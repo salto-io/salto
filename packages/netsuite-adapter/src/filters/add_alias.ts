@@ -419,7 +419,7 @@ const getElementsWithoutAlias = (elementsMap: ElementsMap): ElementsMap =>
 const filterCreator: LocalFilterCreator = ({ config, elementsSource, isPartial }) => ({
   name: 'addAlias',
   onFetch: async (elements: Element[]): Promise<void> => {
-    if (config.fetch?.addAlias !== true) {
+    if (config.fetch.addAlias !== true) {
       log.info('not running addAlias filter as addAlias in the config is false')
       return
     }

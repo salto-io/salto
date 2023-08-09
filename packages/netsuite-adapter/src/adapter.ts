@@ -198,9 +198,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
       .concat(makeArray(config.filePathRegexSkipList))
     this.userConfig = config
     this.getElemIdFunc = getElemIdFunc
-    this.fetchInclude = config.fetch?.include
-    this.fetchExclude = config.fetch?.exclude
-    this.lockedElements = config.fetch?.lockedElementsToExclude
+    this.fetchInclude = config.fetch.include
+    this.fetchExclude = config.fetch.exclude
+    this.lockedElements = config.fetch.lockedElementsToExclude
     this.fetchTarget = getFixedTargetFetch(config.fetchTarget)
     this.withPartialDeletion = config.withPartialDeletion
     this.skipList = config.skipList // old version
@@ -300,7 +300,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const elementsToCreate = [
       ...customObjects,
       ...fileCabinetContent,
-      ...(this.userConfig?.fetch?.addBundles ? bundlesCustomInfo : []),
+      ...(this.userConfig?.fetch.addBundles ? bundlesCustomInfo : []),
     ]
     const baseElements = await createElements(
       elementsToCreate,

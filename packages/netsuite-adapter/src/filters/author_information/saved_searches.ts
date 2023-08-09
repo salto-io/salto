@@ -98,7 +98,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config, elementsSourceInde
   remote: true,
   onFetch: async elements => {
     // if undefined, we want to be treated as true so we check `=== false`
-    if (config.fetch?.authorInformation?.enable === false) {
+    if (config.fetch.authorInformation?.enable === false) {
       log.debug('Author information fetching is disabled')
       return
     }

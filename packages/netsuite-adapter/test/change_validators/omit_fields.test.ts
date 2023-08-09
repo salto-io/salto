@@ -80,7 +80,7 @@ describe('omit fields change validator test', () => {
       [toChange({ before: instance, after })],
       undefined,
       buildElementsSourceFromElements([instance, type, innerType]),
-      { deploy: { fieldsToOmit: [{ type: 'inventoryItem', fields: ['field.*'] }] } }
+      { fetch: {}, deploy: { fieldsToOmit: [{ type: 'inventoryItem', fields: ['field.*'] }] } }
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
@@ -97,7 +97,7 @@ describe('omit fields change validator test', () => {
       [toChange({ before: instance, after })],
       undefined,
       buildElementsSourceFromElements([instance, type, innerType]),
-      { deploy: { fieldsToOmit: [{ type: 'inventoryItem', subtype: 'inner.*', fields: ['.*2'] }] } }
+      { fetch: {}, deploy: { fieldsToOmit: [{ type: 'inventoryItem', subtype: 'inner.*', fields: ['.*2'] }] } }
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({

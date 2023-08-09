@@ -506,7 +506,7 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
-              { deploy: { warnOnStaleWorkspaceData: true } },
+              { fetch: {}, deploy: { warnOnStaleWorkspaceData: true } },
             )
             adapter = adapterAttr.adapter
           })
@@ -531,7 +531,7 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
-              { deploy: { warnOnStaleWorkspaceData: false } },
+              { fetch: {}, deploy: { warnOnStaleWorkspaceData: false } },
             )
             adapter = adapterAttr.adapter
           })
@@ -563,7 +563,7 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
-              { deploy: { warnOnStaleWorkspaceData: true } },
+              { fetch: {}, deploy: { warnOnStaleWorkspaceData: true } },
             )
             adapter = adapterAttr.adapter
           })
@@ -588,7 +588,7 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
-              { deploy: { warnOnStaleWorkspaceData: false } },
+              { fetch: {}, deploy: { warnOnStaleWorkspaceData: false } },
             )
             adapter = adapterAttr.adapter
           })

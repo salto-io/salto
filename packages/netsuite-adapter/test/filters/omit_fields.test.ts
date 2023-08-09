@@ -167,7 +167,7 @@ describe('omit fields filter', () => {
 
     it('should not omit if rule doesn\'t match', async () => {
       await filterCreator({ ...defaultOpts,
-        config: { deploy: { fieldsToOmit: [{ type: 'notSome.*', fields: ['.*'] }] } } })
+        config: { fetch: {}, deploy: { fieldsToOmit: [{ type: 'notSome.*', fields: ['.*'] }] } } })
         .preDeploy?.([
           toChange({ after: instance }),
         ])
@@ -181,7 +181,7 @@ describe('omit fields filter', () => {
       await filterCreator({
         ...defaultOpts,
         elementsSource: buildElementsSourceFromElements([instance, type, innerType]),
-        config: { deploy: { fieldsToOmit: [{ type: 'some.*', fields: ['.*2'] }] } },
+        config: { fetch: {}, deploy: { fieldsToOmit: [{ type: 'some.*', fields: ['.*2'] }] } },
       }).preDeploy?.([toChange({ after: instance })])
       expect(instance.value).toEqual({ field1: true })
     })
@@ -190,7 +190,7 @@ describe('omit fields filter', () => {
       await filterCreator({
         ...defaultOpts,
         elementsSource: buildElementsSourceFromElements([instance, type, innerType]),
-        config: { deploy: { fieldsToOmit: [{ type: 'some.*', subtype: 'inner.*', fields: ['.*2'] }] } },
+        config: { fetch: {}, deploy: { fieldsToOmit: [{ type: 'some.*', subtype: 'inner.*', fields: ['.*2'] }] } },
       }).preDeploy?.([toChange({ after: instance })])
       expect(instance.value).toEqual({
         field1: true,
@@ -213,6 +213,7 @@ describe('omit fields filter', () => {
               { type: 'customrecordcustomfield', fields: ['is.*'] },
             ],
           },
+          fetch: {},
         },
       }).preDeploy?.([toChange({ after: customRecordObjectType })])
       expect(customRecordObjectType.annotations).toEqual({

@@ -277,6 +277,7 @@ describe('Adapter', () => {
     describe('fetchConfig', () => {
       const configWithoutFetch = {
         ..._.omit(config, CONFIG.fetch),
+        fetch: {},
       }
       const createAdapter = (configInput: NetsuiteConfig): NetsuiteAdapter =>
         new NetsuiteAdapter({
@@ -1011,6 +1012,7 @@ describe('Adapter', () => {
               },
             },
           },
+          fetch: {},
         }
         const netsuiteAdapterWithAdditionalSdfDependencies = new NetsuiteAdapter({
           client: new NetsuiteClient(client),
@@ -1080,6 +1082,7 @@ describe('Adapter', () => {
           fetchAllTypesAtOnce: true,
           deploy: {
           },
+          fetch: {},
         }
         const elementsSource = buildElementsSourceFromElements([])
         const adapter = new NetsuiteAdapter({
@@ -1113,6 +1116,7 @@ describe('Adapter', () => {
           deploy: {
             warnOnStaleWorkspaceData: false,
           },
+          fetch: {},
         }
         const elementsSource = buildElementsSourceFromElements([])
         const adapter = new NetsuiteAdapter({
@@ -1146,6 +1150,7 @@ describe('Adapter', () => {
           deploy: {
             warnOnStaleWorkspaceData: true,
           },
+          fetch: {},
         }
         const elementsSource = buildElementsSourceFromElements([])
         const adapter = new NetsuiteAdapter({
@@ -1181,7 +1186,7 @@ describe('Adapter', () => {
           client: { deploy: mockClientDeploy } as unknown as NetsuiteClient,
           elementsSource: buildElementsSourceFromElements([]),
           filtersCreators: [],
-          config: {},
+          config: { fetch: {} },
         })
       })
       it('should return correct deploy errors', async () => {

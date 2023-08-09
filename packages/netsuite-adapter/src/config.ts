@@ -31,7 +31,6 @@ import { ITEM_TYPE_TO_SEARCH_STRING } from './data_elements/types'
 import { isCustomRecordTypeName, netsuiteSupportedTypes } from './types'
 import { FetchByQueryFailures } from './change_validators/safe_deploy'
 import { FailedFiles } from './client/types'
-import { isDefined } from '@salto-io/lowerdash/src/values'
 
 type UserDeployConfig = configUtils.UserDeployConfig
 
@@ -1104,21 +1103,14 @@ export const netsuiteConfigFromConfig = (
       ...config,
       fetch: _.omit(config.fetch, FETCH_PARAMS.lockedElementsToExclude),
     })
-    const relevantConfig = _.pickBy(config, (_value, key) => {
-      if (key in CONFIG) {
-        return true
-      }
-      log.debug('Unknown config property was found: %s', key)
-      return false
-    })
 
-    return _.pickBy(config, (_value, key) => {
-      if (key in CONFIG) {
-        return true
+    const keys = _.keys(CONFIG) as (keyof typeof CONFIG)[]
+    _.keys(config).forEach(key => {
+      if (!(key in CONFIG)) {
+        log.debug('Unknown config property was found: %s', key)
       }
-      log.debug('Unknown config property was found: %s', key)
-      return false
     })
+    return _.pick(config, keys)
   } catch (e) {
     e.message = `Failed to load Netsuite config: ${e.message}`
     log.error(e.message)

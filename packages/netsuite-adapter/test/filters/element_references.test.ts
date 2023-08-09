@@ -512,6 +512,49 @@ describe('instance_references filter', () => {
       ]))
     })
 
+    it('should add generated dependency for for paths that dont start with path prefix', async () => {
+      const fileContent = `
+      define([
+        'SuiteScripts/NtxSuiteScript2_0/Suitelets/NTX_SUIT_CostBatch_TriggerBoomi',
+        'SuiteScripts/NtxSuiteScript2_0/Suitelets/NTX_TriggerCOGSPOUpdate_SUIT.js',
+    ])
+      var salesRep = record.load({
+        type: 'employee',
+        id: requestBody.salesRep,
+        isDynamic: true
+      });
+    `
+      fileInstance.value[PATH] = '/SuiteScripts/NtxSuiteScript2_0/Suitelets/file.js'
+      fileInstance.value.content = new StaticFile({ filepath: 'somePath', content: Buffer.from(fileContent) })
+      const noExtensionInstance = new InstanceElement('noExtensionRef', fileType(), {
+        [PATH]: '/SuiteScripts/NtxSuiteScript2_0/Suitelets/NTX_SUIT_CostBatch_TriggerBoomi.js',
+      })
+      const fileWithExtension = new InstanceElement('extensionRef', fileType(), {
+        [PATH]: '/SuiteScripts/NtxSuiteScript2_0/Suitelets/NTX_TriggerCOGSPOUpdate_SUIT.js',
+      })
+      await filterCreator({
+        elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+        config: await getDefaultAdapterConfig(),
+      }).onFetch?.([fileInstance, noExtensionInstance, fileWithExtension])
+      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(2)
+      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(expect.arrayContaining([
+        {
+          reference: new ReferenceExpression(
+            noExtensionInstance.elemID.createNestedID(PATH)
+          ),
+          occurrences: undefined,
+        },
+        {
+          reference: new ReferenceExpression(
+            fileWithExtension.elemID.createNestedID(PATH)
+          ),
+          occurrences: undefined,
+        },
+      ]))
+    })
+
     it('should add generated dependency from comment', async () => {
       const fileContent = `/**
       * @NApiVersion 2.1

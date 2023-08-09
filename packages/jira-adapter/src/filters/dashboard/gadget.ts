@@ -53,7 +53,8 @@ const deployGadgetProperties = async (
   instance: InstanceElement,
   client: JiraClient
 ): Promise<void> => {
-  const dashboardId = getParents(instance)[0].value.value.id
+  // references are already resolved
+  const dashboardId = getParents(instance)[0].id
 
   await Promise.all(
     Object.entries(instance.value.properties ?? {})

@@ -14,19 +14,19 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import Joi from 'joi'
 import { isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
-import { GetLookupNameFunc, createSchemeGuard, resolvePath } from '@salto-io/adapter-utils'
+import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_TYPE,
   BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, AUTOMATION_STATUS,
   AUTOMATION_CONDITION, AUTOMATION_CONDITION_CRITERIA, AUTOMATION_SUBTASK,
   AUTOMATION_ROLE, AUTOMATION_GROUP, AUTOMATION_EMAIL_RECIPENT, PROJECT_TYPE,
-  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME, AUTOMATION_COMPARE_VALUE, AUTOMATION_TYPE, AUTOMATION_LABEL_TYPE, GROUP_TYPE_NAME, PRIORITY_SCHEME_TYPE_NAME, SCRIPT_RUNNER_TYPE, POST_FUNCTION_CONFIGURATION, RESOLUTION_TYPE_NAME, ISSUE_EVENT_TYPE_NAME, CONDITION_CONFIGURATION, PROJECT_ROLE_TYPE, VALIDATOR_CONFIGURATION, BOARD_TYPE_NAME, ISSUE_LINK_TYPE_NAME, DIRECTED_LINK_TYPE, MAIL_LIST_TYPE_NAME, FILTER_TYPE_NAME } from './constants'
+  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME, AUTOMATION_COMPARE_VALUE, AUTOMATION_TYPE, AUTOMATION_LABEL_TYPE, GROUP_TYPE_NAME, PRIORITY_SCHEME_TYPE_NAME, SCRIPT_RUNNER_TYPE, POST_FUNCTION_CONFIGURATION, RESOLUTION_TYPE_NAME, ISSUE_EVENT_TYPE_NAME, CONDITION_CONFIGURATION, PROJECT_ROLE_TYPE, VALIDATOR_CONFIGURATION, BOARD_TYPE_NAME, ISSUE_LINK_TYPE_NAME, DIRECTED_LINK_TYPE, MAIL_LIST_TYPE_NAME } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 import { getRefType } from './references/workflow_properties'
 import { FIELD_TYPE_NAME } from './filters/fields/constants'
+import { gadgetValuesContextFunc, gadgetValueSerialize, gadgetDashboradValueLookup } from './references/dashboard_gadget_properties'
 
 const { awu } = collections.asynciterable
 const { neighborContextGetter, basicLookUp } = referenceUtils
@@ -68,41 +68,6 @@ export const resolutionAndPriorityToTypeName: referenceUtils.ContextValueMapperF
   return undefined
 }
 
-type GadgetValue = {
-  key: string
-  value: string
-}
-
-const GADGET_VALUE_SCHEME = Joi.object({
-  key: Joi.string().allow('').required(),
-  value: Joi.string().allow('').required(),
-}).unknown(true)
-
-const isGadgetObject = createSchemeGuard<GadgetValue>(GADGET_VALUE_SCHEME, 'Invalid gadget value')
-
-const FILTER_PREFIX = 'filter-'
-const PROJECT_PREFIX = 'project-'
-
-const gadgetValuesContextFunc: referenceUtils.ContextFunc = async ({ instance, fieldPath }) => {
-  if (fieldPath === undefined) {
-    return undefined
-  }
-  const contextObject = resolvePath(instance, fieldPath.createParentID())
-  if (!isGadgetObject(contextObject)) {
-    return undefined
-  }
-  const { key, value } = contextObject
-  switch (key) {
-    case 'ystattype':
-    case 'xstattype':
-    case 'statistictype':
-    case 'statType': return FIELD_TYPE_NAME
-    case 'filterId': return FILTER_TYPE_NAME
-    case 'projectOrFilterId': return _.startsWith(value, PROJECT_PREFIX) ? PROJECT_TYPE : FILTER_TYPE_NAME
-    default: return undefined
-  }
-}
-
 export type ReferenceContextStrategyName = 'parentSelectedFieldType' | 'parentFieldType' | 'workflowStatusPropertiesContext'
 | 'parentFieldId' | 'gadgetPropertyValue'
 
@@ -121,36 +86,6 @@ const groupNameSerialize: GetLookupNameFunc = ({ ref }) =>
 
 const groupIdSerialize: GetLookupNameFunc = ({ ref }) =>
   (isInstanceElement(ref.value) ? ref.value.value.groupId : ref.value)
-
-const gadgetValueSerialize: GetLookupNameFunc = ({ ref, path, element }) => {
-  if (path === undefined) {
-    return ref.value.value.id
-  }
-  if (ref.elemID.typeName === PROJECT_TYPE) {
-    return PROJECT_PREFIX.concat(ref.value.value.id)
-  }
-  if (ref.elemID.typeName === FILTER_TYPE_NAME) {
-    const contextObject = resolvePath(element, path.createParentID())
-    // The first condition is needed for deploy, as contextObject.value is a reference expression
-    // The second condition is needed for fetch
-    return (contextObject?.key === 'projectOrFilterId' || (_.isString(contextObject?.value) && _.startsWith(contextObject?.value, FILTER_PREFIX)))
-      ? FILTER_PREFIX.concat(ref.value.value.id)
-      : ref.value.value.id
-  }
-  return ref.value.value.id
-}
-
-const gadgetDashboradValueLookup: referenceUtils.LookupFunc = val => {
-  if (_.isString(val)) {
-    if (val.startsWith(FILTER_PREFIX)) {
-      return val.slice(FILTER_PREFIX.length)
-    }
-    if (val.startsWith(PROJECT_PREFIX)) {
-      return val.slice(PROJECT_PREFIX.length)
-    }
-  }
-  return val
-}
 
 type JiraReferenceSerializationStrategyName = 'groupStrategyById' | 'groupStrategyByOriginalName' | 'groupId' | 'key' | 'dashboradGadgetsValues'
 const JiraReferenceSerializationStrategyLookup: Record<

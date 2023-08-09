@@ -499,11 +499,13 @@ export const loadWorkspace = async (
      * This means you can't put an `await` between the start of `buildWorkspaceState` and the following lines.
      */
     const initBuild = workspaceState === undefined
-    const stateToBuild = workspaceState !== undefined
-      ? await workspaceState
-      : await initState()
 
     const wsChanges = await workspaceChanges
+
+    const stateToBuild = (!initBuild
+      ? await workspaceState
+      : await initState()) as WorkspaceState
+
 
     const getWorkspaceChangesForEnv = (envName: string): ChangeSet<Change> | undefined => wsChanges[envName]
 
@@ -1285,7 +1287,9 @@ export const loadWorkspace = async (
       return loadWorkspace(config, adaptersConfig, credentials, envSources, remoteMapCreator)
     },
     clear: async (args: ClearFlags) => {
+      log.info('Starting workspace.clear()')
       const currentWSState = await getWorkspaceState()
+      log.info('After first getWorkspaceState()')
       if (args.cache || args.nacl || args.staticResources) {
         if (args.staticResources && !(args.state && args.cache && args.nacl)) {
           throw new Error('Cannot clear static resources without clearing the state, cache and nacls')
@@ -1303,7 +1307,9 @@ export const loadWorkspace = async (
         await promises.array.series(envs().map(e => (() => credentials.delete(e))))
       }
       workspaceState = undefined
+      log.info('Before second getWorkspaceState()')
       await getWorkspaceState()
+      log.info('After second getWorkspaceState()')
     },
     addAccount,
     addService: addAccount,

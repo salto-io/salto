@@ -369,18 +369,16 @@ export const loadWorkspace = async (
   )
   let workspaceState: Promise<WorkspaceState> | undefined
 
-  type WorkspaceChanges = Record<string, ChangeSet<Change>>
-  type BuildWorkspaceStateArgs = {
-    workspaceChanges: Promise<WorkspaceChanges> | WorkspaceChanges
-    stateOnlyChanges?: Record<string, ChangeSet<Change>>
-    validate?: boolean
-  }
 
   const buildWorkspaceState = async ({
     workspaceChanges,
     stateOnlyChanges = {},
     validate = true,
-  }: BuildWorkspaceStateArgs): Promise<WorkspaceState> => {
+  }: {
+    workspaceChanges?: Record<string, ChangeSet<Change>>
+    stateOnlyChanges?: Record<string, ChangeSet<Change>>
+    validate?: boolean
+  }): Promise<WorkspaceState> => {
     const initState = async (): Promise<WorkspaceState> => {
       const wsConfig = await config.getWorkspaceConfig()
       log.debug('initializing state for workspace %s/%s', wsConfig.uid, wsConfig.name)
@@ -494,20 +492,24 @@ export const loadWorkspace = async (
 
     /** HERE BE DRAGONS!
      *
-     * `workspaceState` will be `undefined` until `buildWorkspaceState` returns a promise (see the code in
+     * Dragon 1: `workspaceState` will be `undefined` until `buildWorkspaceState` returns a promise (see the code in
      * `getWorkspaceState`). `buildWorkspaceState` will return a promise the first time it executes an `await`.
      * This means you can't put an `await` between the start of `buildWorkspaceState` and the following lines.
+     *
+     * Dragon 2: initState() uses naclFilesSource. One can't use naclFilesSource until load() was called on it. Hence
+     * setting wsChanges must happen after we set initBuild and previousState, but before we call initState(). Don't
+     * move the initialization of wsChanges.
      */
-    const initBuild = workspaceState === undefined
+    const previousState = workspaceState
+    const initBuild = previousState === undefined
 
-    const wsChanges = await workspaceChanges
+    const wsChanges = (workspaceChanges !== undefined)
+      ? workspaceChanges
+      : await naclFilesSource.load({ ignoreFileChanges })
 
-    const stateToBuild = (!initBuild
-      ? await workspaceState
+    const stateToBuild = (previousState !== undefined
+      ? await previousState
       : await initState()) as WorkspaceState
-
-
-    const getWorkspaceChangesForEnv = (envName: string): ChangeSet<Change> | undefined => wsChanges[envName]
 
     if (ignoreFileChanges) {
       // Skip all updates to the state since this flag means we are operating under the assumption
@@ -588,7 +590,7 @@ export const loadWorkspace = async (
           : []
         log.debug('got %d init hidden element changes', initHiddenElementsChanges.length)
 
-        const stateRemovedElementChanges = await awu(getWorkspaceChangesForEnv(envName)?.changes ?? [])
+        const stateRemovedElementChanges = await awu(wsChanges[envName]?.changes ?? [])
           .filter(async change => (
             isRemovalChange(change)
             && getChangeData(change).elemID.isTopLevel()
@@ -632,7 +634,7 @@ export const loadWorkspace = async (
       }
 
       const workspaceChangedElements = Object.fromEntries(
-        await awu(getWorkspaceChangesForEnv(envName)?.changes ?? [])
+        await awu(wsChanges[envName]?.changes ?? [])
           .map(async change => {
             const workspaceElement = getChangeData(change)
             const hiddenOnlyElement = isRemovalChange(change)
@@ -668,7 +670,7 @@ export const loadWorkspace = async (
       }
 
       const changeResult = await stateToBuild.mergeManager.mergeComponents({
-        src1Changes: getWorkspaceChangesForEnv(envName),
+        src1Changes: wsChanges[envName],
         src2Changes: await completeStateOnlyChanges(
           stateOnlyChanges[envName]
           ?? createEmptyChangeSet(
@@ -776,18 +778,8 @@ export const loadWorkspace = async (
   }
 
   const getWorkspaceState = async (): Promise<WorkspaceState> => {
-    const wsConfig = await config.getWorkspaceConfig()
     if (_.isUndefined(workspaceState)) {
-      /** NOTE!
-       * If there's an await between the `if` above and the call to `buildWorkspaceState` then we may context-switch to
-       * another call stack that also calls `getWorkspaceState` before we assign a value to `workspaceState` and end up
-       * having multiple contexts all stepping over eachother's state (and also calling naclFilesSource.load and using
-       * a whole bunch of file descriptors).
-       * Don't `await` in this `if` block.
-       * */
-      log.debug('No workspace state for %s/%s. Building new workspace state.', wsConfig.uid, wsConfig.name)
-      const changes = naclFilesSource.load({ ignoreFileChanges })
-      workspaceState = buildWorkspaceState({ workspaceChanges: changes })
+      workspaceState = buildWorkspaceState({ })
     }
     return workspaceState
   }
@@ -1287,9 +1279,7 @@ export const loadWorkspace = async (
       return loadWorkspace(config, adaptersConfig, credentials, envSources, remoteMapCreator)
     },
     clear: async (args: ClearFlags) => {
-      log.info('Starting workspace.clear()')
       const currentWSState = await getWorkspaceState()
-      log.info('After first getWorkspaceState()')
       if (args.cache || args.nacl || args.staticResources) {
         if (args.staticResources && !(args.state && args.cache && args.nacl)) {
           throw new Error('Cannot clear static resources without clearing the state, cache and nacls')
@@ -1307,9 +1297,7 @@ export const loadWorkspace = async (
         await promises.array.series(envs().map(e => (() => credentials.delete(e))))
       }
       workspaceState = undefined
-      log.info('Before second getWorkspaceState()')
       await getWorkspaceState()
-      log.info('After second getWorkspaceState()')
     },
     addAccount,
     addService: addAccount,

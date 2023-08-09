@@ -102,10 +102,10 @@ export type SavedSearchQuery = {
 }
 
 export enum EnvType {
-  PRODUCTION,
-  SANDBOX,
-  BETA,
-  INTERNAL
+  PRODUCTION = 'PRODUCTION',
+  SANDBOX = 'SANDBOX',
+  BETA = 'BETA',
+  INTERNAL = 'INTERNAL',
 }
 
 const BASIC_SYSTEM_INFO_SCHEME_PROPERTIES = {
@@ -135,6 +135,11 @@ export const SYSTEM_INFORMATION_SCHEME = {
         ...BASIC_SYSTEM_INFO_SCHEME_PROPERTIES,
       },
       required: ['time', 'appVersion'],
+      additionalProperties: {
+        not: {
+          required: ['envType'], // Ensure that envType is not present in this case
+        },
+      },
     },
   ],
   additionalProperties: true,

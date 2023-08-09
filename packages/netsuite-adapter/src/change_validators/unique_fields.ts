@@ -86,7 +86,7 @@ const getNestedScriptIDField = async (
 const getChangeWorkflowFields = (
   change: ChangeDataType,
 ): string[] =>
-  // custom fields and states' custom fields must have different prefix: "custworkflow" and "custwfstate"
+  // custom fields and states' custom fields must have a different prefix: "custworkflow" and "custwfstate"
   [..._.values(getChangeNestedField(change, WORKFLOW_CUSTOM_FIELDS_PATH)).map(val => val[SCRIPT_ID]),
     ..._.values(getChangeNestedField(change, WORKFLOW_STATES_PATH))
       .flatMap(state => _.values(_.get(state, WORKFLOW_STATES_CUSTOM_FIELDS_PATH)))
@@ -95,7 +95,7 @@ const getChangeWorkflowFields = (
 const getSourceWorkflowFields = async (
   { elemID, elementsSource }: GetterParams
 ): Promise<string[]> =>
-  // custom fields and states' custom fields must have different prefix: "custworkflow" and "custwfstate"
+  // custom fields and states' custom fields must have a different prefix: "custworkflow" and "custwfstate"
   _.values(await elementsSource.get(elemID))
     .map(elem => ({
       customFieldsScriptid: _.values(_.get(elem, WORKFLOW_CUSTOM_FIELDS_PATH)).map(val => val[SCRIPT_ID]),

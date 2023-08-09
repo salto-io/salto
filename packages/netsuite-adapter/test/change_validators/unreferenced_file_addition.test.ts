@@ -13,19 +13,24 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { EMAIL_TEMPLATE, FILE, NETSUITE } from '../../src/constants'
+import { InstanceElement, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import unreferencedFileAddition from '../../src/change_validators/unreferenced_file_addition'
+import { suiteletType } from '../../src/autogen/types/standard_types/suitelet'
+import { fileType } from '../../src/types/file_cabinet_types'
+import { emailtemplateType } from '../../src/autogen/types/standard_types/emailtemplate'
 
 describe('unreferenced file addition validator', () => {
+  const { type: suitelet } = suiteletType()
+  const { type: emailTemplate } = emailtemplateType()
+
   describe('script file', () => {
-    const scriptFileNacl = new InstanceElement('scriptFileNacl', new ObjectType({ elemID: new ElemID(NETSUITE, FILE) }))
-    const scriptReferenceElement = new InstanceElement('scriptElemWithReference', new ObjectType({ elemID: new ElemID(NETSUITE, 'suitlet') }),
-      { defaultfunction: 'svda',
-        scriptfile: new ReferenceExpression(
-          scriptFileNacl.elemID
-        ) })
-    const scriptNonReferenceElement = new InstanceElement('scriptElemWithoutReference', new ObjectType({ elemID: new ElemID(NETSUITE, 'suitlet') }))
+    const scriptFileNacl = new InstanceElement('scriptFileNacl', fileType())
+    const scriptReferenceElement = new InstanceElement('scriptElemWithReference', suitelet,
+      {
+        defaultfunction: 'svda',
+        scriptfile: new ReferenceExpression(scriptFileNacl.elemID),
+      })
+    const scriptNonReferenceElement = new InstanceElement('scriptElemWithoutReference', suitelet)
 
     it('Should not have a change error when adding a File and a script referencing it', async () => {
       const changeErrors = await unreferencedFileAddition([
@@ -54,6 +59,7 @@ describe('unreferenced file addition validator', () => {
       const changeErrors = await unreferencedFileAddition([
         toChange({ after: scriptFileNacl }),
         toChange({ after: scriptNonReferenceElement }),
+        toChange({ before: scriptReferenceElement }),
       ])
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
@@ -62,13 +68,13 @@ describe('unreferenced file addition validator', () => {
   })
 
   describe('email template file', () => {
-    const emailTemplateFileNacl = new InstanceElement('emailTemplateFileNacl', new ObjectType({ elemID: new ElemID(NETSUITE, FILE) }))
-    const emailTemplateReferenceElement = new InstanceElement('emailTemplateElemWithReference', new ObjectType({ elemID: new ElemID(NETSUITE, EMAIL_TEMPLATE) }),
+    const emailTemplateFileNacl = new InstanceElement('emailTemplateFileNacl', fileType())
+    const emailTemplateReferenceElement = new InstanceElement('emailTemplateElemWithReference', emailTemplate,
       { addcompanyaddress: true,
         mediaitem: new ReferenceExpression(
           emailTemplateFileNacl.elemID
         ) })
-    const emailTemplateNonReferenceElement = new InstanceElement('emailTemplateElemWithoutReference', new ObjectType({ elemID: new ElemID(NETSUITE, EMAIL_TEMPLATE) }))
+    const emailTemplateNonReferenceElement = new InstanceElement('emailTemplateElemWithoutReference', emailTemplate)
 
     it('Should not have a change error when adding a File and a template referencing it', async () => {
       const changeErrors = await unreferencedFileAddition([
@@ -97,6 +103,7 @@ describe('unreferenced file addition validator', () => {
       const changeErrors = await unreferencedFileAddition([
         toChange({ after: emailTemplateFileNacl }),
         toChange({ after: emailTemplateNonReferenceElement }),
+        toChange({ before: emailTemplateReferenceElement }),
       ])
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
@@ -104,20 +111,20 @@ describe('unreferenced file addition validator', () => {
     })
   })
   describe('both type of files', () => {
-    const emailTemplateFileNacl = new InstanceElement('emailTemplateFileNacl', new ObjectType({ elemID: new ElemID(NETSUITE, FILE) }))
-    const emailTemplateReferenceElement = new InstanceElement('emailTemplateElemWithReference', new ObjectType({ elemID: new ElemID(NETSUITE, EMAIL_TEMPLATE) }),
+    const emailTemplateFileNacl = new InstanceElement('emailTemplateFileNacl', fileType())
+    const emailTemplateReferenceElement = new InstanceElement('emailTemplateElemWithReference', emailTemplate,
       { addcompanyaddress: true,
         mediaitem: new ReferenceExpression(
           emailTemplateFileNacl.elemID
         ) })
-    const emailTemplateNonReferenceElement = new InstanceElement('emailTemplateElemWithoutReference', new ObjectType({ elemID: new ElemID(NETSUITE, EMAIL_TEMPLATE) }))
-    const scriptFileNacl = new InstanceElement('scriptFileNacl', new ObjectType({ elemID: new ElemID(NETSUITE, FILE) }))
-    const scriptReferenceElement = new InstanceElement('scriptElemWithReference', new ObjectType({ elemID: new ElemID(NETSUITE, 'suitlet') }),
+    const emailTemplateNonReferenceElement = new InstanceElement('emailTemplateElemWithoutReference', emailTemplate)
+    const scriptFileNacl = new InstanceElement('scriptFileNacl', fileType())
+    const scriptReferenceElement = new InstanceElement('scriptElemWithReference', suitelet,
       { defaultfunction: 'svda',
         scriptfile: new ReferenceExpression(
           scriptFileNacl.elemID
         ) })
-    const scriptNonReferenceElement = new InstanceElement('scriptElemWithoutReference', new ObjectType({ elemID: new ElemID(NETSUITE, 'suitlet') }))
+    const scriptNonReferenceElement = new InstanceElement('scriptElemWithoutReference', suitelet)
 
     it('Should not have a change error when adding files and templates referencing them', async () => {
       const changeErrors = await unreferencedFileAddition([
@@ -151,8 +158,10 @@ describe('unreferenced file addition validator', () => {
       const changeErrors = await unreferencedFileAddition([
         toChange({ after: emailTemplateFileNacl }),
         toChange({ after: emailTemplateNonReferenceElement }),
+        toChange({ before: emailTemplateReferenceElement }),
         toChange({ after: scriptFileNacl }),
         toChange({ after: scriptNonReferenceElement }),
+        toChange({ before: scriptReferenceElement }),
       ])
       expect(changeErrors).toHaveLength(2)
       expect(changeErrors.map(changeError => changeError.severity)).toEqual(['Warning', 'Warning'])

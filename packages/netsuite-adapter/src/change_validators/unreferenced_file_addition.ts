@@ -14,54 +14,50 @@
 * limitations under the License.
 */
 
-import { InstanceElement, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceElement, ChangeError } from '@salto-io/adapter-api'
+import { InstanceElement, getChangeData, isAdditionChange, isAdditionOrModificationChange, ChangeError, isInstanceChange, isReferenceExpression } from '@salto-io/adapter-api'
 import { WALK_NEXT_STEP, WalkOnFunc, walkOnElement } from '@salto-io/adapter-utils'
+import { isFileInstance } from '../types'
 import { NetsuiteChangeValidator } from './types'
 
 const fileIsReferenced = (
-  changes: InstanceElement[],
+  instances: InstanceElement[],
   file: InstanceElement
 ): boolean => {
   const fullName = file.elemID.getFullName()
   let answer = false
 
   const func: WalkOnFunc = ({ value }) => {
-    if (value.elemID?.createTopLevelParentID().parent.getFullName() === fullName) {
+    if (isReferenceExpression(value) && value.elemID.createTopLevelParentID().parent.getFullName() === fullName) {
       answer = true
       return WALK_NEXT_STEP.EXIT
     }
     return WALK_NEXT_STEP.RECURSE
   }
 
-  changes.some(element => {
+  return instances.some(element => {
     if (!file.isEqual(element)) {
       walkOnElement({ element, func })
     }
     return answer
   })
-
-  return answer
 }
-const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferencedElements, _elementsSource) => {
+const changeValidator: NetsuiteChangeValidator = async changes => {
   const instanceElementChanges = changes
     .filter(isAdditionOrModificationChange)
-    .map(change => getChangeData(change))
-    .filter(isInstanceElement)
-  const fileAdditions = changes
+    .filter(isInstanceChange)
+  const fileAdditions = instanceElementChanges
     .filter(isAdditionChange)
     .map(getChangeData)
-    .filter(isInstanceElement)
-    .filter(change => change.elemID.typeName === 'file')
-  const unreferencedFiles = fileAdditions
-    .filter(file => !fileIsReferenced(instanceElementChanges, file))
-  const res = unreferencedFiles
+    .filter(isFileInstance)
+
+  return fileAdditions
+    .filter(file => !fileIsReferenced(instanceElementChanges.map(getChangeData), file))
     .map(({ elemID }): ChangeError => ({
       elemID,
       severity: 'Warning',
       message: 'File not referenced by any element',
       detailedMessage: "This file isn't referenced by any other element. This may indicate that you forgot to include some element in your deployment which uses this file.",
     }))
-  return res
 }
 
 export default changeValidator

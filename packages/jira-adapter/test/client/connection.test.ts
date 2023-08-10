@@ -134,7 +134,7 @@ describe('connection', () => {
     afterEach(() => {
       mockAxios.restore()
     })
-    it('should return isProduction true when account id does not include -sandbox- and has paid app', async () => {
+    it('should return isProduction undefined when account id does not include -sandbox- and has paid app', async () => {
       connection = await createConnection({ retries: 1 }).login(
         { baseUrl: 'http://myJira.net', user: 'me', token: 'tok', isDataCenter: true }
       )
@@ -143,28 +143,30 @@ describe('connection', () => {
       const { isProduction } = await validateCredentials({
         connection,
       })
-      expect(isProduction).toEqual(true)
+      expect(isProduction).toEqual(undefined)
     })
-    it('should return isProduction false when account id includes -sandbox-', async () => {
+    it('should return isProduction false and accountType = "Sandbox" when account id includes -sandbox-', async () => {
       connection = await createConnection({ retries: 1 }).login(
         { baseUrl: 'https://test-sandbox-999.atlassian.net', user: 'me', token: 'tok', isDataCenter: true }
       )
       mockAxios.onGet('/rest/api/3/serverInfo').reply(200, { baseUrl: 'https://test-sandbox-999.atlassian.net' })
       mockAxios.onGet('/rest/api/3/instance/license').reply(200, { applications: [{ plan: 'PAID' }] })
-      const { isProduction } = await validateCredentials({
+      const { isProduction, accountType } = await validateCredentials({
         connection,
       })
       expect(isProduction).toEqual(false)
+      expect(accountType).toEqual('Sandbox')
     })
-    it('should return isProduction false when account id does not include -sandbox- but has no paid app', async () => {
+    it('should return isProduction false and accountType = undefined when account id does not include -sandbox- but has no paid app', async () => {
       connection = await createConnection({ retries: 1 }).login(
         { baseUrl: 'https://test-sandbox-999.atlassian.net', user: 'me', token: 'tok', isDataCenter: true }
       )
       mockAxios.onGet('/rest/api/3/serverInfo').reply(200, { baseUrl: 'https://test.atlassian.net' })
       mockAxios.onGet('/rest/api/3/instance/license').reply(200, { applications: [{ plan: 'FREE' }] })
-      const { isProduction } = await validateCredentials({
+      const { isProduction, accountType } = await validateCredentials({
         connection,
       })
+      expect(accountType).toEqual(undefined)
       expect(isProduction).toEqual(false)
     })
   })

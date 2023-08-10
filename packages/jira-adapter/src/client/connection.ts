@@ -44,11 +44,16 @@ const getBaseUrl = async (
   return response.data.baseUrl
 }
 
-const isProd = async (connection: clientUtils.APIConnection): Promise<boolean> => {
+const isSandBox = async (connection: clientUtils.APIConnection): Promise<boolean> => {
   const baseURL = await getBaseUrl(connection)
+  return baseURL.includes('-sandbox-')
+}
+
+const isProd = async (connection: clientUtils.APIConnection): Promise<boolean | undefined> => {
+  const isSandBoxAccount = await isSandBox(connection)
   const response = await connection.get('/rest/api/3/instance/license')
   const hasPaidApp = response.data?.applications.some((app: appInfo) => app.plan === 'PAID') ?? false
-  return !baseURL.includes('-sandbox-') && hasPaidApp
+  return !isSandBoxAccount && hasPaidApp ? undefined : false
 }
 
 export const validateCredentials = async (
@@ -57,6 +62,9 @@ export const validateCredentials = async (
   if (await isAuthorized(connection)) {
     const accountId = await getBaseUrl(connection)
     const isProduction = await isProd(connection)
+    if (await isSandBox(connection)) {
+      return { accountId, isProduction, accountType: 'Sandbox' }
+    }
     return { accountId, isProduction }
   }
   throw new CredentialError('Invalid Credentials')

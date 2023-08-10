@@ -223,6 +223,8 @@ describe('restore', () => {
           expect(modifyChange?.id).toEqual(singlePathInstMergedAfter.elemID
             .createNestedID('nested').createNestedID('str'))
           expect(modifyChange?.path).toEqual(['salto', 'inst', 'simple'])
+          expect(modifyChange?.data.before).toEqual('Str')
+          expect(modifyChange?.data.after).toEqual('modified')
         })
       })
     })

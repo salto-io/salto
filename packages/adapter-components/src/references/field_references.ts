@@ -146,6 +146,7 @@ export const replaceReferenceValues = async <
             ref: new ReferenceExpression(element.elemID, elem),
             field,
             element: instance,
+            path,
           })
           : resolvePath(element, referenceId)
         // this validation is necessary to create a reference from '$Label.check' and not 'check'
@@ -314,7 +315,7 @@ export const generateLookupFunc = <
       ref, path, field, element,
     }) ?? ReferenceSerializationStrategyLookup.fullValue
     if (!isRelativeSerializer(strategy)) {
-      return strategy.serialize({ ref, field, element })
+      return strategy.serialize({ ref, field, element, path })
     }
     return cloneDeepWithoutRefs(ref.value)
   }

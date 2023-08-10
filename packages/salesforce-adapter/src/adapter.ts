@@ -32,7 +32,7 @@ import { logger } from '@salto-io/logging'
 import { collections, values, promises, objects } from '@salto-io/lowerdash'
 import SalesforceClient from './client/client'
 import * as constants from './constants'
-import { apiName, Types, isMetadataObjectType, MetadataObjectType } from './transformers/transformer'
+import { apiName, Types, isMetadataObjectType, MetadataObjectType, isCustomObject } from './transformers/transformer'
 import layoutFilter from './filters/layouts'
 import customObjectsFromDescribeFilter from './filters/custom_objects_from_soap_describe'
 import customObjectsToObjectTypeFilter, { NESTED_INSTANCE_VALUE_TO_TYPE_NAME } from './filters/custom_objects_to_object_type'
@@ -318,6 +318,7 @@ const getMetadataTypesFromElementsSource = async (
 ): Promise<MetadataObjectType[]> => (
   awu(await elementsSource.getAll())
     .filter(isMetadataObjectType)
+    .filter(async metadataType => !await isCustomObject(metadataType))
     .toArray()
 )
 
@@ -330,6 +331,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private client: SalesforceClient
   private userConfig: SalesforceConfig
   private fetchProfile: FetchProfile
+  private elementsSource: ReadOnlyElementsSource
 
   public constructor({
     metadataTypesOfInstancesFetchedInFilters = [FLOW_METADATA_TYPE, FLOW_DEFINITION_METADATA_TYPE],
@@ -389,6 +391,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.metadataTypesOfInstancesFetchedInFilters = metadataTypesOfInstancesFetchedInFilters
     this.nestedMetadataTypes = nestedMetadataTypes
     this.client = client
+    this.elementsSource = elementsSource
 
     const fetchProfile = buildFetchProfile(config.fetch ?? {}, changedAtSingleton)
     this.fetchProfile = fetchProfile
@@ -427,11 +430,11 @@ export default class SalesforceAdapter implements AdapterOperations {
    */
   @logDuration('fetching account configuration')
   async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
-    const allElements = await awu(await this.elementsSource.getAll()).toArray()
-    log.debug('going to fetch salesforce account configuration.. %d', allElements.length)
+    log.debug('going to fetch salesforce account configuration..')
     const fieldTypes = Types.getAllFieldTypes()
     const hardCodedTypes = [
-      ...Types.getAllMissingTypes(),
+      // Missing Metadata subtypes will come from the elementsSource. We want to avoid duplicates
+      ...withChangesDetection ? [] : Types.getAllMissingTypes(),
       ...Types.getAnnotationTypes(),
       ...Object.values(ArtificialTypes),
     ]
@@ -468,9 +471,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       this.userConfig,
     )
     return {
-      elements: withChangesDetection
-        ? elements.filter(element => !isMetadataObjectType(element))
-        : elements,
+      elements,
       errors: onFetchFilterResult.errors ?? [],
       updatedConfig,
       partialFetchData: setPartialFetchData(this.fetchProfile.metadataQuery.isPartialFetch()),

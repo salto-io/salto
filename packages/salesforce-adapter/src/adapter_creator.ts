@@ -175,7 +175,7 @@ In Addition, ${configFromFetch.message}`,
 }
 
 type CreateSalesforceAdapterParams = {
-  withChangedAtSingleton?: boolean
+  isFetchWithChangesDetection?: boolean
 }
 
 export const adapter: Adapter = {
@@ -186,11 +186,11 @@ export const adapter: Adapter = {
     const client = new SalesforceClient({ credentials, config: config[CLIENT_CONFIG] })
 
     const createSalesforceAdapter = async ({
-      withChangedAtSingleton = false,
+      isFetchWithChangesDetection = false,
     }: CreateSalesforceAdapterParams = {}
     ): Promise<SalesforceAdapter> => {
       const { elementsSource, getElemIdFunc } = context
-      const changedAtSingleton = withChangedAtSingleton
+      const changedAtSingleton = isFetchWithChangesDetection
         ? await getChangedAtSingleton(elementsSource)
         : undefined
       return new SalesforceAdapter({
@@ -205,7 +205,7 @@ export const adapter: Adapter = {
     return {
       fetch: async opts => {
         const salesforceAdapter = await createSalesforceAdapter({
-          withChangedAtSingleton: opts.withChangesDetection ?? false,
+          isFetchWithChangesDetection: opts.withChangesDetection ?? false,
         })
         const fetchResults = await salesforceAdapter.fetch(opts)
         fetchResults.updatedConfig = getConfigChange(

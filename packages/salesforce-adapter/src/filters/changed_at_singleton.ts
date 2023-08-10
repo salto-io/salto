@@ -71,17 +71,16 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
         .toArray(),
       async instance => apiName(await instance.getType())
     )
+    const changedAtInstance = await getChangedAtSingletonInstance(config.elementsSource)
+    elements.push(changedAtInstance)
     // None of the Elements were annotated with changedAt
     if (Object.values(metadataInstancesByType).flat().length === 0) {
       return
     }
-
-    const changedAtInstance = await getChangedAtSingletonInstance(config.elementsSource)
     changedAtInstance.value = _.defaultsDeep(
       createChangedAtSingletonInstanceValues(metadataInstancesByType),
       changedAtInstance.value,
     )
-    elements.push(changedAtInstance)
   },
 })
 

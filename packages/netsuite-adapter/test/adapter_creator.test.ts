@@ -385,7 +385,7 @@ describe('NetsuiteAdapter creator', () => {
         })
         expect(NetsuiteAdapter).toHaveBeenCalledWith({
           client: expect.any(Object),
-          config: { fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } } },
+          config: { fetch: { include: { types: [{ name: '.*' }], fileCabinet: ['.*'] }, exclude: { types: [], fileCabinet: [] } } },
           elementsSource,
           getElemIdFunc: mockGetElemIdFunc,
         })

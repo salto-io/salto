@@ -1113,7 +1113,7 @@ export const netsuiteConfigFromConfig = (
   try {
     if (!configInstance) {
       return {
-        fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+        fetch: { include: { types: [{ name: '.*' }], fileCabinet: ['.*'] }, exclude: { types: [], fileCabinet: [] } },
       }
     }
     const { value: config } = configInstance

@@ -167,8 +167,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly additionalDependencies: AdditionalDependencies
   private readonly userConfig: NetsuiteConfig
   private getElemIdFunc?: ElemIdGetter
-  private readonly fetchInclude?: QueryParams
-  private readonly fetchExclude?: QueryParams
+  private readonly fetchInclude: QueryParams
+  private readonly fetchExclude: QueryParams
   private readonly lockedElements?: QueryParams
   private readonly fetchTarget?: NetsuiteQueryParameters
   private readonly withPartialDeletion?: boolean
@@ -395,9 +395,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
       filePaths: this.filePathRegexSkipList.map(reg => `.*${reg}.*`),
     }))
     const fetchQuery = [
-      this.fetchInclude && buildNetsuiteQuery(this.fetchInclude),
+      buildNetsuiteQuery(this.fetchInclude),
       this.fetchTarget && buildNetsuiteQuery(convertToQueryParams(this.fetchTarget)),
-      this.fetchExclude && notQuery(buildNetsuiteQuery(this.fetchExclude)),
+      notQuery(buildNetsuiteQuery(this.fetchExclude)),
       this.lockedElements && notQuery(buildNetsuiteQuery(this.lockedElements)),
       this.skipList && notQuery(buildNetsuiteQuery(convertToQueryParams(this.skipList))),
       notQuery(deprecatedSkipList),

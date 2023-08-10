@@ -118,7 +118,7 @@ describe('sdf folder loader', () => {
       elementsSourceIndex,
       elementsSource,
       isPartial: true,
-      config: { fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } } },
+      config: { fetch: { include: { types: [{ name: '.*' }], fileCabinet: ['.*'] }, exclude: { types: [], fileCabinet: [] } } },
     })
     expect(parseSdfProjectDirMock).toHaveBeenCalledWith('projectDir')
 

@@ -487,8 +487,18 @@ const fieldsToOmitConfig = createMatchingObjectType<FieldToOmitParams>({
 const fetchConfigType = createMatchingObjectType<FetchParams>({
   elemID: new ElemID(NETSUITE, 'fetchConfig'),
   fields: {
-    include: { refType: queryParamsConfigType },
-    exclude: { refType: queryParamsConfigType },
+    include: {
+      refType: queryParamsConfigType,
+      annotations: {
+        _required: true,
+      },
+    },
+    exclude: {
+      refType: queryParamsConfigType,
+      annotations: {
+        _required: true,
+      },
+    },
     lockedElementsToExclude: { refType: queryParamsConfigType },
     authorInformation: { refType: authorInfoConfig },
     strictInstanceStructure: { refType: BuiltinTypes.BOOLEAN },

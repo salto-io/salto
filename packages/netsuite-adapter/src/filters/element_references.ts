@@ -132,7 +132,6 @@ const getServiceElemIDsFromPaths = (
   serviceIdToElemID: ServiceIdRecords,
   customRecordFieldsToServiceIds: ServiceIdRecords,
   element: InstanceElement,
-  // fileNames: Set<string>,
 ): ElemID[] =>
   foundReferences
     .flatMap(ref => {

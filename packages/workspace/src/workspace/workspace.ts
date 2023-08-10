@@ -368,8 +368,6 @@ export const loadWorkspace = async (
     mergedRecoveryMode
   )
   let workspaceState: Promise<WorkspaceState> | undefined
-
-
   const buildWorkspaceState = async ({
     workspaceChanges,
     stateOnlyChanges = {},
@@ -496,20 +494,27 @@ export const loadWorkspace = async (
      * `getWorkspaceState`). `buildWorkspaceState` will return a promise the first time it executes an `await`.
      * This means you can't put an `await` between the start of `buildWorkspaceState` and the following lines.
      *
-     * Dragon 2: initState() uses naclFilesSource. One can't use naclFilesSource until load() was called on it. Hence
-     * setting wsChanges must happen after we set initBuild and previousState, but before we call initState(). Don't
-     * move the initialization of wsChanges.
+     * Dragon 2: initState() uses naclFilesSource. One can't use naclFilesSource until load() was called on it. Hence,
+     * setting wsChanges must happen after we set previousState, but before we call initState().
+     * Don't move the initialization of wsChanges.
      */
     const previousState = workspaceState
-    const initBuild = previousState === undefined
 
-    const wsChanges = (workspaceChanges !== undefined)
-      ? workspaceChanges
+    if (workspaceChanges === undefined && previousState !== undefined) {
+      // We assume that we only want to get the changes from naclFilesSource if the workspace is 'clean' (i.e. there's
+      // no previous state to override.
+      throw new Error('workspaceChanges can be undefined only if the workspace is clean')
+    }
+
+    const wsChanges = (previousState !== undefined)
+      ? (workspaceChanges ?? {})
       : await naclFilesSource.load({ ignoreFileChanges })
 
-    const stateToBuild = (previousState !== undefined
+    const stateToBuild = (previousState !== undefined)
       ? await previousState
-      : await initState()) as WorkspaceState
+      : await initState()
+
+    const initBuild = previousState === undefined
 
     if (ignoreFileChanges) {
       // Skip all updates to the state since this flag means we are operating under the assumption
@@ -779,7 +784,7 @@ export const loadWorkspace = async (
 
   const getWorkspaceState = async (): Promise<WorkspaceState> => {
     if (_.isUndefined(workspaceState)) {
-      workspaceState = buildWorkspaceState({ })
+      workspaceState = buildWorkspaceState({})
     }
     return workspaceState
   }

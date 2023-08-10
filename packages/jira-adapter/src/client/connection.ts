@@ -52,7 +52,7 @@ const isSandBox = async (connection: clientUtils.APIConnection): Promise<boolean
 const isProd = async (connection: clientUtils.APIConnection): Promise<boolean | undefined> => {
   const isSandBoxAccount = await isSandBox(connection)
   const response = await connection.get('/rest/api/3/instance/license')
-  const hasPaidApp = response.data?.applications.some((app: appInfo) => app.plan === 'PAID') ?? false
+  const hasPaidApp = response.data.applications.some((app: appInfo) => app.plan === 'PAID') ?? false
   return !isSandBoxAccount && hasPaidApp ? undefined : false
 }
 

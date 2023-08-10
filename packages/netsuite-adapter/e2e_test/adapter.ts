@@ -62,7 +62,7 @@ export const realAdapter = (
   const adapter = new NetsuiteAdapter({
     client,
     elementsSource: buildElementsSourceFromElements(elements),
-    config: config ?? { fetch: {} },
+    config: config ?? { fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } } },
     ...adapterParams || { getElemIdFunc: mockGetElemIdFunc },
   })
   return { client, adapter }

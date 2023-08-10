@@ -433,7 +433,7 @@ describe('Netsuite adapter E2E with real account', () => {
           // we need to get the folder internalId
           ? await realAdapter(
             { credentials: credentialsLease.value, withSuiteApp },
-            { fetch: { include: { types: [], fileCabinet: ['/Images/'], customRecords: [] } } }
+            { fetch: { include: { types: [], fileCabinet: ['/Images/'], customRecords: [] }, exclude: { types: [], fileCabinet: [] } } }
           ).adapter.fetch({
             progressReporter: { reportProgress: jest.fn() },
           })
@@ -506,7 +506,10 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
-              { fetch: {}, deploy: { warnOnStaleWorkspaceData: true } },
+              {
+                fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+                deploy: { warnOnStaleWorkspaceData: true },
+              },
             )
             adapter = adapterAttr.adapter
           })
@@ -531,7 +534,10 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
-              { fetch: {}, deploy: { warnOnStaleWorkspaceData: false } },
+              {
+                fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+                deploy: { warnOnStaleWorkspaceData: false },
+              },
             )
             adapter = adapterAttr.adapter
           })
@@ -563,7 +569,10 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
-              { fetch: {}, deploy: { warnOnStaleWorkspaceData: true } },
+              {
+                fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+                deploy: { warnOnStaleWorkspaceData: true },
+              },
             )
             adapter = adapterAttr.adapter
           })
@@ -588,7 +597,10 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
-              { fetch: {}, deploy: { warnOnStaleWorkspaceData: false } },
+              {
+                fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+                deploy: { warnOnStaleWorkspaceData: false },
+              },
             )
             adapter = adapterAttr.adapter
           })
@@ -611,7 +623,13 @@ describe('Netsuite adapter E2E with real account', () => {
       beforeAll(async () => {
         const adapterAttr = realAdapter(
           { credentials: credentialsLease.value, withSuiteApp },
-          { fetch: { addAlias: true } }
+          {
+            fetch: {
+              include: { types: [], fileCabinet: [] },
+              exclude: { types: [], fileCabinet: [] },
+              addAlias: true,
+            },
+          }
         )
         adapter = adapterAttr.adapter
 

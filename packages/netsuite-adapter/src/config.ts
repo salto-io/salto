@@ -686,14 +686,14 @@ const validateAdditionalDependencies = (
 export const validateFetchConfig = ({
   include, exclude, fieldsToOmit,
 }: Record<keyof FetchParams, unknown>): void => {
-  if (include !== undefined) {
-    validatePlainObject(include, [CONFIG.fetch, FETCH_PARAMS.include])
-    validateFetchParameters(include)
-  }
-  if (exclude !== undefined) {
-    validatePlainObject(exclude, [CONFIG.fetch, FETCH_PARAMS.exclude])
-    validateFetchParameters(exclude)
-  }
+  validateDefined(include, [CONFIG.fetch, FETCH_PARAMS.include])
+  validatePlainObject(include, [CONFIG.fetch, FETCH_PARAMS.include])
+  validateFetchParameters(include)
+
+  validateDefined(exclude, [CONFIG.fetch, FETCH_PARAMS.exclude])
+  validatePlainObject(exclude, [CONFIG.fetch, FETCH_PARAMS.exclude])
+  validateFetchParameters(exclude)
+
   if (fieldsToOmit !== undefined) {
     validateFieldsToOmitConfig(fieldsToOmit)
   }
@@ -827,7 +827,7 @@ const toConfigSuggestions = ({
   failedTypes,
 }: FetchByQueryFailures): NetsuiteConfig => {
   const config: NetsuiteConfig = {
-    fetch: {},
+    fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
   }
 
   if (!_.isEmpty(failedFilePaths.otherError) || !_.isEmpty(failedTypes.unexpectedError)) {
@@ -985,7 +985,11 @@ const splitConfig = (config: NetsuiteConfig): InstanceElement[] => {
   }
   config.fetch = allFetchConfigExceptLockedElements
   const lockedElementsConfig: NetsuiteConfig = {
-    fetch: { lockedElementsToExclude },
+    fetch: {
+      include: { types: [], fileCabinet: [] },
+      exclude: { types: [], fileCabinet: [] },
+      lockedElementsToExclude,
+    },
   }
   return [
     toConfigInstance(config),
@@ -1094,7 +1098,7 @@ export const netsuiteConfigFromConfig = (
   try {
     if (!configInstance) {
       return {
-        fetch: {},
+        fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
       }
     }
     const { value: config } = configInstance

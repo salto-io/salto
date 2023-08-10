@@ -85,10 +85,8 @@ const filterCreator: LocalFilterCreator = ({
       customRecordTypeObjects.concat(await getElementsSourceCustomRecordTypes(elementsSourceIndex, isPartial)),
       toCustomRecordTypeReference,
     )
-    const fetchQuery = config.fetch.include || config.fetch.exclude ? [
-      config.fetch.include && buildNetsuiteQuery(config.fetch.include),
-      config.fetch.exclude && notQuery(buildNetsuiteQuery(config.fetch.exclude)),
-    ].filter(values.isDefined).reduce(andQuery) : { isCustomRecordTypeMatch: () => false }
+    const fetchQuery = [buildNetsuiteQuery(config.fetch.include), notQuery(buildNetsuiteQuery(config.fetch.exclude))]
+      .filter(values.isDefined).reduce(andQuery)
 
     customRecordTypeObjects.forEach(type => {
       addFieldsToType(type, nameToType, customRecordTypesMap)

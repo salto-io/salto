@@ -200,6 +200,8 @@ describe('add alias filter', () => {
       ...defaultOpts,
       config: {
         fetch: {
+          include: { types: [], fileCabinet: [] },
+          exclude: { types: [], fileCabinet: [] },
           addAlias: true,
         },
       },

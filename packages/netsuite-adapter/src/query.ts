@@ -54,8 +54,8 @@ export type FieldToOmitParams = {
 }
 
 export type FetchParams = {
-  include?: QueryParams
-  exclude?: QueryParams
+  include: QueryParams
+  exclude: QueryParams
   lockedElementsToExclude?: QueryParams
   authorInformation?: {
     enable?: boolean

@@ -81,7 +81,7 @@ describe('config', () => {
         failedTypes: { lockedError: lockedTypes, unexpectedError: suggestedSkipListTypes, excludedTypes: [] },
         failedCustomRecords: [],
       },
-      { fetch: {} }
+      { fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } } }
     )?.config as InstanceElement[]
     expect(configFromConfigChanges[0].isEqual(new InstanceElement(
       ElemID.CONFIG_NAME,
@@ -173,7 +173,7 @@ describe('config', () => {
       typesToSkip: ['someType'],
       filePathRegexSkipList: ['someRegex'],
       fileCabinet: ['SomeRegex', _.escapeRegExp(newFailedFilePath), newLargeFolderExclusion],
-      fetch: {},
+      fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
     }
 
     const configChange = getConfigFromConfigChanges(
@@ -192,7 +192,7 @@ describe('config', () => {
 
   describe('should have a correct default fetch config', () => {
     it('should exclude all types in a correct syntax', () => {
-      expect(fetchDefault.exclude?.types)
+      expect(fetchDefault.exclude.types)
         .toContainEqual({
           name: 'assemblyItem|lotNumberedAssemblyItem|serializedAssemblyItem|descriptionItem|discountItem|kitItem|markupItem|nonInventoryPurchaseItem|nonInventorySaleItem|nonInventoryResaleItem|otherChargeSaleItem|otherChargeResaleItem|otherChargePurchaseItem|paymentItem|serviceResaleItem|servicePurchaseItem|serviceSaleItem|subtotalItem|inventoryItem|lotNumberedInventoryItem|serializedInventoryItem|itemGroup',
         })

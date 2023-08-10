@@ -222,7 +222,7 @@ jobs:
 
   test_cli_mac:
     macos:
-      xcode: 13.2.1
+      xcode: 14.3.1
 
     steps:
       - set_s3_pkg_urls

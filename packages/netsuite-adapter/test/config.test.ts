@@ -88,6 +88,7 @@ describe('config', () => {
       configType,
       {
         fetch: {
+          include: { types: [], fileCabinet: [] },
           exclude: {
             types: Object.entries(suggestedSkipListTypes).map(([name, ids]) => ({ name, ids })),
             fileCabinet: [newFailedFilePath],
@@ -104,6 +105,8 @@ describe('config', () => {
       configType,
       {
         fetch: {
+          include: { types: [], fileCabinet: [] },
+          exclude: { types: [], fileCabinet: [] },
           lockedElementsToExclude: {
             types: Object.entries(lockedTypes).map(([name, ids]) => ({ name, ids })),
             fileCabinet: lockedFiles,

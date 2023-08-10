@@ -24,7 +24,7 @@ describe('custom record types filter', () => {
   let customRecordFieldRefType: ObjectType
 
   const filterOpts = {
-    config: { fetch: {} },
+    config: { fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } } },
     isPartial: false,
     elementsSourceIndex: {
       getIndexes: () => {

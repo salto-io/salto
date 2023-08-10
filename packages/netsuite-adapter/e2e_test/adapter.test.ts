@@ -507,7 +507,7 @@ describe('Netsuite adapter E2E with real account', () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
               {
-                fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+                fetch: { include: { types: [{ name: '.*' }], fileCabinet: ['.*'] }, exclude: { types: [], fileCabinet: [] } },
                 deploy: { warnOnStaleWorkspaceData: true },
               },
             )
@@ -535,7 +535,7 @@ describe('Netsuite adapter E2E with real account', () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
               {
-                fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+                fetch: { include: { types: [{ name: '.*' }], fileCabinet: ['.*'] }, exclude: { types: [], fileCabinet: [] } },
                 deploy: { warnOnStaleWorkspaceData: false },
               },
             )
@@ -570,7 +570,7 @@ describe('Netsuite adapter E2E with real account', () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
               {
-                fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+                fetch: { include: { types: [{ name: '.*' }], fileCabinet: ['.*'] }, exclude: { types: [], fileCabinet: [] } },
                 deploy: { warnOnStaleWorkspaceData: true },
               },
             )
@@ -598,7 +598,7 @@ describe('Netsuite adapter E2E with real account', () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
               {
-                fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+                fetch: { include: { types: [{ name: '.*' }], fileCabinet: ['.*'] }, exclude: { types: [], fileCabinet: [] } },
                 deploy: { warnOnStaleWorkspaceData: false },
               },
             )
@@ -625,7 +625,7 @@ describe('Netsuite adapter E2E with real account', () => {
           { credentials: credentialsLease.value, withSuiteApp },
           {
             fetch: {
-              include: { types: [], fileCabinet: [] },
+              include: { types: [{ name: '.*' }], fileCabinet: ['.*'] },
               exclude: { types: [], fileCabinet: [] },
               addAlias: true,
             },
@@ -948,7 +948,13 @@ describe('Netsuite adapter E2E with real account', () => {
         const res = await adapterCreator.loadElementsFromFolder?.({
           baseDir: projectPath,
           elementsSource: buildElementsSourceFromElements(existingFileCabinetInstances),
-          config: new InstanceElement(ElemID.CONFIG_NAME, configType, { fetch: { addAlias: true } }),
+          config: new InstanceElement(ElemID.CONFIG_NAME, configType, {
+            fetch: {
+              include: { types: [{ name: '.*' }], fileCabinet: ['.*'] },
+              exclude: { types: [], fileCabinet: [] },
+              addAlias: true,
+            },
+          }),
         })
         loadedElements = res?.elements as Element[]
       })

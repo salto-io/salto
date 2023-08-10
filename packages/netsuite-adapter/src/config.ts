@@ -911,7 +911,12 @@ const emptyQueryParams = (): QueryParams => combineQueryParams(undefined, undefi
 
 const updateConfigFromFailedFetch = (config: NetsuiteConfig, failures: FetchByQueryFailures): boolean => {
   const suggestions = toConfigSuggestions(failures)
-  if (_.isEmpty(suggestions) || _.isEqual(suggestions, { fetch: {} })) {
+  if (_.isEmpty(suggestions) || _.isEqual(suggestions, {
+    fetch: {
+      include: { types: [], fileCabinet: [] },
+      exclude: { types: [], fileCabinet: [] },
+    },
+  })) {
     return false
   }
 

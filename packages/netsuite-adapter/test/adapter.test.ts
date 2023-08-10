@@ -27,7 +27,7 @@ import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import { LocalFilterCreator } from '../src/filter'
 import SdfClient from '../src/client/sdf_client'
 import resolveValuesFilter from '../src/filters/element_references'
-import { CONFIG, configType, getConfigFromConfigChanges, NetsuiteConfig } from '../src/config'
+import { configType, getConfigFromConfigChanges, NetsuiteConfig } from '../src/config'
 import { mockGetElemIdFunc } from './utils'
 import NetsuiteClient from '../src/client/client'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, SDFObjectNode } from '../src/client/types'
@@ -97,7 +97,7 @@ describe('Adapter', () => {
   const client = createClient()
   const config = {
     fetch: {
-      include: { types: [], fileCabinet: [] },
+      include: { types: [{ name: '.*' }], fileCabinet: ['.*'] },
       exclude: {
         types: [
           { name: 'account', ids: ['aaa'] },
@@ -211,6 +211,9 @@ describe('Adapter', () => {
       expect(partialFetchData?.isPartial).toBeFalsy()
       const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
       const typesToSkip = [SAVED_SEARCH, TRANSACTION_FORM, INTEGRATION, REPORT_DEFINITION, FINANCIAL_LAYOUT]
+      // const var1 = _.pull(getStandardTypesNames(), ...typesToSkip)
+      // const var2 = var1.every(customObjectsQuery.isTypeMatch)
+      // const var3 = var1.map(val => customObjectsQuery.isTypeMatch(val))
       expect(_.pull(getStandardTypesNames(), ...typesToSkip)
         .every(customObjectsQuery.isTypeMatch)).toBeTruthy()
       expect(typesToSkip.every(customObjectsQuery.isTypeMatch)).toBeFalsy()
@@ -276,9 +279,6 @@ describe('Adapter', () => {
     })
 
     describe('fetchConfig', () => {
-      const configWithoutFetch = {
-        ..._.omit(config, CONFIG.fetch),
-      }
       const createAdapter = (configInput: NetsuiteConfig): NetsuiteAdapter =>
         new NetsuiteAdapter({
           client: new NetsuiteClient(client),
@@ -287,20 +287,6 @@ describe('Adapter', () => {
           config: configInput,
           getElemIdFunc: mockGetElemIdFunc,
         })
-      it('should fetch all types and instances when fetch config is defined with no values', async () => {
-        const configWithEmptyDefinedFetch = {
-          ...configWithoutFetch,
-          fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
-        }
-        const adapter = createAdapter(configWithEmptyDefinedFetch)
-        const { elements, partialFetchData } = await adapter.fetch(mockFetchOpts)
-        expect(partialFetchData?.isPartial).toBeFalsy()
-        expect(elements).toHaveLength(metadataTypes.length)
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
-        expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
-        const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
-        expect(fileCabinetQuery.isFileMatch('any/kind/of/path')).toBeTruthy()
-      })
       it('should fetch all types and instances without those in Types To Skip, skipList and exclude when fetch config, skipList and typeToSkip are defined', async () => {
         const configWithAllFormats = {
           ...config,
@@ -362,7 +348,7 @@ describe('Adapter', () => {
     describe('fetchTarget', () => {
       const conf = {
         fetch: {
-          include: { types: [], fileCabinet: [] },
+          include: { types: [{ name: '.*' }], fileCabinet: ['.*'] },
           exclude: {
             types: [
               { name: SAVED_SEARCH },

@@ -67,7 +67,7 @@ describe('NetsuiteAdapter creator', () => {
     ElemID.CONFIG_NAME,
     adapter.configType as ObjectType,
     {
-      fetch: {},
+      fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
       skipList: {},
       typesToSkip: ['test1'],
       filePathRegexSkipList: ['^/Templates.*'],
@@ -330,7 +330,7 @@ describe('NetsuiteAdapter creator', () => {
       expect(NetsuiteAdapter).toHaveBeenCalledWith({
         client: expect.any(Object),
         config: {
-          fetch: {},
+          fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
           skipList: {},
           typesToSkip: ['test1'],
           filePathRegexSkipList: ['^/Templates.*'],
@@ -347,7 +347,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         {
-          fetch: {},
+          fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
           client: {
             fetchAllTypesAtOnce: true,
           },
@@ -366,7 +366,7 @@ describe('NetsuiteAdapter creator', () => {
         expect(NetsuiteAdapter).toHaveBeenCalledWith({
           client: expect.any(Object),
           config: {
-            fetch: {},
+            fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
             client: {
               fetchAllTypesAtOnce: false,
             },
@@ -385,7 +385,7 @@ describe('NetsuiteAdapter creator', () => {
         })
         expect(NetsuiteAdapter).toHaveBeenCalledWith({
           client: expect.any(Object),
-          config: { fetch: {} },
+          config: { fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } } },
           elementsSource,
           getElemIdFunc: mockGetElemIdFunc,
         })
@@ -396,7 +396,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         {
-          fetch: {},
+          fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
           filePathRegexSkipList: ['\\'],
         }
         )
@@ -418,7 +418,7 @@ describe('NetsuiteAdapter creator', () => {
               ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: {},
+              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
               fetchTarget: {
                 types: ['type1', 'type2'],
               },
@@ -435,7 +435,7 @@ describe('NetsuiteAdapter creator', () => {
               ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: {},
+              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
               fetchTarget: {
                 customRecords: ['customrecord1', 'customrecord2'],
               },
@@ -452,7 +452,7 @@ describe('NetsuiteAdapter creator', () => {
               ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: {},
+              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
               fetchTarget: {
                 types: {
                   type1: 'id',
@@ -471,7 +471,7 @@ describe('NetsuiteAdapter creator', () => {
               ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: {},
+              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
               fetchTarget: {
                 customRecords: {
                   customrecord1: 'id',
@@ -494,6 +494,7 @@ describe('NetsuiteAdapter creator', () => {
             include: {
               types: 'supposed to be an array',
             },
+            exclude: { types: [], fileCabinet: [] },
           },
         }
         )
@@ -513,6 +514,7 @@ describe('NetsuiteAdapter creator', () => {
         adapter.configType as ObjectType,
         {
           fetch: {
+            include: { types: [], fileCabinet: [] },
             exclude: {
               types: [
                 { name: ['should be a string'] },
@@ -537,6 +539,8 @@ describe('NetsuiteAdapter creator', () => {
         adapter.configType as ObjectType,
         {
           fetch: {
+            include: { types: [], fileCabinet: [] },
+            exclude: { types: [], fileCabinet: [] },
             fieldsToOmit: [{
               type: 'a',
             }],
@@ -560,6 +564,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
+            fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
             deploy: {
               deployReferencedElements: 'should be a boolean',
             },
@@ -580,6 +585,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
+            fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
             deploy: {
               warnOnStaleWorkspaceData: 'should be a boolean',
             },
@@ -599,6 +605,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
+            fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
             deploy: {
               validate: 'should be a boolean',
             },
@@ -619,7 +626,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: {},
+              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
               deploy: {
                 additionalDependencies: {
                   include: {
@@ -650,7 +657,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: {},
+              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
               deploy: {
                 additionalDependencies: 'should be an object',
               },
@@ -670,7 +677,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: {},
+              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
               deploy: {
                 additionalDependencies: {
                   include: { features: ['should be list of strings', 1] },
@@ -692,7 +699,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: {},
+              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
               deploy: {
                 additionalDependencies: {
                   include: { files: ['should be list of strings', 1] },
@@ -714,6 +721,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
+              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
               deploy: {
                 additionalDependencies: {
                   exclude: { objects: ['should be list of strings', 1] },
@@ -735,7 +743,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: {},
+              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
               deploy: {
                 additionalDependencies: {
                   include: { features: ['feature'] },
@@ -758,7 +766,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: {},
+              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
               deploy: {
                 additionalDependencies: {
                   include: { features: ['feature:required'] },
@@ -781,7 +789,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: {},
+              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
               deploy: {
                 additionalDependencies: {
                   include: { objects: ['script_id'] },
@@ -805,7 +813,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: {},
+              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
               deploy: {
                 additionalDependencies: {
                   include: { files: ['/Folder/filePath'] },
@@ -832,7 +840,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            fetch: {},
+            fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
             client: {
               installedSuiteApps: 2,
             },
@@ -853,7 +861,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            fetch: {},
+            fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
             client: {
               installedSuiteApps: ['a.b.c', 2],
             },
@@ -874,7 +882,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            fetch: {},
+            fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
             client: {
               installedSuiteApps: ['a', 'a.b.c'],
             },
@@ -895,7 +903,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            fetch: {},
+            fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
             client: {
               installedSuiteApps: ['a.b.c', 'b.c.d'],
             },

@@ -85,7 +85,7 @@ export const getTransitionKey = (transition: Transition, statusesMap: Map<string
       .join(',')
     : TYPE_TO_FROM_MAP[type]
 
-  return naclCase([transition.name ?? '', `From: ${fromSorted}`, type].join(TRANSITION_PARTS_SEPARATOR))
+  return naclCase([transition.name, `From: ${fromSorted}`, type].join(TRANSITION_PARTS_SEPARATOR))
 }
 
 export const transformTransitions = (value: Value): SaltoError[] => {

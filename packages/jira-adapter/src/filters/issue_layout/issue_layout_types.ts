@@ -168,6 +168,15 @@ export type IssueLayoutResponse = {
                   }
               }[]
           }
+          containers: {
+            containerType: string
+            items: {
+              nodes: {
+                fieldItemId: string
+                panelItemId: string
+              }[]
+            }
+          }[]
       }
       metadata: {
           configuration: {
@@ -180,6 +189,8 @@ export type IssueLayoutResponse = {
   }
 
 export type IssueLayoutConfigItem = {
+  type: string
+  sectionType: string
   key: string
   data: {
       name: string

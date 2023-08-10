@@ -134,16 +134,17 @@ describe('connection', () => {
     afterEach(() => {
       mockAxios.restore()
     })
-    it('should return isProduction undefined when account id does not include -sandbox- and has paid app', async () => {
+    it('should return isProduction undefined and accountType = undefined when account id does not include -sandbox- and has paid app', async () => {
       connection = await createConnection({ retries: 1 }).login(
         { baseUrl: 'http://myJira.net', user: 'me', token: 'tok', isDataCenter: true }
       )
       mockAxios.onGet('/rest/api/3/serverInfo').reply(200, { baseUrl: 'http://my.jira.net' })
       mockAxios.onGet('/rest/api/3/instance/license').reply(200, { applications: [{ id: 'software', plan: 'PAID' }, { id: 'serviceDesk', plan: 'FREE' }] })
-      const { isProduction } = await validateCredentials({
+      const { isProduction, accountType } = await validateCredentials({
         connection,
       })
       expect(isProduction).toEqual(undefined)
+      expect(accountType).toEqual(undefined)
     })
     it('should return isProduction false and accountType = "Sandbox" when account id includes -sandbox-', async () => {
       connection = await createConnection({ retries: 1 }).login(

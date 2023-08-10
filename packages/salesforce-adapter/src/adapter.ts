@@ -17,7 +17,7 @@ import {
   TypeElement, ObjectType, InstanceElement, isAdditionChange, getChangeData, Change,
   ElemIdGetter, FetchResult, AdapterOperations, DeployResult, FetchOptions, DeployOptions,
   ReadOnlyElementsSource,
-  setPartialFetchData,
+  setPartialFetchData, ElemID,
 } from '@salto-io/adapter-api'
 import {
   filter,
@@ -316,6 +316,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private client: SalesforceClient
   private userConfig: SalesforceConfig
   private fetchProfile: FetchProfile
+  private elementsSource :ReadOnlyElementsSource
 
   public constructor({
     metadataTypesOfInstancesFetchedInFilters = [FLOW_METADATA_TYPE, FLOW_DEFINITION_METADATA_TYPE],
@@ -374,6 +375,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.metadataTypesOfInstancesFetchedInFilters = metadataTypesOfInstancesFetchedInFilters
     this.nestedMetadataTypes = nestedMetadataTypes
     this.client = client
+    this.elementsSource = elementsSource
 
     const fetchProfile = buildFetchProfile(config.fetch ?? {})
     this.fetchProfile = fetchProfile
@@ -413,6 +415,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   @logDuration('fetching account configuration')
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch salesforce account configuration..')
+    await this.elementsSource.get(new ElemID('salesforce', 'Profile'))
     const fieldTypes = Types.getAllFieldTypes()
     const hardCodedTypes = [
       ...Types.getAllMissingTypes(),

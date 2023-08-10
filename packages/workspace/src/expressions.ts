@@ -280,7 +280,6 @@ const getClonedElements = (elements: Element[]): Element[] => {
 }
 
 type ResolveOpts = {
-  shouldCloneElements?: boolean
   shouldResolveReferences?: boolean
 }
 
@@ -288,14 +287,11 @@ export const resolve = (
   elements: Element[],
   elementsSource: ReadOnlyElementsSource,
   {
-    shouldCloneElements = true,
     shouldResolveReferences = true,
   }: ResolveOpts = {}
 ): Promise<Element[]> => log.time(async () => {
   // Create a clone of the input elements to ensure we do not modify the input
-  const elementsToResolve = shouldCloneElements
-    ? getClonedElements(elements)
-    : elements
+  const elementsToResolve = getClonedElements(elements)
 
   // Since fields technically reference their parent type with the .parent property
   // we need to make sure to resolve all field parents as well

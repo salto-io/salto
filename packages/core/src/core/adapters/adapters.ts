@@ -198,14 +198,10 @@ export const createResolvedTypesElementsSource = (
   elementsSource: ReadOnlyElementsSource
 ): ReadOnlyElementsSource => {
   const resolvedTypes: Map<string, TypeElement> = new Map()
-  const resolveAllTypes = async (): Promise<void> => {
-    const typeElements = await awu(await elementsSource.getAll())
-      .filter(isElement)
-      .filter(isType)
-      .toArray()
-      // Resolve all the types together for better performance
+  const getResolvedElements = async (elements: Element[]): Promise<Element[]> => {
+    // Resolve all the elements together for better performance
     const resolved = await expressions.resolve(
-      typeElements,
+      elements.map(element => element.clone()),
       elementsSource,
       {
         shouldResolveReferences: false,
@@ -215,24 +211,25 @@ export const createResolvedTypesElementsSource = (
       .forEach(typeElement => {
         resolvedTypes.set(typeElement.elemID.getFullName(), typeElement)
       })
+    return resolved
   }
 
   const getResolved = async (id: ElemID): Promise<Element> => {
     if (resolvedTypes.size === 0) {
-      await resolveAllTypes()
+      // Resolve all the types
+      await getResolvedElements(await awu(await elementsSource.getAll())
+        .filter(isType)
+        .toArray())
     }
     // TypeElements
     const alreadyResolvedType = resolvedTypes.get(id.getFullName())
     if (alreadyResolvedType !== undefined) {
       return alreadyResolvedType
     }
-    // InstanceElements / Fields
     const value = await elementsSource.get(id)
-    if (!isElement(value)) {
-      return value
-    }
-    const element = value.clone()
-    if (isInstanceElement(element) || isField(element)) {
+    // Instances & Fields
+    if (isInstanceElement(value) || isField(value)) {
+      const element = isField(value) ? value : value.clone()
       const instanceResolvedType = resolvedTypes.get(element.refType.elemID.getFullName())
       // The type of the Element must be resolved here, otherwise we have a bug
       if (instanceResolvedType === undefined) {
@@ -243,14 +240,14 @@ export const createResolvedTypesElementsSource = (
       element.refType.type = instanceResolvedType
       return element
     }
-    // We should never reach here. otherwise we have a bug
-    log.warn('Did not fully resolve type of Element %s.', element.elemID.getFullName())
-    return element
+    return value
   }
   return {
     get: getResolved,
-    getAll: async () => awu(await elementsSource.getAll())
-      .map(element => getResolved(element.elemID)),
+    getAll: async () => {
+      const elements = await awu(await elementsSource.getAll()).filter(isElement).toArray()
+      return awu(await getResolvedElements(elements))
+    },
     list: elementsSource.list,
     has: elementsSource.has,
   }

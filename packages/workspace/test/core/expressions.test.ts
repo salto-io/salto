@@ -707,17 +707,6 @@ describe('Test Salto Expressions', () => {
         const innerInnerInnerType = (innerInnerType as ListType).refInnerType.type
         expect(innerInnerInnerType).toBe(resolvedInnerType)
       })
-      describe('when shouldCloneElements is false', () => {
-        it('should not clone elements', async () => {
-          const elementsToResolve = [outerObjType, innerObjType]
-          resolved = await resolve(
-            elementsToResolve,
-            createInMemoryElementSource([]),
-            { shouldCloneElements: false }
-          ) as typeof resolved
-          expect(elementsToResolve).toEqual(resolved)
-        })
-      })
     })
   })
 })

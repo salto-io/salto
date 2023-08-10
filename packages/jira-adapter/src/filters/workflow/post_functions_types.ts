@@ -60,7 +60,7 @@ const scriptRunnerObjectType = new ObjectType({
     roleId: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
     boardId: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
     linkTypeId: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
-    transitionId: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    transitionId: { refType: BuiltinTypes.UNKNOWN, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
   },
   path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, SCRIPT_RUNNER_TYPE],
 })

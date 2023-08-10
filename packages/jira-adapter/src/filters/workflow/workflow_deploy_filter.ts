@@ -235,7 +235,6 @@ const verifyAndFixTransitionReferences = async ({
   return newTransitions
 }
 
-
 export const deployWorkflow = async (
   change: AdditionChange<InstanceElement> | RemovalChange<InstanceElement>,
   client: JiraClient,
@@ -257,7 +256,6 @@ export const deployWorkflow = async (
 
   fixGroupNames(instance)
   const expectedTransitionIds = transitionKeysToExpectedIds(instance)
-  // todo reduce to relevant only
   await deployWithClone(resolvedChange, client, config)
 
   if (isRemovalChange(resolvedChange)) {

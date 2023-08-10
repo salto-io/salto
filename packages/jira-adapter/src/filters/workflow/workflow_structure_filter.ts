@@ -15,8 +15,8 @@
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, Field, isInstanceElement, ListType, MapType, SaltoError } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { walkOnValue, WALK_NEXT_STEP, naclCase } from '@salto-io/adapter-utils'
-import { findObject } from '../../utils'
+import { walkOnValue, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { addAnnotationRecursively, findObject, setTypeDeploymentAnnotations } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { postFunctionType, types as postFunctionTypes } from './post_functions_types'
 import { createConditionConfigurationTypes } from './conditions_types'
@@ -36,53 +36,6 @@ const FETCHED_ONLY_INITIAL_POST_FUNCTION = [
   'CreateCommentFunction',
   'IssueStoreFunction',
 ]
-
-export const TRANSITION_PARTS_SEPARATOR = '::'
-
-type TransitionType = 'Directed' | 'Initial' | 'Global' | 'Circular'
-
-const TYPE_TO_FROM_MAP: Record<Exclude<TransitionType, 'Directed'>, string> = {
-  Initial: 'none',
-  Global: 'any status',
-  Circular: 'any status',
-}
-
-export const createStatusMap = (statuses: Status[]): Map<string, string> => new Map(statuses
-  .filter((status): status is {id: string; name: string} => typeof status.id === 'string' && status.name !== undefined)
-  .map((status => [status.id, status.name])))
-
-const getTransitionType = (transition: Transition): TransitionType => {
-  if (transition.type === 'initial') {
-    return 'Initial'
-  }
-  if (transition.from !== undefined
-    && transition.from.length !== 0) {
-    return 'Directed'
-  }
-  if ((transition.to ?? '') === '') {
-    return 'Circular'
-  }
-  return 'Global'
-}
-
-// The key will be in the format of {transition name}::From: {from name}::{transition type}
-// Transitions that were created from any in the UI will have From: any status
-// The initial transition will have From: none
-// In case the user has a status named none or any status there will still be no problem due to the type
-// The types can be Directed, Initial, Global, and Circular (which is global circular)
-export const getTransitionKey = (transition: Transition, statusesMap: Map<string, string>): string => {
-  const type = getTransitionType(transition)
-  const fromSorted = type === 'Directed'
-    ? (transition.from?.map(from => (
-      typeof from === 'string' ? from : from.id ?? ''
-    )) ?? [])
-      .map(from => statusesMap.get(from) ?? from)
-      .sort()
-      .join(',')
-    : TYPE_TO_FROM_MAP[type]
-
-  return naclCase([transition.name ?? '', `From: ${fromSorted}`, type].join(TRANSITION_PARTS_SEPARATOR))
-}
 
 const transformProperties = (item: Status | Transition): void => {
   item.properties = item.properties?.additionalProperties
@@ -220,9 +173,15 @@ const filter: FilterCreator = ({ config }) => ({
           workflowType,
           'transitions',
           new MapType(workflowTransitionType),
+          { [CORE_ANNOTATIONS.CREATABLE]: true,
+            [CORE_ANNOTATIONS.UPDATABLE]: true,
+            [CORE_ANNOTATIONS.DELETABLE]: true },
         )
-        workflowType.fields.transitions.annotations[CORE_ANNOTATIONS.CREATABLE] = true
         delete workflowTransitionType.fields.id
+        setTypeDeploymentAnnotations(workflowTransitionType)
+        await addAnnotationRecursively(workflowTransitionType, CORE_ANNOTATIONS.CREATABLE)
+        await addAnnotationRecursively(workflowTransitionType, CORE_ANNOTATIONS.UPDATABLE)
+        await addAnnotationRecursively(workflowTransitionType, CORE_ANNOTATIONS.DELETABLE)
       }
     }
 
@@ -244,6 +203,10 @@ const filter: FilterCreator = ({ config }) => ({
 
       workflowRulesType.fields.postFunctions = new Field(workflowRulesType, 'postFunctions', new ListType(postFunctionType))
       workflowRulesType.fields.validators = new Field(workflowRulesType, 'validators', new ListType(validatorType))
+      setTypeDeploymentAnnotations(workflowRulesType)
+      await addAnnotationRecursively(workflowRulesType, CORE_ANNOTATIONS.CREATABLE)
+      await addAnnotationRecursively(workflowRulesType, CORE_ANNOTATIONS.UPDATABLE)
+      await addAnnotationRecursively(workflowRulesType, CORE_ANNOTATIONS.DELETABLE)
     }
 
     const worfkflowConditionType = findObject(elements, 'WorkflowCondition')

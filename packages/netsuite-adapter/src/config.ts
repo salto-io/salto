@@ -553,6 +553,7 @@ export type NetsuiteValidatorName = (
   | 'rolePermission'
   | 'translationCollectionReferences'
   | 'omitFields'
+  | 'unreferencedFileAddition'
 )
 
 export type NonSuiteAppValidatorName = (
@@ -599,6 +600,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     fileCabinetInternalIds: { refType: BuiltinTypes.BOOLEAN },
     translationCollectionReferences: { refType: BuiltinTypes.BOOLEAN },
     omitFields: { refType: BuiltinTypes.BOOLEAN },
+    unreferencedFileAddition: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

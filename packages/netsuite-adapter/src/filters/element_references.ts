@@ -135,15 +135,14 @@ const getServiceElemIDsFromPaths = (
 ): ElemID[] =>
   foundReferences
     .flatMap(ref => {
-      if (pathPrefixRegex.test(ref)) {
-        const absolutePath = resolveRelativePath(element.value[PATH], ref)
-        return [absolutePath].concat(
-          osPath.extname(absolutePath) === '' && osPath.extname(element.value[PATH]) !== ''
-            ? [absolutePath.concat(osPath.extname(element.value[PATH]))]
-            : []
-        )
-      }
-      return [ref]
+      const absolutePath = pathPrefixRegex.test(ref)
+        ? resolveRelativePath(element.value[PATH], ref)
+        : FILE_CABINET_PATH_SEPARATOR.concat(ref)
+      return [ref, absolutePath].concat(
+        osPath.extname(absolutePath) === '' && osPath.extname(element.value[PATH]) !== ''
+          ? [absolutePath.concat(osPath.extname(element.value[PATH]))]
+          : []
+      )
     })
     .map(ref => {
       const serviceIdRecord = serviceIdToElemID[ref]
@@ -176,7 +175,7 @@ const getSuiteScriptReferences = async (
     semanticReferences,
     serviceIdToElemID,
     customRecordFieldsToServiceIds,
-    element
+    element,
   )
 }
 
@@ -319,7 +318,7 @@ const filterCreator: LocalFilterCreator = ({
       const newElement = await replaceReferenceValues(
         element,
         serviceIdToElemID,
-        customRecordFieldsToServiceIds
+        customRecordFieldsToServiceIds,
       )
       applyValuesAndAnnotationsToElement(element, newElement)
     })

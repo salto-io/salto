@@ -138,9 +138,13 @@ const getServiceElemIDsFromPaths = (
       const absolutePath = resolveRelativePath(element.value[PATH], ref)
       // TODO: The log should be removed when SALTO-4025 is communicated.
       if (!pathPrefixRegex.test(ref)) {
-        log.debug('Found a possible file reference without a path prefix: %s', ref)
+        const maybeServiceIdRecord = serviceIdToElemID[FILE_CABINET_PATH_SEPARATOR.concat(ref)]
+        if (_.isPlainObject(maybeServiceIdRecord)) {
+          log.debug('Found a file reference without a path prefix: %s', ref)
+        }
+        return [ref]
       }
-      return [ref, absolutePath].concat(
+      return [absolutePath].concat(
         osPath.extname(absolutePath) === '' && osPath.extname(element.value[PATH]) !== ''
           ? [absolutePath.concat(osPath.extname(element.value[PATH]))]
           : []

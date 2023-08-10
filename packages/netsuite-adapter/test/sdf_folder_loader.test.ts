@@ -118,7 +118,7 @@ describe('sdf folder loader', () => {
       elementsSourceIndex,
       elementsSource,
       isPartial: true,
-      config: {},
+      config: { fetch: {} },
     })
     expect(parseSdfProjectDirMock).toHaveBeenCalledWith('projectDir')
 

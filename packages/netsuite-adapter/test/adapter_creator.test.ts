@@ -67,6 +67,7 @@ describe('NetsuiteAdapter creator', () => {
     ElemID.CONFIG_NAME,
     adapter.configType as ObjectType,
     {
+      fetch: {},
       skipList: {},
       typesToSkip: ['test1'],
       filePathRegexSkipList: ['^/Templates.*'],
@@ -329,6 +330,7 @@ describe('NetsuiteAdapter creator', () => {
       expect(NetsuiteAdapter).toHaveBeenCalledWith({
         client: expect.any(Object),
         config: {
+          fetch: {},
           skipList: {},
           typesToSkip: ['test1'],
           filePathRegexSkipList: ['^/Templates.*'],
@@ -345,6 +347,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         {
+          fetch: {},
           client: {
             fetchAllTypesAtOnce: true,
           },
@@ -363,6 +366,7 @@ describe('NetsuiteAdapter creator', () => {
         expect(NetsuiteAdapter).toHaveBeenCalledWith({
           client: expect.any(Object),
           config: {
+            fetch: {},
             client: {
               fetchAllTypesAtOnce: false,
             },
@@ -381,7 +385,7 @@ describe('NetsuiteAdapter creator', () => {
         })
         expect(NetsuiteAdapter).toHaveBeenCalledWith({
           client: expect.any(Object),
-          config: {},
+          config: { fetch: {} },
           elementsSource,
           getElemIdFunc: mockGetElemIdFunc,
         })
@@ -392,6 +396,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         {
+          fetch: {},
           filePathRegexSkipList: ['\\'],
         }
         )
@@ -413,6 +418,7 @@ describe('NetsuiteAdapter creator', () => {
               ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
+              fetch: {},
               fetchTarget: {
                 types: ['type1', 'type2'],
               },
@@ -429,6 +435,7 @@ describe('NetsuiteAdapter creator', () => {
               ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
+              fetch: {},
               fetchTarget: {
                 customRecords: ['customrecord1', 'customrecord2'],
               },
@@ -445,6 +452,7 @@ describe('NetsuiteAdapter creator', () => {
               ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
+              fetch: {},
               fetchTarget: {
                 types: {
                   type1: 'id',
@@ -463,6 +471,7 @@ describe('NetsuiteAdapter creator', () => {
               ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
+              fetch: {},
               fetchTarget: {
                 customRecords: {
                   customrecord1: 'id',
@@ -610,6 +619,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
+              fetch: {},
               deploy: {
                 additionalDependencies: {
                   include: {
@@ -640,6 +650,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
+              fetch: {},
               deploy: {
                 additionalDependencies: 'should be an object',
               },
@@ -659,6 +670,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
+              fetch: {},
               deploy: {
                 additionalDependencies: {
                   include: { features: ['should be list of strings', 1] },
@@ -680,6 +692,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
+              fetch: {},
               deploy: {
                 additionalDependencies: {
                   include: { files: ['should be list of strings', 1] },
@@ -722,6 +735,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
+              fetch: {},
               deploy: {
                 additionalDependencies: {
                   include: { features: ['feature'] },
@@ -744,6 +758,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
+              fetch: {},
               deploy: {
                 additionalDependencies: {
                   include: { features: ['feature:required'] },
@@ -766,6 +781,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
+              fetch: {},
               deploy: {
                 additionalDependencies: {
                   include: { objects: ['script_id'] },
@@ -789,6 +805,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
+              fetch: {},
               deploy: {
                 additionalDependencies: {
                   include: { files: ['/Folder/filePath'] },
@@ -815,6 +832,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
+            fetch: {},
             client: {
               installedSuiteApps: 2,
             },
@@ -835,6 +853,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
+            fetch: {},
             client: {
               installedSuiteApps: ['a.b.c', 2],
             },
@@ -855,6 +874,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
+            fetch: {},
             client: {
               installedSuiteApps: ['a', 'a.b.c'],
             },
@@ -875,6 +895,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
+            fetch: {},
             client: {
               installedSuiteApps: ['a.b.c', 'b.c.d'],
             },

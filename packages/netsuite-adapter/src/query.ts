@@ -15,7 +15,6 @@
 */
 import _ from 'lodash'
 import { collections, regex, strings, types as lowerdashTypes } from '@salto-io/lowerdash'
-import { isDefined } from '@salto-io/lowerdash/src/values'
 import { CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT } from './constants'
 import { TYPES_TO_INTERNAL_ID } from './data_elements/types'
 import { netsuiteSupportedTypes, removeCustomRecordTypePrefix } from './types'
@@ -358,7 +357,7 @@ export function validateDefined(
   value: unknown,
   configPath: string | string[]
 ): asserts value is Record<string, unknown> {
-  if (!isDefined(value)) {
+  if (value === undefined) {
     throw new Error(`${makeArray(configPath).join('.')} should be defined`)
   }
 }

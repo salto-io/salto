@@ -901,7 +901,7 @@ const emptyQueryParams = (): QueryParams => combineQueryParams(undefined, undefi
 
 const updateConfigFromFailedFetch = (config: NetsuiteConfig, failures: FetchByQueryFailures): boolean => {
   const suggestions = toConfigSuggestions(failures)
-  if (_.isEmpty(suggestions)) {
+  if (_.isEmpty(suggestions) || _.isEqual(suggestions, { fetch: {} })) {
     return false
   }
 
@@ -1104,13 +1104,16 @@ export const netsuiteConfigFromConfig = (
       fetch: _.omit(config.fetch, FETCH_PARAMS.lockedElementsToExclude),
     })
 
-    const keys = _.keys(CONFIG) as (keyof typeof CONFIG)[]
-    _.keys(config).forEach(key => {
-      if (!(key in CONFIG)) {
+    return {
+      ..._.pickBy(config, (_value, key) => {
+        if (key in CONFIG) {
+          return true
+        }
         log.debug('Unknown config property was found: %s', key)
-      }
-    })
-    return _.pick(config, keys)
+        return false
+      }),
+      fetch: config.fetch,
+    }
   } catch (e) {
     e.message = `Failed to load Netsuite config: ${e.message}`
     log.error(e.message)

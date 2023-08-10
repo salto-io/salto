@@ -13,17 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import Joi from 'joi'
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, ReferenceExpression, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
-import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { safeJsonStringify, createSchemeGuard } from '@salto-io/adapter-utils'
-import { client as clientUtils, elements as adapterElements } from '@salto-io/adapter-components'
-import JiraClient from '../client/client'
-import { ISSUE_LAYOUT_TYPE, JIRA, PROJECT_TYPE } from '../constants'
-import { FilterCreator } from '../filter'
 
-const { isDefined } = lowerDashValues
-const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerId: Long!, $fieldPropertyKeys: [String!]!, $availableItemsPageSize: Int!, $requestOwnerPropertyKeys: [String!] = []) {
+export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerId: Long!, $fieldPropertyKeys: [String!]!, $availableItemsPageSize: Int!, $requestOwnerPropertyKeys: [String!] = []) {
     ...CMPJSWLayoutConfigurationFragment
   }
   
@@ -298,109 +289,3 @@ const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerId: Long
       }
     }
   }`
-
-type issueTypeMappingStruct = {
-    issueTypeId: string
-    screenSchemeId: ReferenceExpression
-}
-
-type IssueLayoutResponse = {
-  issueLayoutConfiguration: {
-      issueLayoutResult: {
-          id: string
-          name: string
-        }
-      }
-}
-
-const ISSUE_LAYOUT_RESPONSE_SCHEME = Joi.object({
-  issueLayoutConfiguration: Joi.object({
-    issueLayoutResult: Joi.object({
-      id: Joi.string().required(),
-      name: Joi.string().required(),
-    }).unknown(true),
-  }).unknown(true).required(),
-}).unknown(true)
-
-const isIssueLayoutResponse = createSchemeGuard<IssueLayoutResponse>(ISSUE_LAYOUT_RESPONSE_SCHEME, 'Failed to get issue layout from jira service')
-
-const createIssueLayoutType = (): ObjectType =>
-  new ObjectType({
-    elemID: new ElemID(JIRA, ISSUE_LAYOUT_TYPE),
-    fields: {
-      id: {
-        refType: BuiltinTypes.STRING,
-        annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
-      },
-      name: { refType: BuiltinTypes.STRING },
-    },
-    path: [JIRA, adapterElements.TYPES_PATH, ISSUE_LAYOUT_TYPE],
-  })
-
-const getIssueLayout = async ({
-  projectId,
-  screenId,
-  client,
-}:{
-    projectId: number
-    screenId: number
-    client: JiraClient
-  }):
-  Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> => {
-  const baseUrl = '/rest/gira/1'
-  const variables = {
-    projectId,
-    extraDefinerId: screenId,
-    fieldPropertyKeys: [],
-    availableItemsPageSize: 30,
-  }
-  const response = await client.gqlPost({
-    url: baseUrl,
-    query: QUERY,
-    variables,
-  })
-
-  return response
-}
-
-
-const filter: FilterCreator = ({ client }) => ({
-  name: 'issueLayoutFilter',
-  onFetch: async elements => {
-    const projectToScreenId: Record<number, number[]> = Object.fromEntries(
-      (await Promise.all(elements.filter(e => e.elemID.typeName === PROJECT_TYPE)
-        .filter(isInstanceElement)
-        .map(async project => {
-          if (isReferenceExpression(project.value.issueTypeScreenScheme)) {
-            const screenSchemes = (await Promise.all(((await project.value.issueTypeScreenScheme.getResolvedValue())
-              ?.value?.issueTypeMappings
-              .flatMap((struct: issueTypeMappingStruct) => struct.screenSchemeId.getResolvedValue()))))
-              .filter(isInstanceElement)
-
-            const screens = screenSchemes.map(screenScheme => screenScheme.value.screens.default.value.value.id)
-            return [Number(project.value.id), screens]
-          }
-          return undefined
-        })))
-        .filter(isDefined)
-    )
-    const issueLayoutType = createIssueLayoutType()
-    // eslint-disable-next-line no-console
-    console.log(issueLayoutType)
-
-    await Promise.all(Object.entries(projectToScreenId)
-      .flatMap(([projectId, screenIds]) => screenIds.map(async screenId => {
-        const response = await getIssueLayout({
-          projectId: Number(projectId),
-          screenId,
-          client,
-        })
-        if (!Array.isArray(response.data) && isIssueLayoutResponse(response.data.data)) {
-        // eslint-disable-next-line no-console
-          console.log(`projId is: ${projectId} and response is: ${safeJsonStringify(response.data)}`)
-        }
-      })))
-  },
-})
-
-export default filter

@@ -144,6 +144,15 @@ export type itemsIssueLayoutResponse = {
   nodes: nodesIssueLayoutResponse[]
 }
 
+export type containerIssueLayoutResponse = {
+  containerType: string
+  items: {
+    nodes: {
+      fieldItemId?: string
+      panelItemId?: string
+    }[]
+  }
+}
 
 export type IssueLayoutResponse = {
   issueLayoutConfiguration: {
@@ -168,15 +177,7 @@ export type IssueLayoutResponse = {
                   }
               }[]
           }
-          containers: {
-            containerType: string
-            items: {
-              nodes: {
-                fieldItemId: string
-                panelItemId: string
-              }[]
-            }
-          }[]
+          containers: containerIssueLayoutResponse[]
       }
       metadata: {
           configuration: {
@@ -192,31 +193,6 @@ export type IssueLayoutConfigItem = {
   type: string
   sectionType: string
   key: string
-  data: {
-      name: string
-      description: string
-      type: string
-      custom: boolean
-      global: boolean
-      required: boolean
-      externalUuid: string
-      operations: {
-          editable: boolean
-          canModifyRequired: boolean
-          canModifyOptions: boolean
-          canModifyDefaultValue: boolean
-          canModifyPropertyConfiguration: boolean
-          removable: boolean
-          deletable: boolean
-          canAssociateInSettings: boolean
-          categoriesWhitelist: string[]
-      }
-      provider: {
-          key: string
-          name: string
-      }
-      properties: {}
-  }
 }
 
 export type IssueLayoutConfig = {

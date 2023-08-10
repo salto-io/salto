@@ -500,14 +500,8 @@ export const loadWorkspace = async (
      */
     const previousState = workspaceState
 
-    if (workspaceChanges === undefined && previousState !== undefined) {
-      // We assume that we only want to get the changes from naclFilesSource if the workspace is 'clean' (i.e. there's
-      // no previous state to override.
-      throw new Error('workspaceChanges can be undefined only if the workspace is clean')
-    }
-
-    const wsChanges = (previousState !== undefined)
-      ? (workspaceChanges ?? {})
+    const wsChanges = (workspaceChanges !== undefined)
+      ? workspaceChanges
       : await naclFilesSource.load({ ignoreFileChanges })
 
     const stateToBuild = (previousState !== undefined)

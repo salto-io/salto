@@ -50,6 +50,15 @@ const ISSUE_LAYOUT_RESPONSE_SCHEME = Joi.object({
           }).unknown(true).required(),
         }).unknown(true)).required(),
       }).unknown(true).required(),
+      containers: Joi.array().items(Joi.object({
+        containerType: Joi.string().required(),
+        items: Joi.object({
+          nodes: Joi.array().items(Joi.object({
+            fieldItemId: Joi.string(),
+            panelItemId: Joi.string(),
+          }).unknown(true)).required(),
+        }).unknown(true).required(),
+      }).unknown(true)).required(),
     }).unknown(true).required(),
     metadata: Joi.object({
       configuration: Joi.object({
@@ -87,7 +96,7 @@ const createIssueLayoutType = (): ObjectType =>
 const ISSUE_LAYOUT_NODE_SCHEME = Joi.object({
   key: Joi.string().required(),
   name: Joi.string().required(),
-  description: Joi.string().required(),
+  description: Joi.string().allow(null).required(),
   type: Joi.string().required(),
   custom: Joi.boolean().required(),
   global: Joi.boolean().required(),
@@ -98,7 +107,7 @@ const ISSUE_LAYOUT_NODE_SCHEME = Joi.object({
   properties: Joi.object().allow(null).required(),
 }).unknown(true)
 
-const isIssueLayoutNode = createSchemeGuard<nodesIssueLayoutResponse>(ISSUE_LAYOUT_NODE_SCHEME, 'Failed to get issue layout from jira service')
+const isIssueLayoutNode = createSchemeGuard<nodesIssueLayoutResponse>(ISSUE_LAYOUT_NODE_SCHEME, 'Failed to get issue layout node from jira service')
 
 
 const getIssueLayout = async ({
@@ -137,14 +146,18 @@ const fromResponseLayoutOwnersToLayoutOwners = (layoutOwners: LayoutOwners): own
   },
 }))
 
-const fromIssueLayoutConfigRespToIssueLayoutConfig = (issueLayoutConfig: itemsIssueLayoutResponse) :
+const fromIssueLayoutConfigRespToIssueLayoutConfig = (
+  issueLayoutConfig: itemsIssueLayoutResponse, nodeData: Record<string, string[]>
+):
 IssueLayoutConfig => ({
-  items: issueLayoutConfig.nodes.filter(isIssueLayoutNode)
+  items: issueLayoutConfig.nodes.filter(isIssueLayoutNode).filter(node => nodeData[node.key] !== undefined)
     .map(node => ({
+      type: nodeData[node.key][0],
+      sectionType: nodeData[node.key][1],
       key: node.key,
       data: {
         name: node.name,
-        description: node.description,
+        description: node.description ?? '',
         type: node.type,
         custom: node.custom,
         global: node.global,
@@ -200,7 +213,17 @@ const filter: FilterCreator = ({ client }) => ({
         if (!Array.isArray(response.data) && isFullIssueLayoutResponse(response.data.data)) {
           const { issueLayoutResult, metadata } = response.data.data.issueLayoutConfiguration
           const name = `${projectIdToProjectName[projectId]}_${issueLayoutResult.name}`
-          const check = fromIssueLayoutConfigRespToIssueLayoutConfig(metadata.configuration.items)
+          const issueLayoutItemToContainer = Object.fromEntries(issueLayoutResult.containers.flatMap(s => s.items.nodes
+            .map(n => {
+              if (n.fieldItemId) {
+                return [n.fieldItemId, [s.containerType, 'FILED']]
+              } if (n.panelItemId) {
+                return [n.panelItemId, [s.containerType, 'PANEL']]
+              }
+              return undefined
+            }).filter(isDefined)))
+          const check = fromIssueLayoutConfigRespToIssueLayoutConfig(metadata.configuration.items,
+            issueLayoutItemToContainer)
           const issueLayout = new InstanceElement(
             naclCase(name),
             issueLayoutType,

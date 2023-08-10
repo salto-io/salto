@@ -170,5 +170,17 @@ describe('connection', () => {
       expect(accountType).toEqual(undefined)
       expect(isProduction).toEqual(false)
     })
+    it('should return isProduction false and accountType = undefined when account id does not include -sandbox- but has no paid app and isDataCenter is false', async () => {
+      connection = await createConnection({ retries: 1 }).login(
+        { baseUrl: 'https://test-sandbox-999.atlassian.net', user: 'me', token: 'tok', isDataCenter: false }
+      )
+      mockAxios.onGet('/rest/api/3/serverInfo').reply(200, { baseUrl: 'https://test.atlassian.net' })
+      mockAxios.onGet('/rest/api/3/instance/license').reply(200, { applications: [{ plan: 'FREE' }] })
+      const { isProduction, accountType } = await validateCredentials({
+        connection,
+      })
+      expect(accountType).toEqual(undefined)
+      expect(isProduction).toEqual(false)
+    })
   })
 })

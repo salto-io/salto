@@ -46,9 +46,12 @@ import currencyUndeployableFieldsValidator from './change_validators/currency_un
 import fileCabinetInternalIdsValidator from './change_validators/file_cabinet_internal_ids'
 import rolePermissionValidator from './change_validators/role_permission_ids'
 import translationCollectionValidator from './change_validators/translation_collection_references'
+import omitFieldsValidator from './change_validators/omit_fields'
+import unreferencedFileAdditionValidator from './change_validators/unreferenced_file_addition'
 import NetsuiteClient from './client/client'
 import {
   AdditionalDependencies,
+  NetsuiteConfig,
   NetsuiteValidatorName,
   NonSuiteAppValidatorName,
   OnlySuiteAppValidatorName,
@@ -85,6 +88,8 @@ const netsuiteChangeValidators: Record<NetsuiteValidatorName, NetsuiteChangeVali
   extraReferenceDependencies: extraReferenceDependenciesValidator,
   rolePermission: rolePermissionValidator,
   translationCollectionReferences: translationCollectionValidator,
+  omitFields: omitFieldsValidator,
+  unreferencedFileAddition: unreferencedFileAdditionValidator,
 }
 
 const nonSuiteAppValidators: Record<NonSuiteAppValidatorName, NetsuiteChangeValidator> = {
@@ -146,6 +151,7 @@ const getChangeValidator: ({
   filtersRunner: (groupID: string) => Required<Filter>
   elementsSource: ReadOnlyElementsSource
   validatorsActivationConfig?: ValidatorsActivationConfig
+  userConfig?: NetsuiteConfig
   }) => ChangeValidator = (
     {
       client,
@@ -158,6 +164,7 @@ const getChangeValidator: ({
       filtersRunner,
       elementsSource,
       validatorsActivationConfig,
+      userConfig,
     }
   ) =>
     async (changes, elementSource) => {
@@ -169,7 +176,8 @@ const getChangeValidator: ({
       const validators: Record<string, ChangeValidator> = _.mapValues(
         netsuiteValidators,
         validator =>
-          (innerChanges: ReadonlyArray<Change>) => validator(innerChanges, deployReferencedElements, elementsSource)
+          (innerChanges: ReadonlyArray<Change>) =>
+            validator(innerChanges, deployReferencedElements, elementsSource, userConfig)
       )
 
       const safeDeploy = warnStaleData

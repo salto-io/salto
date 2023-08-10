@@ -31,6 +31,12 @@ const splitDetailedChangeByPath = async (
   if (_.isEmpty(changeHints) || isRemovalChange(change)) {
     return [change]
   }
+  if (changeHints.length === 1) {
+    return [{
+      ...change,
+      path: changeHints[0],
+    }]
+  }
   return Promise.all(changeHints.map(async hint => {
     const filteredChange = await applyFunctionToChangeData(
       change,

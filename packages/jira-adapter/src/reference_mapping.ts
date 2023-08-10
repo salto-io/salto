@@ -26,6 +26,7 @@ import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_T
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 import { getRefType } from './references/workflow_properties'
 import { FIELD_TYPE_NAME } from './filters/fields/constants'
+import { gadgetValuesContextFunc, gadgetValueSerialize, gadgetDashboradValueLookup } from './references/dashboard_gadget_properties'
 
 const { awu } = collections.asynciterable
 const { neighborContextGetter, basicLookUp } = referenceUtils
@@ -67,11 +68,6 @@ export const resolutionAndPriorityToTypeName: referenceUtils.ContextValueMapperF
   return undefined
 }
 
-export const getGadgetPropertyRefType = (key: string): string | undefined => (
-  key === 'statType' ? FIELD_TYPE_NAME : undefined
-)
-
-
 export type ReferenceContextStrategyName = 'parentSelectedFieldType' | 'parentFieldType' | 'workflowStatusPropertiesContext'
 | 'parentFieldId' | 'gadgetPropertyValue'
 
@@ -82,7 +78,7 @@ export const contextStrategyLookup: Record<
   parentFieldType: neighborContextFunc({ contextFieldName: 'fieldType', levelsUp: 1, contextValueMapper: toTypeName }),
   workflowStatusPropertiesContext: neighborContextFunc({ contextFieldName: 'key', contextValueMapper: getRefType }),
   parentFieldId: neighborContextFunc({ contextFieldName: 'fieldId', contextValueMapper: resolutionAndPriorityToTypeName }),
-  gadgetPropertyValue: neighborContextFunc({ contextFieldName: 'key', contextValueMapper: getGadgetPropertyRefType }),
+  gadgetPropertyValue: gadgetValuesContextFunc,
 }
 
 const groupNameSerialize: GetLookupNameFunc = ({ ref }) =>
@@ -91,8 +87,7 @@ const groupNameSerialize: GetLookupNameFunc = ({ ref }) =>
 const groupIdSerialize: GetLookupNameFunc = ({ ref }) =>
   (isInstanceElement(ref.value) ? ref.value.value.groupId : ref.value)
 
-
-type JiraReferenceSerializationStrategyName = 'groupStrategyById' | 'groupStrategyByOriginalName' | 'groupId' | 'key'
+type JiraReferenceSerializationStrategyName = 'groupStrategyById' | 'groupStrategyByOriginalName' | 'groupId' | 'key' | 'dashboradGadgetsValues'
 const JiraReferenceSerializationStrategyLookup: Record<
   JiraReferenceSerializationStrategyName | referenceUtils.ReferenceSerializationStrategyName,
   referenceUtils.ReferenceSerializationStrategy
@@ -117,6 +112,12 @@ const JiraReferenceSerializationStrategyLookup: Record<
     serialize: ({ ref }) => ref.value.value.key,
     lookup: basicLookUp,
     lookupIndexName: 'key',
+  },
+  dashboradGadgetsValues: {
+    // DashboardGadgets references are resolved in gadgetProperties filter
+    serialize: gadgetValueSerialize,
+    lookup: gadgetDashboradValueLookup,
+    lookupIndexName: 'id',
   },
 }
 
@@ -679,16 +680,9 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: 'Priority' },
   },
-  // TODO: this is left for backward compatibility, we should remove it
-  {
-    src: { field: 'statType', parentTypes: ['GadgetConfig'] },
-    serializationStrategy: 'id',
-    jiraMissingRefStrategy: 'typeAndValue',
-    target: { type: 'Field' },
-  },
   {
     src: { field: 'value', parentTypes: ['DashboardGadgetProperty'] },
-    serializationStrategy: 'id',
+    jiraSerializationStrategy: 'dashboradGadgetsValues',
     target: { typeContext: 'gadgetPropertyValue' },
   },
   {

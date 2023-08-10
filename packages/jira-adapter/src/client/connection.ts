@@ -44,27 +44,21 @@ const getBaseUrl = async (
   return response.data.baseUrl
 }
 
-const isSandBox = async (connection: clientUtils.APIConnection): Promise<boolean> => {
-  const baseURL = await getBaseUrl(connection)
-  return baseURL.includes('-sandbox-')
-}
-
-const isProd = async (connection: clientUtils.APIConnection): Promise<boolean | undefined> => {
-  const isSandBoxAccount = await isSandBox(connection)
-  const response = await connection.get('/rest/api/3/instance/license')
-  const hasPaidApp = response.data.applications.some((app: appInfo) => app.plan === 'PAID') ?? false
-  return !isSandBoxAccount && hasPaidApp ? undefined : false
-}
-
+/*
+Based on the current implementation of the Jira API, we can't know if the account is a production
+account, but in some cases we can know that it's not a production account.
+*/
 export const validateCredentials = async (
   { connection }: { connection: clientUtils.APIConnection },
 ): Promise<AccountInfo> => {
   if (await isAuthorized(connection)) {
     const accountId = await getBaseUrl(connection)
-    const isProduction = await isProd(connection)
-    if (await isSandBox(connection)) {
-      return { accountId, isProduction, accountType: 'Sandbox' }
+    if (accountId.includes('-sandbox-')) {
+      return { accountId, isProduction: false, accountType: 'Sandbox' }
     }
+    const response = await connection.get('/rest/api/3/instance/license')
+    const hasPaidApp = response.data.applications.some((app: appInfo) => app.plan === 'PAID') ?? false
+    const isProduction = hasPaidApp ? undefined : false
     return { accountId, isProduction }
   }
   throw new CredentialError('Invalid Credentials')

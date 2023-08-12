@@ -13,10 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { logger } from '@salto-io/logging'
 import { AccountInfo, CredentialError } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { Credentials } from '../auth'
 import { FORCE_ACCEPT_LANGUAGE_HEADERS } from './headers'
+
+const log = logger(module)
 
 type appInfo = {
   id: string
@@ -57,7 +61,8 @@ export const validateCredentials = async (
       return { accountId, isProduction: false, accountType: 'Sandbox' }
     }
     const response = await connection.get('/rest/api/3/instance/license')
-    const hasPaidApp = response.data.applications.some((app: appInfo) => app.plan === 'PAID') ?? false
+    log.info(`Jira application's info: ${safeJsonStringify(response.data.applications)}`)
+    const hasPaidApp = response.data.applications.some((app: appInfo) => app.plan === 'PAID')
     const isProduction = hasPaidApp ? undefined : false
     return { accountId, isProduction }
   }

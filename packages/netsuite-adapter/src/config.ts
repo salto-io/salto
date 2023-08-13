@@ -26,7 +26,7 @@ import {
   CURRENCY, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_NAME_PREFIX, DATASET, EXCHANGE_RATE,
   NETSUITE, PERMISSIONS, SAVED_SEARCH, WORKBOOK,
 } from './constants'
-import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, checkTypeNameRegMatch, noSupportedTypeMatch, validateNetsuiteQueryParameters, validateDefined } from './query'
+import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, checkTypeNameRegMatch, noSupportedTypeMatch, validateNetsuiteQueryParameters, validateDefined, SystemConfig } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING } from './data_elements/types'
 import { isCustomRecordTypeName, netsuiteSupportedTypes } from './types'
 import { FetchByQueryFailures } from './change_validators/safe_deploy'
@@ -911,7 +911,7 @@ const emptyQueryParams = (): QueryParams => combineQueryParams(undefined, undefi
 
 const updateConfigFromFailedFetch = (config: NetsuiteConfig, failures: FetchByQueryFailures): boolean => {
   const suggestions = toConfigSuggestions(failures)
-  if (_.isEmpty(suggestions) || _.isEqual(suggestions, {
+  if (_.isEqual(suggestions, {
     fetch: {
       include: { types: [{ name: '.*' }], fileCabinet: ['.*'] },
       exclude: { types: [], fileCabinet: [] },
@@ -999,10 +999,8 @@ const splitConfig = (config: NetsuiteConfig): InstanceElement[] => {
     return [toConfigInstance(config)]
   }
   config.fetch = allFetchConfigExceptLockedElements
-  const lockedElementsConfig: NetsuiteConfig = {
+  const lockedElementsConfig: SystemConfig = {
     fetch: {
-      include: { types: [{ name: '.*' }], fileCabinet: ['.*'] },
-      exclude: { types: [], fileCabinet: [] },
       lockedElementsToExclude,
     },
   }

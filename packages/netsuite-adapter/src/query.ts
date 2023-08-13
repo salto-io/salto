@@ -47,6 +47,12 @@ export type QueryParams = {
   customRecords?: FetchTypeQueryParams[]
 }
 
+export type SystemConfig = {
+  fetch: {
+    lockedElementsToExclude?: QueryParams
+  }
+}
+
 export type FieldToOmitParams = {
   type: string
   subtype?: string
@@ -56,7 +62,6 @@ export type FieldToOmitParams = {
 export type FetchParams = {
   include: QueryParams
   exclude: QueryParams
-  lockedElementsToExclude?: QueryParams
   authorInformation?: {
     enable?: boolean
   }
@@ -64,7 +69,7 @@ export type FetchParams = {
   fieldsToOmit?: FieldToOmitParams[]
   addAlias?: boolean
   addBundles?: boolean
-}
+} & SystemConfig['fetch']
 
 export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
   include: 'include',

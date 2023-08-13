@@ -17,7 +17,7 @@ import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import { NetsuiteQueryParameters } from '../src/query'
-import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, fetchDefault, LARGE_FOLDERS_EXCLUDED_MESSAGE, instanceLimiterCreator, UNLIMITED_INSTANCES_VALUE, LARGE_TYPES_EXCLUDED_MESSAGE, validateClientConfig, DEFAULT_MAX_INSTANCES_VALUE, InstanceLimiterFunc } from '../src/config'
+import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, fetchDefault, LARGE_FOLDERS_EXCLUDED_MESSAGE, instanceLimiterCreator, UNLIMITED_INSTANCES_VALUE, LARGE_TYPES_EXCLUDED_MESSAGE, validateClientConfig, DEFAULT_MAX_INSTANCES_VALUE, InstanceLimiterFunc, netsuiteConfigFromConfig } from '../src/config'
 
 describe('config', () => {
   const skipList: NetsuiteQueryParameters = {
@@ -105,8 +105,6 @@ describe('config', () => {
       configType,
       {
         fetch: {
-          include: { types: [{ name: '.*' }], fileCabinet: ['.*'] },
-          exclude: { types: [], fileCabinet: [] },
           lockedElementsToExclude: {
             types: Object.entries(lockedTypes).map(([name, ids]) => ({ name, ids })),
             fileCabinet: lockedFiles,
@@ -191,6 +189,29 @@ describe('config', () => {
 
     expect(configChange?.message)
       .toBe(formatConfigSuggestionsReasons([STOP_MANAGING_ITEMS_MSG, LARGE_FOLDERS_EXCLUDED_MESSAGE]))
+  })
+  describe('Should throw an error if the config fetch is non-valid', () => {
+    const configWithoutFetch = new InstanceElement('empty', configType, {})
+    const configWithoutInclude = new InstanceElement('noInclude', configType, {
+      fetch: {
+        exclude: { types: [], fileCabinet: [] },
+      },
+    })
+    const configWithInvalidInclude = new InstanceElement('invalidInclude', configType, {
+      fetch: {
+        include: {},
+        exclude: { types: [], fileCabinet: [] },
+      },
+    })
+    it('Should throw an error if the fetch is undefined', () => {
+      expect(() => netsuiteConfigFromConfig(configWithoutFetch)).toThrow('Failed to load Netsuite config: fetch should be defined')
+    })
+    it('Should throw an error if the include is undefined', () => {
+      expect(() => netsuiteConfigFromConfig(configWithoutInclude)).toThrow('Failed to load Netsuite config: fetch.include should be defined')
+    })
+    it('Should throw an error if the include is non-valid', () => {
+      expect(() => netsuiteConfigFromConfig(configWithInvalidInclude)).toThrow('Failed to load Netsuite config: Received invalid adapter config input. "types" field is expected to be an array\n "fileCabinet" field is expected to be an array\n')
+    })
   })
 
   describe('should have a correct default fetch config', () => {

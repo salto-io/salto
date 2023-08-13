@@ -58,7 +58,7 @@ const ISSUE_LAYOUT_RESPONSE_SCHEME = Joi.object({
       }).unknown(true)).required(),
     }).unknown(true).required(),
   }).unknown(true).required(),
-}).unknown(true)
+}).unknown(true).required()
 
 const isIssueLayoutResponse = createSchemeGuard<IssueLayoutResponse>(ISSUE_LAYOUT_RESPONSE_SCHEME, 'Failed to get issue layout from jira service')
 
@@ -140,7 +140,7 @@ const filter: FilterCreator = ({ client }) => ({
         .map(async project => {
           if (isReferenceExpression(project.value.issueTypeScreenScheme)) {
             const screenSchemes = (await Promise.all(((await project.value.issueTypeScreenScheme.getResolvedValue())
-              ?.value?.issueTypeMappings
+              .value.issueTypeMappings
               .flatMap((struct: issueTypeMappingStruct) => struct.screenSchemeId.getResolvedValue()))))
               .filter(isInstanceElement)
 

@@ -240,5 +240,23 @@ describe('issue layout filter', () => {
         },
       })
     })
+    it('should not add issue layout if there is no issueTypeScreenScheme', async () => {
+      projectInstance.value.issueTypeScreenScheme = undefined
+      await filter.onFetch(elements)
+      const instances = elements.filter(isInstanceElement)
+      const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
+      expect(issueLayoutInstance).toBeUndefined()
+    })
+    it('should not add issue layout if it is a bad response', async () => {
+      mockGet.mockImplementation(() => ({
+        status: 200,
+        data: {
+        },
+      }))
+      await filter.onFetch(elements)
+      const instances = elements.filter(isInstanceElement)
+      const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
+      expect(issueLayoutInstance).toBeUndefined()
+    })
   })
 })

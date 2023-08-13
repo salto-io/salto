@@ -41,6 +41,7 @@ export type OktaActionName = ActionName | OktaStatusActionName
 export type OktaFetchConfig = configUtils.UserFetchConfig & {
   convertUsersIds?: boolean
   enableMissingReferences?: boolean
+  includeGroupMemberships?: boolean
 }
 
 export type OktaSwaggerApiConfig = configUtils.AdapterSwaggerApiConfig<OktaActionName>
@@ -1651,6 +1652,7 @@ export const DEFAULT_CONFIG: OktaConfig = {
     hideTypes: true,
     convertUsersIds: true,
     enableMissingReferences: true,
+    includeGroupMemberships: false,
   },
   [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
   [PRIVATE_API_DEFINITIONS_CONFIG]: DUCKTYPE_API_DEFINITIONS,
@@ -1724,6 +1726,7 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
         {
           convertUsersIds: { refType: BuiltinTypes.BOOLEAN },
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
+          includeGroupMemberships: { refType: BuiltinTypes.BOOLEAN },
         }
       ),
     },
@@ -1752,6 +1755,7 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
       `${FETCH_CONFIG}.hideTypes`,
       `${FETCH_CONFIG}.convertUsersIds`,
       `${FETCH_CONFIG}.enableMissingReferences`,
+      `${FETCH_CONFIG}.includeGroupMemberships`,
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },

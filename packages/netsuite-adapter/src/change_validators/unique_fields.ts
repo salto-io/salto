@@ -83,27 +83,13 @@ const getNestedScriptIDField = async (
   _.values(await elementsSource.get(elemID.createNestedID(...nestPath)))
     .map(val => val[SCRIPT_ID])
 
-const getChangeWorkflowFields = (
-  change: ChangeDataType,
-): string[] =>
-  // custom fields and states' custom fields must have a different prefix: "custworkflow" and "custwfstate"
-  [..._.values(getChangeNestedField(change, WORKFLOW_CUSTOM_FIELDS_PATH)).map(val => val[SCRIPT_ID]),
-    ..._.values(getChangeNestedField(change, WORKFLOW_STATES_PATH))
-      .flatMap(state => _.values(_.get(state, WORKFLOW_STATES_CUSTOM_FIELDS_PATH)))
-      .map(custfield => custfield[SCRIPT_ID])]
-
-const getSourceWorkflowFields = async (
-  { elemID, elementsSource }: GetterParams
-): Promise<string[]> =>
-  // custom fields and states' custom fields must have a different prefix: "custworkflow" and "custwfstate"
-  _.values(await elementsSource.get(elemID))
-    .map(elem => ({
-      customFieldsScriptid: _.values(_.get(elem, WORKFLOW_CUSTOM_FIELDS_PATH)).map(val => val[SCRIPT_ID]),
-      stateFieldsScriptid: _.values(_.get(elem, WORKFLOW_STATES_PATH))
-        .flatMap(state => _.values(_.get(state, WORKFLOW_STATES_CUSTOM_FIELDS_PATH)))
-        .map(val => val[SCRIPT_ID]),
-    }))
-    .flatMap(({ customFieldsScriptid, stateFieldsScriptid }) => [...customFieldsScriptid, ...stateFieldsScriptid])
+const getWorkflowFields = (elem: Value): string[] => {
+  const customFieldsScriptid = _.values(_.get(elem.value, WORKFLOW_CUSTOM_FIELDS_PATH)).map(val => val[SCRIPT_ID])
+  const stateFieldsScriptid = _.values(_.get(elem.value, WORKFLOW_STATES_PATH))
+    .flatMap(state => _.values(_.get(state, WORKFLOW_STATES_CUSTOM_FIELDS_PATH)))
+    .map(val => val[SCRIPT_ID])
+  return customFieldsScriptid.concat(stateFieldsScriptid)
+}
 
 const savedSearchGetters: RestrictedTypeGetters = {
   getChangeRestrictedFields: change => [getChangeNestedField(change, [FIELD_DEFAULT_NAME])],
@@ -130,8 +116,11 @@ const customRecordGetters: RestrictedTypeGetters = {
 }
 
 const workflowGetters: RestrictedTypeGetters = {
-  getChangeRestrictedFields: change => getChangeWorkflowFields(change),
-  getSourceRestrictedFields: async params => getSourceWorkflowFields(params),
+  // We use the same getter and list for both workflow's custom fields and state's custom fields
+  // because they must have a different prefix: "custworkflow" and "custwfstate"
+  // thus there will not be any overlap between them
+  getChangeRestrictedFields: getWorkflowFields,
+  getSourceRestrictedFields: async ({ elemID, elementsSource }) => getWorkflowFields(await elementsSource.get(elemID)),
   getMessage: () => 'Workflow contains custom fields with non-unique IDs',
   getDetailedMessage: scriptids => `Can't deploy this workflow as it contains custom fields with IDs that are not unique within this environment: "${scriptids.join(', ')}".`
   + ' To deploy it, change their IDs to unique ones.',

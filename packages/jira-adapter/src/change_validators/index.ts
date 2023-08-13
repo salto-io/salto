@@ -48,7 +48,7 @@ import { statusMigrationChangeValidator } from './status_migration'
 import { activeSchemeChangeValidator } from './active_scheme_change'
 import { activeSchemeDeletionValidator } from './active_scheme_deletion'
 import { automationProjectUnresolvedReferenceValidator } from './automation_unresolved_references'
-import { unresolvedReferenceValidator } from './unresolved_references'
+// import { unresolvedReferenceValidator } from './unresolved_references'
 import { sameIssueTypeNameChangeValidator } from './same_issue_type_name'
 import { issueTypeSchemeMigrationValidator } from './issue_type_scheme_migration'
 import { issueTypeDeletionValidator } from './issue_type_deletion'
@@ -68,7 +68,7 @@ export default (
 ): ChangeValidator => {
   const validators: Record<ChangeValidatorName, ChangeValidator> = {
     ...deployment.changeValidators.getDefaultChangeValidators(['outgoingUnresolvedReferencesValidator']),
-    unresolvedReference: unresolvedReferenceValidator,
+    // unresolvedReference: unresolvedReferenceValidator,
     automationProjectUnresolvedReference: automationProjectUnresolvedReferenceValidator,
     deployTypesNotSupported: deployTypesNotSupportedValidator,
     readOnlyProjectRoleChange: readOnlyProjectRoleChangeValidator,

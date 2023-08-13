@@ -184,7 +184,7 @@ const createClientConfigType = (): ObjectType => {
 }
 
 export type ChangeValidatorName = (
-  | 'unresolvedReference'
+  // | 'unresolvedReference'
   | 'automationProjectUnresolvedReference'
   | 'deployTypesNotSupported'
   | 'readOnlyProjectRoleChange'
@@ -231,7 +231,7 @@ type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig>({
   elemID: new ElemID(JIRA, 'changeValidatorConfig'),
   fields: {
-    unresolvedReference: { refType: BuiltinTypes.BOOLEAN },
+    // unresolvedReference: { refType: BuiltinTypes.BOOLEAN },
     automationProjectUnresolvedReference: { refType: BuiltinTypes.BOOLEAN },
     deployTypesNotSupported: { refType: BuiltinTypes.BOOLEAN },
     readOnlyProjectRoleChange: { refType: BuiltinTypes.BOOLEAN },

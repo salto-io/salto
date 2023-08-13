@@ -89,6 +89,17 @@ export type IssueLayoutResponse = {
           }
           containers: containerIssueLayoutResponse[]
       }
+      metadata: {
+        configuration: {
+          items: {
+            nodes: {
+                name: string
+                type: string
+                key: string
+            }[]
+          }
+        }
+      }
     }
   }
 
@@ -96,6 +107,10 @@ export type IssueLayoutConfigItem = {
   type: string
   sectionType: string
   key: string
+  data: {
+    name: string
+    type: string
+  }
 }
 
 export type IssueLayoutConfig = {
@@ -109,13 +124,16 @@ export type LayoutOwners = {
     id: string
     name: string
 }[]
+export type dataOwner = {
+  id: string
+  name: string
+  description: string
+  avatarId: string
+  iconUrl: string
+}
 
-export type owners = {
-  data: {
-      id: string
-      name: string
-      description: string
-      avatarId: string
-      iconUrl: string
-  }
-}[]
+export type Owner = {
+  data: dataOwner
+}
+
+export type Owners = Owner[]

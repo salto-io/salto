@@ -22,6 +22,7 @@ import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { Values, StaticFile, InstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { MapKeyFunc, mapKeysRecursive, TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import fs from 'fs'
 import { API_VERSION } from '../client/client'
 import {
   INSTANCE_FULL_NAME_FIELD, IS_ATTRIBUTE, METADATA_CONTENT_FIELD, SALESFORCE, XML_ATTRIBUTE_PREFIX,
@@ -443,7 +444,7 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
       const typeName = getManifestTypeName(type)
       deleteManifest.get(typeName).push(name)
     },
-    getZip: () => {
+    getZip: async () => {
       zip.file(`${PACKAGE}/package.xml`, toPackageXml(addManifest))
       if (deleteManifest.size !== 0) {
         zip.file(`${PACKAGE}/${deletionsPackageName}`, toPackageXml(deleteManifest))
@@ -457,7 +458,10 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
         info.date = date
       })
 
-      return zip.generateAsync({ type: 'nodebuffer' })
+      const zipContent = await zip.generateAsync({ type: 'nodebuffer' })
+      fs.writeFileSync('tmp.zip', zipContent)
+      throw new Error('Zip file created. Stopping execution')
+      return zipContent
     },
     getDeletionsPackageName: () => deletionsPackageName,
   }

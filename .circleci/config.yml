@@ -404,10 +404,6 @@ workflows:
 
       - publish_canary:
           context: salto
-          requires:
-            - build
-            - unit_test
-            - e2e_test
 
       - publish_on_version_change:
           context: salto

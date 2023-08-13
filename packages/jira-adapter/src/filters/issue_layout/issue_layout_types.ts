@@ -36,113 +36,28 @@ export const onwerIssueLayoutType = new ObjectType({
   },
 })
 
-const providrItemIssueLayoutType = new ObjectType({
-  elemID: new ElemID(JIRA, 'providerItem'),
-  fields: {
-    key: { refType: BuiltinTypes.STRING },
-    name: { refType: BuiltinTypes.STRING },
-  },
-})
-
-const operationsItemIssueLayoutType = new ObjectType({
-  elemID: new ElemID(JIRA, 'operationsItem'),
-  fields: {
-    editable: { refType: BuiltinTypes.BOOLEAN },
-    canModifyRequired: { refType: BuiltinTypes.BOOLEAN },
-    canModifyOptions: { refType: BuiltinTypes.BOOLEAN },
-    canModifyDefaultValue: { refType: BuiltinTypes.BOOLEAN },
-    canModifyPropertyConfiguration: { refType: BuiltinTypes.BOOLEAN },
-    removable: { refType: BuiltinTypes.BOOLEAN },
-    deletable: { refType: BuiltinTypes.BOOLEAN },
-    canAssociateInSettings: { refType: BuiltinTypes.BOOLEAN },
-    categoriesWhitelist: { refType: new ListType(BuiltinTypes.STRING) },
-  },
-})
-const propertiesItemIssueLayoutType = new ObjectType({
-  elemID: new ElemID(JIRA, 'propertiesItem'),
-  fields: {
-    key: { refType: BuiltinTypes.STRING },
-    value: { refType: BuiltinTypes.STRING },
-  },
-})
-
-const dataItemIssueLayoutType = new ObjectType({
-  elemID: new ElemID(JIRA, 'dataItem'),
-  fields: {
-    externalUuid: { refType: BuiltinTypes.STRING },
-    name: { refType: BuiltinTypes.STRING },
-    description: { refType: BuiltinTypes.STRING },
-    type: { refType: BuiltinTypes.STRING },
-    custom: { refType: BuiltinTypes.BOOLEAN },
-    global: { refType: BuiltinTypes.BOOLEAN },
-    required: { refType: BuiltinTypes.BOOLEAN },
-    operations: { refType: operationsItemIssueLayoutType },
-    provider: { refType: providrItemIssueLayoutType },
-    properties: { refType: new ListType(propertiesItemIssueLayoutType) },
-  },
-})
-
-const itemIssueLayout = new ObjectType({
-  elemID: new ElemID(JIRA, 'item'),
+export const issueLayoutItemsType = new ObjectType({
+  elemID: new ElemID(JIRA, 'issueLayoutItems'),
   fields: {
     type: { refType: BuiltinTypes.STRING },
     sectionType: { refType: BuiltinTypes.STRING },
-    data: { refType: dataItemIssueLayoutType },
+    key: { refType: BuiltinTypes.STRING },
   },
 })
 
 export const issueLayoutConfigType = new ObjectType({
   elemID: new ElemID(JIRA, 'issueLayoutConfig'),
   fields: {
-    items: { refType: new ListType(itemIssueLayout) },
+    items: { refType: new ListType(issueLayoutItemsType) },
   },
 })
 
 export const ISSUE_LAYOUT_SUB_TYPES = [
   dataOwnerIssueLayoutType,
   onwerIssueLayoutType,
-  providrItemIssueLayoutType,
-  operationsItemIssueLayoutType,
-  propertiesItemIssueLayoutType,
-  dataItemIssueLayoutType,
-  itemIssueLayout,
+  issueLayoutItemsType,
   issueLayoutConfigType,
 ]
-
-export type nodesIssueLayoutResponse = {
-  key: string
-  name: string
-  type: string
-  custom: boolean
-  global: boolean
-  required: boolean
-  description: string
-  externalUuid: string
-  defaultValue: string
-  operations: {
-    editable: boolean
-    canModifyRequired: boolean
-    canModifyOptions: boolean
-    canModifyDefaultValue: boolean
-    canModifyPropertyConfiguration: boolean
-    removable: boolean
-    deletable: boolean
-    canAssociateInSettings: boolean
-    categoriesWhitelist: string[]
-  }
-  provider: {
-    key: string
-    name: string
-  }
-  properties: {
-    key: string
-    value: string
-  }[]
-}
-
-export type itemsIssueLayoutResponse = {
-  nodes: nodesIssueLayoutResponse[]
-}
 
 export type containerIssueLayoutResponse = {
   containerType: string
@@ -161,12 +76,7 @@ export type IssueLayoutResponse = {
           name: string
           usageInfo: {
               edges: {
-                  currentProject: boolean
                   node: {
-                      avatarId: string
-                      projectId: number
-                      projectKey: string
-                      projectName: string
                       layoutOwners: {
                           avatarId: string
                           description: string
@@ -178,13 +88,6 @@ export type IssueLayoutResponse = {
               }[]
           }
           containers: containerIssueLayoutResponse[]
-      }
-      metadata: {
-          configuration: {
-              items: {
-                nodes : nodesIssueLayoutResponse[]
-              }
-          }
       }
     }
   }

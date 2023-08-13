@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import Joi from 'joi'
-import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { createSchemeGuard, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { client as clientUtils, elements as adapterElements } from '@salto-io/adapter-components'
@@ -23,6 +23,7 @@ import { ISSUE_LAYOUT_TYPE, JIRA, PROJECT_TYPE } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { QUERY } from './issue_layout_query'
 import { ISSUE_LAYOUT_SUB_TYPES, IssueLayoutConfig, IssueLayoutResponse, LayoutOwners, containerIssueLayoutResponse, issueLayoutConfigType, onwerIssueLayoutType, owners } from './issue_layout_types'
+import { addAnnotationRecursively, setTypeDeploymentAnnotations } from '../../utils'
 
 const { isDefined } = lowerDashValues
 
@@ -187,6 +188,9 @@ const filter: FilterCreator = ({ client }) => ({
             [JIRA, adapterElements.RECORDS_PATH, ISSUE_LAYOUT_TYPE, pathNaclCase(name)],
           )
           elements.push(issueLayout)
+          setTypeDeploymentAnnotations(issueLayoutType)
+          await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.CREATABLE)
+          await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.UPDATABLE)
         }
       })))
   },

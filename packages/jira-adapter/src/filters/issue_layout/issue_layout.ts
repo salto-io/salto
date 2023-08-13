@@ -14,16 +14,19 @@
 * limitations under the License.
 */
 import Joi from 'joi'
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { createSchemeGuard, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
-import { client as clientUtils, elements as adapterElements } from '@salto-io/adapter-components'
+import { client as clientUtils, elements as adapterElements, references as referenceUtils } from '@salto-io/adapter-components'
+import _ from 'lodash'
 import JiraClient from '../../client/client'
 import { ISSUE_LAYOUT_TYPE, JIRA, PROJECT_TYPE } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { QUERY } from './issue_layout_query'
 import { ISSUE_LAYOUT_SUB_TYPES, IssueLayoutConfig, IssueLayoutResponse, LayoutOwners, containerIssueLayoutResponse, issueLayoutConfigType, onwerIssueLayoutType, owners } from './issue_layout_types'
 import { addAnnotationRecursively, setTypeDeploymentAnnotations } from '../../utils'
+import { JiraConfig } from '../../config/config'
+import { referencesRules, JiraFieldReferenceResolver, contextStrategyLookup } from '../../reference_mapping'
 
 const { isDefined } = lowerDashValues
 
@@ -131,11 +134,24 @@ IssueLayoutConfig => {
   })))
   return { items }
 }
+const createReferences = async (config: JiraConfig, elements: Element[]): Promise<void> => {
+  const fixedDefs = referencesRules
+    .map(def => (
+      config.fetch.enableMissingReferences ? def : _.omit(def, 'jiraMissingRefStrategy')
+    ))
+  await referenceUtils.addReferences({
+    elements,
+    fieldsToGroupBy: ['id', 'name', 'originalName', 'groupId', 'key'],
+    defs: fixedDefs,
+    contextStrategyLookup,
+    fieldReferenceResolverCreator: defs => new JiraFieldReferenceResolver(defs),
+  })
+}
 
-const filter: FilterCreator = ({ client }) => ({
+const filter: FilterCreator = ({ client, config }) => ({
   name: 'issueLayoutFilter',
   onFetch: async elements => {
-    const projectToScreenId: Record<number, number[]> = Object.fromEntries(
+    const projectToScreenId: Record<string, number[]> = Object.fromEntries(
       (await Promise.all(elements.filter(e => e.elemID.typeName === PROJECT_TYPE)
         .filter(isInstanceElement)
         .map(async project => {
@@ -146,7 +162,7 @@ const filter: FilterCreator = ({ client }) => ({
               .filter(isInstanceElement)
 
             const screens = screenSchemes.map(screenScheme => screenScheme.value.screens.default.value.value.id)
-            return [Number(project.value.id), screens]
+            return [project.value.id, screens]
           }
           return undefined
         })))
@@ -157,7 +173,7 @@ const filter: FilterCreator = ({ client }) => ({
         .filter(isInstanceElement)
         .map(async project => {
           const projectName = project.value.name
-          return [Number(project.value.id), projectName]
+          return [project.value.id, projectName]
         })))
         .filter(isDefined)
     )
@@ -180,7 +196,7 @@ const filter: FilterCreator = ({ client }) => ({
             naclCase(name),
             issueLayoutType,
             {
-              projectId: Number(projectId),
+              projectId,
               extraDefinerId: screenId,
               owners: fromResponseLayoutOwnersToLayoutOwners(issueLayoutResult.usageInfo.edges[0].node.layoutOwners),
               issueLayoutConfig: fromIssueLayoutConfigRespToIssueLayoutConfig(containers),
@@ -188,6 +204,7 @@ const filter: FilterCreator = ({ client }) => ({
             [JIRA, adapterElements.RECORDS_PATH, ISSUE_LAYOUT_TYPE, pathNaclCase(name)],
           )
           elements.push(issueLayout)
+          await createReferences(config, elements)
           setTypeDeploymentAnnotations(issueLayoutType)
           await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.CREATABLE)
           await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.UPDATABLE)

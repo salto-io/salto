@@ -31,10 +31,17 @@ const { isDefined } = lowerDashValues
 
 const log = logger(module)
 
-const TYPES_TO_CHECK = ['group']
+// Type to field names that together create a unique id in zendesk
+const ZENDESK_ID_FIELDS: Record<string, string[]> = {
+  group: ['name'],
+}
+
+export const toZendeskId = (typeName: string, instance: InstanceElement): string =>
+  ZENDESK_ID_FIELDS[typeName].map(fieldName => instance.value[fieldName]).filter(isDefined).join()
 
 /**
-  * Prevent deployment of two instances with the same values of their id fields
+ * Prevent deployment of two instances that would error on Zendesk because of duplication
+ * If the instances has a different element name, we assume it's the same instance and suggest to regenerate salto ids
  */
 export const duplicateIdFieldValuesValidator = (
   apiConfig: ZendeskApiConfig,
@@ -49,36 +56,50 @@ export const duplicateIdFieldValuesValidator = (
       .filter(isAdditionChange)
       .filter(isInstanceChange)
       .map(getChangeData)
-      .filter(instance => TYPES_TO_CHECK.includes(instance.elemID.typeName)),
+      .filter(instance => Object.keys(ZENDESK_ID_FIELDS).includes(instance.elemID.typeName)),
     change => change.elemID.typeName
   )
 
   const errors = await Promise.all(Object.entries(changedInstancesByType).map(async ([typeName, instances]) => {
     const typeInstances = await getInstancesFromElementSource(elementSource, [typeName])
-    const instancesByIdFields: Record<string, InstanceElement[]> = {}
-    // generated name can be undefined, so we can't use _.groupBy
-    typeInstances.forEach(instance => {
-      const instanceName = generateInstanceNameFromConfig(instance.value, typeName, apiConfig)
-      if (instanceName) {
-        instancesByIdFields[instanceName] = (instancesByIdFields[instanceName] ?? []).concat(instance)
-      }
-    })
+    const instancesByZendeskId = _.groupBy(
+      typeInstances,
+      instance => toZendeskId(typeName, instance)
+    )
+    const instancesByIdFields = _.groupBy(
+      typeInstances,
+      instance => generateInstanceNameFromConfig(instance.value, typeName, apiConfig)
+    )
 
     return instances.map((instance): ChangeError | undefined => {
-      const instanceName = generateInstanceNameFromConfig(instance.value, typeName, apiConfig)
-      if (!instanceName) {
+      const instanceZendeskId = toZendeskId(typeName, instance)
+      const instanceElemName = generateInstanceNameFromConfig(instance.value, typeName, apiConfig)
+
+      const instancesWithSameZendeskId = instancesByZendeskId[instanceZendeskId]
+        .filter(i => i.elemID.getFullName() !== instance.elemID.getFullName())
+      const instancesWithSameName = instanceElemName === undefined
+        ? []
+        : instancesByIdFields[instanceElemName].filter(i => i.elemID.getFullName() !== instance.elemID.getFullName())
+
+      if (instancesWithSameZendeskId.length === 0) {
         return undefined
       }
-      const instancesWithSameIdFields = instancesByIdFields[instanceName]
-        .filter(i => i.elemID.getFullName() !== instance.elemID.getFullName())
-      return instancesWithSameIdFields.length > 0
+
+      return instancesWithSameName.length > 0
+        // This is probably a misalignment of Salto IDs, we prevent deployment and suggest to regenerate them
         ? {
           elemID: instance.elemID,
           severity: 'Error',
           message: `${typeName} duplication detected`,
-          detailedMessage: `This ${typeName} cannot be deployed as it is a duplicate of '${instancesWithSameIdFields.map(i => i.elemID.name).join(', ')}'. This likely indicates a misalignment of Salto IDs. To address this, please execute a fetch on both the source and target environments. Ensure you select the 'Regenerate Salto IDs' option in the advanced settings.`,
+          detailedMessage: `This ${typeName} cannot be deployed as it is a duplicate of '${instancesWithSameName.map(i => i.elemID.name).join(', ')}'. This likely indicates a misalignment of Salto IDs. To address this, please execute a fetch on both the source and target environments. Ensure you select the 'Regenerate Salto IDs' option in the advanced settings.`,
         }
-        : undefined
+      // This is probably a duplication created by the user, we prevent it from being deployed
+        : {
+          elemID: instance.elemID,
+          severity: 'Error',
+          message: `${typeName} duplication detected`,
+          detailedMessage: `This ${typeName} cannot be deployed due to duplication of fields '${ZENDESK_ID_FIELDS[typeName].join(', ')}' with existing instances '${instancesWithSameZendeskId.map(i => i.elemID.name).join(', ')}'. Please ensure that these field values are unique before deploying.`,
+        }
     }).filter(isDefined)
   }))
   return errors.flat()

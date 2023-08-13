@@ -18,7 +18,7 @@ import { ObjectType, ElemID, BuiltinTypes, ListType } from '@salto-io/adapter-ap
 import { JIRA } from '../../constants'
 
 const dataOwnerIssueLayoutType = new ObjectType({
-  elemID: new ElemID(JIRA, 'dataOwner'),
+  elemID: new ElemID(JIRA, 'IssueLayoutDataOwner'),
   fields: {
     id: { refType: BuiltinTypes.STRING },
     name: { refType: BuiltinTypes.STRING },
@@ -29,7 +29,7 @@ const dataOwnerIssueLayoutType = new ObjectType({
 })
 
 export const onwerIssueLayoutType = new ObjectType({
-  elemID: new ElemID(JIRA, 'owner'),
+  elemID: new ElemID(JIRA, 'IssueLayoutOwner'),
   fields: {
     type: { refType: BuiltinTypes.STRING },
     dataOwner: { refType: dataOwnerIssueLayoutType },

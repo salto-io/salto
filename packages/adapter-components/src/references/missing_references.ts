@@ -37,11 +37,9 @@ export const createMissingInstance = (
 )
 
 export const createMissingValueReference = (
-  topParent: ElemID,
-  additionalPath: string[],
+  elemID: ElemID,
   value: string
 ): ReferenceExpression =>
   new ReferenceExpression(
-    topParent.createNestedID(...additionalPath, naclCase(`${MISSING_REF_PREFIX}${value}`)),
-    value
+    elemID.createNestedID(naclCase(`${MISSING_REF_PREFIX}${value}`))
   )

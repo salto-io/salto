@@ -194,7 +194,7 @@ export const DEFAULT_FILTERS = [
   scriptRunnerWorkflowListsFilter,
   scriptRunnerTemplateExpressionFilter,
   scriptRunnerEmptyAccountIdsFilter,
-  // resolves references!
+  // resolves references in workflow instances!
   workflowPropertiesFilter,
   // must run after scriptRunnerWorkflowListsFilter and workflowPropertiesFilter
   scriptRunnerWorkflowReferencesFilter,

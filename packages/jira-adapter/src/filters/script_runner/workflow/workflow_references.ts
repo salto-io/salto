@@ -38,7 +38,7 @@ const addTransitionReferences = (workflowInstance: WorkflowInstance, enableMissi
     walkOverTransitionIds(transition, scriptRunner => {
       const transitionKey = transitionIdToKey.get(scriptRunner.transitionId)
       const missingValue = enableMissingReferences
-        ? referenceUtils.createMissingValueReference(workflowInstance.elemID, ['transitions'], scriptRunner.transitionId)
+        ? referenceUtils.createMissingValueReference(workflowInstance.elemID.createNestedID('transitions'), scriptRunner.transitionId)
         : scriptRunner.transitionId
       scriptRunner.transitionId = transitionKey === undefined
         ? missingValue

@@ -125,8 +125,8 @@ const fromIssueLayoutConfigRespToIssueLayoutConfig = (
 ):
 IssueLayoutConfig => {
   const items = containers.flatMap(container => container.items.nodes.map(node => ({
-    type: container.containerType,
-    sectionType: node.fieldItemId ? 'FIELD' : 'PANEL',
+    type: node.fieldItemId ? 'FIELD' : 'PANEL',
+    sectionType: container.containerType,
     key: node.fieldItemId || node.panelItemId || '',
   })))
   return { items }

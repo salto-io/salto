@@ -3015,10 +3015,10 @@
     lodash "^4.17.21"
     moo "^0.5.2"
 
-"@salto-io/suitecloud-cli@1.6.2-salto-3":
-  version "1.6.2-salto-3"
-  resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.6.2-salto-3.tgz#2194378de9a6045de8110b18131e2a9ace4622f5"
-  integrity sha512-QCZgpArknCoUTjbKNKdzo7YsT9NRxTH6cI8i+eU05MXCpPDykTFKD7N+NJHRuMtPHZE2SdXu1uy74ZcKcJyRkA==
+"@salto-io/suitecloud-cli@1.6.2-salto-4":
+  version "1.6.2-salto-4"
+  resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.6.2-salto-4.tgz#5ed19d8e408bb9c15dcd1b5364b426b2a9bf3a35"
+  integrity sha512-DOzvW5pplIdYpSdt2jYZPkk24pShYi3h5IS1uY/z1bYfzh4hZEryUhggRWeJOBRisKZiJ78SZhDC8mGoVTZfkQ==
   dependencies:
     "@salto-io/logging" "<0.4.0"
     chalk "4.1.2"

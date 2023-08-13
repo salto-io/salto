@@ -837,7 +837,7 @@ const toConfigSuggestions = ({
   failedTypes,
 }: FetchByQueryFailures): NetsuiteConfig => {
   const config: NetsuiteConfig = {
-    fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+    fetch: { include: { types: [{ name: '.*' }], fileCabinet: ['.*'] }, exclude: { types: [], fileCabinet: [] } },
   }
 
   if (!_.isEmpty(failedFilePaths.otherError) || !_.isEmpty(failedTypes.unexpectedError)) {
@@ -913,7 +913,7 @@ const updateConfigFromFailedFetch = (config: NetsuiteConfig, failures: FetchByQu
   const suggestions = toConfigSuggestions(failures)
   if (_.isEmpty(suggestions) || _.isEqual(suggestions, {
     fetch: {
-      include: { types: [], fileCabinet: [] },
+      include: { types: [{ name: '.*' }], fileCabinet: ['.*'] },
       exclude: { types: [], fileCabinet: [] },
     },
   })) {
@@ -1001,7 +1001,7 @@ const splitConfig = (config: NetsuiteConfig): InstanceElement[] => {
   config.fetch = allFetchConfigExceptLockedElements
   const lockedElementsConfig: NetsuiteConfig = {
     fetch: {
-      include: { types: [], fileCabinet: [] },
+      include: { types: [{ name: '.*' }], fileCabinet: ['.*'] },
       exclude: { types: [], fileCabinet: [] },
       lockedElementsToExclude,
     },

@@ -81,14 +81,14 @@ describe('config', () => {
         failedTypes: { lockedError: lockedTypes, unexpectedError: suggestedSkipListTypes, excludedTypes: [] },
         failedCustomRecords: [],
       },
-      { fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } } }
+      { fetch: { include: { types: [{ name: '.*' }], fileCabinet: ['.*'] }, exclude: { types: [], fileCabinet: [] } } }
     )?.config as InstanceElement[]
     expect(configFromConfigChanges[0].isEqual(new InstanceElement(
       ElemID.CONFIG_NAME,
       configType,
       {
         fetch: {
-          include: { types: [], fileCabinet: [] },
+          include: { types: [{ name: '.*' }], fileCabinet: ['.*'] },
           exclude: {
             types: Object.entries(suggestedSkipListTypes).map(([name, ids]) => ({ name, ids })),
             fileCabinet: [newFailedFilePath],
@@ -105,7 +105,7 @@ describe('config', () => {
       configType,
       {
         fetch: {
-          include: { types: [], fileCabinet: [] },
+          include: { types: [{ name: '.*' }], fileCabinet: ['.*'] },
           exclude: { types: [], fileCabinet: [] },
           lockedElementsToExclude: {
             types: Object.entries(lockedTypes).map(([name, ids]) => ({ name, ids })),

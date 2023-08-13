@@ -404,10 +404,6 @@ workflows:
 
       - publish_canary:
           context: salto
-          filters:
-            branches:
-              only:
-                - main
           requires:
             - build
             - unit_test

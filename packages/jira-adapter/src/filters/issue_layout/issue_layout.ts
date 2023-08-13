@@ -22,7 +22,7 @@ import JiraClient from '../../client/client'
 import { ISSUE_LAYOUT_TYPE, JIRA, PROJECT_TYPE } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { QUERY } from './issue_layout_query'
-import { ISSUE_LAYOUT_SUB_TYPES, IssueLayoutConfig, IssueLayoutResponse, LayoutOwners, containerIssueLayoutResponse, issueLayoutConfigType, itemsIssueLayoutResponse, nodesIssueLayoutResponse, onwerIssueLayoutType, owners } from './issue_layout_types'
+import { ISSUE_LAYOUT_SUB_TYPES, IssueLayoutConfig, IssueLayoutResponse, LayoutOwners, containerIssueLayoutResponse, issueLayoutConfigType, onwerIssueLayoutType, owners } from './issue_layout_types'
 
 const { isDefined } = lowerDashValues
 
@@ -34,11 +34,8 @@ type issueTypeMappingStruct = {
 const ISSUE_LAYOUT_RESPONSE_SCHEME = Joi.object({
   issueLayoutConfiguration: Joi.object({
     issueLayoutResult: Joi.object({
-      id: Joi.string().required(),
-      name: Joi.string().required(),
       usageInfo: Joi.object({
         edges: Joi.array().items(Joi.object({
-          currentProject: Joi.boolean().required(),
           node: Joi.object({
             layoutOwners: Joi.array().items(Joi.object({
               avatarId: Joi.string().required().allow(null),
@@ -60,18 +57,10 @@ const ISSUE_LAYOUT_RESPONSE_SCHEME = Joi.object({
         }).unknown(true).required(),
       }).unknown(true)).required(),
     }).unknown(true).required(),
-    metadata: Joi.object({
-      configuration: Joi.object({
-        items: Joi.object({
-          nodes: Joi.array().items(Joi.object({
-          }).unknown(true)).required(),
-        }).unknown(true).required(),
-      }).unknown(true).required(),
-    }).unknown(true).required(),
   }).unknown(true).required(),
 }).unknown(true)
 
-const isFullIssueLayoutResponse = createSchemeGuard<IssueLayoutResponse>(ISSUE_LAYOUT_RESPONSE_SCHEME, 'Failed to get issue layout from jira service')
+const isIssueLayoutResponse = createSchemeGuard<IssueLayoutResponse>(ISSUE_LAYOUT_RESPONSE_SCHEME, 'Failed to get issue layout from jira service')
 
 const createIssueLayoutType = (): ObjectType =>
   new ObjectType({
@@ -92,13 +81,6 @@ const createIssueLayoutType = (): ObjectType =>
     },
     path: [JIRA, adapterElements.TYPES_PATH, ISSUE_LAYOUT_TYPE],
   })
-
-const ISSUE_LAYOUT_NODE_SCHEME = Joi.object({
-  key: Joi.string().required(),
-}).unknown(true)
-
-const isIssueLayoutNode = createSchemeGuard<nodesIssueLayoutResponse>(ISSUE_LAYOUT_NODE_SCHEME, 'Failed to get issue layout node from jira service')
-
 
 const getIssueLayout = async ({
   projectId,
@@ -136,19 +118,8 @@ const fromResponseLayoutOwnersToLayoutOwners = (layoutOwners: LayoutOwners): own
   },
 }))
 
-const fromIssueLayoutConfigRespToIssueLayoutConfig = (
-  issueLayoutConfig: itemsIssueLayoutResponse, nodeData: Record<string, string[]>
-):
-IssueLayoutConfig => ({
-  items: issueLayoutConfig.nodes.filter(isIssueLayoutNode).filter(node => nodeData[node.key] !== undefined)
-    .map(node => ({
-      type: nodeData[node.key][0],
-      sectionType: nodeData[node.key][1],
-      key: node.key,
-    })),
-})
 
-const fromIssueLayoutConfigRespToIssueLayoutConfigTwo = (
+const fromIssueLayoutConfigRespToIssueLayoutConfig = (
   containers: containerIssueLayoutResponse[]
 ):
 IssueLayoutConfig => {
@@ -200,24 +171,10 @@ const filter: FilterCreator = ({ client }) => ({
           screenId,
           client,
         })
-        if (!Array.isArray(response.data) && isFullIssueLayoutResponse(response.data.data)) {
-          const { issueLayoutResult, metadata } = response.data.data.issueLayoutConfiguration
+        if (!Array.isArray(response.data) && isIssueLayoutResponse(response.data.data)) {
+          const { issueLayoutResult } = response.data.data.issueLayoutConfiguration
           const { containers } = issueLayoutResult
           const name = `${projectIdToProjectName[projectId]}_${issueLayoutResult.name}`
-          const issueLayoutItemToContainer = Object.fromEntries(issueLayoutResult.containers.flatMap(s => s.items.nodes
-            .map(n => {
-              if (n.fieldItemId) {
-                return [n.fieldItemId, [s.containerType, 'FILED']]
-              } if (n.panelItemId) {
-                return [n.panelItemId, [s.containerType, 'PANEL']]
-              }
-              return undefined
-            }).filter(isDefined)))
-          const check1 = fromIssueLayoutConfigRespToIssueLayoutConfig(metadata.configuration.items,
-            issueLayoutItemToContainer)
-          // eslint-disable-next-line no-console
-          console.log(check1)
-          const check = fromIssueLayoutConfigRespToIssueLayoutConfigTwo(containers)
           const issueLayout = new InstanceElement(
             naclCase(name),
             issueLayoutType,
@@ -225,7 +182,7 @@ const filter: FilterCreator = ({ client }) => ({
               projectId: Number(projectId),
               extraDefinerId: screenId,
               owners: fromResponseLayoutOwnersToLayoutOwners(issueLayoutResult.usageInfo.edges[0].node.layoutOwners),
-              issueLayoutConfig: check,
+              issueLayoutConfig: fromIssueLayoutConfigRespToIssueLayoutConfig(containers),
             },
             [JIRA, adapterElements.RECORDS_PATH, ISSUE_LAYOUT_TYPE, pathNaclCase(name)],
           )

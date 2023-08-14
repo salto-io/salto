@@ -48,7 +48,7 @@ import dataCategoryGroupValidator from './change_validators/data_category_group'
 import SalesforceClient from './client/client'
 import { ChangeValidatorName, DEPLOY_CONFIG, SalesforceConfig } from './types'
 
-const { createChangeValidator } = deployment.changeValidators
+const { createChangeValidator, getDefaultChangeValidators } = deployment.changeValidators
 
 type ChangeValidatorCreator = (config: SalesforceConfig,
                                isSandbox: boolean,
@@ -89,6 +89,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   unknownPicklistValues: () => unknownPicklistValues,
   installedPackages: () => installedPackages,
   dataCategoryGroup: () => dataCategoryGroupValidator,
+  ...getDefaultChangeValidators(),
 }
 
 const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client }: {

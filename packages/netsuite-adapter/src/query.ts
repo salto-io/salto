@@ -47,6 +47,17 @@ export type QueryParams = {
   customRecords?: FetchTypeQueryParams[]
 }
 
+export const fullQueryParams: QueryParams = {
+  types: [{ name: '.*' }],
+  fileCabinet: ['.*'],
+  customRecords: [{ name: '.*' }],
+}
+
+export const emptyQueryParams: QueryParams = {
+  types: [],
+  fileCabinet: [],
+}
+
 export type SystemConfig = {
   fetch: {
     lockedElementsToExclude?: QueryParams

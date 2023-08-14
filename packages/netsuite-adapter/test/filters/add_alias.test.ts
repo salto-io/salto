@@ -26,6 +26,7 @@ import { translationcollectionType } from '../../src/autogen/types/standard_type
 import { fileType } from '../../src/types/file_cabinet_types'
 import { getConfigurationTypes } from '../../src/types/configuration_types'
 import { bundleType } from '../../src/types/bundle_type'
+import { emptyQueryParams, fullQueryParams } from '../../src/query'
 
 describe('add alias filter', () => {
   const { type: workflow } = workflowType()
@@ -200,8 +201,8 @@ describe('add alias filter', () => {
       ...defaultOpts,
       config: {
         fetch: {
-          include: { types: [], fileCabinet: [] },
-          exclude: { types: [], fileCabinet: [] },
+          include: fullQueryParams,
+          exclude: emptyQueryParams,
           addAlias: true,
         },
       },

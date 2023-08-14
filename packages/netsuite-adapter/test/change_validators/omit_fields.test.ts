@@ -19,6 +19,7 @@ import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { NETSUITE } from '../../src/constants'
 import omitFieldsValidation from '../../src/change_validators/omit_fields'
+import { emptyQueryParams, fullQueryParams } from '../../src/query'
 
 describe('omit fields change validator test', () => {
   let type: ObjectType
@@ -81,7 +82,7 @@ describe('omit fields change validator test', () => {
       undefined,
       buildElementsSourceFromElements([instance, type, innerType]),
       {
-        fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+        fetch: { include: fullQueryParams, exclude: emptyQueryParams },
         deploy: { fieldsToOmit: [{ type: 'inventoryItem', fields: ['field.*'] }] },
       }
     )
@@ -101,7 +102,7 @@ describe('omit fields change validator test', () => {
       undefined,
       buildElementsSourceFromElements([instance, type, innerType]),
       {
-        fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+        fetch: { include: fullQueryParams, exclude: emptyQueryParams },
         deploy: { fieldsToOmit: [{ type: 'inventoryItem', subtype: 'inner.*', fields: ['.*2'] }] },
       }
     )

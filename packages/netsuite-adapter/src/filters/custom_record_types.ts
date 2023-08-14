@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { getChangeData, isAdditionChange, isObjectType, ObjectType } from '@salto-io/adapter-api'
-import { collections, values } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
 import { getCustomField } from './data_types_custom_fields'
 import { isCustomRecordType } from '../types'
@@ -85,8 +85,10 @@ const filterCreator: LocalFilterCreator = ({
       customRecordTypeObjects.concat(await getElementsSourceCustomRecordTypes(elementsSourceIndex, isPartial)),
       toCustomRecordTypeReference,
     )
-    const fetchQuery = [buildNetsuiteQuery(config.fetch.include), notQuery(buildNetsuiteQuery(config.fetch.exclude))]
-      .filter(values.isDefined).reduce(andQuery)
+    const fetchQuery = andQuery(
+      buildNetsuiteQuery(config.fetch.include),
+      notQuery(buildNetsuiteQuery(config.fetch.exclude))
+    )
 
     customRecordTypeObjects.forEach(type => {
       addFieldsToType(type, nameToType, customRecordTypesMap)

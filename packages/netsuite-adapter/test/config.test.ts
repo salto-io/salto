@@ -16,7 +16,7 @@
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
-import { NetsuiteQueryParameters } from '../src/query'
+import { NetsuiteQueryParameters, emptyQueryParams, fullQueryParams } from '../src/query'
 import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, fetchDefault, LARGE_FOLDERS_EXCLUDED_MESSAGE, instanceLimiterCreator, UNLIMITED_INSTANCES_VALUE, LARGE_TYPES_EXCLUDED_MESSAGE, validateClientConfig, DEFAULT_MAX_INSTANCES_VALUE, InstanceLimiterFunc, netsuiteConfigFromConfig } from '../src/config'
 
 describe('config', () => {
@@ -81,14 +81,14 @@ describe('config', () => {
         failedTypes: { lockedError: lockedTypes, unexpectedError: suggestedSkipListTypes, excludedTypes: [] },
         failedCustomRecords: [],
       },
-      { fetch: { include: { types: [{ name: '.*' }], fileCabinet: ['.*'] }, exclude: { types: [], fileCabinet: [] } } }
+      { fetch: { include: fullQueryParams, exclude: emptyQueryParams } }
     )?.config as InstanceElement[]
     expect(configFromConfigChanges[0].isEqual(new InstanceElement(
       ElemID.CONFIG_NAME,
       configType,
       {
         fetch: {
-          include: { types: [{ name: '.*' }], fileCabinet: ['.*'] },
+          include: fullQueryParams,
           exclude: {
             types: Object.entries(suggestedSkipListTypes).map(([name, ids]) => ({ name, ids })),
             fileCabinet: [newFailedFilePath],
@@ -174,7 +174,7 @@ describe('config', () => {
       typesToSkip: ['someType'],
       filePathRegexSkipList: ['someRegex'],
       fileCabinet: ['SomeRegex', _.escapeRegExp(newFailedFilePath), newLargeFolderExclusion],
-      fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+      fetch: { include: fullQueryParams, exclude: emptyQueryParams },
     }
 
     const configChange = getConfigFromConfigChanges(
@@ -194,23 +194,23 @@ describe('config', () => {
     const configWithoutFetch = new InstanceElement('empty', configType, {})
     const configWithoutInclude = new InstanceElement('noInclude', configType, {
       fetch: {
-        exclude: { types: [], fileCabinet: [] },
+        exclude: emptyQueryParams,
       },
     })
     const configWithInvalidInclude = new InstanceElement('invalidInclude', configType, {
       fetch: {
         include: {},
-        exclude: { types: [], fileCabinet: [] },
+        exclude: emptyQueryParams,
       },
     })
-    const configWithoutExclude = new InstanceElement('noInclude', configType, {
+    const configWithoutExclude = new InstanceElement('noExclude', configType, {
       fetch: {
-        include: { types: [], fileCabinet: [] },
+        include: emptyQueryParams,
       },
     })
-    const configWithInvalidExclude = new InstanceElement('invalidInclude', configType, {
+    const configWithInvalidExclude = new InstanceElement('invalidExclude', configType, {
       fetch: {
-        include: { types: [], fileCabinet: [] },
+        include: emptyQueryParams,
         exclude: {},
       },
     })

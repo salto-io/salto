@@ -20,6 +20,7 @@ import { getDefaultAdapterConfig } from '../utils'
 import { NETSUITE, WORKFLOW } from '../../src/constants'
 import filterCreator from '../../src/filters/omit_sdf_untyped_values'
 import { LocalFilterOpts } from '../../src/filter'
+import { emptyQueryParams, fullQueryParams } from '../../src/query'
 
 describe('omit sdf untyped values filter', () => {
   let instance: InstanceElement
@@ -51,8 +52,8 @@ describe('omit sdf untyped values filter', () => {
     await filterCreator({
       ...defaultOpts,
       config: { fetch: {
-        include: { types: [{ name: '.*' }], fileCabinet: ['.*'] },
-        exclude: { types: [], fileCabinet: [] },
+        include: fullQueryParams,
+        exclude: emptyQueryParams,
         strictInstanceStructure: true,
       } },
     }).onFetch?.([instance])
@@ -62,8 +63,8 @@ describe('omit sdf untyped values filter', () => {
     await filterCreator({
       ...defaultOpts,
       config: { fetch: {
-        include: { types: [{ name: '.*' }], fileCabinet: ['.*'] },
-        exclude: { types: [], fileCabinet: [] },
+        include: fullQueryParams,
+        exclude: emptyQueryParams,
         strictInstanceStructure: false,
       } },
     }).onFetch?.([instance])

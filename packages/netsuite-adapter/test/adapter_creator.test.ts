@@ -27,6 +27,7 @@ import { mockGetElemIdFunc } from './utils'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
 import { EnvType } from '../src/client/suiteapp_client/types'
 import { SdfCredentials } from '../src/client/credentials'
+import { emptyQueryParams, fullQueryParams } from '../src/query'
 
 jest.mock('../src/client/sdf_client')
 jest.mock('../src/client/suiteapp_client/suiteapp_client')
@@ -67,7 +68,7 @@ describe('NetsuiteAdapter creator', () => {
     ElemID.CONFIG_NAME,
     adapter.configType as ObjectType,
     {
-      fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+      fetch: { include: fullQueryParams, exclude: emptyQueryParams },
       skipList: {},
       typesToSkip: ['test1'],
       filePathRegexSkipList: ['^/Templates.*'],
@@ -330,7 +331,7 @@ describe('NetsuiteAdapter creator', () => {
       expect(NetsuiteAdapter).toHaveBeenCalledWith({
         client: expect.any(Object),
         config: {
-          fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+          fetch: { include: fullQueryParams, exclude: emptyQueryParams },
           skipList: {},
           typesToSkip: ['test1'],
           filePathRegexSkipList: ['^/Templates.*'],
@@ -347,7 +348,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         {
-          fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+          fetch: { include: fullQueryParams, exclude: emptyQueryParams },
           client: {
             fetchAllTypesAtOnce: true,
           },
@@ -366,7 +367,7 @@ describe('NetsuiteAdapter creator', () => {
         expect(NetsuiteAdapter).toHaveBeenCalledWith({
           client: expect.any(Object),
           config: {
-            fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+            fetch: { include: fullQueryParams, exclude: emptyQueryParams },
             client: {
               fetchAllTypesAtOnce: false,
             },
@@ -385,7 +386,7 @@ describe('NetsuiteAdapter creator', () => {
         })
         expect(NetsuiteAdapter).toHaveBeenCalledWith({
           client: expect.any(Object),
-          config: { fetch: { include: { types: [{ name: '.*' }], fileCabinet: ['.*'] }, exclude: { types: [], fileCabinet: [] } } },
+          config: { fetch: { include: fullQueryParams, exclude: emptyQueryParams } },
           elementsSource,
           getElemIdFunc: mockGetElemIdFunc,
         })
@@ -396,7 +397,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         {
-          fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+          fetch: { include: fullQueryParams, exclude: emptyQueryParams },
           filePathRegexSkipList: ['\\'],
         }
         )
@@ -418,7 +419,7 @@ describe('NetsuiteAdapter creator', () => {
               ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+              fetch: { include: fullQueryParams, exclude: emptyQueryParams },
               fetchTarget: {
                 types: ['type1', 'type2'],
               },
@@ -435,7 +436,7 @@ describe('NetsuiteAdapter creator', () => {
               ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+              fetch: { include: fullQueryParams, exclude: emptyQueryParams },
               fetchTarget: {
                 customRecords: ['customrecord1', 'customrecord2'],
               },
@@ -452,7 +453,7 @@ describe('NetsuiteAdapter creator', () => {
               ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+              fetch: { include: fullQueryParams, exclude: emptyQueryParams },
               fetchTarget: {
                 types: {
                   type1: 'id',
@@ -471,7 +472,7 @@ describe('NetsuiteAdapter creator', () => {
               ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+              fetch: { include: fullQueryParams, exclude: emptyQueryParams },
               fetchTarget: {
                 customRecords: {
                   customrecord1: 'id',
@@ -494,7 +495,7 @@ describe('NetsuiteAdapter creator', () => {
             include: {
               types: 'supposed to be an array',
             },
-            exclude: { types: [], fileCabinet: [] },
+            exclude: emptyQueryParams,
           },
         }
         )
@@ -514,7 +515,7 @@ describe('NetsuiteAdapter creator', () => {
         adapter.configType as ObjectType,
         {
           fetch: {
-            include: { types: [], fileCabinet: [] },
+            include: fullQueryParams,
             exclude: {
               types: [
                 { name: ['should be a string'] },
@@ -539,8 +540,8 @@ describe('NetsuiteAdapter creator', () => {
         adapter.configType as ObjectType,
         {
           fetch: {
-            include: { types: [], fileCabinet: [] },
-            exclude: { types: [], fileCabinet: [] },
+            include: fullQueryParams,
+            exclude: emptyQueryParams,
             fieldsToOmit: [{
               type: 'a',
             }],
@@ -564,7 +565,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+            fetch: { include: fullQueryParams, exclude: emptyQueryParams },
             deploy: {
               deployReferencedElements: 'should be a boolean',
             },
@@ -585,7 +586,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+            fetch: { include: fullQueryParams, exclude: emptyQueryParams },
             deploy: {
               warnOnStaleWorkspaceData: 'should be a boolean',
             },
@@ -605,7 +606,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+            fetch: { include: fullQueryParams, exclude: emptyQueryParams },
             deploy: {
               validate: 'should be a boolean',
             },
@@ -626,7 +627,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+              fetch: { include: fullQueryParams, exclude: emptyQueryParams },
               deploy: {
                 additionalDependencies: {
                   include: {
@@ -657,7 +658,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+              fetch: { include: fullQueryParams, exclude: emptyQueryParams },
               deploy: {
                 additionalDependencies: 'should be an object',
               },
@@ -677,7 +678,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+              fetch: { include: fullQueryParams, exclude: emptyQueryParams },
               deploy: {
                 additionalDependencies: {
                   include: { features: ['should be list of strings', 1] },
@@ -699,7 +700,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+              fetch: { include: fullQueryParams, exclude: emptyQueryParams },
               deploy: {
                 additionalDependencies: {
                   include: { files: ['should be list of strings', 1] },
@@ -721,7 +722,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+              fetch: { include: fullQueryParams, exclude: emptyQueryParams },
               deploy: {
                 additionalDependencies: {
                   exclude: { objects: ['should be list of strings', 1] },
@@ -743,7 +744,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+              fetch: { include: fullQueryParams, exclude: emptyQueryParams },
               deploy: {
                 additionalDependencies: {
                   include: { features: ['feature'] },
@@ -766,7 +767,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+              fetch: { include: fullQueryParams, exclude: emptyQueryParams },
               deploy: {
                 additionalDependencies: {
                   include: { features: ['feature:required'] },
@@ -789,7 +790,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+              fetch: { include: fullQueryParams, exclude: emptyQueryParams },
               deploy: {
                 additionalDependencies: {
                   include: { objects: ['script_id'] },
@@ -813,7 +814,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+              fetch: { include: fullQueryParams, exclude: emptyQueryParams },
               deploy: {
                 additionalDependencies: {
                   include: { files: ['/Folder/filePath'] },
@@ -840,7 +841,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+            fetch: { include: fullQueryParams, exclude: emptyQueryParams },
             client: {
               installedSuiteApps: 2,
             },
@@ -861,7 +862,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+            fetch: { include: fullQueryParams, exclude: emptyQueryParams },
             client: {
               installedSuiteApps: ['a.b.c', 2],
             },
@@ -882,7 +883,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+            fetch: { include: fullQueryParams, exclude: emptyQueryParams },
             client: {
               installedSuiteApps: ['a', 'a.b.c'],
             },
@@ -903,7 +904,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+            fetch: { include: fullQueryParams, exclude: emptyQueryParams },
             client: {
               installedSuiteApps: ['a.b.c', 'b.c.d'],
             },

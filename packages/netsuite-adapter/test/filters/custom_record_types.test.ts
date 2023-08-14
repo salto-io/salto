@@ -18,13 +18,14 @@ import { LocalFilterOpts } from '../../src/filter'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import filterCreator from '../../src/filters/custom_record_types'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
+import { emptyQueryParams } from '../../src/query'
 
 describe('custom record types filter', () => {
   let customRecordType: ObjectType
   let customRecordFieldRefType: ObjectType
 
   const filterOpts = {
-    config: { fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } } },
+    config: { fetch: { include: { types: [{ name: '.*' }], fileCabinet: ['.*'] }, exclude: emptyQueryParams } },
     isPartial: false,
     elementsSourceIndex: {
       getIndexes: () => {

@@ -45,6 +45,7 @@ import { createCustomRecordTypes } from '../src/custom_records/custom_record_typ
 import { Graph, GraphNode } from '../src/client/graph_utils'
 import { getDataElements } from '../src/data_elements/data_elements'
 import * as elementsSourceIndexModule from '../src/elements_source_index/elements_source_index'
+import { emptyQueryParams, fullQueryParams } from '../src/query'
 
 const DEFAULT_SDF_DEPLOY_PARAMS = {
   manifestDependencies: {
@@ -97,7 +98,7 @@ describe('Adapter', () => {
   const client = createClient()
   const config = {
     fetch: {
-      include: { types: [{ name: '.*' }], fileCabinet: ['.*'] },
+      include: fullQueryParams,
       exclude: {
         types: [
           { name: 'account', ids: ['aaa'] },
@@ -316,7 +317,7 @@ describe('Adapter', () => {
       const withChangesDetection = true
       const conf = {
         fetch: {
-          include: { types: [], fileCabinet: [] },
+          include: fullQueryParams,
           exclude: {
             types: [
               { name: SAVED_SEARCH },
@@ -345,7 +346,7 @@ describe('Adapter', () => {
     describe('fetchTarget', () => {
       const conf = {
         fetch: {
-          include: { types: [{ name: '.*' }], fileCabinet: ['.*'] },
+          include: fullQueryParams,
           exclude: {
             types: [
               { name: SAVED_SEARCH },
@@ -921,7 +922,7 @@ describe('Adapter', () => {
               },
             },
           },
-          fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+          fetch: { include: fullQueryParams, exclude: emptyQueryParams },
         }
         const netsuiteAdapterWithAdditionalSdfDependencies = new NetsuiteAdapter({
           client: new NetsuiteClient(client),
@@ -991,7 +992,7 @@ describe('Adapter', () => {
           fetchAllTypesAtOnce: true,
           deploy: {
           },
-          fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+          fetch: { include: fullQueryParams, exclude: emptyQueryParams },
         }
         const elementsSource = buildElementsSourceFromElements([])
         const adapter = new NetsuiteAdapter({
@@ -1025,7 +1026,7 @@ describe('Adapter', () => {
           deploy: {
             warnOnStaleWorkspaceData: false,
           },
-          fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+          fetch: { include: fullQueryParams, exclude: emptyQueryParams },
         }
         const elementsSource = buildElementsSourceFromElements([])
         const adapter = new NetsuiteAdapter({
@@ -1059,7 +1060,7 @@ describe('Adapter', () => {
           deploy: {
             warnOnStaleWorkspaceData: true,
           },
-          fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+          fetch: { include: fullQueryParams, exclude: emptyQueryParams },
         }
         const elementsSource = buildElementsSourceFromElements([])
         const adapter = new NetsuiteAdapter({
@@ -1095,7 +1096,7 @@ describe('Adapter', () => {
           client: { deploy: mockClientDeploy } as unknown as NetsuiteClient,
           elementsSource: buildElementsSourceFromElements([]),
           filtersCreators: [],
-          config: { fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } } },
+          config: { fetch: { include: fullQueryParams, exclude: emptyQueryParams } },
         })
       })
       it('should return correct deploy errors', async () => {

@@ -13,8 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import gql from 'graphql-tag'
 
-export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerId: Long!, $fieldPropertyKeys: [String!]!, $availableItemsPageSize: Int!, $requestOwnerPropertyKeys: [String!] = []) {
+export const QUERY = gql`query SwiftJswCmpInitial($projectId: Long!, $extraDefinerId: Long!, $fieldPropertyKeys: [String!]!, $requestOwnerPropertyKeys: [String!] = []) {
     ...CMPJSWLayoutConfigurationFragment
   }
   
@@ -77,14 +78,10 @@ export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerI
     }
   }
   
-  
-  
   fragment PanelItemFragment on JiraIssueLayoutPanelItemConfiguration {
     panelItemId
     name
   }
-  
-  
   
   fragment FieldItemBaseFragment on JiraIssueLayoutFieldItemConfiguration {
     fieldItemId
@@ -96,23 +93,7 @@ export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerI
     fragment FieldItemFragment on JiraIssueLayoutFieldItemConfiguration {
       ...FieldItemBaseFragment
       properties(keys: $fieldPropertyKeys)
-    }
-  
-  fragment CustomAvailableLayoutItemsGroup on JiraIssueLayoutFieldItemConfigurationResult {
-    items {
-        totalCount
-        pageInfo {
-          hasNextPage
-          endCursor
-        }
-        edges {
-            node {
-                ...FieldItemFragment
-            }
-        }
-    }
-  }
-  
+    } 
   
   fragment JiraIssueLayoutItemConfigurationFragment on JiraIssueLayoutItemConfigurationResult {
     items {
@@ -139,17 +120,6 @@ export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerI
         metadata {
           configuration {
               ...JiraIssueLayoutItemConfigurationFragment
-          }
-          availableItems {
-            restrictedFields(first: $availableItemsPageSize) {
-              ...CustomAvailableLayoutItemsGroup
-            }
-            suggestedFields(first: $availableItemsPageSize) {
-              ...CustomAvailableLayoutItemsGroup
-            }
-            textFields(first: $availableItemsPageSize) {
-              ...CustomAvailableLayoutItemsGroup
-            }
           }
         }
       }

@@ -16,9 +16,9 @@
 import { CORE_ANNOTATIONS, Element, InstanceElement, ReferenceExpression, isInstanceElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { createSchemeGuard, isResolvedReferenceExpression, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
-import { client as clientUtils, elements as adapterElements, references as referenceUtils } from '@salto-io/adapter-components'
+import { elements as adapterElements, references as referenceUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import JiraClient from '../../client/client'
+import JiraClient, { graphQLResponseType } from '../../client/client'
 import { JIRA, PROJECT_TYPE } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { QUERY } from './issue_layout_query'
@@ -45,13 +45,12 @@ const getIssueLayout = async ({
     screenId: number
     client: JiraClient
   }):
-  Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> => {
+  Promise<graphQLResponseType> => {
   const baseUrl = '/rest/gira/1'
   const variables = {
     projectId,
     extraDefinerId: screenId,
     fieldPropertyKeys: [],
-    availableItemsPageSize: 30,
   }
   const response = await client.gqlPost({
     url: baseUrl,
@@ -73,13 +72,15 @@ IssueLayoutConfig => {
   })))
   return { items }
 }
-const createReferences = async (config: JiraConfig, elements: Element[]): Promise<void> => {
+const createReferences = async (
+  config: JiraConfig, elements: Element[], contextElements: Element[]): Promise<void> => {
   const fixedDefs = referencesRules
     .map(def => (
       config.fetch.enableMissingReferences ? def : _.omit(def, 'jiraMissingRefStrategy')
     ))
   await referenceUtils.addReferences({
     elements,
+    contextElements,
     fieldsToGroupBy: ['id', 'name', 'originalName', 'groupId', 'key'],
     defs: fixedDefs,
     contextStrategyLookup,
@@ -93,9 +94,9 @@ const getProjectToScreenMapping = async (elements: Element[]): Promise<Record<st
       .filter(isInstanceElement)
       .filter(project => isResolvedReferenceExpression(project.value.issueTypeScreenScheme))
       .map(async project => {
-        const screenSchemes = (await Promise.all(((project.value.issueTypeScreenScheme.value)
+        const screenSchemes = (project.value.issueTypeScreenScheme.value
           .value.issueTypeMappings
-          .flatMap((struct: issueTypeMappingStruct) => struct.screenSchemeId.getResolvedValue()))))
+          .flatMap((struct: issueTypeMappingStruct) => struct.screenSchemeId.value) as unknown[])
           .filter(isInstanceElement)
 
         const screens = screenSchemes.map(screenScheme => screenScheme.value.screens.default.value.value.id)
@@ -129,8 +130,8 @@ const filter: FilterCreator = ({ client, config }) => ({
           screenId,
           client,
         })
-        if (!Array.isArray(response.data) && isIssueLayoutResponse(response.data.data)) {
-          const { issueLayoutResult } = response.data.data.issueLayoutConfiguration
+        if (!Array.isArray(response.data) && isIssueLayoutResponse(response.data)) {
+          const { issueLayoutResult } = response.data.issueLayoutConfiguration
           const { containers } = issueLayoutResult
           const name = `${projectIdToProjectName[projectId]}_${issueLayoutResult.name}`
           const issueLayout = new InstanceElement(
@@ -145,7 +146,7 @@ const filter: FilterCreator = ({ client, config }) => ({
             [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'Layouts', pathNaclCase(name)],
           )
           elements.push(issueLayout)
-          await createReferences(config, elements)
+          await createReferences(config, [issueLayout], elements)
           setTypeDeploymentAnnotations(issueLayoutType)
           await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.CREATABLE)
           await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.UPDATABLE)

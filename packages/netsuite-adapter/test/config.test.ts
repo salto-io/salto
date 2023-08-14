@@ -203,15 +203,32 @@ describe('config', () => {
         exclude: { types: [], fileCabinet: [] },
       },
     })
-    it('Should throw an error if the fetch is undefined', () => {
-      expect(() => netsuiteConfigFromConfig(configWithoutFetch)).toThrow('Failed to load Netsuite config: fetch should be defined')
+    const configWithoutExclude = new InstanceElement('noInclude', configType, {
+      fetch: {
+        include: { types: [], fileCabinet: [] },
+      },
     })
-    it('Should throw an error if the include is undefined', () => {
-      expect(() => netsuiteConfigFromConfig(configWithoutInclude)).toThrow('Failed to load Netsuite config: fetch.include should be defined')
+    const configWithInvalidExclude = new InstanceElement('invalidInclude', configType, {
+      fetch: {
+        include: { types: [], fileCabinet: [] },
+        exclude: {},
+      },
     })
-    it('Should throw an error if the include is non-valid', () => {
-      expect(() => netsuiteConfigFromConfig(configWithInvalidInclude)).toThrow('Failed to load Netsuite config: Received invalid adapter config input. "types" field is expected to be an array\n "fileCabinet" field is expected to be an array\n')
-    })
+
+    it('Should throw an error if the fetch is undefined', () =>
+      expect(() => netsuiteConfigFromConfig(configWithoutFetch)).toThrow('Failed to load Netsuite config: fetch should be defined'))
+
+    it('Should throw an error if the include is undefined', () =>
+      expect(() => netsuiteConfigFromConfig(configWithoutInclude)).toThrow('Failed to load Netsuite config: fetch.include should be defined'))
+
+    it('Should throw an error if the include is non-valid', () =>
+      expect(() => netsuiteConfigFromConfig(configWithInvalidInclude)).toThrow('Failed to load Netsuite config: Received invalid adapter config input. "types" field is expected to be an array\n "fileCabinet" field is expected to be an array\n'))
+
+    it('Should throw an error if the exclude is undefined', () =>
+      expect(() => netsuiteConfigFromConfig(configWithoutExclude)).toThrow('Failed to load Netsuite config: fetch.exclude should be defined'))
+
+    it('Should throw an error if the exclude is non-valid', () =>
+      expect(() => netsuiteConfigFromConfig(configWithInvalidExclude)).toThrow('Failed to load Netsuite config: Received invalid adapter config input. "types" field is expected to be an array\n "fileCabinet" field is expected to be an array\n'))
   })
 
   describe('should have a correct default fetch config', () => {

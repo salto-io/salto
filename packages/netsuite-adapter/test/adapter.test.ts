@@ -211,9 +211,6 @@ describe('Adapter', () => {
       expect(partialFetchData?.isPartial).toBeFalsy()
       const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
       const typesToSkip = [SAVED_SEARCH, TRANSACTION_FORM, INTEGRATION, REPORT_DEFINITION, FINANCIAL_LAYOUT]
-      // const var1 = _.pull(getStandardTypesNames(), ...typesToSkip)
-      // const var2 = var1.every(customObjectsQuery.isTypeMatch)
-      // const var3 = var1.map(val => customObjectsQuery.isTypeMatch(val))
       expect(_.pull(getStandardTypesNames(), ...typesToSkip)
         .every(customObjectsQuery.isTypeMatch)).toBeTruthy()
       expect(typesToSkip.every(customObjectsQuery.isTypeMatch)).toBeFalsy()

@@ -51,7 +51,7 @@ describe('omit sdf untyped values filter', () => {
     await filterCreator({
       ...defaultOpts,
       config: { fetch: {
-        include: { types: [], fileCabinet: [] },
+        include: { types: [{ name: '.*' }], fileCabinet: ['.*'] },
         exclude: { types: [], fileCabinet: [] },
         strictInstanceStructure: true,
       } },
@@ -62,7 +62,7 @@ describe('omit sdf untyped values filter', () => {
     await filterCreator({
       ...defaultOpts,
       config: { fetch: {
-        include: { types: [], fileCabinet: [] },
+        include: { types: [{ name: '.*' }], fileCabinet: ['.*'] },
         exclude: { types: [], fileCabinet: [] },
         strictInstanceStructure: false,
       } },

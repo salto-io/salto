@@ -102,7 +102,7 @@ describe('omit fields filter', () => {
         ...defaultOpts,
         config: {
           fetch: {
-            include: { types: [], fileCabinet: [] },
+            include: { types: [{ name: '.*' }], fileCabinet: ['.*'] },
             exclude: { types: [], fileCabinet: [] },
             fieldsToOmit: [{ type: 'notSome.*', fields: ['.*'] }],
           },
@@ -118,7 +118,7 @@ describe('omit fields filter', () => {
         ...defaultOpts,
         config: {
           fetch: {
-            include: { types: [], fileCabinet: [] },
+            include: { types: [{ name: '.*' }], fileCabinet: ['.*'] },
             exclude: { types: [], fileCabinet: [] },
             fieldsToOmit: [{ type: 'some.*', fields: ['.*2'] }],
           },
@@ -131,7 +131,7 @@ describe('omit fields filter', () => {
         ...defaultOpts,
         config: {
           fetch: {
-            include: { types: [], fileCabinet: [] },
+            include: { types: [{ name: '.*' }], fileCabinet: ['.*'] },
             exclude: { types: [], fileCabinet: [] },
             fieldsToOmit: [{ type: 'some.*', subtype: 'inner.*', fields: ['.*2'] }],
           },
@@ -147,7 +147,7 @@ describe('omit fields filter', () => {
         ...defaultOpts,
         config: {
           fetch: {
-            include: { types: [], fileCabinet: [] },
+            include: { types: [{ name: '.*' }], fileCabinet: ['.*'] },
             exclude: { types: [], fileCabinet: [] },
             fieldsToOmit: [
               { type: 'customrecordtype', fields: ['links'] },
@@ -217,7 +217,7 @@ describe('omit fields filter', () => {
         ...defaultOpts,
         elementsSource: buildElementsSourceFromElements([instance, type, innerType]),
         config: {
-          fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+          fetch: { include: { types: [{ name: '.*' }], fileCabinet: ['.*'] }, exclude: { types: [], fileCabinet: [] } },
           deploy: { fieldsToOmit: [{ type: 'some.*', subtype: 'inner.*', fields: ['.*2'] }] },
         },
       }).preDeploy?.([toChange({ after: instance })])
@@ -242,7 +242,7 @@ describe('omit fields filter', () => {
               { type: 'customrecordcustomfield', fields: ['is.*'] },
             ],
           },
-          fetch: { include: { types: [], fileCabinet: [] }, exclude: { types: [], fileCabinet: [] } },
+          fetch: { include: { types: [{ name: '.*' }], fileCabinet: ['.*'] }, exclude: { types: [], fileCabinet: [] } },
         },
       }).preDeploy?.([toChange({ after: customRecordObjectType })])
       expect(customRecordObjectType.annotations).toEqual({

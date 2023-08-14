@@ -83,9 +83,9 @@ const getNestedScriptIDField = async (
   _.values(await elementsSource.get(elemID.createNestedID(...nestPath)))
     .map(val => val[SCRIPT_ID])
 
-const getWorkflowFields = (elem: Value): string[] => {
-  const customFieldsScriptid = _.values(_.get(elem.value, WORKFLOW_CUSTOM_FIELDS_PATH)).map(val => val[SCRIPT_ID])
-  const stateFieldsScriptid = _.values(_.get(elem.value, WORKFLOW_STATES_PATH))
+const getWorkflowFields = (elem: ChangeDataType): string[] => {
+  const customFieldsScriptid = getChangeNestedScriptIDField(elem, WORKFLOW_CUSTOM_FIELDS_PATH)
+  const stateFieldsScriptid = _.values(getChangeNestedField(elem, WORKFLOW_STATES_PATH))
     .flatMap(state => _.values(_.get(state, WORKFLOW_STATES_CUSTOM_FIELDS_PATH)))
     .map(val => val[SCRIPT_ID])
   return customFieldsScriptid.concat(stateFieldsScriptid)

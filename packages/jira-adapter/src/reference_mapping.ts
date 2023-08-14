@@ -887,6 +887,18 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: 'Screen' },
   },
+  {
+    src: { field: 'owners', parentTypes: [ISSUE_LAYOUT_TYPE] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: ISSUE_TYPE_NAME },
+  },
+  {
+    src: { field: 'key', parentTypes: ['issueLayoutItem'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: FIELD_TYPE_NAME },
+  },
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [

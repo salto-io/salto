@@ -36,8 +36,8 @@ export const onwerIssueLayoutType = new ObjectType({
   },
 })
 
-export const issueLayoutItemsType = new ObjectType({
-  elemID: new ElemID(JIRA, 'issueLayoutItems'),
+export const issueLayoutItemType = new ObjectType({
+  elemID: new ElemID(JIRA, 'issueLayoutItem'),
   fields: {
     type: { refType: BuiltinTypes.STRING },
     sectionType: { refType: BuiltinTypes.STRING },
@@ -48,16 +48,24 @@ export const issueLayoutItemsType = new ObjectType({
 export const issueLayoutConfigType = new ObjectType({
   elemID: new ElemID(JIRA, 'issueLayoutConfig'),
   fields: {
-    items: { refType: new ListType(issueLayoutItemsType) },
+    items: { refType: new ListType(issueLayoutItemType) },
   },
 })
 
 export const ISSUE_LAYOUT_SUB_TYPES = [
   dataOwnerIssueLayoutType,
   onwerIssueLayoutType,
-  issueLayoutItemsType,
+  issueLayoutItemType,
   issueLayoutConfigType,
 ]
+
+export type LayoutOwners = {
+  avatarId: string
+  description: string
+  iconUrl: string
+  id: string
+  name: string
+}[]
 
 export type containerIssueLayoutResponse = {
   containerType: string
@@ -77,13 +85,7 @@ export type IssueLayoutResponse = {
           usageInfo: {
               edges: {
                   node: {
-                      layoutOwners: {
-                          avatarId: string
-                          description: string
-                          iconUrl: string
-                          id: string
-                          name: string
-                      }[]
+                      layoutOwners: LayoutOwners
                   }
               }[]
           }
@@ -101,21 +103,3 @@ export type IssueLayoutConfigItem = {
 export type IssueLayoutConfig = {
     items: IssueLayoutConfigItem[]
 }
-
-export type LayoutOwners = {
-    avatarId: string
-    description: string
-    iconUrl: string
-    id: string
-    name: string
-}[]
-
-export type owners = {
-  data: {
-      id: string
-      name: string
-      description: string
-      avatarId: string
-      iconUrl: string
-  }
-}[]

@@ -35,6 +35,11 @@ describe('issue layout filter', () => {
   let issueTypeScreenSchemeInstance: InstanceElement
   let projectType: ObjectType
   let projectInstance: InstanceElement
+  let issueTypeType: ObjectType
+  let issueTypeInstance: InstanceElement
+  let fieldType: ObjectType
+  let fieldInstance1: InstanceElement
+  let fieldInstance2: InstanceElement
 
   beforeEach(async () => {
     const mockCli = mockClient()
@@ -115,6 +120,33 @@ describe('issue layout filter', () => {
           new ReferenceExpression(issueTypeScreenSchemeInstance.elemID, issueTypeScreenSchemeInstance),
         }
       )
+      issueTypeType = new ObjectType({ elemID: new ElemID(JIRA, 'IssueType') })
+      issueTypeInstance = new InstanceElement(
+        'issueType1',
+        issueTypeType,
+        {
+          id: '100',
+          name: 'OwnerTest',
+        }
+      )
+      fieldType = new ObjectType({ elemID: new ElemID(JIRA, 'Field') })
+      fieldInstance1 = new InstanceElement(
+        'testField1',
+        fieldType,
+        {
+          id: 'testField1',
+          name: 'TestField1',
+        }
+      )
+      fieldInstance2 = new InstanceElement(
+        'testField2',
+        fieldType,
+        {
+          id: 'testField2',
+          name: 'TestField2',
+        }
+      )
+
       mockGet = jest.spyOn(client, 'gqlPost')
       mockGet.mockImplementation(params => {
         if (params.url === '/rest/gira/1') {
@@ -133,7 +165,7 @@ describe('issue layout filter', () => {
                             avatarId: '3',
                             description: 'ownerTest',
                             iconUrl: 'www.icon.com',
-                            id: '4',
+                            id: '100',
                             name: 'ownerTest',
                           }],
                         },
@@ -147,9 +179,6 @@ describe('issue layout filter', () => {
                             {
                               fieldItemId: 'testField1',
                             },
-                            {
-                              panelItemId: 'testPanel1',
-                            },
                           ],
                         },
                       },
@@ -158,7 +187,7 @@ describe('issue layout filter', () => {
                         items: {
                           nodes: [
                             {
-                              fieldItemId: 'testField3',
+                              fieldItemId: 'testField2',
                             },
                           ],
                         },
@@ -182,22 +211,30 @@ describe('issue layout filter', () => {
         issueTypeScreenSchemeInstance,
         projectType,
         projectInstance,
+        issueTypeType,
+        issueTypeInstance,
+        fieldType,
+        fieldInstance1,
+        fieldInstance2,
       ]
     })
     it('should add all subTypes to the elements', async () => {
       await filter.onFetch(elements)
       expect(elements.filter(isObjectType).map(e => e.elemID.getFullName()).sort())
         .toEqual([
+          'jira.Field',
           'jira.IssueLayout',
           'jira.IssueLayoutDataOwner',
           'jira.IssueLayoutOwner',
+          'jira.IssueType',
           'jira.IssueTypeScreenScheme',
           'jira.IssueTypeScreenSchemeItem',
           'jira.Project',
           'jira.Screen',
           'jira.ScreenScheme',
           'jira.issueLayoutConfig',
-          'jira.issueLayoutItems',
+          'jira.issueLayoutItem',
+
         ])
     })
     it('should add issue layout to the elements', async () => {
@@ -206,35 +243,22 @@ describe('issue layout filter', () => {
       const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
       expect(issueLayoutInstance).toBeDefined()
       expect(issueLayoutInstance?.value).toEqual({
-        projectId: 11111,
-        extraDefinerId: 11,
+        projectId: new ReferenceExpression(projectInstance.elemID, projectInstance),
+        extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
         owners: [
-          {
-            data: {
-              avatarId: '3',
-              description: 'ownerTest',
-              iconUrl: 'www.icon.com',
-              id: '4',
-              name: 'ownerTest',
-            },
-          },
+          new ReferenceExpression(issueTypeInstance.elemID, issueTypeInstance),
         ],
         issueLayoutConfig: {
           items: [
             {
-              type: 'PRIMARY',
-              sectionType: 'FIELD',
-              key: 'testField1',
+              type: 'FIELD',
+              sectionType: 'PRIMARY',
+              key: new ReferenceExpression(fieldInstance1.elemID, fieldInstance1),
             },
             {
-              type: 'PRIMARY',
-              sectionType: 'PANEL',
-              key: 'testPanel1',
-            },
-            {
-              type: 'Secondery',
-              sectionType: 'FIELD',
-              key: 'testField3',
+              type: 'FIELD',
+              sectionType: 'Secondery',
+              key: new ReferenceExpression(fieldInstance2.elemID, fieldInstance2),
             },
           ],
         },
@@ -257,6 +281,74 @@ describe('issue layout filter', () => {
       const instances = elements.filter(isInstanceElement)
       const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
       expect(issueLayoutInstance).toBeUndefined()
+    })
+    it('should add key as missing ref if there is no field', async () => {
+      fieldInstance1.value.id = 'testField3'
+      await filter.onFetch(elements)
+      const instances = elements.filter(isInstanceElement)
+      const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
+      expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].key).toBeInstanceOf(ReferenceExpression)
+      expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].key.elemID.getFullName()).toEqual('jira.Field.instance.missing_testField1')
+    })
+    it('should add field of type PANEL as missing ref if there is no field', async () => {
+      mockGet.mockImplementation(params => {
+        if (params.url === '/rest/gira/1') {
+          return {
+            status: 200,
+            data: {
+              data: {
+                issueLayoutConfiguration: {
+                  issueLayoutResult: {
+                    id: '2',
+                    name: 'Default Issue Layout',
+                    usageInfo: {
+                      edges: [{
+                        node: {
+                          layoutOwners: [{
+                            avatarId: '3',
+                            description: 'ownerTest',
+                            iconUrl: 'www.icon.com',
+                            id: '100',
+                            name: 'ownerTest',
+                          }],
+                        },
+                      }],
+                    },
+                    containers: [
+                      {
+                        containerType: 'PRIMARY',
+                        items: {
+                          nodes: [
+                            {
+                              panelItemId: 'testPanel1',
+                            },
+                          ],
+                        },
+                      },
+                      {
+                        containerType: 'Secondery',
+                        items: {
+                          nodes: [
+                            {
+                              fieldItemId: 'testField2',
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+          }
+        }
+        throw new Error('Err')
+      })
+      await filter.onFetch(elements)
+      const instances = elements.filter(isInstanceElement)
+      const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
+      expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].type).toEqual('PANEL')
+      expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].sectionType).toEqual('PRIMARY')
     })
   })
 })

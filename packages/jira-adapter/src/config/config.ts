@@ -151,6 +151,7 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     hideTypes: true,
     enableMissingReferences: true,
     removeDuplicateProjectRoles: true,
+    addAlias: true,
 
   },
   deploy: {
@@ -347,6 +348,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
       'masking',
       'fetch.hideTypes',
       'fetch.enableMissingReferences',
+      'fetch.addAlias',
       SCRIPT_RUNNER_API_DEFINITIONS]),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },

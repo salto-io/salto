@@ -38,7 +38,7 @@ import boardColumnsFilter from './filters/board/board_columns'
 import boardSubQueryFilter from './filters/board/board_subquery'
 import boardEstimationFilter from './filters/board/board_estimation'
 import boardDeploymentFilter from './filters/board/board_deployment'
-import automationBrokenReferenceFilter from './filters/automation/automation_project_broken_reference'
+import brokenReferences from './filters/broken_reference_filter'
 import automationDeploymentFilter from './filters/automation/automation_deployment'
 import smartValueReferenceFilter from './filters/automation/smart_values/smart_value_reference_filter'
 import webhookFilter from './filters/webhook/webhook'
@@ -156,7 +156,7 @@ export const DEFAULT_FILTERS = [
   automationFetchFilter,
   automationStructureFilter,
   // Should run before automationDeploymentFilter
-  automationBrokenReferenceFilter,
+  brokenReferences,
   automationDeploymentFilter,
   webhookFilter,
   // Should run before duplicateIdsFilter

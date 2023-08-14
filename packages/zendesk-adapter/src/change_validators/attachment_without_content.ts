@@ -18,8 +18,9 @@ import {
   isInstanceElement,
 } from '@salto-io/adapter-api'
 import { MACRO_ATTACHMENT_TYPE_NAME } from '../filters/macro_attachments'
+import { ARTICLE_ATTACHMENT_TYPE_NAME } from '../constants'
 
-const attachmentTypes = [MACRO_ATTACHMENT_TYPE_NAME]
+const attachmentTypes = [MACRO_ATTACHMENT_TYPE_NAME, ARTICLE_ATTACHMENT_TYPE_NAME]
 
 /**
  * prevent deployment of attachment without content. The attachment can be without content if the get content api call

@@ -135,15 +135,20 @@ const getServiceElemIDsFromPaths = (
 ): ElemID[] =>
   foundReferences
     .flatMap(ref => {
-      if (pathPrefixRegex.test(ref)) {
-        const absolutePath = resolveRelativePath(element.value[PATH], ref)
-        return [absolutePath].concat(
-          osPath.extname(absolutePath) === '' && osPath.extname(element.value[PATH]) !== ''
-            ? [absolutePath.concat(osPath.extname(element.value[PATH]))]
-            : []
-        )
+      const absolutePath = resolveRelativePath(element.value[PATH], ref)
+      // TODO: The log should be removed when SALTO-4025 is communicated.
+      if (!pathPrefixRegex.test(ref)) {
+        const maybeServiceIdRecord = serviceIdToElemID[FILE_CABINET_PATH_SEPARATOR.concat(ref)]
+        if (_.isPlainObject(maybeServiceIdRecord)) {
+          log.debug('Found a file reference without a path prefix: %s', ref)
+        }
+        return [ref]
       }
-      return [ref]
+      return [absolutePath].concat(
+        osPath.extname(absolutePath) === '' && osPath.extname(element.value[PATH]) !== ''
+          ? [absolutePath.concat(osPath.extname(element.value[PATH]))]
+          : []
+      )
     })
     .map(ref => {
       const serviceIdRecord = serviceIdToElemID[ref]
@@ -176,7 +181,7 @@ const getSuiteScriptReferences = async (
     semanticReferences,
     serviceIdToElemID,
     customRecordFieldsToServiceIds,
-    element
+    element,
   )
 }
 
@@ -319,7 +324,7 @@ const filterCreator: LocalFilterCreator = ({
       const newElement = await replaceReferenceValues(
         element,
         serviceIdToElemID,
-        customRecordFieldsToServiceIds
+        customRecordFieldsToServiceIds,
       )
       applyValuesAndAnnotationsToElement(element, newElement)
     })

@@ -82,6 +82,7 @@ export type DeployParams = UserDeployConfig & {
     include?: Partial<AdditionalSdfDeployDependencies>
     exclude?: Partial<AdditionalSdfDeployDependencies>
   }
+  fieldsToOmit?: FieldToOmitParams[]
 }
 
 export const DEPLOY_PARAMS: lowerdashTypes.TypeKeysEnum<DeployParams> = {
@@ -90,6 +91,7 @@ export const DEPLOY_PARAMS: lowerdashTypes.TypeKeysEnum<DeployParams> = {
   deployReferencedElements: 'deployReferencedElements',
   additionalDependencies: 'additionalDependencies',
   changeValidators: 'changeValidators',
+  fieldsToOmit: 'fieldsToOmit',
 }
 
 type MaxInstancesPerType = {
@@ -550,6 +552,8 @@ export type NetsuiteValidatorName = (
   | 'extraReferenceDependencies'
   | 'rolePermission'
   | 'translationCollectionReferences'
+  | 'omitFields'
+  | 'unreferencedFileAddition'
 )
 
 export type NonSuiteAppValidatorName = (
@@ -595,6 +599,8 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     removeStandardTypes: { refType: BuiltinTypes.BOOLEAN },
     fileCabinetInternalIds: { refType: BuiltinTypes.BOOLEAN },
     translationCollectionReferences: { refType: BuiltinTypes.BOOLEAN },
+    omitFields: { refType: BuiltinTypes.BOOLEAN },
+    unreferencedFileAddition: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -608,6 +614,7 @@ const baseDeployConfigType = createMatchingObjectType<Omit<DeployParams, keyof U
     validate: { refType: BuiltinTypes.BOOLEAN },
     deployReferencedElements: { refType: BuiltinTypes.BOOLEAN },
     additionalDependencies: { refType: additionalDependenciesType },
+    fieldsToOmit: { refType: new ListType(fieldsToOmitConfig) },
   },
 })
 
@@ -698,6 +705,7 @@ export const validateDeployParams = (
     warnOnStaleWorkspaceData,
     validate,
     additionalDependencies,
+    fieldsToOmit,
   }: Record<keyof DeployParams, unknown>
 ): void => {
   if (deployReferencedElements !== undefined
@@ -715,6 +723,9 @@ export const validateDeployParams = (
   if (additionalDependencies !== undefined) {
     validatePlainObject(additionalDependencies, additionalDependenciesConfigPath)
     validateAdditionalDependencies(additionalDependencies)
+  }
+  if (fieldsToOmit !== undefined) {
+    validateFieldsToOmitConfig(fieldsToOmit)
   }
 }
 

@@ -476,7 +476,7 @@ export const isInstanceOfCustomObjectChange = async (
 )
 
 export const isCustomObjectInstanceChanges = (
-  changes: Change[]
+  changes: ReadonlyArray<Change>
 ): Promise<boolean> =>
   awu(changes).every(isInstanceOfCustomObjectChange)
 

@@ -348,7 +348,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
       const attachmentType = attachments.find(isObjectType)
       if (attachmentType === undefined) {
         log.error('could not find article_attachment object type')
-        return
+        return { errors: [] }
       }
       const articleById: Record<number, InstanceElement> = _.keyBy(articleInstances, getId)
       _.remove(attachments, isObjectType)
@@ -381,7 +381,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
           && isInstanceElement(element)
           && allRemovedAttachmentsIds.has(element.elemID.name))
       )
-      await getArticleAttachments({
+      const attachmentErrors = await getArticleAttachments({
         brandIdToClient,
         attachmentType,
         articleById,
@@ -397,6 +397,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
         ])
         article.value.attachments = sortedAttachments
       })
+      return { errors: attachmentErrors }
     },
     preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
       await handleArticleAttachmentsPreDeploy(

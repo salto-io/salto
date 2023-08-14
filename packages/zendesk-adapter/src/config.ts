@@ -2670,6 +2670,7 @@ export type ChangeValidatorName = (
   | 'guideOrderDeletion'
   | 'attachmentWithoutContent'
   | 'duplicateRoutingAttributeValue'
+  | 'ticketFieldDeactivation'
   | 'duplicateIdFieldValues'
   )
 
@@ -2737,6 +2738,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     orderChildrenParent: { refType: BuiltinTypes.BOOLEAN },
     guideOrderDeletion: { refType: BuiltinTypes.BOOLEAN },
     duplicateRoutingAttributeValue: { refType: BuiltinTypes.BOOLEAN },
+    ticketFieldDeactivation: { refType: BuiltinTypes.BOOLEAN },
     duplicateIdFieldValues: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {

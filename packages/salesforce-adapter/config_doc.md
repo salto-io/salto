@@ -161,6 +161,7 @@ salesforce {
 | fetchCustomObjectUsingRetrieveApi | true                   | Use the Salesforce Metadata Retrieve API to fetch CustomObjects. This should improve reliability and data accuracy, but may have a small performance impact           |
 | fetchProfilesUsingReadApi         | false                  | Use the Salesforce Metadata Read API to fetch Profile instances. This will reduce the accuracy of the data and may result in crashes, but may be needed for debugging |
 | generateRefsInProfiles            | false                  | Generate references from profiles. This will have a significant performance impact, but will provide references from profiles to fields and elements.                 |
+| skipAliases                       | false                  | Do not create aliases for Metadata Elements                                                                                                                           |
 
 ### Data management configuration options
 

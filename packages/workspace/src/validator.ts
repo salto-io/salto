@@ -500,7 +500,7 @@ const validateValue = (
       // We check for both validatedReferences and isParentOf because if we got to
       // the same reference twice but not through a cycle we do want to validate it
       && !(validatedReferences.has(value.elemID.getFullName())
-      && (value.elemID.isParentOf(elemID) || value.elemID.isEqual(elemID)))) {
+        && (value.elemID.isParentOf(elemID) || value.elemID.isEqual(elemID)))) {
       validatedReferences.add(value.elemID.getFullName())
       return validateValue(elemID, value.value, type, validatedReferences)
     }

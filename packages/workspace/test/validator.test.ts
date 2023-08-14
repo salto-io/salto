@@ -2387,6 +2387,43 @@ describe('Elements validation', () => {
       )
       expect(errors).toHaveLength(0)
     })
+
+    it('should handle circular references in two instances', async () => {
+      const type = new ObjectType({ elemID: new ElemID('instance', 'type') })
+      const instance1 = new InstanceElement(
+        'name',
+        type,
+        {
+          value: 1,
+        }
+      )
+
+      const instance2 = new InstanceElement(
+        'name',
+        type,
+        {
+          value: 1,
+        }
+      )
+
+      instance1.value.a = {
+        ref: new ReferenceExpression(instance2.elemID.createNestedID('a'), instance2.value.a),
+      }
+
+      instance2.value.a = {
+        ref: new ReferenceExpression(instance1.elemID.createNestedID('a'), instance1.value.a),
+      }
+
+      const errors = await validateElements(
+        [instance1, instance2],
+        createInMemoryElementSource([
+          instance1,
+          instance2,
+          type,
+        ]),
+      )
+      expect(errors).toHaveLength(0)
+    })
   })
 
   describe('InvalidStaticFileError', () => {

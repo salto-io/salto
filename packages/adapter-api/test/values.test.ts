@@ -247,7 +247,7 @@ describe('Values', () => {
 
         instance.value.a.ref.value = instance.value.a
 
-        expect(isEqualValues(instance, instance, { compareByValue: true })).toBeTruthy()
+        expect(isEqualValues(instance, instance.clone(), { compareByValue: true })).toBeTruthy()
       })
     })
     it('calculate hash', () => {

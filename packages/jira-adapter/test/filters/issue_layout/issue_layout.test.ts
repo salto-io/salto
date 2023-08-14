@@ -151,49 +151,46 @@ describe('issue layout filter', () => {
       mockGet.mockImplementation(params => {
         if (params.url === '/rest/gira/1') {
           return {
-            status: 200,
             data: {
-              data: {
-                issueLayoutConfiguration: {
-                  issueLayoutResult: {
-                    id: '2',
-                    name: 'Default Issue Layout',
-                    usageInfo: {
-                      edges: [{
-                        node: {
-                          layoutOwners: [{
-                            avatarId: '3',
-                            description: 'ownerTest',
-                            iconUrl: 'www.icon.com',
-                            id: '100',
-                            name: 'ownerTest',
-                          }],
-                        },
-                      }],
-                    },
-                    containers: [
-                      {
-                        containerType: 'PRIMARY',
-                        items: {
-                          nodes: [
-                            {
-                              fieldItemId: 'testField1',
-                            },
-                          ],
-                        },
+              issueLayoutConfiguration: {
+                issueLayoutResult: {
+                  id: '2',
+                  name: 'Default Issue Layout',
+                  usageInfo: {
+                    edges: [{
+                      node: {
+                        layoutOwners: [{
+                          avatarId: '3',
+                          description: 'ownerTest',
+                          iconUrl: 'www.icon.com',
+                          id: '100',
+                          name: 'ownerTest',
+                        }],
                       },
-                      {
-                        containerType: 'Secondery',
-                        items: {
-                          nodes: [
-                            {
-                              fieldItemId: 'testField2',
-                            },
-                          ],
-                        },
-                      },
-                    ],
+                    }],
                   },
+                  containers: [
+                    {
+                      containerType: 'PRIMARY',
+                      items: {
+                        nodes: [
+                          {
+                            fieldItemId: 'testField1',
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      containerType: 'Secondery',
+                      items: {
+                        nodes: [
+                          {
+                            fieldItemId: 'testField2',
+                          },
+                        ],
+                      },
+                    },
+                  ],
                 },
               },
             },
@@ -294,49 +291,46 @@ describe('issue layout filter', () => {
       mockGet.mockImplementation(params => {
         if (params.url === '/rest/gira/1') {
           return {
-            status: 200,
             data: {
-              data: {
-                issueLayoutConfiguration: {
-                  issueLayoutResult: {
-                    id: '2',
-                    name: 'Default Issue Layout',
-                    usageInfo: {
-                      edges: [{
-                        node: {
-                          layoutOwners: [{
-                            avatarId: '3',
-                            description: 'ownerTest',
-                            iconUrl: 'www.icon.com',
-                            id: '100',
-                            name: 'ownerTest',
-                          }],
-                        },
-                      }],
-                    },
-                    containers: [
-                      {
-                        containerType: 'PRIMARY',
-                        items: {
-                          nodes: [
-                            {
-                              panelItemId: 'testPanel1',
-                            },
-                          ],
-                        },
+              issueLayoutConfiguration: {
+                issueLayoutResult: {
+                  id: '2',
+                  name: 'Default Issue Layout',
+                  usageInfo: {
+                    edges: [{
+                      node: {
+                        layoutOwners: [{
+                          avatarId: '3',
+                          description: 'ownerTest',
+                          iconUrl: 'www.icon.com',
+                          id: '100',
+                          name: 'ownerTest',
+                        }],
                       },
-                      {
-                        containerType: 'Secondery',
-                        items: {
-                          nodes: [
-                            {
-                              fieldItemId: 'testField2',
-                            },
-                          ],
-                        },
-                      },
-                    ],
+                    }],
                   },
+                  containers: [
+                    {
+                      containerType: 'PRIMARY',
+                      items: {
+                        nodes: [
+                          {
+                            panelItemId: 'testPanel1',
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      containerType: 'Secondery',
+                      items: {
+                        nodes: [
+                          {
+                            fieldItemId: 'testField2',
+                          },
+                        ],
+                      },
+                    },
+                  ],
                 },
               },
             },

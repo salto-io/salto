@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/dummy-adapter",
-  "version": "0.3.44",
+  "version": "0.3.45",
   "license": "Apache-2.0",
   "description": "Salto Salesforce adapter",
   "repository": {
@@ -30,11 +30,11 @@
     "generate": "./generate.sh"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.3.44",
-    "@salto-io/adapter-components": "0.3.44",
-    "@salto-io/adapter-utils": "0.3.44",
-    "@salto-io/lowerdash": "0.3.44",
-    "@salto-io/workspace": "0.3.44",
+    "@salto-io/adapter-api": "0.3.45",
+    "@salto-io/adapter-components": "0.3.45",
+    "@salto-io/adapter-utils": "0.3.45",
+    "@salto-io/lowerdash": "0.3.45",
+    "@salto-io/workspace": "0.3.45",
     "lodash": "^4.17.21",
     "readdirp": "^3.1.1",
     "seedrandom": "^3.0.5",

@@ -15,27 +15,10 @@
 */
 import _ from 'lodash'
 import {
-  ObjectType,
-  ElemID,
-  InstanceElement,
-  Field,
-  Value,
-  Element,
-  Values,
-  BuiltinTypes,
-  isInstanceElement,
-  isReferenceExpression,
-  ReferenceExpression,
-  CORE_ANNOTATIONS,
-  TypeElement,
-  isObjectType,
-  getRestriction,
-  StaticFile,
-  isStaticFile,
-  getChangeData,
-  Change,
-  FetchOptions,
-  ProgressReporter,
+  ObjectType, ElemID, InstanceElement, Field, Value, Element, Values, BuiltinTypes,
+  isInstanceElement, isReferenceExpression, ReferenceExpression, CORE_ANNOTATIONS,
+  TypeElement, isObjectType, getRestriction, StaticFile, isStaticFile, getChangeData,
+  Change, FetchOptions, ProgressReporter,
 } from '@salto-io/adapter-api'
 import { findElement, naclCase } from '@salto-io/adapter-utils'
 import { MetadataInfo, RetrieveResult } from 'jsforce'
@@ -54,10 +37,7 @@ import {
   CustomField, CustomObject, FieldPermissions, FilterItem, ObjectPermissions, ProfileInfo,
   TopicsForObjectsInfo,
 } from '../src/client/types'
-import {
-  FETCH_CONFIG,
-  UsernamePasswordCredentials,
-} from '../src/types'
+import { UsernamePasswordCredentials } from '../src/types'
 import {
   Types, metadataType, apiName, formulaTypeName, MetadataInstanceElement, MetadataObjectType,
   createInstanceElement,
@@ -107,35 +87,8 @@ describe('Salesforce adapter E2E with real account', () => {
   let credLease: CredsLease<UsernamePasswordCredentials>
   beforeAll(async () => {
     credLease = await testHelpers().credentials()
-    const adapterAttr = realAdapter(
-      {
-        credentials: new UsernamePasswordCredentials(credLease.value),
-      },
-      {
-        [FETCH_CONFIG]: {
-          metadata: {
-            include: [
-              {
-                metadataType: '.*',
-                namespace: '',
-                name: '.*',
-              },
-            ],
-          },
-          data: {
-            includeObjects: [
-              '.*',
-            ],
-            saltoIDSettings: {
-              defaultIdFields: [
-                '##allMasterDetailFields##',
-                'Name',
-              ],
-            },
-          },
-        },
-      },
-    )
+    const adapterAttr = realAdapter({ credentials:
+      new UsernamePasswordCredentials(credLease.value) })
     adapter = adapterAttr.adapter
     client = adapterAttr.client
   })

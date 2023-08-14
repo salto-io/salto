@@ -30,11 +30,11 @@ const filter: FilterCreator = ({ config }) => ({
       .filter(isInstanceChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === SCRIPTED_FIELD_TYPE)
-      .filter(instance => instance.value.issueTypeIds !== undefined)
+      .filter(instance => instance.value.issueTypes !== undefined)
       .forEach(instance => {
-        instance.value.issueTypes = instance.value.issueTypeIds
+        instance.value.issueTypeIds = instance.value.issueTypes
           .filter(isResolvedReferenceExpression)
-          .map((issueTypeId: ReferenceExpression) => issueTypeId.value.value.name)
+          .map((issueTypeId: ReferenceExpression) => issueTypeId.value.value.id)
       })
   },
   onDeploy: async changes => {
@@ -48,7 +48,7 @@ const filter: FilterCreator = ({ config }) => ({
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === SCRIPTED_FIELD_TYPE)
       .forEach(instance => {
-        delete instance.value.issueTypes
+        delete instance.value.issueTypeIds
       })
   },
 })

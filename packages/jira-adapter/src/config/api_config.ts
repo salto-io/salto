@@ -1701,7 +1701,7 @@ const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
       fieldsToOmit: [
         {
-          fieldName: 'issueTypes',
+          fieldName: 'issueTypeIds',
         },
       ],
     },

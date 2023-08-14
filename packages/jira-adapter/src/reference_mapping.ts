@@ -894,8 +894,8 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: PROJECT_TYPE },
   },
   {
-    src: { field: 'issueTypeIds', parentTypes: [SCRIPTED_FIELD_TYPE] },
-    serializationStrategy: 'id',
+    src: { field: 'issueTypes', parentTypes: [SCRIPTED_FIELD_TYPE] },
+    serializationStrategy: 'name',
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: ISSUE_TYPE_NAME },
   },

@@ -33,6 +33,7 @@ describe('scripted_fields_issue_types', () => {
       'issueType1',
       issueTypes,
       {
+        id: '1',
         name: 'issueType1',
       }
     )
@@ -40,6 +41,7 @@ describe('scripted_fields_issue_types', () => {
       'issueType2',
       issueTypes,
       {
+        id: '2',
         name: 'issueType2',
       }
     )
@@ -47,7 +49,7 @@ describe('scripted_fields_issue_types', () => {
       'instance',
       scriptedFields,
       {
-        issueTypeIds: [
+        issueTypes: [
           new ReferenceExpression(issueType1.elemID, issueType1),
           new ReferenceExpression(issueType2.elemID, issueType2),
         ],
@@ -60,14 +62,14 @@ describe('scripted_fields_issue_types', () => {
       config.fetch.enableScriptRunnerAddon = true
       filter = scriptedFieldsIssueTypeFilter(getFilterParams({ config })) as FilterType
     })
-    it('should add issueTypeNames on preDeploy', async () => {
+    it('should add issueTypeIds on preDeploy', async () => {
       await filter.preDeploy([toChange({ after: instance })])
-      expect(instance.value.issueTypes).toEqual(['issueType1', 'issueType2'])
+      expect(instance.value.issueTypeIds).toEqual(['1', '2'])
     })
-    it('should remove issueTypeNames on onDeploy', async () => {
+    it('should remove issueTypeIdson onDeploy', async () => {
       instance.value.issueTypes = ['issueType1', 'issueType2']
       await filter.onDeploy([toChange({ after: instance })])
-      expect(instance.value.issueTypes).toBeUndefined()
+      expect(instance.value.issueTypeIds).toBeUndefined()
     })
   })
   describe('when script runner is disabled', () => {
@@ -76,14 +78,14 @@ describe('scripted_fields_issue_types', () => {
       config.fetch.enableScriptRunnerAddon = false
       filter = scriptedFieldsIssueTypeFilter(getFilterParams({ config })) as FilterType
     })
-    it('should not add issueTypeNames on preDeploy when disabled', async () => {
+    it('should not add issueTypeIds on preDeploy when disabled', async () => {
       await filter.preDeploy([toChange({ after: instance })])
-      expect(instance.value.issueTypes).toBeUndefined()
+      expect(instance.value.issueTypeIds).toBeUndefined()
     })
     it('should not remove issueTypeNames on onDeploy when disabled', async () => {
-      instance.value.issueTypes = ['issueType1', 'issueType2']
+      instance.value.issueTypeIds = ['1', '2']
       await filter.onDeploy([toChange({ after: instance })])
-      expect(instance.value.issueTypes).toEqual(['issueType1', 'issueType2'])
+      expect(instance.value.issueTypeIds).toEqual(['1', '2'])
     })
   })
 })

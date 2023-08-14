@@ -19,6 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { SalesforceRecord } from '../src/client/types'
 import SalesforceAdapter from '../index'
 import realAdapter from './adapter'
@@ -35,6 +36,7 @@ import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 import { testHelpers } from './jest_environment'
 
 const { awu } = collections.asynciterable
+const log = logger(module)
 
 /* eslint-disable camelcase */
 describe('custom object instances e2e', () => {
@@ -169,6 +171,7 @@ describe('custom object instances e2e', () => {
           value: productTwoInstanceValue,
           type: productTwoObjectType as ObjectType,
         })
+        log.info('Created instance %o', instance)
         createdInstance = await createElement(
           adapter,
           instance,
@@ -181,6 +184,24 @@ describe('custom object instances e2e', () => {
 
     describe('should update values of a custom object instance', () => {
       it('should update values of a custom object instance', async () => {
+        const updatedInstance = createdInstance.clone()
+        updatedInstance.value.isActive = false
+        updatedInstance.value.ProductCode = 'newCode'
+        await adapter.deploy({
+          changeGroup: {
+            groupID: updatedInstance.elemID.getFullName(),
+            changes: [{ action: 'modify', data: { before: createdInstance, after: updatedInstance } }],
+          },
+        })
+        const fields = ['IsActive', 'ProductCode', 'IsArchived']
+        const result = await getRecordOfInstance(client, createdInstance, fields)
+        expect(result).toBeDefined()
+        expect(result).toMatchObject(_.pick(updatedInstance.value, fields))
+      })
+    })
+
+    describe('should add custom object instance (SALTO-4397)', () => {
+      it('should successfully add a custom object instance', async () => {
         const updatedInstance = createdInstance.clone()
         updatedInstance.value.isActive = false
         updatedInstance.value.ProductCode = 'newCode'

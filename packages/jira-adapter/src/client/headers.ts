@@ -26,7 +26,3 @@ export const JSP_API_HEADERS = {
   ...PRIVATE_API_HEADERS,
   'Content-Type': 'application/x-www-form-urlencoded',
 }
-
-export const JIRA_GQL_HEADERS = {
-  ...PRIVATE_API_HEADERS,
-}

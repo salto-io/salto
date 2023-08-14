@@ -13,17 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import Joi from 'joi'
-import { BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Element, InstanceElement, ReferenceExpression, isInstanceElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { createSchemeGuard, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { createSchemeGuard, isResolvedReferenceExpression, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { client as clientUtils, elements as adapterElements, references as referenceUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import JiraClient from '../../client/client'
-import { ISSUE_LAYOUT_TYPE, JIRA, PROJECT_TYPE } from '../../constants'
+import { JIRA, PROJECT_TYPE } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { QUERY } from './issue_layout_query'
-import { ISSUE_LAYOUT_SUB_TYPES, IssueLayoutConfig, IssueLayoutResponse, containerIssueLayoutResponse, issueLayoutConfigType, onwerIssueLayoutType } from './issue_layout_types'
+import { ISSUE_LAYOUT_RESPONSE_SCHEME, IssueLayoutConfig, IssueLayoutResponse, containerIssueLayoutResponse, createIssueLayoutType } from './issue_layout_types'
 import { addAnnotationRecursively, setTypeDeploymentAnnotations } from '../../utils'
 import { JiraConfig } from '../../config/config'
 import { referencesRules, JiraFieldReferenceResolver, contextStrategyLookup } from '../../reference_mapping'
@@ -35,56 +34,7 @@ type issueTypeMappingStruct = {
     screenSchemeId: ReferenceExpression
 }
 
-const ISSUE_LAYOUT_RESPONSE_SCHEME = Joi.object({
-  issueLayoutConfiguration: Joi.object({
-    issueLayoutResult: Joi.object({
-      usageInfo: Joi.object({
-        edges: Joi.array().items(Joi.object({
-          node: Joi.object({
-            layoutOwners: Joi.array().items(Joi.object({
-              avatarId: Joi.string().required().allow(null),
-              description: Joi.string().required(),
-              iconUrl: Joi.string().required(),
-              id: Joi.string().required(),
-              name: Joi.string().required(),
-            }).unknown(true)).required(),
-          }).unknown(true).required(),
-        }).unknown(true)).required(),
-      }).unknown(true).required(),
-      containers: Joi.array().items(Joi.object({
-        containerType: Joi.string().required(),
-        items: Joi.object({
-          nodes: Joi.array().items(Joi.object({
-            fieldItemId: Joi.string(),
-            panelItemId: Joi.string(),
-          }).unknown(true)).required(),
-        }).unknown(true).required(),
-      }).unknown(true)).required(),
-    }).unknown(true).required(),
-  }).unknown(true).required(),
-}).unknown(true).required()
-
 const isIssueLayoutResponse = createSchemeGuard<IssueLayoutResponse>(ISSUE_LAYOUT_RESPONSE_SCHEME, 'Failed to get issue layout from jira service')
-
-const createIssueLayoutType = (): ObjectType =>
-  new ObjectType({
-    elemID: new ElemID(JIRA, ISSUE_LAYOUT_TYPE),
-    fields: {
-      projectId: {
-        refType: BuiltinTypes.NUMBER,
-      },
-      extraDefinerId: {
-        refType: BuiltinTypes.NUMBER,
-      },
-      owners: {
-        refType: new ListType(onwerIssueLayoutType),
-      },
-      issueLayoutConfig: {
-        refType: issueLayoutConfigType,
-      },
-    },
-    path: [JIRA, adapterElements.TYPES_PATH, ISSUE_LAYOUT_TYPE],
-  })
 
 const getIssueLayout = async ({
   projectId,
@@ -137,26 +87,28 @@ const createReferences = async (config: JiraConfig, elements: Element[]): Promis
   })
 }
 
+const getProjectToScreenMapping = async (elements: Element[]): Promise<Record<string, number[]>> => {
+  const projectToScreenId: Record<string, number[]> = Object.fromEntries(
+    (await Promise.all(elements.filter(e => e.elemID.typeName === PROJECT_TYPE)
+      .filter(isInstanceElement)
+      .filter(project => isResolvedReferenceExpression(project.value.issueTypeScreenScheme))
+      .map(async project => {
+        const screenSchemes = (await Promise.all(((project.value.issueTypeScreenScheme.value)
+          .value.issueTypeMappings
+          .flatMap((struct: issueTypeMappingStruct) => struct.screenSchemeId.getResolvedValue()))))
+          .filter(isInstanceElement)
+
+        const screens = screenSchemes.map(screenScheme => screenScheme.value.screens.default.value.value.id)
+        return [project.value.id, screens]
+      })))
+  )
+  return projectToScreenId
+}
+
 const filter: FilterCreator = ({ client, config }) => ({
   name: 'issueLayoutFilter',
   onFetch: async elements => {
-    const projectToScreenId: Record<string, number[]> = Object.fromEntries(
-      (await Promise.all(elements.filter(e => e.elemID.typeName === PROJECT_TYPE)
-        .filter(isInstanceElement)
-        .map(async project => {
-          if (isReferenceExpression(project.value.issueTypeScreenScheme)) {
-            const screenSchemes = (await Promise.all(((await project.value.issueTypeScreenScheme.getResolvedValue())
-              .value.issueTypeMappings
-              .flatMap((struct: issueTypeMappingStruct) => struct.screenSchemeId.getResolvedValue()))))
-              .filter(isInstanceElement)
-
-            const screens = screenSchemes.map(screenScheme => screenScheme.value.screens.default.value.value.id)
-            return [project.value.id, screens]
-          }
-          return undefined
-        })))
-        .filter(isDefined)
-    )
+    const projectToScreenId = await getProjectToScreenMapping(elements)
     const projectIdToProjectName = Object.fromEntries(
       (await Promise.all(elements.filter(e => e.elemID.typeName === PROJECT_TYPE)
         .filter(isInstanceElement)
@@ -166,9 +118,9 @@ const filter: FilterCreator = ({ client, config }) => ({
         })))
         .filter(isDefined)
     )
-    const issueLayoutType = createIssueLayoutType()
+    const { issueLayoutType, subTypes } = createIssueLayoutType()
     elements.push(issueLayoutType)
-    ISSUE_LAYOUT_SUB_TYPES.forEach(type => elements.push(type))
+    subTypes.forEach(type => elements.push(type))
 
     await Promise.all(Object.entries(projectToScreenId)
       .flatMap(([projectId, screenIds]) => screenIds.map(async screenId => {
@@ -190,7 +142,7 @@ const filter: FilterCreator = ({ client, config }) => ({
               owners: issueLayoutResult.usageInfo.edges[0].node.layoutOwners.map(owner => owner.id),
               issueLayoutConfig: fromIssueLayoutConfigRespToIssueLayoutConfig(containers),
             },
-            [JIRA, adapterElements.RECORDS_PATH, ISSUE_LAYOUT_TYPE, pathNaclCase(name)],
+            [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'Layouts', pathNaclCase(name)],
           )
           elements.push(issueLayout)
           await createReferences(config, elements)

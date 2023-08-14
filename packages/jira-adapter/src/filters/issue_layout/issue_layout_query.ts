@@ -21,7 +21,6 @@ export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerI
   
   
   fragment JiraIssueLayoutOwnerFragment on JiraIssueLayoutOwner {
-    __typename
     ... on JiraIssueLayoutIssueTypeOwner {
       id
       name
@@ -42,7 +41,6 @@ export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerI
   
   fragment JiraIssueLayoutUsageInfo on JiraIssueLayoutUsageInfoConnection {
     edges {
-      currentProject
       node {
         avatarId
         projectId
@@ -58,38 +56,23 @@ export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerI
   
   
     fragment JiraIssueLayoutActivePanelItemFragment on JiraIssueItemPanelItem {
-    __typename
       panelItemId
     }
   
   
   
     fragment JiraIssueLayoutActiveFieldItemFragment on JiraIssueItemFieldItem {
-      __typename
       fieldItemId
       containerPosition
     }
   
-    fragment JiraIssueLayoutTabContainerFragment on JiraIssueItemTabContainer {
-        __typename
-        tabContainerId
-        name
-        items {
-          nodes {
-            ...JiraIssueLayoutActiveFieldItemFragment
-          }
-          totalCount
-        }
-    }
   
   fragment JiraIssueLayoutItemContainerFragment on JiraIssueItemContainer {
     containerType
     items {
       nodes {
-        __typename
         ... JiraIssueLayoutActiveFieldItemFragment,
         ... JiraIssueLayoutActivePanelItemFragment,
-        ... JiraIssueLayoutTabContainerFragment,
       }
     }
   }
@@ -99,33 +82,8 @@ export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerI
   fragment PanelItemFragment on JiraIssueLayoutPanelItemConfiguration {
     panelItemId
     name
-    operations {
-        editable
-        removable
-        categoriesWhitelist
-        canAssociateInSettings
-        deletable
-    }
   }
   
-  
-  fragment FieldItemOperationsFragment on JiraIssueLayoutFieldOperations {
-    editable
-    canModifyRequired
-    canModifyOptions
-    canModifyDefaultValue
-    canModifyPropertyConfiguration
-    removable
-    deletable
-    canAssociateInSettings
-    categoriesWhitelist
-  }
-  
-  
-  fragment FieldItemProviderFragment on JiraIssueLayoutFieldProvider {
-    key
-    name
-  }
   
   
   fragment FieldItemBaseFragment on JiraIssueLayoutFieldItemConfiguration {
@@ -133,52 +91,6 @@ export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerI
     key
     name
     type
-    custom
-    global
-    description
-    configuration
-    required
-    externalUuid
-    defaultValue
-    options {
-      ...FieldItemOptionsFragment
-    }
-    operations {
-      ...FieldItemOperationsFragment
-    }
-    provider {
-      ...FieldItemProviderFragment
-    }
-    availability {
-      isHiddenIn {
-        __typename
-        ... on JiraIssueLayoutFieldConfigurationHiddenInGlobal {
-          fieldConfigs {
-            id
-            configName
-          }
-        }
-        ... on JiraIssueLayoutFieldConfigurationHiddenInLayoutOwner {
-          layoutOwnerId
-          fieldConfigs {
-            id
-            configName
-          }
-        }
-      }
-      context {
-        layoutOwnerIds
-        id
-      }
-    }
-  }
-  
-  
-  fragment FieldItemOptionsFragment on JiraIssueLayoutFieldOption {
-    value
-    id
-    externalUuid
-    parentId
   }
   
     fragment FieldItemFragment on JiraIssueLayoutFieldItemConfiguration {
@@ -186,23 +98,6 @@ export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerI
       properties(keys: $fieldPropertyKeys)
     }
   
-  
-  fragment SystemAvailableLayoutItemsGroup on JiraIssueLayoutFieldPanelItemConfigurationResult {
-    items {
-        totalCount
-        pageInfo {
-          hasNextPage
-          endCursor
-        }
-        edges {
-            node {
-                __typename
-                ...FieldItemFragment
-                ...PanelItemFragment
-            }
-        }
-    }
-  }
   fragment CustomAvailableLayoutItemsGroup on JiraIssueLayoutFieldItemConfigurationResult {
     items {
         totalCount
@@ -212,7 +107,6 @@ export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerI
         }
         edges {
             node {
-                __typename
                 ...FieldItemFragment
             }
         }
@@ -223,7 +117,6 @@ export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerI
   fragment JiraIssueLayoutItemConfigurationFragment on JiraIssueLayoutItemConfigurationResult {
     items {
       nodes {
-        __typename
         ...FieldItemFragment
         ...PanelItemFragment
       }
@@ -232,10 +125,8 @@ export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerI
   
   fragment CMPJSWLayoutConfigurationFragment on Query {
     issueLayoutConfiguration(issueLayoutKey: {projectId: $projectId, extraDefinerId: $extraDefinerId}, type: ISSUE_VIEW) {
-      __typename
       ... on JiraIssueLayoutConfigurationResult {
         issueLayoutResult {
-          __typename
           id
           name
           usageInfo {
@@ -246,7 +137,6 @@ export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerI
           }
         }
         metadata {
-          __typename
           configuration {
               ...JiraIssueLayoutItemConfigurationFragment
           }
@@ -257,31 +147,7 @@ export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerI
             suggestedFields(first: $availableItemsPageSize) {
               ...CustomAvailableLayoutItemsGroup
             }
-            systemAndAppFields(first: $availableItemsPageSize) {
-              ...SystemAvailableLayoutItemsGroup
-            }
             textFields(first: $availableItemsPageSize) {
-              ...CustomAvailableLayoutItemsGroup
-            }
-            labelsFields(first: $availableItemsPageSize) {
-              ...CustomAvailableLayoutItemsGroup
-            }
-            peopleFields(first: $availableItemsPageSize) {
-              ...CustomAvailableLayoutItemsGroup
-            }
-            dateFields(first: $availableItemsPageSize) {
-              ...CustomAvailableLayoutItemsGroup
-            }
-            selectFields(first: $availableItemsPageSize) {
-              ...CustomAvailableLayoutItemsGroup
-            }
-            numberFields(first: $availableItemsPageSize) {
-              ...CustomAvailableLayoutItemsGroup
-            }
-            otherFields(first: $availableItemsPageSize) {
-              ...CustomAvailableLayoutItemsGroup
-            }
-            advancedFields(first: $availableItemsPageSize) {
               ...CustomAvailableLayoutItemsGroup
             }
           }

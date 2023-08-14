@@ -23,7 +23,7 @@ import JiraClient from '../../client/client'
 import { ISSUE_LAYOUT_TYPE, JIRA, PROJECT_TYPE } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { QUERY } from './issue_layout_query'
-import { ISSUE_LAYOUT_SUB_TYPES, IssueLayoutConfig, IssueLayoutResponse, LayoutOwners, containerIssueLayoutResponse, issueLayoutConfigType, onwerIssueLayoutType, owners } from './issue_layout_types'
+import { ISSUE_LAYOUT_SUB_TYPES, IssueLayoutConfig, IssueLayoutResponse, containerIssueLayoutResponse, issueLayoutConfigType, onwerIssueLayoutType } from './issue_layout_types'
 import { addAnnotationRecursively, setTypeDeploymentAnnotations } from '../../utils'
 import { JiraConfig } from '../../config/config'
 import { referencesRules, JiraFieldReferenceResolver, contextStrategyLookup } from '../../reference_mapping'
@@ -112,17 +112,6 @@ const getIssueLayout = async ({
   return response
 }
 
-const fromResponseLayoutOwnersToLayoutOwners = (layoutOwners: LayoutOwners): owners => layoutOwners.map(owner => ({
-  data: {
-    id: owner.id,
-    name: owner.name,
-    description: owner.description,
-    avatarId: owner.avatarId,
-    iconUrl: owner.iconUrl,
-  },
-}))
-
-
 const fromIssueLayoutConfigRespToIssueLayoutConfig = (
   containers: containerIssueLayoutResponse[]
 ):
@@ -198,7 +187,7 @@ const filter: FilterCreator = ({ client, config }) => ({
             {
               projectId,
               extraDefinerId: screenId,
-              owners: fromResponseLayoutOwnersToLayoutOwners(issueLayoutResult.usageInfo.edges[0].node.layoutOwners),
+              owners: issueLayoutResult.usageInfo.edges[0].node.layoutOwners.map(owner => owner.id),
               issueLayoutConfig: fromIssueLayoutConfigRespToIssueLayoutConfig(containers),
             },
             [JIRA, adapterElements.RECORDS_PATH, ISSUE_LAYOUT_TYPE, pathNaclCase(name)],
@@ -208,6 +197,7 @@ const filter: FilterCreator = ({ client, config }) => ({
           setTypeDeploymentAnnotations(issueLayoutType)
           await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.CREATABLE)
           await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.UPDATABLE)
+          await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.DELETABLE)
         }
       })))
   },

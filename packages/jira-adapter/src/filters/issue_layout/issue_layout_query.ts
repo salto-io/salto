@@ -13,9 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import gql from 'graphql-tag'
-
-export const QUERY = gql`query SwiftJswCmpInitial($projectId: Long!, $extraDefinerId: Long!, $fieldPropertyKeys: [String!]!, $requestOwnerPropertyKeys: [String!] = []) {
+export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerId: Long!, $fieldPropertyKeys: [String!]!, $requestOwnerPropertyKeys: [String!] = []) {
     ...CMPJSWLayoutConfigurationFragment
   }
   

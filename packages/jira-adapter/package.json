@@ -44,8 +44,7 @@
     "semver": "^7.3.2",
     "uuid": "^8.3.0",
     "wu": "^2.1.0",
-    "xml-js": "^1.6.11",
-    "graphql-tag": "^2.10.3"
+    "xml-js": "^1.6.11"
   },
   "devDependencies": {
     "@salto-io/e2e-credentials-store": "0.3.45",

@@ -242,6 +242,7 @@ describe('issue layout filter', () => {
       const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
       expect(issueLayoutInstance).toBeDefined()
       expect(issueLayoutInstance?.value).toEqual({
+        id: '2',
         projectId: new ReferenceExpression(projectInstance.elemID, projectInstance),
         extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
         owners: [

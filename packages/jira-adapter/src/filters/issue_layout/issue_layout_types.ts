@@ -15,7 +15,7 @@
 */
 
 import Joi from 'joi'
-import { ObjectType, ElemID, BuiltinTypes, ListType } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, ListType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { elements as adapterElements } from '@salto-io/adapter-components'
 import { ISSUE_LAYOUT_TYPE, JIRA } from '../../constants'
 
@@ -60,6 +60,10 @@ export const createIssueLayoutType = (): {
   const issueLayoutType = new ObjectType({
     elemID: new ElemID(JIRA, ISSUE_LAYOUT_TYPE),
     fields: {
+      id: {
+        refType: BuiltinTypes.STRING,
+        annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+      },
       projectId: {
         refType: BuiltinTypes.NUMBER,
       },

@@ -13,18 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, InstanceElement, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
+import { Element, InstanceElement, ReferenceExpression, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import _ from 'lodash'
 
 const ZENDESK_TICKET_FIELD_TYPE = 'ticket_field'
 const ZENDESK_USER_FIELD_TYPE = 'user_field'
 const ZENDESK_ORGANIZATION_FIELD_TYPE = 'organization_field'
-// const ZENDESK_TICKET_FORM_TYPE = 'ticket_form'
+const ZENDESK_TICKET_FORM_TYPE = 'ticket_form'
 
 export type ZendeskIndex = {
   elementsByInternalID: Record<string, Record<number, Readonly<InstanceElement>>>
   customFieldsByKey: Record<string, Record<string, Readonly<InstanceElement>>>
-  // standardTicketFieldByName: Record<string, Readonly<InstanceElement>>
+  standardTicketFieldByName: Record<string, Readonly<InstanceElement>>
   ticketCustomOptionByFieldIdAndValue: Record<number, Record<string, Readonly<InstanceElement>>>
   customOptionsByFieldKeyAndValue: Record<string, Record<string, Record<string, Readonly<InstanceElement>>>>
 }
@@ -89,22 +89,22 @@ export const indexZendesk = (
     organization: indexCustomOptionByFieldAndValue(fieldsByKey.organization),
   }
 
-  // const defaultTicketForm = instances.filter(e => e.elemID.typeName === ZENDESK_TICKET_FORM_TYPE)
-  //   .find(e => e.value.default)
+  const defaultTicketForm = instances.filter(e => e.elemID.typeName === ZENDESK_TICKET_FORM_TYPE)
+    .find(e => e.value.default)
 
-  // // We search only within the defaultTicketForm.ticket_field_ids.
-  // // Otherwise, we might refer to a custom field with the same raw_name.
-  // const fieldNames: string[] = defaultTicketForm !== undefined
-  //   && defaultTicketForm.value.ticket_field_ids !== undefined
-  //   ? (defaultTicketForm.value.ticket_field_ids as Array<ReferenceExpression>)
-  //     .map(e => e.elemID.name) : []
+  // We search only within the defaultTicketForm.ticket_field_ids.
+  // Otherwise, we might refer to a custom field with the same raw_name.
+  const fieldNames: string[] = defaultTicketForm !== undefined
+    && defaultTicketForm.value.ticket_field_ids !== undefined
+    ? (defaultTicketForm.value.ticket_field_ids as Array<ReferenceExpression>)
+      .map(e => e.elemID.name) : []
 
-  // const indexStandardTicketFieldByRawTitle = _.keyBy(
-  //   ticketFields.filter(field => fieldNames.includes(field.elemID.name))
-  //     .filter(isInstanceElement)
-  //     .filter(e => e.value.raw_title !== undefined),
-  //   e => e.value.raw_title.toLowerCase() as string,
-  // )
+  const indexStandardTicketFieldByRawTitle = _.keyBy(
+    ticketFields.filter(field => fieldNames.includes(field.elemID.name))
+      .filter(isInstanceElement)
+      .filter(e => e.value.raw_title !== undefined),
+    e => e.value.raw_title.toLowerCase() as string,
+  )
 
   const internalIdIndex = {
     macros: indexElementsByInternalID(instances.filter(e => e.elemID.typeName === 'macro')),
@@ -116,7 +116,7 @@ export const indexZendesk = (
 
   return {
     elementsByInternalID: internalIdIndex,
-    // standardTicketFieldByName: indexStandardTicketFieldByRawTitle,
+    standardTicketFieldByName: indexStandardTicketFieldByRawTitle,
     customFieldsByKey: fieldsByKey,
     ticketCustomOptionByFieldIdAndValue: indexCustomOptionByFieldAndValue(indexElementsByInternalID(ticketFields)),
     customOptionsByFieldKeyAndValue: optionsByFieldKeyAndValue,

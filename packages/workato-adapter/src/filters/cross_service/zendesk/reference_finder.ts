@@ -168,14 +168,14 @@ export const addZendeskRecipeReferences = async (
 
     if (name.includes('ticket')) { // TODO change to specific list of blocks
       actionBlock[blockValue.as] = 'ticket'
-      // Object.keys(indexedElements.standardTicketFieldByName).forEach(fieldName => {
-      //   if (input[fieldName] !== undefined) {
-      //     addPotentialIdReference(
-      //       indexedElements.standardTicketFieldByName[fieldName]
-      //       // no pathToOverride because we can't override the field keys in the current format
-      //     )
-      //   }
-      // })
+      Object.keys(indexedElements.standardTicketFieldByName).forEach(fieldName => {
+        if (input[fieldName] !== undefined) {
+          addPotentialIdReference(
+            indexedElements.standardTicketFieldByName[fieldName]
+            // no pathToOverride because we can't override the field keys in the current format
+          )
+        }
+      })
       addFieldsReferences({
         indexKey: indexedElements.elementsByInternalID.ticketFields,
         indexValue: indexedElements.ticketCustomOptionByFieldIdAndValue,
@@ -227,14 +227,14 @@ export const addZendeskRecipeReferences = async (
         return undefined
       }
 
-      // if (actionBlock[block] === 'ticket' && indexedElements.standardTicketFieldByName[fieldName] !== undefined) {
-      //   return {
-      //     location: new ReferenceExpression(path),
-      //     // references inside formulas are always used as input
-      //     direction: 'input' as DependencyDirection,
-      //     reference: new ReferenceExpression(indexedElements.standardTicketFieldByName[fieldName].elemID),
-      //   }
-      // }
+      if (actionBlock[block] === 'ticket' && indexedElements.standardTicketFieldByName[fieldName] !== undefined) {
+        return {
+          location: new ReferenceExpression(path),
+          // references inside formulas are always used as input
+          direction: 'input' as DependencyDirection,
+          reference: new ReferenceExpression(indexedElements.standardTicketFieldByName[fieldName].elemID),
+        }
+      }
       return undefined
     }).filter(isDefined)
   }

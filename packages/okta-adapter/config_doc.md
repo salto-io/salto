@@ -67,7 +67,7 @@ okta {
 | [include](#fetch-entry-options)             | [{ type = ".*" }]                 | List of entries to determine what instances to include in the fetch
 | [exclude](#fetch-entry-options)             | []                                | List of entries to determine what instances to exclude in the fetch
 | convertUsersIds                             | true                              | When enabled, user IDs will be replaced with user login names
-| includeGroupMemberships                     | false                             | Include group assinments
+| includeGroupMemberships                     | false                             | Include group assignments
 
 ## Fetch entry options
 

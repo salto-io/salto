@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { AdditionChange, ElemID, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isRemovalChange, RemovalChange } from '@salto-io/adapter-api'
-import { resolveChangeElement, walkOnValue, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { resolveChangeElement, walkOnValue, WALK_NEXT_STEP, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { isPostFetchWorkflowChange, WorkflowInstance } from './types'

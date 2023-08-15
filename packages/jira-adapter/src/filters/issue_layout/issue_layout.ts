@@ -22,7 +22,7 @@ import JiraClient, { graphQLResponseType } from '../../client/client'
 import { JIRA, PROJECT_TYPE } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { QUERY } from './issue_layout_query'
-import { ISSUE_LAYOUT_RESPONSE_SCHEME, IssueLayoutConfig, IssueLayoutResponse, containerIssueLayoutResponse, createIssueLayoutType } from './issue_layout_types'
+import { ISSUE_LAYOUT_CONFIG_ITEM__SCHEME, ISSUE_LAYOUT_RESPONSE_SCHEME, IssueLayoutConfig, IssueLayoutConfigItem, IssueLayoutResponse, containerIssueLayoutResponse, createIssueLayoutType } from './issue_layout_types'
 import { addAnnotationRecursively, setTypeDeploymentAnnotations } from '../../utils'
 import { JiraConfig } from '../../config/config'
 import { referencesRules, JiraFieldReferenceResolver, contextStrategyLookup } from '../../reference_mapping'
@@ -35,6 +35,7 @@ type issueTypeMappingStruct = {
 }
 
 const isIssueLayoutResponse = createSchemeGuard<IssueLayoutResponse>(ISSUE_LAYOUT_RESPONSE_SCHEME, 'Failed to get issue layout from jira service')
+const isIssueLayoytConfigItem = createSchemeGuard<IssueLayoutConfigItem>(ISSUE_LAYOUT_CONFIG_ITEM__SCHEME, 'Not a valid issue layout config item')
 
 const getIssueLayout = async ({
   projectId,
@@ -68,10 +69,12 @@ IssueLayoutConfig => {
   const items = containers.flatMap(container => container.items.nodes.map(node => ({
     type: node.fieldItemId ? 'FIELD' : 'PANEL',
     sectionType: container.containerType,
-    key: node.fieldItemId || node.panelItemId || '',
-  })))
+    key: node.fieldItemId || node.panelItemId,
+  }))).filter(isDefined).filter(isIssueLayoytConfigItem)
+
   return { items }
 }
+
 const createReferences = async (
   config: JiraConfig, elements: Element[], contextElements: Element[]): Promise<void> => {
   const fixedDefs = referencesRules

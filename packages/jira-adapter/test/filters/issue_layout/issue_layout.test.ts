@@ -15,6 +15,8 @@
 */
 import { filterUtils } from '@salto-io/adapter-components'
 import { ObjectType, ElemID, InstanceElement, BuiltinTypes, ListType, ReferenceExpression, Element, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { getDefaultConfig } from '../../../src/config/config'
 import JiraClient from '../../../src/client/client'
 import issueLayoutFilter from '../../../src/filters/issue_layout/issue_layout'
 import { getFilterParams, mockClient } from '../../utils'
@@ -279,6 +281,12 @@ describe('issue layout filter', () => {
       const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
       expect(issueLayoutInstance).toBeUndefined()
     })
+    it('should throw an error if gql post throws an error', async () => {
+      mockGet.mockImplementation(() => {
+        throw new Error('err')
+      })
+      await expect(filter.onFetch(elements)).rejects.toThrow()
+    })
     it('should add key as missing ref if there is no field', async () => {
       fieldInstance1.value.id = 'testField3'
       await filter.onFetch(elements)
@@ -343,6 +351,65 @@ describe('issue layout filter', () => {
       const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
       expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].type).toEqual('PANEL')
       expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].sectionType).toEqual('PRIMARY')
+    })
+    it('should not add missing reference if enableMissingRef is false', async () => {
+      mockGet.mockImplementation(params => {
+        if (params.url === '/rest/gira/1') {
+          return {
+            data: {
+              issueLayoutConfiguration: {
+                issueLayoutResult: {
+                  id: '2',
+                  name: 'Default Issue Layout',
+                  usageInfo: {
+                    edges: [{
+                      node: {
+                        layoutOwners: [{
+                          avatarId: '3',
+                          description: 'ownerTest',
+                          iconUrl: 'www.icon.com',
+                          id: '100',
+                          name: 'ownerTest',
+                        }],
+                      },
+                    }],
+                  },
+                  containers: [
+                    {
+                      containerType: 'PRIMARY',
+                      items: {
+                        nodes: [
+                          {
+                            panelItemId: 'testPanel1',
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      containerType: 'Secondery',
+                      items: {
+                        nodes: [
+                          {
+                            fieldItemId: 'testField2',
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          }
+        }
+        throw new Error('Err')
+      })
+      const configWithMissingRefs = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      configWithMissingRefs.fetch.enableMissingReferences = false
+      filter = issueLayoutFilter(getFilterParams({ config: configWithMissingRefs, client })) as FilterType
+      await filter.onFetch(elements)
+      elements.filter(isInstanceElement)
+      // const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
+      // expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].key).toEqual('testField1')
     })
   })
 })

@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { filterUtils } from '@salto-io/adapter-components'
+import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { ObjectType, ElemID, InstanceElement, BuiltinTypes, ListType, ReferenceExpression, Element, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { MockInterface } from '@salto-io/test-utils'
 import { getDefaultConfig } from '../../../src/config/config'
 import JiraClient from '../../../src/client/client'
 import issueLayoutFilter from '../../../src/filters/issue_layout/issue_layout'
@@ -23,6 +24,8 @@ import { getFilterParams, mockClient } from '../../utils'
 import { ISSUE_LAYOUT_TYPE, JIRA, PROJECT_TYPE, SCREEN_SCHEME_TYPE } from '../../../src/constants'
 
 describe('issue layout filter', () => {
+  let connection: MockInterface<clientUtils.APIConnection>
+  let fetchQuery: MockInterface<elementUtils.query.ElementQuery>
   let mockGet: jest.SpyInstance
   let client: JiraClient
   type FilterType = filterUtils.FilterWith<'deploy' | 'onFetch'>
@@ -42,14 +45,16 @@ describe('issue layout filter', () => {
   let fieldType: ObjectType
   let fieldInstance1: InstanceElement
   let fieldInstance2: InstanceElement
+  const mockCli = mockClient()
 
   beforeEach(async () => {
-    const mockCli = mockClient()
     client = mockCli.client
+    connection = mockCli.connection
     filter = issueLayoutFilter(getFilterParams({ client })) as typeof filter
   })
   describe('on fetch', () => {
     beforeEach(async () => {
+      client = mockCli.client
       screenType = new ObjectType({ elemID: new ElemID(JIRA, 'Screen'),
         fields: {
           id: { refType: BuiltinTypes.NUMBER },
@@ -282,11 +287,14 @@ describe('issue layout filter', () => {
       const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
       expect(issueLayoutInstance).toBeUndefined()
     })
-    it('should throw an error if gql post throws an error', async () => {
+    it('should catch an error if gql post throws an error and return undefined', async () => {
       mockGet.mockImplementation(() => {
         throw new Error('err')
       })
-      await expect(filter.onFetch(elements)).rejects.toThrow()
+      await filter.onFetch(elements)
+      const instances = elements.filter(isInstanceElement)
+      const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
+      expect(issueLayoutInstance).toBeUndefined()
     })
     it('should add key as missing ref if there is no field', async () => {
       fieldInstance1.value.id = 'testField3'
@@ -355,5 +363,28 @@ describe('issue layout filter', () => {
       const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
       expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].key).toEqual('testField4')
     })
+    it('should not fetch issue layouts if it was excluded', async () => {
+      fetchQuery = elementUtils.query.createMockQuery()
+      const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      filter = issueLayoutFilter(getFilterParams({
+        client,
+        config,
+        fetchQuery,
+      })) as FilterType
+      filter = issueLayoutFilter(getFilterParams({ config, client, fetchQuery })) as FilterType
+      fetchQuery.isTypeMatch.mockReturnValue(false)
+      await filter.onFetch(elements)
+      expect(connection.post).not.toHaveBeenCalled()
+    })
+  })
+  it('should not fetch issue layouts if it is a data center instance', async () => {
+    const configWithDataCenterTrue = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+    filter = issueLayoutFilter(getFilterParams({
+      client,
+      config: configWithDataCenterTrue,
+    })) as FilterType
+    filter = issueLayoutFilter(getFilterParams({ config: configWithDataCenterTrue, client })) as FilterType
+    await filter.onFetch(elements)
+    expect(connection.post).not.toHaveBeenCalled()
   })
 })

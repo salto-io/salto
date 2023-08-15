@@ -15,7 +15,7 @@
 */
 import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { ObjectType, ElemID, InstanceElement, BuiltinTypes, ListType, ReferenceExpression, Element, isInstanceElement, isObjectType, getChangeData } from '@salto-io/adapter-api'
-import _, { after } from 'lodash'
+import _ from 'lodash'
 import { MockInterface } from '@salto-io/test-utils'
 import { getDefaultConfig } from '../../../src/config/config'
 import JiraClient from '../../../src/client/client'

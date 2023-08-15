@@ -141,6 +141,7 @@ const filter: FilterCreator = ({ client, config }) => ({
             naclCase(name),
             issueLayoutType,
             {
+              id: issueLayoutResult.id,
               projectId,
               extraDefinerId: screenId,
               owners: issueLayoutResult.usageInfo.edges[0].node.layoutOwners.map(owner => owner.id),

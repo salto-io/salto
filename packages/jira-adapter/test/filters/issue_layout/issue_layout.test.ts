@@ -183,7 +183,7 @@ describe('issue layout filter', () => {
                       },
                     },
                     {
-                      containerType: 'Secondery',
+                      containerType: 'SECONDARY',
                       items: {
                         nodes: [
                           {
@@ -257,7 +257,7 @@ describe('issue layout filter', () => {
             },
             {
               type: 'FIELD',
-              sectionType: 'Secondery',
+              sectionType: 'SECONDARY',
               key: new ReferenceExpression(fieldInstance2.elemID, fieldInstance2),
             },
           ],
@@ -296,63 +296,6 @@ describe('issue layout filter', () => {
       expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].key).toBeInstanceOf(ReferenceExpression)
       expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].key.elemID.getFullName()).toEqual('jira.Field.instance.missing_testField1')
     })
-    it('should add field of type PANEL as missing ref if there is no field', async () => {
-      mockGet.mockImplementation(params => {
-        if (params.url === '/rest/gira/1') {
-          return {
-            data: {
-              issueLayoutConfiguration: {
-                issueLayoutResult: {
-                  id: '2',
-                  name: 'Default Issue Layout',
-                  usageInfo: {
-                    edges: [{
-                      node: {
-                        layoutOwners: [{
-                          avatarId: '3',
-                          description: 'ownerTest',
-                          iconUrl: 'www.icon.com',
-                          id: '100',
-                          name: 'ownerTest',
-                        }],
-                      },
-                    }],
-                  },
-                  containers: [
-                    {
-                      containerType: 'PRIMARY',
-                      items: {
-                        nodes: [
-                          {
-                            panelItemId: 'testPanel1',
-                          },
-                        ],
-                      },
-                    },
-                    {
-                      containerType: 'Secondery',
-                      items: {
-                        nodes: [
-                          {
-                            fieldItemId: 'testField2',
-                          },
-                        ],
-                      },
-                    },
-                  ],
-                },
-              },
-            },
-          }
-        }
-        throw new Error('Err')
-      })
-      await filter.onFetch(elements)
-      const instances = elements.filter(isInstanceElement)
-      const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
-      expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].type).toEqual('PANEL')
-      expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].sectionType).toEqual('PRIMARY')
-    })
     it('should not add missing reference if enableMissingRef is false', async () => {
       mockGet.mockImplementation(params => {
         if (params.url === '/rest/gira/1') {
@@ -381,13 +324,13 @@ describe('issue layout filter', () => {
                       items: {
                         nodes: [
                           {
-                            panelItemId: 'testPanel1',
+                            fieldItemId: 'testField4',
                           },
                         ],
                       },
                     },
                     {
-                      containerType: 'Secondery',
+                      containerType: 'SECONDARY',
                       items: {
                         nodes: [
                           {
@@ -408,9 +351,9 @@ describe('issue layout filter', () => {
       configWithMissingRefs.fetch.enableMissingReferences = false
       filter = issueLayoutFilter(getFilterParams({ config: configWithMissingRefs, client })) as FilterType
       await filter.onFetch(elements)
-      elements.filter(isInstanceElement)
-      // const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
-      // expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].key).toEqual('testField1')
+      const instances = elements.filter(isInstanceElement)
+      const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
+      expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].key).toEqual('testField4')
     })
   })
 })

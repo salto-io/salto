@@ -22,7 +22,7 @@ import JiraClient, { graphQLResponseType } from '../../client/client'
 import { JIRA, PROJECT_TYPE } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { QUERY } from './issue_layout_query'
-import { ISSUE_LAYOUT_CONFIG_ITEM__SCHEME, ISSUE_LAYOUT_RESPONSE_SCHEME, IssueLayoutConfig, IssueLayoutConfigItem, IssueLayoutResponse, containerIssueLayoutResponse, createIssueLayoutType } from './issue_layout_types'
+import { ISSUE_LAYOUT_CONFIG_ITEM_SCHEME, ISSUE_LAYOUT_RESPONSE_SCHEME, IssueLayoutConfig, IssueLayoutConfigItem, IssueLayoutResponse, containerIssueLayoutResponse, createIssueLayoutType } from './issue_layout_types'
 import { addAnnotationRecursively, setTypeDeploymentAnnotations } from '../../utils'
 import { JiraConfig } from '../../config/config'
 import { referencesRules, JiraFieldReferenceResolver, contextStrategyLookup } from '../../reference_mapping'
@@ -35,7 +35,7 @@ type issueTypeMappingStruct = {
 }
 
 const isIssueLayoutResponse = createSchemeGuard<IssueLayoutResponse>(ISSUE_LAYOUT_RESPONSE_SCHEME, 'Failed to get issue layout from jira service')
-const isIssueLayoytConfigItem = createSchemeGuard<IssueLayoutConfigItem>(ISSUE_LAYOUT_CONFIG_ITEM__SCHEME, 'Not a valid issue layout config item')
+const isIssueLayoutConfigItem = createSchemeGuard<IssueLayoutConfigItem>(ISSUE_LAYOUT_CONFIG_ITEM_SCHEME, 'Not a valid issue layout config item')
 
 const getIssueLayout = async ({
   projectId,
@@ -67,10 +67,10 @@ const fromIssueLayoutConfigRespToIssueLayoutConfig = (
 ):
 IssueLayoutConfig => {
   const items = containers.flatMap(container => container.items.nodes.map(node => ({
-    type: node.fieldItemId ? 'FIELD' : 'PANEL',
+    type: 'FIELD',
     sectionType: container.containerType,
-    key: node.fieldItemId || node.panelItemId,
-  }))).filter(isDefined).filter(isIssueLayoytConfigItem)
+    key: node.fieldItemId,
+  }))).filter(isDefined).filter(isIssueLayoutConfigItem)
 
   return { items }
 }

@@ -155,6 +155,12 @@ export type IssueLayoutConfigItem = {
   key: string
 }
 
+export const ISSUE_LAYOUT_CONFIG_ITEM__SCHEME = Joi.object({
+  type: Joi.string().required(),
+  sectionType: Joi.string().required(),
+  key: Joi.string().required(),
+}).unknown(true).required()
+
 export type IssueLayoutConfig = {
     items: IssueLayoutConfigItem[]
 }

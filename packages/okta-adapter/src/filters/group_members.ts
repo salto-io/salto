@@ -16,7 +16,7 @@
 import { Element, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, ReferenceExpression, ObjectType, ElemID, BuiltinTypes, ListType } from '@salto-io/adapter-api'
 import { elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { pathNaclCase } from '@salto-io/adapter-utils'
-import { collections, values } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { GROUP_TYPE_NAME, GROUP_MEMBERSHIP_TYPE_NAME, OKTA } from '../constants'
@@ -27,7 +27,6 @@ const log = logger(module)
 const { RECORDS_PATH, TYPES_PATH } = elementUtils
 const { toArrayAsync } = collections.asynciterable
 const { makeArray } = collections.array
-const { isDefined } = values
 
 const createGroupMembershipType = (): ObjectType => (
   new ObjectType({
@@ -56,8 +55,8 @@ const getGroupMembersData = async (paginator: clientUtils.Paginator, group: Inst
 
 const createGroupMembershipInstance = async (
   group: InstanceElement,
-  paginator: clientUtils.Paginator,
   groupMembersType: ObjectType,
+  paginator: clientUtils.Paginator,
 ): Promise<InstanceElement | undefined> => {
   const groupName = group.elemID.name
   const groupMembersData = await getGroupMembersData(paginator, group)
@@ -81,6 +80,7 @@ const groupMembersFilter: FilterCreator = ({ config, paginator }) => ({
   name: 'groupMembersFilter',
   onFetch: async (elements: Element[]): Promise<void> => log.time(async () => {
     if (!config[FETCH_CONFIG].includeGroupMemberships) {
+      log.debug('Fetch of group members is disabled')
       return
     }
     const groupInstances = elements
@@ -90,9 +90,9 @@ const groupMembersFilter: FilterCreator = ({ config, paginator }) => ({
     const groupMembersType = createGroupMembershipType()
     elements.push(groupMembersType)
 
-    const groupMembershipInstances: InstanceElement[] = (await Promise.all(groupInstances
-      .map(async groupInstance => createGroupMembershipInstance(groupInstance, paginator, groupMembersType))))
-      .filter(isDefined)
+    const groupMembershipInstances = (await Promise.all(groupInstances
+      .map(async groupInstance => createGroupMembershipInstance(groupInstance, groupMembersType, paginator))))
+      .filter(isInstanceElement)
 
     groupMembershipInstances.forEach(instance => elements.push(instance))
   }, 'Group members filter'),

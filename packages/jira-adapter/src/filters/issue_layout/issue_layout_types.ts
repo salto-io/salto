@@ -155,13 +155,13 @@ export type IssueLayoutResponse = {
 
 export type IssueLayoutConfigItem = {
   type: string
-  sectionType: string
+  sectionType: 'PRIMARY' | 'SECONDARY' | 'CONTENT'
   key: string
 }
 
-export const ISSUE_LAYOUT_CONFIG_ITEM__SCHEME = Joi.object({
+export const ISSUE_LAYOUT_CONFIG_ITEM_SCHEME = Joi.object({
   type: Joi.string().required(),
-  sectionType: Joi.string().required(),
+  sectionType: Joi.string().valid('PRIMARY', 'SECONDARY', 'CONTENT').required(),
   key: Joi.string().required(),
 }).unknown(true).required()
 

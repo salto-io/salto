@@ -19,10 +19,6 @@ module.exports = {
             {
                 selector: "CallExpression[callee.object.name='JSON'][callee.property.name='stringify'][arguments.length=1]",
                 message: 'JSON.stringify usage without a replacer is disallowed. Use inspectValue (or safeJsonStringify for small objects) instead',
-            },
-            {
-                selector: "CallExpression[callee.property.name='safeJsonStringify'][arguments[2] !== undefined]",
-                message: 'safeJsonStringify usage with a replacer is is inefficient. Use inspectValue instead for large objects or long arrays',
             }
         ]
     }

@@ -211,6 +211,11 @@ const associateAttachments = async (
   return allRes
 }
 
+type ArticleAndChanges = {
+  article: InstanceElement
+  modificationChanges: ModificationChange<InstanceElement>[]
+}
+
 const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSource, articleNameToAttachments }: {
   changes: Change<InstanceElement>[]
   client: ZendeskClient
@@ -221,7 +226,7 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
     .filter(isAdditionOrModificationChange)
     .filter(change => getChangeData(change).elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME)
 
-  const articleToModifiedAttachments: Record<string, [InstanceElement, ModificationChange<InstanceElement>[]]> = {}
+  const articleToModifiedAttachments: Record<string, ArticleAndChanges> = {}
   await Promise.all(
     attachmentChanges
       .map(async attachmentChange => {
@@ -245,15 +250,17 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
         // To do so we're going to delete the existing attachment and create a new one instead
         if (isModificationChange(attachmentChange)) {
           const articleInstance = await parentArticleRef.getResolvedValue(elementsSource)
-          if (articleInstance === undefined || !isInstanceElement(articleInstance)) {
+          if (!isInstanceElement(articleInstance)) {
             log.error(`Couldn't get article ${parentArticleRef} in the elementsSource`)
             await deleteArticleAttachment(client, attachmentInstance)
             return
           }
-          const articleName = articleInstance.elemID.getFullName()
+          const articleName = articleInstance.elemID.name
           // We want to associate all attachments in bulks, so we fill it up here handle it later
-          articleToModifiedAttachments[articleName] = articleToModifiedAttachments[articleName] ?? [articleInstance, []]
-          articleToModifiedAttachments[articleName][1].push(attachmentChange)
+          articleToModifiedAttachments[articleName] = articleToModifiedAttachments[articleName] ?? {
+            article: articleInstance, modificationChanges: [],
+          }
+          articleToModifiedAttachments[articleName].modificationChanges.push(attachmentChange)
         }
         const parentArticleName = parentArticleRef.elemID.name
         articleNameToAttachments[parentArticleName] = (
@@ -262,7 +269,7 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
       })
   )
 
-  Object.values(articleToModifiedAttachments).forEach(async ([article, modificationChanges]) => {
+  Object.values(articleToModifiedAttachments).forEach(async ({ article, modificationChanges }) => {
     const attachmentChangesById = _.keyBy<ModificationChange<InstanceElement>>(
       modificationChanges,
       attachment => getChangeData(attachment).value.id
@@ -277,7 +284,7 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
       ),
       ...failures.map(({ ids }) => ids.forEach(id => {
         const afterAttachment = attachmentChangesById[id].data.after
-        log.error(`Association of attachment ${afterAttachment.elemID.name} with id ${afterAttachment.value.id} has failed `)
+        log.error(`Association of attachment ${afterAttachment.elemID.name} with id ${afterAttachment.value.id} has failed, deleting the attachment`)
         return deleteArticleAttachment(client, afterAttachment)
       })),
     ])

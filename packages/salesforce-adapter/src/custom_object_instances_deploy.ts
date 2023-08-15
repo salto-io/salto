@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { inspect } from 'util'
 import { logger } from '@salto-io/logging'
 import { collections, hash, strings, promises, values } from '@salto-io/lowerdash'
 import {
@@ -66,7 +67,11 @@ type InstanceAndResult = {
 const logErroredInstances = (instancesAndResults: InstanceAndResult[]): void => (
   instancesAndResults.forEach(({ instance, result }) => {
     if (result.errors !== undefined) {
-      log.error(`Instance ${instance.elemID.getFullName()} had deploy errors - ${['', ...result.errors].join('\n\t')}`)
+      log.error(`Instance ${instance.elemID.getFullName()} had deploy errors - ${['', ...result.errors].join('\n\t')}
+
+and values -
+${inspect(instance.value)}
+`)
     }
   })
 )

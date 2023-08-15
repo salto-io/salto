@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { inspect } from 'util'
 import { logger } from '@salto-io/logging'
 import { collections, hash, strings, promises, values } from '@salto-io/lowerdash'
 import {
@@ -69,7 +70,7 @@ const logErroredInstances = (instancesAndResults: InstanceAndResult[]): void => 
       log.error(`Instance ${instance.elemID.getFullName()} had deploy errors - ${['', ...result.errors].join('\n\t')}
 
 and values -
-${safeJsonStringify(instance.value, undefined, 2,)}
+${inspect(instance.value)}
 `)
     }
   })

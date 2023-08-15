@@ -22,7 +22,7 @@ import {
   AdapterOperationsContext,
   Adapter,
   ReadOnlyElementsSource,
-  isObjectType, TypeElement, Field, isType,
+  isObjectType, TypeElement, Field, isType, ContainerType, ListType,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { buildElementsSourceFromElements, createDefaultInstanceFromType } from '@salto-io/adapter-utils'
@@ -307,79 +307,93 @@ describe('adapters.ts', () => {
     const ADAPTER = 'salesforce'
 
     let type: TypeElement
-    let innerType: TypeElement
-    let innerInnerType: TypeElement
+    let nestedType: TypeElement
+    let nestedNestedType: TypeElement
     let field: Field
     let instance: InstanceElement
+    let containerType: ContainerType
     let elementsSource: ReadOnlyElementsSource
 
     beforeEach(async () => {
-      innerInnerType = new ObjectType({
-        elemID: new ElemID(ADAPTER, 'InnerInnerType'),
+      nestedNestedType = new ObjectType({
+        elemID: new ElemID(ADAPTER, 'NestedNestedType'),
       })
-      innerType = new ObjectType({
-        elemID: new ElemID(ADAPTER, 'InnerType'),
+      nestedType = new ObjectType({
+        elemID: new ElemID(ADAPTER, 'NestedType'),
         fields: {
-          field: { refType: innerInnerType },
+          field: { refType: nestedNestedType },
         },
       })
       type = new ObjectType({
         elemID: new ElemID(ADAPTER, 'Type'),
         fields: {
-          field: { refType: innerType },
+          field: { refType: nestedType },
         },
       })
       field = type.fields.field
       instance = new InstanceElement('TestInstance', type)
+      containerType = new ListType(type)
       elementsSource = createResolvedTypesElementsSource(utils.buildElementsSourceFromElements([
         type,
         field,
-        innerType,
-        innerInnerType,
+        nestedType,
+        nestedNestedType,
         instance,
+        containerType,
       ]))
     })
 
     describe('get', () => {
       it('should return fully resolved TypeElement', async () => {
         const resolvedType = await elementsSource.get(type.elemID) as ObjectType
-        const resolvedInnerType = resolvedType.fields.field.refType.type as ObjectType
-        const resolvedInnerInnerType = resolvedInnerType.fields.field.refType.type as ObjectType
-        expect([resolvedType, resolvedInnerType, resolvedInnerInnerType]).toSatisfyAll(isType)
+        const resolvedNestedType = resolvedType.fields.field.refType.type as ObjectType
+        const resolvedNestedNestedType = resolvedNestedType.fields.field.refType.type as ObjectType
+        expect([resolvedType, resolvedNestedType, resolvedNestedNestedType]).toSatisfyAll(isType)
       })
       it('should return Field with fully resolved type', async () => {
         const resolvedField = await elementsSource.get(field.elemID) as Field
-        const resolvedInnerType = resolvedField.refType.type as ObjectType
-        const resolvedInnerInnerType = resolvedInnerType.fields.field.refType.type as ObjectType
-        expect([resolvedInnerType, resolvedInnerInnerType]).toSatisfyAll(isType)
+        const resolvedNestedType = resolvedField.refType.type as ObjectType
+        const resolvedNestedNestedType = resolvedNestedType.fields.field.refType.type as ObjectType
+        expect([resolvedNestedType, resolvedNestedNestedType]).toSatisfyAll(isType)
       })
       it('should return Instance with fully resolved type', async () => {
         const resolvedInstance = await elementsSource.get(instance.elemID) as InstanceElement
         const resolvedType = resolvedInstance.refType.type as ObjectType
         expect(isObjectType(resolvedType)).toBeTrue()
-        const resolvedInnerType = resolvedType.fields.field.refType.type as ObjectType
+        const resolvedNestedType = resolvedType.fields.field.refType.type as ObjectType
+        expect(isObjectType(resolvedNestedType)).toBeTrue()
+        const resolvedNestedNestedType = resolvedNestedType.fields.field.refType.type as ObjectType
+        expect(isObjectType(resolvedNestedNestedType)).toBeTrue()
+      })
+      it('should return fully resolved ContainerType', async () => {
+        const resolvedContainerType = await elementsSource.get(containerType.elemID) as ContainerType
+        const resolvedInnerType = resolvedContainerType.refInnerType.type as ObjectType
         expect(isObjectType(resolvedInnerType)).toBeTrue()
-        const resolvedInnerInnerType = resolvedInnerType.fields.field.refType.type as ObjectType
-        expect(isObjectType(resolvedInnerInnerType)).toBeTrue()
+        const resolvedNestedType = resolvedInnerType.fields.field.refType.type as ObjectType
+        expect(isObjectType(resolvedNestedType)).toBeTrue()
+        const resolvedNestedNestedType = resolvedNestedType.fields.field.refType.type as ObjectType
+        expect(isObjectType(resolvedNestedNestedType)).toBeTrue()
       })
     })
     describe('getAll', () => {
       it('should return all elements with resolved types, and resolve all the types ones', async () => {
         const resolvedElements = await toArrayAsync(await elementsSource.getAll())
-        expect(resolvedElements).toHaveLength(5)
+        expect(resolvedElements).toHaveLength(6)
         const resolvedElementsByElemId = _.keyBy(
           resolvedElements,
           element => element.elemID.getFullName(),
         )
         const resolvedType = resolvedElementsByElemId[type.elemID.getFullName()] as ObjectType
-        const resolvedInnerType = resolvedElementsByElemId[innerType.elemID.getFullName()] as ObjectType
-        const resolvedInnerInnerType = resolvedElementsByElemId[innerInnerType.elemID.getFullName()] as ObjectType
+        const resolvedInnerType = resolvedElementsByElemId[nestedType.elemID.getFullName()] as ObjectType
+        const resolvedInnerInnerType = resolvedElementsByElemId[nestedNestedType.elemID.getFullName()] as ObjectType
         const resolvedInstance = resolvedElementsByElemId[instance.elemID.getFullName()] as InstanceElement
         const resolvedField = resolvedElementsByElemId[field.elemID.getFullName()] as Field
+        const resolvedContainerType = resolvedElementsByElemId[containerType.elemID.getFullName()] as ContainerType
         expect(resolvedInnerType.fields.field.refType.type).toEqual(resolvedInnerInnerType)
         expect(resolvedType.fields.field.refType.type).toEqual(resolvedInnerType)
         expect(resolvedInstance.refType.type).toEqual(resolvedType)
         expect(resolvedField.refType.type).toEqual(resolvedInnerType)
+        expect(resolvedContainerType.refInnerType.type).toEqual(resolvedType)
         // Verify that expressions.resolve was invoked once for the whole process
         expect(resolveSpy).toHaveBeenCalledOnce()
       })
@@ -389,10 +403,11 @@ describe('adapters.ts', () => {
         const elementIds = await toArrayAsync(await elementsSource.list())
         expect(elementIds).toIncludeSameMembers([
           type.elemID,
-          innerType.elemID,
-          innerInnerType.elemID,
+          nestedType.elemID,
+          nestedNestedType.elemID,
           instance.elemID,
           field.elemID,
+          containerType.elemID,
         ])
       })
     })

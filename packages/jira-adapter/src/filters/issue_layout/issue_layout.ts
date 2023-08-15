@@ -112,6 +112,9 @@ const getProjectToScreenMapping = async (elements: Element[]): Promise<Record<st
 const filter: FilterCreator = ({ client, config }) => ({
   name: 'issueLayoutFilter',
   onFetch: async elements => {
+    if (client.isDataCenter) {
+      return
+    }
     const projectToScreenId = await getProjectToScreenMapping(elements)
     const projectIdToProjectName = Object.fromEntries(
       (await Promise.all(elements.filter(e => e.elemID.typeName === PROJECT_TYPE)

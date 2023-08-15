@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { ObjectType, ElemID, InstanceElement, BuiltinTypes, ListType, ReferenceExpression, Element, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, BuiltinTypes, ListType, ReferenceExpression, Element, isInstanceElement, isObjectType, getChangeData } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { MockInterface } from '@salto-io/test-utils'
 import { getDefaultConfig } from '../../../src/config/config'
@@ -22,6 +22,7 @@ import JiraClient from '../../../src/client/client'
 import issueLayoutFilter from '../../../src/filters/issue_layout/issue_layout'
 import { getFilterParams, mockClient } from '../../utils'
 import { ISSUE_LAYOUT_TYPE, JIRA, PROJECT_TYPE, SCREEN_SCHEME_TYPE } from '../../../src/constants'
+import { createIssueLayoutType } from '../../../src/filters/issue_layout/issue_layout_types'
 
 describe('issue layout filter', () => {
   let connection: MockInterface<clientUtils.APIConnection>
@@ -205,22 +206,6 @@ describe('issue layout filter', () => {
         }
         throw new Error('Err')
       })
-      elements = [
-        screenType,
-        screenInstance,
-        screenSchemeType,
-        screenSchemeInstance,
-        issueTypeScreenSchemeItemType,
-        issueTypeScreenSchemeType,
-        issueTypeScreenSchemeInstance,
-        projectType,
-        projectInstance,
-        issueTypeType,
-        issueTypeInstance,
-        fieldType,
-        fieldInstance1,
-        fieldInstance2,
-      ]
     })
     it('should add all subTypes to the elements', async () => {
       await filter.onFetch(elements)
@@ -386,5 +371,119 @@ describe('issue layout filter', () => {
     filter = issueLayoutFilter(getFilterParams({ config: configWithDataCenterTrue, client })) as FilterType
     await filter.onFetch(elements)
     expect(connection.post).not.toHaveBeenCalled()
+  })
+  describe('onDeploy', () => {
+    let issueLayoutInstance: InstanceElement
+    let afterIssueLayoutInstance: InstanceElement
+    const { issueLayoutType } = createIssueLayoutType()
+    beforeEach(() => {
+      issueLayoutInstance = new InstanceElement(
+        'issueLayout',
+        issueLayoutType,
+        {
+          id: '2',
+          projectId: new ReferenceExpression(projectInstance.elemID, projectInstance),
+          extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
+          owners: [
+            new ReferenceExpression(issueTypeInstance.elemID, issueTypeInstance),
+          ],
+          issueLayoutConfig: {
+            items: [
+              {
+                type: 'FIELD',
+                sectionType: 'PRIMARY',
+                key: new ReferenceExpression(fieldInstance1.elemID, fieldInstance1),
+              },
+              {
+                type: 'FIELD',
+                sectionType: 'SECONDARY',
+                key: new ReferenceExpression(fieldInstance2.elemID, fieldInstance2),
+              },
+            ],
+          },
+        }
+      )
+      afterIssueLayoutInstance = issueLayoutInstance.clone()
+    })
+    it('should add issue layout to the elements', async () => {
+      const res = await filter.deploy([
+        { action: 'add', data: { after: issueLayoutInstance } },
+        { action: 'add', data: { after: projectInstance } },
+      ])
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.leftoverChanges).toHaveLength(1)
+      expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value)
+        .toEqual(projectInstance.value)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges[0]).toEqual(
+        { action: 'add', data: { after: issueLayoutInstance } }
+      )
+    })
+    it('should modify issue layout', async () => {
+      const fieldInstance3 = new InstanceElement(
+        'testField3',
+        fieldType,
+        {
+          id: 'testField3',
+          name: 'TestField3',
+        }
+      )
+      afterIssueLayoutInstance.value.issueLayoutConfig.items[2] = {
+        type: 'FIELD',
+        sectionType: 'PRIMARY',
+        key: new ReferenceExpression(fieldInstance3.elemID, fieldInstance3),
+      }
+      const res = await filter.deploy([
+        { action: 'modify', data: { before: issueLayoutInstance, after: afterIssueLayoutInstance } },
+      ])
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.leftoverChanges).toHaveLength(0)
+
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges[0]).toEqual(
+        { action: 'modify', data: { before: issueLayoutInstance, after: afterIssueLayoutInstance } }
+      )
+    })
+    it('should not add item if its key is not a reference expression', async () => {
+      connection.put.mockResolvedValue({ status: 200, data: {} })
+      afterIssueLayoutInstance.value.issueLayoutConfig.items[2] = {
+        type: 'FIELD',
+        sectionType: 'PRIMARY',
+        key: 'testField3',
+      }
+      const res = await filter.deploy([
+        { action: 'modify', data: { before: issueLayoutInstance, after: afterIssueLayoutInstance } },
+      ])
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges[0]).toEqual(
+        { action: 'modify', data: { before: issueLayoutInstance, after: afterIssueLayoutInstance } }
+      )
+      expect(connection.put).toHaveBeenCalledWith(
+        '/rest/internal/1.0/issueLayouts/2',
+        { extraDefinerId: 11,
+          projectId: 11111,
+          owners: [],
+          issueLayoutType: 'ISSUE_VIEW',
+          issueLayoutConfig: {
+            items: [
+              { key: 'testField1',
+                sectionType: 'primary',
+                type: 'FIELD',
+                data: {
+                  name: 'TestField1',
+                  type: 'testField1',
+                } },
+              { key: 'testField2',
+                sectionType: 'secondary',
+                type: 'FIELD',
+                data: {
+                  name: 'TestField2',
+                  type: 'testField2',
+                } }],
+          } },
+        undefined
+      )
+    })
   })
 })

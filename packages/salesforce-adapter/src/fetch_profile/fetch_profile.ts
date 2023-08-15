@@ -34,6 +34,15 @@ export type FetchProfile = {
   readonly addNamespacePrefixToFullName: boolean
 }
 
+type OptionalFeaturesDefaultValues = {
+  [FeatureName in keyof OptionalFeatures]?: boolean
+}
+
+const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
+  fetchProfilesUsingReadApi: false,
+  generateRefsInProfiles: false,
+}
+
 export const buildFetchProfile = ({
   metadata = {},
   data,
@@ -49,7 +58,7 @@ changedAtSingleton?: InstanceElement): FetchProfile => ({
     ? getFetchTargets(target as SupportedMetadataType[])
     : undefined),
   dataManagement: data && buildDataManagement(data),
-  isFeatureEnabled: name => optionalFeatures?.[name] ?? true,
+  isFeatureEnabled: name => optionalFeatures?.[name] ?? optionalFeaturesDefaultValues[name] ?? true,
   shouldFetchAllCustomSettings: () => fetchAllCustomSettings ?? true,
   maxInstancesPerType: maxInstancesPerType ?? DEFAULT_MAX_INSTANCES_PER_TYPE,
   preferActiveFlowVersions: preferActiveFlowVersions ?? false,

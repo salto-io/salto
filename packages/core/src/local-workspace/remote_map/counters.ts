@@ -61,7 +61,7 @@ const createLocationCounters = (location: string): LocationCounters => {
     ...COUNTER_TYPES.map(counterType => [counterType, createCounter()]),
     ['dump', () => {
       log.debug('Remote Map Stats for location \'%s\': %o',
-        location, Object.fromEntries(COUNTER_TYPES.map(counterType => [counterType, counters[counterType]])))
+        location, Object.fromEntries(COUNTER_TYPES.map(counterType => [counterType, counters[counterType].value()])))
     }],
   ])
   return counters

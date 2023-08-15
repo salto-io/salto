@@ -43,6 +43,7 @@ describe('adapter creator', () => {
     describe('with valid credentials', () => {
       let accountId: string
       beforeEach(async () => {
+        mockAxiosAdapter.onGet('/rest/api/3/instance/license').reply(200, { applications: [{ plan: 'FREE' }] })
         mockAxiosAdapter.onGet().reply(200, { baseUrl: 'http://my_account.net' });
         ({ accountId } = await adapter.validateCredentials(
           createCredentialsInstance({ baseUrl: 'http://my.net', user: 'u', token: 't' })

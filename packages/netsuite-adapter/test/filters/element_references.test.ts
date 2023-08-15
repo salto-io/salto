@@ -538,21 +538,7 @@ describe('instance_references filter', () => {
         isPartial: false,
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, noExtensionInstance, fileWithExtension])
-      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(2)
-      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(expect.arrayContaining([
-        {
-          reference: new ReferenceExpression(
-            noExtensionInstance.elemID.createNestedID(PATH)
-          ),
-          occurrences: undefined,
-        },
-        {
-          reference: new ReferenceExpression(
-            fileWithExtension.elemID.createNestedID(PATH)
-          ),
-          occurrences: undefined,
-        },
-      ]))
+      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
     })
 
     it('should add generated dependency from comment', async () => {

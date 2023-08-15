@@ -47,7 +47,7 @@ const isValidTransitionResponse = (response: unknown): response is { values: [Wo
   }).unknown(true).required().validate(response)
 
   if (error !== undefined) {
-    log.warn(`Unexpected workflows response from Jira: ${error}. ${safeJsonStringify(response)}`)
+    log.warn(`Unexpected workflows response from Jira: ${error}. ${inspectValue(response)}`)
     return false
   }
   return true
@@ -150,20 +150,6 @@ const deployWithClone = async (
   client: JiraClient,
   config: JiraConfig
 ): Promise<void> => {
-  const resolvedChange = await resolveChangeElement(change, getLookUpName)
-
-  if (!isPostFetchWorkflowChange(resolvedChange)) {
-    const instance = getChangeData(resolvedChange)
-    log.error(`values ${inspectValue(instance.value)} of instance ${instance.elemID.getFullName} are invalid`)
-    throw new Error(`instance ${instance.elemID.getFullName()} is not valid for deployment`)
-  }
-  const instance = getChangeData(resolvedChange)
-  removeCreateIssuePermissionValidator(instance)
-  Object.values(instance.value.transitions).forEach(transition => {
-    changeIdsToString(transition.rules?.conditions ?? {})
-  })
-
-  fixGroupNames(instance)
   const resolvedChangeForDeployment = _.cloneDeep(resolvedChange)
   const deployInstance = getChangeData(resolvedChangeForDeployment)
   if (!isRemovalChange(resolvedChange)) {
@@ -245,7 +231,7 @@ export const deployWorkflow = async (
   if (!isPostFetchWorkflowChange(resolvedChange)
     || !isPostFetchWorkflowChange(change)) {
     const instance = getChangeData(resolvedChange)
-    log.error(`values ${safeJsonStringify(instance.value, elementExpressionStringifyReplacer)} of instance ${instance.elemID.getFullName} are invalid`)
+    log.error(`values ${inspectValue(instance.value)} of instance ${instance.elemID.getFullName} are invalid`)
     throw new Error(`instance ${instance.elemID.getFullName()} is not valid for deployment`)
   }
   const instance = getChangeData(resolvedChange)

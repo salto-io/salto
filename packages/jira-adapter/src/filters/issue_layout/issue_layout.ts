@@ -15,11 +15,12 @@
 */
 import { CORE_ANNOTATIONS, Element, InstanceElement, ReferenceExpression, isInstanceElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { createSchemeGuard, isResolvedReferenceExpression, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { elements as adapterElements, references as referenceUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import JiraClient, { graphQLResponseType } from '../../client/client'
-import { JIRA, PROJECT_TYPE } from '../../constants'
+import { ISSUE_LAYOUT_TYPE, JIRA, PROJECT_TYPE } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { QUERY } from './issue_layout_query'
 import { ISSUE_LAYOUT_CONFIG_ITEM_SCHEME, ISSUE_LAYOUT_RESPONSE_SCHEME, IssueLayoutConfig, IssueLayoutConfigItem, IssueLayoutResponse, containerIssueLayoutResponse, createIssueLayoutType } from './issue_layout_types'
@@ -28,7 +29,7 @@ import { JiraConfig } from '../../config/config'
 import { referencesRules, JiraFieldReferenceResolver, contextStrategyLookup } from '../../reference_mapping'
 
 const { isDefined } = lowerDashValues
-
+const log = logger(module)
 type issueTypeMappingStruct = {
     issueTypeId: string
     screenSchemeId: ReferenceExpression
@@ -51,15 +52,18 @@ const getIssueLayout = async ({
   const variables = {
     projectId,
     extraDefinerId: screenId,
-    fieldPropertyKeys: [],
   }
-  const response = await client.gqlPost({
-    url: baseUrl,
-    query: QUERY,
-    variables,
-  })
-
-  return response
+  try {
+    const response = await client.gqlPost({
+      url: baseUrl,
+      query: QUERY,
+      variables,
+    })
+    return response
+  } catch (e) {
+    log.error(`Failed to get issue layout for project ${projectId} and screen ${screenId}: ${e}`)
+  }
+  return { data: undefined }
 }
 
 const fromIssueLayoutConfigRespToIssueLayoutConfig = (
@@ -70,7 +74,7 @@ IssueLayoutConfig => {
     type: 'FIELD',
     sectionType: container.containerType,
     key: node.fieldItemId,
-  }))).filter(isDefined).filter(isIssueLayoutConfigItem)
+  }))).filter(isIssueLayoutConfigItem)
 
   return { items }
 }
@@ -84,7 +88,7 @@ const createReferences = async (
   await referenceUtils.addReferences({
     elements,
     contextElements,
-    fieldsToGroupBy: ['id', 'name', 'originalName', 'groupId', 'key'],
+    fieldsToGroupBy: ['id'],
     defs: fixedDefs,
     contextStrategyLookup,
     fieldReferenceResolverCreator: defs => new JiraFieldReferenceResolver(defs),
@@ -109,10 +113,10 @@ const getProjectToScreenMapping = async (elements: Element[]): Promise<Record<st
   return projectToScreenId
 }
 
-const filter: FilterCreator = ({ client, config }) => ({
+const filter: FilterCreator = ({ client, config, fetchQuery }) => ({
   name: 'issueLayoutFilter',
   onFetch: async elements => {
-    if (client.isDataCenter) {
+    if (client.isDataCenter || !fetchQuery.isTypeMatch(ISSUE_LAYOUT_TYPE)) {
       return
     }
     const projectToScreenId = await getProjectToScreenMapping(elements)

@@ -46,8 +46,8 @@ export type graphQLResponseType = {
 }
 
 const GRAPHQL_RESPONSE_SCHEME = Joi.object({
-  data: Joi.object().required(),
-  errors: Joi.object().optional(),
+  data: Joi.required(),
+  errors: Joi.optional(),
 }).unknown(true).required()
 
 const isGraphQLResponse = createSchemeGuard<graphQLResponseType>(GRAPHQL_RESPONSE_SCHEME, 'Failed to get graphql response')

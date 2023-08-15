@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerId: Long!, $fieldPropertyKeys: [String!]!, $requestOwnerPropertyKeys: [String!] = []) {
+export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerId: Long!, $requestOwnerPropertyKeys: [String!] = []) {
     ...CMPJSWLayoutConfigurationFragment
   }
   
@@ -90,7 +90,6 @@ export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerI
   
     fragment FieldItemFragment on JiraIssueLayoutFieldItemConfiguration {
       ...FieldItemBaseFragment
-      properties(keys: $fieldPropertyKeys)
     } 
   
   fragment JiraIssueLayoutItemConfigurationFragment on JiraIssueLayoutItemConfigurationResult {

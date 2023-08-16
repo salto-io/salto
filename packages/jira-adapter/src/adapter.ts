@@ -136,6 +136,10 @@ import projectFieldContextOrder from './filters/project_field_contexts_order'
 import scriptedFieldsIssueTypesFilter from './filters/script_runner/scripted_fields_issue_types'
 import scriptRunnerFilter from './filters/script_runner/script_runner_filter'
 import scriptRunnerInstancesDeploy from './filters/script_runner/script_runner_instances_deploy'
+// import scriptRunnerBatchDeploy from './filters/script_runner/script_runner_batch_deploy'
+import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
+import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uuid'
+
 import ScriptRunnerClient from './client/script_runner_client'
 
 const { getAllElements } = elementUtils.ducktype
@@ -189,6 +193,8 @@ export const DEFAULT_FILTERS = [
   scriptRunnerFilter,
   // must run before references are transformed
   scriptedFieldsIssueTypesFilter,
+  behaviorsMappingsFilter,
+  behaviorsFieldUuidFilter,
   scriptRunnerWorkflowFilter,
   // must run after scriptRunnerWorkflowFilter
   scriptRunnerWorkflowListsFilter,
@@ -280,6 +286,8 @@ export const DEFAULT_FILTERS = [
   wrongUserPermissionSchemeFilter,
   deployDcIssueEventsFilter,
   addAliasFilter,
+  // scriptRunnerBatchDeploy,
+  // Must run after scriptRunnerBatchDeploy
   scriptRunnerInstancesDeploy,
   // Must be last
   defaultInstancesDeployFilter,

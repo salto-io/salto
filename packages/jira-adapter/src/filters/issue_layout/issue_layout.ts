@@ -113,7 +113,7 @@ const getProjectToScreenMapping = async (elements: Element[]): Promise<Record<st
   return projectToScreenId
 }
 
-const filter: FilterCreator = ({ client, config, fetchQuery }) => ({
+const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) => ({
   name: 'issueLayoutFilter',
   onFetch: async elements => {
     if (client.isDataCenter || !fetchQuery.isTypeMatch(ISSUE_LAYOUT_TYPE)) {
@@ -143,18 +143,22 @@ const filter: FilterCreator = ({ client, config, fetchQuery }) => ({
         if (!Array.isArray(response.data) && isIssueLayoutResponse(response.data)) {
           const { issueLayoutResult } = response.data.issueLayoutConfiguration
           const { containers } = issueLayoutResult
+          const value = {
+            id: issueLayoutResult.id,
+            projectId,
+            extraDefinerId: screenId,
+            owners: issueLayoutResult.usageInfo.edges[0].node.layoutOwners.map(owner => owner.id),
+            issueLayoutConfig: fromIssueLayoutConfigRespToIssueLayoutConfig(containers),
+          }
           const name = `${projectIdToProjectName[projectId]}_${issueLayoutResult.name}`
+          const serviceIds = adapterElements.createServiceIds(value, 'id', issueLayoutType.elemID)
+          const instanceName = getElemIdFunc ? getElemIdFunc(JIRA, serviceIds, naclCase(name)).name
+            : naclCase(name)
           const issueLayout = new InstanceElement(
-            naclCase(name),
+            instanceName,
             issueLayoutType,
-            {
-              id: issueLayoutResult.id,
-              projectId,
-              extraDefinerId: screenId,
-              owners: issueLayoutResult.usageInfo.edges[0].node.layoutOwners.map(owner => owner.id),
-              issueLayoutConfig: fromIssueLayoutConfigRespToIssueLayoutConfig(containers),
-            },
-            [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'Layouts', pathNaclCase(name)],
+            value,
+            [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'Layouts', pathNaclCase(instanceName)],
           )
           elements.push(issueLayout)
           await createReferences(config, [issueLayout], elements)

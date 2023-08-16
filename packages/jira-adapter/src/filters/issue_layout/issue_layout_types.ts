@@ -27,10 +27,6 @@ export const createIssueLayoutType = (): {
     elemID: new ElemID(JIRA, 'IssueLayoutDataOwner'),
     fields: {
       id: { refType: BuiltinTypes.STRING },
-      name: { refType: BuiltinTypes.STRING },
-      description: { refType: BuiltinTypes.STRING },
-      avatarId: { refType: BuiltinTypes.STRING },
-      iconUrl: { refType: BuiltinTypes.STRING },
     },
   })
   const onwerIssueLayoutType = new ObjectType({
@@ -61,7 +57,7 @@ export const createIssueLayoutType = (): {
     elemID: new ElemID(JIRA, ISSUE_LAYOUT_TYPE),
     fields: {
       id: {
-        refType: BuiltinTypes.STRING,
+        refType: BuiltinTypes.SERVICE_ID,
         annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
       },
       projectId: {
@@ -100,19 +96,11 @@ export type screenScheme = {
 }
 
 export type LayoutOwners = {
-  avatarId: string
-  description: string
-  iconUrl: string
   id: string
-  name: string
 }[]
 
 const LAYOUT_OWNER_RESPONSE_SCHEME = Joi.object({
-  avatarId: Joi.string().required().allow(null),
-  description: Joi.string().required(),
-  iconUrl: Joi.string().required(),
   id: Joi.string().required(),
-  name: Joi.string().required(),
 }).unknown(true).required()
 
 

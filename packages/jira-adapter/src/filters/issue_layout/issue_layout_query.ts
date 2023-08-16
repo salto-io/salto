@@ -17,23 +17,12 @@ export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerI
     ...CMPJSWLayoutConfigurationFragment
   }
   
-  
-  
   fragment JiraIssueLayoutOwnerFragment on JiraIssueLayoutOwner {
     ... on JiraIssueLayoutIssueTypeOwner {
       id
-      name
-      description
-      avatarId
-      iconUrl
     }
     ... on JiraIssueLayoutRequestTypeOwner {
       id
-      name
-      description
-      avatarId
-      iconUrl
-      instructions
       properties(keys: $requestOwnerPropertyKeys)
     }
   }
@@ -41,10 +30,6 @@ export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerI
   fragment JiraIssueLayoutUsageInfo on JiraIssueLayoutUsageInfoConnection {
     edges {
       node {
-        avatarId
-        projectId
-        projectKey
-        projectName
         layoutOwners {
           ... JiraIssueLayoutOwnerFragment
         }
@@ -52,19 +37,14 @@ export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerI
     }
   }
   
-  
-  
     fragment JiraIssueLayoutActivePanelItemFragment on JiraIssueItemPanelItem {
       panelItemId
     }
-  
-  
   
     fragment JiraIssueLayoutActiveFieldItemFragment on JiraIssueItemFieldItem {
       fieldItemId
       containerPosition
     }
-  
   
   fragment JiraIssueLayoutItemContainerFragment on JiraIssueItemContainer {
     containerType
@@ -72,31 +52,6 @@ export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerI
       nodes {
         ... JiraIssueLayoutActiveFieldItemFragment,
         ... JiraIssueLayoutActivePanelItemFragment,
-      }
-    }
-  }
-  
-  fragment PanelItemFragment on JiraIssueLayoutPanelItemConfiguration {
-    panelItemId
-    name
-  }
-  
-  fragment FieldItemBaseFragment on JiraIssueLayoutFieldItemConfiguration {
-    fieldItemId
-    key
-    name
-    type
-  }
-  
-    fragment FieldItemFragment on JiraIssueLayoutFieldItemConfiguration {
-      ...FieldItemBaseFragment
-    } 
-  
-  fragment JiraIssueLayoutItemConfigurationFragment on JiraIssueLayoutItemConfigurationResult {
-    items {
-      nodes {
-        ...FieldItemFragment
-        ...PanelItemFragment
       }
     }
   }
@@ -112,11 +67,6 @@ export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerI
           }
           containers {
               ...JiraIssueLayoutItemContainerFragment
-          }
-        }
-        metadata {
-          configuration {
-              ...JiraIssueLayoutItemConfigurationFragment
           }
         }
       }

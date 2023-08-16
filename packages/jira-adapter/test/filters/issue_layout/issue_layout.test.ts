@@ -378,7 +378,7 @@ describe('issue layout filter', () => {
     })
   })
   it('should not fetch issue layouts if it is a data center instance', async () => {
-    const configWithDataCenterTrue = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+    const configWithDataCenterTrue = _.cloneDeep(getDefaultConfig({ isDataCenter: true }))
     filter = issueLayoutFilter(getFilterParams({
       client,
       config: configWithDataCenterTrue,
@@ -386,5 +386,15 @@ describe('issue layout filter', () => {
     filter = issueLayoutFilter(getFilterParams({ config: configWithDataCenterTrue, client })) as FilterType
     await filter.onFetch(elements)
     expect(connection.post).not.toHaveBeenCalled()
+  })
+  it('should use elemIdGetter', async () => {
+    filter = issueLayoutFilter(getFilterParams({
+      client,
+      getElemIdFunc: () => new ElemID(JIRA, 'someName'),
+    })) as FilterType
+    await filter.onFetch(elements)
+    const instances = elements.filter(isInstanceElement)
+    const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
+    expect(issueLayoutInstance?.elemID.getFullName()).toEqual('jira.IssueLayout.instance.project1_Default_Issue_Layout@uss')
   })
 })

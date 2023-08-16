@@ -744,11 +744,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           toField: 'theme',
           context: [{ name: 'brandId', fromField: 'id' }],
         },
-        {
-          type: 'api__v1__brands___brandId___templates__email@uuuuuu_00123_00125uuuu',
-          toField: 'emailTemplates',
-          context: [{ name: 'brandId', fromField: 'id' }],
-        },
       ],
     },
     transformation: {
@@ -758,14 +753,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   'api__v1__brands___brandId___themes@uuuuuu_00123_00125uu': {
     request: {
       url: '/api/v1/brands/{brandId}/themes',
-    },
-    transformation: {
-      dataField: '.',
-    },
-  },
-  'api__v1__brands___brandId___templates__email@uuuuuu_00123_00125uuuu': {
-    request: {
-      url: '/api/v1/brands/{brandId}/templates/email',
     },
     transformation: {
       dataField: '.',
@@ -850,11 +837,10 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
-      standaloneFields: [{ fieldName: 'theme' }, { fieldName: 'emailTemplates' }],
+      standaloneFields: [{ fieldName: 'theme' }],
       nestStandaloneInstances: false,
       fieldTypeOverrides: [
         { fieldName: 'theme', fieldType: 'list<BrandTheme>' },
-        { fieldName: 'emailTemplates', fieldType: 'list<EmailTemplate>' },
       ],
       serviceUrl: '/admin/customizations/footer',
     },
@@ -950,14 +936,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           brandId: '_parent.1.id',
         },
       },
-    },
-  },
-  EmailTemplate: {
-    transformation: {
-      idFields: ['name'],
-      extendsParentId: true,
-      serviceIdField: 'name',
-      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
     },
   },
   Authenticator: {
@@ -1481,7 +1459,6 @@ export const SUPPORTED_TYPES = {
   AuthorizationServerPolicy: ['api__v1__authorizationServers___authServerId___policies@uuuuuu_00123_00125uu'],
   Brand: ['api__v1__brands'],
   BrandTheme: ['api__v1__brands___brandId___themes@uuuuuu_00123_00125uu'],
-  EmailTemplate: ['api__v1__brands___brandId___templates__email@uuuuuu_00123_00125uuuu'],
   EventHook: ['api__v1__eventHooks'],
   Feature: ['api__v1__features'],
   Group: ['api__v1__groups'],

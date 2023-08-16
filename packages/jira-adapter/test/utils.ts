@@ -25,6 +25,7 @@ import { FilterCreator } from '../src/filter'
 import { paginate } from '../src/client/pagination'
 import { GetUserMapFunc, getUserMapFuncCreator } from '../src/users'
 import { JIRA } from '../src/constants'
+import ScriptRunnerClient from '../src/client/script_runner_client'
 
 
 export const createCredentialsInstance = (credentials: Credentials): InstanceElement => (
@@ -56,6 +57,7 @@ type ClientWithMockConnection = {
   paginator: clientUtils.Paginator
   connection: MockInterface<clientUtils.APIConnection>
   getUserMapFunc: GetUserMapFunc
+  scriptRunnerClient: ScriptRunnerClient
 }
 export const mockClient = (isDataCenter = false): ClientWithMockConnection => {
   const connection = mockConnection()
@@ -79,7 +81,13 @@ export const mockClient = (isDataCenter = false): ClientWithMockConnection => {
     { paginationFuncCreator: paginate, client }
   )
   const getUserMapFunc = getUserMapFuncCreator(paginator, client.isDataCenter)
-  return { client, paginator, connection, getUserMapFunc }
+  const scriptRunnerClient = new ScriptRunnerClient({
+    credentials: {},
+    isDataCenter,
+    jiraClient: client,
+  })
+
+  return { client, paginator, connection, getUserMapFunc, scriptRunnerClient }
 }
 
 export const getDefaultAdapterConfig = async (): Promise<JiraConfig> => {

@@ -16,13 +16,15 @@
 
 import { walkOnValue, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { InstanceElement, Value } from '@salto-io/adapter-api'
-import { SCRIPT_RUNNER_DC_TYPES } from './workflow_dc'
-import { SCRIPT_RUNNER_CLOUD_TYPES } from './workflow_cloud'
-import { isWorkflowInstance } from '../../workflow/types'
+import { SCRIPT_RUNNER_DC_TYPES } from './workflow/workflow_dc'
+import { SCRIPT_RUNNER_CLOUD_TYPES } from './workflow/workflow_cloud'
+import { isWorkflowInstance } from '../workflow/types'
+import { SCRIPT_RUNNER_TYPES } from '../../constants'
 
 
-const SCRIPT_DC_FIELDS = ['FIELD_CONDITION', 'FIELD_ADDITIONAL_SCRIPT', 'FIELD_SCRIPT_FILE_OR_SCRIPT']
-const SCRIPT_CLOUD_FIELDS = ['expression', 'additionalCode', 'emailCode', 'condition']
+const WORKFLOW_SCRIPT_DC_FIELDS = ['FIELD_CONDITION', 'FIELD_ADDITIONAL_SCRIPT', 'FIELD_SCRIPT_FILE_OR_SCRIPT']
+const WORKFLOW_SCRIPT_CLOUD_FIELDS = ['expression', 'additionalCode', 'emailCode', 'condition']
+const SCRIPT_CLOUD_FIELDS = ['script', 'executionCondition', 'codeToRun']
 
 export type referenceFunc = (value: Value, fieldName: string) => void
 
@@ -35,7 +37,7 @@ const walkOnCloudScripts = (func: (value: string, fieldName: string) => void)
     return WALK_NEXT_STEP.SKIP
   }
   if (isCloudScriptRunnerItem(value)) {
-    SCRIPT_CLOUD_FIELDS.forEach(fieldName => {
+    WORKFLOW_SCRIPT_CLOUD_FIELDS.forEach(fieldName => {
       if (value.configuration.scriptRunner[fieldName] != null) {
         func(value.configuration.scriptRunner, fieldName)
       }
@@ -54,7 +56,7 @@ const walkOnDcScripts = (func: referenceFunc)
     return WALK_NEXT_STEP.SKIP
   }
   if (isDCScriptRunnerItem(value)) {
-    SCRIPT_DC_FIELDS.forEach(fieldName => {
+    WORKFLOW_SCRIPT_DC_FIELDS.forEach(fieldName => {
       if (value.configuration[fieldName]?.script != null) {
         func(value.configuration[fieldName], 'script')
       }
@@ -80,5 +82,12 @@ export const walkOnScripts = (
               : walkOnCloudScripts(func) })
         }
       })
+    })
+  instances
+    .filter(instance => SCRIPT_RUNNER_TYPES.includes(instance.elemID.typeName))
+    .forEach(instance => {
+      Object.keys(instance.value)
+        .filter(key => SCRIPT_CLOUD_FIELDS.includes(key))
+        .forEach(key => func(instance.value, key))
     })
 }

@@ -157,15 +157,20 @@ export const serializeStream = async <T = Element>(
       || nameToTypeEntries.find(([_name, type]) => e instanceof type)?.[0]
     return o
   }
-  const staticFileReplacer = (e: StaticFile): Omit<Omit<StaticFile & SerializedClass, 'internalContent'>, 'content'> => {
+  const staticFileReplacer = (e: StaticFile): Omit<types.PickDataFields<StaticFile> & SerializedClass, 'internalContent' | 'content'> => {
     if (storeStaticFile !== undefined) {
       promises.push(storeStaticFile(e))
     }
     return _.pick(saltoClassReplacer(e), SALTO_CLASS_FIELD, 'filepath', 'hash', 'encoding')
   }
 
-  const elemIdReplacer = (id: ElemID): Omit<Omit<StaticFile & SerializedClass, 'internalContent'>, 'content'> =>
-    _.pick(id, 'adapter', 'typeName', 'idType', 'nameParts')
+  const elemIdReplacer = (id: ElemID): Omit<types.PickDataFields<ElemID>, 'nestingLevel' | 'name'> & { readonly nameParts: ReadonlyArray<string> } =>
+    ({
+      adapter: id.adapter,
+      typeName: id.typeName,
+      idType: id.idType,
+      nameParts: _.get(id, 'nameParts'),
+    })
 
   const referenceExpressionReplacer = (e: ReferenceExpression):
     ReferenceExpression & SerializedClass => {

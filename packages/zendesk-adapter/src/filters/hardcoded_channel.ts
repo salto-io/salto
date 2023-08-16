@@ -17,7 +17,7 @@ import Joi from 'joi'
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, isInstanceElement, ObjectType, Values,
 } from '@salto-io/adapter-api'
-import { naclCase, safeJsonStringify, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
+import { naclCase, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
@@ -45,7 +45,7 @@ const EXPECTED_CHANNELS_SCHEMA = Joi.array().items(Joi.object({
 const isChannels = (values: unknown): values is Channel[] => {
   const { error } = EXPECTED_CHANNELS_SCHEMA.validate(values)
   if (error !== undefined) {
-    log.error(`Received an invalid response for the channel values: ${error.message}, ${safeJsonStringify(values, elementExpressionStringifyReplacer)}`)
+    log.error(`Received an invalid response for the channel values: ${error.message}, ${inspectValue(values)}`)
     return false
   }
   return true
@@ -82,7 +82,7 @@ const filterCreator: FilterCreator = () => ({
       path: [ZENDESK, TYPES_PATH, SUBTYPES_PATH, CHANNEL_TYPE_NAME],
     })
     if (channels.length !== (new Set(channels.map(c => c.value))).size) {
-      log.warn(`Found duplicate ids in the channels - Not adding channel instances. ${safeJsonStringify(channels)}`)
+      log.warn(`Found duplicate ids in the channels - Not adding channel instances. ${inspectValue(channels)}`)
       return
     }
     const instances = channels.map(channel => {

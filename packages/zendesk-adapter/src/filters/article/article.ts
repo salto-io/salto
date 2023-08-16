@@ -270,24 +270,34 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
   )
 
   Object.values(articleToModifiedAttachments).forEach(async ({ article, modificationChanges }) => {
-    const attachmentChangesById = _.keyBy<ModificationChange<InstanceElement>>(
+    const [validModifications, invalidModifications] = _.partition(
       modificationChanges,
+      modificationChange => _.isNumber(getChangeData(modificationChange).value.id)
+    )
+
+    const attachmentChangesById = _.keyBy<ModificationChange<InstanceElement>>(
+      validModifications,
       attachment => getChangeData(attachment).value.id
     )
     const results = await associateAttachments(client, article, Object.keys(attachmentChangesById).map(parseInt))
     const [successes, failures] = _.partition(results, result => result.status === SUCCESS_STATUS_CODE)
+
     // On success, delete the old attachment
+    const successesPromises = successes.flatMap(
+      ({ ids }) => ids.map(id => deleteArticleAttachment(client, attachmentChangesById[id].data.before))
+    )
     // On failure, alert and delete the new attachment
-    await Promise.all([
-      ...successes.map(
-        ({ ids }) => ids.forEach(id => deleteArticleAttachment(client, attachmentChangesById[id].data.before))
-      ),
-      ...failures.map(({ ids }) => ids.forEach(id => {
-        const afterAttachment = attachmentChangesById[id].data.after
-        log.error(`Association of attachment ${afterAttachment.elemID.name} with id ${afterAttachment.value.id} has failed, deleting the attachment`)
-        return deleteArticleAttachment(client, afterAttachment)
-      })),
-    ])
+    const failuresPromises = failures.flatMap(({ ids }) => ids.map(id => attachmentChangesById[id].data.after))
+      .concat(invalidModifications.map(modificationChange => modificationChange.data.after))
+      .map(attachment => {
+        const attachmentId = attachment.value.id
+        const idMessage = _.isNumber(attachmentId) ? `, attachmentId: ${attachmentId}` : ' because the new attachment doesn\'t have an id'
+
+        log.error(`Association of attachment ${attachment.elemID.name} has failed${idMessage}, deleting the attachment`)
+        return deleteArticleAttachment(client, attachment)
+      })
+
+    await Promise.all(successesPromises.concat(failuresPromises))
   })
 
   // Article bodies needs to be updated when modifying inline attachments

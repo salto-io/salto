@@ -1195,8 +1195,12 @@ describe('adapter', () => {
                 include: [
                   { type: 'automation' },
                   { type: 'custom_role', criteria: { name: 'A.*' } },
+                  { type: 'organization_field', criteria: { key: '.*_.*', type: 'dropdown' } },
+                  { type: 'ticket_field', criteria: { raw_title: 'A.*|agent.*' } },
                 ],
-                exclude: [],
+                exclude: [
+                  { type: 'ticket_field', criteria: { type: 'assignee' } },
+                ],
                 guide: {
                   brands: ['.*'],
                 },
@@ -1213,8 +1217,11 @@ describe('adapter', () => {
           'zendesk.automation.instance.Tag_tickets_from_Social@s',
           'zendesk.automation_order.instance', // we do not filter out order instances
           'zendesk.custom_role.instance.Advisor',
+          'zendesk.organization_field.instance.dropdown_26',
           'zendesk.organization_field_order.instance',
           'zendesk.sla_policy_order.instance',
+          'zendesk.ticket_field.instance.agent_dropdown_643_for_agent_multiselect@ssssu',
+          'zendesk.ticket_field.instance.agent_field_431_text@ssu',
           'zendesk.ticket_form_order.instance',
           'zendesk.trigger_order.instance',
           'zendesk.user_field_order.instance',

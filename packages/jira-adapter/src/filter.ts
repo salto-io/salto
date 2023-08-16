@@ -18,6 +18,7 @@ import { filterUtils, elements as elementUtils } from '@salto-io/adapter-compone
 import JiraClient from './client/client'
 import { JiraConfig } from './config/config'
 import { GetUserMapFunc } from './users'
+import ScriptRunnerClient from './client/script_runner_client'
 
 export const { filtersRunner } = filterUtils
 
@@ -35,6 +36,7 @@ export type FilterAdditionalParams = {
   // and only when needed.
   adapterContext: Values
   getUserMapFunc: GetUserMapFunc
+  scriptRunnerClient: ScriptRunnerClient
 }
 
 export type FilterCreator = filterUtils.FilterCreator<

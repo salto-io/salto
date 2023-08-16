@@ -132,6 +132,9 @@ import projectCategoryFilter from './filters/project_category'
 import addAliasFilter from './filters/add_alias'
 import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_specific_duplicate_roles'
 import projectFieldContextOrder from './filters/project_field_contexts_order'
+import scriptedFieldsIssueTypesFilter from './filters/script_runner/scripted_fields_issue_types'
+import scriptRunnerFilter from './filters/script_runner/script_runner_filter'
+import scriptRunnerInstancesDeploy from './filters/script_runner/script_runner_instances_deploy'
 import ScriptRunnerClient from './client/script_runner_client'
 
 const { getAllElements } = elementUtils.ducktype
@@ -182,6 +185,9 @@ export const DEFAULT_FILTERS = [
   iconUrlFilter,
   triggersFilter,
   resolutionPropertyFilter,
+  scriptRunnerFilter,
+  // must run before references are transformed
+  scriptedFieldsIssueTypesFilter,
   scriptRunnerWorkflowFilter,
   // must run after scriptRunnerWorkflowFilter
   scriptRunnerWorkflowListsFilter,
@@ -272,6 +278,7 @@ export const DEFAULT_FILTERS = [
   wrongUserPermissionSchemeFilter,
   deployDcIssueEventsFilter,
   addAliasFilter,
+  scriptRunnerInstancesDeploy,
   // Must be last
   defaultInstancesDeployFilter,
   ...Object.values(otherCommonFilters),
@@ -343,6 +350,7 @@ export default class JiraAdapter implements AdapterOperations {
           fetchQuery: this.fetchQuery,
           adapterContext: filterContext,
           getUserMapFunc: this.getUserMapFunc,
+          scriptRunnerClient,
         },
         filterCreators,
         objects.concatObjects

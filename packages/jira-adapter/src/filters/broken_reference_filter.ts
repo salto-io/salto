@@ -17,7 +17,7 @@
 import { Change, ChangeDataType, ReferenceExpression, Value, getChangeData, isAdditionOrModificationChange, isInstanceChange, isReferenceExpression } from '@salto-io/adapter-api'
 import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { AUTOMATION_TYPE } from '../constants'
+import { AUTOMATION_TYPE, SCRIPTED_FIELD_TYPE } from '../constants'
 import { FilterCreator } from '../filter'
 
 export type ProjectType = { projectId: ReferenceExpression }
@@ -33,7 +33,7 @@ export const isProjectReferenceBroken = (project: ProjectType): boolean =>
 
 export type BrokenReferenceInfo = {
   location: string
-  filter: (project: unknown) => boolean
+  filter: (item: unknown) => boolean
   namePath: string
   referencesTypeName: string
   singleReferenceTypeName: string
@@ -44,6 +44,22 @@ export const BROKEN_REFERENCE_TYPE_MAP: Record<string, BrokenReferenceInfo[]> = 
     location: 'projects',
     filter: (project: unknown): boolean => isProjectType(project) && isProjectReferenceBroken(project),
     namePath: 'projectId.value.target.name',
+    referencesTypeName: 'projects',
+    singleReferenceTypeName: 'project',
+    mustHaveReference: true,
+  }],
+  [SCRIPTED_FIELD_TYPE]: [{
+    location: 'issueTypes',
+    filter: (issueTypeId: unknown): boolean => !isResolvedReferenceExpression(issueTypeId),
+    namePath: 'value.target.name',
+    referencesTypeName: 'issue types',
+    singleReferenceTypeName: 'issue type',
+    mustHaveReference: true,
+  },
+  {
+    location: 'projectKeys',
+    filter: (project: unknown): boolean => !isResolvedReferenceExpression(project),
+    namePath: 'value.target.name',
     referencesTypeName: 'projects',
     singleReferenceTypeName: 'project',
     mustHaveReference: true,
@@ -65,7 +81,7 @@ export const filter: FilterCreator = () => {
               .filter(change => getChangeData(change).elemID.typeName === typeName)
               .filter(change => getChangeData(change).value[typeInfo.location] !== undefined)
               .forEach(change => {
-                preDeployReferences[getChangeData(change).elemID.getFullName()] = change.data.after
+                preDeployReferences[`${getChangeData(change).elemID.getFullName()}.${typeInfo.location}`] = change.data.after
                   .value[typeInfo.location]
                 change.data.after.value[typeInfo.location] = change.data.after.value[typeInfo.location]
                   .filter((value: Value) => !typeInfo.filter(value))
@@ -83,9 +99,8 @@ export const filter: FilterCreator = () => {
               .filter(change => getChangeData(change).elemID.typeName === typeName)
               .filter(change => getChangeData(change).value[typeInfo.location] !== undefined)
               .forEach(change => {
-                if (preDeployReferences[getChangeData(change).elemID.getFullName()] !== undefined) {
-                  change.data.after.value[typeInfo.location] = preDeployReferences[getChangeData(change)
-                    .elemID.getFullName()]
+                if (preDeployReferences[`${getChangeData(change).elemID.getFullName()}.${typeInfo.location}`] !== undefined) {
+                  change.data.after.value[typeInfo.location] = preDeployReferences[`${getChangeData(change).elemID.getFullName()}.${typeInfo.location}`]
                 }
               })
           })

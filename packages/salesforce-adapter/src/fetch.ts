@@ -236,7 +236,7 @@ const getPropsWithFullName = (
 
 const getInstanceFromMetadataInformation = (metadata: MetadataInfo,
   filePropertiesMap: Record<string, FileProperties>, metadataType: ObjectType): InstanceElement => {
-  const newMetadata = filePropertiesMap[metadata.fullName]?.id
+  const newMetadata = filePropertiesMap[metadata.fullName]?.id !== undefined && filePropertiesMap[metadata.fullName]?.id !== ''
     ? { ...metadata, [INTERNAL_ID_FIELD]: filePropertiesMap[metadata.fullName]?.id } : metadata
   return createInstanceElement(newMetadata, metadataType,
     filePropertiesMap[newMetadata.fullName]?.namespacePrefix,

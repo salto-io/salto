@@ -43,6 +43,7 @@ describe('adapter creator', () => {
     describe('with valid credentials', () => {
       let accountId: string
       beforeEach(async () => {
+        mockAxiosAdapter.onGet('/rest/api/3/instance/license').reply(200, { applications: [{ plan: 'FREE' }] })
         mockAxiosAdapter.onGet().reply(200, { baseUrl: 'http://my_account.net' });
         ({ accountId } = await adapter.validateCredentials(
           createCredentialsInstance({ baseUrl: 'http://my.net', user: 'u', token: 't' })
@@ -77,11 +78,14 @@ describe('adapter creator', () => {
       elementsSource = buildElementsSourceFromElements([])
       credentialsInstance = createCredentialsInstance({ baseUrl: 'url', user: 'u', token: 't' })
     })
-    describe('with valid config', () => {
+    describe.each([
+      [true, 'dc'],
+      [false, 'cloud'],
+    ])('with valid %s config', (isDataCenter, variationName) => {
       let result: AdapterOperations
       beforeEach(() => {
         const configWithExtraValue = {
-          ...getDefaultConfig({ isDataCenter: false }),
+          ...getDefaultConfig({ isDataCenter }),
           extraValue: true,
         }
         result = adapter.operations({
@@ -90,7 +94,7 @@ describe('adapter creator', () => {
           config: createConfigInstance(configWithExtraValue),
         })
       })
-      it('should return jira operations', () => {
+      it(`should return jira operations on ${variationName}`, () => {
         expect(result).toBeDefined()
       })
     })

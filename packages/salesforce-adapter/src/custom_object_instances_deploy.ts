@@ -26,7 +26,7 @@ import {
   SeverityLevel,
   isInstanceElement, isInstanceChange, toChange,
 } from '@salto-io/adapter-api'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { inspectValue, safeJsonStringify } from '@salto-io/adapter-utils'
 import { BatchResultInfo } from 'jsforce-types'
 import { EOL } from 'os'
 import {
@@ -36,7 +36,7 @@ import {
 import SalesforceClient from './client/client'
 import {
   ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
-  CUSTOM_OBJECT_ID_FIELD, SBAA_APPROVAL_CONDITION,
+  CUSTOM_OBJECT_ID_FIELD, OWNER_ID, SBAA_APPROVAL_CONDITION,
   SBAA_APPROVAL_RULE,
   SBAA_CONDITIONS_MET,
 } from './constants'
@@ -69,7 +69,7 @@ const logErroredInstances = (instancesAndResults: InstanceAndResult[]): void => 
       log.error(`Instance ${instance.elemID.getFullName()} had deploy errors - ${['', ...result.errors].join('\n\t')}
 
 and values -
-${safeJsonStringify(instance.value, undefined, 2,)}
+${inspectValue(instance.value)}
 `)
     }
   })
@@ -122,6 +122,8 @@ const isCompoundFieldType = (type: TypeElement): type is ObjectType => (
   && Object.values(Types.compoundDataTypes).some(compoundType => compoundType.isEqual(type))
 )
 
+const MANDATORY_FIELDS_FOR_UPDATE = [CUSTOM_OBJECT_ID_FIELD, OWNER_ID]
+
 const getRecordsBySaltoIds = async (
   type: ObjectType,
   instances: InstanceElement[],
@@ -155,15 +157,19 @@ const getRecordsBySaltoIds = async (
     return r
   }))
 
-  // Should always query Id together with the SaltoIdFields to match it to instances
-  const saltoIdFieldsWithIdField = (saltoIdFields
-    .find(field => field.name === CUSTOM_OBJECT_ID_FIELD) === undefined)
-    ? [type.fields[CUSTOM_OBJECT_ID_FIELD], ...saltoIdFields] : saltoIdFields
-
-  const fieldNames = await awu(saltoIdFieldsWithIdField).flatMap(getFieldNamesForQuery).toArray()
+  const fieldsToQuery = _.uniq(
+    // Should always query these fields along the SaltoIdFields as they're mandatory for update operation
+    MANDATORY_FIELDS_FOR_UPDATE
+      // Some mandatory fields might not be in the type (e.g. for custom settings or the detail side of
+      // master-detail relationship for CustomObjects)
+      .filter(mandatoryField => Object.keys(type.fields).includes(mandatoryField))
+      .concat(
+        (await awu(saltoIdFields).flatMap(getFieldNamesForQuery).toArray())
+      )
+  )
   const queries = await buildSelectQueries(
     await apiName(type),
-    fieldNames,
+    fieldsToQuery,
     instanceIdValues,
   )
   const recordsIterable = awu(queries).flatMap(query => client.queryAll(query))
@@ -378,9 +384,12 @@ const deployAddInstances = async (
     client.dataRetry.maxAttempts
   )
   existingInstances.forEach(instance => {
-    instance.value[
-      CUSTOM_OBJECT_ID_FIELD
-    ] = existingRecordsLookup[computeSaltoIdHash(instance.value)][CUSTOM_OBJECT_ID_FIELD]
+    const existingRecordLookup = existingRecordsLookup[computeSaltoIdHash(instance.value)]
+    MANDATORY_FIELDS_FOR_UPDATE.forEach(mandatoryField => {
+      if (instance.value[mandatoryField] === undefined && existingRecordLookup[mandatoryField] !== undefined) {
+        instance.value[mandatoryField] = existingRecordLookup[mandatoryField]
+      }
+    })
   })
   const {
     successInstances: successUpdateInstances,
@@ -467,7 +476,7 @@ export const isInstanceOfCustomObjectChange = async (
 )
 
 export const isCustomObjectInstanceChanges = (
-  changes: Change[]
+  changes: ReadonlyArray<Change>
 ): Promise<boolean> =>
   awu(changes).every(isInstanceOfCustomObjectChange)
 
@@ -496,11 +505,11 @@ const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
       throw new Error('dataManagement must be defined in the salesforce.nacl config to deploy Custom Object instances')
     }
     if (changes.every(isAdditionChange)) {
-      const { idFields, invalidFields } = await getIdFields(
+      const { idFields, invalidIdFields } = await getIdFields(
         await instances[0].getType(), actualDataManagement
       )
-      if (invalidFields !== undefined && invalidFields.length > 0) {
-        throw new Error(`Failed to add instances of type ${instanceTypes[0]} due to invalid SaltoIdFields - ${invalidFields}`)
+      if (invalidIdFields !== undefined && invalidIdFields.length > 0) {
+        throw new Error(`Failed to add instances of type ${instanceTypes[0]} due to invalid SaltoIdFields - ${invalidIdFields}`)
       }
       return await deployAddInstances(instances, idFields, client, groupId)
     }

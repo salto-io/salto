@@ -23,8 +23,8 @@ import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { filter } from '@salto-io/adapter-utils'
 import { createElements } from './transformer'
-import { DeployResult, isCustomRecordType } from './types'
-import { INTEGRATION } from './constants'
+import { DeployResult, TYPES_TO_SKIP, isCustomRecordType } from './types'
+import { BUNDLE } from './constants'
 import convertListsToMaps from './filters/convert_lists_to_maps'
 import replaceElementReferences from './filters/element_references'
 import parseReportTypes from './filters/parse_report_types'
@@ -81,7 +81,6 @@ import { getDataElements } from './data_elements/data_elements'
 import { getStandardTypesNames } from './autogen/types'
 import { getConfigTypes, toConfigElements } from './suiteapp_config_elements'
 import { ConfigRecord } from './client/suiteapp_client/types'
-import { bundleType } from './types/bundle_type'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -187,12 +186,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     client,
     elementsSource,
     filtersCreators = defaultFilters,
-    typesToSkip = [
-      INTEGRATION, // The imported xml has no values, especially no SCRIPT_ID, for standard
-      // integrations and contains only SCRIPT_ID attribute for custom ones.
-      // There is no value in fetching them as they contain no data and are not deployable.
-      // If we decide to fetch them we should set the SCRIPT_ID by the xml's filename upon fetch.
-    ],
+    typesToSkip = TYPES_TO_SKIP,
     filePathRegexSkipList = [],
     getElemIdFunc,
     config,
@@ -284,9 +278,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
     )
     progressReporter.reportProgress({ message: 'Fetching file cabinet items' })
 
-    const bundleTypeName = bundleType().type.elemID.typeName
     const bundlesCustomInfo = (await this.client.getInstalledBundles())
-      .map(bundle => ({ typeName: bundleTypeName, values: { ...bundle, id: bundle.id.toString() } }))
+      .map(bundle => ({ typeName: BUNDLE, values: { ...bundle, id: bundle.id.toString() } }))
     // TODO: remove this log when SALTO-2602 is open for all customers
     log.debug('The following bundle ids are missing in the bundle record: %o', bundlesCustomInfo.map(bundle => bundle.values.id))
     const {

@@ -38,8 +38,9 @@ describe('ScriptRunner mail lists in DC', () => {
       'instance',
       workflowType,
       {
-        transitions: [
-          {
+        transitions: {
+          tran1: {
+            name: 'tran1',
             rules: {
               postFunctions: [
                 {
@@ -50,32 +51,32 @@ describe('ScriptRunner mail lists in DC', () => {
               ],
             },
           },
-        ],
+        },
       }
     )
   })
   describe('fetch', () => {
     it('should replace all mail fields to arrays', async () => {
       MAIL_LISTS_FIELDS.forEach(field => {
-        instance.value.transitions[0].rules.postFunctions[0].configuration[field] = 'assignee reporter'
+        instance.value.transitions.tran1.rules.postFunctions[0].configuration[field] = 'assignee reporter'
       })
       await filter.onFetch([instance])
       MAIL_LISTS_FIELDS.forEach(field => {
-        expect(instance.value.transitions[0].rules.postFunctions[0].configuration[field]).toEqual({ field: ['assignee', 'reporter'] })
+        expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration[field]).toEqual({ field: ['assignee', 'reporter'] })
       })
     })
     it('should sort the order of the fields', async () => {
-      instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_TO_USER_FIELDS = 'reporter assignee'
+      instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_TO_USER_FIELDS = 'reporter assignee'
       await filter.onFetch([instance])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_TO_USER_FIELDS).toEqual({ field: ['assignee', 'reporter'] })
+      expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_TO_USER_FIELDS).toEqual({ field: ['assignee', 'reporter'] })
     })
     it('should replace all mail fields in complicated environments', async () => {
       MAIL_LISTS_FIELDS.forEach(field => {
-        instance.value.transitions[0].rules.postFunctions[0].configuration[field] = 'assignee reporter group:abc role:ecd group:"space included" role:"more spaces" peers'
+        instance.value.transitions.tran1.rules.postFunctions[0].configuration[field] = 'assignee reporter group:abc role:ecd group:"space included" role:"more spaces" peers'
       })
       await filter.onFetch([instance])
       MAIL_LISTS_FIELDS.forEach(field => {
-        expect(instance.value.transitions[0].rules.postFunctions[0].configuration[field]).toEqual({
+        expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration[field]).toEqual({
           field: ['assignee', 'peers', 'reporter'],
           group: ['abc', 'space included'],
           role: ['ecd', 'more spaces'],
@@ -83,24 +84,24 @@ describe('ScriptRunner mail lists in DC', () => {
       })
     })
     it('should not replace mail lists on non mail lists fields', async () => {
-      instance.value.transitions[0].rules.postFunctions[0].configuration.a = 'reporter assignee'
+      instance.value.transitions.tran1.rules.postFunctions[0].configuration.a = 'reporter assignee'
       await filter.onFetch([instance])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.a).toEqual('reporter assignee')
+      expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.a).toEqual('reporter assignee')
     })
     it('should not replace if wrong type', async () => {
-      instance.value.transitions[0].rules.postFunctions[1] = {
+      instance.value.transitions.tran1.rules.postFunctions[1] = {
         type: 'other',
         configuration: {
           FIELD_TO_USER_FIELDS: 'reporter assignee',
         },
       }
       await filter.onFetch([instance])
-      expect(instance.value.transitions[0].rules.postFunctions[1].configuration.FIELD_TO_USER_FIELDS).toEqual('reporter assignee')
+      expect(instance.value.transitions.tran1.rules.postFunctions[1].configuration.FIELD_TO_USER_FIELDS).toEqual('reporter assignee')
     })
     it('should log error if mail list is incorrect', async () => {
       const logging = logger('jira-adapter/src/filters/script_runner/workflow/workflow_lists_parsing')
       const logErrorSpy = jest.spyOn(logging, 'error')
-      instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_TO_USER_FIELDS = 'assignee reporter group:abc role:ecd group:"space'
+      instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_TO_USER_FIELDS = 'assignee reporter group:abc role:ecd group:"space'
       await filter.onFetch([instance])
       expect(logErrorSpy).toHaveBeenCalledWith('Invalid input to splitBySpaceNotInQuotes: %s', 'assignee reporter group:abc role:ecd group:"space')
     })
@@ -108,16 +109,16 @@ describe('ScriptRunner mail lists in DC', () => {
   describe('pre deploy', () => {
     it('should replace objects to mail lists', async () => {
       MAIL_LISTS_FIELDS.forEach(field => {
-        instance.value.transitions[0].rules.postFunctions[0].configuration[field] = { field: ['assignee', 'reporter'] }
+        instance.value.transitions.tran1.rules.postFunctions[0].configuration[field] = { field: ['assignee', 'reporter'] }
       })
       await filter.preDeploy([toChange({ after: instance })])
       MAIL_LISTS_FIELDS.forEach(field => {
-        expect(instance.value.transitions[0].rules.postFunctions[0].configuration[field]).toEqual('assignee reporter')
+        expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration[field]).toEqual('assignee reporter')
       })
     })
     it('should replace complex objects to mail lists', async () => {
       MAIL_LISTS_FIELDS.forEach(field => {
-        instance.value.transitions[0].rules.postFunctions[0].configuration[field] = {
+        instance.value.transitions.tran1.rules.postFunctions[0].configuration[field] = {
           field: ['assignee', 'peers', 'reporter'],
           group: ['abc', 'space included'],
           role: ['ecd', 'more spaces'],
@@ -125,27 +126,28 @@ describe('ScriptRunner mail lists in DC', () => {
       })
       await filter.preDeploy([toChange({ after: instance })])
       MAIL_LISTS_FIELDS.forEach(field => {
-        expect(instance.value.transitions[0].rules.postFunctions[0].configuration[field]).toEqual('group:abc group:"space included" role:ecd role:"more spaces" assignee peers reporter')
+        expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration[field]).toEqual('group:abc group:"space included" role:ecd role:"more spaces" assignee peers reporter')
       })
     })
   })
   describe('on deploy', () => {
     it('should replace mail lists to arrays', async () => {
-      instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_TO_USER_FIELDS = 'reporter assignee'
+      instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_TO_USER_FIELDS = 'reporter assignee'
       await filter.onDeploy([toChange({ after: instance })])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_TO_USER_FIELDS).toEqual({ field: ['assignee', 'reporter'] })
+      expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_TO_USER_FIELDS).toEqual({ field: ['assignee', 'reporter'] })
     })
   })
   describe('error flows', () => {
     it('should not fail when field is empty', async () => {
-      instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_TO_USER_FIELDS = undefined
+      instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_TO_USER_FIELDS = undefined
       await filter.onFetch([instance])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_TO_USER_FIELDS).toEqual(undefined)
+      expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_TO_USER_FIELDS)
+        .toEqual(undefined)
     })
     it('should not fail when object is empty', async () => {
-      instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_TO_USER_FIELDS = undefined
+      instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_TO_USER_FIELDS = undefined
       await filter.preDeploy([toChange({ after: instance })])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_TO_USER_FIELDS).toEqual('')
+      expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_TO_USER_FIELDS).toEqual('')
     })
     it('should not throw when no transitions', async () => {
       instance = new InstanceElement(

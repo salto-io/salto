@@ -16,7 +16,18 @@
 import { MetadataInfo, SaveResult } from 'jsforce'
 import _ from 'lodash'
 import { Value } from '@salto-io/adapter-api'
-import { FIELD_TYPE_NAMES, CUSTOM_OBJECT_ID_FIELD, isRelationshipFieldName } from '../constants'
+import { FIELD_TYPE_NAMES, CUSTOM_OBJECT_ID_FIELD } from '../constants'
+
+const RELATIONSHIP_FIELD_NAMES: string[] = [
+  FIELD_TYPE_NAMES.METADATA_RELATIONSHIP,
+  FIELD_TYPE_NAMES.LOOKUP,
+  FIELD_TYPE_NAMES.MASTER_DETAIL,
+  FIELD_TYPE_NAMES.HIERARCHY,
+]
+
+const isRelationshipFieldName = (fieldName: string): boolean => (
+  RELATIONSHIP_FIELD_NAMES.includes(fieldName)
+)
 
 export type JSONBool = boolean | 'true' | 'false'
 
@@ -226,7 +237,14 @@ export class CustomField implements MetadataInfo {
       this.defaultValue = defaultVal
     } else if (isRelationshipFieldName(type)) {
       this.relationshipName = relationshipName
-      this.referenceTo = relatedTo
+      // "Can not specify 'referenceTo' for a CustomField of type Hierarchy" Error will be thrown
+      // if we try sending the `referenceTo` value to Salesforce.
+      // Hierarchy fields always reference the current CustomObject type,
+      // and are not modifiable, that's probably why Salesforce forbid us
+      // from sending the `referenceTo` value upon deploy.
+      if (type !== FIELD_TYPE_NAMES.HIERARCHY) {
+        this.referenceTo = relatedTo
+      }
     } else if (type === FIELD_TYPE_NAMES.ROLLUP_SUMMARY && summaryFilterItems) {
       this.summaryFilterItems = summaryFilterItems
     }

@@ -251,6 +251,13 @@ describe('Test utils.ts & isXXX in elements.ts', () => {
         elemID: new ElemID(''),
       })).toBeTruthy()
     })
+    it('should return false when given an error that has elemID which is undefined', () => {
+      expect(isSaltoElementError({
+        message: '',
+        severity: 'Error',
+        elemID: undefined,
+      })).toBeFalsy()
+    })
     it('should return false when given an error that does not have elemID', () => {
       expect(isSaltoElementError({
         message: '',

@@ -21,7 +21,7 @@ import { StandardType, getStandardTypes, isStandardTypeName, getStandardTypesNam
 import { TypesMap } from './types/object_types'
 import { fileCabinetTypesNames, getFileCabinetTypes } from './types/file_cabinet_types'
 import { getConfigurationTypes } from './types/configuration_types'
-import { CONFIG_FEATURES, CUSTOM_FIELD_PREFIX, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_PREFIX, METADATA_TYPE, SOAP, INTERNAL_ID, SCRIPT_ID, PATH, CUSTOM_RECORD_TYPE_NAME_PREFIX, BUNDLE } from './constants'
+import { CONFIG_FEATURES, CUSTOM_FIELD_PREFIX, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_PREFIX, METADATA_TYPE, SOAP, INTERNAL_ID, SCRIPT_ID, PATH, CUSTOM_RECORD_TYPE_NAME_PREFIX, BUNDLE, INTEGRATION } from './constants'
 import { SUPPORTED_TYPES } from './data_elements/types'
 import { bundleType } from './types/bundle_type'
 
@@ -77,12 +77,23 @@ export const removeCustomRecordTypePrefix = (name: string): string =>
 type MetadataTypes = {
   standardTypes: TypesMap<StandardType>
   additionalTypes: Readonly<Record<string, ObjectType>>
+  innerAdditionalTypes: Readonly<Record<string, ObjectType>>
 }
 
-export const getMetadataTypes = (): MetadataTypes => ({
-  standardTypes: getStandardTypes(),
-  additionalTypes: { ...getFileCabinetTypes(), ...getConfigurationTypes(), bundle: bundleType().type },
-})
+export const getMetadataTypes = (): MetadataTypes => {
+  const bundle = bundleType()
+  return {
+    standardTypes: getStandardTypes(),
+    additionalTypes: {
+      ...getFileCabinetTypes(),
+      ...getConfigurationTypes(),
+      [BUNDLE]: bundle.type,
+    },
+    innerAdditionalTypes: {
+      ...bundle.innerTypes,
+    },
+  }
+}
 
 export const getTopLevelStandardTypes = (standardTypes: TypesMap<StandardType>): ObjectType[] =>
   Object.values(standardTypes).map(standardType => standardType.type)
@@ -91,15 +102,23 @@ export const getInnerStandardTypes = (standardTypes: TypesMap<StandardType>): Ob
   Object.values(standardTypes).flatMap(standardType => Object.values(standardType.innerTypes))
 
 export const metadataTypesToList = (metadataTypes: MetadataTypes): TypeElement[] => {
-  const { standardTypes, additionalTypes } = metadataTypes
+  const { standardTypes, additionalTypes, innerAdditionalTypes } = metadataTypes
   return [
     ...getTopLevelStandardTypes(standardTypes),
     ...getInnerStandardTypes(standardTypes),
     ...Object.values(enums),
     ...Object.values(additionalTypes),
     ...Object.values(fieldTypes),
+    ...Object.values(innerAdditionalTypes),
   ]
 }
+
+export const TYPES_TO_SKIP = [
+  INTEGRATION, // The imported xml has no values, especially no SCRIPT_ID, for standard
+  // integrations and contains only SCRIPT_ID attribute for custom ones.
+  // There is no value in fetching them as they contain no data and are not deployable.
+  // If we decide to fetch them we should set the SCRIPT_ID by the xml's filename upon fetch.
+]
 
 export const SCRIPT_TYPES = [
   'bundleinstallationscript',
@@ -140,11 +159,12 @@ export const FIELD_TYPES = [
   'customfield',
 ]
 
+type DeployError = SaltoElementError | SaltoError
 export type DeployResult = {
   appliedChanges: Change[]
-  errors: (SaltoElementError | SaltoError)[]
-  sdfErrors?: Error[]
+  errors: DeployError[]
   elemIdToInternalId?: Record<string, string>
+  failedFeaturesIds?: string[]
 }
 
 export const SUITEAPP_CONFIG_RECORD_TYPES = [

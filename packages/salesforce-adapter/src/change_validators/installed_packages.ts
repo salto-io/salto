@@ -42,7 +42,7 @@ const createInstalledPackageInstanceChangeError = async (
       elemID: instance.elemID,
       severity: 'Error',
       message: 'InstalledPackage instances cannot be modified',
-      detailedMessage: `The InstalledPackage instance of namespace ${namespace} cannot be modified`,
+      detailedMessage: `The InstalledPackage instance of namespace ${namespace} cannot be modified. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/8058203-installed-packages-cannot-be-added-deleted-through-salto`,
     }
   }
   if (isAdditionChange(change)) {
@@ -50,14 +50,14 @@ const createInstalledPackageInstanceChangeError = async (
       elemID: instance.elemID,
       severity: 'Error',
       message: 'Cannot install a package using Salto',
-      detailedMessage: `Package with namespace ${namespace}  cannot be installed using Salto. Please install the package directly from Salesforce's AppExchange and fetch.`,
+      detailedMessage: `Package with namespace ${namespace}  cannot be installed using Salto. Please install the package directly from Salesforce's AppExchange and fetch. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/8058203-installed-packages-cannot-be-added-deleted-through-salto`,
     }
   }
   return {
     elemID: instance.elemID,
     severity: 'Error',
     message: 'Cannot uninstall a package using Salto',
-    detailedMessage: `Package with namespace ${namespace}  cannot be uninstalled using Salto. Please uninstall this package directly from Salesforce's AppExchange and fetch.`,
+    detailedMessage: `Package with namespace ${namespace}  cannot be uninstalled using Salto. Please uninstall this package directly from Salesforce's AppExchange and fetch. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/8058203-installed-packages-cannot-be-added-deleted-through-salto`,
   }
 }
 

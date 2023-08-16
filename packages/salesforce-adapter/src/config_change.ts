@@ -27,7 +27,7 @@ import {
   SalesforceConfig,
   DataManagementConfig,
   isRetrieveSizeConfigSuggstion,
-  MAX_INSTANCES_PER_TYPE, MetadataConfigSuggestion, MetadataQueryParams, DEPLOY_CONFIG,
+  MAX_INSTANCES_PER_TYPE, MetadataConfigSuggestion, MetadataQueryParams,
 } from './types'
 import * as constants from './constants'
 import {
@@ -54,8 +54,6 @@ const {
 
 const CONFIG_SUGGESTIONS_GENERAL_MESSAGE = 'Salto failed to fetch some items from Salesforce.'
   + ' Failed items must be excluded from the fetch.'
-
-const CHANGE_VALIDATORS_CONFIG_MESSAGE = 'Configuration of change validators was updated to a newer format'
 
 const getConfigChangeMessage = (configChanges: ConfigChangeSuggestion[]): string => {
   const reasons = configChanges.map(configChange => configChange.reason).filter(isDefined)
@@ -225,28 +223,10 @@ export type ConfigChange = {
   message: string
 }
 
-const createConfigInstance = (currentConfig: SalesforceConfig, additionalFields: Values = {}): InstanceElement =>
-  new InstanceElement(
-    ElemID.CONFIG_NAME,
-    configType,
-    {
-      ...currentConfig,
-      ...additionalFields,
-    }
-  )
-
 export const getConfigFromConfigChanges = (
   configChanges: ConfigChangeSuggestion[],
   currentConfig: Readonly<SalesforceConfig>,
 ): ConfigChange | undefined => {
-  // For backwards compatibility (SALTO-4468)
-  const oldFormatValidatorsActivationConfig = (currentConfig as { validators?: Record<string, boolean> }).validators
-  const oldValidatorsFormatExists = oldFormatValidatorsActivationConfig !== undefined
-  const newFormatValidatorsActivationConfig = oldValidatorsFormatExists
-    ? { changeValidators: oldFormatValidatorsActivationConfig }
-    : undefined
-  const deployConfig = _.merge({}, currentConfig[DEPLOY_CONFIG], newFormatValidatorsActivationConfig)
-
   const currentMetadataExclude = makeArray(currentConfig.fetch?.metadata?.exclude)
 
   const newMetadataExclude = makeArray(configChanges)
@@ -265,12 +245,6 @@ export const getConfigFromConfigChanges = (
     .sort((a, b) => a - b)[0]
 
   if ([newMetadataExclude, dataObjectsToExclude].every(_.isEmpty) && retrieveSize === undefined) {
-    if (oldValidatorsFormatExists) {
-      return {
-        config: [createConfigInstance(currentConfig, { validators: undefined, deploy: deployConfig })],
-        message: CHANGE_VALIDATORS_CONFIG_MESSAGE,
-      }
-    }
     return undefined
   }
 
@@ -297,8 +271,6 @@ export const getConfigFromConfigChanges = (
 
   const maxItemsInRetrieveRequest = retrieveSize ?? currentConfig.maxItemsInRetrieveRequest
 
-  const message = getConfigChangeMessage(configChanges)
-
   return {
     config: [new InstanceElement(
       ElemID.CONFIG_NAME,
@@ -320,11 +292,8 @@ export const getConfigFromConfigChanges = (
         }, isDefined),
         maxItemsInRetrieveRequest,
         client: currentConfig.client,
-        deploy: deployConfig,
       }, isDefined)
     )],
-    message: oldValidatorsFormatExists
-      ? formatConfigSuggestionsReasons([message, CHANGE_VALIDATORS_CONFIG_MESSAGE])
-      : message,
+    message: getConfigChangeMessage(configChanges),
   }
 }

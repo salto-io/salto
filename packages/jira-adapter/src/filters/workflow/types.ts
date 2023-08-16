@@ -16,6 +16,7 @@
 import { Change, getChangeData, InstanceElement, isInstanceChange, Values, Element, Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { WORKFLOW_TYPE_NAME } from '../../constants'
 
 const log = logger(module)
@@ -149,7 +150,7 @@ export type Transition = {
   id?: string
   type?: string
   rules?: Rules
-  name?: string
+  name: string
   from?: (TransitionFrom | string)[]
   properties?: Values
   to?: unknown
@@ -159,7 +160,7 @@ export const transitionsSchema = Joi.object({
   id: Joi.string().optional(),
   type: Joi.string().optional(),
   rules: rulesSchema.optional(),
-  name: Joi.string().optional(),
+  name: Joi.string().required(),
   from: Joi.array().items(Joi.any()).optional(),
   properties: Joi.alternatives(Joi.object(), Joi.array()).optional(),
   to: Joi.any().optional(),
@@ -182,13 +183,17 @@ export type Workflow = {
   id?: Id
   entityId?: string
   name?: string
-  transitions: Transition[]
+  transitions: Record<string, Transition>
   statuses?: Status[]
   diagramInitialEntry?: StatusLocation
   diagramGlobalLoopedTransition?: StatusLocation
 }
 
-export const workflowSchema = Joi.object({
+export type WorkflowResponse = Omit<Workflow, 'transitions'> & {
+  transitions: Transition[]
+}
+
+export const WORKFLOW_RESPONSE_SCHEMA = Joi.object({
   id: idSchema.optional(),
   entityId: Joi.string().optional(),
   name: Joi.string().optional(),
@@ -196,7 +201,14 @@ export const workflowSchema = Joi.object({
   statuses: Joi.array().items(statusSchema).optional(),
 }).unknown(true).required()
 
+export const workflowSchema = WORKFLOW_RESPONSE_SCHEMA.keys({
+  transitions: Joi.object().pattern(Joi.string(), transitionsSchema).required(),
+})
+
 export type WorkflowInstance = InstanceElement & { value: InstanceElement['value'] & Workflow }
+export type WorkflowResponseInstance = InstanceElement & { value: InstanceElement['value'] & WorkflowResponse }
+
+const isWorkflowResponseValues = createSchemeGuard<WorkflowResponse>(WORKFLOW_RESPONSE_SCHEMA, 'Received unexpected workflow response from service')
 
 export const isWorkflowValues = (values: unknown): values is Workflow => {
   const { error } = workflowSchema.validate(values)
@@ -211,6 +223,9 @@ export const isWorkflowInstance = (instance: InstanceElement)
 : instance is WorkflowInstance =>
   instance.elemID.typeName === WORKFLOW_TYPE_NAME && isWorkflowValues(instance.value)
 
+export const isWorkflowResponseInstance = (instance: InstanceElement)
+: instance is WorkflowResponseInstance =>
+  instance.elemID.typeName === WORKFLOW_TYPE_NAME && isWorkflowResponseValues(instance.value)
 
 export type PostFetchWorkflow = Workflow & {
   name: string

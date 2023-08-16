@@ -307,6 +307,8 @@ describe('gadgetFilter', () => {
         key1: 'value1',
         key2: 'value2',
       }
+      // references are resolved in pre deploy
+      instance.annotations[CORE_ANNOTATIONS.PARENT][0] = { id: '0' }
 
       change = toChange({ after: instance })
     })

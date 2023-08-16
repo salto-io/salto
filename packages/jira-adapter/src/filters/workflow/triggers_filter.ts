@@ -65,7 +65,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       .map(async instance => {
         try {
           await Promise.all(
-            (instance.value.transitions ?? []).map(async transition => {
+            (Object.values(instance.value.transitions) ?? []).map(async transition => {
               if (transition.id === undefined) {
                 log.warn(`Did not find transition id of transition ${safeJsonStringify(transition)}`)
                 return

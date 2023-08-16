@@ -27,8 +27,8 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 const splitResolutionProperties = (instance: WorkflowInstance): void => {
-  instance.value.transitions
-    ?.filter(transition => transition.properties !== undefined)
+  Object.values(instance.value.transitions)
+    .filter(transition => transition.properties !== undefined)
     ?.forEach(transition => {
       transition.properties = _.mapValues(
         transition.properties,
@@ -62,8 +62,8 @@ const filter: FilterCreator = () => ({
         await applyFunctionToChangeData<Change<WorkflowInstance>>(
           change,
           async instance => {
-            instance.value.transitions
-              ?.filter(transition => _.isPlainObject(transition.properties))
+            Object.values(instance.value.transitions)
+              .filter(transition => _.isPlainObject(transition.properties))
               ?.forEach(transition => {
                 transition.properties = _.mapValues(
                   transition.properties,

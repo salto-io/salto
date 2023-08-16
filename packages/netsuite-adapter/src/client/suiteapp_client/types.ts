@@ -102,10 +102,10 @@ export type SavedSearchQuery = {
 }
 
 export enum EnvType {
-  PRODUCTION,
-  SANDBOX,
-  BETA,
-  INTERNAL
+  PRODUCTION = 'PRODUCTION',
+  SANDBOX = 'SANDBOX',
+  BETA = 'BETA',
+  INTERNAL = 'INTERNAL',
 }
 
 const BASIC_SYSTEM_INFO_SCHEME_PROPERTIES = {
@@ -123,11 +123,12 @@ export const SYSTEM_INFORMATION_SCHEME = {
       properties: {
         ...BASIC_SYSTEM_INFO_SCHEME_PROPERTIES,
         envType: {
-          type: 'number',
+          type: 'string',
           enum: [EnvType.PRODUCTION, EnvType.SANDBOX, EnvType.BETA, EnvType.INTERNAL],
         },
       },
       required: ['time', 'appVersion', 'envType'],
+      additionalProperties: false,
     },
     {
       type: 'object',
@@ -135,9 +136,9 @@ export const SYSTEM_INFORMATION_SCHEME = {
         ...BASIC_SYSTEM_INFO_SCHEME_PROPERTIES,
       },
       required: ['time', 'appVersion'],
+      additionalProperties: false,
     },
   ],
-  additionalProperties: true,
 }
 
 export type SystemInformation = {
@@ -383,7 +384,7 @@ export const GET_BUNDLES_RESULT_SCHEMA = {
     properties: {
       id: { type: 'number' },
       name: { type: 'string' },
-      version: { type: 'string' },
+      version: { type: ['string', 'null'] },
     },
     required: ['id', 'name', 'version'],
   },

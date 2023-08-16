@@ -33,7 +33,13 @@ import {
   SaltoError,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { logDuration, resolveChangeElement, resolveValues, restoreChangeElement } from '@salto-io/adapter-utils'
+import {
+  getElemIdFuncWrapper,
+  logDuration,
+  resolveChangeElement,
+  resolveValues,
+  restoreChangeElement,
+} from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
@@ -417,6 +423,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   private configInstance?: InstanceElement
   private elementsSource: ReadOnlyElementsSource
   private fetchQuery: elementUtils.query.ElementQuery
+  private logIdsFunc?: () => void
   private createClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private getClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private createFiltersRunner: ({
@@ -438,9 +445,11 @@ export default class ZendeskAdapter implements AdapterOperations {
     configInstance,
     elementsSource,
   }: ZendeskAdapterParams) {
+    const wrapper = getElemIdFunc ? getElemIdFuncWrapper(getElemIdFunc) : undefined
     this.userConfig = config
     this.configInstance = configInstance
-    this.getElemIdFunc = getElemIdFunc
+    this.getElemIdFunc = wrapper?.getElemIdFunc
+    this.logIdsFunc = wrapper?.logIdsFunc
     this.client = client
     this.elementsSource = elementsSource
     this.paginator = createPaginator({
@@ -489,7 +498,7 @@ export default class ZendeskAdapter implements AdapterOperations {
           client: filterRunnerClient ?? this.client,
           paginator: paginator ?? this.paginator,
           config,
-          getElemIdFunc,
+          getElemIdFunc: this.getElemIdFunc,
           fetchQuery: this.fetchQuery,
           elementsSource,
           brandIdToClient,
@@ -633,6 +642,9 @@ export default class ZendeskAdapter implements AdapterOperations {
       : undefined
 
     const fetchErrors = (errors ?? []).concat(result.errors ?? []).concat(localeError ?? [])
+    if (this.logIdsFunc !== undefined) {
+      this.logIdsFunc()
+    }
     return { elements, errors: fetchErrors, updatedConfig }
   }
 

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ListType, ObjectType } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
@@ -46,7 +46,7 @@ describe('workflowDiagramFilter', () => {
       elemID: new ElemID(JIRA, WORKFLOW_TYPE_NAME),
       fields: {
         statuses: { refType: new ListType(workflowStatusType) },
-        transitions: { refType: new ListType(workflowTransitionType) },
+        transitions: { refType: new MapType(workflowTransitionType) },
       },
     })
 
@@ -77,36 +77,36 @@ describe('workflowDiagramFilter', () => {
             id: '400',
           },
         ],
-        transitions: [
-          {
+        transitions: {
+          tran1: {
             name: 'Building',
             to: '400',
             type: 'global',
           },
-          {
+          tran2: {
             name: 'Create',
             to: '1',
             type: 'initial',
           },
-          {
+          tran3: {
             name: 'hey',
             from: ['1'],
             to: '5',
             type: 'directed',
           },
-          {
+          tran4: {
             name: 'super',
             from: ['10007'],
             to: '400',
             type: 'directed',
           },
-          {
+          tran5: {
             name: 'yey',
             from: ['5'],
             to: '10007',
             type: 'directed',
           },
-        ],
+        },
       }
     )
 
@@ -284,10 +284,10 @@ describe('workflowDiagramFilter', () => {
         },
       )
       expect(elements).toHaveLength(3)
-      expect(instance.value.transitions[2].from).toBeDefined()
-      expect(instance.value.transitions[2].from[0].id).toEqual('1')
-      expect(instance.value.transitions[2].from[0].sourceAngle).toEqual(-78.11)
-      expect(instance.value.transitions[2].from[0].targetAngle).toEqual(173.58)
+      expect(instance.value.transitions.tran3.from).toBeDefined()
+      expect(instance.value.transitions.tran3.from[0].id).toEqual('1')
+      expect(instance.value.transitions.tran3.from[0].sourceAngle).toEqual(-78.11)
+      expect(instance.value.transitions.tran3.from[0].targetAngle).toEqual(173.58)
     })
     it('should add angles to from of initial transitions with undefined id', async () => {
       const elements = [instance]
@@ -300,10 +300,10 @@ describe('workflowDiagramFilter', () => {
         },
       )
       expect(elements).toHaveLength(3)
-      expect(instance.value.transitions[1].from).toBeDefined()
-      expect(instance.value.transitions[1].from[0].id).toBeUndefined()
-      expect(instance.value.transitions[1].from[0].sourceAngle).toEqual(99.11)
-      expect(instance.value.transitions[1].from[0].targetAngle).toEqual(173.58)
+      expect(instance.value.transitions.tran2.from).toBeDefined()
+      expect(instance.value.transitions.tran2.from[0].id).toBeUndefined()
+      expect(instance.value.transitions.tran2.from[0].sourceAngle).toEqual(99.11)
+      expect(instance.value.transitions.tran2.from[0].targetAngle).toEqual(173.58)
     })
     it('from should not be undefined in global transitions', async () => {
       const elements = [instance]
@@ -316,7 +316,7 @@ describe('workflowDiagramFilter', () => {
         },
       )
       expect(elements).toHaveLength(3)
-      expect(instance.value.transitions[0].from).toBeUndefined()
+      expect(instance.value.transitions.tran1.from).toBeUndefined()
     })
     it('should add diagramGlobalLoopedTransition angles to the instance', async () => {
       const elements = [instance]
@@ -451,9 +451,9 @@ describe('workflowDiagramFilter', () => {
       expect(instance.value.statuses[0].location).toBeDefined()
       expect(instance.value.statuses[0].location.x).toEqual(-3)
       expect(instance.value.statuses[0].location.y).toEqual(6)
-      expect(instance.value.transitions[2].from[0].id).toBeDefined()
-      expect(instance.value.transitions[2].from[0].sourceAngle).toEqual(-78.11)
-      expect(instance.value.transitions[2].from[0].targetAngle).toEqual(173.58)
+      expect(instance.value.transitions.tran3.from[0].id).toBeDefined()
+      expect(instance.value.transitions.tran3.from[0].sourceAngle).toEqual(-78.11)
+      expect(instance.value.transitions.tran3.from[0].targetAngle).toEqual(173.58)
     })
 
     it('should log error when response is not valid', async () => {

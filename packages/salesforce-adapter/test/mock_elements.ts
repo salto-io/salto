@@ -344,6 +344,21 @@ export const mockTypes = {
       [API_NAME]: 'Account',
     },
   }),
+  User: createCustomObjectType('User', {
+    fields: {
+      Manager__c: {
+        refType: Types.primitiveDataTypes.Hierarchy,
+        annotations: {
+          [API_NAME]: 'User.Manager__c',
+          [FIELD_ANNOTATIONS.QUERYABLE]: true,
+          [FIELD_ANNOTATIONS.CREATABLE]: true,
+          [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          [FIELD_ANNOTATIONS.RELATIONSHIP_NAME]: 'Manager',
+          [FIELD_ANNOTATIONS.REFERENCE_TO]: ['User'],
+        },
+      },
+    },
+  }),
   ListView: createMetadataObjectType({
     annotations: {
       metadataType: 'ListView',
@@ -494,9 +509,23 @@ export const mockTypes = {
         refType: Types.primitiveDataTypes.MasterDetail,
         annotations: {
           referenceTo: ['SBQQ__Template__c'],
+          [FIELD_ANNOTATIONS.QUERYABLE]: true,
         },
       },
-      SBQQ__FieldName__c: { refType: BuiltinTypes.STRING },
+      SBQQ__FieldName__c: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [FIELD_ANNOTATIONS.QUERYABLE]: true,
+        },
+      },
+    },
+  }),
+  WebLink: createMetadataObjectType({
+    annotations: {
+      metadataType: 'WebLink',
+      dirName: 'links',
+      suffix: 'link',
+      hasMetaFile: true,
     },
   }),
 }

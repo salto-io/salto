@@ -540,6 +540,7 @@ export const generateElements = async (
         annotationRefsOrTypes,
         annotations: await generateAnnotations(annotationRefsOrTypes),
       })
+      fullObjType.annotations[CORE_ANNOTATIONS.ALIAS] = `${fullObjType.elemID.name}_alias`
       const fieldsObjType = new ObjectType({
         elemID: fullObjType.elemID,
         fields: fullObjType.fields,
@@ -570,6 +571,7 @@ export const generateElements = async (
       ),
       [DUMMY_ADAPTER, 'Records', instanceType.elemID.name, name]
     )
+    record.annotations[CORE_ANNOTATIONS.ALIAS] = `${name}_alias`
     if (randomGen() < defaultParams.parentFreq) {
       record.annotations[CORE_ANNOTATIONS.PARENT] = new ReferenceExpression(
         chooseObjIgnoreRank().elemID
@@ -738,6 +740,7 @@ export const generateElements = async (
         [`${envID}Anno`]: 'AnnoValue',
         SharedHidden: 'HIDDEN!',
         DiffHidden: `${envID}-HIDDENNNN!!!!`,
+        [CORE_ANNOTATIONS.ALIAS]: 'EnvObj_alias',
       },
       path: [DUMMY_ADAPTER, 'EnvStuff', 'EnvObj'],
     })
@@ -752,6 +755,7 @@ export const generateElements = async (
       [DUMMY_ADAPTER, 'EnvStuff', 'EnvInst'],
       {
         [CORE_ANNOTATIONS.SERVICE_URL]: `http://www.somthing.com/${envID}`,
+        [CORE_ANNOTATIONS.ALIAS]: 'EnvInst_alias',
       }
     )
     const envSpecificObj = new ObjectType({
@@ -762,12 +766,18 @@ export const generateElements = async (
         },
       },
       path: [DUMMY_ADAPTER, 'EnvStuff', `${envID}EnvObj`],
+      annotations: {
+        [CORE_ANNOTATIONS.ALIAS]: `${envID}EnvObj_alias`,
+      },
     })
     const envSpecificInst = new InstanceElement(
       `${envID}EnvInst`,
       envSpecificObj,
       { Field: 'FieldValue' },
-      [DUMMY_ADAPTER, 'EnvStuff', `${envID}EnvInst`]
+      [DUMMY_ADAPTER, 'EnvStuff', `${envID}EnvInst`],
+      {
+        [CORE_ANNOTATIONS.ALIAS]: `${envID}EnvInst_alias`,
+      }
     )
     const res = [envSpecificInst, sharedObj, sharedInst, PrimWithHiddenAnnos]
     if (!process.env.SALTO_OMIT) {

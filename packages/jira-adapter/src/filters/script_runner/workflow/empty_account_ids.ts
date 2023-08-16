@@ -23,7 +23,7 @@ import { SCRIPT_RUNNER_POST_FUNCTION_TYPE, SCRIPT_RUNNER_SEND_NOTIFICATIONS } fr
 const { makeArray } = collections.array
 
 const changeAccountIds = (workflowInstance: WorkflowInstance, func: (scriptRunner: Value) => Value): void => {
-  workflowInstance.value.transitions.forEach(transition => {
+  Object.values(workflowInstance.value.transitions).forEach(transition => {
     makeArray(transition.rules?.postFunctions).forEach(postFunction => {
       if (postFunction.type === SCRIPT_RUNNER_POST_FUNCTION_TYPE
           && postFunction.configuration?.scriptRunner?.className === SCRIPT_RUNNER_SEND_NOTIFICATIONS) {

@@ -39,7 +39,7 @@ import {
   DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, ClientConfig, InstanceLimiterFunc,
 } from '../config'
 import { NetsuiteFetchQueries, NetsuiteQuery, NetsuiteTypesQueryParams, ObjectID } from '../query'
-import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError, MissingManifestFeaturesError } from './errors'
+import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError, MissingManifestFeaturesError, getFailedObjectsMap, getFailedObjects } from './errors'
 import { SdfCredentials } from './credentials'
 import {
   CustomizationInfo, CustomTypeInfo, FailedImport, FailedTypes, FileCustomizationInfo,
@@ -49,14 +49,14 @@ import {
 import { fileCabinetTopLevelFolders } from './constants'
 import {
   isCustomTypeInfo, isFileCustomizationInfo, isFolderCustomizationInfo, isTemplateCustomTypeInfo,
-  mergeTypeToInstances, getGroupItemFromRegex, toError,
+  mergeTypeToInstances, getGroupItemFromRegex, toError, sliceMessagesByRegex,
 } from './utils'
 import { fixManifest } from './manifest_utils'
 import { detectLanguage, FEATURE_NAME, fetchLockedObjectErrorRegex, fetchUnexpectedErrorRegex, multiLanguageErrorDetectors, OBJECT_ID } from './language_utils'
 import { Graph } from './graph_utils'
 import { FileSize, filterFilesInFolders, largeFoldersToExclude } from './file_cabinet_utils'
 import { reorderDeployXml } from './deploy_xml_utils'
-import { OBJECTS_DIR, ADDITIONAL_FILE_PATTERN, ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX, READ_CONCURRENCY, convertToXmlContent, parseFeaturesXml, parseFileCabinetDir, parseObjectsDir, convertToFeaturesXmlContent, FEATURES_XML, getCustomTypeInfoPath, getFileCabinetCustomInfoPath, getFileCabinetDirPath, getSrcDirPath, getDeployFilePath, getManifestFilePath, getFeaturesXmlPath } from './sdf_parser'
+import { OBJECTS_DIR, ADDITIONAL_FILE_PATTERN, ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX, READ_CONCURRENCY, convertToXmlContent, parseFeaturesXml, parseFileCabinetDir, parseObjectsDir, convertToFeaturesXmlContent, getCustomTypeInfoPath, getFileCabinetCustomInfoPath, getFileCabinetDirPath, getSrcDirPath, getDeployFilePath, getManifestFilePath, getFeaturesXmlPath, FEATURES_XML } from './sdf_parser'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
@@ -834,44 +834,53 @@ export default class SdfClient {
       return error
     }
 
-    const errorMessage = error.message
-    const sdfLanguage = detectLanguage(errorMessage)
+    const messages = error.message.split(`${os.EOL}${os.EOL}`)
+    const sdfLanguage = detectLanguage(error.message)
     const {
       settingsValidationErrorRegex,
       manifestErrorDetailsRegex,
-      objectValidationErrorRegex,
-      missingFeatureErrorRegex,
+      objectValidationErrorRegexes,
+      missingFeatureErrorRegexes,
       deployedObjectRegex,
       errorObjectRegex,
+      otherErrorRegexes,
     } = multiLanguageErrorDetectors[sdfLanguage]
-    const manifestErrorScriptids = getGroupItemFromRegex(errorMessage, manifestErrorDetailsRegex, OBJECT_ID)
+
+    const manifestErrorScriptids = getFailedObjects(messages, manifestErrorDetailsRegex)
     if (manifestErrorScriptids.length > 0) {
-      return new ManifestValidationError(errorMessage, manifestErrorScriptids)
+      return new ManifestValidationError(error.message, manifestErrorScriptids)
     }
-    const missingFeatureNames = missingFeatureErrorRegex
-      .flatMap(regex => getGroupItemFromRegex(errorMessage, regex, FEATURE_NAME))
+
+    const missingFeatureNames = missingFeatureErrorRegexes
+      .flatMap(regex => getGroupItemFromRegex(error.message, regex, FEATURE_NAME))
     if (missingFeatureNames.length > 0) {
-      return new MissingManifestFeaturesError(errorMessage, _.uniq(missingFeatureNames))
+      return new MissingManifestFeaturesError(error.message, _.uniq(missingFeatureNames))
     }
-    const validationErrorObjects = getGroupItemFromRegex(
-      errorMessage, objectValidationErrorRegex, OBJECT_ID
-    )
-    if (validationErrorObjects.length > 0) {
-      return new ObjectsDeployError(errorMessage, new Set(validationErrorObjects))
+
+    const validationErrorsMap = getFailedObjectsMap(messages, ...objectValidationErrorRegexes)
+    if (validationErrorsMap.size > 0) {
+      return new ObjectsDeployError(error.message, validationErrorsMap)
     }
-    if (settingsValidationErrorRegex.test(errorMessage) && errorMessage.includes(FEATURES_XML)) {
-      return new SettingsDeployError(errorMessage, new Set([CONFIG_FEATURES]))
+
+    const settingsErrors = sliceMessagesByRegex(messages, settingsValidationErrorRegex)
+      .filter(message => message.includes(FEATURES_XML))
+      .map(message => ({ message }))
+    if (settingsErrors.length > 0) {
+      return new SettingsDeployError(error.message, new Map([[CONFIG_FEATURES, settingsErrors]]))
     }
-    const errorObject = errorMessage.match(errorObjectRegex)?.groups?.[OBJECT_ID]
-    if (errorObject !== undefined) {
-      return new ObjectsDeployError(errorMessage, new Set([errorObject]))
+
+    const errorObjectsMap = getFailedObjectsMap(messages, errorObjectRegex)
+    if (errorObjectsMap.size > 0) {
+      return new ObjectsDeployError(error.message, errorObjectsMap)
     }
-    const allDeployedObjects = getGroupItemFromRegex(
-      errorMessage, deployedObjectRegex, OBJECT_ID
-    )
+
+    const allDeployedObjects = getGroupItemFromRegex(error.message, deployedObjectRegex, OBJECT_ID)
     if (allDeployedObjects.length > 0) {
+      const errorMessages = sliceMessagesByRegex(messages, deployedObjectRegex, false)
+      const message = errorMessages.length > 0 ? errorMessages.join(os.EOL) : error.message
       // the last object in the error message is the one that failed the deploy
-      return new ObjectsDeployError(errorMessage, new Set([allDeployedObjects.slice(-1)[0]]))
+      const errorsMap = new Map([[allDeployedObjects.slice(-1)[0], [{ message }]]])
+      return new ObjectsDeployError(error.message, errorsMap)
     }
 
     log.warn(`
@@ -882,7 +891,9 @@ ${this.manifestXmlContent}
 deploy.xml:
 ${this.deployXmlContent}
 `)
-    return error
+
+    const detectedErrors = messages.filter(message => otherErrorRegexes.some(regex => regex.test(message)))
+    return detectedErrors.length > 0 ? new Error(detectedErrors.join(os.EOL)) : error
   }
 
   private async runDeployCommands(

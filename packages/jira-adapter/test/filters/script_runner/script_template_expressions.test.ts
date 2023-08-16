@@ -23,22 +23,22 @@ import { getDefaultConfig } from '../../../src/config/config'
 type FilterType = filterUtils.FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
 
 const checkValuesNoReference = (element: InstanceElement): void => {
-  const postFunction = element.value.transitions[0].rules.postFunctions[0].configuration.scriptRunner
-  const { conditions } = element.value.transitions[0].rules.conditions
+  const postFunction = element.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner
+  const { conditions } = element.value.transitions.tran1.rules.conditions
   expect(postFunction.field).toEqual(1)
   expect(postFunction.field2).toEqual('no fields')
   expect(postFunction.expression).toEqual('test customfield_1 test2')
   expect(postFunction.additionalCode).toEqual('customfield_2')
   expect(postFunction.emailCode).toEqual('customfield_3 test customfield_4')
   expect(postFunction.condition).toEqual('customfield_5')
-  expect(element.value.transitions[0].rules.validators[0].configuration.scriptRunner.expression).toEqual('test customfield_1 test2')
+  expect(element.value.transitions.tran1.rules.validators[0].configuration.scriptRunner.expression).toEqual('test customfield_1 test2')
   expect(conditions[0].configuration.scriptRunner.expression).toEqual('test customfield_1 test2')
   expect(conditions[1].configuration.scriptRunner.expression).toEqual('test customfield_2 test2')
 }
 
 const checkValues = (element: InstanceElement): void => {
-  const postFunction = element.value.transitions[0].rules.postFunctions[0].configuration.scriptRunner
-  const { conditions } = element.value.transitions[0].rules.conditions
+  const postFunction = element.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner
+  const { conditions } = element.value.transitions.tran1.rules.conditions
   expect(postFunction.field).toEqual(1)
   expect(postFunction.field2).toEqual('no fields')
   expect(postFunction.expression.parts[1].elemID.getFullName()).toEqual('jira.Field.instance.field_1')
@@ -46,34 +46,34 @@ const checkValues = (element: InstanceElement): void => {
   expect(postFunction.emailCode.parts[0].elemID.getFullName()).toEqual('jira.Field.instance.field_3')
   expect(postFunction.emailCode.parts[2].elemID.getFullName()).toEqual('jira.Field.instance.field_4')
   expect(postFunction.condition.parts[0].elemID.getFullName()).toEqual('jira.Field.instance.field_5')
-  expect(element.value.transitions[0].rules.validators[0].configuration.scriptRunner.expression.parts[1].elemID.getFullName()).toEqual('jira.Field.instance.field_1')
+  expect(element.value.transitions.tran1.rules.validators[0].configuration.scriptRunner.expression.parts[1].elemID.getFullName()).toEqual('jira.Field.instance.field_1')
   expect(conditions[0].configuration.scriptRunner.expression.parts[1].elemID.getFullName()).toEqual('jira.Field.instance.field_1')
   expect(conditions[1].configuration.scriptRunner.expression.parts[1].elemID.getFullName()).toEqual('jira.Field.instance.field_2')
 }
 
 const checkDcValuesNoReference = (element: InstanceElement): void => {
-  const postFunction = element.value.transitions[0].rules.postFunctions[0].configuration
-  const { conditions } = element.value.transitions[0].rules.conditions
+  const postFunction = element.value.transitions.tran1.rules.postFunctions[0].configuration
+  const { conditions } = element.value.transitions.tran1.rules.conditions
   expect(postFunction.field).toEqual(1)
   expect(postFunction.field2.script).toEqual('no fields')
   expect(postFunction.FIELD_CONDITION.script).toEqual('test customfield_1 test2')
   expect(postFunction.FIELD_ADDITIONAL_SCRIPT.script).toEqual('customfield_2')
   expect(postFunction.FIELD_SCRIPT_FILE_OR_SCRIPT.script).toEqual('customfield_3 test customfield_4')
-  expect(element.value.transitions[0].rules.validators[0].configuration.FIELD_CONDITION.script).toEqual('test customfield_1 test2')
+  expect(element.value.transitions.tran1.rules.validators[0].configuration.FIELD_CONDITION.script).toEqual('test customfield_1 test2')
   expect(conditions[0].configuration.FIELD_SCRIPT_FILE_OR_SCRIPT.script).toEqual('test customfield_1 test2')
   expect(conditions[1].configuration.FIELD_SCRIPT_FILE_OR_SCRIPT.script).toEqual('test customfield_2 test2')
 }
 
 const checkDcValues = (element: InstanceElement): void => {
-  const postFunction = element.value.transitions[0].rules.postFunctions[0].configuration
-  const { conditions } = element.value.transitions[0].rules.conditions
+  const postFunction = element.value.transitions.tran1.rules.postFunctions[0].configuration
+  const { conditions } = element.value.transitions.tran1.rules.conditions
   expect(postFunction.field).toEqual(1)
   expect(postFunction.field2.script).toEqual('no fields')
   expect(postFunction.FIELD_CONDITION.script.parts[1].elemID.getFullName()).toEqual('jira.Field.instance.field_1')
   expect(postFunction.FIELD_ADDITIONAL_SCRIPT.script.parts[0].elemID.getFullName()).toEqual('jira.Field.instance.field_2')
   expect(postFunction.FIELD_SCRIPT_FILE_OR_SCRIPT.script.parts[0].elemID.getFullName()).toEqual('jira.Field.instance.field_3')
   expect(postFunction.FIELD_SCRIPT_FILE_OR_SCRIPT.script.parts[2].elemID.getFullName()).toEqual('jira.Field.instance.field_4')
-  expect(element.value.transitions[0].rules.validators[0].configuration.FIELD_CONDITION.script.parts[1].elemID.getFullName()).toEqual('jira.Field.instance.field_1')
+  expect(element.value.transitions.tran1.rules.validators[0].configuration.FIELD_CONDITION.script.parts[1].elemID.getFullName()).toEqual('jira.Field.instance.field_1')
   expect(conditions[0].configuration.FIELD_SCRIPT_FILE_OR_SCRIPT.script.parts[1].elemID.getFullName()).toEqual('jira.Field.instance.field_1')
   expect(conditions[1].configuration.FIELD_SCRIPT_FILE_OR_SCRIPT.script.parts[1].elemID.getFullName()).toEqual('jira.Field.instance.field_2')
 }
@@ -105,8 +105,9 @@ describe('workflow_script_references', () => {
         'instance',
         workflowType,
         {
-          transitions: [
-            {
+          transitions: {
+            tran1: {
+              name: 'tran1',
               rules: {
                 undefined, // to test cases of undefined fields
                 postFunctions: [
@@ -157,7 +158,8 @@ describe('workflow_script_references', () => {
                   ],
                 },
               },
-            }],
+            },
+          },
         }
       )
     })
@@ -173,16 +175,16 @@ describe('workflow_script_references', () => {
     })
     it('fetch should not fail if a script is null', async () => {
       const elements = [instance, ...fields]
-      elements[0].value.transitions[0].rules.postFunctions[0].configuration.scriptRunner.expression = null
+      elements[0].value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner.expression = null
       await filter.onFetch(elements)
-      expect(elements[0].value.transitions[0].rules.postFunctions[0].configuration.scriptRunner.expression)
+      expect(elements[0].value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner.expression)
         .toBeNull()
     })
     it('fetch should not fail if a scriptRunner object is null', async () => {
       const elements = [instance, ...fields]
-      elements[0].value.transitions[0].rules.postFunctions[0].configuration.scriptRunner = null
+      elements[0].value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner = null
       await filter.onFetch(elements)
-      expect(elements[0].value.transitions[0].rules.postFunctions[0].configuration.scriptRunner).toBeNull()
+      expect(elements[0].value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner).toBeNull()
     })
     it('pre-deploy should not remove references when script runner is disabled', async () => {
       await filter.onFetch([instance, ...fields])
@@ -234,8 +236,9 @@ describe('workflow_script_references', () => {
         'instance',
         workflowType,
         {
-          transitions: [
-            {
+          transitions: {
+            tran1: {
+              name: 'tran1',
               rules: {
                 undefined, // to test cases of undefined fields
                 postFunctions: [
@@ -290,7 +293,8 @@ describe('workflow_script_references', () => {
                   ],
                 },
               },
-            }],
+            },
+          },
         }
       )
     })
@@ -306,16 +310,16 @@ describe('workflow_script_references', () => {
     })
     it('fetch should not fail if a script is null', async () => {
       const elements = [instance, ...fields]
-      elements[0].value.transitions[0].rules.postFunctions[0].configuration.FIELD_CONDITION = null
+      elements[0].value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_CONDITION = null
       await filter.onFetch(elements)
-      expect(elements[0].value.transitions[0].rules.postFunctions[0].configuration.FIELD_CONDITION)
+      expect(elements[0].value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_CONDITION)
         .toBeNull()
     })
     it('fetch should not fail if a scriptRunner object is null', async () => {
       const elements = [instance, ...fields]
-      elements[0].value.transitions[0].rules.postFunctions[0].configuration = null
+      elements[0].value.transitions.tran1.rules.postFunctions[0].configuration = null
       await filter.onFetch(elements)
-      expect(elements[0].value.transitions[0].rules.postFunctions[0].configuration).toBeNull()
+      expect(elements[0].value.transitions.tran1.rules.postFunctions[0].configuration).toBeNull()
     })
     it('pre-deploy should not remove references when script runner is disabled', async () => {
       await filter.onFetch([instance, ...fields])

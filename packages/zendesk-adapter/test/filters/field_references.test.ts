@@ -18,7 +18,7 @@ import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element,
 import { filterUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../src/filters/field_references'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
-import { ROUTING_ATTRIBUTE_VALUE_TYPE, ZENDESK } from '../../src/constants'
+import { ROUTING_ATTRIBUTE_VALUE_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { createFilterCreatorParams } from '../utils'
 
 describe('References by id filter', () => {
@@ -205,7 +205,7 @@ describe('References by id filter', () => {
     },
   })
   const routingAttributeValueType = new ObjectType({
-    elemID: new ElemID(ZENDESK, ROUTING_ATTRIBUTE_VALUE_TYPE),
+    elemID: new ElemID(ZENDESK, ROUTING_ATTRIBUTE_VALUE_TYPE_NAME),
     fields: {
       id: { refType: BuiltinTypes.NUMBER },
       conditions: {

@@ -21,6 +21,8 @@ export const defaultFieldConfigurationValidator: ChangeValidator = async changes
     .filter(isModificationChange)
     .filter(change => getChangeData(change).elemID.typeName === 'FieldConfiguration')
     .filter(change => getChangeData(change).value.isDefault)
+    .filter(change => !(change.data.before.value.name === change.data.after.value.name
+      && change.data.before.value.description === change.data.after.value.description))
     .map(change => ({
       elemID: getChangeData(change).elemID,
       severity: 'Error' as SeverityLevel,

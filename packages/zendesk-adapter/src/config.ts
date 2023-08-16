@@ -1128,6 +1128,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   workspace__selected_macros: {
     transformation: {
       fieldsToHide: [],
+      fieldsToOmit: [{ fieldName: 'usage_7d', fieldType: 'number' }],
     },
   },
   workspace__selected_macros__restriction: {
@@ -1381,7 +1382,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   macros: {
     request: {
       url: '/api/v2/macros',
-      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      queryParams: {
+        ...DEFAULT_QUERY_PARAMS,
+        access: 'shared',
+      },
       paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
@@ -2659,10 +2663,14 @@ export type ChangeValidatorName = (
   | 'defaultAutomationRemoval'
   | 'deflectionAction'
   | 'uniqueAutomationConditions'
+  | 'triggerCategoryRemoval'
   | 'childInOrder'
   | 'childrenReferences'
   | 'orderChildrenParent'
   | 'guideOrderDeletion'
+  | 'attachmentWithoutContent'
+  | 'duplicateRoutingAttributeValue'
+  | 'ticketFieldDeactivation'
   )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -2720,12 +2728,16 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     featureActivation: { refType: BuiltinTypes.BOOLEAN },
     standardFields: { refType: BuiltinTypes.BOOLEAN },
     defaultAutomationRemoval: { refType: BuiltinTypes.BOOLEAN },
+    attachmentWithoutContent: { refType: BuiltinTypes.BOOLEAN },
     deflectionAction: { refType: BuiltinTypes.BOOLEAN },
     uniqueAutomationConditions: { refType: BuiltinTypes.BOOLEAN },
+    triggerCategoryRemoval: { refType: BuiltinTypes.BOOLEAN },
     childInOrder: { refType: BuiltinTypes.BOOLEAN },
     childrenReferences: { refType: BuiltinTypes.BOOLEAN },
     orderChildrenParent: { refType: BuiltinTypes.BOOLEAN },
     guideOrderDeletion: { refType: BuiltinTypes.BOOLEAN },
+    duplicateRoutingAttributeValue: { refType: BuiltinTypes.BOOLEAN },
+    ticketFieldDeactivation: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

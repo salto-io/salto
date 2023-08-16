@@ -404,6 +404,17 @@ describe('SalesforceAdapter fetch', () => {
                 bla: { bla: '55', bla2: 'false', bla3: 'true' },
               },
             },
+            {
+              props: {
+                fullName: 'FlowInstanceNoId',
+                fileName: 'flows/FlowInstanceNoId.flow',
+                id: '',
+              },
+              values: {
+                fullName: 'FlowInstanceNoId',
+                bla: { bla: '55', bla2: 'false', bla3: 'true' },
+              },
+            },
           ]
         )
       }
@@ -427,6 +438,14 @@ describe('SalesforceAdapter fetch', () => {
         expect(flow.annotations[CORE_ANNOTATIONS.CREATED_AT]).toEqual('2020-05-01T14:31:36.000Z')
         expect(flow.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toEqual('test')
         expect(flow.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('2020-05-01T14:41:36.000Z')
+      })
+
+      it('should not have id field if id is empty string in fileProps', async () => {
+        mockFlowType()
+        const { elements: result } = await adapter.fetch(mockFetchOpts)
+        const flow = findElements(result, 'Flow', 'FlowInstanceNoId').pop() as InstanceElement
+        expect((await flow.getType()).elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow'))
+        expect(flow.value.id).toBeUndefined()
       })
 
       it('should not fetch excluded namespaces', async () => {
@@ -1057,6 +1076,25 @@ public class MyClass${index} {
       })
     })
 
+    describe('when there is an empty id in retrieve response', () => {
+      it('should not create instance with internalId', async () => {
+        mockMetadataType(
+          { xmlName: 'Account' },
+          { valueTypeFields: [] },
+          [
+            {
+              props: { fullName: 'Account', id: '' },
+              values: { fullName: 'Account' },
+            },
+          ]
+        )
+        const { elements: result } = await adapter.fetch(mockFetchOpts)
+        const [testObject] = findElements(result, 'Account', 'Account') as [InstanceElement]
+        expect(testObject).toBeDefined()
+        expect(testObject.value.internalId).toBeUndefined()
+      })
+    })
+
     it('should not fail the fetch on instances too large', async () => {
       mockMetadataType(
         { xmlName: 'ApexClass', metaFile: true, suffix: 'cls', directoryName: 'classes' },
@@ -1340,7 +1378,6 @@ public class LargeClass${index} {
         expect(config).toBeDefined()
         expect(config.value).toEqual(
           {
-            deploy: {},
             fetch: {
               metadata: {
                 exclude: [
@@ -1374,7 +1411,6 @@ public class LargeClass${index} {
         config = result?.updatedConfig?.config[0] as InstanceElement
         expect(config.value).toEqual(
           {
-            deploy: {},
             fetch: {
               metadata: {
                 exclude: [

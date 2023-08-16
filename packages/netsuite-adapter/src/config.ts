@@ -82,6 +82,7 @@ export type DeployParams = UserDeployConfig & {
     include?: Partial<AdditionalSdfDeployDependencies>
     exclude?: Partial<AdditionalSdfDeployDependencies>
   }
+  fieldsToOmit?: FieldToOmitParams[]
 }
 
 export const DEPLOY_PARAMS: lowerdashTypes.TypeKeysEnum<DeployParams> = {
@@ -90,6 +91,7 @@ export const DEPLOY_PARAMS: lowerdashTypes.TypeKeysEnum<DeployParams> = {
   deployReferencedElements: 'deployReferencedElements',
   additionalDependencies: 'additionalDependencies',
   changeValidators: 'changeValidators',
+  fieldsToOmit: 'fieldsToOmit',
 }
 
 type MaxInstancesPerType = {
@@ -549,6 +551,9 @@ export type NetsuiteValidatorName = (
   | 'undeployableConfigFeatures'
   | 'extraReferenceDependencies'
   | 'rolePermission'
+  | 'translationCollectionReferences'
+  | 'omitFields'
+  | 'unreferencedFileAddition'
 )
 
 export type NonSuiteAppValidatorName = (
@@ -561,8 +566,8 @@ export type OnlySuiteAppValidatorName = (
 )
 
 type ChangeValidatorConfig = Record<
-  NetsuiteValidatorName & NonSuiteAppValidatorName & OnlySuiteAppValidatorName,
-  boolean
+  NetsuiteValidatorName | NonSuiteAppValidatorName | OnlySuiteAppValidatorName,
+  boolean | undefined
 >
 
 const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig>({
@@ -593,21 +598,30 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     removeFileCabinet: { refType: BuiltinTypes.BOOLEAN },
     removeStandardTypes: { refType: BuiltinTypes.BOOLEAN },
     fileCabinetInternalIds: { refType: BuiltinTypes.BOOLEAN },
+    translationCollectionReferences: { refType: BuiltinTypes.BOOLEAN },
+    omitFields: { refType: BuiltinTypes.BOOLEAN },
+    unreferencedFileAddition: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
 
-const deployConfigType = configUtils.createUserDeployConfigType(
-  NETSUITE,
-  changeValidatorConfigType,
-  {
+const baseDeployConfigType = createMatchingObjectType<Omit<DeployParams, keyof UserDeployConfig>>({
+  elemID: new ElemID(NETSUITE, 'deploy_config'),
+  fields: {
     warnOnStaleWorkspaceData: { refType: BuiltinTypes.BOOLEAN },
     validate: { refType: BuiltinTypes.BOOLEAN },
     deployReferencedElements: { refType: BuiltinTypes.BOOLEAN },
     additionalDependencies: { refType: additionalDependenciesType },
-  }
+    fieldsToOmit: { refType: new ListType(fieldsToOmitConfig) },
+  },
+})
+
+const deployConfigType = configUtils.createUserDeployConfigType(
+  NETSUITE,
+  changeValidatorConfigType,
+  baseDeployConfigType.fields,
 )
 
 const additionalDependenciesConfigPath: string[] = [
@@ -691,6 +705,7 @@ export const validateDeployParams = (
     warnOnStaleWorkspaceData,
     validate,
     additionalDependencies,
+    fieldsToOmit,
   }: Record<keyof DeployParams, unknown>
 ): void => {
   if (deployReferencedElements !== undefined
@@ -708,6 +723,9 @@ export const validateDeployParams = (
   if (additionalDependencies !== undefined) {
     validatePlainObject(additionalDependencies, additionalDependenciesConfigPath)
     validateAdditionalDependencies(additionalDependencies)
+  }
+  if (fieldsToOmit !== undefined) {
+    validateFieldsToOmitConfig(fieldsToOmit)
   }
 }
 

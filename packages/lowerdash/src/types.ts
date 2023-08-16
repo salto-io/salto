@@ -52,6 +52,9 @@ export type TypeGuard<T, S extends T> = (item: T) => item is S
 export type Predicate<T> = (item: T) => boolean
 export type AsyncPredicate<T> = (item: T) => Promise<boolean>
 
+// eslint-disable-next-line @typescript-eslint/ban-types
+export type PickDataFields<T> = Omit<T, KeysOfType<T, Function>>
+
 /*
 
 --- Bean ---
@@ -100,3 +103,4 @@ export const isNonEmptyArray = <T> (array: T[]): array is NonEmptyArray<T> => (
 export type AllowOnly<T, K extends keyof T> = Pick<T, K> & { [P in keyof Omit<T, K>]?: never };
 export type OneOf<T, K = keyof T> = K extends keyof T ? AllowOnly<T, K> : never
 export type XOR<A, B> = AllowOnly<A & B, keyof A> | AllowOnly<A & B, keyof B>
+export type NonPromise<T> = T extends Promise<unknown> ? never : T

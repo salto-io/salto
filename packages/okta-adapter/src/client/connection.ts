@@ -20,13 +20,24 @@ import { Credentials, AccessTokenCredentials } from '../auth'
 
 const log = logger(module)
 
+// We can only detect if an account is a preview account, as production accounts don't have indicators in their base URL
+// For more info see: https://developer.okta.com/docs/concepts/okta-organizations/#preview-and-production
+const isOktaPreviewAccount = (baseUrl: string): boolean => /.*\.oktapreview\..*/.test(baseUrl)
+const PRODUCTION_ACCOUNT_TYPE = 'Production'
+const PREVIEW_ACCOUNT_TYPE = 'Preview'
+
 export const validateCredentials = async (_creds: {
   credentials: Credentials
   connection: clientUtils.APIConnection
 }): Promise<AccountInfo> => {
   try {
     const response = await _creds.connection.get('/api/v1/org')
-    return { accountId: response.data.id }
+    const isPreview = isOktaPreviewAccount(_creds.credentials.baseUrl)
+    return {
+      accountId: response.data.id,
+      accountType: isPreview ? PREVIEW_ACCOUNT_TYPE : PRODUCTION_ACCOUNT_TYPE,
+      isProduction: !isPreview,
+    }
   } catch (error) {
     if (error.response?.status === 401) {
       log.error('Failed to validate credentials: %s', error)
@@ -52,7 +63,7 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = (
     authParamsFunc: async (creds: Credentials) => (
       accessTokenAuthParamsFunc(creds)
     ),
-    baseURLFunc: ({ baseUrl }) => baseUrl,
+    baseURLFunc: async ({ baseUrl }) => baseUrl,
     credValidateFunc: validateCredentials,
   })
 )

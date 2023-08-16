@@ -66,18 +66,6 @@ export enum FIELD_TYPE_NAMES {
   FILE = 'File',
 }
 
-const RELATIONSHIP_FIELD_NAMES = [
-  'MetadataRelationship',
-  'Lookup',
-  'MasterDetail',
-] as const
-
-type RelationshipFieldName = typeof RELATIONSHIP_FIELD_NAMES[number]
-
-export const isRelationshipFieldName = (fieldName: string): fieldName is RelationshipFieldName => (
-  (RELATIONSHIP_FIELD_NAMES as ReadonlyArray<string>).includes(fieldName)
-)
-
 export enum INTERNAL_FIELD_TYPE_NAMES {
   UNKNOWN = 'Unknown', // internal-only placeholder for fields whose type is unknown
   ANY = 'AnyType',
@@ -144,6 +132,9 @@ export enum ANNOTATION_TYPE_NAMES {
   FIELD_DEPENDENCY = 'FieldDependency',
   VALUE_SETTINGS = 'ValueSettings',
 }
+
+// Salesforce System Fields
+export const OWNER_ID = 'OwnerId'
 
 // Salto annotations
 export const API_NAME = 'apiName'

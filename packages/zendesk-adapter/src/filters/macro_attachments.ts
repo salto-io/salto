@@ -17,11 +17,24 @@ import _ from 'lodash'
 import Joi from 'joi'
 import FormData from 'form-data'
 import {
-  BuiltinTypes, Change, CORE_ANNOTATIONS, createSaltoElementError, ElemID, getChangeData, InstanceElement,
-  isInstanceElement, isRemovalChange, isSaltoError, isStaticFile, ObjectType, ReferenceExpression, StaticFile,
+  BuiltinTypes,
+  Change,
+  CORE_ANNOTATIONS,
+  createSaltoElementError,
+  ElemID,
+  getChangeData,
+  InstanceElement,
+  isInstanceElement,
+  isRemovalChange,
+  isSaltoError,
+  isStaticFile,
+  ObjectType,
+  ReferenceExpression,
+  SaltoElementError,
+  StaticFile,
 } from '@salto-io/adapter-api'
-import { normalizeFilePathPart, naclCase, elementExpressionStringifyReplacer,
-  resolveChangeElement, safeJsonStringify, pathNaclCase, references } from '@salto-io/adapter-utils'
+import { normalizeFilePathPart, naclCase,
+  resolveChangeElement, safeJsonStringify, pathNaclCase, references, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
@@ -62,7 +75,7 @@ const EXPECTED_ATTACHMENT_SCHEMA = Joi.array().items(Joi.object({
 const isAttachments = (value: unknown): value is Attachment[] => {
   const { error } = EXPECTED_ATTACHMENT_SCHEMA.validate(value)
   if (error !== undefined) {
-    log.error(`Received an invalid response for the attachments values: ${error.message}, ${safeJsonStringify(value, elementExpressionStringifyReplacer)}`)
+    log.error(`Received an invalid response for the attachments values: ${error.message}, ${inspectValue(value)}`)
     return false
   }
   return true
@@ -78,7 +91,7 @@ const replaceAttachmentId = (
   }
   if (!isArrayOfRefExprToInstances(attachments)) {
     log.error(`Failed to deploy macro because its attachment field has an invalid format: ${
-      safeJsonStringify(attachments, elementExpressionStringifyReplacer)}`)
+      inspectValue(attachments)}`)
     throw createSaltoElementError({ // caught in try block
       message: 'Failed to deploy macro because its attachment field has an invalid format',
       severity: 'Error',
@@ -117,7 +130,7 @@ const createAttachmentInstance = ({
 }: {
   attachment: Attachment
   attachmentType: ObjectType
-  content: Buffer
+  content?: Buffer
   macro: InstanceElement
 }): InstanceElement => {
   const name = elementsUtils.ducktype.toNestedTypeName(
@@ -133,10 +146,9 @@ const createAttachmentInstance = ({
       id: attachment.id,
       filename: attachment.filename,
       contentType: attachment.content_type,
-      content: new StaticFile({
-        filepath: `${ZENDESK}/${attachmentType.elemID.name}/${resourcePathName}`,
-        content,
-      }),
+      content: content
+        ? new StaticFile({ filepath: `${ZENDESK}/${attachmentType.elemID.name}/${resourcePathName}`, content })
+        : undefined,
     },
     [ZENDESK, RECORDS_PATH, MACRO_ATTACHMENT_TYPE_NAME, pathName],
     { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(macro.elemID, macro)] },
@@ -158,6 +170,12 @@ const createAttachmentType = (): ObjectType =>
     path: [ZENDESK, TYPES_PATH, SUBTYPES_PATH, MACRO_ATTACHMENT_TYPE_NAME],
   })
 
+const getAttachmentError = (attachment: Attachment, attachmentInstance: InstanceElement): SaltoElementError => ({
+  message: `could not add content to attachment ${attachment.filename} with id ${attachment.id}`,
+  severity: 'Warning',
+  elemID: attachmentInstance.elemID,
+})
+
 const getAttachmentContent = async ({
   client, attachment, macro, attachmentType,
 }: {
@@ -165,17 +183,30 @@ const getAttachmentContent = async ({
   attachment: Attachment
   macro: InstanceElement
   attachmentType: ObjectType
-}): Promise<InstanceElement | undefined> => {
-  const res = await client.getSinglePage({
-    url: `/api/v2/macros/attachments/${attachment.id}/content`,
-    responseType: 'arraybuffer',
-  })
-  const content = _.isString(res.data) ? Buffer.from(res.data) : res.data
-  if (!Buffer.isBuffer(content)) {
-    log.error(`Received invalid response from Zendesk API for attachment content, ${safeJsonStringify(res.data, undefined, 2)}. Not adding macro attachments`)
-    return undefined
+}): Promise<(InstanceElement | undefined | SaltoElementError)[]> => {
+  try {
+    const res = await client.getSinglePage({
+      url: `/api/v2/macros/attachments/${attachment.id}/content`,
+      responseType: 'arraybuffer',
+    })
+    const content = _.isString(res.data) ? Buffer.from(res.data) : res.data
+    if (!Buffer.isBuffer(content)) {
+      log.error(`Received invalid response from Zendesk API for attachment content, ${safeJsonStringify(res.data, undefined, 2)}. Not adding macro attachments`)
+      const attachmentInstance = createAttachmentInstance({ attachment, attachmentType, macro })
+      return [
+        getAttachmentError(attachment, attachmentInstance),
+        attachmentInstance,
+      ]
+    }
+    return [createAttachmentInstance({ attachment, attachmentType, macro, content })]
+  } catch (e) {
+    log.error(`could not add content to attachment ${attachment.filename} with id ${attachment.id} received error: ${e}`)
+    const attachmentInstance = createAttachmentInstance({ attachment, attachmentType, macro })
+    return [
+      getAttachmentError(attachment, attachmentInstance),
+      attachmentInstance,
+    ]
   }
-  return createAttachmentInstance({ attachment, attachmentType, macro, content })
 }
 
 const getMacroAttachments = async ({
@@ -184,7 +215,7 @@ const getMacroAttachments = async ({
   client: ZendeskClient
   macro: InstanceElement
   attachmentType: ObjectType
-}): Promise<InstanceElement[]> => {
+}): Promise<(InstanceElement | SaltoElementError)[]> => {
   // We are ok with calling getSinglePage here
   //  because a macro can be associated with up to five attachments.
   const response = await client.getSinglePage({
@@ -201,7 +232,7 @@ const getMacroAttachments = async ({
   return (await Promise.all(
     attachments.map(async attachment =>
       getAttachmentContent({ client, attachment, macro, attachmentType }))
-  )).filter(values.isDefined)
+  )).flat().filter(values.isDefined)
 }
 
 /**
@@ -215,10 +246,14 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       .filter(e => e.elemID.typeName === MACRO_TYPE_NAME)
       .filter(e => !_.isEmpty(e.value[ATTACHMENTS_FIELD_NAME]))
     const attachmentType = createAttachmentType()
-    const macroAttachments = (await Promise.all(macrosWithAttachments
+    const macroAttachmentsAndErrors = (await Promise.all(macrosWithAttachments
       .map(async macro => getMacroAttachments({ client, attachmentType, macro })))).flat()
+    const [macroAttachments, errors] = _.partition(macroAttachmentsAndErrors, isInstanceElement)
     _.remove(elements, element => element.elemID.isEqual(attachmentType.elemID))
     elements.push(attachmentType, ...macroAttachments)
+    return {
+      errors,
+    }
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [relevantChanges, leftoverChanges] = _.partition(

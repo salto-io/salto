@@ -63,7 +63,7 @@ import {
   calcFetchChanges,
 } from './core/fetch'
 import { defaultDependencyChangers } from './core/plan/plan'
-import { createRestoreChanges } from './core/restore'
+import { createRestoreChanges, createRestorePathChanges } from './core/restore'
 import { getAdapterChangeGroupIdFunctions } from './core/adapters/custom_group_key'
 import { createDiffChanges } from './core/diff'
 import getChangeValidators from './core/plan/change_validators'
@@ -520,6 +520,15 @@ export async function restore(
   )
   return detailedChanges.map(change => ({ change, serviceChanges: [change] }))
 }
+
+export const restorePaths = async (
+  workspace: Workspace,
+  accounts?: string[],
+): Promise<LocalChange[]> => (await createRestorePathChanges(
+  await awu(await (await workspace.elements()).getAll()).toArray(),
+  await workspace.state().getPathIndex(),
+  accounts,
+)).map(change => ({ change, serviceChanges: [change] }))
 
 export function diff(
   workspace: Workspace,

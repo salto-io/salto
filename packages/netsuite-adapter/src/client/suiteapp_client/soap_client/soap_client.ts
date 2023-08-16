@@ -24,7 +24,7 @@ import { collections, decorators, promises, strings } from '@salto-io/lowerdash'
 import { v4 as uuidv4 } from 'uuid'
 import { RECORD_REF } from '../../../constants'
 import { SuiteAppSoapCredentials, toUrlAccountId } from '../../credentials'
-import { CONSUMER_KEY, CONSUMER_SECRET, ECONN_ERROR, INSUFFICIENT_PERMISSION_ERROR, UNEXPECTED_ERROR, VALIDATION_ERROR } from '../constants'
+import { CONSUMER_KEY, CONSUMER_SECRET, ECONN_ERROR, INSUFFICIENT_PERMISSION_ERROR, REQUEST_ABORTED_ERROR, UNEXPECTED_ERROR, VALIDATION_ERROR } from '../constants'
 import { ReadFileError } from '../errors'
 import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails, FileDetails, FolderDetails, HasElemIDFunc } from '../types'
 import { CustomRecordResponse, DeployListResults, GetAllResponse, GetResult, isDeployListSuccess, isGetSuccess, isWriteResponseSuccess, RecordResponse, RecordValue, SearchErrorResponse, SearchPageResponse, SearchResponse, SoapSearchType, WriteResponse } from './types'
@@ -59,7 +59,13 @@ const SOAP_FILE_CABINET_URN = `urn:filecabinet_${NETSUITE_VERSION}.documents.web
 
 const SOAP_CUSTOM_RECORD_TYPE_NAME = 'CustomRecord'
 
-const RETRYABLE_MESSAGES = [ECONN_ERROR, UNEXPECTED_ERROR, INSUFFICIENT_PERMISSION_ERROR, VALIDATION_ERROR]
+const RETRYABLE_MESSAGES = [
+  ECONN_ERROR,
+  UNEXPECTED_ERROR,
+  INSUFFICIENT_PERMISSION_ERROR,
+  VALIDATION_ERROR,
+  REQUEST_ABORTED_ERROR,
+]
 const SOAP_RETRYABLE_MESSAGES = ['CONCURRENT']
 const SOAP_RETRYABLE_STATUS_INITIALS = ['5']
 

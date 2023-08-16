@@ -149,25 +149,28 @@ salesforce {
 
 ## Optional Features
 
-| Name                              | Default when undefined | Description                                                                                                                                                 |
-|-----------------------------------|------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| extraDependencies                 | true                   | Find additional dependencies between configuration elements by using the salesforce tooling API                                                             |
-| elementsUrls                      | true                   | Populate URLs for your salesforce configuration elements and enable quick navigation from Salto to the corresponding salesforce screen                      |
-| addMissingIds                     | true                   | Populate Salesforce internal ids for a few types that require special handling                                                                              |
-| profilePaths                      | true                   | Update file names for profiles whose API name is different from their display name                                                                          |
-| authorInformation                 | true                   | Populate Salesforce author information about who and when last changed Salesforce configuration elements.                                                   |
-| describeSObjects                  | true                   | Fetch additional information about CustomObjects from the soap API                                                                                          |
-| formulaDeps                       | true                   | Parse formula fields in custom objects for additional dependencies beyond those provided by the tooling API                                                 |
-| fetchCustomObjectUsingRetrieveApi | true                   | Use the Salesforce Metadata Retrieve API to fetch CustomObjects. This should improve reliability and data accuracy, but may have a small performance impact | 
+| Name                              | Default when undefined | Description                                                                                                                                                           |
+|-----------------------------------|------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| extraDependencies                 | true                   | Find additional dependencies between configuration elements by using the salesforce tooling API                                                                       |
+| elementsUrls                      | true                   | Populate URLs for your salesforce configuration elements and enable quick navigation from Salto to the corresponding salesforce screen                                |
+| addMissingIds                     | true                   | Populate Salesforce internal ids for a few types that require special handling                                                                                        |
+| profilePaths                      | true                   | Update file names for profiles whose API name is different from their display name                                                                                    |
+| authorInformation                 | true                   | Populate Salesforce author information about who and when last changed Salesforce configuration elements.                                                             |
+| describeSObjects                  | true                   | Fetch additional information about CustomObjects from the soap API                                                                                                    |
+| formulaDeps                       | true                   | Parse formula fields in custom objects for additional dependencies beyond those provided by the tooling API                                                           |
+| fetchCustomObjectUsingRetrieveApi | true                   | Use the Salesforce Metadata Retrieve API to fetch CustomObjects. This should improve reliability and data accuracy, but may have a small performance impact           |
+| fetchProfilesUsingReadApi         | false                  | Use the Salesforce Metadata Read API to fetch Profile instances. This will reduce the accuracy of the data and may result in crashes, but may be needed for debugging |
+| generateRefsInProfiles            | false                  | Generate references from profiles. This will have a significant performance impact, but will provide references from profiles to fields and elements.                 |
 
 ### Data management configuration options
 
-| Name                                                        | Default when undefined                           | Description                                                                                               |
-|-------------------------------------------------------------|--------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
-| includeObjects                                              | N/A (required when dataManagement is configured) | Data records of matched object names will be fetched                                                      |
-| excludeObjects                                              | []                                               | Data records of matched object names will not be fetched in case they are matched in includeObjects       |
-| allowReferenceTo                                            | []                                               | Data records of matched object names will be fetched only when referenced from other fetched data records |
-| [saltoIDSettings](#salto-id-settings-configuration-options) | N/A (required when dataManagement is configured) | Configuration for cross environments data record ids management                                           |
+| Name                                                              | Default when undefined                           | Description                                                                                               |
+|-------------------------------------------------------------------|--------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| includeObjects                                                    | N/A (required when dataManagement is configured) | Data records of matched object names will be fetched                                                      |
+| excludeObjects                                                    | []                                               | Data records of matched object names will not be fetched in case they are matched in includeObjects       |
+| allowReferenceTo                                                  | []                                               | Data records of matched object names will be fetched only when referenced from other fetched data records |
+| [saltoIDSettings](#salto-id-settings-configuration-options)       | N/A (required when dataManagement is configured) | Configuration for cross environments data record ids management                                           |
+| [saltoAliasSettings](#salto-alias-settings-configuration-options) | N/A                                              | Configuration for data record aliases                                                                     |
 
 #### Salto ID settings configuration options
 
@@ -176,12 +179,26 @@ salesforce {
 | defaultIdFields                                        | N/A (required when saltoIDSettings is configured) | Default fields list for defining the data record's cross environment id |
 | [overrides](#object-id-settings-configuration-options) | []                                                | Overrides the default id fields for specific objects                    |
 
+#### Salto Alias settings configuration options
+
+| Name                                                      | Default when undefined | Description                                              |
+|-----------------------------------------------------------|------------------------|----------------------------------------------------------|
+| defaultAliasFields                                        | N/A                    | Default fields list for defining the data record's alias |
+| [overrides](#object-alias-settings-configuration-options) | []                     | Overrides the default alias fields for specific objects  |
+
 #### Object ID settings configuration options
 
 | Name         | Default when undefined                      | Description                                                                                   |
 |--------------|---------------------------------------------|-----------------------------------------------------------------------------------------------|
 | objectsRegex | N/A (required when overrides is configured) | Cross environments ids of the matched object names will be defined by the specified id fields |
 | idFields     | []                                          | Fields list for defining the data record's cross environment id                               |
+
+#### Object Alias settings configuration options
+
+| Name         | Default when undefined                      | Description                                                                  |
+|--------------|---------------------------------------------|------------------------------------------------------------------------------|
+| objectsRegex | N/A (required when overrides is configured) | Alias of the matched object names will be defined by the specified id fields |
+| aliasFields  | []                                          | Fields list for defining the data record's alias                             |
 
 ### Client configuration options
 
@@ -253,17 +270,29 @@ For more details see the DeployOptions section in the [salesforce documentation 
 | overrides | Profile and PermissionSet are set to 1 | Chunk size for specific metadata types       |
 
 ## Validator Configuration Options
-| Name                  | Default when undefined | Description                                                                                       |
-|-----------------------|------------------------|---------------------------------------------------------------------------------------------------|
-| managedPackage        | true                   | Disallow changes to objects and fields that are part of a managed package                         |
-| picklistStandardField | true                   | It is forbidden to modify a picklist on a standard field. Only StandardValueSet is allowed        |
-| customObjectInstances | true                   | Validate permissions of creating / update data records                                            |
-| unknownField          | true                   | Disallow deploying an unknown field type                                                          |
-| customFieldType       | true                   | Ensure the type given to a custom field is a valid type for custom fields                         |
-| standardFieldLabel    | true                   | Disallow changing a label of a standard field                                                     |
-| profileMapKeys        | true                   | Ensure proper structure of profiles before deploying                                              |
-| multipleDefaults      | true                   | Check for multiple default values in picklists and other places where only one default is allowed |
-| picklistPromote       | true                   | Disallow promoting picklist value-set to global since it cannot be done with the API              |
-| validateOnlyFlag      | true                   | Disallow deploying data records in a validation only deploy                                       |
-| dataCategoryGroup     | true                   | Warn when deploying additions or changes to DataCategoryGroup elements                            |
-| installedPackages     | true                   | Disallow any changes on metadata instances of type InstalledPackage.                              |
+| Name                         | Default when undefined | Description                                                                                       |
+|------------------------------|------------------------|---------------------------------------------------------------------------------------------------|
+| managedPackage               | true                   | Disallow changes to objects and fields that are part of a managed package                         |
+| picklistStandardField        | true                   | It is forbidden to modify a picklist on a standard field. Only StandardValueSet is allowed        |
+| customObjectInstances        | true                   | Validate permissions of creating / update data records                                            |
+| unknownField                 | true                   | Disallow deploying an unknown field type                                                          |
+| customFieldType              | true                   | Ensure the type given to a custom field is a valid type for custom fields                         |
+| standardFieldLabel           | true                   | Disallow changing a label of a standard field                                                     |
+| mapKeys                      | true                   | Ensure proper structure of profiles before deploying                                              |
+| multipleDefaults             | true                   | Check for multiple default values in picklists and other places where only one default is allowed |
+| picklistPromote              | true                   | Disallow promoting picklist value-set to global since it cannot be done with the API              |
+| dataCategoryGroup            | true                   | Warn when deploying additions or changes to DataCategoryGroup elements                            |
+| installedPackages            | true                   | Disallow any changes on metadata instances of type InstalledPackage.                              |
+| recordTypeDeletion           | true                   | Disallow deletion of recordType.                                                                  |
+| flowsValidator               | true                   | Better flows versions management, mostly regarding the work with active flows.                    |
+| cpqValidator                 | true                   | Disallow any CPQ changes before disabling CPQ trigger on SF org.                                  |
+| fullNameChangedValidator     | true                   | Disallow any fullName property changes.                                                           |
+| invalidListViewFilterScope   | true                   | Disallow usage of some scopes as the 'filterScope' property of a ListView element.                |
+| caseAssignmentRulesValidator | true                   | Disallow deployment of case assignment rules with case teams.                                     |
+| unknownUser                  | true                   | Disallow any changes with reference to non existing users in the target org.                      |
+| animationRuleRecordType      | true                   | Disallow deployment of AnimationRule with invalid RecordType.                                     |
+| currencyIsoCodes             | true                   | Disallow any changes that includes unsupported org currency.                                      |
+| duplicateRulesSortOrder      | true                   | Disallow deployment of duplicate rule instances that are not in sequential order.                 |
+| lastLayoutRemoval            | true                   | Disallow deletion of the last layout for custom objects.                                          |
+| accountSettings              | true                   | Cannot set a value for enableAccountOwnerReport without proper org setting.                       |
+| unknownPicklistValues        | true                   | Disallow any usage of unknown pickList values.                                                    |

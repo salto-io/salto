@@ -16,8 +16,17 @@
 import _ from 'lodash'
 import Joi from 'joi'
 import {
-  getChangeData, InstanceElement, isInstanceElement, isObjectType, Element, ReferenceExpression,
-  ObjectType, ElemID, ListType, BuiltinTypes, createSaltoElementError,
+  BuiltinTypes,
+  createSaltoElementError,
+  Element,
+  ElemID,
+  getChangeData,
+  InstanceElement,
+  isInstanceElement,
+  isObjectType,
+  ListType,
+  ObjectType,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, pathNaclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -25,10 +34,8 @@ import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../filter'
 import { deployChange } from '../../deployment'
 import { createOrderTypeName, createReorderFilterCreator, DeployFuncType } from './creator'
-import { ZENDESK } from '../../constants'
+import { TRIGGER_CATEGORY_TYPE_NAME, TRIGGER_TYPE_NAME, ZENDESK } from '../../constants'
 
-export const TYPE_NAME = 'trigger'
-export const TRIGGER_CATEGORY_TYPE_NAME = 'trigger_category'
 const TRIGGER_ORDER_ENTRY_TYPE_NAME = 'trigger_order_entry'
 
 const { RECORDS_PATH, SUBTYPES_PATH, TYPES_PATH, SETTINGS_NESTED_PATH } = elementsUtils
@@ -94,10 +101,10 @@ const filterCreator: FilterCreator = ({
 }) => ({
   name: 'triggerOrderFilter',
   onFetch: async (elements: Element[]): Promise<void> => {
-    const orderTypeName = createOrderTypeName(TYPE_NAME)
+    const orderTypeName = createOrderTypeName(TRIGGER_TYPE_NAME)
     const triggerObjType = elements
       .filter(isObjectType)
-      .find(e => e.elemID.name === TYPE_NAME)
+      .find(e => e.elemID.name === TRIGGER_TYPE_NAME)
     const triggerCategoryObjType = elements
       .filter(isObjectType)
       .find(e => e.elemID.name === TRIGGER_CATEGORY_TYPE_NAME)
@@ -112,7 +119,7 @@ const filterCreator: FilterCreator = ({
     const triggers = _.sortBy(
       elements
         .filter(isInstanceElement)
-        .filter(e => e.elemID.typeName === TYPE_NAME),
+        .filter(e => e.elemID.typeName === TRIGGER_TYPE_NAME),
       instance => !instance.value.active,
       inst => inst.value.position,
       inst => inst.value.title
@@ -176,7 +183,7 @@ const filterCreator: FilterCreator = ({
   },
   deploy: createReorderFilterCreator({
     filterName: 'triggerOrderFilter',
-    typeName: TYPE_NAME,
+    typeName: TRIGGER_TYPE_NAME,
     orderFieldName: 'order',
     deployFunc,
     activeFieldName: 'active',

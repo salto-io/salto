@@ -31,36 +31,6 @@ const allSettled = async <T>(promises: IterableIterator<Promise<T>>): Promise<vo
   await Promise.all(Array.from(promises).map(p => p.catch(() => undefined)))
 }
 
-type KeyFromPromiseResult<T> = (result: T) => string
-class PromisesQueue<T> {
-  private readonly promises: Map<string, Promise<T>>
-  private readonly hashFunc: KeyFromPromiseResult<T>
-  constructor(hashFunc: KeyFromPromiseResult<T>) {
-    this.promises = new Map()
-    this.hashFunc = hashFunc
-  }
-
-  enqueue(key: string, promise: Promise<T>): void {
-    this.promises.set(key, promise)
-    log.debug(`Added promise to pagination queue. Queue size: ${this.promises.size}`)
-  }
-
-  async dequeue(): Promise<T> {
-    const settledPromise = await Promise.race(this.promises.values())
-    this.promises.delete(this.hashFunc(settledPromise))
-    log.debug(`Removed promise from pagination queue. Queue size: ${this.promises.size}`)
-    return settledPromise
-  }
-
-  size(): number {
-    return this.promises.size
-  }
-
-  async clear(): Promise<void> {
-    await allSettled(this.promises.values())
-  }
-}
-
 type PaginationResult = {
   page: ResponseValue[]
   response: Response<ResponseValue| ResponseValue[]>
@@ -69,7 +39,8 @@ type PaginationResult = {
 }
 
 type GetPageArgs = {
-  promisesQueue: PromisesQueue<PaginationResult>
+  // eslint-disable-next-line no-use-before-define
+  promisesQueue: PromisesQueue
   paginationFunc: PaginationFunc
   client: HTTPReadClientInterface
   extractPageEntries: PageEntriesExtractor
@@ -108,8 +79,53 @@ const singlePagePagination = async (
     return { response, page: [], additionalArgs, yieldResult: false }
   }
   const page = customEntryExtractor ? entries.flatMap(customEntryExtractor) : entries
-
+  // eslint-disable-next-line no-use-before-define
+  addNextPages({
+    pageArgs,
+    page,
+    response,
+    additionalArgs,
+  })
   return { response, page, additionalArgs, yieldResult: true }
+}
+
+
+class PromisesQueue {
+  private readonly promises: Promise<PaginationResult>[]
+  private shouldContinue: boolean
+  constructor() {
+    this.promises = []
+    this.shouldContinue = true
+  }
+
+  enqueue(pageArgs: GetPageArgs, additionalArgs: Record<string, string>): void {
+    if (!this.shouldContinue) {
+      return
+    }
+    const promise = singlePagePagination(pageArgs, additionalArgs)
+    this.promises.push(promise)
+    log.debug(`Added promise to pagination queue. Queue size: ${this.promises.length}`)
+  }
+
+  async dequeue(): Promise<PaginationResult> {
+    const settledPromise = await this.promises.shift()
+    if (settledPromise === undefined) {
+      // this may occur if the queue is empty which we checked it before calling dequeue
+      log.error('No promises to dequeue from pagination queue')
+      throw new Error('No promises to dequeue from pagination queue')
+    }
+    log.debug(`Removed promise from pagination queue. Queue size: ${this.promises.length}`)
+    return settledPromise
+  }
+
+  size(): number {
+    return this.promises.length
+  }
+
+  async clear(): Promise<void> {
+    this.shouldContinue = false
+    await allSettled(this.promises.values())
+  }
 }
 
 const pushPage = (pageArgs: GetPageArgs, additionalArgs: Record<string, string>):void => {
@@ -118,8 +134,7 @@ const pushPage = (pageArgs: GetPageArgs, additionalArgs: Record<string, string>)
     return
   }
   pageArgs.usedParams.add(argsHash)
-  const result = singlePagePagination(pageArgs, additionalArgs)
-  pageArgs.promisesQueue.enqueue(argsHash, result)
+  pageArgs.promisesQueue.enqueue(pageArgs, additionalArgs)
 }
 
 const addNextPages = ({ pageArgs, page, response, additionalArgs } :{
@@ -167,9 +182,7 @@ export const traverseRequestsAsync: (
   getParams,
 }) {
   const usedParams = new Set<string>()
-  const promisesQueue: PromisesQueue<PaginationResult> = new PromisesQueue<PaginationResult>(
-    (result: PaginationResult): string => objectHash(result.additionalArgs)
-  )
+  const promisesQueue: PromisesQueue = new PromisesQueue()
   let numResults = 0
   const pageArgs = {
     promisesQueue,
@@ -189,12 +202,6 @@ export const traverseRequestsAsync: (
       if (result.yieldResult) {
         yield result.page
         numResults += result.page.length
-        addNextPages({
-          pageArgs,
-          page: result.page,
-          response: result.response,
-          additionalArgs: result.additionalArgs,
-        })
       }
     } catch (e) {
       // avoid leaking promises

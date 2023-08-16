@@ -235,7 +235,7 @@ describe('adapter creator', () => {
   it('should validate credentials using createConnection', async () => {
     jest.spyOn(connection, 'createConnection')
     jest.spyOn(connection, 'validateCredentials')
-    mockAxiosAdapter.onGet('/api/v2/account/settings').reply(200, {
+    mockAxiosAdapter.onGet('/api/v2/account').reply(200, {
       settings: {},
     })
 
@@ -295,5 +295,74 @@ describe('adapter creator', () => {
         credentials: { accessToken: 'token', subdomain: 'abc' },
       })
     )
+  })
+  describe('isProduction check', () => {
+    it('should give correct answer if it is a production account', async () => {
+      jest.spyOn(connection, 'createConnection')
+      jest.spyOn(connection, 'validateCredentials')
+      mockAxiosAdapter.onGet('/api/v2/account/settings').reply(200, {
+        settings: {},
+      })
+      mockAxiosAdapter.onGet('/api/v2/account').reply(200, {
+        account: {
+          sandbox: false,
+        },
+      })
+
+      // basic auth method
+      expect(await adapter.validateCredentials(new InstanceElement(
+        'config',
+        usernamePasswordCredentialsType,
+        { username: 'user123', password: 'pwd456', subdomain: 'abc' },
+      ))).toEqual({ accountId: 'https://abc.zendesk.com', isProduction: true })
+    })
+    it('should give correct answer if it is not a production account', async () => {
+      jest.spyOn(connection, 'createConnection')
+      jest.spyOn(connection, 'validateCredentials')
+      mockAxiosAdapter.onGet('/api/v2/account/settings').reply(200, {
+        settings: {},
+      })
+      mockAxiosAdapter.onGet('/api/v2/account').reply(200, {
+        account: {
+          sandbox: true,
+        },
+      })
+
+      // basic auth method
+      expect(await adapter.validateCredentials(new InstanceElement(
+        'config',
+        usernamePasswordCredentialsType,
+        { username: 'user123', password: 'pwd456', subdomain: 'abc' },
+      ))).toEqual({ accountId: 'https://abc.zendesk.com', isProduction: false })
+    })
+    it('should not return isProduction if re is invalid', async () => {
+      jest.spyOn(connection, 'createConnection')
+      jest.spyOn(connection, 'validateCredentials')
+      mockAxiosAdapter.onGet('/api/v2/account/settings').reply(200, {
+        settings: {},
+      })
+      mockAxiosAdapter.onGet('/api/v2/account').reply(200, {
+        account: {},
+      })
+
+      // basic auth method
+      expect(await adapter.validateCredentials(new InstanceElement(
+        'config',
+        usernamePasswordCredentialsType,
+        { username: 'user123', password: 'pwd456', subdomain: 'abc' },
+      ))).toEqual({ accountId: 'https://abc.zendesk.com' })
+    })
+    it('should not return isProduction on failed status', async () => {
+      jest.spyOn(connection, 'createConnection')
+      jest.spyOn(connection, 'validateCredentials')
+      mockAxiosAdapter.onGet('/api/v2/account').reply(400, {})
+
+      // basic auth method
+      await expect(() => adapter.validateCredentials(new InstanceElement(
+        'config',
+        usernamePasswordCredentialsType,
+        { username: 'user123', password: 'pwd456', subdomain: 'abc' },
+      ))).rejects.toThrow()
+    })
   })
 })

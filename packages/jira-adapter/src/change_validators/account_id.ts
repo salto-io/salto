@@ -16,7 +16,6 @@
 import { ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement,
   isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
-import { logger } from '@salto-io/logging'
 import { walkOnElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { isDeployableAccountIdType, walkOnUsers, WalkOnUsersCallback } from '../filters/account_id/account_id_filter'
@@ -24,8 +23,6 @@ import { getUserIdFromEmail, getUsersMap, getUsersMapByVisibleId, UserMap } from
 import { JiraConfig } from '../config/config'
 import JiraClient from '../client/client'
 import { JIRA_USERS_PAGE, PERMISSION_SCHEME_TYPE_NAME } from '../constants'
-
-const log = logger(module)
 
 type DisplayNameMismatchDetails = {
   currentDisplayName: string
@@ -254,29 +251,27 @@ const createChangeErrorsForAccountIdIssues = (
 export const accountIdValidator: (
   client: JiraClient,
   config: JiraConfig,
-) =>
-  ChangeValidator = (client, config) => async (changes, elementsSource) =>
-    log.time(async () => {
-      if (!(config.fetch.convertUsersIds ?? true)) {
-        return []
-      }
-      const { baseUrl, isDataCenter } = client
-      const rawUserMap = await getUsersMap(elementsSource)
-      if (rawUserMap === undefined) {
-        return []
-      }
-      const userMap = getUsersMapByVisibleId(rawUserMap, client.isDataCenter)
+) => ChangeValidator = (client, config) => async (changes, elementsSource) => {
+  if (!(config.fetch.convertUsersIds ?? true)) {
+    return []
+  }
+  const { baseUrl, isDataCenter } = client
+  const rawUserMap = await getUsersMap(elementsSource)
+  if (rawUserMap === undefined) {
+    return []
+  }
+  const userMap = getUsersMapByVisibleId(rawUserMap, client.isDataCenter)
 
-      const defaultUserExist = doesDefaultUserExist(config.deploy.defaultMissingUserFallback, userMap, isDataCenter)
-      return changes
-        .filter(isAdditionOrModificationChange)
-        .filter(isInstanceChange)
-        .map(change => getChangeData(change))
-        .filter(isDeployableAccountIdType)
-        .map(
-          element => createChangeErrorsForAccountIdIssues(
-            element, userMap, baseUrl, isDataCenter, config, defaultUserExist
-          )
-        )
-        .flat()
-    }, 'display name validator')
+  const defaultUserExist = doesDefaultUserExist(config.deploy.defaultMissingUserFallback, userMap, isDataCenter)
+  return changes
+    .filter(isAdditionOrModificationChange)
+    .filter(isInstanceChange)
+    .map(change => getChangeData(change))
+    .filter(isDeployableAccountIdType)
+    .map(
+      element => createChangeErrorsForAccountIdIssues(
+        element, userMap, baseUrl, isDataCenter, config, defaultUserExist
+      )
+    )
+    .flat()
+}

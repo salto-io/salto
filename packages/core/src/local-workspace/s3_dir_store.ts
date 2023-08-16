@@ -41,7 +41,7 @@ export const buildS3DirectoryStore = (
     concurrencyLimit?: number
   }
 ): staticFiles.StateStaticFilesStore => {
-  const updated: Record<string, dirStore.File<Buffer>> = {}
+  let updated: Record<string, dirStore.File<Buffer>> = {}
   const s3 = S3Client ?? createS3Client()
   const bottleneck = new Bottleneck({ maxConcurrent: concurrencyLimit })
 
@@ -133,7 +133,9 @@ export const buildS3DirectoryStore = (
   )
 
   const flush = async (): Promise<void> => {
-    await Promise.all(Object.values(updated).map(f => writeFile(f)))
+    const files = Object.values(updated)
+    updated = {}
+    await Promise.all(files.map(f => writeFile(f)))
   }
 
   return {

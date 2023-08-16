@@ -13,19 +13,21 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, InstanceElement, Element, ReferenceExpression } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, InstanceElement, Element } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/metadata_instances_aliases'
 import { defaultFilterContext } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { mockTypes } from '../mock_elements'
 import { FilterWith } from './mocks'
+import { LABEL } from '../../src/constants'
 
 describe('metadataInstancesAliases filter', () => {
+  const LABEL_VALUE = 'Test Label'
+  const NAMESPACE = 'SBQQ'
+
   let basicInstance: InstanceElement
-  let instanceWithCustomSuffix: InstanceElement
-  let instanceWithParent: InstanceElement
-  let layoutInstanceWithNamespace: InstanceElement
-  let instanceWithLodash: InstanceElement
+  let instanceWithNamespaceAndLabel: InstanceElement
+  let instanceWithLabel: InstanceElement
   let instances: InstanceElement[]
   let fetchElements: Element[]
   let filter: FilterWith<'onFetch'>
@@ -36,43 +38,30 @@ describe('metadataInstancesAliases filter', () => {
       mockTypes.CustomLabel,
       { fullName: 'TestInstance' }
     )
-    instanceWithCustomSuffix = new InstanceElement(
-      'TestValueSet__gvs',
-      mockTypes.GlobalValueSet,
-      { fullName: 'TestValueSet__gvs' }
+    instanceWithLabel = new InstanceElement(
+      'TestInstance',
+      mockTypes.Flow,
+      {
+        fullName: 'TestInstance',
+        [LABEL]: LABEL_VALUE,
+      }
     )
-    // Instances with parents use-cases
-    const layoutType = mockTypes.Layout
-    layoutType.annotations[CORE_ANNOTATIONS.ALIAS] = 'Layout'
-    const accountType = mockTypes.Account
-    accountType.annotations[CORE_ANNOTATIONS.ALIAS] = 'Account'
-    instanceWithParent = new InstanceElement(
-      'Account_Billing',
-      mockTypes.WebLink,
-      { fullName: 'Account.Billing' },
-      undefined,
-      { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(accountType.elemID)] }
+
+    instanceWithNamespaceAndLabel = new InstanceElement(
+      `${NAMESPACE}__TestInstance`,
+      mockTypes.Flow,
+      {
+        fullName: `${NAMESPACE}__TestInstance`,
+        [LABEL]: LABEL_VALUE,
+      }
     )
-    layoutInstanceWithNamespace = new InstanceElement(
-      'Account_SBQQ__Amend_Assets',
-      mockTypes.Layout,
-      { fullName: 'Account-SBQQ__CPQ Account Layout' },
-      undefined,
-      { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(accountType.elemID)] }
-    )
-    instanceWithLodash = new InstanceElement(
-      'Test_Instance',
-      mockTypes.CustomLabel,
-      { fullName: 'Test_Instance_Name' }
-    )
+
     instances = [
       basicInstance,
-      instanceWithCustomSuffix,
-      instanceWithParent,
-      layoutInstanceWithNamespace,
-      instanceWithLodash,
+      instanceWithLabel,
+      instanceWithNamespaceAndLabel,
     ]
-    fetchElements = [...instances, accountType, layoutType]
+    fetchElements = [...instances]
   })
   describe('when skipAliases is enabled', () => {
     beforeEach(() => {
@@ -105,10 +94,26 @@ describe('metadataInstancesAliases filter', () => {
     it('should add correct aliases', async () => {
       await filter.onFetch(fetchElements)
       expect(basicInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('TestInstance')
-      expect(instanceWithCustomSuffix.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('TestValueSet')
-      expect(instanceWithParent.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Billing (Account)')
-      expect(layoutInstanceWithNamespace.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('SBQQ: CPQ Account Layout (Account)')
-      expect(instanceWithLodash.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Test Instance Name')
+      expect(instanceWithLabel.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Test Label')
+      expect(instanceWithNamespaceAndLabel.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Test Label (SBQQ)')
+    })
+    describe('when useLabelAsAlias is disabled', () => {
+      beforeEach(() => {
+        filter = filterCreator({
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildFetchProfile({
+              optionalFeatures: { skipAliases: false, useLabelAsAlias: false },
+            }),
+          },
+        }) as typeof filter
+      })
+      it('should add correct aliases', async () => {
+        await filter.onFetch(fetchElements)
+        expect(basicInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('TestInstance')
+        expect(instanceWithLabel.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('TestInstance')
+        expect(instanceWithNamespaceAndLabel.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('SBQQ__TestInstance')
+      })
     })
   })
 })

@@ -18,8 +18,7 @@ import { Change, ChangeValidator, getChangeData,
   InstanceElement,
   isAdditionOrModificationChange, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
 import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
-
-export const TICKET_FORM_TYPE_NAME = 'ticket_form'
+import { TICKET_FORM_TYPE_NAME } from '../constants'
 
 const isRelevantChange = (change: Change<InstanceElement>): boolean =>
   (getChangeData(change).elemID.typeName === TICKET_FORM_TYPE_NAME)

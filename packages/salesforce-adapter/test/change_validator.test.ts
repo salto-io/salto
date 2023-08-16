@@ -155,4 +155,7 @@ describe('createSalesforceChangeValidator', () => {
       })
     })
   })
+  it('should include the default change validators from core', () => {
+    expect(changeValidators).toContainKeys(Object.keys(deployment.changeValidators.getDefaultChangeValidators()))
+  })
 })

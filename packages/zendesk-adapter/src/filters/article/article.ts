@@ -261,6 +261,7 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
             article: articleInstance, modificationChanges: [],
           }
           articleToModifiedAttachments[articleName].modificationChanges.push(attachmentChange)
+          return
         }
         const parentArticleName = parentArticleRef.elemID.name
         articleNameToAttachments[parentArticleName] = (

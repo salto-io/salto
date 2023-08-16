@@ -89,7 +89,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   unknownPicklistValues: () => unknownPicklistValues,
   installedPackages: () => installedPackages,
   dataCategoryGroup: () => dataCategoryGroupValidator,
-  ...getDefaultChangeValidators(),
+  ..._.mapValues(getDefaultChangeValidators(), validator => (() => validator)),
 }
 
 const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client }: {

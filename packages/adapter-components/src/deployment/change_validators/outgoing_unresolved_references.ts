@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, Element, ElemID, SeverityLevel, isReferenceExpression, isTemplateExpression, isAdditionOrModificationChange, UnresolvedReference } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, Element, ElemID, SeverityLevel, isReferenceExpression, isAdditionOrModificationChange, UnresolvedReference } from '@salto-io/adapter-api'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { values, collections } from '@salto-io/lowerdash'
 
@@ -31,13 +31,6 @@ const getOutgoingUnresolvedReferences = (element: Element, shouldIgnore: ElemIDP
     if (isReferenceExpression(value) && value.value instanceof UnresolvedReference) {
       unresolvedReferences.push(value.elemID)
       return WALK_NEXT_STEP.SKIP
-    }
-    if (isTemplateExpression(value)) {
-      value.parts.forEach(part => {
-        if (isReferenceExpression(part) && part.value instanceof UnresolvedReference) {
-          unresolvedReferences.push(part.elemID)
-        }
-      })
     }
     return WALK_NEXT_STEP.RECURSE
   }

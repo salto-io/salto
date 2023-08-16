@@ -14,7 +14,14 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, isInstanceElement, isReferenceExpression, ElemID, isObjectType, isContainerType } from '@salto-io/adapter-api'
+import {
+  Element,
+  isInstanceElement,
+  isReferenceExpression,
+  ElemID,
+  isObjectType,
+  isContainerType,
+} from '@salto-io/adapter-api'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { getLocations, SaltoElemLocation, SaltoElemFileLocation } from './location'

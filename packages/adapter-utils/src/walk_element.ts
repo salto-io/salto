@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  ElemID, Values, Value, isInstanceElement, isType, isObjectType, isElement, Element, isVariable,
+  ElemID, Values, Value, isInstanceElement, isType, isObjectType, isElement, Element, isVariable, isTemplateExpression,
 } from '@salto-io/adapter-api'
 
 const log = logger(module)
@@ -76,6 +76,8 @@ export const walkOnValue = (
       current.forEach((item, index) => run(item, keyPathID?.createNestedID(String(index))))
     } else if (_.isPlainObject(current)) {
       runOnValues(current)
+    } else if (isTemplateExpression(current)) {
+      current.parts.forEach(item => run(item, keyPathID?.createNestedID()))
     }
   }
   try {

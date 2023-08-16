@@ -346,7 +346,6 @@ describe('unique fields validator', () => {
 
   describe("Workflow and states' custom field unique `scriptid` field validator", () => {
     const testElements = getWorkflowElements()
-    // const testElementsStates = getWorkflowStatesElements()
     describe('Workflow custom field with a unique scriptid', () => {
       it('Should not have a change error when adding a new Workflow without a custom field/state', async () => {
         const emptyElement = new InstanceElement('empty', new ObjectType({ elemID: new ElemID(NETSUITE, WORKFLOW) }))
@@ -529,14 +528,14 @@ describe('unique fields validator', () => {
   describe('Multiple types', () => {
     const savedSearchTestInstances = getSavedSearchElements()
     const financialLayoutTestInstances = getFinancialLayoutElements()
-    const workflowCustomFieldTestInstances = getWorkflowElements()
+    const workflowTestInstances = getWorkflowElements()
     const scriptTestInstances = getScriptElements('restlet')
     const customRecordTestObjects = getCustomRecordElements()
     const customRecordTestChanges = getCustomRecordChanges(customRecordTestObjects)
 
     const idToValSavedSearch = getIDToVal(savedSearchTestInstances, FIELD_DEFAULT_NAME)
     const idToValFinancialLayout = getIDToVal(financialLayoutTestInstances, NAME_FIELD)
-    const idToValWorkflowCustomField = getIDToVal(workflowCustomFieldTestInstances)
+    const idToValWorkflowCustomField = getIDToVal(workflowTestInstances)
     const idToValScript = getIDToVal(scriptTestInstances, 'scriptcustomfields', 'scriptcustomfield')
     const idToVal = new Map([
       ...idToValSavedSearch,
@@ -554,14 +553,14 @@ describe('unique fields validator', () => {
           toChange({ after: savedSearchTestInstances.basic }),
           toChange({ after: financialLayoutTestInstances.basic }),
           toChange({ after: customRecordTestChanges.basic }),
-          toChange({ after: workflowCustomFieldTestInstances.basic }),
+          toChange({ after: workflowTestInstances.basic }),
           toChange({ after: scriptTestInstances.basic }),
         ], undefined, buildElementsSource(
           [
             savedSearchTestInstances.diffField, savedSearchTestInstances.basic,
             financialLayoutTestInstances.diffField, financialLayoutTestInstances.basic,
             customRecordTestObjects.diffField, customRecordTestObjects.basic,
-            workflowCustomFieldTestInstances.diffField, workflowCustomFieldTestInstances.basic,
+            workflowTestInstances.diffField, workflowTestInstances.basic,
             scriptTestInstances.diffField, scriptTestInstances.basic,
           ]
         ))
@@ -573,15 +572,15 @@ describe('unique fields validator', () => {
           toChange({ before: savedSearchTestInstances.basic, after: savedSearchTestInstances.sameField }),
           toChange({ before: financialLayoutTestInstances.basic, after: financialLayoutTestInstances.sameField }),
           toChange({ before: customRecordTestChanges.basic, after: customRecordTestChanges.sameField }),
-          toChange({ before: workflowCustomFieldTestInstances.basic,
-            after: workflowCustomFieldTestInstances.sameField }),
+          toChange({ before: workflowTestInstances.basic,
+            after: workflowTestInstances.sameField }),
           toChange({ before: scriptTestInstances.basic, after: scriptTestInstances.sameField }),
         ], undefined, buildElementsSource(
           [
             savedSearchTestInstances.diffField, savedSearchTestInstances.sameField,
             financialLayoutTestInstances.diffField, financialLayoutTestInstances.sameField,
             customRecordTestObjects.diffField, customRecordTestObjects.sameField,
-            workflowCustomFieldTestInstances.diffField, workflowCustomFieldTestInstances.sameField,
+            workflowTestInstances.diffField, workflowTestInstances.sameField,
             scriptTestInstances.diffField, scriptTestInstances.sameField,
           ]
         ))
@@ -595,14 +594,14 @@ describe('unique fields validator', () => {
           toChange({ after: savedSearchTestInstances.sameField }),
           toChange({ after: financialLayoutTestInstances.sameField }),
           toChange({ after: customRecordTestChanges.sameField }),
-          toChange({ after: workflowCustomFieldTestInstances.sameField }),
+          toChange({ after: workflowTestInstances.sameField }),
           toChange({ after: scriptTestInstances.sameField }),
         ], undefined, buildElementsSource(
           [
             savedSearchTestInstances.basic, savedSearchTestInstances.sameField,
             financialLayoutTestInstances.basic, financialLayoutTestInstances.sameField,
             customRecordTestObjects.basic, customRecordTestObjects.sameField,
-            workflowCustomFieldTestInstances.basic, workflowCustomFieldTestInstances.sameField,
+            workflowTestInstances.basic, workflowTestInstances.sameField,
             scriptTestInstances.basic, scriptTestInstances.sameField,
           ]
         ))
@@ -612,7 +611,7 @@ describe('unique fields validator', () => {
           savedSearchTestInstances.sameField.elemID,
           financialLayoutTestInstances.sameField.elemID,
           customRecordTestChanges.sameField.elemID,
-          workflowCustomFieldTestInstances.sameField.elemID,
+          workflowTestInstances.sameField.elemID,
           scriptTestInstances.sameField.elemID,
         ]))
       })
@@ -622,15 +621,15 @@ describe('unique fields validator', () => {
           toChange({ before: savedSearchTestInstances.diffField, after: savedSearchTestInstances.sameField }),
           toChange({ before: financialLayoutTestInstances.diffField, after: financialLayoutTestInstances.sameField }),
           toChange({ before: customRecordTestChanges.diffField, after: customRecordTestChanges.sameField }),
-          toChange({ before: workflowCustomFieldTestInstances.diffField,
-            after: workflowCustomFieldTestInstances.sameField }),
+          toChange({ before: workflowTestInstances.diffField,
+            after: workflowTestInstances.sameField }),
           toChange({ before: scriptTestInstances.diffField, after: scriptTestInstances.sameField }),
         ], undefined, buildElementsSource(
           [
             savedSearchTestInstances.basic, savedSearchTestInstances.sameField,
             financialLayoutTestInstances.basic, financialLayoutTestInstances.sameField,
             customRecordTestObjects.basic, customRecordTestObjects.sameField,
-            workflowCustomFieldTestInstances.basic, workflowCustomFieldTestInstances.sameField,
+            workflowTestInstances.basic, workflowTestInstances.sameField,
             scriptTestInstances.basic, scriptTestInstances.sameField,
           ]
         ))
@@ -640,7 +639,7 @@ describe('unique fields validator', () => {
           savedSearchTestInstances.sameField.elemID,
           financialLayoutTestInstances.sameField.elemID,
           customRecordTestChanges.sameField.elemID,
-          workflowCustomFieldTestInstances.sameField.elemID,
+          workflowTestInstances.sameField.elemID,
           scriptTestInstances.sameField.elemID,
         ]))
       })

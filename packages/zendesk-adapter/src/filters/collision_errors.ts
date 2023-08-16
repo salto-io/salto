@@ -18,7 +18,7 @@ import { config as configUtils } from '@salto-io/adapter-components'
 import { getAndLogCollisionWarnings, getInstancesWithCollidingElemID } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { ZENDESK } from '../constants'
-import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, isGuideEnabled } from '../config'
+import { API_DEFINITIONS_CONFIG } from '../config'
 
 
 /**
@@ -39,8 +39,6 @@ const filterCreator: FilterCreator = ({ config }) => ({
         config[API_DEFINITIONS_CONFIG].typeDefaults.transformation,
       ).idFields,
       idFieldsName: 'idFields',
-      // Needed because 'safeJsonStringify' is really slow, which causes problems with articles stress test (SALTO-3059)
-      skipLogCollisionStringify: isGuideEnabled(config[FETCH_CONFIG]),
       docsUrl: 'https://help.salto.io/en/articles/6927157-salto-id-collisions',
     })
     return { errors: collistionWarnings }

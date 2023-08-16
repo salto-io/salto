@@ -244,13 +244,15 @@ const convertInstanceFieldsToMaps = async (
   instanceMapFieldDef: Record<string, MapDef>,
 ): Promise<string[]> => {
   const nonUniqueMapFields = _.uniq(instancesToConvert.flatMap(
-    instance => convertArraysToMaps(instance, instanceMapFieldDef)
+    instance => {
+      const nonUniqueFields = convertArraysToMaps(instance, instanceMapFieldDef)
+      if (nonUniqueFields.length > 0) {
+        log.info(`Instance ${instance.elemID.getFullName()} has non-unique map fields: ${nonUniqueFields}`)
+      }
+      return nonUniqueFields
+    }
   ))
   if (nonUniqueMapFields.length > 0) {
-    log.info(`Converting the following fields to non-unique maps: ${nonUniqueMapFields},
-     instances types are: ${
-  await awu(instancesToConvert).map(inst => metadataType(inst)).toArray()
-}`)
     instancesToConvert.forEach(instance => {
       convertValuesToMapArrays(instance, nonUniqueMapFields, instanceMapFieldDef)
     })

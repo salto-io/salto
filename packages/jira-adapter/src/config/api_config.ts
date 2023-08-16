@@ -1648,15 +1648,87 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 }
 
 const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
-  ScripRunnerListeners: {
+  ScriptRunnerListener: {
     request: {
       url: '/sr-dispatcher/jira/admin/token/scriptevents',
+    },
+    transformation: {
+      serviceIdField: 'uuid',
+      sourceTypeName: 'ScriptRunnerListener__values',
+      idFields: ['description'],
+      fieldsToHide: [
+        { fieldName: 'createdByAccountId' },
+        { fieldName: 'createdTimestamp' },
+        { fieldName: 'updatedByAccountId' },
+        { fieldName: 'updatedTimestamp' },
+      ],
+    },
+  },
+  ScriptFragment: {
+    request: {
+      url: '/sr-dispatcher/jira/token/script-fragments',
+    },
+  },
+  ScheduledJob: {
+    request: {
+      url: '/sr-dispatcher/jira/rest/api/1/scheduled-scripts',
+    },
+  },
+  Behavior: {
+    request: {
+      url: '/sr-dispatcher/jira/rest/api/1/behaviours',
+    },
+  },
+  EscalationService: {
+    request: {
+      url: '/sr-dispatcher/jira/rest/api/1/escalation-scripts',
+    },
+  },
+  ScriptedField: {
+    request: {
+      url: '/sr-dispatcher/jira/rest/api/1/scripted-fields',
+    },
+    transformation: {
+      serviceIdField: 'uuid',
+      dataField: '.',
+      fieldsToHide: [
+        {
+          fieldName: 'uuid',
+        },
+        {
+          fieldName: 'auditData',
+        },
+      ],
+      fieldsToOmit: [
+        {
+          fieldName: 'issueTypeIds',
+        },
+      ],
+    },
+    deployRequests: {
+      add: {
+        url: '/sr-dispatcher/jira/rest/api/1/scripted-fields',
+        method: 'post',
+      },
+      modify: {
+        url: '/sr-dispatcher/jira/rest/api/1/scripted-fields/{uuid}',
+        method: 'put',
+      },
+      remove: {
+        url: '/sr-dispatcher/jira/rest/api/1/scripted-fields/{uuid}',
+        method: 'delete',
+      },
     },
   },
 }
 
 export const DUCKTYPE_SUPPORTED_TYPES = {
-  // ScripRunnerListeners: ['ScripRunnerListeners'],
+  // ScriptRunnerListener: ['ScriptRunnerListener'],
+  // ScriptFragment: ['ScriptFragment'],
+  // ScheduledJob: ['ScheduledJob'],
+  // Behavior: ['Behavior'],
+  // EscalationService: ['EscalationService'],
+  ScriptedField: ['ScriptedField'],
 }
 
 const TRANSFORMATION_DEFAULTS: configUtils.TransformationDefaultConfig = {

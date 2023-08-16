@@ -18,7 +18,7 @@ import { extractTemplate, replaceTemplatesWithValues, resolveTemplates } from '@
 import { InstanceElement, isInstanceElement, TemplateExpression, ReferenceExpression, Element, Value, isAdditionOrModificationChange, getChangeData, isInstanceChange, TemplatePart } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
 import { FIELD_TYPE_NAME } from '../fields/constants'
-import { referenceFunc, walkOnScripts } from './workflow/walk_on_scripts'
+import { referenceFunc, walkOnScripts } from './walk_on_scripts'
 
 const CUSTOM_FIELD_PATTERN = /(customfield_\d+)/
 

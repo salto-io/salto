@@ -2671,6 +2671,7 @@ export type ChangeValidatorName = (
   | 'attachmentWithoutContent'
   | 'duplicateRoutingAttributeValue'
   | 'ticketFieldDeactivation'
+  | 'duplicateIdFieldValues'
   )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -2738,6 +2739,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     guideOrderDeletion: { refType: BuiltinTypes.BOOLEAN },
     duplicateRoutingAttributeValue: { refType: BuiltinTypes.BOOLEAN },
     ticketFieldDeactivation: { refType: BuiltinTypes.BOOLEAN },
+    duplicateIdFieldValues: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

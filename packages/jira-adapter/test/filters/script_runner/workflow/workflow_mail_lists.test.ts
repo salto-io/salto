@@ -17,10 +17,10 @@ import { filterUtils } from '@salto-io/adapter-components'
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { createEmptyType, getFilterParams, mockClient } from '../../utils'
-import orFilter, { MAIL_LISTS_FIELDS } from '../../../src/filters/script_runner/workflow/workflow_lists_parsing'
-import { WORKFLOW_TYPE_NAME } from '../../../src/constants'
-import { getDefaultConfig } from '../../../src/config/config'
+import { createEmptyType, getFilterParams, mockClient } from '../../../utils'
+import orFilter, { MAIL_LISTS_FIELDS } from '../../../../src/filters/script_runner/workflow/workflow_lists_parsing'
+import { WORKFLOW_TYPE_NAME } from '../../../../src/constants'
+import { getDefaultConfig } from '../../../../src/config/config'
 
 
 describe('ScriptRunner mail lists in DC', () => {

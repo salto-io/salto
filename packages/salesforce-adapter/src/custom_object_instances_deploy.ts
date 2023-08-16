@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { inspect } from 'util'
 import { logger } from '@salto-io/logging'
 import { collections, hash, strings, promises, values } from '@salto-io/lowerdash'
 import {
@@ -27,7 +26,7 @@ import {
   SeverityLevel,
   isInstanceElement, isInstanceChange, toChange,
 } from '@salto-io/adapter-api'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { inspectValue, safeJsonStringify } from '@salto-io/adapter-utils'
 import { BatchResultInfo } from 'jsforce-types'
 import { EOL } from 'os'
 import {
@@ -70,7 +69,7 @@ const logErroredInstances = (instancesAndResults: InstanceAndResult[]): void => 
       log.error(`Instance ${instance.elemID.getFullName()} had deploy errors - ${['', ...result.errors].join('\n\t')}
 
 and values -
-${inspect(instance.value)}
+${inspectValue(instance.value)}
 `)
     }
   })

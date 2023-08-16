@@ -185,7 +185,7 @@ const createClientConfigType = (): ObjectType => {
 
 export type ChangeValidatorName = (
   | 'unresolvedReference'
-  | 'automationProjectUnresolvedReference'
+  | 'brokenReferences'
   | 'deployTypesNotSupported'
   | 'readOnlyProjectRoleChange'
   | 'defaultFieldConfiguration'
@@ -232,7 +232,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
   elemID: new ElemID(JIRA, 'changeValidatorConfig'),
   fields: {
     unresolvedReference: { refType: BuiltinTypes.BOOLEAN },
-    automationProjectUnresolvedReference: { refType: BuiltinTypes.BOOLEAN },
+    brokenReferences: { refType: BuiltinTypes.BOOLEAN },
     deployTypesNotSupported: { refType: BuiltinTypes.BOOLEAN },
     readOnlyProjectRoleChange: { refType: BuiltinTypes.BOOLEAN },
     defaultFieldConfiguration: { refType: BuiltinTypes.BOOLEAN },

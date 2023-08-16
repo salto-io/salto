@@ -37,6 +37,7 @@ export type BrokenReferenceInfo = {
   namePath: string
   referencesTypeName: string
   singleReferenceTypeName: string
+  mustHaveReference: boolean
 }
 export const BROKEN_REFERENCE_TYPE_MAP: Record<string, BrokenReferenceInfo[]> = {
   [AUTOMATION_TYPE]: [{
@@ -45,6 +46,7 @@ export const BROKEN_REFERENCE_TYPE_MAP: Record<string, BrokenReferenceInfo[]> = 
     namePath: 'projectId.value.target.name',
     referencesTypeName: 'projects',
     singleReferenceTypeName: 'project',
+    mustHaveReference: true,
   }],
 }
 

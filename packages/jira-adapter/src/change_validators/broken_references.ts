@@ -45,11 +45,11 @@ export const brokenReferenceValidator: ChangeValidator = async changes =>
           const brokenReferencesNamesString = brokenReferencesNames.join(', ')
           const prettyTypeName = prettifyName(typeName).toLowerCase()
           const referencesName = typeInfo.referencesTypeName
-          if (brokenReferencesNames.length === instance.value.projects.length) {
+          if (typeInfo.mustHaveReference && brokenReferencesNames.length === instance.value[typeInfo.location].length) {
             return {
               elemID: instance.elemID,
               severity: 'Error' as SeverityLevel,
-              message: `${capitalizeFirstLetter(prettyTypeName)} isn’t attached to any existing project`,
+              message: `${capitalizeFirstLetter(prettyTypeName)} isn’t attached to any existing ${typeInfo.singleReferenceTypeName}`,
               detailedMessage: `All ${referencesName} attached to this ${prettyTypeName} do not exist in the target environment: `
               + `${brokenReferencesNamesString}. The ${prettyTypeName} can’t be deployed. To solve this, go back `
               + `and include at least one attached ${typeInfo.singleReferenceTypeName} in your deployment.`,

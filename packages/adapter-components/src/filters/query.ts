@@ -13,10 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { isInstanceElement, InstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { filter, getParents } from '@salto-io/adapter-utils'
-import _ from 'lodash'
-import { DAG } from '@salto-io/dag'
+import { collections } from '@salto-io/lowerdash'
+import { DataNodeMap } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter_utils'
 import { ElementQuery } from '../elements/query'
@@ -24,17 +25,17 @@ import { ElementQuery } from '../elements/query'
 const log = logger(module)
 
 /*
- * Create a graph with instance ids as nodes and parent annotations as edges
+ * Create a graph with instance ids as nodes and parent annotations+fields as edges
  */
 const createGraph = (
   instances: InstanceElement[],
   additionalParentFields?: Record<string, string[]>,
-): DAG<InstanceElement> => {
-  const graph = new DAG<InstanceElement>()
+): DataNodeMap<InstanceElement> => {
+  const graph = new DataNodeMap<InstanceElement>()
   instances.forEach(instance => {
     const parents = getParents(instance)
     const additionalParents = additionalParentFields?.[instance.elemID.typeName]
-      ?.map(fieldName => instance.value[fieldName]) ?? []
+      ?.flatMap(fieldName => collections.array.makeArray(instance.value[fieldName])) ?? []
     const parentIDs = (parents.concat(additionalParents))
       .filter(isReferenceExpression)
       .filter(ref => ref.elemID.idType === 'instance')
@@ -64,9 +65,10 @@ export const queryFilterCreator: <
 }) => ({
   name: 'queryFilter',
   onFetch: async elements => {
+    const ignoredTypes = new Set(typesToIgnore ?? [])
     const removedInstances = _.remove(elements, element => (
       isInstanceElement(element)
-      && !(typesToIgnore ?? []).includes(element.elemID.typeName)
+      && !ignoredTypes.has(element.elemID.typeName)
       && !fetchQuery.isInstanceMatch(element)
     ))
     if (removedInstances.length === 0) {

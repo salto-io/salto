@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerId: Long!, $requestOwnerPropertyKeys: [String!] = []) {
+export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerId: Long!) {
     ...CMPJSWLayoutConfigurationFragment
   }
   
@@ -23,7 +23,6 @@ export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerI
     }
     ... on JiraIssueLayoutRequestTypeOwner {
       id
-      properties(keys: $requestOwnerPropertyKeys)
     }
   }
   

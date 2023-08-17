@@ -55,7 +55,7 @@ export const prepareArticleAttachmentsForDeploy = async ({ changes, client }: {
     try {
       parentArticle = getParent(attachmentInstance)
     } catch (e) {
-      const articleName = 'unknown'
+      const articleName = '' // article name is irrelevant because, we just need a unique key
       articleNameToAttachments[articleName] = {
         attachmentAdditions: articleNameToAttachments[articleName]?.attachmentAdditions ?? {},
         attachmentModifications: articleNameToAttachments[articleName]?.attachmentModifications ?? {},
@@ -79,10 +79,10 @@ export const prepareArticleAttachmentsForDeploy = async ({ changes, client }: {
     }
 
     // Create the new attachment, unassociated, that will be associated in the deploy stage
-    const newAttachmentId = await createUnassociatedAttachment(client, attachmentInstance)
-    if (newAttachmentId === undefined) {
+    const { id: newAttachmentId, error = '' } = await createUnassociatedAttachment(client, attachmentInstance)
+    if (!_.isEmpty(error) || newAttachmentId === undefined) {
       articleNameToAttachments[articleName].attachmentFailures.push({
-        reason: 'TODO',
+        reason: error,
         change: attachmentChange,
       })
       return
@@ -148,7 +148,7 @@ export const associateAttachmentToArticles = async ({
     )
 
     // On Additions, mark the change as either applied or error, according to the association status
-    await Promise.all(additionResults.flatMap(async ({ status, ids }) => {
+    await Promise.all(additionResults.flatMap(async ({ status, ids, error }) => {
       if (status === SUCCESS_STATUS_CODE) {
         ids.forEach(id => deployResult.appliedChanges.push(attachmentAdditions[id]))
         return []
@@ -156,12 +156,12 @@ export const associateAttachmentToArticles = async ({
       ids.forEach(id => deployResult.errors.push({
         elemID: getChangeData(attachmentAdditions[id]).elemID,
         severity: 'Error',
-        message: 'TODO',
+        message: error,
       }))
       return ids.map(id => deleteArticleAttachment(client, id))
     }))
 
-    return modificationResults.map(async ({ status, ids }) => {
+    return modificationResults.map(async ({ status, ids, error }) => {
       const attachmentIdsToDelete = []
       // If the association was successful, mark the changes as applies and delete the old attachment
       if (status === SUCCESS_STATUS_CODE) {
@@ -174,7 +174,7 @@ export const associateAttachmentToArticles = async ({
         ids.forEach(id => deployResult.errors.push({
           elemID: getChangeData(attachmentModifications[id].change).elemID,
           severity: 'Error',
-          message: 'TODO',
+          message: error,
         }))
         attachmentIdsToDelete.push(
           ...Object.values(attachmentModifications).map(modification => modification.newAttachmentId)

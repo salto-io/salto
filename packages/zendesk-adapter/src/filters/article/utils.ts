@@ -184,7 +184,7 @@ export const getArticleAttachments = async ({ brandIdToClient, articleById, atta
 export const createUnassociatedAttachment = async (
   client: ZendeskClient,
   attachmentInstance: InstanceElement,
-): Promise<number | undefined> => {
+): Promise<{ id?: number; error?: string }> => {
   try {
     log.info(`Creating unassociated article attachment: ${attachmentInstance.value.file_name}`)
     const fileContent = isStaticFile(attachmentInstance.value.content)
@@ -199,18 +199,22 @@ export const createUnassociatedAttachment = async (
       headers: { ...form.getHeaders() },
     })
     if (res === undefined) {
-      log.error('Received an empty response from Zendesk API. Not adding article attachments')
-      return undefined
+      const error = 'Received an empty response from Zendesk API. Not adding article attachments'
+      log.error(error)
+      return { error }
     }
     if (Array.isArray(res.data)) {
-      log.error(`Received an invalid response from Zendesk API, ${safeJsonStringify(res.data, undefined, 2).slice(0, RESULT_MAXIMUM_OUTPUT_SIZE)}. Not adding article attachments`)
-      return undefined
+      const error = `Received an invalid response from Zendesk API, ${safeJsonStringify(res.data, undefined, 2).slice(0, RESULT_MAXIMUM_OUTPUT_SIZE)}`
+      log.error(`${error}, Not adding article attachments`)
+      return { error }
     }
     const createdAttachment = [res.data.article_attachment]
     if (!isAttachmentsResponse(createdAttachment)) {
-      return undefined
+      const error = `Received an attachment in an unexpected format from Zendesk API: ${safeJsonStringify(createdAttachment)}`
+      log.error(error)
+      return { error }
     }
-    return createdAttachment[0].id
+    return { id: createdAttachment[0].id }
   } catch (err) {
     throw getZendeskError(attachmentInstance.elemID, err) // caught in adapter.ts
   }
@@ -221,7 +225,7 @@ export const associateAttachments = async (
   client: ZendeskClient,
   article: InstanceElement,
   attachmentsIds: number[]
-): Promise<{ status: number; ids: number[] }[]> => {
+): Promise<{ status: number; ids: number[]; error: string }[]> => {
   const attachChunk = _.chunk(attachmentsIds, MAX_BULK_SIZE)
   const articleId = article.value.id
   log.debug(`there are ${attachmentsIds.length} attachments to associate for article ${article.elemID.name}, associating in chunks of 20`)
@@ -230,10 +234,10 @@ export const associateAttachments = async (
 
     const createErrorMsg = (error: Value, status?: number): string => (
       [
-        `could not associate chunk number ${index} for article ${article.elemID.name}`,
+        `could not associate chunk number ${index} for article '${article.elemID.name}'`,
         status !== undefined ? `, status: ${status}` : '',
-        `The unassociated attachment ids are: ${chunk}, error: ${safeJsonStringify(error)}`,
-      ].join())
+        `, The unassociated attachment ids are: ${chunk}, error: ${safeJsonStringify(error)}`,
+      ].join(''))
 
     try {
       const res = await client.post({
@@ -241,15 +245,17 @@ export const associateAttachments = async (
         data: { attachment_ids: chunk },
       })
       if (res.status !== SUCCESS_STATUS_CODE) {
-        log.warn(createErrorMsg(res.data, res.status))
+        const error = createErrorMsg(res.data, res.status)
+        log.warn(error)
+        return { status: res.status, ids: chunk, error }
       }
-      return { status: res.status, ids: chunk }
+      return { status: res.status, ids: chunk, error: '' }
     } catch (e) {
       const error = e.reponse?.data ?? e
       const status = e.reponse?.status
 
       log.error(createErrorMsg(error, status))
-      return { status, ids: chunk }
+      return { status, ids: chunk, error }
     }
   }))
   return allRes

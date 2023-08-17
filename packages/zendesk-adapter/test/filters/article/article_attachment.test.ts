@@ -102,8 +102,8 @@ describe('article filter', () => {
         toChange({ after: unrelatedInstance }),
       ]
 
-      createAttachmentSpy.mockResolvedValueOnce(1)
-      createAttachmentSpy.mockResolvedValueOnce(3)
+      createAttachmentSpy.mockResolvedValueOnce({ id: 1 })
+      createAttachmentSpy.mockResolvedValueOnce({ id: 3 })
       associateAttachmentSpy.mockResolvedValueOnce([{ status: SUCCESS_STATUS_CODE, ids: [1] }])
       associateAttachmentSpy.mockResolvedValueOnce([{ status: SUCCESS_STATUS_CODE, ids: [3] }])
       const result = await filter.deploy(changes)
@@ -128,8 +128,8 @@ describe('article filter', () => {
         toChange({ before: oldAttachment, after: newAttachment }),
       ]
 
-      createAttachmentSpy.mockResolvedValueOnce(3)
-      mockPost.mockResolvedValueOnce([{ status: 400, ids: [3] }])
+      createAttachmentSpy.mockResolvedValueOnce({ id: 3 })
+      mockPost.mockResolvedValueOnce({ status: 400, ids: [3], data: 'error!' })
       deleteAttachmentSpy.mockResolvedValueOnce({})
       const result = await filter.deploy(changes)
       expect(result).toEqual({
@@ -144,7 +144,7 @@ describe('article filter', () => {
             {
               elemID: newAttachment.elemID,
               severity: 'Error',
-              message: 'TODO',
+              message: 'could not associate chunk number 0 for article \'article\', status: 400, The unassociated attachment ids are: 3, error: "error!"',
             },
           ],
         },
@@ -213,15 +213,15 @@ describe('article filter', () => {
           attachmentFailures: [
             {
               change: { action: 'add', data: { after: newAttachment1 } },
-              reason: 'TODO',
+              reason: 'Received an attachment in an unexpected format from Zendesk API: [{"file_name":"f","content_type":"ct","content_url":"cu","inline":false}]',
             },
             {
               change: { action: 'add', data: { after: newAttachment2 } },
-              reason: 'TODO',
+              reason: 'Received an attachment in an unexpected format from Zendesk API: [{"id":[1,2,3],"file_name":"f","content_type":"ct","content_url":"cu","inline":false}]',
             },
           ],
         },
-        unknown: {
+        '': {
           attachmentAdditions: {},
           attachmentModifications: {},
           attachmentFailures: [
@@ -246,7 +246,7 @@ describe('article filter', () => {
       article = createArticle('article')
       oldAttachment = createArticleAttachment('oldAttachment', OLD_ATTACHMENT_ID, article)
       newAttachment = createArticleAttachment('newAttachment', NEW_ATTACHMENT_ID, article)
-      createAttachmentSpy.mockResolvedValue(NEW_ATTACHMENT_ID)
+      createAttachmentSpy.mockResolvedValue({ id: NEW_ATTACHMENT_ID })
     })
     it('should not associate attachments that have no parent article', async () => {
       const attachmentWithNoParent = createArticleAttachment('attachmentWithNoParent', OLD_ATTACHMENT_ID)
@@ -294,7 +294,7 @@ describe('article filter', () => {
     it('should delete new attachments on association failure', async () => {
       const changes: AdditionChange<InstanceElement>[] = [{ action: 'add', data: { after: newAttachment } }]
       const articleNameToAttachments = await prepareArticleAttachmentsForDeploy({ client, changes })
-      associateAttachmentSpy.mockResolvedValueOnce([{ status: 400, ids: [NEW_ATTACHMENT_ID] }])
+      associateAttachmentSpy.mockResolvedValueOnce([{ status: 400, ids: [NEW_ATTACHMENT_ID], error: 'error!' }])
       const deployResult = await associateAttachmentToArticles({ client, articleNameToAttachments })
       expect(deleteAttachmentSpy).toHaveBeenCalledTimes(1)
       expect(deleteAttachmentSpy).toHaveBeenCalledWith(client, NEW_ATTACHMENT_ID)
@@ -303,7 +303,7 @@ describe('article filter', () => {
         errors: [{
           elemID: newAttachment.elemID,
           severity: 'Error',
-          message: 'TODO',
+          message: 'error!',
         }],
       })
     })
@@ -314,12 +314,12 @@ describe('article filter', () => {
         action: 'add',
         data: { after: createArticleAttachment(`attachment${id}`, id, article) },
       }))
-      successIds.concat(failureIds).forEach(id => createAttachmentSpy.mockResolvedValueOnce(id))
+      successIds.concat(failureIds).forEach(id => createAttachmentSpy.mockResolvedValueOnce({ id }))
       const articleNameToAttachments = await prepareArticleAttachmentsForDeploy({ client, changes })
 
       associateAttachmentSpy.mockResolvedValueOnce([
         { status: SUCCESS_STATUS_CODE, ids: successIds },
-        { status: 400, ids: failureIds },
+        { status: 400, ids: failureIds, error: 'error!' },
       ])
       associateAttachmentSpy.mockResolvedValueOnce([])
       deleteAttachmentSpy.mockResolvedValue({})
@@ -333,7 +333,7 @@ describe('article filter', () => {
         errors: failureIds.map(id => ({
           elemID: createArticleAttachment(`attachment${id}`, id).elemID,
           severity: 'Error',
-          message: 'TODO',
+          message: 'error!',
         })),
       })
     })

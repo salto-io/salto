@@ -160,10 +160,7 @@ const { awu } = collections.asynciterable
 const { concatObjects } = objects
 const SECTIONS_TYPE_NAME = 'sections'
 
-const { query: queryFilter, ...otherCommonFilters } = commonFilters
-
 export const DEFAULT_FILTERS = [
-  queryFilter,
   ticketStatusCustomStatusDeployFilter,
   ticketFieldFilter,
   userFieldFilter,
@@ -236,7 +233,8 @@ export const DEFAULT_FILTERS = [
   dynamicContentReferencesFilter,
   guideParentSection,
   serviceUrlFilter,
-  ...Object.values(otherCommonFilters),
+  // referencedIdFieldsFilter and queryFilter should run after element references are resolved
+  ...Object.values(commonFilters),
   articleBodyFilter,
   handleAppInstallationsFilter,
   handleTemplateExpressionFilter,

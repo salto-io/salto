@@ -59,10 +59,7 @@ const { findDataField, computeGetArgs } = elementUtils
 const { createPaginator } = clientUtils
 const log = logger(module)
 
-const { query: queryFilter, ...otherCommonFilters } = commonFilters
-
 export const DEFAULT_FILTERS = [
-  queryFilter,
   standardRolesFilter,
   deleteFieldsFilter,
   userTypeFilter,
@@ -85,9 +82,9 @@ export const DEFAULT_FILTERS = [
   serviceUrlFilter,
   appDeploymentFilter,
   // should run after fieldReferences
-  ...Object.values(otherCommonFilters),
-  privateApiDeployFilter,
+  ...Object.values(commonFilters),
   // should run last
+  privateApiDeployFilter,
   defaultDeployFilter,
 ]
 

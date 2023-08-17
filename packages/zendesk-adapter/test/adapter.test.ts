@@ -677,11 +677,10 @@ describe('adapter', () => {
           'zendesk.automation.instance.Pending_notification_24_hours@s',
           'zendesk.automation.instance.Pending_notification_5_days@s',
           'zendesk.automation.instance.Tag_tickets_from_Social@s',
-          'zendesk.automation_order.instance',
+          'zendesk.automation_order.instance', // we do not filter out order instances
           'zendesk.custom_role.instance.Advisor',
           'zendesk.organization_field_order.instance',
           'zendesk.sla_policy_order.instance',
-          'zendesk.tag.instance.Social',
           'zendesk.ticket_form_order.instance',
           'zendesk.trigger_order.instance',
           'zendesk.user_field_order.instance',

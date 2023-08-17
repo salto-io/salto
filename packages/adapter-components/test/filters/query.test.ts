@@ -103,7 +103,7 @@ describe('query filter', () => {
           fetchQuery,
         }) as FilterWith<'onFetch'>
       })
-      it('should include all elements when using default config without customizations', async () => {
+      it('should include all elements', async () => {
         await filter.onFetch(elements)
         expect(elements.map(e => e.elemID.getFullName())).toEqual([
           'salto.connection',
@@ -171,7 +171,7 @@ describe('query filter', () => {
           additionalParentFields: {
             item: ['folder_id'],
           },
-          typesToIgnore: ['extra'],
+          typesToKeep: ['extra'],
         })({
           client: {} as unknown,
           paginator: undefined as unknown as Paginator,

@@ -27,7 +27,7 @@ const log = logger(module)
 /*
  * Create a graph with instance ids as nodes and parent annotations+fields as edges
  */
-const createGraph = (
+const createParentChildGraph = (
   instances: InstanceElement[],
   additionalParentFields?: Record<string, string[]>,
 ): AbstractNodeMap => {
@@ -47,6 +47,7 @@ const createGraph = (
   return graph
 }
 
+
 /**
  * A filter to filter out instances by the fetchQuery of the adapter
  */
@@ -55,15 +56,15 @@ export const queryFilterCreator: <
   TContext,
   TResult extends void | filter.FilterResult,
   TAdditional extends { fetchQuery: ElementQuery},
->({ additionalParentFields, typesToIgnore }: {
+>({ additionalParentFields, typesToKeep }: {
   additionalParentFields?: Record<string, string[]>
-  typesToIgnore?: string[]
-}) => FilterCreator<TClient, TContext, TResult, TAdditional> = ({ additionalParentFields, typesToIgnore }) => ({
+  typesToKeep?: string[]
+}) => FilterCreator<TClient, TContext, TResult, TAdditional> = ({ additionalParentFields, typesToKeep }) => ({
   fetchQuery,
 }) => ({
   name: 'queryFilter',
   onFetch: async elements => {
-    const ignoredTypes = new Set(typesToIgnore ?? [])
+    const ignoredTypes = new Set(typesToKeep ?? [])
     const removedInstances = _.remove(elements, element => (
       isInstanceElement(element)
       && !ignoredTypes.has(element.elemID.typeName)
@@ -72,9 +73,12 @@ export const queryFilterCreator: <
     if (removedInstances.length === 0) {
       return
     }
-    log.debug(`Omitted ${removedInstances.length} instances that did not match the fetch criteria. The first 100 ids that were removed are: ${removedInstances.slice(0, 100).map(e => e.elemID.getFullName()).join(', ')}`)
+    log.debug('Omitted %d instances that did not match the fetch criteria. The first 100 ids that were removed are: %s',
+      removedInstances.length,
+      removedInstances.slice(0, 100).map(e => e.elemID.getFullName()).join(', '))
 
-    const graph = createGraph(elements.filter(isInstanceElement), additionalParentFields)
+    // recurively remove children of removed instances
+    const graph = createParentChildGraph(elements.filter(isInstanceElement), additionalParentFields)
     const additionalIDsToRemove = graph.getComponent({
       roots: removedInstances.map(e => e.elemID.getFullName()),
       reverse: true,
@@ -84,7 +88,9 @@ export const queryFilterCreator: <
       element => additionalIDsToRemove.has(element.elemID.getFullName())
     )
     if (dependentRemovedInstances.length > 0) {
-      log.debug(`Omitted ${removedInstances.length} instances whose parents did not match the fetch criteria. The first 100 ids that were removed are: ${dependentRemovedInstances.slice(0, 100).map(e => e.elemID.getFullName()).join(', ')}`)
+      log.debug('Omitted %d instances whose parents did not match the fetch criteria. The first 100 ids that were removed are: %s',
+        removedInstances.length,
+        dependentRemovedInstances.slice(0, 100).map(e => e.elemID.getFullName()).join(', '))
     }
   },
 })

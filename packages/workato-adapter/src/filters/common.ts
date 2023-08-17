@@ -31,7 +31,7 @@ const filterCreators: Record<string, FilterCreator> = {
   referencedInstanceNames: filters.referencedInstanceNamesFilterCreator(),
   query: filters.queryFilterCreator({
     additionalParentFields: ADDITIONAL_PARENT_FIELDS,
-    typesToIgnore: [RECIPE_CODE_TYPE],
+    typesToKeep: [RECIPE_CODE_TYPE],
   }),
 }
 

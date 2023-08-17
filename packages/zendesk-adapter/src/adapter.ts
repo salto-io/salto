@@ -233,6 +233,7 @@ export const DEFAULT_FILTERS = [
   dynamicContentReferencesFilter,
   guideParentSection,
   serviceUrlFilter,
+  // referencedIdFieldsFilter and queryFilter should run after element references are resolved
   ...Object.values(commonFilters),
   articleBodyFilter,
   handleAppInstallationsFilter,

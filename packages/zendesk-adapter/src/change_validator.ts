@@ -74,10 +74,11 @@ import {
   duplicateRoutingAttributeValueValidator,
   triggerCategoryRemovalValidator,
   ticketFieldDeactivationValidator,
+  duplicateIdFieldValuesValidator,
+  notEnabledMissingReferencesValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
-import { ChangeValidatorName, ZedneskDeployConfig, ZendeskFetchConfig } from './config'
-import { duplicateIdFieldValuesValidator } from './change_validators/duplicate_id_field_values'
+import { ChangeValidatorName, ZedneskDeployConfig, ZendeskFetchConfig, ZendeskConfig } from './config'
 
 const {
   deployTypesNotSupportedValidator,
@@ -88,6 +89,7 @@ const {
 
 export default ({
   client,
+  config,
   apiConfig,
   fetchConfig,
   deployConfig,
@@ -95,6 +97,7 @@ export default ({
   typesWithNoDeploy,
 }: {
   client: ZendeskClient
+  config: ZendeskConfig
   apiConfig: configUtils.AdapterDuckTypeApiConfig
   fetchConfig: ZendeskFetchConfig
   deployConfig?: ZedneskDeployConfig
@@ -161,6 +164,7 @@ export default ({
     duplicateRoutingAttributeValue: duplicateRoutingAttributeValueValidator,
     triggerCategoryRemoval: triggerCategoryRemovalValidator(apiConfig),
     duplicateIdFieldValues: duplicateIdFieldValuesValidator(apiConfig),
+    notEnabledMissingReferences: notEnabledMissingReferencesValidator(config),
     // *** Guide Order Validators ***
     childInOrder: childInOrderValidator,
     childrenReferences: childrenReferencesValidator,

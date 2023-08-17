@@ -2672,6 +2672,7 @@ export type ChangeValidatorName = (
   | 'duplicateRoutingAttributeValue'
   | 'ticketFieldDeactivation'
   | 'duplicateIdFieldValues'
+  | 'notEnabledMissingReferences'
   )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -2740,6 +2741,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     duplicateRoutingAttributeValue: { refType: BuiltinTypes.BOOLEAN },
     ticketFieldDeactivation: { refType: BuiltinTypes.BOOLEAN },
     duplicateIdFieldValues: { refType: BuiltinTypes.BOOLEAN },
+    notEnabledMissingReferences: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

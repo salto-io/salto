@@ -98,3 +98,7 @@ zendesk {
 | Name                                        | Default when undefined            | Description
 |---------------------------------------------|-----------------------------------|------------
 | name                                        | .*                                | A regex used to filter instances by matching the regex to their name value
+| key                                         | .*                                | A regex used to filter instances by matching the regex to the value of their key field
+| raw_title                                   | .*                                | A regex used to filter instances by matching the regex to their raw_title value
+| title                                       | .*                                | A regex used to filter instances by matching the regex to their title value
+| type                                        | .*                                | A regex used to filter instances by matching the regex to the value of their type field

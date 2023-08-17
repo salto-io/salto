@@ -14,9 +14,92 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { nameCriterion } from '../../../src/elements/query'
+import { fieldCriterionCreator, nameCriterion } from '../../../src/elements/query'
 
 describe('fetch_criteria', () => {
+  describe('fieldCriterionCreator', () => {
+    it('should match element field value when equal', () => {
+      const instance = new InstanceElement(
+        'instance',
+        new ObjectType({ elemID: new ElemID('adapter', 'type') }),
+        {
+          name: 'name',
+          nested: {
+            value: 'xyz',
+          },
+        },
+      )
+
+      expect(fieldCriterionCreator('name')({ instance, value: '.ame' })).toBeTruthy()
+      expect(fieldCriterionCreator('name')({ instance, value: 'ame' })).toBeFalsy()
+    })
+    it('should match element nested field value when equal', () => {
+      const instance = new InstanceElement(
+        'instance',
+        new ObjectType({ elemID: new ElemID('adapter', 'type') }),
+        {
+          name: 'name',
+          nested: {
+            value: 'xyz',
+          },
+        },
+      )
+
+      expect(fieldCriterionCreator('nested.value')({ instance, value: '.y.' })).toBeTruthy()
+      expect(fieldCriterionCreator('nested.value')({ instance, value: '.z' })).toBeFalsy()
+    })
+
+    it('should not match element when field value does not exist', () => {
+      const instance = new InstanceElement(
+        'instance',
+        new ObjectType({ elemID: new ElemID('adapter', 'type') }),
+        {
+          name: 'name',
+          nested: {
+            value: 'xyz',
+          },
+        },
+      )
+
+      expect(fieldCriterionCreator('val')({ instance, value: '.ame' })).toBeFalsy()
+      expect(fieldCriterionCreator('nested.and.missing')({ instance, value: '.ame' })).toBeFalsy()
+    })
+
+    it('should not match element when field value is not a string', () => {
+      expect(fieldCriterionCreator('val')({
+        instance: new InstanceElement(
+          'instance',
+          new ObjectType({ elemID: new ElemID('adapter', 'type') }),
+          {
+            val: ['bla'],
+          },
+        ),
+        value: '.ame',
+      })).toBeFalsy()
+      expect(fieldCriterionCreator('key')({
+        instance: new InstanceElement(
+          'instance',
+          new ObjectType({ elemID: new ElemID('adapter', 'type') }),
+          {
+            key: 123,
+          },
+        ),
+        value: '.ame',
+      })).toBeFalsy()
+      expect(fieldCriterionCreator('name')({
+        instance: new InstanceElement(
+          'instance',
+          new ObjectType({ elemID: new ElemID('adapter', 'type') }),
+          {
+            name: {
+              value: 'name',
+            },
+          },
+        ),
+        value: '.ame',
+      })).toBeFalsy()
+    })
+  })
   describe('name', () => {
     it('should match element name when equal', () => {
       const instance = new InstanceElement(

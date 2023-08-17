@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { isInstanceElement, InstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { filter, getParents } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { DataNodeMap } from '@salto-io/dag'
+import { AbstractNodeMap } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter_utils'
 import { ElementQuery } from '../elements/query'
@@ -30,21 +30,19 @@ const log = logger(module)
 const createGraph = (
   instances: InstanceElement[],
   additionalParentFields?: Record<string, string[]>,
-): DataNodeMap<InstanceElement> => {
-  const graph = new DataNodeMap<InstanceElement>()
+): AbstractNodeMap => {
+  const graph = new AbstractNodeMap()
   instances.forEach(instance => {
     const parents = getParents(instance)
     const additionalParents = additionalParentFields?.[instance.elemID.typeName]
       ?.flatMap(fieldName => collections.array.makeArray(instance.value[fieldName])) ?? []
+    const instanceID = instance.elemID.getFullName()
     const parentIDs = (parents.concat(additionalParents))
       .filter(isReferenceExpression)
       .filter(ref => ref.elemID.idType === 'instance')
       .map(ref => ref.elemID.getFullName())
-    graph.addNode(
-      instance.elemID.getFullName(),
-      parentIDs,
-      instance,
-    )
+
+    parentIDs.forEach(parentID => graph.addEdge(instanceID, parentID))
   })
   return graph
 }

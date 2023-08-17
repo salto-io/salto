@@ -255,34 +255,6 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
       .find(values.isDefined)
   }
 
-  clear(): void {
-    super.clear()
-    this.reverseNeighbors.clear()
-  }
-}
-
-// This class adds storage of node data to NodeMap
-export class DataNodeMap<T> extends AbstractNodeMap {
-  readonly nodeData: Map<NodeId, T>
-
-  constructor(
-    entries?: Iterable<[NodeId, Set<NodeId>]>,
-    nodeData?: Map<NodeId, T>,
-  ) {
-    super(entries)
-    this.nodeData = nodeData || new Map<NodeId, T>()
-  }
-
-  addNode(id: NodeId, dependsOn: Iterable<NodeId>, data: T): void {
-    super.addNodeBase(id, dependsOn)
-    this.nodeData.set(id, data)
-  }
-
-  deleteNode(id: NodeId): Set<NodeId> {
-    this.nodeData.delete(id)
-    return super.deleteNode(id)
-  }
-
   getComponent({ roots, filterFunc, reverse }:{
     roots: NodeId[]
     filterFunc?: (id: NodeId) => boolean
@@ -309,6 +281,35 @@ export class DataNodeMap<T> extends AbstractNodeMap {
     const visited = new Set<NodeId>()
 
     return new Set(roots.flatMap(root => [...getComponentImpl(root, visited, filterFunc).values()]))
+  }
+
+
+  clear(): void {
+    super.clear()
+    this.reverseNeighbors.clear()
+  }
+}
+
+// This class adds storage of node data to NodeMap
+export class DataNodeMap<T> extends AbstractNodeMap {
+  readonly nodeData: Map<NodeId, T>
+
+  constructor(
+    entries?: Iterable<[NodeId, Set<NodeId>]>,
+    nodeData?: Map<NodeId, T>,
+  ) {
+    super(entries)
+    this.nodeData = nodeData || new Map<NodeId, T>()
+  }
+
+  addNode(id: NodeId, dependsOn: Iterable<NodeId>, data: T): void {
+    super.addNodeBase(id, dependsOn)
+    this.nodeData.set(id, data)
+  }
+
+  deleteNode(id: NodeId): Set<NodeId> {
+    this.nodeData.delete(id)
+    return super.deleteNode(id)
   }
 
   cloneWithout(ids: Set<NodeId>): this {

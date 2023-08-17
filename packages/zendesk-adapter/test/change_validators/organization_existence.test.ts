@@ -149,14 +149,14 @@ describe('OrganizationExistence', () => {
       {
         elemID: slaInstance.elemID,
         severity: 'Warning',
-        message: 'Referenced organizations do not exist',
-        detailedMessage: 'The following referenced organizations do not exist in the target environment: three, four\nIf you continue, they will be created.',
+        message: 'Referenced organizations do not exist and will be created',
+        detailedMessage: 'The following organizations are referenced but do not exist in the target environment: three, four\nIf you continue, they will be created.',
       },
       {
         elemID: triggerInstance.elemID,
         severity: 'Warning',
-        message: 'Referenced organizations do not exist',
-        detailedMessage: 'The following referenced organizations do not exist in the target environment: three, four\nIf you continue, they will be created.',
+        message: 'Referenced organizations do not exist and will be created',
+        detailedMessage: 'The following organizations are referenced but do not exist in the target environment: three, four\nIf you continue, they will be created.',
       },
     ])
   })

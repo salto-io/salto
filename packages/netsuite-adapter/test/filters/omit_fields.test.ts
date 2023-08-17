@@ -22,7 +22,7 @@ import filterCreator from '../../src/filters/omit_fields'
 import { LocalFilterOpts } from '../../src/filter'
 import { toAnnotationRefTypes } from '../../src/custom_records/custom_record_type'
 import { customrecordtypeType } from '../../src/autogen/types/standard_types/customrecordtype'
-import { emptyQueryParams, fullQueryParams } from '../../src/query'
+import { emptyQueryParams, fullQueryParams, fullFetch } from '../../src/query'
 
 describe('omit fields filter', () => {
   let type: ObjectType
@@ -189,7 +189,7 @@ describe('omit fields filter', () => {
     it('should not omit if rule doesn\'t match', async () => {
       await filterCreator({ ...defaultOpts,
         config: {
-          fetch: { include: fullQueryParams, exclude: emptyQueryParams },
+          fetch: fullFetch,
           deploy: { fieldsToOmit: [{ type: 'notSome.*', fields: ['.*'] }] },
         } })
         .preDeploy?.([
@@ -206,7 +206,7 @@ describe('omit fields filter', () => {
         ...defaultOpts,
         elementsSource: buildElementsSourceFromElements([instance, type, innerType]),
         config: {
-          fetch: { include: fullQueryParams, exclude: emptyQueryParams },
+          fetch: fullFetch,
           deploy: { fieldsToOmit: [{ type: 'some.*', fields: ['.*2'] }] },
         },
       }).preDeploy?.([toChange({ after: instance })])
@@ -218,7 +218,7 @@ describe('omit fields filter', () => {
         ...defaultOpts,
         elementsSource: buildElementsSourceFromElements([instance, type, innerType]),
         config: {
-          fetch: { include: fullQueryParams, exclude: emptyQueryParams },
+          fetch: fullFetch,
           deploy: { fieldsToOmit: [{ type: 'some.*', subtype: 'inner.*', fields: ['.*2'] }] },
         },
       }).preDeploy?.([toChange({ after: instance })])
@@ -243,7 +243,7 @@ describe('omit fields filter', () => {
               { type: 'customrecordcustomfield', fields: ['is.*'] },
             ],
           },
-          fetch: { include: fullQueryParams, exclude: emptyQueryParams },
+          fetch: fullFetch,
         },
       }).preDeploy?.([toChange({ after: customRecordObjectType })])
       expect(customRecordObjectType.annotations).toEqual({

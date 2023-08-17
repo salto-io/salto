@@ -58,6 +58,11 @@ export const emptyQueryParams: QueryParams = {
   fileCabinet: [],
 }
 
+export const fullFetch = {
+  include: fullQueryParams,
+  exclude: emptyQueryParams,
+}
+
 export type SystemConfig = {
   fetch: {
     lockedElementsToExclude?: QueryParams
@@ -369,10 +374,10 @@ export function validatePlainObject(
   }
 }
 
-export function validateDefined(
-  value: unknown,
+export function validateDefined<T>(
+  value: T | undefined,
   configPath: string | string[]
-): asserts value is Record<string, unknown> {
+): asserts value is T {
   if (value === undefined) {
     throw new Error(`${makeArray(configPath).join('.')} should be defined`)
   }

@@ -27,7 +27,7 @@ import { mockGetElemIdFunc } from '../test/utils'
 import { credsSpec } from './jest_environment'
 import NetsuiteClient from '../src/client/client'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
-import { emptyQueryParams, fullQueryParams } from '../src/query'
+import { fullFetch } from '../src/query'
 
 const log = logger(module)
 
@@ -63,7 +63,7 @@ export const realAdapter = (
   const adapter = new NetsuiteAdapter({
     client,
     elementsSource: buildElementsSourceFromElements(elements),
-    config: config ?? { fetch: { include: fullQueryParams, exclude: emptyQueryParams } },
+    config: config ?? { fetch: fullFetch },
     ...adapterParams || { getElemIdFunc: mockGetElemIdFunc },
   })
   return { client, adapter }

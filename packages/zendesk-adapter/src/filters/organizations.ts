@@ -161,19 +161,23 @@ export const getOrCreateOrganizationsByNames = async ({
         const organization = res.find(org => org.name === organizationName)
         if (organization === undefined) {
           log.debug(`could not find any organization with name ${organizationName}, if createMissingOrganizations it will be created`)
-          if (createMissingOrganizations === true && client !== undefined) {
-            try {
-              const postRes = (await client.post({
+          if (createMissingOrganizations === true) {
+            if (client === undefined) {
+              log.debug(`client is undefined, can not create org ${organizationName}`)
+            } else {
+              try {
+                const postRes = (await client.post({
                 // in case of issues we can also try to use the bulk-create alternative `organizations/create_many`
-                url: '/api/v2/organizations',
-                data: { organization: { name: organizationName } },
-              })).data
-              if (isSingleOrganizationResponse(postRes)) {
-                return postRes.organization
+                  url: '/api/v2/organizations',
+                  data: { organization: { name: organizationName } },
+                })).data
+                if (isSingleOrganizationResponse(postRes)) {
+                  return postRes.organization
+                }
+                log.error(`invalid organization creation response for org name ${organizationName}`)
+              } catch (err) {
+                log.error(`could not create organization with name ${organizationName}, error is ${err}`)
               }
-              log.error(`invalid organization creation response for org name ${organizationName}`)
-            } catch (err) {
-              log.error(`could not create organization with name ${organizationName}, error is ${err}`)
             }
           }
         }

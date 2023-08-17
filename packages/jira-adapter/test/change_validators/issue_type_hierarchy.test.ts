@@ -16,7 +16,7 @@
 
 import { ObjectType, ElemID, InstanceElement, ReadOnlyElementsSource, toChange, SeverityLevel } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { JIRA, ISSUE_TYPE_NAME, ACCOUNT_INFO_TYPE, ACCOUNT_INFO_ELEM_ID } from '../../src/constants'
+import { JIRA, ISSUE_TYPE_NAME } from '../../src/constants'
 import { getAccountInfoInstance } from '../utils'
 import { issueTypeHierarchyValidator } from '../../src/change_validators/issue_type_hierarchy'
 

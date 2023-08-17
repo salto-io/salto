@@ -1838,6 +1838,7 @@ const SUPPORTED_TYPES = {
   Automation: [],
   Webhook: [],
   [AUTOMATION_LABEL_TYPE]: [],
+  IssueLayout: [],
 }
 
 export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {

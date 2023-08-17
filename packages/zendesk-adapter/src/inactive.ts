@@ -24,6 +24,7 @@ import { TICKET_FORM_TYPE_NAME, WEBHOOK_TYPE_NAME } from './constants'
 /**
  * Helper for omitting inactive instances during the initial fetch, in order to avoid creating their standalone
  * child instances.
+ * Note: We assume all instances are of the same type.
  */
 export const filterOutInactiveInstancesForType = (config: ZendeskConfig):
     (instances: InstanceElement[]) => InstanceElement[] => {

@@ -153,7 +153,7 @@ describe('article utility functions', () => {
     })
     it('should run the creation of unassociated attachment', async () => {
       const clonedAttachment = articleAttachmentInstance.clone()
-      const clonedAttachmentId = await articleUtils.createUnassociatedAttachment(client, clonedAttachment)
+      const { id: clonedAttachmentId } = await articleUtils.createUnassociatedAttachment(client, clonedAttachment)
       expect(mockPost).toHaveBeenCalledTimes(1)
       expect(clonedAttachmentId).toBe(20222022)
     })

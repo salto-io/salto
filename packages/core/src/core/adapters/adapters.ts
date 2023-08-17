@@ -28,16 +28,18 @@ import {
   ObjectType,
   isInstanceElement,
   isType,
-  TypeElement, isField, isContainerType,
+  TypeElement,
+  isField,
 } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, getSubtypes, safeJsonStringify } from '@salto-io/adapter-utils'
+import { createDefaultInstanceFromType, getSubtypes, resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { createAdapterReplacedID, expressions, merger, updateElementsWithAlternativeAccount } from '@salto-io/workspace'
+import { createAdapterReplacedID, expressions, merger, updateElementsWithAlternativeAccount, elementSource as workspaceElementSource } from '@salto-io/workspace'
 import { collections, promises } from '@salto-io/lowerdash'
 import adapterCreators from './creators'
 
 const { awu } = collections.asynciterable
 const { mapValuesAsync } = promises.object
+const { buildContainerType } = workspaceElementSource
 const log = logger(module)
 
 export const getAdaptersCredentialsTypes = (
@@ -197,8 +199,14 @@ export const createResolvedTypesElementsSource = (
   elementsSource: ReadOnlyElementsSource
 ): ReadOnlyElementsSource => {
   const resolvedTypes: Map<string, TypeElement> = new Map()
+  let typesWereResolved = false
   const resolveTypes = async (): Promise<void> => {
+    typesWereResolved = true
     const typeElements = await awu(await elementsSource.getAll()).filter(isType).toArray()
+    // Relevant for first fetch
+    if (typeElements === []) {
+      return
+    }
     // Resolve all the types together for better performance
     const resolved = await expressions.resolve(
       typeElements,
@@ -214,7 +222,7 @@ export const createResolvedTypesElementsSource = (
   }
 
   const getResolved = async (id: ElemID): Promise<Element> => {
-    if (resolvedTypes.size === 0) {
+    if (!typesWereResolved) {
       await resolveTypes()
     }
     // TypeElements
@@ -222,28 +230,37 @@ export const createResolvedTypesElementsSource = (
     if (alreadyResolvedType !== undefined) {
       return alreadyResolvedType
     }
-    const value = await elementsSource.get(id)
-    // Instances & Fields
-    if (isInstanceElement(value) || isField(value)) {
-      const element = isField(value) ? value : value.clone()
-      const elementResolvedValue = resolvedTypes.get(element.refType.elemID.getFullName())
-      // The type of the Element must be resolved here, otherwise we have a bug
-      if (elementResolvedValue === undefined) {
-        log.warn('Expected type of Element %s to be resolved. Type elemID: %s. Returning Element with non fully resolved type.', element.elemID.getFullName(), element.refType.elemID.getFullName())
-        return element
-      }
-      // If the type of the Element is resolved, simply set the type on the instance
-      element.refType.type = elementResolvedValue
-      return element
-    }
     // Container types
-    if (isContainerType(value)) {
-      const resolvedInnerValue = resolvedTypes.get(value.refInnerType.elemID.getFullName())
-      if (resolvedInnerValue === undefined) {
-        log.warn('Expected inner type of ContainerType %s to be resolved. Inner type elemID: %s. Returning Element with non fully resolved type.', value.elemID.getFullName(), value.refInnerType.elemID.getFullName())
+    const containerInfo = id.getContainerPrefixAndInnerType()
+    if (containerInfo !== undefined) {
+      const resolvedInner = await getResolved(ElemID.fromFullName(containerInfo.innerTypeName))
+      if (isType(resolvedInner)) {
+        return buildContainerType(containerInfo.prefix, resolvedInner)
+      }
+    }
+    const value = await elementsSource.get(id)
+    // Fields
+    if (isField(value)) {
+      const { parent } = id.createTopLevelParentID()
+      const topLevel = resolvedTypes.get(parent.getFullName())
+      if (topLevel === undefined) {
+        log.warn('Expected parent of Field %s to be resolved. Returning field with non fully resolved type.', id.getFullName())
         return value
       }
-      value.setRefInnerType(resolvedInnerValue)
+      return resolvePath(topLevel, id)
+    }
+    // Instances
+    if (isInstanceElement(value)) {
+      const instance = value.clone()
+      const elementResolvedValue = resolvedTypes.get(instance.refType.elemID.getFullName())
+      // The type of the Element must be resolved here, otherwise we have a bug
+      if (elementResolvedValue === undefined) {
+        log.warn('Expected type of Instance %s to be resolved. Type elemID: %s. Returning Instance with non fully resolved type.', instance.elemID.getFullName(), instance.refType.elemID.getFullName())
+        return instance
+      }
+      // If the type of the Element is resolved, simply set the type on the instance
+      instance.refType.type = elementResolvedValue
+      return instance
     }
     return value
   }

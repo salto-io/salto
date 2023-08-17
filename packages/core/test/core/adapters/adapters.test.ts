@@ -22,7 +22,7 @@ import {
   AdapterOperationsContext,
   Adapter,
   ReadOnlyElementsSource,
-  isObjectType, TypeElement, Field, isType, ContainerType, ListType,
+  isObjectType, TypeElement, Field, isType, ContainerType, ListType, isContainerType,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { buildElementsSourceFromElements, createDefaultInstanceFromType } from '@salto-io/adapter-utils'
@@ -332,14 +332,13 @@ describe('adapters.ts', () => {
       })
       field = type.fields.field
       instance = new InstanceElement('TestInstance', type)
-      containerType = new ListType(type)
+      containerType = new ListType(new ListType(type))
       elementsSource = createResolvedTypesElementsSource(utils.buildElementsSourceFromElements([
         type,
         field,
         nestedType,
         nestedNestedType,
         instance,
-        containerType,
       ]))
     })
 
@@ -367,8 +366,9 @@ describe('adapters.ts', () => {
       })
       it('should return fully resolved ContainerType', async () => {
         const resolvedContainerType = await elementsSource.get(containerType.elemID) as ContainerType
-        const resolvedInnerType = resolvedContainerType.refInnerType.type as ObjectType
-        expect(isObjectType(resolvedInnerType)).toBeTrue()
+        const resolvedInnerContainerType = resolvedContainerType.refInnerType.type as ContainerType
+        expect(isContainerType(resolvedInnerContainerType)).toBeTrue()
+        const resolvedInnerType = resolvedInnerContainerType.refInnerType.type as ObjectType
         const resolvedNestedType = resolvedInnerType.fields.field.refType.type as ObjectType
         expect(isObjectType(resolvedNestedType)).toBeTrue()
         const resolvedNestedNestedType = resolvedNestedType.fields.field.refType.type as ObjectType
@@ -378,7 +378,7 @@ describe('adapters.ts', () => {
     describe('getAll', () => {
       it('should return all elements with resolved types, and resolve all the types ones', async () => {
         const resolvedElements = await toArrayAsync(await elementsSource.getAll())
-        expect(resolvedElements).toHaveLength(6)
+        expect(resolvedElements).toHaveLength(5)
         const resolvedElementsByElemId = _.keyBy(
           resolvedElements,
           element => element.elemID.getFullName(),
@@ -388,12 +388,10 @@ describe('adapters.ts', () => {
         const resolvedInnerInnerType = resolvedElementsByElemId[nestedNestedType.elemID.getFullName()] as ObjectType
         const resolvedInstance = resolvedElementsByElemId[instance.elemID.getFullName()] as InstanceElement
         const resolvedField = resolvedElementsByElemId[field.elemID.getFullName()] as Field
-        const resolvedContainerType = resolvedElementsByElemId[containerType.elemID.getFullName()] as ContainerType
         expect(resolvedInnerType.fields.field.refType.type).toEqual(resolvedInnerInnerType)
         expect(resolvedType.fields.field.refType.type).toEqual(resolvedInnerType)
         expect(resolvedInstance.refType.type).toEqual(resolvedType)
         expect(resolvedField.refType.type).toEqual(resolvedInnerType)
-        expect(resolvedContainerType.refInnerType.type).toEqual(resolvedType)
         // Verify that expressions.resolve was invoked once for the whole process
         expect(resolveSpy).toHaveBeenCalledOnce()
       })
@@ -407,7 +405,6 @@ describe('adapters.ts', () => {
           nestedNestedType.elemID,
           instance.elemID,
           field.elemID,
-          containerType.elemID,
         ])
       })
     })

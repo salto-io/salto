@@ -28,6 +28,7 @@ describe('organizations filter', () => {
     credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
   })
   let mockGet: jest.SpyInstance
+  let mockPost: jest.SpyInstance
   type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   const triggerType = new ObjectType({ elemID: new ElemID(ZENDESK, 'trigger') })
   const userSegmentType = new ObjectType({ elemID: new ElemID(ZENDESK, 'user_segment') })
@@ -283,53 +284,160 @@ describe('organizations filter', () => {
     beforeEach(() => {
       jest.clearAllMocks()
       mockGet = jest.spyOn(client, 'getSinglePage')
+      mockPost = jest.spyOn(client, 'post')
+    })
+    describe('getOrganizationsByNames', () => {
+      it('should return correct result on valid response', async () => {
+        mockGet.mockResolvedValueOnce({
+          status: 200,
+          data: {
+            organizations: [
+              { id: 1, name: 'org1' },
+              { id: 2, name: 'org11' },
+              { id: 3, name: 'org1111' },
+            ],
+          },
+        }).mockResolvedValueOnce({
+          status: 200,
+          data: {
+            organizations: [
+              { id: 2, name: 'org11' },
+              { id: 3, name: 'org1111' },
+            ],
+          },
+        })
+
+        const goodResult = await getOrganizationsByNames({
+          organizationNames: ['org1', 'org11'],
+          paginator,
+          defaultMissingOrgFallback: undefined,
+          client,
+        })
+        expect(goodResult).toEqual([
+          { id: 1, name: 'org1' },
+          { id: 2, name: 'org11' },
+        ])
+      })
+      it('should create org if return empty array on invalid response', async () => {
+        mockGet.mockResolvedValueOnce({
+          status: 200,
+          data: {
+            organizations: [
+              { id: 2, name: 'org11' },
+            ],
+          },
+        }).mockResolvedValueOnce({
+          status: 200,
+          data: {
+            organizations: [
+              { id: 2, name: 'org11' },
+              { id: 3 }, // Bad structure
+            ],
+          },
+        })
+        const badResult = await getOrganizationsByNames({
+          organizationNames: ['org1', 'org11'],
+          paginator,
+          defaultMissingOrgFallback: false,
+          client,
+        })
+        expect(badResult).toEqual([])
+      })
+      it('should create org if defaultMissingOrgFallback is true', async () => {
+        mockGet.mockResolvedValueOnce({
+          status: 200,
+          data: {
+            organizations: [
+              { id: 1, name: 'org1' },
+            ],
+          },
+        }).mockResolvedValueOnce({
+          status: 200,
+          data: {
+            organizations: [],
+          },
+        })
+        mockPost.mockResolvedValue({
+          status: 200,
+          data: {
+            organization:
+              { id: 2, name: 'org11' },
+          },
+        })
+
+        const goodResult = await getOrganizationsByNames({
+          organizationNames: ['org1', 'org11'],
+          paginator,
+          defaultMissingOrgFallback: true,
+          client,
+        })
+        expect(goodResult).toEqual([
+          { id: 1, name: 'org1' },
+          { id: 2, name: 'org11' },
+        ])
+      })
+      it('should not create org if defaultMissingOrgFallback is true and res is invalid', async () => {
+        mockGet.mockResolvedValueOnce({
+          status: 200,
+          data: {
+            organizations: [
+              { id: 1, name: 'org1' },
+            ],
+          },
+        }).mockResolvedValueOnce({
+          status: 200,
+          data: {
+            organizations: [],
+          },
+        })
+        mockPost.mockResolvedValue({
+          status: 200,
+          data: {
+            organization: {},
+          },
+        })
+
+        const goodResult = await getOrganizationsByNames({
+          organizationNames: ['org1', 'org11'],
+          paginator,
+          defaultMissingOrgFallback: true,
+          client,
+        })
+        expect(goodResult).toEqual([
+          { id: 1, name: 'org1' },
+        ])
+      })
+      it('should not create org if defaultMissingOrgFallback is true post fails', async () => {
+        mockGet.mockResolvedValueOnce({
+          status: 200,
+          data: {
+            organizations: [
+              { id: 1, name: 'org1' },
+            ],
+          },
+        }).mockResolvedValueOnce({
+          status: 200,
+          data: {
+            organizations: [],
+          },
+        })
+        mockPost.mockResolvedValue(
+          () => { throw Error('err') }
+        )
+
+        const goodResult = await getOrganizationsByNames({
+          organizationNames: ['org1', 'org11'],
+          paginator,
+          defaultMissingOrgFallback: true,
+          client,
+        })
+        expect(goodResult).toEqual([
+          { id: 1, name: 'org1' },
+        ])
+      })
     })
 
-    it('getOrganizationsByNames', async () => {
-      mockGet.mockResolvedValueOnce({
-        status: 200,
-        data: {
-          organizations: [
-            { id: 1, name: 'org1' },
-            { id: 2, name: 'org11' },
-            { id: 3, name: 'org1111' },
-          ],
-        },
-      }).mockResolvedValueOnce({
-        status: 200,
-        data: {
-          organizations: [
-            { id: 2, name: 'org11' },
-            { id: 3, name: 'org1111' },
-          ],
-        },
-      })
 
-      const goodResult = await getOrganizationsByNames(['org1', 'org11'], paginator)
-      expect(goodResult).toEqual([
-        { id: 1, name: 'org1' },
-        { id: 2, name: 'org11' },
-      ])
-
-      mockGet.mockResolvedValueOnce({
-        status: 200,
-        data: {
-          organizations: [
-            { id: 2, name: 'org11' },
-          ],
-        },
-      }).mockResolvedValueOnce({
-        status: 200,
-        data: {
-          organizations: [
-            { id: 2, name: 'org11' },
-            { id: 3 }, // Bad structure
-          ],
-        },
-      })
-      const badResult = await getOrganizationsByNames(['org1', 'org11'], paginator)
-      expect(badResult).toEqual([])
-    })
     it('getOrganizationsByIds', async () => {
       mockGet.mockResolvedValueOnce({
         status: 200,

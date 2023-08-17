@@ -147,7 +147,7 @@ export default ({
     helpCenterCreationOrRemoval: helpCenterCreationOrRemovalValidator(client, apiConfig),
     externalSourceWebhook: externalSourceWebhookValidator,
     defaultGroupChange: defaultGroupChangeValidator,
-    organizationExistence: organizationExistenceValidator(client, fetchConfig),
+    organizationExistence: organizationExistenceValidator(client, fetchConfig, deployConfig),
     badFormatWebhookAction: badFormatWebhookActionValidator,
     guideDisabled: guideDisabledValidator(fetchConfig),
     additionOfTicketStatusForTicketForm: additionOfTicketStatusForTicketFormValidator,

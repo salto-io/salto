@@ -153,10 +153,9 @@ describe('article utility functions', () => {
     })
     it('should run the creation of unassociated attachment', async () => {
       const clonedAttachment = articleAttachmentInstance.clone()
-      expect(clonedAttachment.value.id).toBeUndefined()
-      await articleUtils.createUnassociatedAttachment(client, clonedAttachment)
+      const clonedAttachmentId = await articleUtils.createUnassociatedAttachment(client, clonedAttachment)
       expect(mockPost).toHaveBeenCalledTimes(1)
-      expect(clonedAttachment.value.id).toBe(20222022)
+      expect(clonedAttachmentId).toBe(20222022)
     })
   })
   describe('updateArticleTranslationBody function', () => {

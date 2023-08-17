@@ -34,7 +34,7 @@ import {
   ObjectType,
   ReferenceExpression,
   SaltoElementError,
-  StaticFile,
+  StaticFile, Value,
   Values,
 } from '@salto-io/adapter-api'
 import ZendeskClient from '../../client/client'
@@ -50,6 +50,7 @@ const log = logger(module)
 const { awu } = collections.asynciterable
 
 const RESULT_MAXIMUM_OUTPUT_SIZE = 100
+export const SUCCESS_STATUS_CODE = 200
 
 type Attachment = InstanceElement & {
   value: {
@@ -64,7 +65,7 @@ type Attachment = InstanceElement & {
   }
 }
 
-type AttachmentResponse = {
+export type AttachmentResponse = {
   id: number
   // eslint-disable-next-line camelcase
   file_name: string
@@ -183,7 +184,7 @@ export const getArticleAttachments = async ({ brandIdToClient, articleById, atta
 export const createUnassociatedAttachment = async (
   client: ZendeskClient,
   attachmentInstance: InstanceElement,
-): Promise<void> => {
+): Promise<number | undefined> => {
   try {
     log.info(`Creating unassociated article attachment: ${attachmentInstance.value.file_name}`)
     const fileContent = isStaticFile(attachmentInstance.value.content)
@@ -199,28 +200,67 @@ export const createUnassociatedAttachment = async (
     })
     if (res === undefined) {
       log.error('Received an empty response from Zendesk API. Not adding article attachments')
-      return
+      return undefined
     }
     if (Array.isArray(res.data)) {
       log.error(`Received an invalid response from Zendesk API, ${safeJsonStringify(res.data, undefined, 2).slice(0, RESULT_MAXIMUM_OUTPUT_SIZE)}. Not adding article attachments`)
-      return
+      return undefined
     }
     const createdAttachment = [res.data.article_attachment]
     if (!isAttachmentsResponse(createdAttachment)) {
-      return
+      return undefined
     }
-    attachmentInstance.value.id = createdAttachment[0].id
+    return createdAttachment[0].id
   } catch (err) {
     throw getZendeskError(attachmentInstance.elemID, err) // caught in adapter.ts
   }
 }
 
+const MAX_BULK_SIZE = 20
+export const associateAttachments = async (
+  client: ZendeskClient,
+  article: InstanceElement,
+  attachmentsIds: number[]
+): Promise<{ status: number; ids: number[] }[]> => {
+  const attachChunk = _.chunk(attachmentsIds, MAX_BULK_SIZE)
+  const articleId = article.value.id
+  log.debug(`there are ${attachmentsIds.length} attachments to associate for article ${article.elemID.name}, associating in chunks of 20`)
+  const allRes = await Promise.all(attachChunk.map(async (chunk: number[], index: number) => {
+    log.debug(`starting article attachment associate chunk ${index + 1}/${attachChunk.length} for article ${article.elemID.name}`)
+
+    const createErrorMsg = (error: Value, status?: number): string => (
+      [
+        `could not associate chunk number ${index} for article ${article.elemID.name}`,
+        status !== undefined ? `, status: ${status}` : '',
+        `The unassociated attachment ids are: ${chunk}, error: ${safeJsonStringify(error)}`,
+      ].join())
+
+    try {
+      const res = await client.post({
+        url: `/api/v2/help_center/articles/${articleId}/bulk_attachments`,
+        data: { attachment_ids: chunk },
+      })
+      if (res.status !== SUCCESS_STATUS_CODE) {
+        log.warn(createErrorMsg(res.data, res.status))
+      }
+      return { status: res.status, ids: chunk }
+    } catch (e) {
+      const error = e.reponse?.data ?? e
+      const status = e.reponse?.status
+
+      log.error(createErrorMsg(error, status))
+      return { status, ids: chunk }
+    }
+  }))
+  return allRes
+}
+
 export const deleteArticleAttachment = async (
   client: ZendeskClient,
-  attachmentInstance: InstanceElement,
+  attachmentId: number,
 ): Promise<void> => {
   const res = await client.delete({
-    url: `/api/v2/help_center/articles/attachments/${attachmentInstance.value.id}`,
+    url: `/api/v2/help_center/articles/attachments/${attachmentId}`,
   })
   if (res === undefined) {
     log.error('Received an empty response from Zendesk API when deleting an article attachment')

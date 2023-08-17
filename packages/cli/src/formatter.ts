@@ -21,7 +21,7 @@ import {
   Element, isInstanceElement, Values, Change, Value, getChangeData, ElemID,
   isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes, ReferenceExpression,
   ActionName, ChangeError, SaltoError, isElement, TypeMap, DetailedChange, ChangeDataType,
-  isStaticFile, Group,
+  isStaticFile, Group, isSaltoElementError,
 } from '@salto-io/adapter-api'
 import { Plan, PlanItem, FetchChange, FetchResult, LocalChange, getSupportedServiceAdapterNames } from '@salto-io/core'
 import { errors, SourceLocation, WorkspaceComponents, StateRecency } from '@salto-io/workspace'
@@ -76,6 +76,12 @@ const indent = (text: string, level: number): string => {
   const indentText = _.repeat('  ', level)
   return text.split(EOL).map(line => `${indentText}${line}`).join(EOL)
 }
+
+export const formatStepStart = (text: string, indentLevel?: number): string => indent(`${chalk.yellow('>>>')} ${text}`, indentLevel ?? 1)
+export const formatStepCompleted = (text: string, indentLevel?: number): string => indent(`${chalk.green('vvv')} ${text}`, indentLevel ?? 1)
+export const formatStepFailed = (text: string, indentLevel?: number): string => indent(`${error('xxx')} ${text}`, indentLevel ?? 1)
+export const formatShowWarning = (text: string, indentLevel?: number): string => indent(`${chalk.red('!!!')} ${text}`, indentLevel ?? 1)
+export const formatListRecord = (text: string, indentLevel?: number): string => indent(`○ ${text}`, indentLevel ?? 2)
 
 const singleOrPluralString = (number: number, single: string, plural: string): string =>
   ((number || 0) === 1 ? `${number} ${single}` : `${number} ${plural}`)
@@ -350,6 +356,8 @@ export const cancelDeployOutput = (checkOnly: boolean): string => [
 ].join('\n')
 
 export const deployErrorsOutput = (allErrors: DeployError[]): string => {
+  const getErrorMessage = (err: DeployError): string =>
+    formatListRecord(`${isSaltoElementError(err) ? `${err.elemID.getFullName()}: ` : ''}${err.message}`, 1)
   const errorOutputLines = [
     emptyLine(),
   ]
@@ -359,17 +367,17 @@ export const deployErrorsOutput = (allErrors: DeployError[]): string => {
     const deployErrors = allErrors.filter(err => err.severity === 'Error')
     if (!_.isEmpty(deployErrors)) {
       errorOutputLines.push(error('Errors:'))
-      errorOutputLines.push(...deployErrors.map(deployError => error(`${deployError.message}`)))
+      deployErrors.forEach(deployError => errorOutputLines.push(error(getErrorMessage(deployError)), emptyLine()))
       errorOutputLines.push(emptyLine())
     }
     if (!_.isEmpty(warnings)) {
       errorOutputLines.push(warn('Warnings:'))
-      errorOutputLines.push(...warnings.map(warning => warn(`${warning.message}`)))
+      warnings.forEach(warning => errorOutputLines.push(warn(getErrorMessage(warning)), emptyLine()))
       errorOutputLines.push(emptyLine())
     }
     if (!_.isEmpty(infos)) {
       errorOutputLines.push(header('Info:'))
-      errorOutputLines.push(...infos.map(info => header(`${info.message}`)))
+      infos.forEach(info => errorOutputLines.push(header(getErrorMessage(info)), emptyLine()))
       errorOutputLines.push(emptyLine())
     }
     return errorOutputLines.join(EOL)
@@ -499,12 +507,6 @@ export const formatFetchFinish = (): string => [
   emptyLine(),
   Prompts.FETCH_SUCCESS_FINISHED,
 ].join('\n')
-
-export const formatStepStart = (text: string, indentLevel?: number): string => indent(`${chalk.yellow('>>>')} ${text}`, indentLevel ?? 1)
-export const formatStepCompleted = (text: string, indentLevel?: number): string => indent(`${chalk.green('vvv')} ${text}`, indentLevel ?? 1)
-export const formatStepFailed = (text: string, indentLevel?: number): string => indent(`${error('xxx')} ${text}`, indentLevel ?? 1)
-export const formatShowWarning = (text: string, indentLevel?: number): string => indent(`${chalk.red('!!!')} ${text}`, indentLevel ?? 1)
-export const formatListRecord = (text: string, indentLevel?: number): string => indent(`○ ${text}`, indentLevel ?? 2)
 
 export const formatMergeErrors = (mergeErrors: FetchResult['mergeErrors']): string =>
   `${Prompts.FETCH_MERGE_ERRORS}\n${mergeErrors.map(

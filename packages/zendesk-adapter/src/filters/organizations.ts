@@ -128,17 +128,17 @@ export const getOrganizationsByIds = async (
   return results.flatMap(orgResponse => orgResponse.organizations)
 }
 
-export const getOrganizationsByNames = async ({
+export const getOrCreateOrganizationsByNames = async ({
   organizationNames,
   paginator,
-  defaultMissingOrgFallback,
+  createMissingOrganizations,
   client,
 }: {
- organizationNames: string[]
- paginator: clientUtils.Paginator
- defaultMissingOrgFallback?: boolean
- client?: ZendeskClient
-                                                }
+  organizationNames: string[]
+  paginator: clientUtils.Paginator
+  createMissingOrganizations?: boolean
+  client?: ZendeskClient
+ }
 ): Promise<Organization[]> => {
   const paginationArgs = {
     url: '/api/v2/organizations/autocomplete',
@@ -160,17 +160,18 @@ export const getOrganizationsByNames = async ({
         // the endpoint returns all organizations with names matching the wildcard `organizationName`
         const organization = res.find(org => org.name === organizationName)
         if (organization === undefined) {
-          log.error(`could not find any organization with name ${organizationName}`)
-          if (defaultMissingOrgFallback === true && client !== undefined) {
+          log.debug(`could not find any organization with name ${organizationName}, if createMissingOrganizations it will be created`)
+          if (createMissingOrganizations === true && client !== undefined) {
             try {
               const postRes = (await client.post({
+                // in case of issues we can also try to use the bulk-create alternative `organizations/create_many`
                 url: '/api/v2/organizations',
                 data: { organization: { name: organizationName } },
               })).data
               if (isSingleOrganizationResponse(postRes)) {
                 return postRes.organization
               }
-              log.error('invalid organization creation response')
+              log.error(`invalid organization creation response for org name ${organizationName}`)
             } catch (err) {
               log.error(`could not create organization with name ${organizationName}, error is ${err}`)
             }
@@ -251,9 +252,9 @@ const filterCreator: FilterCreator = ({ client, config }) => {
         client,
         paginationFuncCreator: paginate,
       })
-      const defaultMissingOrgFallback = config[DEPLOY_CONFIG]?.defaultMissingOrgFallback ?? false
-      const organizations = await getOrganizationsByNames({
-        organizationNames, paginator, defaultMissingOrgFallback, client,
+      const createMissingOrganizations = config[DEPLOY_CONFIG]?.createMissingOrganizations ?? false
+      const organizations = await getOrCreateOrganizationsByNames({
+        organizationNames, paginator, createMissingOrganizations, client,
       })
       if (_.isEmpty(organizations)) {
         return

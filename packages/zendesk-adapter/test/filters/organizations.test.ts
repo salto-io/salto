@@ -16,7 +16,7 @@
 import { ObjectType, ElemID, InstanceElement, isInstanceElement, toChange } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { ZENDESK } from '../../src/constants'
-import filterCreator, { getOrganizationsByIds, getOrganizationsByNames } from '../../src/filters/organizations'
+import filterCreator, { getOrganizationsByIds, getOrCreateOrganizationsByNames } from '../../src/filters/organizations'
 import { createFilterCreatorParams } from '../utils'
 import ZendeskClient from '../../src/client/client'
 import { FETCH_CONFIG, DEFAULT_CONFIG } from '../../src/config'
@@ -286,7 +286,7 @@ describe('organizations filter', () => {
       mockGet = jest.spyOn(client, 'getSinglePage')
       mockPost = jest.spyOn(client, 'post')
     })
-    describe('getOrganizationsByNames', () => {
+    describe('getOrCreateOrganizationsByNames', () => {
       it('should return correct result on valid response', async () => {
         mockGet.mockResolvedValueOnce({
           status: 200,
@@ -307,10 +307,10 @@ describe('organizations filter', () => {
           },
         })
 
-        const goodResult = await getOrganizationsByNames({
+        const goodResult = await getOrCreateOrganizationsByNames({
           organizationNames: ['org1', 'org11'],
           paginator,
-          defaultMissingOrgFallback: undefined,
+          createMissingOrganizations: undefined,
           client,
         })
         expect(goodResult).toEqual([
@@ -335,15 +335,15 @@ describe('organizations filter', () => {
             ],
           },
         })
-        const badResult = await getOrganizationsByNames({
+        const badResult = await getOrCreateOrganizationsByNames({
           organizationNames: ['org1', 'org11'],
           paginator,
-          defaultMissingOrgFallback: false,
+          createMissingOrganizations: false,
           client,
         })
         expect(badResult).toEqual([])
       })
-      it('should create org if defaultMissingOrgFallback is true', async () => {
+      it('should create org if createMissingOrganizations is true', async () => {
         mockGet.mockResolvedValueOnce({
           status: 200,
           data: {
@@ -365,10 +365,10 @@ describe('organizations filter', () => {
           },
         })
 
-        const goodResult = await getOrganizationsByNames({
+        const goodResult = await getOrCreateOrganizationsByNames({
           organizationNames: ['org1', 'org11'],
           paginator,
-          defaultMissingOrgFallback: true,
+          createMissingOrganizations: true,
           client,
         })
         expect(goodResult).toEqual([
@@ -376,7 +376,7 @@ describe('organizations filter', () => {
           { id: 2, name: 'org11' },
         ])
       })
-      it('should not create org if defaultMissingOrgFallback is true and res is invalid', async () => {
+      it('should not create org if createMissingOrganizations is true and res is invalid', async () => {
         mockGet.mockResolvedValueOnce({
           status: 200,
           data: {
@@ -397,17 +397,17 @@ describe('organizations filter', () => {
           },
         })
 
-        const goodResult = await getOrganizationsByNames({
+        const goodResult = await getOrCreateOrganizationsByNames({
           organizationNames: ['org1', 'org11'],
           paginator,
-          defaultMissingOrgFallback: true,
+          createMissingOrganizations: true,
           client,
         })
         expect(goodResult).toEqual([
           { id: 1, name: 'org1' },
         ])
       })
-      it('should not create org if defaultMissingOrgFallback is true post fails', async () => {
+      it('should not create org if createMissingOrganizations is true post fails', async () => {
         mockGet.mockResolvedValueOnce({
           status: 200,
           data: {
@@ -425,10 +425,10 @@ describe('organizations filter', () => {
           () => { throw Error('err') }
         )
 
-        const goodResult = await getOrganizationsByNames({
+        const goodResult = await getOrCreateOrganizationsByNames({
           organizationNames: ['org1', 'org11'],
           paginator,
-          defaultMissingOrgFallback: true,
+          createMissingOrganizations: true,
           client,
         })
         expect(goodResult).toEqual([

@@ -28,7 +28,7 @@ import wu from 'wu'
 import {
   createOrganizationPathEntries,
   getOrganizationsByIds,
-  getOrganizationsByNames, Organization,
+  getOrCreateOrganizationsByNames, Organization,
   TYPE_NAME_TO_REPLACER,
 } from '../filters/organizations'
 import ZendeskClient from '../client/client'
@@ -40,8 +40,8 @@ const { isDefined } = lowerDashValues
 const log = logger(module)
 
 /**
- * Validates the existence of organizations that are referenced in added or modified elements, if resolveOrganizationIDs
- * is true and defaultMissingOrgFallback than we will warn the user instead of error
+ * Validates the existence of organizations that are referenced in added or modified elements.
+ * If resolveOrganizationIDs is true and createMissingOrganizations then we will warn the user instead of error
  */
 export const organizationExistenceValidator: (
   client: ZendeskClient,
@@ -52,7 +52,7 @@ export const organizationExistenceValidator: (
   // If the user change this config between a fetch and a deploy, this validator will fail
   // This is a known issue and is ok because handling it is not trivial and the use case shouldn't be common
   const orgIdsResolved = fetchConfig.resolveOrganizationIDs === true
-  const defaultMissingOrgFallback = deployConfig?.defaultMissingOrgFallback === true
+  const createMissingOrganizations = deployConfig?.createMissingOrganizations === true
 
   const relevantChanges = changes.filter(isAdditionOrModificationChange).filter(isInstanceChange).map(getChangeData)
     .filter(instance => Object.keys(TYPE_NAME_TO_REPLACER).includes(instance.elemID.typeName))
@@ -70,7 +70,7 @@ export const organizationExistenceValidator: (
   let existingOrgs: Organization[]
   try {
     existingOrgs = orgIdsResolved
-      ? await getOrganizationsByNames({
+      ? await getOrCreateOrganizationsByNames({
         organizationNames: orgIdentifiers,
         paginator,
       })
@@ -98,12 +98,12 @@ export const organizationExistenceValidator: (
         const nonExistingOrgsAreIds = !orgIdsResolved || wu(nonExistingOrgs.values()).some(org => _.isNumber(org))
         const resolveOrgsRecommendation = nonExistingOrgsAreIds ? '. Salto can identify organizations by their names. This requires setting the \'resolveOrganizationIDs\' to true in the zendesk configuration file of both source and target envs and fetch.\n'
                 + 'More information about Salto\'s config files can be found here: \'https://help.salto.io/en/articles/7439324-salto-configuration-file\'' : ''
-        if (orgIdsResolved && defaultMissingOrgFallback) {
+        if (orgIdsResolved && createMissingOrganizations) {
           return {
             elemID: entries[0].instance.elemID,
             severity: 'Warning',
-            message: 'Referenced organizations do not exist',
-            detailedMessage: `The following referenced organizations do not exist in the target environment: ${Array.from(nonExistingOrgs).join(', ')}\nIf you continue, they will be created.`,
+            message: 'Referenced organizations do not exist and will be created',
+            detailedMessage: `The following organizations are referenced but do not exist in the target environment: ${Array.from(nonExistingOrgs).join(', ')}\nIf you continue, they will be created.`,
           }
         }
         return {

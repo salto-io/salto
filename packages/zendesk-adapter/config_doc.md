@@ -88,9 +88,9 @@ zendesk {
 ### Deploy configuration options
 
 | Name                         | Default when undefined | Description
-|------------------------------|-----------------------|------------
-| [defaultMissingUserFallback] | ""                    | Configure replacement for missing users during deploy, can be user email or ##DEPLOYER## to fallback to deployer's user 
-| [defaultMissingOrgFallback]  | undefined             | When enabled, missing organizations will be created during deploy, 
+|------------------------------|------------------------|------------
+| [defaultMissingUserFallback] | ""                     | Configure replacement for missing users during deploy, can be user email or ##DEPLOYER## to fallback to deployer's user 
+| [createMissingOrganizations] | false                  | When enabled with resolveOrganizationIDs flag , missing organizations will be created during deploy.
 
 
 ## Fetch entry criteria

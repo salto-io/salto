@@ -85,7 +85,7 @@ export type ZendeskFetchConfig = configUtils.UserFetchConfig
   resolveOrganizationIDs?: boolean
 }
 export type ZedneskDeployConfig = configUtils.UserDeployConfig & configUtils.DefaultMissingUserFallbackConfig & {
-defaultMissingOrgFallback?: boolean
+  createMissingOrganizations?: boolean
 }
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
   configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean },
@@ -2550,6 +2550,9 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     includeAuditDetails: false,
     addAlias: false,
   },
+  [DEPLOY_CONFIG]: {
+    createMissingOrganizations: false,
+  },
   [API_DEFINITIONS_CONFIG]: {
     typeDefaults: {
       request: {
@@ -2774,7 +2777,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
         changeValidatorConfigType,
         {
           ...defaultMissingUserFallbackField,
-          defaultMissingOrgFallback: { refType: BuiltinTypes.BOOLEAN },
+          createMissingOrganizations: { refType: BuiltinTypes.BOOLEAN },
         },
       ),
     },

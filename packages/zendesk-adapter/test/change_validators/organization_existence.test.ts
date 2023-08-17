@@ -125,9 +125,9 @@ describe('OrganizationExistence', () => {
       },
     ])
   })
-  it('should return a warning if the organization does not exist, with resolved Ids and defaultMissingOrgFallback is on', async () => {
+  it('should return a warning if the organization does not exist, with resolved Ids and createMissingOrganizations is on', async () => {
     const fetchConfig = { ...DEFAULT_CONFIG[FETCH_CONFIG], resolveOrganizationIDs: true }
-    const deployConfig = { defaultMissingOrgFallback: true }
+    const deployConfig = { createMissingOrganizations: true }
     const resolvedIdsClient = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
       allowOrganizationNames: true,
@@ -162,7 +162,7 @@ describe('OrganizationExistence', () => {
   })
 
   it('should return an error if the organization does not exist, and request all orgs in one request, with unresolved Ids', async () => {
-    const deployConfig = { defaultMissingOrgFallback: true }
+    const deployConfig = { createMissingOrganizations: true }
     const validator = organizationExistenceValidator(client, DEFAULT_CONFIG[FETCH_CONFIG], deployConfig)
     mockAxios.onGet().replyOnce(200).onGet()
       .replyOnce(200, { organizations: [{ id: 1, name: 'one' }, { id: 2, name: 'two' }] })

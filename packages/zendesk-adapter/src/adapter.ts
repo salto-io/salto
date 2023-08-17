@@ -100,7 +100,6 @@ import routingAttributeFilter from './filters/routing_attribute'
 import serviceUrlFilter from './filters/service_url'
 import slaPolicyFilter from './filters/sla_policy'
 import macroAttachmentsFilter from './filters/macro_attachments'
-import omitInactiveFilter from './filters/omit_inactive'
 import tagsFilter from './filters/tag'
 import guideLocalesFilter from './filters/guide_locale'
 import webhookFilter from './filters/webhook'
@@ -144,6 +143,7 @@ import customRoleDeployFilter from './filters/custom_role_deploy'
 import routingAttributeValueDeployFilter from './filters/routing_attribute_value'
 import localeFilter from './filters/locale'
 import ticketStatusCustomStatusDeployFilter from './filters/ticket_status_custom_status'
+import { filterOutInactiveInstancesForType } from './inactive'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -166,9 +166,6 @@ export const DEFAULT_FILTERS = [
   userFieldFilter,
   viewFilter,
   workspaceFilter,
-  // omitInactiveFilter should be before:
-  //  order filters, collisionErrorsFilter and fieldReferencesFilter
-  omitInactiveFilter,
   ticketFormOrderFilter,
   userFieldOrderFilter,
   organizationFieldOrderFilter,
@@ -515,6 +512,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     const supportedTypes = isGuideEnabledInConfig
       ? _.omit(allSupportedTypes, ...Object.keys(GUIDE_BRAND_SPECIFIC_TYPES))
       : _.omit(allSupportedTypes, ...Object.keys(GUIDE_SUPPORTED_TYPES))
+
     // Zendesk Support and (if enabled) global Zendesk Guide types
     const defaultSubdomainResult = await getAllElements({
       adapterName: ZENDESK,
@@ -527,6 +525,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       computeGetArgs,
       typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
       getElemIdFunc: this.getElemIdFunc,
+      customInstanceFilter: filterOutInactiveInstancesForType(this.userConfig),
     })
 
     if (!isGuideInFetch) {

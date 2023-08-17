@@ -283,6 +283,7 @@ export const getTypeAndInstances = async ({
   getElemIdFunc,
   getEntriesResponseValuesFunc,
   reversedSupportedTypes,
+  customInstanceFilter,
 }: {
   adapterName: string
   typeName: string
@@ -295,6 +296,7 @@ export const getTypeAndInstances = async ({
   getElemIdFunc?: ElemIdGetter
   getEntriesResponseValuesFunc?: EntriesRequester
   reversedSupportedTypes: Record<string, string[]>
+  customInstanceFilter?: (instances: InstanceElement[]) => InstanceElement[]
 }): Promise<Element[]> => {
   const entries = await getEntriesForType({
     adapterName,
@@ -309,7 +311,9 @@ export const getTypeAndInstances = async ({
     getEntriesResponseValuesFunc,
     reversedSupportedTypes,
   })
-  const elements = [entries.type, ...entries.nestedTypes, ...entries.instances]
+  const { type, nestedTypes, instances } = entries
+  const filteredInstances = customInstanceFilter !== undefined ? customInstanceFilter(instances) : instances
+  const elements = [type, ...nestedTypes, ...filteredInstances]
   const transformationConfigByType = getTransformationConfigByType(typesConfig)
 
   // We currently don't support extracting standalone fields from the types we recursed into
@@ -344,6 +348,7 @@ export const getAllElements = async ({
   getElemIdFunc,
   getEntriesResponseValuesFunc,
   isErrorTurnToConfigSuggestion,
+  customInstanceFilter,
 }: {
   adapterName: string
   fetchQuery: ElementQuery
@@ -357,6 +362,7 @@ export const getAllElements = async ({
   getElemIdFunc?: ElemIdGetter
   getEntriesResponseValuesFunc?: EntriesRequester
   isErrorTurnToConfigSuggestion?: (error: Error) => boolean
+  customInstanceFilter?: (instances: InstanceElement[]) => InstanceElement[]
 }): Promise<FetchElements<Element[]>> => {
   const supportedTypesWithEndpoints = _.mapValues(
     supportedTypes,
@@ -391,7 +397,7 @@ export const getAllElements = async ({
     typeElementGetter: async args => {
       try {
         return {
-          elements: (await getTypeAndInstances({ ...elementGenerationParams, ...args })),
+          elements: (await getTypeAndInstances({ ...elementGenerationParams, ...args, customInstanceFilter })),
           errors: [],
         }
       } catch (e) {

@@ -78,7 +78,7 @@ const createGroupMembershipInstance = async (
  */
 const groupMembersFilter: FilterCreator = ({ config, paginator }) => ({
   name: 'groupMembersFilter',
-  onFetch: async (elements: Element[]): Promise<void> => log.time(async () => {
+  onFetch: async (elements: Element[]): Promise<void> => {
     if (!config[FETCH_CONFIG].includeGroupMemberships) {
       log.debug('Fetch of group members is disabled')
       return
@@ -95,7 +95,7 @@ const groupMembersFilter: FilterCreator = ({ config, paginator }) => ({
       .filter(isInstanceElement)
 
     groupMembershipInstances.forEach(instance => elements.push(instance))
-  }, 'Group members filter'),
+  },
 })
 
 export default groupMembersFilter

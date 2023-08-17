@@ -15,10 +15,11 @@
 */
 
 import { ElemID } from '../src/element_id'
-import { StaticFile, isEqualValues, VariableExpression,
+import { StaticFile, VariableExpression,
   ReferenceExpression, isStaticFile, calculateStaticFileHash, isPrimitiveValue, TemplateExpression, TypeReference, Values, cloneDeepWithoutRefs } from '../src/values'
 import { BuiltinTypes } from '../src/builtins'
 import { ObjectType, InstanceElement, Variable } from '../src/elements'
+import { isEqualValues } from '../src/comparison'
 
 describe('Values', () => {
   describe('ReferenceExpression', () => {

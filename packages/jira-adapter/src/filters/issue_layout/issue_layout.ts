@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, Element, InstanceElement, ReferenceExpression, isInstanceElement } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Change, Element, InstanceElement, ReferenceExpression, getChangeData, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard, isResolvedReferenceExpression, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
@@ -27,9 +27,16 @@ import { ISSUE_LAYOUT_CONFIG_ITEM_SCHEME, ISSUE_LAYOUT_RESPONSE_SCHEME, IssueLay
 import { addAnnotationRecursively, setTypeDeploymentAnnotations } from '../../utils'
 import { JiraConfig } from '../../config/config'
 import { referencesRules, JiraFieldReferenceResolver, contextStrategyLookup } from '../../reference_mapping'
+import { deployChanges } from '../../deployment/standard_deployment'
 
 const { isDefined } = lowerDashValues
 const log = logger(module)
+const CAPITAL_CONTAINER_TO_LOWER_CONTAINER: Record<string, string> = {
+  PRIMARY: 'primary',
+  SECONDARY: 'secondary',
+  CONTENT: 'content',
+}
+
 type issueTypeMappingStruct = {
     issueTypeId: string
     screenSchemeId: ReferenceExpression
@@ -113,6 +120,44 @@ const getProjectToScreenMapping = async (elements: Element[]): Promise<Record<st
   return projectToScreenId
 }
 
+const deployIssueLayoutChanges = async (
+  change: Change<InstanceElement>,
+  client: JiraClient,
+): Promise<void> => {
+  const issueLayout = getChangeData(change)
+  const items = issueLayout.value.issueLayoutConfig.items.map((item: IssueLayoutConfigItem) => {
+    if (isResolvedReferenceExpression(item.key)) {
+      const key = item.key.value.value.id
+      return {
+        type: item.type,
+        sectionType: CAPITAL_CONTAINER_TO_LOWER_CONTAINER[item.sectionType],
+        key,
+        data: {
+          name: item.key.value.value.name,
+          type: item.key.value.value.type ?? key,
+        },
+      }
+    }
+    return undefined
+  }).filter(isDefined)
+
+  if (isResolvedReferenceExpression(issueLayout.value.projectId)
+  && isResolvedReferenceExpression(issueLayout.value.extraDefinerId)) {
+    const data = {
+      projectId: issueLayout.value.projectId.value.value.id,
+      extraDefinerId: issueLayout.value.extraDefinerId.value.value.id,
+      issueLayoutType: 'ISSUE_VIEW',
+      owners: [],
+      issueLayoutConfig: {
+        items,
+      },
+    }
+    const url = `/rest/internal/1.0/issueLayouts/${issueLayout.value.id}`
+    await client.put({ url, data })
+  }
+  return undefined
+}
+
 const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) => ({
   name: 'issueLayoutFilter',
   onFetch: async elements => {
@@ -168,6 +213,19 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) =>
           await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.DELETABLE)
         }
       })))
+  },
+  deploy: async changes => {
+    const [issueLayoutsChanges, leftoverChanges] = _.partition(
+      changes,
+      change => isInstanceChange(change) && getChangeData(change).elemID.typeName === ISSUE_LAYOUT_TYPE
+    )
+    const deployResult = await deployChanges(issueLayoutsChanges.filter(isInstanceChange),
+      async change => deployIssueLayoutChanges(change, client))
+
+    return {
+      leftoverChanges,
+      deployResult,
+    }
   },
 })
 

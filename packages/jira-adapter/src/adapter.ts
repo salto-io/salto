@@ -131,7 +131,7 @@ import storeUsersFilter from './filters/store_users'
 import projectCategoryFilter from './filters/project_category'
 import addAliasFilter from './filters/add_alias'
 import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_specific_duplicate_roles'
-// import issueLayoutFilter from './filters/issue_layout/issue_layout' // will be enabled after the deploy will merge
+import issueLayoutFilter from './filters/issue_layout/issue_layout'
 import projectFieldContextOrder from './filters/project_field_contexts_order'
 import scriptedFieldsIssueTypesFilter from './filters/script_runner/scripted_fields_issue_types'
 import scriptRunnerFilter from './filters/script_runner/script_runner_filter'
@@ -245,7 +245,7 @@ export const DEFAULT_FILTERS = [
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,
   fieldReferencesFilter,
-  // issueLayoutFilter, - will be enabled after the deploy will merge
+  issueLayoutFilter,
   // Must run after fieldReferencesFilter
   contextsProjectsFilter,
   // must run after contextsProjectsFilter

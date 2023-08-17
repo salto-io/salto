@@ -216,7 +216,7 @@ export const createUnassociatedAttachment = async (
   }
 }
 
-const MAX_BULK_SIZE = 20
+export const MAX_BULK_SIZE = 20
 export const associateAttachments = async (
   client: ZendeskClient,
   article: InstanceElement,

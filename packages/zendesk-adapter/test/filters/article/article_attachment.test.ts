@@ -26,7 +26,7 @@ import articleAttachmentsFilter, {
   prepareArticleAttachmentsForDeploy,
 } from '../../../src/filters/article/article_attachment'
 import * as articleUtils from '../../../src/filters/article/utils'
-import { AttachmentResponse, SUCCESS_STATUS_CODE } from '../../../src/filters/article/utils'
+import { AttachmentResponse, MAX_BULK_SIZE, SUCCESS_STATUS_CODE } from '../../../src/filters/article/utils'
 
 const createArticle = (name: string): InstanceElement => new InstanceElement(
   name,
@@ -305,6 +305,36 @@ describe('article filter', () => {
           severity: 'Error',
           message: 'TODO',
         }],
+      })
+    })
+    it('should handle different bulk associate results differently', async () => {
+      const successIds = Array.from({ length: MAX_BULK_SIZE }, (_, i) => i + 1)
+      const failureIds = Array.from({ length: MAX_BULK_SIZE }, (_, i) => i + 1 + MAX_BULK_SIZE)
+      const changes: AdditionChange<InstanceElement>[] = successIds.concat(failureIds).map(id => ({
+        action: 'add',
+        data: { after: createArticleAttachment(`attachment${id}`, id, article) },
+      }))
+      successIds.concat(failureIds).forEach(id => createAttachmentSpy.mockResolvedValueOnce(id))
+      const articleNameToAttachments = await prepareArticleAttachmentsForDeploy({ client, changes })
+
+      associateAttachmentSpy.mockResolvedValueOnce([
+        { status: SUCCESS_STATUS_CODE, ids: successIds },
+        { status: 400, ids: failureIds },
+      ])
+      associateAttachmentSpy.mockResolvedValueOnce([])
+      deleteAttachmentSpy.mockResolvedValue({})
+      const deployResult = await associateAttachmentToArticles({ client, articleNameToAttachments })
+
+      expect(deleteAttachmentSpy).toHaveBeenCalledTimes(MAX_BULK_SIZE)
+      failureIds.forEach(id => expect(deleteAttachmentSpy).toHaveBeenCalledWith(client, id))
+
+      expect(deployResult).toEqual({
+        appliedChanges: successIds.map(id => changes[id - 1]),
+        errors: failureIds.map(id => ({
+          elemID: createArticleAttachment(`attachment${id}`, id).elemID,
+          severity: 'Error',
+          message: 'TODO',
+        })),
       })
     })
   })

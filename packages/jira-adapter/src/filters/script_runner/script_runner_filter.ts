@@ -14,17 +14,30 @@
 * limitations under the License.
 */
 import { getChangeData, isInstanceChange, isObjectType, isAdditionChange,
-  isModificationChange, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+  isModificationChange, CORE_ANNOTATIONS, Value } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { v4 as uuidv4 } from 'uuid'
 import { FilterCreator } from '../../filter'
-import { SCRIPT_RUNNER_TYPES } from '../../constants'
+import { SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE, SCRIPT_RUNNER_TYPES } from '../../constants'
 import { addAnnotationRecursively, setTypeDeploymentAnnotations } from '../../utils'
-import { getCurrentUserInfo } from '../../users'
+import { UserInfo, getCurrentUserInfo } from '../../users'
 
 const { awu } = collections.asynciterable
 
 const getTimeNowAsSeconds = (): number => Math.floor(Date.now() / 1000)
+
+const AUDIT_SCRIPT_RUNNER_TYPES = SCRIPT_RUNNER_TYPES
+  .filter(type => ![SCRIPT_RUNNER_LISTENER_TYPE, SCRIPT_FRAGMENT_TYPE].includes(type))
+
+const addCreatedChanges = (value: Value, currentUserInfo: UserInfo | undefined): void => {
+  value.createdByAccountId = currentUserInfo?.userId ?? ''
+  value.createdTimestamp = getTimeNowAsSeconds().toString()
+}
+
+const addUpdatedChanges = (value: Value, currentUserInfo: UserInfo | undefined): void => {
+  value.updatedByAccountId = currentUserInfo?.userId ?? ''
+  value.updatedTimestamp = getTimeNowAsSeconds().toString()
+}
 
 // This filter is used to make script runner types deployable, and to manage the audit items
 const filter: FilterCreator = ({ client, config }) => ({
@@ -48,31 +61,53 @@ const filter: FilterCreator = ({ client, config }) => ({
       return
     }
 
-    // update audit info
     const currentUserInfo = await getCurrentUserInfo(client)
 
-    changes
+    const additionInstances = changes
       .filter(isAdditionChange)
       .filter(isInstanceChange)
       .map(getChangeData)
-      .filter(instance => SCRIPT_RUNNER_TYPES.includes(instance.elemID.typeName))
+
+    // Addition
+    additionInstances
+      .filter(instance => AUDIT_SCRIPT_RUNNER_TYPES.includes(instance.elemID.typeName))
       .forEach(instance => {
-        instance.value.auditData = {
-          createdByAccountId: currentUserInfo?.userId ?? '',
-          createdTimestamp: getTimeNowAsSeconds(),
-        }
+        instance.value.auditData = {}
+        addCreatedChanges(instance.value.auditData, currentUserInfo)
         // generate uuid for new instances
         instance.value.uuid = uuidv4()
       })
 
-    changes
+    additionInstances
+      .filter(instance => instance.elemID.typeName === SCRIPT_RUNNER_LISTENER_TYPE)
+      .forEach(instance => {
+        addCreatedChanges(instance.value, currentUserInfo)
+        // generate uuid for new instances
+        instance.value.uuid = uuidv4()
+      })
+
+    additionInstances
+      .filter(instance => instance.elemID.typeName === SCRIPT_FRAGMENT_TYPE)
+      .forEach(instance => {
+        instance.value.id = uuidv4()
+      })
+
+    // Modification
+    const modificationInstances = changes
       .filter(isModificationChange)
       .filter(isInstanceChange)
       .map(getChangeData)
-      .filter(instance => SCRIPT_RUNNER_TYPES.includes(instance.elemID.typeName))
+
+    modificationInstances
+      .filter(instance => AUDIT_SCRIPT_RUNNER_TYPES.includes(instance.elemID.typeName))
       .forEach(instance => {
-        instance.value.auditData.updatedByAccountId = currentUserInfo?.userId ?? ''
-        instance.value.auditData.updatedTimestamp = getTimeNowAsSeconds()
+        addUpdatedChanges(instance.value.auditData, currentUserInfo)
+      })
+
+    modificationInstances
+      .filter(instance => instance.elemID.typeName === SCRIPT_RUNNER_LISTENER_TYPE)
+      .forEach(instance => {
+        addUpdatedChanges(instance.value, currentUserInfo)
       })
   },
 })

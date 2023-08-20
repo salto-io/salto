@@ -270,10 +270,7 @@ export const createResolvedTypesElementsSource = (
       if (resolvedTypes.size === 0) {
         await resolveTypes()
       }
-      return awu(await elementsSource.list())
-        .filter(id => id.idType !== 'type')
-        .map(getResolved)
-        .concat(resolvedTypes.values())
+      return awu(await elementsSource.list()).map(getResolved)
     },
     list: elementsSource.list,
     has: elementsSource.has,

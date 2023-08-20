@@ -92,13 +92,16 @@ export const toElementError = (
 
 export const toDependencyError = (
   dependency: { elemId: ElemID; dependOn: ElemID[] }
-): SaltoElementError => ({
-  elemID: dependency.elemId,
-  message: `Element cannot be deployed due to an error in its ${
-    dependency.dependOn.length > 1 ? 'dependencies' : 'dependency'
-  }: ${dependency.dependOn.map(id => id.getFullName()).join(', ')}`,
-  severity: 'Error',
-})
+): SaltoElementError => {
+  const dependencies = _.uniq(dependency.dependOn)
+  return {
+    elemID: dependency.elemId,
+    message: `Element cannot be deployed due to an error in its ${
+      dependencies.length > 1 ? 'dependencies' : 'dependency'
+    }: ${dependencies.map(id => id.getFullName()).join(', ')}`,
+    severity: 'Error',
+  }
+}
 
 export const getDeployResultFromSuiteAppResult = <T extends Change>(
   changes: T[],

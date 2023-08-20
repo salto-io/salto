@@ -97,5 +97,6 @@ export const ESCALATION_SERVICE_TYPE = 'EscalationService'
 export const SCRIPTED_FIELD_TYPE = 'ScriptedField'
 export const SCRIPT_RUNNER_TYPES = [SCRIPT_RUNNER_LISTENER_TYPE, SCRIPT_FRAGMENT_TYPE, SCHEDULED_JOB_TYPE,
   BEHAVIOR_TYPE, ESCALATION_SERVICE_TYPE, SCRIPTED_FIELD_TYPE]
+export const ISSUE_LAYOUT_TYPE = 'IssueLayout'
 // almost constant functions
 export const fetchFailedWarnings = (name :string):string => `Salto could not access the ${name} resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource`

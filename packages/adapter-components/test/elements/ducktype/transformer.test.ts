@@ -532,6 +532,77 @@ describe('ducktype_transformer', () => {
         new ReferenceExpression(folder2.elemID, folder2),
       ] })
     })
+    it('should not return filtered-out instances or their standalone children', async () => {
+      jest.spyOn(typeElements, 'generateType').mockRestore()
+      jest.spyOn(instanceElements, 'toInstance').mockRestore()
+      const res = await getTypeAndInstances({
+        adapterName: 'something',
+        paginator: mockFunction<Paginator>().mockImplementation(async function *get(params) {
+          if (params.url === '/folders') {
+            yield [
+              {
+                id: 1,
+                name: 'folder1',
+                subfolders: [{ id: 3, name: 'subfolder1' }],
+              },
+              {
+                id: 2,
+                name: 'folder2',
+                subfolders: [{ id: 3, name: 'subfolder2' }],
+              },
+            ]
+          }
+        }),
+        computeGetArgs,
+        typeName: 'folder',
+        typesConfig: {
+          folder: {
+            request: {
+              url: '/folders',
+            },
+            transformation: {
+              standaloneFields: [{ fieldName: 'subfolders' }],
+            },
+          },
+          subfolder: {
+            transformation: {
+              sourceTypeName: 'folder__subfolders',
+            },
+          },
+        },
+        typeDefaultConfig: {
+          transformation: {
+            idFields: ['name'],
+            fileNameFields: ['also_name'],
+          },
+        },
+        nestedFieldFinder: returnFullEntry,
+        reversedSupportedTypes: { folders: ['folder'] },
+        customInstanceFilter: instances => instances.filter(inst => inst.value.name !== 'folder2'),
+      })
+      expect(res).toHaveLength(4)
+      expect(res.map(e => e.elemID.getFullName())).toEqual([
+        'something.folder',
+        'something.subfolder',
+        'something.folder.instance.folder1',
+        'something.subfolder.instance.folder1__subfolder1',
+      ])
+      const folder1 = res.find(e =>
+        e.elemID.getFullName() === 'something.folder.instance.folder1') as InstanceElement
+      const subfolder1 = res.find(
+        e => e.elemID.getFullName() === 'something.subfolder.instance.folder1__subfolder1'
+      ) as InstanceElement
+      expect(folder1.value)
+        .toEqual({
+          id: 1,
+          name: 'folder1',
+          subfolders: [new ReferenceExpression(subfolder1.elemID, subfolder1)],
+        })
+      expect(subfolder1.value).toEqual({ id: 3, name: 'subfolder1' })
+      expect(subfolder1.annotations).toEqual({ [CORE_ANNOTATIONS.PARENT]: [
+        new ReferenceExpression(folder1.elemID, folder1),
+      ] })
+    })
   })
 
   describe('getAllElements', () => {

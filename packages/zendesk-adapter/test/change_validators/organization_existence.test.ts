@@ -125,9 +125,45 @@ describe('OrganizationExistence', () => {
       },
     ])
   })
+  it('should return a warning if the organization does not exist, with resolved Ids and createMissingOrganizations is on', async () => {
+    const fetchConfig = { ...DEFAULT_CONFIG[FETCH_CONFIG], resolveOrganizationIDs: true }
+    const deployConfig = { createMissingOrganizations: true }
+    const resolvedIdsClient = new ZendeskClient({
+      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
+      allowOrganizationNames: true,
+    })
+    const validator = organizationExistenceValidator(resolvedIdsClient, fetchConfig, deployConfig)
+    mockAxios.onGet().reply(() => [200, { organizations: [{ id: 1, name: 'one' }, { id: 2, name: 'two' }] }])
+
+    const slaInstance = createSlaInstance(false)
+    const triggerInstance = createTriggerInstance(false)
+
+    const changes = [
+      toChange({ after: slaInstance }),
+      toChange({ before: triggerInstance, after: triggerInstance }),
+      toChange({ before: slaInstance }), // Should do nothing because we don't care about removals
+    ]
+
+    const errors = await validator(changes)
+    expect(errors).toMatchObject([
+      {
+        elemID: slaInstance.elemID,
+        severity: 'Warning',
+        message: 'Referenced organizations do not exist and will be created',
+        detailedMessage: 'The following organizations are referenced but do not exist in the target environment: three, four\nIf you continue, they will be created.',
+      },
+      {
+        elemID: triggerInstance.elemID,
+        severity: 'Warning',
+        message: 'Referenced organizations do not exist and will be created',
+        detailedMessage: 'The following organizations are referenced but do not exist in the target environment: three, four\nIf you continue, they will be created.',
+      },
+    ])
+  })
 
   it('should return an error if the organization does not exist, and request all orgs in one request, with unresolved Ids', async () => {
-    const validator = organizationExistenceValidator(client, DEFAULT_CONFIG[FETCH_CONFIG])
+    const deployConfig = { createMissingOrganizations: true }
+    const validator = organizationExistenceValidator(client, DEFAULT_CONFIG[FETCH_CONFIG], deployConfig)
     mockAxios.onGet().replyOnce(200).onGet()
       .replyOnce(200, { organizations: [{ id: 1, name: 'one' }, { id: 2, name: 'two' }] })
       .onGet()

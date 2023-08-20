@@ -42,7 +42,7 @@ const filter: FilterCreator = ({ scriptRunnerClient, config }) => ({
       }
     }
     const deployResult = await deployChanges(
-      changes.filter(isInstanceChange),
+      relevantChanges.filter(isInstanceChange),
       async change => {
         await defaultDeployChange({
           change,

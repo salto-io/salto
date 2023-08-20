@@ -892,7 +892,7 @@ export const loadWorkspace = async (
 
   const getErrorSourceRange = async <T extends SaltoElementError>(error: T):
   Promise<SourceRange[]> => (
-    error.source === 'config'
+    error.type === 'config'
       ? adaptersConfig.getSourceRanges(error.elemID)
       : (await getLoadedNaclFilesSource()).getSourceRanges(currentEnv(), error.elemID)
   )

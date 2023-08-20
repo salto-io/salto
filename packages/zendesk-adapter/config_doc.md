@@ -87,12 +87,18 @@ zendesk {
 
 ### Deploy configuration options
 
-| Name                                                          | Default when undefined   | Description
-|---------------------------------------------------------------|--------------------------|------------
-| [defaultMissingUserFallback]                                  | ""                       | Configure replacement for missing users during deploy, can be user email or ##DEPLOYER## to fallback to deployer's user 
+| Name                         | Default when undefined | Description
+|------------------------------|------------------------|------------
+| [defaultMissingUserFallback] | ""                     | Configure replacement for missing users during deploy, can be user email or ##DEPLOYER## to fallback to deployer's user 
+| [createMissingOrganizations] | false                  | When enabled with resolveOrganizationIDs flag , missing organizations will be created during deploy.
+
 
 ## Fetch entry criteria
 
 | Name                                        | Default when undefined            | Description
 |---------------------------------------------|-----------------------------------|------------
 | name                                        | .*                                | A regex used to filter instances by matching the regex to their name value
+| key                                         | .*                                | A regex used to filter instances by matching the regex to the value of their key field
+| raw_title                                   | .*                                | A regex used to filter instances by matching the regex to their raw_title value
+| title                                       | .*                                | A regex used to filter instances by matching the regex to their title value
+| type                                        | .*                                | A regex used to filter instances by matching the regex to the value of their type field

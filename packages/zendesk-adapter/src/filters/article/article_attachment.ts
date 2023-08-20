@@ -16,14 +16,13 @@
 import _, { parseInt } from 'lodash'
 import {
   AdditionChange,
-  Change, DeployResult,
+  Change, CORE_ANNOTATIONS, DeployResult,
   getChangeData,
   InstanceElement, isAdditionChange,
-  isAdditionOrModificationChange,
-  ModificationChange,
+  isAdditionOrModificationChange, isInstanceElement, isReferenceExpression,
+  ModificationChange, ReadOnlyElementsSource, ReferenceExpression,
   SaltoElementError,
 } from '@salto-io/adapter-api'
-import { getParent } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { ARTICLE_ATTACHMENT_TYPE_NAME } from '../../constants'
 import ZendeskClient from '../../client/client'
@@ -43,39 +42,64 @@ export type ArticleWithAttachmentChanges = {
   }[]
 }
 
-export const prepareArticleAttachmentsForDeploy = async ({ changes, client }: {
+const getAttachmentArticleRef = (
+  attachmentInstance: InstanceElement
+): ReferenceExpression | undefined => {
+  const parentArticleList = attachmentInstance.annotations[CORE_ANNOTATIONS.PARENT]
+  if (!_.isArray(parentArticleList)) {
+    return undefined
+  }
+  const parentArticleRef = parentArticleList[0]
+  if (!isReferenceExpression(parentArticleRef)) {
+    return undefined
+  }
+  return parentArticleRef
+}
+
+export const prepareArticleAttachmentsForDeploy = async ({ changes, client, elementsSource }: {
   changes: (AdditionChange<InstanceElement> | ModificationChange<InstanceElement>)[]
   client: ZendeskClient
+  elementsSource: ReadOnlyElementsSource
 }): Promise<Record<string, ArticleWithAttachmentChanges>> => {
   const articleNameToAttachments: Record<string, ArticleWithAttachmentChanges> = {}
   await Promise.all(changes.map(async attachmentChange => {
     const attachmentInstance = getChangeData(attachmentChange)
-    let parentArticle: InstanceElement
 
-    try {
-      parentArticle = getParent(attachmentInstance)
-    } catch (e) {
-      const articleName = '' // article name is irrelevant because, we just need a unique key
-      articleNameToAttachments[articleName] = {
-        attachmentAdditions: articleNameToAttachments[articleName]?.attachmentAdditions ?? {},
-        attachmentModifications: articleNameToAttachments[articleName]?.attachmentModifications ?? {},
-        attachmentFailures: [
-          ...(articleNameToAttachments[articleName]?.attachmentFailures ?? []),
-          {
-            reason: 'Couldn\'t find the attachment\'s parent article',
-            change: attachmentChange,
-          },
-        ],
+    let parentArticle: InstanceElement | undefined
+    let failureReason: string | undefined
+    const attachmentWithUnresolvedParent = await elementsSource.get(attachmentInstance.elemID)
+    if (isInstanceElement(attachmentWithUnresolvedParent)) {
+      const parentArticleRef = getAttachmentArticleRef(attachmentWithUnresolvedParent)
+      if (parentArticleRef !== undefined) {
+        const articleInstance = await parentArticleRef.getResolvedValue(elementsSource)
+        if (isInstanceElement(articleInstance)) {
+          parentArticle = articleInstance
+        } else {
+          failureReason = 'Resolved parent article is not an instance element'
+        }
+      } else {
+        failureReason = 'Resolved attachment\'s parent is invalid'
       }
-      return
+    } else {
+      failureReason = 'Resolved attachment is not an instance element'
     }
 
-    const articleName = parentArticle.elemID.name
+    // if we did not find the parent article, the name is irrelevant because we just need a unique key
+    const articleName = parentArticle ? parentArticle.elemID.name : ''
     articleNameToAttachments[articleName] = {
       article: parentArticle,
       attachmentAdditions: articleNameToAttachments[articleName]?.attachmentAdditions ?? {},
       attachmentModifications: articleNameToAttachments[articleName]?.attachmentModifications ?? {},
       attachmentFailures: articleNameToAttachments[articleName]?.attachmentFailures ?? [],
+    }
+
+    // These failure reasons are not service dependent and will always require investigation from our side
+    if (failureReason) {
+      articleNameToAttachments[articleName].attachmentFailures.push({
+        reason: failureReason,
+        change: attachmentChange,
+      })
+      return
     }
 
     // Create the new attachment, unassociated, that will be associated in the deploy stage
@@ -190,7 +214,7 @@ export const associateAttachmentToArticles = async ({
 /**
  * Handle association of article attachments during deploy
  */
-const articleAttachmentsFilter: FilterCreator = ({ client }) => ({
+const articleAttachmentsFilter: FilterCreator = ({ client, elementsSource }) => ({
   name: 'articleAttachmentsFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [attachmentChanges, leftoverChanges] = _.partition(
@@ -202,6 +226,7 @@ const articleAttachmentsFilter: FilterCreator = ({ client }) => ({
     const articleNameToAttachments = await prepareArticleAttachmentsForDeploy({
       changes: attachmentChanges.filter(isAdditionOrModificationChange), // Used for casting
       client,
+      elementsSource,
     })
 
     const deployResult = await associateAttachmentToArticles({

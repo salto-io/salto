@@ -15,9 +15,10 @@
 */
 import {
   ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression,
-  AdditionChange, ModificationChange, Value, toChange,
+  AdditionChange, ModificationChange, Value, toChange, ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { createFilterCreatorParams } from '../../utils'
 import ZendeskClient from '../../../src/client/client'
 import { ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TYPE_NAME, ZENDESK } from '../../../src/constants'
@@ -69,17 +70,49 @@ describe('article filter', () => {
   let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'deploy'>
   let filter: FilterType
+  let elementsSource: ReadOnlyElementsSource
   let createAttachmentSpy: jest.SpyInstance
   let associateAttachmentSpy: jest.SpyInstance
   let deleteAttachmentSpy: jest.SpyInstance
   let mockPost: jest.SpyInstance
 
+  let article: InstanceElement
+  let attachment1: InstanceElement
+  let attachment2: InstanceElement
+  let attachment3: InstanceElement
+  let attachmentWithoutParent: InstanceElement
+  let unrelatedInstance: InstanceElement
+
   beforeEach(async () => {
+    article = createArticle('article')
+    attachment1 = createArticleAttachment('attachment1', 1, article)
+    attachment2 = createArticleAttachment('attachment2', 2, article)
+    attachment3 = createArticleAttachment('attachment3', 3, article)
+    attachmentWithoutParent = createArticleAttachment('attachmentWithoutParent', 4)
+    unrelatedInstance = new InstanceElement(
+      'unrelated',
+      new ObjectType({ elemID: new ElemID(ZENDESK, 'unrelated') }),
+      {},
+    )
+    elementsSource = buildElementsSourceFromElements([
+      article,
+      attachment1.clone(),
+      attachment2.clone(),
+      attachment3.clone(),
+      attachmentWithoutParent,
+      unrelatedInstance,
+    ])
+    const attachments = [attachment1, attachment2, attachment3]
+    attachments.forEach(attachment => {
+      // On deploy, the parent is unresolved (which mean it is the value and not a reference expression)
+      attachment.annotations[CORE_ANNOTATIONS.PARENT] = attachment.annotations[CORE_ANNOTATIONS.PARENT][0].value.value
+    })
     jest.clearAllMocks()
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
-    filter = articleAttachmentsFilter(createFilterCreatorParams({ client })) as FilterType
+
+    filter = articleAttachmentsFilter(createFilterCreatorParams({ client, elementsSource })) as FilterType
     createAttachmentSpy = jest.spyOn(articleUtils, 'createUnassociatedAttachment')
     associateAttachmentSpy = jest.spyOn(articleUtils, 'associateAttachments')
     deleteAttachmentSpy = jest.spyOn(articleUtils, 'deleteArticleAttachment')
@@ -87,18 +120,9 @@ describe('article filter', () => {
   })
   describe('deploy', () => {
     it('should return success on happy flow', async () => {
-      const article = createArticle('article')
-      const attachment = createArticleAttachment('attachment', 1, article)
-      const oldAttachment = createArticleAttachment('oldAttachment', 2, article)
-      const newAttachment = createArticleAttachment('newAttachment', 3, article)
-      const unrelatedInstance = new InstanceElement(
-        'unrelated',
-        new ObjectType({ elemID: new ElemID(ZENDESK, 'unrelated') }),
-        {},
-      )
       const changes = [
-        toChange({ after: attachment }),
-        toChange({ before: oldAttachment, after: newAttachment }),
+        toChange({ after: attachment1 }),
+        toChange({ before: attachment2, after: attachment3 }),
         toChange({ after: unrelatedInstance }),
       ]
 
@@ -110,8 +134,8 @@ describe('article filter', () => {
       expect(result).toEqual({
         deployResult: {
           appliedChanges: [
-            toChange({ after: attachment }),
-            toChange({ before: oldAttachment, after: newAttachment }),
+            toChange({ after: attachment1 }),
+            toChange({ before: attachment2, after: attachment3 }),
           ],
           errors: [],
         },
@@ -119,13 +143,9 @@ describe('article filter', () => {
       })
     })
     it('should return failure on error', async () => {
-      const article = createArticle('article')
-      const attachment = createArticleAttachment('attachment', 1)
-      const oldAttachment = createArticleAttachment('oldAttachment', 2, article)
-      const newAttachment = createArticleAttachment('newAttachment', 3, article)
       const changes = [
-        toChange({ after: attachment }),
-        toChange({ before: oldAttachment, after: newAttachment }),
+        toChange({ after: attachmentWithoutParent }),
+        toChange({ before: attachment2, after: attachment3 }),
       ]
 
       createAttachmentSpy.mockResolvedValueOnce({ id: 3 })
@@ -137,12 +157,12 @@ describe('article filter', () => {
           appliedChanges: [],
           errors: [
             {
-              elemID: attachment.elemID,
+              elemID: attachmentWithoutParent.elemID,
               severity: 'Error',
-              message: 'Couldn\'t find the attachment\'s parent article',
+              message: 'Resolved attachment\'s parent is invalid',
             },
             {
-              elemID: newAttachment.elemID,
+              elemID: attachment3.elemID,
               severity: 'Error',
               message: 'could not associate chunk number 0 for article \'article\', status: 400, The unassociated attachment ids are: 3, error: "error!"',
             },
@@ -153,35 +173,31 @@ describe('article filter', () => {
     })
   })
   describe('prepareArticleAttachmentsForDeploy', () => {
-    let article: InstanceElement
     beforeEach(async () => {
-      article = createArticle('article')
       jest.clearAllMocks()
     })
     it('should create unassociated attachment on attachment addition and modification', async () => {
-      const newAttachment = createArticleAttachment('newAttachment', 1, article)
-      const modifiedAttachment = createArticleAttachment('modifiedAttachment', 2, article)
       const changes: (AdditionChange<InstanceElement> | ModificationChange<InstanceElement>)[] = [
-        { action: 'add', data: { after: newAttachment } },
-        { action: 'modify', data: { before: modifiedAttachment, after: modifiedAttachment } },
+        { action: 'add', data: { after: attachment1 } },
+        { action: 'modify', data: { before: attachment2, after: attachment3 } },
       ]
-      mockPost.mockResolvedValueOnce(createAttachmentRes(3))
-      mockPost.mockResolvedValueOnce(createAttachmentRes(4))
-      const articleNameToAttachments = await prepareArticleAttachmentsForDeploy({ client, changes })
+      mockPost.mockResolvedValueOnce(createAttachmentRes(9))
+      mockPost.mockResolvedValueOnce(createAttachmentRes(10))
+      const articleNameToAttachments = await prepareArticleAttachmentsForDeploy({ client, changes, elementsSource })
       expect(mockPost).toHaveBeenCalledTimes(2)
-      expect(createAttachmentSpy).toHaveBeenCalledWith(client, newAttachment)
-      expect(createAttachmentSpy).toHaveBeenCalledWith(client, modifiedAttachment)
+      expect(createAttachmentSpy).toHaveBeenCalledWith(client, attachment1)
+      expect(createAttachmentSpy).toHaveBeenCalledWith(client, attachment3)
       expect(articleNameToAttachments).toEqual({
         [article.elemID.name]: {
           article,
           attachmentAdditions: {
-            3: { action: 'add', data: { after: newAttachment } },
+            9: { action: 'add', data: { after: attachment1 } },
           },
           attachmentModifications: {
-            4: {
-              oldAttachmentId: 2,
-              newAttachmentId: 4,
-              change: { action: 'modify', data: { before: modifiedAttachment, after: modifiedAttachment } },
+            10: {
+              oldAttachmentId: attachment2.value.id,
+              newAttachmentId: 10,
+              change: { action: 'modify', data: { before: attachment2, after: attachment3 } },
             },
           },
           attachmentFailures: [],
@@ -189,22 +205,18 @@ describe('article filter', () => {
       })
     })
     it('should return the correct articleNameToAttachments on failures', async () => {
-      const newAttachment1 = createArticleAttachment('newAttachment1', 1, article)
-      const newAttachment2 = createArticleAttachment('newAttachment2', 2, article)
-      const modifiedAttachment = createArticleAttachment('modifiedAttachment', 3)
-
       const changes: (AdditionChange<InstanceElement> | ModificationChange<InstanceElement>)[] = [
-        { action: 'add', data: { after: newAttachment1 } },
-        { action: 'add', data: { after: newAttachment2 } },
-        { action: 'modify', data: { before: modifiedAttachment, after: modifiedAttachment } },
+        { action: 'add', data: { after: attachment1 } },
+        { action: 'add', data: { after: attachment2 } },
+        { action: 'modify', data: { before: attachmentWithoutParent, after: attachmentWithoutParent } },
       ]
       mockPost.mockResolvedValueOnce(createAttachmentRes(undefined))
       mockPost.mockResolvedValueOnce(createAttachmentRes([1, 2, 3]))
       mockPost.mockResolvedValueOnce(createAttachmentRes('invalid'))
-      const articleNameToAttachments = await prepareArticleAttachmentsForDeploy({ client, changes })
-      expect(mockPost).toHaveBeenCalledTimes(2) // should not call createAttachment for parentless attachment
-      expect(createAttachmentSpy).toHaveBeenCalledWith(client, newAttachment1)
-      expect(createAttachmentSpy).toHaveBeenCalledWith(client, newAttachment2)
+      const articleNameToAttachments = await prepareArticleAttachmentsForDeploy({ client, changes, elementsSource })
+      expect(mockPost).toHaveBeenCalledTimes(2) // should not call createAttachment for parentless attachment1
+      expect(createAttachmentSpy).toHaveBeenCalledWith(client, attachment1)
+      expect(createAttachmentSpy).toHaveBeenCalledWith(client, attachment2)
       expect(articleNameToAttachments).toEqual({
         [article.elemID.name]: {
           article,
@@ -212,11 +224,11 @@ describe('article filter', () => {
           attachmentModifications: {},
           attachmentFailures: [
             {
-              change: { action: 'add', data: { after: newAttachment1 } },
+              change: { action: 'add', data: { after: attachment1 } },
               reason: 'Received an attachment in an unexpected format from Zendesk API: [{"file_name":"f","content_type":"ct","content_url":"cu","inline":false}]',
             },
             {
-              change: { action: 'add', data: { after: newAttachment2 } },
+              change: { action: 'add', data: { after: attachment2 } },
               reason: 'Received an attachment in an unexpected format from Zendesk API: [{"id":[1,2,3],"file_name":"f","content_type":"ct","content_url":"cu","inline":false}]',
             },
           ],
@@ -226,8 +238,8 @@ describe('article filter', () => {
           attachmentModifications: {},
           attachmentFailures: [
             {
-              change: { action: 'modify', data: { before: modifiedAttachment, after: modifiedAttachment } },
-              reason: 'Couldn\'t find the attachment\'s parent article',
+              change: { action: 'modify', data: { before: attachmentWithoutParent, after: attachmentWithoutParent } },
+              reason: 'Resolved attachment\'s parent is invalid',
             },
           ],
         },
@@ -236,37 +248,31 @@ describe('article filter', () => {
   })
 
   describe('associateAttachmentToArticles', () => {
-    const OLD_ATTACHMENT_ID = 1
-    const NEW_ATTACHMENT_ID = 2
-    let article: InstanceElement
-    let oldAttachment: InstanceElement
-    let newAttachment: InstanceElement
+    const NEW_ATTACHMENT_ID = 99
     beforeEach(() => {
       jest.clearAllMocks()
-      article = createArticle('article')
-      oldAttachment = createArticleAttachment('oldAttachment', OLD_ATTACHMENT_ID, article)
-      newAttachment = createArticleAttachment('newAttachment', NEW_ATTACHMENT_ID, article)
       createAttachmentSpy.mockResolvedValue({ id: NEW_ATTACHMENT_ID })
     })
     it('should not associate attachments that have no parent article', async () => {
-      const attachmentWithNoParent = createArticleAttachment('attachmentWithNoParent', OLD_ATTACHMENT_ID)
-      const changes: AdditionChange<InstanceElement>[] = [{ action: 'add', data: { after: attachmentWithNoParent } }]
-      const articleNameToAttachments = await prepareArticleAttachmentsForDeploy({ client, changes })
+      const changes: AdditionChange<InstanceElement>[] = [{ action: 'add', data: { after: attachmentWithoutParent } }]
+      const articleNameToAttachments = await prepareArticleAttachmentsForDeploy({ client, changes, elementsSource })
       const deployResult = await associateAttachmentToArticles({ client, articleNameToAttachments })
       expect(associateAttachmentSpy).not.toHaveBeenCalled()
       expect(deleteAttachmentSpy).not.toHaveBeenCalled()
       expect(deployResult).toEqual({
         appliedChanges: [],
         errors: [{
-          elemID: attachmentWithNoParent.elemID,
+          elemID: attachmentWithoutParent.elemID,
           severity: 'Error',
-          message: 'Couldn\'t find the attachment\'s parent article',
+          message: 'Resolved attachment\'s parent is invalid',
         }],
       })
     })
     it('should associate attachments to articles on attachment addition', async () => {
-      const change: AdditionChange<InstanceElement> = { action: 'add', data: { after: newAttachment } }
-      const articleNameToAttachments = await prepareArticleAttachmentsForDeploy({ client, changes: [change] })
+      const change: AdditionChange<InstanceElement> = { action: 'add', data: { after: attachment1 } }
+      const articleNameToAttachments = await prepareArticleAttachmentsForDeploy(
+        { client, changes: [change], elementsSource }
+      )
       mockPost.mockResolvedValue({ status: SUCCESS_STATUS_CODE })
       const deployResult = await associateAttachmentToArticles({ client, articleNameToAttachments })
       expect(mockPost).toHaveBeenCalledTimes(1)
@@ -278,22 +284,24 @@ describe('article filter', () => {
       })
     })
     it('should associate new attachments and unassociate old attachments to articles on attachment modification', async () => {
-      const change: ModificationChange<InstanceElement> = { action: 'modify', data: { before: oldAttachment, after: newAttachment } }
-      const articleNameToAttachments = await prepareArticleAttachmentsForDeploy({ client, changes: [change] })
+      const change: ModificationChange<InstanceElement> = { action: 'modify', data: { before: attachment1, after: attachment1 } }
+      const articleNameToAttachments = await prepareArticleAttachmentsForDeploy(
+        { client, changes: [change], elementsSource }
+      )
       mockPost.mockResolvedValue({ status: SUCCESS_STATUS_CODE })
       const deployResult = await associateAttachmentToArticles({ client, articleNameToAttachments })
       expect(mockPost).toHaveBeenCalledTimes(1)
       expect(mockPost).toHaveBeenCalledWith(expect.objectContaining({ data: { attachment_ids: [NEW_ATTACHMENT_ID] } }))
       expect(deleteAttachmentSpy).toHaveBeenCalledTimes(1)
-      expect(deleteAttachmentSpy).toHaveBeenCalledWith(client, OLD_ATTACHMENT_ID)
+      expect(deleteAttachmentSpy).toHaveBeenCalledWith(client, attachment1.value.id)
       expect(deployResult).toEqual({
         errors: [],
         appliedChanges: [change],
       })
     })
     it('should delete new attachments on association failure', async () => {
-      const changes: AdditionChange<InstanceElement>[] = [{ action: 'add', data: { after: newAttachment } }]
-      const articleNameToAttachments = await prepareArticleAttachmentsForDeploy({ client, changes })
+      const changes: AdditionChange<InstanceElement>[] = [{ action: 'add', data: { after: attachment1 } }]
+      const articleNameToAttachments = await prepareArticleAttachmentsForDeploy({ client, changes, elementsSource })
       associateAttachmentSpy.mockResolvedValueOnce([{ status: 400, ids: [NEW_ATTACHMENT_ID], error: 'error!' }])
       const deployResult = await associateAttachmentToArticles({ client, articleNameToAttachments })
       expect(deleteAttachmentSpy).toHaveBeenCalledTimes(1)
@@ -301,7 +309,7 @@ describe('article filter', () => {
       expect(deployResult).toEqual({
         appliedChanges: [],
         errors: [{
-          elemID: newAttachment.elemID,
+          elemID: attachment1.elemID,
           severity: 'Error',
           message: 'error!',
         }],
@@ -310,12 +318,14 @@ describe('article filter', () => {
     it('should handle different bulk associate results differently', async () => {
       const successIds = Array.from({ length: MAX_BULK_SIZE }, (_, i) => i + 1)
       const failureIds = Array.from({ length: MAX_BULK_SIZE }, (_, i) => i + 1 + MAX_BULK_SIZE)
-      const changes: AdditionChange<InstanceElement>[] = successIds.concat(failureIds).map(id => ({
+      const attachments = successIds.concat(failureIds).map(id => createArticleAttachment(`attachment${id}`, id, article))
+      const changes: AdditionChange<InstanceElement>[] = attachments.map(attachment => ({
         action: 'add',
-        data: { after: createArticleAttachment(`attachment${id}`, id, article) },
+        data: { after: attachment },
       }))
+      elementsSource = buildElementsSourceFromElements([article, ...attachments])
       successIds.concat(failureIds).forEach(id => createAttachmentSpy.mockResolvedValueOnce({ id }))
-      const articleNameToAttachments = await prepareArticleAttachmentsForDeploy({ client, changes })
+      const articleNameToAttachments = await prepareArticleAttachmentsForDeploy({ client, changes, elementsSource })
 
       associateAttachmentSpy.mockResolvedValueOnce([
         { status: SUCCESS_STATUS_CODE, ids: successIds },

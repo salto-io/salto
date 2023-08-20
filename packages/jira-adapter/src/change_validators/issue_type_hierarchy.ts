@@ -20,7 +20,7 @@ import { isFreeLicense } from '../utils'
 
 const { awu } = collections.asynciterable
 
-const getRelevantChanges = (changes: ReadonlyArray<Change>): (
+export const getRelevantChanges = (changes: ReadonlyArray<Change>): (
     AdditionChange<InstanceElement> | ModificationChange<InstanceElement>)[] => changes.filter(isInstanceChange)
   .filter(isAdditionOrModificationChange)
   .filter(change => getChangeData(change).elemID.typeName === ISSUE_TYPE_NAME)

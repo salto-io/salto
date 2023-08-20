@@ -1771,7 +1771,7 @@ export const DUCKTYPE_SUPPORTED_TYPES = {
   // ScriptFragment: ['ScriptFragment'],
   ScheduledJob: ['ScheduledJob'],
   Behavior: ['Behavior'],
-  // EscalationService: ['EscalationService'],
+  EscalationService: ['EscalationService'],
   ScriptedField: ['ScriptedField'],
 }
 

@@ -47,6 +47,7 @@ import serviceUrlFilter from './filters/service_url'
 import schemaFieldsRemovalFilter from './filters/schema_field_removal'
 import appLogoFilter from './filters/app_logo'
 import brandThemeFilesFilter from './filters/brand_theme_files'
+import groupMembersFilter from './filters/group_members'
 import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
 
@@ -70,6 +71,7 @@ export const DEFAULT_FILTERS = [
   // should run before fieldReferencesFilter
   replaceObjectWithIdFilter,
   userFilter,
+  groupMembersFilter,
   oktaExpressionLanguageFilter,
   profileEnrollmentAttributesFilter,
   defaultPolicyRuleDeployment,

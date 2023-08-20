@@ -1436,7 +1436,7 @@ public class LargeClass${index} {
       } as unknown as ObjectType
       const metadataQuery = {
         isTypeMatch: jest.fn(),
-        isInstanceMatch: jest.fn(),
+        isInstanceMatch: jest.fn().mockReturnValue(true),
         isPartialFetch: jest.fn(),
         isTargetedFetch: jest.fn(),
         isFetchWithChangesDetection: jest.fn(),

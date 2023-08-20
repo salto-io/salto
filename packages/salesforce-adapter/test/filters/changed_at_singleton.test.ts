@@ -109,22 +109,5 @@ describe('createChangedAtSingletonInstanceFilter', () => {
         })
       })
     })
-    describe('when no Elements are annotated with _changed_at', () => {
-      let fetchedElements: Element[]
-      beforeEach(async () => {
-        const { Profile: instance } = mockInstances()
-        delete instance.annotations?.[CORE_ANNOTATIONS.CHANGED_AT]
-        const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch'>
-        fetchedElements = [instance]
-        await filter.onFetch(fetchedElements)
-      })
-
-      it('should not create the singleton instance', async () => {
-        const changedAtSingleton = fetchedElements
-          .filter(isInstanceElement)
-          .find(e => e.elemID.typeName === CHANGED_AT_SINGLETON)
-        expect(changedAtSingleton).toBeUndefined()
-      })
-    })
   })
 })

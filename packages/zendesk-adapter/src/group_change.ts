@@ -17,8 +17,7 @@ import { getChangeData, isInstanceElement, isReferenceExpression } from '@salto-
 import { getParents } from '@salto-io/adapter-utils'
 import { deployment } from '@salto-io/adapter-components'
 import { SECTION_TYPE_NAME, TICKET_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME,
-  ORG_FIELD_TYPE_NAME, ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TYPE_NAME } from './constants'
-
+  ORG_FIELD_TYPE_NAME } from './constants'
 
 const PARENT_GROUPED_WITH_INNER_TYPE = [
   TICKET_FIELD_TYPE_NAME,
@@ -26,7 +25,6 @@ const PARENT_GROUPED_WITH_INNER_TYPE = [
   'dynamic_content_item',
   ORG_FIELD_TYPE_NAME,
   'macro',
-  ARTICLE_TYPE_NAME,
 ]
 const INNER_TYPE_GROUPED_WITH_PARENT = [
   'ticket_field__custom_field_options',
@@ -34,7 +32,6 @@ const INNER_TYPE_GROUPED_WITH_PARENT = [
   'dynamic_content_item__variants',
   'organization_field__custom_field_options',
   'macro_attachment',
-  ARTICLE_ATTACHMENT_TYPE_NAME,
 ]
 
 const recurseIntoInstanceChangeToGroupId: deployment.ChangeIdFunction = async change => {

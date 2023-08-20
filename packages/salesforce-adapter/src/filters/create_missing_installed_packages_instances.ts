@@ -38,9 +38,6 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   name: 'createMissingInstalledPackagesInstancesFilter',
   remote: true,
   onFetch: async (elements: Element[]): Promise<FilterResult | undefined> => {
-    if (config.fetchProfile.metadataQuery.isFetchWithChangesDetection()) {
-      return
-    }
     const installedPackageType = await awu(elements)
       .filter(isObjectType)
       .find(async objectType => await apiName(objectType) === INSTALLED_PACKAGE_METADATA)

@@ -19,14 +19,21 @@ import {
   Change, CORE_ANNOTATIONS, DeployResult,
   getChangeData,
   InstanceElement, isAdditionChange,
-  isAdditionOrModificationChange, isInstanceElement, isReferenceExpression,
+  isAdditionOrModificationChange, isInstanceElement, isModificationChange, isReferenceExpression,
   ModificationChange, ReadOnlyElementsSource, ReferenceExpression,
   SaltoElementError,
 } from '@salto-io/adapter-api'
+import { getParents } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { ARTICLE_ATTACHMENT_TYPE_NAME } from '../../constants'
 import ZendeskClient from '../../client/client'
-import { associateAttachments, createUnassociatedAttachment, deleteArticleAttachment, SUCCESS_STATUS_CODE } from './utils'
+import {
+  associateAttachments,
+  createUnassociatedAttachment,
+  deleteArticleAttachment,
+  SUCCESS_STATUS_CODE,
+  updateArticleTranslationBody,
+} from './utils'
 
 export type ArticleWithAttachmentChanges = {
   article?: InstanceElement
@@ -125,6 +132,19 @@ export const prepareArticleAttachmentsForDeploy = async ({ changes, client, elem
       }
     }
   }))
+
+  // Article bodies needs to be updated when modifying inline attachments
+  // There might be another request if the article_translation 'body' fields also changed
+  // (To Do: SALTO-3076)
+  const modifiedInlineAttachments = changes
+    .filter(isModificationChange)
+    .map(getChangeData)
+    .filter(attachmentInstance => attachmentInstance.value.inline)
+  if (modifiedInlineAttachments.length > 0) {
+    // All the attachments in the current change_group share the same parent article instance
+    const articleValues = getParents(modifiedInlineAttachments[0])[0]
+    await updateArticleTranslationBody({ client, articleValues, attachmentInstances: modifiedInlineAttachments })
+  }
   return articleNameToAttachments
 }
 

@@ -35,13 +35,10 @@ const { createPaginator, getWithCursorPagination } = clientUtils
 const { generateTypes, getAllInstances } = elementUtils.swagger
 const log = logger(module)
 
-const { query: queryFilter, ...otherCommonFilters } = commonFilters
-
 export const DEFAULT_FILTERS = [
-  queryFilter,
   // fieldReferencesFilter should run after all elements were created
   fieldReferencesFilter,
-  ...Object.values(otherCommonFilters),
+  ...Object.values(commonFilters),
 ]
 
 export interface StripeAdapterParams {

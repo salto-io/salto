@@ -101,6 +101,16 @@ describe('add alias filter', () => {
         undefined,
       ])
     })
+    it('should not add alias if flag is false', async () => {
+      config.fetch.addAlias = false
+      filter = filterCreator(getFilterParams({ client, config })) as FilterType
+      const dashboardGadgetInstance = new InstanceElement('instance2', dashboardGadgetType, { title: 'gadget name alias' })
+      const elements = [
+        dashboardGadgetInstance,
+      ]
+      await filter.onFetch(elements)
+      expect(dashboardGadgetInstance.annotations[CORE_ANNOTATIONS.ALIAS]).not.toBeDefined()
+    })
     it('should not crush when one of the values is undefined', async () => {
       const dashboardGadgetInstanceInvalid = new InstanceElement(
         'instance1',

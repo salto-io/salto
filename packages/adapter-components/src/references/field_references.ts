@@ -223,12 +223,14 @@ export const addReferences = async <
   GenericFieldReferenceDefinition extends FieldReferenceDefinition<T>
 >({
   elements,
+  contextElements = elements,
   defs,
   fieldsToGroupBy = ['id'],
   contextStrategyLookup,
   fieldReferenceResolverCreator,
 }: {
   elements: Element[]
+  contextElements?: Element[]
   defs: GenericFieldReferenceDefinition[]
   fieldsToGroupBy?: string[]
   contextStrategyLookup?: Record<T, ContextFunc>
@@ -253,7 +255,7 @@ export const addReferences = async <
     filter: e => isInstanceElement(e) && e.value[fieldName] !== undefined,
     key: (inst: InstanceElement) => [inst.refType.elemID.name, inst.value[fieldName]],
   }))
-  const { elemByElemID, ...fieldLookups } = await indexer.process(awu(elements))
+  const { elemByElemID, ...fieldLookups } = await indexer.process(awu(contextElements))
 
   const fieldsWithResolvedReferences = new Set<string>()
   await awu(instances).forEach(async instance => {

@@ -67,13 +67,14 @@ okta {
 | [include](#fetch-entry-options)             | [{ type = ".*" }]                 | List of entries to determine what instances to include in the fetch
 | [exclude](#fetch-entry-options)             | []                                | List of entries to determine what instances to exclude in the fetch
 | convertUsersIds                             | true                              | When enabled, user IDs will be replaced with user login names
+| includeGroupMemberships                     | false                             | Include group assignments
 
 ## Fetch entry options
 
 | Name                                        | Default when undefined            | Description
 |---------------------------------------------|-----------------------------------|------------
 | type                                        | ""                                | A regex of the Salto type name to include in the entry
-| [criteria](#fetch-entry-criteria)             |                                   | A List of criteria to filter specific instance of certain types
+| [criteria](#fetch-entry-criteria)           |                                   | A List of criteria to filter specific instance of certain types
 
 ## Fetch entry criteria
 

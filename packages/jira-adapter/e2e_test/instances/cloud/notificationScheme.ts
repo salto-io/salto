@@ -34,10 +34,6 @@ export const createNotificationSchemeValues = (name: string): Values => ({
           type: 'CurrentUser',
         },
         {
-          parameter: 'email@gmail.com',
-          type: 'EmailAddress',
-        },
-        {
           type: 'ProjectLead',
         },
         {

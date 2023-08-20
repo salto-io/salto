@@ -18,7 +18,7 @@ import { applyFunctionToChangeData, setPath, walkOnElement, WALK_NEXT_STEP, isRe
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { AUTOMATION_TYPE, WORKFLOW_TYPE_NAME } from '../../constants'
+import { AUTOMATION_TYPE, ESCALATION_SERVICE_TYPE, WORKFLOW_TYPE_NAME } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { generateTemplateExpression, generateJqlContext, removeCustomFieldPrefix } from './template_expression_generator'
 
@@ -30,6 +30,7 @@ const JQL_FIELDS = [
   { type: 'Filter', path: ['jql'] },
   { type: 'Board', path: ['subQuery'] },
   { type: 'Webhook', path: ['filters', 'issue_related_events_section'] },
+  { type: ESCALATION_SERVICE_TYPE, path: ['jql'] },
 ]
 
 type JqlDetails = {

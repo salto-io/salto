@@ -334,13 +334,12 @@ describe('workflowModificationFilter', () => {
     })
     it('should clean when failure in deploy of the actual instance not related to sync', async () => {
       deployWorkflowMock.mockResolvedValueOnce()
-      deployWorkflowMock.mockRejectedValueOnce({
-        response: {
-          data: {
-            errorMessages: ['Other error'],
-          },
+      deployWorkflowMock.mockRejectedValueOnce(new clientUtils.HTTPError('message', {
+        status: 400,
+        data: {
+          errorMessages: ['other error'],
         },
-      })
+      }))
       await filter.deploy([change])
       expectDeleteOfTempWorkflow(3)
       expectSchemeChangeBack(3)

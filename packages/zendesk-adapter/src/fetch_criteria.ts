@@ -17,4 +17,8 @@ import { elements as elementUtils } from '@salto-io/adapter-components'
 
 export default {
   name: elementUtils.query.nameCriterion,
+  key: elementUtils.query.fieldCriterionCreator('key'),
+  raw_title: elementUtils.query.fieldCriterionCreator('raw_title'),
+  title: elementUtils.query.fieldCriterionCreator('title'),
+  type: elementUtils.query.fieldCriterionCreator('type'),
 }

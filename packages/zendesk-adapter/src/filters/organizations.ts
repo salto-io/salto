@@ -24,7 +24,7 @@ import { FilterCreator } from '../filter'
 import { ValueReplacer, deployModificationFunc, replaceConditionsAndActionsCreator, fieldReplacer } from '../replacers_utils'
 import ZendeskClient from '../client/client'
 import { paginate } from '../client/pagination'
-import { FETCH_CONFIG } from '../config'
+import { DEPLOY_CONFIG, FETCH_CONFIG } from '../config'
 
 const log = logger(module)
 const { isDefined } = lowerDashValues
@@ -42,22 +42,33 @@ type OrganizationResponse = {
   organizations: Organization[]
 }
 
+type SingleOrganizationResponse = {
+  organization: Organization
+}
+
 type organizationIdInstanceAndPath = {
     instance: InstanceElement
     path: ElemID
     identifier: string
 }
 
-const ORGANIZATIONS_SCHEMA = Joi.array().items(Joi.object({
+const SINGLE_ORGANIZATION_SCHEMA = Joi.object({
   id: Joi.number().required(),
   name: Joi.string().required(),
-}).unknown(true)).required()
+}).unknown(true)
+
+const ORGANIZATIONS_SCHEMA = Joi.array().items(SINGLE_ORGANIZATION_SCHEMA).required()
 
 const EXPECTED_ORGANIZATION_RESPONSE_SCHEMA = Joi.object({
   organizations: ORGANIZATIONS_SCHEMA,
 }).unknown(true)
 
+const EXPECTED_SINGLE_ORGANIZATION_RESPONSE_SCHEMA = Joi.object({
+  organization: SINGLE_ORGANIZATION_SCHEMA,
+}).unknown(true)
+
 const isOrganizationsResponse = createSchemeGuard<OrganizationResponse>(EXPECTED_ORGANIZATION_RESPONSE_SCHEMA, 'Received an invalid response from organization request')
+const isSingleOrganizationResponse = createSchemeGuard<SingleOrganizationResponse>(EXPECTED_SINGLE_ORGANIZATION_RESPONSE_SCHEMA, 'Received an invalid response from single organization request')
 
 const areOrganizations = createSchemeGuard<Organization[]>(ORGANIZATIONS_SCHEMA, 'Received invalid organizations')
 
@@ -117,9 +128,17 @@ export const getOrganizationsByIds = async (
   return results.flatMap(orgResponse => orgResponse.organizations)
 }
 
-export const getOrganizationsByNames = async (
-  organizationNames: string[],
-  paginator: clientUtils.Paginator,
+export const getOrCreateOrganizationsByNames = async ({
+  organizationNames,
+  paginator,
+  createMissingOrganizations,
+  client,
+}: {
+  organizationNames: string[]
+  paginator: clientUtils.Paginator
+  createMissingOrganizations?: boolean
+  client?: ZendeskClient
+ }
 ): Promise<Organization[]> => {
   const paginationArgs = {
     url: '/api/v2/organizations/autocomplete',
@@ -141,7 +160,26 @@ export const getOrganizationsByNames = async (
         // the endpoint returns all organizations with names matching the wildcard `organizationName`
         const organization = res.find(org => org.name === organizationName)
         if (organization === undefined) {
-          log.error(`could not find any organization with name ${organizationName}`)
+          log.debug(`could not find any organization with name ${organizationName}, if createMissingOrganizations it will be created`)
+          if (createMissingOrganizations === true) {
+            if (client === undefined) {
+              log.debug(`client is undefined, can not create org ${organizationName}`)
+            } else {
+              try {
+                const postRes = (await client.post({
+                // in case of issues we can also try to use the bulk-create alternative `organizations/create_many`
+                  url: '/api/v2/organizations',
+                  data: { organization: { name: organizationName } },
+                })).data
+                if (isSingleOrganizationResponse(postRes)) {
+                  return postRes.organization
+                }
+                log.error(`invalid organization creation response for org name ${organizationName}`)
+              } catch (err) {
+                log.error(`could not create organization with name ${organizationName}, error is ${err}`)
+              }
+            }
+          }
         }
         return organization
       })
@@ -218,7 +256,10 @@ const filterCreator: FilterCreator = ({ client, config }) => {
         client,
         paginationFuncCreator: paginate,
       })
-      const organizations = await getOrganizationsByNames(organizationNames, paginator)
+      const createMissingOrganizations = config[DEPLOY_CONFIG]?.createMissingOrganizations ?? false
+      const organizations = await getOrCreateOrganizationsByNames({
+        organizationNames, paginator, createMissingOrganizations, client,
+      })
       if (_.isEmpty(organizations)) {
         return
       }

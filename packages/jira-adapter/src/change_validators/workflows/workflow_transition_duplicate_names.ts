@@ -15,7 +15,7 @@
 */
 import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
 import { invertNaclCase } from '@salto-io/adapter-utils'
-import { TRANSITION_PARTS_SEPARATOR } from '../../filters/workflow/workflow_structure_filter'
+import { TRANSITION_PARTS_SEPARATOR } from '../../filters/workflow/transition_structure'
 import { isWorkflowInstance } from '../../filters/workflow/types'
 
 const isDuplicateTransitionKey = (transitionKey: string): boolean =>

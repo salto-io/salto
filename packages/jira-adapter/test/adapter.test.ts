@@ -67,7 +67,6 @@ describe('adapter', () => {
     const config = createConfigInstance(getDefaultConfig({ isDataCenter: false }))
     config.value.client.usePrivateAPI = false
     config.value.fetch.convertUsersIds = false
-    config.value.fetch.enableScriptRunnerAddon = true
 
     adapter = adapterCreator.operations({
       elementsSource,
@@ -280,25 +279,21 @@ describe('adapter', () => {
         })
       )
     })
-    it('should call getAllElements', () => {
-      expect(getAllElements).toHaveBeenCalledTimes(1)
-    })
-
     it('should return all types and instances returned from the infrastructure', () => {
       expect(result.elements).toContain(platformTestType)
       expect(result.elements).toContain(jiraTestType)
       expect(result.elements).toContain(testInstance)
-      expect(result.elements).toContain(testInstance2)
+      expect(result.elements).not.toContain(testInstance2)
     })
   })
-  describe('no scriptRunner', () => {
+  describe('scriptRunner', () => {
     let srAdapter: AdapterOperations
     beforeEach(() => {
       const elementsSource = buildElementsSourceFromElements([])
       const config = createConfigInstance(getDefaultConfig({ isDataCenter: false }))
       config.value.client.usePrivateAPI = false
       config.value.fetch.convertUsersIds = false
-      config.value.fetch.enableScriptRunnerAddon = false
+      config.value.fetch.enableScriptRunnerAddon = true
 
       srAdapter = adapterCreator.operations({
         elementsSource,
@@ -358,7 +353,10 @@ describe('adapter', () => {
         expect(result.elements).toContain(platformTestType)
         expect(result.elements).toContain(jiraTestType)
         expect(result.elements).toContain(testInstance)
-        expect(result.elements).not.toContain(testInstance2)
+        expect(result.elements).toContain(testInstance2)
+      })
+      it('should call getAllElements', () => {
+        expect(getAllElements).toHaveBeenCalledTimes(1)
       })
     })
   })

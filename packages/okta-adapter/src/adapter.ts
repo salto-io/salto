@@ -47,6 +47,7 @@ import serviceUrlFilter from './filters/service_url'
 import schemaFieldsRemovalFilter from './filters/schema_field_removal'
 import appLogoFilter from './filters/app_logo'
 import brandThemeFilesFilter from './filters/brand_theme_files'
+import groupMembersFilter from './filters/group_members'
 import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
 
@@ -59,10 +60,7 @@ const { findDataField, computeGetArgs } = elementUtils
 const { createPaginator } = clientUtils
 const log = logger(module)
 
-const { query: queryFilter, ...otherCommonFilters } = commonFilters
-
 export const DEFAULT_FILTERS = [
-  queryFilter,
   standardRolesFilter,
   deleteFieldsFilter,
   userTypeFilter,
@@ -73,6 +71,7 @@ export const DEFAULT_FILTERS = [
   // should run before fieldReferencesFilter
   replaceObjectWithIdFilter,
   userFilter,
+  groupMembersFilter,
   oktaExpressionLanguageFilter,
   profileEnrollmentAttributesFilter,
   defaultPolicyRuleDeployment,
@@ -85,9 +84,9 @@ export const DEFAULT_FILTERS = [
   serviceUrlFilter,
   appDeploymentFilter,
   // should run after fieldReferences
-  ...Object.values(otherCommonFilters),
-  privateApiDeployFilter,
+  ...Object.values(commonFilters),
   // should run last
+  privateApiDeployFilter,
   defaultDeployFilter,
 ]
 

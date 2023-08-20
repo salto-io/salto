@@ -32,7 +32,7 @@ export const NON_DEPLOYABLE_TYPES = ['Board']
 export const PARAMETER_STYLE_TYPES = ['PermissionScheme', 'NotificationScheme', 'SecurityLevel']
 export const DEPLOYABLE_TYPES = [...PARAMETER_STYLE_TYPES,
   'Automation', 'Project', 'ProjectComponent', 'ProjectRole', 'Filter', 'Dashboard', 'CustomFieldContext', 'ProjectRoleUser',
-  'CustomFieldContextDefaultValue', 'Workflow']
+  'CustomFieldContextDefaultValue', 'Workflow', 'ScheduledJob', 'EscalationService']
 export const ACCOUNT_ID_TYPES = [...NON_DEPLOYABLE_TYPES, ...DEPLOYABLE_TYPES]
 
 const USER_TYPE = 'user'
@@ -260,7 +260,8 @@ const filter: FilterCreator = ({ config }) => {
         })
       await awu(elements)
         .filter(isObjectType)
-        .filter(object => ACCOUNT_ID_TYPES.includes(object.elemID.typeName))
+        .filter(object => ACCOUNT_ID_TYPES.includes(object.elemID.typeName)
+          || ['ScheduledJob__atlassianUser', 'EscalationService__atlassianUser'].includes(object.elemID.typeName))
         .forEach(async objectType => {
           await convertType(objectType)
         })

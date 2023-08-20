@@ -646,7 +646,7 @@ describe('workspace', () => {
       const mockAdaptersConfig = mockAdaptersConfigSource()
       const ws = await createWorkspace(undefined, undefined, undefined, mockAdaptersConfig)
       const error = new InvalidValueValidationError({ elemID: new ElemID('someID'), value: 'val', fieldName: 'field', expectedValue: 'expVal' });
-      (error as SaltoError).source = 'config'
+      (error as SaltoError).type = 'config'
       await ws.transformError(error)
       expect(mockAdaptersConfig.getSourceRanges).toHaveBeenCalled()
     })

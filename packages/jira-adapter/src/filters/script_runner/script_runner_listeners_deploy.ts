@@ -36,13 +36,15 @@ const LISTENERS_RESPONSE_SCHEME = Joi.object({
 
 const isListenersResponse = createSchemeGuard<ListenersResponse>(LISTENERS_RESPONSE_SCHEME, 'Received an invalid script runner listeners response')
 
-export const applyChangesToArray = async (changes: Change[], allValues: Value[], identifier: string): Promise<{
+export const getValuesToDeploy = async (changes: Change[], valuesFromService: Value[], identifier: string): Promise<{
   errors: SaltoElementError[]
   appliedChanges: Change[]
+  valuesToDeploy: Value[]
 }> => {
-  const idToIndex = Object.fromEntries(allValues.map((value, index) => [value[identifier], index]))
+  const idToIndex = Object.fromEntries(valuesFromService.map((value, index) => [value[identifier], index]))
   const errors: SaltoElementError[] = []
   const appliedChanges: Change[] = []
+  const valuesToDeploy = _.cloneDeep(valuesFromService)
 
   await awu(changes)
     .filter(isInstanceChange)
@@ -59,7 +61,7 @@ export const applyChangesToArray = async (changes: Change[], allValues: Value[],
           elemID: getChangeData(change).elemID,
         })
       } else {
-        allValues.push(instance.value)
+        valuesToDeploy.push(instance.value)
         appliedChanges.push(change)
       }
     })
@@ -72,7 +74,7 @@ export const applyChangesToArray = async (changes: Change[], allValues: Value[],
       const instance = getChangeData(resolvedChange)
       const index = idToIndex[instance.value[identifier]]
       if (index !== undefined) {
-        allValues[index] = instance.value
+        valuesToDeploy[index] = instance.value
         appliedChanges.push(change)
       } else {
         errors.push({
@@ -90,10 +92,10 @@ export const applyChangesToArray = async (changes: Change[], allValues: Value[],
       const resolvedChange = await resolveChangeElement(change, getLookUpName, resolveValues)
       const instance = getChangeData(resolvedChange)
       // using find Index as the indices change when we remove elements
-      const index = allValues
+      const index = valuesToDeploy
         .findIndex(value => value[identifier] === instance.value[identifier])
       if (index !== -1) {
-        allValues.splice(index, 1)
+        valuesToDeploy.splice(index, 1)
         appliedChanges.push(change)
       } else {
         errors.push({
@@ -103,7 +105,7 @@ export const applyChangesToArray = async (changes: Change[], allValues: Value[],
         })
       }
     })
-  return { errors, appliedChanges }
+  return { errors, appliedChanges, valuesToDeploy }
 }
 
 // This filter deploys script runner instances that are deployed in batches
@@ -129,7 +131,7 @@ const filter: FilterCreator = ({ scriptRunnerClient, config }) => ({
         deployResult: { errors: [], appliedChanges: [] },
       }
     }
-    let allValues: Value[]
+    let valuesFromService: Value[]
     try {
       const response = await scriptRunnerClient
         .getSinglePage({
@@ -138,7 +140,7 @@ const filter: FilterCreator = ({ scriptRunnerClient, config }) => ({
       if (!isListenersResponse(response.data)) {
         throw new Error('Received an invalid script runner listeners response')
       }
-      allValues = response.data.values
+      valuesFromService = response.data.values
     } catch (e) {
       return {
         leftoverChanges,
@@ -154,11 +156,11 @@ const filter: FilterCreator = ({ scriptRunnerClient, config }) => ({
         },
       }
     }
-    const { errors, appliedChanges } = await applyChangesToArray(relevantChanges, allValues, 'uuid')
+    const { errors, appliedChanges, valuesToDeploy } = await getValuesToDeploy(relevantChanges, valuesFromService, 'uuid')
     try {
       await scriptRunnerClient.put({
         url: '/sr-dispatcher/jira/admin/token/scriptevents',
-        data: allValues,
+        data: valuesToDeploy,
       })
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : e

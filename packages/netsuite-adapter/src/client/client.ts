@@ -407,11 +407,13 @@ export default class NetsuiteClient {
           .filter(values.isDefined)
 
         const dependentNodes = NetsuiteClient.getDependenciesFromGraph(nodesWithError, dependencyGraph)
-        const dependencyErrors = dependentNodes
-          .flatMap(({ elemId, dependOn }) => changesByTopLevel[elemId.getFullName()]
-            .map(change => ({ elemId: getChangeData(change).elemID, dependOn })))
-          .map(toDependencyError)
-        errors.push(...dependencyErrors)
+        if (!validateOnly) {
+          const dependencyErrors = dependentNodes
+            .flatMap(({ elemId, dependOn }) => changesByTopLevel[elemId.getFullName()]
+              .map(change => ({ elemId: getChangeData(change).elemID, dependOn })))
+            .map(toDependencyError)
+          errors.push(...dependencyErrors)
+        }
 
         const numOfAttemptedNodesToDeploy = dependencyGraph.nodes.size
         nodesWithError.forEach(node => dependencyGraph.removeNode(node.id))

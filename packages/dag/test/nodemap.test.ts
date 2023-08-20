@@ -16,7 +16,7 @@
 import wu from 'wu'
 import _ from 'lodash'
 import {
-  NodeId, CircularDependencyError, WalkError, NodeSkippedError, DataNodeMap, DAG,
+  NodeId, CircularDependencyError, WalkError, NodeSkippedError, DataNodeMap, DAG, AbstractNodeMap,
 } from '../src/nodemap'
 
 class MaxCounter {
@@ -1071,6 +1071,48 @@ describe('NodeMap', () => {
       it('should not modify the graph', () => {
         expect(subject).toEqual(origGraph)
       })
+    })
+  })
+})
+
+describe('AbstractNodeMap', () => {
+  let subject: AbstractNodeMap
+
+  beforeEach(() => {
+    subject = new AbstractNodeMap()
+  })
+
+  describe('get component', () => {
+    beforeEach(() => {
+      subject = new AbstractNodeMap()
+      subject.addEdge(1, 2)
+      subject.addEdge(1, 3)
+      subject.addEdge(2, 2)
+      subject.addEdge(2, 3)
+      subject.addEdge(2, 4)
+      subject.addEdge(3, 1)
+      subject.addEdge(4, 5)
+      subject.addEdge(4, 2)
+      subject.addEdge(6, 7)
+      subject.addEdge(6, 4)
+    })
+    it('should return the connected components of a node', () => {
+      expect([...subject.getComponent({ roots: [3] }).keys()].sort()).toEqual([1, 2, 3, 4, 5])
+    })
+
+    it('should return the connected components of a node in reverse order', () => {
+      expect([...subject.getComponent({ roots: [3], reverse: true }).keys()].sort())
+        .toEqual([1, 2, 3, 4, 6])
+    })
+
+    it('should filter out nodes that are filtered by the filter func', () => {
+      expect([...subject.getComponent({ roots: [3], filterFunc: id => id !== 4 }).keys()].sort())
+        .toEqual([1, 2, 3])
+    })
+
+    it('should return the connected components of multiple roots', () => {
+      expect([...subject.getComponent({ roots: [3, 6], filterFunc: id => id !== 4 }).keys()].sort())
+        .toEqual([1, 2, 3, 6, 7])
     })
   })
 })

@@ -1653,10 +1653,10 @@ const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       url: '/sr-dispatcher/jira/admin/token/scriptevents',
     },
     transformation: {
-      serviceIdField: 'uuid',
       sourceTypeName: 'ScriptRunnerListener__values',
       idFields: ['description'],
       fieldsToHide: [
+        { fieldName: 'uuid' },
         { fieldName: 'createdByAccountId' },
         { fieldName: 'createdTimestamp' },
         { fieldName: 'updatedByAccountId' },
@@ -1673,15 +1673,68 @@ const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
     request: {
       url: '/sr-dispatcher/jira/rest/api/1/scheduled-scripts',
     },
+    transformation: {
+    },
+    deployRequests: {
+      add: {
+        url: '/sr-dispatcher/jira/rest/api/1/scheduled-scripts',
+        method: 'post',
+      },
+      modify: {
+        url: '/sr-dispatcher/jira/rest/api/1/scheduled-scripts/{uuid}',
+        method: 'put',
+      },
+      remove: {
+        url: '/sr-dispatcher/jira/rest/api/1/scheduled-scripts/{uuid}',
+        method: 'delete',
+      },
+    },
   },
   Behavior: {
     request: {
       url: '/sr-dispatcher/jira/rest/api/1/behaviours',
     },
+    deployRequests: {
+      add: {
+        url: '/sr-dispatcher/jira/rest/api/1/behaviours',
+        method: 'post',
+      },
+      modify: {
+        url: '/sr-dispatcher/jira/rest/api/1/behaviours/{uuid}',
+        method: 'put',
+      },
+      remove: {
+        url: '/sr-dispatcher/jira/rest/api/1/behaviours/{uuid}',
+        method: 'delete',
+      },
+    },
+  },
+  Behavior__config: {
+    transformation: {
+      fieldsToOmit: [
+        {
+          fieldName: 'fieldUuid',
+        },
+      ],
+    },
   },
   EscalationService: {
     request: {
       url: '/sr-dispatcher/jira/rest/api/1/escalation-scripts',
+    },
+    deployRequests: {
+      add: {
+        url: '/sr-dispatcher/jira/rest/api/1/escalation-scripts',
+        method: 'post',
+      },
+      modify: {
+        url: '/sr-dispatcher/jira/rest/api/1/escalation-scripts/{uuid}',
+        method: 'put',
+      },
+      remove: {
+        url: '/sr-dispatcher/jira/rest/api/1/escalation-scripts/{uuid}',
+        method: 'delete',
+      },
     },
   },
   ScriptedField: {
@@ -1689,21 +1742,12 @@ const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       url: '/sr-dispatcher/jira/rest/api/1/scripted-fields',
     },
     transformation: {
-      serviceIdField: 'uuid',
-      dataField: '.',
-      fieldsToHide: [
-        {
-          fieldName: 'uuid',
-        },
-        {
-          fieldName: 'auditData',
-        },
-      ],
       fieldsToOmit: [
         {
           fieldName: 'issueTypeIds',
         },
       ],
+      dataField: '.',
     },
     deployRequests: {
       add: {
@@ -1725,21 +1769,32 @@ const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
 export const DUCKTYPE_SUPPORTED_TYPES = {
   // ScriptRunnerListener: ['ScriptRunnerListener'],
   // ScriptFragment: ['ScriptFragment'],
-  // ScheduledJob: ['ScheduledJob'],
+  ScheduledJob: ['ScheduledJob'],
   // Behavior: ['Behavior'],
-  // EscalationService: ['EscalationService'],
+  EscalationService: ['EscalationService'],
   ScriptedField: ['ScriptedField'],
 }
 
-const TRANSFORMATION_DEFAULTS: configUtils.TransformationDefaultConfig = {
+const SCRIPT_RUNNER_FIELDS_TO_HIDE = [
+  {
+    fieldName: 'uuid',
+  },
+  {
+    fieldName: 'auditData',
+  },
+]
+
+const SCRIPT_RUNNER_TRANSFORMATION_DEFAULTS: configUtils.TransformationDefaultConfig = {
   idFields: DEFAULT_ID_FIELDS,
   fieldsToOmit: FIELDS_TO_OMIT,
+  fieldsToHide: SCRIPT_RUNNER_FIELDS_TO_HIDE,
+  serviceIdField: 'uuid',
   nestStandaloneInstances: true,
 }
 
 export const DUCKTYPE_API_DEFINITIONS: JiraDuckTypeConfig = {
   typeDefaults: {
-    transformation: TRANSFORMATION_DEFAULTS,
+    transformation: SCRIPT_RUNNER_TRANSFORMATION_DEFAULTS,
   },
   types: DUCKTYPE_TYPES,
   supportedTypes: DUCKTYPE_SUPPORTED_TYPES,
@@ -1783,6 +1838,7 @@ const SUPPORTED_TYPES = {
   Automation: [],
   Webhook: [],
   [AUTOMATION_LABEL_TYPE]: [],
+  IssueLayout: [],
 }
 
 export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {

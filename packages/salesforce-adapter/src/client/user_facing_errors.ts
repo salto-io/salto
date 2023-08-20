@@ -61,14 +61,14 @@ export type ErrorMappers = {
   [ENOTFOUND]: ErrorMapper<DNSException>
 }
 
-const withOriginalError = (error: Error, saltoErrorMessage: string): string => (
-  `${saltoErrorMessage}\n\nOriginal error: ${error.message}`
+const withOriginalError = (salesforceError: string, saltoErrorMessage: string): string => (
+  `${saltoErrorMessage}\n\nOriginal error: ${salesforceError}`
 )
 
 export const ERROR_MAPPERS: ErrorMappers = {
   [ERROR_HTTP_502]: {
     test: (error: Error): error is Error => error.message === ERROR_HTTP_502,
-    map: (error: Error): string => withOriginalError(error, ERROR_HTTP_502_MESSAGE),
+    map: (error: Error): string => withOriginalError(error.message, ERROR_HTTP_502_MESSAGE),
   },
   [SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED]: {
     test: (error: Error): error is SalesforceError => (
@@ -76,20 +76,20 @@ export const ERROR_MAPPERS: ErrorMappers = {
     ),
     map: (error: SalesforceError): string => (
       error.message.includes('TotalRequests Limit exceeded')
-        ? withOriginalError(error, REQUEST_LIMIT_EXCEEDED_MESSAGE)
-        : withOriginalError(error, MAX_CONCURRENT_REQUESTS_MESSAGE)
+        ? withOriginalError(error.message, REQUEST_LIMIT_EXCEEDED_MESSAGE)
+        : withOriginalError(error.message, MAX_CONCURRENT_REQUESTS_MESSAGE)
     ),
   },
   [INVALID_GRANT]: {
     test: (error: Error): error is Error => error.name === INVALID_GRANT,
-    map: (error: Error): string => withOriginalError(error, INVALID_GRANT_MESSAGE),
+    map: (error: Error): string => withOriginalError(error.message, INVALID_GRANT_MESSAGE),
   },
   [ENOTFOUND]: {
     test: (error: Error): error is DNSException => (
       isDNSException(error) && error.code === ENOTFOUND
     ),
     map: (error: DNSException) => (
-      withOriginalError(error, `Unable to communicate with the salesforce org at ${error[ERROR_PROPERTIES.HOSTNAME]}.`
+      withOriginalError(error.message, `Unable to communicate with the salesforce org at ${error[ERROR_PROPERTIES.HOSTNAME]}.`
       + ' This may indicate that the org no longer exists, e.g. a sandbox that was deleted, or due to other network issues.')
     ),
   },
@@ -98,9 +98,11 @@ export const ERROR_MAPPERS: ErrorMappers = {
 // Deploy Errors Mapping
 
 const SCHEDULABLE_CLASS = 'This schedulable class has jobs pending or in progress'
+const MAX_METADATA_DEPLOY_LIMIT = 'Maximum size of request reached. Maximum size of request is 52428800 bytes.'
 
 const MAPPABLE_SALESFORCE_PROBLEMS = [
   SCHEDULABLE_CLASS,
+  MAX_METADATA_DEPLOY_LIMIT,
 ] as const
 
 export type MappableSalesforceProblem = typeof MAPPABLE_SALESFORCE_PROBLEMS[number]
@@ -110,9 +112,13 @@ const isMappableSalesforceProblem = (problem: string): problem is MappableSalesf
 )
 
 export const MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE: Record<MappableSalesforceProblem, string> = {
-  [SCHEDULABLE_CLASS]: 'This deployment contains a scheduled Apex class (or a class related to one).'
-  + 'By default, Salesforce does not allow changes to scheduled apex. '
-  + 'Please follow the instructions here: https://help.salesforce.com/s/articleView?id=000384960&type=1',
+  [SCHEDULABLE_CLASS]: withOriginalError(SCHEDULABLE_CLASS, 'This deployment contains a scheduled Apex class (or a class related to one).'
+    + ' By default, Salesforce does not allow changes to scheduled apex.'
+    + ' Please follow the instructions here: https://help.salesforce.com/s/articleView?id=000384960&type=1'),
+  [MAX_METADATA_DEPLOY_LIMIT]: withOriginalError(MAX_METADATA_DEPLOY_LIMIT, 'The metadata deployment exceeded the maximum allowed size of 50MB.'
+    + ' To avoid this issue, please split your deployment to smaller chunks.'
+    + ' For more info you may refer to: https://help.salto.io/en/articles/8263355-the-metadata-deployment-exceeded-the-maximum-allowed-size-of-50mb'),
+
 }
 
 export const getUserFriendlyDeployMessage = (deployMessage: DeployMessage): DeployMessage => ({

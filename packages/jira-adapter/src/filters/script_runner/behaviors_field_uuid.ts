@@ -33,7 +33,7 @@ const filter: FilterCreator = ({ config }) => ({
       .filter(instance => instance.elemID.typeName === BEHAVIOR_TYPE)
       .forEach(instance => {
         instance.value.config?.forEach((configField: Value) => {
-          configField.uuid = uuidv4()
+          configField.fieldUuid = uuidv4()
         })
       })
   },
@@ -48,7 +48,7 @@ const filter: FilterCreator = ({ config }) => ({
       .filter(instance => instance.elemID.typeName === BEHAVIOR_TYPE)
       .forEach(instance => {
         instance.value.config?.forEach((configField: Value) => {
-          delete configField.uuid
+          delete configField.fieldUuid
         })
       })
   },

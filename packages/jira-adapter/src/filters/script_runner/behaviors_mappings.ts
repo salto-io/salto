@@ -35,7 +35,7 @@ const getIssueTypesForBehavior = (behavior: InstanceElement): string[] =>
     .filter(isResolvedReferenceExpression)
     .map((issueTypeRef: ReferenceExpression) => issueTypeRef.value.value.id)
 
-// This filter is used to convert from an to the mappings to projects and issue types
+// This filter is used to convert from mappings to projects and issue types
 const filter: FilterCreator = ({ config }) => {
   const preDeployProjects: Record<string, Value[]> = {}
   const preDeployIssueTypes: Record<string, Value[]> = {}

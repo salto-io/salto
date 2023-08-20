@@ -53,8 +53,8 @@ describe('behavior_field_uuid', () => {
         }
       )
       await filter.preDeploy([toChange({ after: instance })])
-      expect(instance.value.config[0].uuid).toEqual('my-uuid')
-      expect(instance.value.config[1].uuid).toEqual('my-uuid')
+      expect(instance.value.config[0].fieldUuid).toEqual('my-uuid')
+      expect(instance.value.config[1].fieldUuid).toEqual('my-uuid')
     })
     it('should remove uuid', async () => {
       instance = new InstanceElement(
@@ -64,18 +64,18 @@ describe('behavior_field_uuid', () => {
           config: [
             {
               name: 'name',
-              uuid: 'my-uuid',
+              fieldUuid: 'my-uuid',
             },
             {
               name: 'name2',
-              uuid: 'my-uuid2',
+              fieldUuid: 'my-uuid2',
             },
           ],
         }
       )
       await filter.onDeploy([toChange({ after: instance })])
-      expect(instance.value.config[0].uuid).toBeUndefined()
-      expect(instance.value.config[1].uuid).toBeUndefined()
+      expect(instance.value.config[0].fieldUuid).toBeUndefined()
+      expect(instance.value.config[1].fieldUuid).toBeUndefined()
     })
     it('should not fail when no config', async () => {
       instance = new InstanceElement(

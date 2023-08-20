@@ -20,7 +20,7 @@ import { createEmptyType, getFilterParams, mockClient } from '../../../utils'
 import referencesFilter from '../../../../src/filters/script_runner/workflow/workflow_references'
 import { WORKFLOW_TYPE_NAME } from '../../../../src/constants'
 import { getDefaultConfig } from '../../../../src/config/config'
-
+import { SCRIPT_RUNNER_POST_FUNCTION_TYPE } from '../../../../src/filters/script_runner/workflow/workflow_cloud'
 
 const resolvedInstance = new InstanceElement(
   'instance',
@@ -73,9 +73,9 @@ jest.mock('@salto-io/adapter-utils', () => ({
 }))
 
 describe('Scriptrunner references', () => {
-  let filter: filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
-  let filterOff: filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
-  let filterCloud: filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
+  let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+  let filterOff: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+  let filterCloud: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let instance: InstanceElement
   let reference: ReferenceExpression
   const workflowType = createEmptyType(WORKFLOW_TYPE_NAME)
@@ -86,9 +86,9 @@ describe('Scriptrunner references', () => {
     const configOff = _.cloneDeep(getDefaultConfig({ isDataCenter: true }))
     const { client } = mockClient(true)
     config.fetch.enableScriptRunnerAddon = true
-    filter = referencesFilter(getFilterParams({ client, config })) as filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
-    filterOff = referencesFilter(getFilterParams({ client, config: configOff })) as filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
-    filterCloud = referencesFilter(getFilterParams({ config })) as filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
+    filter = referencesFilter(getFilterParams({ client, config })) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+    filterOff = referencesFilter(getFilterParams({ client, config: configOff })) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+    filterCloud = referencesFilter(getFilterParams({ config })) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
     reference = new ReferenceExpression(new ElemID('jira', 'temp', 'instance', 'reference'))
     instance = new InstanceElement(
       'instance',
@@ -110,6 +110,149 @@ describe('Scriptrunner references', () => {
         },
       }
     )
+  })
+  describe('on fetch', () => {
+    beforeEach(() => {
+      instance.value.transitions = {
+        tran1: {
+          id: '11',
+          name: 'tran1',
+          rules: {
+            postFunctions: [
+              {
+                type: SCRIPT_RUNNER_POST_FUNCTION_TYPE,
+                configuration: {
+                  scriptRunner: {
+                    transitionId: '21',
+                  },
+                },
+              },
+              {
+                type: SCRIPT_RUNNER_POST_FUNCTION_TYPE,
+                configuration: {
+                  scriptRunner: {
+                    transitionId: '11',
+                  },
+                },
+              },
+            ],
+          },
+        },
+        tran2: {
+          id: '21',
+          name: 'tran2',
+          rules: {
+            postFunctions: [
+              {
+                type: SCRIPT_RUNNER_POST_FUNCTION_TYPE,
+                configuration: {
+                  scriptRunner: {
+                    transitionId: '11',
+                  },
+                },
+              },
+            ],
+          },
+        },
+      }
+    })
+    it('should create references to transitions', async () => {
+      await filterCloud.onFetch([instance])
+      expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner.transitionId)
+        .toBeInstanceOf(ReferenceExpression)
+      expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner.transitionId
+        .elemID.getFullName()).toEqual('jira.Workflow.instance.instance.transitions.tran2')
+      expect(instance.value.transitions.tran1.rules.postFunctions[1].configuration.scriptRunner.transitionId)
+        .toBeInstanceOf(ReferenceExpression)
+      expect(instance.value.transitions.tran1.rules.postFunctions[1].configuration.scriptRunner.transitionId
+        .elemID.getFullName()).toEqual('jira.Workflow.instance.instance.transitions.tran1')
+      expect(instance.value.transitions.tran2.rules.postFunctions[0].configuration.scriptRunner.transitionId)
+        .toBeInstanceOf(ReferenceExpression)
+      expect(instance.value.transitions.tran2.rules.postFunctions[0].configuration.scriptRunner.transitionId
+        .elemID.getFullName()).toEqual('jira.Workflow.instance.instance.transitions.tran1')
+    })
+    it('should not fail if wrong structure', async () => {
+      instance.value.transitions = {
+        tran1: {
+          id: '11',
+          name: 'tran1',
+        },
+        tran2: {
+          id: '21',
+          name: 'tran2',
+          rules: {
+          },
+        },
+        tran3: {
+          id: '31',
+          name: 'tran3',
+          rules: {
+            postFunctions: [
+              {
+              },
+            ],
+          },
+        },
+        tran4: {
+          id: '41',
+          name: 'tran4',
+          rules: {
+            postFunctions: [
+              {
+                type: SCRIPT_RUNNER_POST_FUNCTION_TYPE,
+              },
+              {
+                type: SCRIPT_RUNNER_POST_FUNCTION_TYPE,
+                configuration: {
+                },
+              },
+              {
+                type: SCRIPT_RUNNER_POST_FUNCTION_TYPE,
+                configuration: {
+                  scriptRunner: {
+                  },
+                },
+              },
+            ],
+          },
+        },
+      }
+      await expect(filterCloud.onFetch([instance])).resolves.not.toThrow()
+    })
+    it('should convert to missing reference if transition id does not exist', async () => {
+      instance.value.transitions = {
+        tran1: {
+          id: '11',
+          name: 'tran1',
+          rules: {
+            postFunctions: [
+              {
+                type: SCRIPT_RUNNER_POST_FUNCTION_TYPE,
+                configuration: {
+                  scriptRunner: {
+                    transitionId: '21',
+                  },
+                },
+              },
+            ],
+          },
+        },
+      }
+      await filterCloud.onFetch([instance])
+      const { transitionId } = instance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner
+      expect(transitionId).toBeInstanceOf(ReferenceExpression)
+      expect(transitionId.elemID.getFullName()).toEqual('jira.Workflow.instance.instance.transitions.missing_21')
+    })
+    it('should not change anything if script runner is not enabled', async () => {
+      await filterOff.onFetch([instance])
+      expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner.transitionId)
+        .toEqual('21')
+    })
+    it('should not change anything if dc', async () => {
+      await filter.onFetch([instance])
+      expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner.transitionId)
+        .toEqual('21')
+    })
   })
   describe('pre deploy', () => {
     it('should store reference and replace correctly', async () => {

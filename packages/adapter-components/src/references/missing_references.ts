@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { Element, ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 
 export const MISSING_ANNOTATION = 'salto_missing_ref'
@@ -35,3 +35,11 @@ export const createMissingInstance = (
     { [MISSING_ANNOTATION]: true },
   )
 )
+
+export const createMissingValueReference = (
+  elemID: ElemID,
+  value: string
+): ReferenceExpression =>
+  new ReferenceExpression(
+    elemID.createNestedID(naclCase(`${MISSING_REF_PREFIX}${value}`))
+  )

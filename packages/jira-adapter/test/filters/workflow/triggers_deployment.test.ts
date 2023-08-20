@@ -37,6 +37,7 @@ describe('triggersDeployment', () => {
         name: 'workflowName',
         transitions: {
           'name__From__any_status__Circular@fffssff': {
+            id: '1',
             name: 'name',
             rules: {
               triggers: [{
@@ -52,22 +53,6 @@ describe('triggersDeployment', () => {
     const { client: cli, connection } = mockClient()
     client = cli
     mockConnection = connection
-
-    mockConnection.get.mockResolvedValue({
-      status: 200,
-      data: {
-        values: [
-          {
-            transitions: [
-              {
-                name: 'name',
-                id: '1',
-              },
-            ],
-          },
-        ],
-      },
-    })
   })
 
   it('should call the deploy triggers endpoint', async () => {

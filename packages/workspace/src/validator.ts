@@ -497,8 +497,6 @@ const validateValue = (
 
   if (isReferenceExpression(value)) {
     if (!isElement(value.value)
-      // We check for both validatedReferences and isParentOf because if we got to
-      // the same reference twice but not through a cycle we do want to validate it
       && !validatedReferences.has(value.elemID.getFullName())) {
       validatedReferences.add(value.elemID.getFullName())
       const result = validateValue(elemID, value.value, type, validatedReferences)

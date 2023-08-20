@@ -15,9 +15,139 @@
 */
 import _ from 'lodash'
 // eslint-disable-next-line import/no-cycle
-import { areReferencesEqual, shouldResolve } from './reference_comparison'
+import { CompareOptions, ReferenceExpression, Value, isReferenceExpression, isStaticFile } from './values'
 // eslint-disable-next-line import/no-cycle
-import { CompareOptions, Value, isReferenceExpression, isStaticFile } from './values'
+import { ReadOnlyElementsSource, isVariable } from './elements'
+
+type ReferenceCompareReturnValue<T> = {
+  returnCode: 'return'
+  returnValue: boolean
+} | {
+  returnCode: 'recurse'
+  returnValue: {
+    firstValue: T
+    secondValue: T
+  }
+}
+
+
+const getReferenceValue = (
+  reference: ReferenceExpression,
+  elementsSource: ReadOnlyElementsSource | undefined,
+  visitedReferences: Set<string>,
+): Value => {
+  const targetId = reference.elemID.getFullName()
+  if (visitedReferences.has(targetId)) {
+    // Circular reference, to avoid infinite recursion we need to return something
+    // the chosen behavior for now is to return "undefined"
+    // this may cause circular references to compare equal if we compare to undefined
+    // but this shouldn't matter much as we assume the user has already seen the warning
+    // about having a circular reference before getting to this point
+    return undefined
+  }
+  visitedReferences.add(targetId)
+  return reference.value
+    ?? reference.getResolvedValue(elementsSource).then(refValue => (isVariable(refValue) ? refValue.value : refValue))
+}
+
+
+export const shouldResolve = (value: unknown): boolean => (
+  // We don't resolve references to elements because the logic of how to resolve each
+  // reference currently exists only in the adapter so here we don't know how to
+  // resolve them.
+  // We do resolve variables because they always point to a primitive value that we can compare.
+  // If a value is not a reference we decided to return that we should "resolve" it so
+  // the value will be treated like a resolved reference
+  !isReferenceExpression(value) || !value.elemID.isBaseID() || value.elemID.idType === 'var'
+)
+
+export function areReferencesEqual({
+  first,
+  second,
+  firstSrc,
+  secondSrc,
+  firstVisitedReferences,
+  secondVisitedReferences,
+  compareOptions,
+}: {
+  first: Value
+  second: Value
+  firstSrc: ReadOnlyElementsSource
+  secondSrc: ReadOnlyElementsSource
+  firstVisitedReferences: Set<string>
+  secondVisitedReferences: Set<string>
+  compareOptions?: CompareOptions
+}): ReferenceCompareReturnValue<Promise<Value>>
+
+export function areReferencesEqual({
+  first,
+  second,
+  firstVisitedReferences,
+  secondVisitedReferences,
+  compareOptions,
+}: {
+  first: Value
+  second: Value
+  firstVisitedReferences: Set<string>
+  secondVisitedReferences: Set<string>
+  compareOptions?: CompareOptions
+}): ReferenceCompareReturnValue<Value>
+
+export function areReferencesEqual({
+  first,
+  second,
+  firstSrc,
+  secondSrc,
+  firstVisitedReferences,
+  secondVisitedReferences,
+  compareOptions,
+}: {
+  first: Value
+  second: Value
+  firstSrc?: ReadOnlyElementsSource
+  secondSrc?: ReadOnlyElementsSource
+  firstVisitedReferences: Set<string>
+  secondVisitedReferences: Set<string>
+  compareOptions?: CompareOptions
+}): ReferenceCompareReturnValue<Value> {
+  if (compareOptions?.compareByValue && shouldResolve(first) && shouldResolve(second)) {
+    const shouldResolveFirst = isReferenceExpression(first)
+
+    const firstValue = shouldResolveFirst
+      ? getReferenceValue(first, firstSrc, firstVisitedReferences)
+      : first
+
+    const shouldResolveSecond = isReferenceExpression(second)
+
+    const secondValue = shouldResolveSecond
+      ? getReferenceValue(second, secondSrc, secondVisitedReferences)
+      : second
+
+    if (shouldResolveFirst || shouldResolveSecond) {
+      return {
+        returnCode: 'recurse',
+        returnValue: {
+          firstValue,
+          secondValue,
+        },
+      }
+    }
+  }
+
+  if (isReferenceExpression(first) && isReferenceExpression(second)) {
+    return {
+      returnCode: 'return',
+      returnValue: first.elemID.isEqual(second.elemID),
+    }
+  }
+
+  // if we got here, as we assume that one of the compared values is a ReferenceExpression,
+  // we need to return false because a non-resolved reference isn't equal to a non-reference value
+  return {
+    returnCode: 'return',
+    returnValue: false,
+  }
+}
 
 /*
   Benchmarking reveals that looping on strings is extremely expensive.
@@ -41,8 +171,8 @@ const shouldCompareByValue = (
 const compareSpecialValuesWithCircularRefs = (
   first: Value,
   second: Value,
-  sourceComparedReferences: Set<string>,
-  targetComparedReferences: Set<string>,
+  firstVisitedReferences: Set<string>,
+  secondVisitedReferences: Set<string>,
   options?: CompareOptions,
 ): boolean | undefined => {
   if (isStaticFile(first) && isStaticFile(second)) {
@@ -56,8 +186,8 @@ const compareSpecialValuesWithCircularRefs = (
       const referencesCompareResult = areReferencesEqual({
         first,
         second,
-        firstVisitedReferences: sourceComparedReferences,
-        secondVisitedReferences: targetComparedReferences,
+        firstVisitedReferences,
+        secondVisitedReferences,
         compareOptions: options,
       })
 
@@ -71,8 +201,8 @@ const compareSpecialValuesWithCircularRefs = (
         (va1, va2) => compareSpecialValuesWithCircularRefs(
           va1,
           va2,
-          sourceComparedReferences,
-          targetComparedReferences,
+          firstVisitedReferences,
+          secondVisitedReferences,
           options
         ),
       )

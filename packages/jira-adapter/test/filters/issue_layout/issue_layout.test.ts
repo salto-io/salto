@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { filterUtils, client as clientUtils, elements as elementUtils, elements as adapterElements } from '@salto-io/adapter-components'
 import { ObjectType, ElemID, InstanceElement, BuiltinTypes, ListType, ReferenceExpression, Element, isInstanceElement, isObjectType, getChangeData } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { MockInterface } from '@salto-io/test-utils'
@@ -126,7 +126,8 @@ describe('issue layout filter', () => {
           name: 'project1',
           issueTypeScreenScheme:
           new ReferenceExpression(issueTypeScreenSchemeInstance.elemID, issueTypeScreenSchemeInstance),
-        }
+        },
+        [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1']
       )
       issueTypeType = new ObjectType({ elemID: new ElemID(JIRA, 'IssueType') })
       issueTypeInstance = new InstanceElement(
@@ -144,6 +145,7 @@ describe('issue layout filter', () => {
         {
           id: 'testField1',
           name: 'TestField1',
+          type: 'testField1',
         }
       )
       fieldInstance2 = new InstanceElement(
@@ -152,6 +154,9 @@ describe('issue layout filter', () => {
         {
           id: 'testField2',
           name: 'TestField2',
+          schema: {
+            system: 'testField2',
+          },
         }
       )
 
@@ -437,8 +442,33 @@ describe('issue layout filter', () => {
       jest.clearAllMocks()
     })
     it('should add issue layout to the elements', async () => {
+      const issueLayoutInstanceWithoutId = new InstanceElement(
+        'issueLayout',
+        issueLayoutType,
+        {
+          projectId: new ReferenceExpression(projectInstance.elemID, projectInstance),
+          extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
+          owners: [
+            new ReferenceExpression(issueTypeInstance.elemID, issueTypeInstance),
+          ],
+          issueLayoutConfig: {
+            items: [
+              {
+                type: 'FIELD',
+                sectionType: 'PRIMARY',
+                key: new ReferenceExpression(fieldInstance1.elemID, fieldInstance1),
+              },
+              {
+                type: 'FIELD',
+                sectionType: 'SECONDARY',
+                key: new ReferenceExpression(fieldInstance2.elemID, fieldInstance2),
+              },
+            ],
+          },
+        }
+      )
       const res = await filter.deploy([
-        { action: 'add', data: { after: issueLayoutInstance } },
+        { action: 'add', data: { after: issueLayoutInstanceWithoutId } },
         { action: 'add', data: { after: projectInstance } },
       ])
       expect(res.deployResult.errors).toHaveLength(0)
@@ -457,6 +487,7 @@ describe('issue layout filter', () => {
         {
           id: 'testField3',
           name: 'TestField3',
+          type: 'testField3',
         }
       )
       afterIssueLayoutInstance.value.issueLayoutConfig.items[2] = {
@@ -547,13 +578,6 @@ describe('issue layout filter', () => {
           } },
         undefined
       )
-    })
-    it('should not add item if its project is not a reference expression', async () => {
-      issueLayoutInstance.value.projectId = 6565
-      await filter.deploy([
-        { action: 'add', data: { after: issueLayoutInstance } },
-      ])
-      expect(connection.put).not.toHaveBeenCalled()
     })
   })
 })

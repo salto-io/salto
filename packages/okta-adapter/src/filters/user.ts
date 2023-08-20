@@ -28,7 +28,7 @@ const log = logger(module)
 const { toArrayAsync, awu } = collections.asynciterable
 const { makeArray } = collections.array
 
-type User = {
+export type User = {
   id: string
   profile: {
     login: string
@@ -44,7 +44,7 @@ const USER_SCHEMA = Joi.object({
 
 const USERS_RESPONSE_SCHEMA = Joi.array().items(USER_SCHEMA).required()
 
-const areUsers = createSchemeGuard<User[]>(
+export const areUsers = createSchemeGuard<User[]>(
   USERS_RESPONSE_SCHEMA, 'Received an invalid response for the users'
 )
 

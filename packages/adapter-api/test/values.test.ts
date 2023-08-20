@@ -15,10 +15,11 @@
 */
 
 import { ElemID } from '../src/element_id'
-import { StaticFile, isEqualValues, VariableExpression,
+import { StaticFile, VariableExpression,
   ReferenceExpression, isStaticFile, calculateStaticFileHash, isPrimitiveValue, TemplateExpression, TypeReference, Values, cloneDeepWithoutRefs } from '../src/values'
 import { BuiltinTypes } from '../src/builtins'
 import { ObjectType, InstanceElement, Variable } from '../src/elements'
+import { isEqualValues } from '../src/comparison'
 
 describe('Values', () => {
   describe('ReferenceExpression', () => {
@@ -233,6 +234,21 @@ describe('Values', () => {
       it('Reference should not be equal to its resolved value when compareReferencesByValue is true', () => {
         const ref1 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 1)
         expect(isEqualValues(ref1, 1, { compareByValue: true })).toBeTruthy()
+      })
+
+      it('Comparing circular dependencies should return true', () => {
+        const instance = new InstanceElement(
+          'instance',
+          new ObjectType({ elemID: new ElemID('adapter', 'type') }),
+        )
+
+        instance.value.a = {
+          ref: new ReferenceExpression(instance.elemID.createNestedID('a')),
+        }
+
+        instance.value.a.ref.value = instance.value.a
+
+        expect(isEqualValues(instance, instance.clone(), { compareByValue: true })).toBeTruthy()
       })
     })
     it('calculate hash', () => {

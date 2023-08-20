@@ -61,10 +61,14 @@ export type ErrorMappers = {
   [ENOTFOUND]: ErrorMapper<DNSException>
 }
 
+const withOriginalError = (error: Error, saltoErrorMessage: string): string => (
+  `${saltoErrorMessage}\n\nOriginal error: ${error.message}`
+)
+
 export const ERROR_MAPPERS: ErrorMappers = {
   [ERROR_HTTP_502]: {
     test: (error: Error): error is Error => error.message === ERROR_HTTP_502,
-    map: (_error: Error): string => ERROR_HTTP_502_MESSAGE,
+    map: (error: Error): string => withOriginalError(error, ERROR_HTTP_502_MESSAGE),
   },
   [SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED]: {
     test: (error: Error): error is SalesforceError => (
@@ -72,21 +76,21 @@ export const ERROR_MAPPERS: ErrorMappers = {
     ),
     map: (error: SalesforceError): string => (
       error.message.includes('TotalRequests Limit exceeded')
-        ? REQUEST_LIMIT_EXCEEDED_MESSAGE
-        : MAX_CONCURRENT_REQUESTS_MESSAGE
+        ? withOriginalError(error, REQUEST_LIMIT_EXCEEDED_MESSAGE)
+        : withOriginalError(error, MAX_CONCURRENT_REQUESTS_MESSAGE)
     ),
   },
   [INVALID_GRANT]: {
     test: (error: Error): error is Error => error.name === INVALID_GRANT,
-    map: (_error: Error): string => INVALID_GRANT_MESSAGE,
+    map: (error: Error): string => withOriginalError(error, INVALID_GRANT_MESSAGE),
   },
   [ENOTFOUND]: {
     test: (error: Error): error is DNSException => (
       isDNSException(error) && error.code === ENOTFOUND
     ),
     map: (error: DNSException) => (
-      `Unable to communicate with the salesforce org at ${error[ERROR_PROPERTIES.HOSTNAME]}.`
-      + ' This may indicate that the org no longer exists, e.g. a sandbox that was deleted, or due to other network issues.'
+      withOriginalError(error, `Unable to communicate with the salesforce org at ${error[ERROR_PROPERTIES.HOSTNAME]}.`
+      + ' This may indicate that the org no longer exists, e.g. a sandbox that was deleted, or due to other network issues.')
     ),
   },
 }

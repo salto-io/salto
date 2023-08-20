@@ -18,7 +18,7 @@ import { ElemID, InstanceElement, ObjectType, toChange, ReferenceExpression } fr
 import { filterUtils } from '@salto-io/adapter-components'
 import { createEmptyType, getFilterParams } from '../../utils'
 import scriptRunnerBrokenReferenceFilter from '../../../src/filters/broken_reference_filter'
-import { ISSUE_TYPE_NAME, JIRA, PROJECT_TYPE, SCRIPTED_FIELD_TYPE } from '../../../src/constants'
+import { BEHAVIOR_TYPE, ISSUE_TYPE_NAME, JIRA, PROJECT_TYPE, SCRIPTED_FIELD_TYPE } from '../../../src/constants'
 
 describe('scriptRunnerBrokenReferenceFilter', () => {
   let filter: filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
@@ -26,6 +26,7 @@ describe('scriptRunnerBrokenReferenceFilter', () => {
   let projectType: ObjectType
   let IssueTypeType: ObjectType
   let scriptedFieldInstance: InstanceElement
+  let behaviorsInstance: InstanceElement
   let projectInstance: InstanceElement
   let unresolvedProject: ReferenceExpression
   let resolvedProject: ReferenceExpression
@@ -39,6 +40,7 @@ describe('scriptRunnerBrokenReferenceFilter', () => {
     scriptedFieldsType = createEmptyType(SCRIPTED_FIELD_TYPE)
     projectType = createEmptyType(PROJECT_TYPE)
     IssueTypeType = createEmptyType(ISSUE_TYPE_NAME)
+    const behaviorType = createEmptyType(BEHAVIOR_TYPE)
     projectInstance = new InstanceElement(
       'ProjectInstance',
       projectType,
@@ -58,6 +60,20 @@ describe('scriptRunnerBrokenReferenceFilter', () => {
       scriptedFieldsType,
       {
         projectKeys: [
+          resolvedProject,
+          unresolvedProject,
+        ],
+        issueTypes: [
+          resolvedIssueType,
+          unresolvedIssueType,
+        ],
+      },
+    )
+    behaviorsInstance = new InstanceElement(
+      'BehaviorsInstance',
+      behaviorType,
+      {
+        projects: [
           resolvedProject,
           unresolvedProject,
         ],
@@ -94,6 +110,34 @@ describe('scriptRunnerBrokenReferenceFilter', () => {
       expect(modificationInstance.value.issueTypes[0])
         .toEqual(resolvedIssueType)
       expect(deletedInstance.value.projectKeys)
+        .toEqual([resolvedProject, unresolvedProject])
+      expect(deletedInstance.value.issueTypes)
+        .toEqual([resolvedIssueType, unresolvedIssueType])
+    })
+    it('should remove unresolved project from behaviors for adding and modification', async () => {
+      const modificationInstance = behaviorsInstance.clone()
+      const deletedInstance = behaviorsInstance.clone()
+      await filter.preDeploy([
+        toChange({ after: behaviorsInstance }),
+        toChange({ before: behaviorsInstance, after: modificationInstance }),
+        toChange({ before: deletedInstance })])
+
+      expect(behaviorsInstance.value.projects).toHaveLength(1)
+      expect(behaviorsInstance.value.issueTypes).toHaveLength(1)
+      expect(modificationInstance.value.projects).toHaveLength(1)
+      expect(modificationInstance.value.issueTypes).toHaveLength(1)
+      expect(deletedInstance.value.projects).toHaveLength(2)
+      expect(deletedInstance.value.issueTypes).toHaveLength(2)
+
+      expect(behaviorsInstance.value.projects[0])
+        .toEqual(resolvedProject)
+      expect(behaviorsInstance.value.issueTypes[0])
+        .toEqual(resolvedIssueType)
+      expect(modificationInstance.value.projects[0])
+        .toEqual(resolvedProject)
+      expect(modificationInstance.value.issueTypes[0])
+        .toEqual(resolvedIssueType)
+      expect(deletedInstance.value.projects)
         .toEqual([resolvedProject, unresolvedProject])
       expect(deletedInstance.value.issueTypes)
         .toEqual([resolvedIssueType, unresolvedIssueType])
@@ -135,6 +179,44 @@ describe('scriptRunnerBrokenReferenceFilter', () => {
       expect(modificationInstance.value.issueTypes)
         .toEqual([resolvedIssueType, unresolvedIssueType])
       expect(deletedInstance.value.projectKeys)
+        .toEqual([resolvedProject, unresolvedProject])
+      expect(deletedInstance.value.issueTypes)
+        .toEqual([resolvedIssueType, unresolvedIssueType])
+    })
+    it('should add back unresolved project references to behaviors when adding or modifying', async () => {
+      const modificationInstance = behaviorsInstance.clone()
+      const deletedInstance = behaviorsInstance.clone()
+
+      await filter.preDeploy([
+        toChange({ after: behaviorsInstance }),
+        toChange({ before: behaviorsInstance, after: modificationInstance }),
+        toChange({ before: deletedInstance })])
+
+      expect(behaviorsInstance.value.projects).toHaveLength(1)
+      expect(modificationInstance.value.projects).toHaveLength(1)
+      expect(deletedInstance.value.projects).toHaveLength(2)
+      await filter.onDeploy([
+        toChange({ after: behaviorsInstance }),
+        toChange({ before: behaviorsInstance, after: modificationInstance }),
+        toChange({ before: deletedInstance })])
+
+      expect(behaviorsInstance.value.projects).toHaveLength(2)
+      expect(behaviorsInstance.value.issueTypes).toHaveLength(2)
+      expect(modificationInstance.value.projects).toHaveLength(2)
+      expect(modificationInstance.value.issueTypes).toHaveLength(2)
+      expect(deletedInstance.value.projects).toHaveLength(2)
+      expect(deletedInstance.value.issueTypes).toHaveLength(2)
+
+
+      expect(behaviorsInstance.value.projects)
+        .toEqual([resolvedProject, unresolvedProject])
+      expect(behaviorsInstance.value.issueTypes)
+        .toEqual([resolvedIssueType, unresolvedIssueType])
+      expect(modificationInstance.value.projects)
+        .toEqual([resolvedProject, unresolvedProject])
+      expect(modificationInstance.value.issueTypes)
+        .toEqual([resolvedIssueType, unresolvedIssueType])
+      expect(deletedInstance.value.projects)
         .toEqual([resolvedProject, unresolvedProject])
       expect(deletedInstance.value.issueTypes)
         .toEqual([resolvedIssueType, unresolvedIssueType])

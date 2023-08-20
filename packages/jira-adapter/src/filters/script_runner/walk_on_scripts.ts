@@ -19,7 +19,7 @@ import { InstanceElement, Value } from '@salto-io/adapter-api'
 import { SCRIPT_RUNNER_DC_TYPES } from './workflow/workflow_dc'
 import { SCRIPT_RUNNER_CLOUD_TYPES } from './workflow/workflow_cloud'
 import { isWorkflowInstance } from '../workflow/types'
-import { SCRIPT_RUNNER_TYPES } from '../../constants'
+import { BEHAVIOR_TYPE, SCRIPT_RUNNER_TYPES } from '../../constants'
 
 
 const WORKFLOW_SCRIPT_DC_FIELDS = ['FIELD_CONDITION', 'FIELD_ADDITIONAL_SCRIPT', 'FIELD_SCRIPT_FILE_OR_SCRIPT']
@@ -89,5 +89,14 @@ export const walkOnScripts = (
       Object.keys(instance.value)
         .filter(key => SCRIPT_CLOUD_FIELDS.includes(key))
         .forEach(key => func(instance.value, key))
+    })
+
+  instances
+    .filter(instance => instance.elemID.typeName === BEHAVIOR_TYPE)
+    .forEach(instance => {
+      instance.value.config?.forEach((config: Value) => {
+        func(config, 'typescript')
+        func(config, 'javascript')
+      })
     })
 }

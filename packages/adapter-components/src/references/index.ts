@@ -15,7 +15,8 @@
 */
 export { neighborContextGetter, ContextFunc, ContextValueMapperFunc, findParentPath } from './context'
 export { addReferences, replaceReferenceValues, generateLookupFunc } from './field_references'
-export { createMissingInstance, checkMissingRef, MISSING_REF_PREFIX } from './missing_references'
+export { createMissingInstance, createMissingValueReference, checkMissingRef, MISSING_REF_PREFIX } from './missing_references'
+export { createMissingInstance, createMissingValueReference } from './missing_references'
 export {
   ReferenceSerializationStrategy,
   ReferenceSerializationStrategyName,

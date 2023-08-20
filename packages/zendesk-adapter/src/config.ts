@@ -84,7 +84,9 @@ export type ZendeskFetchConfig = configUtils.UserFetchConfig
   guide?: Guide
   resolveOrganizationIDs?: boolean
 }
-export type ZedneskDeployConfig = configUtils.UserDeployConfig & configUtils.DefaultMissingUserFallbackConfig
+export type ZedneskDeployConfig = configUtils.UserDeployConfig & configUtils.DefaultMissingUserFallbackConfig & {
+  createMissingOrganizations?: boolean
+}
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
   configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean },
   configUtils.TransformationDefaultConfig & { omitInactive?: boolean }
@@ -2546,7 +2548,10 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     enableMissingReferences: true,
     resolveOrganizationIDs: false,
     includeAuditDetails: false,
-    addAlias: false,
+    addAlias: true,
+  },
+  [DEPLOY_CONFIG]: {
+    createMissingOrganizations: false,
   },
   [API_DEFINITIONS_CONFIG]: {
     typeDefaults: {
@@ -2760,7 +2765,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
         {
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
           includeAuditDetails: { refType: BuiltinTypes.BOOLEAN },
-          addAlias: { refType: BuiltinTypes.BOOLEAN }, // SALTO-3662 this flag should become true by default
+          addAlias: { refType: BuiltinTypes.BOOLEAN },
           greedyAppReferences: { refType: BuiltinTypes.BOOLEAN },
           appReferenceLocators: { refType: IdLocatorType },
           guide: { refType: GuideType },
@@ -2772,7 +2777,10 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       refType: createUserDeployConfigType(
         ZENDESK,
         changeValidatorConfigType,
-        defaultMissingUserFallbackField
+        {
+          ...defaultMissingUserFallbackField,
+          createMissingOrganizations: { refType: BuiltinTypes.BOOLEAN },
+        },
       ),
     },
     [API_DEFINITIONS_CONFIG]: {

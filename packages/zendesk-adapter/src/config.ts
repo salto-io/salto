@@ -2548,7 +2548,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     enableMissingReferences: true,
     resolveOrganizationIDs: false,
     includeAuditDetails: false,
-    addAlias: false,
+    addAlias: true,
   },
   [DEPLOY_CONFIG]: {
     createMissingOrganizations: false,
@@ -2763,7 +2763,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
         {
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
           includeAuditDetails: { refType: BuiltinTypes.BOOLEAN },
-          addAlias: { refType: BuiltinTypes.BOOLEAN }, // SALTO-3662 this flag should become true by default
+          addAlias: { refType: BuiltinTypes.BOOLEAN },
           greedyAppReferences: { refType: BuiltinTypes.BOOLEAN },
           appReferenceLocators: { refType: IdLocatorType },
           guide: { refType: GuideType },

@@ -120,8 +120,10 @@ describe('article filter', () => {
   })
   describe('deploy', () => {
     it('should return success on happy flow', async () => {
+      const newAttachment = attachment1.clone()
+      delete newAttachment.value.id // New elements doesn't have id until they are created
       const changes = [
-        toChange({ after: attachment1 }),
+        toChange({ after: newAttachment }),
         toChange({ before: attachment2, after: attachment3 }),
         toChange({ after: unrelatedInstance }),
       ]
@@ -284,7 +286,8 @@ describe('article filter', () => {
       })
     })
     it('should associate new attachments and unassociate old attachments to articles on attachment modification', async () => {
-      const change: ModificationChange<InstanceElement> = { action: 'modify', data: { before: attachment1, after: attachment1 } }
+      // clone the after because it is modified in the filter
+      const change: ModificationChange<InstanceElement> = { action: 'modify', data: { before: attachment1, after: attachment1.clone() } }
       const articleNameToAttachments = await prepareArticleAttachmentsForDeploy(
         { client, changes: [change], elementsSource }
       )

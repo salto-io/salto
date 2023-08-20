@@ -181,7 +181,11 @@ export const associateAttachmentToArticles = async ({
     // On Additions, mark the change as either applied or error, according to the association status
     await Promise.all(additionResults.flatMap(async ({ status, ids, error }) => {
       if (status === SUCCESS_STATUS_CODE) {
-        ids.forEach(id => deployResult.appliedChanges.push(attachmentAdditions[id]))
+        ids.forEach(id => {
+          const change = attachmentAdditions[id]
+          change.data.after.value.id = id
+          deployResult.appliedChanges.push(change)
+        })
         return []
       }
       ids.forEach(id => deployResult.errors.push({
@@ -196,7 +200,11 @@ export const associateAttachmentToArticles = async ({
       const attachmentIdsToDelete = []
       // If the association was successful, mark the changes as applies and delete the old attachment
       if (status === SUCCESS_STATUS_CODE) {
-        ids.forEach(id => deployResult.appliedChanges.push(attachmentModifications[id].change))
+        ids.forEach(id => {
+          const { change } = attachmentModifications[id]
+          change.data.after.value.id = id
+          deployResult.appliedChanges.push(change)
+        })
         attachmentIdsToDelete.push(
           ...Object.values(attachmentModifications).map(modification => modification.oldAttachmentId)
         )

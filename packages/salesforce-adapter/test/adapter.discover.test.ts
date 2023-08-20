@@ -335,7 +335,8 @@ describe('SalesforceAdapter fetch', () => {
         + 1 /* treat blank as */
         + 1 /* value set */
         + 2 /* field dependency & value settings */
-        + 7 /* range restrictions */)
+        + 7 /* range restrictions */
+        + 2 /* ChangedAtSingleton type & instance */)
 
       const elementsMap = _.keyBy(result, element => element.elemID.getFullName())
       const nestingType = elementsMap['salesforce.NestingType'] as ObjectType
@@ -1436,8 +1437,8 @@ public class LargeClass${index} {
       } as unknown as ObjectType
       const metadataQuery = {
         isTypeMatch: jest.fn(),
-        isInstanceMatch: jest.fn().mockReturnValue(true),
-        isPartialFetch: jest.fn(),
+        isInstanceMatch: () => true,
+        isPartialFetch: () => false,
         isTargetedFetch: jest.fn(),
         isFetchWithChangesDetection: jest.fn(),
         getFolderPathsByName: jest.fn(),

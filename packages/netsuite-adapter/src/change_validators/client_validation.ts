@@ -43,9 +43,9 @@ const toChangeErrors = (
     missingDependenciesErrors,
     error => error.elemID.getFullName()
   )).map(elementErrors => {
-    const missingDependencies = elementErrors
+    const missingDependencies = _.uniq(elementErrors
       .flatMap(error => missingDependenciesRegexes
-        .flatMap(regex => getGroupItemFromRegex(error.message, regex, OBJECT_ID)))
+        .flatMap(regex => getGroupItemFromRegex(error.message, regex, OBJECT_ID))))
 
     return {
       elemID: elementErrors[0].elemID,

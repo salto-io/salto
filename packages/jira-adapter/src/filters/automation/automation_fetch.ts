@@ -16,7 +16,7 @@
 import { ElemIdGetter, InstanceElement, isInstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
 import { createSchemeGuard, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
-// import { values as lowerdashValues } from '@salto-io/lowerdash'
+import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
 import _ from 'lodash'
@@ -92,9 +92,10 @@ const createInstance = (
   const serviceIds = elementUtils.createServiceIds(values, 'id', type.elemID)
   const defaultName = naclCase([
     values.name,
-    (convertRuleScopeValueToProjects(values) ?? [])
-      .filter((project: Values) => idToProject[project.projectId]?.value.name !== undefined)
-      .map((project: Values) => `_${idToProject[project.projectId]?.value.name}`)].join(''))
+    ...(convertRuleScopeValueToProjects(values) ?? [])
+      .map((project: Values) => idToProject[project.projectId]?.value.name)
+      .filter(lowerdashValues.isDefined),
+  ].join('_'))
 
   const instanceName = getElemIdFunc && serviceIds
     ? getElemIdFunc(JIRA, serviceIds, defaultName).name

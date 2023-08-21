@@ -16,7 +16,7 @@
 import { ElemIdGetter, InstanceElement, isInstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
 import { createSchemeGuard, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { values as lowerdashValues } from '@salto-io/lowerdash'
+// import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
 import _ from 'lodash'
@@ -26,6 +26,7 @@ import { FilterCreator } from '../../filter'
 import { createAutomationTypes } from './types'
 import { JiraConfig } from '../../config/config'
 import { getCloudId } from './cloud_id'
+import { convertRuleScopeValueToProjects } from './automation_structure'
 
 const DEFAULT_PAGE_SIZE = 1000
 
@@ -89,13 +90,11 @@ const createInstance = (
   getElemIdFunc?: ElemIdGetter,
 ): InstanceElement => {
   const serviceIds = elementUtils.createServiceIds(values, 'id', type.elemID)
-
   const defaultName = naclCase([
     values.name,
-    ...values.projects
-      .map((project: Values) => idToProject[project.projectId]?.value.name)
-      .filter(lowerdashValues.isDefined),
-  ].join('_'))
+    (convertRuleScopeValueToProjects(values) ?? [])
+      .filter((project: Values) => idToProject[project.projectId]?.value.name !== undefined)
+      .map((project: Values) => `_${idToProject[project.projectId]?.value.name}`)].join(''))
 
   const instanceName = getElemIdFunc && serviceIds
     ? getElemIdFunc(JIRA, serviceIds, defaultName).name

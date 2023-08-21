@@ -22,7 +22,7 @@ import {
   normalizeFilePathPart,
   replaceTemplatesWithValues,
   safeJsonStringify,
-  inspectValue,
+  inspectValue, isResolvedReferenceExpression,
 } from '@salto-io/adapter-utils'
 import { collections, promises, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
@@ -37,12 +37,14 @@ import {
   StaticFile, Value,
   Values,
 } from '@salto-io/adapter-api'
+import { references } from '@salto-io/adapter-components'
 import ZendeskClient from '../../client/client'
 import { ZENDESK } from '../../constants'
 import { getZendeskError } from '../../errors'
 import { CLIENT_CONFIG, ZendeskApiConfig, ZendeskConfig } from '../../config'
 import { prepRef } from './article_body'
 
+const { checkMissingRef } = references
 const { isDefined } = lowerDashValues
 
 const { sleep } = promises.timeout
@@ -292,6 +294,18 @@ export const updateArticleTranslationBody = async ({
     .filter(isReferenceExpression)
     .filter(translationInstance => isTemplateExpression(translationInstance.value.value.body))
     .forEach(async translationInstance => {
+      // Because this is a translation deployment called from attachment, we don't catch missing references by default
+      // We need to catch them manually and throw an error
+      const missingReferencesInTranslation = translationInstance.value.value.body.parts.filter(isReferenceExpression)
+        .filter((ref: ReferenceExpression) => checkMissingRef(ref.value) || !isResolvedReferenceExpression(ref))
+      if (missingReferencesInTranslation.length > 0) {
+        log.error(`Article translation requires deployment for attachment, but has missing references (${translationInstance.elemID.getFullName()})`)
+        throw createSaltoElementError({
+          message: 'Article translation requires deployment for attachment, but has missing references',
+          severity: 'Error',
+          elemID: translationInstance.elemID,
+        })
+      }
       try {
         replaceTemplatesWithValues(
           { values: [translationInstance.value.value], fieldName: 'body' },

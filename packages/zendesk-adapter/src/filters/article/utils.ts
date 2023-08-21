@@ -297,11 +297,12 @@ export const updateArticleTranslationBody = async ({
       // Because this is a translation deployment called from attachment, we don't catch missing references by default
       // We need to catch them manually and throw an error
       const missingReferencesInTranslation = translationInstance.value.value.body.parts.filter(isReferenceExpression)
-        .filter((ref: ReferenceExpression) => checkMissingRef(ref.value) || !isResolvedReferenceExpression(ref))
+        .filter((ref: ReferenceExpression) => !isResolvedReferenceExpression(ref) || checkMissingRef(ref.value))
       if (missingReferencesInTranslation.length > 0) {
-        log.error(`Article translation requires deployment for attachment, but has missing references (${translationInstance.elemID.getFullName()})`)
+        const error = 'This article translation is needed to be deployed in order to deploy this attachment, but has missing references'
+        log.error(`${error} (${translationInstance.elemID.getFullName()})`)
         throw createSaltoElementError({
-          message: 'Article translation requires deployment for attachment, but has missing references',
+          message: error,
           severity: 'Error',
           elemID: translationInstance.elemID,
         })

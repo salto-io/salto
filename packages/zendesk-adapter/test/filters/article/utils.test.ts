@@ -14,7 +14,13 @@
 * limitations under the License.
 */
 import {
-  ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, StaticFile, TemplateExpression,
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  CORE_ANNOTATIONS,
+  ReferenceExpression,
+  StaticFile,
+  TemplateExpression,
 } from '@salto-io/adapter-api'
 import ZendeskClient from '../../../src/client/client'
 import {
@@ -181,6 +187,25 @@ describe('article utility functions', () => {
         attachmentInstances: [clonedAttachment],
       })
       expect(mockPut).toHaveBeenCalledTimes(1)
+    })
+    it('should error on missing reference inside the article translation\'s body', async () => {
+      const clonedArticle = articleWithAttachmentInstance.clone()
+      const clonedTranslation = articleTranslationInstance.clone()
+      const clonedAttachment = articleAttachmentInstance.clone()
+      clonedTranslation.value.body = new TemplateExpression({
+        parts: [new ReferenceExpression(clonedAttachment.elemID)],
+      })
+      clonedArticle.value.translations = [new ReferenceExpression(clonedTranslation.elemID, clonedTranslation)]
+      try {
+        await articleUtils.updateArticleTranslationBody({
+          client,
+          articleValues: clonedArticle.value,
+          attachmentInstances: [clonedAttachment],
+        })
+        throw new Error('Should have failed')
+      } catch (e) {
+        expect(e.message).toBe('This article translation is needed to be deployed in order to deploy this attachment, but has missing references')
+      }
     })
   })
 })

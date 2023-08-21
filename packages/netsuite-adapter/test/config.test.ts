@@ -81,14 +81,14 @@ describe('config', () => {
         failedTypes: { lockedError: lockedTypes, unexpectedError: suggestedSkipListTypes, excludedTypes: [] },
         failedCustomRecords: [],
       },
-      { fetch: fullFetch }
+      { fetch: fullFetch() }
     )?.config as InstanceElement[]
     expect(configFromConfigChanges[0].isEqual(new InstanceElement(
       ElemID.CONFIG_NAME,
       configType,
       {
         fetch: {
-          include: fullQueryParams,
+          include: fullQueryParams(),
           exclude: {
             types: Object.entries(suggestedSkipListTypes).map(([name, ids]) => ({ name, ids })),
             fileCabinet: [newFailedFilePath],
@@ -174,7 +174,7 @@ describe('config', () => {
       typesToSkip: ['someType'],
       filePathRegexSkipList: ['someRegex'],
       fileCabinet: ['SomeRegex', _.escapeRegExp(newFailedFilePath), newLargeFolderExclusion],
-      fetch: fullFetch,
+      fetch: fullFetch(),
     }
 
     const configChange = getConfigFromConfigChanges(
@@ -190,27 +190,27 @@ describe('config', () => {
     expect(configChange?.message)
       .toBe(formatConfigSuggestionsReasons([STOP_MANAGING_ITEMS_MSG, LARGE_FOLDERS_EXCLUDED_MESSAGE]))
   })
-  describe('Should throw an error if the config fetch is non-valid', () => {
+  describe('Fetch validation', () => {
     const configWithoutFetch = new InstanceElement('empty', configType, {})
     const configWithoutInclude = new InstanceElement('noInclude', configType, {
       fetch: {
-        exclude: emptyQueryParams,
+        exclude: emptyQueryParams(),
       },
     })
     const configWithInvalidInclude = new InstanceElement('invalidInclude', configType, {
       fetch: {
         include: {},
-        exclude: emptyQueryParams,
+        exclude: emptyQueryParams(),
       },
     })
     const configWithoutExclude = new InstanceElement('noExclude', configType, {
       fetch: {
-        include: emptyQueryParams,
+        include: emptyQueryParams(),
       },
     })
     const configWithInvalidExclude = new InstanceElement('invalidExclude', configType, {
       fetch: {
-        include: emptyQueryParams,
+        include: emptyQueryParams(),
         exclude: {},
       },
     })

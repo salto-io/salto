@@ -103,8 +103,8 @@ describe('omit fields filter', () => {
         ...defaultOpts,
         config: {
           fetch: {
-            include: fullQueryParams,
-            exclude: emptyQueryParams,
+            include: fullQueryParams(),
+            exclude: emptyQueryParams(),
             fieldsToOmit: [{ type: 'notSome.*', fields: ['.*'] }],
           },
         },
@@ -119,8 +119,8 @@ describe('omit fields filter', () => {
         ...defaultOpts,
         config: {
           fetch: {
-            include: fullQueryParams,
-            exclude: emptyQueryParams,
+            include: fullQueryParams(),
+            exclude: emptyQueryParams(),
             fieldsToOmit: [{ type: 'some.*', fields: ['.*2'] }],
           },
         },
@@ -132,8 +132,8 @@ describe('omit fields filter', () => {
         ...defaultOpts,
         config: {
           fetch: {
-            include: fullQueryParams,
-            exclude: emptyQueryParams,
+            include: fullQueryParams(),
+            exclude: emptyQueryParams(),
             fieldsToOmit: [{ type: 'some.*', subtype: 'inner.*', fields: ['.*2'] }],
           },
         },
@@ -148,8 +148,8 @@ describe('omit fields filter', () => {
         ...defaultOpts,
         config: {
           fetch: {
-            include: fullQueryParams,
-            exclude: emptyQueryParams,
+            include: fullQueryParams(),
+            exclude: emptyQueryParams(),
             fieldsToOmit: [
               { type: 'customrecordtype', fields: ['links'] },
               { type: 'customrecordtype', subtype: 'customrecordtype_permissions_permission', fields: ['.*level'] },
@@ -189,7 +189,7 @@ describe('omit fields filter', () => {
     it('should not omit if rule doesn\'t match', async () => {
       await filterCreator({ ...defaultOpts,
         config: {
-          fetch: fullFetch,
+          fetch: fullFetch(),
           deploy: { fieldsToOmit: [{ type: 'notSome.*', fields: ['.*'] }] },
         } })
         .preDeploy?.([
@@ -206,7 +206,7 @@ describe('omit fields filter', () => {
         ...defaultOpts,
         elementsSource: buildElementsSourceFromElements([instance, type, innerType]),
         config: {
-          fetch: fullFetch,
+          fetch: fullFetch(),
           deploy: { fieldsToOmit: [{ type: 'some.*', fields: ['.*2'] }] },
         },
       }).preDeploy?.([toChange({ after: instance })])
@@ -218,7 +218,7 @@ describe('omit fields filter', () => {
         ...defaultOpts,
         elementsSource: buildElementsSourceFromElements([instance, type, innerType]),
         config: {
-          fetch: fullFetch,
+          fetch: fullFetch(),
           deploy: { fieldsToOmit: [{ type: 'some.*', subtype: 'inner.*', fields: ['.*2'] }] },
         },
       }).preDeploy?.([toChange({ after: instance })])
@@ -243,7 +243,7 @@ describe('omit fields filter', () => {
               { type: 'customrecordcustomfield', fields: ['is.*'] },
             ],
           },
-          fetch: fullFetch,
+          fetch: fullFetch(),
         },
       }).preDeploy?.([toChange({ after: customRecordObjectType })])
       expect(customRecordObjectType.annotations).toEqual({

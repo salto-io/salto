@@ -98,7 +98,7 @@ describe('Adapter', () => {
   const client = createClient()
   const config = {
     fetch: {
-      include: fullQueryParams,
+      include: fullQueryParams(),
       exclude: {
         types: [
           { name: 'account', ids: ['aaa'] },
@@ -317,7 +317,7 @@ describe('Adapter', () => {
       const withChangesDetection = true
       const conf = {
         fetch: {
-          include: fullQueryParams,
+          include: fullQueryParams(),
           exclude: {
             types: [
               { name: SAVED_SEARCH },
@@ -346,7 +346,7 @@ describe('Adapter', () => {
     describe('fetchTarget', () => {
       const conf = {
         fetch: {
-          include: fullQueryParams,
+          include: fullQueryParams(),
           exclude: {
             types: [
               { name: SAVED_SEARCH },
@@ -922,7 +922,7 @@ describe('Adapter', () => {
               },
             },
           },
-          fetch: fullFetch,
+          fetch: fullFetch(),
         }
         const netsuiteAdapterWithAdditionalSdfDependencies = new NetsuiteAdapter({
           client: new NetsuiteClient(client),
@@ -992,7 +992,7 @@ describe('Adapter', () => {
           fetchAllTypesAtOnce: true,
           deploy: {
           },
-          fetch: fullFetch,
+          fetch: fullFetch(),
         }
         const elementsSource = buildElementsSourceFromElements([])
         const adapter = new NetsuiteAdapter({
@@ -1026,7 +1026,7 @@ describe('Adapter', () => {
           deploy: {
             warnOnStaleWorkspaceData: false,
           },
-          fetch: fullFetch,
+          fetch: fullFetch(),
         }
         const elementsSource = buildElementsSourceFromElements([])
         const adapter = new NetsuiteAdapter({
@@ -1060,7 +1060,7 @@ describe('Adapter', () => {
           deploy: {
             warnOnStaleWorkspaceData: true,
           },
-          fetch: fullFetch,
+          fetch: fullFetch(),
         }
         const elementsSource = buildElementsSourceFromElements([])
         const adapter = new NetsuiteAdapter({
@@ -1096,7 +1096,7 @@ describe('Adapter', () => {
           client: { deploy: mockClientDeploy } as unknown as NetsuiteClient,
           elementsSource: buildElementsSourceFromElements([]),
           filtersCreators: [],
-          config: { fetch: fullFetch },
+          config: { fetch: fullFetch() },
         })
       })
       it('should return correct deploy errors', async () => {

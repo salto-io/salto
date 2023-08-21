@@ -119,7 +119,7 @@ describe('sdf folder loader', () => {
       elementsSourceIndex,
       elementsSource,
       isPartial: true,
-      config: { fetch: fullFetch },
+      config: { fetch: fullFetch() },
     })
     expect(parseSdfProjectDirMock).toHaveBeenCalledWith('projectDir')
 

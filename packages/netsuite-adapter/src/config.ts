@@ -26,7 +26,7 @@ import {
   CURRENCY, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_NAME_PREFIX, DATASET, EXCHANGE_RATE,
   NETSUITE, PERMISSIONS, SAVED_SEARCH, WORKBOOK,
 } from './constants'
-import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, checkTypeNameRegMatch, noSupportedTypeMatch, validateNetsuiteQueryParameters, validateDefined, SystemConfig, emptyQueryParams, fullFetch } from './query'
+import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, checkTypeNameRegMatch, noSupportedTypeMatch, validateNetsuiteQueryParameters, validateDefined, LockedElementsConfig, emptyQueryParams, fullFetch } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING } from './data_elements/types'
 import { isCustomRecordTypeName, netsuiteSupportedTypes } from './types'
 import { FetchByQueryFailures } from './change_validators/safe_deploy'
@@ -837,7 +837,7 @@ const toConfigSuggestions = ({
   failedTypes,
 }: FetchByQueryFailures): NetsuiteConfig => {
   const config: NetsuiteConfig = {
-    fetch: fullFetch,
+    fetch: fullFetch(),
   }
 
   if (!_.isEmpty(failedFilePaths.otherError) || !_.isEmpty(failedTypes.unexpectedError)) {
@@ -887,7 +887,7 @@ export const combineQueryParams = (
   second: QueryParams | undefined,
 ): QueryParams => {
   if (first === undefined || second === undefined) {
-    return first ?? second ?? emptyQueryParams
+    return first ?? second ?? emptyQueryParams()
   }
 
   // case where both are defined
@@ -910,7 +910,7 @@ export const combineQueryParams = (
 const updateConfigFromFailedFetch = (config: NetsuiteConfig, failures: FetchByQueryFailures): boolean => {
   const suggestions = toConfigSuggestions(failures)
   if (_.isEqual(suggestions, {
-    fetch: fullFetch,
+    fetch: fullFetch(),
   })) {
     return false
   }
@@ -941,7 +941,7 @@ const updateConfigFromFailedFetch = (config: NetsuiteConfig, failures: FetchByQu
   suggestedFetchConfig?.lockedElementsToExclude
   )
 
-  if (!_.isEqual(newLockedElementToExclude, emptyQueryParams)) {
+  if (!_.isEqual(newLockedElementToExclude, emptyQueryParams())) {
     updatedFetchConfig.lockedElementsToExclude = newLockedElementToExclude
   }
 
@@ -994,7 +994,7 @@ const splitConfig = (config: NetsuiteConfig): InstanceElement[] => {
     return [toConfigInstance(config)]
   }
   config.fetch = allFetchConfigExceptLockedElements
-  const lockedElementsConfig: SystemConfig = {
+  const lockedElementsConfig: LockedElementsConfig = {
     fetch: {
       lockedElementsToExclude,
     },
@@ -1059,7 +1059,6 @@ function validateConfig(config: Record<string, unknown>): asserts config is Nets
     suiteAppClient,
   } = _.pick(config, Object.values(CONFIG))
 
-  validatePlainObject(config, 'config')
   validateDefined(fetch, CONFIG.fetch)
   validatePlainObject(fetch, CONFIG.fetch)
   validateFetchConfig(fetch)
@@ -1105,8 +1104,9 @@ export const netsuiteConfigFromConfig = (
 ): NetsuiteConfig => {
   try {
     if (!configInstance) {
+      log.debug('Using netsuite adapter config with full fetch')
       return {
-        fetch: fullFetch,
+        fetch: fullFetch(),
       }
     }
     const { value: config } = configInstance

@@ -52,8 +52,8 @@ describe('omit sdf untyped values filter', () => {
     await filterCreator({
       ...defaultOpts,
       config: { fetch: {
-        include: fullQueryParams,
-        exclude: emptyQueryParams,
+        include: fullQueryParams(),
+        exclude: emptyQueryParams(),
         strictInstanceStructure: true,
       } },
     }).onFetch?.([instance])
@@ -63,8 +63,8 @@ describe('omit sdf untyped values filter', () => {
     await filterCreator({
       ...defaultOpts,
       config: { fetch: {
-        include: fullQueryParams,
-        exclude: emptyQueryParams,
+        include: fullQueryParams(),
+        exclude: emptyQueryParams(),
         strictInstanceStructure: false,
       } },
     }).onFetch?.([instance])

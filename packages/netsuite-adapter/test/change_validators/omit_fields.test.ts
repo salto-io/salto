@@ -82,7 +82,7 @@ describe('omit fields change validator test', () => {
       undefined,
       buildElementsSourceFromElements([instance, type, innerType]),
       {
-        fetch: fullFetch,
+        fetch: fullFetch(),
         deploy: { fieldsToOmit: [{ type: 'inventoryItem', fields: ['field.*'] }] },
       }
     )
@@ -102,7 +102,7 @@ describe('omit fields change validator test', () => {
       undefined,
       buildElementsSourceFromElements([instance, type, innerType]),
       {
-        fetch: fullFetch,
+        fetch: fullFetch(),
         deploy: { fieldsToOmit: [{ type: 'inventoryItem', subtype: 'inner.*', fields: ['.*2'] }] },
       }
     )

@@ -47,23 +47,7 @@ export type QueryParams = {
   customRecords?: FetchTypeQueryParams[]
 }
 
-export const fullQueryParams: QueryParams = {
-  types: [{ name: '.*' }],
-  fileCabinet: ['.*'],
-  customRecords: [{ name: '.*' }],
-}
-
-export const emptyQueryParams: QueryParams = {
-  types: [],
-  fileCabinet: [],
-}
-
-export const fullFetch = {
-  include: fullQueryParams,
-  exclude: emptyQueryParams,
-}
-
-export type SystemConfig = {
+export type LockedElementsConfig = {
   fetch: {
     lockedElementsToExclude?: QueryParams
   }
@@ -85,7 +69,24 @@ export type FetchParams = {
   fieldsToOmit?: FieldToOmitParams[]
   addAlias?: boolean
   addBundles?: boolean
-} & SystemConfig['fetch']
+} & LockedElementsConfig['fetch']
+
+
+export const fullQueryParams = (): QueryParams => ({
+  types: [{ name: '.*' }],
+  fileCabinet: ['.*'],
+  customRecords: [{ name: '.*' }],
+})
+
+export const emptyQueryParams = (): QueryParams => ({
+  types: [],
+  fileCabinet: [],
+})
+
+export const fullFetch = (): FetchParams => ({
+  include: fullQueryParams(),
+  exclude: emptyQueryParams(),
+})
 
 export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
   include: 'include',

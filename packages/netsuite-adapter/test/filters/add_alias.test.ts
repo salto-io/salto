@@ -201,8 +201,8 @@ describe('add alias filter', () => {
       ...defaultOpts,
       config: {
         fetch: {
-          include: fullQueryParams,
-          exclude: emptyQueryParams,
+          include: fullQueryParams(),
+          exclude: emptyQueryParams(),
           addAlias: true,
         },
       },

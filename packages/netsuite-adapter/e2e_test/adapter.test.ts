@@ -434,7 +434,7 @@ describe('Netsuite adapter E2E with real account', () => {
           // we need to get the folder internalId
           ? await realAdapter(
             { credentials: credentialsLease.value, withSuiteApp },
-            { fetch: { include: { types: [], fileCabinet: ['/Images/'], customRecords: [] }, exclude: emptyQueryParams } }
+            { fetch: { include: { types: [], fileCabinet: ['/Images/'], customRecords: [] }, exclude: emptyQueryParams() } }
           ).adapter.fetch({
             progressReporter: { reportProgress: jest.fn() },
           })
@@ -508,7 +508,7 @@ describe('Netsuite adapter E2E with real account', () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
               {
-                fetch: fullFetch,
+                fetch: fullFetch(),
                 deploy: { warnOnStaleWorkspaceData: true },
               },
             )
@@ -536,7 +536,7 @@ describe('Netsuite adapter E2E with real account', () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
               {
-                fetch: fullFetch,
+                fetch: fullFetch(),
                 deploy: { warnOnStaleWorkspaceData: false },
               },
             )
@@ -571,7 +571,7 @@ describe('Netsuite adapter E2E with real account', () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
               {
-                fetch: fullFetch,
+                fetch: fullFetch(),
                 deploy: { warnOnStaleWorkspaceData: true },
               },
             )
@@ -599,7 +599,7 @@ describe('Netsuite adapter E2E with real account', () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
               {
-                fetch: fullFetch,
+                fetch: fullFetch(),
                 deploy: { warnOnStaleWorkspaceData: false },
               },
             )
@@ -626,8 +626,8 @@ describe('Netsuite adapter E2E with real account', () => {
           { credentials: credentialsLease.value, withSuiteApp },
           {
             fetch: {
-              include: fullQueryParams,
-              exclude: emptyQueryParams,
+              include: fullQueryParams(),
+              exclude: emptyQueryParams(),
               addAlias: true,
             },
           }
@@ -951,8 +951,8 @@ describe('Netsuite adapter E2E with real account', () => {
           elementsSource: buildElementsSourceFromElements(existingFileCabinetInstances),
           config: new InstanceElement(ElemID.CONFIG_NAME, configType, {
             fetch: {
-              include: fullQueryParams,
-              exclude: emptyQueryParams,
+              include: fullQueryParams(),
+              exclude: emptyQueryParams(),
               addAlias: true,
             },
           }),

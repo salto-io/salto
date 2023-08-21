@@ -69,7 +69,7 @@ import {
   apiName,
   defaultApiName,
   isCustomObject,
-  isNameField,
+  isNameField, MetadataInstanceElement,
   metadataType,
   MetadataValues,
   Types,
@@ -442,3 +442,17 @@ export const isStandardObject = async (objectType: ObjectType): Promise<boolean>
   await isCustomObject(objectType)
   && !ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(await safeApiName(objectType) ?? '')
 )
+
+export const getInstanceAlias = async (
+  instance: MetadataInstanceElement,
+  useLabelAsAlias: boolean
+): Promise<string> => {
+  const label = instance.value[LABEL]
+  if (!useLabelAsAlias || label === undefined) {
+    return instance.value[INSTANCE_FULL_NAME_FIELD]
+  }
+  const namespace = await getNamespace(instance)
+  return namespace === undefined
+    ? label
+    : `${label} (${namespace})`
+}

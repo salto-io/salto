@@ -27,14 +27,14 @@ describe('issue Type Hierarchy Filter', () => {
   })
   const accountInfoInstanceFree = getAccountInfoInstance(true)
   const accountInfoInstancePaid = getAccountInfoInstance(false)
-  let issueTypeInstance: InstanceElement
-  let issueTypeInstanceTwo: InstanceElement
+  let issueTypeInstanceLevelTwo: InstanceElement
+  let issueTypeInstanceLevelZero: InstanceElement
   let elementsSource: ReadOnlyElementsSource
   type FilterType = filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
   let filter: FilterType
 
   beforeEach(() => {
-    issueTypeInstance = new InstanceElement(
+    issueTypeInstanceLevelTwo = new InstanceElement(
       'issueTypeInstance',
       issueTypeType,
       {
@@ -42,7 +42,7 @@ describe('issue Type Hierarchy Filter', () => {
         description: 'test',
       }
     )
-    issueTypeInstanceTwo = new InstanceElement(
+    issueTypeInstanceLevelZero = new InstanceElement(
       'issueTypeInstanceTwo',
       issueTypeType,
       {
@@ -53,10 +53,10 @@ describe('issue Type Hierarchy Filter', () => {
   })
 
   describe('preDeploy', () => {
-    it('should convert hierarchy level to 0 if it is paid account and adding issue type that has hierarchy level greater than 0', async () => {
+    it('should convert hierarchy level to 0 only if it is paid account and adding issue type that has hierarchy level greater than 0', async () => {
       elementsSource = buildElementsSourceFromElements([accountInfoInstancePaid])
       filter = issueTypeHierarchyFilter(getFilterParams({ elementsSource })) as FilterType
-      const changes = [toChange({ after: issueTypeInstance }), toChange({ after: issueTypeInstanceTwo })]
+      const changes = [toChange({ after: issueTypeInstanceLevelTwo }), toChange({ after: issueTypeInstanceLevelZero })]
       await filter.preDeploy(changes)
       expect(getChangeData(changes[0]).value.hierarchyLevel).toEqual(0)
       expect(getChangeData(changes[1]).value.hierarchyLevel).toEqual(0)
@@ -64,24 +64,24 @@ describe('issue Type Hierarchy Filter', () => {
     it('should not convert hierarchy level to 0 if it has hierarchy level -1', async () => {
       elementsSource = buildElementsSourceFromElements([accountInfoInstancePaid])
       filter = issueTypeHierarchyFilter(getFilterParams({ elementsSource })) as FilterType
-      issueTypeInstance.value.hierarchyLevel = -1
-      const changes = [toChange({ after: issueTypeInstance })]
+      issueTypeInstanceLevelTwo.value.hierarchyLevel = -1
+      const changes = [toChange({ after: issueTypeInstanceLevelTwo })]
       await filter.preDeploy(changes)
       expect(getChangeData(changes[0]).value.hierarchyLevel).toEqual(-1)
     })
     it('should not convert hierarchy level to 0 if it is free account', async () => {
       elementsSource = buildElementsSourceFromElements([accountInfoInstanceFree])
       filter = issueTypeHierarchyFilter(getFilterParams({ elementsSource })) as FilterType
-      const changes = [toChange({ after: issueTypeInstance })]
+      const changes = [toChange({ after: issueTypeInstanceLevelTwo })]
       await filter.preDeploy(changes)
       expect(getChangeData(changes[0]).value.hierarchyLevel).toEqual(2)
     })
   })
   describe('onDeploy', () => {
-    it('should resrote hierarchy level to original value', async () => {
+    it('should restore hierarchy level to original value', async () => {
       elementsSource = buildElementsSourceFromElements([accountInfoInstancePaid])
       filter = issueTypeHierarchyFilter(getFilterParams({ elementsSource })) as FilterType
-      const changes = [toChange({ after: issueTypeInstance }), toChange({ after: issueTypeInstanceTwo })]
+      const changes = [toChange({ after: issueTypeInstanceLevelTwo })]
       await filter.preDeploy(changes)
       await filter.onDeploy(changes)
       expect(getChangeData(changes[0]).value.hierarchyLevel).toEqual(2)

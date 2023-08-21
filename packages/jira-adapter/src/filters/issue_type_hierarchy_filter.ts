@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { Change, InstanceElement, ReadOnlyElementsSource, getChangeData, isAdditionChange, isInstanceChange } from '@salto-io/adapter-api'
+import { Change, InstanceElement, getChangeData, isAdditionChange, isInstanceChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { ISSUE_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
@@ -22,9 +22,9 @@ import { isFreeLicense } from '../utils'
 
 const { awu } = collections.asynciterable
 
-const isRelevantChange = async (change: Change<InstanceElement>, elementsSource: ReadOnlyElementsSource):
-    Promise<boolean> => {
-  if (await isFreeLicense(elementsSource) === false
+const isRelevantChange = (change: Change<InstanceElement>, isLicenseFree: boolean):
+    boolean => {
+  if (isLicenseFree === false
   && isAdditionChange(change) && change.data.after.value.hierarchyLevel > 0) {
     return true
   }
@@ -32,30 +32,29 @@ const isRelevantChange = async (change: Change<InstanceElement>, elementsSource:
 }
 
 const filter: FilterCreator = ({ elementsSource }) => {
-  const ISSUE_TYPE_TO_HIERARCHY_LEVEL: Record<string, number> = {}
+  const IssueTypeTohierarchyLevel: Record<string, number> = {}
   return {
     name: 'issueTypeHierarchyFilter',
     preDeploy: async changes => {
+      const isLicenseFree = await isFreeLicense(elementsSource)
       await awu(changes)
         .filter(isInstanceChange)
         .filter(isAdditionChange)
         .filter(change => getChangeData(change).elemID.typeName === ISSUE_TYPE_NAME)
-        .filter(change => isRelevantChange(change, elementsSource))
+        .filter(change => isRelevantChange(change, isLicenseFree))
         .map(getChangeData)
         .forEach(instance => {
-          ISSUE_TYPE_TO_HIERARCHY_LEVEL[instance.elemID.getFullName()] = instance.value.hierarchyLevel
+          IssueTypeTohierarchyLevel[instance.elemID.getFullName()] = instance.value.hierarchyLevel
           instance.value.hierarchyLevel = 0
         })
     },
     onDeploy: async changes => {
       await awu(changes)
         .filter(isInstanceChange)
-        .filter(isAdditionChange)
         .map(getChangeData)
-        .filter(instance => instance.elemID.typeName === ISSUE_TYPE_NAME)
-        .filter(instance => Object.keys(ISSUE_TYPE_TO_HIERARCHY_LEVEL).includes(instance.elemID.getFullName()))
+        .filter(instance => Object.keys(IssueTypeTohierarchyLevel).includes(instance.elemID.getFullName()))
         .forEach(instance => {
-          instance.value.hierarchyLevel = ISSUE_TYPE_TO_HIERARCHY_LEVEL[instance.elemID.getFullName()]
+          instance.value.hierarchyLevel = IssueTypeTohierarchyLevel[instance.elemID.getFullName()]
         })
     },
   }

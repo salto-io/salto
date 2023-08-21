@@ -13,23 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeError, ChangeValidator, getChangeData, InstanceElement, isInstanceChange, SeverityLevel, ReadOnlyElementsSource, Change, ModificationChange, AdditionChange, isAdditionOrModificationChange, isEqualValues, isAdditionChange, isModificationChange } from '@salto-io/adapter-api'
+import { ChangeError, ChangeValidator, getChangeData, InstanceElement, isInstanceChange, SeverityLevel, Change, ModificationChange, AdditionChange, isAdditionOrModificationChange, isEqualValues, isAdditionChange, isModificationChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { ISSUE_TYPE_NAME } from '../constants'
 import { isFreeLicense } from '../utils'
 
 const { awu } = collections.asynciterable
 
-export const getRelevantChanges = (changes: ReadonlyArray<Change>): (
+const getIssueTypeWithHierachyChanges = (changes: ReadonlyArray<Change>): (
     AdditionChange<InstanceElement> | ModificationChange<InstanceElement>)[] => changes.filter(isInstanceChange)
   .filter(isAdditionOrModificationChange)
   .filter(change => getChangeData(change).elemID.typeName === ISSUE_TYPE_NAME)
   .filter(change => {
-    if (isAdditionChange(change) && change.data.after.value.hierarchyLevel > 0) {
-      return true
-    }
-    if (isModificationChange(change)
-      && !isEqualValues(change.data.before.value.hierarchyLevel, change.data.after.value.hierarchyLevel)) {
+    if ((isAdditionChange(change) && change.data.after.value.hierarchyLevel > 0) || (isModificationChange(change)
+    && !isEqualValues(change.data.before.value.hierarchyLevel, change.data.after.value.hierarchyLevel))) {
       return true
     }
     return false
@@ -45,11 +42,11 @@ const getIsuueTypeHierarchyErrorMessage = (instance: InstanceElement): ChangeErr
 const getIsuueTypeHierearchyWarningMessage = (instance: InstanceElement): ChangeError => ({
   elemID: instance.elemID,
   severity: 'Warning' as SeverityLevel,
-  message: 'Hierarchy Level Mismatch',
-  detailedMessage: `${instance.value.name} hierarchy level mismatch. You will need to change it to your desired hierarchy level through the service. Please follow the instructions to make the necessary adjustments.`,
+  message: 'Unsupported hierarchy Level',
+  detailedMessage: `${instance.value.name} hierarchy level is unsupported for deployment. You will need to change it to your desired hierarchy level through the service. Please follow the instructions to make the necessary adjustments.`,
   deployActions: {
     postAction: {
-      title: 'hierarchy level change is required',
+      title: 'Hierarchy level change is required',
       description: 'To change the hierarchy level to the desired hierarchy level, follow these steps:',
       showOnFailure: false,
       subActions: [
@@ -62,9 +59,9 @@ const getIsuueTypeHierearchyWarningMessage = (instance: InstanceElement): Change
   },
 })
 
-const proccessIssueTypeHierarchy = async (instance: InstanceElement, elementSource: ReadOnlyElementsSource):
-Promise<ChangeError> => {
-  if (await isFreeLicense(elementSource) === false || instance.value.hierarchyLevel <= 0) {
+const proccessIssueTypeHierarchy = (instance: InstanceElement, isLicenseFree: boolean):
+ChangeError => {
+  if (isLicenseFree === false || instance.value.hierarchyLevel <= 0) {
     return getIsuueTypeHierearchyWarningMessage(instance)
   }
   return getIsuueTypeHierarchyErrorMessage(instance)
@@ -72,15 +69,13 @@ Promise<ChangeError> => {
 
 
 export const issueTypeHierarchyValidator: ChangeValidator = async (changes, elementSource) => {
-  if (!elementSource) {
+  if (elementSource === undefined) {
     return []
   }
-  const relevantChanges = getRelevantChanges(changes)
-
+  const relevantChanges = getIssueTypeWithHierachyChanges(changes)
+  const isLicenseFree = await isFreeLicense(elementSource)
   return awu(relevantChanges)
-    .filter(isInstanceChange)
-    .filter(change => getChangeData(change).elemID.typeName === ISSUE_TYPE_NAME)
     .map(getChangeData)
-    .map(instance => proccessIssueTypeHierarchy(instance, elementSource))
+    .map(instance => proccessIssueTypeHierarchy(instance, isLicenseFree))
     .toArray()
 }

@@ -293,6 +293,7 @@ Currently the following core annotations are supported:
 - [_updatable](#_changed_by)
 - [_deletable](#_changed_at)
 - [_additional_properties](#_additional_properties)
+- [_important_values / _self_important_values](#_important_values-_self_important_values)
 
 #### `_required`
 This annotation is used on field blocks to specify that an instance must contain a value for this field.
@@ -421,6 +422,22 @@ salto.example child2 {
 ```
 
 #### _alias
+
+This annotation is used to define a user-friendly alias for the element. The alias can be used in Salto enabled editors to display a shorter, clearer element name to users. Unlike the element ID, it does not have to be unique.
+
+Type: `string` Default: `undefined` Applicable to: Types, Instances, Fields
+Example:
+```HCL
+type salto.example_type_long_id {
+_alias = "Example Type"
+}
+
+salto.example_type_long_id example_instance_id_with_long_prefix {
+_alias = "Example Instance"
+}
+```
+
+#### _important_values / _self_important_values
 
 This annotation is used to define a user-friendly alias for the element. The alias can be used in Salto enabled editors to display a shorter, clearer element name to users. Unlike the element ID, it does not have to be unique.
 

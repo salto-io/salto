@@ -235,16 +235,19 @@ const articleAttachmentsFilter: FilterCreator = ({ client, elementsSource }) => 
     // Article bodies needs to be updated when modifying inline attachments
     // There might be another request if the article_translation 'body' fields also changed
     // (To Do: SALTO-3076)
-    const modifiedInlineAttachments = changes
-      .filter(isModificationChange)
-      .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME)
-      .filter(attachmentInstance => attachmentInstance.value.inline)
-    if (modifiedInlineAttachments.length > 0) {
-      // All the attachments in the current change_group share the same parent article instance
-      const articleValues = getParents(modifiedInlineAttachments[0])[0]
-      await updateArticleTranslationBody({ client, articleValues, attachmentInstances: modifiedInlineAttachments })
-    }
+    const modifiedInlineAttachments = _.groupBy(
+      changes
+        .filter(isModificationChange)
+        .map(getChangeData)
+        .filter(instance => instance.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME)
+        .filter(attachmentInstance => attachmentInstance.value.inline)
+        .filter(attachmentInstance => (getParents(attachmentInstance)[0] ?? {}).id !== undefined),
+      attachmentInstance => getParents(attachmentInstance)[0].id
+    )
+    await Promise.all(Object.values(modifiedInlineAttachments).map(async attachmentInstances => {
+      const articleValues = getParents(attachmentInstances[0])[0]
+      return updateArticleTranslationBody({ client, articleValues, attachmentInstances })
+    }))
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [attachmentChanges, leftoverChanges] = _.partition(

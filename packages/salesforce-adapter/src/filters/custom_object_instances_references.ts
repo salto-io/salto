@@ -92,10 +92,7 @@ const createWarnings = async (
       .filter(isDefined)
       .uniq()
       .value()
-    const numMissingInstances = _(missingRefsFromOriginType)
-      .map(missingRef => missingRef.targetId)
-      .uniq()
-      .value().length
+    const numMissingInstances = _.uniqBy(missingRefsFromOriginType, missingRef => missingRef.targetId).length
     const header = `${numMissingInstances} records of the ${originTypeName} object were not fetched, along with their child records of the ${typesOfMissingRefsTargets.join(', ')} objects.\n\nHere are the relevant records:`
     const perMissingInstanceMsgs = missingRefs
       .map(missingRef => `${getInstanceDesc(missingRef.origin.id, baseUrl)} relates to ${getInstanceDesc(missingRef.targetId, baseUrl)}`)
@@ -141,14 +138,6 @@ Please follow the instructions here [new intercom article] to resolve this issue
       )
     })
     .toArray()
-
-  // const typeToInstanceIdToMissingRefs = _.mapValues(
-  //   _.groupBy(
-  //     missingRefs,
-  //     missingRef => customObjectPrefixKeyMap[missingRef.targetId.substring(0, KEY_PREFIX_LENGTH)],
-  //   ),
-  //   typeMissingRefs => _.groupBy(typeMissingRefs, missingRef => missingRef.targetId)
-  // )
 
   const originTypeToMissingRef = _.groupBy(missingRefs, missingRef => missingRef.origin.type)
 
@@ -325,7 +314,6 @@ const filter: RemoteFilterCreator = ({ client, config }) => ({
         && invalidInstances.has(await serializeInstanceInternalID(element as InstanceElement))),
     )
     const baseUrl = await client.getUrl()
-    // const customObjectPrefixKeyMap = await buildCustomObjectPrefixKeyMap(elements)
     return {
       errors: await createWarnings(
         instancesWithCollidingElemID,

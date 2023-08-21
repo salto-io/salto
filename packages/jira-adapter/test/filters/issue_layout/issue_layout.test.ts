@@ -579,5 +579,41 @@ describe('issue layout filter', () => {
         undefined
       )
     })
+    it('should return error if project is not reference expression', async () => {
+      const issueLayoutInstanceWithoutProj = new InstanceElement(
+        'issueLayoutInstanceWithoutProj',
+        issueLayoutType,
+        {
+          projectId: 11111,
+          extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
+          owners: [
+            new ReferenceExpression(issueTypeInstance.elemID, issueTypeInstance),
+          ],
+          issueLayoutConfig: {
+            items: [
+              {
+                type: 'FIELD',
+                sectionType: 'PRIMARY',
+                key: new ReferenceExpression(fieldInstance1.elemID, fieldInstance1),
+              },
+              {
+                type: 'FIELD',
+                sectionType: 'SECONDARY',
+                key: new ReferenceExpression(fieldInstance2.elemID, fieldInstance2),
+              },
+            ],
+          },
+        }
+      )
+      const res = await filter.deploy([
+        { action: 'add', data: { after: issueLayoutInstanceWithoutProj } },
+      ])
+      expect(res.deployResult.errors).toHaveLength(1)
+      expect(res.deployResult.errors[0].message).toEqual(
+        `Deployment of ${issueLayoutInstanceWithoutProj.elemID.getFullName()} failed: Error: Failed to deploy issue layout changes due to missing references`
+      )
+      expect(res.deployResult.appliedChanges).toHaveLength(0)
+      expect(res.leftoverChanges).toHaveLength(0)
+    })
   })
 })

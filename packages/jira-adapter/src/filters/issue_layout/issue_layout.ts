@@ -152,14 +152,15 @@ const deployIssueLayoutChanges = async (
         screenId: issueLayout.value.extraDefinerId.value.value.id,
         client })
       if (!isIssueLayoutResponse(response.data)) {
-        return undefined
+        throw Error('Failed to deploy issue layout changes due to bad response from jira service')
       }
       issueLayout.value.id = response.data.issueLayoutConfiguration.issueLayoutResult.id
     }
     const url = `/rest/internal/1.0/issueLayouts/${issueLayout.value.id}`
     await client.put({ url, data })
+    return undefined
   }
-  return undefined
+  throw Error('Failed to deploy issue layout changes due to missing references')
 }
 
 const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) => ({

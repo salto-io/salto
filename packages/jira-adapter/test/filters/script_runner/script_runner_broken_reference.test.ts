@@ -18,7 +18,7 @@ import { ElemID, InstanceElement, ObjectType, toChange, ReferenceExpression } fr
 import { filterUtils } from '@salto-io/adapter-components'
 import { createEmptyType, getFilterParams } from '../../utils'
 import scriptRunnerBrokenReferenceFilter from '../../../src/filters/broken_reference_filter'
-import { BEHAVIOR_TYPE, ISSUE_TYPE_NAME, JIRA, PROJECT_TYPE, SCRIPTED_FIELD_TYPE, SCRIPT_RUNNER_LISTENER_TYPE } from '../../../src/constants'
+import { BEHAVIOR_TYPE, ISSUE_TYPE_NAME, JIRA, PROJECT_TYPE, SCRIPTED_FIELD_TYPE, SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE } from '../../../src/constants'
 
 describe('scriptRunnerBrokenReferenceFilter', () => {
   let filter: filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
@@ -29,6 +29,7 @@ describe('scriptRunnerBrokenReferenceFilter', () => {
   let scriptedFieldInstance: InstanceElement
   let behaviorsInstance: InstanceElement
   let listenerInstance: InstanceElement
+  let fragmentsInstance: InstanceElement
   let projectInstance: InstanceElement
   let unresolvedProject: ReferenceExpression
   let resolvedProject: ReferenceExpression
@@ -43,6 +44,7 @@ describe('scriptRunnerBrokenReferenceFilter', () => {
     projectType = createEmptyType(PROJECT_TYPE)
     IssueTypeType = createEmptyType(ISSUE_TYPE_NAME)
     const behaviorType = createEmptyType(BEHAVIOR_TYPE)
+    const fragmentsType = createEmptyType(SCRIPT_FRAGMENT_TYPE)
     listenerType = createEmptyType(SCRIPT_RUNNER_LISTENER_TYPE)
     projectInstance = new InstanceElement(
       'ProjectInstance',
@@ -91,6 +93,16 @@ describe('scriptRunnerBrokenReferenceFilter', () => {
       listenerType,
       {
         projects: [
+          resolvedProject,
+          unresolvedProject,
+        ],
+      },
+    )
+    fragmentsInstance = new InstanceElement(
+      'FragmentsInstance',
+      fragmentsType,
+      {
+        entities: [
           resolvedProject,
           unresolvedProject,
         ],
@@ -174,8 +186,26 @@ describe('scriptRunnerBrokenReferenceFilter', () => {
       expect(deletedInstance.value.projects)
         .toEqual([resolvedProject, unresolvedProject])
     })
-  })
+    it('should remove unresolved project from fragments for adding and modification', async () => {
+      const modificationInstance = fragmentsInstance.clone()
+      const deletedInstance = fragmentsInstance.clone()
+      await filter.preDeploy([
+        toChange({ after: fragmentsInstance }),
+        toChange({ before: fragmentsInstance, after: modificationInstance }),
+        toChange({ before: deletedInstance })])
 
+      expect(fragmentsInstance.value.entities).toHaveLength(1)
+      expect(modificationInstance.value.entities).toHaveLength(1)
+      expect(deletedInstance.value.entities).toHaveLength(2)
+
+      expect(fragmentsInstance.value.entities[0])
+        .toEqual(resolvedProject)
+      expect(modificationInstance.value.entities[0])
+        .toEqual(resolvedProject)
+      expect(deletedInstance.value.entities)
+        .toEqual([resolvedProject, unresolvedProject])
+    })
+  })
   describe('onDeploy', () => {
     it('should add back unresolved project references to the scripted fields when adding or modifying', async () => {
       const modificationInstance = scriptedFieldInstance.clone()
@@ -280,6 +310,35 @@ describe('scriptRunnerBrokenReferenceFilter', () => {
       expect(modificationInstance.value.projects)
         .toEqual([resolvedProject, unresolvedProject])
       expect(deletedInstance.value.projects)
+        .toEqual([resolvedProject, unresolvedProject])
+    })
+    it('should add back unresolved project references to fragments when adding or modifying', async () => {
+      const modificationInstance = fragmentsInstance.clone()
+      const deletedInstance = fragmentsInstance.clone()
+
+      await filter.preDeploy([
+        toChange({ after: fragmentsInstance }),
+        toChange({ before: fragmentsInstance, after: modificationInstance }),
+        toChange({ before: deletedInstance })])
+
+      expect(fragmentsInstance.value.entities).toHaveLength(1)
+      expect(modificationInstance.value.entities).toHaveLength(1)
+      expect(deletedInstance.value.entities).toHaveLength(2)
+      await filter.onDeploy([
+        toChange({ after: fragmentsInstance }),
+        toChange({ before: fragmentsInstance, after: modificationInstance }),
+        toChange({ before: deletedInstance })])
+
+      expect(fragmentsInstance.value.entities).toHaveLength(2)
+      expect(modificationInstance.value.entities).toHaveLength(2)
+      expect(deletedInstance.value.entities).toHaveLength(2)
+
+
+      expect(fragmentsInstance.value.entities)
+        .toEqual([resolvedProject, unresolvedProject])
+      expect(modificationInstance.value.entities)
+        .toEqual([resolvedProject, unresolvedProject])
+      expect(deletedInstance.value.entities)
         .toEqual([resolvedProject, unresolvedProject])
     })
     it('should not crash if onDeployCalled without predeploy', async () => {

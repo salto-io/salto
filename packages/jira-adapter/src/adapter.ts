@@ -135,6 +135,7 @@ import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_speci
 import projectFieldContextOrder from './filters/project_field_contexts_order'
 import scriptedFieldsIssueTypesFilter from './filters/script_runner/scripted_fields_issue_types'
 import scriptRunnerFilter from './filters/script_runner/script_runner_filter'
+import scriptRunnerListenersDeployFilter from './filters/script_runner/script_runner_listeners_deploy'
 import scriptRunnerInstancesDeploy from './filters/script_runner/script_runner_instances_deploy'
 import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
 import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uuid'
@@ -286,7 +287,8 @@ export const DEFAULT_FILTERS = [
   wrongUserPermissionSchemeFilter,
   deployDcIssueEventsFilter,
   addAliasFilter,
-  // Must run after scriptRunnerBatchDeploy
+  // must be done before scriptRunnerInstances
+  scriptRunnerListenersDeployFilter,
   scriptRunnerInstancesDeploy,
   // Must be last
   defaultInstancesDeployFilter,

@@ -1767,7 +1767,7 @@ const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
 }
 
 export const DUCKTYPE_SUPPORTED_TYPES = {
-  // ScriptRunnerListener: ['ScriptRunnerListener'],
+  ScriptRunnerListener: ['ScriptRunnerListener'],
   // ScriptFragment: ['ScriptFragment'],
   ScheduledJob: ['ScheduledJob'],
   Behavior: ['Behavior'],

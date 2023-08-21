@@ -25,6 +25,7 @@ describe('change validator creator', () => {
     it('should not fail if there are no deploy changes', async () => {
       expect(await createChangeValidator({
         client,
+        config: DEFAULT_CONFIG,
         apiConfig: DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
         fetchConfig: DEFAULT_CONFIG[FETCH_CONFIG],
         deployConfig: DEFAULT_CONFIG[DEPLOY_CONFIG],
@@ -37,6 +38,7 @@ describe('change validator creator', () => {
     it('should fail each change individually', async () => {
       expect(await createChangeValidator({
         client,
+        config: DEFAULT_CONFIG,
         apiConfig: DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
         fetchConfig: DEFAULT_CONFIG[FETCH_CONFIG],
         deployConfig: DEFAULT_CONFIG[DEPLOY_CONFIG],
@@ -66,6 +68,7 @@ describe('change validator creator', () => {
       const type = new ObjectType({ elemID: new ElemID(ZENDESK, 'obj') })
       expect(await createChangeValidator({
         client,
+        config: DEFAULT_CONFIG,
         apiConfig: DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
         fetchConfig: DEFAULT_CONFIG[FETCH_CONFIG],
         deployConfig: DEFAULT_CONFIG[DEPLOY_CONFIG],

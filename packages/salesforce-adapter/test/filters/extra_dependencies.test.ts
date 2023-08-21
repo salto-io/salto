@@ -13,7 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ElemID, ObjectType, InstanceElement, BuiltinTypes, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import {
+  Element,
+  ElemID,
+  ObjectType,
+  InstanceElement,
+  BuiltinTypes,
+  ReferenceExpression,
+  CORE_ANNOTATIONS,
+  ReadOnlyElementsSource,
+} from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 import { FilterResult } from '../../src/filter'
@@ -45,7 +54,8 @@ describe('extra dependencies filter', () => {
   let instances: InstanceElement[]
   let workspaceInstance: InstanceElement
   let elements: Element[]
-  beforeAll(() => {
+  let elementsSource: ReadOnlyElementsSource
+  beforeEach(() => {
     const mdType = createMetadataTypeElement(
       'meta',
       {
@@ -131,7 +141,7 @@ describe('extra dependencies filter', () => {
         [INSTANCE_FULL_NAME_FIELD]: 'inst3',
       }
     )
-    const workspaceElements = buildElementsSourceFromElements([otherMdType, workspaceInstance])
+    elementsSource = buildElementsSourceFromElements([otherMdType, workspaceInstance])
     elements = [mdType, layoutObjType, customObjType, leadObjType, ...instances]
     client = mockClient().client
     filter = filterCreator({
@@ -139,7 +149,7 @@ describe('extra dependencies filter', () => {
       config: {
         ...defaultFilterContext,
         fetchProfile: buildFetchProfile({ target: ['meta'] }),
-        elementsSource: workspaceElements,
+        elementsSource,
       },
     }) as FilterType
   })
@@ -253,7 +263,7 @@ describe('extra dependencies filter', () => {
       ] as unknown as SalesforceRecord[]
     }
 
-    beforeAll(async () => {
+    beforeEach(async () => {
       mockQueryAll = jest.fn()
         .mockImplementationOnce(mockQueryAllImplLayout)
         .mockImplementationOnce(mockQueryAllImplEmpty)
@@ -262,64 +272,103 @@ describe('extra dependencies filter', () => {
         .mockImplementationOnce(mockQueryAllImplEmpty)
         .mockImplementationOnce(mockQueryAllImpl)
       SalesforceClient.prototype.queryAll = mockQueryAll
-
       numElements = elements.length
-      await filter.onFetch(elements)
     })
 
-    it('should not change # of elements', () => {
-      expect(elements.length).toEqual(numElements)
-    })
+    describe('when toolingDepsOfCurrentNamespace is disabled', () => {
+      beforeEach(async () => {
+        filter = filterCreator({
+          client,
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildFetchProfile({
+              target: ['meta'],
+              optionalFeatures: { toolingDepsOfCurrentNamespace: false },
+            }),
+            elementsSource,
+          },
+        }) as FilterType
+        await filter.onFetch(elements)
+      })
+      it('should not change # of elements', () => {
+        expect(elements.length).toEqual(numElements)
+      })
 
-    it('should add field dependencies to instances', () => {
-      const firstFieldRef = new ReferenceExpression(customObjType.fields.first.elemID)
-      const secondFieldRef = new ReferenceExpression(customObjType.fields.second.elemID)
-      const leadFieldRef = new ReferenceExpression(leadObjType.fields.custom.elemID)
-      expect(getGeneratedDeps(instances[0])).toContainEqual({ reference: secondFieldRef })
-      expect(getGeneratedDeps(instances[1])).toEqual(
-        expect.arrayContaining([{ reference: firstFieldRef }, { reference: leadFieldRef }])
-      )
-      expect(getGeneratedDeps(instances[2])).toEqual([{ reference: firstFieldRef }])
-    })
+      it('should add field dependencies to instances', () => {
+        const firstFieldRef = new ReferenceExpression(customObjType.fields.first.elemID)
+        const secondFieldRef = new ReferenceExpression(customObjType.fields.second.elemID)
+        const leadFieldRef = new ReferenceExpression(leadObjType.fields.custom.elemID)
+        expect(getGeneratedDeps(instances[0])).toContainEqual({ reference: secondFieldRef })
+        expect(getGeneratedDeps(instances[1])).toEqual(
+          expect.arrayContaining([{ reference: firstFieldRef }, { reference: leadFieldRef }])
+        )
+        expect(getGeneratedDeps(instances[2])).toEqual([{ reference: firstFieldRef }])
+      })
 
-    it('should not add generated dependencies to targets that already have a reference in the element', () => {
-      expect(getGeneratedDeps(instances[0])).not.toContainEqual(
-        { reference: new ReferenceExpression(customObjType.fields.first.elemID) }
-      )
-    })
+      it('should not add generated dependencies to targets that already have a reference in the element', () => {
+        expect(getGeneratedDeps(instances[0])).not.toContainEqual(
+          { reference: new ReferenceExpression(customObjType.fields.first.elemID) }
+        )
+      })
 
-    it('should add dependencies to standard objects', () => {
-      expect(getGeneratedDeps(instances[1])).toEqual(
-        expect.arrayContaining([{ reference: new ReferenceExpression(leadObjType.elemID) }])
-      )
-    })
+      it('should add dependencies to standard objects', () => {
+        expect(getGeneratedDeps(instances[1])).toEqual(
+          expect.arrayContaining([{ reference: new ReferenceExpression(leadObjType.elemID) }])
+        )
+      })
 
-    it('should add generated dependencies annotation to fields', () => {
-      expect(getGeneratedDeps(leadObjType.fields.custom)).toEqual(
-        [{ reference: new ReferenceExpression(customObjType.fields.second.elemID) }]
-      )
-    })
+      it('should add generated dependencies annotation to fields', () => {
+        expect(getGeneratedDeps(leadObjType.fields.custom)).toEqual(
+          [{ reference: new ReferenceExpression(customObjType.fields.second.elemID) }]
+        )
+      })
 
-    it('should sort generated dependencies by name', () => {
-      expect(getGeneratedDeps(instances[1])).toEqual([
-        { reference: new ReferenceExpression(leadObjType.elemID) },
-        { reference: new ReferenceExpression(leadObjType.fields.custom.elemID) },
-        { reference: new ReferenceExpression(customObjType.fields.first.elemID) },
-      ])
-    })
+      it('should sort generated dependencies by name', () => {
+        expect(getGeneratedDeps(instances[1])).toEqual([
+          { reference: new ReferenceExpression(leadObjType.elemID) },
+          { reference: new ReferenceExpression(leadObjType.fields.custom.elemID) },
+          { reference: new ReferenceExpression(customObjType.fields.first.elemID) },
+        ])
+      })
 
-    it('should have individual queries for types marked for individual query', () => {
-      expect(mockQueryAll).toHaveBeenCalledTimes(6)
-    })
+      it('should have individual queries for types marked for individual query', () => {
+        expect(mockQueryAll).toHaveBeenCalledTimes(6)
+        mockQueryAll.mock.calls.forEach(([query]: [string, boolean]) => {
+          expect(query).not.toContain('MetadataComponentNamespacePrefix')
+        })
+      })
 
-    it('should add generated dependencies to elements that were not fetched', () => {
-      expect(getGeneratedDeps(instances[0])).toContainEqual(
-        { reference: new ReferenceExpression(workspaceInstance.elemID) }
-      )
-    })
+      it('should add generated dependencies to elements that were not fetched', () => {
+        expect(getGeneratedDeps(instances[0])).toContainEqual(
+          { reference: new ReferenceExpression(workspaceInstance.elemID) }
+        )
+      })
 
-    it('should not modify workspace elements that were not fetched', () => {
-      expect(getGeneratedDeps(workspaceInstance)).toBeUndefined()
+      it('should not modify workspace elements that were not fetched', () => {
+        expect(getGeneratedDeps(workspaceInstance)).toBeUndefined()
+      })
+    })
+    describe('when toolingDepsOfCurrentNamespace is enabled', () => {
+      beforeEach(async () => {
+        filter = filterCreator({
+          client,
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildFetchProfile({
+              target: ['meta'],
+              optionalFeatures: { toolingDepsOfCurrentNamespace: true },
+            }),
+            elementsSource: buildElementsSourceFromElements(elements),
+          },
+        }) as FilterType
+        await filter.onFetch(elements)
+      })
+      it('should have individual queries for types marked for individual query', () => {
+        expect(mockQueryAll).toHaveBeenCalledTimes(6)
+        mockQueryAll.mock.calls.forEach(([query]: [string, boolean]) => {
+          expect(query).toContain('MetadataComponentNamespacePrefix')
+        })
+      })
     })
   })
 

@@ -49,10 +49,11 @@ type DependencyGroup = {
 
 /**
  * Get a list of known dependencies between metadata components.
- *
- * @param client  The client to use to run the query
  */
-const getDependencies = async (client: SalesforceClient): Promise<DependencyGroup[]> => {
+const getDependencies = async (
+  client: SalesforceClient,
+  toolingDepsOfCurrentNamespace: boolean,
+): Promise<DependencyGroup[]> => {
   const allTypes = REFERENCING_TYPES_TO_FETCH_INDIVIDUALLY.map(t => `'${t}'`).join(', ')
   const whereClauses = [
     ...REFERENCING_TYPES_TO_FETCH_INDIVIDUALLY.map(t => `MetadataComponentType='${t}'`),
@@ -62,6 +63,10 @@ const getDependencies = async (client: SalesforceClient): Promise<DependencyGrou
     MetadataComponentId, MetadataComponentType, MetadataComponentName, 
     RefMetadataComponentId, RefMetadataComponentType, RefMetadataComponentName 
   FROM MetadataComponentDependency WHERE ${clause}`)
+    // Filter for the current namespace if the toolingDepsOfCurrentNamespace feature is enabled
+    .map(query => (toolingDepsOfCurrentNamespace
+      ? `${query} AND MetadataComponentNamespacePrefix = '${client.orgNamespace}'`
+      : query))
   const allDepsIters = await Promise.all(allQueries.map(q => client.queryAll(q, true)))
 
   const allDepsResults = allDepsIters.map(iter => collections.asynciterable.mapAsync(
@@ -196,7 +201,7 @@ const creator: RemoteFilterCreator = ({ client, config }) => ({
     config,
     filterName: 'extraDependencies',
     fetchFilterFunc: async (elements: Element[]) => {
-      const groupedDeps = await getDependencies(client)
+      const groupedDeps = await getDependencies(client, config.fetchProfile.isFeatureEnabled('toolingDepsOfCurrentNamespace'))
       const fetchedElements = buildElementsSourceFromElements(elements)
       const allElements = buildElementsSourceForFetch(elements, config)
 

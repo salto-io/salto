@@ -95,6 +95,7 @@ export const SCHEDULED_JOB_TYPE = 'ScheduledJob'
 export const BEHAVIOR_TYPE = 'Behavior'
 export const ESCALATION_SERVICE_TYPE = 'EscalationService'
 export const SCRIPTED_FIELD_TYPE = 'ScriptedField'
+export const SCRIPT_RUNNER_SETTINGS_TYPE = 'ScriptRunnerSettings'
 export const SCRIPT_RUNNER_TYPES = [SCRIPT_RUNNER_LISTENER_TYPE, SCRIPT_FRAGMENT_TYPE, SCHEDULED_JOB_TYPE,
   BEHAVIOR_TYPE, ESCALATION_SERVICE_TYPE, SCRIPTED_FIELD_TYPE]
 export const ISSUE_LAYOUT_TYPE = 'IssueLayout'

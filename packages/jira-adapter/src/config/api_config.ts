@@ -1764,6 +1764,26 @@ const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       },
     },
   },
+  ScriptRunnerSettings: {
+    request: {
+      url: 'sr-dispatcher/jira/admin/token/settings/features',
+    },
+    transformation: {
+      isSingleton: true,
+      fieldsToOmit: [
+        { fieldName: 'use_s3_storage@b' },
+      ],
+      fieldsToHide: [
+        { fieldName: 'jql_aliases@b' },
+      ],
+    },
+    deployRequests: {
+      modify: {
+        url: '/sr-dispatcher/jira/admin/token/settings/features',
+        method: 'put',
+      },
+    },
+  },
 }
 
 export const DUCKTYPE_SUPPORTED_TYPES = {
@@ -1773,6 +1793,7 @@ export const DUCKTYPE_SUPPORTED_TYPES = {
   Behavior: ['Behavior'],
   EscalationService: ['EscalationService'],
   ScriptedField: ['ScriptedField'],
+  ScriptRunnerSettings: ['ScriptRunnerSettings'],
 }
 
 const SCRIPT_RUNNER_FIELDS_TO_HIDE = [

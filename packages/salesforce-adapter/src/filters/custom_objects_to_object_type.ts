@@ -38,14 +38,14 @@ import {
   WEBLINK_METADATA_TYPE, INTERNAL_FIELD_TYPE_NAMES, CUSTOM_FIELD, INTERNAL_ID_ANNOTATION,
   INTERNAL_ID_FIELD, LIGHTNING_PAGE_TYPE, FLEXI_PAGE_TYPE, KEY_PREFIX, PLURAL_LABEL,
 } from '../constants'
-import { LocalFilterCreator } from '../filter'
+import { FilterContext, LocalFilterCreator } from '../filter'
 import {
   Types, isCustomObject, apiName, transformPrimitive, MetadataValues,
   formulaTypeName, metadataType, isCustomSettings, metadataAnnotationTypes,
   MetadataTypeAnnotations, createInstanceElement, toCustomField, toCustomProperties, isLocalOnly,
   toMetadataInfo,
   isFieldOfCustomObject,
-  createInstanceServiceIds,
+  createInstanceServiceIds, MetadataInstanceElement,
 } from '../transformers/transformer'
 import {
   addApiName, addMetadataType, addLabel, getNamespace, boolValue,
@@ -56,7 +56,7 @@ import {
   isInstanceOfType,
   isMasterDetailField,
   buildElementsSourceForFetch,
-  addKeyPrefix, addPluralLabel,
+  addKeyPrefix, addPluralLabel, getInstanceAlias,
 } from './utils'
 import { convertList } from './convert_lists'
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../metadata_deploy'
@@ -387,13 +387,13 @@ export const createCustomTypeFromCustomObjectInstance = async ({
   typesFromInstance = DEFAULT_TYPES_FROM_INSTANCE,
   fieldsToSkip = [],
   metadataType: objectMetadataType,
-  skipAliases,
+  config,
 }: {
   instance: InstanceElement
   typesFromInstance?: TypesFromInstance
   fieldsToSkip?: string[]
   metadataType?: string
-  skipAliases: boolean
+  config: FilterContext
 }): Promise<ObjectType> => {
   const name = instance.value[INSTANCE_FULL_NAME_FIELD]
   const label = instance.value[LABEL]
@@ -426,12 +426,11 @@ export const createCustomTypeFromCustomObjectInstance = async ({
         object.fields[field.name] = field
       }
     })
-  if (!skipAliases && _.isString(label)) {
-    const namespace = await getNamespace(object)
-    object.annotations[CORE_ANNOTATIONS.ALIAS] = [
-      label,
-      namespace !== undefined ? `(${namespace})` : undefined,
-    ].filter(isDefined).join(' ')
+  if (!config.fetchProfile.isFeatureEnabled('skipAliases')) {
+    object.annotations[CORE_ANNOTATIONS.ALIAS] = await getInstanceAlias(
+      instance as MetadataInstanceElement,
+      config.fetchProfile.isFeatureEnabled('useLabelAsAlias')
+    )
   }
   return object
 }
@@ -439,14 +438,14 @@ export const createCustomTypeFromCustomObjectInstance = async ({
 const createFromInstance = async (
   instance: InstanceElement,
   typesFromInstance: TypesFromInstance,
-  skipAliases: boolean,
+  config: FilterContext,
   fieldsToSkip?: string[],
 ): Promise<Element[]> => {
   const object = await createCustomTypeFromCustomObjectInstance({
     instance,
     typesFromInstance,
     fieldsToSkip,
-    skipAliases,
+    config,
   })
   const nestedMetadataInstances = await createNestedMetadataInstances(instance, object,
     typesFromInstance.nestedMetadataTypes)
@@ -847,7 +846,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
       )
 
       await awu(customObjectInstances)
-        .flatMap(instance => createFromInstance(instance, typesFromInstance, config.fetchProfile.isFeatureEnabled('skipAliases'), fieldsToSkip))
+        .flatMap(instance => createFromInstance(instance, typesFromInstance, config, fieldsToSkip))
         // Make sure we do not override existing metadata types with custom objects
         // this can happen with standard objects having the same name as a metadata type
         .filter(elem => !existingElementIDs.has(elem.elemID.getFullName()))

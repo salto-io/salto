@@ -364,7 +364,7 @@ describe('extra dependencies filter', () => {
         await filter.onFetch(elements)
       })
       it('should have individual queries for types marked for individual query', () => {
-        expect(mockQueryAll).toHaveBeenCalledTimes(6)
+        expect(mockQueryAll).toHaveBeenCalledTimes(12)
         mockQueryAll.mock.calls.forEach(([query]: [string, boolean]) => {
           expect(query).toContain('MetadataComponentNamespacePrefix')
         })

@@ -24,7 +24,7 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { LocalFilterCreator } from '../filter'
+import { FilterContext, LocalFilterCreator } from '../filter'
 import {
   CUSTOM_METADATA,
   CUSTOM_METADATA_SUFFIX,
@@ -41,13 +41,13 @@ const { awu, groupByAsync } = collections.asynciterable
 const createCustomMetadataRecordType = async (
   instance: InstanceElement,
   customMetadataType: ObjectType,
-  skipAliases: boolean
+  config: FilterContext
 )
   : Promise<ObjectType> => {
   const objectType = await createCustomTypeFromCustomObjectInstance({
     instance,
     metadataType: CUSTOM_METADATA,
-    skipAliases,
+    config,
   })
   objectType.fields = {
     ...objectType.fields,
@@ -89,7 +89,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
         .filter(e => e.elemID.name.endsWith(CUSTOM_METADATA_SUFFIX))
 
       const customMetadataRecordTypes = await awu(customMetadataInstances)
-        .map(instance => createCustomMetadataRecordType(instance, customMetadataType, config.fetchProfile.isFeatureEnabled('skipAliases')))
+        .map(instance => createCustomMetadataRecordType(instance, customMetadataType, config))
         .toArray()
       _.pullAll(elements, customMetadataInstances)
       customMetadataRecordTypes.forEach(e => elements.push(e))

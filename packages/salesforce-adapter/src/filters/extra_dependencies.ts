@@ -50,6 +50,25 @@ type DependencyGroup = {
 /**
  * Get a list of known dependencies between metadata components.
  */
+
+
+const createQueries = (
+  whereClauses: string[],
+  toolingDepsOfCurrentNamespace: boolean,
+  orgNamespace: string | undefined
+): string[] => {
+  const baseQueries = whereClauses.map(clause => `SELECT 
+    MetadataComponentId, MetadataComponentType, MetadataComponentName, 
+    RefMetadataComponentId, RefMetadataComponentType, RefMetadataComponentName 
+  FROM MetadataComponentDependency WHERE ${clause}`)
+  if (!toolingDepsOfCurrentNamespace) {
+    return baseQueries
+  }
+  const nonNamespaceDepsQueries = baseQueries.map(query => `${query} AND MetadataComponentNamespacePrefix = '${orgNamespace}'`)
+  const namespaceDepsQueries = baseQueries.map(query => `${query} AND MetadataComponentNamespacePrefix != '${orgNamespace}'`)
+  return nonNamespaceDepsQueries.concat(namespaceDepsQueries)
+}
+
 const getDependencies = async (
   client: SalesforceClient,
   toolingDepsOfCurrentNamespace: boolean,
@@ -59,10 +78,7 @@ const getDependencies = async (
     ...REFERENCING_TYPES_TO_FETCH_INDIVIDUALLY.map(t => `MetadataComponentType='${t}'`),
     `MetadataComponentType NOT IN (${allTypes})`,
   ]
-  const allQueries = whereClauses.map(clause => `SELECT 
-    MetadataComponentId, MetadataComponentType, MetadataComponentName, 
-    RefMetadataComponentId, RefMetadataComponentType, RefMetadataComponentName 
-  FROM MetadataComponentDependency WHERE ${clause}`)
+  const allQueries = createQueries(whereClauses, toolingDepsOfCurrentNamespace, client.orgNamespace)
     // Filter for the current namespace if the toolingDepsOfCurrentNamespace feature is enabled
     .map(query => (toolingDepsOfCurrentNamespace
       ? `${query} AND MetadataComponentNamespacePrefix = '${client.orgNamespace}'`

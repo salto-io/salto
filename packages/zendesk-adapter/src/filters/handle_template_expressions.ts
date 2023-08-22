@@ -14,13 +14,12 @@
 * limitations under the License.
 */
 import {
-  Change, Element, getChangeData, InstanceElement, isInstanceElement,
+  Change, Element, getChangeData, InstanceElement, isInstanceElement, isReferenceExpression, isTemplateExpression,
   ReferenceExpression, TemplateExpression, TemplatePart, UnresolvedReference, Values,
 } from '@salto-io/adapter-api'
 import { extractTemplate, TemplateContainer, replaceTemplatesWithValues, resolveTemplates } from '@salto-io/adapter-utils'
 import { references as referencesUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from './dynamic_content'
@@ -29,10 +28,8 @@ import {
   TICKET_FIELD_TYPE_NAME,
   ORG_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, GROUP_TYPE_NAME,
 } from '../constants'
-import { FETCH_CONFIG } from '../config'
+import { FETCH_CONFIG, ZendeskConfig } from '../config'
 
-
-const { awu } = collections.asynciterable
 const { createMissingInstance } = referencesUtils
 const log = logger(module)
 const BRACKETS = [['{{', '}}'], ['{%', '%}']]
@@ -258,7 +255,7 @@ const formulaToTemplate = (
     })
 }
 
-const getContainers = async (instances: InstanceElement[]): Promise<TemplateContainer[]> =>
+const getContainers = (instances: InstanceElement[]): TemplateContainer[] =>
   instances.map(instance =>
     potentialTemplates.filter(
       t => instance.elemID.typeName === t.instanceType
@@ -271,20 +268,34 @@ const getContainers = async (instances: InstanceElement[]): Promise<TemplateCont
       ].flat().filter(template.containerValidator).filter(v => !_.isEmpty(v)),
     }))).flat()
 
-const replaceFormulasWithTemplates = async (
-  instances: InstanceElement[], enableMissingReferences?: boolean
-): Promise<void> => {
+const replaceFormulasWithTemplates = (instances: InstanceElement[], enableMissingReferences?: boolean): void => {
   const instancesByType = _.groupBy(instances, i => i.elemID.typeName)
+
+  // On deployment, we might want to run the logic to create missing references that weren't created on fetch
+  // Because the values are already converted to TempleExpressions, we need to handle them specifically
+  const handleTemplateExpressionParts = (parts: TemplatePart[]): TemplateExpression => {
+    const newParts = parts.flatMap(part => {
+      if (isReferenceExpression(part)) {
+        return part
+      }
+      const template = formulaToTemplate(part, instancesByType, enableMissingReferences)
+      return isTemplateExpression(template) ? template.parts : template
+    })
+    return new TemplateExpression({ parts: newParts })
+  }
 
   const formulaToTemplateValue = (value: unknown): unknown => {
     if (Array.isArray(value)) {
       return value.map(innerValue => formulaToTemplateValue(innerValue))
     }
+    if (isTemplateExpression(value)) {
+      return handleTemplateExpressionParts(value.parts)
+    }
     return _.isString(value) ? formulaToTemplate(value, instancesByType, enableMissingReferences) : value
   }
 
   try {
-    (await getContainers(instances)).forEach(container => {
+    getContainers(instances).forEach(container => {
       const { fieldName } = container
       container.values.forEach(value => {
         value[fieldName] = formulaToTemplateValue(value[fieldName])
@@ -318,6 +329,10 @@ export const prepRef = (part: ReferenceExpression): TemplatePart => {
   return part
 }
 
+export const handleTemplateExpressionsOnFetch = (elements: Element[], config: ZendeskConfig): void => {
+  replaceFormulasWithTemplates(elements.filter(isInstanceElement), config[FETCH_CONFIG].enableMissingReferences)
+}
+
 /**
  * Process values that can reference other objects and turn them into TemplateExpressions
  */
@@ -325,19 +340,18 @@ const filterCreator: FilterCreator = ({ config }) => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}
   return ({
     name: 'handleTemplateExpressionFilter',
-    onFetch: async (elements: Element[]): Promise<void> =>
-      replaceFormulasWithTemplates(elements.filter(isInstanceElement), config[FETCH_CONFIG].enableMissingReferences),
-    preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
+    onFetch: async (elements: Element[]) => handleTemplateExpressionsOnFetch(elements, config),
+    preDeploy: async (changes: Change<InstanceElement>[]) => {
       try {
-        (await getContainers(await awu(changes).map(getChangeData).toArray())).forEach(
+        getContainers(changes.map(getChangeData)).forEach(
           async container => replaceTemplatesWithValues(container, deployTemplateMapping, prepRef)
         )
       } catch (e) {
         log.error(`Error parsing templates in deployment: ${e.message}`)
       }
     },
-    onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
-      (await getContainers(changes.map(getChangeData)))
+    onDeploy: async (changes: Change<InstanceElement>[]) => {
+      getContainers(changes.map(getChangeData))
         .forEach(container => resolveTemplates(container, deployTemplateMapping))
     },
   })

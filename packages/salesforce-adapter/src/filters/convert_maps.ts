@@ -56,6 +56,10 @@ export const defaultMapper = (val: string): string[] => (
   val.split(API_NAME_SEPARATOR).map(v => naclCase(v))
 )
 
+const lwcMapper = (val: string): string[] => (
+  [naclCase(val.split('/').slice(2).join('/'))]
+)
+
 const BUSINESS_HOURS_MAP_FIELD_DEF: Record<string, MapDef> = {
   // One-level maps
   businessHours: { key: 'name' },
@@ -95,7 +99,7 @@ const EMAIL_TEMPLATE_MAP_FIELD_DEF: Record<string, MapDef> = {
 }
 
 const LIGHTNING_COMPONENT_BUNDLE_MAP: Record<string, MapDef> = {
-  'lwcResources.lwcResource': { key: 'filePath', mapper: (item => [naclCase(_.last(item.split('/')))]) },
+  'lwcResources.lwcResource': { key: 'filePath', mapper: (item => lwcMapper(item)) },
 }
 
 export const metadataTypeToFieldToMapDef: Record<string, Record<string, MapDef>> = {

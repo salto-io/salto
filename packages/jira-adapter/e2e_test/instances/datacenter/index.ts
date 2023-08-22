@@ -18,17 +18,17 @@ import { AUTOMATION_TYPE, PRIORITY_SCHEME_TYPE_NAME, WORKFLOW_TYPE_NAME } from '
 import { findType } from '../../utils'
 import { createAutomationValues } from './automation'
 import { createKanbanBoardValues, createScrumBoardValues } from './board'
-import { createFieldConfigurationValues } from './fieldConfiguration'
+// import { createFieldConfigurationValues } from './fieldConfiguration'
 import { createFilterValues } from './filter'
 import { createPrioritySchemeValues } from './priorityScheme'
 import { createWorkflowValues } from './workflow'
 
 export const createInstances = (randomString: string, fetchedElements: Element[]): InstanceElement[][] => {
-  const fieldConfiguration = new InstanceElement(
-    randomString,
-    findType('FieldConfiguration', fetchedElements),
-    createFieldConfigurationValues(randomString),
-  )
+  // const fieldConfiguration = new InstanceElement(
+  //   randomString,
+  //   findType('FieldConfiguration', fetchedElements),
+  //   createFieldConfigurationValues(randomString),
+  // )
 
   const automation = new InstanceElement(
     randomString,
@@ -67,7 +67,7 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
   )
 
   return [
-    [fieldConfiguration],
+    // [fieldConfiguration],
     [automation],
     [workflow],
     [kanbanBoard],

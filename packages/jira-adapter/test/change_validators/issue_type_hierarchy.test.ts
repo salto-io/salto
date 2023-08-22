@@ -78,6 +78,18 @@ describe('issue type hierarchy validator', () => {
       const changes = [toChange({ after: issueTypeLevelZero })]
       expect(await issueTypeHierarchyValidator(changes, elementsSource)).toEqual([])
     })
+    it('should return error message for unsupported hierarchy change from 0 to -1 or backwards', async () => {
+      const issueTypeAfter = issueTypeLevelZero.clone()
+      issueTypeAfter.value.hierarchyLevel = -1
+      const changes = [toChange({ before: issueTypeLevelZero, after: issueTypeAfter })]
+      expect(await issueTypeHierarchyValidator(changes, elementsSource)).toEqual([
+        {
+          elemID: issueTypeAfter.elemID,
+          severity: 'Error' as SeverityLevel,
+          message: 'Cannot modify hierarchy level from 0 to -1 or vice versa.',
+          detailedMessage: 'Issue type hierarchy level cannot be changed from 0 to -1 or vice versa.',
+        }])
+    })
   })
   describe('paid account', () => {
     const accountInfoInstancePaid = getAccountInfoInstance(false)

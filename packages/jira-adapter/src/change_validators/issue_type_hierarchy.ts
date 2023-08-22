@@ -35,6 +35,12 @@ const getIsuueTypeHierarchyErrorMessage = (instance: InstanceElement): ChangeErr
   message: 'Cannot deploy issue type with hierarchy level greater than 0.',
   detailedMessage: 'Issue type hierarchy level can only be -1, 0. To deploy, change the hierarchy level to one of the allowed values.',
 })
+const getIsuueTypeUnsupportedHierarchyErrorMessage = (instance: InstanceElement): ChangeError => ({
+  elemID: instance.elemID,
+  severity: 'Error' as SeverityLevel,
+  message: 'Cannot modify hierarchy level from 0 to -1 or vice versa.',
+  detailedMessage: 'Issue type hierarchy level cannot be changed from 0 to -1 or vice versa.',
+})
 
 const getIsuueTypeHierearchyWarningMessage = (instance: InstanceElement): ChangeError => ({
   elemID: instance.elemID,
@@ -63,8 +69,12 @@ export const issueTypeHierarchyValidator: ChangeValidator = async (changes, elem
   const relevantChanges = getIssueTypeWithHierachyChanges(changes)
   const isLicenseFree = await isFreeLicense(elementSource)
   return awu(relevantChanges)
-    .map(getChangeData)
-    .map(instance => {
+    .map(change => {
+      const instance = getChangeData(change)
+      if (isModificationChange(change)
+      && change.data.before.value.hierarchyLevel + change.data.after.value.hierarchyLevel === -1) {
+        return getIsuueTypeUnsupportedHierarchyErrorMessage(instance)
+      }
       if (isLicenseFree === false) {
         return getIsuueTypeHierearchyWarningMessage(instance)
       }

@@ -79,10 +79,6 @@ const getDependencies = async (
     `MetadataComponentType NOT IN (${allTypes})`,
   ]
   const allQueries = createQueries(whereClauses, toolingDepsOfCurrentNamespace, client.orgNamespace)
-    // Filter for the current namespace if the toolingDepsOfCurrentNamespace feature is enabled
-    .map(query => (toolingDepsOfCurrentNamespace
-      ? `${query} AND MetadataComponentNamespacePrefix = '${client.orgNamespace}'`
-      : query))
   const allDepsIters = await Promise.all(allQueries.map(q => client.queryAll(q, true)))
 
   const allDepsResults = allDepsIters.map(iter => collections.asynciterable.mapAsync(

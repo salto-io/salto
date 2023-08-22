@@ -68,7 +68,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           ]
           if (placeholder === undefined) {
             throw createSaltoElementError({ // caught by deployChanges
-              message: `Unknown auth type was found for webhook ${instance.elemID.getFullName()}: ${
+              message: `Unknown auth type was found for webhook: ${
                 instance.value.authentication.type}`,
               severity: 'Error',
               elemID: getChangeData(change).elemID,

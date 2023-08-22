@@ -93,7 +93,7 @@ const replaceAttachmentId = (
     log.error(`Failed to deploy macro because its attachment field has an invalid format: ${
       inspectValue(attachments)}`)
     throw createSaltoElementError({ // caught in try block
-      message: 'Failed to deploy macro because its attachment field has an invalid format',
+      message: 'Macro attachment field has an invalid format',
       severity: 'Error',
       elemID: parentInstance.elemID,
     })
@@ -275,7 +275,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           errors: childrenChanges
             .map(getChangeData)
             .map(e => createSaltoElementError({
-              message: `Failed to update ${e.elemID.getFullName()} since it has no valid parent`,
+              message: 'Attachment is not linked to a valid macro',
               severity: 'Error',
               elemID: e.elemID,
             })),
@@ -313,6 +313,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           errors: [...parentChanges
             .map(getChangeData)
             .map(e => createSaltoElementError({
+              // TODO
               message: `Failed to update ${e.elemID.getFullName()} since the deployment of its attachments failed`,
               severity: 'Error',
               elemID: e.elemID,

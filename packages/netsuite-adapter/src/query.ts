@@ -367,7 +367,7 @@ export function validateArrayOfStrings(
 }
 
 export function validatePlainObject(
-  value: unknown,
+  value: NonNullable<unknown>,
   configPath: string | string[]
 ): asserts value is Record<string, unknown> {
   if (!_.isPlainObject(value)) {
@@ -376,9 +376,9 @@ export function validatePlainObject(
 }
 
 export function validateDefined<T>(
-  value: T | undefined,
+  value: T,
   configPath: string | string[]
-): asserts value is T {
+): asserts value is NonNullable<T> {
   if (value === undefined) {
     throw new Error(`${makeArray(configPath).join('.')} should be defined`)
   }
@@ -397,13 +397,13 @@ export function validateNetsuiteQueryParameters(
   if (filePaths !== undefined) {
     validateArrayOfStrings(filePaths, [configName, netsuiteQueryParamsKeys.filePaths])
   }
-  if (types !== undefined) {
+  if (types != null) {
     validatePlainObject(types, [configName, netsuiteQueryParamsKeys.types])
     Object.entries(types).forEach(([key, value]) => {
       validateArrayOfStrings(value, [configName, netsuiteQueryParamsKeys.types, key])
     })
   }
-  if (customRecords !== undefined) {
+  if (customRecords != null) {
     validatePlainObject(customRecords, [configName, netsuiteQueryParamsKeys.customRecords])
     Object.entries(customRecords).forEach(([key, value]) => {
       validateArrayOfStrings(value, [configName, netsuiteQueryParamsKeys.customRecords, key])

@@ -658,11 +658,11 @@ function validateAdditionalSdfDeployDependencies(
 const validateAdditionalDependencies = (
   { include, exclude }: Partial<Record<keyof AdditionalDependencies, unknown>>
 ): void => {
-  if (include !== undefined) {
+  if (include != null) {
     validatePlainObject(include, additionalDependenciesConfigPath.concat('include'))
     validateAdditionalSdfDeployDependencies(include, 'include')
   }
-  if (exclude !== undefined) {
+  if (exclude != null) {
     validatePlainObject(exclude, additionalDependenciesConfigPath.concat('exclude'))
     validateAdditionalSdfDeployDependencies(exclude, 'exclude')
   }
@@ -730,7 +730,7 @@ export const validateDeployParams = (
     && typeof validate !== 'boolean') {
     throw new Error(`Expected "validate" to be a boolean or to be undefined, but received:\n ${validate}`)
   }
-  if (additionalDependencies !== undefined) {
+  if (additionalDependencies != null) {
     validatePlainObject(additionalDependencies, additionalDependenciesConfigPath)
     validateAdditionalDependencies(additionalDependencies)
   }
@@ -1071,29 +1071,29 @@ function validateConfig(config: Record<string, unknown>): asserts config is Nets
     validateArrayOfStrings(typesToSkip, CONFIG.typesToSkip)
   }
 
-  if (client !== undefined) {
+  if (client != null) {
     validatePlainObject(client, CONFIG.client)
     validateClientConfig(client, fetchTarget !== undefined)
   }
 
-  if (fetchTarget !== undefined) {
+  if (fetchTarget != null) {
     validatePlainObject(fetchTarget, CONFIG.fetchTarget)
     validateNetsuiteQueryParameters(fetchTarget, CONFIG.fetchTarget)
     validateFetchParameters(convertToQueryParams(fetchTarget))
   }
 
-  if (skipList !== undefined) {
+  if (skipList != null) {
     validatePlainObject(skipList, CONFIG.skipList)
     validateNetsuiteQueryParameters(skipList, CONFIG.skipList)
     validateFetchParameters(convertToQueryParams(skipList))
   }
 
-  if (deploy !== undefined) {
+  if (deploy != null) {
     validatePlainObject(deploy, CONFIG.deploy)
     validateDeployParams(deploy)
   }
 
-  if (suiteAppClient !== undefined) {
+  if (suiteAppClient != null) {
     validatePlainObject(suiteAppClient, CONFIG.suiteAppClient)
     validateSuiteAppClientParams(suiteAppClient)
   }
@@ -1116,15 +1116,20 @@ export const netsuiteConfigFromConfig = (
       fetch: _.omit(config.fetch, FETCH_PARAMS.lockedElementsToExclude),
     })
 
+    const {
+      fetch,
+      ...restOfConfig
+    } = config
+
     return {
-      ..._.pickBy(config, (_value, key) => {
+      ..._.pickBy(restOfConfig, (_value, key) => {
         if (key in CONFIG) {
           return true
         }
         log.debug('Unknown config property was found: %s', key)
         return false
       }),
-      fetch: config.fetch,
+      fetch,
     }
   } catch (e) {
     e.message = `Failed to load Netsuite config: ${e.message}.

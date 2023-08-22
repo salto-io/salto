@@ -24,13 +24,10 @@ const getIssueTypeWithHierachyChanges = (changes: ReadonlyArray<Change>): (
     AdditionChange<InstanceElement> | ModificationChange<InstanceElement>)[] => changes.filter(isInstanceChange)
   .filter(isAdditionOrModificationChange)
   .filter(change => getChangeData(change).elemID.typeName === ISSUE_TYPE_NAME)
-  .filter(change => {
-    if ((isAdditionChange(change) && change.data.after.value.hierarchyLevel > 0) || (isModificationChange(change)
-    && !isEqualValues(change.data.before.value.hierarchyLevel, change.data.after.value.hierarchyLevel))) {
-      return true
-    }
-    return false
-  })
+  .filter(change =>
+    (isAdditionChange(change) && change.data.after.value.hierarchyLevel > 0)
+    || (isModificationChange(change)
+    && !isEqualValues(change.data.before.value.hierarchyLevel, change.data.after.value.hierarchyLevel)))
 
 const getIsuueTypeHierarchyErrorMessage = (instance: InstanceElement): ChangeError => ({
   elemID: instance.elemID,
@@ -59,15 +56,6 @@ const getIsuueTypeHierearchyWarningMessage = (instance: InstanceElement): Change
   },
 })
 
-const proccessIssueTypeHierarchy = (instance: InstanceElement, isLicenseFree: boolean):
-ChangeError => {
-  if (isLicenseFree === false || instance.value.hierarchyLevel <= 0) {
-    return getIsuueTypeHierearchyWarningMessage(instance)
-  }
-  return getIsuueTypeHierarchyErrorMessage(instance)
-}
-
-
 export const issueTypeHierarchyValidator: ChangeValidator = async (changes, elementSource) => {
   if (elementSource === undefined) {
     return []
@@ -76,6 +64,11 @@ export const issueTypeHierarchyValidator: ChangeValidator = async (changes, elem
   const isLicenseFree = await isFreeLicense(elementSource)
   return awu(relevantChanges)
     .map(getChangeData)
-    .map(instance => proccessIssueTypeHierarchy(instance, isLicenseFree))
+    .map(instance => {
+      if (isLicenseFree === false || instance.value.hierarchyLevel <= 0) {
+        return getIsuueTypeHierearchyWarningMessage(instance)
+      }
+      return getIsuueTypeHierarchyErrorMessage(instance)
+    })
     .toArray()
 }

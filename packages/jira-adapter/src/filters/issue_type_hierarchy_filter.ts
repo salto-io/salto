@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { Change, InstanceElement, getChangeData, isAdditionChange, isInstanceChange } from '@salto-io/adapter-api'
+import { getChangeData, isAdditionChange, isInstanceChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { ISSUE_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
@@ -22,27 +22,22 @@ import { isFreeLicense } from '../utils'
 
 const { awu } = collections.asynciterable
 
-const isRelevantChange = (change: Change<InstanceElement>, isLicenseFree: boolean):
-    boolean => {
-  if (isLicenseFree === false
-  && isAdditionChange(change) && change.data.after.value.hierarchyLevel > 0) {
-    return true
-  }
-  return false
-}
-
 const filter: FilterCreator = ({ elementsSource }) => {
   const IssueTypeTohierarchyLevel: Record<string, number> = {}
   return {
     name: 'issueTypeHierarchyFilter',
     preDeploy: async changes => {
       const isLicenseFree = await isFreeLicense(elementsSource)
+      if (isLicenseFree) {
+        return
+      }
+
       await awu(changes)
         .filter(isInstanceChange)
         .filter(isAdditionChange)
-        .filter(change => getChangeData(change).elemID.typeName === ISSUE_TYPE_NAME)
-        .filter(change => isRelevantChange(change, isLicenseFree))
         .map(getChangeData)
+        .filter(instance => instance.elemID.typeName === ISSUE_TYPE_NAME)
+        .filter(instance => instance.value.hierarchyLevel > 0)
         .forEach(instance => {
           IssueTypeTohierarchyLevel[instance.elemID.getFullName()] = instance.value.hierarchyLevel
           instance.value.hierarchyLevel = 0

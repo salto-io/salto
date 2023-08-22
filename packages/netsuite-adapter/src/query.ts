@@ -367,7 +367,7 @@ export function validateArrayOfStrings(
 }
 
 export function validatePlainObject(
-  value: NonNullable<unknown>,
+  value: NonNullable<unknown> | null,
   configPath: string | string[]
 ): asserts value is Record<string, unknown> {
   if (!_.isPlainObject(value)) {
@@ -375,10 +375,10 @@ export function validatePlainObject(
   }
 }
 
-export function validateDefined<T>(
-  value: T,
+export function validateDefined(
+  value: unknown,
   configPath: string | string[]
-): asserts value is NonNullable<T> {
+): asserts value is NonNullable<unknown> | null {
   if (value === undefined) {
     throw new Error(`${makeArray(configPath).join('.')} should be defined`)
   }
@@ -397,13 +397,13 @@ export function validateNetsuiteQueryParameters(
   if (filePaths !== undefined) {
     validateArrayOfStrings(filePaths, [configName, netsuiteQueryParamsKeys.filePaths])
   }
-  if (types != null) {
+  if (types !== undefined) {
     validatePlainObject(types, [configName, netsuiteQueryParamsKeys.types])
     Object.entries(types).forEach(([key, value]) => {
       validateArrayOfStrings(value, [configName, netsuiteQueryParamsKeys.types, key])
     })
   }
-  if (customRecords != null) {
+  if (customRecords !== undefined) {
     validatePlainObject(customRecords, [configName, netsuiteQueryParamsKeys.customRecords])
     Object.entries(customRecords).forEach(([key, value]) => {
       validateArrayOfStrings(value, [configName, netsuiteQueryParamsKeys.customRecords, key])

@@ -658,11 +658,11 @@ function validateAdditionalSdfDeployDependencies(
 const validateAdditionalDependencies = (
   { include, exclude }: Partial<Record<keyof AdditionalDependencies, unknown>>
 ): void => {
-  if (include != null) {
+  if (include !== undefined) {
     validatePlainObject(include, additionalDependenciesConfigPath.concat('include'))
     validateAdditionalSdfDeployDependencies(include, 'include')
   }
-  if (exclude != null) {
+  if (exclude !== undefined) {
     validatePlainObject(exclude, additionalDependenciesConfigPath.concat('exclude'))
     validateAdditionalSdfDeployDependencies(exclude, 'exclude')
   }
@@ -730,7 +730,7 @@ export const validateDeployParams = (
     && typeof validate !== 'boolean') {
     throw new Error(`Expected "validate" to be a boolean or to be undefined, but received:\n ${validate}`)
   }
-  if (additionalDependencies != null) {
+  if (additionalDependencies !== undefined) {
     validatePlainObject(additionalDependencies, additionalDependenciesConfigPath)
     validateAdditionalDependencies(additionalDependencies)
   }
@@ -1071,29 +1071,29 @@ function validateConfig(config: Record<string, unknown>): asserts config is Nets
     validateArrayOfStrings(typesToSkip, CONFIG.typesToSkip)
   }
 
-  if (client != null) {
+  if (client !== undefined) {
     validatePlainObject(client, CONFIG.client)
     validateClientConfig(client, fetchTarget !== undefined)
   }
 
-  if (fetchTarget != null) {
+  if (fetchTarget !== undefined) {
     validatePlainObject(fetchTarget, CONFIG.fetchTarget)
     validateNetsuiteQueryParameters(fetchTarget, CONFIG.fetchTarget)
     validateFetchParameters(convertToQueryParams(fetchTarget))
   }
 
-  if (skipList != null) {
+  if (skipList !== undefined) {
     validatePlainObject(skipList, CONFIG.skipList)
     validateNetsuiteQueryParameters(skipList, CONFIG.skipList)
     validateFetchParameters(convertToQueryParams(skipList))
   }
 
-  if (deploy != null) {
+  if (deploy !== undefined) {
     validatePlainObject(deploy, CONFIG.deploy)
     validateDeployParams(deploy)
   }
 
-  if (suiteAppClient != null) {
+  if (suiteAppClient !== undefined) {
     validatePlainObject(suiteAppClient, CONFIG.suiteAppClient)
     validateSuiteAppClientParams(suiteAppClient)
   }

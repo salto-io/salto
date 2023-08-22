@@ -26,7 +26,7 @@ const getIssueTypeWithHierachyChanges = (changes: ReadonlyArray<Change>): (
   .filter(change => getChangeData(change).elemID.typeName === ISSUE_TYPE_NAME)
   .filter(change =>
     (isAdditionChange(change) && change.data.after.value.hierarchyLevel > 0)
-    || (isModificationChange(change)
+      || (isModificationChange(change)
     && change.data.before.value.hierarchyLevel !== change.data.after.value.hierarchyLevel))
 
 const getIsuueTypeHierarchyErrorMessage = (instance: InstanceElement): ChangeError => ({

@@ -1766,7 +1766,7 @@ const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   },
   ScriptRunnerSettings: {
     request: {
-      url: 'sr-dispatcher/jira/admin/token/settings/features',
+      url: '/sr-dispatcher/jira/admin/token/settings/features',
     },
     transformation: {
       isSingleton: true,

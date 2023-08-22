@@ -25,8 +25,9 @@ const log = logger(module)
 export const SALESFORCE_LABEL_ANNOTATION = 'label'
 export const SALESFORCE_S_OBJECT_NAME = 'sobject_name'
 
+// TODO check all salesforce optional references + check current user references
 export const resolveReference : GetLookupNameFunc = async ({ ref, path }) => {
-  if (path !== undefined) {
+  if (path !== undefined) { // check ref.value has annotations[SALE...]
     if (isObjectType(ref.value)) {
       if (path.name === SALESFORCE_S_OBJECT_NAME) {
         return ref.value.annotations[SALESFORCE_LABEL_ANNOTATION]
@@ -45,6 +46,6 @@ export const resolveReference : GetLookupNameFunc = async ({ ref, path }) => {
     }
   }
 
-  log.warn('get cross-service netsuite reference which is not ObjectType or Field')
+  log.warn('get cross-service netsuite reference which is not ObjectType or Field') // TODO do we want to stop the deployment?
   return ref
 }

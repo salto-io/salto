@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { DEFAULT_CONFIG } from '../src/config'
 import changeValidator from '../src/change_validator'
 import { DEPLOY_SUPPORTED_TYPES, WORKATO } from '../src/constants'
 
@@ -23,11 +24,11 @@ describe('change validator creator', () => {
     const anotherNonInFolderType = new ObjectType({ elemID: new ElemID(WORKATO, 'nonRLM1') })
 
     it('should not fail if there are no deploy changes', async () => {
-      expect(await changeValidator([])).toEqual([])
+      expect(await changeValidator(DEFAULT_CONFIG)([])).toEqual([])
     })
 
     it('both should fail', async () => {
-      expect(await changeValidator([
+      expect(await changeValidator(DEFAULT_CONFIG)([
         toChange({ after: new InstanceElement('inst1', nonInFolderType) }),
         toChange({ before: new InstanceElement('inst1', anotherNonInFolderType),
           after: new InstanceElement('inst1', anotherNonInFolderType) }),
@@ -44,7 +45,7 @@ describe('change validator creator', () => {
   describe('notSupportedRemovalValidator', () => {
     const InFolderType = new ObjectType({ elemID: new ElemID(WORKATO, DEPLOY_SUPPORTED_TYPES[0]) })
     it('should fail', async () => {
-      expect(await changeValidator([
+      expect(await changeValidator(DEFAULT_CONFIG)([
         toChange({ before: new InstanceElement('inst1', InFolderType) }),
       ])).toMatchObject([{
         severity: 'Error',

@@ -228,10 +228,11 @@ export const DEFAULT_CONFIG: WorkatoConfig = {
 }
 
 export type ChangeValidatorName = (
-  'deployTypesNotSupported' 
+  'deployTypesNotSupported'
   | 'notSupportedTypes'
   | 'notSupportedRemoval'
   | 'recipeOverwrittenValues'
+  | 'notSupportedCrossServices'
 )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -239,7 +240,11 @@ type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig>({
   elemID: new ElemID(WORKATO, 'changeValidatorConfig'),
   fields: {
-    deployNotSupported: { refType: BuiltinTypes.BOOLEAN },
+    deployTypesNotSupported: { refType: BuiltinTypes.BOOLEAN },
+    notSupportedTypes: { refType: BuiltinTypes.BOOLEAN },
+    notSupportedRemoval: { refType: BuiltinTypes.BOOLEAN },
+    recipeOverwrittenValues: { refType: BuiltinTypes.BOOLEAN },
+    notSupportedCrossServices: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

@@ -19,7 +19,7 @@ import _ from 'lodash'
 import * as path from 'path'
 import JSZip from 'jszip'
 import { logger } from '@salto-io/logging'
-import { Change, DeployResult, ElemID, getChangeData, Element, InstanceElement, isInstanceElement, ReadOnlyElementsSource, Values } from '@salto-io/adapter-api'
+import { Change, DeployResult, ElemID, getChangeData, Element, InstanceElement, isInstanceElement, ReadOnlyElementsSource, Values, SaltoError } from '@salto-io/adapter-api'
 import { createSchemeGuard, createSchemeGuardForInstance, GetLookupNameFunc, getParent, resolveValues, ResolveValuesFunc, safeJsonStringify } from '@salto-io/adapter-utils'
 import { retry } from '@salto-io/lowerdash'
 import Joi from 'joi'
@@ -189,11 +189,11 @@ Promise<void> => {
     })
 }
 
-const getWorkatoError = (elemList: ElemID[], error: Error): Error => {
+const getWorkatoError = (elemList: ElemID[], error: Error): SaltoError => { // TODO change all to SaltoError
   const baseErrorMessage = `Deployment of the next elements failed:${elemList.map(elemId => `\n\t${elemId.getFullName()}`)}`
 
   if (!(error instanceof clientUtils.HTTPError)) {
-    return new Error(`${baseErrorMessage}\n${error}`)
+    return { message: `${baseErrorMessage}\n${error}`, severity: 'Error' }
   }
 
   const logBaseErrorMessage = `Deployment of the next elements failed:${elemList.map(elemId => `\n\t${elemId.getFullName()}.`)}`
@@ -204,10 +204,10 @@ const getWorkatoError = (elemList: ElemID[], error: Error): Error => {
     if (error.response.status === 500 && error.response.data.id !== undefined) {
       errorResponse.push(`id: ${error.response.data.id}`)
     }
-    return new Error(errorResponse.join(EOL))
+    return { message: errorResponse.join(EOL), severity: 'Error' }
   }
 
-  return new Error([baseErrorMessage, `${error}`, safeJsonStringify(error.response.data, undefined, 2)].join(EOL))
+  return { message: [baseErrorMessage, `${error}`, safeJsonStringify(error.response.data, undefined, 2)].join(EOL), severity: 'Error' }
 }
 
 const recipeToZipFormat = async (zip: JSZip, recipe: InstanceElement) : Promise<void> => {
@@ -249,7 +249,7 @@ const connectionToZipFormat = (zip: JSZip, connection: InstanceElement) : void =
  * changes should be only connection or recipe changes (recipeCode merge into recipeFile while resolving)
  * return zip of converted files
  */
-const makeRLMZipFormat = (changes: Change<InstanceElement>[]) : [JSZip, DeployResult] => {
+const convertChangesToRLMFormat = (changes: Change<InstanceElement>[]) : [JSZip, DeployResult] => {
   const zip = new JSZip()
   const [connectionChanges, nonConnectionChanges] = _.partition(changes, isFromType([CONNECTION_TYPE]))
   const [recipeChanges, otherChanges] = _.partition(nonConnectionChanges, isFromType([RECIPE_TYPE, RECIPE_CODE_TYPE]))
@@ -259,9 +259,10 @@ const makeRLMZipFormat = (changes: Change<InstanceElement>[]) : [JSZip, DeployRe
       zip,
       {
         appliedChanges: [],
-        errors: [new Error(['unknwon Types for RLM', ...otherChanges
+        errors: [{ message: ['unknwon Types for RLM', ...otherChanges
           .map(change => getChangeData(change))
-          .map(data => `\t${data.elemID.name} from type ${data.elemID.typeName}`)].join(EOL))],
+          .map(data => `\t${data.elemID.name} from type ${data.elemID.typeName}`)].join(EOL),
+        severity: 'Error' }],
       },
     ]
   }
@@ -281,10 +282,11 @@ const makeRLMZipFormat = (changes: Change<InstanceElement>[]) : [JSZip, DeployRe
     {
       appliedChanges: [...validConnections, ...validRecipes],
       errors: [...invalidConnections, ...invalidRecipes].map(
-        elem => new Error([
+        elem => ({ message: [
           `Deployment of ${getChangeData(elem).elemID.getFullName()} failed:`,
           `invalid ${getChangeData(elem).elemID.typeName}`,
-        ].join(EOL))
+        ].join(EOL),
+        severity: 'Error' })
       ),
     },
   ]
@@ -327,7 +329,7 @@ const RLMImportZip = async ({ zip, client, rootId, elemList }: {
 }
 
 export const RLMDeploy = async (changes: Change<InstanceElement>[], client: WorkatoClient): Promise<DeployResult> => {
-  const [zip, deployResult] = makeRLMZipFormat(changes)
+  const [zip, deployResult] = convertChangesToRLMFormat(changes)
 
   if (!_.isEmpty(deployResult.appliedChanges)) {
     try {

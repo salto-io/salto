@@ -35,7 +35,7 @@ import changeValidator from './change_validator'
 import { paginate } from './client/pagination'
 import { getChangeGroupIds } from './group_change'
 import { resolveValuesCheckRecipeFunc as resolveValuesRecipeCodeWrapper, RLMDeploy } from './rlm'
-import { getCrossServiceLookUpNameFuncs, getLookUpNameFuncsToFunc, workatoLookUpName } from './reference_mapping'
+import { getCrossServiceLookUpNameFuncs, mergeLookUpNameFuncs, workatoLookUpName } from './reference_mapping'
 import { isFromType } from './utils'
 
 const log = logger(module)
@@ -153,7 +153,7 @@ export default class WorkatoAdapter implements AdapterOperations {
     // resolving workato and cross-service
     const resolvedChanges = await awu(
       changeGroup.changes
-    ).map(async change => resolveChangeElement(change, getLookUpNameFuncsToFunc([
+    ).map(async change => resolveChangeElement(change, mergeLookUpNameFuncs([
       ...getCrossServiceLookUpNameFuncs(accountToServiceNameMap),
       workatoLookUpName,
     ]), resolveValuesRecipeCodeWrapper)).toArray()
@@ -191,7 +191,7 @@ export default class WorkatoAdapter implements AdapterOperations {
   // eslint-disable-next-line class-methods-use-this
   public get deployModifiers(): DeployModifiers {
     return {
-      changeValidator,
+      changeValidator: changeValidator(this.userConfig),
       getChangeGroupIds,
     }
   }

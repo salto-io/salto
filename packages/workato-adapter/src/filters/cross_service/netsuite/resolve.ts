@@ -26,6 +26,7 @@ export const NETSUITE_OBJECT_REFERENCE_SEEPARATOR = '@@'
 export const NETSUITE_FIELD_REFERENCE_SEPARATOR = '@'
 export const NETSUITE_SCRIPT_SUFFIX = 'script'
 
+// TODO check all netsuite optional references + check current user references
 export const resolveReference : GetLookupNameFunc = async ({ ref }) => {
   if (isObjectType(ref.value)) {
     /*
@@ -33,16 +34,16 @@ export const resolveReference : GetLookupNameFunc = async ({ ref }) => {
       * (like Customer or Employee in recomended 'Search standard records') imported without @@script suffix.
       * This behaviour isn't change anything.
       */
-    return `${ref.value.elemID.typeName}${NETSUITE_OBJECT_REFERENCE_SEEPARATOR}${NETSUITE_SCRIPT_SUFFIX}`
+    return `${ref.value.elemID.typeName}${NETSUITE_OBJECT_REFERENCE_SEEPARATOR}${NETSUITE_SCRIPT_SUFFIX}` // TODO dont use elemID typeName?
   }
 
-  if (isInstanceElement(ref.value)) {
+  if (isInstanceElement(ref.value)) { // TODO check with Joi ref.value has value.label/scriptid etc.
     return {
       label: ref.value.value.label,
       value: `${ref.value.elemID.typeName}${NETSUITE_FIELD_REFERENCE_SEPARATOR}${ref.value.value.scriptid}`,
     }
   }
 
-  log.warn('get cross-service netsuite reference which is not ObjectType or InstanceElement')
+  log.warn('get cross-service netsuite reference which is not ObjectType or InstanceElement') // TODO do we want to stop the deployment?
   return ref
 }

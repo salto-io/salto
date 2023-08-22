@@ -18,7 +18,7 @@ import { cloneDeepWithoutRefs, isInstanceElement, isReferenceExpression } from '
 import { GetLookupNameFunc, GetLookupNameFuncArgs, resolveValues } from '@salto-io/adapter-utils'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
-import { CONNECTION_TYPE, FOLDER_TYPE, NETSUITE, RECIPE_CODE_TYPE, RECIPE_CONFIG_TYPE, RECIPE_TYPE, SALESFORCE } from './constants'
+import { CONNECTION_TYPE, FOLDER_TYPE, NETSUITE, RECIPE_CODE_TYPE, RECIPE_CONFIG_TYPE, RECIPE_TYPE, SALESFORCE, WORKATO } from './constants'
 import { resolveReference as salesforceResolver } from './filters/cross_service/salesforce/resolve'
 import { resolveReference as netsuiteResolver } from './filters/cross_service/netsuite/resolve'
 import { getFolderPath, getRootFolderID } from './utils'
@@ -86,9 +86,14 @@ export const referencesRules: WorkatoFieldReferenceDefinition[] = [
 ]
 
 // The second param is needed to resolve references by WorkatoSerializationStrategy
-localWorkatoLookUpName = referenceUtils.generateLookupFunc(
-  referencesRules, defs => new WorkatoFieldReferenceResolver(defs)
-)
+localWorkatoLookUpName = async args => {
+  if (args.ref.elemID.adapter === WORKATO) {
+    return referenceUtils.generateLookupFunc(
+      referencesRules, defs => new WorkatoFieldReferenceResolver(defs)
+    )(args)
+  }
+  return args.ref
+}
 export const workatoLookUpName = localWorkatoLookUpName
 
 const getCrossServiceLookupNameFunc = (
@@ -96,7 +101,7 @@ const getCrossServiceLookupNameFunc = (
   accountToServiceNameMap: Record<string, string>,
   serviceName: string
 ): GetLookupNameFunc => async args => {
-  if (accountToServiceNameMap[args.ref.elemID.adapter] === serviceName) {
+  if (accountToServiceNameMap[args.ref.elemID.adapter] === serviceName) { // TODO add check args.ref
     return resolveReferenceFunc(args)
   }
   return args.ref
@@ -109,9 +114,11 @@ export const getCrossServiceLookUpNameFuncs = (
   getCrossServiceLookupNameFunc(salesforceResolver, accountToServiceNameMap, SALESFORCE),
 ] : [])
 
-export const getLookUpNameFuncsToFunc = (
+export const mergeLookUpNameFuncs = (
   lookUpNameFuncs: GetLookupNameFunc[]
-) => (async (args: GetLookupNameFuncArgs) => (
-  await awu(lookUpNameFuncs.map(
+) => (async (args: GetLookupNameFuncArgs) => {
+  const resolveds = await awu(lookUpNameFuncs.map(
     lookupFunc => lookupFunc(args)
-  )).toArray()).find(res => !isReferenceExpression(res)))
+  )).toArray()
+  return resolveds.find(resolved => !isReferenceExpression(resolved)) ?? args.ref
+})

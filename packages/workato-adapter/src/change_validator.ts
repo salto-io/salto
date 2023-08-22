@@ -16,20 +16,28 @@
 
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
-import { createChangeValidator } from '@salto-io/adapter-components/src/deployment/change_validators'
-import { ChangeValidatorName } from './config'
+import { ChangeValidatorName, DEPLOY_CONFIG, WorkatoConfig } from './config'
 import notSupportedTypesValidator from './change_validators/types_not_supported'
 import notSupportedRemovalValidator from './change_validators/actions_not_supported'
 import recipeOverwrittenValuesValidator from './change_validators/recipe_overwritten_values'
+import notSupportedCrossServicesValidator from './change_validators/cross_services_not_supported'
 
-const { deployTypesNotSupportedValidator, getDefaultChangeValidators } = deployment.changeValidators
+const { deployTypesNotSupportedValidator,
+  getDefaultChangeValidators,
+  createChangeValidator } = deployment.changeValidators
 
 const validators: Record<ChangeValidatorName, ChangeValidator> = {
   ...getDefaultChangeValidators(),
   deployTypesNotSupported: deployTypesNotSupportedValidator,
+  notSupportedCrossServices: notSupportedCrossServicesValidator,
   notSupportedTypes: notSupportedTypesValidator,
   notSupportedRemoval: notSupportedRemovalValidator,
   recipeOverwrittenValues: recipeOverwrittenValuesValidator,
 }
 
-export default createChangeValidator({ validators })
+export default (
+  config: WorkatoConfig,
+) : ChangeValidator => createChangeValidator({
+  validators,
+  validatorsActivationConfig: config[DEPLOY_CONFIG]?.changeValidators,
+})

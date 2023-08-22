@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { readFile, readDir, writeFile, mkdirp, rm, rename } from '@salto-io/file'
+import { readFile, writeFile, mkdirp, rm, rename } from '@salto-io/file'
 import osPath from 'path'
 import { buildNetsuiteQuery, notQuery } from '../../src/query'
 import mockClient, { DUMMY_CREDENTIALS } from './sdf_client'
@@ -29,7 +29,7 @@ import { DEFAULT_COMMAND_TIMEOUT_IN_MINUTES } from '../../src/config'
 import { FeaturesDeployError, ManifestValidationError, MissingManifestFeaturesError, ObjectsDeployError, SettingsDeployError } from '../../src/client/errors'
 import { Graph, GraphNode } from '../../src/client/graph_utils'
 import { ATTRIBUTES_FOLDER_NAME } from '../../src/client/sdf_parser'
-import { MOCK_FEATURES_XML, MOCK_FILE_ATTRS_PATH, MOCK_FILE_PATH, MOCK_FOLDER_ATTRS_PATH, MOCK_FOLDER_PATH, MOCK_MANIFEST_VALID_DEPENDENCIES, MOCK_TEMPLATE_CONTENT, readDirMockFunction, readFileMockFunction, statMockFunction } from './mocks'
+import { MOCK_FEATURES_XML, MOCK_FILE_ATTRS_PATH, MOCK_FILE_PATH, MOCK_FOLDER_ATTRS_PATH, MOCK_FOLDER_PATH, MOCK_MANIFEST_VALID_DEPENDENCIES, MOCK_TEMPLATE_CONTENT, OBJECTS_DIR_FILES, readFileMockFunction, statMockFunction } from './mocks'
 import { largeFoldersToExclude } from '../../src/client/file_cabinet_utils'
 
 const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams, Graph<SDFObjectNode>] = [
@@ -48,8 +48,11 @@ const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams, Graph<SDFObjectNode>] 
   new Graph(),
 ]
 
+jest.mock('readdirp', () => ({
+  promise: jest.fn().mockImplementation(() => OBJECTS_DIR_FILES.map(path => ({ path }))),
+}))
+
 jest.mock('@salto-io/file', () => ({
-  readDir: jest.fn().mockImplementation(() => readDirMockFunction()),
   readFile: jest.fn().mockImplementation(path => readFileMockFunction(path)),
   writeFile: jest.fn(),
   rename: jest.fn(),
@@ -59,7 +62,6 @@ jest.mock('@salto-io/file', () => ({
   exists: jest.fn().mockResolvedValue(true),
 }))
 const readFileMock = readFile as unknown as jest.Mock
-const readDirMock = readDir as jest.Mock
 const writeFileMock = writeFile as jest.Mock
 const renameMock = rename as unknown as jest.Mock
 const mkdirpMock = mkdirp as jest.Mock
@@ -575,7 +577,6 @@ describe('sdf client', () => {
       expect(failedToFetchAllAtOnce).toBe(false)
       expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {}, excludedTypes: [] })
       expect(currentInstanceIds).toEqual([{ type: 'addressForm', instanceId: 'a' }])
-      expect(readDirMock).toHaveBeenCalledTimes(1)
       expect(readFileMock).toHaveBeenCalledTimes(4)
       expect(rmMock).toHaveBeenCalledTimes(1)
       expect(customizationInfos).toHaveLength(3)
@@ -645,7 +646,6 @@ describe('sdf client', () => {
       } = await mockClient({ installedSuiteApps: ['a.b.c'] }).getCustomObjects(typeNames, typeNamesQueries)
       expect(failedToFetchAllAtOnce).toBe(false)
       expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {}, excludedTypes: [] })
-      expect(readDirMock).toHaveBeenCalledTimes(2)
       expect(readFileMock).toHaveBeenCalledTimes(7)
       expect(rmMock).toHaveBeenCalledTimes(2)
       expect(customizationInfos).toEqual([{

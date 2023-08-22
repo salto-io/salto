@@ -93,17 +93,22 @@ const createWarnings = async (
       .uniq()
       .value()
     const numMissingInstances = _.uniqBy(missingRefsFromOriginType, missingRef => missingRef.targetId).length
-    const header = `${numMissingInstances} records of the ${originTypeName} object were not fetched, along with their child records of the ${typesOfMissingRefsTargets.join(', ')} objects.\n\nHere are the relevant records:`
+    const header = `Your Salto environment is configured to manage records of the ${originTypeName} object. ${numMissingInstances} ${originTypeName} records were not fetched because they have a lookup relationship to one of the following objects:`
+    const perTargetTypeMsgs = typesOfMissingRefsTargets.join('\n')
+    const perInstancesPreamble = 'and these objects are not part of your Salto configuration. \n\nHere are the records:'
     const perMissingInstanceMsgs = missingRefs
       .map(missingRef => `${getInstanceDesc(missingRef.origin.id, baseUrl)} relates to ${getInstanceDesc(missingRef.targetId, baseUrl)}`)
       .slice(0, MAX_BREAKDOWN_ELEMENTS)
+      .sort() // this effectively sorts by origin instance ID
 
-    const epilogue = `This is most likely because ${originTypeName} has a relationship to ${typesOfMissingRefsTargets.join(', ')}, yet ${typesOfMissingRefsTargets.join(', ')} hasn't been included in your data fetch configuration.
-
-Please follow the instructions here [new intercom article] to resolve this issue. `
-    const overflowMsg = numMissingInstances > MAX_BREAKDOWN_ELEMENTS ? ['', `... and ${numMissingInstances - MAX_BREAKDOWN_ELEMENTS} more missing Instances`] : []
+    const epilogue = 'To resolve this issue, follow the steps outlined here: https://help.salto.io/en/articles/8283155-data-records-were-not-fetched'
+    const overflowMsg = numMissingInstances > MAX_BREAKDOWN_ELEMENTS ? ['', `... and ${numMissingInstances - MAX_BREAKDOWN_ELEMENTS} more missing records`] : []
     return createWarningFromMsg([
       header,
+      '',
+      perTargetTypeMsgs,
+      '',
+      perInstancesPreamble,
       '',
       ...perMissingInstanceMsgs,
       ...overflowMsg,

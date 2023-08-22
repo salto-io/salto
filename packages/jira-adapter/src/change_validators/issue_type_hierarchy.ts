@@ -65,7 +65,7 @@ export const issueTypeHierarchyValidator: ChangeValidator = async (changes, elem
   return awu(relevantChanges)
     .map(getChangeData)
     .map(instance => {
-      if (isLicenseFree === false || instance.value.hierarchyLevel <= 0) {
+      if (isLicenseFree === false) {
         return getIsuueTypeHierearchyWarningMessage(instance)
       }
       return getIsuueTypeHierarchyErrorMessage(instance)

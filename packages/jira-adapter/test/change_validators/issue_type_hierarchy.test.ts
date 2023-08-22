@@ -78,31 +78,6 @@ describe('issue type hierarchy validator', () => {
       const changes = [toChange({ after: issueTypeLevelZero })]
       expect(await issueTypeHierarchyValidator(changes, elementsSource)).toEqual([])
     })
-    it('should return warning if it is free account and changing issue type hierarchy from 0 to -1 or backwards', async () => {
-      const issueTypeAfter = issueTypeLevelZero.clone()
-      issueTypeAfter.value.hierarchyLevel = -1
-      const changes = [toChange({ before: issueTypeLevelZero, after: issueTypeAfter })]
-      expect(await issueTypeHierarchyValidator(changes, elementsSource)).toEqual([
-        {
-          elemID: issueTypeAfter.elemID,
-          severity: 'Warning' as SeverityLevel,
-          message: 'Unsupported hierarchy Level',
-          detailedMessage: 'issueTypeLevelZero hierarchy level is unsupported for deployment. You will need to change it to your desired hierarchy level through the service. Please follow the instructions to make the necessary adjustments.',
-          deployActions: {
-            postAction: {
-              title: 'Hierarchy level change is required',
-              description: 'To change the hierarchy level to the desired hierarchy level, follow these steps:',
-              showOnFailure: false,
-              subActions: [
-                'Go to Issue type hierarchy page in your jira account.',
-                'Under "Jira Issue Types" column, Click on your desired hierarchy level.',
-                'Select issueTypeLevelZero from the list of issue types.',
-                'Click on the "Save changes" button.',
-              ],
-            },
-          },
-        }])
-    })
   })
   describe('paid account', () => {
     const accountInfoInstancePaid = getAccountInfoInstance(false)

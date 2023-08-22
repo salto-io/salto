@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeError, ChangeValidator, getChangeData, InstanceElement, isInstanceChange, SeverityLevel, Change, ModificationChange, AdditionChange, isAdditionOrModificationChange, isEqualValues, isAdditionChange, isModificationChange } from '@salto-io/adapter-api'
+import { ChangeError, ChangeValidator, getChangeData, InstanceElement, isInstanceChange, SeverityLevel, Change, ModificationChange, AdditionChange, isAdditionOrModificationChange, isAdditionChange, isModificationChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { ISSUE_TYPE_NAME } from '../constants'
 import { isFreeLicense } from '../utils'
@@ -27,7 +27,7 @@ const getIssueTypeWithHierachyChanges = (changes: ReadonlyArray<Change>): (
   .filter(change =>
     (isAdditionChange(change) && change.data.after.value.hierarchyLevel > 0)
     || (isModificationChange(change)
-    && !isEqualValues(change.data.before.value.hierarchyLevel, change.data.after.value.hierarchyLevel)))
+    && change.data.before.value.hierarchyLevel !== change.data.after.value.hierarchyLevel))
 
 const getIsuueTypeHierarchyErrorMessage = (instance: InstanceElement): ChangeError => ({
   elemID: instance.elemID,

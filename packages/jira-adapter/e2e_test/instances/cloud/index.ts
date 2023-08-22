@@ -27,6 +27,7 @@ import { createAutomationValues } from './automation'
 import { createKanbanBoardValues, createScrumBoardValues } from './board'
 import { createFilterValues } from './filter'
 import { createIssueLayoutValues } from './issueLayout'
+import { createBehaviorValues } from './scriptrunner/beahvior'
 
 export const createInstances = (randomString: string, fetchedElements: Element[]): InstanceElement[][] => {
   const dashboard = new InstanceElement(
@@ -123,6 +124,12 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
     createIssueLayoutValues(fetchedElements),
   )
 
+  const behavior = new InstanceElement(
+    randomString,
+    findType('Behavior', fetchedElements),
+    createBehaviorValues(randomString, fetchedElements),
+  )
+
   return [
     [dashboard],
     [dashboardGadget1],
@@ -137,5 +144,6 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
     [scrumBoard],
     [filter],
     [issueLayout],
+    [behavior],
   ]
 }

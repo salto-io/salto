@@ -20,6 +20,11 @@ import { isFreeLicense } from '../utils'
 
 const { awu } = collections.asynciterable
 
+const isSubTaskStoryChange = (change: Change<InstanceElement>): boolean =>
+  isModificationChange(change)
+  && change.data.before.value.hierarchyLevel + change.data.after.value.hierarchyLevel === -1
+
+
 const getIssueTypeWithHierachyChanges = (changes: ReadonlyArray<Change>): (
     AdditionChange<InstanceElement> | ModificationChange<InstanceElement>)[] => changes.filter(isInstanceChange)
   .filter(isAdditionOrModificationChange)
@@ -71,14 +76,11 @@ export const issueTypeHierarchyValidator: ChangeValidator = async (changes, elem
   return awu(relevantChanges)
     .map(change => {
       const instance = getChangeData(change)
-      if (isModificationChange(change)
-      && change.data.before.value.hierarchyLevel + change.data.after.value.hierarchyLevel === -1) {
+      if (isSubTaskStoryChange(change)) {
         return getIsuueTypeUnsupportedHierarchyErrorMessage(instance)
       }
-      if (isLicenseFree === false) {
-        return getIsuueTypeHierearchyWarningMessage(instance)
-      }
-      return getIsuueTypeHierarchyErrorMessage(instance)
+      return isLicenseFree === false
+        ? getIsuueTypeHierearchyWarningMessage(instance) : getIsuueTypeHierarchyErrorMessage(instance)
     })
     .toArray()
 }

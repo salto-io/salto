@@ -45,9 +45,59 @@ const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
 // The expression match AppUserSchema endpoint used for fetch
 const APP_USER_SCHEMA_URL = /(\/api\/v1\/meta\/schemas\/apps\/[a-zA-Z0-9]+\/default)/
 
+const initRateLimits = {
+  rateLimitRemaining: 0,
+  rateLimitReset: 0,
+  currentlyRunning: 0,
+}
+
+
+const urls = [
+  new RegExp('/api/v1/apps/.+/(?:logo|groups)'), // has to be before /api/v1/apps.*
+  new RegExp('/api/v1/apps.*'),
+  new RegExp('/api/v1/groups/.+/roles'), // has to be before /api/v1/groups.*
+  new RegExp('/api/v1/groups.*'),
+  new RegExp('/api/v1/users.*'),
+  new RegExp('/api/v1/logs.*'),
+  new RegExp('/api/v1/events.*'),
+  new RegExp('/oauth2/v1/clients.*'),
+  new RegExp('/api/v1/org/email/bounces/remove-list'),
+  new RegExp('/api/v1/users'),
+  new RegExp('/api/v1/certificateAuthorities.*'),
+  new RegExp('/api/v1/devices.*'),
+  new RegExp('/api/v1.+'), // Has to be last
+]
+
+const updateRateLimits = (
+  rateLimits: { rateLimitRemaining: number; rateLimitReset: number },
+  headers: Record<string, string>
+): void => {
+  const updatedRateLimitRemaining = Number(headers['x-rate-limit-remaining'])
+  const updatedRateLimitReset = Number(headers['x-rate-limit-reset'])
+  if (!_.isNumber(updatedRateLimitRemaining) || !_.isNumber(updatedRateLimitReset)) {
+    log.error(`Invalid getSinglePage response headers: ${safeJsonStringify(headers)}`)
+    return
+  }
+  // If this is a new limitation, reset the remaining count
+  if (updatedRateLimitReset !== rateLimits.rateLimitReset) {
+    rateLimits.rateLimitRemaining = updatedRateLimitRemaining
+    rateLimits.rateLimitReset = updatedRateLimitReset
+  } else {
+    // In case an older request returned later than a newer one, we want to take the minimum which is the most updated
+    rateLimits.rateLimitRemaining = Math.min(updatedRateLimitRemaining, rateLimits.rateLimitRemaining)
+  }
+}
+
 export default class OktaClient extends clientUtils.AdapterHTTPClient<
   Credentials, clientUtils.ClientRateLimitConfig
 > {
+  private rateLimits = urls.map(url => ({
+    url,
+    limits: { ...initRateLimits },
+  }))
+
+  private defaultRateLimit = { ...initRateLimits } // All other endpoints share the same rate limit
+
   constructor(
     clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig>
   ) {
@@ -70,11 +120,30 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
     return this.credentials.baseUrl
   }
 
+  private async waitAndReGet(
+    rateLimitReset: number, // In seconds
+    args: clientUtils.ClientBaseParams
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    const currentTime = Date.now()
+    const rateLimitResetTime = rateLimitReset * 1000 - currentTime
+    await new Promise(resolve => setTimeout(resolve, rateLimitResetTime))
+    return this.getSinglePage(args)
+  }
+
   public async getSinglePage(
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    const rateLimits = this.rateLimits.find(rateLimit => args.url.match(rateLimit.url))?.limits ?? this.defaultRateLimit
+    if (rateLimits.currentlyRunning > 0 && rateLimits.rateLimitRemaining - rateLimits.currentlyRunning <= 1) {
+      return this.waitAndReGet(rateLimits.rateLimitReset, args)
+    }
     try {
-      return await super.getSinglePage(args)
+      rateLimits.currentlyRunning += 1
+      const res = await super.getSinglePage(args)
+      if (res.headers) {
+        updateRateLimits(rateLimits, res.headers)
+      }
+      return res
     } catch (e) {
       const status = e.response?.status
       // Okta returns 404 when trying fetch AppUserSchema for built-in apps
@@ -88,6 +157,8 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
         return { data: [], status }
       }
       throw e
+    } finally {
+      rateLimits.currentlyRunning -= 1 // Make sure to always decrease the counter
     }
   }
 

@@ -16,31 +16,40 @@
 import { SeverityLevel, Value, getChangeData, isInstanceChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import Joi from 'joi'
-import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { createSchemeGuard, getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { PROJECT_TYPE, SCRIPT_FRAGMENT_TYPE } from '../../constants'
 import { getValuesToDeploy } from './script_runner_listeners_deploy'
 
-const { awu } = collections.asynciterable
-
 const log = logger(module)
 
-type FragmentsResponse = Value[]
-
+type FragmentsResponse = unknown[]
 const FRAGMENTS_RESPONSE_SCHEME = Joi.array().required()
-
 const isFragmentsResponse = createSchemeGuard<FragmentsResponse>(FRAGMENTS_RESPONSE_SCHEME, 'Received an invalid scripted fragments response')
+
+type Fragments = {
+  entities: string[]
+  id: string
+  panelLocation: string
+}
+const FRAGMENTS_ARRAY_SCHEME = Joi.array().items(
+  Joi.object({
+    entities: Joi.array().items(Joi.string()).required(),
+    id: Joi.string().required(),
+    panelLocation: Joi.string().required(),
+  }).required().unknown(true),
+).required()
+const isFragmentsArray = createSchemeGuard<Fragments[]>(FRAGMENTS_ARRAY_SCHEME, 'Received an invalid scripted fragments response')
 
 type FragmentsProjectsProperties = {
   fragments: string[]
   panelLocations: string[]
 }
 
-const getProjectToPropertiesMap = (valuesToDeploy: Value[]): Record<string, FragmentsProjectsProperties> => {
+const getProjectToPropertiesMap = (FragmentsValues: Fragments[]): Record<string, FragmentsProjectsProperties> => {
   const projectToPropertiesMap: Record<string, FragmentsProjectsProperties> = {}
-  valuesToDeploy.forEach(value => {
+  FragmentsValues.forEach(value => {
     value.entities.forEach((projectKey: string) => {
       if (projectToPropertiesMap[projectKey] === undefined) {
         projectToPropertiesMap[projectKey] = {
@@ -50,6 +59,9 @@ const getProjectToPropertiesMap = (valuesToDeploy: Value[]): Record<string, Frag
       }
       const properties = projectToPropertiesMap[projectKey]
       properties.fragments.push(value.id)
+      // for some reason all panel locations requires 0 at the end, for instance
+      // atl.jira.view.issue.right.context0. Did not encounter a case it was not 0,
+      // even when there are several in the same location
       properties.panelLocations.push(`${value.panelLocation}0`)
     })
   })
@@ -79,7 +91,7 @@ const filter: FilterCreator = ({ client, scriptRunnerClient, config, elementsSou
         deployResult: { errors: [], appliedChanges: [] },
       }
     }
-    let valuesFromService: Value[]
+    let fragmentsFromService: Value[]
     try {
       const response = await scriptRunnerClient
         .getSinglePage({
@@ -88,8 +100,9 @@ const filter: FilterCreator = ({ client, scriptRunnerClient, config, elementsSou
       if (!isFragmentsResponse(response.data)) {
         throw new Error('Received an invalid scripted fragments response')
       }
-      valuesFromService = response.data
+      fragmentsFromService = response.data
     } catch (e) {
+      log.error(`Failed to get scripted fragments with the error: ${e}`)
       return {
         leftoverChanges,
         deployResult: {
@@ -104,26 +117,38 @@ const filter: FilterCreator = ({ client, scriptRunnerClient, config, elementsSou
         },
       }
     }
-    const { errors, appliedChanges, valuesToDeploy } = await getValuesToDeploy(relevantChanges, valuesFromService, 'id')
+    const { errors, appliedChanges, valuesToDeploy: fragmentValuesToDeploy } = await getValuesToDeploy(relevantChanges, fragmentsFromService, 'id')
+    if (!isFragmentsArray(fragmentValuesToDeploy)) {
+      return {
+        leftoverChanges,
+        deployResult: {
+          errors: relevantChanges
+            .map(getChangeData)
+            .map(instance => ({
+              severity: 'Error' as SeverityLevel,
+              message: 'Error getting other scripted fragments information from the service',
+              elemID: instance.elemID,
+            })),
+          appliedChanges: [],
+        },
+      }
+    }
     try {
       await scriptRunnerClient.put({
         url: '/sr-dispatcher/jira/admin/token/script-fragments',
-        data: valuesToDeploy,
+        data: fragmentValuesToDeploy,
       })
-      const projects = await awu(await elementsSource.list())
-        .filter(id => id.idType === 'instance' && id.typeName === PROJECT_TYPE)
-        .map(id => elementsSource.get(id))
-        .toArray()
+      const projects = await getInstancesFromElementSource(elementsSource, [PROJECT_TYPE])
 
-      const projectToPropertiesMap = getProjectToPropertiesMap(valuesToDeploy)
+      const projectToPropertiesMap = getProjectToPropertiesMap(fragmentValuesToDeploy)
 
-      await awu(projects)
-        .forEach(async project => {
+      await Promise.all(projects
+        .map(async project => {
           const projectKey = project.value.key
           const { fragments, panelLocations } = projectToPropertiesMap[projectKey]
             ?? { fragments: [], panelLocations: [] }
           const currentEpoch = Date.now()
-          await client.put({
+          return client.put({
             url: `/rest/api/2/project/${projectKey}/properties/enabled-script-fragments?_r=${currentEpoch}`,
             data: {
               fragments,
@@ -131,7 +156,7 @@ const filter: FilterCreator = ({ client, scriptRunnerClient, config, elementsSou
               panelLocations,
             },
           })
-        })
+        }))
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : e
       log.error(`Failed to put scripted fragments with the error: ${errorMessage}`)

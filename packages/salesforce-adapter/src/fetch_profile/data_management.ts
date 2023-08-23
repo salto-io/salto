@@ -14,21 +14,24 @@
 * limitations under the License.
 */
 import { collections, types } from '@salto-io/lowerdash'
+import { ObjectType } from '@salto-io/adapter-api'
 import { ConfigValidationError, validateRegularExpressions } from '../config_validation'
 import { DataManagementConfig } from '../types'
 import { DETECTS_PARENTS_INDICATOR } from '../constants'
+import { apiName } from '../transformers/transformer'
 
 const { makeArray } = collections.array
 
 const defaultIgnoreReferenceTo = ['User']
 
 export type DataManagement = {
-  isObjectMatch: (name: string) => boolean
+  isObjectTypeMatch: (objType: ObjectType) =>Promise<boolean>
   isReferenceAllowed: (name: string) => boolean
   shouldIgnoreReference: (name: string) => boolean
   getObjectIdsFields: (name: string) => string[]
   getObjectAliasFields: (name: string) => types.NonEmptyArray<string>
   showReadOnlyValues?: boolean
+  managedBySaltoField?: string
 }
 
 
@@ -69,10 +72,26 @@ const ALIAS_FIELDS_BY_TYPE: Record<string, types.NonEmptyArray<string>> = {
   ],
 }
 
-export const buildDataManagement = (params: DataManagementConfig): DataManagement => (
-  {
-    isObjectMatch: name => params.includeObjects.some(re => new RegExp(`^${re}$`).test(name))
-      && !params.excludeObjects?.some(re => new RegExp(`^${re}$`).test(name)),
+export const buildDataManagement = (params: DataManagementConfig): DataManagement => {
+  const isObjectTypeMatch = async (objType: ObjectType): Promise<boolean> => {
+    const managedBySaltoFieldName = params.saltoManagementFieldSettings?.defaultFieldName
+    const typeName = await apiName(objType)
+    const hasManagedBySaltoField = managedBySaltoFieldName !== undefined
+      && objType.fields[managedBySaltoFieldName] !== undefined
+    if (params.excludeObjects?.some(re => new RegExp(`^${re}$`).test(typeName))) {
+      return false
+    }
+    if (params.includeObjects.some(re => new RegExp(`^${re}$`).test(typeName))) {
+      return true
+    }
+    return params.allowReferenceTo !== undefined
+      && hasManagedBySaltoField
+      && params.allowReferenceTo.some(re => new RegExp(`^${re}$`).test(typeName))
+  }
+  return {
+    isObjectTypeMatch,
+
+    managedBySaltoField: params.saltoManagementFieldSettings?.defaultFieldName,
 
     isReferenceAllowed: name => params.allowReferenceTo?.some(re => new RegExp(`^${re}$`).test(name))
       ?? false,
@@ -95,7 +114,7 @@ export const buildDataManagement = (params: DataManagementConfig): DataManagemen
     },
     showReadOnlyValues: params.showReadOnlyValues,
   }
-)
+}
 
 export const validateDataManagementConfig = (
   dataManagementConfig: Partial<DataManagementConfig>,

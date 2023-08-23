@@ -15,7 +15,12 @@
 */
 
 import { buildDataManagement, DataManagement } from '../../src/fetch_profile/data_management'
-import { DETECTS_PARENTS_INDICATOR } from '../../src/constants'
+import {
+  API_NAME,
+  DETECTS_PARENTS_INDICATOR,
+} from '../../src/constants'
+import { createCustomObjectType } from '../utils'
+import { Types } from '../../src/transformers/transformer'
 
 describe('buildDataManagement', () => {
   let dataManagement: DataManagement
@@ -24,6 +29,9 @@ describe('buildDataManagement', () => {
       includeObjects: ['aaa.*'],
       excludeObjects: ['.*bbb'],
       allowReferenceTo: ['ccc'],
+      saltoManagementFieldSettings: {
+        defaultFieldName: 'ManagedBySalto__c',
+      },
       saltoIDSettings: {
         defaultIdFields: ['default'],
         overrides: [{
@@ -47,11 +55,34 @@ describe('buildDataManagement', () => {
       },
     })
   })
-
-  it('isObjectMatch should return currect results for matched objects', () => {
-    expect(dataManagement.isObjectMatch('aaa')).toBeTruthy()
-    expect(dataManagement.isObjectMatch('ccc')).toBeFalsy()
-    expect(dataManagement.isObjectMatch('aaabbb')).toBeFalsy()
+  describe('isObjectMatch', () => {
+    it('should match on included objects', async () => {
+      expect(await dataManagement.isObjectTypeMatch(createCustomObjectType('aaa', {}))).toBeTrue()
+      expect(await dataManagement.isObjectTypeMatch(createCustomObjectType('aaaccc', {}))).toBeTrue()
+    })
+    it('should not match on objects we allow refs to if they are not managed by Salto', async () => {
+      expect(await dataManagement.isObjectTypeMatch(createCustomObjectType('ccc', {}))).toBeFalse()
+    })
+    it('should match on objects we allow refs to if they may be managed by Salto', async () => {
+      const objType = createCustomObjectType('ccc', {
+        fields: {
+          ManagedBySalto__c: {
+            refType: Types.primitiveDataTypes.Checkbox,
+            annotations: {
+              [API_NAME]: 'ManagedBySalto__c',
+            },
+          },
+        },
+      })
+      expect(await dataManagement.isObjectTypeMatch(objType)).toBeTrue()
+    })
+    it('should not match on objects that are excluded', async () => {
+      expect(await dataManagement.isObjectTypeMatch(createCustomObjectType('bbb', {}))).toBeFalse()
+      expect(await dataManagement.isObjectTypeMatch(createCustomObjectType('cccbbb', {}))).toBeFalse()
+    })
+    it('should not match on objects that are both included and excluded', async () => {
+      expect(await dataManagement.isObjectTypeMatch(createCustomObjectType('aaabbb', {}))).toBeFalse()
+    })
   })
 
   it('isReferenceAllowed should return currect results for allowed references', () => {

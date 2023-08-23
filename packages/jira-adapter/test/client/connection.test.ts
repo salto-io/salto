@@ -42,6 +42,7 @@ describe('connection', () => {
       beforeEach(async () => {
         ({ accountId } = await validateCredentials({
           connection,
+          isDataCenter: false,
         }))
       })
 
@@ -61,12 +62,12 @@ describe('connection', () => {
     describe('when unauthorized', () => {
       it('should throw Invalid Credentials Error', async () => {
         mockAxios.onGet('/rest/api/3/configuration').reply(401)
-        await expect(validateCredentials({ connection })).rejects.toThrow(new Error('Invalid Credentials'))
+        await expect(validateCredentials({ connection, isDataCenter: false })).rejects.toThrow(new Error('Invalid Credentials'))
       })
 
       it('should rethrow unrelated Network Error', async () => {
         mockAxios.onGet('/rest/api/3/configuration').networkError()
-        await expect(validateCredentials({ connection })).rejects.toThrow(new Error('Network Error'))
+        await expect(validateCredentials({ connection, isDataCenter: false })).rejects.toThrow(new Error('Network Error'))
       })
     })
   })
@@ -85,6 +86,7 @@ describe('connection', () => {
       )
       await validateCredentials({
         connection,
+        isDataCenter: false,
       })
     })
     afterEach(() => {
@@ -110,6 +112,7 @@ describe('connection', () => {
       )
       await validateCredentials({
         connection,
+        isDataCenter: true,
       })
     })
     afterEach(() => {
@@ -142,6 +145,7 @@ describe('connection', () => {
       mockAxios.onGet('/rest/api/3/instance/license').reply(200, { applications: [{ id: 'software', plan: 'PAID' }, { id: 'serviceDesk', plan: 'FREE' }] })
       const { isProduction, accountType } = await validateCredentials({
         connection,
+        isDataCenter: false,
       })
       expect(isProduction).toEqual(undefined)
       expect(accountType).toEqual(undefined)
@@ -154,6 +158,7 @@ describe('connection', () => {
       mockAxios.onGet('/rest/api/3/instance/license').reply(200, { applications: [{ plan: 'PAID' }] })
       const { isProduction, accountType } = await validateCredentials({
         connection,
+        isDataCenter: false,
       })
       expect(isProduction).toEqual(false)
       expect(accountType).toEqual('Sandbox')
@@ -166,9 +171,24 @@ describe('connection', () => {
       mockAxios.onGet('/rest/api/3/instance/license').reply(200, { applications: [{ plan: 'FREE' }] })
       const { isProduction, accountType } = await validateCredentials({
         connection,
+        isDataCenter: false,
       })
       expect(accountType).toEqual(undefined)
       expect(isProduction).toEqual(false)
+    })
+
+    it('should return isProduction undefined and accountType = undefined', async () => {
+      connection = await createConnection({ retries: 1 }).login(
+        { baseUrl: 'https://test-sandbox-999.atlassian.net', user: 'me', token: 'tok', isDataCenter: true }
+      )
+      mockAxios.onGet('/rest/api/3/serverInfo').reply(200, { baseUrl: 'https://test.atlassian.net' })
+      mockAxios.onGet('/rest/api/3/instance/license').reply(200, { applications: [{ plan: 'FREE' }] })
+      const { isProduction, accountType } = await validateCredentials({
+        connection,
+        isDataCenter: true,
+      })
+      expect(accountType).toEqual(undefined)
+      expect(isProduction).toEqual(undefined)
     })
   })
 })

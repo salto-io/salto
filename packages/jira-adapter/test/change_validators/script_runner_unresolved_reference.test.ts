@@ -15,13 +15,14 @@
 */
 import { ObjectType, ElemID, InstanceElement, toChange, UnresolvedReference, ReferenceExpression } from '@salto-io/adapter-api'
 import { brokenReferenceValidator } from '../../src/change_validators/broken_references'
-import { BEHAVIOR_TYPE, ISSUE_TYPE_NAME, JIRA, PROJECT_TYPE, SCRIPTED_FIELD_TYPE } from '../../src/constants'
+import { BEHAVIOR_TYPE, ISSUE_TYPE_NAME, JIRA, PROJECT_TYPE, SCRIPTED_FIELD_TYPE, SCRIPT_RUNNER_LISTENER_TYPE } from '../../src/constants'
 
 describe('scriptRunnerUnresolvedReferenceValidator', () => {
   let scriptedFieldType: ObjectType
   let projectType: ObjectType
   let issueTypeType: ObjectType
   let scriptedFieldInstance: InstanceElement
+  let listenerInstance: InstanceElement
   let behaviorInstance: InstanceElement
   let projectInstance: InstanceElement
   let issueTypeInstance: InstanceElement
@@ -32,6 +33,7 @@ describe('scriptRunnerUnresolvedReferenceValidator', () => {
     scriptedFieldType = new ObjectType({ elemID: new ElemID(JIRA, SCRIPTED_FIELD_TYPE) })
     projectType = new ObjectType({ elemID: new ElemID(JIRA, PROJECT_TYPE) })
     issueTypeType = new ObjectType({ elemID: new ElemID(JIRA, ISSUE_TYPE_NAME) })
+    const listenerType = new ObjectType({ elemID: new ElemID(JIRA, SCRIPT_RUNNER_LISTENER_TYPE) })
     const behaviorType = new ObjectType({ elemID: new ElemID(JIRA, BEHAVIOR_TYPE) })
     projectInstance = new InstanceElement(
       'ProjectInstance',
@@ -73,6 +75,16 @@ describe('scriptRunnerUnresolvedReferenceValidator', () => {
         ],
       },
     )
+    listenerInstance = new InstanceElement(
+      'listenerInstance',
+      listenerType,
+      {
+        projects: [
+          new ReferenceExpression(projectInstance.elemID, projectInstance),
+          new ReferenceExpression(unresolvedProjectElemId, new UnresolvedReference(unresolvedProjectElemId)),
+        ],
+      },
+    )
   })
 
   it('should return a warning when project reference is unresolved', async () => {
@@ -108,6 +120,16 @@ describe('scriptRunnerUnresolvedReferenceValidator', () => {
         detailedMessage: 'The behavior is attached to some projects which do not exist in the target environment: unresolvedProject. If you continue, the behavior will be deployed without them. Alternatively, you can go back and include these projects in your deployment.',
       },
     ])
+    expect(await brokenReferenceValidator(
+      [toChange({ after: listenerInstance })]
+    )).toEqual([
+      {
+        elemID: listenerInstance.elemID,
+        severity: 'Warning',
+        message: 'Script runner listener won’t be attached to some projects',
+        detailedMessage: 'The script runner listener is attached to some projects which do not exist in the target environment: unresolvedProject. If you continue, the script runner listener will be deployed without them. Alternatively, you can go back and include these projects in your deployment.',
+      },
+    ])
   })
   it('should not return a warning when there is not a project reference that is unresolved', async () => {
     scriptedFieldInstance.value.projectKeys = [
@@ -122,8 +144,14 @@ describe('scriptRunnerUnresolvedReferenceValidator', () => {
     behaviorInstance.value.issueTypes = [
       new ReferenceExpression(issueTypeInstance.elemID, issueTypeInstance),
     ]
+    listenerInstance.value.projects = [
+      new ReferenceExpression(projectType.elemID, projectInstance),
+    ]
+
     expect(await brokenReferenceValidator(
-      [toChange({ after: scriptedFieldInstance })]
+      [toChange({ after: scriptedFieldInstance }),
+        toChange({ after: listenerInstance }),
+        toChange({ after: behaviorInstance })]
     )).toEqual([])
   })
   it('should return an error when all the projects references are unresolved', async () => {
@@ -173,5 +201,17 @@ describe('scriptRunnerUnresolvedReferenceValidator', () => {
         detailedMessage: 'All projects attached to this behavior do not exist in the target environment: unresolvedProject. The behavior can’t be deployed. To solve this, go back and include at least one attached project in your deployment.',
       },
     ])
+  })
+  it('should not return an error when all the projects references are unresolved in relevant types', async () => {
+    listenerInstance.value.projects = [
+      new ReferenceExpression(unresolvedProjectElemId, new UnresolvedReference(unresolvedProjectElemId)),
+    ]
+
+    const result = await brokenReferenceValidator(
+      [toChange({ after: listenerInstance })]
+    )
+
+    expect(result).toHaveLength(1)
+    expect(result[0].severity).toEqual('Warning')
   })
 })

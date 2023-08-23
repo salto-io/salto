@@ -17,7 +17,7 @@ import { Element, ElemID, InstanceElement, ObjectType, ReferenceExpression } fro
 import { naclCase } from '@salto-io/adapter-utils'
 
 export const MISSING_ANNOTATION = 'salto_missing_ref'
-const MISSING_REF_PREFIX = 'missing_'
+export const MISSING_REF_PREFIX = 'missing_'
 
 export const checkMissingRef = (element: Element): boolean =>
   element.annotations?.[MISSING_ANNOTATION] === true

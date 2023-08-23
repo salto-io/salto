@@ -57,6 +57,3 @@ export const createSaltoElementError = ({
 }): SaltoElementError => ({ message, severity, elemID })
 
 export class CredentialError extends Error {}
-
-export const isCredentialError = (error: unknown): error is CredentialError =>
-  error instanceof CredentialError

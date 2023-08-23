@@ -73,3 +73,4 @@ export { duplicateRoutingAttributeValueValidator } from './duplicate_routing_att
 export { triggerCategoryRemovalValidator } from './trigger_category_removal'
 export { ticketFieldDeactivationValidator } from './ticket_field_deactivation'
 export { duplicateIdFieldValuesValidator } from './duplicate_id_field_values'
+export { notEnabledMissingReferencesValidator } from './not_enabled_missing_references'

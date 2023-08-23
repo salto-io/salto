@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ResponseType } from 'axios'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { inspectValue, safeJsonStringify } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
@@ -231,6 +231,9 @@ export abstract class AdapterHTTPClient<
         }
         : undefined
 
+      if (isMethodWithData(params)) {
+        log.trace('going to send %s request with data %s', method.toUpperCase(), inspectValue(params.data))
+      }
       const res = isMethodWithData(params)
         ? await this.apiClient[method](
           url,

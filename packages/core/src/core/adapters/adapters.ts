@@ -29,7 +29,6 @@ import {
   isInstanceElement,
   isType,
   TypeElement,
-  isField,
 } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType, getSubtypes, resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -203,10 +202,6 @@ export const createResolvedTypesElementsSource = (
   const resolveTypes = async (): Promise<void> => {
     typesWereResolved = true
     const typeElements = await awu(await elementsSource.getAll()).filter(isType).toArray()
-    // Relevant for first fetch
-    if (typeElements === []) {
-      return
-    }
     // Resolve all the types together for better performance
     const resolved = await expressions.resolve(
       typeElements,
@@ -238,40 +233,35 @@ export const createResolvedTypesElementsSource = (
         return buildContainerType(containerInfo.prefix, resolvedInner)
       }
     }
-    const value = await elementsSource.get(id)
     // Fields
-    if (isField(value)) {
+    if (id.idType === 'field') {
       const { parent } = id.createTopLevelParentID()
       const topLevel = resolvedTypes.get(parent.getFullName())
       if (topLevel === undefined) {
         log.warn('Expected parent of Field %s to be resolved. Returning field with non fully resolved type.', id.getFullName())
-        return value
+        return elementsSource.get(id)
       }
       return resolvePath(topLevel, id)
     }
+    const value = await elementsSource.get(id)
     // Instances
     if (isInstanceElement(value)) {
       const instance = value.clone()
-      const elementResolvedValue = resolvedTypes.get(instance.refType.elemID.getFullName())
+      const resolvedType = resolvedTypes.get(instance.refType.elemID.getFullName())
       // The type of the Element must be resolved here, otherwise we have a bug
-      if (elementResolvedValue === undefined) {
+      if (resolvedType === undefined) {
         log.warn('Expected type of Instance %s to be resolved. Type elemID: %s. Returning Instance with non fully resolved type.', instance.elemID.getFullName(), instance.refType.elemID.getFullName())
         return instance
       }
       // If the type of the Element is resolved, simply set the type on the instance
-      instance.refType.type = elementResolvedValue
+      instance.refType.type = resolvedType
       return instance
     }
     return value
   }
   return {
     get: getResolved,
-    getAll: async () => {
-      if (resolvedTypes.size === 0) {
-        await resolveTypes()
-      }
-      return awu(await elementsSource.list()).map(getResolved)
-    },
+    getAll: async () => awu(await elementsSource.list()).map(getResolved),
     list: elementsSource.list,
     has: elementsSource.has,
   }

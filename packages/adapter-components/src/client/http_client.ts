@@ -232,7 +232,7 @@ export abstract class AdapterHTTPClient<
         : undefined
 
       if (isMethodWithData(params)) {
-        log.trace('going to send %s request with data %s', method.toUpperCase(), inspectValue(params.data))
+        log.trace('going to send %s request. The URL is %s and the data is %s', method.toUpperCase(), url, inspectValue(params.data))
       }
       const res = isMethodWithData(params)
         ? await this.apiClient[method](

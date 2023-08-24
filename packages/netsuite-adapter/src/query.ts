@@ -47,6 +47,12 @@ export type QueryParams = {
   customRecords?: FetchTypeQueryParams[]
 }
 
+export type LockedElementsConfig = {
+  fetch: {
+    lockedElementsToExclude?: QueryParams
+  }
+}
+
 export type FieldToOmitParams = {
   type: string
   subtype?: string
@@ -54,9 +60,8 @@ export type FieldToOmitParams = {
 }
 
 export type FetchParams = {
-  include?: QueryParams
-  exclude?: QueryParams
-  lockedElementsToExclude?: QueryParams
+  include: QueryParams
+  exclude: QueryParams
   authorInformation?: {
     enable?: boolean
   }
@@ -64,7 +69,24 @@ export type FetchParams = {
   fieldsToOmit?: FieldToOmitParams[]
   addAlias?: boolean
   addBundles?: boolean
-}
+} & LockedElementsConfig['fetch']
+
+
+export const fullQueryParams = (): QueryParams => ({
+  types: [{ name: '.*' }],
+  fileCabinet: ['.*'],
+  customRecords: [{ name: '.*' }],
+})
+
+export const emptyQueryParams = (): QueryParams => ({
+  types: [],
+  fileCabinet: [],
+})
+
+export const fullFetchConfig = (): FetchParams => ({
+  include: fullQueryParams(),
+  exclude: emptyQueryParams(),
+})
 
 export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
   include: 'include',
@@ -345,11 +367,20 @@ export function validateArrayOfStrings(
 }
 
 export function validatePlainObject(
-  value: unknown,
+  value: NonNullable<unknown> | null,
   configPath: string | string[]
 ): asserts value is Record<string, unknown> {
   if (!_.isPlainObject(value)) {
     throw new Error(`${makeArray(configPath).join('.')} should be an object`)
+  }
+}
+
+export function validateDefined(
+  value: unknown,
+  configPath: string | string[]
+): asserts value is NonNullable<unknown> | null {
+  if (value === undefined) {
+    throw new Error(`${makeArray(configPath).join('.')} should be defined`)
   }
 }
 

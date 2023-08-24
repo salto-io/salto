@@ -1721,6 +1721,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       queryParams: { ...DEFAULT_QUERY_PARAMS },
       paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
+    transformation: {
+      dataField: 'clients',
+    },
   },
   // eslint-disable-next-line camelcase
   oauth_global_clients: {

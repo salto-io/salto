@@ -37,7 +37,7 @@ export type User = {
   email: string
   role: string
   // eslint-disable-next-line camelcase
-  custom_role_id: number
+  custom_role_id?: number | null
   locale: string
 }
 
@@ -50,7 +50,7 @@ const EXPECTED_USER_SCHEMA = Joi.object({
   name: Joi.string().required(),
   email: Joi.string().required(),
   role: Joi.string(),
-  custom_role_id: Joi.number(),
+  custom_role_id: Joi.number().allow(null),
   locale: Joi.string().required(),
 }).unknown(true)
 

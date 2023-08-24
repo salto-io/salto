@@ -610,7 +610,7 @@ describe('issue layout filter', () => {
       ])
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.errors[0].message).toEqual(
-        `Deployment of ${issueLayoutInstanceWithoutProj.elemID.getFullName()} failed: Error: Failed to deploy issue layout changes due to missing references`
+        'Error: Failed to deploy issue layout changes due to missing references'
       )
       expect(res.deployResult.appliedChanges).toHaveLength(0)
       expect(res.leftoverChanges).toHaveLength(0)

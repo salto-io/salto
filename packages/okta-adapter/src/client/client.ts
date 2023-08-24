@@ -52,7 +52,7 @@ const initRateLimits = {
 }
 
 
-const urls = [
+const rateLimitUrls = [
   new RegExp('/api/v1/apps/.+/(?:logo|groups)'), // has to be before /api/v1/apps.*
   new RegExp('/api/v1/apps.*'),
   new RegExp('/api/v1/groups/.+/roles'), // has to be before /api/v1/groups.*
@@ -83,7 +83,7 @@ const updateRateLimits = (
     rateLimits.rateLimitRemaining = updatedRateLimitRemaining
     rateLimits.rateLimitReset = updatedRateLimitReset
   } else {
-    // In case an older request returned later than a newer one, we want to take the minimum which is the most updated
+    // In case an older request returned after a newer one, we want to take the minimum because it is the most updated
     rateLimits.rateLimitRemaining = Math.min(updatedRateLimitRemaining, rateLimits.rateLimitRemaining)
   }
 }
@@ -91,7 +91,7 @@ const updateRateLimits = (
 export default class OktaClient extends clientUtils.AdapterHTTPClient<
   Credentials, clientUtils.ClientRateLimitConfig
 > {
-  private rateLimits = urls.map(url => ({
+  private rateLimits = rateLimitUrls.map(url => ({
     url,
     limits: { ...initRateLimits },
   }))
@@ -124,6 +124,7 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
     rateLimitReset: number, // In seconds
     args: clientUtils.ClientBaseParams
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    // Calculate the time to wait until the rate limit is reset, and then recall the function
     const currentTime = Date.now()
     const rateLimitResetTime = rateLimitReset * 1000 - currentTime
     await new Promise(resolve => setTimeout(resolve, rateLimitResetTime))

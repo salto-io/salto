@@ -172,7 +172,7 @@ const getChangedByName = async ({
         sort: '-created_at',
         'filter[source_id]': id,
         'filter[created_at]': [start, end],
-        'filter[source_type': sourceType,
+        'filter[source_type]': sourceType,
       }
       : {
         'page[size]': '1',

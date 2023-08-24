@@ -396,7 +396,7 @@ export const getAllInstances = async (
     customObjectFetchSetting,
     setting => setting.isBase
   )
-  log.debug('Base types: %o', baseTypesSettings)
+  log.debug('Base types: %o', _.keys(baseTypesSettings))
   const baseRecordByTypeAndId = await mapValuesAsync(
     baseTypesSettings,
     setting => getRecords(client, setting.objectType, undefined, setting.managedBySaltoField)
@@ -458,7 +458,7 @@ export const getCustomObjectsFetchSettings = async (
     objectType: type,
     isBase: await dataManagement.isObjectTypeMatch(type),
     ...await getIdFields(type, dataManagement),
-    managedBySaltoField: dataManagement.managedBySaltoField,
+    managedBySaltoField: dataManagement.managedBySaltoFieldForType(type),
   })
 
   return awu(types)

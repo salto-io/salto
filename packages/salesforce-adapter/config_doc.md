@@ -165,13 +165,14 @@ salesforce {
 
 ### Data management configuration options
 
-| Name                                                              | Default when undefined                           | Description                                                                                               |
-|-------------------------------------------------------------------|--------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
-| includeObjects                                                    | N/A (required when dataManagement is configured) | Data records of matched object names will be fetched                                                      |
-| excludeObjects                                                    | []                                               | Data records of matched object names will not be fetched in case they are matched in includeObjects       |
-| allowReferenceTo                                                  | []                                               | Data records of matched object names will be fetched only when referenced from other fetched data records |
-| [saltoIDSettings](#salto-id-settings-configuration-options)       | N/A (required when dataManagement is configured) | Configuration for cross environments data record ids management                                           |
-| [saltoAliasSettings](#salto-alias-settings-configuration-options) | N/A                                              | Configuration for data record aliases                                                                     |
+| Name                                                              | Default when undefined                           | Description                                                                                                                                                       |
+|-------------------------------------------------------------------|--------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| includeObjects                                                    | N/A (required when dataManagement is configured) | Data records of matched object names will be fetched                                                                                                              |
+| excludeObjects                                                    | []                                               | Data records of matched object names will not be fetched in case they are matched in includeObjects                                                               |
+| allowReferenceTo                                                  | []                                               | Data records of matched object names will be fetched only when referenced from other fetched data records                                                         |
+| [saltoIDSettings](#salto-id-settings-configuration-options)       | N/A (required when dataManagement is configured) | Configuration for cross environments data record ids management                                                                                                   |
+| [saltoAliasSettings](#salto-alias-settings-configuration-options) | N/A                                              | Configuration for data record aliases                                                                                                                             |
+| saltoManagementFieldSettings                                      | {}                                               | Set the `defaultFieldName` entry to the name of a custom field. If this entry is set, Salto will not fetch records where this field exists and is equal to `false` |
 
 #### Salto ID settings configuration options
 

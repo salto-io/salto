@@ -31,7 +31,7 @@ export type DataManagement = {
   getObjectIdsFields: (name: string) => string[]
   getObjectAliasFields: (name: string) => types.NonEmptyArray<string>
   showReadOnlyValues?: boolean
-  managedBySaltoField?: string
+  managedBySaltoFieldForType: (objType: ObjectType) => string | undefined
 }
 
 
@@ -91,7 +91,15 @@ export const buildDataManagement = (params: DataManagementConfig): DataManagemen
   return {
     isObjectTypeMatch,
 
-    managedBySaltoField: params.saltoManagementFieldSettings?.defaultFieldName,
+    managedBySaltoFieldForType: objType => {
+      if (params.saltoManagementFieldSettings?.defaultFieldName === undefined) {
+        return undefined
+      }
+      if (objType.fields[params.saltoManagementFieldSettings.defaultFieldName] === undefined) {
+        return undefined
+      }
+      return params.saltoManagementFieldSettings.defaultFieldName
+    },
 
     isReferenceAllowed: name => params.allowReferenceTo?.some(re => new RegExp(`^${re}$`).test(name))
       ?? false,

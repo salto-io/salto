@@ -97,7 +97,8 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
     try {
-      return await super.getSinglePage(args)
+      const res = await super.getSinglePage(args)
+      return res
     } catch (e) {
       const status = e.response?.status
       // Zendesk returns 404 when it doesn't have permissions for objects (not enabled features)

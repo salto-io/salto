@@ -1718,6 +1718,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   oauth_clients: {
     request: {
       url: '/api/v2/oauth/clients',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
+      // data field clients?
     },
   },
   // eslint-disable-next-line camelcase
@@ -2343,8 +2346,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   user_segments: {
     request: {
       url: '/api/v2/help_center/user_segments',
-      queryParams: { per_page: String(PAGE_SIZE) },
-      paginationField: 'next_page',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'user_segments',
@@ -2426,6 +2429,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   oauth_tokens: {
     request: {
       url: '/api/v2/oauth/tokens',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'tokens',

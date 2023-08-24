@@ -343,17 +343,17 @@ describe('script_runner_listeners_deploy', () => {
     expect(res.leftoverChanges).toEqual([])
     expect(res.deployResult.errors[0]).toEqual({
       severity: 'Error',
-      message: 'Failed to add instance as it already exists in the service',
+      message: 'Instance already exists in the service',
       elemID: scriptInstanceModify.elemID,
     })
     expect(res.deployResult.errors[1]).toEqual({
       severity: 'Error',
-      message: 'Failed to modify instance as it does not exist in the service',
+      message: 'Instance does not exist in the service',
       elemID: scriptInstanceAdd.elemID,
     })
     expect(res.deployResult.errors[2]).toEqual({
       severity: 'Error',
-      message: 'Failed to remove instance as it does not exist in the service',
+      message: 'Instance does not exist in the service',
       elemID: removalInstance.elemID,
     })
   })

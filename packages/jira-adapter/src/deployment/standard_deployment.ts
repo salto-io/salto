@@ -118,10 +118,9 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
         await deployChangeFunc(change)
         return change
       } catch (err) {
-        err.message = `Deployment of ${getChangeData(change).elemID.getFullName()} failed: ${err}`
-        log.error(err)
+        log.error(`Deployment of ${getChangeData(change).elemID.getFullName()} failed: ${err}`)
         errors.push({
-          message: err.message,
+          message: `${err}`,
           severity: 'Error',
           elemID: getChangeData(change).elemID,
         })

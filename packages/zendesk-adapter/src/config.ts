@@ -1720,7 +1720,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       url: '/api/v2/oauth/clients',
       queryParams: { ...DEFAULT_QUERY_PARAMS },
       paginationField: CURSOR_BASED_PAGINATION_FIELD,
-      // data field clients?
     },
   },
   // eslint-disable-next-line camelcase

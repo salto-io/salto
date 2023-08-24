@@ -178,7 +178,6 @@ const getUsersFunc = ():(paginator: clientUtils.Paginator) => Promise<User[]> =>
         role: ['admin', 'agent'],
         ...DEFAULT_QUERY_PARAMS,
       },
-      // data field users?
     }
     const users = (await toArrayAsync(
       paginator(paginationArgs, page => makeArray(page) as clientUtils.ResponseValue[])

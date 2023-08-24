@@ -26,7 +26,7 @@ import {
   CURRENCY, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_NAME_PREFIX, DATASET, EXCHANGE_RATE,
   NETSUITE, PERMISSIONS, SAVED_SEARCH, WORKBOOK,
 } from './constants'
-import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, checkTypeNameRegMatch, noSupportedTypeMatch, validateNetsuiteQueryParameters, validateDefined, LockedElementsConfig, emptyQueryParams, fullFetch } from './query'
+import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, checkTypeNameRegMatch, noSupportedTypeMatch, validateNetsuiteQueryParameters, validateDefined, LockedElementsConfig, emptyQueryParams, fullFetchConfig } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING } from './data_elements/types'
 import { isCustomRecordTypeName, netsuiteSupportedTypes } from './types'
 import { FetchByQueryFailures } from './change_validators/safe_deploy'
@@ -837,7 +837,7 @@ const toConfigSuggestions = ({
   failedTypes,
 }: FetchByQueryFailures): NetsuiteConfig => {
   const config: NetsuiteConfig = {
-    fetch: fullFetch(),
+    fetch: fullFetchConfig(),
   }
 
   if (!_.isEmpty(failedFilePaths.otherError) || !_.isEmpty(failedTypes.unexpectedError)) {
@@ -910,7 +910,7 @@ export const combineQueryParams = (
 const updateConfigFromFailedFetch = (config: NetsuiteConfig, failures: FetchByQueryFailures): boolean => {
   const suggestions = toConfigSuggestions(failures)
   if (_.isEqual(suggestions, {
-    fetch: fullFetch(),
+    fetch: fullFetchConfig(),
   })) {
     return false
   }
@@ -1106,7 +1106,7 @@ export const netsuiteConfigFromConfig = (
     if (!configInstance) {
       log.debug('Using netsuite adapter config with full fetch')
       return {
-        fetch: fullFetch(),
+        fetch: fullFetchConfig(),
       }
     }
     const { value: config } = configInstance

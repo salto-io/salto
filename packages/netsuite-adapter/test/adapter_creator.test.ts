@@ -27,7 +27,7 @@ import { mockGetElemIdFunc } from './utils'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
 import { EnvType } from '../src/client/suiteapp_client/types'
 import { SdfCredentials } from '../src/client/credentials'
-import { emptyQueryParams, fullQueryParams, fullFetch } from '../src/query'
+import { emptyQueryParams, fullQueryParams, fullFetchConfig } from '../src/query'
 
 jest.mock('../src/client/sdf_client')
 jest.mock('../src/client/suiteapp_client/suiteapp_client')
@@ -68,7 +68,7 @@ describe('NetsuiteAdapter creator', () => {
     ElemID.CONFIG_NAME,
     adapter.configType as ObjectType,
     {
-      fetch: fullFetch(),
+      fetch: fullFetchConfig(),
       skipList: {},
       typesToSkip: ['test1'],
       filePathRegexSkipList: ['^/Templates.*'],
@@ -331,7 +331,7 @@ describe('NetsuiteAdapter creator', () => {
       expect(NetsuiteAdapter).toHaveBeenCalledWith({
         client: expect.any(Object),
         config: {
-          fetch: fullFetch(),
+          fetch: fullFetchConfig(),
           skipList: {},
           typesToSkip: ['test1'],
           filePathRegexSkipList: ['^/Templates.*'],
@@ -348,7 +348,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         {
-          fetch: fullFetch(),
+          fetch: fullFetchConfig(),
           client: {
             fetchAllTypesAtOnce: true,
           },
@@ -367,7 +367,7 @@ describe('NetsuiteAdapter creator', () => {
         expect(NetsuiteAdapter).toHaveBeenCalledWith({
           client: expect.any(Object),
           config: {
-            fetch: fullFetch(),
+            fetch: fullFetchConfig(),
             client: {
               fetchAllTypesAtOnce: false,
             },
@@ -386,7 +386,7 @@ describe('NetsuiteAdapter creator', () => {
         })
         expect(NetsuiteAdapter).toHaveBeenCalledWith({
           client: expect.any(Object),
-          config: { fetch: fullFetch() },
+          config: { fetch: fullFetchConfig() },
           elementsSource,
           getElemIdFunc: mockGetElemIdFunc,
         })
@@ -397,7 +397,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         {
-          fetch: fullFetch(),
+          fetch: fullFetchConfig(),
           filePathRegexSkipList: ['\\'],
         }
         )
@@ -419,7 +419,7 @@ describe('NetsuiteAdapter creator', () => {
               ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: fullFetch(),
+              fetch: fullFetchConfig(),
               fetchTarget: {
                 types: ['type1', 'type2'],
               },
@@ -436,7 +436,7 @@ describe('NetsuiteAdapter creator', () => {
               ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: fullFetch(),
+              fetch: fullFetchConfig(),
               fetchTarget: {
                 customRecords: ['customrecord1', 'customrecord2'],
               },
@@ -453,7 +453,7 @@ describe('NetsuiteAdapter creator', () => {
               ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: fullFetch(),
+              fetch: fullFetchConfig(),
               fetchTarget: {
                 types: {
                   type1: 'id',
@@ -472,7 +472,7 @@ describe('NetsuiteAdapter creator', () => {
               ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: fullFetch(),
+              fetch: fullFetchConfig(),
               fetchTarget: {
                 customRecords: {
                   customrecord1: 'id',
@@ -565,7 +565,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            fetch: fullFetch(),
+            fetch: fullFetchConfig(),
             deploy: {
               deployReferencedElements: 'should be a boolean',
             },
@@ -586,7 +586,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            fetch: fullFetch(),
+            fetch: fullFetchConfig(),
             deploy: {
               warnOnStaleWorkspaceData: 'should be a boolean',
             },
@@ -606,7 +606,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            fetch: fullFetch(),
+            fetch: fullFetchConfig(),
             deploy: {
               validate: 'should be a boolean',
             },
@@ -627,7 +627,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: fullFetch(),
+              fetch: fullFetchConfig(),
               deploy: {
                 additionalDependencies: {
                   include: {
@@ -658,7 +658,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: fullFetch(),
+              fetch: fullFetchConfig(),
               deploy: {
                 additionalDependencies: 'should be an object',
               },
@@ -678,7 +678,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: fullFetch(),
+              fetch: fullFetchConfig(),
               deploy: {
                 additionalDependencies: {
                   include: { features: ['should be list of strings', 1] },
@@ -700,7 +700,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: fullFetch(),
+              fetch: fullFetchConfig(),
               deploy: {
                 additionalDependencies: {
                   include: { files: ['should be list of strings', 1] },
@@ -722,7 +722,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: fullFetch(),
+              fetch: fullFetchConfig(),
               deploy: {
                 additionalDependencies: {
                   exclude: { objects: ['should be list of strings', 1] },
@@ -744,7 +744,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: fullFetch(),
+              fetch: fullFetchConfig(),
               deploy: {
                 additionalDependencies: {
                   include: { features: ['feature'] },
@@ -767,7 +767,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: fullFetch(),
+              fetch: fullFetchConfig(),
               deploy: {
                 additionalDependencies: {
                   include: { features: ['feature:required'] },
@@ -790,7 +790,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: fullFetch(),
+              fetch: fullFetchConfig(),
               deploy: {
                 additionalDependencies: {
                   include: { objects: ['script_id'] },
@@ -814,7 +814,7 @@ describe('NetsuiteAdapter creator', () => {
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
-              fetch: fullFetch(),
+              fetch: fullFetchConfig(),
               deploy: {
                 additionalDependencies: {
                   include: { files: ['/Folder/filePath'] },
@@ -841,7 +841,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            fetch: fullFetch(),
+            fetch: fullFetchConfig(),
             client: {
               installedSuiteApps: 2,
             },
@@ -862,7 +862,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            fetch: fullFetch(),
+            fetch: fullFetchConfig(),
             client: {
               installedSuiteApps: ['a.b.c', 2],
             },
@@ -883,7 +883,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            fetch: fullFetch(),
+            fetch: fullFetchConfig(),
             client: {
               installedSuiteApps: ['a', 'a.b.c'],
             },
@@ -904,7 +904,7 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            fetch: fullFetch(),
+            fetch: fullFetchConfig(),
             client: {
               installedSuiteApps: ['a.b.c', 'b.c.d'],
             },

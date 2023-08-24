@@ -24,7 +24,7 @@ import { createCustomRecordTypes } from '../src/custom_records/custom_record_typ
 import { LocalFilterCreator } from '../src/filter'
 import { addApplicationIdToType } from '../src/transformer'
 import { createEmptyElementsSourceIndexes } from './utils'
-import { fullFetch } from '../src/query'
+import { fullFetchConfig } from '../src/query'
 
 const parseSdfProjectDirMock = jest.fn()
 jest.mock('../src/client/sdf_parser', () => ({
@@ -119,7 +119,7 @@ describe('sdf folder loader', () => {
       elementsSourceIndex,
       elementsSource,
       isPartial: true,
-      config: { fetch: fullFetch() },
+      config: { fetch: fullFetchConfig() },
     })
     expect(parseSdfProjectDirMock).toHaveBeenCalledWith('projectDir')
 

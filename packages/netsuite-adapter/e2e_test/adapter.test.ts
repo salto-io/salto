@@ -27,7 +27,7 @@ import { buildElementsSourceFromElements, findElement, naclCase } from '@salto-i
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
 import each from 'jest-each'
-import { emptyQueryParams, fullFetch, fullQueryParams } from '../src/query'
+import { emptyQueryParams, fullFetchConfig, fullQueryParams } from '../src/query'
 import NetsuiteAdapter from '../src/adapter'
 import { configType } from '../src/config'
 import { credsLease, realAdapter } from './adapter'
@@ -508,7 +508,7 @@ describe('Netsuite adapter E2E with real account', () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
               {
-                fetch: fullFetch(),
+                fetch: fullFetchConfig(),
                 deploy: { warnOnStaleWorkspaceData: true },
               },
             )
@@ -536,7 +536,7 @@ describe('Netsuite adapter E2E with real account', () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
               {
-                fetch: fullFetch(),
+                fetch: fullFetchConfig(),
                 deploy: { warnOnStaleWorkspaceData: false },
               },
             )
@@ -571,7 +571,7 @@ describe('Netsuite adapter E2E with real account', () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
               {
-                fetch: fullFetch(),
+                fetch: fullFetchConfig(),
                 deploy: { warnOnStaleWorkspaceData: true },
               },
             )
@@ -599,7 +599,7 @@ describe('Netsuite adapter E2E with real account', () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
               {
-                fetch: fullFetch(),
+                fetch: fullFetchConfig(),
                 deploy: { warnOnStaleWorkspaceData: false },
               },
             )

@@ -16,7 +16,7 @@
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
-import { NetsuiteQueryParameters, emptyQueryParams, fullQueryParams, fullFetch } from '../src/query'
+import { NetsuiteQueryParameters, emptyQueryParams, fullQueryParams, fullFetchConfig } from '../src/query'
 import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, fetchDefault, LARGE_FOLDERS_EXCLUDED_MESSAGE, instanceLimiterCreator, UNLIMITED_INSTANCES_VALUE, LARGE_TYPES_EXCLUDED_MESSAGE, validateClientConfig, DEFAULT_MAX_INSTANCES_VALUE, InstanceLimiterFunc, netsuiteConfigFromConfig } from '../src/config'
 
 describe('config', () => {
@@ -81,7 +81,7 @@ describe('config', () => {
         failedTypes: { lockedError: lockedTypes, unexpectedError: suggestedSkipListTypes, excludedTypes: [] },
         failedCustomRecords: [],
       },
-      { fetch: fullFetch() }
+      { fetch: fullFetchConfig() }
     )?.config as InstanceElement[]
     expect(configFromConfigChanges[0].isEqual(new InstanceElement(
       ElemID.CONFIG_NAME,
@@ -174,7 +174,7 @@ describe('config', () => {
       typesToSkip: ['someType'],
       filePathRegexSkipList: ['someRegex'],
       fileCabinet: ['SomeRegex', _.escapeRegExp(newFailedFilePath), newLargeFolderExclusion],
-      fetch: fullFetch(),
+      fetch: fullFetchConfig(),
     }
 
     const configChange = getConfigFromConfigChanges(

@@ -83,7 +83,7 @@ export const emptyQueryParams = (): QueryParams => ({
   fileCabinet: [],
 })
 
-export const fullFetch = (): FetchParams => ({
+export const fullFetchConfig = (): FetchParams => ({
   include: fullQueryParams(),
   exclude: emptyQueryParams(),
 })

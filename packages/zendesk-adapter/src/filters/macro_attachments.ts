@@ -313,7 +313,6 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           errors: [...parentChanges
             .map(getChangeData)
             .map(e => createSaltoElementError({
-              // TODO
               message: `Failed to update ${e.elemID.getFullName()} since the deployment of its attachments failed`,
               severity: 'Error',
               elemID: e.elemID,

@@ -202,7 +202,6 @@ const verifyDeployment = async (
       return false
     }
   )
-  // TODO Shir
   deployResult.errors = [
     ...deployResult.errors,
     ...invalidChanges.map(change => ({ message: 'Failed to deploy change', severity: 'Error' as SeverityLevel, elemID: getChangeData(change).elemID })),

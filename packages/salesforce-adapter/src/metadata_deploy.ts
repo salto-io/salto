@@ -177,7 +177,7 @@ type MetadataId = {
   fullName: string
 }
 
-type FailureMetadata = MetadataId & { problem: DeployMessage }
+type FailureMetadata = MetadataId & { deployMessage: DeployMessage }
 
 const getUnFoundDeleteName = (
   message: DeployMessage,
@@ -209,7 +209,7 @@ const processDeployResponse = (
     .map(failure => (
       { type: failure.componentType,
         fullName: failure.fullName,
-        problem: getUserFriendlyDeployMessage(failure) }))
+        deployMessage: getUserFriendlyDeployMessage(failure) }))
 
   const testFailures = makeArray(result.details)
     .flatMap(detail => makeArray((detail.runTestResult as RunTestsResult)?.failures))
@@ -409,12 +409,12 @@ export const deployMetadata = async (
     .flatMap(change => {
       const changeElem = getChangeData(change)
       return componentErrorsFullNames.filter(error =>
-        !isUnFoundDelete(error.problem, pkg.getDeletionsPackageName())
+        !isUnFoundDelete(error.deployMessage, pkg.getDeletionsPackageName())
         && error.type === changeElem.elemID.typeName
         && error.fullName === changeElem.elemID.name)
         .map(error => (
           { elemID: changeElem.elemID,
-            message: `Failed to ${checkOnly ? 'validate' : 'deploy'} ${error.fullName} with error: ${error.problem} (${error.problem.problemType})`,
+            message: error.deployMessage.problem,
             severity: 'Error' as SeverityLevel }
         ))
     })

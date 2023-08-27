@@ -56,7 +56,12 @@ export const defaultMapper = (val: string): string[] => (
   val.split(API_NAME_SEPARATOR).map(v => naclCase(v))
 )
 
-const lwcMapper = (val: string): string[] => (
+/**
+ * Convert a string value of a file path to the map index key.
+ * In this case, we want to use the last part of the path as the key, and it's
+ * unknown how many levels the path has.
+ */
+const filePathMapper = (val: string): string[] => (
   [naclCase(val.split('/').slice(2).join('/'))]
 )
 
@@ -99,7 +104,7 @@ const EMAIL_TEMPLATE_MAP_FIELD_DEF: Record<string, MapDef> = {
 }
 
 const LIGHTNING_COMPONENT_BUNDLE_MAP: Record<string, MapDef> = {
-  'lwcResources.lwcResource': { key: 'filePath', mapper: (item => lwcMapper(item)) },
+  'lwcResources.lwcResource': { key: 'filePath', mapper: (item => filePathMapper(item)) },
 }
 
 export const metadataTypeToFieldToMapDef: Record<string, Record<string, MapDef>> = {

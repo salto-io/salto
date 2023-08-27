@@ -132,7 +132,6 @@ import projectCategoryFilter from './filters/project_category'
 import addAliasFilter from './filters/add_alias'
 import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_specific_duplicate_roles'
 import issueLayoutFilter from './filters/issue_layout/issue_layout'
-import issueTypeHierarchyFilter from './filters/issue_type_hierarchy_filter'
 import projectFieldContextOrder from './filters/project_field_contexts_order'
 import scriptedFieldsIssueTypesFilter from './filters/script_runner/scripted_fields_issue_types'
 import scriptRunnerFilter from './filters/script_runner/script_runner_filter'
@@ -240,7 +239,6 @@ export const DEFAULT_FILTERS = [
   notificationSchemeStructureFilter,
   notificationSchemeDeploymentFilter,
   issueTypeScreenSchemeFilter,
-  issueTypeHierarchyFilter,
   fieldConfigurationFilter,
   fieldConfigurationItemsFilter,
   fieldConfigurationSchemeFilter,

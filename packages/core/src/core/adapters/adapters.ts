@@ -220,11 +220,6 @@ export const createResolvedTypesElementsSource = (
     if (!typesWereResolved) {
       await resolveTypes()
     }
-    // TypeElements
-    const alreadyResolvedType = resolvedTypes.get(id.getFullName())
-    if (alreadyResolvedType !== undefined) {
-      return alreadyResolvedType
-    }
     // Container types
     const containerInfo = id.getContainerPrefixAndInnerType()
     if (containerInfo !== undefined) {
@@ -233,15 +228,11 @@ export const createResolvedTypesElementsSource = (
         return buildContainerType(containerInfo.prefix, resolvedInner)
       }
     }
-    // Fields
-    if (id.idType === 'field') {
-      const { parent } = id.createTopLevelParentID()
-      const topLevel = resolvedTypes.get(parent.getFullName())
-      if (topLevel === undefined) {
-        log.warn('Expected parent of Field %s to be resolved. Returning field with non fully resolved type.', id.getFullName())
-        return elementsSource.get(id)
-      }
-      return resolvePath(topLevel, id)
+    const { parent } = id.createTopLevelParentID()
+    const alreadyResolvedType = resolvedTypes.get(parent.getFullName())
+    if (alreadyResolvedType !== undefined) {
+      // resolvePath here to handle cases where the input ID was for a field or attribute inside the type
+      return resolvePath(alreadyResolvedType, id)
     }
     const value = await elementsSource.get(id)
     // Instances

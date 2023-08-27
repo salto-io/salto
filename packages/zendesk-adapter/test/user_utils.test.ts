@@ -50,6 +50,8 @@ describe('userUtils', () => {
               { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
               { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
               { id: 2, email: 'c@c.com', role: 'agent', custom_role_id: '123', name: 'c', locale: 'en-US' },
+              { id: 2, email: 'd@d.com', role: 'agent', custom_role_id: null, name: 'd', locale: 'en-US' },
+              { id: 2, email: 'e@e.com', role: 'agent', custom_role_id: undefined, name: 'e', locale: 'en-US' },
             ] },
           ]
         })
@@ -60,6 +62,8 @@ describe('userUtils', () => {
           { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
           { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
           { id: 2, email: 'c@c.com', role: 'agent', custom_role_id: '123', name: 'c', locale: 'en-US' },
+          { id: 2, email: 'd@d.com', role: 'agent', name: 'd', locale: 'en-US', custom_role_id: null },
+          { id: 2, email: 'e@e.com', role: 'agent', name: 'e', locale: 'en-US', custom_role_id: undefined },
         ]
       )
     })
@@ -70,6 +74,7 @@ describe('userUtils', () => {
             { users: [
               { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
               { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
+              { id: 2, email: 'd@d.com', role: 'agent', custom_role_id: null, name: 'd', locale: 'en-US' },
             ] },
           ]
         })
@@ -78,6 +83,7 @@ describe('userUtils', () => {
         [
           { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
           { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
+          { id: 2, email: 'd@d.com', role: 'agent', custom_role_id: null, name: 'd', locale: 'en-US' },
         ]
       )
       const getUsersAfterCache = await userUtils.getUsers(mockPaginator)
@@ -85,6 +91,7 @@ describe('userUtils', () => {
         [
           { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
           { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
+          { id: 2, email: 'd@d.com', role: 'agent', custom_role_id: null, name: 'd', locale: 'en-US' },
         ]
       )
       await userUtils.getUsers(mockPaginator)

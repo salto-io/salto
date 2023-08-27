@@ -65,16 +65,16 @@ export const getOktaError = (elemID: ElemID, error: Error): Error => {
     return error
   }
   const { status, data } = error.response
-  const baseErrorMessage = `Deployment of ${elemID.typeName} instance ${elemID.name} failed with status code ${status}:`
+  const baseErrorMessage = `(status code: ${status})`
   if (isOktaError(data)) {
     const { errorSummary, errorCauses } = data
     const oktaErrorMessage = _.isEmpty(errorCauses) ? errorSummary : `${errorSummary}. More info: ${errorCauses.map(c => c.errorSummary).join(',')}`
-    log.error(`${baseErrorMessage} ${oktaErrorMessage}`)
-    error.message = `${baseErrorMessage} ${oktaErrorMessage}`
+    log.error(`Deployment of ${elemID.getFullName()} failed. ${oktaErrorMessage} ${baseErrorMessage}`)
+    error.message = `${oktaErrorMessage} ${baseErrorMessage}`
     return error
   }
-  log.error(`${baseErrorMessage} ${error.message}`)
-  error.message = `${baseErrorMessage} ${error.message}`
+  log.error(`Deployment of ${elemID.getFullName()} failed. ${error.message} ${baseErrorMessage}`)
+  error.message = `${error.message} ${baseErrorMessage}`
   return error
 }
 

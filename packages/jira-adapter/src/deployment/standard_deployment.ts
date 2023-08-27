@@ -15,7 +15,7 @@
 */
 import { Change, ChangeDataType, DeployResult, ElemID, getChangeData, InstanceElement, isAdditionChange, isEqualValues, isModificationChange, ReadOnlyElementsSource, SaltoElementError } from '@salto-io/adapter-api'
 import { config, deployment, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { resolveChangeElement, resolveValues } from '@salto-io/adapter-utils'
+import { invertNaclCase, resolveChangeElement, resolveValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import { getLookUpName } from '../reference_mapping'
@@ -33,6 +33,15 @@ type DeployChangeParam = {
   elementsSource?: ReadOnlyElementsSource
 }
 
+const invertKeysNames = (instance: Record<string, unknown>): void => {
+  Object.keys(instance)
+    .filter(key => invertNaclCase(key) !== key)
+    .forEach(key => {
+      instance[invertNaclCase(key)] = instance[key]
+      delete instance[key]
+    })
+}
+
 /**
  * Deploy change with the standard "add", "modify", "remove" endpoints
  */
@@ -46,8 +55,10 @@ export const defaultDeployChange = async ({
 }: DeployChangeParam): Promise<
   clientUtils.ResponseValue | clientUtils.ResponseValue[] | undefined
 > => {
+  const resolvedChange = await resolveChangeElement(change, getLookUpName, resolveValues, elementsSource)
+  invertKeysNames(getChangeData(resolvedChange).value)
   const changeToDeploy = await elementUtils.swagger.flattenAdditionalProperties(
-    await resolveChangeElement(change, getLookUpName, resolveValues, elementsSource),
+    resolvedChange,
     elementsSource,
   )
 
@@ -107,10 +118,9 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
         await deployChangeFunc(change)
         return change
       } catch (err) {
-        err.message = `Deployment of ${getChangeData(change).elemID.getFullName()} failed: ${err}`
-        log.error(err)
+        log.error(`Deployment of ${getChangeData(change).elemID.getFullName()} failed: ${err}`)
         errors.push({
-          message: err.message,
+          message: `${err}`,
           severity: 'Error',
           elemID: getChangeData(change).elemID,
         })

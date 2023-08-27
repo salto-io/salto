@@ -25,7 +25,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'omitSdfUntypedValues',
   onFetch: async elements => {
     // the default behavior is strictInstanceStructure=false
-    if (!config.fetch?.strictInstanceStructure) {
+    if (!config.fetch.strictInstanceStructure) {
       return
     }
     await awu(elements)

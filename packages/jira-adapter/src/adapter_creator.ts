@@ -159,6 +159,7 @@ export const adapter: Adapter = {
 
     return validateCredentials({
       connection: productSettings.wrapConnection(await connection.login(creds)),
+      isDataCenter: Boolean(creds.isDataCenter),
     })
   },
   authenticationMethods: {

@@ -96,8 +96,8 @@ type ReportFieldsType = {
   FLAG_DIV_BY_THOUSAND?: boolean
   FLAG_NEG_IN_RED?: boolean
   FIELD_NEG_VAL_FORMAT?: string
-  FIELD_GROUP?: string
-  FIELD_PARENT_GROUP?: string
+  FIELD_GROUP?: unknown
+  FIELD_PARENT_GROUP?: unknown
   FIELD_COLUMN_FILTER_GROUP?: string
   FIELD_FORMAT?: string
   FIELD_FORMULA?: string
@@ -374,8 +374,8 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
       FLAG_DIV_BY_THOUSAND: { refType: BuiltinTypes.BOOLEAN },
       FLAG_NEG_IN_RED: { refType: BuiltinTypes.BOOLEAN },
       FIELD_NEG_VAL_FORMAT: { refType: BuiltinTypes.STRING },
-      FIELD_GROUP: { refType: BuiltinTypes.STRING },
-      FIELD_PARENT_GROUP: { refType: BuiltinTypes.STRING },
+      FIELD_GROUP: { refType: BuiltinTypes.UNKNOWN },
+      FIELD_PARENT_GROUP: { refType: BuiltinTypes.UNKNOWN },
       FIELD_COLUMN_FILTER_GROUP: { refType: BuiltinTypes.STRING },
       FIELD_FORMAT: { refType: BuiltinTypes.STRING },
       FIELD_FORMULA: { refType: BuiltinTypes.STRING },

@@ -17,7 +17,7 @@
 import { Change, ChangeDataType, ReferenceExpression, Value, getChangeData, isAdditionOrModificationChange, isInstanceChange, isReferenceExpression } from '@salto-io/adapter-api'
 import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { AUTOMATION_TYPE, BEHAVIOR_TYPE, SCRIPTED_FIELD_TYPE } from '../constants'
+import { AUTOMATION_TYPE, BEHAVIOR_TYPE, SCRIPTED_FIELD_TYPE, SCRIPT_RUNNER_LISTENER_TYPE } from '../constants'
 import { FilterCreator } from '../filter'
 
 export type ProjectType = { projectId: ReferenceExpression }
@@ -47,6 +47,14 @@ export const BROKEN_REFERENCE_TYPE_MAP: Record<string, BrokenReferenceInfo[]> = 
     referencesTypeName: 'projects',
     singleReferenceTypeName: 'project',
     mustHaveReference: true,
+  }],
+  [SCRIPT_RUNNER_LISTENER_TYPE]: [{
+    location: 'projects',
+    filter: (project: unknown): boolean => !isResolvedReferenceExpression(project),
+    namePath: 'value.target.name',
+    referencesTypeName: 'projects',
+    singleReferenceTypeName: 'project',
+    mustHaveReference: false,
   }],
   [SCRIPTED_FIELD_TYPE]: [{
     location: 'issueTypes',

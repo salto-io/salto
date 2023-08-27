@@ -22,6 +22,7 @@ import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { Values } from '@salto-io/adapter-api'
 import ZendeskClient from './client/client'
 import { ValueReplacer, replaceConditionsAndActionsCreator, fieldReplacer } from './replacers_utils'
+import { CURSOR_BASED_PAGINATION_FIELD, DEFAULT_QUERY_PARAMS } from './config'
 
 const log = logger(module)
 const { toArrayAsync } = collections.asynciterable
@@ -172,9 +173,10 @@ const getUsersFunc = ():(paginator: clientUtils.Paginator) => Promise<User[]> =>
     }
     const paginationArgs = {
       url: '/api/v2/users',
-      paginationField: 'next_page',
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
       queryParams: {
         role: ['admin', 'agent'],
+        ...DEFAULT_QUERY_PARAMS,
       },
     }
     const users = (await toArrayAsync(

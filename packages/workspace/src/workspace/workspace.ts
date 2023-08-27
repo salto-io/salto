@@ -17,7 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
   Value, toChange, isRemovalChange, getChangeData,
-  ReadOnlyElementsSource, isAdditionOrModificationChange, StaticFile, isInstanceElement, AuthorInformation } from '@salto-io/adapter-api'
+  ReadOnlyElementsSource, isAdditionOrModificationChange, StaticFile, isInstanceElement, AuthorInformation, ReferenceInfo, ReferenceType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
   applyDetailedChanges,
@@ -46,7 +46,7 @@ import { createMergeManager, ElementMergeManager, ChangeSet, createEmptyChangeSe
 import { ReadOnlyRemoteMap, RemoteMap, RemoteMapCreator } from './remote_map'
 import { serialize, deserializeMergeErrors, deserializeSingleElement, deserializeValidationErrors } from '../serializer/elements'
 import { AdaptersConfigSource } from './adapters_config_source'
-import { updateReferenceIndexes } from './reference_indexes'
+import { ReferenceTargetIndexValue, updateReferenceIndexes } from './reference_indexes'
 import { updateChangedByIndex, Author, authorKeyToAuthor, authorToAuthorKey } from './changed_by_index'
 import { updateChangedAtIndex } from './changed_at_index'
 import { updateReferencedStaticFilesIndex } from './static_files_index'
@@ -187,7 +187,7 @@ export type Workspace = {
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   getReferenceSourcesIndex: (envName?: string) => Promise<ReadOnlyRemoteMap<ElemID[]>>
-  getElementOutgoingReferences: (id: ElemID, envName?: string) => Promise<ElemID[]>
+  getElementOutgoingReferences: (id: ElemID, envName?: string) => Promise<{ id: ElemID; type: ReferenceType }[]>
   getElementIncomingReferences: (id: ElemID, envName?: string) => Promise<ElemID[]>
   getElementAuthorInformation: (id: ElemID, envName?: string) => Promise<AuthorInformation>
   getAllChangedByAuthors: (envName?: string) => Promise<Author[]>
@@ -279,7 +279,7 @@ type SingleState = {
   alias: RemoteMap<string>
   referencedStaticFiles: RemoteMap<string[]>
   referenceSources: RemoteMap<ElemID[]>
-  referenceTargets: RemoteMap<collections.treeMap.TreeMap<ElemID>>
+  referenceTargets: RemoteMap<ReferenceTargetIndexValue>
   mapVersions: RemoteMap<number>
 }
 type WorkspaceState = {
@@ -306,12 +306,16 @@ const compact = (sortedIds: ElemID[]): ElemID[] => {
  * Serialize a reference tree to a JSON of path (without baseId) to ElemID
  * example: (adapter.type.instance.instanceName.)field.nestedField -> ElemID
  */
-export const serializeReferenceTree = async (val: collections.treeMap.TreeMap<ElemID>): Promise<string> => {
-  const entriesToSerialize = Array.from(val.entries()).map(([key, ids]) => [key, ids.map(id => id.getFullName())])
+export const serializeReferenceTree = async (val: ReferenceTargetIndexValue): Promise<string> => {
+  const entriesToSerialize = Array.from(val.entries())
+    .map(([key, refs]) => [
+      key,
+      refs.map(ref => ({ ...ref, id: ref.id.getFullName() })),
+    ])
   return safeJsonStringify(entriesToSerialize)
 }
 
-export const deserializeReferenceTree = async (data: string): Promise<collections.treeMap.TreeMap<ElemID>> => {
+export const deserializeReferenceTree = async (data: string): Promise<ReferenceTargetIndexValue> => {
   const parsedEntries = JSON.parse(data)
 
   // Backwards compatibility for old serialized data, should be removed in the future
@@ -320,15 +324,15 @@ export const deserializeReferenceTree = async (data: string): Promise<collection
   const entries = isOldListFormat ? [['', parsedEntries]] : parsedEntries
 
   const elemIdsEntries = entries.map(
-    ([key, refs]: [string, (string | { id: string })[]]) => [
+    ([key, refs]: [string, (string | { id: string; type: ReferenceType })[]]) => [
       key,
       refs.map((ref => {
         // Backwards compatibility for old serialized data, should be removed in the future
         if (_.isString(ref)) {
-          return ElemID.fromFullName(ref)
+          return { id: ElemID.fromFullName(ref), type: 'strong' }
         }
 
-        return ElemID.fromFullName(ref.id)
+        return { ...ref, id: ElemID.fromFullName(ref.id) }
       })),
     ]
   )
@@ -341,9 +345,10 @@ export const loadWorkspace = async (
   credentials: ConfigSource,
   environmentsSources: EnvironmentsSources,
   remoteMapCreator: RemoteMapCreator,
+  getCustomReferences: (elements: Element[], accountToServiceName: Record<string, string>) => Promise<ReferenceInfo[]>,
   ignoreFileChanges = false,
   persistent = true,
-  mergedRecoveryMode: MergedRecoveryMode = 'rebuild'
+  mergedRecoveryMode: MergedRecoveryMode = 'rebuild',
 ): Promise<Workspace> => {
   const workspaceConfig = await config.getWorkspaceConfig()
   log.debug('Loading workspace with id: %s', workspaceConfig.uid)
@@ -460,7 +465,7 @@ export const loadWorkspace = async (
             deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
             persistent,
           }),
-          referenceTargets: await remoteMapCreator<collections.treeMap.TreeMap<ElemID>>({
+          referenceTargets: await remoteMapCreator<ReferenceTargetIndexValue>({
             namespace: getRemoteMapNamespace('referenceTargets', envName),
             serialize: serializeReferenceTree,
             deserialize: deserializeReferenceTree,
@@ -748,6 +753,7 @@ export const loadWorkspace = async (
         stateToBuild.states[envName].mapVersions,
         stateToBuild.states[envName].merged,
         changeResult.cacheValid,
+        element => getCustomReferences(element, currentEnvConf().accountToServiceName ?? {}),
       )
 
       const changedElements = changes
@@ -1215,7 +1221,7 @@ export const loadWorkspace = async (
         ? referencesTree.values()
         : referencesTree.valuesWithPrefix(idPath)
 
-      return _.uniqBy(Array.from(references).flat(), elemId => elemId.getFullName())
+      return _.uniqBy(Array.from(references).flat(), ref => ref.id.getFullName())
     },
     getElementIncomingReferences: async (id, envName = currentEnv()) => {
       if (!id.isBaseID()) {
@@ -1288,7 +1294,7 @@ export const loadWorkspace = async (
       const sources = _.mapValues(environmentsSources.sources, source =>
         ({ naclFiles: source.naclFiles.clone(), state: source.state }))
       const envSources = { commonSourceName: environmentsSources.commonSourceName, sources }
-      return loadWorkspace(config, adaptersConfig, credentials, envSources, remoteMapCreator)
+      return loadWorkspace(config, adaptersConfig, credentials, envSources, remoteMapCreator, getCustomReferences)
     },
     clear: async (args: ClearFlags) => {
       const currentWSState = await getWorkspaceState()
@@ -1554,6 +1560,7 @@ export const initWorkspace = async (
   credentials: ConfigSource,
   envs: EnvironmentsSources,
   remoteMapCreator: RemoteMapCreator,
+  getCustomReferences: (elements: Element[], accountToServiceName: Record<string, string>) => Promise<ReferenceInfo[]>,
 ): Promise<Workspace> => {
   log.debug('Initializing workspace with id: %s', uid)
   await config.setWorkspaceConfig({
@@ -1562,5 +1569,5 @@ export const initWorkspace = async (
     envs: [{ name: defaultEnvName, accountToServiceName: {} }],
     currentEnv: defaultEnvName,
   })
-  return loadWorkspace(config, adaptersConfig, credentials, envs, remoteMapCreator)
+  return loadWorkspace(config, adaptersConfig, credentials, envs, remoteMapCreator, getCustomReferences)
 }

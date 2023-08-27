@@ -23,8 +23,10 @@ import {
   isRemovalOrModificationChange,
   isAdditionOrModificationChange,
   isTemplateExpression,
-  ReferenceMapping,
   isObjectTypeChange,
+  GetCustomReferencesFunc,
+  ReferenceInfo,
+  ReferenceType,
 } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -39,37 +41,58 @@ export const REFERENCE_INDEXES_VERSION = 4
 export const REFERENCE_INDEXES_KEY = 'reference_indexes'
 
 type ChangeReferences = {
-  removed: ReferenceMapping[]
-  currentAndNew: ReferenceMapping[]
+  removed: ReferenceInfo[]
+  currentAndNew: ReferenceInfo[]
 }
 
-const getReferences = (element: Element): ReferenceMapping[] => {
-  const references: ReferenceMapping[] = []
+export type ReferenceTargetIndexValue = collections.treeMap.TreeMap<{ id: ElemID; type: ReferenceType }>
+
+const getReferenceDetailsIdentifier = (referenceDetails: ReferenceInfo): string =>
+  `${referenceDetails.target.getFullName()} - ${referenceDetails.source.getFullName()}`
+
+const getReferences = (
+  element: Element,
+  customReferences: ReferenceInfo[]
+): ReferenceInfo[] => {
+  const references: Record<string, ReferenceInfo> = {}
   walkOnElement({
     element,
     func: ({ value, path: source }) => {
       if (isReferenceExpression(value)) {
-        references.push({ source, target: value.elemID })
+        const refInfo = { source, target: value.elemID, type: 'strong' as const }
+        references[getReferenceDetailsIdentifier(refInfo)] = refInfo
       }
       if (isTemplateExpression(value)) {
         value.parts.forEach(part => {
           if (isReferenceExpression(part)) {
-            references.push({ source, target: part.elemID })
+            const refInfo = { source, target: part.elemID, type: 'strong' as const }
+            references[getReferenceDetailsIdentifier(refInfo)] = refInfo
           }
         })
       }
       return WALK_NEXT_STEP.RECURSE
     },
   })
-  return references
+
+  customReferences.forEach(refInfo => {
+    references[getReferenceDetailsIdentifier(refInfo)] = refInfo
+  })
+
+  return Object.values(references)
 }
 
-const getReferenceDetailsIdentifier = (referenceDetails: ReferenceMapping): string =>
-  `${referenceDetails.target.getFullName()} - ${referenceDetails.source.getFullName()}`
+const getReferencesFromChange = (
+  change: Change<Element>,
+  customReferences: Record<string, { before: ReferenceInfo[]; after: ReferenceInfo[] }>
+): ChangeReferences => {
+  const fullName = getChangeData(change).elemID.getFullName()
 
-const getReferencesFromChange = (change: Change<Element>): ChangeReferences => {
-  const before = isRemovalOrModificationChange(change) ? getReferences(change.data.before) : []
-  const after = isAdditionOrModificationChange(change) ? getReferences(change.data.after) : []
+  const before = isRemovalOrModificationChange(change)
+    ? getReferences(change.data.before, customReferences[fullName]?.before ?? [])
+    : []
+  const after = isAdditionOrModificationChange(change)
+    ? getReferences(change.data.after, customReferences[fullName]?.after ?? [])
+    : []
 
   const afterIds = new Set(after.map(getReferenceDetailsIdentifier))
   const removedReferences = before.filter(ref => !afterIds.has(getReferenceDetailsIdentifier(ref)))
@@ -79,8 +102,8 @@ const getReferencesFromChange = (change: Change<Element>): ChangeReferences => {
   }
 }
 
-const createReferenceTree = (references: ReferenceMapping[], rootFields = false): collections.treeMap.TreeMap<ElemID> =>
-  new collections.treeMap.TreeMap<ElemID>(
+const createReferenceTree = (references: ReferenceInfo[], rootFields = false): ReferenceTargetIndexValue =>
+  new collections.treeMap.TreeMap(
     references.map(
       ref => {
         // In case we are creating a reference tree for a type object, the fields path is not relevant
@@ -88,7 +111,7 @@ const createReferenceTree = (references: ReferenceMapping[], rootFields = false)
         const key = rootFields && ref.source.idType === 'field'
           ? ''
           : ref.source.createBaseID().path.join(ElemID.NAMESPACE_SEPARATOR)
-        return [key, [ref.target]]
+        return [key, [{ id: ref.target, type: ref.type }]]
       }
     ),
     ElemID.NAMESPACE_SEPARATOR
@@ -97,8 +120,8 @@ const createReferenceTree = (references: ReferenceMapping[], rootFields = false)
 const getReferenceTargetIndexUpdates = (
   change: Change<Element>,
   changeToReferences: Record<string, ChangeReferences>,
-): RemoteMapEntry<collections.treeMap.TreeMap<ElemID>>[] => {
-  const indexUpdates: RemoteMapEntry<collections.treeMap.TreeMap<ElemID>>[] = []
+): RemoteMapEntry<ReferenceTargetIndexValue>[] => {
+  const indexUpdates: RemoteMapEntry<ReferenceTargetIndexValue>[] = []
 
   if (isObjectTypeChange(change)) {
     const objectType = getChangeData(change)
@@ -135,7 +158,7 @@ const getReferenceTargetIndexUpdates = (
 
 const updateReferenceTargetsIndex = async (
   changes: Change<Element>[],
-  referenceTargetsIndex: RemoteMap<collections.treeMap.TreeMap<ElemID>>,
+  referenceTargetsIndex: RemoteMap<ReferenceTargetIndexValue>,
   changeToReferences: Record<string, ChangeReferences>,
 ): Promise<void> => {
   const changesTrees = changes.flatMap(change => getReferenceTargetIndexUpdates(change, changeToReferences))
@@ -161,7 +184,7 @@ const updateIdOfReferenceSourcesIndex = (
 }
 
 const getReferenceSourcesMap = (
-  references: ReferenceMapping[],
+  references: ReferenceInfo[],
 ): Record<string, ElemID[]> => {
   const referenceSourcesChanges = _(references)
     .groupBy(({ target }) => target.createBaseID().parent.getFullName())
@@ -234,13 +257,46 @@ const updateReferenceSourcesIndex = async (
   ])
 }
 
+const getIdToCustomReferences = async (getCustomReferences: GetCustomReferencesFunc, changes: Change<Element>[])
+: Promise<Record<string, { before: ReferenceInfo[]; after: ReferenceInfo[]}>> => {
+  const customReferencesAfter = await getCustomReferences(
+    changes.filter(isAdditionOrModificationChange).map(getChangeData)
+  )
+
+  const customReferencesBefore = await getCustomReferences(
+    changes.filter(isRemovalOrModificationChange).map(getChangeData)
+  )
+
+  const customReferences: Record<string, { before: ReferenceInfo[]; after: ReferenceInfo[]} > = {}
+
+  customReferencesAfter.forEach(reference => {
+    const fullName = reference.source.createTopLevelParentID().parent.getFullName()
+    if (customReferences[fullName] === undefined) {
+      customReferences[fullName] = { before: [], after: [] }
+    }
+
+    customReferences[fullName].after.push(reference)
+  })
+
+  customReferencesBefore.forEach(reference => {
+    const fullName = reference.source.createTopLevelParentID().parent.getFullName()
+    if (customReferences[fullName] === undefined) {
+      customReferences[fullName] = { before: [], after: [] }
+    }
+
+    customReferences[fullName].before.push(reference)
+  })
+  return customReferences
+}
+
 export const updateReferenceIndexes = async (
   changes: Change<Element>[],
-  referenceTargetsIndex: RemoteMap<collections.treeMap.TreeMap<ElemID>>,
+  referenceTargetsIndex: RemoteMap<ReferenceTargetIndexValue>,
   referenceSourcesIndex: RemoteMap<ElemID[]>,
   mapVersions: RemoteMap<number>,
   elementsSource: ElementsSource,
   isCacheValid: boolean,
+  getCustomReferences: GetCustomReferencesFunc,
 ): Promise<void> => log.time(async () => {
   let relevantChanges = changes
   let initialIndex = false
@@ -262,10 +318,12 @@ export const updateReferenceIndexes = async (
     initialIndex = true
   }
 
+  const customReferences = await getIdToCustomReferences(getCustomReferences, changes)
+
   const changeToReferences = Object.fromEntries(relevantChanges
     .map(change => [
       getChangeData(change).elemID.getFullName(),
-      getReferencesFromChange(change),
+      getReferencesFromChange(change, customReferences),
     ]))
 
   // Outgoing references

@@ -266,6 +266,7 @@ Promise<Workspace> => {
     mockCredentialsSource,
     elementsSources,
     mockCreateRemoteMap,
+    async () => [],
   )
 }
 

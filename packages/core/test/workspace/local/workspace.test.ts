@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import path from 'path'
-import { Value } from '@salto-io/adapter-api'
+import { Adapter, ElemID, GetCustomReferencesFunc, InstanceElement, ObjectType, Value } from '@salto-io/adapter-api'
 import * as ws from '@salto-io/workspace'
 import * as file from '@salto-io/file'
 import { EnvironmentsSources, configSource as cs } from '@salto-io/workspace'
@@ -23,10 +23,11 @@ import { mockFunction } from '@salto-io/test-utils'
 import {
   initLocalWorkspace, ExistingWorkspaceError, NotAnEmptyWorkspaceError, NotAWorkspaceError,
   loadLocalWorkspace, CREDENTIALS_CONFIG_PATH,
-  loadLocalElementsSources, locateWorkspaceRoot,
+  loadLocalElementsSources, locateWorkspaceRoot, getCustomReferences,
 } from '../../../src/local-workspace/workspace'
 import { getSaltoHome } from '../../../src/app_config'
 import * as mockDirStore from '../../../src/local-workspace/dir_store'
+import { adapterCreators } from '../../../src/core/adapters'
 import { mockStaticFilesSource } from '../../common/state'
 
 const { awu } = collections.asynciterable
@@ -491,6 +492,64 @@ describe('local workspace', () => {
       expect(lastWorkspace.clear).toHaveBeenCalledWith(args)
       expect(file.isEmptyDir.notFoundAsUndefined).toHaveBeenCalledTimes(1)
       expect(file.rm).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('getCustomReferences', () => {
+    let instance: InstanceElement
+    beforeEach(() => {
+      const type = new ObjectType({
+        elemID: new ElemID('test2', 'type'),
+      })
+      instance = new InstanceElement(
+        'instance',
+        type,
+        {
+          field: 'val',
+        }
+      )
+
+      const mockTestAdapter = {
+        getCustomReferences: mockFunction<GetCustomReferencesFunc>().mockResolvedValue([{
+          source: new ElemID('test2', 'type', 'instance', 'inst1'),
+          target: new ElemID('test2', 'type', 'instance', 'inst2'),
+          type: 'strong',
+        }]),
+      }
+
+      const mockTest2Adapter = {
+        getCustomReferences: mockFunction<GetCustomReferencesFunc>().mockResolvedValue([{
+          source: new ElemID('test2', 'type', 'instance', 'inst3'),
+          target: new ElemID('test2', 'type', 'instance', 'inst4'),
+          type: 'strong',
+        }]),
+      }
+
+      adapterCreators.test = mockTestAdapter as unknown as Adapter
+      adapterCreators.test2 = mockTest2Adapter as unknown as Adapter
+    })
+    it('Should call the right adapter getCustomReferences', async () => {
+      const references = await getCustomReferences([instance], { test2: 'test' })
+      expect(references).toEqual([{
+        source: new ElemID('test2', 'type', 'instance', 'inst1'),
+        target: new ElemID('test2', 'type', 'instance', 'inst2'),
+        type: 'strong',
+      }])
+    })
+
+    it('Should call use the adapter name when it is not present in the account to service name mapping', async () => {
+      const references = await getCustomReferences([instance], {})
+      expect(references).toEqual([{
+        source: new ElemID('test2', 'type', 'instance', 'inst3'),
+        target: new ElemID('test2', 'type', 'instance', 'inst4'),
+        type: 'strong',
+      }])
+    })
+
+    it('Should return empty array if adapter does not have getCustomReferences func', async () => {
+      adapterCreators.test = {} as unknown as Adapter
+      const references = await getCustomReferences([instance], { test2: 'test' })
+      expect(references).toEqual([])
     })
   })
 })

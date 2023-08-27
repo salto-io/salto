@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, ObjectType, BuiltinTypes, InstanceElement, Element, ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable, isVariableExpression, isReferenceExpression, StaticFile, PrimitiveType, PrimitiveTypes, TypeReference, MapType, TypeElement, Field, PlaceholderObjectType, UnresolvedReference } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, BuiltinTypes, InstanceElement, Element, ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable, isVariableExpression, isReferenceExpression, StaticFile, PrimitiveType, PrimitiveTypes, TypeReference, MapType, Field, PlaceholderObjectType, UnresolvedReference } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { TestFuncImpl, getFieldsAndAnnoTypes } from '../utils'
 import { resolve, CircularReference } from '../../src/expressions'
@@ -182,7 +182,9 @@ describe('Test Salto Expressions', () => {
       })
       it('should not resolve references', () => {
         const element = findResolved<InstanceElement>(simpleRefInst)
-        expect(isReferenceExpression(element.value.test)).toEqual(true)
+        const ref = element.value.test as ReferenceExpression
+        expect(isReferenceExpression(ref)).toEqual(true)
+        expect(ref.value).toBeUndefined()
       })
     })
 
@@ -667,8 +669,6 @@ describe('Test Salto Expressions', () => {
     describe('with container types', () => {
       let innerObjType: ObjectType
       let outerObjType: ObjectType
-      let resolved: [ObjectType]
-      let resolvedInnerType: TypeElement | undefined
       beforeEach(async () => {
         innerObjType = new ObjectType({ elemID: new ElemID('salto', 'inner') })
         outerObjType = new ObjectType({
@@ -681,11 +681,10 @@ describe('Test Salto Expressions', () => {
         })
       })
       it('should resolve field types to the same inner object type', async () => {
-        resolved = await resolve(
+        const resolved = await resolve(
           [outerObjType],
           createInMemoryElementSource([innerObjType]),
-        ) as typeof resolved
-        resolvedInnerType = (resolved[0].fields.listObj.refType.type as ListType)?.refInnerType.type
+        ) as [ObjectType]
         expect(resolved[0].fields.listObj.refType.type).toBeInstanceOf(ListType)
         expect(resolved[0].fields.mapObj.refType.type).toBeInstanceOf(MapType)
         const listInner = (resolved[0].fields.listObj.refType.type as ListType).refInnerType.type
@@ -693,11 +692,11 @@ describe('Test Salto Expressions', () => {
         expect(listInner).toBe(mapInner)
       })
       it('should handle multi-level containers', async () => {
-        resolved = await resolve(
+        const resolved = await resolve(
           [outerObjType],
           createInMemoryElementSource([innerObjType]),
-        ) as typeof resolved
-        resolvedInnerType = (resolved[0].fields.listObj.refType.type as ListType)?.refInnerType.type
+        ) as [ObjectType]
+        const resolvedInnerType = (resolved[0].fields.listObj.refType.type as ListType)?.refInnerType.type
         const nestedFieldType = resolved[0].fields.nestedContainers.refType.type
         expect(nestedFieldType).toBeInstanceOf(ListType)
         const innerType = (nestedFieldType as ListType).refInnerType.type

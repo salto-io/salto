@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
-import { DetailedChange, ObjectType, ReferenceInfo, Element } from '@salto-io/adapter-api'
+import { DetailedChange, ObjectType, ReferenceInfo, Element, GLOBAL_ADAPTER } from '@salto-io/adapter-api'
 import { exists, isEmptyDir, rm } from '@salto-io/file'
 import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl, remoteMap,
   configSource as cs, staticFiles, dirStore, WorkspaceComponents, errors, elementSource,
@@ -249,10 +249,15 @@ export const getCustomReferences = async (
   elements: Element[],
   accountToServiceName: Record<string, string>,
 ): Promise<ReferenceInfo[]> => {
-  const accountToElements = _.groupBy(elements.filter(e => e.elemID.adapter !== ''), e => e.elemID.adapter)
+  const accountToElements = _.groupBy(elements.filter(e => e.elemID.adapter !== GLOBAL_ADAPTER), e => e.elemID.adapter)
   return (await Promise.all(Object.entries(accountToElements).map(([account, accountElements]) => {
     const serviceName = accountToServiceName[account] ?? account
-    return adapterCreators[serviceName].getCustomReferences?.(accountElements) ?? []
+    try {
+      return adapterCreators[serviceName]?.getCustomReferences?.(accountElements) ?? []
+    } catch (err) {
+      log.error('failed to get custom references for %s: %o', account, err)
+      return []
+    }
   }))).flat()
 }
 
@@ -306,9 +311,10 @@ const loadLocalWorkspaceImpl = async ({
     credentials,
     elemSources,
     remoteMapCreator,
-    getCustomReferences,
     false,
     persistent,
+    undefined,
+    getCustomReferences,
   )
 
   return {

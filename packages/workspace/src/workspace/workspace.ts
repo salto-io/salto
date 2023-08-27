@@ -339,16 +339,21 @@ export const deserializeReferenceTree = async (data: string): Promise<ReferenceT
   return new collections.treeMap.TreeMap(elemIdsEntries)
 }
 
+type GetCustomReferencesFunc = (
+  elements: Element[],
+  accountToServiceName: Record<string, string>
+) => Promise<ReferenceInfo[]>
+
 export const loadWorkspace = async (
   config: WorkspaceConfigSource,
   adaptersConfig: AdaptersConfigSource,
   credentials: ConfigSource,
   environmentsSources: EnvironmentsSources,
   remoteMapCreator: RemoteMapCreator,
-  getCustomReferences: (elements: Element[], accountToServiceName: Record<string, string>) => Promise<ReferenceInfo[]>,
   ignoreFileChanges = false,
   persistent = true,
   mergedRecoveryMode: MergedRecoveryMode = 'rebuild',
+  getCustomReferences: GetCustomReferencesFunc = async () => [],
 ): Promise<Workspace> => {
   const workspaceConfig = await config.getWorkspaceConfig()
   log.debug('Loading workspace with id: %s', workspaceConfig.uid)
@@ -1294,7 +1299,8 @@ export const loadWorkspace = async (
       const sources = _.mapValues(environmentsSources.sources, source =>
         ({ naclFiles: source.naclFiles.clone(), state: source.state }))
       const envSources = { commonSourceName: environmentsSources.commonSourceName, sources }
-      return loadWorkspace(config, adaptersConfig, credentials, envSources, remoteMapCreator, getCustomReferences)
+      return loadWorkspace(config, adaptersConfig, credentials, envSources, remoteMapCreator,
+        ignoreFileChanges, persistent, mergedRecoveryMode, getCustomReferences)
     },
     clear: async (args: ClearFlags) => {
       const currentWSState = await getWorkspaceState()
@@ -1560,7 +1566,7 @@ export const initWorkspace = async (
   credentials: ConfigSource,
   envs: EnvironmentsSources,
   remoteMapCreator: RemoteMapCreator,
-  getCustomReferences: (elements: Element[], accountToServiceName: Record<string, string>) => Promise<ReferenceInfo[]>,
+  getCustomReferences: GetCustomReferencesFunc = async () => [],
 ): Promise<Workspace> => {
   log.debug('Initializing workspace with id: %s', uid)
   await config.setWorkspaceConfig({
@@ -1569,5 +1575,6 @@ export const initWorkspace = async (
     envs: [{ name: defaultEnvName, accountToServiceName: {} }],
     currentEnv: defaultEnvName,
   })
-  return loadWorkspace(config, adaptersConfig, credentials, envs, remoteMapCreator, getCustomReferences)
+  return loadWorkspace(config, adaptersConfig, credentials, envs, remoteMapCreator,
+    undefined, undefined, undefined, getCustomReferences)
 }

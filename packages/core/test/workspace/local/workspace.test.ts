@@ -238,6 +238,8 @@ describe('local workspace', () => {
             expect.anything(),
             expect.anything(),
             expect.anything(),
+            undefined,
+            expect.anything(),
           )
         })
       })
@@ -255,6 +257,8 @@ describe('local workspace', () => {
             expect.anything(),
             expect.anything(),
             false,
+            undefined,
+            expect.anything(),
           )
         })
       })

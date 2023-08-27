@@ -532,7 +532,7 @@ describe('updateReferenceIndexes', () => {
         mapVersions,
         elementsSource,
         true,
-        async () => [
+        async elements => (elements.length !== 0 ? [
           {
             source: inst.elemID.createNestedID('val2'),
             target: new ElemID('test', 'type', 'instance', 'someInstance2'),
@@ -543,7 +543,7 @@ describe('updateReferenceIndexes', () => {
             target: new ElemID('test', 'type', 'instance', 'someInstance3'),
             type: 'weak',
           },
-        ],
+        ] : []),
       )
     })
     it('should override the default references with the custom references', () => {
@@ -587,6 +587,45 @@ describe('updateReferenceIndexes', () => {
       )
     })
     it('should override the default references with the custom references', () => {
+      expect(referenceTargetsIndex.deleteAll).toHaveBeenCalledWith([
+        'test.object.instance.instance',
+      ])
+    })
+  })
+
+  describe('getCustomReferences modifications', () => {
+    beforeEach(async () => {
+      const instBefore = new InstanceElement(
+        'instance',
+        object,
+        {
+          val1: 'string',
+        }
+      )
+
+      const instAfter = new InstanceElement(
+        'instance',
+        object,
+      )
+      const changes = [toChange({ before: instBefore, after: instAfter })]
+
+      await updateReferenceIndexes(
+        changes,
+        referenceTargetsIndex,
+        referenceSourcesIndex,
+        mapVersions,
+        elementsSource,
+        true,
+        async elements => ((elements[0] as InstanceElement).value.val1 !== undefined ? [
+          {
+            source: instBefore.elemID.createNestedID('val1'),
+            target: new ElemID('test', 'type', 'instance', 'someInstance1'),
+            type: 'weak',
+          },
+        ] : []),
+      )
+    })
+    it('should remove the removed custom references', () => {
       expect(referenceTargetsIndex.deleteAll).toHaveBeenCalledWith([
         'test.object.instance.instance',
       ])

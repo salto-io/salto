@@ -83,15 +83,15 @@ const getReferences = (
 
 const getReferencesFromChange = (
   change: Change<Element>,
-  customReferences: Record<string, { before: ReferenceInfo[]; after: ReferenceInfo[] }>
+  customReferences: { before: Record<string, ReferenceInfo[]>; after: Record<string, ReferenceInfo[]> },
 ): ChangeReferences => {
   const fullName = getChangeData(change).elemID.getFullName()
 
   const before = isRemovalOrModificationChange(change)
-    ? getReferences(change.data.before, customReferences[fullName]?.before ?? [])
+    ? getReferences(change.data.before, customReferences.before[fullName] ?? [])
     : []
   const after = isAdditionOrModificationChange(change)
-    ? getReferences(change.data.after, customReferences[fullName]?.after ?? [])
+    ? getReferences(change.data.after, customReferences.after[fullName] ?? [])
     : []
 
   const afterIds = new Set(after.map(getReferenceDetailsIdentifier))
@@ -258,35 +258,19 @@ const updateReferenceSourcesIndex = async (
 }
 
 const getIdToCustomReferences = async (getCustomReferences: GetCustomReferencesFunc, changes: Change<Element>[])
-: Promise<Record<string, { before: ReferenceInfo[]; after: ReferenceInfo[]}>> => {
+: Promise<{ before: Record<string, ReferenceInfo[]>; after: Record<string, ReferenceInfo[]> }> => {
   const customReferencesAfter = await getCustomReferences(
-    changes.filter(isAdditionOrModificationChange).map(getChangeData)
+    changes.filter(isAdditionOrModificationChange).map(change => change.data.after)
   )
 
   const customReferencesBefore = await getCustomReferences(
-    changes.filter(isRemovalOrModificationChange).map(getChangeData)
+    changes.filter(isRemovalOrModificationChange).map(change => change.data.before)
   )
 
-  const customReferences: Record<string, { before: ReferenceInfo[]; after: ReferenceInfo[]} > = {}
-
-  customReferencesAfter.forEach(reference => {
-    const fullName = reference.source.createTopLevelParentID().parent.getFullName()
-    if (customReferences[fullName] === undefined) {
-      customReferences[fullName] = { before: [], after: [] }
-    }
-
-    customReferences[fullName].after.push(reference)
-  })
-
-  customReferencesBefore.forEach(reference => {
-    const fullName = reference.source.createTopLevelParentID().parent.getFullName()
-    if (customReferences[fullName] === undefined) {
-      customReferences[fullName] = { before: [], after: [] }
-    }
-
-    customReferences[fullName].before.push(reference)
-  })
-  return customReferences
+  return {
+    before: _.groupBy(customReferencesBefore, ref => ref.source.createTopLevelParentID().parent.getFullName()),
+    after: _.groupBy(customReferencesAfter, ref => ref.source.createTopLevelParentID().parent.getFullName()),
+  }
 }
 
 export const updateReferenceIndexes = async (

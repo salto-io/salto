@@ -1790,7 +1790,7 @@ export const DUCKTYPE_SUPPORTED_TYPES = {
   ScriptRunnerListener: ['ScriptRunnerListener'],
   // ScriptFragment: ['ScriptFragment'],
   ScheduledJob: ['ScheduledJob'],
-  Behavior: ['Behavior'],
+  // Behavior: ['Behavior'],
   EscalationService: ['EscalationService'],
   ScriptedField: ['ScriptedField'],
   ScriptRunnerSettings: ['ScriptRunnerSettings'],

@@ -114,7 +114,7 @@ export const omitFieldsFromElements = async (
 const filterCreator: LocalFilterCreator = ({ config, elementsSource }) => ({
   name: 'omitFieldsFilter',
   onFetch: async elements => {
-    const fieldsToOmit = FIELDS_TO_OMIT_ON_FETCH.concat(config.fetch?.fieldsToOmit ?? [])
+    const fieldsToOmit = FIELDS_TO_OMIT_ON_FETCH.concat(config.fetch.fieldsToOmit ?? [])
 
     if (fieldsToOmit.length === 0) {
       return

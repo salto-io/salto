@@ -37,7 +37,7 @@ describe('deployChanges', () => {
     )
     expect(res.appliedChanges).toHaveLength(0)
     expect(res.errors).toEqual([{
-      message: 'Deployment of jira.type.instance.instance failed: Error: failed',
+      message: 'Error: failed',
       severity: 'Error',
       elemID: instance.elemID,
     }])

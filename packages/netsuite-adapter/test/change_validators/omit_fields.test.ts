@@ -19,6 +19,7 @@ import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { NETSUITE } from '../../src/constants'
 import omitFieldsValidation from '../../src/change_validators/omit_fields'
+import { fullFetchConfig } from '../../src/query'
 
 describe('omit fields change validator test', () => {
   let type: ObjectType
@@ -80,7 +81,10 @@ describe('omit fields change validator test', () => {
       [toChange({ before: instance, after })],
       undefined,
       buildElementsSourceFromElements([instance, type, innerType]),
-      { deploy: { fieldsToOmit: [{ type: 'inventoryItem', fields: ['field.*'] }] } }
+      {
+        fetch: fullFetchConfig(),
+        deploy: { fieldsToOmit: [{ type: 'inventoryItem', fields: ['field.*'] }] },
+      }
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
@@ -97,7 +101,10 @@ describe('omit fields change validator test', () => {
       [toChange({ before: instance, after })],
       undefined,
       buildElementsSourceFromElements([instance, type, innerType]),
-      { deploy: { fieldsToOmit: [{ type: 'inventoryItem', subtype: 'inner.*', fields: ['.*2'] }] } }
+      {
+        fetch: fullFetchConfig(),
+        deploy: { fieldsToOmit: [{ type: 'inventoryItem', subtype: 'inner.*', fields: ['.*2'] }] },
+      }
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({

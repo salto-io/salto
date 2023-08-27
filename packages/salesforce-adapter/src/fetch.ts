@@ -291,6 +291,8 @@ export const fetchMetadataInstances = async ({
       changedAt: prop.lastModifiedDate,
     }))
 
+  // Avoid sending empty requests for types that had no instances that were changed from the previous fetch
+  // This is a common case for fetchWithChangesDetection mode for types that had no changes on their instances
   if (filePropsToRead.length === 0) {
     return { elements: [], configChanges: [] }
   }
@@ -485,6 +487,8 @@ export const retrieveMetadataInstances = async ({
       .map(listFilesOfType)
   )).filter(props => notInSkipList(metadataQuery, props, false))
 
+  // Avoid sending empty requests for types that had no instances that were changed from the previous fetch
+  // This is a common case for fetchWithChangesDetection mode for types that had no changes on their instances
   if (filesToRetrieve.length === 0) {
     log.debug('No files to retrieve, skipping')
     return { elements: [], configChanges }

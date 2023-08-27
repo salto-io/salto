@@ -1274,6 +1274,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
   },
 
+  // placeholder for config validation (the type is created by a filter)
+  tag: {
+    transformation: {
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'string' }],
+    },
+  },
 
   // api types
   groups: {
@@ -2502,6 +2508,8 @@ export const SUPPORTED_TYPES = {
   webhook: ['webhooks'],
   workspace: ['workspaces'],
   account_features: ['features'],
+  // tags are included in supportedTypes so that they can be easily omitted, but are fetched separately
+  tag: ['tags'],
 }
 
 // Types in Zendesk Guide which relate to a certain brand
@@ -2812,7 +2820,23 @@ export type FilterContext = {
   [API_DEFINITIONS_CONFIG]: ZendeskApiConfig
 }
 
-export const validateFetchConfig = validateDuckTypeFetchConfig
+export const validateFetchConfig = (
+  fetchConfigPath: string,
+  userFetchConfig: configUtils.UserFetchConfig,
+  adapterApiConfig: configUtils.AdapterApiConfig,
+): void => validateDuckTypeFetchConfig(
+  fetchConfigPath,
+  userFetchConfig,
+  _.defaults(
+    {},
+    adapterApiConfig,
+    {
+      supportedTypes: {
+        tag: ['tags'],
+      },
+    },
+  ),
+)
 
 /**
  * Validating each Zendesk Guide type has a dataField property in the configuration

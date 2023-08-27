@@ -18,7 +18,7 @@ import { getChangeData, isInstanceChange, isObjectType, isAdditionChange,
 import { collections } from '@salto-io/lowerdash'
 import { v4 as uuidv4 } from 'uuid'
 import { FilterCreator } from '../../filter'
-import { SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE, SCRIPT_RUNNER_TYPES } from '../../constants'
+import { SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE, SCRIPT_RUNNER_SETTINGS_TYPE, SCRIPT_RUNNER_TYPES } from '../../constants'
 import { addAnnotationRecursively, setTypeDeploymentAnnotations } from '../../utils'
 import { UserInfo, getCurrentUserInfo } from '../../users'
 
@@ -46,11 +46,22 @@ const filter: FilterCreator = ({ client, config }) => ({
     if (!config.fetch.enableScriptRunnerAddon) {
       return
     }
-    await awu(elements)
-      .filter(isObjectType)
+    const objects = elements.filter(isObjectType)
+
+    await awu(objects)
       .filter(type => SCRIPT_RUNNER_TYPES.includes(type.elemID.typeName))
       .forEach(async type => {
         setTypeDeploymentAnnotations(type)
+        await addAnnotationRecursively(type, CORE_ANNOTATIONS.CREATABLE)
+        await addAnnotationRecursively(type, CORE_ANNOTATIONS.UPDATABLE)
+        await addAnnotationRecursively(type, CORE_ANNOTATIONS.DELETABLE)
+      })
+    await awu(objects)
+      .filter(type => type.elemID.typeName === SCRIPT_RUNNER_SETTINGS_TYPE)
+      .forEach(async type => {
+        type.annotations[CORE_ANNOTATIONS.CREATABLE] = false
+        type.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
+        type.annotations[CORE_ANNOTATIONS.DELETABLE] = false
         await addAnnotationRecursively(type, CORE_ANNOTATIONS.CREATABLE)
         await addAnnotationRecursively(type, CORE_ANNOTATIONS.UPDATABLE)
         await addAnnotationRecursively(type, CORE_ANNOTATIONS.DELETABLE)

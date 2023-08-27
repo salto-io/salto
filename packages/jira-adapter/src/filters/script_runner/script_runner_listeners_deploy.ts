@@ -56,7 +56,7 @@ export const getValuesToDeploy = async (changes: Change[], valuesFromService: Va
       if (index !== undefined) {
         log.error('Should never happened, newly created uuid exists in the service')
         errors.push({
-          message: 'Failed to add instance as it already exists in the service',
+          message: 'Instance already exists in the service',
           severity: 'Error',
           elemID: getChangeData(change).elemID,
         })
@@ -79,7 +79,7 @@ export const getValuesToDeploy = async (changes: Change[], valuesFromService: Va
       } else {
         errors.push({
           severity: 'Error',
-          message: 'Failed to modify instance as it does not exist in the service',
+          message: 'Instance does not exist in the service',
           elemID: instance.elemID,
         })
       }
@@ -100,7 +100,7 @@ export const getValuesToDeploy = async (changes: Change[], valuesFromService: Va
       } else {
         errors.push({
           severity: 'Error',
-          message: 'Failed to remove instance as it does not exist in the service',
+          message: 'Instance does not exist in the service',
           elemID: instance.elemID,
         })
       }

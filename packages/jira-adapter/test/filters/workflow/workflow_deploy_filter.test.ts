@@ -698,7 +698,7 @@ describe('workflowDeployFilter', () => {
         const { deployResult } = await filterSR.deploy([toChange({ after: instance })])
         expect(deployResult.errors).toHaveLength(1)
         expect(deployResult.errors[0].message).toEqual(
-          'Deployment of jira.Workflow.instance.instance failed: Error: Failed to deploy workflow, transition ids changed'
+          'Error: Failed to deploy workflow, transition ids changed'
         )
         expect(deployChangeMock).toHaveBeenCalledTimes(2)
         // two calls for transitions

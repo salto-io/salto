@@ -27,6 +27,7 @@ import { buildElementsSourceFromElements, findElement, naclCase } from '@salto-i
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
 import each from 'jest-each'
+import { emptyQueryParams, fullFetchConfig, fullQueryParams } from '../src/query'
 import NetsuiteAdapter from '../src/adapter'
 import { configType } from '../src/config'
 import { credsLease, realAdapter } from './adapter'
@@ -433,7 +434,7 @@ describe('Netsuite adapter E2E with real account', () => {
           // we need to get the folder internalId
           ? await realAdapter(
             { credentials: credentialsLease.value, withSuiteApp },
-            { fetch: { include: { types: [], fileCabinet: ['/Images/'], customRecords: [] } } }
+            { fetch: { include: { types: [], fileCabinet: ['/Images/'], customRecords: [] }, exclude: emptyQueryParams() } }
           ).adapter.fetch({
             progressReporter: { reportProgress: jest.fn() },
           })
@@ -506,7 +507,10 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
-              { deploy: { warnOnStaleWorkspaceData: true } },
+              {
+                fetch: fullFetchConfig(),
+                deploy: { warnOnStaleWorkspaceData: true },
+              },
             )
             adapter = adapterAttr.adapter
           })
@@ -531,7 +535,10 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
-              { deploy: { warnOnStaleWorkspaceData: false } },
+              {
+                fetch: fullFetchConfig(),
+                deploy: { warnOnStaleWorkspaceData: false },
+              },
             )
             adapter = adapterAttr.adapter
           })
@@ -563,7 +570,10 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
-              { deploy: { warnOnStaleWorkspaceData: true } },
+              {
+                fetch: fullFetchConfig(),
+                deploy: { warnOnStaleWorkspaceData: true },
+              },
             )
             adapter = adapterAttr.adapter
           })
@@ -588,7 +598,10 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
-              { deploy: { warnOnStaleWorkspaceData: false } },
+              {
+                fetch: fullFetchConfig(),
+                deploy: { warnOnStaleWorkspaceData: false },
+              },
             )
             adapter = adapterAttr.adapter
           })
@@ -611,7 +624,13 @@ describe('Netsuite adapter E2E with real account', () => {
       beforeAll(async () => {
         const adapterAttr = realAdapter(
           { credentials: credentialsLease.value, withSuiteApp },
-          { fetch: { addAlias: true } }
+          {
+            fetch: {
+              include: fullQueryParams(),
+              exclude: emptyQueryParams(),
+              addAlias: true,
+            },
+          }
         )
         adapter = adapterAttr.adapter
 
@@ -930,7 +949,13 @@ describe('Netsuite adapter E2E with real account', () => {
         const res = await adapterCreator.loadElementsFromFolder?.({
           baseDir: projectPath,
           elementsSource: buildElementsSourceFromElements(existingFileCabinetInstances),
-          config: new InstanceElement(ElemID.CONFIG_NAME, configType, { fetch: { addAlias: true } }),
+          config: new InstanceElement(ElemID.CONFIG_NAME, configType, {
+            fetch: {
+              include: fullQueryParams(),
+              exclude: emptyQueryParams(),
+              addAlias: true,
+            },
+          }),
         })
         loadedElements = res?.elements as Element[]
       })

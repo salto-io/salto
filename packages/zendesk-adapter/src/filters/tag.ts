@@ -14,15 +14,15 @@
 * limitations under the License.
 */
 import {
-  BuiltinTypes, Change, Element, ElemID, getChangeData, InstanceElement,
-  isInstanceElement, ObjectType, ReferenceExpression,
+  Change, Element, ElemID, getChangeData, InstanceElement,
+  isInstanceElement, isObjectType, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, naclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { ZENDESK, FIELD_TYPE_NAMES } from '../constants'
+import { ZENDESK, FIELD_TYPE_NAMES, TAG_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
 import { isConditions } from './utils'
 
@@ -42,10 +42,9 @@ const TYPE_NAME_TO_TAG_FIELD_NAMES: Record<string, string[]> = {
 }
 
 const TAG_FIELD_NAME_IN_CHECKBOX = 'tag'
-export const TAG_TYPE_NAME = 'tag'
 const TAGS_FILE_NAME = 'tags'
 
-const { RECORDS_PATH, TYPES_PATH } = elementsUtils
+const { RECORDS_PATH } = elementsUtils
 const { awu } = collections.asynciterable
 
 const TAG_SEPERATOR = ' '
@@ -68,6 +67,25 @@ const createTagReferenceExpression = (tag: string): ReferenceExpression => (
   new ReferenceExpression(new ElemID(ZENDESK, TAG_TYPE_NAME, 'instance', naclCase(tag)))
 )
 
+const convertConditionTagFieldsToArray = (instance: InstanceElement): void => {
+  (TYPE_NAME_TO_RELEVANT_FIELD_NAMES_WITH_CONDITIONS[instance.elemID.typeName] ?? [])
+    .forEach(fieldName => {
+      const conditions = _.get(instance.value, fieldName)
+      if (conditions === undefined || !isConditions(conditions)) {
+        return
+      }
+      conditions.forEach(condition => {
+        if (
+          _.isString(condition.field)
+          && RELEVANT_FIELD_NAMES.includes(condition.field)
+          && _.isString(condition.value)
+        ) {
+          condition.value = extractTags(condition.value)
+        }
+      })
+    })
+}
+
 const replaceTagsWithReferences = (instance: InstanceElement): string[] => {
   const tags: string[] = [];
   (TYPE_NAME_TO_RELEVANT_FIELD_NAMES_WITH_CONDITIONS[instance.elemID.typeName] ?? [])
@@ -77,13 +95,13 @@ const replaceTagsWithReferences = (instance: InstanceElement): string[] => {
         return
       }
       conditions.forEach(condition => {
-        if (_.isString(condition.field)
+        if (
+          _.isString(condition.field)
           && RELEVANT_FIELD_NAMES.includes(condition.field)
-          && _.isString(condition.value)) {
-          const conditionTags = extractTags(condition.value)
-          conditionTags.forEach(tag => { tags.push(tag) })
-          condition.value = conditionTags
-            .map(tag => createTagReferenceExpression(tag))
+          && Array.isArray(condition.value) && condition.value.every(_.isString)
+        ) {
+          condition.value.forEach(tag => { tags.push(tag) })
+          condition.value = condition.value.map(tag => createTagReferenceExpression(tag))
         }
       })
     })
@@ -127,19 +145,25 @@ const serializeReferencesToTags = (instance: InstanceElement): void => {
 /**
  * Extract tags references from business rules that refers to them
  */
-const filterCreator: FilterCreator = () => ({
+const filterCreator: FilterCreator = ({ fetchQuery }) => ({
   name: 'tagsFilter',
   onFetch: async (elements: Element[]): Promise<void> => {
     const instances = elements
       .filter(isInstanceElement)
       .filter(isRelevantInstance)
 
-    const tags = instances.map(instance => replaceTagsWithReferences(instance)).flat()
-    const tagObjectType = new ObjectType({
-      elemID: new ElemID(ZENDESK, TAG_TYPE_NAME),
-      fields: { id: { refType: BuiltinTypes.STRING } },
-      path: [ZENDESK, TYPES_PATH, TAG_TYPE_NAME],
-    })
+    instances.forEach(convertConditionTagFieldsToArray)
+    if (!fetchQuery.isTypeMatch(TAG_TYPE_NAME)) {
+      log.debug('tags are excluded, not creating references and instances')
+      return
+    }
+    const tagObjectType = elements.filter(isObjectType).find(t => t.elemID.typeName === TAG_TYPE_NAME)
+    if (tagObjectType === undefined) {
+      log.error('could not find tag object type')
+      return
+    }
+    const tags = instances.flatMap(instance => replaceTagsWithReferences(instance))
+    // the tag object type was created by the config
     const tagInstances = _(tags)
       .uniq()
       .sort()
@@ -150,9 +174,9 @@ const filterCreator: FilterCreator = () => ({
           { id: tag },
           [ZENDESK, RECORDS_PATH, TAG_TYPE_NAME, TAGS_FILE_NAME]
         ))
-      .value();
+      .value()
     // We do this trick to avoid calling push with the spread notation
-    [tagObjectType, tagInstances].flat().forEach(element => { elements.push(element) })
+    tagInstances.forEach(element => { elements.push(element) })
   },
   // Tag is not an object in Zendesk, and there is no meaning to "deploy" tag
   // Therefore, we created an empty deploy function that always "succeed"
@@ -187,11 +211,18 @@ const filterCreator: FilterCreator = () => ({
     if (_.isEmpty(relevantChanges)) {
       return
     }
+    const shouldReplaceTags = fetchQuery.isTypeMatch(TAG_TYPE_NAME)
+    if (!shouldReplaceTags) {
+      log.debug('tags are excluded, not creating references and instances')
+    }
     await awu(changes).forEach(async change => {
       await applyFunctionToChangeData<Change<InstanceElement>>(
         change,
         instance => {
-          replaceTagsWithReferences(instance)
+          convertConditionTagFieldsToArray(instance)
+          if (shouldReplaceTags) {
+            replaceTagsWithReferences(instance)
+          }
           return instance
         }
       )

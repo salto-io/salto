@@ -177,6 +177,8 @@ type MetadataId = {
   fullName: string
 }
 
+type FailureMetadata = MetadataId & { problem: DeployMessage }
+
 const getUnFoundDeleteName = (
   message: DeployMessage,
   deletionsPackageName: string
@@ -197,12 +199,17 @@ const isUnFoundDelete = (message: DeployMessage, deletionsPackageName: string): 
 const processDeployResponse = (
   result: SFDeployResult,
   deletionsPackageName: string,
-  changeDeployedIds: Record<string, MetadataIdsMap>,
-  checkOnly: boolean,
 ): { successfulFullNames: ReadonlyArray<MetadataId>
-  errors: ReadonlyArray<SaltoError | SaltoElementError> } => {
+  nonComponentErrors: ReadonlyArray<SaltoError | SaltoElementError>
+  componentErrorsFullNames: ReadonlyArray<FailureMetadata> } => {
   const allFailureMessages = makeArray(result.details)
     .flatMap(detail => makeArray(detail.componentFailures))
+
+  const componentErrorsFullNames = allFailureMessages
+    .map(failure => (
+      { type: failure.componentType,
+        fullName: failure.fullName,
+        problem: getUserFriendlyDeployMessage(failure) }))
 
   const testFailures = makeArray(result.details)
     .flatMap(detail => makeArray((detail.runTestResult as RunTestsResult)?.failures))
@@ -217,30 +224,22 @@ const processDeployResponse = (
       ),
       severity: 'Error' as SeverityLevel,
     }))
-  const componentErrors = allFailureMessages
-    .filter(failure => !isUnFoundDelete(failure, deletionsPackageName))
-    .map(getUserFriendlyDeployMessage)
-    .map(failure => ({
-      elemID: changeDeployedIds[failure.componentType]?.[failure.fullName],
-      message: `Failed to ${checkOnly ? 'validate' : 'deploy'} ${failure.fullName} with error: ${failure.problem} (${failure.problemType})`,
-      severity: 'Error' as SeverityLevel,
-    }))
   const codeCoverageWarningErrors = makeArray(result.details)
     .map(detail => detail.runTestResult as RunTestsResult | undefined)
     .flatMap(runTestResult => makeArray(runTestResult?.codeCoverageWarnings))
     .map(codeCoverageWarning => codeCoverageWarning.message)
     .map(message => ({ message, severity: 'Error' as SeverityLevel }))
 
-  const errors = [...testErrors, ...componentErrors, ...codeCoverageWarningErrors]
+  const nonComponentErrors = [...testErrors, ...codeCoverageWarningErrors]
 
   if (isDefined(result.errorMessage)) {
-    errors.push({ message: result.errorMessage, severity: 'Error' as SeverityLevel })
+    nonComponentErrors.push({ message: result.errorMessage, severity: 'Error' as SeverityLevel })
   }
 
   // In checkOnly none of the changes are actually applied
   if (!result.checkOnly && result.rollbackOnError && !result.success) {
     // if rollbackOnError and we did not succeed, nothing was applied as well
-    return { successfulFullNames: [], errors }
+    return { successfulFullNames: [], componentErrorsFullNames, nonComponentErrors }
   }
 
   const allSuccessMessages = makeArray(result.details)
@@ -257,7 +256,7 @@ const processDeployResponse = (
     .map(success => ({ type: success.componentType, fullName: success.fullName }))
     .concat(unFoundDeleteNames)
 
-  return { successfulFullNames, errors }
+  return { successfulFullNames, componentErrorsFullNames, nonComponentErrors }
 }
 
 const getChangeError = async (change: Change): Promise<SaltoElementError | undefined> => {
@@ -381,8 +380,8 @@ export const deployMetadata = async (
     })),
   }, undefined, 2))
 
-  const { errors, successfulFullNames } = processDeployResponse(
-    sfDeployRes, pkg.getDeletionsPackageName(), changeToDeployedIds, checkOnly ?? false
+  const { nonComponentErrors, componentErrorsFullNames, successfulFullNames } = processDeployResponse(
+    sfDeployRes, pkg.getDeletionsPackageName()
   )
   const isSuccessfulChange = (change: Change<MetadataInstanceElement>): boolean => {
     const changeElem = getChangeData(change)
@@ -394,10 +393,36 @@ export const deployMetadata = async (
     )
   }
 
+  const isComponentFailureChange = (change: Change<MetadataInstanceElement>): boolean => {
+    const changeElem = getChangeData(change)
+    const changeDeployedIds = changeToDeployedIds[changeElem.elemID.getFullName()]
+    // TODO - this logic is not perfect, it might produce false positives when there are
+    // child xml instances (because we pass in everything with a single change)
+    return (componentErrorsFullNames.some(
+      failureId => changeDeployedIds[failureId.type]?.has(failureId.fullName)
+    ))
+  }
+
+  const componentErrorsValidChanges = validChanges.filter(isComponentFailureChange)
+
+  const componentErrors = componentErrorsValidChanges
+    .flatMap(change => {
+      const changeElem = getChangeData(change)
+      return componentErrorsFullNames.filter(error =>
+        !isUnFoundDelete(error.problem, pkg.getDeletionsPackageName())
+        && error.type === changeElem.elemID.typeName
+        && error.fullName === changeElem.elemID.name)
+        .map(error => (
+          { elemID: changeElem.elemID,
+            message: `Failed to ${checkOnly ? 'validate' : 'deploy'} ${error.fullName} with error: ${error.problem} (${error.problem.problemType})`,
+            severity: 'Error' as SeverityLevel }
+        ))
+    })
+
   const deploymentUrl = await getDeployStatusUrl(sfDeployRes, client)
   return {
     appliedChanges: validChanges.filter(isSuccessfulChange),
-    errors: [...validationErrors, ...errors],
+    errors: [...validationErrors, ...nonComponentErrors, ...componentErrors],
     extraProperties: {
       groups: isQuickDeployable(sfDeployRes)
         ? [{ id: groupId, requestId: sfDeployRes.id, hash: planHash, url: deploymentUrl }]

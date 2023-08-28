@@ -33,7 +33,7 @@ export const createReportErrorsEventListener = (
     await workspace.awaitAllUpdates()
     const newDiag = toVSDiagnostics(
       workspace.baseDir,
-      (await diagnostics.getDiagnostics(workspace)).errors
+      await diagnostics.getDiagnostics(workspace)
     )
     diagCollection.set(newDiag)
   },

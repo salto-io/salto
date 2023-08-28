@@ -94,7 +94,7 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
     fileWatcher.onDidDelete((uri: vscode.Uri) => onFileChange(workspace, uri.fsPath))
     const newDiag = toVSDiagnostics(
       workspace.baseDir,
-      (await diagnostics.getDiagnostics(workspace)).errors
+      await diagnostics.getDiagnostics(workspace)
     )
     diagCollection.set(newDiag)
   }

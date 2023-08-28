@@ -118,8 +118,8 @@ const toVSDiagnostic = (
 
 export const toVSDiagnostics = (
   workspaceBaseDir: string,
-  workspaceDiag: diagnostics.WorkspaceSaltoDiagnostics.errors
-): ReadonlyDiags => _(workspaceDiag)
+  workspaceDiag: diagnostics.WorkspaceSaltoDiagnostics
+): ReadonlyDiags => _(workspaceDiag.errors)
   .mapValues(diags => diags.map(toVSDiagnostic))
   .entries()
   .map(([k, v]) => [vscode.Uri.file(toVSFileName(workspaceBaseDir, k)), v] as ReadonlyDiagsItem)

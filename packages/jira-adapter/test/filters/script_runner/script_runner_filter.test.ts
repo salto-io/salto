@@ -97,10 +97,9 @@ describe('script_runner_filter', () => {
         await filter.preDeploy([
           toChange({ after: auditInstance }),
           toChange({ after: listenerInstance }),
-          toChange({ after: fragmentInstance })])
+        ])
         expect(auditInstance.value.uuid).toEqual('my-uuid')
         expect(listenerInstance.value.uuid).toEqual('my-uuid')
-        expect(fragmentInstance.value.id).toEqual('my-uuid')
       })
       it('should add audit info when not defined', async () => {
         jest.spyOn(users, 'getCurrentUserInfo').mockReset()

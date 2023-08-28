@@ -31,6 +31,7 @@ import { ParsedNaclFile } from '../../../src/workspace/nacl_files/parsed_nacl_fi
 import * as naclFileSourceModule from '../../../src/workspace/nacl_files/nacl_files_source'
 import { mockDirStore as createMockDirStore } from '../../common/nacl_file_store'
 import { getDanglingStaticFiles } from '../../../src/workspace/nacl_files/nacl_files_source'
+import { DetailedChangeWithSource, getChangeLocations } from '../../../src/workspace/nacl_files/nacl_file_update'
 
 const { awu } = collections.asynciterable
 
@@ -56,14 +57,7 @@ const createChange = (): DetailedChange => {
 
 jest.mock('../../../src/workspace/nacl_files/nacl_file_update', () => ({
   ...jest.requireActual<{}>('../../../src/workspace/nacl_files/nacl_file_update'),
-  getChangeLocations: (change: DetailedChange) => ({
-    ...change,
-    location: {
-      filename: 'file',
-      start: { line: 0, row: 0, byte: 0 },
-      end: { line: 0, row: 0, byte: 0 },
-    },
-  }),
+  getChangeLocations: jest.fn(),
 }))
 
 jest.mock('../../../src/parser', () => {
@@ -93,6 +87,7 @@ const validateParsedNaclFile = async (
 }
 
 describe('Nacl Files Source', () => {
+  let getChangeLocationsMock: jest.MockedFunction<typeof getChangeLocations>
   let mockDirStore: MockInterface<DirectoryStore<string>>
   let mockCache: ParsedNaclFileCache
   let mockedStaticFilesSource: StaticFilesSource
@@ -131,6 +126,7 @@ describe('Nacl Files Source', () => {
   }
 
   beforeEach(async () => {
+    jest.clearAllMocks()
     createdMaps = {}
     mockDirStore = createMockDirStore([], true)
     mockedStaticFilesSource = mockStaticFilesSource()
@@ -140,6 +136,15 @@ describe('Nacl Files Source', () => {
       mockStaticFilesSource(),
       true
     )
+    getChangeLocationsMock = getChangeLocations as jest.MockedFunction<typeof getChangeLocations>
+    getChangeLocationsMock.mockImplementation((change: DetailedChange) => ({
+      ...change,
+      location: {
+        filename: 'file',
+        start: { line: 0, row: 0, byte: 0 },
+        end: { line: 0, row: 0, byte: 0 },
+      },
+    }) as unknown as DetailedChangeWithSource[])
   })
 
   describe('clear', () => {
@@ -458,6 +463,38 @@ describe('Nacl Files Source', () => {
         path: ['new', 'file'],
       } as DetailedChange
       await src.updateNaclFiles([change])
+      expect(mockedStaticFilesSource.delete).toHaveBeenCalledTimes(0)
+    })
+    it('should not delete static file if the file was both added and deleted', async () => {
+      getChangeLocationsMock.mockImplementationOnce((change: DetailedChange) => ({
+        ...change,
+        location: {
+          filename: 'file1',
+          start: { line: 0, row: 0, byte: 0 },
+          end: { line: 0, row: 0, byte: 0 },
+        },
+      }) as unknown as DetailedChangeWithSource[])
+      getChangeLocationsMock.mockImplementationOnce((change: DetailedChange) => ({
+        ...change,
+        location: {
+          filename: 'file2',
+          start: { line: 0, row: 0, byte: 0 },
+          end: { line: 0, row: 0, byte: 0 },
+        },
+      }) as unknown as DetailedChangeWithSource[])
+      const changeAdd = {
+        id: new ElemID('salesforce', 'new_elem2'),
+        action: 'add',
+        data: { after: new StaticFile({ filepath, hash: 'XII' }) },
+        path: ['new', 'file'],
+      } as DetailedChange
+      const changeDelete = {
+        id: elemID,
+        action: 'remove',
+        data: { before: new StaticFile({ filepath, hash: 'XII' }) },
+        path: ['old', 'file2'],
+      } as DetailedChange
+      await src.updateNaclFiles([changeAdd, changeDelete])
       expect(mockedStaticFilesSource.delete).toHaveBeenCalledTimes(0)
     })
   })

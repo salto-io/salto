@@ -118,7 +118,7 @@ const toVSDiagnostic = (
 
 export const toVSDiagnostics = (
   workspaceBaseDir: string,
-  workspaceDiag: diagnostics.WorkspaceSaltoDiagnostics
+  workspaceDiag: diagnostics.WorkspaceSaltoDiagnostics.errors
 ): ReadonlyDiags => _(workspaceDiag)
   .mapValues(diags => diags.map(toVSDiagnostic))
   .entries()

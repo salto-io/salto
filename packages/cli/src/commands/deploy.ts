@@ -17,8 +17,10 @@ import _ from 'lodash'
 import { EOL } from 'os'
 import { promises } from '@salto-io/lowerdash'
 import { PlanItem, Plan, preview, DeployResult, ItemStatus, deploy, summarizeDeployChanges } from '@salto-io/core'
+import { Change, Element } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
+import wu from 'wu'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts, getTagsForAccounts } from './common/accounts'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
@@ -224,6 +226,16 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
   const actionPlan = await preview(workspace, actualAccounts, checkOnly)
   await printPlan(actionPlan, output, workspace, detailedPlan)
 
+  // the plan is being mutated in the deployPlan function, and therefore we must clone it in advance
+  const immutableRequestedChanges = wu(actionPlan.itemsByEvalOrder())
+    .map(item => wu(item.changes()).toArray())
+    .toArray()
+    .flat()
+    .map(change => ({
+      action: change.action,
+      data: _.mapValues(change.data, (element: Element) => element.clone()),
+    } as Change))
+
   const result = dryRun ? { success: true, errors: [] } : await deployPlan(
     actionPlan,
     workspace,
@@ -247,8 +259,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
     }
   }
 
-  const requested = Array.from(actionPlan.itemsByEvalOrder()).flatMap(item => Array.from(item.changes()))
-  const summary = summarizeDeployChanges(requested, result.appliedChanges ?? [])
+  const summary = summarizeDeployChanges(immutableRequestedChanges, result.appliedChanges ?? [])
   const changeErrorsForPostDeployOutput = actionPlan.changeErrors.filter(changeError =>
     summary[changeError.elemID.getFullName()] !== 'failure' || changeError.deployActions?.postAction?.showOnFailure)
 

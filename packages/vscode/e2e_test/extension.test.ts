@@ -69,7 +69,7 @@ describe.skip('extension e2e', () => {
   })
 
   it('should diagnostics on errors', async () => {
-    const diag = (await diagnostics.getDiagnostics(workspace)).errors
+    const diag = await diagnostics.getDiagnostics(workspace)
     const err = diag['error.nacl'][0]
     expect(err.msg).toContain(
       'Error merging @salto-io/core.complex.instance.inst1: duplicate key str'

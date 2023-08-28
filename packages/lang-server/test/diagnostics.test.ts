@@ -57,14 +57,12 @@ describe('diagnostics', () => {
   })
   it('should diagnostics on errors', async () => {
     const workspace = new EditorWorkspace('bla', baseWs)
-    const diag = await getDiagnostics(workspace)
-    const diagErrors = diag.errors['/parse_error.nacl']
-    const validationError = diagErrors[0]
-    expect(diag.totalNumberOfErrors).toBe(2)
+    const diag = (await getDiagnostics(workspace))['/parse_error.nacl']
+    const validationError = diag[0]
     expect(validationError).toBeDefined()
     expect(validationError.msg).toContain('Blabla')
     expect(validationError.severity).toBe('Error')
-    const parseError = diagErrors[1]
+    const parseError = diag[1]
     expect(parseError).toBeDefined()
     expect(parseError.msg).toContain('parse')
     expect(parseError.severity).toBe('Error')
@@ -75,7 +73,7 @@ describe('diagnostics', () => {
       [{ severity: 'Error', message: 'Blabla' }, { severity: 'Warning', message: 'test' }],
     ))
     const workspace = new EditorWorkspace('bla', baseWs)
-    const diag = (await getDiagnostics(workspace)).errors['/parse_error.nacl']
+    const diag = (await getDiagnostics(workspace))['/parse_error.nacl']
     expect(diag).toHaveLength(1)
     const error = diag[0]
     expect(error.severity).toEqual('Error')
@@ -86,7 +84,7 @@ describe('diagnostics', () => {
       [{ severity: 'Warning', message: 'Blabla' }],
     ))
     const workspace = new EditorWorkspace('bla', baseWs)
-    const diag = (await getDiagnostics(workspace)).errors['/parse_error.nacl']
+    const diag = (await getDiagnostics(workspace))['/parse_error.nacl']
     expect(diag).toHaveLength(1)
     const error = diag[0]
     expect(error.severity).toEqual('Warning')

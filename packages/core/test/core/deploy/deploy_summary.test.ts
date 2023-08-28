@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ElemID, InstanceElement, Values } from '@salto-io/adapter-api'
+import { Change, ElemID, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
+import { Types } from '@salto-io/salesforce-adapter/src/transformers/transformer'
 import { summarizeDeployChanges } from '../../../src/core/deploy/deploy_summary'
 import * as mockElements from '../../common/elements'
 
@@ -41,6 +42,48 @@ describe('summarizeDeployChanges', () => {
         name: 'foo',
         seats: { c1: 'n1', c2: 'n2' } } }
   )
+  const salesforceTest = new ElemID('Salesforce', 'Test')
+  const pickListElement = new ObjectType({
+    elemID: salesforceTest,
+    fields: {
+      picklist: {
+        refType: Types.primitiveDataTypes.Picklist,
+        annotations: {
+          ['label']: 'Picklist description label',
+          ['valueSet']: [
+          { 
+            fullName: "Amit",
+            default: false,
+            label: "Amit"
+          }
+          ],
+        },
+      }
+    },
+  })
+  const modifiedPicklistElement = new ObjectType({
+    elemID: salesforceTest,
+    fields: {
+      picklist: {
+        refType: Types.primitiveDataTypes.Picklist,
+        annotations: {
+          ['label']: 'Picklist description label',
+          ['valueSet']: [
+          { 
+            fullName: "Amit1",
+            default: false,
+            label: "Amit1"
+          },
+          { 
+            fullName: "Amit2",
+            default: false,
+            label: "Amit2"
+          }
+          ],
+        },
+      }
+    },
+  })
 
   const saltoEmployeeInstanceInstanceID = new ElemID('salto', 'employee', 'instance', 'instance')
 
@@ -209,6 +252,13 @@ describe('summarizeDeployChanges', () => {
           .getFullName()]: 'failure',
         [saltoEmployeeInstanceInstanceID.createNestedID('office')
           .getFullName()]: 'failure',
+      })
+    })
+    it('should return modification changes on fields', () => {
+      const modifyRequestedChanges: Change[] = [{ action: 'modify',
+        data: { before: pickListElement, after: modifiedPicklistElement } }]
+      expect(summarizeDeployChanges(modifyRequestedChanges, modifyRequestedChanges)).toEqual({
+        [salesforceTest.createNestedID('field', 'picklist', 'valueSet').getFullName()]: 'success',
       })
     })
   })

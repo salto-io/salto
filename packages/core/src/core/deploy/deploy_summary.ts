@@ -108,7 +108,8 @@ const summarizeModificationChange = (
 ): DetailedChangeDeploySummaryResult[] => {
   const requestedDetailedChanges = detailedCompare(
     requestedChange.data.before,
-    requestedChange.data.after
+    requestedChange.data.after,
+    { 'createFieldChanges': true },
   )
   if (isAdditionOrRemovalChange(appliedChange)) {
     if (isAdditionChange(appliedChange)) {

@@ -2713,6 +2713,12 @@ describe('workspace', () => {
       const reSerializedTree = await serializeReferenceTree(deserializedTree)
       expect(reSerializedTree).toEqual(serializedTree)
     })
+
+    it('should deserialize references with types', async () => {
+      const serializedTree = '[["someAnnotation",[{"id":"test.target2.field.someField.value","type":"strong"}]]]'
+      const deserializedTree = await deserializeReferenceTree(serializedTree)
+      expect(deserializedTree.get('someAnnotation')).toEqual([ElemID.fromFullName('test.target2.field.someField.value')])
+    })
   })
   describe('deleteEnvironment', () => {
     describe('should delete environment', () => {

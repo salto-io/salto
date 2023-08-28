@@ -280,6 +280,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     const bundlesCustomInfo = (await this.client.getInstalledBundles())
       .map(bundle => ({ typeName: BUNDLE, values: { ...bundle, id: bundle.id.toString() } }))
+      .filter(bundle => ((bundle.values.isPrivate !== undefined) && !bundle.values.isPrivate))
     // TODO: remove this log when SALTO-2602 is open for all customers
     log.debug('The following bundle ids are missing in the bundle record: %o', bundlesCustomInfo.map(bundle => bundle.values.id))
     const {

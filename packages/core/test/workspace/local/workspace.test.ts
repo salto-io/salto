@@ -555,5 +555,13 @@ describe('local workspace', () => {
       const references = await getCustomReferences([instance], { test2: 'test' })
       expect(references).toEqual([])
     })
+
+    it('Should return empty array if adapter getCustomReferences throws an error', async () => {
+      adapterCreators.test = {
+        getCustomReferences: mockFunction<GetCustomReferencesFunc>().mockRejectedValue(new Error('aaa')),
+      } as unknown as Adapter
+      const references = await getCustomReferences([instance], { test2: 'test' })
+      expect(references).toEqual([])
+    })
   })
 })

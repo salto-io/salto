@@ -17,13 +17,14 @@ import { ElemID, InstanceElement, StaticFile, isInstanceElement, isObjectType } 
 import { buildElementsSourceFromElements, naclCase } from '@salto-io/adapter-utils'
 import { mockFunction } from '@salto-io/test-utils'
 import { CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo } from '../src/client/types'
-import { CONFIG_FEATURES, CUSTOM_RECORD_TYPE, ENTITY_CUSTOM_FIELD, FILE, FILE_CABINET_PATH, FOLDER, NETSUITE, PATH, RECORDS_PATH, SCRIPT_ID, SETTINGS_PATH } from '../src/constants'
+import { CONFIG_FEATURES, CUSTOM_RECORD_TYPE, ENTITY_CUSTOM_FIELD, FILE, FILE_CABINET_PATH, FOLDER, INTEGRATION, NETSUITE, PATH, RECORDS_PATH, SCRIPT_ID, SETTINGS_PATH } from '../src/constants'
 import loadElementsFromFolder from '../src/sdf_folder_loader'
 import { getMetadataTypes, isCustomRecordType, metadataTypesToList } from '../src/types'
 import { createCustomRecordTypes } from '../src/custom_records/custom_record_type'
 import { LocalFilterCreator } from '../src/filter'
 import { addApplicationIdToType } from '../src/transformer'
 import { createEmptyElementsSourceIndexes } from './utils'
+import { fullFetchConfig } from '../src/query'
 
 const parseSdfProjectDirMock = jest.fn()
 jest.mock('../src/client/sdf_parser', () => ({
@@ -83,12 +84,18 @@ describe('sdf folder loader', () => {
       scriptId: 'customrecord1',
     }
 
+    const integrationCustInfo = {
+      typeName: INTEGRATION,
+      values: '',
+    }
+
     parseSdfProjectDirMock.mockResolvedValue([
       folderCustomizationInfo,
       fileCustomizationInfo,
       featuresCustomTypeInfo,
       customTypeInfo,
       customRecordTypeCustInfo,
+      integrationCustInfo,
     ])
 
     const elementsSourceIndex = createEmptyElementsSourceIndexes()
@@ -112,12 +119,12 @@ describe('sdf folder loader', () => {
       elementsSourceIndex,
       elementsSource,
       isPartial: true,
-      config: {},
+      config: { fetch: fullFetchConfig() },
     })
     expect(parseSdfProjectDirMock).toHaveBeenCalledWith('projectDir')
 
-    const { standardTypes, additionalTypes } = getMetadataTypes()
-    const metadataTypes = metadataTypesToList({ standardTypes, additionalTypes })
+    const { standardTypes, additionalTypes, innerAdditionalTypes } = getMetadataTypes()
+    const metadataTypes = metadataTypesToList({ standardTypes, additionalTypes, innerAdditionalTypes })
       .concat(createCustomRecordTypes([], standardTypes.customrecordtype.type))
 
     // metadataTypes + folderInstance + fileInstance + featuresInstance + customTypeInstance + customRecordType

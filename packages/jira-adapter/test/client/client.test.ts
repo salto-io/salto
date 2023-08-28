@@ -57,4 +57,68 @@ describe('client', () => {
       expect(result).toEqual({ status: 200, data: { response: 'asd' } })
     })
   })
+  it('should preserve headers', async () => {
+    mockAxios.onPatch().reply(200, { response: 'asd' })
+    mockAxios.onPost().reply(200, { response: 'asd' })
+    mockAxios.onGet().reply(200, { response: 'asd' })
+    mockAxios.onPut().reply(200, { response: 'asd' })
+    mockAxios.onDelete().reply(200, { response: 'asd' })
+    await client.patchPrivate({ url: '/myPath', headers: { 'x-atlassian-force-account-id': '1234' }, data: { a: 'b' } })
+    await client.jspPost({ url: '/myPath', data: { a: 'b' }, headers: { 'x-atlassian-force-account-id': '1234' } })
+    await client.putPrivate({ url: '/myPath', data: { a: 'b' }, headers: { 'x-atlassian-force-account-id': '1234' } })
+    await client.postPrivate({ url: '/myPath', data: { a: 'b' }, headers: { 'x-atlassian-force-account-id': '1234' } })
+    await client.getPrivate({ url: '/myPath', headers: { 'x-atlassian-force-account-id': '1234' } })
+    await client.deletePrivate({ url: '/myPath', headers: { 'x-atlassian-force-account-id': '1234' } })
+    expect(mockAxios.history.patch[0].headers?.['x-atlassian-force-account-id']).toEqual('1234')
+    expect(mockAxios.history.get[0].headers?.['x-atlassian-force-account-id']).toEqual('1234')
+    expect(mockAxios.history.post[0].headers?.['x-atlassian-force-account-id']).toEqual('1234')
+    expect(mockAxios.history.post[1].headers?.['x-atlassian-force-account-id']).toEqual('1234')
+    expect(mockAxios.history.delete[0].headers?.['x-atlassian-force-account-id']).toEqual('1234')
+    expect(mockAxios.history.put[0].headers?.['x-atlassian-force-account-id']).toEqual('1234')
+    await client.patchPrivate({ url: '/myPath', data: { a: 'b' } })
+  })
+  it('check if gqlpost returns a response if it is as expected', async () => {
+    const innerData = {
+      issueLayoutConfiguration: {
+        issueLayoutResult: {
+          id: '2',
+          name: 'Default Issue Layout',
+          usageInfo: {
+            edges: [{
+              node: {
+                layoutOwners: [{
+                  avatarId: '3',
+                  description: 'ownerTest',
+                  iconUrl: 'www.icon.com',
+                  id: '100',
+                  name: 'ownerTest',
+                }],
+              },
+            }],
+          },
+          containers: [
+            {
+              containerType: 'PRIMARY',
+              items: {
+                nodes: [],
+              },
+            },
+            {
+              containerType: 'Secondery',
+              items: {
+                nodes: [],
+              },
+            },
+          ],
+        },
+      },
+    }
+    mockAxios.onPost().replyOnce(200, { data: { data: innerData } })
+    result = await client.gqlPost({ url: 'www.test.com', query: 'query' })
+    expect(result).toEqual({ data: { data: innerData } })
+  })
+  it('check if gqlpost throws an error if the response is not as expected', async () => {
+    mockAxios.onPost().replyOnce(200, { response: 'not as expected' })
+    await expect(client.gqlPost({ url: 'www.test.com', query: 'query' })).rejects.toThrow()
+  })
 })

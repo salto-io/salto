@@ -32,7 +32,7 @@ export const NON_DEPLOYABLE_TYPES = ['Board']
 export const PARAMETER_STYLE_TYPES = ['PermissionScheme', 'NotificationScheme', 'SecurityLevel']
 export const DEPLOYABLE_TYPES = [...PARAMETER_STYLE_TYPES,
   'Automation', 'Project', 'ProjectComponent', 'ProjectRole', 'Filter', 'Dashboard', 'CustomFieldContext', 'ProjectRoleUser',
-  'CustomFieldContextDefaultValue', 'Workflow']
+  'CustomFieldContextDefaultValue', 'Workflow', 'ScheduledJob', 'EscalationService']
 export const ACCOUNT_ID_TYPES = [...NON_DEPLOYABLE_TYPES, ...DEPLOYABLE_TYPES]
 
 const USER_TYPE = 'user'
@@ -84,9 +84,14 @@ const callbackValueOrValues = (
   }
 }
 
-const walkOnAutomationValue = (regexPath: string, callback: WalkOnUsersCallback)
-: WalkOnFunc => ({ value, path }): WALK_NEXT_STEP => {
-  if (new RegExp(regexPath).test(path.getFullName()) && value.type === 'ID') {
+const walkOnAutomationValue = (
+  regexPath: string,
+  callback: WalkOnUsersCallback,
+  excludeValues?: string[]
+): WalkOnFunc => ({ value, path }): WALK_NEXT_STEP => {
+  if (new RegExp(regexPath).test(path.getFullName())
+    && value.type === 'ID'
+    && !excludeValues?.includes(value.value)) {
     callbackValueOrValues({ value, path, callback })
     return WALK_NEXT_STEP.SKIP
   }
@@ -173,7 +178,8 @@ const accountIdsScenarios = (
         // the second is 'value.operations.0.value' (numbers can differ)
         func: walkOnAutomationValue('value\\.operations\\.\\d+.value\\.\\d+'
           + '|value\\.operations\\.\\d+\\.value',
-        callback) })
+        callback,
+        ['assignee', 'reporter']) })
       return WALK_NEXT_STEP.SKIP
     }
     // user condition
@@ -254,7 +260,8 @@ const filter: FilterCreator = ({ config }) => {
         })
       await awu(elements)
         .filter(isObjectType)
-        .filter(object => ACCOUNT_ID_TYPES.includes(object.elemID.typeName))
+        .filter(object => ACCOUNT_ID_TYPES.includes(object.elemID.typeName)
+          || ['ScheduledJob__atlassianUser', 'EscalationService__atlassianUser'].includes(object.elemID.typeName))
         .forEach(async objectType => {
           await convertType(objectType)
         })

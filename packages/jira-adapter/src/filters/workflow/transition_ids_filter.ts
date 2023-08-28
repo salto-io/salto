@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isInstanceElement } from '@salto-io/adapter-api'
+import { Element, getChangeData, isAdditionOrModificationChange, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
 import { isWorkflowInstance } from './types'
 
@@ -29,7 +29,21 @@ const filter: FilterCreator = () => ({
       .filter(isInstanceElement)
       .filter(isWorkflowInstance)
       .forEach(instance => {
-        instance.value.transitions?.forEach(transition => {
+        Object.values(instance.value.transitions).forEach(transition => {
+          // We don't need to id after this filter since
+          // in modification we remove and create a new workflow
+          delete transition.id
+        })
+      })
+  },
+  onDeploy: async changes => {
+    changes
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeData)
+      .filter(isInstanceElement)
+      .filter(isWorkflowInstance)
+      .forEach(instance => {
+        Object.values(instance.value.transitions).forEach(transition => {
           // We don't need to id after this filter since
           // in modification we remove and create a new workflow
           delete transition.id

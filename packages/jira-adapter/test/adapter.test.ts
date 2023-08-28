@@ -25,7 +25,7 @@ import { getDefaultConfig } from '../src/config/config'
 import { ISSUE_TYPE_NAME, JIRA } from '../src/constants'
 import { createCredentialsInstance, createConfigInstance } from './utils'
 
-
+const { getAllElements } = elements.ducktype
 const { generateTypes, getAllInstances, loadSwagger } = elements.swagger
 
 jest.mock('@salto-io/adapter-components', () => {
@@ -46,6 +46,10 @@ jest.mock('@salto-io/adapter-components', () => {
         getAllInstances: jest.fn().mockImplementation(() => { throw new Error('getAllInstances called without a mock') }),
         loadSwagger: jest.fn().mockImplementation(() => { throw new Error('loadSwagger called without a mock') }),
         addDeploymentAnnotations: jest.fn(),
+      },
+      ducktype: {
+        ...actual.elements.ducktype,
+        getAllElements: jest.fn().mockImplementation(() => { throw new Error('getAllElements called without a mock') }),
       },
     },
   }
@@ -150,12 +154,12 @@ describe('adapter', () => {
       })
       expect(deployRes.errors).toEqual([
         {
-          message: 'Deployment of jira.FieldConfigurationIssueTypeItem.instance.inst1 failed: Error: some error',
+          message: 'Error: some error',
           severity: 'Error',
           elemID: ElemID.fromFullName('jira.FieldConfigurationIssueTypeItem.instance.inst1'),
         },
         {
-          message: 'Deployment of jira.FieldConfigurationIssueTypeItem.instance.inst2 failed: Error: some error',
+          message: 'Error: some error',
           severity: 'Error',
           elemID: ElemID.fromFullName('jira.FieldConfigurationIssueTypeItem.instance.inst2'),
         },
@@ -202,6 +206,7 @@ describe('adapter', () => {
     let platformTestType: ObjectType
     let jiraTestType: ObjectType
     let testInstance: InstanceElement
+    let testInstance2: InstanceElement
     let mockAxiosAdapter: MockAdapter
     beforeEach(async () => {
       progressReporter = {
@@ -213,7 +218,8 @@ describe('adapter', () => {
       jiraTestType = new ObjectType({
         elemID: new ElemID(JIRA, 'jira'),
       })
-      testInstance = new InstanceElement('test', jiraTestType);
+      testInstance = new InstanceElement('test', jiraTestType)
+      testInstance2 = new InstanceElement('test2', jiraTestType);
 
       (generateTypes as jest.MockedFunction<typeof generateTypes>)
         .mockResolvedValueOnce({
@@ -225,6 +231,8 @@ describe('adapter', () => {
           parsedConfigs: { JiraTest: { request: { url: 'jira' } } },
         });
 
+      (getAllElements as jest.MockedFunction<typeof getAllElements>)
+        .mockResolvedValue({ elements: [testInstance2] });
       (getAllInstances as jest.MockedFunction<typeof getAllInstances>)
         .mockResolvedValue({ elements: [testInstance] });
       (loadSwagger as jest.MockedFunction<typeof loadSwagger>)
@@ -235,7 +243,8 @@ describe('adapter', () => {
       result = await adapter.fetch({ progressReporter })
     })
     afterEach(() => {
-      mockAxiosAdapter.restore()
+      mockAxiosAdapter.restore();
+      (getAllElements as jest.MockedFunction<typeof getAllElements>).mockClear()
     })
     it('should generate types for the platform and the jira apis', () => {
       expect(loadSwagger).toHaveBeenCalledTimes(2)
@@ -266,15 +275,89 @@ describe('adapter', () => {
     it('should pass elem id getter to getAllInstances', () => {
       expect(getAllInstances).toHaveBeenCalledWith(
         expect.objectContaining({
-          getElemIdFunc,
+          getElemIdFunc: expect.any(Function),
         })
       )
     })
-
     it('should return all types and instances returned from the infrastructure', () => {
       expect(result.elements).toContain(platformTestType)
       expect(result.elements).toContain(jiraTestType)
       expect(result.elements).toContain(testInstance)
+      expect(result.elements).not.toContain(testInstance2)
+    })
+  })
+  describe('scriptRunner', () => {
+    let srAdapter: AdapterOperations
+    beforeEach(() => {
+      const elementsSource = buildElementsSourceFromElements([])
+      const config = createConfigInstance(getDefaultConfig({ isDataCenter: false }))
+      config.value.client.usePrivateAPI = false
+      config.value.fetch.convertUsersIds = false
+      config.value.fetch.enableScriptRunnerAddon = true
+
+      srAdapter = adapterCreator.operations({
+        elementsSource,
+        credentials: createCredentialsInstance({ baseUrl: 'http:/jira.net', user: 'u', token: 't' }),
+        config,
+        getElemIdFunc,
+      })
+    })
+    describe('fetch', () => {
+      let progressReporter: ProgressReporter
+      let result: FetchResult
+      let platformTestType: ObjectType
+      let jiraTestType: ObjectType
+      let testInstance: InstanceElement
+      let testInstance2: InstanceElement
+      let mockAxiosAdapter: MockAdapter
+      beforeEach(async () => {
+        progressReporter = {
+          reportProgress: mockFunction<ProgressReporter['reportProgress']>(),
+        }
+        platformTestType = new ObjectType({
+          elemID: new ElemID(JIRA, 'platform'),
+        })
+        jiraTestType = new ObjectType({
+          elemID: new ElemID(JIRA, 'jira'),
+        })
+        testInstance = new InstanceElement('test', jiraTestType)
+        testInstance2 = new InstanceElement('test2', jiraTestType);
+
+        (generateTypes as jest.MockedFunction<typeof generateTypes>)
+          .mockResolvedValueOnce({
+            allTypes: { PlatformTest: platformTestType },
+            parsedConfigs: { PlatformTest: { request: { url: 'platform' } } },
+          })
+          .mockResolvedValueOnce({
+            allTypes: { JiraTest: jiraTestType },
+            parsedConfigs: { JiraTest: { request: { url: 'jira' } } },
+          });
+
+        (getAllElements as jest.MockedFunction<typeof getAllElements>)
+          .mockResolvedValue({ elements: [testInstance2] });
+        (getAllInstances as jest.MockedFunction<typeof getAllInstances>)
+          .mockResolvedValue({ elements: [testInstance] });
+        (loadSwagger as jest.MockedFunction<typeof loadSwagger>)
+          .mockResolvedValue({ document: {}, parser: {} } as elements.swagger.LoadedSwagger)
+
+        mockAxiosAdapter = new MockAdapter(axios)
+        // mock as there are gets of license during fetch
+        mockAxiosAdapter.onGet().reply(200, { })
+        result = await srAdapter.fetch({ progressReporter })
+      })
+      afterEach(() => {
+        mockAxiosAdapter.restore();
+        (getAllElements as jest.MockedFunction<typeof getAllElements>).mockClear()
+      })
+      it('should return all types and instances returned from the infrastructure', () => {
+        expect(result.elements).toContain(platformTestType)
+        expect(result.elements).toContain(jiraTestType)
+        expect(result.elements).toContain(testInstance)
+        expect(result.elements).toContain(testInstance2)
+      })
+      it('should call getAllElements', () => {
+        expect(getAllElements).toHaveBeenCalledTimes(1)
+      })
     })
   })
 })

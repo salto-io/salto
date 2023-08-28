@@ -127,7 +127,7 @@ const handleExistingUsers = ({ existingUsersPaths, customRolesById, usersByEmail
       return false
     }
     const userCustomRoleId = usersByEmail[user].custom_role_id
-    const customRole = customRolesById[userCustomRoleId]
+    const customRole = _.isNumber(userCustomRoleId) ? customRolesById[userCustomRoleId] : undefined
     // ticket_editing permission is required to be an assignee
     return customRole !== undefined && customRole.value.configuration?.ticket_editing === false
   })

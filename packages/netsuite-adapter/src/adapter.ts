@@ -14,17 +14,17 @@
 * limitations under the License.
 */
 import {
-  FetchResult, AdapterOperations, DeployOptions,
-  ElemIdGetter, ReadOnlyElementsSource, ProgressReporter,
+  FetchResult, AdapterOperations, DeployOptions, ElemIdGetter, ReadOnlyElementsSource, ProgressReporter,
   FetchOptions, DeployModifiers, getChangeData, isObjectType, isInstanceElement, ElemID, isSaltoElementError,
+  setPartialFetchData,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { filter } from '@salto-io/adapter-utils'
 import { createElements } from './transformer'
-import { DeployResult, isCustomRecordType } from './types'
-import { INTEGRATION } from './constants'
+import { DeployResult, TYPES_TO_SKIP, isCustomRecordType } from './types'
+import { BUNDLE } from './constants'
 import convertListsToMaps from './filters/convert_lists_to_maps'
 import replaceElementReferences from './filters/element_references'
 import parseReportTypes from './filters/parse_report_types'
@@ -81,7 +81,6 @@ import { getDataElements } from './data_elements/data_elements'
 import { getStandardTypesNames } from './autogen/types'
 import { getConfigTypes, toConfigElements } from './suiteapp_config_elements'
 import { ConfigRecord } from './client/suiteapp_client/types'
-import { bundleType } from './types/bundle_type'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -168,8 +167,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly additionalDependencies: AdditionalDependencies
   private readonly userConfig: NetsuiteConfig
   private getElemIdFunc?: ElemIdGetter
-  private readonly fetchInclude?: QueryParams
-  private readonly fetchExclude?: QueryParams
+  private readonly fetchInclude: QueryParams
+  private readonly fetchExclude: QueryParams
   private readonly lockedElements?: QueryParams
   private readonly fetchTarget?: NetsuiteQueryParameters
   private readonly withPartialDeletion?: boolean
@@ -187,12 +186,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     client,
     elementsSource,
     filtersCreators = defaultFilters,
-    typesToSkip = [
-      INTEGRATION, // The imported xml has no values, especially no SCRIPT_ID, for standard
-      // integrations and contains only SCRIPT_ID attribute for custom ones.
-      // There is no value in fetching them as they contain no data and are not deployable.
-      // If we decide to fetch them we should set the SCRIPT_ID by the xml's filename upon fetch.
-    ],
+    typesToSkip = TYPES_TO_SKIP,
     filePathRegexSkipList = [],
     getElemIdFunc,
     config,
@@ -204,9 +198,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
       .concat(makeArray(config.filePathRegexSkipList))
     this.userConfig = config
     this.getElemIdFunc = getElemIdFunc
-    this.fetchInclude = config.fetch?.include
-    this.fetchExclude = config.fetch?.exclude
-    this.lockedElements = config.fetch?.lockedElementsToExclude
+    this.fetchInclude = config.fetch.include
+    this.fetchExclude = config.fetch.exclude
+    this.lockedElements = config.fetch.lockedElementsToExclude
     this.fetchTarget = getFixedTargetFetch(config.fetchTarget)
     this.withPartialDeletion = config.withPartialDeletion
     this.skipList = config.skipList // old version
@@ -284,9 +278,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
     )
     progressReporter.reportProgress({ message: 'Fetching file cabinet items' })
 
-    const bundleTypeName = bundleType().type.elemID.typeName
     const bundlesCustomInfo = (await this.client.getInstalledBundles())
-      .map(bundle => ({ typeName: bundleTypeName, values: { ...bundle, id: bundle.id.toString() } }))
+      .map(bundle => ({ typeName: BUNDLE, values: { ...bundle, id: bundle.id.toString() } }))
     // TODO: remove this log when SALTO-2602 is open for all customers
     log.debug('The following bundle ids are missing in the bundle record: %o', bundlesCustomInfo.map(bundle => bundle.values.id))
     const {
@@ -307,7 +300,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const elementsToCreate = [
       ...customObjects,
       ...fileCabinetContent,
-      ...(this.userConfig?.fetch?.addBundles ? bundlesCustomInfo : []),
+      ...(this.userConfig.fetch.addBundles ? bundlesCustomInfo : []),
     ]
     const baseElements = await createElements(
       elementsToCreate,
@@ -337,7 +330,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     // we calculate deleted elements only in partial-fetch mode
     const { deletedElements, errors: deletedElementErrors }: FetchDeletionResult = (
-      isPartial && this.withPartialDeletion === true) ? await getDeletedElements({
+      isPartial && this.withPartialDeletion !== false) ? await getDeletedElements({
         client: this.client,
         elementsSource: this.elementsSource,
         fetchQuery,
@@ -402,9 +395,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
       filePaths: this.filePathRegexSkipList.map(reg => `.*${reg}.*`),
     }))
     const fetchQuery = [
-      this.fetchInclude && buildNetsuiteQuery(this.fetchInclude),
+      buildNetsuiteQuery(this.fetchInclude),
       this.fetchTarget && buildNetsuiteQuery(convertToQueryParams(this.fetchTarget)),
-      this.fetchExclude && notQuery(buildNetsuiteQuery(this.fetchExclude)),
+      notQuery(buildNetsuiteQuery(this.fetchExclude)),
       this.lockedElements && notQuery(buildNetsuiteQuery(this.lockedElements)),
       this.skipList && notQuery(buildNetsuiteQuery(convertToQueryParams(this.skipList))),
       notQuery(deprecatedSkipList),
@@ -424,10 +417,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     const updatedConfig = getConfigFromConfigChanges(failures, this.userConfig)
 
+    const partialFetchData = setPartialFetchData(isPartial, deletedElements)
+
     if (_.isUndefined(updatedConfig)) {
-      return { elements, deletedElements, isPartial, errors: deletedElementErrors }
+      return { elements, errors: deletedElementErrors, partialFetchData }
     }
-    return { elements, deletedElements, updatedConfig, isPartial, errors: deletedElementErrors }
+    return { elements, updatedConfig, errors: deletedElementErrors, partialFetchData }
   }
 
   private async runSuiteAppOperations(

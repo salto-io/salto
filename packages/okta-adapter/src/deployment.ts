@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import Joi from 'joi'
-import { Change, ChangeDataType, DeployResult, getChangeData, InstanceElement, isAdditionChange, isModificationChange, isEqualValues, ModificationChange, AdditionChange, ElemID } from '@salto-io/adapter-api'
+import { Change, ChangeDataType, DeployResult, getChangeData, InstanceElement, isAdditionChange, isModificationChange, isEqualValues, ModificationChange, AdditionChange, ElemID, createSaltoElementError, isSaltoError, SaltoError } from '@salto-io/adapter-api'
 import { config as configUtils, deployment, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -65,16 +65,16 @@ export const getOktaError = (elemID: ElemID, error: Error): Error => {
     return error
   }
   const { status, data } = error.response
-  const baseErrorMessage = `Deployment of ${elemID.typeName} instance ${elemID.name} failed with status code ${status}:`
+  const baseErrorMessage = `(status code: ${status})`
   if (isOktaError(data)) {
     const { errorSummary, errorCauses } = data
     const oktaErrorMessage = _.isEmpty(errorCauses) ? errorSummary : `${errorSummary}. More info: ${errorCauses.map(c => c.errorSummary).join(',')}`
-    log.error(`${baseErrorMessage} ${oktaErrorMessage}`)
-    error.message = `${baseErrorMessage} ${oktaErrorMessage}`
+    log.error(`Deployment of ${elemID.getFullName()} failed. ${oktaErrorMessage} ${baseErrorMessage}`)
+    error.message = `${oktaErrorMessage} ${baseErrorMessage}`
     return error
   }
-  log.error(`${baseErrorMessage} ${error.message}`)
-  error.message = `${baseErrorMessage} ${error.message}`
+  log.error(`Deployment of ${elemID.getFullName()} failed. ${error.message} ${baseErrorMessage}`)
+  error.message = `${error.message} ${baseErrorMessage}`
   return error
 }
 
@@ -293,25 +293,22 @@ export const deployEdges = async (
   })
 }
 
-// TODO SALTO-2742 move to adapter components
 export const deployChanges = async <T extends Change<ChangeDataType>>(
   changes: T[],
-  deployChangeFunc: (change: T) => Promise<void | T[]>
+  deployChangeFunc: (change: T) => Promise<void | T>
 ): Promise<DeployResult> => {
-  const result = await Promise.all(
-    changes.map(async change => {
-      try {
-        const res = await deployChangeFunc(change)
-        return res !== undefined ? res : change
-      } catch (err) {
-        if (!_.isError(err)) {
-          throw err
-        }
-        return err
-      }
-    })
-  )
-
-  const [errors, appliedChanges] = _.partition(result.flat(), _.isError)
+  const result = await Promise.all(changes.map(async (change): Promise<T | SaltoError> => {
+    try {
+      const res = await deployChangeFunc(change)
+      return res !== undefined ? res : change
+    } catch (err) {
+      return createSaltoElementError({
+        message: err.message,
+        severity: 'Error',
+        elemID: getChangeData(change).elemID,
+      })
+    }
+  }))
+  const [errors, appliedChanges] = _.partition(result, isSaltoError)
   return { errors, appliedChanges }
 }

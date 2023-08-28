@@ -13,16 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, getChangeData, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { ElemID, getChangeData, InstanceElement, ObjectType, toChange, Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { deployment, filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
+import _ from 'lodash'
+import { walkOnValue } from '@salto-io/adapter-utils'
 import JiraClient from '../../../src/client/client'
 import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import workflowFilter, { INITIAL_VALIDATOR } from '../../../src/filters/workflow/workflow_deploy_filter'
 import { getFilterParams, mockClient } from '../../utils'
 import { WITH_PERMISSION_VALIDATORS } from './workflow_values'
+import { encodeCloudFields, SCRIPT_RUNNER_POST_FUNCTION_TYPE } from '../../../src/filters/script_runner/workflow/workflow_cloud'
 
 
 jest.mock('@salto-io/adapter-components', () => {
@@ -85,6 +88,7 @@ describe('workflowDeployFilter', () => {
               name: 'name',
               transitions: [
                 {
+                  name: 'tran1',
                   type: 'initial',
                   rules: {
                     validators: [
@@ -125,8 +129,9 @@ describe('workflowDeployFilter', () => {
           workflowType,
           {
             name: 'name',
-            transitions: [
-              {
+            transitions: {
+              'tran1__From__none__Initial@fffsff': {
+                name: 'tran1',
                 type: 'initial',
                 rules: {
                   conditions: {
@@ -144,7 +149,7 @@ describe('workflowDeployFilter', () => {
                   },
                 },
               },
-            ],
+            },
           },
         ),
       })
@@ -160,6 +165,7 @@ describe('workflowDeployFilter', () => {
               name: 'name',
               transitions: [
                 {
+                  name: 'tran1',
                   type: 'initial',
                   rules: {
                     conditions: {
@@ -209,7 +215,7 @@ describe('workflowDeployFilter', () => {
           workflowType,
           {
             name: 'name',
-            transitions: [],
+            transitions: {},
           }
         ),
       })
@@ -241,11 +247,12 @@ describe('workflowDeployFilter', () => {
           workflowType,
           {
             name: 'name',
-            transitions: [
-              {
+            transitions: {
+              'tran1__From__none__Initial@fffsff': {
+                name: 'tran1',
                 type: 'initial',
               },
-            ],
+            },
           }
         ),
       })
@@ -261,6 +268,7 @@ describe('workflowDeployFilter', () => {
               name: 'name',
               transitions: [
                 {
+                  name: 'tran1',
                   type: 'initial',
                 },
               ],
@@ -298,12 +306,12 @@ describe('workflowDeployFilter', () => {
             workflowType,
             {
               name: 'workflowName',
-              transitions: [
-                {
+              transitions: {
+                'name__From__none__Initial@fffsff': {
                   name: 'name',
                   type: 'initial',
                 },
-              ],
+              },
             },
           ),
         })
@@ -327,12 +335,12 @@ describe('workflowDeployFilter', () => {
             workflowType,
             {
               name: 'workflowName',
-              transitions: [
-                {
+              transitions: {
+                'name__From__none__Initial@fffsff': {
                   name: 'name',
                   type: 'initial',
                 },
-              ],
+              },
             },
           ),
         })
@@ -356,12 +364,12 @@ describe('workflowDeployFilter', () => {
             workflowType,
             {
               name: 'workflowName',
-              transitions: [
-                {
+              transitions: {
+                'name__From__none__Initial@fffsff': {
                   name: 'name',
                   type: 'initial',
                 },
-              ],
+              },
             },
           ),
         })
@@ -389,12 +397,12 @@ describe('workflowDeployFilter', () => {
             workflowType,
             {
               name: 'workflowName',
-              transitions: [
-                {
+              transitions: {
+                'name__From__none__Initial@fffsff': {
                   name: 'name',
                   type: 'initial',
                 },
-              ],
+              },
             },
           ),
         })
@@ -413,6 +421,288 @@ describe('workflowDeployFilter', () => {
         const { deployResult } = await filter.deploy([change])
 
         expect(deployResult.errors).toHaveLength(1)
+      })
+      it('should add transitionIds to the workflow', async () => {
+        const INITIAL_KEY = 'name__From__none__Initial@fffsff'
+        const change = toChange({
+          after: new InstanceElement(
+            'instance',
+            workflowType,
+            {
+              name: 'workflowName',
+              transitions: {
+                [INITIAL_KEY]: {
+                  name: 'name',
+                  type: 'initial',
+                },
+              },
+            },
+          ),
+        })
+        mockConnection.get.mockResolvedValueOnce({
+          status: 200,
+          data: {
+            values: [
+              {
+                transitions: [
+                  {
+                    name: 'name',
+                    id: '1',
+                    type: 'initial',
+                  },
+                ],
+              },
+            ],
+          },
+        })
+        await filter.deploy([change])
+        expect(getChangeData(change).value.transitions[INITIAL_KEY].id).toEqual('1')
+      })
+    })
+
+    describe('transitionIds references', () => {
+      const INITIAL_KEY = 'name__From__none__Initial@fffsff'
+      const TRANSITION_KEY_2 = 'name2__From__any_status__Global@fffssff'
+      const scriptRunnerWithRef = (id: string): Value => {
+        const result = {
+          type: SCRIPT_RUNNER_POST_FUNCTION_TYPE,
+          configuration: {
+            scriptRunner: {
+              transitionId: id,
+            },
+          },
+        }
+        walkOnValue({ elemId: new ElemID(JIRA, 'none'),
+          value: result,
+          func: encodeCloudFields })
+        return result
+      }
+
+      let instance: InstanceElement
+      let filterSR: filterUtils.FilterWith<'onFetch' | 'deploy'>
+      let clientSR: JiraClient
+      let mockConnectionSR: MockInterface<clientUtils.APIConnection>
+      beforeEach(async () => {
+        const { client: cli, paginator, connection } = mockClient()
+        clientSR = cli
+        mockConnectionSR = connection
+        const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+        config.fetch.enableScriptRunnerAddon = true
+        filterSR = workflowFilter(getFilterParams({
+          client: clientSR,
+          paginator,
+          config,
+        })) as typeof filter
+        instance = new InstanceElement(
+          'instance',
+          workflowType,
+          {
+            name: 'workflowName',
+            transitions: {
+              [INITIAL_KEY]: {
+                name: 'name',
+                type: 'initial',
+                rules: {
+                  postFunctions: [
+                    scriptRunnerWithRef('1'),
+                  ],
+                },
+              },
+              [TRANSITION_KEY_2]: {
+                name: 'name2',
+                type: 'global',
+                to: [1],
+                rules: {
+                  postFunctions: [
+                    scriptRunnerWithRef('11'),
+                  ],
+                },
+              },
+            },
+          },
+        )
+      })
+      it('should deploy once if the transitionId is expected', async () => {
+        mockConnectionSR.get.mockResolvedValueOnce({
+          status: 200,
+          data: {
+            values: [
+              {
+                transitions: [
+                  {
+                    name: 'name',
+                    id: '1',
+                    type: 'initial',
+                  },
+                  {
+                    name: 'name2',
+                    id: '11',
+                    type: 'global',
+                    to: [1],
+                  },
+                ],
+              },
+            ],
+          },
+        })
+        await filterSR.deploy([toChange({ after: instance })])
+        expect(deployChangeMock).toHaveBeenCalledOnce()
+        // two calls, one for transitions, one for step deployment
+        expect(mockConnectionSR.get).toHaveBeenCalledTimes(2)
+      })
+      it('should deploy twice if the transitionId was not expected', async () => {
+        mockConnectionSR.get.mockResolvedValue({
+          status: 200,
+          data: {
+            values: [
+              {
+                transitions: [
+                  {
+                    name: 'name',
+                    id: '11',
+                    type: 'initial',
+                  },
+                  {
+                    name: 'name2',
+                    id: '1',
+                    type: 'global',
+                    to: [1],
+                  },
+                ],
+              },
+            ],
+          },
+        })
+        await filterSR.deploy([toChange({ after: instance })])
+        expect(deployChangeMock).toHaveBeenCalledTimes(2)
+        expect(deployChangeMock).toHaveBeenCalledWith({
+          change: toChange({
+            after: new InstanceElement(
+              'instance',
+              workflowType,
+              {
+                name: 'workflowName',
+                transitions: [
+                  {
+                    name: 'name',
+                    type: 'initial',
+                    rules: {
+                      postFunctions: [
+                        scriptRunnerWithRef('1'),
+                      ],
+                    },
+                  },
+                  {
+                    name: 'name2',
+                    type: 'global',
+                    to: [1],
+                    rules: {
+                      postFunctions: [
+                        scriptRunnerWithRef('11'),
+                      ],
+                    },
+                  },
+                ],
+              },
+            ),
+          }),
+          client: clientSR,
+          endpointDetails: getDefaultConfig({ isDataCenter: false })
+            .apiDefinitions.types.Workflow.deployRequests,
+          fieldsToIgnore: expect.toBeFunction(),
+        })
+        expect(deployChangeMock).toHaveBeenCalledWith({
+          change: toChange({
+            after: new InstanceElement(
+              'instance',
+              workflowType,
+              {
+                name: 'workflowName',
+                transitions: [
+                  {
+                    name: 'name',
+                    type: 'initial',
+                    rules: {
+                      postFunctions: [
+                        scriptRunnerWithRef('11'),
+                      ],
+                    },
+                  },
+                  {
+                    name: 'name2',
+                    type: 'global',
+                    to: [1],
+                    rules: {
+                      postFunctions: [
+                        scriptRunnerWithRef('1'),
+                      ],
+                    },
+                  },
+                ],
+              },
+            ),
+          }),
+          client: clientSR,
+          endpointDetails: getDefaultConfig({ isDataCenter: false })
+            .apiDefinitions.types.Workflow.deployRequests,
+          fieldsToIgnore: expect.toBeFunction(),
+        })
+        // three calls, two for transitions, one for step deployment
+        expect(mockConnectionSR.get).toHaveBeenCalledTimes(3)
+      })
+      it('should throw if two deployments are not enough', async () => {
+        mockConnectionSR.get.mockResolvedValueOnce({
+          status: 200,
+          data: {
+            values: [
+              {
+                transitions: [
+                  {
+                    name: 'name',
+                    id: '11',
+                    type: 'initial',
+                  },
+                  {
+                    name: 'name2',
+                    id: '1',
+                    type: 'global',
+                    to: [1],
+                  },
+                ],
+              },
+            ],
+          },
+        })
+        mockConnectionSR.get.mockResolvedValueOnce({
+          status: 200,
+          data: {
+            values: [
+              {
+                transitions: [
+                  {
+                    name: 'name',
+                    id: '21',
+                    type: 'initial',
+                  },
+                  {
+                    name: 'name2',
+                    id: '1',
+                    type: 'global',
+                    to: [1],
+                  },
+                ],
+              },
+            ],
+          },
+        })
+        const { deployResult } = await filterSR.deploy([toChange({ after: instance })])
+        expect(deployResult.errors).toHaveLength(1)
+        expect(deployResult.errors[0].message).toEqual(
+          'Error: Failed to deploy workflow, transition ids changed'
+        )
+        expect(deployChangeMock).toHaveBeenCalledTimes(2)
+        // two calls for transitions
+        expect(mockConnectionSR.get).toHaveBeenCalledTimes(2)
       })
     })
 
@@ -433,9 +723,7 @@ describe('workflowDeployFilter', () => {
         ),
       })
 
-
       const { client: cli, paginator, connection } = mockClient(true)
-
       filter = workflowFilter(getFilterParams({
         client: cli,
         paginator,
@@ -447,6 +735,7 @@ describe('workflowDeployFilter', () => {
     })
     describe('workflow diagrams', () => {
       let instance: InstanceElement
+      const TRANSITION_KEY_3 = 'hey__From__Open__Directed@fffsff'
       beforeEach(() => {
         instance = new InstanceElement(
           'instance',
@@ -507,13 +796,13 @@ describe('workflowDeployFilter', () => {
               x: -15.85,
               y: 109.40,
             },
-            transitions: [
-              {
+            transitions: {
+              'Building__From__any_status__Global@fffssff': {
                 name: 'Building',
                 to: '400',
                 type: 'global',
               },
-              {
+              'Create__From__none__Initial@fffsff': {
                 name: 'Create',
                 to: '1',
                 type: 'initial',
@@ -524,7 +813,7 @@ describe('workflowDeployFilter', () => {
                   },
                 ],
               },
-              {
+              [TRANSITION_KEY_3]: {
                 name: 'hey',
                 to: '5',
                 type: 'directed',
@@ -536,7 +825,7 @@ describe('workflowDeployFilter', () => {
                   },
                 ],
               },
-              {
+              'super__From__the_best_name__Directed@fffsssff': {
                 name: 'super',
                 from: [
                   {
@@ -548,7 +837,7 @@ describe('workflowDeployFilter', () => {
                 to: '400',
                 type: 'directed',
               },
-              {
+              'yey__From__Resolved__Directed@fffsff': {
                 name: 'yey',
                 from: [
                   {
@@ -560,7 +849,7 @@ describe('workflowDeployFilter', () => {
                 to: '10007',
                 type: 'directed',
               },
-              {
+              'with_from_a_string__From__Resolved__Directed@sssfffssff': {
                 name: 'with from as string',
                 from: [
                   '5',
@@ -568,18 +857,33 @@ describe('workflowDeployFilter', () => {
                 to: '10007',
                 type: 'directed',
               },
-              {
+              'looped__From__any_status__Circular@fffssff': {
                 name: 'looped',
                 from: [],
                 to: '',
                 type: 'global',
               },
-            ],
+            },
           }
         )
         mockConnection.post.mockResolvedValue({
           status: 200,
           data: {
+          },
+        })
+        mockConnection.get.mockResolvedValueOnce({
+          status: 200,
+          data: {
+            values: [
+              {
+                transitions: [
+                  {
+                    name: 'name',
+                    id: '1',
+                  },
+                ],
+              },
+            ],
           },
         })
         mockConnection.get.mockResolvedValue({
@@ -793,7 +1097,7 @@ describe('workflowDeployFilter', () => {
           responseType: undefined },)
       })
       it('should log error when transition from id is undefined', async () => {
-        instance.value.transitions[2].from[0].id = undefined
+        instance.value.transitions[TRANSITION_KEY_3].from[0].id = undefined
         await filter.deploy([toChange(
           { after: instance }
         )])
@@ -819,7 +1123,7 @@ describe('workflowDeployFilter', () => {
         expect(logErrorSpy).toHaveBeenCalledWith('Fail to deploy Workflow workflowName diagram with the error: Fail to deploy Workflow workflowName Status The best name Diagram values')
       })
       it('should work ok with partial transition from values', async () => {
-        instance.value.transitions[2].from[0].targetAngle = undefined
+        instance.value.transitions[TRANSITION_KEY_3].from[0].targetAngle = undefined
         await filter.deploy([toChange(
           { after: instance }
         )])

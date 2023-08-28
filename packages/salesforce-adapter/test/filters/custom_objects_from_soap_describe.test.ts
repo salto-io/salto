@@ -213,6 +213,7 @@ describe('Custom Objects from describe filter', () => {
         metadataObjects: [
           CUSTOM_OBJECT, ...(isMetadataType ? [properties.name] : []),
         ].map(xmlName => ({ xmlName })),
+        organizationNamespace: '',
       })
       connection.metadata.list.mockImplementation(async query => {
         const { type } = collections.array.makeArray(query)[0]

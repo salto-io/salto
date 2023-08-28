@@ -46,12 +46,56 @@ import {
 const { awu } = collections.asynciterable
 const log = logger(module)
 
+// Of the types enumerated in https://help.salesforce.com/s/articleView?id=sf.tracking_field_history.htm&type=5, only
+// the types mentioned as having an object-level checkbox in
+// https://help.salesforce.com/s/articleView?id=sf.tracking_field_history_for_standard_objects.htm&type=5 have an
+// object-level enable. For other types, we should assume tracking is supported and enabled.
+const TYPES_WITH_NO_OBJECT_LEVEL_ENABLE_HISTORY = [
+  'ActiveScratchOrg', // This type does not appear in the SF docs, but we saw it with fields where trackHistory=true
+  'Article',
+  'Asset',
+  'Campaign',
+  'Case',
+  'ContentVersion', // This type does not appear in the SF docs, but it supports history tracking in the UI and API.
+  'Contract',
+  'ContractLineItem',
+  'Crisis',
+  'Employee',
+  'EmployeeCrisisAssessment',
+  'Entitlement',
+  'Event',
+  'Individual',
+  'InternalOrganizationUnit',
+  'Knowledge',
+  'LiveChatTranscript', // This type does not appear in the SF docs, but we saw it with fields where trackHistory=true
+  'NamespaceRegistry', // This type does not appear in the SF docs, but we saw it with fields where trackHistory=true
+  'Order',
+  'OrderItem', // API name of 'Order Product'
+  'PartnerMarketingBudget', // This type does not appear in the SF docs, but we saw it with fields where trackHistory=true
+  'PartnerFundAllocation', // This type does not appear in the SF docs, but we saw it with fields where trackHistory=true
+  'Pricebook2', // This type does not appear in the SF docs, but we saw it with fields where trackHistory=true
+  'PricebookEntry',
+  'Product',
+  'Product2', // This type does not appear in the SF docs, but we saw it with fields where trackHistory=true
+  'Quote',
+  'QuoteLineItem',
+  'ScratchOrgInfo', // This type does not appear in the SF docs, but we saw it with fields where trackHistory=true
+  'ServiceAppointment',
+  'ServiceContract',
+  'ServiceResource', // This type does not appear in the SF docs, but we saw it with fields where trackHistory=true
+  'SignupRequest', // This type does not appear in the SF docs, but we saw it with fields where trackHistory=true
+  'Solution',
+  'Task',
+  'WorkOrder',
+  'WorkOrderLineItem',
+]
 
 type TrackedFieldsDefinition = {
   objectLevelEnable: string
   recordTypeEnable: string
   fieldLevelEnable: string
   aggregate: string
+  alwaysEnabledObjectTypes: Set<string>
 }
 
 const trackedFieldsDefinitions: TrackedFieldsDefinition[] = [
@@ -60,17 +104,20 @@ const trackedFieldsDefinitions: TrackedFieldsDefinition[] = [
     recordTypeEnable: RECORD_TYPE_HISTORY_TRACKING_ENABLED,
     fieldLevelEnable: FIELD_ANNOTATIONS.TRACK_HISTORY,
     aggregate: HISTORY_TRACKED_FIELDS,
+    alwaysEnabledObjectTypes: new Set(TYPES_WITH_NO_OBJECT_LEVEL_ENABLE_HISTORY),
   },
   {
     objectLevelEnable: OBJECT_FEED_HISTORY_TRACKING_ENABLED,
     recordTypeEnable: RECORD_TYPE_FEED_HISTORY_TRACKING_ENABLED,
     fieldLevelEnable: FIELD_ANNOTATIONS.TRACK_FEED_HISTORY,
     aggregate: FEED_HISTORY_TRACKED_FIELDS,
+    alwaysEnabledObjectTypes: new Set(),
   },
 ]
 
 const isHistoryTrackingEnabled = (type: ObjectType, trackingDef: TrackedFieldsDefinition): boolean => (
   type.annotations[trackingDef.objectLevelEnable] === true
+  || trackingDef.alwaysEnabledObjectTypes.has(type.elemID.typeName)
 )
 
 const trackedFields = (type: ObjectType | undefined, trackingDef: TrackedFieldsDefinition): string[] => (
@@ -94,6 +141,7 @@ const centralizeHistoryTrackingAnnotations = (customObject: ObjectType, tracking
   )
   const isTrackingSupported = (obj: ObjectType): boolean => (
     obj.annotations[trackingDef.objectLevelEnable] !== undefined
+    && !trackingDef.alwaysEnabledObjectTypes.has(obj.elemID.typeName)
   )
 
   if (isHistoryTrackingEnabled(customObject, trackingDef)) {
@@ -102,9 +150,7 @@ const centralizeHistoryTrackingAnnotations = (customObject: ObjectType, tracking
       field => new ReferenceExpression(field.elemID),
     )
   } else {
-    // There are standard types where tracking is supported but the object-level annotation is missing. We want to have
-    // a clear idea of what types those are and what they look like.
-    // cf. SALTO-4309
+    // After the resolution of SALTO-4309, the following should not happen. Let's make sure, though...
     if (customObject.annotations[trackingDef.recordTypeEnable] === true) {
       log.debug('In object type %s, %s is %s but %s is true. Treating as tracking disabled.',
         customObject.elemID.getFullName(),

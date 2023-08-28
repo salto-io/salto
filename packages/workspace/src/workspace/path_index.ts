@@ -18,7 +18,6 @@ import { collections, serialize as lowerdashSerialize, values } from '@salto-io/
 import {
   Element,
   ElemID,
-  Field,
   InstanceElement,
   isInstanceElement,
   isObjectType,
@@ -31,6 +30,7 @@ import { RemoteMap, RemoteMapEntry } from './remote_map'
 
 const { awu } = collections.asynciterable
 const { getSerializedStream } = lowerdashSerialize
+const { makeArray } = collections.array
 
 const log = logger(module)
 
@@ -43,96 +43,98 @@ export type PathIndex = RemoteMap<Path[]>
 const getValuePathHints = (fragments: Fragment<Value>[], elemID: ElemID): PathHint[] => {
   // We only have 3 cases to handle: Object type (which can be split among files)
   // or a single list/primitive value.
+  if (fragments.length === 0) {
+    // No fragments with this ID, so no path hints needed
+    return []
+  }
+  const valueTopLevelKey = [{
+    key: elemID.getFullName(),
+    value: makeArray(fragments.map(f => f.path)),
+  }]
   if (fragments.length === 1) {
-    return [{
-      key: elemID.getFullName(),
-      value: [fragments[0].path],
-    }]
+    return valueTopLevelKey
   }
   if (_.every(fragments, f => _.isPlainObject(f.value))) {
     const allKeys = _.uniq(fragments.flatMap(f => Object.keys(f.value)))
-    return allKeys.flatMap(key => getValuePathHints(
+    return valueTopLevelKey.concat(allKeys.flatMap(key => getValuePathHints(
       fragments
         .filter(f => values.isDefined(f.value[key]))
         .map(f => ({ value: f.value[key], path: f.path })),
       elemID.createNestedID(key)
-    ))
+    )))
   }
   // This will only be called if we have problematic input - different value types, or a list which
   // is split between different fragments. In each case, a path hint makes no sense.
+  log.warn('getValuePathHints called with invalid input, values: %o', fragments)
   return []
 }
 
 const getAnnotationTypesPathHints = (
   fragments: Fragment<Element>[],
-): PathHint[] => {
-  const fragmentsWithNonEmptyAnnoTypes = fragments.filter(
-    f => !_.isEmpty(f.value.annotationRefTypes)
+): PathHint[] => (
+  getValuePathHints(
+    fragments
+      .filter(fragment => !_.isEmpty(fragment.value.annotationRefTypes))
+      .map(fragment => ({ value: fragment.value.annotationRefTypes, path: fragment.path })),
+    fragments[0].value.elemID.createNestedID('annotation')
   )
-
-  if (fragmentsWithNonEmptyAnnoTypes.length === 1) {
-    return [{
-      key: fragmentsWithNonEmptyAnnoTypes[0].value.elemID
-        .createNestedID('annotation').getFullName(),
-      value: [fragmentsWithNonEmptyAnnoTypes[0].path],
-    }]
-  }
-  return fragmentsWithNonEmptyAnnoTypes
-    .flatMap(f => Object.keys(f.value.annotationRefTypes).map(annoKey => ({
-      key: f.value.elemID.createNestedID('annotation', annoKey).getFullName(),
-      value: [f.path],
-    })))
-}
+)
 
 const getAnnotationPathHints = (
   fragments: Fragment<Element>[],
-): PathHint[] => {
-  const elem = fragments[0].value
-  return getValuePathHints(
-    fragments.map(f => ({ value: f.value.annotations, path: f.path })),
-    isInstanceElement(elem) ? elem.elemID : elem.elemID.createNestedID('attr'),
+): PathHint[] => (
+  getValuePathHints(
+    fragments
+      .filter(f => !_.isEmpty(f.value.annotations))
+      .map(f => ({ value: f.value.annotations, path: f.path })),
+    fragments[0].value.elemID.createNestedID('attr'),
   )
-}
-
-const getFieldPathHints = (
-  fragments: Fragment<Field>[],
-): PathHint[] => {
-  if (fragments.length === 0) {
-    return []
-  }
-  if (fragments.length === 1) {
-    return [{
-      key: fragments[0].value.elemID.getFullName(),
-      value: [fragments[0].path],
-    }]
-  }
-  return [...getValuePathHints(
-    fragments.map(f => ({ value: f.value.annotations, path: f.path })),
-    fragments[0].value.elemID
-  ),
-  {
-    key: fragments[0].value.elemID.getFullName(),
-    value: fragments.map(f => f.path),
-  },
-  ]
-}
+)
 
 const getFieldsPathHints = (
   fragments: Fragment<ObjectType>[],
+): PathHint[] => (
+  getValuePathHints(
+    fragments
+      .filter(f => !_.isEmpty(f.value.fields))
+      .map(f => ({ value: _.mapValues(f.value.fields, field => field.annotations), path: f.path })),
+    fragments[0].value.elemID.createNestedID('field'),
+  )
+)
+
+const isObjectTypeFragments = (fragments: Fragment<Element>[]): fragments is Fragment<ObjectType>[] => (
+  fragments.every(fragment => isObjectType(fragment.value))
+)
+
+const getTypePathHints = (
+  elementFragments: Fragment<Element>[]
 ): PathHint[] => {
-  const fragmentsWithFields = fragments.filter(f => !_.isEmpty(f.value.fields))
-  if (fragmentsWithFields.length === 1) {
-    return [{
-      key: fragmentsWithFields[0].value.elemID.createNestedID('field').getFullName(),
-      value: [fragmentsWithFields[0].path],
-    }]
-  }
-  const fieldNames = _.uniq(fragmentsWithFields.flatMap(f => Object.keys(f.value.fields)))
-  return fieldNames.flatMap(fieldName => getFieldPathHints(
-    fragments.filter(f => values.isDefined(f.value.fields[fieldName]))
-      .map(f => ({ value: f.value.fields[fieldName], path: f.path })),
-  ))
+  const annoTypesHints = getAnnotationTypesPathHints(elementFragments)
+  const annotationHints = getAnnotationPathHints(elementFragments)
+  const fieldHints = isObjectTypeFragments(elementFragments) ? getFieldsPathHints(elementFragments) : []
+  return [
+    ...annoTypesHints,
+    ...annotationHints,
+    ...fieldHints,
+    {
+      key: elementFragments[0].value.elemID.getFullName(),
+      value: elementFragments.map(f => f.path),
+    },
+  ]
 }
+
+const isInstanceElementFragments = (fragments: Fragment<Element>[]): fragments is Fragment<InstanceElement>[] => (
+  fragments.every(fragment => isInstanceElement(fragment.value))
+)
+
+const getInstancePathHints = (
+  elementFragments: Fragment<InstanceElement>[]
+): PathHint[] =>
+  // In instances the elemIds of values and attributes are not separated
+  getValuePathHints(
+    elementFragments.map(f => ({ value: _.merge({}, f.value.value, f.value.annotations), path: f.path })),
+    elementFragments[0].value.elemID
+  )
 
 const getElementPathHints = (
   elementFragments: Fragment<Element>[]
@@ -146,27 +148,10 @@ const getElementPathHints = (
       value: [elementFragments[0].path],
     }]
   }
-  const annoTypesHints = getAnnotationTypesPathHints(elementFragments)
-  const annotationHints = getAnnotationPathHints(elementFragments)
-  const fieldHints = elementFragments.every(f => isObjectType(f.value))
-    ? getFieldsPathHints(elementFragments as Fragment<ObjectType>[])
-    : []
-  const valueHints = elementFragments.every(f => isInstanceElement(f.value))
-    ? getValuePathHints(
-      (elementFragments as Fragment<InstanceElement>[])
-        .map(f => ({ value: f.value.value, path: f.path })),
-      elementFragments[0].value.elemID
-    ) : []
-  return [
-    ...annoTypesHints,
-    ...annotationHints,
-    ...fieldHints,
-    ...valueHints,
-    {
-      key: elementFragments[0].value.elemID.getFullName(),
-      value: elementFragments.map(f => f.path),
-    },
-  ]
+  if (isInstanceElementFragments(elementFragments)) {
+    return getInstancePathHints(elementFragments)
+  }
+  return getTypePathHints(elementFragments)
 }
 
 export const getElementsPathHints = (unmergedElements: Element[]):
@@ -274,7 +259,8 @@ export const filterByPathHint = async (index: PathIndex, hint:Path, id: ElemID):
   const isHintMatch = idHints.some(idHint => _.isEqual(idHint, hint))
   if (!isHintMatch) {
     // This case will be removed, when we fix the .annotation and .field keys in the path index
-    if (idHints.length === 0 && (id.isEqual(new ElemID(id.adapter, id.typeName, 'annotation')) || id.isEqual(new ElemID(id.adapter, id.typeName, 'field')) || id.isEqual(new ElemID(id.adapter, id.typeName, 'attr')))) {
+    if (idHints.length === 0
+        && ((id.isIDNestedInType() && id.nestingLevel === 0) || (id.isAnnotationTypeID() && id.nestingLevel === 1))) {
       return FILTER_FUNC_NEXT_STEP.RECURSE
     }
     return FILTER_FUNC_NEXT_STEP.EXCLUDE

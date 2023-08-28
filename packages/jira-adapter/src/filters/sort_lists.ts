@@ -17,7 +17,7 @@ import { InstanceElement, isInstanceElement, Value } from '@salto-io/adapter-api
 import { isResolvedReferenceExpression, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { AUTOMATION_TYPE, DASHBOARD_TYPE, NOTIFICATION_EVENT_TYPE_NAME, NOTIFICATION_SCHEME_TYPE_NAME, PROJECT_ROLE_TYPE, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_STATUS_TYPE_NAME, WORKFLOW_TRANSITION_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../constants'
+import { AUTOMATION_TYPE, DASHBOARD_TYPE, ISSUE_LAYOUT_TYPE, NOTIFICATION_EVENT_TYPE_NAME, NOTIFICATION_SCHEME_TYPE_NAME, PROJECT_ROLE_TYPE, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_STATUS_TYPE_NAME, WORKFLOW_TRANSITION_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
 
 const { awu } = collections.asynciterable
@@ -41,7 +41,6 @@ const VALUES_TO_SORT: Record<string, Record<string, string[]>> = {
     projects: ['projectId.elemID.name', 'projectTypeKey'],
   },
   [WORKFLOW_TYPE_NAME]: {
-    transitions: ['name'],
     statuses: ['id.elemID.name'],
   },
   [NOTIFICATION_EVENT_TYPE_NAME]: {
@@ -81,6 +80,9 @@ const VALUES_TO_SORT: Record<string, Record<string, string[]>> = {
   },
   [WORKFLOW_STATUS_TYPE_NAME]: {
     properties: ['key'],
+  },
+  [ISSUE_LAYOUT_TYPE]: {
+    owners: ['elemID.name'],
   },
 }
 

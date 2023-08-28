@@ -14,9 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, InstanceElement, ObjectType, BuiltinTypes, DeployResult, ReferenceExpression,
+import {
+  ElemID, InstanceElement, ObjectType, BuiltinTypes, DeployResult, ReferenceExpression,
   isRemovalChange, getChangeData, isInstanceElement, ChangeGroup, isModificationChange,
-  isAdditionChange, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, Change } from '@salto-io/adapter-api'
+  isAdditionChange, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, Change, toChange,
+} from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { BulkLoadOperation, BulkOptions, Record as SfRecord, Batch } from 'jsforce'
 import { EventEmitter } from 'events'
@@ -26,7 +28,13 @@ import * as constants from '../src/constants'
 import Connection from '../src/client/jsforce'
 import mockAdapter from './adapter'
 import { createCustomObjectType } from './utils'
-import { FIELD_ANNOTATIONS } from '../src/constants'
+import {
+  ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP, CUSTOM_OBJECT_ID_FIELD,
+  FIELD_ANNOTATIONS, OWNER_ID, SBAA_APPROVAL_CONDITION,
+  SBAA_APPROVAL_RULE,
+  SBAA_CONDITIONS_MET,
+} from '../src/constants'
+import { mockTypes } from './mock_elements'
 
 describe('Custom Object Instances CRUD', () => {
   let adapter: SalesforceAdapter
@@ -46,6 +54,15 @@ describe('Custom Object Instances CRUD', () => {
           [constants.FIELD_ANNOTATIONS.UPDATEABLE]: false,
           [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
           [constants.API_NAME]: 'Id',
+        },
+      },
+      [OWNER_ID]: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+          [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
+          [constants.API_NAME]: OWNER_ID,
         },
       },
       SaltoName: {
@@ -141,6 +158,7 @@ describe('Custom Object Instances CRUD', () => {
       type: 'Type',
     },
     Id: 'queryId',
+    [OWNER_ID]: 'ownerId',
     SaltoName: 'existingInstance',
     NumField: 1,
     Address: {
@@ -165,6 +183,7 @@ describe('Custom Object Instances CRUD', () => {
       type: 'Type',
     },
     Id: 'anotherQueryId',
+    [OWNER_ID]: 'anotherOwnerId',
     SaltoName: 'anotherExistingInstanceWithThing\'',
     NumField: null,
   }
@@ -238,6 +257,7 @@ describe('Custom Object Instances CRUD', () => {
                   defaultIdFields: ['SaltoName', 'NumField', 'Address', 'Name'],
                   overrides: [
                     { objectsRegex: 'TestType__c', idFields: ['Name'] },
+                    { objectsRegex: 'sbaa__ApprovalRule__c|sbaa__ApprovalCondition__c', idFields: ['Id'] },
                   ],
                 },
               },
@@ -435,7 +455,7 @@ describe('Custom Object Instances CRUD', () => {
 
           it('Should query according to instance values', () => {
             expect(mockQuery.mock.calls).toHaveLength(1)
-            expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix FROM Type WHERE SaltoName IN (\'existingInstance\',\'newInstanceWithRef\') AND NumField IN (1,2) AND City IN (\'Tel-Aviv\',null) AND Country IN (\'Israel\',null) AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (\'first\',null) AND LastName IN (\'last\',null) AND Salutation IN (\'mrs.\',null) AND MiddleName IN (null) AND Suffix IN (null)')
+            expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,OwnerId,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix FROM Type WHERE SaltoName IN (\'existingInstance\',\'newInstanceWithRef\') AND NumField IN (1,2) AND City IN (\'Tel-Aviv\',null) AND Country IN (\'Israel\',null) AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (\'first\',null) AND LastName IN (\'last\',null) AND Salutation IN (\'mrs.\',null) AND MiddleName IN (null) AND Suffix IN (null)')
           })
 
           it('Should call load operation twice - once with insert once with update', () => {
@@ -533,7 +553,7 @@ describe('Custom Object Instances CRUD', () => {
 
             it('Should query according to instance values', () => {
               expect(mockQuery.mock.calls).toHaveLength(1)
-              expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix FROM Type WHERE SaltoName IN (\'newInstanceWithRef\',\'anotherNewInstance\') AND NumField IN (2,3) AND City IN (null,\'Ashkelon\') AND Country IN (null,\'Israel\') AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (null) AND LastName IN (null) AND Salutation IN (null) AND MiddleName IN (null) AND Suffix IN (null)')
+              expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,OwnerId,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix FROM Type WHERE SaltoName IN (\'newInstanceWithRef\',\'anotherNewInstance\') AND NumField IN (2,3) AND City IN (null,\'Ashkelon\') AND Country IN (null,\'Israel\') AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (null) AND LastName IN (null) AND Salutation IN (null) AND MiddleName IN (null) AND Suffix IN (null)')
             })
 
             it('Should call load operation once with insert', () => {
@@ -684,7 +704,7 @@ describe('Custom Object Instances CRUD', () => {
 
           it('Should query according to instance values', () => {
             expect(mockQuery.mock.calls).toHaveLength(1)
-            expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix FROM Type WHERE SaltoName IN (\'existingInstance\',\'anotherExistingInstanceWithThing\\\'\') AND NumField IN (1,null) AND City IN (\'Tel-Aviv\',null) AND Country IN (\'Israel\',null) AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (\'first\',null) AND LastName IN (\'last\',null) AND Salutation IN (\'mrs.\',null) AND MiddleName IN (null) AND Suffix IN (null)')
+            expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,OwnerId,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix FROM Type WHERE SaltoName IN (\'existingInstance\',\'anotherExistingInstanceWithThing\\\'\') AND NumField IN (1,null) AND City IN (\'Tel-Aviv\',null) AND Country IN (\'Israel\',null) AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (\'first\',null) AND LastName IN (\'last\',null) AND Salutation IN (\'mrs.\',null) AND MiddleName IN (null) AND Suffix IN (null)')
           })
 
           it('Should call load operation once with update', () => {
@@ -693,7 +713,7 @@ describe('Custom Object Instances CRUD', () => {
             expect(updateCall).toBeDefined()
           })
 
-          it('Should have result with 2 applied changes, add 2 instances with insert Id', async () => {
+          it('Should have result with 2 applied changes, add 2 instances with insert Id and OwnerId', async () => {
             expect(result.errors).toHaveLength(0)
             expect(result.appliedChanges).toHaveLength(2)
 
@@ -707,6 +727,9 @@ describe('Custom Object Instances CRUD', () => {
             // Should add result Id
             expect(existingInstanceChangeData.value.Id).toBeDefined()
             expect(existingInstanceChangeData.value.Id).toEqual('queryId')
+            // Should add result OwnerId
+            expect(existingInstanceChangeData.value.Id).toBeDefined()
+            expect(existingInstanceChangeData.value[OWNER_ID]).toEqual('ownerId')
 
             // anotherExistingInstance appliedChange
             const anotherExistingInstanceChangeData = result.appliedChanges
@@ -720,6 +743,9 @@ describe('Custom Object Instances CRUD', () => {
             // Should add result Id
             expect(anotherExistingInstanceChangeData.value.Id).toBeDefined()
             expect(anotherExistingInstanceChangeData.value.Id).toEqual('anotherQueryId')
+            // Should add result OwnerId
+            expect(anotherExistingInstanceChangeData.value.Id).toBeDefined()
+            expect(anotherExistingInstanceChangeData.value[OWNER_ID]).toEqual('anotherOwnerId')
           })
         })
         describe('When called with a large number of new instances', () => {
@@ -793,7 +819,7 @@ describe('Custom Object Instances CRUD', () => {
         })
         it('Should query according to instance values', () => {
           expect(mockQuery.mock.calls).toHaveLength(1)
-          expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix FROM Type WHERE SaltoName IN (\'existingInstance\',\'newInstanceWithRef\',\'anotherExistingInstanceWithThing\\\'\',\'anotherNewInstance\') AND NumField IN (1,2,null,3) AND City IN (\'Tel-Aviv\',null,\'Ashkelon\') AND Country IN (\'Israel\',null) AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (\'first\',null) AND LastName IN (\'last\',null) AND Salutation IN (\'mrs.\',null) AND MiddleName IN (null) AND Suffix IN (null)')
+          expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,OwnerId,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix FROM Type WHERE SaltoName IN (\'existingInstance\',\'newInstanceWithRef\',\'anotherExistingInstanceWithThing\\\'\',\'anotherNewInstance\') AND NumField IN (1,2,null,3) AND City IN (\'Tel-Aviv\',null,\'Ashkelon\') AND Country IN (\'Israel\',null) AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (\'first\',null) AND LastName IN (\'last\',null) AND Salutation IN (\'mrs.\',null) AND MiddleName IN (null) AND Suffix IN (null)')
         })
 
         it('Should call load operation both with update and with insert', () => {
@@ -1153,6 +1179,173 @@ describe('Custom Object Instances CRUD', () => {
               message: expect.stringContaining('Custom Object Instances change group must have one action'),
             }),
           ]))
+        })
+      })
+    })
+
+    describe('when group is ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP', () => {
+      describe('when no Errors occur during the deploy', () => {
+        beforeEach(async () => {
+          const approvalRule = new InstanceElement(
+            'customApprovalRule',
+            mockTypes.ApprovalRule,
+            {
+              [SBAA_CONDITIONS_MET]: 'Custom',
+            },
+          )
+          const approvalCondition = new InstanceElement(
+            'customApprovalCondition',
+            mockTypes.ApprovalCondition,
+            {
+              [SBAA_APPROVAL_RULE]: new ReferenceExpression(approvalRule.elemID, approvalRule),
+            }
+          )
+          const changeGroup = {
+            groupID: ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+            changes: [approvalRule, approvalCondition].map(instance => toChange({ after: instance })),
+          }
+          result = await adapter.deploy({
+            changeGroup,
+          })
+        })
+        it('should deploy successfully', () => {
+          expect(result.errors).toBeEmpty()
+          expect(result.appliedChanges).toHaveLength(2)
+          const [approvalRule, approvalCondition] = result.appliedChanges.map(getChangeData).filter(isInstanceElement)
+          expect(approvalRule.value).toEqual({
+            [CUSTOM_OBJECT_ID_FIELD]: 'newId0',
+            [SBAA_CONDITIONS_MET]: 'Custom',
+          })
+          expect(approvalCondition.value).toEqual({
+            [CUSTOM_OBJECT_ID_FIELD]: 'newId0',
+            [SBAA_APPROVAL_RULE]: expect.objectContaining({ elemID: approvalRule.elemID }),
+          })
+
+          expect(connection.bulk.load).toHaveBeenCalledTimes(3)
+          expect(connection.bulk.load).toHaveBeenCalledWith(
+            SBAA_APPROVAL_RULE, 'insert', expect.anything(), [
+              { Id: undefined, [SBAA_CONDITIONS_MET]: 'All' },
+            ]
+          )
+          expect(connection.bulk.load).toHaveBeenCalledWith(
+            SBAA_APPROVAL_CONDITION, 'insert', expect.anything(), [
+              { Id: undefined, [SBAA_APPROVAL_RULE]: approvalRule.value[CUSTOM_OBJECT_ID_FIELD] },
+            ]
+          )
+          expect(connection.bulk.load).toHaveBeenCalledWith(
+            SBAA_APPROVAL_RULE, 'update', expect.anything(), [
+              { Id: 'newId0', [SBAA_CONDITIONS_MET]: 'Custom' },
+            ]
+          )
+        })
+      })
+      describe('when some ApprovalRule instances fail to deploy', () => {
+        let approvalRule: InstanceElement
+        let approvalCondition: InstanceElement
+        let failApprovalRule: InstanceElement
+        let failApprovalCondition: InstanceElement
+        beforeEach(async () => {
+          approvalRule = new InstanceElement(
+            '1',
+            mockTypes.ApprovalRule,
+            {
+              [SBAA_CONDITIONS_MET]: 'Custom',
+            },
+          )
+          approvalCondition = new InstanceElement(
+            '1',
+            mockTypes.ApprovalCondition,
+            {
+              [SBAA_APPROVAL_RULE]: new ReferenceExpression(approvalRule.elemID, approvalRule),
+            }
+          )
+          failApprovalRule = new InstanceElement(
+            '2',
+            mockTypes.ApprovalRule,
+            {
+              [SBAA_CONDITIONS_MET]: 'Custom',
+              Name: 'Fail', // Used to indicate which Record should fail in SF
+            },
+          )
+          failApprovalCondition = new InstanceElement(
+            '2',
+            mockTypes.ApprovalCondition,
+            {
+              [SBAA_APPROVAL_RULE]: new ReferenceExpression(failApprovalRule.elemID, failApprovalRule),
+            }
+          )
+          const changeGroup = {
+            groupID: ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+            changes: [
+              approvalRule,
+              failApprovalRule,
+              approvalCondition,
+              failApprovalCondition,
+            ].map(instance => toChange({ after: instance })),
+          }
+
+          connection.bulk.load = jest.fn().mockImplementation(
+            (_type: string, _operation: BulkLoadOperation, _opt?: BulkOptions, input?: SfRecord[]) => {
+              const loadEmitter = new EventEmitter()
+              loadEmitter.on('newListener', (_event, _listener) => {
+                // This is a workaround to call emit('close')
+                // that is really called as a side effect to load() inside
+                // jsforce *after* our code listens on.('close')
+                setTimeout(() => loadEmitter.emit('close'), 0)
+              })
+              return {
+                then: () => (Promise.resolve(input?.map((res, index) => ({
+                  id: res.Id || `newId${index}`,
+                  success: res.Name !== 'Fail',
+                  errors: res.Name === 'Fail' ? ['Failed to deploy ApprovalRule with Name Fail'] : [],
+                })))),
+                job: loadEmitter,
+              }
+            }
+          )
+
+          result = await adapter.deploy({
+            changeGroup,
+          })
+        })
+
+        it('should deploy partially', () => {
+          expect(result.errors).toEqual([
+            expect.objectContaining({ elemID: failApprovalRule.elemID }),
+            expect.objectContaining({ elemID: failApprovalCondition.elemID }),
+          ])
+          expect(result.appliedChanges).toHaveLength(2)
+          const [appliedApprovalRule, appliedApprovalCondition] = result.appliedChanges
+            .map(getChangeData)
+            .filter(isInstanceElement)
+          expect(appliedApprovalRule.elemID).toEqual(approvalRule.elemID)
+          expect(appliedApprovalCondition.elemID).toEqual(approvalCondition.elemID)
+        })
+      })
+      describe('when an ApprovalRule instance does not have sbaa__ConditionsMet__c = Custom', () => {
+        let changeGroup: ChangeGroup
+        beforeEach(() => {
+          const approvalRule = new InstanceElement(
+            '1',
+            mockTypes.ApprovalRule,
+            {
+              [SBAA_CONDITIONS_MET]: 'All',
+            },
+          )
+          const approvalCondition = new InstanceElement(
+            '1',
+            mockTypes.ApprovalCondition,
+            {
+              [SBAA_APPROVAL_RULE]: new ReferenceExpression(approvalRule.elemID, approvalRule),
+            }
+          )
+          changeGroup = {
+            groupID: ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+            changes: [approvalRule, approvalCondition].map(instance => toChange({ after: instance })),
+          }
+        })
+        it('should throw an error', async () => {
+          await expect(adapter.deploy({ changeGroup })).rejects.toThrow()
         })
       })
     })

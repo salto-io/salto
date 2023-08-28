@@ -17,7 +17,8 @@ SCRIPT_DIR = os.path.dirname(__file__)
 SRC_DIR = os.path.join(SCRIPT_DIR, '../../src/autogen/')
 BUNDLE_COMPONENTS_DIR = os.path.join(SRC_DIR, 'bundle_components/')
 FULL_LINE_LENGTH = 4
-BUNDLE_IDS = [39609, 53195, 233251, 47492]
+BUNDLE_IDS = [332172, 39609, 53195, 233251, 47492]
+NO_VERSION = 'NO_VERSION'
 
 search_bundles_link_template = 'https://{account_id}.app.netsuite.com/app/bundler/installbundle.nl?whence='
 
@@ -36,13 +37,15 @@ def wait_on_element(webpage):
   return False
 
 def parse_components_table(bundle_id_to_components, bundle_id, components_table, webpage, driverWait):
-  version = webpage.find_element(By.CSS_SELECTOR, '[data-searchable-id="mainmainversion"] > .uir-field')
+  webpage_version = webpage.find_element(By.CSS_SELECTOR, '[data-searchable-id="mainmainversion"] > .uir-field')
+  print('Bundle id is: ', bundle_id, 'with version: ',webpage_version.text.strip())
+  version = webpage_version.text.strip() if webpage_version.text.strip() != '' else NO_VERSION
   # wait until loading row disappears and the table is fully loaded.
   driverWait.until(wait_on_element)
   for row in components_table.find_elements(By.TAG_NAME, TABLE_ROW)[3:]:
     cells = row.find_elements(By.TAG_NAME, TABLE_DATA)
-    if len(cells) >= FULL_LINE_LENGTH and cells[3].text.strip()!= '' :
-      bundle_id_to_components[bundle_id][version.text.strip()].append(cells[3].text)
+    if len(cells) >= FULL_LINE_LENGTH and cells[3].text.strip()!= '' and (not cells[3].text.strip().isdigit()):
+      bundle_id_to_components[bundle_id][version].append(cells[3].text)
   webpage.back()
 
 
@@ -77,6 +80,9 @@ def format_components(bundle_id_to_components):
   for bundle_id, bundle_versions in bundle_id_to_components.items():
     table_content += f'  {bundle_id}: {{\n'
     for version, files in bundle_versions.items():
+      if version == NO_VERSION:
+        table_content += f'    {version}: new Set({files}),\n'
+      else:
         table_content += f'    \'{version}\': new Set({files}),\n'
     table_content += "  },\n"
   return table_content

@@ -15,9 +15,8 @@
 */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { ZENDESK } from '../../src/constants'
+import { TRIGGER_CATEGORY_TYPE_NAME, TRIGGER_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { createWrongPlaceErrorMessage, triggerOrderInstanceContainsAllTheInstancesValidator } from '../../src/change_validators/trigger_order'
-import { TYPE_NAME as TRIGGER_TYPE_NAME, TRIGGER_CATEGORY_TYPE_NAME } from '../../src/filters/reorder/trigger'
 import { createOrderTypeName } from '../../src/filters/reorder/creator'
 
 describe('triggerOrderInstanceContainsAllTheInstancesValidator', () => {

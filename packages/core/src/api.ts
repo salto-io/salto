@@ -30,7 +30,6 @@ import {
   SaltoError,
   Element,
   DetailedChange,
-  isCredentialError,
   DeployExtraProperties,
   ReferenceMapping,
   AccountInfo,
@@ -63,7 +62,7 @@ import {
   calcFetchChanges,
 } from './core/fetch'
 import { defaultDependencyChangers } from './core/plan/plan'
-import { createRestoreChanges } from './core/restore'
+import { createRestoreChanges, createRestorePathChanges } from './core/restore'
 import { getAdapterChangeGroupIdFunctions } from './core/adapters/custom_group_key'
 import { createDiffChanges } from './core/diff'
 import getChangeValidators from './core/plan/change_validators'
@@ -96,13 +95,10 @@ export const verifyCredentials = async (
       const account = await adapterCreator.validateCredentials(loginConfig)
       return { success: true, ...account }
     } catch (error) {
-      if (isCredentialError(error)) {
-        return {
-          success: false,
-          error,
-        }
+      return {
+        success: false,
+        error,
       }
-      throw error
     }
   }
   throw new Error(`unknown adapter: ${loginConfig.elemID.adapter}`)
@@ -276,46 +272,33 @@ export const fetch: FetchFunc = async (
   if (progressEmitter) {
     progressEmitter.emit('adaptersDidInitialize')
   }
-  try {
-    const {
-      changes, serviceToStateChanges, elements, mergeErrors, errors, updatedConfig,
-      configChanges, accountNameToConfigMessage, unmergedElements,
-    } = await fetchChanges(
-      accountToAdapter,
-      await workspace.elements(),
-      workspace.state(),
-      accountToServiceNameMap,
-      currentConfigs,
-      progressEmitter,
-      withChangesDetection,
-    )
-    log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
-    await workspace.state().updateStateFromChanges({
-      changes: serviceToStateChanges,
-      unmergedElements,
-      fetchAccounts,
-    })
+  const {
+    changes, serviceToStateChanges, elements, mergeErrors, errors, updatedConfig,
+    configChanges, accountNameToConfigMessage, unmergedElements,
+  } = await fetchChanges(
+    accountToAdapter,
+    await workspace.elements(),
+    workspace.state(),
+    accountToServiceNameMap,
+    currentConfigs,
+    progressEmitter,
+    withChangesDetection,
+  )
+  log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
+  await workspace.state().updateStateFromChanges({
+    changes: serviceToStateChanges,
+    unmergedElements,
+    fetchAccounts,
+  })
 
-    return {
-      changes,
-      fetchErrors: errors,
-      mergeErrors,
-      success: true,
-      configChanges,
-      updatedConfig,
-      accountNameToConfigMessage,
-    }
-  } catch (error) {
-    if (isCredentialError(error)) {
-      return {
-        changes: [],
-        fetchErrors: [{ message: error.message, severity: 'Error' }],
-        mergeErrors: [],
-        success: false,
-        updatedConfig: {},
-      }
-    }
-    throw error
+  return {
+    changes,
+    fetchErrors: errors,
+    mergeErrors,
+    success: true,
+    configChanges,
+    updatedConfig,
+    accountNameToConfigMessage,
   }
 }
 
@@ -461,7 +444,7 @@ export const calculatePatch = async (
     mergedAfterElements,
     elementSource.createInMemoryElementSource(mergedBeforeElements),
     adapterContext.elementsSource,
-    new Set([accountName]),
+    new Map([[accountName, {}]]),
     new Set([accountName]),
   )
   return {
@@ -520,6 +503,15 @@ export async function restore(
   )
   return detailedChanges.map(change => ({ change, serviceChanges: [change] }))
 }
+
+export const restorePaths = async (
+  workspace: Workspace,
+  accounts?: string[],
+): Promise<LocalChange[]> => (await createRestorePathChanges(
+  await awu(await (await workspace.elements()).getAll()).toArray(),
+  await workspace.state().getPathIndex(),
+  accounts,
+)).map(change => ({ change, serviceChanges: [change] }))
 
 export function diff(
   workspace: Workspace,

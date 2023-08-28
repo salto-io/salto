@@ -369,7 +369,7 @@ export const loadWorkspace = async (
   )
   let workspaceState: Promise<WorkspaceState> | undefined
   const buildWorkspaceState = async ({
-    workspaceChanges = {},
+    workspaceChanges,
     stateOnlyChanges = {},
     validate = true,
   }: {
@@ -488,10 +488,27 @@ export const loadWorkspace = async (
       return initializedState
     }
 
-    const initBuild = workspaceState === undefined
-    const stateToBuild = workspaceState !== undefined
-      ? await workspaceState
+    /** HERE BE DRAGONS!
+     *
+     * Dragon 1: `workspaceState` will be `undefined` until `buildWorkspaceState` returns a promise (see the code in
+     * `getWorkspaceState`). `buildWorkspaceState` will return a promise the first time it executes an `await`.
+     * This means you can't put an `await` between the start of `buildWorkspaceState` and the following lines.
+     *
+     * Dragon 2: initState() uses naclFilesSource. One can't use naclFilesSource until load() was called on it. Hence,
+     * setting wsChanges must happen after we set previousState, but before we call initState().
+     * Don't move the initialization of wsChanges.
+     */
+    const previousState = workspaceState
+
+    const wsChanges = (workspaceChanges !== undefined)
+      ? workspaceChanges
+      : await naclFilesSource.load({ ignoreFileChanges })
+
+    const stateToBuild = (previousState !== undefined)
+      ? await previousState
       : await initState()
+
+    const initBuild = previousState === undefined
 
     if (ignoreFileChanges) {
       // Skip all updates to the state since this flag means we are operating under the assumption
@@ -572,7 +589,7 @@ export const loadWorkspace = async (
           : []
         log.debug('got %d init hidden element changes', initHiddenElementsChanges.length)
 
-        const stateRemovedElementChanges = await awu(workspaceChanges[envName]?.changes ?? [])
+        const stateRemovedElementChanges = await awu(wsChanges[envName]?.changes ?? [])
           .filter(async change => (
             isRemovalChange(change)
             && getChangeData(change).elemID.isTopLevel()
@@ -616,7 +633,7 @@ export const loadWorkspace = async (
       }
 
       const workspaceChangedElements = Object.fromEntries(
-        await awu(workspaceChanges[envName]?.changes ?? [])
+        await awu(wsChanges[envName]?.changes ?? [])
           .map(async change => {
             const workspaceElement = getChangeData(change)
             const hiddenOnlyElement = isRemovalChange(change)
@@ -652,7 +669,7 @@ export const loadWorkspace = async (
       }
 
       const changeResult = await stateToBuild.mergeManager.mergeComponents({
-        src1Changes: workspaceChanges[envName],
+        src1Changes: wsChanges[envName],
         src2Changes: await completeStateOnlyChanges(
           stateOnlyChanges[envName]
           ?? createEmptyChangeSet(
@@ -761,12 +778,7 @@ export const loadWorkspace = async (
 
   const getWorkspaceState = async (): Promise<WorkspaceState> => {
     if (_.isUndefined(workspaceState)) {
-      const wsConfig = await config.getWorkspaceConfig()
-      log.debug('No workspace state for %s/%s. Building new workspace state.', wsConfig.uid, wsConfig.name)
-      const workspaceChanges = await naclFilesSource.load({ ignoreFileChanges })
-      workspaceState = buildWorkspaceState({
-        workspaceChanges,
-      })
+      workspaceState = buildWorkspaceState({})
     }
     return workspaceState
   }
@@ -880,7 +892,7 @@ export const loadWorkspace = async (
 
   const getErrorSourceRange = async <T extends SaltoElementError>(error: T):
   Promise<SourceRange[]> => (
-    error.source === 'config'
+    error.type === 'config'
       ? adaptersConfig.getSourceRanges(error.elemID)
       : (await getLoadedNaclFilesSource()).getSourceRanges(currentEnv(), error.elemID)
   )

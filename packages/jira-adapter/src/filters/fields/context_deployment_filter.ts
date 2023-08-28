@@ -21,7 +21,7 @@ import { deployChanges } from '../../deployment/standard_deployment'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from './constants'
 import { findObject, isThereValidParent, setFieldDeploymentAnnotations } from '../../utils'
 
-const filter: FilterCreator = ({ client, config, elementsSource }) => ({
+const filter: FilterCreator = ({ client, config, paginator, elementsSource }) => ({
   name: 'contextDeploymentFilter',
   onFetch: async (elements: Element[]) => {
     const fieldType = findObject(elements, FIELD_TYPE_NAME)
@@ -48,7 +48,7 @@ const filter: FilterCreator = ({ client, config, elementsSource }) => ({
         // field contexts without fields cant be removed because they don't exist,
         // modification changes are also not allowed but will not crash.
         if (isThereValidParent(getChangeData(change)) || !isRemovalChange(change)) {
-          await deployContextChange(change, client, config.apiDefinitions, elementsSource)
+          await deployContextChange(change, client, config.apiDefinitions, paginator, elementsSource)
         }
       }
     )

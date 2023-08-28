@@ -27,7 +27,7 @@ import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import { LocalFilterCreator } from '../src/filter'
 import SdfClient from '../src/client/sdf_client'
 import resolveValuesFilter from '../src/filters/element_references'
-import { CONFIG, configType, getConfigFromConfigChanges, NetsuiteConfig } from '../src/config'
+import { configType, getConfigFromConfigChanges, NetsuiteConfig } from '../src/config'
 import { mockGetElemIdFunc } from './utils'
 import NetsuiteClient from '../src/client/client'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, SDFObjectNode } from '../src/client/types'
@@ -45,6 +45,7 @@ import { createCustomRecordTypes } from '../src/custom_records/custom_record_typ
 import { Graph, GraphNode } from '../src/client/graph_utils'
 import { getDataElements } from '../src/data_elements/data_elements'
 import * as elementsSourceIndexModule from '../src/elements_source_index/elements_source_index'
+import { fullQueryParams, fullFetchConfig } from '../src/query'
 
 const DEFAULT_SDF_DEPLOY_PARAMS = {
   manifestDependencies: {
@@ -97,6 +98,7 @@ describe('Adapter', () => {
   const client = createClient()
   const config = {
     fetch: {
+      include: fullQueryParams(),
       exclude: {
         types: [
           { name: 'account', ids: ['aaa'] },
@@ -133,8 +135,8 @@ describe('Adapter', () => {
     progressReporter: { reportProgress: jest.fn() },
   }
 
-  const { standardTypes, additionalTypes } = getMetadataTypes()
-  const metadataTypes = metadataTypesToList({ standardTypes, additionalTypes })
+  const { standardTypes, additionalTypes, innerAdditionalTypes } = getMetadataTypes()
+  const metadataTypes = metadataTypesToList({ standardTypes, additionalTypes, innerAdditionalTypes })
     .concat(createCustomRecordTypes([], standardTypes.customrecordtype.type))
 
   beforeEach(() => {
@@ -206,8 +208,8 @@ describe('Adapter', () => {
           failedToFetchAllAtOnce: false,
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         })
-      const { elements, isPartial } = await netsuiteAdapter.fetch(mockFetchOpts)
-      expect(isPartial).toBeFalsy()
+      const { elements, partialFetchData } = await netsuiteAdapter.fetch(mockFetchOpts)
+      expect(partialFetchData?.isPartial).toBeFalsy()
       const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
       const typesToSkip = [SAVED_SEARCH, TRANSACTION_FORM, INTEGRATION, REPORT_DEFINITION, FINANCIAL_LAYOUT]
       expect(_.pull(getStandardTypesNames(), ...typesToSkip)
@@ -275,9 +277,6 @@ describe('Adapter', () => {
     })
 
     describe('fetchConfig', () => {
-      const configWithoutFetch = {
-        ..._.omit(config, CONFIG.fetch),
-      }
       const createAdapter = (configInput: NetsuiteConfig): NetsuiteAdapter =>
         new NetsuiteAdapter({
           client: new NetsuiteClient(client),
@@ -286,96 +285,6 @@ describe('Adapter', () => {
           config: configInput,
           getElemIdFunc: mockGetElemIdFunc,
         })
-      it('should fetch all types and instances when fetch config is undefined', async () => {
-        const adapter = createAdapter(configWithoutFetch)
-        const { elements, isPartial } = await adapter.fetch(mockFetchOpts)
-        expect(isPartial).toBeFalsy()
-        expect(elements).toHaveLength(metadataTypes.length)
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
-        expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
-        const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
-        expect(fileCabinetQuery.isFileMatch('any/kind/of/path')).toBeTruthy()
-      })
-      it('should fetch all types and instances when fetch config is defined with no values', async () => {
-        const configWithEmptyDefinedFetch = {
-          ...configWithoutFetch,
-          fetch: {},
-        }
-        const adapter = createAdapter(configWithEmptyDefinedFetch)
-        const { elements, isPartial } = await adapter.fetch(mockFetchOpts)
-        expect(isPartial).toBeFalsy()
-        expect(elements).toHaveLength(metadataTypes.length)
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
-        expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
-        const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
-        expect(fileCabinetQuery.isFileMatch('any/kind/of/path')).toBeTruthy()
-      })
-      it('should fetch all types and instances in include when exclude config is undefined', async () => {
-        const configWithIncludeButNoExclude = {
-          ...configWithoutFetch,
-          fetch: {
-            include: {
-              types: [{ name: 'someType.*' }],
-              fileCabinet: ['someFilePath'],
-              customRecords: [],
-            },
-          },
-        }
-        const adapter = createAdapter(configWithIncludeButNoExclude)
-        const { isPartial } = await adapter.fetch(mockFetchOpts)
-        expect(isPartial).toBeFalsy()
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
-        expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeFalsy()
-        expect(customObjectsQuery.isTypeMatch('someType')).toBeTruthy()
-        expect(customObjectsQuery.isTypeMatch('someType1')).toBeTruthy()
-        const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
-        expect(fileCabinetQuery.isFileMatch('any/kind/of/path')).toBeFalsy()
-        expect(fileCabinetQuery.isFileMatch('someFilePath')).toBeTruthy()
-      })
-      it('should fetch all types and instances that are not in exclude when include config is undefined', async () => {
-        const configWithExcludeButNoInclude = {
-          ...configWithoutFetch,
-          fetch: {
-            exclude: {
-              types: [{ name: 'someTypeToSkip.*' }],
-              fileCabinet: ['someFilePathToSkip'],
-              customRecords: [],
-            },
-          },
-        }
-        const adapter = createAdapter(configWithExcludeButNoInclude)
-        const { isPartial } = await adapter.fetch(mockFetchOpts)
-        expect(isPartial).toBeFalsy()
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
-        expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
-        expect(customObjectsQuery.isTypeMatch('someTypeToSkip')).toBeFalsy()
-        expect(customObjectsQuery.isTypeMatch('someTypeToSkip1')).toBeFalsy()
-        const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
-        expect(fileCabinetQuery.isFileMatch('any/kind/of/path')).toBeTruthy()
-        expect(fileCabinetQuery.isFileMatch('someFilePathToSkip')).toBeFalsy()
-      })
-      it('should fetch all types and instances besides those in skipList or Types To Skip when fetch config is undefined', async () => {
-        const configWithSkipListAndTypesToSkip = {
-          ...configWithoutFetch,
-          skipList: {
-            types: {
-              typeToSkip: ['.*'],
-            },
-            filePaths: ['someFilePathToSkip'],
-          },
-          typesToSkip: ['skipThisType'],
-        }
-        const adapter = createAdapter(configWithSkipListAndTypesToSkip)
-        const { isPartial } = await adapter.fetch(mockFetchOpts)
-        expect(isPartial).toBeFalsy()
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
-        expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
-        expect(customObjectsQuery.isTypeMatch('typeToSkip')).toBeFalsy()
-        expect(customObjectsQuery.isTypeMatch('skipThisType')).toBeFalsy()
-        const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
-        expect(fileCabinetQuery.isFileMatch('any/kind/of/path')).toBeTruthy()
-        expect(fileCabinetQuery.isFileMatch('someFilePathToSkip')).toBeFalsy()
-      })
       it('should fetch all types and instances without those in Types To Skip, skipList and exclude when fetch config, skipList and typeToSkip are defined', async () => {
         const configWithAllFormats = {
           ...config,
@@ -388,8 +297,8 @@ describe('Adapter', () => {
           typesToSkip: ['skipThisType'],
         }
         const adapter = createAdapter(configWithAllFormats)
-        const { isPartial } = await adapter.fetch(mockFetchOpts)
-        expect(isPartial).toBeFalsy()
+        const { partialFetchData } = await adapter.fetch(mockFetchOpts)
+        expect(partialFetchData?.isPartial).toBeFalsy()
         const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
         expect(customObjectsQuery.isTypeMatch('typeToSkip')).toBeFalsy()
@@ -408,6 +317,7 @@ describe('Adapter', () => {
       const withChangesDetection = true
       const conf = {
         fetch: {
+          include: fullQueryParams(),
           exclude: {
             types: [
               { name: SAVED_SEARCH },
@@ -428,14 +338,15 @@ describe('Adapter', () => {
       })
 
       it('isPartial should be true', async () => {
-        const { isPartial } = await adapter.fetch({ ...mockFetchOpts, withChangesDetection })
-        expect(isPartial).toBeTruthy()
+        const { partialFetchData } = await adapter.fetch({ ...mockFetchOpts, withChangesDetection })
+        expect(partialFetchData?.isPartial).toBeTruthy()
       })
     })
 
     describe('fetchTarget', () => {
       const conf = {
         fetch: {
+          include: fullQueryParams(),
           exclude: {
             types: [
               { name: SAVED_SEARCH },
@@ -481,8 +392,8 @@ describe('Adapter', () => {
         })
 
         it('isPartial should be true', async () => {
-          const { isPartial } = await adapter.fetch(mockFetchOpts)
-          expect(isPartial).toBeTruthy()
+          const { partialFetchData } = await adapter.fetch(mockFetchOpts)
+          expect(partialFetchData?.isPartial).toBeTruthy()
         })
 
         it('should match the types that match fetchTarget and exclude', async () => {
@@ -1011,6 +922,7 @@ describe('Adapter', () => {
               },
             },
           },
+          fetch: fullFetchConfig(),
         }
         const netsuiteAdapterWithAdditionalSdfDependencies = new NetsuiteAdapter({
           client: new NetsuiteClient(client),
@@ -1080,6 +992,7 @@ describe('Adapter', () => {
           fetchAllTypesAtOnce: true,
           deploy: {
           },
+          fetch: fullFetchConfig(),
         }
         const elementsSource = buildElementsSourceFromElements([])
         const adapter = new NetsuiteAdapter({
@@ -1113,6 +1026,7 @@ describe('Adapter', () => {
           deploy: {
             warnOnStaleWorkspaceData: false,
           },
+          fetch: fullFetchConfig(),
         }
         const elementsSource = buildElementsSourceFromElements([])
         const adapter = new NetsuiteAdapter({
@@ -1146,6 +1060,7 @@ describe('Adapter', () => {
           deploy: {
             warnOnStaleWorkspaceData: true,
           },
+          fetch: fullFetchConfig(),
         }
         const elementsSource = buildElementsSourceFromElements([])
         const adapter = new NetsuiteAdapter({
@@ -1181,7 +1096,7 @@ describe('Adapter', () => {
           client: { deploy: mockClientDeploy } as unknown as NetsuiteClient,
           elementsSource: buildElementsSourceFromElements([]),
           filtersCreators: [],
-          config: {},
+          config: { fetch: fullFetchConfig() },
         })
       })
       it('should return correct deploy errors', async () => {
@@ -1509,9 +1424,9 @@ describe('Adapter', () => {
       })
 
       it('check call getDeletedElements and verify return value', async () => {
-        const { deletedElements } = await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
+        const { partialFetchData } = await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
         expect(getDeletedElementsMock).toHaveBeenCalled()
-        expect(deletedElements).toEqual([elemId])
+        expect(partialFetchData?.deletedElements).toEqual([elemId])
         expect(spy).toHaveBeenCalledWith(expect.anything(), true, [elemId])
       })
     })
@@ -1526,9 +1441,9 @@ describe('Adapter', () => {
       })
 
       it('check call getDeletedElements and verify return value', async () => {
-        const { deletedElements } = await adapter.fetch({ ...mockFetchOpts })
+        const { partialFetchData } = await adapter.fetch({ ...mockFetchOpts })
         expect(getDeletedElementsMock).not.toHaveBeenCalled()
-        expect(deletedElements).toEqual(undefined)
+        expect(partialFetchData?.deletedElements).toEqual(undefined)
         expect(spy).toHaveBeenCalledWith(expect.anything(), false, undefined)
       })
     })

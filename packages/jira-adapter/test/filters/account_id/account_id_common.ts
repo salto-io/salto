@@ -258,6 +258,40 @@ export const createInstance = (
         },
       },
     },
+    automation61: {
+      fieldType: 'com.atlassian.jira.plugin.system.customfieldtypes:userpicker',
+      compareFieldValue: {
+        value: {
+          operations: [
+            {
+              value: [
+                {
+                  type: 'ID',
+                  value: 'assignee',
+                },
+              ],
+            },
+          ],
+        },
+      },
+    },
+    automation62: {
+      fieldType: 'com.atlassian.jira.plugin.system.customfieldtypes:userpicker',
+      compareFieldValue: {
+        value: {
+          operations: [
+            {
+              value: [
+                {
+                  type: 'ID',
+                  value: 'reporter',
+                },
+              ],
+            },
+          ],
+        },
+      },
+    },
     automation7: {
       type: 'jira.user.condition',
       value: {
@@ -466,6 +500,40 @@ export const createObjectedInstance = (id: string, objectType: ObjectType): Inst
         },
       },
     },
+    automation61: {
+      fieldType: 'com.atlassian.jira.plugin.system.customfieldtypes:userpicker',
+      compareFieldValue: {
+        value: {
+          operations: [
+            {
+              value: [
+                {
+                  type: 'ID',
+                  value: 'assignee',
+                },
+              ],
+            },
+          ],
+        },
+      },
+    },
+    automation62: {
+      fieldType: 'com.atlassian.jira.plugin.system.customfieldtypes:userpicker',
+      compareFieldValue: {
+        value: {
+          operations: [
+            {
+              value: [
+                {
+                  type: 'ID',
+                  value: 'reporter',
+                },
+              ],
+            },
+          ],
+        },
+      },
+    },
     automation7: {
       type: 'jira.user.condition',
       value: {
@@ -552,6 +620,8 @@ export const checkObjectedInstanceIds = (
     expect(objInstance.value.automation5.compareFieldValue.value.id).toEqual(`${id}automation5`)
     expect(objInstance.value.automation9.compareFieldValue.value.id).toEqual(`${id}automation9`)
     expect(objInstance.value.automation6.compareFieldValue.value.operations[0].value[0].value.id).toEqual(`${id}automation6`)
+    expect(objInstance.value.automation61.compareFieldValue.value.operations[0].value[0].value).toEqual('assignee')
+    expect(objInstance.value.automation62.compareFieldValue.value.operations[0].value[0].value).toEqual('reporter')
     expect(objInstance.value.automation7.value.conditions[1].criteria[0].value.id).toEqual(`${id}automation7`)
     expect(objInstance.value.automation7.value.conditions[2].criteria[0].value).toEqual(`${id}automation7X`)
     expect(objInstance.value.automation8.compareFieldValue[0].value.assignee.values[0].id).toEqual(`${id}automation8a`)
@@ -584,6 +654,8 @@ export const checkSimpleInstanceIds = (
     expect(objInstance.value.automation5.compareFieldValue.value).toEqual(`${id}automation5`)
     expect(objInstance.value.automation9.compareFieldValue.value).toEqual(`${id}automation9`)
     expect(objInstance.value.automation6.compareFieldValue.value.operations[0].value[0].value).toEqual(`${id}automation6`)
+    expect(objInstance.value.automation61.compareFieldValue.value.operations[0].value[0].value).toEqual('assignee')
+    expect(objInstance.value.automation62.compareFieldValue.value.operations[0].value[0].value).toEqual('reporter')
     expect(objInstance.value.automation7.value.conditions[1].criteria[0].value).toEqual(`${id}automation7`)
     expect(objInstance.value.automation8.compareFieldValue[0].value.assignee.values[0]).toEqual(`${id}automation8a`)
     expect(objInstance.value.automation8.compareFieldValue[0].value.assignee.values[1]).toEqual(`${id}automation8b`)

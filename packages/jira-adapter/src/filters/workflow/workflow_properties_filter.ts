@@ -31,7 +31,7 @@ const { awu } = collections.asynciterable
 const convertPropertiesToList = (instance: WorkflowInstance): void => {
   [
     ...(instance.value.statuses ?? []),
-    ...(instance.value.transitions ?? []),
+    ...(Object.values(instance.value.transitions) ?? []),
   ].forEach(item => {
     if (item.properties !== undefined) {
       item.properties = Object.entries(item.properties)
@@ -43,7 +43,7 @@ const convertPropertiesToList = (instance: WorkflowInstance): void => {
 const convertPropertiesToMap = (instance: WorkflowInstance): void => {
   [
     ...(instance.value.statuses ?? []),
-    ...(instance.value.transitions ?? []),
+    ...(Object.values(instance.value.transitions) ?? []),
   ].forEach(item => {
     if (item.properties !== undefined) {
       item.properties = Object.fromEntries(

@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { config } from '@salto-io/adapter-components'
-import { DEFAULT_API_DEFINITIONS, JiraApiConfig } from '../config/api_config'
+import { DEFAULT_API_DEFINITIONS, DUCKTYPE_API_DEFINITIONS, JiraApiConfig } from '../config/api_config'
 import { ProductSettings } from './product_settings'
 import { addTypeNameOverrides } from './utils'
 
@@ -159,4 +159,5 @@ export const CLOUD_SETTINGS: ProductSettings = {
   ) as JiraApiConfig,
   wrapConnection: _.identity,
   type: 'cloud',
+  defaultScriptRunnerApiDefinitions: DUCKTYPE_API_DEFINITIONS,
 }

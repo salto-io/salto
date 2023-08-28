@@ -54,7 +54,7 @@ describe('SuiteAppClient', () => {
       mockAxiosAdapter.onPost().replyOnce(200, {
         status: 'success',
         results: {
-          appVersion: [0, 1, 7],
+          appVersion: [0, 1, 9],
           time: 1000,
           envType: EnvType.PRODUCTION,
         },

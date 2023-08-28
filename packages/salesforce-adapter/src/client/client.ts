@@ -426,10 +426,45 @@ export const loginFromCredentialsAndReturnOrgId = async (
   return identityInfo.organization_id
 }
 
+type OrganizationRecord = SalesforceRecord & {
+  OrganizationType: string
+  IsSandbox: boolean
+}
+
+const isOrganizationRecord = (record: SalesforceRecord): record is OrganizationRecord => (
+  _.isString(record.OrganizationType) && _.isBoolean(record.IsSandbox)
+)
+
+const queryOrganization = async (conn: Connection, orgId: string): Promise<OrganizationRecord | undefined> => {
+  try {
+    const result = await conn.query(`SELECT OrganizationType, IsSandbox FROM Organization WHERE Id = '${orgId}'`)
+    const [organizationRecord] = result.records as SalesforceRecord[]
+    log.debug('organization record: %o', organizationRecord)
+    return isOrganizationRecord(organizationRecord)
+      ? organizationRecord
+      : undefined
+  } catch (e) {
+    log.error('Failed to query the organization record from salesforce', e)
+    return undefined
+  }
+}
+
+const PRODUCTION_ACCOUNT_TYPES = [
+  'Team Edition',
+  'Professional Edition',
+  'Enterprise Edition',
+  'Personal Edition',
+  'Unlimited Edition',
+  'Contact Manager Edition',
+  'Base Edition',
+]
+
 export const getConnectionDetails = async (
   creds: Credentials, connection? : Connection): Promise<{
   remainingDailyRequests: number
   orgId: string
+  accountType?: string
+  isProduction?: boolean
 }> => {
   const options = {
     maxAttempts: 2,
@@ -438,16 +473,26 @@ export const getConnectionDetails = async (
   const conn = connection || createConnectionFromCredentials(creds, options)
   const orgId = (await loginFromCredentialsAndReturnOrgId(conn, creds))
   const limits = await conn.limits()
+  const organizationRecord = await queryOrganization(conn, orgId)
+  if (organizationRecord === undefined) {
+    return {
+      remainingDailyRequests: limits.DailyApiRequests.Remaining,
+      orgId,
+    }
+  }
   return {
     remainingDailyRequests: limits.DailyApiRequests.Remaining,
     orgId,
+    accountType: organizationRecord.OrganizationType,
+    isProduction: !organizationRecord.IsSandbox
+      && PRODUCTION_ACCOUNT_TYPES.includes(organizationRecord.OrganizationType),
   }
 }
 
 export const validateCredentials = async (
   creds: Credentials, minApiRequestsRemaining = 0, connection?: Connection,
 ): Promise<AccountInfo> => {
-  const { remainingDailyRequests, orgId } = await getConnectionDetails(
+  const { remainingDailyRequests, orgId, accountType, isProduction } = await getConnectionDetails(
     creds, connection
   )
   if (remainingDailyRequests < minApiRequestsRemaining) {
@@ -455,12 +500,17 @@ export const validateCredentials = async (
       `Remaining limits: ${remainingDailyRequests}, needed: ${minApiRequestsRemaining}`
     )
   }
-  return { accountId: orgId }
+  return {
+    accountId: orgId,
+    accountType,
+    isProduction,
+  }
 }
 export default class SalesforceClient {
   private readonly retryOptions: RequestRetryOptions
   private readonly conn: Connection
   private isLoggedIn = false
+  orgNamespace?: string
   private readonly credentials: Credentials
   private readonly config?: SalesforceClientConfig
   private readonly setFetchPollingTimeout: () => void
@@ -542,6 +592,8 @@ export default class SalesforceClient {
   @requiresLogin()
   public async listMetadataTypes(): Promise<MetadataObject[]> {
     const describeResult = await this.retryOnBadResponse(() => this.conn.metadata.describe())
+    this.orgNamespace = describeResult.organizationNamespace
+    log.debug('org namespace: %s', this.orgNamespace)
     return flatValues((describeResult).metadataObjects)
   }
 

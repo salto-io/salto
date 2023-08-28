@@ -33,7 +33,13 @@ import {
   SaltoError,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { logDuration, resolveChangeElement, resolveValues, restoreChangeElement } from '@salto-io/adapter-utils'
+import {
+  getElemIdFuncWrapper,
+  logDuration,
+  resolveChangeElement,
+  resolveValues,
+  restoreChangeElement,
+} from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
@@ -89,12 +95,11 @@ import hardcodedChannelFilter from './filters/hardcoded_channel'
 import usersFilter from './filters/user'
 import addFieldOptionsFilter from './filters/add_field_options'
 import appOwnedConvertListToMapFilter from './filters/app_owned_convert_list_to_map'
-import appsFilter from './filters/app'
+import appInstallationsFilter from './filters/app_installations'
 import routingAttributeFilter from './filters/routing_attribute'
 import serviceUrlFilter from './filters/service_url'
 import slaPolicyFilter from './filters/sla_policy'
 import macroAttachmentsFilter from './filters/macro_attachments'
-import omitInactiveFilter from './filters/omit_inactive'
 import tagsFilter from './filters/tag'
 import guideLocalesFilter from './filters/guide_locale'
 import webhookFilter from './filters/webhook'
@@ -138,6 +143,7 @@ import customRoleDeployFilter from './filters/custom_role_deploy'
 import routingAttributeValueDeployFilter from './filters/routing_attribute_value'
 import localeFilter from './filters/locale'
 import ticketStatusCustomStatusDeployFilter from './filters/ticket_status_custom_status'
+import { filterOutInactiveInstancesForType } from './inactive'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -154,18 +160,12 @@ const { awu } = collections.asynciterable
 const { concatObjects } = objects
 const SECTIONS_TYPE_NAME = 'sections'
 
-const { query: queryFilter, ...otherCommonFilters } = commonFilters
-
 export const DEFAULT_FILTERS = [
-  queryFilter,
   ticketStatusCustomStatusDeployFilter,
   ticketFieldFilter,
   userFieldFilter,
   viewFilter,
   workspaceFilter,
-  // omitInactiveFilter should be before:
-  //  order filters, collisionErrorsFilter and fieldReferencesFilter
-  omitInactiveFilter,
   ticketFormOrderFilter,
   userFieldOrderFilter,
   organizationFieldOrderFilter,
@@ -217,7 +217,7 @@ export const DEFAULT_FILTERS = [
   addAliasFilter, // should run after fieldReferencesFilter
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,
-  appsFilter,
+  appInstallationsFilter,
   appOwnedConvertListToMapFilter,
   slaPolicyFilter,
   routingAttributeFilter,
@@ -230,7 +230,8 @@ export const DEFAULT_FILTERS = [
   dynamicContentReferencesFilter,
   guideParentSection,
   serviceUrlFilter,
-  ...Object.values(otherCommonFilters),
+  // referencedIdFieldsFilter and queryFilter should run after element references are resolved
+  ...Object.values(commonFilters),
   articleBodyFilter,
   handleAppInstallationsFilter,
   handleTemplateExpressionFilter,
@@ -417,6 +418,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   private configInstance?: InstanceElement
   private elementsSource: ReadOnlyElementsSource
   private fetchQuery: elementUtils.query.ElementQuery
+  private logIdsFunc?: () => void
   private createClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private getClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private createFiltersRunner: ({
@@ -438,9 +440,11 @@ export default class ZendeskAdapter implements AdapterOperations {
     configInstance,
     elementsSource,
   }: ZendeskAdapterParams) {
+    const wrapper = getElemIdFunc ? getElemIdFuncWrapper(getElemIdFunc) : undefined
     this.userConfig = config
     this.configInstance = configInstance
-    this.getElemIdFunc = getElemIdFunc
+    this.getElemIdFunc = wrapper?.getElemIdFunc
+    this.logIdsFunc = wrapper?.logIdsFunc
     this.client = client
     this.elementsSource = elementsSource
     this.paginator = createPaginator({
@@ -489,7 +493,7 @@ export default class ZendeskAdapter implements AdapterOperations {
           client: filterRunnerClient ?? this.client,
           paginator: paginator ?? this.paginator,
           config,
-          getElemIdFunc,
+          getElemIdFunc: this.getElemIdFunc,
           fetchQuery: this.fetchQuery,
           elementsSource,
           brandIdToClient,
@@ -508,18 +512,21 @@ export default class ZendeskAdapter implements AdapterOperations {
     const supportedTypes = isGuideEnabledInConfig
       ? _.omit(allSupportedTypes, ...Object.keys(GUIDE_BRAND_SPECIFIC_TYPES))
       : _.omit(allSupportedTypes, ...Object.keys(GUIDE_SUPPORTED_TYPES))
+
     // Zendesk Support and (if enabled) global Zendesk Guide types
     const defaultSubdomainResult = await getAllElements({
       adapterName: ZENDESK,
       types: this.userConfig.apiDefinitions.types,
       shouldAddRemainingTypes: !isGuideInFetch,
-      supportedTypes,
+      // tags are "fetched" in a filter
+      supportedTypes: _.omit(supportedTypes, 'tag'),
       fetchQuery: this.fetchQuery,
       paginator: this.paginator,
       nestedFieldFinder: findDataField,
       computeGetArgs,
       typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
       getElemIdFunc: this.getElemIdFunc,
+      customInstanceFilter: filterOutInactiveInstancesForType(this.userConfig),
     })
 
     if (!isGuideInFetch) {
@@ -633,6 +640,9 @@ export default class ZendeskAdapter implements AdapterOperations {
       : undefined
 
     const fetchErrors = (errors ?? []).concat(result.errors ?? []).concat(localeError ?? [])
+    if (this.logIdsFunc !== undefined) {
+      this.logIdsFunc()
+    }
     return { elements, errors: fetchErrors, updatedConfig }
   }
 
@@ -787,6 +797,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     return {
       changeValidator: createChangeValidator({
         client: this.client,
+        config: this.userConfig,
         apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
         fetchConfig: this.userConfig[FETCH_CONFIG],
         deployConfig: this.userConfig[DEPLOY_CONFIG],

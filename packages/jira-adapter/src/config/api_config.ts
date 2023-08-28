@@ -36,6 +36,8 @@ export type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'>
   typesToFallbackToInternalId: string[]
 }
 
+export type JiraDuckTypeConfig = configUtils.AdapterDuckTypeApiConfig
+
 const DEFAULT_ID_FIELDS = ['name']
 const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
   { fieldName: 'expand', fieldType: 'string' },
@@ -1645,6 +1647,183 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
 }
 
+const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
+  ScriptRunnerListener: {
+    request: {
+      url: '/sr-dispatcher/jira/admin/token/scriptevents',
+    },
+    transformation: {
+      sourceTypeName: 'ScriptRunnerListener__values',
+      idFields: ['description'],
+      fieldsToHide: [
+        { fieldName: 'uuid' },
+        { fieldName: 'createdByAccountId' },
+        { fieldName: 'createdTimestamp' },
+        { fieldName: 'updatedByAccountId' },
+        { fieldName: 'updatedTimestamp' },
+      ],
+    },
+  },
+  ScriptFragment: {
+    request: {
+      url: '/sr-dispatcher/jira/token/script-fragments',
+    },
+    transformation: {
+      idFields: ['id'],
+    },
+  },
+  ScheduledJob: {
+    request: {
+      url: '/sr-dispatcher/jira/rest/api/1/scheduled-scripts',
+    },
+    transformation: {
+    },
+    deployRequests: {
+      add: {
+        url: '/sr-dispatcher/jira/rest/api/1/scheduled-scripts',
+        method: 'post',
+      },
+      modify: {
+        url: '/sr-dispatcher/jira/rest/api/1/scheduled-scripts/{uuid}',
+        method: 'put',
+      },
+      remove: {
+        url: '/sr-dispatcher/jira/rest/api/1/scheduled-scripts/{uuid}',
+        method: 'delete',
+      },
+    },
+  },
+  Behavior: {
+    request: {
+      url: '/sr-dispatcher/jira/rest/api/1/behaviours',
+    },
+    deployRequests: {
+      add: {
+        url: '/sr-dispatcher/jira/rest/api/1/behaviours',
+        method: 'post',
+      },
+      modify: {
+        url: '/sr-dispatcher/jira/rest/api/1/behaviours/{uuid}',
+        method: 'put',
+      },
+      remove: {
+        url: '/sr-dispatcher/jira/rest/api/1/behaviours/{uuid}',
+        method: 'delete',
+      },
+    },
+  },
+  Behavior__config: {
+    transformation: {
+      fieldsToOmit: [
+        {
+          fieldName: 'fieldUuid',
+        },
+      ],
+    },
+  },
+  EscalationService: {
+    request: {
+      url: '/sr-dispatcher/jira/rest/api/1/escalation-scripts',
+    },
+    deployRequests: {
+      add: {
+        url: '/sr-dispatcher/jira/rest/api/1/escalation-scripts',
+        method: 'post',
+      },
+      modify: {
+        url: '/sr-dispatcher/jira/rest/api/1/escalation-scripts/{uuid}',
+        method: 'put',
+      },
+      remove: {
+        url: '/sr-dispatcher/jira/rest/api/1/escalation-scripts/{uuid}',
+        method: 'delete',
+      },
+    },
+  },
+  ScriptedField: {
+    request: {
+      url: '/sr-dispatcher/jira/rest/api/1/scripted-fields',
+    },
+    transformation: {
+      fieldsToOmit: [
+        {
+          fieldName: 'issueTypeIds',
+        },
+      ],
+      dataField: '.',
+    },
+    deployRequests: {
+      add: {
+        url: '/sr-dispatcher/jira/rest/api/1/scripted-fields',
+        method: 'post',
+      },
+      modify: {
+        url: '/sr-dispatcher/jira/rest/api/1/scripted-fields/{uuid}',
+        method: 'put',
+      },
+      remove: {
+        url: '/sr-dispatcher/jira/rest/api/1/scripted-fields/{uuid}',
+        method: 'delete',
+      },
+    },
+  },
+  ScriptRunnerSettings: {
+    request: {
+      url: '/sr-dispatcher/jira/admin/token/settings/features',
+    },
+    transformation: {
+      isSingleton: true,
+      fieldsToOmit: [
+        { fieldName: 'use_s3_storage@b' },
+      ],
+      fieldsToHide: [
+        { fieldName: 'jql_aliases@b' },
+      ],
+    },
+    deployRequests: {
+      modify: {
+        url: '/sr-dispatcher/jira/admin/token/settings/features',
+        method: 'put',
+      },
+    },
+  },
+}
+
+export const DUCKTYPE_SUPPORTED_TYPES = {
+  ScriptRunnerListener: ['ScriptRunnerListener'],
+  ScriptFragment: ['ScriptFragment'],
+  ScheduledJob: ['ScheduledJob'],
+  // Behavior: ['Behavior'],
+  EscalationService: ['EscalationService'],
+  ScriptedField: ['ScriptedField'],
+  ScriptRunnerSettings: ['ScriptRunnerSettings'],
+}
+
+const SCRIPT_RUNNER_FIELDS_TO_HIDE = [
+  {
+    fieldName: 'uuid',
+  },
+  {
+    fieldName: 'auditData',
+  },
+]
+
+const SCRIPT_RUNNER_TRANSFORMATION_DEFAULTS: configUtils.TransformationDefaultConfig = {
+  idFields: DEFAULT_ID_FIELDS,
+  fieldsToOmit: FIELDS_TO_OMIT,
+  fieldsToHide: SCRIPT_RUNNER_FIELDS_TO_HIDE,
+  serviceIdField: 'uuid',
+  nestStandaloneInstances: true,
+}
+
+export const DUCKTYPE_API_DEFINITIONS: JiraDuckTypeConfig = {
+  typeDefaults: {
+    transformation: SCRIPT_RUNNER_TRANSFORMATION_DEFAULTS,
+  },
+  types: DUCKTYPE_TYPES,
+  supportedTypes: DUCKTYPE_SUPPORTED_TYPES,
+}
+
 const SUPPORTED_TYPES = {
   ApplicationProperty: ['ApplicationProperties'],
   ApplicationRole: ['ApplicationRoles'],
@@ -1683,6 +1862,7 @@ const SUPPORTED_TYPES = {
   Automation: [],
   Webhook: [],
   [AUTOMATION_LABEL_TYPE]: [],
+  IssueLayout: [],
 }
 
 export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {

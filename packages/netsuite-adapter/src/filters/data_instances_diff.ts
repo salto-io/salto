@@ -13,23 +13,27 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeData, InstanceElement, isEqualValues, isInstanceChange, isModificationChange, ModificationChange } from '@salto-io/adapter-api'
+import { getChangeData, InstanceElement, isEqualValues, isInstanceChange, isModificationChange, ModificationChange, Element } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { isDataObjectType } from '../types'
+import { getElementValueOrAnnotations, isDataObjectType } from '../types'
 import { LocalFilterCreator } from '../filter'
 
 const { awu } = collections.asynciterable
 
 export const getDifferentKeys = (
-  change: ModificationChange<InstanceElement>
-): Set<string> => new Set(
-  Object.keys(change.data.after.value)
-    .filter(key => !isEqualValues(
-      change.data.after.value[key],
-      change.data.before.value[key]
-    ))
-)
+  change: ModificationChange<Element>
+): Set<string> => {
+  const afterValues = getElementValueOrAnnotations(change.data.after)
+  const beforeValues = getElementValueOrAnnotations(change.data.before)
+  return new Set(
+    Object.keys(afterValues)
+      .filter(key => !isEqualValues(
+        afterValues[key],
+        beforeValues[key]
+      ))
+  )
+}
 
 export const removeIdenticalValues = (change: ModificationChange<InstanceElement>): void => {
   const differentKeys = getDifferentKeys(change)

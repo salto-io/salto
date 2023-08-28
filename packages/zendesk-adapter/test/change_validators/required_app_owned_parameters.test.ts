@@ -17,9 +17,8 @@
 import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { APP_OWNED_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { APP_INSTALLATION_TYPE_NAME, APP_OWNED_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { requiredAppOwnedParametersValidator } from '../../src/change_validators'
-import { APP_INSTALLATION_TYPE_NAME } from '../../src/filters/app'
 
 describe('requiredAppOwnedParametersValidator', () => {
   const AppOwnedType = new ObjectType({

@@ -18,7 +18,7 @@ import {
   AdapterOperations, getChangeData, Change,
   isAdditionOrModificationChange,
   DeployExtraProperties, DeployOptions, Group,
-  SaltoElementError, SaltoError, SeverityLevel, AdapterDeployResult, DeployResult, ChangeDataType,
+  SaltoElementError, SaltoError, SeverityLevel, DeployResult, ChangeDataType, SaltoErrorType,
 } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { WalkError, NodeSkippedError } from '@salto-io/dag'
@@ -45,33 +45,15 @@ const addElemIDsToError = (
   ))
   )
 
-const extractErrors = (
-  result: DeployResult,
-  changes: readonly Change<ChangeDataType>[]
-): ReadonlyArray<SaltoElementError | SaltoError> =>
-  result.errors.flatMap(error =>
-    (error instanceof Error
-      ? addElemIDsToError(changes, error)
-      : error))
-
-
 const deployOrValidate = async (
   { adapter, adapterName, opts, checkOnly }: DeployOrValidateParams
-): Promise<AdapterDeployResult> => {
+): Promise<DeployResult> => {
   const deployOrValidateFn = checkOnly ? adapter.validate?.bind(adapter) : adapter.deploy.bind(adapter)
   if (deployOrValidateFn === undefined) {
     throw new Error(`${checkOnly ? 'Check-Only deployment' : 'Deployment'} is not supported in adapter ${adapterName}`)
   }
   try {
-    const result = await deployOrValidateFn(opts)
-    const failedChanges = opts.changeGroup.changes.filter(
-      change => !result.appliedChanges.some(c => getChangeData(c) === getChangeData(change))
-    )
-    return {
-      appliedChanges: result.appliedChanges,
-      extraProperties: result.extraProperties,
-      errors: extractErrors(result, failedChanges),
-    }
+    return await deployOrValidateFn(opts)
   } catch (error) {
     log.warn('adapter threw exception during deploy or validate, attaching to all elements in group: %o', error)
     return {
@@ -85,7 +67,7 @@ const deployAction = async (
   planItem: PlanItem,
   adapters: Record<string, AdapterOperations>,
   checkOnly: boolean
-): Promise<AdapterDeployResult> => {
+): Promise<DeployResult> => {
   const changes = [...planItem.changes()]
   const adapterName = getChangeData(changes[0]).elemID.adapter
   const adapter = adapters[adapterName]
@@ -189,8 +171,9 @@ export const deployActions = async (
             ({
               elemID: getChangeData(change).elemID,
               groupId: item.groupKey,
-              message: `Element ${key} was not deployed, as it depends on element ${nodeError.causingNode} which failed to deploy`,
+              message: `Element was not deployed, as it depends on ${nodeError.causingNode} which failed to deploy`,
               severity: 'Error' as SeverityLevel,
+              type: 'dependency' as SaltoErrorType,
             })))
         } else if (nodeError instanceof WalkDeployError) {
           deployErrors.push(...nodeError.errors.map(deployError => ({ ...deployError, groupId: item.groupKey })))

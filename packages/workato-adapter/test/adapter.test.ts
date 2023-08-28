@@ -252,7 +252,7 @@ describe('adapter', () => {
               fetch: {
                 ...DEFAULT_CONFIG.fetch,
                 include: [
-                  { type: 'folder' },
+                  { type: '(?!recipe$).*' },
                   { type: 'recipe', criteria: { name: 'test.*' } },
                 ],
               },
@@ -262,11 +262,22 @@ describe('adapter', () => {
         }).fetch({ progressReporter: { reportProgress: () => null } })
 
         expect(elements.filter(isInstanceElement).map(e => e.elemID.getFullName()).sort()).toEqual([
+          'workato.api_access_profile.instance.ap1',
+          'workato.api_client.instance.test_client_1@s',
+          'workato.api_collection.instance.test1',
+          'workato.api_endpoint.instance.ep321__somedomainname_test1_v10_user__id_@uddbdd_00123_00125',
+          'workato.connection.instance.HTTP_connection_1@s',
+          'workato.connection.instance.My_Gmail_connection@s',
+          'workato.connection.instance.My_Google_sheets_connection@s',
+          'workato.connection.instance.Test_NetSuite_account@s',
+          'workato.connection.instance.dev2_sfdc_account@s',
+          'workato.connection.instance.sfdev1',
           'workato.folder.instance.Root',
           'workato.folder.instance.basedir1_Root',
           'workato.folder.instance.f1_nested1_basedir1_Root',
           'workato.folder.instance.f1_nested2_basedir1_Root@vuu',
           'workato.folder.instance.f1n2_leaf1_f1_nested2_basedir1_Root_vuu@suuuum',
+          'workato.property.instance',
           'workato.recipe.instance.test_recipe_321_f1_nested2_basedir1_Root_vuu@ssuuuum',
           'workato.recipe__code.instance.test_recipe_321_f1_nested2_basedir1_Root_vuu_ssuuuum@uuuuuuum',
         ])
@@ -416,17 +427,14 @@ describe('adapter', () => {
             configType,
             {
               [FETCH_CONFIG]: {
-                include: [...Object.keys(DEFAULT_TYPES)].sort()
-                  .filter(type => type !== RECIPE_CODE_TYPE)
-                  .map(type => ({ type })),
-                exclude: [],
+                ...DEFAULT_CONFIG[FETCH_CONFIG],
                 serviceConnectionNames: {
                   salesforce: ['sfdev1'],
                   salesforce2: ['dev2 sfdc account'],
                   netsuite: ['Test NetSuite account'],
                 },
               },
-            }
+            },
           ),
           elementsSource: buildElementsSourceFromElements([]),
         }) as types.PickyRequired<AdapterOperations, 'postFetch'>

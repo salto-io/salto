@@ -13,16 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, Field, isInstanceElement, ListType, MapType } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, Field, isInstanceElement, ListType, MapType, SaltoError } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { walkOnValue, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
-import { findObject } from '../../utils'
+import { addAnnotationRecursively, findObject, setTypeDeploymentAnnotations } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { postFunctionType, types as postFunctionTypes } from './post_functions_types'
 import { createConditionConfigurationTypes } from './conditions_types'
-import { Condition, isWorkflowInstance, Rules, Status, Transition, Validator, Workflow } from './types'
+import { Condition, isWorkflowResponseInstance, Rules, WorkflowResponse, Status, Transition, Validator } from './types'
 import { validatorType, types as validatorTypes } from './validators_types'
-import { JIRA, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
+import { JIRA, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TRANSITION_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
+import { transformTransitions } from './transition_structure'
 
 const NOT_FETCHED_POST_FUNCTION_TYPES = [
   'GenerateChangeHistoryFunction',
@@ -139,29 +140,49 @@ const transformRules = (rules: Rules, transitionType?: string): void => {
   rules.validators?.forEach(transformValidator)
 }
 
-const transformWorkflowInstance = (workflowValues: Workflow): void => {
+const transformWorkflowInstance = (workflowValues: WorkflowResponse): SaltoError[] => {
   workflowValues.entityId = workflowValues.id?.entityId
   workflowValues.name = workflowValues.id?.name
   delete workflowValues.id
 
   workflowValues.statuses?.forEach(transformProperties)
 
-  workflowValues.transitions?.forEach(transformProperties)
+  workflowValues.transitions.forEach(transformProperties)
   workflowValues.transitions
-    ?.filter(transition => transition.rules !== undefined)
+    .filter(transition => transition.rules !== undefined)
     .forEach(transition => {
       transformRules(transition.rules as Rules, transition.type)
     })
+
+  // The type is changed after transform Transitions, so should be last
+  return transformTransitions(workflowValues)
 }
 
 // This filter transforms the workflow values structure so it will fit its deployment endpoint
 const filter: FilterCreator = ({ config }) => ({
   name: 'workflowStructureFilter',
   onFetch: async (elements: Element[]) => {
+    const workflowTransitionType = findObject(elements, WORKFLOW_TRANSITION_TYPE_NAME)
+
     const workflowType = findObject(elements, WORKFLOW_TYPE_NAME)
     if (workflowType !== undefined) {
       delete workflowType.fields.id
       workflowType.fields.operations.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
+      if (workflowTransitionType !== undefined) {
+        workflowType.fields.transitions = new Field(
+          workflowType,
+          'transitions',
+          new MapType(workflowTransitionType),
+          { [CORE_ANNOTATIONS.CREATABLE]: true,
+            [CORE_ANNOTATIONS.UPDATABLE]: true,
+            [CORE_ANNOTATIONS.DELETABLE]: true },
+        )
+        delete workflowTransitionType.fields.id
+        setTypeDeploymentAnnotations(workflowTransitionType)
+        await addAnnotationRecursively(workflowTransitionType, CORE_ANNOTATIONS.CREATABLE)
+        await addAnnotationRecursively(workflowTransitionType, CORE_ANNOTATIONS.UPDATABLE)
+        await addAnnotationRecursively(workflowTransitionType, CORE_ANNOTATIONS.DELETABLE)
+      }
     }
 
     const workflowStatusType = findObject(elements, 'WorkflowStatus')
@@ -182,6 +203,10 @@ const filter: FilterCreator = ({ config }) => ({
 
       workflowRulesType.fields.postFunctions = new Field(workflowRulesType, 'postFunctions', new ListType(postFunctionType))
       workflowRulesType.fields.validators = new Field(workflowRulesType, 'validators', new ListType(validatorType))
+      setTypeDeploymentAnnotations(workflowRulesType)
+      await addAnnotationRecursively(workflowRulesType, CORE_ANNOTATIONS.CREATABLE)
+      await addAnnotationRecursively(workflowRulesType, CORE_ANNOTATIONS.UPDATABLE)
+      await addAnnotationRecursively(workflowRulesType, CORE_ANNOTATIONS.DELETABLE)
     }
 
     const worfkflowConditionType = findObject(elements, 'WorkflowCondition')
@@ -194,10 +219,12 @@ const filter: FilterCreator = ({ config }) => ({
     elements.push(...validatorTypes)
     elements.push(conditionConfigurationTypes.type, ...conditionConfigurationTypes.subTypes)
 
-    elements
+    const errors = elements
       .filter(isInstanceElement)
-      .filter(isWorkflowInstance)
-      .forEach(instance => transformWorkflowInstance(instance.value))
+      .filter(isWorkflowResponseInstance)
+      .map(instance => transformWorkflowInstance(instance.value)) // also changes the instance
+      .flat()
+    return { errors }
   },
 })
 

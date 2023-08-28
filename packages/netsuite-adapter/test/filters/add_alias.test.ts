@@ -24,11 +24,16 @@ import { customsegmentType } from '../../src/autogen/types/standard_types/custom
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 import { translationcollectionType } from '../../src/autogen/types/standard_types/translationcollection'
 import { fileType } from '../../src/types/file_cabinet_types'
+import { getConfigurationTypes } from '../../src/types/configuration_types'
+import { bundleType } from '../../src/types/bundle_type'
+import { emptyQueryParams, fullQueryParams } from '../../src/query'
 
 describe('add alias filter', () => {
   const { type: workflow } = workflowType()
   const { type: customsegment } = customsegmentType()
   const { type: translationcollection } = translationcollectionType()
+  const { type: bundle } = bundleType()
+  const { companyFeatures } = getConfigurationTypes()
   const file = fileType()
   const customer = new ObjectType({ elemID: new ElemID(NETSUITE, 'customer') })
   const assemblyItem = new ObjectType({ elemID: new ElemID(NETSUITE, 'assemblyItem') })
@@ -42,6 +47,8 @@ describe('add alias filter', () => {
   let segmentInstance: InstanceElement
   let customRecordTypeWithSegment: ObjectType
 
+  let settingsInstance: InstanceElement
+  let bundleInstance: InstanceElement
   let customRecordInstance: InstanceElement
   let subInstance: InstanceElement
 
@@ -94,6 +101,10 @@ describe('add alias filter', () => {
         customsegment: new ReferenceExpression(segmentInstance.elemID.createNestedID(SCRIPT_ID)),
         [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
       },
+    })
+    settingsInstance = new InstanceElement(ElemID.CONFIG_NAME, companyFeatures)
+    bundleInstance = new InstanceElement('12345', bundle, {
+      name: 'Bundle Name',
     })
     customRecordInstance = new InstanceElement('val_123', customRecordType, {
       name: 'Custom Record Instance',
@@ -167,6 +178,8 @@ describe('add alias filter', () => {
       customRecordType,
       segmentInstance,
       customRecordTypeWithSegment,
+      settingsInstance,
+      bundleInstance,
       customRecordInstance,
       subInstance,
       dataInstanceWithFallback,
@@ -197,6 +210,8 @@ describe('add alias filter', () => {
       ...defaultOpts,
       config: {
         fetch: {
+          include: fullQueryParams(),
+          exclude: emptyQueryParams(),
           addAlias: true,
         },
       },
@@ -225,6 +240,8 @@ describe('add alias filter', () => {
     expect(customRecordType.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Custom Record 1')
     expect(segmentInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Custom Segment 1')
     expect(customRecordTypeWithSegment.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Custom Segment 1')
+    expect(settingsInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Company Features')
+    expect(bundleInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Bundle Name')
     expect(customRecordInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Custom Record Instance')
     expect(subInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Sub Instance 1')
     expect(dataInstanceWithFallback.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Customer 2')

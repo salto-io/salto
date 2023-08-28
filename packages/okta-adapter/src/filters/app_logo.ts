@@ -25,6 +25,7 @@ import { APPLICATION_TYPE_NAME, APP_LOGO_TYPE_NAME, LINKS_FIELD } from '../const
 import { FilterCreator } from '../filter'
 import { createFileType, deployLogo, getLogo } from '../logo'
 import OktaClient from '../client/client'
+import { deployChanges } from '../deployment'
 
 const log = logger(module)
 const { getInstanceName } = elementsUtils
@@ -119,20 +120,14 @@ const appLogoFilter: FilterCreator = ({ client, config }) => ({
       change => getChangeData(change).elemID.typeName === APP_LOGO_TYPE_NAME,
     )
 
-    const deployLogoResults = await Promise.all(appLogoChanges.map(async change => {
-      const deployResult = await deployLogo(change, client)
-      return deployResult === undefined ? change : deployResult
-    }))
-    const [deployLogoErrors, successfulChanges] = _.partition(
-      deployLogoResults,
-      _.isError,
+    const deployResult = await deployChanges(
+      appLogoChanges,
+      async change => deployLogo(change, client)
     )
+
     return {
-      deployResult: {
-        appliedChanges: successfulChanges,
-        errors: deployLogoErrors,
-      },
       leftoverChanges,
+      deployResult,
     }
   },
 })

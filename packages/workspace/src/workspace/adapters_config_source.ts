@@ -140,8 +140,6 @@ export const buildAdaptersConfigSource = async ({
       .map(conf => ({
         id: conf.elemID, action: 'remove', data: { before: conf },
       })))
-    // If flush is not called here the removal seems to be ignored
-    await naclSource.flush()
 
     const removeUndefined = async (instance: InstanceElement): Promise<InstanceElement> =>
       transformElement({
@@ -180,7 +178,7 @@ export const buildAdaptersConfigSource = async ({
 
   const createConfigError = <T extends SaltoError>(error: T): T => {
     const configError = _.clone(error)
-    configError.source = 'config'
+    configError.type = 'config'
     return configError
   }
 

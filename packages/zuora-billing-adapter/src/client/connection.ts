@@ -49,7 +49,7 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = retr
         retryOptions,
       })
     ),
-    baseURLFunc: ({ baseURL }) => baseURL,
+    baseURLFunc: async ({ baseURL }) => baseURL,
     credValidateFunc: validateCredentials,
   })
 )

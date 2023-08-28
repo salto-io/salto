@@ -22,6 +22,7 @@ import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { Values } from '@salto-io/adapter-api'
 import ZendeskClient from './client/client'
 import { ValueReplacer, replaceConditionsAndActionsCreator, fieldReplacer } from './replacers_utils'
+import { CURSOR_BASED_PAGINATION_FIELD, DEFAULT_QUERY_PARAMS } from './config'
 
 const log = logger(module)
 const { toArrayAsync } = collections.asynciterable
@@ -37,7 +38,7 @@ export type User = {
   email: string
   role: string
   // eslint-disable-next-line camelcase
-  custom_role_id: number
+  custom_role_id?: number | null
   locale: string
 }
 
@@ -50,7 +51,7 @@ const EXPECTED_USER_SCHEMA = Joi.object({
   name: Joi.string().required(),
   email: Joi.string().required(),
   role: Joi.string(),
-  custom_role_id: Joi.number(),
+  custom_role_id: Joi.number().allow(null),
   locale: Joi.string().required(),
 }).unknown(true)
 
@@ -172,9 +173,10 @@ const getUsersFunc = ():(paginator: clientUtils.Paginator) => Promise<User[]> =>
     }
     const paginationArgs = {
       url: '/api/v2/users',
-      paginationField: 'next_page',
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
       queryParams: {
         role: ['admin', 'agent'],
+        ...DEFAULT_QUERY_PARAMS,
       },
     }
     const users = (await toArrayAsync(

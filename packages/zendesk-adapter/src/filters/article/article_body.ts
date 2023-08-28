@@ -32,7 +32,7 @@ import {
   CATEGORY_TYPE_NAME,
   SECTION_TYPE_NAME, SECTIONS_FIELD, ZENDESK,
 } from '../../constants'
-import { FETCH_CONFIG } from '../../config'
+import { FETCH_CONFIG, ZendeskConfig } from '../../config'
 import { getBrandsForGuide } from '../utils'
 
 const log = logger(module)
@@ -43,13 +43,17 @@ const { createMissingInstance } = referencesUtils
 
 const BODY_FIELD = 'body'
 
-const ELEMENTS_REGEXES = [CATEGORIES_FIELD, SECTIONS_FIELD, ARTICLES_FIELD, ARTICLE_ATTACHMENTS_FIELD].map(
-  field => ({
-    field,
-    urlRegex: new RegExp(`(\\/${field}\\/\\d+)`),
-    idRegex: new RegExp(`(?<url>/${field}/)(?<id>\\d+)`),
-  })
-)
+const ELEMENTS_REGEXES = [
+  [CATEGORIES_FIELD, CATEGORY_TYPE_NAME],
+  [SECTIONS_FIELD, SECTION_TYPE_NAME],
+  [ARTICLES_FIELD, ARTICLE_TYPE_NAME],
+  [ARTICLE_ATTACHMENTS_FIELD, ARTICLE_ATTACHMENT_TYPE_NAME],
+].map(([field, type]) => ({
+  field,
+  type,
+  urlRegex: new RegExp(`(\\/${field}\\/\\d+)`),
+  idRegex: new RegExp(`(?<url>/${field}/)(?<id>\\d+)`),
+}))
 
 const URL_REGEX = /(https?:[0-9a-zA-Z;,/?:@&=+$-_.!~*'()#]+)/
 const DOMAIN_REGEX = /(https:\/\/[^/]+)/
@@ -61,12 +65,12 @@ type missingBrandInfo = {
 }
 
 // Attempt to match the regex to an element and create a reference to that element
-const createInstanceReference = ({ urlPart, urlBrandInstance, idToInstance, idRegex, field, enableMissingReferences }: {
+const createInstanceReference = ({ urlPart, urlBrandInstance, idToInstance, idRegex, type, enableMissingReferences }: {
   urlPart: string
   urlBrandInstance: InstanceElement
   idToInstance: Record<string, InstanceElement>
   idRegex: RegExp
-  field: string
+  type: string
   enableMissingReferences?: boolean
 }): TemplatePart[] | undefined => {
   const { url, id } = urlPart.match(idRegex)?.groups ?? {}
@@ -82,7 +86,7 @@ const createInstanceReference = ({ urlPart, urlBrandInstance, idToInstance, idRe
     }
     // if could not find a valid instance, create a MissingReferences.
     if (enableMissingReferences) {
-      const missingInstance = createMissingInstance(ZENDESK, field, `${urlBrandInstance.value.name}_${id}`)
+      const missingInstance = createMissingInstance(ZENDESK, type, `${urlBrandInstance.value.name}_${id}`)
       missingInstance.value.id = id
       return [url, new ReferenceExpression(missingInstance.elemID, missingInstance)]
     }
@@ -103,13 +107,13 @@ const referenceUrls = ({ urlPart, urlBrandInstance, additionalInstances, enableM
   }
 
   // Attempt to match other instances, stop on the first result
-  const result = wu(ELEMENTS_REGEXES).map(({ idRegex, field }) =>
+  const result = wu(ELEMENTS_REGEXES).map(({ idRegex, field, type }) =>
     createInstanceReference({
       urlPart,
       urlBrandInstance,
       idToInstance: additionalInstances[field],
       idRegex,
-      field,
+      type,
       enableMissingReferences,
     })).find(isDefined)
 
@@ -216,6 +220,42 @@ const getWarningsForMissingBrands = (
     }))
 }
 
+export const articleBodyOnFetch = (elements: Element[], config: ZendeskConfig): { errors: SaltoError[] } => {
+  const instances = elements.filter(isInstanceElement)
+  const additionalInstances = {
+    [BRAND_TYPE_NAME]:
+        _.keyBy(instances.filter(e => e.elemID.typeName === BRAND_TYPE_NAME), i => _.toString(i.value.brand_url)),
+    [CATEGORIES_FIELD]:
+        _.keyBy(instances.filter(e => e.elemID.typeName === CATEGORY_TYPE_NAME), i => _.toString(i.value.id)),
+    [SECTIONS_FIELD]:
+        _.keyBy(instances.filter(e => e.elemID.typeName === SECTION_TYPE_NAME), i => _.toString(i.value.id)),
+    [ARTICLES_FIELD]:
+        _.keyBy(instances.filter(e => e.elemID.typeName === ARTICLE_TYPE_NAME), i => _.toString(i.value.id)),
+    [ARTICLE_ATTACHMENTS_FIELD]:
+        _.keyBy(
+          instances.filter(e => e.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME && e.value.id !== undefined),
+          i => _.toString(i.value.id)
+        ),
+  }
+  const includedBrands = getBrandsForGuide(instances, config[FETCH_CONFIG])
+  const translationToMissingBrands = instances
+    .filter(instance => instance.elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME)
+    .filter(translationInstance => !_.isEmpty(translationInstance.value[BODY_FIELD]))
+    .flatMap(translationInstance => (
+      updateArticleTranslationBody({
+        translationInstance,
+        additionalInstances,
+        includedBrands,
+        enableMissingReferences: config[FETCH_CONFIG].enableMissingReferences,
+      })
+    ))
+
+  const warnings = _.isEmpty(translationToMissingBrands)
+    ? []
+    : getWarningsForMissingBrands(translationToMissingBrands)
+  return { errors: warnings }
+}
+
 /**
  * Process body value in article translation instances to reference other objects
  */
@@ -223,41 +263,7 @@ const filterCreator: FilterCreator = ({ config }) => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}
   return {
     name: 'articleBodyFilter',
-    onFetch: async (elements: Element[]) => {
-      const instances = elements.filter(isInstanceElement)
-      const additionalInstances = {
-        [BRAND_TYPE_NAME]:
-            _.keyBy(instances.filter(e => e.elemID.typeName === BRAND_TYPE_NAME), i => _.toString(i.value.brand_url)),
-        [CATEGORIES_FIELD]:
-            _.keyBy(instances.filter(e => e.elemID.typeName === CATEGORY_TYPE_NAME), i => _.toString(i.value.id)),
-        [SECTIONS_FIELD]:
-            _.keyBy(instances.filter(e => e.elemID.typeName === SECTION_TYPE_NAME), i => _.toString(i.value.id)),
-        [ARTICLES_FIELD]:
-            _.keyBy(instances.filter(e => e.elemID.typeName === ARTICLE_TYPE_NAME), i => _.toString(i.value.id)),
-        [ARTICLE_ATTACHMENTS_FIELD]:
-            _.keyBy(
-              instances.filter(e => e.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME && e.value.id !== undefined),
-              i => _.toString(i.value.id)
-            ),
-      }
-      const includedBrands = getBrandsForGuide(instances, config[FETCH_CONFIG])
-      const translationToMissingBrands = instances
-        .filter(instance => instance.elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME)
-        .filter(translationInstance => !_.isEmpty(translationInstance.value[BODY_FIELD]))
-        .flatMap(translationInstance => (
-          updateArticleTranslationBody({
-            translationInstance,
-            additionalInstances,
-            includedBrands,
-            enableMissingReferences: config[FETCH_CONFIG].enableMissingReferences,
-          })
-        ))
-
-      const warnings = _.isEmpty(translationToMissingBrands)
-        ? []
-        : getWarningsForMissingBrands(translationToMissingBrands)
-      return { errors: warnings }
-    },
+    onFetch: async (elements: Element[]) => articleBodyOnFetch(elements, config),
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       await awu(changes)
         .filter(isAdditionOrModificationChange)

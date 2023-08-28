@@ -31,7 +31,6 @@ import picklistPromoteValidator from './change_validators/picklist_promote'
 import omitDataValidator from './change_validators/omit_data'
 import dataChangeValidator from './change_validators/data_change'
 import cpqValidator from './change_validators/cpq_trigger'
-import sbaaApprovalRulesCustomCondition from './change_validators/sbaa_approval_rules_custom_condition'
 import recordTypeDeletionValidator from './change_validators/record_type_deletion'
 import flowsValidator from './change_validators/flows'
 import fullNameChangedValidator from './change_validators/fullname_changed'
@@ -45,11 +44,12 @@ import currencyIsoCodes from './change_validators/currency_iso_codes'
 import unknownPicklistValues from './change_validators/unknown_picklist_values'
 import accountSettings from './change_validators/account_settings'
 import installedPackages from './change_validators/installed_packages'
+import standardFieldOrObjectAdditionRemoval from './change_validators/standard_field_or_object_additions_or_deletions'
 import dataCategoryGroupValidator from './change_validators/data_category_group'
 import SalesforceClient from './client/client'
 import { ChangeValidatorName, DEPLOY_CONFIG, SalesforceConfig } from './types'
 
-const { createChangeValidator } = deployment.changeValidators
+const { createChangeValidator, getDefaultChangeValidators } = deployment.changeValidators
 
 type ChangeValidatorCreator = (config: SalesforceConfig,
                                isSandbox: boolean,
@@ -74,7 +74,6 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   multipleDefaults: () => multipleDefaultsValidator,
   picklistPromote: () => picklistPromoteValidator,
   cpqValidator: () => cpqValidator,
-  sbaaApprovalRulesCustomCondition: () => sbaaApprovalRulesCustomCondition,
   recordTypeDeletion: () => recordTypeDeletionValidator,
   flowsValidator: (config, isSandbox, client) => flowsValidator(config, isSandbox, client),
   fullNameChangedValidator: () => fullNameChangedValidator,
@@ -91,6 +90,8 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   unknownPicklistValues: () => unknownPicklistValues,
   installedPackages: () => installedPackages,
   dataCategoryGroup: () => dataCategoryGroupValidator,
+  standardFieldOrObjectAdditionRemoval: () => standardFieldOrObjectAdditionRemoval,
+  ..._.mapValues(getDefaultChangeValidators(), validator => (() => validator)),
 }
 
 const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client }: {
@@ -104,14 +105,9 @@ const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client 
     ? defaultChangeValidatorsValidateConfig
     : defaultChangeValidatorsDeployConfig
 
-  // Used for backward compatibility of the old config for disabling validators (SALTO-4468)
-  const oldValidatorsActivationConfig = (config as { validators?: Record<string, boolean> }).validators
-
-  const validatorsActivationConfig = { ...config[DEPLOY_CONFIG]?.changeValidators, ...oldValidatorsActivationConfig }
-
   const changeValidator = createChangeValidator({
     validators: _.mapValues(changeValidators, validator => validator(config, isSandbox, client)),
-    validatorsActivationConfig: { ...defaultValidatorsActivationConfig, ...validatorsActivationConfig },
+    validatorsActivationConfig: { ...defaultValidatorsActivationConfig, ...config[DEPLOY_CONFIG]?.changeValidators },
   })
 
   // Returns a change validator with elementsSource that lazily resolves types using resolveTypeShallow

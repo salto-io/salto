@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, Change, DeployResult, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isModificationChange, isRemovalChange, Values } from '@salto-io/adapter-api'
+import { AdditionChange, Change, DeployResult, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isModificationChange, isRemovalChange, SeverityLevel, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { resolveValues, safeJsonStringify } from '@salto-io/adapter-utils'
@@ -202,10 +202,9 @@ const verifyDeployment = async (
       return false
     }
   )
-
   deployResult.errors = [
     ...deployResult.errors,
-    ...invalidChanges.map(change => new Error(`Failed to deploy ${getChangeData(change).elemID.getFullName()}`)),
+    ...invalidChanges.map(change => ({ message: 'Failed to deploy change', severity: 'Error' as SeverityLevel, elemID: getChangeData(change).elemID })),
   ]
 }
 
@@ -256,7 +255,7 @@ export const deployWithJspEndpoints = async ({
       log.error(`Failed to query service values: ${err}`)
       deployResult.errors = [
         ...deployResult.errors,
-        ...deployResult.appliedChanges.map(change => new Error(`Failed to deploy ${getChangeData(change).elemID.getFullName()}`)),
+        ...deployResult.appliedChanges.map(change => ({ message: 'Failed to deploy change', severity: 'Error' as SeverityLevel, elemID: getChangeData(change).elemID })),
       ]
       deployResult.appliedChanges = []
     }

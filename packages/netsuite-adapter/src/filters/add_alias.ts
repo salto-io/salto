@@ -15,13 +15,14 @@
 */
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { CORE_ANNOTATIONS, Element, InstanceElement, ReadOnlyElementsSource, isInstanceElement, isObjectType, isReferenceExpression } from '@salto-io/adapter-api'
-import { addAliasToElements, AliasData as GenericAliasData, AliasComponent } from '@salto-io/adapter-components'
+import { CORE_ANNOTATIONS, Element, InstanceElement, ObjectType, ReadOnlyElementsSource, isInstanceElement, isObjectType, isReferenceExpression } from '@salto-io/adapter-api'
+import { addAliasToElements, AliasData as GenericAliasData, AliasComponent, ConstantComponent } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { LocalFilterCreator } from '../filter'
-import { APPLICATION_ID, CUSTOM_RECORD_TYPE, FILE_CABINET_PATH_SEPARATOR, IS_SUB_INSTANCE, PATH, TRANSLATION_COLLECTION } from '../constants'
-import { getElementValueOrAnnotations, isCustomRecordType, isFileCabinetType } from '../types'
+import { APPLICATION_ID, BUNDLE, CUSTOM_RECORD_TYPE, FILE, FILE_CABINET_PATH_SEPARATOR, FOLDER, IS_SUB_INSTANCE, PATH, TRANSLATION_COLLECTION } from '../constants'
+import { SuiteAppConfigTypeName, getElementValueOrAnnotations, isCustomRecordType, isFileCabinetType } from '../types'
+import { ConfigurationTypeName } from '../types/configuration_types'
 import { StandardType } from '../autogen/types'
 import { SupportedDataType, isItemType } from '../data_elements/types'
 
@@ -36,6 +37,7 @@ const DEFAULT_TRANSLATION = 'defaulttranslation'
 type ElementsMap = Parameters<typeof addAliasToElements>['0']['elementsMap']
 type AliasDataWithSingleComponent = GenericAliasData<[AliasComponent]>
 type AliasDataWithMultipleComponents = GenericAliasData<AliasComponent[]>
+type ConstantAliasData = GenericAliasData<[ConstantComponent]>
 
 const toAliasDataWithMultipleComponents = (...parts: string[]): AliasDataWithMultipleComponents => ({
   aliasComponents: parts.map(name => ({
@@ -45,6 +47,10 @@ const toAliasDataWithMultipleComponents = (...parts: string[]): AliasDataWithMul
 
 const toAliasDataWithSingleComponent = (fieldName: string): AliasDataWithSingleComponent => ({
   aliasComponents: [{ fieldName }],
+})
+
+const toConstantAliasData = (constant: string): ConstantAliasData => ({
+  aliasComponents: [{ constant }],
 })
 
 const labelAlias = toAliasDataWithSingleComponent('label')
@@ -72,7 +78,7 @@ const customRecordTypesWithSegmentAlias: AliasDataWithSingleComponent = {
   }],
 }
 
-const standardTypesAliasMap: Record<StandardType, AliasDataWithSingleComponent> = {
+const standardInstancesAliasMap: Record<StandardType, AliasDataWithSingleComponent> = {
   addressForm: nameAlias,
   advancedpdftemplate: titleAlias,
   bankstatementparserplugin: nameAlias,
@@ -135,7 +141,70 @@ const standardTypesAliasMap: Record<StandardType, AliasDataWithSingleComponent> 
   workflowactionscript: nameAlias,
 }
 
-const dataTypesAliasMap: Record<SupportedDataType, AliasDataWithMultipleComponents> = {
+const standardTypesAliasMap: Record<StandardType, ConstantAliasData> = {
+  addressForm: toConstantAliasData('Address Form'),
+  advancedpdftemplate: toConstantAliasData('Advanced PDF Template'),
+  bankstatementparserplugin: toConstantAliasData('Bank Statement Parser Plugin'),
+  bundleinstallationscript: toConstantAliasData('Bundle Installation Script'),
+  center: toConstantAliasData('Center'),
+  centercategory: toConstantAliasData('Center Category'),
+  centerlink: toConstantAliasData('Center Link'),
+  centertab: toConstantAliasData('Center Tab'),
+  clientscript: toConstantAliasData('Client Script'),
+  cmscontenttype: toConstantAliasData('CMS Content Type'),
+  crmcustomfield: toConstantAliasData('CRM Custom Field'),
+  customglplugin: toConstantAliasData('Custom GL Plugin'),
+  customlist: toConstantAliasData('Custom List'),
+  customrecordactionscript: toConstantAliasData('Custom Record Action Script'),
+  customrecordtype: toConstantAliasData('Custom Record Type'),
+  customsegment: toConstantAliasData('Custom Segment'),
+  customtransactiontype: toConstantAliasData('Custom Transaction Type'),
+  dataset: toConstantAliasData('Dataset'),
+  datasetbuilderplugin: toConstantAliasData('Dataset Builder Plugin'),
+  emailcaptureplugin: toConstantAliasData('Email Capture Plugin'),
+  emailtemplate: toConstantAliasData('Email Template'),
+  entitycustomfield: toConstantAliasData('Entity Custom Field'),
+  entryForm: toConstantAliasData('Entry Form'),
+  ficonnectivityplugin: toConstantAliasData('Financial Institution Connectivity Plugin'),
+  financiallayout: toConstantAliasData('Financial Layout'),
+  fiparserplugin: toConstantAliasData('Financial Institution Parser Plugin'),
+  integration: toConstantAliasData('Integration'),
+  itemcustomfield: toConstantAliasData('Item Custom Field'),
+  itemnumbercustomfield: toConstantAliasData('Item Number Custom Field'),
+  itemoptioncustomfield: toConstantAliasData('Item Option Custom Field'),
+  kpiscorecard: toConstantAliasData('KPI Score Card'),
+  mapreducescript: toConstantAliasData('Map Reduce Script'),
+  massupdatescript: toConstantAliasData('Mass Update Script'),
+  othercustomfield: toConstantAliasData('Other Custom Field'),
+  pluginimplementation: toConstantAliasData('Plugin Implementation'),
+  plugintype: toConstantAliasData('Plugin Type'),
+  portlet: toConstantAliasData('Portlet'),
+  promotionsplugin: toConstantAliasData('Promotions Plugin'),
+  publisheddashboard: toConstantAliasData('Published Dashboard'),
+  reportdefinition: toConstantAliasData('Report Definition'),
+  restlet: toConstantAliasData('Restlet'),
+  role: toConstantAliasData('Role'),
+  savedcsvimport: toConstantAliasData('Saved CSV Import'),
+  savedsearch: toConstantAliasData('Saved Search'),
+  scheduledscript: toConstantAliasData('Scheduled Script'),
+  sdfinstallationscript: toConstantAliasData('SDF Installation Script'),
+  secret: toConstantAliasData('Secret'),
+  sspapplication: toConstantAliasData('SSP Application'),
+  sublist: toConstantAliasData('Sublist'),
+  subtab: toConstantAliasData('Subtab'),
+  suitelet: toConstantAliasData('Suitelet'),
+  transactionForm: toConstantAliasData('Transaction Form'),
+  transactionbodycustomfield: toConstantAliasData('Transaction Body Custom Field'),
+  transactioncolumncustomfield: toConstantAliasData('Transaction Column Custom Field'),
+  translationcollection: toConstantAliasData('Translation Collection'),
+  usereventscript: toConstantAliasData('User Event Script'),
+  workbook: toConstantAliasData('Workbook'),
+  workbookbuilderplugin: toConstantAliasData('Workbook Builder Plugin'),
+  workflow: toConstantAliasData('Workflow'),
+  workflowactionscript: toConstantAliasData('Workflow Action Script'),
+}
+
+const dataInstancesAliasMap: Record<SupportedDataType, AliasDataWithMultipleComponents> = {
   subsidiary: nameAlias,
   department: nameAlias,
   classification: nameAlias,
@@ -176,9 +245,64 @@ const dataTypesAliasMap: Record<SupportedDataType, AliasDataWithMultipleComponen
   nexus: identifierAlias,
 }
 
-const [itemTypes, otherDataTypes] = _.partition(Object.keys(dataTypesAliasMap), isItemType)
-const entityIdFallbackAliasMap = Object.fromEntries(otherDataTypes.map(type => [type, entityIdAlias]))
-const itemTypesFallbackAliasMap = Object.fromEntries(itemTypes.map(type => [type, itemIdAlias]))
+const dataTypesAliasMap: Record<SupportedDataType, ConstantAliasData> = {
+  subsidiary: toConstantAliasData('Subsidiary'),
+  department: toConstantAliasData('Department'),
+  classification: toConstantAliasData('Classification'),
+  location: toConstantAliasData('Location'),
+  currency: toConstantAliasData('Currency'),
+  customer: toConstantAliasData('Customer'),
+  employee: toConstantAliasData('Employee'),
+  job: toConstantAliasData('Job'),
+  manufacturingCostTemplate: toConstantAliasData('Manufacturing Cost Template'),
+  partner: toConstantAliasData('Partner'),
+  solution: toConstantAliasData('Solution'),
+  assemblyItem: toConstantAliasData('Assembly Item'),
+  lotNumberedAssemblyItem: toConstantAliasData('Lot Numbered Assembly Item'),
+  serializedAssemblyItem: toConstantAliasData('Serialized Assembly Item'),
+  descriptionItem: toConstantAliasData('Description Item'),
+  discountItem: toConstantAliasData('Discount Item'),
+  kitItem: toConstantAliasData('Kit Item'),
+  markupItem: toConstantAliasData('Markup Item'),
+  nonInventoryPurchaseItem: toConstantAliasData('Non-inventory Purchase Item'),
+  nonInventorySaleItem: toConstantAliasData('Non-inventory Sale Item'),
+  nonInventoryResaleItem: toConstantAliasData('Non-inventory Resale Item'),
+  otherChargeSaleItem: toConstantAliasData('Other Charge Sale Item'),
+  otherChargeResaleItem: toConstantAliasData('Other Charge Resale Item'),
+  otherChargePurchaseItem: toConstantAliasData('Other Charge Purchase Item'),
+  paymentItem: toConstantAliasData('Payment Item'),
+  serviceResaleItem: toConstantAliasData('Service Resale Item'),
+  servicePurchaseItem: toConstantAliasData('Service Purchase Item'),
+  serviceSaleItem: toConstantAliasData('Service Sale Item'),
+  subtotalItem: toConstantAliasData('Subtotal Item'),
+  inventoryItem: toConstantAliasData('Inventory Item'),
+  lotNumberedInventoryItem: toConstantAliasData('Lot Numbered Inventory Item'),
+  serializedInventoryItem: toConstantAliasData('Serialized Inventory Item'),
+  itemGroup: toConstantAliasData('Item Group'),
+  giftCertificateItem: toConstantAliasData('Gift Certificate Item'),
+  downloadItem: toConstantAliasData('Download Item'),
+  accountingPeriod: toConstantAliasData('Accounting Period'),
+  account: toConstantAliasData('Account'),
+  nexus: toConstantAliasData('Nexus'),
+}
+
+const [itemInstances, otherDataInstances] = _.partition(Object.keys(dataInstancesAliasMap), isItemType)
+const entityIdFallbackAliasMap = Object.fromEntries(otherDataInstances.map(type => [type, entityIdAlias]))
+const itemInstancesFallbackAliasMap = Object.fromEntries(itemInstances.map(type => [type, itemIdAlias]))
+
+type SettingsTypeName = SuiteAppConfigTypeName | ConfigurationTypeName
+const settingsAliasMap: Record<SettingsTypeName, ConstantAliasData> = {
+  companyFeatures: toConstantAliasData('Company Features'),
+  userPreferences: toConstantAliasData('User Preferences'),
+  companyInformation: toConstantAliasData('Company Information'),
+  companyPreferences: toConstantAliasData('Company Preferences'),
+  accountingPreferences: toConstantAliasData('Accounting Preferences'),
+}
+
+const fileCabinetTypesAliasMap: Record<string, ConstantAliasData> = {
+  [FILE]: toConstantAliasData('File'),
+  [FOLDER]: toConstantAliasData('Folder'),
+}
 
 const splitInstancesToGroups = async (instances: InstanceElement[]): Promise<{
   fileCabinetInstances: InstanceElement[]
@@ -206,6 +330,23 @@ const splitInstancesToGroups = async (instances: InstanceElement[]): Promise<{
     customRecordInstances,
     subInstances,
     otherInstances,
+  }
+}
+
+const splitTypesToGroups = (types: ObjectType[]): {
+  definitionTypes: ObjectType[]
+  customRecordTypes: ObjectType[]
+  customRecordTypesWithSegment: ObjectType[]
+} => {
+  const [customRecordTypes, definitionTypes] = _.partition(types, isCustomRecordType)
+  const [customRecordTypesWithSegment, otherCustomRecordTypes] = _.partition(
+    customRecordTypes,
+    type => type.annotations[CUSTOM_SEGMENT_FIELD] !== undefined
+  )
+  return {
+    definitionTypes,
+    customRecordTypes: otherCustomRecordTypes,
+    customRecordTypesWithSegment,
   }
 }
 
@@ -278,7 +419,7 @@ const getElementsWithoutAlias = (elementsMap: ElementsMap): ElementsMap =>
 const filterCreator: LocalFilterCreator = ({ config, elementsSource, isPartial }) => ({
   name: 'addAlias',
   onFetch: async (elements: Element[]): Promise<void> => {
-    if (config.fetch?.addAlias === false) {
+    if (config.fetch.addAlias === false) {
       log.info('not running addAlias filter as addAlias in the config is false')
       return
     }
@@ -291,24 +432,37 @@ const filterCreator: LocalFilterCreator = ({ config, elementsSource, isPartial }
       otherInstances,
     } = await splitInstancesToGroups(instances)
 
-    const [customRecordTypesWithSegment, customRecordTypes] = _.partition(
-      elements.filter(isObjectType).filter(isCustomRecordType),
-      type => type.annotations[CUSTOM_SEGMENT_FIELD] !== undefined
-    )
+    const {
+      definitionTypes,
+      customRecordTypes,
+      customRecordTypesWithSegment,
+    } = splitTypesToGroups(elements.filter(isObjectType))
 
-    const instancesMap = _.groupBy(otherInstances, instance => instance.elemID.typeName)
-    const elementsMap: ElementsMap = {
-      ...instancesMap,
+    addAliasToElements({
+      elementsMap: _.groupBy(definitionTypes, type => type.elemID.name),
+      aliasMap: {
+        ...standardTypesAliasMap,
+        ...dataTypesAliasMap,
+        ...settingsAliasMap,
+        ...fileCabinetTypesAliasMap,
+      },
+    })
+
+    const otherInstancesMap = _.groupBy(otherInstances, instance => instance.elemID.typeName)
+    const instancesMap: ElementsMap = {
+      ...otherInstancesMap,
       [IS_SUB_INSTANCE]: subInstances,
       [CUSTOM_RECORD_TYPE]: customRecordTypes,
       [CUSTOM_RECORD_INSTANCES]: customRecordInstances,
     }
 
     addAliasToElements({
-      elementsMap,
+      elementsMap: instancesMap,
       aliasMap: {
-        ...standardTypesAliasMap,
-        ...dataTypesAliasMap,
+        ...standardInstancesAliasMap,
+        ...dataInstancesAliasMap,
+        ...settingsAliasMap,
+        [BUNDLE]: nameAlias,
         [IS_SUB_INSTANCE]: nameAlias,
         [CUSTOM_RECORD_INSTANCES]: nameAlias,
       },
@@ -316,23 +470,23 @@ const filterCreator: LocalFilterCreator = ({ config, elementsSource, isPartial }
 
     await addAliasFromTranslatedFields({
       elementsSource: buildElementsSourceFromElements(instances, isPartial ? [elementsSource] : []),
-      elementsMap: getElementsWithoutAlias(elementsMap),
-      aliasMap: standardTypesAliasMap,
+      elementsMap: getElementsWithoutAlias(instancesMap),
+      aliasMap: standardInstancesAliasMap,
     })
 
     // some data type instances have a fallback
     addAliasToElements({
-      elementsMap: getElementsWithoutAlias(elementsMap),
+      elementsMap: getElementsWithoutAlias(instancesMap),
       aliasMap: {
         ...entityIdFallbackAliasMap,
-        ...itemTypesFallbackAliasMap,
+        ...itemInstancesFallbackAliasMap,
         [IS_SUB_INSTANCE]: labelAlias,
       },
     })
 
     addAliasToElements({
       elementsMap: {
-        ...elementsMap,
+        ...instancesMap,
         [CUSTOM_RECORD_TYPES_WITH_SEGMENT]: customRecordTypesWithSegment,
       },
       aliasMap: {

@@ -58,7 +58,7 @@ describe('client_http_connection', () => {
         { createConnection: retryOptions => (axiosConnection({
           retryOptions,
           authParamsFunc: async () => ({}),
-          baseURLFunc: () => BASE_URL,
+          baseURLFunc: async () => BASE_URL,
           credValidateFunc: async () => { throw new UnauthorizedError('aaa') },
         })) },
       )).rejects.toThrow(new UnauthorizedError('Unauthorized - update credentials and try again'))
@@ -69,7 +69,7 @@ describe('client_http_connection', () => {
         { createConnection: retryOptions => (axiosConnection({
           retryOptions,
           authParamsFunc: async () => ({}),
-          baseURLFunc: () => BASE_URL,
+          baseURLFunc: async () => BASE_URL,
           credValidateFunc: async () => { throw new Error('aaa') },
         })) },
       )).rejects.toThrow(new Error('Login failed with error: Error: aaa'))

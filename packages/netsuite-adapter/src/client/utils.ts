@@ -60,20 +60,48 @@ export const getGroupItemFromRegex = (str: string, regex: RegExp, item: string):
     .filter(isDefined)
     .map(groups => groups[item])
 
+export const sliceMessagesByRegex = (
+  messages: string[],
+  lookFromRegex: RegExp,
+  includeMatchedRegex = true
+): string[] => {
+  // remove the global flag of the regex
+  const fixedLookedFromRegex = RegExp(lookFromRegex, lookFromRegex.flags.replace('g', ''))
+  const matchedMessages = messages.map(message => fixedLookedFromRegex.test(message))
+  const lookFromIndex = includeMatchedRegex
+    ? matchedMessages.indexOf(true)
+    : matchedMessages.lastIndexOf(true)
+  return lookFromIndex !== -1
+    ? messages.slice(lookFromIndex + (includeMatchedRegex ? 0 : 1))
+    : []
+}
+
 export const getConfigRecordsFieldValue = (
   configRecord: ConfigRecord | undefined,
   field: string,
 ): unknown => configRecord?.data?.fields?.[field]
 
-export const toDependencyError = (
-  dependency: { elemId: ElemID; dependOn: ElemID[] }
+export const toElementError = (
+  elemID: ElemID,
+  message: string
 ): SaltoElementError => ({
-  elemID: dependency.elemId,
-  message: `Element cannot be deployed due to an error in its ${
-    dependency.dependOn.length > 1 ? 'dependencies' : 'dependency'
-  }: ${dependency.dependOn.map(id => id.getFullName()).join(', ')}`,
+  elemID,
+  message,
   severity: 'Error',
 })
+
+export const toDependencyError = (
+  dependency: { elemId: ElemID; dependOn: ElemID[] }
+): SaltoElementError => {
+  const dependencies = _.uniq(dependency.dependOn)
+  return {
+    elemID: dependency.elemId,
+    message: `Element cannot be deployed due to an error in its ${
+      dependencies.length > 1 ? 'dependencies' : 'dependency'
+    }: ${dependencies.map(id => id.getFullName()).join(', ')}`,
+    severity: 'Error',
+  }
+}
 
 export const getDeployResultFromSuiteAppResult = <T extends Change>(
   changes: T[],
@@ -103,7 +131,7 @@ export const getDeployResultFromSuiteAppResult = <T extends Change>(
         appliedChanges.push(change)
         elemIdToInternalId[elemID.getFullName()] = result.toString()
       } else {
-        errors.push({ elemID, message: result.message, severity: 'Error' })
+        errors.push(toElementError(elemID, result.message))
       }
     })
 

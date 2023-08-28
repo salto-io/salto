@@ -146,6 +146,7 @@ export const replaceReferenceValues = async <
             ref: new ReferenceExpression(element.elemID, elem),
             field,
             element: instance,
+            path,
           })
           : resolvePath(element, referenceId)
         // this validation is necessary to create a reference from '$Label.check' and not 'check'
@@ -222,12 +223,14 @@ export const addReferences = async <
   GenericFieldReferenceDefinition extends FieldReferenceDefinition<T>
 >({
   elements,
+  contextElements = elements,
   defs,
   fieldsToGroupBy = ['id'],
   contextStrategyLookup,
   fieldReferenceResolverCreator,
 }: {
   elements: Element[]
+  contextElements?: Element[]
   defs: GenericFieldReferenceDefinition[]
   fieldsToGroupBy?: string[]
   contextStrategyLookup?: Record<T, ContextFunc>
@@ -252,7 +255,7 @@ export const addReferences = async <
     filter: e => isInstanceElement(e) && e.value[fieldName] !== undefined,
     key: (inst: InstanceElement) => [inst.refType.elemID.name, inst.value[fieldName]],
   }))
-  const { elemByElemID, ...fieldLookups } = await indexer.process(awu(elements))
+  const { elemByElemID, ...fieldLookups } = await indexer.process(awu(contextElements))
 
   const fieldsWithResolvedReferences = new Set<string>()
   await awu(instances).forEach(async instance => {
@@ -314,7 +317,7 @@ export const generateLookupFunc = <
       ref, path, field, element,
     }) ?? ReferenceSerializationStrategyLookup.fullValue
     if (!isRelativeSerializer(strategy)) {
-      return strategy.serialize({ ref, field, element })
+      return strategy.serialize({ ref, field, element, path })
     }
     return cloneDeepWithoutRefs(ref.value)
   }

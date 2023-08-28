@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression, Field, CredentialError, getChangeData, toChange, SeverityLevel, GetAdditionalReferencesFunc, Change } from '@salto-io/adapter-api'
+import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression, Field, getChangeData, toChange, SeverityLevel, GetAdditionalReferencesFunc, Change } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
@@ -60,6 +60,15 @@ jest.mock('../src/core/restore', () => ({
       }]
       : detailedChanges
   }),
+  createRestorePathChanges: jest.fn().mockResolvedValue([{
+    action: 'add',
+    data: { after: 'value' },
+    detailedChanges: () => [{
+      action: 'add',
+      data: { after: 'value' },
+      path: ['path'],
+    }],
+  }]),
 }))
 
 jest.mock('../src/core/diff', () => ({
@@ -260,14 +269,9 @@ describe('api.ts', () => {
       beforeAll(() => {
         ws = mockWorkspace({ stateElements: [] })
       })
-      it('to return credential error', async () => {
-        mockFetchChanges.mockRejectedValueOnce(new CredentialError('test'))
-        const result = await api.fetch(ws, undefined, [mockService])
-        expect(result).toEqual(expect.objectContaining({ fetchErrors: expect.arrayContaining([{ message: 'test', severity: 'Error' }]) }))
-      })
-      it('throw unexpected error', async () => {
+      it('should throw an error upon failure', async () => {
         mockFetchChanges.mockRejectedValueOnce(new Error('test'))
-        await expect(api.fetch(ws, undefined, [mockService])).rejects.toThrow()
+        await expect(api.fetch(ws, undefined, [mockService])).rejects.toThrow(new Error('test'))
       })
     })
   })
@@ -426,7 +430,7 @@ describe('api.ts', () => {
         mockAdapterOps.deploy.mockImplementationOnce(async ({ changeGroup }) => ({
           appliedChanges: changeGroup.changes.filter(isModificationChange),
           errors: [
-            new Error('cannot add new employee'),
+            { message: 'cannot add new employee', severity: 'Error' as SeverityLevel, elemID: newEmployee.elemID },
             { message: 'cannot add new employee', severity: 'Error' as SeverityLevel },
           ],
         }))
@@ -719,6 +723,20 @@ describe('api.ts', () => {
       const changes = await api.restore(ws, undefined, undefined, 'changes')
       expect(changes).toHaveLength(1)
       expect(_.keys(changes[0])).toEqual(['action', 'data', 'detailedChanges'])
+    })
+  })
+
+  describe('restorePaths', () => {
+    it('should return all changes as local changes', async () => {
+      const ws = mockWorkspace({
+        elements: [],
+        name: 'restore',
+        index: [],
+        stateElements: [],
+      })
+      const changes = await api.restorePaths(ws)
+      expect(changes).toHaveLength(1)
+      expect(_.keys(changes[0])).toEqual(['change', 'serviceChanges'])
     })
   })
 

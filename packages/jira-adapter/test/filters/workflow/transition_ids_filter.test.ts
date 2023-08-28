@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import JiraClient from '../../../src/client/client'
 import { JIRA, WORKFLOW_TYPE_NAME } from '../../../src/constants'
@@ -42,20 +42,20 @@ describe('transitionIdsFilter', () => {
         'instance',
         workflowType,
         {
-          transitions: [
-            { id: '1', name: 'transition1', from: ['4', '5'] },
-            { id: '2', name: 'transition2' },
-            { id: '3', from: ['7', '6'] },
-          ],
+          transitions: {
+            tran1: { id: '1', name: 'transition1', from: ['4', '5'] },
+            tran2: { id: '2', name: 'transition2' },
+            tran3: { name: 'tran3', id: '3', from: ['7', '6'] },
+          },
         },
       )
       await filter.onFetch([instance])
       expect(instance.value).toEqual({
-        transitions: [
-          { name: 'transition1', from: ['4', '5'] },
-          { name: 'transition2' },
-          { from: ['7', '6'] },
-        ],
+        transitions: {
+          tran1: { name: 'transition1', from: ['4', '5'] },
+          tran2: { name: 'transition2' },
+          tran3: { name: 'tran3', from: ['7', '6'] },
+        },
       })
     })
 
@@ -67,6 +67,29 @@ describe('transitionIdsFilter', () => {
       )
       await filter.onFetch([instance])
       expect(instance.value).toEqual({})
+    })
+  })
+  describe('onDeploy', () => {
+    it('should add transition ids', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        workflowType,
+        {
+          transitions: {
+            tran1: { id: '1', name: 'transition1', from: ['4', '5'] },
+            tran2: { id: '2', name: 'transition2' },
+            tran3: { name: 'tran3', id: '3', from: ['7', '6'] },
+          },
+        },
+      )
+      await filter.onDeploy([toChange({ after: instance })])
+      expect(instance.value).toEqual({
+        transitions: {
+          tran1: { name: 'transition1', from: ['4', '5'] },
+          tran2: { name: 'transition2' },
+          tran3: { name: 'tran3', from: ['7', '6'] },
+        },
+      })
     })
   })
 })

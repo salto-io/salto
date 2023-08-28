@@ -16,11 +16,9 @@
 import _ from 'lodash'
 import { Change, ChangeValidator, getChangeData,
   InstanceElement,
-  isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
-
-const { awu } = collections.asynciterable
-export const TICKET_FORM_TYPE_NAME = 'ticket_form'
+  isAdditionOrModificationChange, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
+import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
+import { TICKET_FORM_TYPE_NAME } from '../constants'
 
 const isRelevantChange = (change: Change<InstanceElement>): boolean =>
   (getChangeData(change).elemID.typeName === TICKET_FORM_TYPE_NAME)
@@ -39,12 +37,7 @@ export const onlyOneTicketFormDefaultValidator: ChangeValidator = async (
   if (_.isEmpty(relevantInstances) || (elementSource === undefined)) {
     return []
   }
-  const allTicketForms = await awu(await elementSource.list())
-    .filter(id => id.typeName === TICKET_FORM_TYPE_NAME)
-    .filter(id => id.idType === 'instance')
-    .map(id => elementSource.get(id))
-    .filter(isInstanceElement)
-    .toArray()
+  const allTicketForms = await getInstancesFromElementSource(elementSource, [TICKET_FORM_TYPE_NAME])
   return relevantInstances
     .flatMap(instance => {
       const otherDefaultTicketForms = allTicketForms

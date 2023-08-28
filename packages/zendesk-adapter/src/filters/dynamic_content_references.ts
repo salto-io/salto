@@ -32,7 +32,7 @@ import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from './dynamic_content'
 import { ZENDESK } from '../constants'
-import { FETCH_CONFIG } from '../config'
+import { FETCH_CONFIG, ZendeskConfig } from '../config'
 
 const { awu } = collections.asynciterable
 const { createMissingInstance } = referencesUtils
@@ -130,6 +130,19 @@ const returnDynamicContentsToApiValue = async (
   }) ?? instance.value
 }
 
+export const DynamicContentReferencesOnFetch = async (elements: Element[], config: ZendeskConfig): Promise<void> => {
+  const instances = elements.filter(isInstanceElement)
+
+  const placeholderToItem = _(instances)
+    .filter(instance => instance.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME)
+    .keyBy(instance => instance.value.placeholder)
+    .value()
+
+  await Promise.all(instances.map(instance =>
+    transformDynamicContentDependencies(instance, placeholderToItem,
+      config[FETCH_CONFIG].enableMissingReferences)))
+}
+
 /**
  * Add dependencies from elements to dynamic content items in
  * the _generated_ dependencies annotation
@@ -138,18 +151,7 @@ const filterCreator: FilterCreator = ({ config }) => {
   const templateMapping: Record<string, TemplateExpression> = {}
   return ({
     name: 'dynamicContentReferencesFilter',
-    onFetch: async (elements: Element[]): Promise<void> => {
-      const instances = elements.filter(isInstanceElement)
-
-      const placeholderToItem = _(instances)
-        .filter(instance => instance.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME)
-        .keyBy(instance => instance.value.placeholder)
-        .value()
-
-      await Promise.all(instances.map(instance =>
-        transformDynamicContentDependencies(instance, placeholderToItem,
-          config[FETCH_CONFIG].enableMissingReferences)))
-    },
+    onFetch: async (elements: Element[]): Promise<void> => DynamicContentReferencesOnFetch(elements, config),
     preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
       await Promise.all(changes.map(getChangeData).map(instance =>
         returnDynamicContentsToApiValue(instance, templateMapping)))

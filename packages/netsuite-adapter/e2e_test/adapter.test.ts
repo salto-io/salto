@@ -27,10 +27,11 @@ import { buildElementsSourceFromElements, findElement, naclCase } from '@salto-i
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
 import each from 'jest-each'
+import { emptyQueryParams, fullFetchConfig, fullQueryParams } from '../src/query'
 import NetsuiteAdapter from '../src/adapter'
 import { configType } from '../src/config'
 import { credsLease, realAdapter } from './adapter'
-import { SUITEAPP_CONFIG_TYPE_NAMES, getElementValueOrAnnotations, getMetadataTypes, isCustomRecordType, isSDFConfigTypeName, metadataTypesToList } from '../src/types'
+import { getElementValueOrAnnotations, getMetadataTypes, isCustomRecordType, isSDFConfigTypeName, metadataTypesToList, netsuiteSupportedTypes } from '../src/types'
 import { adapter as adapterCreator } from '../src/adapter_creator'
 import {
   CUSTOM_RECORD_TYPE, EMAIL_TEMPLATE, ENTITY_CUSTOM_FIELD,
@@ -62,8 +63,8 @@ const logging = (message: string): void => {
 describe('Netsuite adapter E2E with real account', () => {
   let adapter: NetsuiteAdapter
   let credentialsLease: CredsLease<Required<Credentials>>
-  const { standardTypes, additionalTypes } = getMetadataTypes()
-  const metadataTypes = metadataTypesToList({ standardTypes, additionalTypes })
+  const { standardTypes, additionalTypes, innerAdditionalTypes } = getMetadataTypes()
+  const metadataTypes = metadataTypesToList({ standardTypes, additionalTypes, innerAdditionalTypes })
 
   const createInstanceElement = (typeName: string, valuesOverride: Values, annotations?: Values): InstanceElement => {
     const instValues = {
@@ -136,6 +137,9 @@ describe('Netsuite adapter E2E with real account', () => {
 
     const randomNumber = String(Date.now()).substring(6)
     const randomString = `created by oss e2e - ${randomNumber}`
+
+    additionalTypes[FOLDER].annotate({ [CORE_ANNOTATIONS.ALIAS]: 'Folder' })
+    additionalTypes[FILE].annotate({ [CORE_ANNOTATIONS.ALIAS]: 'File' })
 
     const entityCustomFieldToCreate = createInstanceElement(
       ENTITY_CUSTOM_FIELD,
@@ -430,7 +434,7 @@ describe('Netsuite adapter E2E with real account', () => {
           // we need to get the folder internalId
           ? await realAdapter(
             { credentials: credentialsLease.value, withSuiteApp },
-            { fetch: { include: { types: [], fileCabinet: ['/Images/'], customRecords: [] } } }
+            { fetch: { include: { types: [], fileCabinet: ['/Images/'], customRecords: [] }, exclude: emptyQueryParams() } }
           ).adapter.fetch({
             progressReporter: { reportProgress: jest.fn() },
           })
@@ -503,7 +507,10 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
-              { deploy: { warnOnStaleWorkspaceData: true } },
+              {
+                fetch: fullFetchConfig(),
+                deploy: { warnOnStaleWorkspaceData: true },
+              },
             )
             adapter = adapterAttr.adapter
           })
@@ -528,7 +535,10 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
-              { deploy: { warnOnStaleWorkspaceData: false } },
+              {
+                fetch: fullFetchConfig(),
+                deploy: { warnOnStaleWorkspaceData: false },
+              },
             )
             adapter = adapterAttr.adapter
           })
@@ -560,7 +570,10 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
-              { deploy: { warnOnStaleWorkspaceData: true } },
+              {
+                fetch: fullFetchConfig(),
+                deploy: { warnOnStaleWorkspaceData: true },
+              },
             )
             adapter = adapterAttr.adapter
           })
@@ -585,7 +598,10 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
-              { deploy: { warnOnStaleWorkspaceData: false } },
+              {
+                fetch: fullFetchConfig(),
+                deploy: { warnOnStaleWorkspaceData: false },
+              },
             )
             adapter = adapterAttr.adapter
           })
@@ -608,7 +624,13 @@ describe('Netsuite adapter E2E with real account', () => {
       beforeAll(async () => {
         const adapterAttr = realAdapter(
           { credentials: credentialsLease.value, withSuiteApp },
-          { fetch: { addAlias: true } }
+          {
+            fetch: {
+              include: fullQueryParams(),
+              exclude: emptyQueryParams(),
+              addAlias: true,
+            },
+          }
         )
         adapter = adapterAttr.adapter
 
@@ -627,22 +649,22 @@ describe('Netsuite adapter E2E with real account', () => {
 
       it('should add alias to elements', async () => {
         const relevantElements = fetchResult.elements
-          .filter(element => isInstanceElement(element) || (isObjectType(element) && isCustomRecordType(element)))
+          .filter(element => isInstanceElement(element)
+            || (isObjectType(element) && (
+              isCustomRecordType(element) || netsuiteSupportedTypes.includes(element.elemID.name)
+            )))
 
         const elementsWithoutAlias = relevantElements
           .filter(element => element.annotations[CORE_ANNOTATIONS.ALIAS] === undefined)
           // some sub-instances don't have alias
           .filter(element => getElementValueOrAnnotations(element)[IS_SUB_INSTANCE] !== true)
-          .map(element => element.elemID.getFullName())
-          .sort()
 
-        const settingsTypeNames = new Set([...SUITEAPP_CONFIG_TYPE_NAMES, CONFIG_FEATURES, SERVER_TIME_TYPE_NAME])
-        const settingsElements = relevantElements
-          .filter(element => settingsTypeNames.has(element.elemID.typeName))
-          .map(element => element.elemID.getFullName())
-          .sort()
-
-        expect(elementsWithoutAlias).toEqual(settingsElements)
+        if (withSuiteApp) {
+          expect(elementsWithoutAlias).toHaveLength(1)
+          expect(elementsWithoutAlias[0].elemID.typeName).toEqual(SERVER_TIME_TYPE_NAME)
+        } else {
+          expect(elementsWithoutAlias).toHaveLength(0)
+        }
       })
 
       it('should fetch the created entityCustomField and its special chars', async () => {
@@ -927,7 +949,13 @@ describe('Netsuite adapter E2E with real account', () => {
         const res = await adapterCreator.loadElementsFromFolder?.({
           baseDir: projectPath,
           elementsSource: buildElementsSourceFromElements(existingFileCabinetInstances),
-          config: new InstanceElement(ElemID.CONFIG_NAME, configType, { fetch: { addAlias: true } }),
+          config: new InstanceElement(ElemID.CONFIG_NAME, configType, {
+            fetch: {
+              include: fullQueryParams(),
+              exclude: emptyQueryParams(),
+              addAlias: true,
+            },
+          }),
         })
         loadedElements = res?.elements as Element[]
       })

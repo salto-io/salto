@@ -14,15 +14,12 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import {
-  Change, getChangeData, InstanceElement, isRemovalChange, Value, Values,
-} from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isRemovalChange, Value, Values } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import { applyforInstanceChangesOfType } from './utils'
-
-export const VIEW_TYPE_NAME = 'view'
+import { VIEW_TYPE_NAME } from '../constants'
 
 const valToString = (val: Value): string | string[] => (_.isArray(val) ? val.map(String) : val?.toString())
 

@@ -38,6 +38,7 @@ import { wrongUserPermissionSchemeValidator } from './wrong_user_permission_sche
 import { accountIdValidator } from './account_id'
 import { screenSchemeDefaultValidator } from './screen_scheme_default'
 import { workflowSchemeDupsValidator } from './workflows/workflow_scheme_dups'
+import { workflowTransitionDuplicateNameValidator } from './workflows/workflow_transition_duplicate_names'
 import { issueTypeSchemeDefaultTypeValidator } from './issue_type_scheme_default_type'
 import { emptyValidatorWorkflowChangeValidator } from './workflows/empty_validator_workflow'
 import { fieldContextValidator } from './field_contexts/field_contexts'
@@ -46,7 +47,7 @@ import { permissionSchemeDeploymentValidator } from './permission_scheme'
 import { statusMigrationChangeValidator } from './status_migration'
 import { activeSchemeChangeValidator } from './active_scheme_change'
 import { activeSchemeDeletionValidator } from './active_scheme_deletion'
-import { automationProjectUnresolvedReferenceValidator } from './automation_unresolved_references'
+import { brokenReferenceValidator } from './broken_references'
 import { unresolvedReferenceValidator } from './unresolved_references'
 import { sameIssueTypeNameChangeValidator } from './same_issue_type_name'
 import { issueTypeSchemeMigrationValidator } from './issue_type_scheme_migration'
@@ -54,6 +55,7 @@ import { issueTypeDeletionValidator } from './issue_type_deletion'
 import { projectCategoryValidator } from './project_category'
 import { unresolvedFieldConfigurationItemsValidator } from './unresolved_field_configuration_items'
 import { fieldSecondGlobalContextValidator } from './field_contexts/second_global_context'
+import { customFieldsWith10KOptionValidator } from './field_contexts/custom_field_with_10K_options'
 
 const {
   deployTypesNotSupportedValidator,
@@ -67,7 +69,7 @@ export default (
   const validators: Record<ChangeValidatorName, ChangeValidator> = {
     ...deployment.changeValidators.getDefaultChangeValidators(['outgoingUnresolvedReferencesValidator']),
     unresolvedReference: unresolvedReferenceValidator,
-    automationProjectUnresolvedReference: automationProjectUnresolvedReferenceValidator,
+    brokenReferences: brokenReferenceValidator,
     deployTypesNotSupported: deployTypesNotSupportedValidator,
     readOnlyProjectRoleChange: readOnlyProjectRoleChangeValidator,
     defaultFieldConfiguration: defaultFieldConfigurationValidator,
@@ -102,9 +104,11 @@ export default (
     wrongUserPermissionScheme: wrongUserPermissionSchemeValidator(client, config),
     accountId: accountIdValidator(client, config),
     workflowSchemeDups: workflowSchemeDupsValidator,
+    workflowTransitionDuplicateName: workflowTransitionDuplicateNameValidator,
     permissionSchemeDeployment: permissionSchemeDeploymentValidator(client),
     projectCategory: projectCategoryValidator(client),
     unresolvedFieldConfigurationItems: unresolvedFieldConfigurationItemsValidator,
+    customFieldsWith10KOptions: customFieldsWith10KOptionValidator,
   }
 
   return createChangeValidator({

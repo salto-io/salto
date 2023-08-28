@@ -22,22 +22,24 @@ import { client as clientUtils, config as configUtils } from '@salto-io/adapter-
 import JiraClient from './client/client'
 import JiraAdapter from './adapter'
 import { Credentials, basicAuthCredentialsType } from './auth'
-import { configType, JiraConfig, getApiDefinitions, getDefaultConfig } from './config/config'
+import { configType, JiraConfig, getApiDefinitions, getDefaultConfig, validateJiraFetchConfig } from './config/config'
 import { createConnection, validateCredentials } from './client/connection'
-import { AUTOMATION_TYPE, WEBHOOK_TYPE } from './constants'
+import { AUTOMATION_TYPE, SCRIPT_RUNNER_API_DEFINITIONS, WEBHOOK_TYPE } from './constants'
 import { getProductSettings } from './product_settings'
 import { configCreator } from './config_creator'
+import ScriptRunnerClient from './client/script_runner_client'
 
 const log = logger(module)
 const { validateClientConfig, createRetryOptions, DEFAULT_RETRY_OPTS } = clientUtils
-const { validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } = configUtils
+const { validateSwaggerApiDefinitionConfig,
+  validateDuckTypeApiDefinitionConfig } = configUtils
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => (
   config.value as Credentials
 )
 
 function validateConfig(config: Values): asserts config is JiraConfig {
-  const { client, apiDefinitions, fetch } = config
+  const { client, apiDefinitions, fetch, scriptRunnerApiDefinitions } = config
 
   validateClientConfig('client', client)
   if (!_.isPlainObject(apiDefinitions)) {
@@ -49,7 +51,14 @@ function validateConfig(config: Values): asserts config is JiraConfig {
   Object.values(getApiDefinitions(apiDefinitions)).forEach(swaggerDef => {
     validateSwaggerApiDefinitionConfig('apiDefinitions', swaggerDef)
   })
-  validateSwaggerFetchConfig('fetch', fetch, apiDefinitions)
+  validateJiraFetchConfig({
+    fetchConfig: fetch,
+    apiDefinitions,
+    scriptRunnerApiDefinitions,
+  })
+  if (scriptRunnerApiDefinitions !== undefined) {
+    validateDuckTypeApiDefinitionConfig(SCRIPT_RUNNER_API_DEFINITIONS, scriptRunnerApiDefinitions)
+  }
 }
 
 const adapterConfigFromConfig = (
@@ -74,6 +83,7 @@ const adapterConfigFromConfig = (
     fetch: null,
     deploy: null,
     masking: null,
+    scriptRunnerApiDefinitions: null,
   }
   Object.keys(fullConfig)
     .filter(k => !Object.keys(adapterConfig).includes(k))
@@ -109,15 +119,25 @@ export const adapter: Adapter = {
       defaultConfig
     )
     const credentials = credentialsFromConfig(context.credentials)
-    const adapterOperations = new JiraAdapter({
-      client: new JiraClient({
-        credentials,
+    const client = new JiraClient({
+      credentials,
+      config: config.client,
+      isDataCenter,
+    })
+    const scriptRunnerClient = new ScriptRunnerClient(
+      {
+        credentials: {},
         config: config.client,
         isDataCenter,
-      }),
+        jiraClient: client,
+      },
+    )
+    const adapterOperations = new JiraAdapter({
+      client,
       config,
       getElemIdFunc: context.getElemIdFunc,
       elementsSource: context.elementsSource,
+      scriptRunnerClient,
     })
 
     return {
@@ -139,6 +159,7 @@ export const adapter: Adapter = {
 
     return validateCredentials({
       connection: productSettings.wrapConnection(await connection.login(creds)),
+      isDataCenter: Boolean(creds.isDataCenter),
     })
   },
   authenticationMethods: {

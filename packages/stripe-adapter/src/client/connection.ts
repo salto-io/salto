@@ -45,7 +45,7 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = retr
         Authorization: `Bearer ${creds.token}`,
       },
     }),
-    baseURLFunc: () => BASE_URL,
+    baseURLFunc: async () => BASE_URL,
     credValidateFunc: validateCredentials,
   })
 )

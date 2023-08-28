@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { readFile, readDir, writeFile, mkdirp, rm, rename } from '@salto-io/file'
+import { readFile, writeFile, mkdirp, rm, rename } from '@salto-io/file'
 import osPath from 'path'
 import { buildNetsuiteQuery, notQuery } from '../../src/query'
 import mockClient, { DUMMY_CREDENTIALS } from './sdf_client'
@@ -29,7 +29,7 @@ import { DEFAULT_COMMAND_TIMEOUT_IN_MINUTES } from '../../src/config'
 import { FeaturesDeployError, ManifestValidationError, MissingManifestFeaturesError, ObjectsDeployError, SettingsDeployError } from '../../src/client/errors'
 import { Graph, GraphNode } from '../../src/client/graph_utils'
 import { ATTRIBUTES_FOLDER_NAME } from '../../src/client/sdf_parser'
-import { MOCK_FEATURES_XML, MOCK_FILE_ATTRS_PATH, MOCK_FILE_PATH, MOCK_FOLDER_ATTRS_PATH, MOCK_FOLDER_PATH, MOCK_MANIFEST_VALID_DEPENDENCIES, MOCK_TEMPLATE_CONTENT, readDirMockFunction, readFileMockFunction, statMockFunction } from './mocks'
+import { MOCK_FEATURES_XML, MOCK_FILE_ATTRS_PATH, MOCK_FILE_PATH, MOCK_FOLDER_ATTRS_PATH, MOCK_FOLDER_PATH, MOCK_MANIFEST_VALID_DEPENDENCIES, MOCK_TEMPLATE_CONTENT, OBJECTS_DIR_FILES, readFileMockFunction, statMockFunction } from './mocks'
 import { largeFoldersToExclude } from '../../src/client/file_cabinet_utils'
 
 const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams, Graph<SDFObjectNode>] = [
@@ -48,8 +48,11 @@ const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams, Graph<SDFObjectNode>] 
   new Graph(),
 ]
 
+jest.mock('readdirp', () => ({
+  promise: jest.fn().mockImplementation(() => OBJECTS_DIR_FILES.map(path => ({ path }))),
+}))
+
 jest.mock('@salto-io/file', () => ({
-  readDir: jest.fn().mockImplementation(() => readDirMockFunction()),
   readFile: jest.fn().mockImplementation(path => readFileMockFunction(path)),
   writeFile: jest.fn(),
   rename: jest.fn(),
@@ -59,7 +62,6 @@ jest.mock('@salto-io/file', () => ({
   exists: jest.fn().mockResolvedValue(true),
 }))
 const readFileMock = readFile as unknown as jest.Mock
-const readDirMock = readDir as jest.Mock
 const writeFileMock = writeFile as jest.Mock
 const renameMock = rename as unknown as jest.Mock
 const mkdirpMock = mkdirp as jest.Mock
@@ -575,7 +577,6 @@ describe('sdf client', () => {
       expect(failedToFetchAllAtOnce).toBe(false)
       expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {}, excludedTypes: [] })
       expect(currentInstanceIds).toEqual([{ type: 'addressForm', instanceId: 'a' }])
-      expect(readDirMock).toHaveBeenCalledTimes(1)
       expect(readFileMock).toHaveBeenCalledTimes(4)
       expect(rmMock).toHaveBeenCalledTimes(1)
       expect(customizationInfos).toHaveLength(3)
@@ -645,7 +646,6 @@ describe('sdf client', () => {
       } = await mockClient({ installedSuiteApps: ['a.b.c'] }).getCustomObjects(typeNames, typeNamesQueries)
       expect(failedToFetchAllAtOnce).toBe(false)
       expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {}, excludedTypes: [] })
-      expect(readDirMock).toHaveBeenCalledTimes(2)
       expect(readFileMock).toHaveBeenCalledTimes(7)
       expect(rmMock).toHaveBeenCalledTimes(2)
       expect(customizationInfos).toEqual([{
@@ -1476,7 +1476,15 @@ File: ~/Objects/custform_114_t1441298_782.xml
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Set(['custform_114_t1441298_782']))
+          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Map([[
+            'custform_114_t1441298_782',
+            [{
+              message: `An error occurred during custom object validation. (custform_114_t1441298_782)
+File: ~/Objects/custform_114_t1441298_782.xml
+        `,
+              scriptId: 'custform_114_t1441298_782',
+            }],
+          ]]))
         }
         expect(isRejected).toBe(true)
       })
@@ -1513,7 +1521,15 @@ File: ~/Objects/custform_114_t1441298_782.xml
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Set(['custform_114_t1441298_782']))
+          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Map([[
+            'custform_114_t1441298_782',
+            [{
+              message: `Une erreur s'est produite lors de la validation de l'objet personnalis.. (custform_114_t1441298_782)
+File: ~/Objects/custform_114_t1441298_782.xml
+        `,
+              scriptId: 'custform_114_t1441298_782',
+            }],
+          ]]))
         }
         expect(isRejected).toBe(true)
       })
@@ -1565,7 +1581,15 @@ File: ~/Objects/custform_15_t1049933_143.xml
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Set(['custform_15_t1049933_143']))
+          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Map([[
+            'custform_15_t1049933_143',
+            [{
+              message: `An unexpected error has occurred. (custform_15_t1049933_143)
+File: ~/Objects/custform_15_t1049933_143.xml
+`,
+              scriptId: 'custform_15_t1049933_143',
+            }],
+          ]]))
         }
         expect(isRejected).toBe(true)
       })
@@ -1615,7 +1639,15 @@ File: ~/Objects/custform_15_t1049933_143.xml
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Set(['custform_15_t1049933_143']))
+          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Map([[
+            'custform_15_t1049933_143',
+            [{
+              message: `An unexpected error has occurred. (custform_15_t1049933_143)
+File: ~/Objects/custform_15_t1049933_143.xml
+`,
+              scriptId: 'custform_15_t1049933_143',
+            }],
+          ]]))
         }
         expect(isRejected).toBe(true)
       })
@@ -1666,6 +1698,54 @@ Object: customrecord_flo_customization.custrecord_flo_custz_link (customrecordcu
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeFalsy()
+          expect(e.message).toEqual(errorMessage)
+        }
+        expect(isRejected).toBe(true)
+      })
+      it('should throw shorten error', async () => {
+        const errorMessage = `
+The deployment process has encountered an error.
+Deploying to TSTDRV2259448 - Salto Extended Dev - Administrator.
+2022-03-30 23:55:26 (PST) Installation started
+Info -- Account [(PRODUCTION) Salto Extended Dev]
+Info -- Account Customization Project [TempSdfProject-e5a4eed4-e331-490f-9cfa-69cf84bd231b]
+Info -- Framework Version [1.0]
+Validate manifest -- Success
+Validate deploy file -- Success
+Validate configuration -- Success
+Validate objects -- Success
+Validate files -- Success
+Validate folders -- Success
+Validate translation imports -- Success
+Validation of referenceability from custom objects to translations collection strings in progress. -- Success
+Validate preferences -- Success
+Validate flags -- Success
+Validate for circular dependencies -- Success
+Validate account settings -- Failed
+*** ERROR ***
+
+Validation of account settings failed.
+
+An error occurred during account settings validation.
+Details: To install this SuiteCloud project, the INVENTORYSTATUS(Inventory Status) feature must be enabled in the account.
+Details: To install this SuiteCloud project, the CHARGEBASEDBILLING(Charge-Based Billing) feature must be enabled in the account.`
+        mockExecuteAction.mockImplementation(({ commandName }) => {
+          if (commandName === COMMANDS.DEPLOY_PROJECT) {
+            throw errorMessage
+          }
+          return { isSuccess: () => true }
+        })
+        let isRejected: boolean
+        testGraph.addNodes([new GraphNode('name', testSDFNode)])
+        try {
+          await client.deploy(...DEFAULT_DEPLOY_PARAMS)
+          isRejected = false
+        } catch (e) {
+          isRejected = true
+          expect(e instanceof ObjectsDeployError).toBeFalsy()
+          expect(e.message).toEqual(`An error occurred during account settings validation.
+Details: To install this SuiteCloud project, the INVENTORYSTATUS(Inventory Status) feature must be enabled in the account.
+Details: To install this SuiteCloud project, the CHARGEBASEDBILLING(Charge-Based Billing) feature must be enabled in the account.`)
         }
         expect(isRejected).toBe(true)
       })
@@ -1718,7 +1798,13 @@ Object: customrecord_flo_customization.custrecord_flo_custz_link (customrecordcu
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Set(['customrecord_flo_customization']))
+          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Map([[
+            'customrecord_flo_customization',
+            [{ message: `An error occurred during custom object update.
+File: ~/Objects/customrecord_flo_customization.xml
+Object: customrecord_flo_customization.custrecord_flo_custz_link (customrecordcustomfield)
+` }],
+          ]]))
         }
         expect(isRejected).toBe(true)
       })
@@ -1772,7 +1858,12 @@ File: ~/AccountConfiguration/features.xml`
         } catch (e) {
           isRejected = true
           expect(e instanceof SettingsDeployError).toBeTruthy()
-          expect(e instanceof SettingsDeployError && e.failedConfigTypes).toEqual(new Set(['companyFeatures']))
+          expect(e instanceof SettingsDeployError && e.failedConfigTypes).toEqual(new Map([[
+            'companyFeatures',
+            [{ message: `An error occurred during configuration validation.
+Details: Disable the SUPPLYCHAINPREDICTEDRISKS(Supply Chain Predicted Risks) feature before disabling the SUPPLYCHAINCONTROLTOWER(Supply Chain Control Tower) feature.
+File: ~/AccountConfiguration/features.xml` }],
+          ]]))
         }
         expect(isRejected).toBe(true)
       })
@@ -2000,7 +2091,8 @@ File: ~/AccountConfiguration/features.xml`
       it('should throw ManifestValidationError', async () => {
         let errorMessage: string
         const errorReferenceName = 'some_scriptid'
-        const manifestErrorMessage = `Details: The manifest contains a dependency on ${errorReferenceName} object, but it is not in the account.`
+        const manifestErrorMessage = `An error occurred during account settings validation.
+Details: The manifest contains a dependency on ${errorReferenceName} object, but it is not in the account.`
         mockExecuteAction.mockImplementation(context => {
           if (context.commandName === COMMANDS.VALIDATE_PROJECT) {
             errorMessage = `Warning: The validation process has encountered an error.
@@ -2039,7 +2131,7 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
         } catch (e) {
           expect(e instanceof ManifestValidationError).toBeTruthy()
           expect(e.message).toContain(manifestErrorMessage)
-          expect(e.missingDependencyScriptIds).toContain(errorReferenceName)
+          expect(e.missingDependencies).toEqual([{ scriptId: errorReferenceName, message: manifestErrorMessage }])
         }
       })
 

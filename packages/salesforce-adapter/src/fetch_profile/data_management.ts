@@ -85,7 +85,14 @@ export const buildDataManagement = (params: DataManagementConfig): DataManagemen
         ?.find(override => new RegExp(`^${override.objectsRegex}$`).test(name))
       return matchedOverride?.idFields ?? params.saltoIDSettings.defaultIdFields
     },
-    getObjectAliasFields: name => ALIAS_FIELDS_BY_TYPE[name] ?? DEFAULT_ALIAS_FIELDS,
+    getObjectAliasFields: name => {
+      const defaultFields = params.saltoAliasSettings?.defaultAliasFields ?? DEFAULT_ALIAS_FIELDS
+      const matchedOverride = params.saltoAliasSettings?.overrides
+        ?.find(override => new RegExp(`^${override.objectsRegex}$`).test(name))
+      return matchedOverride !== undefined && types.isNonEmptyArray(matchedOverride.aliasFields)
+        ? matchedOverride.aliasFields
+        : ALIAS_FIELDS_BY_TYPE[name] ?? defaultFields
+    },
     showReadOnlyValues: params.showReadOnlyValues,
   }
 )
@@ -111,5 +118,12 @@ export const validateDataManagementConfig = (
     const overridesObjectRegexs = dataManagementConfig.saltoIDSettings.overrides
       .map(override => override.objectsRegex)
     validateRegularExpressions(overridesObjectRegexs, [...fieldPath, 'saltoIDSettings', 'overrides'])
+  }
+  const saltoAliasOverrides = dataManagementConfig.saltoAliasSettings?.overrides
+  if (saltoAliasOverrides !== undefined) {
+    validateRegularExpressions(
+      saltoAliasOverrides.map(override => override.objectsRegex),
+      [...fieldPath, 'saltoAliasSettings', 'overrides'],
+    )
   }
 }

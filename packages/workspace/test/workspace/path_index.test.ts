@@ -22,7 +22,7 @@ import {
   TypeReference,
   createRefToElmWithValue,
   CORE_ANNOTATIONS,
-  Element,
+  Element, PrimitiveType, PrimitiveTypes,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import {
@@ -286,7 +286,7 @@ describe('split element by path', () => {
     },
     path: ['salto', 'obj', 'customFields'],
   })
-  const objFragAnnotations = new ObjectType({
+  const objFragAnnotationsOne = new ObjectType({
     elemID: objElemId,
     annotationRefsOrTypes: {
       anno: createRefToElmWithValue(BuiltinTypes.STRING),
@@ -294,7 +294,18 @@ describe('split element by path', () => {
     annotations: {
       anno: 'Hey',
     },
-    path: ['salto', 'obj', 'annotations'],
+    path: ['salto', 'obj', 'annotationsOne'],
+  })
+
+  const objFragAnnotationsTwo = new ObjectType({
+    elemID: objElemId,
+    annotationRefsOrTypes: {
+      num: BuiltinTypes.NUMBER,
+    },
+    annotations: {
+      num: 22,
+    },
+    path: ['salto', 'obj', 'annotationsTwo'],
   })
 
   const objFull = new ObjectType({
@@ -315,9 +326,11 @@ describe('split element by path', () => {
     },
     annotationRefsOrTypes: {
       anno: createRefToElmWithValue(BuiltinTypes.STRING),
+      num: BuiltinTypes.NUMBER,
     },
     annotations: {
       anno: 'Hey',
+      num: 22,
     },
   })
 
@@ -416,7 +429,7 @@ describe('split element by path', () => {
   })
 
   const fullObjFrags = [
-    objFragStdFields, objFragCustomFields, objFragAnnotations,
+    objFragStdFields, objFragCustomFields, objFragAnnotationsOne, objFragAnnotationsTwo,
   ]
   const singleFieldObjFrags = [
     singleFieldObj, singleFieldObjAnnotations,
@@ -430,17 +443,17 @@ describe('split element by path', () => {
     await updatePathIndex({ pathIndex: pi, unmergedElements })
   })
 
-  it('should split an element with multiple pathes', async () => {
-    const splitedElements = await splitElementByPath(objFull, pi)
+  it('should split an element with multiple paths', async () => {
+    const splitElements = await splitElementByPath(objFull, pi)
     fullObjFrags.forEach(
-      frag => expect(splitedElements.filter(elem => elem.isEqual(frag))).toHaveLength(1)
+      frag => expect(splitElements.filter(elem => elem.isEqual(frag))).toHaveLength(1)
     )
   })
 
   it('should split an element with one fields file', async () => {
-    const splitedElements = await splitElementByPath(singleFieldObjFull, pi)
+    const splitElements = await splitElementByPath(singleFieldObjFull, pi)
     singleFieldObjFrags.forEach(
-      frag => expect(splitedElements.filter(elem => elem.isEqual(frag))).toHaveLength(1)
+      frag => expect(splitElements.filter(elem => elem.isEqual(frag))).toHaveLength(1)
     )
   })
 
@@ -453,15 +466,15 @@ describe('split element by path', () => {
   })
 
   it('should return a single object for an element with one path', async () => {
-    const splitedElements = await splitElementByPath(singlePathObj, pi)
-    expect(splitedElements).toHaveLength(1)
-    expect(splitedElements[0]).toEqual(singlePathObj)
+    const splitElements = await splitElementByPath(singlePathObj, pi)
+    expect(splitElements).toHaveLength(1)
+    expect(splitElements[0]).toEqual(singlePathObj)
   })
 
   it('should return the element for an element with no pathes', async () => {
-    const splitedElements = await splitElementByPath(noPathObj, pi)
-    expect(splitedElements).toHaveLength(1)
-    expect(splitedElements[0]).toEqual(noPathObj)
+    const splitElements = await splitElementByPath(noPathObj, pi)
+    expect(splitElements).toHaveLength(1)
+    expect(splitElements[0]).toEqual(noPathObj)
   })
 })
 
@@ -534,5 +547,237 @@ describe('updatePathIndex', () => {
         ]),
       ]
     ))
+  })
+})
+
+describe('getElementsPathHints', () => {
+  const elemId = new ElemID('salto', 'obj')
+  it('should return one path hint for single path ObjectType with no annotations and fields', async () => {
+    const singlePath = ['salto', 'obj', 'simple']
+    const singlePathObjectWithoutFieldAndAnnotation = new ObjectType({
+      elemID: elemId,
+      path: singlePath,
+    })
+    const pathHints = getElementsPathHints([singlePathObjectWithoutFieldAndAnnotation])
+    expect(pathHints).toEqual(expect.arrayContaining([
+      expect.objectContaining({ key: 'salto.obj', value: [singlePath] }),
+    ]))
+  })
+
+  it('should return one path hint for annotations and one for fields in ObjectType', async () => {
+    const fieldPath = ['salto', 'obj', 'field']
+    const annotationPath = ['salto', 'obj', 'annotations']
+    const singleFieldObj = new ObjectType({
+      elemID: elemId,
+      fields: {
+        uriField: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          annotations: {
+            test: 'test',
+          },
+        },
+      },
+      path: fieldPath,
+    })
+
+    const singleFieldObjAnnotations = new ObjectType({
+      elemID: elemId,
+      annotationRefsOrTypes: {
+        anno: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      annotations: {
+        anno: 'Bye',
+      },
+      path: annotationPath,
+    })
+    const pathHints = getElementsPathHints([singleFieldObj, singleFieldObjAnnotations])
+    expect(pathHints).toEqual(expect.arrayContaining([
+      expect.objectContaining({ key: 'salto.obj', value: [fieldPath, annotationPath] }),
+      expect.objectContaining({ key: 'salto.obj.attr', value: [annotationPath] }),
+      expect.objectContaining({ key: 'salto.obj.annotation', value: [annotationPath] }),
+      expect.objectContaining({ key: 'salto.obj.field', value: [fieldPath] }),
+    ]))
+  })
+
+  it('should return path hints for divided annotations and divided fields in ObjectType', async () => {
+    const stdFieldPath = ['salto', 'obj', 'standardFields']
+    const customFieldPath = ['salto', 'obj', 'customFields']
+    const annotationOnePath = ['salto', 'obj', 'annotationsOne']
+    const annotationTwoPath = ['salto', 'obj', 'annotationsTwo']
+    const objFragStdFields = new ObjectType({
+      elemID: elemId,
+      fields: {
+        stdField: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          annotations: {
+            test: 'test',
+          },
+        },
+      },
+      path: stdFieldPath,
+    })
+    const objFragCustomFields = new ObjectType({
+      elemID: elemId,
+      fields: {
+        customField: {
+          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          annotations: {
+            test: 'test',
+          },
+        },
+      },
+      path: customFieldPath,
+    })
+    const objFragAnnotationsOne = new ObjectType({
+      elemID: elemId,
+      annotationRefsOrTypes: {
+        anno: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      annotations: {
+        anno: 'Hey',
+      },
+      path: annotationOnePath,
+    })
+    const objFragAnnotationsTwo = new ObjectType({
+      elemID: elemId,
+      annotationRefsOrTypes: {
+        ping: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      annotations: {
+        ping: 'pong',
+      },
+      path: annotationTwoPath,
+    })
+    const pathHints = getElementsPathHints([
+      objFragAnnotationsOne, objFragAnnotationsTwo, objFragStdFields, objFragCustomFields,
+    ])
+    expect(pathHints).toEqual(expect.arrayContaining([
+      expect.objectContaining({ key: 'salto.obj.annotation', value: [annotationOnePath, annotationTwoPath] }),
+      expect.objectContaining({ key: 'salto.obj.annotation.anno', value: [annotationOnePath] }),
+      expect.objectContaining({ key: 'salto.obj.annotation.ping', value: [annotationTwoPath] }),
+      expect.objectContaining({ key: 'salto.obj.attr', value: [annotationOnePath, annotationTwoPath] }),
+      expect.objectContaining({ key: 'salto.obj.attr.anno', value: [annotationOnePath] }),
+      expect.objectContaining({ key: 'salto.obj.attr.ping', value: [annotationTwoPath] }),
+      expect.objectContaining({ key: 'salto.obj.field', value: [stdFieldPath, customFieldPath] }),
+      expect.objectContaining({ key: 'salto.obj.field.stdField', value: [stdFieldPath] }),
+      expect.objectContaining({ key: 'salto.obj.field.customField', value: [customFieldPath] }),
+      expect.objectContaining({ key: 'salto.obj', value: [annotationOnePath, annotationTwoPath, stdFieldPath, customFieldPath] }),
+
+    ]))
+  })
+
+  it('should return path hints for nested fields in ObjectType', async () => {
+    const onePath = ['salto', 'obj', 'one']
+    const twoPath = ['salto', 'obj', 'two']
+    const objFragFieldOne = new ObjectType({
+      elemID: elemId,
+      fields: {
+        myField: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          annotations: {
+            test: 'test',
+          },
+        },
+      },
+      path: onePath,
+    })
+    const objFragFieldTwo = new ObjectType({
+      elemID: elemId,
+      fields: {
+        myField: {
+          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          annotations: {
+            yo: 'yo',
+          },
+        },
+      },
+      path: twoPath,
+    })
+    const pathHints = getElementsPathHints([objFragFieldOne, objFragFieldTwo])
+    expect(pathHints).toEqual(expect.arrayContaining([
+      expect.objectContaining({ key: 'salto.obj', value: [onePath, twoPath] }),
+      expect.objectContaining({ key: 'salto.obj.field', value: [onePath, twoPath] }),
+      expect.objectContaining({ key: 'salto.obj.field.myField', value: [onePath, twoPath] }),
+      expect.objectContaining({ key: 'salto.obj.field.myField.test', value: [onePath] }),
+      expect.objectContaining({ key: 'salto.obj.field.myField.yo', value: [twoPath] }),
+    ]))
+  })
+
+  it('should return path hints for nested values in an instances', async () => {
+    const abFilePath = ['salto', 'inst', 'A', 'B']
+    const acFilePath = ['salto', 'inst', 'A', 'C']
+    const annotationsPath = ['salto', 'inst', 'annotations']
+    const instFragOne = new InstanceElement(
+      'inst',
+      new TypeReference(multiPathInstanceTypeID),
+      {
+        a: {
+          b: 'd',
+        },
+      },
+      abFilePath
+    )
+    const instFragTwo = new InstanceElement(
+      'inst',
+      new TypeReference(multiPathInstanceTypeID),
+      {
+        a: {
+          c: 'd',
+        },
+      },
+      acFilePath
+    )
+    const instAnnotations = new InstanceElement(
+      'inst',
+      new TypeReference(multiPathInstanceTypeID),
+      {},
+      annotationsPath,
+      { anno: 'hey' }
+    )
+    const pathHints = getElementsPathHints([instFragOne, instFragTwo, instAnnotations])
+    expect(pathHints).toEqual(expect.arrayContaining([
+      expect.objectContaining({ key: 'salto.obj.instance.inst', value: [abFilePath, acFilePath, annotationsPath] }),
+      expect.objectContaining({ key: 'salto.obj.instance.inst.a', value: [abFilePath, acFilePath] }),
+      expect.objectContaining({ key: 'salto.obj.instance.inst.a.b', value: [abFilePath] }),
+      expect.objectContaining({ key: 'salto.obj.instance.inst.a.c', value: [acFilePath] }),
+      expect.objectContaining({ key: 'salto.obj.instance.inst.anno', value: [annotationsPath] }),
+    ]))
+  })
+
+  it('should return path hints for divided annotations in PrimitiveType', async () => {
+    const aFilePath = ['salto', 'primitive', 'a']
+    const bFilePath = ['salto', 'primitive', 'b']
+    const primitiveAnnotaionsA = new PrimitiveType({
+      elemID: new ElemID('salto', 'primitive'),
+      primitive: PrimitiveTypes.STRING,
+      annotationRefsOrTypes: {
+        a: BuiltinTypes.STRING,
+      },
+      annotations: {
+        a: 'a',
+      },
+      path: aFilePath,
+    })
+    const primitiveAnnotaionsB = new PrimitiveType({
+      elemID: new ElemID('salto', 'primitive'),
+      primitive: PrimitiveTypes.STRING,
+      annotationRefsOrTypes: {
+        b: BuiltinTypes.STRING,
+      },
+      annotations: {
+        b: 'b',
+      },
+      path: bFilePath,
+    })
+    const pathHints = getElementsPathHints([primitiveAnnotaionsA, primitiveAnnotaionsB])
+    expect(pathHints).toEqual(expect.arrayContaining([
+      expect.objectContaining({ key: 'salto.primitive.annotation', value: [aFilePath, bFilePath] }),
+      expect.objectContaining({ key: 'salto.primitive.annotation.a', value: [aFilePath] }),
+      expect.objectContaining({ key: 'salto.primitive.annotation.b', value: [bFilePath] }),
+      expect.objectContaining({ key: 'salto.primitive.attr', value: [aFilePath, bFilePath] }),
+      expect.objectContaining({ key: 'salto.primitive.attr.a', value: [aFilePath] }),
+      expect.objectContaining({ key: 'salto.primitive.attr.b', value: [bFilePath] }),
+      expect.objectContaining({ key: 'salto.primitive', value: [aFilePath, bFilePath] }),
+    ]))
   })
 })

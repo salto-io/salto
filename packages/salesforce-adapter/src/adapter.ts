@@ -17,8 +17,15 @@ import {
   TypeElement, ObjectType, InstanceElement, isAdditionChange, getChangeData, Change,
   ElemIdGetter, FetchResult, AdapterOperations, DeployResult, FetchOptions, DeployOptions,
   ReadOnlyElementsSource,
+  setPartialFetchData,
 } from '@salto-io/adapter-api'
-import { filter, logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
+import {
+  filter,
+  logDuration,
+  resolveChangeElement,
+  restoreChangeElement,
+  safeJsonStringify,
+} from '@salto-io/adapter-utils'
 import { MetadataObject } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -79,6 +86,7 @@ import fetchFlowsFilter from './filters/fetch_flows'
 import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
 import installedPackageGeneratedDependencies from './filters/installed_package_generated_dependencies'
 import createMissingInstalledPackagesInstancesFilter from './filters/create_missing_installed_packages_instances'
+import metadataInstancesAliasesFilter from './filters/metadata_instances_aliases'
 import formulaDepsFilter from './filters/formula_deps'
 import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
 import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
@@ -89,13 +97,14 @@ import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFil
 import { addDefaults } from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, listMetadataObjects } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
-import { getLookUpName } from './transformers/reference_mapping'
+import { getLookUpName, getLookupNameWithFallbackToElement } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
 import {
   CUSTOM_OBJECT,
   FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
+  OWNER_ID,
   PROFILE_METADATA_TYPE,
 } from './constants'
 
@@ -182,6 +191,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: profileInstanceSplitFilter },
   // Any filter that relies on _created_at or _changed_at should run after removeUnixTimeZero
   { creator: removeUnixTimeZeroFilter },
+  { creator: metadataInstancesAliasesFilter },
 ]
 
 // By default we run all filters and provide a client
@@ -288,7 +298,7 @@ export const SYSTEM_FIELDS = [
   'Name',
   'RecordTypeId',
   'SystemModstamp',
-  'OwnerId',
+  OWNER_ID,
   'SetupOwnerId',
 ]
 
@@ -442,7 +452,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       elements,
       errors: onFetchFilterResult.errors ?? [],
       updatedConfig,
-      isPartial: this.userConfig.fetch?.target !== undefined,
+      partialFetchData: setPartialFetchData(this.userConfig.fetch?.target !== undefined),
     }
   }
 
@@ -450,16 +460,22 @@ export default class SalesforceAdapter implements AdapterOperations {
     { changeGroup }: DeployOptions,
     checkOnly: boolean
   ): Promise<DeployResult> {
+    log.debug(`about to ${checkOnly ? 'validate' : 'deploy'} group ${changeGroup.groupID} with scope (first 100): ${safeJsonStringify(changeGroup.changes.slice(0, 100).map(getChangeData).map(e => e.elemID.getFullName()))}`)
+    const isDataDeployGroup = await isCustomObjectInstanceChanges(changeGroup.changes)
+    const getLookupNameFunc = isDataDeployGroup
+      ? getLookupNameWithFallbackToElement
+      : getLookUpName
     const resolvedChanges = await awu(changeGroup.changes)
-      .map(change => resolveChangeElement(change, getLookUpName))
+      .map(change => resolveChangeElement(change, getLookupNameFunc))
       .toArray()
 
     await awu(resolvedChanges).filter(isAdditionChange).map(getChangeData).forEach(addDefaults)
     const filtersRunner = this.createFiltersRunner()
     await filtersRunner.preDeploy(resolvedChanges)
+    log.debug(`preDeploy of group ${changeGroup.groupID} finished`)
 
     let deployResult: DeployResult
-    if (await isCustomObjectInstanceChanges(resolvedChanges)) {
+    if (isDataDeployGroup) {
       if (checkOnly) {
         return {
           appliedChanges: [],
@@ -477,9 +493,11 @@ export default class SalesforceAdapter implements AdapterOperations {
         this.nestedMetadataTypes, this.userConfig.client?.deploy?.deleteBeforeUpdate, checkOnly,
           this.userConfig.client?.deploy?.quickDeployParams)
     }
+    log.debug(`received deployResult for group ${changeGroup.groupID}`)
     // onDeploy can change the change list in place, so we need to give it a list it can modify
     const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
     await filtersRunner.onDeploy(appliedChangesBeforeRestore)
+    log.debug(`onDeploy of group ${changeGroup.groupID} finished`)
 
     const sourceChanges = _.keyBy(
       changeGroup.changes,
@@ -487,7 +505,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     )
 
     const appliedChanges = await awu(appliedChangesBeforeRestore)
-      .map(change => restoreChangeElement(change, sourceChanges, getLookUpName))
+      .map(change => restoreChangeElement(change, sourceChanges, getLookupNameFunc))
       .toArray()
     return {
       appliedChanges,

@@ -15,7 +15,7 @@
 */
 import os from 'os'
 import wu from 'wu'
-import _ from 'lodash'
+import _, { mapValues } from 'lodash'
 import { inspect, InspectOptions } from 'util'
 import safeStringify from 'fast-safe-stringify'
 import { logger } from '@salto-io/logging'
@@ -282,9 +282,6 @@ export const transformValues = async (
   return newVal
 }
 
-// NOTE: Any changes that are made to this function need to take into account whether
-//  they're also needed over at transformValues. The two functions are separated
-//  only because of the way async is intertwined with the logic.
 export const transformValuesSync = (
   {
     values,
@@ -294,12 +291,9 @@ export const transformValuesSync = (
     pathID = undefined,
     isTopLevel = true,
     allowEmpty = false,
-  }: TransformValuesSyncArgs,
-): Values | undefined => {
-  const transformValueSync = (
-    value: Value,
-    keyPathID?: ElemID, field?: Field
-  ): Value => {
+  }: TransformValuesSyncArgs
+): lowerDashTypes.NonPromise<Value> | undefined => {
+  const transformValue = (value: Value, keyPathID?: ElemID, field?: Field): lowerDashTypes.NonPromise<Value> => {
     if (field === undefined && strict) {
       return undefined
     }
@@ -309,92 +303,16 @@ export const transformValuesSync = (
     }
 
     const newVal = transformFunc({ value, path: keyPathID, field })
-    if (newVal === undefined) {
-      return undefined
-    }
-
-    if (isReferenceExpression(newVal)) {
-      return newVal
-    }
-
-    const fieldType = field?.getTypeSync()
-
-    if (field && isListType(fieldType)) {
-      const transformListInnerValue = (item: Value, index?: number): Value =>
-        (transformValueSync(
-          item,
-          !_.isUndefined(index) ? keyPathID?.createNestedID(String(index)) : keyPathID,
-          new Field(
-            field.parent,
-            field.name,
-            fieldType.refInnerType,
-            field.annotations
-          ),
-        ))
-      if (!_.isArray(newVal)) {
-        if (strict) {
-          log.debug(`Array value and isListType mis-match for field - ${field.name}. Got non-array for ListType.`)
-        }
-        return transformListInnerValue(newVal)
-      }
-      const transformed = wu(newVal)
-        .enumerate()
-        .map(([item, index]) => transformListInnerValue(item, index))
-        .filter((val: Value) => !_.isUndefined(val))
-        .toArray()
-      return transformed.length === 0 && (newVal.length > 0 || !allowEmpty)
-        ? undefined
-        : transformed
-    }
-    if (_.isArray(newVal)) {
-      // Even fields that are not defined as ListType can have array values
-      const transformed = wu(newVal)
-        .enumerate()
-        .map(([item, index]) => transformValueSync(item, keyPathID?.createNestedID(String(index)), field))
-        .filter(val => !_.isUndefined(val))
-        .toArray()
-      return transformed.length === 0 && (newVal.length > 0 || !allowEmpty)
-        ? undefined
-        : transformed
-    }
-
-    if (isObjectType(fieldType) || isMapType(fieldType)) {
-      if (!_.isPlainObject(newVal)) {
-        if (strict) {
-          log.debug(`Value mis-match for field ${field?.name} - value is not an object`)
-        }
-        // _.isEmpty returns true for primitive values (boolean, number)
-        // but we do not want to omit those, we only want to omit empty
-        // objects, arrays and strings. we don't need to check for objects here
-        // because we cannot get here with an object
-        const valueIsEmpty = (Array.isArray(newVal) || _.isString(newVal)) && _.isEmpty(newVal)
-        return (valueIsEmpty && !allowEmpty) ? undefined : newVal
-      }
-      const transformed = _.omitBy(
-        transformValuesSync({
-          values: newVal,
-          type: fieldType,
-          transformFunc,
-          strict,
-          pathID: keyPathID,
-          isTopLevel: false,
-          allowEmpty,
-        }),
-        _.isUndefined
-      )
-      return _.isEmpty(transformed) && (!_.isEmpty(newVal) || !allowEmpty) ? undefined : transformed
-    }
-    if (_.isPlainObject(newVal) && !strict) {
-      const transformed = _.omitBy(
-        _.mapValues(
-          newVal ?? {},
-          (val, key) => transformValueSync(val, keyPathID?.createNestedID(key)),
-        ),
-        _.isUndefined,
-      )
-      return _.isEmpty(transformed) && (!allowEmpty || !_.isEmpty(newVal)) ? undefined : transformed
-    }
-    return newVal
+    const recursed = recurseIntoValue(
+      newVal,
+      transformValue,
+      strict,
+      allowEmpty,
+      keyPathID,
+      field,
+      field?.getTypeSync()
+    )
+    return removeEmptyParts(recursed, allowEmpty)
   }
 
   const fieldMapper = fieldMapperGenerator(type, values)
@@ -402,22 +320,24 @@ export const transformValuesSync = (
   const newVal = isTopLevel ? transformFunc({ value: values, path: pathID }) : values
   if (_.isPlainObject(newVal)) {
     const result = _.omitBy(
-      _.mapValues(
+      mapValues(
         newVal ?? {},
-        (value, key) => transformValueSync(value, pathID?.createNestedID(key), fieldMapper(key))
+        (value, key) => transformValue(value, pathID?.createNestedID(key), fieldMapper(key))
       ),
       _.isUndefined
     )
     return _.isEmpty(result) && !allowEmpty ? undefined : result
   }
   if (_.isArray(newVal)) {
-    const result = newVal
-      .map((value, index) => transformValueSync(
+    const result = wu(newVal)
+      .enumerate()
+      .map(([value, index]) => transformValue(
         value,
         pathID?.createNestedID(String(index)),
         fieldMapper(String(index))
       ))
       .filter(value => !_.isUndefined(value))
+      .toArray()
     return result.length === 0 && !allowEmpty ? undefined : result
   }
   return newVal

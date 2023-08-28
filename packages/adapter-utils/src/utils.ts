@@ -245,7 +245,7 @@ export const transformValues = async (
     const newVal = await transformFunc({ value, path: keyPathID, field })
     const recursed = recurseIntoValue(
       newVal,
-      transformFunc,
+      transformValue,
       strict,
       allowEmpty,
       keyPathID,

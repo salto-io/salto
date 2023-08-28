@@ -315,11 +315,24 @@ export const deserializeReferenceTree = async (data: string): Promise<collection
   const parsedEntries = JSON.parse(data)
 
   // Backwards compatibility for old serialized data, should be removed in the future
-  const isOldFormat = Array.isArray(parsedEntries) && parsedEntries.length > 0 && _.isString(parsedEntries[0])
-  const entries = isOldFormat ? [['', parsedEntries]] : parsedEntries
+  const isOldListFormat = Array.isArray(parsedEntries) && parsedEntries.length > 0 && _.isString(parsedEntries[0])
 
-  const elemIdsEntries = entries.map(([key, ids]: [string, string[]]) => [key, ids.map(ElemID.fromFullName)])
-  return new collections.treeMap.TreeMap<ElemID>(elemIdsEntries)
+  const entries = isOldListFormat ? [['', parsedEntries]] : parsedEntries
+
+  const elemIdsEntries = entries.map(
+    ([key, refs]: [string, (string | { id: string })[]]) => [
+      key,
+      refs.map((ref => {
+        // Backwards compatibility for old serialized data, should be removed in the future
+        if (_.isString(ref)) {
+          return ElemID.fromFullName(ref)
+        }
+
+        return ElemID.fromFullName(ref.id)
+      })),
+    ]
+  )
+  return new collections.treeMap.TreeMap(elemIdsEntries)
 }
 
 export const loadWorkspace = async (

@@ -117,7 +117,6 @@ export type ChangeValidatorName = (
   | 'unknownPicklistValues'
   | 'installedPackages'
   | 'dataCategoryGroup'
-  | 'standardFieldOrObjectAdditionRemoval'
 )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -672,7 +671,6 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     unknownPicklistValues: { refType: BuiltinTypes.BOOLEAN },
     dataCategoryGroup: { refType: BuiltinTypes.BOOLEAN },
     installedPackages: { refType: BuiltinTypes.BOOLEAN },
-    standardFieldOrObjectAdditionRemoval: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

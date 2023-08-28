@@ -99,7 +99,7 @@ export const isFreeLicense = async (
   const mainApplication = accountInfo.value.license.applications.find((app: Value) => app.id === 'jira-software')
 
   if (mainApplication?.plan === undefined) {
-    log.error('could not find license of jira-software, treating the account as paid one')
+    log.warn('could not find license of jira-software, treating the account as paid one')
     return false
   }
   return mainApplication.plan === JIRA_FREE_PLAN

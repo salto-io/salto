@@ -81,25 +81,35 @@ const getDependencies = async (
   const allQueries = createQueries(whereClauses, toolingDepsOfCurrentNamespace, client.orgNamespace)
   const allDepsIters = await Promise.all(allQueries.map(q => client.queryAll(q, true)))
 
+  const queriesRecordsCount: number[] = []
   const allDepsResults = allDepsIters.map(iter => collections.asynciterable.mapAsync(
     iter,
-    recs => recs.map(rec => ({
-      from: {
-        type: rec.MetadataComponentType,
-        id: rec.MetadataComponentId,
-        name: rec.MetadataComponentName,
-      },
-      to: {
-        type: rec.RefMetadataComponentType,
-        id: rec.RefMetadataComponentId,
-        name: rec.RefMetadataComponentName,
-      },
-    }))
+    recs => {
+      queriesRecordsCount.push(recs.length)
+      return recs.map(rec => ({
+        from: {
+          type: rec.MetadataComponentType,
+          id: rec.MetadataComponentId,
+          name: rec.MetadataComponentName,
+        },
+        to: {
+          type: rec.RefMetadataComponentType,
+          id: rec.RefMetadataComponentId,
+          name: rec.RefMetadataComponentName,
+        },
+      }))
+    }
   ))
 
   const deps = (await Promise.all(allDepsResults.map(
     async res => (await collections.asynciterable.toArrayAsync(res)).flat()
   ))).flat()
+
+  log.debug('extra dependencies queries info: %o', {
+    queries: allQueries,
+    counts: queriesRecordsCount,
+  })
+
   return _.values(
     _.groupBy(deps, dep => Object.entries(dep.from))
   ).map(depArr => ({

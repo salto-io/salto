@@ -531,7 +531,7 @@ describe('Convert maps filter', () => {
     type FilterType = FilterWith<'onFetch'| 'preDeploy'>
     let filter: FilterType
     beforeAll(async () => {
-      const lwc = createInstanceElement({ fullName: 'lwc', lwcResources: { lwcResource: [{ filePath: 'dir/lwc.js', source: 'lwc.ts' }] } }, mockTypes.LightningComponentBundle)
+      const lwc = createInstanceElement({ fullName: 'lwc', lwcResources: { lwcResource: [{ filePath: 'lwc/dir/lwc.js', source: 'lwc.ts' }, { filePath: 'lwc/dir/__mocks__/lwc.js', source: 'lwc.ts' }] } }, mockTypes.LightningComponentBundle)
       const lwcType = mockTypes.LightningComponentBundle
       elements = [lwc, lwcType]
 
@@ -551,6 +551,7 @@ describe('Convert maps filter', () => {
       it('should use the custom mapper to create the key', async () => {
         const lwc = elements[0] as InstanceElement
         expect(Object.keys(lwc.value.lwcResources.lwcResource)[0]).toEqual('lwc_js@v')
+        expect(Object.keys(lwc.value.lwcResources.lwcResource)[1]).toEqual('__mocks___lwc_js@uuuudv')
       })
     })
   })

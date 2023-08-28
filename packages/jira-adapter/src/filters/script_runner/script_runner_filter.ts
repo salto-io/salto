@@ -97,12 +97,6 @@ const filter: FilterCreator = ({ client, config }) => ({
         instance.value.uuid = uuidv4()
       })
 
-    additionInstances
-      .filter(instance => instance.elemID.typeName === SCRIPT_FRAGMENT_TYPE)
-      .forEach(instance => {
-        instance.value.id = uuidv4()
-      })
-
     // Modification
     const modificationInstances = changes
       .filter(isModificationChange)

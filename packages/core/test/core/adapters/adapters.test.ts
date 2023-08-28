@@ -13,19 +13,32 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ElemID, AdapterAuthentication, ObjectType, AdapterOperationsContext, Adapter } from '@salto-io/adapter-api'
+import 'jest-extended'
+import {
+  InstanceElement,
+  ElemID,
+  AdapterAuthentication,
+  ObjectType,
+  AdapterOperationsContext,
+  Adapter,
+  ReadOnlyElementsSource,
+  isObjectType, TypeElement, Field, isType, ContainerType, ListType, isContainerType,
+} from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { buildElementsSourceFromElements, createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { adapter } from '@salto-io/salesforce-adapter'
 import { mockFunction } from '@salto-io/test-utils'
 import _ from 'lodash'
+import { expressions } from '@salto-io/workspace'
 import {
   initAdapters, getAdaptersCredentialsTypes, getAdaptersCreatorConfigs,
   getDefaultAdapterConfig,
   adapterCreators,
-  getAdaptersConfigTypesMap,
+  getAdaptersConfigTypesMap, createResolvedTypesElementsSource,
 } from '../../../src/core/adapters'
+
+const { toArrayAsync } = collections.asynciterable
 
 jest.mock('@salto-io/workspace', () => ({
   ...jest.requireActual<{}>('@salto-io/workspace'),
@@ -65,6 +78,13 @@ describe('adapters.ts', () => {
       sandbox: false,
     }
   )
+
+  let resolveSpy: jest.SpyInstance
+
+  beforeEach(() => {
+    resolveSpy = jest.spyOn(expressions, 'resolve')
+    jest.clearAllMocks()
+  })
 
   describe('run get adapters config statuses', () => {
     let credentials: Record<string, AdapterAuthentication>
@@ -281,6 +301,118 @@ describe('adapters.ts', () => {
           },
         }
       )).toThrow()
+    })
+  })
+  describe('createResolvedTypesElementsSource', () => {
+    const ADAPTER = 'salesforce'
+
+    let type: TypeElement
+    let nestedType: TypeElement
+    let nestedNestedType: TypeElement
+    let field: Field
+    let instance: InstanceElement
+    let containerType: ContainerType
+    let elementsSource: ReadOnlyElementsSource
+
+    beforeEach(async () => {
+      nestedNestedType = new ObjectType({
+        elemID: new ElemID(ADAPTER, 'NestedNestedType'),
+      })
+      nestedType = new ObjectType({
+        elemID: new ElemID(ADAPTER, 'NestedType'),
+        fields: {
+          field: { refType: nestedNestedType },
+        },
+      })
+      type = new ObjectType({
+        elemID: new ElemID(ADAPTER, 'Type'),
+        fields: {
+          field: { refType: nestedType },
+        },
+      })
+      field = type.fields.field
+      instance = new InstanceElement('TestInstance', type)
+      containerType = new ListType(new ListType(type))
+      elementsSource = createResolvedTypesElementsSource(utils.buildElementsSourceFromElements([
+        type,
+        field,
+        nestedType,
+        nestedNestedType,
+        instance,
+      ]))
+    })
+
+    describe('get', () => {
+      it('should return fully resolved TypeElement', async () => {
+        const resolvedType = await elementsSource.get(type.elemID) as ObjectType
+        const resolvedNestedType = resolvedType.fields.field.refType.type as ObjectType
+        const resolvedNestedNestedType = resolvedNestedType.fields.field.refType.type as ObjectType
+        expect([resolvedType, resolvedNestedType, resolvedNestedNestedType]).toSatisfyAll(isType)
+      })
+      it('should return Field with fully resolved type', async () => {
+        const resolvedField = await elementsSource.get(field.elemID) as Field
+        const resolvedNestedType = resolvedField.refType.type as ObjectType
+        const resolvedNestedNestedType = resolvedNestedType.fields.field.refType.type as ObjectType
+        expect([resolvedNestedType, resolvedNestedNestedType]).toSatisfyAll(isType)
+      })
+      it('should return Instance with fully resolved type', async () => {
+        const resolvedInstance = await elementsSource.get(instance.elemID) as InstanceElement
+        const resolvedType = resolvedInstance.refType.type as ObjectType
+        expect(isObjectType(resolvedType)).toBeTrue()
+        const resolvedNestedType = resolvedType.fields.field.refType.type as ObjectType
+        expect(isObjectType(resolvedNestedType)).toBeTrue()
+        const resolvedNestedNestedType = resolvedNestedType.fields.field.refType.type as ObjectType
+        expect(isObjectType(resolvedNestedNestedType)).toBeTrue()
+      })
+      it('should return fully resolved ContainerType', async () => {
+        const resolvedContainerType = await elementsSource.get(containerType.elemID) as ContainerType
+        const resolvedInnerContainerType = resolvedContainerType.refInnerType.type as ContainerType
+        expect(isContainerType(resolvedInnerContainerType)).toBeTrue()
+        const resolvedInnerType = resolvedInnerContainerType.refInnerType.type as ObjectType
+        const resolvedNestedType = resolvedInnerType.fields.field.refType.type as ObjectType
+        expect(isObjectType(resolvedNestedType)).toBeTrue()
+        const resolvedNestedNestedType = resolvedNestedType.fields.field.refType.type as ObjectType
+        expect(isObjectType(resolvedNestedNestedType)).toBeTrue()
+      })
+    })
+    describe('getAll', () => {
+      it('should return all elements with resolved types, and resolve all the types ones', async () => {
+        const resolvedElements = await toArrayAsync(await elementsSource.getAll())
+        expect(resolvedElements).toHaveLength(5)
+        const resolvedElementsByElemId = _.keyBy(
+          resolvedElements,
+          element => element.elemID.getFullName(),
+        )
+        const resolvedType = resolvedElementsByElemId[type.elemID.getFullName()] as ObjectType
+        const resolvedInnerType = resolvedElementsByElemId[nestedType.elemID.getFullName()] as ObjectType
+        const resolvedInnerInnerType = resolvedElementsByElemId[nestedNestedType.elemID.getFullName()] as ObjectType
+        const resolvedInstance = resolvedElementsByElemId[instance.elemID.getFullName()] as InstanceElement
+        const resolvedField = resolvedElementsByElemId[field.elemID.getFullName()] as Field
+        expect(resolvedInnerType.fields.field.refType.type).toEqual(resolvedInnerInnerType)
+        expect(resolvedType.fields.field.refType.type).toEqual(resolvedInnerType)
+        expect(resolvedInstance.refType.type).toEqual(resolvedType)
+        expect(resolvedField.refType.type).toEqual(resolvedInnerType)
+        // Verify that expressions.resolve was invoked once for the whole process
+        expect(resolveSpy).toHaveBeenCalledOnce()
+      })
+    })
+    describe('list', () => {
+      it('should return correct element IDs', async () => {
+        const elementIds = await toArrayAsync(await elementsSource.list())
+        expect(elementIds).toIncludeSameMembers([
+          type.elemID,
+          nestedType.elemID,
+          nestedNestedType.elemID,
+          instance.elemID,
+          field.elemID,
+        ])
+      })
+    })
+    describe('has', () => {
+      it('should return true for existing element and false otherwise', async () => {
+        expect(await elementsSource.has(type.elemID)).toBeTrue()
+        expect(await elementsSource.has(new ElemID(ADAPTER, 'NonExistingType'))).toBeFalse()
+      })
     })
   })
 })

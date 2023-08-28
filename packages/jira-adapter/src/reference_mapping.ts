@@ -27,7 +27,7 @@ import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_T
   PRIORITY_SCHEME_TYPE_NAME, SCRIPT_RUNNER_TYPE, POST_FUNCTION_CONFIGURATION, RESOLUTION_TYPE_NAME,
   ISSUE_EVENT_TYPE_NAME, CONDITION_CONFIGURATION, PROJECT_ROLE_TYPE, VALIDATOR_CONFIGURATION,
   BOARD_TYPE_NAME, ISSUE_LINK_TYPE_NAME, DIRECTED_LINK_TYPE, MAIL_LIST_TYPE_NAME,
-  SCRIPT_RUNNER_LISTENER_TYPE, SCRIPTED_FIELD_TYPE, BEHAVIOR_TYPE, ISSUE_LAYOUT_TYPE, SCRIPT_RUNNER_SETTINGS_TYPE } from './constants'
+  SCRIPT_RUNNER_LISTENER_TYPE, SCRIPTED_FIELD_TYPE, BEHAVIOR_TYPE, ISSUE_LAYOUT_TYPE, SCRIPT_RUNNER_SETTINGS_TYPE, SCRIPT_FRAGMENT_TYPE } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 import { getRefType } from './references/workflow_properties'
 import { FIELD_TYPE_NAME } from './filters/fields/constants'
@@ -952,6 +952,12 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     jiraSerializationStrategy: 'groupStrategyByOriginalName',
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: GROUP_TYPE_NAME },
+  },
+  {
+    src: { field: 'entities', parentTypes: [SCRIPT_FRAGMENT_TYPE] },
+    jiraSerializationStrategy: 'key',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: PROJECT_TYPE },
   },
 ]
 

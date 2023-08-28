@@ -16,7 +16,7 @@
 import { getChangeData, isModificationChange, isAdditionChange } from '@salto-io/adapter-api'
 import { getParent, getParents, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { deployment } from '@salto-io/adapter-components'
-import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, SCRIPT_RUNNER_LISTENER_TYPE, SECURITY_LEVEL_TYPE, WORKFLOW_TYPE_NAME } from './constants'
+import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE, SECURITY_LEVEL_TYPE, WORKFLOW_TYPE_NAME } from './constants'
 
 export const getWorkflowGroup: deployment.ChangeIdFunction = async change => (
   isModificationChange(change)
@@ -57,9 +57,15 @@ const getScriptListenersGroup: deployment.ChangeIdFunction = async change =>
     ? 'Script Listeners'
     : undefined)
 
+const getScriptedFragmentsGroup: deployment.ChangeIdFunction = async change =>
+  (getChangeData(change).elemID.typeName === SCRIPT_FRAGMENT_TYPE
+    ? 'Scripted Fragments'
+    : undefined)
+
 export const getChangeGroupIds = deployment.getChangeGroupIdsFunc([
   getWorkflowGroup,
   getSecurityLevelGroup,
   getFieldConfigItemGroup,
   getScriptListenersGroup,
+  getScriptedFragmentsGroup,
 ])

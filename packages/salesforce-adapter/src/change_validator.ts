@@ -44,6 +44,7 @@ import currencyIsoCodes from './change_validators/currency_iso_codes'
 import unknownPicklistValues from './change_validators/unknown_picklist_values'
 import accountSettings from './change_validators/account_settings'
 import installedPackages from './change_validators/installed_packages'
+import standardFieldOrObjectAdditionRemoval from './change_validators/standard_field_or_object_additions_or_deletions'
 import dataCategoryGroupValidator from './change_validators/data_category_group'
 import SalesforceClient from './client/client'
 import { ChangeValidatorName, DEPLOY_CONFIG, SalesforceConfig } from './types'
@@ -89,6 +90,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   unknownPicklistValues: () => unknownPicklistValues,
   installedPackages: () => installedPackages,
   dataCategoryGroup: () => dataCategoryGroupValidator,
+  standardFieldOrObjectAdditionRemoval: () => standardFieldOrObjectAdditionRemoval,
   ..._.mapValues(getDefaultChangeValidators(), validator => (() => validator)),
 }
 

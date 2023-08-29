@@ -24,11 +24,11 @@ export const createBehaviorValues = (name: string, allElements: Element[]): Valu
   description: 'description',
   enabled: true,
   projects: [
-    createReference(new ElemID(JIRA, 'Project', 'instance', 'Test_Project@s'), allElements),
+    createReference(new ElemID(JIRA, 'Project', 'instance', 'Test_Project@s'), allElements, ['id']),
   ],
   issueTypes: [
-    createReference(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'Story'), allElements),
-    createReference(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'Bug'), allElements),
+    createReference(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'Story'), allElements, ['id']),
+    createReference(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'Bug'), allElements, ['id']),
   ],
   config: [
     {

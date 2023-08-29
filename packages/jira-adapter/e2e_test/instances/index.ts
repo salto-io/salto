@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+// import { v4 as uuidv4 } from 'uuid'
 import { InstanceElement, Element, ElemID, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { CUSTOM_FIELDS_SUFFIX } from '../../src/filters/fields/field_name_filter'
@@ -30,6 +31,7 @@ import { createInstances as createCloudInstances } from './cloud'
 
 export const createInstances = (fetchedElements: Element[], isDataCenter: boolean): InstanceElement[][] => {
   const randomString = `createdByOssE2e${String(Date.now()).substring(6)}`
+  // const uuid = uuidv4()
 
   const issueType = new InstanceElement(
     randomString,
@@ -136,6 +138,7 @@ export const createInstances = (fetchedElements: Element[], isDataCenter: boolea
       isDataCenter
         ? createDataCenterInstances(randomString, fetchedElements)
         : createCloudInstances(randomString, fetchedElements)
+        // : createCloudInstances(randomString, uuid, fetchedElements)
     ),
     [issueType],
     [field],

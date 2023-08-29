@@ -15,7 +15,7 @@
 */
 import { Change, ChangeDataType, DeployResult, ElemID, getChangeData, InstanceElement, isAdditionChange, isEqualValues, isModificationChange, ReadOnlyElementsSource, SaltoElementError } from '@salto-io/adapter-api'
 import { config, deployment, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { invertNaclCase, resolveChangeElement, resolveValues } from '@salto-io/adapter-utils'
+import { invertNaclCase, resolveChangeElement, resolveValues, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import { getLookUpName } from '../reference_mapping'
@@ -57,6 +57,7 @@ export const defaultDeployChange = async ({
 > => {
   const resolvedChange = await resolveChangeElement(change, getLookUpName, resolveValues, elementsSource)
   invertKeysNames(getChangeData(resolvedChange).value)
+  log.debug(`Deploying second second second ${getChangeData(resolvedChange).elemID.getFullName()} with change: ${safeJsonStringify(getChangeData(resolvedChange))}`)
   const changeToDeploy = await elementUtils.swagger.flattenAdditionalProperties(
     resolvedChange,
     elementsSource,

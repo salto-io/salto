@@ -74,10 +74,9 @@ const summarizeAdditionChange = (
       ? 'success'
       : 'partial-success'
     if (deployResult === 'partial-success') {
-      log.debug('Addition Summary for change id %s returned partial-success result', {
+      log.debug('Addition Summary for change id %s returned partial-success result, diffs between requested and applied: %s',
         requestedChangeName,
-        diffs: inspectValue(diffBetweenRequestedAndApplied),
-      })
+        inspectValue(diffBetweenRequestedAndApplied),)
     }
     return [[requestedChangeName, deployResult]]
   }
@@ -98,11 +97,9 @@ const summarizeRemovalChange = (
       return 'success'
     }
     if (isModificationChange(appliedChange)) {
-      log.debug('Removal Summary for change id %s returned partial-success result', {
+      log.debug('Removal Summary for change id %s returned partial-success result, applied change is: %s',
         requestedChangeName,
-        requestedChange: inspectValue(requestedChange),
-        appliedChange: inspectValue(appliedChange),
-      })
+        inspectValue(appliedChange))
       return 'partial-success'
     }
     // We do not expect appliedChange to be an addition (since it requires no before)
@@ -174,10 +171,9 @@ const summarizeModificationChange = (
   )
   if (modificationDetailedChangeResults.some(([, result]) => result !== 'success')) {
     const requestedChangeName = getChangeData(requestedChange).elemID.getFullName()
-    log.debug('Modification Summary for change id %s returned unsuccessful result', {
+    log.debug('Modification Summary for change id %s returned unsuccessful result, diffs between requested and applied: %s',
       requestedChangeName,
-      diffs: inspectValue(diffBetweenRequestedAndApplied),
-    })
+      inspectValue(diffBetweenRequestedAndApplied),)
   }
   return modificationDetailedChangeResults
 }

@@ -27,7 +27,6 @@ import {
   ModificationChange,
   AdditionChange,
   RemovalChange,
-  Value,
 } from '@salto-io/adapter-api'
 import { detailedCompare, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -38,8 +37,6 @@ const log = logger(module)
 export type DeploySummaryResult = 'success' | 'failure' | 'partial-success'
 export type DetailedChangeId = string
 export type DetailedChangeDeploySummaryResult = [DetailedChangeId, DeploySummaryResult]
-
-const toTrimmedChangeValue = (value: Value): string => inspectValue(value).slice(0, 1000)
 
 const handleEmptyAppliedChange = (
   requestedChange: Change,
@@ -79,7 +76,7 @@ const summarizeAdditionChange = (
     if (deployResult === 'partial-success') {
       log.debug('Addition Summary for change id %s returned partial-success result', {
         requestedChangeName,
-        diffs: toTrimmedChangeValue(diffBetweenRequestedAndApplied),
+        diffs: inspectValue(diffBetweenRequestedAndApplied),
       })
     }
     return [[requestedChangeName, deployResult]]
@@ -103,8 +100,8 @@ const summarizeRemovalChange = (
     if (isModificationChange(appliedChange)) {
       log.debug('Removal Summary for change id %s returned partial-success result', {
         requestedChangeName,
-        requestedChange: toTrimmedChangeValue(requestedChange),
-        appliedChange: toTrimmedChangeValue(appliedChange),
+        requestedChange: inspectValue(requestedChange),
+        appliedChange: inspectValue(appliedChange),
       })
       return 'partial-success'
     }
@@ -179,7 +176,7 @@ const summarizeModificationChange = (
     const requestedChangeName = getChangeData(requestedChange).elemID.getFullName()
     log.debug('Modification Summary for change id %s returned unsuccessful result', {
       requestedChangeName,
-      diffs: toTrimmedChangeValue(diffBetweenRequestedAndApplied),
+      diffs: inspectValue(diffBetweenRequestedAndApplied),
     })
   }
   return modificationDetailedChangeResults

@@ -40,7 +40,7 @@ const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitC
 }
 
 // We have a buffer to prevent reaching the rate limit with the initial request on parallel or consecutive fetches
-export const RATE_LIMIT_BUFFER = 1
+export const RATE_LIMIT_BUFFER = 6
 
 const DEFAULT_MAX_REQUESTS_PER_MINUTE = 700
 

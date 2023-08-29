@@ -439,17 +439,23 @@ _alias = "Example Instance"
 
 #### _important_values / _self_important_values
 
-This annotation is used to define a user-friendly alias for the element. The alias can be used in Salto enabled editors to display a shorter, clearer element name to users. Unlike the element ID, it does not have to be unique.
-
-Type: `string` Default: `undefined` Applicable to: Types, Instances, Fields
+This annotation is used to define what are these element's most important values. This list will be used in Salto enabled editors to highlight more important parts of the element, and index some of them for easy searchability. The list should include objects with the key of the element's important values and if it is indexed.
+Type: `string` Default: `undefined` Applicable to: Types
 Example:
 ```HCL
-type salto.example_type_long_id {
-_alias = "Example Type"
-}
-
-salto.example_type_long_id example_instance_id_with_long_prefix {
-_alias = "Example Instance"
+type salto.example {
+  _important_values = [
+    {
+      value = "active"
+      indexed = true
+    },
+  ]
+  _self_important_values = [
+    {
+      value = "name"
+      indexed = false
+    },
+  ]
 }
 ```
 

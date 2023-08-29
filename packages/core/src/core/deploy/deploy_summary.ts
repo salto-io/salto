@@ -27,8 +27,9 @@ import {
   ModificationChange,
   AdditionChange,
   RemovalChange,
+  Value,
 } from '@salto-io/adapter-api'
-import { detailedCompare } from '@salto-io/adapter-utils'
+import { detailedCompare, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 
@@ -38,10 +39,14 @@ export type DeploySummaryResult = 'success' | 'failure' | 'partial-success'
 export type DetailedChangeId = string
 export type DetailedChangeDeploySummaryResult = [DetailedChangeId, DeploySummaryResult]
 
+const toTrimmedChangeValue = (value: Value): string => inspectValue(value).slice(0, 1000)
+
 const handleEmptyAppliedChange = (
   requestedChange: Change,
 ): DetailedChangeDeploySummaryResult[] => {
   const requestedChangeName = getChangeData(requestedChange).elemID.getFullName()
+  log.debug('handling empty applied change for id %s', requestedChangeName)
+
   if (isAdditionOrRemovalChange(requestedChange)) {
     return [[requestedChangeName, 'failure']]
   }
@@ -71,6 +76,12 @@ const summarizeAdditionChange = (
     const deployResult = diffBetweenRequestedAndApplied.every(isAdditionChange)
       ? 'success'
       : 'partial-success'
+    if (deployResult === 'partial-success') {
+      log.debug('Addition Summary for change id %s returned partial-success result', {
+        requestedChangeName,
+        diffs: toTrimmedChangeValue(diffBetweenRequestedAndApplied),
+      })
+    }
     return [[requestedChangeName, deployResult]]
   }
   // We do not expect appliedChange to be Removal or Modify (since both require a before)
@@ -90,6 +101,11 @@ const summarizeRemovalChange = (
       return 'success'
     }
     if (isModificationChange(appliedChange)) {
+      log.debug('Removal Summary for change id %s returned partial-success result', {
+        requestedChangeName,
+        requestedChange: toTrimmedChangeValue(requestedChange),
+        appliedChange: toTrimmedChangeValue(appliedChange),
+      })
       return 'partial-success'
     }
     // We do not expect appliedChange to be an addition (since it requires no before)
@@ -151,15 +167,22 @@ const summarizeModificationChange = (
     }
     return 'success'
   }
-
-  return (
-    requestedDetailedChanges.map(requestedDetailedChange => (
+  const modificationDetailedChangeResults = requestedDetailedChanges.map(
+    (requestedDetailedChange): DetailedChangeDeploySummaryResult => (
       [
         requestedDetailedChange.id.getFullName(),
         getResultForDetailedChange(requestedDetailedChange),
       ]
-    ))
+    )
   )
+  if (modificationDetailedChangeResults.some(([, result]) => result !== 'success')) {
+    const requestedChangeName = getChangeData(requestedChange).elemID.getFullName()
+    log.debug('Modification Summary for change id %s returned unsuccessful result', {
+      requestedChangeName,
+      diffs: toTrimmedChangeValue(diffBetweenRequestedAndApplied),
+    })
+  }
+  return modificationDetailedChangeResults
 }
 
 const summarizeDeployChange = (

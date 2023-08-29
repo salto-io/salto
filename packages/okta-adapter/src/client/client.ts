@@ -19,11 +19,13 @@ import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import axios from 'axios'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { promises } from '@salto-io/lowerdash'
 import { createConnection } from './connection'
 import { OKTA } from '../constants'
 import { Credentials } from '../auth'
 import { LINK_HEADER_NAME } from './pagination'
 
+const { sleep } = promises.timeout
 const {
   RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS, DEFAULT_RETRY_OPTS,
   throttle, logDecorator,
@@ -32,10 +34,14 @@ const log = logger(module)
 
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-  // TODO SALTO-2649: add better handling for rate limits
-  get: 2,
+  // There is a concurrent rate limit of minimum 15, depending on the plan, we take a buffer
+  get: 10,
   deploy: 2,
 }
+
+// We have a buffer to prevent reaching the rate limit with the initial request on parallel or consecutive fetches
+export const RATE_LIMIT_BUFFER = 1
+
 const DEFAULT_MAX_REQUESTS_PER_MINUTE = 700
 
 const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
@@ -81,7 +87,7 @@ const updateRateLimits = (
   // If this is a new limitation, reset the remaining count
   if (updatedRateLimitReset !== rateLimits.rateLimitReset) {
     rateLimits.rateLimitRemaining = updatedRateLimitRemaining
-    rateLimits.rateLimitReset = updatedRateLimitReset
+    rateLimits.rateLimitReset = updatedRateLimitReset * 1000 // Convert to milliseconds
   } else {
     // In case an older request returned after a newer one, we want to take the minimum because it is the most updated
     rateLimits.rateLimitRemaining = Math.min(updatedRateLimitRemaining, rateLimits.rateLimitRemaining)
@@ -108,10 +114,8 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
       {
         pageSize: DEFAULT_PAGE_SIZE,
         rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
-        // TODO SALTO-2649: add better handling for rate limits
         maxRequestsPerMinute: DEFAULT_MAX_REQUESTS_PER_MINUTE,
-        // wait for 10s before trying again, change after SALTO-2649
-        retry: { ...DEFAULT_RETRY_OPTS, retryDelay: 10000 },
+        retry: DEFAULT_RETRY_OPTS,
       }
     )
   }
@@ -121,21 +125,27 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
   }
 
   private async waitAndReGet(
-    rateLimitReset: number, // In seconds
+    rateLimitReset: number,
     args: clientUtils.ClientBaseParams
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
     // Calculate the time to wait until the rate limit is reset, and then recall the function
     const currentTime = Date.now()
-    const rateLimitResetTime = rateLimitReset * 1000 - currentTime
-    await new Promise(resolve => setTimeout(resolve, rateLimitResetTime))
+    const rateLimitResetTime = Math.max(rateLimitReset - currentTime, 100)
+    await sleep(rateLimitResetTime)
     return this.getSinglePage(args)
   }
 
+  // This getSinglePage implements a rate limit logic, for more information: https://salto-io.atlassian.net/browse/SALTO-4350
   public async getSinglePage(
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
     const rateLimits = this.rateLimits.find(rateLimit => args.url.match(rateLimit.url))?.limits ?? this.defaultRateLimit
-    if (rateLimits.currentlyRunning > 0 && rateLimits.rateLimitRemaining - rateLimits.currentlyRunning <= 1) {
+    // If this is the initial request, don't wait
+    if (!_.isEqual(rateLimits, initRateLimits)
+      // If nothing is running, and we passed the rate limit reset time, don't wait
+      && !(rateLimits.currentlyRunning === 0 && rateLimits.rateLimitReset < Date.now())
+      // If we are at the rate limit with the buffer, wait
+      && rateLimits.rateLimitRemaining - rateLimits.currentlyRunning <= RATE_LIMIT_BUFFER) {
       return this.waitAndReGet(rateLimits.rateLimitReset, args)
     }
     try {

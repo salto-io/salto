@@ -16,7 +16,11 @@
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import OktaClient from '../../src/client/client'
+import { Value } from '@salto-io/adapter-api'
+import { promises } from '@salto-io/lowerdash'
+import OktaClient, { RATE_LIMIT_BUFFER } from '../../src/client/client'
+
+const { sleep } = promises.timeout
 
 describe('client', () => {
   let client: OktaClient
@@ -63,6 +67,91 @@ describe('client', () => {
         .replyOnce(410)
       result = await client.getSinglePage({ url: '/api/v1/deprecated' })
       expect(result.data).toEqual([])
+    })
+  })
+  describe('rateLimits', () => {
+    let oktaGetSinglePageSpy: jest.SpyInstance
+    let clientGetSinglePageSpy: jest.SpyInstance
+    let waitAndGetSpy: jest.SpyInstance
+    beforeEach(() => {
+      jest.clearAllMocks()
+      oktaGetSinglePageSpy = jest.spyOn(client, 'getSinglePage')
+      clientGetSinglePageSpy = jest.spyOn(clientUtils.AdapterHTTPClient.prototype, 'getSinglePage')
+
+      waitAndGetSpy = jest.spyOn(client as Value, 'waitAndReGet') // as Value to spy on private method
+      mockAxios.onGet().replyOnce(200, {}) // First request is for client authentication
+    })
+    it('should wait for first request, then wait according to rate limit', async () => {
+      for (let i = 1; i <= 2; i += 1) {
+        for (let j = 1; j <= 5; j += 1) {
+          const resetTime = Math.floor((Date.now() + 500 * i) / 1000)
+          // eslint-disable-next-line no-loop-func
+          clientGetSinglePageSpy.mockImplementationOnce(async () => {
+            await sleep(100)
+            return { headers: { 'x-rate-limit-remaining': (RATE_LIMIT_BUFFER + 5 - j).toString(), 'x-rate-limit-reset': resetTime } }
+          })
+        }
+      }
+
+      const requests = Array(6).fill(0).map((_, i) => `/api/v1/org${i}`)
+
+      const promise = requests.map(async request => client.getSinglePage({ url: request }))
+      await Promise.all(promise)
+
+      // all enter, 5 wait and 1 enter, 1 wait and 4 enter, 1 enter
+      expect(oktaGetSinglePageSpy).toHaveBeenCalledTimes(6 + 5 + 1)
+      expect(waitAndGetSpy).toHaveBeenCalledTimes(5 + 1)
+      expect(clientGetSinglePageSpy).toHaveBeenCalledTimes(6)
+    })
+    it('should enter immediately if rate limit is not exceeded', async () => {
+      clientGetSinglePageSpy.mockImplementationOnce(async () => ({
+        headers: {
+          'x-rate-limit-remaining': '99',
+          'x-rate-limit-reset': '123',
+        },
+      }))
+      clientGetSinglePageSpy.mockImplementationOnce(async () => {
+        await sleep(100)
+        return { headers: { 'x-rate-limit-remaining': '98', 'x-rate-limit-reset': '123' } }
+      })
+      clientGetSinglePageSpy.mockImplementationOnce(async () => {
+        await sleep(100)
+        return { headers: { 'x-rate-limit-remaining': '97', 'x-rate-limit-reset': '123' } }
+      })
+      clientGetSinglePageSpy.mockImplementationOnce(async () => ({
+        headers: {
+          'x-rate-limit-remaining': '96',
+          'x-rate-limit-reset': '123',
+        },
+      }))
+      const firstRequest = client.getSinglePage({ url: '/api/v1/org1' })
+      const secondRequest = client.getSinglePage({ url: '/api/v1/org2' })
+      const thirdRequest = client.getSinglePage({ url: '/api/v1/org3' })
+      await firstRequest
+      const forthRequest = client.getSinglePage({ url: '/api/v1/org4' })
+      await Promise.all([secondRequest, thirdRequest, forthRequest])
+
+      // The first request should enter immediately while the second and third wait for the first to finish
+      // The first returns and updates the rate limit, then the forth request enters immediately
+      // Then the second and third requests finish waiting and enters
+      expect(oktaGetSinglePageSpy).toHaveBeenCalledTimes(4 + 2)
+      expect(waitAndGetSpy).toHaveBeenCalledTimes(2)
+      expect(clientGetSinglePageSpy).toHaveBeenCalledTimes(4)
+
+      expect(oktaGetSinglePageSpy).toHaveBeenNthCalledWith(1, { url: '/api/v1/org1' })
+      expect(oktaGetSinglePageSpy).toHaveBeenNthCalledWith(2, { url: '/api/v1/org2' })
+      expect(oktaGetSinglePageSpy).toHaveBeenNthCalledWith(3, { url: '/api/v1/org3' })
+      expect(oktaGetSinglePageSpy).toHaveBeenNthCalledWith(4, { url: '/api/v1/org4' })
+      expect(oktaGetSinglePageSpy).toHaveBeenNthCalledWith(5, { url: '/api/v1/org2' })
+      expect(oktaGetSinglePageSpy).toHaveBeenNthCalledWith(6, { url: '/api/v1/org3' })
+
+      expect(waitAndGetSpy).toHaveBeenNthCalledWith(1, 0, { url: '/api/v1/org2' })
+      expect(waitAndGetSpy).toHaveBeenNthCalledWith(2, 0, { url: '/api/v1/org3' })
+
+      expect(clientGetSinglePageSpy).toHaveBeenNthCalledWith(1, { url: '/api/v1/org1' })
+      expect(clientGetSinglePageSpy).toHaveBeenNthCalledWith(2, { url: '/api/v1/org4' })
+      expect(clientGetSinglePageSpy).toHaveBeenNthCalledWith(3, { url: '/api/v1/org2' })
+      expect(clientGetSinglePageSpy).toHaveBeenNthCalledWith(4, { url: '/api/v1/org3' })
     })
   })
 

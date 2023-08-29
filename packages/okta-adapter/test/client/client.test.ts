@@ -81,6 +81,11 @@ describe('client', () => {
       waitAndGetSpy = jest.spyOn(client as Value, 'waitAndReGet') // as Value to spy on private method
       mockAxios.onGet().replyOnce(200, {}) // First request is for client authentication
     })
+    afterAll(() => {
+      oktaGetSinglePageSpy.mockRestore()
+      clientGetSinglePageSpy.mockRestore()
+      waitAndGetSpy.mockRestore()
+    })
     it('should wait for first request, then wait according to rate limit', async () => {
       for (let i = 1; i <= 2; i += 1) {
         for (let j = 1; j <= 5; j += 1) {

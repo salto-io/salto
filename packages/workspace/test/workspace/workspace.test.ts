@@ -2094,6 +2094,7 @@ describe('workspace', () => {
           },
         },
         () => Promise.resolve(new InMemoryRemoteMap()),
+        async () => [],
       )
       expect((workspaceConf.setWorkspaceConfig as jest.Mock).mock.calls[0][0]).toEqual(
         { name: 'ws-name', uid: 'uid', envs: [{ name: 'default', accountToServiceName: {} }], currentEnv: 'default' }
@@ -2692,15 +2693,15 @@ describe('workspace', () => {
   })
   describe('referenceTargetsTree index', () => {
     it('should return same result after serialize and deserialize', async () => {
-      const referenceTargetsTree = new collections.treeMap.TreeMap<ElemID>([
-        ['someAnnotation', [ElemID.fromFullName('test.target2.field.someField.value')]],
-        ['someValue', [ElemID.fromFullName('test.target2.instance.someInstance')]],
+      const referenceTargetsTree = new collections.treeMap.TreeMap([
+        ['someAnnotation', [{ id: ElemID.fromFullName('test.target2.field.someField.value'), type: 'strong' as const }]],
+        ['someValue', [{ id: ElemID.fromFullName('test.target2.instance.someInstance'), type: 'strong' as const }]],
         ['inner.templateValue', [
-          ElemID.fromFullName('test.target2.field.someTemplateField.value'),
-          ElemID.fromFullName('test.target2.field.anotherTemplateField.value'),
+          { id: ElemID.fromFullName('test.target2.field.someTemplateField.value'), type: 'strong' as const },
+          { id: ElemID.fromFullName('test.target2.field.anotherTemplateField.value'), type: 'strong' as const },
         ],
         ],
-        ['', [ElemID.fromFullName('test.target2.instance.someInstance2')]],
+        ['', [{ id: ElemID.fromFullName('test.target2.instance.someInstance2'), type: 'strong' as const }]],
 
       ])
       const serializedTree = await serializeReferenceTree(referenceTargetsTree)
@@ -2708,7 +2709,7 @@ describe('workspace', () => {
       expect(deserializedTree).toEqual(referenceTargetsTree)
     })
     it('should return same result after deserialize and serialize', async () => {
-      const serializedTree = '[["someAnnotation",["test.target2.field.someField.value"]],["someValue",["test.target2.instance.someInstance"]],["inner.templateValue",["test.target2.field.someTemplateField.value","test.target2.field.anotherTemplateField.value"]],["",["test.target2.instance.someInstance2"]]]'
+      const serializedTree = '[["someAnnotation",[{"id":"test.target2.field.someField.value","type":"strong"}]],["someValue",[{"id":"test.target2.instance.someInstance","type":"strong"}]],["inner.templateValue",[{"id":"test.target2.field.someTemplateField.value","type":"strong"},{"id":"test.target2.field.anotherTemplateField.value","type":"strong"}]],["",[{"id":"test.target2.instance.someInstance2","type":"strong"}]]]'
       const deserializedTree = await deserializeReferenceTree(serializedTree)
       const reSerializedTree = await serializeReferenceTree(deserializedTree)
       expect(reSerializedTree).toEqual(serializedTree)
@@ -2717,7 +2718,7 @@ describe('workspace', () => {
     it('should deserialize references with types', async () => {
       const serializedTree = '[["someAnnotation",[{"id":"test.target2.field.someField.value","type":"strong"}]]]'
       const deserializedTree = await deserializeReferenceTree(serializedTree)
-      expect(deserializedTree.get('someAnnotation')).toEqual([ElemID.fromFullName('test.target2.field.someField.value')])
+      expect(deserializedTree.get('someAnnotation')).toEqual([{ id: ElemID.fromFullName('test.target2.field.someField.value'), type: 'strong' }])
     })
   })
   describe('deleteEnvironment', () => {
@@ -3351,17 +3352,17 @@ describe('workspace', () => {
 
     it('top level instance should return all references under it without duplicates', async () => {
       const instanceRefs = await workspace.getElementOutgoingReferences(new ElemID('adapter', 'test', 'instance', 'test'))
-      expect(instanceRefs).toMatchObject([ref1.elemID, ref2.elemID, templateRef1.elemID, templateRef2.elemID])
+      expect(instanceRefs).toMatchObject([ref1.elemID, ref2.elemID, templateRef1.elemID, templateRef2.elemID].map(id => ({ id, type: 'strong' })))
     })
 
     it('instance field should return all references nested under it', async () => {
       const instanceRefs = await workspace.getElementOutgoingReferences(new ElemID('adapter', 'test', 'instance', 'test', 'inner'))
-      expect(instanceRefs).toMatchObject([ref2.elemID, templateRef1.elemID, templateRef2.elemID])
+      expect(instanceRefs).toMatchObject([ref2.elemID, templateRef1.elemID, templateRef2.elemID].map(id => ({ id, type: 'strong' })))
     })
 
     it('specific nested instance field path should return references under it', async () => {
       const instanceRefs = await workspace.getElementOutgoingReferences(new ElemID('adapter', 'test', 'instance', 'test', 'inner', 'inner2', 'refs'))
-      expect(instanceRefs).toMatchObject([templateRef1.elemID, templateRef2.elemID])
+      expect(instanceRefs).toMatchObject([templateRef1.elemID, templateRef2.elemID].map(id => ({ id, type: 'strong' })))
     })
 
     it('nested instance field without references should return an empty array', async () => {
@@ -3380,7 +3381,7 @@ describe('workspace', () => {
 
     it('object type should also include the references of its fields', async () => {
       const instanceRefs = await workspace.getElementOutgoingReferences(new ElemID('adapter', 'object'))
-      expect(instanceRefs).toMatchObject([ref1.elemID, ref2.elemID])
+      expect(instanceRefs).toMatchObject([ref1.elemID, ref2.elemID].map(id => ({ id, type: 'strong' })))
     })
   })
 

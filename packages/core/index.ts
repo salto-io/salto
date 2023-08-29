@@ -23,7 +23,7 @@ export { RenameElementIdError } from './src/core/rename'
 export {
   loadLocalWorkspace, initLocalWorkspace, loadLocalElementsSources,
   CACHE_DIR_NAME, STATES_DIR_NAME, locateWorkspaceRoot, createEnvironmentSource,
-  getAdapterConfigsPerAccount,
+  getAdapterConfigsPerAccount, getCustomReferences,
 } from './src/local-workspace/workspace'
 export {
   workspaceConfigSource as localWorkspaceConfigSource,

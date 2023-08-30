@@ -22,7 +22,7 @@ import {
   isAdditionOrRemovalChange,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { apiName, isCustom, isCustomObject, isFieldOfCustomObject } from '../transformers/transformer'
+import { isCustom, isCustomObject, isFieldOfCustomObject } from '../transformers/transformer'
 import { safeApiName } from '../filters/utils'
 
 const { awu } = collections.asynciterable
@@ -45,7 +45,7 @@ const createObjectAdditionChangeError = async (objectType: ObjectType): Promise<
   elemID: objectType.elemID,
   severity: 'Error',
   message: 'Standard object does not exist in target organization',
-  detailedMessage: `The standard object ${await apiName(objectType)} does not exist in your target organization.  You cannot create a standard object through the API. You may need additional feature licenses. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/8058127-creation-deletion-of-standard-field-object-is-not-allowed`,
+  detailedMessage: `The standard object ${await safeApiName(objectType)} does not exist in your target organization.  You cannot create a standard object through the API. You may need additional feature licenses. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/8058127-creation-deletion-of-standard-field-object-is-not-allowed`,
 })
 
 const createFieldRemovalChangeError = (field: Field): ChangeError => ({
@@ -59,17 +59,17 @@ const createObjectRemovalChangeError = async (objectType: ObjectType): Promise<C
   elemID: objectType.elemID,
   severity: 'Error',
   message: 'Cannot delete a standard object',
-  detailedMessage: `Deletion of standard object ${await apiName(objectType)} through the API is forbidden. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/8058127-creation-deletion-of-standard-field-object-is-not-allowed`,
+  detailedMessage: `Deletion of standard object ${await safeApiName(objectType)} through the API is forbidden. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/8058127-creation-deletion-of-standard-field-object-is-not-allowed`,
 })
 
 /**
- * It is forbidden to create standard fields or objects.
+ * It is forbidden to add/remove standard fields or objects.
  */
 const changeValidator: ChangeValidator = async changes => {
   const standardFieldChanges = await awu(changes)
     .filter(isFieldChange)
     .filter(isCustomFieldChange)
-    .filter(async field => !isCustom(await apiName(getChangeData(field))))
+    .filter(async field => !isCustom(await safeApiName(getChangeData(field)) ?? ''))
     .toArray()
 
   const additionOrRemovalCustomObjectChanges = await awu(changes)

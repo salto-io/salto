@@ -18,10 +18,11 @@ import {
   ChangeValidator, isAdditionChange, Change, isFieldChange,
   isObjectTypeChange,
   ObjectType,
-  isRemovalChange,
+  isRemovalChange, isAdditionOrRemovalChange,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { apiName, isCustom, isCustomObject, isFieldOfCustomObject } from '../transformers/transformer'
+import { safeApiName } from '../filters/utils'
 
 const { awu } = collections.asynciterable
 
@@ -32,11 +33,11 @@ const isCustomFieldChange = async (change: Change<Field>): Promise<boolean> =>
 const isCustomObjectChange = async (change: Change<ObjectType>): Promise<boolean> =>
   (isCustomObject(getChangeData(change)))
 
-const createFieldAdditionChangeError = (field: Field): ChangeError => ({
+const createFieldAdditionChangeError = async (field: Field): Promise<ChangeError> => ({
   elemID: field.elemID,
   severity: 'Error',
   message: 'Standard field does not exist in target organization',
-  detailedMessage: `The standard field ${field.name} of type ${field.parent} does not exist in your target organization. It is not possible to create a standard field through the API. You may need additional feature licenses. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/8058127-creation-deletion-of-standard-field-object-is-not-allowed`,
+  detailedMessage: `The standard field ${field.name} of type ${await safeApiName(field.parent)} does not exist in your target organization. It is not possible to create a standard field through the API. You may need additional feature licenses. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/8058127-creation-deletion-of-standard-field-object-is-not-allowed`,
 })
 
 const createObjectAdditionChangeError = async (objectType: ObjectType): Promise<ChangeError> => ({
@@ -70,15 +71,31 @@ const changeValidator: ChangeValidator = async changes => {
     .filter(async field => !isCustom(await apiName(getChangeData(field))))
     .toArray()
 
-  const standardObjectChanges = await awu(changes)
+  const additionOrRemovalCustomObjectChanges = await awu(changes)
+    .filter(isAdditionOrRemovalChange)
     .filter(isObjectTypeChange)
     .filter(isCustomObjectChange)
-    .filter(async obj => !isCustom(await apiName(getChangeData(obj))))
+    .toArray()
+
+  const addedOrDeletedCustomObjects = await awu(additionOrRemovalCustomObjectChanges)
+    .map(getChangeData)
+    .toArray()
+
+  const isFieldOfAddedOrDeletedCustomObject = (field: Field): boolean => (
+    addedOrDeletedCustomObjects.some(customObject => Object.values(customObject.fields).includes(field))
+  )
+
+  const standardObjectChanges = await awu(additionOrRemovalCustomObjectChanges)
+    .filter(async obj => !isCustom(await safeApiName(getChangeData(obj)) ?? ''))
     .toArray()
 
   const standardFieldAdditionErrors = await awu(standardFieldChanges)
     .filter(isAdditionChange)
     .map(getChangeData)
+    // We only want to create an error for fields that are not part of an added CustomObject type, since the error
+    // will already be on their parent CustomObject change. This should also avoid blocking valid addition changes
+    // in case the Field parent CustomObject was added.
+    .filter(field => !isFieldOfAddedOrDeletedCustomObject(field))
     .map(createFieldAdditionChangeError)
     .toArray()
 
@@ -91,6 +108,10 @@ const changeValidator: ChangeValidator = async changes => {
   const standardFieldRemovalErrors = await awu(standardFieldChanges)
     .filter(isRemovalChange)
     .map(getChangeData)
+    // We only want to create an error for fields that are not part of a deleted CustomObject type, since the error
+    // will already be on their parent CustomObject change. This should also avoid blocking valid deletion changes
+    // in case the Field parent CustomObject was deleted.
+    .filter(field => !isFieldOfAddedOrDeletedCustomObject(field))
     .map(createFieldRemovalChangeError)
     .toArray()
 

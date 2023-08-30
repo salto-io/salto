@@ -44,6 +44,7 @@ export const getDiagnostics = async (
   const errors = errorsAndWarnings
     .filter(e => e.severity === 'Error')
   const errorsToDisplay = _.isEmpty(errors) ? errorsAndWarnings : errors
+  const totalNumberOfErrors = _.isEmpty(errors) ? errorsAndWarnings.length : errors.length
   const workspaceErrors = await Promise.all(
     wu(errorsToDisplay)
       .slice(0, MAX_WORKSPACE_ERRORS)
@@ -69,5 +70,5 @@ export const getDiagnostics = async (
     .flatten()
     .groupBy('filename')
     .value()
-  return { errors: { ...emptyDiagFiles, ...diag }, totalNumberOfErrors: errorsAndWarnings.length }
+  return { errors: { ...emptyDiagFiles, ...diag }, totalNumberOfErrors }
 }

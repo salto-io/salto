@@ -226,7 +226,10 @@ describe('Internal IDs filter', () => {
         client,
         config: {
           ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({ optionalFeatures: { addMissingIds: false } }),
+          fetchProfile: buildFetchProfile({
+            fetchParams: { optionalFeatures: { addMissingIds: false } },
+            isFetchWithChangesDetection: false,
+          }),
         },
       }) as FilterType
       await filter.onFetch([inst])

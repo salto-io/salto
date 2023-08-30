@@ -43,27 +43,44 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   generateRefsInProfiles: false,
 }
 
+type BuildFetchProfileParams = {
+  fetchParams: FetchParameters
+  isFetchWithChangesDetection: boolean
+  changedAtSingleton?: InstanceElement
+}
+
 export const buildFetchProfile = ({
-  metadata = {},
-  data,
-  fetchAllCustomSettings,
-  optionalFeatures,
-  target,
-  maxInstancesPerType,
-  preferActiveFlowVersions,
-  addNamespacePrefixToFullName,
-}: FetchParameters,
-changedAtSingleton?: InstanceElement): FetchProfile => ({
-  metadataQuery: buildMetadataQuery(metadata, changedAtSingleton, isDefined(target)
-    ? getFetchTargets(target as SupportedMetadataType[])
-    : undefined),
-  dataManagement: data && buildDataManagement(data),
-  isFeatureEnabled: name => optionalFeatures?.[name] ?? optionalFeaturesDefaultValues[name] ?? true,
-  shouldFetchAllCustomSettings: () => fetchAllCustomSettings ?? true,
-  maxInstancesPerType: maxInstancesPerType ?? DEFAULT_MAX_INSTANCES_PER_TYPE,
-  preferActiveFlowVersions: preferActiveFlowVersions ?? false,
-  addNamespacePrefixToFullName: addNamespacePrefixToFullName ?? true,
-})
+  fetchParams,
+  isFetchWithChangesDetection,
+  changedAtSingleton,
+}: BuildFetchProfileParams): FetchProfile => {
+  const {
+    metadata = {},
+    data,
+    fetchAllCustomSettings,
+    optionalFeatures,
+    target,
+    maxInstancesPerType,
+    preferActiveFlowVersions,
+    addNamespacePrefixToFullName,
+  } = fetchParams
+  return {
+    metadataQuery: buildMetadataQuery({
+      metadataParams: metadata,
+      changedAtSingleton,
+      isFetchWithChangesDetection,
+      target: isDefined(target)
+        ? getFetchTargets(target as SupportedMetadataType[])
+        : undefined,
+    }),
+    dataManagement: data && buildDataManagement(data),
+    isFeatureEnabled: name => optionalFeatures?.[name] ?? optionalFeaturesDefaultValues[name] ?? true,
+    shouldFetchAllCustomSettings: () => fetchAllCustomSettings ?? true,
+    maxInstancesPerType: maxInstancesPerType ?? DEFAULT_MAX_INSTANCES_PER_TYPE,
+    preferActiveFlowVersions: preferActiveFlowVersions ?? false,
+    addNamespacePrefixToFullName: addNamespacePrefixToFullName ?? true,
+  }
+}
 
 export const validateFetchParameters = (
   params: Partial<FetchParameters>,

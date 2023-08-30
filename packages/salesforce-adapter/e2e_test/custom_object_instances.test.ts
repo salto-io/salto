@@ -90,7 +90,7 @@ describe('custom object instances e2e', () => {
   }
 
   const filtersContext = {
-    fetchProfile: buildFetchProfile(config.fetch),
+    fetchProfile: buildFetchProfile({ fetchParams: config.fetch, isFetchWithChangesDetection: false }),
   }
   beforeAll(async () => {
     credLease = await testHelpers().credentials()

@@ -35,11 +35,14 @@ describe('Test Settings Type', () => {
       config: {
         ...defaultFilterContext,
         fetchProfile: buildFetchProfile({
-          metadata: {
-            exclude: [
-              { metadataType: 'CaseSettings' },
-            ],
+          fetchParams: {
+            metadata: {
+              exclude: [
+                { metadataType: 'CaseSettings' },
+              ],
+            },
           },
+          isFetchWithChangesDetection: false,
         }),
       },
     }

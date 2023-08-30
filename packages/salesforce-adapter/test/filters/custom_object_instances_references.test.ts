@@ -193,12 +193,15 @@ describe('Custom Object Instances References filter', () => {
       config: {
         ...defaultFilterContext,
         fetchProfile: buildFetchProfile({
-          data: {
-            includeObjects: ['*'],
-            saltoIDSettings: {
-              defaultIdFields: ['Name'],
+          fetchParams: {
+            data: {
+              includeObjects: ['*'],
+              saltoIDSettings: {
+                defaultIdFields: ['Name'],
+              },
             },
           },
+          isFetchWithChangesDetection: false,
         }),
       },
     }) as FilterType

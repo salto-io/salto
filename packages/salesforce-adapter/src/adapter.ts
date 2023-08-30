@@ -237,6 +237,8 @@ export interface SalesforceAdapterParams {
 
   elementsSource: ReadOnlyElementsSource
 
+  isFetchWithChangesDetection: boolean
+
   changedAtSingleton?: InstanceElement
 }
 
@@ -383,6 +385,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     systemFields = SYSTEM_FIELDS,
     unsupportedSystemFields = UNSUPPORTED_SYSTEM_FIELDS,
     config,
+    isFetchWithChangesDetection,
     changedAtSingleton,
   }: SalesforceAdapterParams) {
     this.maxItemsInRetrieveRequest = config.maxItemsInRetrieveRequest ?? maxItemsInRetrieveRequest
@@ -393,7 +396,11 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.client = client
     this.elementsSource = elementsSource
 
-    const fetchProfile = buildFetchProfile(config.fetch ?? {}, changedAtSingleton)
+    const fetchProfile = buildFetchProfile({
+      fetchParams: config.fetch ?? {},
+      isFetchWithChangesDetection,
+      changedAtSingleton,
+    })
     this.fetchProfile = fetchProfile
     if (!this.fetchProfile.isFeatureEnabled('fetchCustomObjectUsingRetrieveApi')) {
       // We have to fetch custom objects using retrieve in order to be able to fetch the field-level permissions

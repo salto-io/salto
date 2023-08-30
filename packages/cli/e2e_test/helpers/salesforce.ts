@@ -106,7 +106,7 @@ export const addElements = async <T extends InstanceElement | ObjectType>(
   elements: T[]
 ): Promise<T[]> => {
   const adapter = new SalesforceAdapter(
-    { client, config: {}, elementsSource: buildElementsSourceFromElements([]) }
+    { client, config: {}, elementsSource: buildElementsSourceFromElements([]), isFetchWithChangesDetection: false }
   )
   const changeGroup: ChangeGroup = {
     groupID: elements[0].elemID.getFullName(),
@@ -125,7 +125,7 @@ export const removeElements = async <T extends InstanceElement | ObjectType>(
   elements: T[]
 ): Promise<void> => {
   const adapter = new SalesforceAdapter(
-    { client, config: {}, elementsSource: buildElementsSourceFromElements([]) }
+    { client, config: {}, elementsSource: buildElementsSourceFromElements([]), isFetchWithChangesDetection: false }
   )
   const changeGroup: ChangeGroup = {
     groupID: elements[0].elemID.getFullName(),

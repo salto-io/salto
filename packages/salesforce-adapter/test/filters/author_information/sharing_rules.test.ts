@@ -89,7 +89,10 @@ describe('sharing rules author information test', () => {
         client,
         config: {
           ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({ optionalFeatures: { authorInformation: false } }),
+          fetchProfile: buildFetchProfile({
+            fetchParams: { optionalFeatures: { authorInformation: false } },
+            isFetchWithChangesDetection: false,
+          }),
         },
       })
       await filter.onFetch?.([sharingRulesInstance])

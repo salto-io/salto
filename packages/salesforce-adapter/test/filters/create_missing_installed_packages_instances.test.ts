@@ -96,14 +96,17 @@ describe('createMissingInstalledPackagesInstancesFilter', () => {
           const filterContext = {
             ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
-              metadata: {
-                exclude: [
-                  {
-                    metadataType: 'InstalledPackage',
-                    namespace: MISSING_NAMESPACE,
-                  },
-                ],
+              fetchParams: {
+                metadata: {
+                  exclude: [
+                    {
+                      metadataType: 'InstalledPackage',
+                      namespace: MISSING_NAMESPACE,
+                    },
+                  ],
+                },
               },
+              isFetchWithChangesDetection: false,
             }),
           }
           filter = filterCreator({ client, config: filterContext }) as FilterWith<'onFetch'>

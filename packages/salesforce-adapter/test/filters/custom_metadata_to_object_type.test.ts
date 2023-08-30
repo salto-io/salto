@@ -56,7 +56,8 @@ describe('customMetadataToObjectTypeFilter', () => {
     config: {
       ...defaultFilterContext,
       fetchProfile: buildFetchProfile({
-        optionalFeatures: { skipAliases: false },
+        fetchParams: { optionalFeatures: { skipAliases: false } },
+        isFetchWithChangesDetection: false,
       }),
     },
   }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>

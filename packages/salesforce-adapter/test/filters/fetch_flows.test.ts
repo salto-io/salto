@@ -58,7 +58,10 @@ describe('fetch flows filter', () => {
         elements = [flowType, flowDefinitionType]
         filter = fetchFlowFilter(
           { config: { ...defaultFilterContext,
-            fetchProfile: buildFetchProfile({ preferActiveFlowVersions: true }) },
+            fetchProfile: buildFetchProfile({
+              fetchParams: { preferActiveFlowVersions: true },
+              isFetchWithChangesDetection: false,
+            }) },
           client },
         ) as FilterWith<'onFetch'>
         await filter.onFetch(elements)

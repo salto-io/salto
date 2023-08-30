@@ -1853,7 +1853,7 @@ describe('Fetch via retrieve API', () => {
           client,
           types: [mockTypes.ApexClass],
           maxItemsInRetrieveRequest: DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
-          metadataQuery: buildMetadataQuery({}),
+          metadataQuery: buildMetadataQuery({ metadataParams: {}, isFetchWithChangesDetection: false }),
           addNamespacePrefixToFullName: false,
           typesToSkip: new Set(),
         }
@@ -1884,7 +1884,7 @@ describe('Fetch via retrieve API', () => {
           client,
           types: [mockTypes.ApexClass, mockTypes.CustomObject],
           maxItemsInRetrieveRequest: chunkSize,
-          metadataQuery: buildMetadataQuery({}),
+          metadataQuery: buildMetadataQuery({ metadataParams: {}, isFetchWithChangesDetection: false }),
           addNamespacePrefixToFullName: false,
           typesToSkip: new Set(),
         }
@@ -1919,7 +1919,7 @@ describe('Fetch via retrieve API', () => {
           client,
           types: [mockTypes.CustomObject, mockTypes.Profile],
           maxItemsInRetrieveRequest: chunkSize,
-          metadataQuery: buildMetadataQuery({}),
+          metadataQuery: buildMetadataQuery({ metadataParams: {}, isFetchWithChangesDetection: false }),
           addNamespacePrefixToFullName: false,
           typesToSkip: new Set(),
         }
@@ -1962,7 +1962,7 @@ describe('Fetch via retrieve API', () => {
           client,
           types: [mockTypes.CustomObject, mockTypes.Profile],
           maxItemsInRetrieveRequest: 3,
-          metadataQuery: buildMetadataQuery({}),
+          metadataQuery: buildMetadataQuery({ metadataParams: {}, isFetchWithChangesDetection: false }),
           addNamespacePrefixToFullName: false,
           typesToSkip: new Set(),
         }

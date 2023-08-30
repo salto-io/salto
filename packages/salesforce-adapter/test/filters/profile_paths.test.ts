@@ -114,7 +114,10 @@ describe('profile paths filter', () => {
         client,
         config: {
           ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({ optionalFeatures: { profilePaths: false } }),
+          fetchProfile: buildFetchProfile({
+            fetchParams: { optionalFeatures: { profilePaths: false } },
+            isFetchWithChangesDetection: false,
+          }),
         },
       }) as FilterWith<'onFetch'>
       await filter.onFetch([instance])

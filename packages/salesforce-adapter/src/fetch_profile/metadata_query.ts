@@ -16,7 +16,16 @@
 import { regex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { InstanceElement } from '@salto-io/adapter-api'
-import { DEFAULT_NAMESPACE, SETTINGS_METADATA_TYPE, TOPICS_FOR_OBJECTS_METADATA_TYPE, CUSTOM_OBJECT, MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD, FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from '../constants'
+import {
+  DEFAULT_NAMESPACE,
+  SETTINGS_METADATA_TYPE,
+  TOPICS_FOR_OBJECTS_METADATA_TYPE,
+  CUSTOM_OBJECT,
+  MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD,
+  FLOW_DEFINITION_METADATA_TYPE,
+  FLOW_METADATA_TYPE,
+  CUSTOM_FIELD,
+} from '../constants'
 import { validateRegularExpressions, ConfigValidationError } from '../config_validation'
 import { MetadataInstance, MetadataParams, MetadataQueryParams, METADATA_INCLUDE_LIST, METADATA_EXCLUDE_LIST, METADATA_SEPARATE_FIELD_LIST } from '../types'
 
@@ -56,6 +65,13 @@ const DEFAULT_NAMESPACE_MATCH_ALL_TYPE_LIST = [
 ]
 
 
+// Instances of this type won't be fetched in fetchWithChangesDetection mode
+const UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES = [
+  FLOW_METADATA_TYPE,
+  CUSTOM_OBJECT,
+  CUSTOM_FIELD,
+]
+
 const getDefaultNamespace = (metadataType: string): string =>
   (DEFAULT_NAMESPACE_MATCH_ALL_TYPE_LIST.includes(metadataType)
     ? '.*'
@@ -75,11 +91,20 @@ const isFolderMetadataTypeNameMatch = ({ name: instanceName }: MetadataInstance,
   || regex.isFullRegexMatch(instanceName, name)
 )
 
-export const buildMetadataQuery = (
-  { include = [{}], exclude = [] }: MetadataParams,
-  changedAtSingleton?: InstanceElement,
-  target?: string[],
-): MetadataQuery => {
+type BuildMetadataQueryParams = {
+  metadataParams: MetadataParams
+  changedAtSingleton?: InstanceElement
+  target?: string[]
+  isFetchWithChangesDetection: boolean
+}
+
+export const buildMetadataQuery = ({
+  metadataParams,
+  changedAtSingleton,
+  target,
+  isFetchWithChangesDetection,
+}: BuildMetadataQueryParams): MetadataQuery => {
+  const { include = [{}], exclude = [] } = metadataParams
   const fullExcludeList = [...exclude, ...PERMANENT_SKIP_LIST]
 
   const isInstanceMatchQueryParams = (
@@ -119,7 +144,10 @@ export const buildMetadataQuery = (
     }
     return false
   }
-  const wasUpdated = (instance: MetadataInstance): boolean => {
+  const isIncludedInFetchWithChangesDetection = (instance: MetadataInstance): boolean => {
+    if (UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES.includes(instance.metadataType)) {
+      return false
+    }
     if (changedAtSingleton === undefined || instance.changedAt === undefined) {
       return true
     }
@@ -144,14 +172,14 @@ export const buildMetadataQuery = (
     isInstanceMatch: instance => (
       include.some(params => isInstanceMatchQueryParams(instance, params))
       && !fullExcludeList.some(params => isInstanceMatchQueryParams(instance, params))
-      && wasUpdated(instance)
+      && (!isFetchWithChangesDetection || isIncludedInFetchWithChangesDetection(instance))
     ),
 
     isTargetedFetch: () => target !== undefined,
 
-    isFetchWithChangesDetection: () => changedAtSingleton !== undefined,
+    isFetchWithChangesDetection: () => isFetchWithChangesDetection,
 
-    isPartialFetch: () => target !== undefined || changedAtSingleton !== undefined,
+    isPartialFetch: () => target !== undefined || isFetchWithChangesDetection,
 
     getFolderPathsByName: (folderType: string) => {
       const folderPaths = include

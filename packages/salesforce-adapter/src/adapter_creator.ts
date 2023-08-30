@@ -199,6 +199,7 @@ export const adapter: Adapter = {
         getElemIdFunc,
         elementsSource,
         changedAtSingleton,
+        isFetchWithChangesDetection: false,
       })
     }
 

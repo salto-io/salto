@@ -84,12 +84,15 @@ describe('buildMetadataQuery', () => {
   describe('isInstanceMatch', () => {
     it('filter with namespace', () => {
       const query = buildMetadataQuery({
-        include: [
-          { namespace: 'aaa.*' },
-        ],
-        exclude: [
-          { namespace: '.*bbb' },
-        ],
+        metadataParams: {
+          include: [
+            { namespace: 'aaa.*' },
+          ],
+          exclude: [
+            { namespace: '.*bbb' },
+          ],
+        },
+        isFetchWithChangesDetection: false,
       })
 
       expect(query.isInstanceMatch({ namespace: 'aaaa', metadataType: '', name: '', isFolderType: false, changedAt: undefined })).toBeTruthy()
@@ -99,12 +102,15 @@ describe('buildMetadataQuery', () => {
 
     it('filter with metadataType', () => {
       const query = buildMetadataQuery({
-        include: [
-          { metadataType: 'aaa.*' },
-        ],
-        exclude: [
-          { metadataType: '.*bbb' },
-        ],
+        metadataParams: {
+          include: [
+            { metadataType: 'aaa.*' },
+          ],
+          exclude: [
+            { metadataType: '.*bbb' },
+          ],
+        },
+        isFetchWithChangesDetection: false,
       })
 
       expect(query.isInstanceMatch({ metadataType: 'aaaa', namespace: '', name: '', isFolderType: false, changedAt: undefined })).toBeTruthy()
@@ -114,12 +120,15 @@ describe('buildMetadataQuery', () => {
 
     it('filter with name', () => {
       const query = buildMetadataQuery({
-        include: [
-          { name: 'aaa.*' },
-        ],
-        exclude: [
-          { name: '.*bbb' },
-        ],
+        metadataParams: {
+          include: [
+            { name: 'aaa.*' },
+          ],
+          exclude: [
+            { name: '.*bbb' },
+          ],
+        },
+        isFetchWithChangesDetection: false,
       })
 
       expect(query.isInstanceMatch({ name: 'aaaa', namespace: '', metadataType: '', isFolderType: false, changedAt: undefined })).toBeTruthy()
@@ -129,12 +138,15 @@ describe('buildMetadataQuery', () => {
 
     it('filter with multiple fields', () => {
       const query = buildMetadataQuery({
-        include: [
-          { namespace: 'aaa.*', metadataType: 'bbb.*', name: 'ccc.*' },
-        ],
-        exclude: [
-          { namespace: '.*aaa', metadataType: '.*bbb', name: '.*ccc' },
-        ],
+        metadataParams: {
+          include: [
+            { namespace: 'aaa.*', metadataType: 'bbb.*', name: 'ccc.*' },
+          ],
+          exclude: [
+            { namespace: '.*aaa', metadataType: '.*bbb', name: '.*ccc' },
+          ],
+        },
+        isFetchWithChangesDetection: false,
       })
 
       expect(query.isInstanceMatch({ namespace: 'aaabbb', metadataType: 'bbbccc', name: 'cccddd', isFolderType: false, changedAt: undefined })).toBeTruthy()
@@ -144,14 +156,17 @@ describe('buildMetadataQuery', () => {
 
     it('filter with multiple queries', () => {
       const query = buildMetadataQuery({
-        include: [
-          { namespace: 'aaa.*' },
-          { namespace: 'bbb.*' },
-        ],
-        exclude: [
-          { namespace: '.*aaa' },
-          { namespace: '.*bbb' },
-        ],
+        metadataParams: {
+          include: [
+            { namespace: 'aaa.*' },
+            { namespace: 'bbb.*' },
+          ],
+          exclude: [
+            { namespace: '.*aaa' },
+            { namespace: '.*bbb' },
+          ],
+        },
+        isFetchWithChangesDetection: false,
       })
 
       expect(query.isInstanceMatch({ namespace: 'aaaccc', metadataType: '', name: '', isFolderType: false, changedAt: undefined })).toBeTruthy()
@@ -163,9 +178,12 @@ describe('buildMetadataQuery', () => {
 
     it('empty namespace should be tread as "standard"', () => {
       const query = buildMetadataQuery({
-        include: [
-          { namespace: '' },
-        ],
+        metadataParams: {
+          include: [
+            { namespace: '' },
+          ],
+        },
+        isFetchWithChangesDetection: false,
       })
       expect(query.isInstanceMatch({ namespace: 'standard', metadataType: '', name: '', isFolderType: false, changedAt: undefined })).toBeTruthy()
       expect(query.isInstanceMatch({ namespace: 'notstandard', metadataType: '', name: '', isFolderType: false, changedAt: undefined })).toBeFalsy()
@@ -173,23 +191,29 @@ describe('buildMetadataQuery', () => {
 
     it('should return InstalledPackage with namespace if \'\' namespace is provided', () => {
       const query = buildMetadataQuery({
-        include: [
-          { namespace: '' },
-        ],
+        metadataParams: {
+          include: [
+            { namespace: '' },
+          ],
+        },
+        isFetchWithChangesDetection: false,
       })
       expect(query.isInstanceMatch({ namespace: 'SBQQ', metadataType: 'InstalledPackage', name: 'lala', isFolderType: false, changedAt: undefined })).toBeTruthy()
     })
 
     it('should not return InstalledPackage with a different namespace then one specifically provided', () => {
       const query = buildMetadataQuery({
-        include: [
-          { namespace: 'SBAA' },
-        ],
+        metadataParams: {
+          include: [
+            { namespace: 'SBAA' },
+          ],
+        },
+        isFetchWithChangesDetection: false,
       })
       expect(query.isInstanceMatch({ namespace: 'SBQQ', metadataType: 'InstalledPackage', name: 'lala', isFolderType: false, changedAt: undefined })).toBeFalsy()
     })
 
-    describe('with changedAtSingleton', () => {
+    describe('fetchWithChangesDetection', () => {
       const LAST_MODIFIED_DATE = '2023-01-12T15:51:47.000Z'
       let query: MetadataQuery
       beforeEach(() => {
@@ -197,13 +221,16 @@ describe('buildMetadataQuery', () => {
         changedAtSingleton.value.Report = { testReport: LAST_MODIFIED_DATE }
         query = buildMetadataQuery(
           {
-            include: [
-              {
-                metadataType: 'Report',
-              },
-            ],
+            metadataParams: {
+              include: [
+                {
+                  metadataType: 'Report',
+                },
+              ],
+            },
+            changedAtSingleton,
+            isFetchWithChangesDetection: true,
           },
-          changedAtSingleton,
         )
       })
       describe('isPartialFetch', () => {
@@ -244,13 +271,16 @@ describe('buildMetadataQuery', () => {
 
   it('isTypeMatch should return correct results', () => {
     const query = buildMetadataQuery({
-      include: [
-        { metadataType: 'aaa.*' },
-      ],
-      exclude: [
-        { metadataType: '.*bbb' },
-        { metadataType: '.*ccc', name: 'someName' },
-      ],
+      metadataParams: {
+        include: [
+          { metadataType: 'aaa.*' },
+        ],
+        exclude: [
+          { metadataType: '.*bbb' },
+          { metadataType: '.*ccc', name: 'someName' },
+        ],
+      },
+      isFetchWithChangesDetection: false,
     })
     expect(query.isTypeMatch('aaa')).toBeTruthy()
     expect(query.isTypeMatch('ccc')).toBeFalsy()
@@ -263,11 +293,13 @@ describe('buildMetadataQuery', () => {
     beforeEach(() => {
       query = buildMetadataQuery(
         {
-          include: [{ metadataType: '.*' }],
-          exclude: [{ metadataType: 'exclude' }],
+          metadataParams: {
+            include: [{ metadataType: '.*' }],
+            exclude: [{ metadataType: 'exclude' }],
+          },
+          target: ['target', 'exclude', CUSTOM_OBJECT],
+          isFetchWithChangesDetection: false,
         },
-        undefined,
-        ['target', 'exclude', CUSTOM_OBJECT],
       )
     })
     describe('isPartialFetch', () => {
@@ -301,25 +333,28 @@ describe('buildMetadataQuery', () => {
     let query: MetadataQuery
     beforeEach(() => {
       query = buildMetadataQuery({
-        include: [
-          {
-            metadataType: inFolderType,
-          },
-          {
-            metadataType: folderType,
-            name: '^(TopFolder|TopFolder/NestedFolder|TopFolder/NestedFolder/NestedNestedFolder)$',
-          },
-          // Folder names with underscores and numbers
-          {
-            metadataType: folderType,
-            name: '^(UnderscoreFolder_cx|TopFolder/NestedUnderscoreFolder_12)$',
-          },
-          // The names .* and NestedFolder1? Should not be in the result
-          {
-            metadataType: folderType,
-            name: '.*|NestedFolder1?',
-          },
-        ],
+        metadataParams: {
+          include: [
+            {
+              metadataType: inFolderType,
+            },
+            {
+              metadataType: folderType,
+              name: '^(TopFolder|TopFolder/NestedFolder|TopFolder/NestedFolder/NestedNestedFolder)$',
+            },
+            // Folder names with underscores and numbers
+            {
+              metadataType: folderType,
+              name: '^(UnderscoreFolder_cx|TopFolder/NestedUnderscoreFolder_12)$',
+            },
+            // The names .* and NestedFolder1? Should not be in the result
+            {
+              metadataType: folderType,
+              name: '.*|NestedFolder1?',
+            },
+          ],
+        },
+        isFetchWithChangesDetection: false,
       })
     })
     describe('getFolderPathsByName', () => {
@@ -341,12 +376,15 @@ describe('buildMetadataQuery', () => {
     describe('with included full paths', () => {
       beforeEach(() => {
         query = buildMetadataQuery({
-          include: [
-            {
-              metadataType: folderType,
-              name: '^(TopFolder|TopFolder/NestedFolder|TopFolder/NestedFolder/NestedNestedFolder)$',
-            },
-          ],
+          metadataParams: {
+            include: [
+              {
+                metadataType: folderType,
+                name: '^(TopFolder|TopFolder/NestedFolder|TopFolder/NestedFolder/NestedNestedFolder)$',
+              },
+            ],
+          },
+          isFetchWithChangesDetection: false,
         })
       })
       it.each([
@@ -379,11 +417,14 @@ describe('buildMetadataQuery', () => {
     describe('with included wildcard', () => {
       beforeEach(() => {
         query = buildMetadataQuery({
-          include: [
-            {
-              metadataType: folderType,
-            },
-          ],
+          metadataParams: {
+            include: [
+              {
+                metadataType: folderType,
+              },
+            ],
+          },
+          isFetchWithChangesDetection: false,
         })
       })
       it.each([
@@ -403,12 +444,15 @@ describe('buildMetadataQuery', () => {
     describe('with included regex paths', () => {
       beforeEach(() => {
         query = buildMetadataQuery({
-          include: [
-            {
-              metadataType: folderType,
-              name: '^(TopFolder1?|TopFolder[23])$',
-            },
-          ],
+          metadataParams: {
+            include: [
+              {
+                metadataType: folderType,
+                name: '^(TopFolder1?|TopFolder[23])$',
+              },
+            ],
+          },
+          isFetchWithChangesDetection: false,
         })
       })
       it.each([

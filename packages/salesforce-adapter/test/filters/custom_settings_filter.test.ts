@@ -129,7 +129,10 @@ describe('Custom settings filter', () => {
         client,
         config: {
           ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({ fetchAllCustomSettings: false }),
+          fetchProfile: buildFetchProfile({
+            fetchParams: { fetchAllCustomSettings: false },
+            isFetchWithChangesDetection: false,
+          }),
         },
       }) as FilterType
       await filter.onFetch(elements)
@@ -142,7 +145,10 @@ describe('Custom settings filter', () => {
         client,
         config: {
           ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({ fetchAllCustomSettings: true }),
+          fetchProfile: buildFetchProfile({
+            fetchParams: { fetchAllCustomSettings: true },
+            isFetchWithChangesDetection: false,
+          }),
         },
       }) as FilterType
       await filter.onFetch(elements)

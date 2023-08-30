@@ -138,7 +138,7 @@ describe('extra dependencies filter', () => {
       client,
       config: {
         ...defaultFilterContext,
-        fetchProfile: buildFetchProfile({ target: ['meta'] }),
+        fetchProfile: buildFetchProfile({ fetchParams: { target: ['meta'] }, isFetchWithChangesDetection: false }),
         elementsSource: workspaceElements,
       },
     }) as FilterType
@@ -350,7 +350,10 @@ describe('extra dependencies filter', () => {
         client,
         config: {
           ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({ optionalFeatures: { extraDependencies: false } }),
+          fetchProfile: buildFetchProfile({
+            fetchParams: { optionalFeatures: { extraDependencies: false } },
+            isFetchWithChangesDetection: false,
+          }),
           elementsSource: buildElementsSourceFromElements(elements),
         },
       }) as FilterType

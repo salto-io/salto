@@ -19,7 +19,7 @@ import _ from 'lodash'
 import scriptRunnerFilter from '../../../src/filters/script_runner/script_runner_filter'
 import { createEmptyType, getFilterParams } from '../../utils'
 import { getDefaultConfig } from '../../../src/config/config'
-import { JIRA, SCRIPTED_FIELD_TYPE, SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE } from '../../../src/constants'
+import { JIRA, SCRIPTED_FIELD_TYPE, SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE, SCRIPT_RUNNER_SETTINGS_TYPE } from '../../../src/constants'
 import * as users from '../../../src/users'
 
 type FilterType = filterUtils.FilterWith<'preDeploy' | 'onFetch'>
@@ -70,14 +70,50 @@ describe('script_runner_filter', () => {
           notImportant: { refType: BuiltinTypes.STRING },
         },
       })
-      await filter.onFetch([scriptedFields])
-      expect(scriptedFields.annotations[CORE_ANNOTATIONS.CREATABLE]).toEqual(true)
-      expect(scriptedFields.annotations[CORE_ANNOTATIONS.UPDATABLE]).toEqual(true)
-      expect(scriptedFields.annotations[CORE_ANNOTATIONS.DELETABLE]).toEqual(true)
-      expect(scriptedFields.fields.notImportant.annotations[CORE_ANNOTATIONS.CREATABLE]).toEqual(true)
-      expect(scriptedFields.fields.notImportant.annotations[CORE_ANNOTATIONS.UPDATABLE]).toEqual(true)
-      expect(scriptedFields.fields.notImportant.annotations[CORE_ANNOTATIONS.DELETABLE]).toEqual(true)
+      const settings = new ObjectType({
+        elemID: new ElemID(JIRA, SCRIPT_RUNNER_SETTINGS_TYPE),
+        fields: {
+          notImportant: { refType: BuiltinTypes.STRING },
+        },
+      })
+      await filter.onFetch([scriptedFields, settings])
+      expect(scriptedFields.annotations[CORE_ANNOTATIONS.CREATABLE]).toBeTrue()
+      expect(scriptedFields.annotations[CORE_ANNOTATIONS.UPDATABLE]).toBeTrue()
+      expect(scriptedFields.annotations[CORE_ANNOTATIONS.DELETABLE]).toBeTrue()
+      expect(scriptedFields.fields.notImportant.annotations[CORE_ANNOTATIONS.CREATABLE]).toBeTrue()
+      expect(scriptedFields.fields.notImportant.annotations[CORE_ANNOTATIONS.UPDATABLE]).toBeTrue()
+      expect(scriptedFields.fields.notImportant.annotations[CORE_ANNOTATIONS.DELETABLE]).toBeTrue()
+      expect(settings.annotations[CORE_ANNOTATIONS.CREATABLE]).toBeFalse()
+      expect(settings.annotations[CORE_ANNOTATIONS.UPDATABLE]).toBeTrue()
+      expect(settings.annotations[CORE_ANNOTATIONS.DELETABLE]).toBeFalse()
+      expect(settings.fields.notImportant.annotations[CORE_ANNOTATIONS.UPDATABLE]).toBeTrue()
     })
+    it('should remove empty instances', async () => {
+      const emptyListenerInstance = new InstanceElement(
+        'unnamed_0',
+        createEmptyType(SCRIPT_RUNNER_LISTENER_TYPE),
+        {
+          spaceRemaining: 99.9,
+        }
+      )
+      const elements = [emptyListenerInstance]
+      await filter.onFetch(elements)
+      expect(elements).toHaveLength(0)
+    })
+    it('should not remove non empty instances', async () => {
+      const nonEmptyListenerInstance = new InstanceElement(
+        'unnamed_0',
+        createEmptyType(SCRIPT_RUNNER_LISTENER_TYPE),
+        {
+          description: 'not empty',
+        }
+      )
+      const elements = [nonEmptyListenerInstance]
+      await filter.onFetch(elements)
+      expect(elements).toHaveLength(1)
+    })
+
+
     describe('on creation', () => {
       it('should add audit info to relevant types', async () => {
         await filter.preDeploy([

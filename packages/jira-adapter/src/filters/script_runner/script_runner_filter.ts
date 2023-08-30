@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { getChangeData, isInstanceChange, isObjectType, isAdditionChange,
-  isModificationChange, CORE_ANNOTATIONS, Value } from '@salto-io/adapter-api'
+  isModificationChange, CORE_ANNOTATIONS, Value, isInstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { v4 as uuidv4 } from 'uuid'
 import { FilterCreator } from '../../filter'
@@ -39,16 +39,21 @@ const addUpdatedChanges = (value: Value, currentUserInfo: UserInfo | undefined):
   value.updatedTimestamp = getTimeNowAsSeconds().toString()
 }
 
-// This filter is used to make script runner types deployable, and to manage the audit items
+// This filter is used to:
+// * make script runner types deployable
+// * make script runner settings only updatable
+// * remove empty instances if exists
+// * manage uuids
+// * manage the audit items
 const filter: FilterCreator = ({ client, config }) => ({
   name: 'scriptRunnerFilter',
   onFetch: async elements => {
     if (!config.fetch.enableScriptRunnerAddon) {
       return
     }
-    const objects = elements.filter(isObjectType)
+    const objectTypes = elements.filter(isObjectType)
 
-    await awu(objects)
+    await awu(objectTypes)
       .filter(type => SCRIPT_RUNNER_TYPES.includes(type.elemID.typeName))
       .forEach(async type => {
         setTypeDeploymentAnnotations(type)
@@ -56,16 +61,24 @@ const filter: FilterCreator = ({ client, config }) => ({
         await addAnnotationRecursively(type, CORE_ANNOTATIONS.UPDATABLE)
         await addAnnotationRecursively(type, CORE_ANNOTATIONS.DELETABLE)
       })
-    await awu(objects)
+    await awu(objectTypes)
       .filter(type => type.elemID.typeName === SCRIPT_RUNNER_SETTINGS_TYPE)
       .forEach(async type => {
         type.annotations[CORE_ANNOTATIONS.CREATABLE] = false
         type.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
         type.annotations[CORE_ANNOTATIONS.DELETABLE] = false
-        await addAnnotationRecursively(type, CORE_ANNOTATIONS.CREATABLE)
         await addAnnotationRecursively(type, CORE_ANNOTATIONS.UPDATABLE)
-        await addAnnotationRecursively(type, CORE_ANNOTATIONS.DELETABLE)
       })
+
+    // If there are non listeners in the service we will get a single instance with spaceRemaining
+    const listeners = elements
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === SCRIPT_RUNNER_LISTENER_TYPE)
+    if (listeners.length === 1
+      && listeners[0].elemID.name === 'unnamed_0'
+      && listeners[0].value.spaceRemaining !== undefined) {
+      elements.splice(elements.indexOf(listeners[0]), 1)
+    }
   },
   preDeploy: async changes => {
     if (!config.fetch.enableScriptRunnerAddon || client.isDataCenter) {

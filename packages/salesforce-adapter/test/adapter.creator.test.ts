@@ -740,22 +740,25 @@ In order to complete the fetch operation, Salto needs to stop managing these ite
         await adapterOperations.fetch({ ...mockFetchOpts, withChangesDetection: true })
         expect(SalesforceAdapter).toHaveBeenCalledWith(expect.objectContaining({
           changedAtSingleton,
+          isFetchWithChangesDetection: true,
         }))
       })
     })
     describe('when withChangesDetection is undefined', () => {
       it('should create the adapter with the ChangedAtSingleton', async () => {
         await adapterOperations.fetch({ ...mockFetchOpts, withChangesDetection: undefined })
-        expect(SalesforceAdapter).not.toHaveBeenCalledWith(expect.objectContaining({
+        expect(SalesforceAdapter).toHaveBeenCalledWith(expect.objectContaining({
           changedAtSingleton,
+          isFetchWithChangesDetection: false,
         }))
       })
     })
     describe('when withChangesDetection is false', () => {
       it('should create the adapter with the ChangedAtSingleton', async () => {
         await adapterOperations.fetch({ ...mockFetchOpts, withChangesDetection: false })
-        expect(SalesforceAdapter).not.toHaveBeenCalledWith(expect.objectContaining({
+        expect(SalesforceAdapter).toHaveBeenCalledWith(expect.objectContaining({
           changedAtSingleton,
+          isFetchWithChangesDetection: false,
         }))
       })
     })

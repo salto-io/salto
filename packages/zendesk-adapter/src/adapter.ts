@@ -35,11 +35,11 @@ import {
 import { client as clientUtils, config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import {
   getElemIdFuncWrapper,
+  inspectValue,
   logDuration,
   resolveChangeElement,
   resolveValues,
   restoreChangeElement,
-  safeJsonStringify,
 } from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -616,16 +616,16 @@ export default class ZendeskAdapter implements AdapterOperations {
       const { data } = await this.client.getSinglePage({ url: '/api/v2/account/subscription.json' })
       const subscriptionData = !_.isArray(data) ? data.subscription : undefined
       if (subscriptionData) {
-        log.info(`Account subscription data: ${safeJsonStringify(subscriptionData)}`)
+        log.info(`Account subscription data: ${inspectValue(subscriptionData)}`)
       } else {
-        log.info(`Account subscription data invalid: ${safeJsonStringify(data)}`)
+        log.info(`Account subscription data invalid: ${inspectValue(data)}`)
       }
     // This log is not crucial for the fetch to succeed, so we don't want to fail the fetch if it fails
     } catch (e) {
       if (e.response?.status === 422) {
         log.info('Account subscription data unavailable because this is a sandbox environment')
       } else {
-        log.info(`Account subscription data unavailable because of an error ${safeJsonStringify(e)}`)
+        log.info(`Account subscription data unavailable because of an error ${inspectValue(e)}`)
       }
     }
   }

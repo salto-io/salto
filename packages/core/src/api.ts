@@ -34,6 +34,7 @@ import {
   ReferenceMapping,
   AccountInfo,
   isAdditionOrModificationChange,
+  ElementFix,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -75,6 +76,8 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 const { mapValuesAsync } = promises.object
+
+const MAX_FIX_RUNS = 10
 
 const getAdapterFromLoginConfig = (loginConfig: Readonly<InstanceElement>): Adapter =>
   adapterCreators[loginConfig.elemID.adapter]
@@ -692,3 +695,61 @@ export const getAdditionalReferences = async (
     .flat()
     .filter(values.isDefined)
 }
+
+const getFixedElements = (
+  elements: Element[],
+  elementFixes: ElementFix[],
+): Element[] => {
+  const elementFixesByElemID = _.keyBy(
+    elementFixes.map(elementFix => elementFix.fixedElement),
+    element => element.elemID.getFullName()
+  )
+  return elements.map(element => elementFixesByElemID[element.elemID.getFullName()] ?? element)
+}
+
+const fixElementsContinuously = async (
+  workspace: Workspace,
+  elements: Element[],
+  runsLeft: number
+): Promise<ElementFix[]> => {
+  log.debug(`Fixing elements. ${runsLeft} runs left.`)
+
+  const accountToService = getAccountToServiceNameMap(workspace, workspace.accounts())
+
+  const elementGroups = _.groupBy(elements, element => element.elemID.adapter)
+
+  const elementFixGroups = await Promise.all(
+    Object.entries(elementGroups).map(async ([account, elementGroup]) => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/return-await
+        return await adapterCreators[accountToService[account]]?.fixElements?.(elementGroup)
+      } catch (e) {
+        log.error(`Failed to fix elements for ${account} adapter: ${e}`)
+        return []
+      }
+    })
+  )
+
+  const elementFixes = elementFixGroups
+    .flat()
+    .filter(values.isDefined)
+
+  if (elementFixes.length > 0 && runsLeft > 0) {
+    const fixedElements = getFixedElements(elements, elementFixes)
+    return elementFixes.concat(
+      await fixElementsContinuously(workspace, fixedElements, runsLeft - 1)
+    )
+  }
+
+  if (elementFixes.length > 0) {
+    log.warn('Max element fix runs reached')
+  }
+
+  return elementFixes
+}
+
+export const fixElements = async (
+  workspace: Workspace,
+  elements: Element[],
+): Promise<ElementFix[]> =>
+  fixElementsContinuously(workspace, elements, MAX_FIX_RUNS)

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression, Field, getChangeData, toChange, SeverityLevel, GetAdditionalReferencesFunc, Change } from '@salto-io/adapter-api'
+import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression, Field, getChangeData, toChange, SeverityLevel, GetAdditionalReferencesFunc, Change, FixElementsFunc } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
@@ -115,6 +115,7 @@ describe('api.ts', () => {
     authenticationMethods: { basic: { credentialsType: mockConfigType } },
     validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Sandbox', isProduction: false }),
     getAdditionalReferences: mockFunction<GetAdditionalReferencesFunc>().mockResolvedValue([]),
+    fixElements: mockFunction<FixElementsFunc>().mockResolvedValue([]),
   }
 
   const mockEmptyAdapter = {
@@ -1066,6 +1067,124 @@ describe('api.ts', () => {
       }])
 
       expect(mockAdapter.getAdditionalReferences).toHaveBeenCalledWith([change])
+    })
+  })
+
+  describe('fixElements', () => {
+    let ws: workspace.Workspace
+    let type: ObjectType
+
+    beforeEach(() => {
+      ws = mockWorkspace({
+        accounts: ['salto1'],
+        accountToServiceName: {
+          salto1: 'salto',
+        },
+      })
+
+      type = new ObjectType({
+        elemID: new ElemID('salto1', 'test'),
+      })
+
+      mockAdapter.fixElements.mockClear()
+    })
+    it('should return all the fixes', async () => {
+      mockAdapter.fixElements.mockResolvedValueOnce([{
+        fixedElement: new ObjectType({
+          elemID: new ElemID('salto1', 'test'),
+          fields: {
+            field1: { refType: BuiltinTypes.STRING },
+          },
+        }),
+        message: 'message1',
+        detailedMessage: 'detailedMessage1',
+        severity: 'Info',
+      }])
+
+      mockAdapter.fixElements.mockResolvedValueOnce([{
+        fixedElement: new ObjectType({
+          elemID: new ElemID('salto1', 'test'),
+          fields: {
+            field2: { refType: BuiltinTypes.STRING },
+          },
+        }),
+        message: 'message2',
+        detailedMessage: 'detailedMessage2',
+        severity: 'Info',
+      }])
+
+      mockAdapter.fixElements.mockResolvedValueOnce([])
+      const res = await api.fixElements(ws, [type])
+
+      expect(res).toEqual([
+        {
+          fixedElement: new ObjectType({
+            elemID: new ElemID('salto1', 'test'),
+            fields: {
+              field1: { refType: BuiltinTypes.STRING },
+            },
+          }),
+          message: 'message1',
+          detailedMessage: 'detailedMessage1',
+          severity: 'Info',
+        },
+        {
+          fixedElement: new ObjectType({
+            elemID: new ElemID('salto1', 'test'),
+            fields: {
+              field2: { refType: BuiltinTypes.STRING },
+            },
+          }),
+          message: 'message2',
+          detailedMessage: 'detailedMessage2',
+          severity: 'Info',
+        },
+      ])
+
+      expect(mockAdapter.fixElements).toHaveBeenCalledWith([type])
+      expect(mockAdapter.fixElements).toHaveBeenCalledWith([new ObjectType({
+        elemID: new ElemID('salto1', 'test'),
+        fields: {
+          field1: { refType: BuiltinTypes.STRING },
+        },
+      })])
+    })
+
+    it('should stop after max 11 times', async () => {
+      mockAdapter.fixElements.mockResolvedValue([{
+        fixedElement: type,
+        message: 'message1',
+        detailedMessage: 'detailedMessage1',
+        severity: 'Info',
+      }])
+
+      const res = await api.fixElements(ws, [type])
+
+      expect(res).toEqual(_.range(11).map(() => ({
+        fixedElement: type,
+        message: 'message1',
+        detailedMessage: 'detailedMessage1',
+        severity: 'Info',
+      })))
+
+      expect(mockAdapter.fixElements).toHaveBeenCalledTimes(11)
+    })
+
+    it('should return an empty array when failed', async () => {
+      mockAdapter.fixElements.mockRejectedValue(new Error())
+
+      const res = await api.fixElements(ws, [type])
+
+      expect(res).toEqual([])
+      expect(mockAdapter.fixElements).toHaveBeenCalledTimes(1)
+    })
+
+    it('should return an empty array when there is not a fixElements function', async () => {
+      delete (mockAdapter as { fixElements?: typeof mockAdapter['fixElements']}).fixElements
+
+      const res = await api.fixElements(ws, [type])
+
+      expect(res).toEqual([])
     })
   })
 })

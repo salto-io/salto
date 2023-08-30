@@ -17,13 +17,14 @@ import _ from 'lodash'
 import open from 'open'
 import { ElemID, isElement, CORE_ANNOTATIONS, isModificationChange } from '@salto-io/adapter-api'
 import { Workspace, ElementSelector, createElementSelectors, FromSource, selectElementIdsByTraversal, parser, nacl, staticFiles } from '@salto-io/workspace'
-import { getEnvsDeletionsDiff, RenameElementIdError, rename } from '@salto-io/core'
+import { getEnvsDeletionsDiff, RenameElementIdError, rename, fixElements } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
+import { collections, promises } from '@salto-io/lowerdash'
+import { detailedCompare } from '@salto-io/adapter-utils'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
 import { CliOutput, CliExitCode, KeyedOption } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
-import { formatTargetEnvRequired, formatUnknownTargetEnv, formatInvalidEnvTargetCurrent, formatCloneToEnvFailed, formatInvalidFilters, formatMoveFailed, formatListFailed, emptyLine, formatListUnresolvedFound, formatListUnresolvedMissing, formatElementListUnresolvedFailed } from '../formatter'
+import { formatTargetEnvRequired, formatUnknownTargetEnv, formatInvalidEnvTargetCurrent, formatCloneToEnvFailed, formatInvalidFilters, formatMoveFailed, formatListFailed, emptyLine, formatListUnresolvedFound, formatListUnresolvedMissing, formatElementListUnresolvedFailed, formatChangeErrors } from '../formatter'
 import { isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
@@ -775,6 +776,64 @@ const printElementDef = createWorkspaceCommand({
   action: printElementAction,
 })
 
+export const fixElementsAction: WorkspaceCommandAction<EnvArg> = async ({
+  workspace,
+  input,
+  output,
+}) => {
+  await validateAndSetEnv(workspace, input, output)
+  const elementFixes = await fixElements(workspace, await awu(await (await workspace.elements()).getAll()).toArray())
+
+  if (elementFixes.length === 0) {
+    outputLine(Prompts.EMPTY_PLAN, output)
+    return CliExitCode.Success
+  }
+
+  const idToElement = _.keyBy(
+    await awu(await (await workspace.elements()).getAll()).toArray(),
+    e => e.elemID.getFullName()
+  )
+
+  // We do Object.values and Object.fromEntries to take only the last
+  // element we got in case the same element was fixed more than once
+  const fixedElements = Object.values(
+    Object.fromEntries(
+      elementFixes.map(fix => fix.fixedElement).map(e => [e.elemID.getFullName(), e])
+    )
+  )
+
+  const changes = fixedElements
+    .flatMap(element => detailedCompare(
+      idToElement[element.elemID.getFullName()],
+      element
+    ))
+
+  const errors = await promises.array.withLimitedConcurrency(
+    elementFixes
+      .map(fix => () => workspace.transformToWorkspaceError({ ...fix, elemID: fix.fixedElement.elemID })),
+    20
+  )
+
+  outputLine(formatChangeErrors(errors), output)
+
+  await workspace.updateNaclFiles(changes)
+  await workspace.flush()
+
+  return CliExitCode.Success
+}
+
+const fixElementsDef = createWorkspaceCommand({
+  properties: {
+    name: 'fix',
+    description: 'Apply a set of service specific fixes to the NaCls in the workspace',
+    keyedOptions: [
+      ENVIRONMENT_OPTION,
+    ],
+  },
+  action: fixElementsAction,
+})
+
+
 const elementGroupDef = createCommandGroupDef({
   properties: {
     name: 'element',
@@ -789,6 +848,7 @@ const elementGroupDef = createCommandGroupDef({
     listElementsDef,
     renameElementsDef,
     printElementDef,
+    fixElementsDef,
   ],
 })
 

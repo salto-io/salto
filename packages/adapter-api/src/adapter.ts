@@ -192,6 +192,13 @@ export type ReferenceInfo = {
 
 export type GetCustomReferencesFunc = (elements: Element[]) => Promise<ReferenceInfo[]>
 
+export type ElementFix = Pick<ChangeError, 'message' | 'detailedMessage'> & {
+  severity: 'Info' | 'Warning'
+  fixedElement: Element
+}
+
+export type FixElementsFunc = (elements: Element[]) => Promise<ElementFix[]>
+
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations
   validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountInfo>
@@ -202,6 +209,7 @@ export type Adapter = {
   loadElementsFromFolder?: (args: LoadElementsFromFolderArgs) => Promise<FetchResult>
   getAdditionalReferences?: GetAdditionalReferencesFunc
   getCustomReferences?: GetCustomReferencesFunc
+  fixElements?: FixElementsFunc
 }
 
 export const OBJECT_SERVICE_ID = 'object_service_id'

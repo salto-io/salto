@@ -672,7 +672,9 @@ export const rename = async (
 export const getAdapterConfigOptionsType = (adapterName: string): ObjectType | undefined =>
   adapterCreators[adapterName].configCreator?.optionsType
 
-
+/**
+ * @deprecated
+ */
 export const getAdditionalReferences = async (
   workspace: Workspace,
   changes: Change[],

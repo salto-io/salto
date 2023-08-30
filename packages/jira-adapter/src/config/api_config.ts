@@ -1668,6 +1668,9 @@ const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
     request: {
       url: '/sr-dispatcher/jira/token/script-fragments',
     },
+    transformation: {
+      idFields: ['id'],
+    },
   },
   ScheduledJob: {
     request: {
@@ -1788,7 +1791,7 @@ const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
 
 export const DUCKTYPE_SUPPORTED_TYPES = {
   ScriptRunnerListener: ['ScriptRunnerListener'],
-  // ScriptFragment: ['ScriptFragment'],
+  ScriptFragment: ['ScriptFragment'],
   ScheduledJob: ['ScheduledJob'],
   // Behavior: ['Behavior'],
   EscalationService: ['EscalationService'],
@@ -1859,7 +1862,7 @@ const SUPPORTED_TYPES = {
   Automation: [],
   Webhook: [],
   [AUTOMATION_LABEL_TYPE]: [],
-  IssueLayout: [],
+  // IssueLayout: [],
 }
 
 export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {

@@ -877,8 +877,8 @@ const buildNaclFilesSource = (
 
     // This method was written with the assumption that each static file is pointed by no more
     // then one value in the nacls. A ticket was open to fix that (SALTO-954)
-    const removeDanglingStaticFiles = async (fileChanges: DetailedChange[]): Promise<void> => {
-      await Promise.all(getDanglingStaticFiles(fileChanges).map(file => staticFilesSource.delete(file)))
+    const removeDanglingStaticFiles = async (allChanges: DetailedChange[]): Promise<void> => {
+      await Promise.all(getDanglingStaticFiles(allChanges).map(file => staticFilesSource.delete(file)))
     }
     const changesByFileName = await groupChangesByFilename(changes)
     log.debug(
@@ -890,6 +890,7 @@ const buildNaclFilesSource = (
 
     const { parsedNaclFiles } = await getState()
     const allFileNames = _.keyBy(await parsedNaclFiles.list(), name => name.toLowerCase())
+    let appliedChanges: DetailedChange[] = []
     const updatedNaclFiles = (await withLimitedConcurrency(
       Object.entries(changesByFileName)
         .map(([lowerCaseFilename, fileChanges]) => async ():
@@ -918,9 +919,9 @@ const buildNaclFilesSource = (
             if (((await parsed.data.errors()) ?? []).length > 0) {
               logNaclFileUpdateErrorContext(filename, fileChanges, naclFileData, buffer)
             }
-            await removeDanglingStaticFiles(fileChanges)
             log.trace('Nacl source %s finished updating file %s with %d changes', sourceName, filename, fileChanges.length)
             const { data, elements } = parsed
+            appliedChanges = appliedChanges.concat(fileChanges)
             return { filename, elements, data, buffer }
           } catch (e) {
             log.error('failed to update NaCl file %s due to %o with %o changes',
@@ -930,6 +931,7 @@ const buildNaclFilesSource = (
         }),
       DUMP_CONCURRENCY
     )).filter(values.isDefined)
+    await removeDanglingStaticFiles(appliedChanges)
 
     if (updatedNaclFiles.length > 0) {
       log.debug('going to update %d NaCl files', updatedNaclFiles.length)

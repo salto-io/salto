@@ -538,7 +538,21 @@ describe('instance_references filter', () => {
         isPartial: false,
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, noExtensionInstance, fileWithExtension])
-      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
+      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(2)
+      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(expect.arrayContaining([
+        {
+          reference: new ReferenceExpression(
+            noExtensionInstance.elemID.createNestedID(PATH)
+          ),
+          occurrences: undefined,
+        },
+        {
+          reference: new ReferenceExpression(
+            fileWithExtension.elemID.createNestedID(PATH)
+          ),
+          occurrences: undefined,
+        },
+      ]))
     })
 
     it('should add generated dependency from comment', async () => {
@@ -587,7 +601,14 @@ describe('instance_references filter', () => {
         isPartial: false,
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance, customRecordType])
-      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
+      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual([
+        {
+          reference: new ReferenceExpression(
+            customRecordType.fields.custom_field.elemID.createNestedID(SCRIPT_ID)
+          ),
+          occurrences: undefined,
+        },
+      ])
     })
 
     it('should add customrecord field as generated dependency from elementsSource in partial fetch', async () => {
@@ -613,7 +634,14 @@ describe('instance_references filter', () => {
         isPartial: true,
         config: await getDefaultAdapterConfig(),
       }).onFetch?.([fileInstance])
-      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
+      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual([
+        {
+          reference: new ReferenceExpression(
+            customRecordField.elemID.createNestedID(SCRIPT_ID)
+          ),
+          occurrences: undefined,
+        },
+      ])
     })
   })
   describe('preDeploy', () => {

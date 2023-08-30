@@ -132,10 +132,12 @@ import projectCategoryFilter from './filters/project_category'
 import addAliasFilter from './filters/add_alias'
 import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_specific_duplicate_roles'
 import issueLayoutFilter from './filters/issue_layout/issue_layout'
+import issueTypeHierarchyFilter from './filters/issue_type_hierarchy_filter'
 import projectFieldContextOrder from './filters/project_field_contexts_order'
 import scriptedFieldsIssueTypesFilter from './filters/script_runner/scripted_fields_issue_types'
 import scriptRunnerFilter from './filters/script_runner/script_runner_filter'
 import scriptRunnerListenersDeployFilter from './filters/script_runner/script_runner_listeners_deploy'
+import scriptedFragmentsDeployFilter from './filters/script_runner/scripted_fragments_deploy'
 import scriptRunnerInstancesDeploy from './filters/script_runner/script_runner_instances_deploy'
 import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
 import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uuid'
@@ -239,6 +241,7 @@ export const DEFAULT_FILTERS = [
   notificationSchemeStructureFilter,
   notificationSchemeDeploymentFilter,
   issueTypeScreenSchemeFilter,
+  issueTypeHierarchyFilter,
   fieldConfigurationFilter,
   fieldConfigurationItemsFilter,
   fieldConfigurationSchemeFilter,
@@ -289,6 +292,8 @@ export const DEFAULT_FILTERS = [
   addAliasFilter,
   // must be done before scriptRunnerInstances
   scriptRunnerListenersDeployFilter,
+  // must be done before scriptRunnerInstances
+  scriptedFragmentsDeployFilter,
   scriptRunnerInstancesDeploy,
   // Must be last
   defaultInstancesDeployFilter,

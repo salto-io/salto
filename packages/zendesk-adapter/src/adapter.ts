@@ -35,6 +35,7 @@ import {
 import { client as clientUtils, config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import {
   getElemIdFuncWrapper,
+  inspectValue,
   logDuration,
   resolveChangeElement,
   resolveValues,
@@ -610,6 +611,25 @@ export default class ZendeskAdapter implements AdapterOperations {
     return undefined
   }
 
+  private async logSubscriptionData(): Promise<void> {
+    try {
+      const { data } = await this.client.getSinglePage({ url: '/api/v2/account/subscription.json' })
+      const subscriptionData = !_.isArray(data) ? data.subscription : undefined
+      if (subscriptionData) {
+        log.info(`Account subscription data: ${inspectValue(subscriptionData)}`)
+      } else {
+        log.info(`Account subscription data invalid: ${inspectValue(data)}`)
+      }
+    // This log is not crucial for the fetch to succeed, so we don't want to fail the fetch if it fails
+    } catch (e) {
+      if (e.response?.status === 422) {
+        log.info('Account subscription data unavailable because this is a sandbox environment')
+      } else {
+        log.info(`Account subscription data unavailable because of an error ${inspectValue(e)}`)
+      }
+    }
+  }
+
   /**
    * Fetch configuration elements in the given account.
    * Account credentials were given in the constructor.
@@ -618,6 +638,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch zendesk account configuration..')
     progressReporter.reportProgress({ message: 'Fetching types and instances' })
+    await this.logSubscriptionData()
     const localeError = await this.isLocaleEnUs()
     const { elements, configChanges, errors } = await this.getElements()
     log.debug('going to run filters on %d fetched elements', elements.length)

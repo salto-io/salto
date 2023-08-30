@@ -86,7 +86,7 @@ describe('script_runner_filter', () => {
           toChange({ after: fragmentInstance })])
         expect(auditInstance.value.auditData).toEqual({
           createdByAccountId: 'salto',
-          createdTimestamp: '10',
+          createdTimestamp: 10,
         })
         expect(listenerInstance.value.createdByAccountId).toEqual('salto')
         expect(listenerInstance.value.createdTimestamp).toEqual('10')
@@ -107,18 +107,20 @@ describe('script_runner_filter', () => {
         await filter.preDeploy([toChange({ after: auditInstance })])
         expect(auditInstance.value.auditData).toEqual({
           createdByAccountId: '',
-          createdTimestamp: '10',
+          createdTimestamp: 10,
         })
       })
     })
     describe('on update', () => {
       beforeEach(() => {
-        const auditData = {
+        auditInstance.value.auditData = {
+          createdByAccountId: 'not-salto',
+          createdTimestamp: 1,
+        }
+        listenerInstance.value = {
           createdByAccountId: 'not-salto',
           createdTimestamp: '1',
         }
-        auditInstance.value.auditData = auditData
-        listenerInstance.value = auditData
       })
       it('should add audit info for relevant types', async () => {
         await filter.preDeploy([
@@ -126,9 +128,9 @@ describe('script_runner_filter', () => {
           toChange({ before: listenerInstance, after: listenerInstance })])
         expect(auditInstance.value.auditData).toEqual({
           createdByAccountId: 'not-salto',
-          createdTimestamp: '1',
+          createdTimestamp: 1,
           updatedByAccountId: 'salto',
-          updatedTimestamp: '10',
+          updatedTimestamp: 10,
         })
         expect(listenerInstance.value.updatedByAccountId).toEqual('salto')
         expect(listenerInstance.value.updatedTimestamp).toEqual('10')
@@ -152,9 +154,9 @@ describe('script_runner_filter', () => {
         await filter.preDeploy([toChange({ before: auditInstance, after: auditInstance })])
         expect(auditInstance.value.auditData).toEqual({
           createdByAccountId: 'not-salto',
-          createdTimestamp: '1',
+          createdTimestamp: 1,
           updatedByAccountId: '',
-          updatedTimestamp: '10',
+          updatedTimestamp: 10,
         })
       })
     })

@@ -29,14 +29,18 @@ const getTimeNowAsSeconds = (): number => Math.floor(Date.now() / 1000)
 const AUDIT_SCRIPT_RUNNER_TYPES = SCRIPT_RUNNER_TYPES
   .filter(type => ![SCRIPT_RUNNER_LISTENER_TYPE, SCRIPT_FRAGMENT_TYPE].includes(type))
 
-const addCreatedChanges = (value: Value, currentUserInfo: UserInfo | undefined): void => {
+const addCreatedChanges = (value: Value, currentUserInfo: UserInfo | undefined, timeStampAsString: boolean): void => {
   value.createdByAccountId = currentUserInfo?.userId ?? ''
-  value.createdTimestamp = getTimeNowAsSeconds().toString()
+  value.createdTimestamp = timeStampAsString
+    ? getTimeNowAsSeconds().toString()
+    : getTimeNowAsSeconds()
 }
 
-const addUpdatedChanges = (value: Value, currentUserInfo: UserInfo | undefined): void => {
+const addUpdatedChanges = (value: Value, currentUserInfo: UserInfo | undefined, timeStampAsString: boolean): void => {
   value.updatedByAccountId = currentUserInfo?.userId ?? ''
-  value.updatedTimestamp = getTimeNowAsSeconds().toString()
+  value.updatedTimestamp = timeStampAsString
+    ? getTimeNowAsSeconds().toString()
+    : getTimeNowAsSeconds()
 }
 
 // This filter is used to make script runner types deployable, and to manage the audit items
@@ -84,7 +88,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(instance => AUDIT_SCRIPT_RUNNER_TYPES.includes(instance.elemID.typeName))
       .forEach(instance => {
         instance.value.auditData = {}
-        addCreatedChanges(instance.value.auditData, currentUserInfo)
+        addCreatedChanges(instance.value.auditData, currentUserInfo, false)
         // generate uuid for new instances
         instance.value.uuid = uuidv4()
       })
@@ -92,7 +96,7 @@ const filter: FilterCreator = ({ client, config }) => ({
     additionInstances
       .filter(instance => instance.elemID.typeName === SCRIPT_RUNNER_LISTENER_TYPE)
       .forEach(instance => {
-        addCreatedChanges(instance.value, currentUserInfo)
+        addCreatedChanges(instance.value, currentUserInfo, true)
         // generate uuid for new instances
         instance.value.uuid = uuidv4()
       })
@@ -106,13 +110,13 @@ const filter: FilterCreator = ({ client, config }) => ({
     modificationInstances
       .filter(instance => AUDIT_SCRIPT_RUNNER_TYPES.includes(instance.elemID.typeName))
       .forEach(instance => {
-        addUpdatedChanges(instance.value.auditData, currentUserInfo)
+        addUpdatedChanges(instance.value.auditData, currentUserInfo, false)
       })
 
     modificationInstances
       .filter(instance => instance.elemID.typeName === SCRIPT_RUNNER_LISTENER_TYPE)
       .forEach(instance => {
-        addUpdatedChanges(instance.value, currentUserInfo)
+        addUpdatedChanges(instance.value, currentUserInfo, true)
       })
   },
 })

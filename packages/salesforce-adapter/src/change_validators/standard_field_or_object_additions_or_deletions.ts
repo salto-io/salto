@@ -18,7 +18,8 @@ import {
   ChangeValidator, isAdditionChange, Change, isFieldChange,
   isObjectTypeChange,
   ObjectType,
-  isRemovalChange, isAdditionOrRemovalChange,
+  isRemovalChange,
+  isAdditionOrRemovalChange,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { apiName, isCustom, isCustomObject, isFieldOfCustomObject } from '../transformers/transformer'

@@ -15,7 +15,7 @@
 */
 import os from 'os'
 import wu from 'wu'
-import _, { mapValues } from 'lodash'
+import _ from 'lodash'
 import { inspect, InspectOptions } from 'util'
 import safeStringify from 'fast-safe-stringify'
 import { logger } from '@salto-io/logging'
@@ -156,7 +156,6 @@ const recurseIntoValue = (
 
   if (field && isListType(fieldType)) {
     const transformListInnerValue = (item: Value, index?: number): Value => (
-      // eslint-disable-next-line no-use-before-define
       transformFunc(
         item,
         !_.isUndefined(index) ? keyPathID?.createNestedID(String(index)) : keyPathID,
@@ -208,17 +207,17 @@ const recurseIntoValue = (
   return newVal
 }
 
-const depromise = async (x: Value): Promise<Value> => {
-  if (x instanceof Promise) {
-    return x
+const depromise = async (value: Value): Promise<Value> => {
+  if (value instanceof Promise) {
+    return value
   }
-  if (Array.isArray(x) && x.some(item => item instanceof Promise)) {
-    return Promise.all(x)
+  if (Array.isArray(value) && value.some(item => item instanceof Promise)) {
+    return Promise.all(value)
   }
-  if (_.isPlainObject(x)) {
-    return mapValuesAsync(x, async val => val)
+  if (_.isPlainObject(value)) {
+    return mapValuesAsync(value, async val => depromise(val))
   }
-  return x
+  return value
 }
 
 export const transformValues = async (
@@ -320,7 +319,7 @@ export const transformValuesSync = (
   const newVal = isTopLevel ? transformFunc({ value: values, path: pathID }) : values
   if (_.isPlainObject(newVal)) {
     const result = _.omitBy(
-      mapValues(
+      _.mapValues(
         newVal ?? {},
         (value, key) => transformValue(value, pathID?.createNestedID(key), fieldMapper(key))
       ),
@@ -329,15 +328,13 @@ export const transformValuesSync = (
     return _.isEmpty(result) && !allowEmpty ? undefined : result
   }
   if (_.isArray(newVal)) {
-    const result = wu(newVal)
-      .enumerate()
-      .map(([value, index]) => transformValue(
+    const result = newVal
+      .map((value, index) => transformValue(
         value,
         pathID?.createNestedID(String(index)),
         fieldMapper(String(index))
       ))
       .filter(value => !_.isUndefined(value))
-      .toArray()
     return result.length === 0 && !allowEmpty ? undefined : result
   }
   return newVal

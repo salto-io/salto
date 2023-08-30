@@ -190,16 +190,13 @@ export const adapter: Adapter = {
     }: CreateSalesforceAdapterParams = {}
     ): Promise<SalesforceAdapter> => {
       const { elementsSource, getElemIdFunc } = context
-      const changedAtSingleton = isFetchWithChangesDetection
-        ? await getChangedAtSingleton(elementsSource)
-        : undefined
       return new SalesforceAdapter({
         client,
         config,
         getElemIdFunc,
         elementsSource,
-        changedAtSingleton,
-        isFetchWithChangesDetection: false,
+        changedAtSingleton: await getChangedAtSingleton(elementsSource),
+        isFetchWithChangesDetection,
       })
     }
 

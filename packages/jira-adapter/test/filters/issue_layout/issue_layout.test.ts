@@ -51,7 +51,9 @@ describe('issue layout filter', () => {
   beforeEach(async () => {
     client = mockCli.client
     connection = mockCli.connection
-    filter = issueLayoutFilter(getFilterParams({ client })) as typeof filter
+    const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+    config.fetch.enableIssueLayouts = true
+    filter = issueLayoutFilter(getFilterParams({ client, config })) as typeof filter
   })
   describe('on fetch', () => {
     beforeEach(async () => {
@@ -363,6 +365,7 @@ describe('issue layout filter', () => {
       })
       const configWithMissingRefs = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       configWithMissingRefs.fetch.enableMissingReferences = false
+      configWithMissingRefs.fetch.enableIssueLayouts = true
       filter = issueLayoutFilter(getFilterParams({ config: configWithMissingRefs, client })) as FilterType
       await filter.onFetch(elements)
       const instances = elements.filter(isInstanceElement)
@@ -385,10 +388,12 @@ describe('issue layout filter', () => {
   })
   it('should not fetch issue layouts if it is a data center instance', async () => {
     const configWithDataCenterTrue = _.cloneDeep(getDefaultConfig({ isDataCenter: true }))
+    configWithDataCenterTrue.fetch.enableIssueLayouts = true
     filter = issueLayoutFilter(getFilterParams({
       client,
       config: configWithDataCenterTrue,
     })) as FilterType
+
     filter = issueLayoutFilter(getFilterParams({ config: configWithDataCenterTrue, client })) as FilterType
     await filter.onFetch(elements)
     expect(connection.post).not.toHaveBeenCalled()

@@ -70,6 +70,7 @@ type JiraFetchConfig = configUtils.UserFetchConfig<JiraFetchFilters> & {
   addAlias?: boolean
   splitFieldConfiguration?: boolean
   enableMissingReferences?: boolean
+  enableIssueLayouts?: boolean
 }
 
 export type MaskingConfig = {
@@ -312,6 +313,7 @@ const fetchConfigType = createUserFetchConfigType(
     addAlias: { refType: BuiltinTypes.BOOLEAN },
     splitFieldConfiguration: { refType: BuiltinTypes.BOOLEAN },
     enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
+    enableIssueLayouts: { refType: BuiltinTypes.BOOLEAN },
   },
   fetchFiltersType,
 )

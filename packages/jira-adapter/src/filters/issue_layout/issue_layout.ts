@@ -166,7 +166,9 @@ const deployIssueLayoutChanges = async (
 const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) => ({
   name: 'issueLayoutFilter',
   onFetch: async elements => {
-    if (client.isDataCenter || !fetchQuery.isTypeMatch(ISSUE_LAYOUT_TYPE)) {
+    if (client.isDataCenter
+      || !fetchQuery.isTypeMatch(ISSUE_LAYOUT_TYPE)
+      || !config.fetch.enableIssueLayouts) {
       return
     }
     const projectToScreenId = await getProjectToScreenMapping(elements)

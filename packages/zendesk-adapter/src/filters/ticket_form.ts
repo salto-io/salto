@@ -32,7 +32,7 @@ import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import {
-  ACCOUNT_FEATURES_TYPE_NAME,
+  ACCOUNT_FEATURES_TYPE_NAME, TICKET_FIELD_TYPE_NAME,
   TICKET_FORM_TYPE_NAME,
   ZENDESK,
 } from '../constants'
@@ -193,6 +193,53 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
       errors: tempDeployResult.errors,
     }
     return { deployResult, leftoverChanges }
+  },
+  onDeploy: async (changes: Change<InstanceElement>[]) => {
+    const ticketFormChanges = changes
+      .filter(isAdditionOrModificationChange)
+      .filter(change => TICKET_FORM_TYPE_NAME === getChangeData(change).elemID.typeName)
+    if (_.isEmpty(ticketFormChanges)) {
+      return
+    }
+
+    const ticketFields = await awu(await elementsSource.list())
+      .filter(id => id.typeName === TICKET_FIELD_TYPE_NAME)
+      .map(id => elementsSource.get(id))
+      .filter(isInstanceElement)
+      .toArray()
+    const ticketStatusTicketField = ticketFields.find(field => field.value.type === 'custom_status')
+    if (ticketStatusTicketField === undefined) {
+      log.error('could not find field of type custom_status not running on deploy of ticket_form')
+      return
+    }
+
+    // ticket status field exists in the account and therefore there is no need for the onDeploy
+    if (ticketStatusTicketField.value.id !== undefined) {
+      return
+    }
+
+    const ticketFormsToFieldIds = Object.fromEntries(await awu(ticketFormChanges)
+      .map(change => getChangeData(change).elemID)
+      .map(async id => {
+        const form = await elementsSource.get(id)
+        if (!isInstanceElement(form)) {
+          log.error(`could not find in the elementsSource a form with name ${id.name} `)
+          return [id.getFullName(), undefined]
+        }
+        const ticketFieldIds = form.value.ticket_field_ids // the references are unresolved
+        return [id.getFullName(), ticketFieldIds]
+      })
+      .toArray())
+
+    ticketFormChanges.forEach(change => {
+      const form = getChangeData(change)
+      const ticketFieldIds = ticketFormsToFieldIds[form.elemID.getFullName()]
+      if (ticketFieldIds === undefined) {
+        log.error(`could not find ticketFieldIds for form ${form.elemID.name}`)
+        return
+      }
+      form.value.ticket_field_ids = ticketFieldIds
+    })
   },
 })
 export default filterCreator

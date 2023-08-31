@@ -149,14 +149,17 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
       await waitForRateLimit(rateLimits.rateLimitReset)
       return this.getSinglePage(args)
     }
-    let headers: Record<string, string> | undefined
     try {
       rateLimits.currentlyRunning += 1
       const res = await super.getSinglePage(args)
-      headers = res.headers
+      if (res.headers) {
+        updateRateLimits(rateLimits, res.headers)
+      }
       return res
     } catch (e) {
-      headers = e.response?.headers
+      if (e.response?.headers) {
+        updateRateLimits(rateLimits, e.response?.headers)
+      }
       const status = e.response?.status
       // Okta returns 404 when trying fetch AppUserSchema for built-in apps
       if (status === 404 && args.url.match(APP_USER_SCHEMA_URL)) {
@@ -172,9 +175,6 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
     } finally {
       // Make sure to always decrease the counter and update the headers
       rateLimits.currentlyRunning -= 1
-      if (headers) {
-        updateRateLimits(rateLimits, headers)
-      }
     }
   }
 

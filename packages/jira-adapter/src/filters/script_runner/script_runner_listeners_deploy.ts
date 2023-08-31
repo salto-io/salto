@@ -13,15 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, SaltoElementError, SeverityLevel, Value, getChangeData, isAdditionChange, isInstanceChange, isModificationChange, isRemovalChange } from '@salto-io/adapter-api'
+import { Change, InstanceElement, SaltoElementError, SeverityLevel, Value, getChangeData, isAdditionChange, isInstanceChange, isModificationChange, isRemovalChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard, resolveChangeElement, resolveValues } from '@salto-io/adapter-utils'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
 import { SCRIPT_RUNNER_LISTENER_TYPE } from '../../constants'
 import { getLookUpName } from '../../reference_mapping'
+import { JiraDuckTypeConfig } from '../../config/api_config'
+
+const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -36,7 +40,31 @@ const LISTENERS_RESPONSE_SCHEME = Joi.object({
 
 const isListenersResponse = createSchemeGuard<ListenersResponse>(LISTENERS_RESPONSE_SCHEME, 'Received an invalid script runner listeners response')
 
-export const getValuesToDeploy = async (changes: Change[], valuesFromService: Value[], identifier: string): Promise<{
+// this function rebuilds the type inside the instance based on the instance's fields
+const fixType = (
+  change: Change<InstanceElement>,
+  scriptRunnerApiDefinitions: JiraDuckTypeConfig
+): Change<InstanceElement> => ({
+  action: change.action,
+  data: _.mapValues(change.data, (instance: InstanceElement) =>
+    replaceInstanceTypeForDeploy({
+      instance,
+      config: scriptRunnerApiDefinitions,
+    })),
+} as Change<InstanceElement>)
+
+
+export const getValuesToDeploy = async ({
+  changes,
+  valuesFromService,
+  identifier,
+  scriptRunnerApiDefinitions,
+}:{
+  changes: Change[]
+  valuesFromService: Value[]
+  identifier: string
+  scriptRunnerApiDefinitions: JiraDuckTypeConfig
+}): Promise<{
   errors: SaltoElementError[]
   appliedChanges: Change[]
   valuesToDeploy: Value[]
@@ -50,7 +78,8 @@ export const getValuesToDeploy = async (changes: Change[], valuesFromService: Va
     .filter(isInstanceChange)
     .filter(isAdditionChange)
     .forEach(async change => {
-      const resolvedChange = await resolveChangeElement(change, getLookUpName, resolveValues)
+      const typeFixedChange = fixType(change, scriptRunnerApiDefinitions)
+      const resolvedChange = await resolveChangeElement(typeFixedChange, getLookUpName, resolveValues)
       const instance = getChangeData(resolvedChange)
       const index = idToIndex[instance.value[identifier]]
       if (index !== undefined) {
@@ -156,7 +185,12 @@ const filter: FilterCreator = ({ scriptRunnerClient, config }) => ({
         },
       }
     }
-    const { errors, appliedChanges, valuesToDeploy } = await getValuesToDeploy(relevantChanges, valuesFromService, 'uuid')
+    const { errors, appliedChanges, valuesToDeploy } = await getValuesToDeploy({
+      changes: relevantChanges,
+      valuesFromService,
+      identifier: 'uuid',
+      scriptRunnerApiDefinitions,
+    })
     try {
       await scriptRunnerClient.put({
         url: '/sr-dispatcher/jira/admin/token/scriptevents',

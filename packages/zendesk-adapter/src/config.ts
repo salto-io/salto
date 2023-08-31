@@ -2478,6 +2478,52 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       isSingleton: true,
     },
   },
+  custom_objects: {
+    request: {
+      url: '/api/v2/custom_objects',
+      queryParams: { per_page: String(PAGE_SIZE) },
+      paginationField: 'next_page',
+    },
+    transformation: {
+      dataField: 'custom_objects',
+    },
+  },
+  custom_object: {
+    transformation: {
+      idFields: ['key'],
+      sourceTypeName: 'custom_objects__custom_objects',
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'number' },
+      ),
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'created_by_user_id', fieldType: 'string' },
+        { fieldName: 'updated_by_user_id', fieldType: 'string' },
+      ),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+    },
+    deployRequests: {
+      add: {
+        url: '/api/v2/custom_objects',
+        method: 'post',
+        deployAsField: 'custom_object',
+      },
+      modify: {
+        url: '/api/v2/custom_objects/{custom_object_key}',
+        method: 'patch',
+        deployAsField: 'custom_object',
+        urlParamsToFields: {
+          custom_object_key: 'key',
+        },
+      },
+      remove: {
+        url: '/api/v2/custom_objects/{custom_object_key}',
+        method: 'delete',
+        urlParamsToFields: {
+          custom_object_key: 'key',
+        },
+      },
+    },
+  },
 }
 
 export const SUPPORTED_TYPES = {
@@ -2517,6 +2563,7 @@ export const SUPPORTED_TYPES = {
   account_features: ['features'],
   // tags are included in supportedTypes so that they can be easily omitted, but are fetched separately
   tag: ['tags'],
+  custom_object: ['custom_objects'],
 }
 
 // Types in Zendesk Guide which relate to a certain brand

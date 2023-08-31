@@ -2483,6 +2483,13 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       url: '/api/v2/custom_objects',
       queryParams: { per_page: String(PAGE_SIZE) },
       paginationField: 'next_page',
+      recurseInto: [
+        {
+          type: 'custom_object_fields',
+          toField: 'custom_object_fields',
+          context: [{ name: 'custom_object_key', fromField: 'key' }],
+        },
+      ],
     },
     transformation: {
       dataField: 'custom_objects',
@@ -2492,6 +2499,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       idFields: ['key'],
       sourceTypeName: 'custom_objects__custom_objects',
+      standaloneFields: [{ fieldName: 'custom_object_fields' }],
       fieldsToHide: FIELDS_TO_HIDE.concat(
         { fieldName: 'id', fieldType: 'number' },
       ),
@@ -2520,6 +2528,61 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         method: 'delete',
         urlParamsToFields: {
           custom_object_key: 'key',
+        },
+      },
+    },
+  },
+  custom_object_fields: {
+    request: {
+      url: '/api/v2/custom_objects/{custom_object_key}/fields',
+      dependsOn: [
+        { pathParam: 'custom_object_key', from: { type: 'custom_objects', field: 'key' } },
+      ],
+      queryParams: {
+        per_page: String(PAGE_SIZE),
+        include_standard_fields: 'true',
+      },
+    },
+    transformation: {
+      dataField: 'custom_object_fields',
+    },
+  },
+  custom_object_field: {
+    transformation: {
+      idFields: ['key'],
+      extendsParentId: true,
+      sourceTypeName: 'custom_object__custom_object_fields',
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'number' },
+      ),
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'number' },
+      ],
+    },
+    deployRequests: {
+      add: {
+        url: '/api/v2/custom_objects/{custom_object_key}/fields',
+        method: 'post',
+        deployAsField: 'custom_object_field',
+        urlParamsToFields: {
+          custom_object_key: '_parent.0.key',
+        },
+      },
+      modify: {
+        url: '/api/v2/custom_objects/{custom_object_key}/fields/{custom_object_field_key}',
+        method: 'put',
+        deployAsField: 'custom_object_field',
+        urlParamsToFields: {
+          custom_object_key: '_parent.0.key',
+          custom_object_field_key: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v2/custom_objects/{custom_object_key}/fields/{custom_object_field_key}',
+        method: 'delete',
+        urlParamsToFields: {
+          custom_object_key: '_parent.0.key',
+          custom_object_field_key: 'id',
         },
       },
     },

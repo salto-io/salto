@@ -77,7 +77,7 @@ export const fixTypes = (
         getTypeTransformationConfig(
           typeName, typeConfig, typeDefaultConfig
         ).fieldsToHide as FieldToHideType[],
-        type.fields,
+        type,
         typeName,
       )
     })

@@ -75,9 +75,11 @@ describe('diagnostics', () => {
       [{ severity: 'Error', message: 'Blabla' }, { severity: 'Warning', message: 'test' }],
     ))
     const workspace = new EditorWorkspace('bla', baseWs)
-    const diag = (await getDiagnostics(workspace)).errors['/parse_error.nacl']
-    expect(diag).toHaveLength(1)
-    const error = diag[0]
+    const diag = await getDiagnostics(workspace)
+    const diagErrors = diag.errors['/parse_error.nacl']
+    expect(diag.totalNumberOfErrors).toBe(1)
+    expect(diagErrors).toHaveLength(1)
+    const error = diagErrors[0]
     expect(error.severity).toEqual('Error')
     expect(error.msg).toEqual('Blabla')
   })

@@ -40,9 +40,10 @@ const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitC
 }
 
 // We have a buffer to prevent reaching the rate limit with the initial request on parallel or consecutive fetches
-export const RATE_LIMIT_BUFFER = 6
+export const RATE_LIMIT_BUFFER = 6 // TODO: make this configurable
 
-const DEFAULT_MAX_REQUESTS_PER_MINUTE = 700
+// Unlimited because the rate max requests is calculated dynamically
+const DEFAULT_MAX_REQUESTS_PER_MINUTE = -1
 
 const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
   get: 50,
@@ -57,22 +58,29 @@ const initRateLimits = {
   currentlyRunning: 0,
 }
 
-
+// According to https://developer.okta.com/docs/reference/rl-global-mgmt/
 const rateLimitUrls = [
   new RegExp('/api/v1/apps/.+/(?:logo|groups)'), // has to be before /api/v1/apps.*
   new RegExp('/api/v1/apps.*'),
   new RegExp('/api/v1/groups/.+/roles'), // has to be before /api/v1/groups.*
   new RegExp('/api/v1/groups.*'),
   new RegExp('/api/v1/users.*'),
+  new RegExp('/api/v1/users'),
   new RegExp('/api/v1/logs.*'),
   new RegExp('/api/v1/events.*'),
-  new RegExp('/oauth2/v1/clients.*'),
-  new RegExp('/api/v1/org/email/bounces/remove-list'),
-  new RegExp('/api/v1/users'),
   new RegExp('/api/v1/certificateAuthorities.*'),
   new RegExp('/api/v1/devices.*'),
+  new RegExp('/api/v1/org/email/bounces/remove-list'),
+  new RegExp('/oauth2/v1/clients.*'),
   new RegExp('/api/v1.+'), // Has to be last
 ]
+
+const waitForRateLimit = async (rateLimitReset: number): Promise<void> => {
+  // Calculate the time to wait until the rate limit is reset and wait
+  const currentTime = Date.now()
+  const rateLimitResetTime = Math.max(rateLimitReset - currentTime, 100)
+  await sleep(rateLimitResetTime)
+}
 
 const updateRateLimits = (
   rateLimits: { rateLimitRemaining: number; rateLimitReset: number },
@@ -81,7 +89,7 @@ const updateRateLimits = (
   const updatedRateLimitRemaining = Number(headers['x-rate-limit-remaining'])
   const updatedRateLimitReset = Number(headers['x-rate-limit-reset'])
   if (!_.isNumber(updatedRateLimitRemaining) || !_.isNumber(updatedRateLimitReset)) {
-    log.error(`Invalid getSinglePage response headers: ${safeJsonStringify(headers)}`)
+    log.error(`Invalid getSinglePage response headers, remaining: ${updatedRateLimitRemaining}, reset: ${updatedRateLimitReset}`)
     return
   }
   // If this is a new limitation, reset the remaining count
@@ -124,18 +132,10 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
     return this.credentials.baseUrl
   }
 
-  private async waitAndReGet(
-    rateLimitReset: number,
-    args: clientUtils.ClientBaseParams
-  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
-    // Calculate the time to wait until the rate limit is reset, and then recall the function
-    const currentTime = Date.now()
-    const rateLimitResetTime = Math.max(rateLimitReset - currentTime, 100)
-    await sleep(rateLimitResetTime)
-    return this.getSinglePage(args)
-  }
-
-  // This getSinglePage implements a rate limit logic, for more information: https://salto-io.atlassian.net/browse/SALTO-4350
+  // This getSinglePage tracks the number of running requests per endpoint, with their rate limits and reset times
+  // It Pauses new requests when running requests approach the rate limit, factoring in a buffer
+  // Then it resumes when the rate limit resets.
+  // For more information: SALTO-4350
   public async getSinglePage(
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
@@ -146,7 +146,8 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
       && !(rateLimits.currentlyRunning === 0 && rateLimits.rateLimitReset < Date.now())
       // If we are at the rate limit with the buffer, wait
       && rateLimits.rateLimitRemaining - rateLimits.currentlyRunning <= RATE_LIMIT_BUFFER) {
-      return this.waitAndReGet(rateLimits.rateLimitReset, args)
+      await waitForRateLimit(rateLimits.rateLimitReset)
+      return this.getSinglePage(args)
     }
     try {
       rateLimits.currentlyRunning += 1

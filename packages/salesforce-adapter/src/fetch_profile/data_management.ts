@@ -78,15 +78,15 @@ export const buildDataManagement = (params: DataManagementConfig): DataManagemen
     const typeName = await apiName(objType)
     const hasManagedBySaltoField = managedBySaltoFieldName !== undefined
       && objType.fields[managedBySaltoFieldName] !== undefined
+    if (params.allowReferenceTo !== undefined
+      && hasManagedBySaltoField
+      && params.allowReferenceTo.some(re => new RegExp(`^${re}$`).test(typeName))) {
+      return true
+    }
     if (params.excludeObjects?.some(re => new RegExp(`^${re}$`).test(typeName))) {
       return false
     }
-    if (params.includeObjects.some(re => new RegExp(`^${re}$`).test(typeName))) {
-      return true
-    }
-    return params.allowReferenceTo !== undefined
-      && hasManagedBySaltoField
-      && params.allowReferenceTo.some(re => new RegExp(`^${re}$`).test(typeName))
+    return params.includeObjects !== undefined && params.includeObjects.some(re => new RegExp(`^${re}$`).test(typeName))
   }
   return {
     isObjectTypeMatch,

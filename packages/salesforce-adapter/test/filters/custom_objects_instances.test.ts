@@ -66,6 +66,8 @@ const stringType = new PrimitiveType({
   primitive: PrimitiveTypes.STRING,
 })
 
+const MANAGED_BY_SALTO_FIELD_NAME = 'ManagedBySalto__c'
+
 const createCustomObject = (
   name: string,
   additionalFields?: Record<string, FieldDefinition>
@@ -124,7 +126,7 @@ describe('Custom Object Instances filter', () => {
   const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
     ElemID => new ElemID(adapterName, `${NAME_FROM_GET_ELEM_ID}${name}`)
 
-  const TestCustomRecords = [
+  const TestCustomRecords: Record<string, unknown>[] = [
     {
       attributes: {
         type: 'Test',
@@ -180,18 +182,29 @@ describe('Custom Object Instances filter', () => {
   const emptyRefToObjectName = 'EmptyRefTo'
   const notInNamespaceName = 'NotInNamespace__c'
 
+  const mockQueryImplementation = async (soql: string): Promise<Record<string, unknown>> => {
+    if (soql.includes(`${MANAGED_BY_SALTO_FIELD_NAME}=TRUE`)) {
+      const filteredRecords = TestCustomRecords.filter(record => record[MANAGED_BY_SALTO_FIELD_NAME] === true)
+      return {
+        totalSize: filteredRecords.length,
+        done: true,
+        records: filteredRecords,
+      }
+    }
+    return {
+      totalSize: TestCustomRecords.length,
+      done: true,
+      records: TestCustomRecords,
+    }
+  }
+
   beforeEach(async () => {
     ({ connection, client } = mockAdapter({
       adapterParams: {
         getElemIdFunc: mockGetElemIdFunc,
       },
     }))
-    basicQueryImplementation = jest.fn().mockImplementation(async () => (
-      {
-        totalSize: 2,
-        done: true,
-        records: TestCustomRecords,
-      }))
+    basicQueryImplementation = jest.fn().mockImplementation(mockQueryImplementation)
     connection.query = basicQueryImplementation
   })
 

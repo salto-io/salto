@@ -31,6 +31,7 @@ import { PRIVATE_API_HEADERS } from '../client/headers'
 type IssueTypeResponse = {
     data: {
         iconUrl: string
+        avatarId: number
     }
 }
 type IssueTypeIconResponse = {
@@ -52,7 +53,7 @@ const createIconType = (): ObjectType =>
     elemID: new ElemID(JIRA, ISSUE_TYPE_ICON_NAME),
     fields: {
       id: {
-        refType: BuiltinTypes.STRING,
+        refType: BuiltinTypes.NUMBER,
         annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
       },
       content: { refType: BuiltinTypes.STRING },
@@ -82,6 +83,7 @@ const getLogo = async ({
   contentType,
   logoName,
   link,
+  id,
 }:{
     client: JiraClient
     parents: InstanceElement[]
@@ -89,6 +91,7 @@ const getLogo = async ({
     contentType: string
     logoName: string
     link: string
+    id: number
   }):
   Promise<InstanceElement | Error> => {
   const logoContent = await getLogoContent(link, client)
@@ -97,13 +100,12 @@ const getLogo = async ({
   }
   const pathName = pathNaclCase(logoName)
   const resourcePathName = logoName
-  const logoId = logoName
   const refParents = parents.map(parent => new ReferenceExpression(parent.elemID, parent))
   const logo = new InstanceElement(
     logoName,
     logoType,
     {
-      id: logoId,
+      id,
       fileName: `${logoName}.${contentType}`,
       contentType,
       content: new StaticFile({
@@ -134,6 +136,7 @@ const sendLogoRequest = async ({
   && isStaticFile(logoInstance.value.content)
     ? await logoInstance.value.content.getContent()
     : undefined
+
   const resp = await client.post({
     url,
     data: fileContent,
@@ -185,6 +188,7 @@ const filter: FilterCreator = ({ client }) => ({
         contentType: 'png',
         logoName: `${issueType.elemID.name}Icon`,
         link: iconUrl,
+        id: response.data.avatarId,
       })
       if (logo instanceof Error) {
         return logo

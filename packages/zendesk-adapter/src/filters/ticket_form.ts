@@ -14,9 +14,16 @@
 * limitations under the License.
 */
 import {
-  Change, DeployResult, ElemID,
+  Change,
+  DeployResult,
+  ElemID,
   getChangeData,
-  InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, ReadOnlyElementsSource,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  isInstanceElement,
+  isModificationChange, ModificationChange,
+  ReadOnlyElementsSource, toChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -121,6 +128,21 @@ const returnValidInstance = (inst: InstanceElement): InstanceElement => {
   return clonedInst
 }
 
+// this function returns an instance that contains the removed field. This is because zendesk does not allow removing
+// field and condition at the same time
+const getChangeWithoutRemovedFields = (change: ModificationChange<InstanceElement>): InstanceElement => {
+  const { before } = change.data
+  const { after } = change.data
+  const beforeFields: number[] = before.value.ticket_field_ids ?? []
+  const afterFields = new Set(after.value.ticket_field_ids ?? [])
+  const removedFields = beforeFields.filter(field => !afterFields.has(field))
+  const clonedInst = after.clone()
+  // it is true because if we get to returnValidInstance function its after we got true from isInvalidTicketForm so
+  // custom_statuses is enabled
+  clonedInst.value.ticket_field_ids = (clonedInst.value.ticket_field_ids ?? []).concat(removedFields)
+  return clonedInst
+}
+
 /**
  * this filter deploys ticket_form changes. if the instance has both statuses and custom_statuses under
  * required_on_statuses then it removes the statuses field.
@@ -143,9 +165,18 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
       .map(change => applyFunctionToChangeData(change, returnValidInstance))
       .toArray()
 
+    const allChanges = fixedTicketFormChanges.concat(otherTicketFormChanges)
+
     const tempDeployResult = await deployChanges(
-      [...fixedTicketFormChanges, ...otherTicketFormChanges],
+      allChanges,
       async change => {
+        if (isModificationChange(change)) {
+          const intermediateChange = toChange(
+            { before: change.data.before, after: getChangeWithoutRemovedFields(change) }
+          )
+          // first deploy is without the removed fields
+          await deployChange(intermediateChange, client, config.apiDefinitions)
+        }
         await deployChange(change, client, config.apiDefinitions)
       }
     )

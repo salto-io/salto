@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 
-import { InstanceElement, ReadOnlyElementsSource, toChange, SeverityLevel } from '@salto-io/adapter-api'
+import { InstanceElement, ReadOnlyElementsSource, toChange, SeverityLevel, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { ISSUE_TYPE_NAME } from '../../src/constants'
+import { ISSUE_TYPE_NAME, JIRA } from '../../src/constants'
 import { createEmptyType, getAccountInfoInstance } from '../utils'
 import { issueTypeHierarchyValidator } from '../../src/change_validators/issue_type_hierarchy'
 
@@ -89,6 +89,34 @@ describe('issue type hierarchy validator', () => {
           message: 'Cannot modify hierarchy level from 0 to -1 or vice versa.',
           detailedMessage: 'Issue type hierarchy level cannot be changed from 0 to -1 or vice versa.',
         }])
+    })
+    it('should return error if there is no jira-software in the account info instance because it considered free acount', async () => {
+      const accountInfoWithNoJiraSoftware = new InstanceElement(
+        '_config',
+        new ObjectType({
+          elemID: new ElemID(JIRA, 'AccountInfo'),
+        }),
+        {
+          license: {
+            applications: [
+              {
+                id: 'jira-serviceDesk',
+                plan: 'PAID',
+              },
+            ],
+          },
+        }
+      )
+      elementsSource = buildElementsSourceFromElements([accountInfoWithNoJiraSoftware])
+      const changes = [toChange({ after: issueTypeLevelTwo })]
+      expect(await issueTypeHierarchyValidator(changes, elementsSource)).toEqual([
+        {
+          elemID: issueTypeLevelTwo.elemID,
+          severity: 'Error' as SeverityLevel,
+          message: 'Cannot deploy issue type with hierarchy level greater than 0.',
+          detailedMessage: 'Issue type hierarchy level can only be -1, 0. To deploy, change the hierarchy level to one of the allowed values.',
+        },
+      ])
     })
   })
   describe('paid account', () => {

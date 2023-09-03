@@ -21,8 +21,12 @@ import { getParent } from '@salto-io/adapter-utils'
 import { JiraConfig, JspUrls } from './config/config'
 import { ACCOUNT_INFO_ELEM_ID, JIRA_FREE_PLAN } from './constants'
 
-const log = logger(module)
+type appInfo = {
+  id: string
+  plan: string
+}
 
+const log = logger(module)
 const { awu } = collections.asynciterable
 
 export const setFieldDeploymentAnnotations = (type: ObjectType, fieldName: string): void => {
@@ -84,7 +88,23 @@ export const getFilledJspUrls = (
   }
 }
 
-export const isFreeLicense = async (
+export const isAllFreeLicense = async (
+  elementsSource: ReadOnlyElementsSource
+): Promise<boolean> => {
+  if (!await elementsSource.has(ACCOUNT_INFO_ELEM_ID)) {
+    return false
+  }
+  const accountInfo = await elementsSource.get(ACCOUNT_INFO_ELEM_ID)
+  if (!isInstanceElement(accountInfo)
+  || accountInfo.value.license?.applications === undefined) {
+    log.error('account info instance or its license not found in elements source, treating the account as paid one')
+    return false
+  }
+  const hasPaidApp = accountInfo.value.license.applications.some((app: appInfo) => app.plan !== 'FREE')
+  return !hasPaidApp
+}
+
+export const isJiraSoftwareFreeLicense = async (
   elementsSource: ReadOnlyElementsSource
 ): Promise<boolean> => {
   if (!await elementsSource.has(ACCOUNT_INFO_ELEM_ID)) {
@@ -97,10 +117,9 @@ export const isFreeLicense = async (
     return false
   }
   const mainApplication = accountInfo.value.license.applications.find((app: Value) => app.id === 'jira-software')
-
   if (mainApplication?.plan === undefined) {
-    log.warn('could not find license of jira-software, treating the account as paid one')
-    return false
+    log.warn('could not find license of jira-software, treating the account as free one')
+    return true
   }
   return mainApplication.plan === JIRA_FREE_PLAN
 }

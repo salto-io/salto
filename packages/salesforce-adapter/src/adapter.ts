@@ -99,6 +99,7 @@ import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, l
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 import { getLookUpName, getLookupNameWithFallbackToElement } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
+import nestedInstancesAuthorInformation from './filters/author_information/nested_instances'
 import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
 import {
   CUSTOM_OBJECT,
@@ -159,6 +160,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: profilePathsFilter, addsNewInformation: true },
   { creator: territoryFilter },
   { creator: elementsUrlFilter, addsNewInformation: true },
+  { creator: nestedInstancesAuthorInformation, addsNewInformation: true },
   { creator: customObjectAuthorFilter, addsNewInformation: true },
   { creator: dataInstancesAuthorFilter, addsNewInformation: true },
   { creator: sharingRulesAuthorFilter, addsNewInformation: true },

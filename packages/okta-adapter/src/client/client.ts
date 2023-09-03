@@ -173,7 +173,7 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
       }
       throw e
     } finally {
-      // Make sure to always decrease the counter and update the headers
+      // Make sure to always decrease the counter
       rateLimits.currentlyRunning -= 1
     }
   }

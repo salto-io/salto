@@ -104,12 +104,15 @@ describe('client', () => {
       expect(clientGetSinglePageSpy).toHaveBeenCalledTimes(6)
     })
     it('should enter immediately if rate limit is not exceeded', async () => {
-      clientGetSinglePageSpy.mockImplementationOnce(async () => ({
-        headers: {
-          'x-rate-limit-remaining': '99',
-          'x-rate-limit-reset': '123',
+      clientGetSinglePageSpy.mockRejectedValueOnce({
+        response: {
+          headers: {
+            'x-rate-limit-remaining': '99',
+            'x-rate-limit-reset': '123',
+          },
+          status: 410,
         },
-      }))
+      })
       clientGetSinglePageSpy.mockImplementationOnce(async () => {
         await sleep(100)
         return { headers: { 'x-rate-limit-remaining': '98', 'x-rate-limit-reset': '123' } }

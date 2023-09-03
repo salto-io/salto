@@ -40,6 +40,7 @@ type OptionalFeaturesDefaultValues = {
 const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   fetchProfilesUsingReadApi: false,
   generateRefsInProfiles: false,
+  toolingDepsOfCurrentNamespace: false,
 }
 
 export const buildFetchProfile = ({

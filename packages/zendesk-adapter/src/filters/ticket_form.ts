@@ -137,8 +137,6 @@ const getChangeWithoutRemovedFields = (change: ModificationChange<InstanceElemen
   const afterFields = new Set(after.value.ticket_field_ids ?? [])
   const removedFields = beforeFields.filter(field => !afterFields.has(field))
   const clonedInst = after.clone()
-  // it is true because if we get to returnValidInstance function its after we got true from isInvalidTicketForm so
-  // custom_statuses is enabled
   clonedInst.value.ticket_field_ids = (clonedInst.value.ticket_field_ids ?? []).concat(removedFields)
   return clonedInst
 }

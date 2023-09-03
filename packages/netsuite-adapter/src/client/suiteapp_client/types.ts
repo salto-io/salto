@@ -407,7 +407,7 @@ export const GET_BUNDLES_RESULT_SCHEMA = {
         required: ['id', 'name'],
       },
     },
-    required: ['id', 'name', 'version', 'isManaged', 'description', 'dateInstalled', 'dateLastUpdated', 'installedFrom', 'publisher', 'installedBy'],
+    required: ['id', 'name', 'installedFrom', 'publisher'],
   },
 }
 

@@ -145,6 +145,7 @@ import routingAttributeValueDeployFilter from './filters/routing_attribute_value
 import localeFilter from './filters/locale'
 import ticketStatusCustomStatusDeployFilter from './filters/ticket_status_custom_status'
 import { filterOutInactiveInstancesForType } from './inactive'
+import isCustomObjectFieldOptionsFilter from './filters/custom_object_field_options'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -194,6 +195,7 @@ export const DEFAULT_FILTERS = [
   guideAddBrandToArticleTranslation,
   macroFilter,
   macroAttachmentsFilter,
+  isCustomObjectFieldOptionsFilter,
   ticketFormDeploy,
   customRoleDeployFilter,
   sideConversationsFilter,

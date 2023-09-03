@@ -71,9 +71,10 @@ import {
   isCustomObject, isMetadataObjectType,
   isNameField, MetadataInstanceElement,
   metadataType,
-  MetadataValues, relativeApiName,
+  MetadataValues,
   Types,
 } from '../transformers/transformer'
+import * as transformer from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
 
 const { toArrayAsync, awu } = collections.asynciterable
@@ -136,7 +137,7 @@ const fullApiNameSync = (elem: Readonly<Element>): string | undefined => {
 
 export const apiNameSync = (elem: Readonly<Element>, relative = false): string | undefined => {
   const name = fullApiNameSync(elem)
-  return name && relative ? relativeApiName(name) : name
+  return name && relative ? transformer.relativeApiName(name) : name
 }
 
 export const isMetadataInstanceElementSync = (elem: Element): elem is MetadataInstanceElement => (

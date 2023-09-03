@@ -2514,11 +2514,13 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         url: '/api/v2/custom_objects',
         method: 'post',
         deployAsField: 'custom_object',
+        fieldsToIgnore: ['custom_object_fields'],
       },
       modify: {
         url: '/api/v2/custom_objects/{custom_object_key}',
         method: 'patch',
         deployAsField: 'custom_object',
+        fieldsToIgnore: ['custom_object_fields'],
         urlParamsToFields: {
           custom_object_key: 'key',
         },

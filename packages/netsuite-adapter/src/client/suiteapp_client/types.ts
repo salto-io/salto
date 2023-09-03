@@ -385,8 +385,29 @@ export const GET_BUNDLES_RESULT_SCHEMA = {
       id: { type: 'number' },
       name: { type: 'string' },
       version: { type: ['string', 'null'] },
+      isManaged: { type: ['boolean', 'null'] },
+      description: { type: ['string', 'null'] },
+      dateInstalled: { type: ['string', 'null'] },
+      dateLastUpdated: { type: ['string', 'null'] },
+      installedFrom: { type: ['string', 'null'] },
+      publisher: {
+        type: ['object', 'null'],
+        properties: {
+          id: { type: 'string' },
+          name: { type: 'string' },
+        },
+        required: ['id', 'name'],
+      },
+      installedBy: {
+        type: ['object', 'null'],
+        properties: {
+          id: { type: 'number' },
+          name: { type: 'string' },
+        },
+        required: ['id', 'name'],
+      },
     },
-    required: ['id', 'name', 'version'],
+    required: ['id', 'name', 'version', 'isManaged', 'description', 'dateInstalled', 'dateLastUpdated', 'installedFrom', 'publisher', 'installedBy'],
   },
 }
 

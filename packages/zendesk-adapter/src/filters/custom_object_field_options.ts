@@ -19,11 +19,12 @@ import {
   ObjectType,
   InstanceElement,
   ElemID,
-  CORE_ANNOTATIONS, ReferenceExpression, BuiltinTypes,
+  CORE_ANNOTATIONS, ReferenceExpression, BuiltinTypes, isInstanceChange, isAdditionOrModificationChange, getChangeData,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
+import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import {
   CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
@@ -63,8 +64,9 @@ const isCustomObjectFieldOptions = (options: unknown): options is CustomObjectFi
 /**
  * Convert custom_field_options of custom_object_field to be instance elements
  * This is needed because 'extractStandaloneFields' doesn't support recurse into
+ * On deploy, parse 'custom_field_options' to values before deploy
  */
-const customObjectFieldOptionsFilter: FilterCreator = () => ({
+const customObjectFieldOptionsFilter: FilterCreator = ({ elementsSource }) => ({
   name: 'customObjectFieldOptionsFilter',
   onFetch: async (elements: Element[]) => {
     const customObjectFields = elements
@@ -94,6 +96,21 @@ const customObjectFieldOptionsFilter: FilterCreator = () => ({
       field.value.custom_field_options = instanceOptions.map(option => new ReferenceExpression(option.elemID, option))
       elements.push(...instanceOptions)
     })
+  },
+  preDeploy: async changes => {
+    const [customObjectFieldChanges, leftoverChanges] = _.partition(
+      changes,
+      change => isInstanceChange(change) && getChangeData(change).elemID.typeName === CUSTOM_OBJECT_FIELD_TYPE_NAME
+    )
+    const customObjectFieldOptionsByName = _.keyBy(
+      await getInstancesFromElementSource(elementsSource, [CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME]),
+      instance => instance.elemID.name
+    )
+
+    // TODO - convert to values
+  },
+  onDeploy: async changes => {
+    // TODO - convert to references
   },
 })
 

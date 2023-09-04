@@ -64,7 +64,7 @@ const fixElements: FixElementsFunc = async elements => {
     message: 'Fixed FullInst1.strField',
     detailedMessage: 'Removed FullInst1.strField',
     severity: 'Info',
-    fixedElement: fullInst1,
+    elemID: fullInst1.elemID,
   }]
 }
 

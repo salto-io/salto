@@ -207,7 +207,7 @@ export const createElementSelectors = (selectors: string[], caseInSensitive = fa
   }
 }
 
-const isTopLevelSelector = (selector: ElementSelector): boolean =>
+export const isTopLevelSelector = (selector: ElementSelector): boolean =>
   ElemID.fromFullName(selector.origin).isTopLevel()
 
 export const createTopLevelSelector = (selector: ElementSelector): ElementSelector => {

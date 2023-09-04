@@ -1604,15 +1604,19 @@ Moving the specified elements to common.
       })
       cliArgs = mocks.mockCliArgs()
       workspace = mocks.mockWorkspace({ getElements: () => [type] })
+      workspace.getValue.mockResolvedValue(type)
       fixElementsMock = fixElements as jest.Mock
       fixElementsMock.mockClear()
-      fixElementsMock.mockResolvedValue([])
+      fixElementsMock.mockResolvedValue({
+        fixedElements: [type],
+        fixes: [],
+      })
     })
 
     it('should do nothing where there are no fixes', async () => {
       const result = await fixElementsAction({
         ...mocks.mockCliCommandArgs(commandName, cliArgs),
-        input: {},
+        input: { selectors: [type.elemID.getFullName()] },
         workspace,
       })
 
@@ -1623,29 +1627,44 @@ Moving the specified elements to common.
         .toContain('Nothing to do.')
     })
 
+    it('should return an error for invalid selector', async () => {
+      const result = await fixElementsAction({
+        ...mocks.mockCliCommandArgs(commandName, cliArgs),
+        input: { selectors: ['a.b.c.d'] },
+        workspace,
+      })
+
+      expect(result).toBe(CliExitCode.UserInputError)
+    })
+
+    it('should return an error for non top level selector', async () => {
+      const result = await fixElementsAction({
+        ...mocks.mockCliCommandArgs(commandName, cliArgs),
+        input: { selectors: ['salto.type.attr.d'] },
+        workspace,
+      })
+
+      expect(result).toBe(CliExitCode.UserInputError)
+    })
+
     it('should apply the fixes to the workspace', async () => {
-      const typeWithFix1 = type.clone()
-      typeWithFix1.annotations.fix1 = 'fix1'
+      const typeWithFix = type.clone()
+      typeWithFix.annotations.fix1 = 'fix1'
 
-      const typeWithFix2 = type.clone()
-      typeWithFix2.annotations.fix2 = 'fix2'
-
-      fixElementsMock.mockResolvedValue([
-        {
-          fixedElement: typeWithFix1,
-          message: 'Fix1',
-          detailedMessage: 'Detailed fix1',
-        },
-        {
-          fixedElement: typeWithFix2,
-          message: 'Fix2',
-          detailedMessage: 'Detailed fix2',
-        },
-      ])
+      fixElementsMock.mockResolvedValue({
+        fixedElements: [typeWithFix],
+        fixes: [
+          {
+            elemID: typeWithFix.elemID,
+            message: 'Fix1',
+            detailedMessage: 'Detailed fix1',
+          },
+        ],
+      })
 
       const result = await fixElementsAction({
         ...mocks.mockCliCommandArgs(commandName, cliArgs),
-        input: {},
+        input: { selectors: [type.elemID.getFullName()] },
         workspace,
       })
 
@@ -1654,19 +1673,15 @@ Moving the specified elements to common.
         .toContain('Fix1')
       expect(cliArgs.output.stdout.content)
         .toContain('Detailed fix1')
-      expect(cliArgs.output.stdout.content)
-        .toContain('Fix2')
-      expect(cliArgs.output.stdout.content)
-        .toContain('Detailed fix2')
 
       expect(workspace.updateNaclFiles).toHaveBeenCalledWith([
         {
-          id: type.elemID.createNestedID('attr', 'fix2'),
+          id: type.elemID.createNestedID('attr', 'fix1'),
           action: 'add',
-          data: { after: 'fix2' },
+          data: { after: 'fix1' },
           elemIDs: {
-            before: type.elemID.createNestedID('attr', 'fix2'),
-            after: type.elemID.createNestedID('attr', 'fix2'),
+            before: type.elemID.createNestedID('attr', 'fix1'),
+            after: type.elemID.createNestedID('attr', 'fix1'),
           },
         },
       ])

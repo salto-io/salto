@@ -221,6 +221,10 @@ ${Prompts.ACCOUNT_ADD_HELP}`
     invalidFilters: string
   ): string => `Failed to created element ID filters for: ${invalidFilters}. Invalid Regex provided.`
 
+  public static readonly NON_TOP_LEVEL_FILTERS = (
+    invalidFilters: string
+  ): string => `Expected top level selectors, received: ${invalidFilters}.`
+
   public static readonly MISSING_ELEMENT_SELECTORS = 'No element selectors specified'
 
   public static readonly DIFF_CALC_DIFF_START = (

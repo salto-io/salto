@@ -192,12 +192,7 @@ export type ReferenceInfo = {
 
 export type GetCustomReferencesFunc = (elements: Element[]) => Promise<ReferenceInfo[]>
 
-export type ElementFix = Pick<ChangeError, 'message' | 'detailedMessage'> & {
-  severity: 'Info' | 'Warning'
-  fixedElement: Element
-}
-
-export type FixElementsFunc = (elements: Element[]) => Promise<ElementFix[]>
+export type FixElementsFunc = (elements: Element[]) => Promise<ChangeError[]>
 
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations

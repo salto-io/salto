@@ -34,13 +34,13 @@ import {
   ReferenceMapping,
   AccountInfo,
   isAdditionOrModificationChange,
-  ElementFix,
+  ChangeError,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises, collections, values } from '@salto-io/lowerdash'
-import { Workspace, ElementSelector, elementSource, expressions, merger } from '@salto-io/workspace'
+import { Workspace, ElementSelector, elementSource, expressions, merger, selectElementIdsByTraversal } from '@salto-io/workspace'
 import { EOL } from 'os'
 import {
   buildElementsSourceFromElements,
@@ -696,22 +696,11 @@ export const getAdditionalReferences = async (
     .filter(values.isDefined)
 }
 
-const getFixedElements = (
-  elements: Element[],
-  elementFixes: ElementFix[],
-): Element[] => {
-  const elementFixesByElemID = _.keyBy(
-    elementFixes.map(elementFix => elementFix.fixedElement),
-    element => element.elemID.getFullName()
-  )
-  return elements.map(element => elementFixesByElemID[element.elemID.getFullName()] ?? element)
-}
-
 const fixElementsContinuously = async (
   workspace: Workspace,
   elements: Element[],
   runsLeft: number
-): Promise<ElementFix[]> => {
+): Promise<ChangeError[]> => {
   log.debug(`Fixing elements. ${runsLeft} runs left.`)
 
   const accountToService = getAccountToServiceNameMap(workspace, workspace.accounts())
@@ -735,9 +724,8 @@ const fixElementsContinuously = async (
     .filter(values.isDefined)
 
   if (elementFixes.length > 0 && runsLeft > 0) {
-    const fixedElements = getFixedElements(elements, elementFixes)
     return elementFixes.concat(
-      await fixElementsContinuously(workspace, fixedElements, runsLeft - 1)
+      await fixElementsContinuously(workspace, elements, runsLeft - 1)
     )
   }
 
@@ -750,6 +738,16 @@ const fixElementsContinuously = async (
 
 export const fixElements = async (
   workspace: Workspace,
-  elements: Element[],
-): Promise<ElementFix[]> =>
-  fixElementsContinuously(workspace, elements, MAX_FIX_RUNS)
+  selectors: ElementSelector[],
+): Promise<{ fixes: ChangeError[]; fixedElements: Element[] }> => {
+  const relevantIds = await selectElementIdsByTraversal({
+    selectors,
+    source: await workspace.elements(),
+    referenceSourcesIndex: await workspace.getReferenceSourcesIndex(),
+  })
+  const elements = await awu(relevantIds).map(id => workspace.getValue(id)).toArray()
+
+  const clonedElements = elements.map(e => e.clone())
+  const fixes = await fixElementsContinuously(workspace, clonedElements, MAX_FIX_RUNS)
+  return { fixes, fixedElements: clonedElements }
+}

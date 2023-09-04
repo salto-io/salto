@@ -16,15 +16,15 @@
 import _ from 'lodash'
 import open from 'open'
 import { ElemID, isElement, CORE_ANNOTATIONS, isModificationChange } from '@salto-io/adapter-api'
-import { Workspace, ElementSelector, createElementSelectors, FromSource, selectElementIdsByTraversal, parser, nacl, staticFiles } from '@salto-io/workspace'
+import { Workspace, ElementSelector, createElementSelectors, FromSource, selectElementIdsByTraversal, parser, nacl, staticFiles, isTopLevelSelector } from '@salto-io/workspace'
 import { getEnvsDeletionsDiff, RenameElementIdError, rename, fixElements } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
-import { collections, promises } from '@salto-io/lowerdash'
+import { collections, promises, values } from '@salto-io/lowerdash'
 import { detailedCompare } from '@salto-io/adapter-utils'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
 import { CliOutput, CliExitCode, KeyedOption } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
-import { formatTargetEnvRequired, formatUnknownTargetEnv, formatInvalidEnvTargetCurrent, formatCloneToEnvFailed, formatInvalidFilters, formatMoveFailed, formatListFailed, emptyLine, formatListUnresolvedFound, formatListUnresolvedMissing, formatElementListUnresolvedFailed, formatChangeErrors } from '../formatter'
+import { formatTargetEnvRequired, formatUnknownTargetEnv, formatInvalidEnvTargetCurrent, formatCloneToEnvFailed, formatInvalidFilters, formatMoveFailed, formatListFailed, emptyLine, formatListUnresolvedFound, formatListUnresolvedMissing, formatElementListUnresolvedFailed, formatChangeErrors, formatNonTopLevelFilters } from '../formatter'
 import { isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
@@ -776,30 +776,52 @@ const printElementDef = createWorkspaceCommand({
   action: printElementAction,
 })
 
-export const fixElementsAction: WorkspaceCommandAction<EnvArg> = async ({
+type FixElementsArgs = {
+  selectors: string[]
+} & EnvArg
+
+export const fixElementsAction: WorkspaceCommandAction<FixElementsArgs> = async ({
   workspace,
   input,
   output,
 }) => {
-  await validateAndSetEnv(workspace, input, output)
-  const elementFixes = await fixElements(workspace, await awu(await (await workspace.elements()).getAll()).toArray())
+  const { validSelectors, invalidSelectors } = createElementSelectors(input.selectors)
+  if (!_.isEmpty(invalidSelectors)) {
+    errorOutputLine(formatInvalidFilters(invalidSelectors), output)
+    return CliExitCode.UserInputError
+  }
 
-  if (elementFixes.length === 0) {
+  const nonTopLevelSelectors = validSelectors.filter(selector => !isTopLevelSelector(selector))
+
+  if (!_.isEmpty(nonTopLevelSelectors)) {
+    errorOutputLine(formatNonTopLevelFilters(nonTopLevelSelectors.map(({ origin }) => origin)), output)
+    return CliExitCode.UserInputError
+  }
+
+  await validateAndSetEnv(workspace, input, output)
+
+
+  const relevantIds = await selectElementIdsByTraversal({
+    selectors: validSelectors,
+    source: await workspace.elements(),
+    referenceSourcesIndex: await workspace.getReferenceSourcesIndex(),
+  })
+
+  const elements = await awu(relevantIds)
+    .map(id => workspace.getValue(id))
+    .filter(values.isDefined)
+    .toArray()
+
+  const { fixedElements, fixes } = await fixElements(workspace, validSelectors)
+
+  if (fixes.length === 0) {
     outputLine(Prompts.EMPTY_PLAN, output)
     return CliExitCode.Success
   }
 
   const idToElement = _.keyBy(
-    await awu(await (await workspace.elements()).getAll()).toArray(),
+    elements,
     e => e.elemID.getFullName()
-  )
-
-  // We do Object.values and Object.fromEntries to take only the last
-  // element we got in case the same element was fixed more than once
-  const fixedElements = Object.values(
-    Object.fromEntries(
-      elementFixes.map(fix => fix.fixedElement).map(e => [e.elemID.getFullName(), e])
-    )
   )
 
   const changes = fixedElements
@@ -809,8 +831,8 @@ export const fixElementsAction: WorkspaceCommandAction<EnvArg> = async ({
     ))
 
   const errors = await promises.array.withLimitedConcurrency(
-    elementFixes
-      .map(fix => () => workspace.transformToWorkspaceError({ ...fix, elemID: fix.fixedElement.elemID })),
+    fixes
+      .map(fix => () => workspace.transformToWorkspaceError(fix)),
     20
   )
 
@@ -828,6 +850,13 @@ const fixElementsDef = createWorkspaceCommand({
     description: 'Apply a set of service specific fixes to the NaCls in the workspace',
     keyedOptions: [
       ENVIRONMENT_OPTION,
+    ],
+    positionalOptions: [
+      {
+        name: 'selectors',
+        type: 'stringsList',
+        required: true,
+      },
     ],
   },
   action: fixElementsAction,

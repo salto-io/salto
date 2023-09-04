@@ -99,7 +99,7 @@ const isValidRestrictionIds = (ids: unknown, groupInstancesById: Record<string, 
     id => isReferenceExpression(id) && (groupInstancesById[id.elemID.getFullName()]?.value.name !== undefined)
   )
 
-const orderMacroViewRestrictions = (instances: InstanceElement[]): void => {
+const orderMacroAndViewRestrictions = (instances: InstanceElement[]): void => {
   const relevantInstances = instances.filter(e => [MACRO_TYPE_NAME, VIEW_TYPE_NAME].includes(e.refType.elemID.name))
   const groupInstancesById = getInstanceByFullName(GROUP_TYPE_NAME, instances)
   relevantInstances.forEach(instance => {
@@ -223,7 +223,7 @@ const filterCreator: FilterCreator = () => ({
     const instances = elements.filter(isInstanceElement)
     orderDynamicContentItems(instances)
     orderTriggerDefinitions(instances)
-    orderMacroViewRestrictions(instances)
+    orderMacroAndViewRestrictions(instances)
     orderFormCondition(instances)
     orderViewCustomFields(instances)
   },

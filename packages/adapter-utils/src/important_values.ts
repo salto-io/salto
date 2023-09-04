@@ -38,7 +38,7 @@ const extractIAFromElement = ({
   importantValues: ImportantValues
   element: Element
   indexed?: boolean
-}) => {
+}): Values => {
   if (_.isEmpty(importantValues)) {
     return {}
   }
@@ -60,7 +60,7 @@ export const getImportantValues = async ({
   elementSource,
   indexed,
 }:{
-element: Element
+  element: Element
   elementSource?: ReadOnlyElementsSource
   indexed?: boolean
 }): Promise<Values> => {
@@ -70,7 +70,7 @@ element: Element
   }
   if (isField(element) || isInstanceElement(element)) {
     const typeObj = await element.getType(elementSource)
-    const importantValues = typeObj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES]
+    const importantValues = typeObj?.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES]
     return extractIAFromElement({ importantValues, element, indexed })
   }
   return {}

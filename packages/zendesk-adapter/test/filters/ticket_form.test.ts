@@ -304,7 +304,7 @@ describe('ticket form filter', () => {
           ticket_forms: clonedElement,
         }))
       const res = await filter.deploy([toChange({ before: clonedElement, after: clonedElement })])
-      expect(mockDeployChange).toHaveBeenCalledTimes(2)
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
       expect(mockDeployChange).toHaveBeenCalledWith({
         change: { action: 'modify', data: { before: fixedTicketForm, after: fixedTicketForm } },
         client: expect.anything(),
@@ -351,7 +351,7 @@ describe('ticket form filter', () => {
           ticket_forms: clonedElement,
         }))
       const res = await filter.deploy([toChange({ before: clonedElement, after: clonedElement })])
-      expect(mockDeployChange).toHaveBeenCalledTimes(2)
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
       expect(mockDeployChange).toHaveBeenCalledWith({
         change: { action: 'modify', data: { before: clonedElement, after: clonedElement } },
         client: expect.anything(),

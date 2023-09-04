@@ -130,12 +130,15 @@ const returnValidInstance = (inst: InstanceElement): InstanceElement => {
 
 // this function returns an instance that contains the removed field. This is because zendesk does not allow removing
 // field and condition at the same time
-const getChangeWithoutRemovedFields = (change: ModificationChange<InstanceElement>): InstanceElement => {
+const getChangeWithoutRemovedFields = (change: ModificationChange<InstanceElement>): InstanceElement | undefined => {
   const { before } = change.data
   const { after } = change.data
   const beforeFields: number[] = before.value.ticket_field_ids ?? []
   const afterFields = new Set(after.value.ticket_field_ids ?? [])
   const removedFields = beforeFields.filter(field => !afterFields.has(field))
+  if (_.isEmpty(removedFields)) {
+    return undefined
+  }
   const clonedInst = after.clone()
   clonedInst.value.ticket_field_ids = (clonedInst.value.ticket_field_ids ?? []).concat(removedFields)
   return clonedInst
@@ -169,11 +172,14 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
       allChanges,
       async change => {
         if (isModificationChange(change)) {
-          const intermediateChange = toChange(
-            { before: change.data.before, after: getChangeWithoutRemovedFields(change) }
-          )
-          // first deploy is without the removed fields
-          await deployChange(intermediateChange, client, config.apiDefinitions)
+          const newAfter = getChangeWithoutRemovedFields(change)
+          const intermediateChange = newAfter !== undefined
+            ? toChange({ before: change.data.before, after: newAfter })
+            : undefined
+          if (intermediateChange !== undefined) {
+            // first deploy is without the removed fields
+            await deployChange(intermediateChange, client, config.apiDefinitions)
+          }
         }
         await deployChange(change, client, config.apiDefinitions)
       }

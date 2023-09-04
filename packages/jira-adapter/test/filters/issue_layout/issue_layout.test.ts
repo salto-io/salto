@@ -117,6 +117,7 @@ describe('issue layout filter', () => {
         elemID: new ElemID(JIRA, PROJECT_TYPE),
         fields: {
           id: { refType: BuiltinTypes.NUMBER },
+          simplified: { refType: BuiltinTypes.BOOLEAN },
           issueTypeScreenScheme: { refType: issueTypeScreenSchemeType },
         },
       })
@@ -126,6 +127,8 @@ describe('issue layout filter', () => {
         {
           id: 11111,
           name: 'project1',
+          simplified: false,
+          projectTypeKey: 'software',
           issueTypeScreenScheme:
           new ReferenceExpression(issueTypeScreenSchemeInstance.elemID, issueTypeScreenSchemeInstance),
         },
@@ -171,19 +174,6 @@ describe('issue layout filter', () => {
                 issueLayoutResult: {
                   id: '2',
                   name: 'Default Issue Layout',
-                  usageInfo: {
-                    edges: [{
-                      node: {
-                        layoutOwners: [{
-                          avatarId: '3',
-                          description: 'ownerTest',
-                          iconUrl: 'www.icon.com',
-                          id: '100',
-                          name: 'ownerTest',
-                        }],
-                      },
-                    }],
-                  },
                   containers: [
                     {
                       containerType: 'PRIMARY',
@@ -236,8 +226,6 @@ describe('issue layout filter', () => {
         .toEqual([
           'jira.Field',
           'jira.IssueLayout',
-          'jira.IssueLayoutDataOwner',
-          'jira.IssueLayoutOwner',
           'jira.IssueType',
           'jira.IssueTypeScreenScheme',
           'jira.IssueTypeScreenSchemeItem',
@@ -258,9 +246,6 @@ describe('issue layout filter', () => {
         id: '2',
         projectId: new ReferenceExpression(projectInstance.elemID, projectInstance),
         extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
-        owners: [
-          new ReferenceExpression(issueTypeInstance.elemID, issueTypeInstance),
-        ],
         issueLayoutConfig: {
           items: [
             {
@@ -321,19 +306,6 @@ describe('issue layout filter', () => {
                 issueLayoutResult: {
                   id: '2',
                   name: 'Default Issue Layout',
-                  usageInfo: {
-                    edges: [{
-                      node: {
-                        layoutOwners: [{
-                          avatarId: '3',
-                          description: 'ownerTest',
-                          iconUrl: 'www.icon.com',
-                          id: '100',
-                          name: 'ownerTest',
-                        }],
-                      },
-                    }],
-                  },
                   containers: [
                     {
                       containerType: 'PRIMARY',
@@ -422,9 +394,6 @@ describe('issue layout filter', () => {
           id: '2',
           projectId: new ReferenceExpression(projectInstance.elemID, projectInstance),
           extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
-          owners: [
-            new ReferenceExpression(issueTypeInstance.elemID, issueTypeInstance),
-          ],
           issueLayoutConfig: {
             items: [
               {
@@ -453,9 +422,6 @@ describe('issue layout filter', () => {
         {
           projectId: new ReferenceExpression(projectInstance.elemID, projectInstance),
           extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
-          owners: [
-            new ReferenceExpression(issueTypeInstance.elemID, issueTypeInstance),
-          ],
           issueLayoutConfig: {
             items: [
               {
@@ -591,9 +557,6 @@ describe('issue layout filter', () => {
         {
           projectId: 11111,
           extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
-          owners: [
-            new ReferenceExpression(issueTypeInstance.elemID, issueTypeInstance),
-          ],
           issueLayoutConfig: {
             items: [
               {

@@ -279,10 +279,10 @@ Annotations can be of any primitive type, as well as complex types.
 Currently the following core annotations are supported:
 - [_required](#_required)
 - [_restriction](#_restriction)
-- [_hidden / _hidden_value](#_hidden-_hidden_value)
+- [_hidden / _hidden_value](#_hidden--_hidden_value)
 - [_parent](#_parent)
 - [_alias](#_alias)
-- [_generated_dependencies / _depends_on](#_generated_dependencies-_depends_on)
+- [_generated_dependencies / _depends_on](#_generated_dependencies--_depends_on)
 - [_service_url](#_service_url)
 - [_is_service_id](#_is_service_id)
 - [_created_by](#_created_by)
@@ -293,7 +293,7 @@ Currently the following core annotations are supported:
 - [_updatable](#_changed_by)
 - [_deletable](#_changed_at)
 - [_additional_properties](#_additional_properties)
-- [_important_values / _self_important_values](#_important_values-_self_important_values)
+- [_important_values / _self_important_values](#_important_values--_self_important_values)
 
 #### `_required`
 This annotation is used on field blocks to specify that an instance must contain a value for this field.
@@ -351,7 +351,7 @@ type salto.example_type {
 }
 ```
 
-#### _hidden / _hidden_value
+#### `_hidden` / `_hidden_value`
 These annotations are used to control which values appear in NaCl files and which are "hidden".
 hidden values are still part of the Salto element graph, but will not be represented in NaCl.
 
@@ -389,7 +389,7 @@ salto.example example_instance {
 
 ```
 
-#### _parent
+#### `_parent`
 This is an annotation that can hold references to other elements to represent a parent-child relationship
 
 Type: `List<reference>`
@@ -421,7 +421,7 @@ salto.example child2 {
 }
 ```
 
-#### _alias
+#### `_alias`
 
 This annotation is used to define a user-friendly alias for the element. The alias can be used in Salto enabled editors to display a shorter, clearer element name to users. Unlike the element ID, it does not have to be unique.
 
@@ -437,10 +437,10 @@ _alias = "Example Instance"
 }
 ```
 
-#### _important_values / _self_important_values
+#### `_important_values` / `_self_important_values`
 
 This annotation is used to define what are these element's most important values. This list will be used in Salto enabled editors to highlight more important parts of the element, and index some of them for easy searchability. The list should include objects with the key of the element's important values and if it is indexed.
-Type: `string` Default: `undefined` Applicable to: Types
+Type: `String` Default: `undefined` Applicable to: Types
 Example:
 ```HCL
 type salto.example {
@@ -460,7 +460,7 @@ type salto.example {
 ```
 
 
-#### _generated_dependencies / _depends_on
+#### `_generated_dependencies` / `_depends_on`
 These are place holders for additional references from one element to another.
 They are needed for cases where the dependency is not derived directly from the configuration.
 
@@ -487,11 +487,11 @@ type salto.example {
 }
 ```
 
-#### _service_url
+#### `_service_url`
 This is a hidden annotation (will not be seen in NaCl) that is used to store a URL for an element.
 Elements that have this annotation can support the "Go To Service" feature in Salto enabled editors.
 
-#### _is_service_id
+#### `_is_service_id`
 This boolean annotation is used to identify fields or types as ServiceId. a ServiceId is a value that denotes an ID in the service (used by adapters to distinguish ID fields from other fields). 
 
 Type: `boolean`
@@ -511,7 +511,7 @@ type salto.example {
 ```
 
 
-#### _created_by
+#### `_created_by`
 This is a hidden string annotation (will not be seen in NaCl) that is used to store a name of the user who created this element.\
 
 Type: `string`
@@ -530,7 +530,7 @@ type salto.example {
   }
 }
 ```
-#### _created_at
+#### `_created_at`
 This is a hidden string annotation (will not be seen in NaCl) that is used to store the time the element was created.
 The time format is ISO-8601
 
@@ -551,7 +551,7 @@ type salto.example {
 }
 ```
 
-#### _changed_by
+#### `_changed_by`
 This is a hidden string annotation (will not be seen in NaCl) that is used to store a name of the user who last changed this element.
 
 Type: `string`
@@ -571,7 +571,7 @@ type salto.example {
 }
 ```
 
-#### _changed_at
+#### `_changed_at`
 This is a hidden string annotation (will not be seen in NaCl) that is used to store the last time this element was changed.
 The time format is ISO-8601
 
@@ -592,7 +592,7 @@ type salto.example {
 }
 ```
 
-#### _creatable
+#### `_creatable`
 This is a hidden boolean annotation (will not be seen in NaCl) that is used to set whether creating instances of a type or certain value in it is supported.
 
 Type: `boolean`
@@ -629,7 +629,7 @@ salto.example invalid {
 }
 ```
 
-#### _updatable
+#### `_updatable`
 This is a hidden boolean annotation (will not be seen in NaCl) that is used to set whether a modification of an instance or a certain value in an instance is supported.
 
 Type: `boolean`
@@ -711,7 +711,7 @@ salto.notUpdatable invalid {
 }
 ```
 
-#### _deletable
+#### `_deletable`
 This is a hidden boolean annotation (will not be seen in NaCl) that is used to set whether a deletion of an instance is supported.
 
 Type: `boolean`

@@ -194,7 +194,9 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
     }
     return { deployResult, leftoverChanges }
   },
-  // this onDeploy filter should be temporary and deleted once SALTO-4726 is implemented
+  // this onDeploy filter should be temporary and deleted once SALTO-4726 is implemented. This is because when
+  // custom_status ticket_field does not exist in the env and is referenced by a form, it is removed from the form and
+  // the deploy fails due to summarizeDeployChanges. This onDeploy filter restores ticket_field_ids to its initial state
   onDeploy: async (changes: Change<InstanceElement>[]) => {
     const ticketFormChanges = changes
       .filter(isAdditionOrModificationChange)
@@ -224,7 +226,6 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
       .map(async id => {
         const form = await elementsSource.get(id)
         if (!isInstanceElement(form)) {
-          log.error(`could not find in the elementsSource a form with name ${id.name} `)
           return [id.getFullName(), undefined]
         }
         const ticketFieldIds = form.value.ticket_field_ids // the references are unresolved

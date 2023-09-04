@@ -478,7 +478,7 @@ describe('ticket form filter', () => {
       const clonedForm = formToDeploy.clone()
       await filter.onDeploy([toChange({ after: clonedForm })])
       expect(clonedForm.value.ticket_field_ids).toEqual(formToDeploy.value.ticket_field_ids)
-      expect(mockLogError).toHaveBeenCalledWith(`could not find in the elementsSource a form with name ${clonedForm.elemID.name} `)
+      expect(mockLogError).toHaveBeenCalledWith(`could not find ticketFieldIds for form ${clonedForm.elemID.name}`)
     })
     it('should do nothing if ticket_field_ids is undefined', async () => {
       const clonedElementSourceForm = elementSourceForm.clone()

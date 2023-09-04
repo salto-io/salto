@@ -440,7 +440,11 @@ _alias = "Example Instance"
 #### `_important_values` / `_self_important_values`
 
 This annotation is used to define what are these element's most important values. This list will be used in Salto enabled editors to highlight more important parts of the element, and index some of them for easy searchability. The list should include objects with the key of the element's important values and if it is indexed.
-Type: `String` Default: `undefined` Applicable to: Types
+Type: `Array` of objects of type
+- value: `string` - The name of the important value.
+- indexed: `boolean` - Specifies if the value is index for easy searchability.
+
+Default: `undefined` Applicable to: Types
 Example:
 ```HCL
 type salto.example {

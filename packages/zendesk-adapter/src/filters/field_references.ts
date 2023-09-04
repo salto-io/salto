@@ -141,15 +141,12 @@ const neighborReferenceUserAndOrgFieldLookupFunc: GetLookupNameFunc = async ({ r
     if (ref.elemID.typeName === ORG_FIELD_TYPE_NAME) {
       return ORG_FIELD_OPTION_TYPE_NAME
     }
-    if (ref.elemID.typeName === TICKET_FIELD_TYPE_NAME) {
-      return TICKET_FIELD_OPTION_TYPE_NAME
-    }
   }
   return undefined
 }
 
 const neighborReferenceUserAndOrgFieldLookupType: referenceUtils.ContextValueMapperFunc = val => (
-  [USER_FIELD_OPTION_TYPE_NAME, ORG_FIELD_OPTION_TYPE_NAME, TICKET_FIELD_OPTION_TYPE_NAME].includes(val)
+  [USER_FIELD_OPTION_TYPE_NAME, ORG_FIELD_OPTION_TYPE_NAME].includes(val)
     ? val
     : undefined
 )

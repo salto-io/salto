@@ -194,6 +194,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
     }
     return { deployResult, leftoverChanges }
   },
+  // this onDeploy filter should be temporary and deleted once SALTO-4726 is implemented
   onDeploy: async (changes: Change<InstanceElement>[]) => {
     const ticketFormChanges = changes
       .filter(isAdditionOrModificationChange)

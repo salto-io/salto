@@ -107,6 +107,80 @@ describe('ticket form filter', () => {
     },
   )
 
+  describe('deploy of removal of field and its condition', () => {
+    beforeEach(async () => {
+      jest.clearAllMocks()
+      filter = filterCreator(createFilterCreatorParams({ elementsSource: createElementSource(true) })) as FilterType
+    })
+    it('should deploy modification change with removal of conditions and field', async () => {
+      const beforeTicketForm = new InstanceElement(
+        'test',
+        ticketFormType,
+        {
+          ticket_field_ids: [
+            1,
+            11,
+            123,
+            1234,
+          ],
+          agent_conditions: [
+            {
+              parent_field_id: 123,
+              child_fields: [
+                {
+                  id: 1234,
+                },
+              ],
+            },
+          ],
+          end_user_conditions: [
+            {
+              parent_field_id: 123,
+              child_fields: [
+                {
+                  id: 1234,
+                },
+              ],
+            },
+          ],
+        },
+      )
+      const afterTicketForm = beforeTicketForm.clone()
+      afterTicketForm.value.ticket_field_ids = [1, 11]
+      afterTicketForm.value.agent_conditions = []
+      afterTicketForm.value.end_user_conditions = []
+
+      const intermediateTicketForm = beforeTicketForm.clone()
+      intermediateTicketForm.value.ticket_field_ids = [1, 11, 123, 1234]
+      intermediateTicketForm.value.agent_conditions = []
+      intermediateTicketForm.value.end_user_conditions = []
+
+      mockDeployChange
+        .mockImplementation(async () => ({
+          ticket_forms: afterTicketForm,
+        }))
+      const res = await filter.deploy([toChange({ before: beforeTicketForm, after: afterTicketForm })])
+      expect(mockDeployChange).toHaveBeenCalledTimes(2)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: beforeTicketForm, after: intermediateTicketForm } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        undefined,
+      })
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: beforeTicketForm, after: afterTicketForm } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        undefined,
+      })
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges)
+        .toEqual([toChange({ before: beforeTicketForm, after: afterTicketForm })])
+    })
+  })
+
   describe('deploy with custom_statuses enabled', () => {
     beforeEach(async () => {
       jest.clearAllMocks()

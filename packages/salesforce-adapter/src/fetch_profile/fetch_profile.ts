@@ -41,6 +41,7 @@ type OptionalFeaturesDefaultValues = {
 const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   fetchProfilesUsingReadApi: false,
   generateRefsInProfiles: false,
+  toolingDepsOfCurrentNamespace: false,
 }
 
 type BuildFetchProfileParams = {

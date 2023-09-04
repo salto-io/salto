@@ -49,40 +49,67 @@ type DependencyGroup = {
 
 /**
  * Get a list of known dependencies between metadata components.
- *
- * @param client  The client to use to run the query
  */
-const getDependencies = async (client: SalesforceClient): Promise<DependencyGroup[]> => {
+
+
+const createQueries = (
+  whereClauses: string[],
+  toolingDepsOfCurrentNamespace: boolean,
+  orgNamespace: string | undefined
+): string[] => {
+  const baseQueries = whereClauses.map(clause => `SELECT 
+    MetadataComponentId, MetadataComponentType, MetadataComponentName, 
+    RefMetadataComponentId, RefMetadataComponentType, RefMetadataComponentName 
+  FROM MetadataComponentDependency WHERE ${clause}`)
+  if (!toolingDepsOfCurrentNamespace) {
+    return baseQueries
+  }
+  const nonNamespaceDepsQueries = baseQueries.map(query => `${query} AND MetadataComponentNamespacePrefix = '${orgNamespace}'`)
+  const namespaceDepsQueries = baseQueries.map(query => `${query} AND MetadataComponentNamespacePrefix != '${orgNamespace}'`)
+  return nonNamespaceDepsQueries.concat(namespaceDepsQueries)
+}
+
+const getDependencies = async (
+  client: SalesforceClient,
+  toolingDepsOfCurrentNamespace: boolean,
+): Promise<DependencyGroup[]> => {
   const allTypes = REFERENCING_TYPES_TO_FETCH_INDIVIDUALLY.map(t => `'${t}'`).join(', ')
   const whereClauses = [
     ...REFERENCING_TYPES_TO_FETCH_INDIVIDUALLY.map(t => `MetadataComponentType='${t}'`),
     `MetadataComponentType NOT IN (${allTypes})`,
   ]
-  const allQueries = whereClauses.map(clause => `SELECT 
-    MetadataComponentId, MetadataComponentType, MetadataComponentName, 
-    RefMetadataComponentId, RefMetadataComponentType, RefMetadataComponentName 
-  FROM MetadataComponentDependency WHERE ${clause}`)
+  const allQueries = createQueries(whereClauses, toolingDepsOfCurrentNamespace, client.orgNamespace)
   const allDepsIters = await Promise.all(allQueries.map(q => client.queryAll(q, true)))
 
+  const queriesRecordsCount: number[] = []
   const allDepsResults = allDepsIters.map(iter => collections.asynciterable.mapAsync(
     iter,
-    recs => recs.map(rec => ({
-      from: {
-        type: rec.MetadataComponentType,
-        id: rec.MetadataComponentId,
-        name: rec.MetadataComponentName,
-      },
-      to: {
-        type: rec.RefMetadataComponentType,
-        id: rec.RefMetadataComponentId,
-        name: rec.RefMetadataComponentName,
-      },
-    }))
+    recs => {
+      queriesRecordsCount.push(recs.length)
+      return recs.map(rec => ({
+        from: {
+          type: rec.MetadataComponentType,
+          id: rec.MetadataComponentId,
+          name: rec.MetadataComponentName,
+        },
+        to: {
+          type: rec.RefMetadataComponentType,
+          id: rec.RefMetadataComponentId,
+          name: rec.RefMetadataComponentName,
+        },
+      }))
+    }
   ))
 
   const deps = (await Promise.all(allDepsResults.map(
     async res => (await collections.asynciterable.toArrayAsync(res)).flat()
   ))).flat()
+
+  log.debug('extra dependencies queries info: %o', {
+    queries: allQueries,
+    counts: queriesRecordsCount,
+  })
+
   return _.values(
     _.groupBy(deps, dep => Object.entries(dep.from))
   ).map(depArr => ({
@@ -196,7 +223,7 @@ const creator: RemoteFilterCreator = ({ client, config }) => ({
     config,
     filterName: 'extraDependencies',
     fetchFilterFunc: async (elements: Element[]) => {
-      const groupedDeps = await getDependencies(client)
+      const groupedDeps = await getDependencies(client, config.fetchProfile.isFeatureEnabled('toolingDepsOfCurrentNamespace'))
       const fetchedElements = buildElementsSourceFromElements(elements)
       const allElements = buildElementsSourceForFetch(elements, config)
 

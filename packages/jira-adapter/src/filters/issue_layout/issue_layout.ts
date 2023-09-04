@@ -37,7 +37,7 @@ type issueTypeMappingStruct = {
     screenSchemeId: ReferenceExpression
 }
 
-const isIssueLayoutResponse = createSchemeGuard<IssueLayoutResponse>(ISSUE_LAYOUT_RESPONSE_SCHEME, 'Failed to get issue layout from jira service')
+const isIssueLayoutResponse = createSchemeGuard<IssueLayoutResponse>(ISSUE_LAYOUT_RESPONSE_SCHEME)
 const isIssueLayoutConfigItem = createSchemeGuard<IssueLayoutConfigItem>(ISSUE_LAYOUT_CONFIG_ITEM_SCHEME)
 
 const getIssueLayout = async ({
@@ -171,13 +171,15 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) =>
       || !config.fetch.enableIssueLayouts) {
       return
     }
-    const projectToScreenId = await getProjectToScreenMapping(elements)
     const projectIdToProject = Object.fromEntries(
       (await Promise.all(elements.filter(e => e.elemID.typeName === PROJECT_TYPE)
         .filter(isInstanceElement)
+        .filter(project => project.value.simplified === false && project.value.projectTypeKey === 'software')
         .map(async project => [project.value.id, project])))
         .filter(isDefined)
     )
+    const projectToScreenId = Object.fromEntries(Object.entries(await getProjectToScreenMapping(elements))
+      .filter(([key]) => Object.keys(projectIdToProject).includes(key)))
     const { issueLayoutType, subTypes } = createIssueLayoutType()
     elements.push(issueLayoutType)
     subTypes.forEach(type => elements.push(type))
@@ -196,7 +198,6 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) =>
             id: issueLayoutResult.id,
             projectId,
             extraDefinerId: screenId,
-            owners: issueLayoutResult.usageInfo.edges[0].node.layoutOwners.map(owner => owner.id),
             issueLayoutConfig: fromIssueLayoutConfigRespToIssueLayoutConfig(containers),
           }
           const name = `${projectIdToProject[projectId].value.name}_${issueLayoutResult.name}`
@@ -214,7 +215,6 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) =>
           setTypeDeploymentAnnotations(issueLayoutType)
           await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.CREATABLE)
           await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.UPDATABLE)
-          issueLayoutType.fields.owners.annotations[CORE_ANNOTATIONS.UPDATABLE] = false
           await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.DELETABLE)
         }
       })))

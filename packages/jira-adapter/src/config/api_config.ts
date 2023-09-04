@@ -838,13 +838,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'fieldContexts', fieldType: `list<${FIELD_CONTEXT_TYPE_NAME}>` },
       ],
       fieldsToHide: [
-        {
-          fieldName: 'id',
-        },
+        { fieldName: 'id' },
+        { fieldName: 'simplified' },
       ],
       fieldsToOmit: [
         { fieldName: 'style' },
-        { fieldName: 'simplified' },
         { fieldName: 'isPrivate' },
         { fieldName: 'expand' },
         { fieldName: 'archived' },

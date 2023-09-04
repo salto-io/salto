@@ -13,19 +13,29 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, Field, ObjectType } from '@salto-io/adapter-api'
+import {
+  CORE_ANNOTATIONS,
+  Element,
+  Field,
+  ObjectType,
+} from '@salto-io/adapter-api'
 import { FileProperties } from 'jsforce-types'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
 import { CUSTOM_FIELD, CUSTOM_OBJECT } from '../../constants'
-import { apiName, getAuthorAnnotations, isCustomObject } from '../../transformers/transformer'
+import { getAuthorAnnotations, MetadataInstanceElement } from '../../transformers/transformer'
 import { RemoteFilterCreator } from '../../filter'
 import SalesforceClient from '../../client/client'
-import { ensureSafeFilterFetch } from '../utils'
-
-const { awu } = collections.asynciterable
-type AwuIterable<T> = collections.asynciterable.AwuIterable<T>
+import {
+  apiNameSync,
+  ensureSafeFilterFetch,
+  getAuthorInformationFromFileProps,
+  getElementAuthorInformation,
+  isCustomObjectSync,
+  isElementWithParent,
+  isMetadataInstanceElementSync, metadataTypeSync,
+} from '../utils'
+import { NESTED_INSTANCE_VALUE_TO_TYPE_NAME } from '../custom_objects_to_object_type'
 
 type FilePropertiesMap = Record<string, FileProperties>
 type FieldFileNameParts = {fieldName: string; objectName: string}
@@ -51,17 +61,6 @@ const addAuthorAnnotationsToField = (
   Object.assign(field.annotations, getAuthorAnnotations(fileProperties))
 }
 
-const addAuthorAnnotationsToFields = (
-  fileProperties: FilePropertiesMap,
-  object: ObjectType
-): void => {
-  Object.values(fileProperties)
-    .forEach(fileProp => addAuthorAnnotationsToField(
-      fileProp,
-      getObjectFieldByFileProperties(fileProp, object)
-    ))
-}
-
 const getCustomObjectFileProperties = async (client: SalesforceClient):
   Promise<FilePropertiesMap> => {
   const { result, errors } = await client.listMetadataObjects({ type: CUSTOM_OBJECT })
@@ -82,20 +81,51 @@ const getCustomFieldFileProperties = async (client: SalesforceClient):
       (fileProps:FileProperties) => getFieldNameParts(fileProps).fieldName)).value()
 }
 
-const objectAuthorInformationSupplier = async (
-  customTypeFilePropertiesMap: FilePropertiesMap,
-  customFieldsFilePropertiesMap: Record<string, FilePropertiesMap>,
+type ObjectAuthorInformationSupplierArgs = {
   object: ObjectType
-): Promise<void> => {
-  const objectApiName = await apiName(object)
-  if (objectApiName in customTypeFilePropertiesMap) {
-    Object.assign(object.annotations,
-      getAuthorAnnotations(customTypeFilePropertiesMap[objectApiName]))
-  }
-  if (objectApiName in customFieldsFilePropertiesMap) {
-    addAuthorAnnotationsToFields(customFieldsFilePropertiesMap[objectApiName], object)
+  typeFileProperties: FileProperties
+  customFieldsFileProperties: FileProperties[]
+  nestedInstances: MetadataInstanceElement[]
+}
+
+const setObjectAuthorInformation = (
+  {
+    object,
+    typeFileProperties,
+    customFieldsFileProperties,
+    nestedInstances,
+  }: ObjectAuthorInformationSupplierArgs
+): void => {
+  // Set author information on the CustomObject's fields
+  Object.values(customFieldsFileProperties)
+    .forEach(fileProp => addAuthorAnnotationsToField(fileProp, getObjectFieldByFileProperties(fileProp, object)))
+  // Set the latest AuthorInformation on the CustomObject
+  const allAuthorInformation = [getAuthorInformationFromFileProps(typeFileProperties)]
+    .concat(customFieldsFileProperties.map(getAuthorInformationFromFileProps))
+    .concat(nestedInstances.map(getElementAuthorInformation))
+  const mostRecentAuthorInformation = _.maxBy(
+    allAuthorInformation,
+    authorInfo => (
+      authorInfo.changedAt !== undefined
+        ? new Date(authorInfo.changedAt).getTime()
+        : undefined
+    )
+  )
+  if (mostRecentAuthorInformation) {
+    object.annotations[CORE_ANNOTATIONS.CHANGED_BY] = mostRecentAuthorInformation.changedBy
+    object.annotations[CORE_ANNOTATIONS.CHANGED_AT] = mostRecentAuthorInformation.changedAt
+    object.annotations[CORE_ANNOTATIONS.CREATED_BY] = mostRecentAuthorInformation.createdBy
+    object.annotations[CORE_ANNOTATIONS.CREATED_AT] = mostRecentAuthorInformation.createdAt
   }
 }
+
+const CUSTOM_OBJECT_SUB_INSTANCES_METADATA_TYPES: Set<string> = new Set(
+  Object.values(NESTED_INSTANCE_VALUE_TO_TYPE_NAME)
+)
+
+const isCustomObjectSubInstance = (instance: MetadataInstanceElement): boolean => (
+  CUSTOM_OBJECT_SUB_INSTANCES_METADATA_TYPES.has(metadataTypeSync(instance))
+)
 
 export const WARNING_MESSAGE = 'Encountered an error while trying to populate author information in some of the Salesforce configuration elements.'
 
@@ -112,12 +142,35 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     fetchFilterFunc: async (elements: Element[]) => {
       const customTypeFilePropertiesMap = await getCustomObjectFileProperties(client)
       const customFieldsFilePropertiesMap = await getCustomFieldFileProperties(client)
-      await (awu(elements)
-        .filter(isCustomObject) as AwuIterable<ObjectType>)
-        .forEach(async object => {
-          await objectAuthorInformationSupplier(customTypeFilePropertiesMap,
-            customFieldsFilePropertiesMap,
-            object)
+      const instancesByParent = _.groupBy(
+        elements
+          .filter(isMetadataInstanceElementSync)
+          .filter(isElementWithParent),
+        instance => {
+          const [parent] = instance.annotations[CORE_ANNOTATIONS.PARENT]
+          return apiNameSync(parent.value)
+        }
+      )
+
+      elements
+        .filter(isCustomObjectSync)
+        .forEach(object => {
+          const typeFileProperties = customTypeFilePropertiesMap[apiNameSync(object) ?? '']
+          if (typeFileProperties === undefined) {
+            log.warn(`Not adding author information on the CustomObject ${apiNameSync(object)} and it's fields because it has no file properties`)
+            return
+          }
+          const fieldsPropertiesMap = customFieldsFilePropertiesMap[apiNameSync(object) ?? '']
+          if (fieldsPropertiesMap === undefined) {
+            log.warn(`Not adding author information on the CustomObject ${apiNameSync(object)} and it's fields because it's fields has no file properties`)
+            return
+          }
+          setObjectAuthorInformation({
+            object,
+            typeFileProperties,
+            customFieldsFileProperties: Object.values(fieldsPropertiesMap),
+            nestedInstances: instancesByParent[apiNameSync(object) ?? ''].filter(isCustomObjectSubInstance) ?? [],
+          })
         })
     },
   }),

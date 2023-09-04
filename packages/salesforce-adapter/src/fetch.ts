@@ -32,7 +32,7 @@ import {
   FOLDER_CONTENT_TYPE,
   INSTALLED_PACKAGE_METADATA,
   API_NAME_SEPARATOR,
-  PROFILE_METADATA_TYPE,
+  PROFILE_METADATA_TYPE, CUSTOM_FIELD,
 } from './constants'
 import SalesforceClient, { ErrorFilter } from './client/client'
 import {
@@ -44,6 +44,7 @@ import {
 import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements, getAuthorAnnotations } from './transformers/transformer'
 import { fromRetrieveResult, toRetrieveRequest, getManifestTypeName } from './transformers/xml_transformer'
 import { MetadataQuery } from './fetch_profile/metadata_query'
+import { NESTED_INSTANCE_TYPE_NAME } from './filters/custom_objects_to_object_type'
 
 const { isDefined } = lowerDashValues
 const { makeArray, splitDuplicates } = collections.array
@@ -136,14 +137,19 @@ export const listMetadataObjects = async (
 const getNamespace = (obj: FileProperties): string => (
   obj.namespacePrefix === undefined || obj.namespacePrefix === '' ? DEFAULT_NAMESPACE : obj.namespacePrefix
 )
-export const notInSkipList = (metadataQuery: MetadataQuery, file: FileProperties, isFolderType: boolean): boolean => (
+export const notInSkipList = (
+  metadataQuery: MetadataQuery,
+  file: FileProperties,
+  isFolderType: boolean,
+  customObjectSubInstancesPropsByParent?: Record<string, FileProperties[]>
+): boolean => (
   metadataQuery.isInstanceMatch({
     namespace: getNamespace(file),
     metadataType: file.type,
     name: file.fullName,
     isFolderType,
     changedAt: file.lastModifiedDate,
-  })
+  }, customObjectSubInstancesPropsByParent)
 )
 
 const listMetadataObjectsWithinFolders = async (
@@ -480,12 +486,27 @@ export const retrieveMetadataInstances = async ({
     return contextInstances.concat(Object.values(profileInstances))
   }
 
+  const retrieveCustomObjectSubInstancesPropsByParent = async (): Promise<Record<string, FileProperties[]>> => {
+    const allSubInstancesFileProps = _.flatten(await Promise.all(
+      [
+        ...Object.values(NESTED_INSTANCE_TYPE_NAME),
+        CUSTOM_FIELD,
+      ].map(typeName => listMetadataObjects(client, typeName))
+    )).flatMap(result => result.elements)
+    return _.groupBy(
+      allSubInstancesFileProps,
+      fileProp => fileProp.fullName.split('.')[0],
+    )
+  }
+
+  const customObjectSubInstancesPropsByParent = await retrieveCustomObjectSubInstancesPropsByParent()
+
   const filesToRetrieve = _.flatten(await Promise.all(
     types
       // We get folders as part of getting the records inside them
       .filter(type => type.annotations.folderContentType === undefined)
       .map(listFilesOfType)
-  )).filter(props => notInSkipList(metadataQuery, props, false))
+  )).filter(props => notInSkipList(metadataQuery, props, false, customObjectSubInstancesPropsByParent))
 
   // Avoid sending empty requests for types that had no instances that were changed from the previous fetch
   // This is a common case for fetchWithChangesDetection mode for types that had no changes on their instances

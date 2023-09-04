@@ -43,7 +43,7 @@ import {
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements, createSchemeGuard, getParents } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
-import { chunks, collections } from '@salto-io/lowerdash'
+import { chunks, collections, types } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import SalesforceClient from '../client/client'
 import { INSTANCE_SUFFIXES, OptionalFeatures } from '../types'
@@ -91,15 +91,15 @@ export const isMetadataValues = createSchemeGuard<MetadataValues>(METADATA_VALUE
 // This function checks whether an element is an instance of a certain metadata type
 // note that for instances of custom objects this will check the specific type (i.e Lead)
 // if you want instances of all custom objects use isInstanceOfCustomObject
-export const isInstanceOfType = (...types: string[]) => (
+export const isInstanceOfType = (...typeNames: string[]) => (
   async (elem: Element): Promise<boolean> => (
-    isInstanceElement(elem) && types.includes(await apiName(await elem.getType()))
+    isInstanceElement(elem) && typeNames.includes(await apiName(await elem.getType()))
   )
 )
 
-export const isInstanceOfTypeChange = (...types: string[]) => (
+export const isInstanceOfTypeChange = (...typeNames: string[]) => (
   (change: Change): Promise<boolean> => (
-    isInstanceOfType(...types)(getChangeData(change))
+    isInstanceOfType(...typeNames)(getChangeData(change))
   )
 )
 
@@ -118,7 +118,7 @@ export const metadataTypeSync = (element: Readonly<Element>): string => {
   }
   return element.annotations[METADATA_TYPE] || 'unknown'
 }
-export const isCustomObjectSync = (element: Readonly<Element>): boolean => {
+export const isCustomObjectSync = (element: Readonly<Element>): element is ObjectType => {
   const res = isObjectType(element)
     && metadataTypeSync(element) === CUSTOM_OBJECT
     // The last part is so we can tell the difference between a custom object
@@ -506,3 +506,35 @@ export const getChangedAtSingleton = async (
   const element = await elementsSource.get(new ElemID(SALESFORCE, CHANGED_AT_SINGLETON, 'instance', ElemID.CONFIG_NAME))
   return isInstanceElement(element) ? element : undefined
 }
+
+export type ElementWithParent<T extends Element> = T & {
+  annotations: {
+    _parent: types.NonEmptyArray<ReferenceExpression>
+  }
+}
+
+
+export const isElementWithParent = <T extends Element>(element: T): element is ElementWithParent<T> => (
+  getParents(element).some(isReferenceExpression)
+)
+
+type AuthorInformation = Partial<{
+  createdBy: string
+  createdAt: string
+  changedBy: string
+  changedAt: string
+}>
+
+export const getAuthorInformationFromFileProps = (fileProps: FileProperties): AuthorInformation => ({
+  createdBy: fileProps.createdByName,
+  createdAt: fileProps.createdDate,
+  changedBy: fileProps.lastModifiedByName,
+  changedAt: fileProps.lastModifiedDate,
+})
+
+export const getElementAuthorInformation = ({ annotations }: Element): AuthorInformation => ({
+  createdBy: annotations[CORE_ANNOTATIONS.CREATED_BY],
+  createdAt: annotations[CORE_ANNOTATIONS.CREATED_AT],
+  changedBy: annotations[CORE_ANNOTATIONS.CHANGED_BY],
+  changedAt: annotations[CORE_ANNOTATIONS.CHANGED_AT],
+})

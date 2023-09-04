@@ -294,7 +294,7 @@ const transformObjectAnnotations = async (
 }
 
 const createNestedMetadataInstances = (instance: InstanceElement,
-  { elemID: objElemID, path: objPath }: ObjectType,
+  objectType: ObjectType,
   nestedMetadataTypes: Record<string, ObjectType>):
   Promise<InstanceElement[]> =>
   awu(Object.entries(nestedMetadataTypes))
@@ -324,12 +324,12 @@ const createNestedMetadataInstances = (instance: InstanceElement,
           )
           nestedInstanceValues[INSTANCE_FULL_NAME_FIELD] = fullName
           const path = [
-            ...(objPath as string[]).slice(0, -1),
+            ...(objectType.path as string[]).slice(0, -1),
             typeFolderName,
             instanceFileName,
           ]
           return new InstanceElement(instanceName, type, nestedInstanceValues,
-            path, { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(objElemID)] })
+            path, { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(objectType.elemID, objectType)] })
         })
     }).toArray()
 
@@ -454,7 +454,7 @@ const createFromInstance = async (
 
 const removeIrrelevantElements = async (elements: Element[]): Promise<void> => {
   await removeAsync(elements, isInstanceOfType(CUSTOM_OBJECT))
-  await removeAsync(elements, async elem => await apiName(elem) === CUSTOM_OBJECT)
+  // await removeAsync(elements, async elem => await apiName(elem) === CUSTOM_OBJECT)
 }
 
 // Instances metadataTypes that should be under the customObject folder and have a PARENT reference

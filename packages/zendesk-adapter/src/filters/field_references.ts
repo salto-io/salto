@@ -479,17 +479,6 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
   {
     src: { field: 'parent_field_id' },
     serializationStrategy: 'id',
-    target: { type: TICKET_FIELD_TYPE_NAME },
-  },
-  {
-    src: {
-      field: 'parent_field_id',
-      parentTypes: [
-        'ticket_form__end_user_conditions',
-        'ticket_form__agent_conditions',
-      ],
-    },
-    serializationStrategy: 'id',
     zendeskMissingRefStrategy: 'typeAndValue',
     target: { type: TICKET_FIELD_TYPE_NAME },
   },
@@ -982,6 +971,7 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
       ],
     },
     zendeskSerializationStrategy: 'ticketFieldOption',
+    zendeskMissingRefStrategy: 'typeAndValue',
     target: { typeContext: 'neighborReferenceTicketFormCondition' },
   },
   {

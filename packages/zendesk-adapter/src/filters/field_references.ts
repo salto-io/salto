@@ -145,11 +145,8 @@ const neighborReferenceUserAndOrgFieldLookupFunc: GetLookupNameFunc = async ({ r
   return undefined
 }
 
-const neighborReferenceUserAndOrgFieldLookupType: referenceUtils.ContextValueMapperFunc = val => (
-  [USER_FIELD_OPTION_TYPE_NAME, ORG_FIELD_OPTION_TYPE_NAME].includes(val)
-    ? val
-    : undefined
-)
+const neighborReferenceUserAndOrgFieldLookupType: referenceUtils.ContextValueMapperFunc = val =>
+  ([USER_FIELD_OPTION_TYPE_NAME, ORG_FIELD_OPTION_TYPE_NAME].includes(val) ? val : undefined)
 
 const getSerializationStrategyOfCustomFieldByContainingType = (
   prefix: string,
@@ -248,7 +245,7 @@ export type ReferenceContextStrategyName = 'neighborField'
   | 'neighborSubject'
   | 'neighborReferenceTicketField'
   | 'neighborReferenceTicketFormCondition'
-  | 'neighborReferenceUserOrgAndTicketField'
+  | 'neighborReferenceUserAndOrgField'
   | 'neighborSubjectReferenceTicketField'
   | 'neighborSubjectReferenceUserAndOrgField'
   | 'neighborParentType'
@@ -262,7 +259,7 @@ export const contextStrategyLookup: Record<
   allowlistedNeighborSubject: neighborContextFunc({ contextFieldName: 'subject', contextValueMapper: allowListLookupType }),
   neighborReferenceTicketField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceTicketFieldLookupFunc, contextValueMapper: neighborReferenceTicketFieldLookupType }),
   neighborReferenceTicketFormCondition: neighborContextFunc({ contextFieldName: 'parent_field_id', getLookUpName: neighborReferenceTicketFieldLookupFunc, contextValueMapper: neighborReferenceTicketFieldLookupType }),
-  neighborReferenceUserOrgAndTicketField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceUserAndOrgFieldLookupFunc, contextValueMapper: neighborReferenceUserAndOrgFieldLookupType }),
+  neighborReferenceUserAndOrgField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceUserAndOrgFieldLookupFunc, contextValueMapper: neighborReferenceUserAndOrgFieldLookupType }),
   neighborSubjectReferenceTicketField: neighborContextFunc({ contextFieldName: 'subject', getLookUpName: neighborReferenceTicketFieldLookupFunc, contextValueMapper: neighborReferenceTicketFieldLookupType }),
   neighborSubjectReferenceUserAndOrgField: neighborContextFunc({ contextFieldName: 'subject', getLookUpName: neighborReferenceUserAndOrgFieldLookupFunc, contextValueMapper: neighborReferenceUserAndOrgFieldLookupType }),
   neighborType: neighborContextFunc({ contextFieldName: 'type', contextValueMapper: getLowerCaseSingularLookupType }),
@@ -961,7 +958,7 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
       ],
     },
     zendeskSerializationStrategy: 'userFieldOption',
-    target: { typeContext: 'neighborReferenceUserOrgAndTicketField' },
+    target: { typeContext: 'neighborReferenceUserAndOrgField' },
     zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
@@ -1020,7 +1017,7 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
       ],
     },
     serializationStrategy: 'id',
-    target: { typeContext: 'neighborReferenceUserOrgAndTicketField' },
+    target: { typeContext: 'neighborReferenceUserAndOrgField' },
     zendeskMissingRefStrategy: 'typeAndValue',
   },
   {

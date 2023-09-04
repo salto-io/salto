@@ -141,12 +141,18 @@ const neighborReferenceUserAndOrgFieldLookupFunc: GetLookupNameFunc = async ({ r
     if (ref.elemID.typeName === ORG_FIELD_TYPE_NAME) {
       return ORG_FIELD_OPTION_TYPE_NAME
     }
+    if (ref.elemID.typeName === TICKET_FIELD_TYPE_NAME) {
+      return TICKET_FIELD_OPTION_TYPE_NAME
+    }
   }
   return undefined
 }
 
-const neighborReferenceUserAndOrgFieldLookupType: referenceUtils.ContextValueMapperFunc = val =>
-  ([USER_FIELD_OPTION_TYPE_NAME, ORG_FIELD_OPTION_TYPE_NAME].includes(val) ? val : undefined)
+const neighborReferenceUserAndOrgFieldLookupType: referenceUtils.ContextValueMapperFunc = val => (
+  [USER_FIELD_OPTION_TYPE_NAME, ORG_FIELD_OPTION_TYPE_NAME, TICKET_FIELD_OPTION_TYPE_NAME].includes(val)
+    ? val
+    : undefined
+)
 
 const getSerializationStrategyOfCustomFieldByContainingType = (
   prefix: string,
@@ -245,7 +251,7 @@ export type ReferenceContextStrategyName = 'neighborField'
   | 'neighborSubject'
   | 'neighborReferenceTicketField'
   | 'neighborReferenceTicketFormCondition'
-  | 'neighborReferenceUserAndOrgField'
+  | 'neighborReferenceUserOrgAndTicketField'
   | 'neighborSubjectReferenceTicketField'
   | 'neighborSubjectReferenceUserAndOrgField'
   | 'neighborParentType'
@@ -259,7 +265,7 @@ export const contextStrategyLookup: Record<
   allowlistedNeighborSubject: neighborContextFunc({ contextFieldName: 'subject', contextValueMapper: allowListLookupType }),
   neighborReferenceTicketField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceTicketFieldLookupFunc, contextValueMapper: neighborReferenceTicketFieldLookupType }),
   neighborReferenceTicketFormCondition: neighborContextFunc({ contextFieldName: 'parent_field_id', getLookUpName: neighborReferenceTicketFieldLookupFunc, contextValueMapper: neighborReferenceTicketFieldLookupType }),
-  neighborReferenceUserAndOrgField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceUserAndOrgFieldLookupFunc, contextValueMapper: neighborReferenceUserAndOrgFieldLookupType }),
+  neighborReferenceUserOrgAndTicketField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceUserAndOrgFieldLookupFunc, contextValueMapper: neighborReferenceUserAndOrgFieldLookupType }),
   neighborSubjectReferenceTicketField: neighborContextFunc({ contextFieldName: 'subject', getLookUpName: neighborReferenceTicketFieldLookupFunc, contextValueMapper: neighborReferenceTicketFieldLookupType }),
   neighborSubjectReferenceUserAndOrgField: neighborContextFunc({ contextFieldName: 'subject', getLookUpName: neighborReferenceUserAndOrgFieldLookupFunc, contextValueMapper: neighborReferenceUserAndOrgFieldLookupType }),
   neighborType: neighborContextFunc({ contextFieldName: 'type', contextValueMapper: getLowerCaseSingularLookupType }),
@@ -473,11 +479,24 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
   {
     src: { field: 'ticket_field_ids' },
     serializationStrategy: 'id',
+    zendeskMissingRefStrategy: 'typeAndValue',
     target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'parent_field_id' },
     serializationStrategy: 'id',
+    target: { type: TICKET_FIELD_TYPE_NAME },
+  },
+  {
+    src: {
+      field: 'parent_field_id',
+      parentTypes: [
+        'ticket_form__end_user_conditions',
+        'ticket_form__agent_conditions',
+      ],
+    },
+    serializationStrategy: 'id',
+    zendeskMissingRefStrategy: 'typeAndValue',
     target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
@@ -489,6 +508,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     serializationStrategy: 'id',
+    zendeskMissingRefStrategy: 'typeAndValue',
     target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
@@ -529,6 +549,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     zendeskSerializationStrategy: 'ticketField',
+    zendeskMissingRefStrategy: 'startsWith',
     target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
@@ -943,7 +964,7 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
       ],
     },
     zendeskSerializationStrategy: 'userFieldOption',
-    target: { typeContext: 'neighborReferenceUserAndOrgField' },
+    target: { typeContext: 'neighborReferenceUserOrgAndTicketField' },
     zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
@@ -1002,7 +1023,7 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
       ],
     },
     serializationStrategy: 'id',
-    target: { typeContext: 'neighborReferenceUserAndOrgField' },
+    target: { typeContext: 'neighborReferenceUserOrgAndTicketField' },
     zendeskMissingRefStrategy: 'typeAndValue',
   },
   {

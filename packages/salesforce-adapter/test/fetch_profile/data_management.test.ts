@@ -55,15 +55,15 @@ describe('buildDataManagement', () => {
       },
     })
   })
-  describe('isObjectMatch', () => {
-    it('should match on included objects', async () => {
-      expect(await dataManagement.isObjectTypeMatch(createCustomObjectType('aaa', {}))).toBeTrue()
-      expect(await dataManagement.isObjectTypeMatch(createCustomObjectType('aaaccc', {}))).toBeTrue()
+  describe('shouldFetchObjectType', () => {
+    it('should fetch included objects', async () => {
+      expect(await dataManagement.shouldFetchObjectType(createCustomObjectType('aaa', {}))).toEqual('Always')
+      expect(await dataManagement.shouldFetchObjectType(createCustomObjectType('aaaccc', {}))).toEqual('Always')
     })
-    it('should not match on objects we allow refs to if they are not managed by Salto', async () => {
-      expect(await dataManagement.isObjectTypeMatch(createCustomObjectType('ccc', {}))).toBeFalse()
+    it('should fetch objects we allow refs to if they are not managed by Salto', async () => {
+      expect(await dataManagement.shouldFetchObjectType(createCustomObjectType('ccc', {}))).toEqual('IfReferenced')
     })
-    it('should match on objects we allow refs to if they may be managed by Salto', async () => {
+    it('should fetch objects we allow refs to if they may be managed by Salto', async () => {
       const objType = createCustomObjectType('ccc', {
         fields: {
           ManagedBySalto__c: {
@@ -74,22 +74,17 @@ describe('buildDataManagement', () => {
           },
         },
       })
-      expect(await dataManagement.isObjectTypeMatch(objType)).toBeTrue()
+      expect(await dataManagement.shouldFetchObjectType(objType)).toEqual('Always')
     })
-    it('should not match on objects that are excluded', async () => {
-      expect(await dataManagement.isObjectTypeMatch(createCustomObjectType('bbb', {}))).toBeFalse()
-      expect(await dataManagement.isObjectTypeMatch(createCustomObjectType('cccbbb', {}))).toBeFalse()
+    it('should not fetch objects that are excluded', async () => {
+      expect(await dataManagement.shouldFetchObjectType(createCustomObjectType('bbb', {}))).toEqual('Never')
+      expect(await dataManagement.shouldFetchObjectType(createCustomObjectType('cccbbb', {}))).toEqual('Never')
     })
-    it('should not match on objects that are both included and excluded', async () => {
-      expect(await dataManagement.isObjectTypeMatch(createCustomObjectType('aaabbb', {}))).toBeFalse()
+    it('should not fetch objects that are both included and excluded', async () => {
+      expect(await dataManagement.shouldFetchObjectType(createCustomObjectType('aaabbb', {}))).toEqual('Never')
     })
   })
 
-  it('isReferenceAllowed should return currect results for allowed references', () => {
-    expect(dataManagement.isReferenceAllowed('aaa')).toBeFalsy()
-    expect(dataManagement.isReferenceAllowed('ccc')).toBeTruthy()
-    expect(dataManagement.isReferenceAllowed('aaabbb')).toBeFalsy()
-  })
 
   it('getObjectIdsFields should return currect results', () => {
     expect(dataManagement.getObjectIdsFields('aaa')).toEqual(['default'])

@@ -24,8 +24,10 @@ const { makeArray } = collections.array
 
 const defaultIgnoreReferenceTo = ['User']
 
+export type TypeFetchCategory = 'Always' | 'IfReferenced' | 'Never'
+
 export type DataManagement = {
-  isObjectTypeMatch: (objType: ObjectType) =>Promise<boolean>
+  shouldFetchObjectType: (objectType: ObjectType) => Promise<TypeFetchCategory>
   isReferenceAllowed: (name: string) => boolean
   shouldIgnoreReference: (name: string) => boolean
   getObjectIdsFields: (name: string) => string[]
@@ -73,23 +75,47 @@ const ALIAS_FIELDS_BY_TYPE: Record<string, types.NonEmptyArray<string>> = {
 }
 
 export const buildDataManagement = (params: DataManagementConfig): DataManagement => {
-  const isObjectTypeMatch = async (objType: ObjectType): Promise<boolean> => {
-    const managedBySaltoFieldName = params.saltoManagementFieldSettings?.defaultFieldName
-    const typeName = await apiName(objType)
-    const hasManagedBySaltoField = managedBySaltoFieldName !== undefined
-      && objType.fields[managedBySaltoFieldName] !== undefined
-    if (params.allowReferenceTo !== undefined
-      && hasManagedBySaltoField
-      && params.allowReferenceTo.some(re => new RegExp(`^${re}$`).test(typeName))) {
-      return true
-    }
-    if (params.excludeObjects?.some(re => new RegExp(`^${re}$`).test(typeName))) {
-      return false
-    }
-    return params.includeObjects !== undefined && params.includeObjects.some(re => new RegExp(`^${re}$`).test(typeName))
-  }
+  const isReferenceAllowed = (name: string): boolean => (
+    params.allowReferenceTo?.some(re => new RegExp(`^${re}$`).test(name)) ?? false
+  )
+
   return {
-    isObjectTypeMatch,
+    shouldFetchObjectType: async objectType => {
+      /* See details in https://salto-io.atlassian.net/browse/SALTO-4579?focusedCommentId=97852 but the upshot is:
+      - If we allow references and the type has the 'managed by Salto' field, always fetch instances that are managed
+       by Salto (even if they are not referenced anywhere).
+      - If we allow references to a type that has no 'managed by Salto' field, only fetch if there are references
+       to the instance (even if it's excluded)
+      - If the object is excluded, don't fetch it (even if it's explicitly included)
+      - Finally, only fetch the Salto-managed instances if the object is explicitly included
+      */
+      const managedBySaltoFieldName = params.saltoManagementFieldSettings?.defaultFieldName
+      const typeName = await apiName(objectType)
+      const hasManagedBySaltoField = managedBySaltoFieldName !== undefined
+        && objectType.fields[managedBySaltoFieldName] !== undefined
+      const refsAllowed = isReferenceAllowed(typeName)
+      const excluded = params.excludeObjects?.some(re => new RegExp(`^${re}$`).test(typeName)) ?? false
+      const included = params.includeObjects?.some(re => new RegExp(`^${re}$`).test(typeName)) ?? false
+
+      if (refsAllowed) {
+        // we have to check all the 'refsAllowed' cases here because `refsAllowed` should take precedence over
+        // `excluded`
+        if (hasManagedBySaltoField || included) {
+          return 'Always'
+        }
+        return 'IfReferenced'
+      }
+
+      if (excluded) {
+        return 'Never'
+      }
+
+      if (included) {
+        return 'Always'
+      }
+
+      return 'Never'
+    },
 
     managedBySaltoFieldForType: objType => {
       if (params.saltoManagementFieldSettings?.defaultFieldName === undefined) {
@@ -101,8 +127,7 @@ export const buildDataManagement = (params: DataManagementConfig): DataManagemen
       return params.saltoManagementFieldSettings.defaultFieldName
     },
 
-    isReferenceAllowed: name => params.allowReferenceTo?.some(re => new RegExp(`^${re}$`).test(name))
-      ?? false,
+    isReferenceAllowed,
 
     shouldIgnoreReference: name =>
       (params.ignoreReferenceTo ?? defaultIgnoreReferenceTo).includes(name),

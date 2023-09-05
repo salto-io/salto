@@ -456,14 +456,13 @@ export const getCustomObjectsFetchSettings = async (
 ): Promise<CustomObjectFetchSetting[]> => {
   const typeToFetchSettings = async (type: ObjectType): Promise<CustomObjectFetchSetting> => ({
     objectType: type,
-    isBase: await dataManagement.isObjectTypeMatch(type),
+    isBase: await dataManagement.shouldFetchObjectType(type) === 'Always',
     ...await getIdFields(type, dataManagement),
     managedBySaltoField: dataManagement.managedBySaltoFieldForType(type),
   })
 
   return awu(types)
-    .filter(async type => await dataManagement.isObjectTypeMatch(type)
-      || dataManagement.isReferenceAllowed(await apiName(type)))
+    .filter(async type => await dataManagement.shouldFetchObjectType(type) !== 'Never')
     .map(typeToFetchSettings)
     .toArray()
 }

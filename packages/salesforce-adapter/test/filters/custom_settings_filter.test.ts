@@ -15,6 +15,7 @@
 */
 import { ElemID, ObjectType, Element, ServiceIds, isInstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { createCustomSettingsObject, defaultFilterContext } from '../utils'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
@@ -132,6 +133,7 @@ describe('Custom settings filter', () => {
           fetchProfile: buildFetchProfile({
             fetchParams: { fetchAllCustomSettings: false },
             isFetchWithChangesDetection: false,
+            elementsSource: buildElementsSourceFromElements([]),
           }),
         },
       }) as FilterType
@@ -148,6 +150,7 @@ describe('Custom settings filter', () => {
           fetchProfile: buildFetchProfile({
             fetchParams: { fetchAllCustomSettings: true },
             isFetchWithChangesDetection: false,
+            elementsSource: buildElementsSourceFromElements([]),
           }),
         },
       }) as FilterType

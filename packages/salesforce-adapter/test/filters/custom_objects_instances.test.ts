@@ -30,6 +30,7 @@ import {
   ServiceIds,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { ConfigChangeSuggestion, isDataManagementConfigSuggestions, SaltoAliasSettings } from '../../src/types'
 import { buildSelectQueries, getFieldNamesForQuery } from '../../src/filters/utils'
 import { FilterResult } from '../../src/filter'
@@ -225,6 +226,7 @@ describe('Custom Object Instances filter', () => {
                 },
               },
               isFetchWithChangesDetection: false,
+              elementsSource: buildElementsSourceFromElements([]),
             }),
           },
         }
@@ -289,6 +291,7 @@ describe('Custom Object Instances filter', () => {
                 },
               },
               isFetchWithChangesDetection: false,
+              elementsSource: buildElementsSourceFromElements([]),
             }),
           },
         }
@@ -877,6 +880,7 @@ describe('Custom Object Instances filter', () => {
                 },
               },
               isFetchWithChangesDetection: false,
+              elementsSource: buildElementsSourceFromElements([]),
             }),
           },
         }
@@ -1103,6 +1107,7 @@ describe('Custom Object Instances filter', () => {
                 maxInstancesPerType: 2,
               },
               isFetchWithChangesDetection: false,
+              elementsSource: buildElementsSourceFromElements([]),
             },),
           },
         }
@@ -1164,6 +1169,7 @@ describe('Custom Object Instances filter', () => {
             },
           },
           isFetchWithChangesDetection: false,
+          elementsSource: buildElementsSourceFromElements([]),
         }),
       },
     }) as FilterType

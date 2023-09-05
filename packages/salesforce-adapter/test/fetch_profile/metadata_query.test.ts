@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { buildMetadataQuery, validateMetadataParams, MetadataQuery } from '../../src/fetch_profile/metadata_query'
 import { CUSTOM_OBJECT, TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../../src/constants'
 import { mockInstances } from '../mock_elements'
@@ -93,6 +94,7 @@ describe('buildMetadataQuery', () => {
           ],
         },
         isFetchWithChangesDetection: false,
+        elementsSource: buildElementsSourceFromElements([]),
       })
 
       expect(query.isInstanceMatch({ namespace: 'aaaa', metadataType: '', name: '', isFolderType: false, changedAt: undefined })).toBeTruthy()
@@ -111,6 +113,7 @@ describe('buildMetadataQuery', () => {
           ],
         },
         isFetchWithChangesDetection: false,
+        elementsSource: buildElementsSourceFromElements([]),
       })
 
       expect(query.isInstanceMatch({ metadataType: 'aaaa', namespace: '', name: '', isFolderType: false, changedAt: undefined })).toBeTruthy()
@@ -129,6 +132,7 @@ describe('buildMetadataQuery', () => {
           ],
         },
         isFetchWithChangesDetection: false,
+        elementsSource: buildElementsSourceFromElements([]),
       })
 
       expect(query.isInstanceMatch({ name: 'aaaa', namespace: '', metadataType: '', isFolderType: false, changedAt: undefined })).toBeTruthy()
@@ -147,6 +151,7 @@ describe('buildMetadataQuery', () => {
           ],
         },
         isFetchWithChangesDetection: false,
+        elementsSource: buildElementsSourceFromElements([]),
       })
 
       expect(query.isInstanceMatch({ namespace: 'aaabbb', metadataType: 'bbbccc', name: 'cccddd', isFolderType: false, changedAt: undefined })).toBeTruthy()
@@ -167,6 +172,7 @@ describe('buildMetadataQuery', () => {
           ],
         },
         isFetchWithChangesDetection: false,
+        elementsSource: buildElementsSourceFromElements([]),
       })
 
       expect(query.isInstanceMatch({ namespace: 'aaaccc', metadataType: '', name: '', isFolderType: false, changedAt: undefined })).toBeTruthy()
@@ -184,6 +190,7 @@ describe('buildMetadataQuery', () => {
           ],
         },
         isFetchWithChangesDetection: false,
+        elementsSource: buildElementsSourceFromElements([]),
       })
       expect(query.isInstanceMatch({ namespace: 'standard', metadataType: '', name: '', isFolderType: false, changedAt: undefined })).toBeTruthy()
       expect(query.isInstanceMatch({ namespace: 'notstandard', metadataType: '', name: '', isFolderType: false, changedAt: undefined })).toBeFalsy()
@@ -197,6 +204,7 @@ describe('buildMetadataQuery', () => {
           ],
         },
         isFetchWithChangesDetection: false,
+        elementsSource: buildElementsSourceFromElements([]),
       })
       expect(query.isInstanceMatch({ namespace: 'SBQQ', metadataType: 'InstalledPackage', name: 'lala', isFolderType: false, changedAt: undefined })).toBeTruthy()
     })
@@ -209,6 +217,7 @@ describe('buildMetadataQuery', () => {
           ],
         },
         isFetchWithChangesDetection: false,
+        elementsSource: buildElementsSourceFromElements([]),
       })
       expect(query.isInstanceMatch({ namespace: 'SBQQ', metadataType: 'InstalledPackage', name: 'lala', isFolderType: false, changedAt: undefined })).toBeFalsy()
     })
@@ -216,7 +225,7 @@ describe('buildMetadataQuery', () => {
     describe('fetchWithChangesDetection', () => {
       const LAST_MODIFIED_DATE = '2023-01-12T15:51:47.000Z'
       let query: MetadataQuery
-      beforeEach(() => {
+      beforeEach(async () => {
         const { ChangedAtSingleton: changedAtSingleton } = mockInstances()
         changedAtSingleton.value.Report = { testReport: LAST_MODIFIED_DATE }
         query = buildMetadataQuery(
@@ -228,10 +237,11 @@ describe('buildMetadataQuery', () => {
                 },
               ],
             },
-            changedAtSingleton,
             isFetchWithChangesDetection: true,
+            elementsSource: buildElementsSourceFromElements([changedAtSingleton]),
           },
         )
+        await query.prepare()
       })
       describe('isPartialFetch', () => {
         it('should return true', () => {
@@ -281,6 +291,7 @@ describe('buildMetadataQuery', () => {
         ],
       },
       isFetchWithChangesDetection: false,
+      elementsSource: buildElementsSourceFromElements([]),
     })
     expect(query.isTypeMatch('aaa')).toBeTruthy()
     expect(query.isTypeMatch('ccc')).toBeFalsy()
@@ -299,6 +310,7 @@ describe('buildMetadataQuery', () => {
           },
           target: ['target', 'exclude', CUSTOM_OBJECT],
           isFetchWithChangesDetection: false,
+          elementsSource: buildElementsSourceFromElements([]),
         },
       )
     })
@@ -355,6 +367,7 @@ describe('buildMetadataQuery', () => {
           ],
         },
         isFetchWithChangesDetection: false,
+        elementsSource: buildElementsSourceFromElements([]),
       })
     })
     describe('getFolderPathsByName', () => {
@@ -385,6 +398,7 @@ describe('buildMetadataQuery', () => {
             ],
           },
           isFetchWithChangesDetection: false,
+          elementsSource: buildElementsSourceFromElements([]),
         })
       })
       it.each([
@@ -425,6 +439,7 @@ describe('buildMetadataQuery', () => {
             ],
           },
           isFetchWithChangesDetection: false,
+          elementsSource: buildElementsSourceFromElements([]),
         })
       })
       it.each([
@@ -453,6 +468,7 @@ describe('buildMetadataQuery', () => {
             ],
           },
           isFetchWithChangesDetection: false,
+          elementsSource: buildElementsSourceFromElements([]),
         })
       })
       it.each([

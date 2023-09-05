@@ -37,7 +37,6 @@ import { ConfigChange } from './config_change'
 import { configCreator } from './config_creator'
 import { loadElementsFromFolder } from './sfdx_parser/sfdx_parser'
 import { getAdditionalReferences } from './additional_references'
-import { getChangedAtSingleton } from './filters/utils'
 
 type ValidatorsActivationConfig = deployment.changeValidators.ValidatorsActivationConfig
 
@@ -195,7 +194,6 @@ export const adapter: Adapter = {
         config,
         getElemIdFunc,
         elementsSource,
-        changedAtSingleton: await getChangedAtSingleton(elementsSource),
         isFetchWithChangesDetection,
       })
     }

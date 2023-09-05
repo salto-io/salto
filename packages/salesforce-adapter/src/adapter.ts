@@ -238,8 +238,6 @@ export interface SalesforceAdapterParams {
   elementsSource: ReadOnlyElementsSource
 
   isFetchWithChangesDetection: boolean
-
-  changedAtSingleton?: InstanceElement
 }
 
 const METADATA_TO_RETRIEVE = [
@@ -386,7 +384,6 @@ export default class SalesforceAdapter implements AdapterOperations {
     unsupportedSystemFields = UNSUPPORTED_SYSTEM_FIELDS,
     config,
     isFetchWithChangesDetection,
-    changedAtSingleton,
   }: SalesforceAdapterParams) {
     this.maxItemsInRetrieveRequest = config.maxItemsInRetrieveRequest ?? maxItemsInRetrieveRequest
     this.metadataToRetrieve = metadataToRetrieve
@@ -399,7 +396,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     const fetchProfile = buildFetchProfile({
       fetchParams: config.fetch ?? {},
       isFetchWithChangesDetection,
-      changedAtSingleton,
+      elementsSource,
     })
     this.fetchProfile = fetchProfile
     if (!this.fetchProfile.isFeatureEnabled('fetchCustomObjectUsingRetrieveApi')) {
@@ -438,6 +435,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   @logDuration('fetching account configuration')
   async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch salesforce account configuration..')
+    await this.fetchProfile.metadataQuery.prepare()
     const fieldTypes = Types.getAllFieldTypes()
     const hardCodedTypes = [
       // Missing Metadata subtypes will come from the elementsSource. We want to avoid duplicates

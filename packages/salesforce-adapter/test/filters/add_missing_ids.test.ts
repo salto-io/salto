@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { Element, ElemID, ObjectType, InstanceElement, BuiltinTypes, Field } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { FilterResult } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import filterCreator, { WARNING_MESSAGE } from '../../src/filters/add_missing_ids'
@@ -229,6 +230,7 @@ describe('Internal IDs filter', () => {
           fetchProfile: buildFetchProfile({
             fetchParams: { optionalFeatures: { addMissingIds: false } },
             isFetchWithChangesDetection: false,
+            elementsSource: buildElementsSourceFromElements([]),
           }),
         },
       }) as FilterType

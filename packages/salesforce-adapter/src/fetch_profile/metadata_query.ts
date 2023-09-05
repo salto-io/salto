@@ -15,7 +15,7 @@
 */
 import { regex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { InstanceElement } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import {
   DEFAULT_NAMESPACE,
   SETTINGS_METADATA_TYPE,
@@ -25,6 +25,9 @@ import {
   FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
   CUSTOM_FIELD,
+  SALESFORCE,
+  CHANGED_AT_SINGLETON,
+  PROFILE_METADATA_TYPE,
 } from '../constants'
 import { validateRegularExpressions, ConfigValidationError } from '../config_validation'
 import { MetadataInstance, MetadataParams, MetadataQueryParams, METADATA_INCLUDE_LIST, METADATA_EXCLUDE_LIST, METADATA_SEPARATE_FIELD_LIST } from '../types'
@@ -36,6 +39,7 @@ const { isDefined } = values
 const VALID_FOLDER_PATH_RE = /^[a-zA-Z\d_/]+$/
 
 export type MetadataQuery = {
+  prepare: () => Promise<void>
   isTypeMatch: (type: string) => boolean
   isInstanceMatch: (instance: MetadataInstance) => boolean
   isTargetedFetch: () => boolean
@@ -67,7 +71,7 @@ const DEFAULT_NAMESPACE_MATCH_ALL_TYPE_LIST = [
 
 // Instances of this type won't be fetched in fetchWithChangesDetection mode
 const UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES = [
-  FLOW_METADATA_TYPE,
+  PROFILE_METADATA_TYPE,
   CUSTOM_OBJECT,
   CUSTOM_FIELD,
 ]
@@ -93,19 +97,21 @@ const isFolderMetadataTypeNameMatch = ({ name: instanceName }: MetadataInstance,
 
 type BuildMetadataQueryParams = {
   metadataParams: MetadataParams
-  changedAtSingleton?: InstanceElement
   target?: string[]
+  elementsSource: ReadOnlyElementsSource
   isFetchWithChangesDetection: boolean
 }
 
 export const buildMetadataQuery = ({
   metadataParams,
-  changedAtSingleton,
+  elementsSource,
   target,
   isFetchWithChangesDetection,
 }: BuildMetadataQueryParams): MetadataQuery => {
   const { include = [{}], exclude = [] } = metadataParams
   const fullExcludeList = [...exclude, ...PERMANENT_SKIP_LIST]
+
+  let changedAtSingleton: InstanceElement | undefined
 
   const isInstanceMatchQueryParams = (
     instance: MetadataInstance,
@@ -167,6 +173,11 @@ export const buildMetadataQuery = ({
   )
 
   return {
+    prepare: async () => {
+      if (isFetchWithChangesDetection) {
+        changedAtSingleton = await elementsSource.get(new ElemID(SALESFORCE, CHANGED_AT_SINGLETON, 'instance', ElemID.CONFIG_NAME))
+      }
+    },
     isTypeMatch: type => isTypeIncluded(type) && !isTypeExcluded(type),
 
     isInstanceMatch: instance => (

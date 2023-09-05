@@ -20,7 +20,6 @@ import {
   OAuthMethod,
   FetchOptions,
   ProgressReporter,
-  AdapterOperations,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
@@ -29,7 +28,6 @@ import SalesforceClient, { validateCredentials } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
 import { usernamePasswordCredentialsType, UsernamePasswordCredentials, oauthRequestParameters, OauthAccessTokenCredentials, accessTokenCredentialsType, METADATA_TYPES_SKIPPED_LIST } from '../src/types'
 import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
-import { mockInstances } from './mock_elements'
 
 jest.mock('../src/client/client')
 jest.mock('../src/adapter')
@@ -720,46 +718,6 @@ In order to complete the fetch operation, Salto needs to stop managing these ite
       )
       it('return undefined', () => {
         expect(updatedConfig).toBe(undefined)
-      })
-    })
-  })
-
-  describe('fetch withChangesDetection', () => {
-    let changedAtSingleton: InstanceElement
-    let adapterOperations: AdapterOperations
-    beforeEach(() => {
-      changedAtSingleton = mockInstances().ChangedAtSingleton
-      adapterOperations = adapter.operations({
-        credentials,
-        config,
-        elementsSource: buildElementsSourceFromElements([changedAtSingleton]),
-      })
-    })
-    describe('when withChangesDetection is true', () => {
-      it('should create the adapter with the ChangedAtSingleton', async () => {
-        await adapterOperations.fetch({ ...mockFetchOpts, withChangesDetection: true })
-        expect(SalesforceAdapter).toHaveBeenCalledWith(expect.objectContaining({
-          changedAtSingleton,
-          isFetchWithChangesDetection: true,
-        }))
-      })
-    })
-    describe('when withChangesDetection is undefined', () => {
-      it('should create the adapter with the ChangedAtSingleton', async () => {
-        await adapterOperations.fetch({ ...mockFetchOpts, withChangesDetection: undefined })
-        expect(SalesforceAdapter).toHaveBeenCalledWith(expect.objectContaining({
-          changedAtSingleton,
-          isFetchWithChangesDetection: false,
-        }))
-      })
-    })
-    describe('when withChangesDetection is false', () => {
-      it('should create the adapter with the ChangedAtSingleton', async () => {
-        await adapterOperations.fetch({ ...mockFetchOpts, withChangesDetection: false })
-        expect(SalesforceAdapter).toHaveBeenCalledWith(expect.objectContaining({
-          changedAtSingleton,
-          isFetchWithChangesDetection: false,
-        }))
       })
     })
   })

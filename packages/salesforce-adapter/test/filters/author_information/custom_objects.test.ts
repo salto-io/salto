@@ -17,6 +17,7 @@
 import { CORE_ANNOTATIONS, ElemID, Element, ObjectType, PrimitiveType, PrimitiveTypes } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { FileProperties } from 'jsforce-types'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockFileProperties } from '../../connection'
 import mockClient from '../../client'
 import Connection from '../../../src/client/jsforce'
@@ -116,6 +117,7 @@ describe('custom objects author information test', () => {
           fetchProfile: buildFetchProfile({
             fetchParams: { optionalFeatures: { authorInformation: false } },
             isFetchWithChangesDetection: false,
+            elementsSource: buildElementsSourceFromElements([]),
           }),
         },
       })

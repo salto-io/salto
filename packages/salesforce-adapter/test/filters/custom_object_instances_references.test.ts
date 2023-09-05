@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { Element, ElemID, ObjectType, PrimitiveTypes, PrimitiveType, CORE_ANNOTATIONS, InstanceElement, ReferenceExpression, isInstanceElement, SaltoError } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import SalesforceClient from '../../src/client/client'
 import filterCreator from '../../src/filters/custom_object_instances_references'
@@ -202,6 +203,7 @@ describe('Custom Object Instances References filter', () => {
             },
           },
           isFetchWithChangesDetection: false,
+          elementsSource: buildElementsSourceFromElements([]),
         }),
       },
     }) as FilterType

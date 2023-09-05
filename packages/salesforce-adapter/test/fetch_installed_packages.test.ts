@@ -15,6 +15,7 @@
 */
 import { ObjectType, isInstanceElement, InstanceElement } from '@salto-io/adapter-api'
 import { makeArray } from '@salto-io/lowerdash/src/collections/array'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { INSTALLED_PACKAGE_METADATA, INSTANCE_FULL_NAME_FIELD } from '../src/constants'
 import mockClient from './client'
 import { fetchMetadataInstances } from '../src/fetch'
@@ -41,6 +42,7 @@ describe('Test fetching installed package metadata', () => {
       {
         metadataParams: { include: [{ metadataType: '.*' }] },
         isFetchWithChangesDetection: false,
+        elementsSource: buildElementsSourceFromElements([]),
       }
     )
 

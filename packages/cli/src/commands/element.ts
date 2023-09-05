@@ -16,11 +16,10 @@
 import _ from 'lodash'
 import open from 'open'
 import { ElemID, isElement, CORE_ANNOTATIONS, isModificationChange } from '@salto-io/adapter-api'
-import { Workspace, ElementSelector, createElementSelectors, FromSource, selectElementIdsByTraversal, parser, nacl, staticFiles, isTopLevelSelector } from '@salto-io/workspace'
-import { getEnvsDeletionsDiff, RenameElementIdError, rename, fixElements } from '@salto-io/core'
+import { Workspace, ElementSelector, createElementSelectors, FromSource, selectElementIdsByTraversal, parser, nacl, staticFiles } from '@salto-io/workspace'
+import { getEnvsDeletionsDiff, RenameElementIdError, rename, fixElements, SelectorsError } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
-import { collections, promises, values } from '@salto-io/lowerdash'
-import { detailedCompare } from '@salto-io/adapter-utils'
+import { collections, promises } from '@salto-io/lowerdash'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
 import { CliOutput, CliExitCode, KeyedOption } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
@@ -791,57 +790,35 @@ export const fixElementsAction: WorkspaceCommandAction<FixElementsArgs> = async 
     return CliExitCode.UserInputError
   }
 
-  const nonTopLevelSelectors = validSelectors.filter(selector => !isTopLevelSelector(selector))
-
-  if (!_.isEmpty(nonTopLevelSelectors)) {
-    errorOutputLine(formatNonTopLevelFilters(nonTopLevelSelectors.map(({ origin }) => origin)), output)
-    return CliExitCode.UserInputError
-  }
-
   await validateAndSetEnv(workspace, input, output)
 
+  try {
+    const { changes, errors } = await fixElements(workspace, validSelectors)
 
-  const relevantIds = await selectElementIdsByTraversal({
-    selectors: validSelectors,
-    source: await workspace.elements(),
-    referenceSourcesIndex: await workspace.getReferenceSourcesIndex(),
-  })
+    if (changes.length === 0) {
+      outputLine(Prompts.EMPTY_PLAN, output)
+      return CliExitCode.Success
+    }
 
-  const elements = await awu(relevantIds)
-    .map(id => workspace.getValue(id))
-    .filter(values.isDefined)
-    .toArray()
+    const changeErrors = await promises.array.withLimitedConcurrency(
+      errors
+        .map(error => () => workspace.transformToWorkspaceError(error)),
+      20
+    )
 
-  const { fixedElements, fixes } = await fixElements(workspace, validSelectors)
+    outputLine(formatChangeErrors(changeErrors), output)
 
-  if (fixes.length === 0) {
-    outputLine(Prompts.EMPTY_PLAN, output)
+    await workspace.updateNaclFiles(changes)
+    await workspace.flush()
+
     return CliExitCode.Success
+  } catch (err) {
+    if (err instanceof SelectorsError) {
+      errorOutputLine(formatNonTopLevelFilters(err.invalidSelectors), output)
+      return CliExitCode.UserInputError
+    }
+    throw err
   }
-
-  const idToElement = _.keyBy(
-    elements,
-    e => e.elemID.getFullName()
-  )
-
-  const changes = fixedElements
-    .flatMap(element => detailedCompare(
-      idToElement[element.elemID.getFullName()],
-      element
-    ))
-
-  const errors = await promises.array.withLimitedConcurrency(
-    fixes
-      .map(fix => () => workspace.transformToWorkspaceError(fix)),
-    20
-  )
-
-  outputLine(formatChangeErrors(errors), output)
-
-  await workspace.updateNaclFiles(changes)
-  await workspace.flush()
-
-  return CliExitCode.Success
 }
 
 const fixElementsDef = createWorkspaceCommand({

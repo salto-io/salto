@@ -15,7 +15,7 @@
 */
 import {
   FetchResult, AdapterOperations, DeployResult, FetchOptions,
-  DeployOptions, DeployModifiers, getChangeData, isInstanceElement,
+  DeployOptions, DeployModifiers, getChangeData, isInstanceElement, FixElementsFunc,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { generateElements, GeneratorParams } from './generator'
@@ -62,5 +62,29 @@ export default class DummyAdapter implements AdapterOperations {
   public deployModifiers: DeployModifiers =
   {
     changeValidator: changeValidator(this.genParams),
+  }
+
+  fixElements: FixElementsFunc = async elements => {
+    const fullInst1 = elements.find(e => e.elemID.getFullName() === 'dummy.Full.instance.FullInst1')
+    if (!isInstanceElement(fullInst1)) {
+      return { fixedElements: [], errors: [] }
+    }
+
+    if (fullInst1.value.strField === undefined) {
+      return { fixedElements: [], errors: [] }
+    }
+
+    const clonedInstance = fullInst1.clone()
+    delete clonedInstance.value.strField
+
+    return {
+      fixedElements: [clonedInstance],
+      errors: [{
+        message: 'Fixed FullInst1.strField',
+        detailedMessage: 'Removed FullInst1.strField',
+        severity: 'Info',
+        elemID: fullInst1.elemID,
+      }],
+    }
   }
 }

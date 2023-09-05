@@ -35,15 +35,17 @@ import {
   AccountInfo,
   isAdditionOrModificationChange,
   ChangeError,
+  AdapterOperations,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { promises, collections, values } from '@salto-io/lowerdash'
-import { Workspace, ElementSelector, elementSource, expressions, merger, selectElementIdsByTraversal } from '@salto-io/workspace'
+import { promises, collections, values, objects } from '@salto-io/lowerdash'
+import { Workspace, ElementSelector, elementSource, expressions, merger, selectElementIdsByTraversal, isTopLevelSelector } from '@salto-io/workspace'
 import { EOL } from 'os'
 import {
   buildElementsSourceFromElements,
+  detailedCompare,
   getDetailedChanges as getDetailedChangesFromChange,
 } from '@salto-io/adapter-utils'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
@@ -696,14 +698,24 @@ export const getAdditionalReferences = async (
     .filter(values.isDefined)
 }
 
+const getFixedElements = (
+  elements: Element[],
+  fixedElements: Element[],
+): Element[] => {
+  const elementFixesByElemID = _.keyBy(
+    fixedElements,
+    element => element.elemID.getFullName()
+  )
+  return elements.map(element => elementFixesByElemID[element.elemID.getFullName()] ?? element)
+}
+
 const fixElementsContinuously = async (
   workspace: Workspace,
   elements: Element[],
+  adapters: Record<string, AdapterOperations>,
   runsLeft: number
-): Promise<ChangeError[]> => {
+): Promise<{ errors: ChangeError[]; fixedElements: Element[] }> => {
   log.debug(`Fixing elements. ${runsLeft} runs left.`)
-
-  const accountToService = getAccountToServiceNameMap(workspace, workspace.accounts())
 
   const elementGroups = _.groupBy(elements, element => element.elemID.adapter)
 
@@ -711,43 +723,88 @@ const fixElementsContinuously = async (
     Object.entries(elementGroups).map(async ([account, elementGroup]) => {
       try {
         // eslint-disable-next-line @typescript-eslint/return-await
-        return await adapterCreators[accountToService[account]]?.fixElements?.(elementGroup)
+        return await adapters[account]?.fixElements?.(elementGroup)
+          ?? { errors: [], fixedElements: [] }
       } catch (e) {
         log.error(`Failed to fix elements for ${account} adapter: ${e}`)
-        return []
+        return { errors: [], fixedElements: [] }
       }
     })
   )
 
-  const elementFixes = elementFixGroups
-    .flat()
-    .filter(values.isDefined)
+  const fixes = objects.concatObjects(elementFixGroups)
 
-  if (elementFixes.length > 0 && runsLeft > 0) {
-    return elementFixes.concat(
-      await fixElementsContinuously(workspace, elements, runsLeft - 1)
-    )
+  const fixedElements = getFixedElements(elements, fixes.fixedElements)
+
+  if (fixes.errors.length > 0 && runsLeft > 0) {
+    const elementFixes = await fixElementsContinuously(workspace, fixedElements, adapters, runsLeft - 1)
+
+    const ids = new Set(elementFixes.fixedElements.map(element => element.elemID.getFullName()))
+
+    return {
+      errors: fixes.errors.concat(elementFixes.errors),
+      fixedElements: fixes.fixedElements
+        .filter(element => !ids.has(element.elemID.getFullName()))
+        .concat(elementFixes.fixedElements),
+    }
   }
 
-  if (elementFixes.length > 0) {
+  if (fixes.errors.length > 0) {
     log.warn('Max element fix runs reached')
   }
 
-  return elementFixes
+  return fixes
+}
+
+export class SelectorsError extends Error {
+  constructor(message: string, readonly invalidSelectors: string[]) {
+    super(message)
+  }
 }
 
 export const fixElements = async (
   workspace: Workspace,
   selectors: ElementSelector[],
-): Promise<{ fixes: ChangeError[]; fixedElements: Element[] }> => {
+): Promise<{ errors: ChangeError[]; changes: DetailedChange[] }> => {
+  const accounts = workspace.accounts()
+  const adapters = await getAdapters(
+    accounts,
+    await workspace.accountCredentials(accounts),
+    workspace.accountConfig.bind(workspace),
+    await workspace.elements(),
+    getAccountToServiceNameMap(workspace, accounts)
+  )
+
+  const nonTopLevelSelectors = selectors.filter(selector => !isTopLevelSelector(selector))
+
+  if (!_.isEmpty(nonTopLevelSelectors)) {
+    throw new SelectorsError(
+      'Fixing elements by selectors that are not top level is not supported',
+      nonTopLevelSelectors.map(selector => selector.origin)
+    )
+  }
+
   const relevantIds = await selectElementIdsByTraversal({
     selectors,
     source: await workspace.elements(),
     referenceSourcesIndex: await workspace.getReferenceSourcesIndex(),
   })
-  const elements = await awu(relevantIds).map(id => workspace.getValue(id)).toArray()
 
-  const clonedElements = elements.map(e => e.clone())
-  const fixes = await fixElementsContinuously(workspace, clonedElements, MAX_FIX_RUNS)
-  return { fixes, fixedElements: clonedElements }
+  const elements = await awu(relevantIds)
+    .map(id => workspace.getValue(id))
+    .filter(values.isDefined)
+    .toArray()
+
+  const idToElement = _.keyBy(
+    elements,
+    e => e.elemID.getFullName()
+  )
+
+  const fixes = await fixElementsContinuously(workspace, elements, adapters, MAX_FIX_RUNS)
+  const changes = fixes.fixedElements
+    .flatMap(element => detailedCompare(
+      idToElement[element.elemID.getFullName()],
+      element
+    ))
+  return { errors: fixes.errors, changes }
 }

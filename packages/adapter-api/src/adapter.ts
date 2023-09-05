@@ -124,6 +124,11 @@ export type DeployModifiers = {
 
 export type ValidationModifiers = Pick<DeployModifiers, 'changeValidator'>
 
+export type FixElementsFunc = (elements: Element[]) => Promise<{
+  fixedElements: Element[]
+  errors: ChangeError[]
+}>
+
 export type AdapterOperations = {
   fetch: (opts: FetchOptions) => Promise<FetchResult>
   deploy: (opts: DeployOptions) => Promise<DeployResult>
@@ -131,6 +136,7 @@ export type AdapterOperations = {
   postFetch?: (opts: PostFetchOptions) => Promise<void>
   deployModifiers?: DeployModifiers
   validationModifiers?: ValidationModifiers
+  fixElements?: FixElementsFunc
 }
 
 export type AdapterOperationName = keyof AdapterOperations
@@ -192,8 +198,6 @@ export type ReferenceInfo = {
 
 export type GetCustomReferencesFunc = (elements: Element[]) => Promise<ReferenceInfo[]>
 
-export type FixElementsFunc = (elements: Element[]) => Promise<ChangeError[]>
-
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations
   validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountInfo>
@@ -204,7 +208,6 @@ export type Adapter = {
   loadElementsFromFolder?: (args: LoadElementsFromFolderArgs) => Promise<FetchResult>
   getAdditionalReferences?: GetAdditionalReferencesFunc
   getCustomReferences?: GetCustomReferencesFunc
-  fixElements?: FixElementsFunc
 }
 
 export const OBJECT_SERVICE_ID = 'object_service_id'

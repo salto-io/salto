@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Adapter, ElemID, CORE_ANNOTATIONS, BuiltinTypes, ObjectType, ListType, GetCustomReferencesFunc, FixElementsFunc, isInstanceElement } from '@salto-io/adapter-api'
+import { Adapter, ElemID, CORE_ANNOTATIONS, BuiltinTypes, ObjectType, ListType, GetCustomReferencesFunc } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import DummyAdapter from './adapter'
 import { GeneratorParams, DUMMY_ADAPTER, defaultParams, changeErrorType } from './generator'
@@ -48,26 +48,6 @@ const getCustomReferences: GetCustomReferencesFunc = async elements => (
     : []
 )
 
-const fixElements: FixElementsFunc = async elements => {
-  const fullInst1 = elements.find(e => e.elemID.getFullName() === 'dummy.Full.instance.FullInst1')
-  if (!isInstanceElement(fullInst1)) {
-    return []
-  }
-
-  if (fullInst1.value.strField === undefined) {
-    return []
-  }
-
-  delete fullInst1.value.strField
-
-  return [{
-    message: 'Fixed FullInst1.strField',
-    detailedMessage: 'Removed FullInst1.strField',
-    severity: 'Info',
-    elemID: fullInst1.elemID,
-  }]
-}
-
 export const adapter: Adapter = {
   operations: context => new DummyAdapter(context.config?.value as GeneratorParams),
   validateCredentials: async () => ({ accountId: '' }),
@@ -76,5 +56,4 @@ export const adapter: Adapter = {
   } }),
   configType,
   getCustomReferences,
-  fixElements,
 }

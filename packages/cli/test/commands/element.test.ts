@@ -17,7 +17,7 @@ import open from 'open'
 import { Element, ElemID, ObjectType, CORE_ANNOTATIONS, isInstanceElement, InstanceElement, isObjectType } from '@salto-io/adapter-api'
 import { errors, UnresolvedElemIDs, createElementSelector } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
-import { fixElements } from '@salto-io/core'
+import { SelectorsError, fixElements } from '@salto-io/core'
 import { CliExitCode } from '../../src/types'
 import { cloneAction, moveToEnvsAction, moveToCommonAction, listUnresolvedAction, openAction, listAction, renameAction, printElementAction, fixElementsAction } from '../../src/commands/element'
 import * as mocks from '../mocks'
@@ -1595,7 +1595,7 @@ Moving the specified elements to common.
     const commandName = 'fix'
     let cliArgs: mocks.MockCliArgs
     let workspace: MockWorkspace
-    let fixElementsMock: jest.Mock
+    let fixElementsMock: jest.MockedFunction<typeof fixElements>
     let type: ObjectType
 
     beforeEach(() => {
@@ -1608,8 +1608,8 @@ Moving the specified elements to common.
       fixElementsMock = fixElements as jest.Mock
       fixElementsMock.mockClear()
       fixElementsMock.mockResolvedValue({
-        fixedElements: [type],
-        fixes: [],
+        changes: [],
+        errors: [],
       })
     })
 
@@ -1638,6 +1638,7 @@ Moving the specified elements to common.
     })
 
     it('should return an error for non top level selector', async () => {
+      fixElementsMock.mockRejectedValue(new SelectorsError('message', []))
       const result = await fixElementsAction({
         ...mocks.mockCliCommandArgs(commandName, cliArgs),
         input: { selectors: ['salto.type.attr.d'] },
@@ -1652,10 +1653,19 @@ Moving the specified elements to common.
       typeWithFix.annotations.fix1 = 'fix1'
 
       fixElementsMock.mockResolvedValue({
-        fixedElements: [typeWithFix],
-        fixes: [
+        changes: [{
+          action: 'add',
+          data: { after: 'fix1' },
+          id: typeWithFix.elemID.createNestedID('attr', 'fix1'),
+          elemIDs: {
+            before: typeWithFix.elemID.createNestedID('attr', 'fix1'),
+            after: typeWithFix.elemID.createNestedID('attr', 'fix1'),
+          },
+        }],
+        errors: [
           {
             elemID: typeWithFix.elemID,
+            severity: 'Info',
             message: 'Fix1',
             detailedMessage: 'Detailed fix1',
           },

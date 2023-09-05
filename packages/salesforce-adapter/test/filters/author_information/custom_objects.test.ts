@@ -25,7 +25,7 @@ import { Filter, FilterResult } from '../../../src/filter'
 import customObjects, { WARNING_MESSAGE } from '../../../src/filters/author_information/custom_objects'
 import { defaultFilterContext } from '../../utils'
 import { buildFetchProfile } from '../../../src/fetch_profile/fetch_profile'
-import { API_NAME, CUSTOM_OBJECT } from '../../../src/constants'
+import { API_NAME, CUSTOM_OBJECT, INTERNAL_ID_ANNOTATION } from '../../../src/constants'
 
 describe('custom objects author information test', () => {
   let filter: Filter
@@ -37,19 +37,22 @@ describe('custom objects author information test', () => {
     createdByName: 'created_name',
     createdDate: 'created_date',
     lastModifiedByName: 'changed_name',
-    lastModifiedDate: 'changed_date' })
+    lastModifiedDate: 'changed_date',
+    id: 'id' })
   const fieldProperties = mockFileProperties({ fullName: 'Custom__c.StringField__c',
     type: 'test',
     createdByName: 'created_name_field',
     createdDate: 'created_date_field',
     lastModifiedByName: 'changed_name_field',
-    lastModifiedDate: 'changed_date_field' })
+    lastModifiedDate: 'changed_date_field',
+    id: 'id_field' })
   const nonExistentFieldProperties = mockFileProperties({ fullName: 'Custom__c.noSuchField',
     type: 'test',
     createdByName: 'test',
     createdDate: 'test',
     lastModifiedByName: 'test',
-    lastModifiedDate: 'test' })
+    lastModifiedDate: 'test',
+    id: 'test' })
   // In order to test a field that was described in the server and not found in our elements.
   const primID = new ElemID('test', 'prim')
   const primNum = new PrimitiveType({
@@ -63,6 +66,7 @@ describe('custom objects author information test', () => {
     expect(object.annotations[CORE_ANNOTATIONS.CREATED_AT]).toEqual(properties.createdDate)
     expect(object.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toEqual(properties.lastModifiedByName)
     expect(object.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual(properties.lastModifiedDate)
+    expect(object.annotations[INTERNAL_ID_ANNOTATION]).toEqual(properties.id)
   }
   const objectWithoutInformation = new ObjectType({
     elemID: new ElemID('salesforce', 'otherName'),
@@ -76,9 +80,12 @@ describe('custom objects author information test', () => {
     filter = customObjects({ client, config: defaultFilterContext })
     customObject = new ObjectType({
       elemID: new ElemID('salesforce', 'Custom__c'),
-      annotations: { metadataType: CUSTOM_OBJECT, [API_NAME]: 'Custom__c' },
+      annotations: { metadataType: CUSTOM_OBJECT, [API_NAME]: 'Custom__c', [INTERNAL_ID_ANNOTATION]: 'id' },
       fields: {
-        StringField__c: { refType: primNum },
+        StringField__c: {
+          refType: primNum,
+          annotations: { [INTERNAL_ID_ANNOTATION]: 'id_field' },
+        },
       },
     })
   })

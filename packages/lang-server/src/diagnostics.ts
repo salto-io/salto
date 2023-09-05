@@ -31,7 +31,7 @@ export type WorkspaceSaltoDiagnostics = {
   totalNumberOfErrors: number
 }
 
-const MAX_WORKSPACE_ERRORS = 30
+const MAX_WORKSPACE_ERRORS = 50
 
 export const getDiagnostics = async (
   workspace: EditorWorkspace,

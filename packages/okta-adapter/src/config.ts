@@ -41,6 +41,7 @@ export type OktaActionName = ActionName | OktaStatusActionName
 export type OktaFetchConfig = configUtils.UserFetchConfig & {
   convertUsersIds?: boolean
   enableMissingReferences?: boolean
+  rateLimitBuffer?: number
 }
 
 export type OktaSwaggerApiConfig = configUtils.AdapterSwaggerApiConfig<OktaActionName>
@@ -1724,6 +1725,7 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
         {
           convertUsersIds: { refType: BuiltinTypes.BOOLEAN },
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
+          rateLimitBuffer: { refType: BuiltinTypes.NUMBER },
         }
       ),
     },

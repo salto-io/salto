@@ -17,7 +17,7 @@ import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { promises } from '@salto-io/lowerdash'
-import OktaClient, { RATE_LIMIT_BUFFER } from '../../src/client/client'
+import OktaClient, { DEFAULT_RATE_LIMIT_BUFFER } from '../../src/client/client'
 
 const { sleep } = promises.timeout
 
@@ -89,7 +89,7 @@ describe('client', () => {
           // eslint-disable-next-line no-loop-func
           clientGetSinglePageSpy.mockImplementationOnce(async () => {
             await sleep(100)
-            return { headers: { 'x-rate-limit-remaining': (RATE_LIMIT_BUFFER + 5 - j).toString(), 'x-rate-limit-reset': resetTime } }
+            return { headers: { 'x-rate-limit-remaining': (DEFAULT_RATE_LIMIT_BUFFER + 5 - j).toString(), 'x-rate-limit-reset': resetTime } }
           })
         }
       }

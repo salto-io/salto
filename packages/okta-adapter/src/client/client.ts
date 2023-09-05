@@ -32,6 +32,10 @@ const {
 } = clientUtils
 const log = logger(module)
 
+type OktaRateLimitConfig = {
+  rateLimitBuffer?: number
+}
+
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
   // There is a concurrent rate limit of minimum 15, depending on the plan, we take a buffer
@@ -40,7 +44,7 @@ const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitC
 }
 
 // We have a buffer to prevent reaching the rate limit with the initial request on parallel or consecutive fetches
-export const RATE_LIMIT_BUFFER = 6 // TODO: make this configurable
+export const DEFAULT_RATE_LIMIT_BUFFER = 6
 
 // Unlimited because the rate max requests is calculated dynamically
 const DEFAULT_MAX_REQUESTS_PER_MINUTE = -1
@@ -105,15 +109,17 @@ const updateRateLimits = (
 export default class OktaClient extends clientUtils.AdapterHTTPClient<
   Credentials, clientUtils.ClientRateLimitConfig
 > {
+  private readonly rateLimitBuffer: number
+
   private rateLimits = rateLimitUrls.map(url => ({
     url,
     limits: { ...initRateLimits },
   }))
 
-  private defaultRateLimit = { ...initRateLimits } // All other endpoints share the same rate limit
+  private defaultRateLimits = { ...initRateLimits } // All other endpoints share the same rate limit
 
   constructor(
-    clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig>
+    clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig> & OktaRateLimitConfig
   ) {
     super(
       OKTA,
@@ -126,6 +132,7 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
         retry: DEFAULT_RETRY_OPTS,
       }
     )
+    this.rateLimitBuffer = clientOpts.rateLimitBuffer ?? DEFAULT_RATE_LIMIT_BUFFER
   }
 
   public get baseUrl(): string {
@@ -139,13 +146,13 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
   public async getSinglePage(
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
-    const rateLimits = this.rateLimits.find(rateLimit => args.url.match(rateLimit.url))?.limits ?? this.defaultRateLimit
+    const rateLimits = this.rateLimits.find(({ url }) => args.url.match(url))?.limits ?? this.defaultRateLimits
     // If this is the initial request, don't wait
     if (!_.isEqual(rateLimits, initRateLimits)
       // If nothing is running, and we passed the rate limit reset time, don't wait
       && !(rateLimits.currentlyRunning === 0 && rateLimits.rateLimitReset < Date.now())
       // If we are at the rate limit with the buffer, wait
-      && rateLimits.rateLimitRemaining - rateLimits.currentlyRunning <= RATE_LIMIT_BUFFER) {
+      && rateLimits.rateLimitRemaining - rateLimits.currentlyRunning <= this.rateLimitBuffer) {
       await waitForRateLimit(rateLimits.rateLimitReset)
       return this.getSinglePage(args)
     }

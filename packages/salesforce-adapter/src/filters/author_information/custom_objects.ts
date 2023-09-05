@@ -22,7 +22,7 @@ import {
 import { FileProperties } from 'jsforce-types'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { CUSTOM_FIELD, CUSTOM_OBJECT } from '../../constants'
+import { CUSTOM_FIELD, CUSTOM_OBJECT, INTERNAL_ID_ANNOTATION } from '../../constants'
 import { getAuthorAnnotations, MetadataInstanceElement } from '../../transformers/transformer'
 import { RemoteFilterCreator } from '../../filter'
 import SalesforceClient from '../../client/client'
@@ -98,7 +98,14 @@ const setObjectAuthorInformation = (
 ): void => {
   // Set author information on the CustomObject's fields
   Object.values(customFieldsFileProperties)
-    .forEach(fileProp => addAuthorAnnotationsToField(fileProp, getObjectFieldByFileProperties(fileProp, object)))
+    .forEach(fileProp => {
+      const field = getObjectFieldByFileProperties(fileProp, object)
+      if (field === undefined) {
+        return
+      }
+      field.annotations[INTERNAL_ID_ANNOTATION] = fileProp.id
+      addAuthorAnnotationsToField(fileProp, field)
+    })
   // Set the latest AuthorInformation on the CustomObject
   const allAuthorInformation = [getAuthorInformationFromFileProps(typeFileProperties)]
     .concat(customFieldsFileProperties.map(getAuthorInformationFromFileProps))

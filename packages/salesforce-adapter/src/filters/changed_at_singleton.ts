@@ -29,7 +29,7 @@ import { apiNameSync, getChangedAtSingleton, isCustomObjectSync, isMetadataInsta
 const createChangedAtSingletonInstanceValues = (
   metadataInstancesByType: Record<string, InstanceElement[]>,
   customObjectTypeByName: Record<string, ObjectType>,
-) => {
+): Values => {
   const instanceValues: Values = {}
   Object.entries(metadataInstancesByType).forEach(([metadataType, instances]) => {
     instanceValues[metadataType] = {}

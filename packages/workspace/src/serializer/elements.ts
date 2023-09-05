@@ -530,7 +530,7 @@ const generalDeserializeParsed = async <T>(
   if (!Array.isArray(parsed)) {
     throw new Error('got non-array JSON data')
   }
-  const elements = parsed.map(restoreClasses)
+  const elements = restoreClasses(parsed)
   if (staticFiles.length > 0) {
     await Promise.all(staticFiles.map(
       async ({ obj, key }) => {

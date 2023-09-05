@@ -341,6 +341,15 @@ describe('State/cache serialization', () => {
       ])
       expect(mockStoreStaticFile).toHaveBeenCalledWith(staticFile)
     })
+    it('should deserialize static files - with a reviver', async () => {
+      const staticFile = new StaticFile({ filepath: 'abc', content: Buffer.from('hello world!') })
+      const mockStaticFileReviver = jest.fn().mockResolvedValue(staticFile)
+      const deserialized = await deserializeValues(await serialize([staticFile]), mockStaticFileReviver)
+      expect(deserialized[0]).toBe(staticFile)
+      expect(mockStaticFileReviver).toHaveBeenCalledWith(
+        new StaticFile({ filepath: staticFile.filepath, hash: staticFile.hash }),
+      )
+    })
   })
 
   describe('validate deserialization', () => {

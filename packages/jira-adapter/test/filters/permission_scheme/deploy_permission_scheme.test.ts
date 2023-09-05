@@ -52,7 +52,7 @@ describe('deploy permission scheme', () => {
     const elementsSource = getLicenseElementSource(true)
     filter = deployPermissionScheme(getFilterParams({ elementsSource })) as typeof filter
   })
-  it('should mock deploy of addition schemes on free license', async () => {
+  it('should deploy of addition schemes on free license', async () => {
     const { deployResult, leftoverChanges } = await filter.deploy(changes)
     expect(deployResult).toEqual({
       appliedChanges: [changes[0], changes[2]],
@@ -60,7 +60,7 @@ describe('deploy permission scheme', () => {
     })
     expect(leftoverChanges).toEqual([changes[1]])
   })
-  it('should not mock deploy removal and modification schemes on free license', async () => {
+  it('should not deploy removal and modification schemes on free license', async () => {
     const { deployResult, leftoverChanges } = await filter.deploy(otherChanges)
     expect(deployResult).toEqual({
       appliedChanges: [],
@@ -68,7 +68,7 @@ describe('deploy permission scheme', () => {
     })
     expect(leftoverChanges).toEqual(otherChanges)
   })
-  it('should not mock deploy on paid license', async () => {
+  it('should not deploy on paid license', async () => {
     const elementsSource = getLicenseElementSource(false)
     filter = deployPermissionScheme(getFilterParams({ elementsSource })) as typeof filter
     const { deployResult, leftoverChanges } = await filter.deploy(changes)
@@ -78,7 +78,7 @@ describe('deploy permission scheme', () => {
     })
     expect(leftoverChanges).toEqual(changes)
   })
-  it('should not mock deploy on paid license due to account info with some paid app', async () => {
+  it('should not deploy on paid license due to account info with some paid app', async () => {
     const accountInfoWithSomePaidApp = new InstanceElement(
       '_config',
       createEmptyType('AccountInfo'),
@@ -106,7 +106,7 @@ describe('deploy permission scheme', () => {
     })
     expect(leftoverChanges).toEqual(changes)
   })
-  it('should not mock deploy on paid license due to missing account info', async () => {
+  it('should not deploy on paid license due to missing account info', async () => {
     const elementsSource = buildElementsSourceFromElements([])
     filter = deployPermissionScheme(getFilterParams({ elementsSource })) as typeof filter
     const { deployResult, leftoverChanges } = await filter.deploy(changes)
@@ -116,7 +116,7 @@ describe('deploy permission scheme', () => {
     })
     expect(leftoverChanges).toEqual(changes)
   })
-  it('should not mock deploy on dc', async () => {
+  it('should not deploy on dc', async () => {
     filter = deployPermissionScheme(getFilterParams(undefined, true)) as typeof filter
     const { deployResult, leftoverChanges } = await filter.deploy(changes)
     expect(deployResult).toEqual({

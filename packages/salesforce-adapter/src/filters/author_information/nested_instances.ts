@@ -22,8 +22,8 @@ import { RemoteFilterCreator } from '../../filter'
 import { apiNameSync, ensureSafeFilterFetch, isMetadataInstanceElementSync } from '../utils'
 import { WORKFLOW_FIELD_TO_TYPE } from '../workflow'
 import { NESTED_INSTANCE_VALUE_TO_TYPE_NAME } from '../custom_objects_to_object_type'
-import { SalesforceClient } from '../../../index'
 import { getAuthorAnnotations, MetadataInstanceElement } from '../../transformers/transformer'
+import SalesforceClient from '../../client/client'
 
 const { awu } = collections.asynciterable
 const log = logger(module)

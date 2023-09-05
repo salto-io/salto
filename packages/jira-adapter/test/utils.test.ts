@@ -15,7 +15,7 @@
 */
 
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { isAllFreeLicense, isJiraSoftwareFreeLicense } from '../src/utils'
 import { createEmptyType, getAccountInfoInstance } from './utils'
 import { JIRA } from '../src/constants'

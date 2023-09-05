@@ -213,7 +213,7 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) =>
         }
         return undefined
       })))).filter(isDefined)
-    elements.push(...issueLayouts)
+    issueLayouts.forEach(layout => { elements.push(layout) })
     await createReferences(config, issueLayouts, elements)
     setTypeDeploymentAnnotations(issueLayoutType)
     await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.CREATABLE)

@@ -174,7 +174,11 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) =>
     const projectIdToProject = Object.fromEntries(
       (await Promise.all(elements.filter(e => e.elemID.typeName === PROJECT_TYPE)
         .filter(isInstanceElement)
-        .filter(project => project.value.simplified === false && project.value.projectTypeKey === 'software')
+        .filter(project => {
+          const { simplified } = project.value
+          delete project.value.simplified
+          return !simplified && project.value.projectTypeKey === 'software'
+        })
         .map(async project => [project.value.id, project])))
         .filter(isDefined)
     )
@@ -184,7 +188,7 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) =>
     elements.push(issueLayoutType)
     subTypes.forEach(type => elements.push(type))
 
-    await Promise.all(Object.entries(projectToScreenId)
+    const issueLayouts = (await Promise.all(Object.entries(projectToScreenId)
       .flatMap(([projectId, screenIds]) => screenIds.map(async screenId => {
         const response = await getIssueLayout({
           projectId: Number(projectId),
@@ -204,20 +208,21 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) =>
           const serviceIds = adapterElements.createServiceIds(value, 'id', issueLayoutType.elemID)
           const instanceName = getElemIdFunc ? getElemIdFunc(JIRA, serviceIds, naclCase(name)).name
             : naclCase(name)
-          const issueLayout = new InstanceElement(
+          return new InstanceElement(
             instanceName,
             issueLayoutType,
             value,
             [...projectIdToProject[projectId].path.slice(0, -1), 'layouts', pathNaclCase(instanceName)],
           )
-          elements.push(issueLayout)
-          await createReferences(config, [issueLayout], elements)
-          setTypeDeploymentAnnotations(issueLayoutType)
-          await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.CREATABLE)
-          await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.UPDATABLE)
-          await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.DELETABLE)
         }
-      })))
+        return undefined
+      })))).filter(isDefined)
+    elements.push(...issueLayouts)
+    await createReferences(config, issueLayouts, elements)
+    setTypeDeploymentAnnotations(issueLayoutType)
+    await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.CREATABLE)
+    await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.UPDATABLE)
+    await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.DELETABLE)
   },
   deploy: async changes => {
     const [issueLayoutsChanges, leftoverChanges] = _.partition(

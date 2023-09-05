@@ -839,7 +839,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
       fieldsToHide: [
         { fieldName: 'id' },
-        { fieldName: 'simplified' },
       ],
       fieldsToOmit: [
         { fieldName: 'style' },

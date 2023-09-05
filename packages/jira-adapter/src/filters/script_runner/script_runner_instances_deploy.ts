@@ -15,17 +15,13 @@
 */
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { Change, InstanceElement, getChangeData, isInstanceChange } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { FilterCreator } from '../../filter'
 
 const {
   replaceInstanceTypeForDeploy,
 } = elementUtils.ducktype
-
-const log = logger(module)
 
 // This filter deploys script runner instances
 const filter: FilterCreator = ({ scriptRunnerClient, config }) => ({
@@ -59,8 +55,6 @@ const filter: FilterCreator = ({ scriptRunnerClient, config }) => ({
             config: scriptRunnerApiDefinitions,
           })),
       })) as Change<InstanceElement>[]
-    log.debug(`Deploying ${typeFixedChanges.length} script runner instances`)
-    log.debug(`Deploying first first first ${safeJsonStringify(getChangeData(typeFixedChanges[0]))}`)
     const deployResult = await deployChanges(
       typeFixedChanges.filter(isInstanceChange),
       async change => {

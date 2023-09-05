@@ -90,6 +90,32 @@ describe('issue type hierarchy validator', () => {
           detailedMessage: 'Issue type hierarchy level cannot be changed from 0 to -1 or vice versa.',
         }])
     })
+    it('should return error if there is no jira-software in the account info instance because it considered free acount', async () => {
+      const accountInfoWithNoJiraSoftware = new InstanceElement(
+        '_config',
+        createEmptyType('AccountInfo'),
+        {
+          license: {
+            applications: [
+              {
+                id: 'jira-serviceDesk',
+                plan: 'PAID',
+              },
+            ],
+          },
+        }
+      )
+      elementsSource = buildElementsSourceFromElements([accountInfoWithNoJiraSoftware])
+      const changes = [toChange({ after: issueTypeLevelTwo })]
+      expect(await issueTypeHierarchyValidator(changes, elementsSource)).toEqual([
+        {
+          elemID: issueTypeLevelTwo.elemID,
+          severity: 'Error' as SeverityLevel,
+          message: 'Cannot deploy issue type with hierarchy level greater than 0.',
+          detailedMessage: 'Issue type hierarchy level can only be -1, 0. To deploy, change the hierarchy level to one of the allowed values.',
+        },
+      ])
+    })
   })
   describe('paid account', () => {
     const accountInfoInstancePaid = getAccountInfoInstance(false)

@@ -21,7 +21,7 @@ import {
   GROUP_TYPE_NAME,
   MACRO_TYPE_NAME,
   TICKET_FIELD_CUSTOM_FIELD_OPTION, TICKET_FIELD_TYPE_NAME,
-  TICKET_FORM_TYPE_NAME,
+  TICKET_FORM_TYPE_NAME, VIEW_TYPE_NAME,
   ZENDESK,
 } from '../../src/constants'
 import filterCreator from '../../src/filters/unordered_lists'
@@ -37,6 +37,7 @@ describe('Unordered lists filter', () => {
     const dynamicContentItemType = new ObjectType({ elemID: new ElemID(ZENDESK, 'dynamic_content_item') })
     const triggerDefinitionType = new ObjectType({ elemID: new ElemID(ZENDESK, 'trigger_definition') })
     const macroType = new ObjectType({ elemID: new ElemID(ZENDESK, MACRO_TYPE_NAME) })
+    const viewType = new ObjectType({ elemID: new ElemID(ZENDESK, VIEW_TYPE_NAME) })
     const groupType = new ObjectType({ elemID: new ElemID(ZENDESK, GROUP_TYPE_NAME) })
     const ticketFormType = new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FORM_TYPE_NAME) })
     const ticketCustomFieldType = new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FIELD_CUSTOM_FIELD_OPTION) })
@@ -177,6 +178,19 @@ describe('Unordered lists filter', () => {
         },
       },
     )
+    const validViewInstance = new InstanceElement(
+      'valid view',
+      viewType,
+      {
+        restriction: {
+          ids: [
+            new ReferenceExpression(groupThreeInstance.elemID, groupThreeInstance),
+            new ReferenceExpression(groupOneInstance.elemID, groupOneInstance),
+            new ReferenceExpression(groupTwoInstance.elemID, groupTwoInstance),
+          ],
+        },
+      },
+    )
     const macroWithValuesInstance = new InstanceElement(
       'values macro',
       macroType,
@@ -190,10 +204,33 @@ describe('Unordered lists filter', () => {
         },
       },
     )
+    const viewWithValuesInstance = new InstanceElement(
+      'values view',
+      viewType,
+      {
+        restriction: {
+          ids: [
+            123,
+            new ReferenceExpression(groupOneInstance.elemID, groupOneInstance),
+            new ReferenceExpression(groupTwoInstance.elemID, groupTwoInstance),
+          ],
+        },
+      },
+    )
     const invalidMacroInstance1 = new InstanceElement('invalid macro1', macroType, {})
+    const invalidViewInstance1 = new InstanceElement('invalid view1', viewType, {})
     const invalidMacroInstance2 = new InstanceElement(
       'invalid macro2',
       macroType,
+      {
+        restriction: {
+          id: 123,
+        },
+      },
+    )
+    const invalidViewInstance2 = new InstanceElement(
+      'invalid view2',
+      viewType,
       {
         restriction: {
           id: 123,
@@ -327,7 +364,8 @@ describe('Unordered lists filter', () => {
       triggerDefinitionType, unsortedTriggerDefinitionInstance, enVariantInstance, esVariantInstance, heVariantInstance,
       enVariantNotPopulatedInstance, enVariantWithValuesInstance, withSomeUnpopulatedLocaleRefs, withSomeValuesForLocal,
       groupOneInstance, groupTwoInstance, groupThreeInstance, validMacroInstance, invalidMacroInstance1,
-      invalidMacroInstance2, macroWithValuesInstance, validTicketFormInstance, customOneInstance, customThreeInstance,
+      invalidMacroInstance2, macroWithValuesInstance, validViewInstance, invalidViewInstance1, invalidViewInstance2,
+      viewWithValuesInstance, validTicketFormInstance, customOneInstance, customThreeInstance,
       invalidTicketFormInstance, ticketFieldOneInstance, ticketFieldThreeInstance, invalidChildFieldTicketFormInstance,
       invalidTicketFieldInstance,
     ]
@@ -383,28 +421,36 @@ describe('Unordered lists filter', () => {
       expect(instances[0].value).toEqual({})
     })
   })
-  describe('macro', () => {
+  describe('macro and view restrictions', () => {
     it('sort correctly', async () => {
-      const instances = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'valid macro')
-      expect(instances[0].value.restriction.ids).toHaveLength(3)
-      expect(instances[0].value.restriction.ids[0].elemID.name).toEqual('groupA')
-      expect(instances[0].value.restriction.ids[1].elemID.name).toEqual('groupB')
-      expect(instances[0].value.restriction.ids[2].elemID.name).toEqual('groupC')
+      const instances = elements.filter(isInstanceElement).filter(e => ['valid macro', 'valid view'].includes(e.elemID.name))
+      instances.forEach((instance => {
+        expect(instance.value.restriction.ids).toHaveLength(3)
+        expect(instance.value.restriction.ids[0].elemID.name).toEqual('groupA')
+        expect(instance.value.restriction.ids[1].elemID.name).toEqual('groupB')
+        expect(instance.value.restriction.ids[2].elemID.name).toEqual('groupC')
+      }))
     })
     it('not change order when some are values', async () => {
-      const instances = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'values macro')
-      expect(instances[0].value.restriction.ids).toHaveLength(3)
-      expect(instances[0].value.restriction.ids[0]).toEqual(123)
-      expect(instances[0].value.restriction.ids[1].elemID.name).toEqual('groupA')
-      expect(instances[0].value.restriction.ids[2].elemID.name).toEqual('groupB')
+      const instances = elements.filter(isInstanceElement).filter(e => ['values macro', 'values view'].includes(e.elemID.name))
+      instances.forEach((instance => {
+        expect(instance.value.restriction.ids).toHaveLength(3)
+        expect(instance.value.restriction.ids[0]).toEqual(123)
+        expect(instance.value.restriction.ids[1].elemID.name).toEqual('groupA')
+        expect(instance.value.restriction.ids[2].elemID.name).toEqual('groupB')
+      }))
     })
     it('should do nothing when there is no restriction', async () => {
-      const instances = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'invalid macro1')
-      expect(instances[0].value.restriction).not.toBeDefined()
+      const instances = elements.filter(isInstanceElement).filter(e => ['invalid macro1', 'invalid view1'].includes(e.elemID.name))
+      instances.forEach((instance => {
+        expect(instance.value.restriction).not.toBeDefined()
+      }))
     })
     it('should do nothing when there is no ids', async () => {
-      const instances = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'invalid macro2')
-      expect(instances[0].value.restriction.id).toEqual(123)
+      const instances = elements.filter(isInstanceElement).filter(e => ['invalid macro2', 'invalid view2'].includes(e.elemID.name))
+      instances.forEach((instance => {
+        expect(instance.value.restriction.id).toEqual(123)
+      }))
     })
   })
   describe('ticket_form', () => {

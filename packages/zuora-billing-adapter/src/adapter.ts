@@ -43,12 +43,11 @@ const { createPaginator } = clientUtils
 const { generateTypes, getAllInstances } = elementUtils.swagger
 const log = logger(module)
 
-const { hideTypes: hideTypesFilter, query: queryFilter, ...otherCommonFilters } = commonFilters
+const { hideTypes: hideTypesFilter, ...otherCommonFilters } = commonFilters
 
 export const DEFAULT_FILTERS = [
   // hideTypes should run before creating custom objects, so that it doesn't hide them
   hideTypesFilter,
-  queryFilter,
   // objectDefsFilter should run before everything else
   objectDefsFilter,
   // unorderedLists should run before references are created

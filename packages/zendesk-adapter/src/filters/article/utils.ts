@@ -261,7 +261,7 @@ export const updateArticleTranslationBody = async ({
       } catch (e) {
         log.error(`Error serializing article translation body in Deployment for ${translationInstance.elemID.getFullName()}: ${e}, stack: ${e.stack}`)
         throw createSaltoElementError({ // caught in adapter.ts
-          message: `Error serializing article translation body in Deployment for ${translationInstance.elemID.getFullName()}: ${e}, stack: ${e.stack}`,
+          message: `Error serializing article translation body in Deployment: ${e}, stack: ${e.stack}`,
           severity: 'Error',
           elemID: translationInstance.elemID,
         })

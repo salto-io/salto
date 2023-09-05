@@ -21,7 +21,7 @@ import xmlParser from 'fast-xml-parser'
 import readdirp from 'readdirp'
 import { logger } from '@salto-io/logging'
 import { promises, collections } from '@salto-io/lowerdash'
-import { exists, readDir, readFile } from '@salto-io/file'
+import { exists, readFile } from '@salto-io/file'
 import { CustomTypeInfo, CustomizationInfo, FileCabinetCustomizationInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from './types'
 import { CONFIG_FEATURES, FILE_CABINET_PATH_SEPARATOR } from '../constants'
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from './constants'
@@ -182,11 +182,15 @@ const transformCustomObject = async (
   )
 }
 
+const listFilesRecursive = async (dirPath: string): Promise<string[]> =>
+  // TODO: SALTO-4200 support also windows path style
+  (await readdirp.promise(dirPath, { type: 'files' })).map(file => file.path)
+
 export const parseObjectsDir = async (
   projectPath: string
 ): Promise<CustomTypeInfo[]> => {
   const objectsDirPath = getObjectsDirPath(projectPath)
-  const filenames = await readDir(objectsDirPath)
+  const filenames = await listFilesRecursive(objectsDirPath)
   const scriptIdToFiles = _.groupBy(
     filenames,
     filename => filename.split(FILE_SEPARATOR)[0]
@@ -291,18 +295,14 @@ const transformFoldersWithoutAttributes = (
     .value()
 }
 
-const listFilesRecursive = async (dirPath: string): Promise<string[]> =>
-  // TODO: SALTO-4200 support also windows path style
-  (await readdirp.promise(dirPath, { type: 'files' }))
-    .map(file => `${FILE_CABINET_PATH_SEPARATOR}${file.path}`)
-
 export const parseFileCabinetDir = async (
   projectPath: string,
   pathsToImport?: string[]
 ): Promise<FileCabinetCustomizationInfo[]> => {
   const fileCabinetDirPath = getFileCabinetDirPath(projectPath)
   const [attributesPaths, filePaths] = _.partition(
-    pathsToImport ?? await listFilesRecursive(fileCabinetDirPath),
+    pathsToImport ?? (await listFilesRecursive(fileCabinetDirPath))
+      .map(path => `${FILE_CABINET_PATH_SEPARATOR}${path}`),
     p => p.endsWith(ATTRIBUTES_FILE_SUFFIX)
   )
   const [folderAttrsPaths, fileAttrsPaths] = _.partition(

@@ -20,6 +20,7 @@ import { getDefaultAdapterConfig } from '../utils'
 import { NETSUITE, WORKFLOW } from '../../src/constants'
 import filterCreator from '../../src/filters/omit_sdf_untyped_values'
 import { LocalFilterOpts } from '../../src/filter'
+import { emptyQueryParams, fullQueryParams } from '../../src/query'
 
 describe('omit sdf untyped values filter', () => {
   let instance: InstanceElement
@@ -50,14 +51,22 @@ describe('omit sdf untyped values filter', () => {
   it('should omit untyped values when enable=true', async () => {
     await filterCreator({
       ...defaultOpts,
-      config: { fetch: { strictInstanceStructure: true } },
+      config: { fetch: {
+        include: fullQueryParams(),
+        exclude: emptyQueryParams(),
+        strictInstanceStructure: true,
+      } },
     }).onFetch?.([instance])
     expect(instance.value).toEqual({ someField: true })
   })
   it('should not omit untyped values when enable=false', async () => {
     await filterCreator({
       ...defaultOpts,
-      config: { fetch: { strictInstanceStructure: false } },
+      config: { fetch: {
+        include: fullQueryParams(),
+        exclude: emptyQueryParams(),
+        strictInstanceStructure: false,
+      } },
     }).onFetch?.([instance])
     expect(instance.value).toEqual({ someField: true, untypedField: 'test' })
   })

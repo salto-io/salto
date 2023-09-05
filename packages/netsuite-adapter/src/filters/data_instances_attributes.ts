@@ -35,7 +35,7 @@ const filterCreator: LocalFilterCreator = () => ({
           type: await e.getType(),
           strict: false,
           transformFunc: async ({ value }) => {
-            if (typeof value === 'object' && 'attributes' in value) {
+            if (_.isPlainObject(value) && 'attributes' in value) {
               _.assign(value, value.attributes)
               delete value.attributes
               delete value[XSI_TYPE]

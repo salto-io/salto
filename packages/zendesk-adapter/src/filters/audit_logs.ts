@@ -28,7 +28,22 @@ import { createSchemeGuard, getParent } from '@salto-io/adapter-utils'
 import moment from 'moment-timezone'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
-import { AUDIT_TIME_TYPE_NAME, TRANSLATION_TYPE_NAMES, ZENDESK } from '../constants'
+import {
+  APP_INSTALLATION_TYPE_NAME, APP_OWNED_TYPE_NAME,
+  AUDIT_TIME_TYPE_NAME, AUTOMATION_TYPE_NAME, BRAND_TYPE_NAME,
+  BUSINESS_HOUR_SCHEDULE,
+  BUSINESS_HOUR_SCHEDULE_HOLIDAY, CUSTOM_ROLE_TYPE_NAME,
+  CUSTOM_STATUS_TYPE_NAME, GROUP_TYPE_NAME, LOCALE_TYPE_NAME,
+  MACRO_TYPE_NAME, ORG_FIELD_TYPE_NAME,
+  SLA_POLICY_TYPE_NAME,
+  SUPPORT_ADDRESS_TYPE_NAME,
+  TICKET_FIELD_TYPE_NAME,
+  TICKET_FORM_TYPE_NAME,
+  TRANSLATION_TYPE_NAMES, TRIGGER_TYPE_NAME,
+  USER_FIELD_TYPE_NAME,
+  VIEW_TYPE_NAME,
+  ZENDESK,
+} from '../constants'
 import ZendeskClient from '../client/client'
 import { getIdByName } from '../user_utils'
 import { FETCH_CONFIG, GUIDE_GLOBAL_TYPES, GUIDE_TYPES_TO_HANDLE_BY_BRAND } from '../config'
@@ -37,6 +52,27 @@ const log = logger(module)
 const { awu } = collections.asynciterable
 
 export const AUDIT_TIME_TYPE_ID = new ElemID(ZENDESK, AUDIT_TIME_TYPE_NAME)
+const TYPE_TO_SOURCE_TYPE: Record<string, string> = {
+  [TICKET_FORM_TYPE_NAME]: 'ticket_form',
+  [SLA_POLICY_TYPE_NAME]: 'sla/policy',
+  [USER_FIELD_TYPE_NAME]: 'custom_field/field',
+  [ORG_FIELD_TYPE_NAME]: 'custom_field/field',
+  [TICKET_FIELD_TYPE_NAME]: 'ticket_field',
+  [VIEW_TYPE_NAME]: 'view',
+  [CUSTOM_STATUS_TYPE_NAME]: 'custom_status',
+  [SUPPORT_ADDRESS_TYPE_NAME]: 'recipient_address',
+  [BUSINESS_HOUR_SCHEDULE]: 'zendesk/business_hours/workweek',
+  [BUSINESS_HOUR_SCHEDULE_HOLIDAY]: 'zendesk/business_hours/holiday',
+  [MACRO_TYPE_NAME]: 'macro',
+  [AUTOMATION_TYPE_NAME]: 'rule',
+  [APP_INSTALLATION_TYPE_NAME]: 'zendesk/app_market/installation',
+  [APP_OWNED_TYPE_NAME]: 'zendesk/app_market/app',
+  [BRAND_TYPE_NAME]: 'brand',
+  [CUSTOM_ROLE_TYPE_NAME]: 'permission_set',
+  [GROUP_TYPE_NAME]: 'group',
+  [LOCALE_TYPE_NAME]: 'account',
+  [TRIGGER_TYPE_NAME]: 'trigger',
+}
 const AUDIT_TIME_INSTANCE_ID = AUDIT_TIME_TYPE_ID.createNestedID('instance', ElemID.CONFIG_NAME)
 const ELEMENTS_WITH_PARENTS = [
   'ticket_field__custom_field_options',
@@ -128,15 +164,26 @@ const getChangedByName = async ({
     return undefined
   }
   try {
-    const res = (await client.getSinglePage({
-      url: '/api/v2/audit_logs',
-      queryParams: {
+    const sourceType = TYPE_TO_SOURCE_TYPE[instance.elemID.typeName]
+    const queryParams: Record<string, string | string[]> = sourceType !== undefined
+      ? {
         'page[size]': '1',
         // this is the log creation time and not when the source was created
         sort: '-created_at',
         'filter[source_id]': id,
         'filter[created_at]': [start, end],
-      },
+        'filter[source_type]': sourceType,
+      }
+      : {
+        'page[size]': '1',
+        // this is the log creation time and not when the source was created
+        sort: '-created_at',
+        'filter[source_id]': id,
+        'filter[created_at]': [start, end],
+      }
+    const res = (await client.getSinglePage({
+      url: '/api/v2/audit_logs',
+      queryParams,
     })).data
     if (isValidAuditRes(res)) {
       if (_.isEmpty(res.audit_logs)) {
@@ -211,6 +258,7 @@ const addChangedByUsingUpdatedById = (instances: InstanceElement[], idToName: Re
 }
 
 const calculateLogNumber = async (client: ZendeskClient): Promise<string> => {
+  // we do not use cursor base pagination as the field 'count' would not exist
   try {
     const res = (await client.getSinglePage({
       url: '/api/v2/audit_logs',

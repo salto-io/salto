@@ -56,6 +56,21 @@ export const defaultMapper = (val: string): string[] => (
   val.split(API_NAME_SEPARATOR).map(v => naclCase(v))
 )
 
+/**
+ * Convert a string value of a file path to the map index key.
+ * In this case, we want to use the last part of the path as the key, and it's
+ * unknown how many levels the path has. If there are less than two levels, take only the last.
+ */
+const filePathMapper = (val: string): string[] => {
+  const splitPath = val.split('/')
+  if (splitPath.length >= 3) {
+    return [naclCase(splitPath.slice(2).join('/'))]
+  }
+  log.warn(`Path ${val} has less than two levels, using only the last part as the key`)
+  return [naclCase(_.last(splitPath))]
+}
+
+
 const BUSINESS_HOURS_MAP_FIELD_DEF: Record<string, MapDef> = {
   // One-level maps
   businessHours: { key: 'name' },
@@ -95,7 +110,7 @@ const EMAIL_TEMPLATE_MAP_FIELD_DEF: Record<string, MapDef> = {
 }
 
 const LIGHTNING_COMPONENT_BUNDLE_MAP: Record<string, MapDef> = {
-  'lwcResources.lwcResource': { key: 'filePath', mapper: (item => [naclCase(_.last(item.split('/')))]) },
+  'lwcResources.lwcResource': { key: 'filePath', mapper: (item => filePathMapper(item)) },
 }
 
 export const metadataTypeToFieldToMapDef: Record<string, Record<string, MapDef>> = {

@@ -14,15 +14,13 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { convertToFeaturesXmlContent, convertToXmlContent, parseFeaturesXml, parseFileCabinetDir, parseObjectsDir, parseSdfProjectDir } from '../../src/client/sdf_parser'
+import { OBJECTS_DIR, convertToFeaturesXmlContent, convertToXmlContent, parseFeaturesXml, parseFileCabinetDir, parseObjectsDir, parseSdfProjectDir } from '../../src/client/sdf_parser'
 import { isFileCustomizationInfo, isFolderCustomizationInfo } from '../../src/client/utils'
-import { MOCK_FEATURES_XML, MOCK_FILE_ATTRS_PATH, MOCK_FILE_PATH, MOCK_FILE_WITHOUT_ATTRIBUTES_PATH, MOCK_FOLDER_ATTRS_PATH, MOCK_TEMPLATE_CONTENT, OBJECT_XML_WITH_HTML_CHARS, readDirMockFunction, readFileMockFunction } from './mocks'
+import { MOCK_FEATURES_XML, MOCK_FILE_ATTRS_PATH, MOCK_FILE_PATH, MOCK_FILE_WITHOUT_ATTRIBUTES_PATH, MOCK_FOLDER_ATTRS_PATH, MOCK_TEMPLATE_CONTENT, OBJECTS_DIR_FILES, OBJECT_XML_WITH_HTML_CHARS, readFileMockFunction } from './mocks'
 
-const readDirMock = jest.fn()
 const readFileMock = jest.fn()
 const existsMock = jest.fn()
 jest.mock('@salto-io/file', () => ({
-  readDir: jest.fn().mockImplementation((...args) => readDirMock(...args)),
   readFile: jest.fn().mockImplementation((...args) => readFileMock(...args)),
   exists: jest.fn().mockImplementation((...args) => existsMock(...args)),
 }))
@@ -35,15 +33,18 @@ jest.mock('readdirp', () => ({
 describe('sdf parser', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    readDirMock.mockImplementation(() => readDirMockFunction())
     readFileMock.mockImplementation(path => readFileMockFunction(path))
     existsMock.mockResolvedValue(true)
-    readdirpMock.mockImplementation(() => [
-      MOCK_FILE_PATH,
-      MOCK_FILE_ATTRS_PATH,
-      MOCK_FOLDER_ATTRS_PATH,
-      MOCK_FILE_WITHOUT_ATTRIBUTES_PATH,
-    ].map(path => ({ path: path.slice(1) })))
+    readdirpMock.mockImplementation(dirPath => (
+      dirPath.endsWith(OBJECTS_DIR)
+        ? OBJECTS_DIR_FILES.map(path => ({ path }))
+        : [
+          MOCK_FILE_PATH,
+          MOCK_FILE_ATTRS_PATH,
+          MOCK_FOLDER_ATTRS_PATH,
+          MOCK_FILE_WITHOUT_ATTRIBUTES_PATH,
+        ].map(path => ({ path: path.slice(1) }))
+    ))
   })
   describe('parseObjectsDir', () => {
     it('should parse', async () => {
@@ -66,13 +67,13 @@ describe('sdf parser', () => {
         },
       ])
       expect(readFileMock).toHaveBeenCalledTimes(3)
-      const files = readDirMockFunction()
+      const files = OBJECTS_DIR_FILES
       expect(readFileMock).toHaveBeenCalledWith(`/projectPath/src/Objects/${files[0]}`)
       expect(readFileMock).toHaveBeenCalledWith(`/projectPath/src/Objects/${files[1]}`)
       expect(readFileMock).toHaveBeenCalledWith(`/projectPath/src/Objects/${files[2]}`)
     })
     it('should decode html chars', async () => {
-      readDirMock.mockResolvedValue(['custentity_my_script_id.xml'])
+      readdirpMock.mockResolvedValue([{ path: 'custentity_my_script_id.xml' }])
       readFileMock.mockResolvedValue(OBJECT_XML_WITH_HTML_CHARS)
       await expect(parseObjectsDir('objectsDir')).resolves.toEqual([{
         typeName: 'entitycustomfield',

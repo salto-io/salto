@@ -308,14 +308,22 @@ const getScope = (resource: string): { projectId?: string; projectTypeKey?: stri
   return undefined
 }
 
-const convertRuleScopeToProjects = (instance: InstanceElement): void => {
-  const { ruleScope } = instance.value
+export const convertRuleScopeValueToProjects = (values: Values): {
+  projectId?: string
+  projectTypeKey?: string
+}[] | undefined => {
+  const { ruleScope } = values
   if (!isRuleScope(ruleScope)) {
-    return
+    return undefined
   }
-  instance.value.projects = ruleScope.resources
+  return ruleScope.resources
     .map(getScope)
     .filter(isDefined)
+}
+
+
+const convertRuleScopeToProjects = (instance: InstanceElement): void => {
+  instance.value.projects = convertRuleScopeValueToProjects(instance.value)
 }
 
 const filter: FilterCreator = ({ client }) => {

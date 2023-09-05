@@ -26,7 +26,7 @@ import {
   CURRENCY, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_NAME_PREFIX, DATASET, EXCHANGE_RATE,
   NETSUITE, PERMISSIONS, SAVED_SEARCH, WORKBOOK,
 } from './constants'
-import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, checkTypeNameRegMatch, noSupportedTypeMatch, validateNetsuiteQueryParameters } from './query'
+import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, checkTypeNameRegMatch, noSupportedTypeMatch, validateNetsuiteQueryParameters, validateDefined, LockedElementsConfig, emptyQueryParams, fullFetchConfig } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING } from './data_elements/types'
 import { isCustomRecordTypeName, netsuiteSupportedTypes } from './types'
 import { FetchByQueryFailures } from './change_validators/safe_deploy'
@@ -134,7 +134,7 @@ export type NetsuiteConfig = {
   concurrencyLimit?: number
   client?: ClientConfig
   suiteAppClient?: SuiteAppClientConfig
-  fetch?: FetchParams
+  fetch: FetchParams
   fetchTarget?: NetsuiteQueryParameters
   skipList?: NetsuiteQueryParameters
   useChangesDetection?: boolean // TODO remove this from config SALTO-3676
@@ -487,8 +487,18 @@ const fieldsToOmitConfig = createMatchingObjectType<FieldToOmitParams>({
 const fetchConfigType = createMatchingObjectType<FetchParams>({
   elemID: new ElemID(NETSUITE, 'fetchConfig'),
   fields: {
-    include: { refType: queryParamsConfigType },
-    exclude: { refType: queryParamsConfigType },
+    include: {
+      refType: queryParamsConfigType,
+      annotations: {
+        _required: true,
+      },
+    },
+    exclude: {
+      refType: queryParamsConfigType,
+      annotations: {
+        _required: true,
+      },
+    },
     lockedElementsToExclude: { refType: queryParamsConfigType },
     authorInformation: { refType: authorInfoConfig },
     strictInstanceStructure: { refType: BuiltinTypes.BOOLEAN },
@@ -686,14 +696,14 @@ const validateAdditionalDependencies = (
 export const validateFetchConfig = ({
   include, exclude, fieldsToOmit,
 }: Record<keyof FetchParams, unknown>): void => {
-  if (include !== undefined) {
-    validatePlainObject(include, [CONFIG.fetch, FETCH_PARAMS.include])
-    validateFetchParameters(include)
-  }
-  if (exclude !== undefined) {
-    validatePlainObject(exclude, [CONFIG.fetch, FETCH_PARAMS.exclude])
-    validateFetchParameters(exclude)
-  }
+  validateDefined(include, [CONFIG.fetch, FETCH_PARAMS.include])
+  validatePlainObject(include, [CONFIG.fetch, FETCH_PARAMS.include])
+  validateFetchParameters(include)
+
+  validateDefined(exclude, [CONFIG.fetch, FETCH_PARAMS.exclude])
+  validatePlainObject(exclude, [CONFIG.fetch, FETCH_PARAMS.exclude])
+  validateFetchParameters(exclude)
+
   if (fieldsToOmit !== undefined) {
     validateFieldsToOmitConfig(fieldsToOmit)
   }
@@ -752,6 +762,7 @@ export const configType = createMatchingObjectType<NetsuiteConfig>({
       refType: fetchConfigType,
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: fetchDefault,
+        _required: true,
       },
     },
     filePathRegexSkipList: {
@@ -825,7 +836,9 @@ const toConfigSuggestions = ({
   failedFilePaths,
   failedTypes,
 }: FetchByQueryFailures): NetsuiteConfig => {
-  const config: NetsuiteConfig = {}
+  const config: NetsuiteConfig = {
+    fetch: fullFetchConfig(),
+  }
 
   if (!_.isEmpty(failedFilePaths.otherError) || !_.isEmpty(failedTypes.unexpectedError)) {
     config.fetch = {
@@ -874,7 +887,7 @@ export const combineQueryParams = (
   second: QueryParams | undefined,
 ): QueryParams => {
   if (first === undefined || second === undefined) {
-    return first ?? second ?? { types: [], fileCabinet: [] }
+    return first ?? second ?? emptyQueryParams()
   }
 
   // case where both are defined
@@ -894,11 +907,11 @@ export const combineQueryParams = (
   }
 }
 
-const emptyQueryParams = (): QueryParams => combineQueryParams(undefined, undefined)
-
 const updateConfigFromFailedFetch = (config: NetsuiteConfig, failures: FetchByQueryFailures): boolean => {
   const suggestions = toConfigSuggestions(failures)
-  if (_.isEmpty(suggestions)) {
+  if (_.isEqual(suggestions, {
+    fetch: fullFetchConfig(),
+  })) {
     return false
   }
 
@@ -941,7 +954,7 @@ const updateConfigFromLargeFolders = (config: NetsuiteConfig, { largeFolderError
     const largeFoldersToExclude = convertToQueryParams({ filePaths: createFolderExclude(largeFolderError) })
     config.fetch = {
       ...config.fetch,
-      exclude: combineQueryParams(config.fetch?.exclude, largeFoldersToExclude),
+      exclude: combineQueryParams(config.fetch.exclude, largeFoldersToExclude),
     }
     return true
   }
@@ -962,7 +975,7 @@ const updateConfigFromLargeTypes = (
     }
     config.fetch = {
       ...config.fetch,
-      exclude: combineQueryParams(config.fetch?.exclude, typesExcludeQuery),
+      exclude: combineQueryParams(config.fetch.exclude, typesExcludeQuery),
     }
     return true
   }
@@ -976,13 +989,15 @@ const splitConfig = (config: NetsuiteConfig): InstanceElement[] => {
   const {
     lockedElementsToExclude,
     ...allFetchConfigExceptLockedElements
-  } = config.fetch ?? {}
+  } = config.fetch
   if (lockedElementsToExclude === undefined) {
     return [toConfigInstance(config)]
   }
   config.fetch = allFetchConfigExceptLockedElements
-  const lockedElementsConfig: NetsuiteConfig = {
-    fetch: { lockedElementsToExclude },
+  const lockedElementsConfig: LockedElementsConfig = {
+    fetch: {
+      lockedElementsToExclude,
+    },
   }
   return [
     toConfigInstance(config),
@@ -1044,6 +1059,10 @@ function validateConfig(config: Record<string, unknown>): asserts config is Nets
     suiteAppClient,
   } = _.pick(config, Object.values(CONFIG))
 
+  validateDefined(fetch, CONFIG.fetch)
+  validatePlainObject(fetch, CONFIG.fetch)
+  validateFetchConfig(fetch)
+
   if (filePathRegexSkipList !== undefined) {
     validateArrayOfStrings(filePathRegexSkipList, CONFIG.filePathRegexSkipList)
     validateRegularExpressions(filePathRegexSkipList)
@@ -1069,11 +1088,6 @@ function validateConfig(config: Record<string, unknown>): asserts config is Nets
     validateFetchParameters(convertToQueryParams(skipList))
   }
 
-  if (fetch !== undefined) {
-    validatePlainObject(fetch, CONFIG.fetch)
-    validateFetchConfig(fetch)
-  }
-
   if (deploy !== undefined) {
     validatePlainObject(deploy, CONFIG.deploy)
     validateDeployParams(deploy)
@@ -1090,7 +1104,10 @@ export const netsuiteConfigFromConfig = (
 ): NetsuiteConfig => {
   try {
     if (!configInstance) {
-      return {}
+      log.debug('Using netsuite adapter config with full fetch')
+      return {
+        fetch: fullFetchConfig(),
+      }
     }
     const { value: config } = configInstance
     validateConfig(config)
@@ -1098,15 +1115,25 @@ export const netsuiteConfigFromConfig = (
       ...config,
       fetch: _.omit(config.fetch, FETCH_PARAMS.lockedElementsToExclude),
     })
-    return _.pickBy(config, (_value, key) => {
-      if (key in CONFIG) {
-        return true
-      }
-      log.debug('Unknown config property was found: %s', key)
-      return false
-    })
+
+    const {
+      fetch,
+      ...restOfConfig
+    } = config
+
+    return {
+      ..._.pickBy(restOfConfig, (_value, key) => {
+        if (key in CONFIG) {
+          return true
+        }
+        log.debug('Unknown config property was found: %s', key)
+        return false
+      }),
+      fetch,
+    }
   } catch (e) {
-    e.message = `Failed to load Netsuite config: ${e.message}`
+    e.message = `Failed to load Netsuite config: ${e.message}.
+      More information about Netsuite configuration options in Salto can be found here: https://github.com/salto-io/salto/blob/main/packages/netsuite-adapter/config_doc.md`
     log.error(e.message)
     throw e
   }

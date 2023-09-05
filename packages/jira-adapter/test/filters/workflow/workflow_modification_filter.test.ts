@@ -307,7 +307,7 @@ describe('workflowModificationFilter', () => {
       const res = await filter.deploy([change])
 
       expect(res.deployResult.errors).toEqual([{
-        message: 'Deployment of jira.Workflow.instance.workflowInstance failed: Error: Modification to an active workflow jira.Workflow.instance.workflowInstance is not backward compatible',
+        message: 'Error: Modification to an active workflow jira.Workflow.instance.workflowInstance is not backward compatible',
         severity: 'Error',
         elemID: workflowInstance.elemID,
       }])
@@ -334,13 +334,12 @@ describe('workflowModificationFilter', () => {
     })
     it('should clean when failure in deploy of the actual instance not related to sync', async () => {
       deployWorkflowMock.mockResolvedValueOnce()
-      deployWorkflowMock.mockRejectedValueOnce({
-        response: {
-          data: {
-            errorMessages: ['Other error'],
-          },
+      deployWorkflowMock.mockRejectedValueOnce(new clientUtils.HTTPError('message', {
+        status: 400,
+        data: {
+          errorMessages: ['other error'],
         },
-      })
+      }))
       await filter.deploy([change])
       expectDeleteOfTempWorkflow(3)
       expectSchemeChangeBack(3)
@@ -361,7 +360,7 @@ describe('workflowModificationFilter', () => {
       const res = await filter.deploy([change])
 
       expect(res.deployResult.errors).toEqual([{
-        message: 'Deployment of jira.Workflow.instance.workflowInstance failed: Error: The environment is not synced to the Jira Service for jira.Workflow.instance.workflowInstance, run fetch and try again',
+        message: 'Error: The environment is not synced to the Jira Service for jira.Workflow.instance.workflowInstance, run fetch and try again',
         severity: 'Error',
         elemID: workflowInstance.elemID,
       }])

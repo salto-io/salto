@@ -14,4 +14,4 @@
 * limitations under the License.
 */
 export { ALL_TYPES, INCLUDE_ALL_CONFIG, ElementQuery, QueryCriterion, createElementQuery, createMockQuery } from './query'
-export { nameCriterion } from './fetch_criteria'
+export { nameCriterion, fieldCriterionCreator } from './fetch_criteria'

@@ -26,6 +26,7 @@ import { FilterCreator } from '../../filter'
 import { createAutomationTypes } from './types'
 import { JiraConfig } from '../../config/config'
 import { getCloudId } from './cloud_id'
+import { convertRuleScopeValueToProjects } from './automation_structure'
 
 const DEFAULT_PAGE_SIZE = 1000
 
@@ -89,10 +90,9 @@ const createInstance = (
   getElemIdFunc?: ElemIdGetter,
 ): InstanceElement => {
   const serviceIds = elementUtils.createServiceIds(values, 'id', type.elemID)
-
   const defaultName = naclCase([
     values.name,
-    ...values.projects
+    ...(convertRuleScopeValueToProjects(values) ?? [])
       .map((project: Values) => idToProject[project.projectId]?.value.name)
       .filter(lowerdashValues.isDefined),
   ].join('_'))

@@ -22,7 +22,16 @@ import { FilterCreator } from '../filter'
 const filterCreators: Record<string, FilterCreator> = {
   hideTypes: filters.hideTypesFilterCreator(),
   referencedInstanceNames: filters.referencedInstanceNamesFilterCreator(),
-  query: filters.queryFilterCreator(),
+  query: filters.queryFilterCreator({ typesToKeep: [
+    'automation_order',
+    'organization_field_order',
+    'sla_policy_order',
+    'ticket_form_order',
+    'trigger_order',
+    'user_field_order',
+    'view_order',
+    'workspace_order',
+  ] }),
 }
 
 export default filterCreators

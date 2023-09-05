@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression, Field, CredentialError, getChangeData, toChange, SeverityLevel, GetAdditionalReferencesFunc, Change } from '@salto-io/adapter-api'
+import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression, Field, getChangeData, toChange, SeverityLevel, GetAdditionalReferencesFunc, Change } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
@@ -269,14 +269,9 @@ describe('api.ts', () => {
       beforeAll(() => {
         ws = mockWorkspace({ stateElements: [] })
       })
-      it('to return credential error', async () => {
-        mockFetchChanges.mockRejectedValueOnce(new CredentialError('test'))
-        const result = await api.fetch(ws, undefined, [mockService])
-        expect(result).toEqual(expect.objectContaining({ fetchErrors: expect.arrayContaining([{ message: 'test', severity: 'Error' }]) }))
-      })
-      it('throw unexpected error', async () => {
+      it('should throw an error upon failure', async () => {
         mockFetchChanges.mockRejectedValueOnce(new Error('test'))
-        await expect(api.fetch(ws, undefined, [mockService])).rejects.toThrow()
+        await expect(api.fetch(ws, undefined, [mockService])).rejects.toThrow(new Error('test'))
       })
     })
   })

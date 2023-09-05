@@ -84,7 +84,9 @@ export type ZendeskFetchConfig = configUtils.UserFetchConfig
   guide?: Guide
   resolveOrganizationIDs?: boolean
 }
-export type ZedneskDeployConfig = configUtils.UserDeployConfig & configUtils.DefaultMissingUserFallbackConfig
+export type ZedneskDeployConfig = configUtils.UserDeployConfig & configUtils.DefaultMissingUserFallbackConfig & {
+  createMissingOrganizations?: boolean
+}
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
   configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean },
   configUtils.TransformationDefaultConfig & { omitInactive?: boolean }
@@ -1272,6 +1274,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
   },
 
+  // placeholder for config validation (the type is created by a filter)
+  tag: {
+    transformation: {
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'string' }],
+    },
+  },
 
   // api types
   groups: {
@@ -1716,6 +1724,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   oauth_clients: {
     request: {
       url: '/api/v2/oauth/clients',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
+    },
+    transformation: {
+      dataField: 'clients',
     },
   },
   // eslint-disable-next-line camelcase
@@ -2341,8 +2354,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   user_segments: {
     request: {
       url: '/api/v2/help_center/user_segments',
-      queryParams: { per_page: String(PAGE_SIZE) },
-      paginationField: 'next_page',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'user_segments',
@@ -2424,6 +2437,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   oauth_tokens: {
     request: {
       url: '/api/v2/oauth/tokens',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'tokens',
@@ -2500,6 +2515,8 @@ export const SUPPORTED_TYPES = {
   webhook: ['webhooks'],
   workspace: ['workspaces'],
   account_features: ['features'],
+  // tags are included in supportedTypes so that they can be easily omitted, but are fetched separately
+  tag: ['tags'],
 }
 
 // Types in Zendesk Guide which relate to a certain brand
@@ -2546,7 +2563,10 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     enableMissingReferences: true,
     resolveOrganizationIDs: false,
     includeAuditDetails: false,
-    addAlias: false,
+    addAlias: true,
+  },
+  [DEPLOY_CONFIG]: {
+    createMissingOrganizations: false,
   },
   [API_DEFINITIONS_CONFIG]: {
     typeDefaults: {
@@ -2672,6 +2692,7 @@ export type ChangeValidatorName = (
   | 'duplicateRoutingAttributeValue'
   | 'ticketFieldDeactivation'
   | 'duplicateIdFieldValues'
+  | 'notEnabledMissingReferences'
   )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -2740,6 +2761,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     duplicateRoutingAttributeValue: { refType: BuiltinTypes.BOOLEAN },
     ticketFieldDeactivation: { refType: BuiltinTypes.BOOLEAN },
     duplicateIdFieldValues: { refType: BuiltinTypes.BOOLEAN },
+    notEnabledMissingReferences: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -2758,7 +2780,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
         {
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
           includeAuditDetails: { refType: BuiltinTypes.BOOLEAN },
-          addAlias: { refType: BuiltinTypes.BOOLEAN }, // SALTO-3662 this flag should become true by default
+          addAlias: { refType: BuiltinTypes.BOOLEAN },
           greedyAppReferences: { refType: BuiltinTypes.BOOLEAN },
           appReferenceLocators: { refType: IdLocatorType },
           guide: { refType: GuideType },
@@ -2770,7 +2792,10 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       refType: createUserDeployConfigType(
         ZENDESK,
         changeValidatorConfigType,
-        defaultMissingUserFallbackField
+        {
+          ...defaultMissingUserFallbackField,
+          createMissingOrganizations: { refType: BuiltinTypes.BOOLEAN },
+        },
       ),
     },
     [API_DEFINITIONS_CONFIG]: {
@@ -2802,7 +2827,23 @@ export type FilterContext = {
   [API_DEFINITIONS_CONFIG]: ZendeskApiConfig
 }
 
-export const validateFetchConfig = validateDuckTypeFetchConfig
+export const validateFetchConfig = (
+  fetchConfigPath: string,
+  userFetchConfig: configUtils.UserFetchConfig,
+  adapterApiConfig: configUtils.AdapterApiConfig,
+): void => validateDuckTypeFetchConfig(
+  fetchConfigPath,
+  userFetchConfig,
+  _.defaults(
+    {},
+    adapterApiConfig,
+    {
+      supportedTypes: {
+        tag: ['tags'],
+      },
+    },
+  ),
+)
 
 /**
  * Validating each Zendesk Guide type has a dataField property in the configuration

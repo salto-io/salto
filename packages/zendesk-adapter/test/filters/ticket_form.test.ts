@@ -16,11 +16,18 @@
 */
 
 import { filterUtils } from '@salto-io/adapter-components'
-import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, toChange } from '@salto-io/adapter-api'
+import {
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  ReadOnlyElementsSource,
+  ReferenceExpression,
+  toChange,
+} from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/ticket_form'
 import { createFilterCreatorParams } from '../utils'
-import { ACCOUNT_FEATURES_TYPE_NAME, TICKET_FORM_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { ACCOUNT_FEATURES_TYPE_NAME, TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME, ZENDESK } from '../../src/constants'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -33,6 +40,17 @@ jest.mock('@salto-io/adapter-components', () => {
     },
   }
 })
+
+const mockLogError = jest.fn()
+jest.mock('@salto-io/logging', () => ({
+  ...jest.requireActual<{}>('@salto-io/logging'),
+  logger: jest.fn()
+    .mockReturnValue({
+      debug: jest.fn(),
+      info: jest.fn(),
+      error: jest.fn((...args) => mockLogError(...args)),
+    }),
+}))
 
 const createElementSource = (customStatusesEnabled: boolean): ReadOnlyElementsSource => {
   const accountFeaturesType = new ObjectType({
@@ -51,7 +69,7 @@ const createElementSource = (customStatusesEnabled: boolean): ReadOnlyElementsSo
 }
 
 describe('ticket form filter', () => {
-  type FilterType = filterUtils.FilterWith<'deploy'>
+  type FilterType = filterUtils.FilterWith<'deploy' | 'onDeploy'>
   let filter: FilterType
   const ticketFormType = new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FORM_TYPE_NAME) })
   const invalidTicketForm = new InstanceElement(
@@ -106,6 +124,80 @@ describe('ticket form filter', () => {
       ],
     },
   )
+
+  describe('deploy of removal of field and its condition', () => {
+    beforeEach(async () => {
+      jest.clearAllMocks()
+      filter = filterCreator(createFilterCreatorParams({ elementsSource: createElementSource(true) })) as FilterType
+    })
+    it('should deploy modification change with removal of conditions and field', async () => {
+      const beforeTicketForm = new InstanceElement(
+        'test',
+        ticketFormType,
+        {
+          ticket_field_ids: [
+            1,
+            11,
+            123,
+            1234,
+          ],
+          agent_conditions: [
+            {
+              parent_field_id: 123,
+              child_fields: [
+                {
+                  id: 1234,
+                },
+              ],
+            },
+          ],
+          end_user_conditions: [
+            {
+              parent_field_id: 123,
+              child_fields: [
+                {
+                  id: 1234,
+                },
+              ],
+            },
+          ],
+        },
+      )
+      const afterTicketForm = beforeTicketForm.clone()
+      afterTicketForm.value.ticket_field_ids = [1, 11]
+      afterTicketForm.value.agent_conditions = []
+      afterTicketForm.value.end_user_conditions = []
+
+      const intermediateTicketForm = beforeTicketForm.clone()
+      intermediateTicketForm.value.ticket_field_ids = [1, 11, 123, 1234]
+      intermediateTicketForm.value.agent_conditions = []
+      intermediateTicketForm.value.end_user_conditions = []
+
+      mockDeployChange
+        .mockImplementation(async () => ({
+          ticket_forms: afterTicketForm,
+        }))
+      const res = await filter.deploy([toChange({ before: beforeTicketForm, after: afterTicketForm })])
+      expect(mockDeployChange).toHaveBeenCalledTimes(2)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: beforeTicketForm, after: intermediateTicketForm } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        undefined,
+      })
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: beforeTicketForm, after: afterTicketForm } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        undefined,
+      })
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges)
+        .toEqual([toChange({ before: beforeTicketForm, after: afterTicketForm })])
+    })
+  })
 
   describe('deploy with custom_statuses enabled', () => {
     beforeEach(async () => {
@@ -309,6 +401,95 @@ describe('ticket form filter', () => {
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       expect(res.deployResult.appliedChanges)
         .toEqual([toChange({ after: clonedElement })])
+    })
+  })
+  describe('onDeploy', () => {
+    const ticketStatusField = new InstanceElement(
+      'ticket status',
+      new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FIELD_TYPE_NAME) }),
+      {
+        type: 'custom_status',
+      }
+    )
+    const otherField = new InstanceElement(
+      'other field',
+      new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FIELD_TYPE_NAME) }),
+      {
+        type: 'text',
+      }
+    )
+    const elementSourceForm = new InstanceElement(
+      'elementSourceForm',
+      ticketFormType,
+      {
+        ticket_field_ids: [
+          new ReferenceExpression(ticketStatusField.elemID, ticketStatusField),
+          123456,
+          new ReferenceExpression(otherField.elemID, otherField),
+        ],
+      }
+    )
+    const formToDeploy = new InstanceElement(
+      'elementSourceForm',
+      ticketFormType,
+      {
+        ticket_field_ids: [
+          123456,
+          654321,
+        ],
+      }
+    )
+    beforeEach(async () => {
+      jest.clearAllMocks()
+      filter = filterCreator(createFilterCreatorParams({
+        elementsSource: buildElementsSourceFromElements([elementSourceForm, otherField, ticketStatusField]),
+      })) as FilterType
+    })
+
+    it('should restore ticket field ids from elementSource', async () => {
+      const clonedForm = formToDeploy.clone()
+      await filter.onDeploy([toChange({ after: clonedForm })])
+      expect(clonedForm.value.ticket_field_ids).toEqual(elementSourceForm.value.ticket_field_ids)
+      expect(mockLogError).not.toHaveBeenCalled()
+    })
+    it('should do nothing if ticket status field does not exist in element source', async () => {
+      filter = filterCreator(createFilterCreatorParams({
+        elementsSource: buildElementsSourceFromElements([elementSourceForm, otherField]),
+      })) as FilterType
+      const clonedForm = formToDeploy.clone()
+      await filter.onDeploy([toChange({ after: clonedForm })])
+      expect(clonedForm.value.ticket_field_ids).toEqual(formToDeploy.value.ticket_field_ids)
+      expect(mockLogError).toHaveBeenCalledWith('could not find field of type custom_status not running on deploy of ticket_form')
+    })
+    it('should do nothing if ticket status field has an id', async () => {
+      const clonedForm = formToDeploy.clone()
+      const clonedCustomStatusField = ticketStatusField.clone()
+      clonedCustomStatusField.value.id = 1
+      filter = filterCreator(createFilterCreatorParams({
+        elementsSource: buildElementsSourceFromElements([elementSourceForm, otherField, clonedCustomStatusField]),
+      })) as FilterType
+      expect(clonedForm.value.ticket_field_ids).toEqual(formToDeploy.value.ticket_field_ids)
+      expect(mockLogError).not.toHaveBeenCalled()
+    })
+    it('should do nothing if deployed form is not in the element source', async () => {
+      filter = filterCreator(createFilterCreatorParams({
+        elementsSource: buildElementsSourceFromElements([otherField, ticketStatusField]),
+      })) as FilterType
+      const clonedForm = formToDeploy.clone()
+      await filter.onDeploy([toChange({ after: clonedForm })])
+      expect(clonedForm.value.ticket_field_ids).toEqual(formToDeploy.value.ticket_field_ids)
+      expect(mockLogError).toHaveBeenCalledWith(`could not find ticketFieldIds for form ${clonedForm.elemID.name}`)
+    })
+    it('should do nothing if ticket_field_ids is undefined', async () => {
+      const clonedElementSourceForm = elementSourceForm.clone()
+      clonedElementSourceForm.value.ticket_field_ids = undefined
+      filter = filterCreator(createFilterCreatorParams({
+        elementsSource: buildElementsSourceFromElements([clonedElementSourceForm, otherField, ticketStatusField]),
+      })) as FilterType
+      const clonedForm = formToDeploy.clone()
+      await filter.onDeploy([toChange({ after: clonedForm })])
+      expect(clonedForm.value.ticket_field_ids).toEqual(formToDeploy.value.ticket_field_ids)
+      expect(mockLogError).toHaveBeenCalledWith(`could not find ticketFieldIds for form ${clonedForm.elemID.name}`)
     })
   })
 })

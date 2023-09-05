@@ -13,9 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { regex } from '@salto-io/lowerdash'
 import { QueryCriterion } from './query'
 
-export const nameCriterion: QueryCriterion = ({ instance, value }): boolean => (
-  regex.isFullRegexMatch(instance.value.name, value)
+
+export const fieldCriterionCreator = (fieldName: string): QueryCriterion => ((
+  ({ instance, value }): boolean => regex.isFullRegexMatch(_.get(instance.value, fieldName), value))
 )
+
+export const nameCriterion = fieldCriterionCreator('name')

@@ -18,12 +18,12 @@ import { ElemID } from './element_id'
 
 export type SeverityLevel = 'Error' | 'Warning' | 'Info'
 
-export type SaltoErrorSource = 'config'
+export type SaltoErrorType = 'config' | 'dependency'
 
 export type SaltoError = {
     message: string
     severity: SeverityLevel
-    source?: SaltoErrorSource
+    type?: SaltoErrorType
 }
 
 export type SaltoElementError = SaltoError & {
@@ -57,6 +57,3 @@ export const createSaltoElementError = ({
 }): SaltoElementError => ({ message, severity, elemID })
 
 export class CredentialError extends Error {}
-
-export const isCredentialError = (error: unknown): error is CredentialError =>
-  error instanceof CredentialError

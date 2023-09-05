@@ -22,6 +22,7 @@ import { createFieldConfigurationValues } from './fieldConfiguration'
 import { createFilterValues } from './filter'
 import { createPrioritySchemeValues } from './priorityScheme'
 import { createWorkflowValues } from './workflow'
+import { BeforeAfterInstances } from '../types'
 
 export const createInstances = (randomString: string, fetchedElements: Element[]): InstanceElement[][] => {
   const fieldConfiguration = new InstanceElement(
@@ -76,3 +77,5 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
     [priorityScheme],
   ]
 }
+
+export const modifyDataCenterInstances = (_fetchedElements: Element[]): BeforeAfterInstances[][] => []

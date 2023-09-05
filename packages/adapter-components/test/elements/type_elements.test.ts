@@ -103,6 +103,8 @@ describe('type_elements', () => {
       expect(Object.keys(myCustomType.fields)).toHaveLength(2)
       expect(myCustomType.fields.str.annotations).toEqual({ [CORE_ANNOTATIONS.REQUIRED]: true })
       expect(myCustomType.fields.num.annotations).toEqual({})
+      // eslint-disable-next-line no-underscore-dangle
+      expect(myCustomType.fields.missing.annotations._hidden_value).toBeTruthy()
 
       hideFields([
         { fieldName: 'missing', fieldType: 'string' },

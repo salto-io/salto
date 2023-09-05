@@ -15,11 +15,9 @@
 */
 import { InstanceElement, Element, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
-import { AUTOMATION_TYPE, ESCALATION_SERVICE_TYPE, ISSUE_TYPE_SCHEMA_NAME, NOTIFICATION_SCHEME_TYPE_NAME, SCHEDULED_JOB_TYPE, SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, WORKFLOW_TYPE_NAME } from '../../../src/constants'
-// import { AUTOMATION_TYPE, ESCALATION_SERVICE_TYPE, ISSUE_TYPE_SCHEMA_NAME, NOTIFICATION_SCHEME_TYPE_NAME,
-// SCHEDULED_JOB_TYPE, SCRIPTED_FIELD_TYPE, SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE,
-// SCRIPT_RUNNER_SETTINGS_TYPE, SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, WORKFLOW_TYPE_NAME
-// } from '../../../src/constants'
+import { AUTOMATION_TYPE, ESCALATION_SERVICE_TYPE, ISSUE_TYPE_SCHEMA_NAME, NOTIFICATION_SCHEME_TYPE_NAME,
+  SCHEDULED_JOB_TYPE, SCRIPTED_FIELD_TYPE, SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE,
+  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { createSecurityLevelValues, createSecuritySchemeValues } from './securityScheme'
 import { createIssueTypeSchemeValues } from './issueTypeScheme'
 import { createDashboardValues, createGadget1Values, createGadget2Values } from './dashboard'
@@ -32,16 +30,17 @@ import { createKanbanBoardValues, createScrumBoardValues } from './board'
 import { createFilterValues } from './filter'
 import { createIssueLayoutValues } from './issueLayout'
 // import { createBehaviorValues } from './scriptrunner/beahvior'
-// import { createScriptedFieldValues } from './scriptrunner/scripted_fields'
-// import { createScriptRunnerListenerValues } from './scriptrunner/listener'
-// import { createScriptRunnerSettingsValues } from './scriptrunner/settings'
+import { createScriptedFieldValues } from './scriptrunner/scripted_fields'
+import { createScriptRunnerListenerValues } from './scriptrunner/listener'
 import { createScheduledJobsValues } from './scriptrunner/scheduled_jobs'
 import { createEscalationServiceValues } from './scriptrunner/escalation_service'
-// import { createScriptedFragmentsValues } from './scriptrunner/scripted_fragments'
+import { createScriptedFragmentsValues } from './scriptrunner/scripted_fragments'
+import { BeforeAfterInstances } from '../types'
+import { createScriptRunnerSettingsInstances } from './scriptrunner/settings'
 
 export const createInstances = (
   randomString: string,
-  // uuid: string,
+  uuid: string,
   fetchedElements: Element[]
 ): InstanceElement[][] => {
   const dashboard = new InstanceElement(
@@ -142,22 +141,16 @@ export const createInstances = (
   //   findType('Behavior', fetchedElements),
   //   createBehaviorValues(randomString, fetchedElements),
   // )
-  // const scriptedField = new InstanceElement(
-  //   randomString,
-  //   findType(SCRIPTED_FIELD_TYPE, fetchedElements),
-  //   createScriptedFieldValues(randomString, fetchedElements),
-  // )
-  // const scriptRunnerListeners = new InstanceElement(
-  //   randomString,
-  //   findType(SCRIPT_RUNNER_LISTENER_TYPE, fetchedElements),
-  //   createScriptRunnerListenerValues(randomString, fetchedElements),
-  // )
-
-  // const scriptRunnerSettings = new InstanceElement(
-  //   '_config',
-  //   findType(SCRIPT_RUNNER_SETTINGS_TYPE, fetchedElements),
-  //   createScriptRunnerSettingsValues(fetchedElements),
-  // )
+  const scriptedField = new InstanceElement(
+    randomString,
+    findType(SCRIPTED_FIELD_TYPE, fetchedElements),
+    createScriptedFieldValues(randomString, fetchedElements),
+  )
+  const scriptRunnerListeners = new InstanceElement(
+    randomString,
+    findType(SCRIPT_RUNNER_LISTENER_TYPE, fetchedElements),
+    createScriptRunnerListenerValues(randomString, fetchedElements),
+  )
 
   const scheduledJobs = new InstanceElement(
     randomString,
@@ -171,11 +164,11 @@ export const createInstances = (
     createEscalationServiceValues(randomString, fetchedElements),
   )
 
-  // const scriptedFragments = new InstanceElement(
-  //   uuid,
-  //   findType(SCRIPT_FRAGMENT_TYPE, fetchedElements),
-  //   createScriptedFragmentsValues(uuid, fetchedElements),
-  // )
+  const scriptedFragments = new InstanceElement(
+    naclCase(uuid),
+    findType(SCRIPT_FRAGMENT_TYPE, fetchedElements),
+    createScriptedFragmentsValues(uuid, fetchedElements),
+  )
 
   return [
     [dashboard],
@@ -192,11 +185,20 @@ export const createInstances = (
     [filter],
     [issueLayout],
     // [behavior],
-    // [scriptedField],
-    // [scriptRunnerListeners],
-    // [scriptRunnerSettings],
+    [scriptedField],
+    [scriptRunnerListeners],
     [scheduledJobs],
     [escalationService],
-    // [scriptedFragments],
+    [scriptedFragments],
+  ]
+}
+
+export const modifyCloudInstances = (fetchedElements: Element[]): BeforeAfterInstances[][] => {
+  const {
+    before: scriptRunnerSettingsBefore,
+    after: scriptRunnerSettingsAfter,
+  } = createScriptRunnerSettingsInstances(fetchedElements)
+  return [
+    [{ before: scriptRunnerSettingsBefore, after: scriptRunnerSettingsAfter }],
   ]
 }

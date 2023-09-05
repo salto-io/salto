@@ -13,21 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, Values, Element } from '@salto-io/adapter-api'
-import { createReference } from '../../../utils'
-import { JIRA } from '../../../../src/constants'
+import { InstanceElement } from '@salto-io/adapter-api'
 
-
-export const createScriptRunnerListenerValues = (name: string, allElements: Element[]): Values => ({
-  projects: [
-    createReference(new ElemID(JIRA, 'Project', 'instance', 'Test_Project@s'), allElements),
-  ],
-  script: 'import java.time.LocalDate;return LocalDate.now().minusDays(1)',
-  enabled: true,
-  events: [
-    'comment_created',
-  ],
-  executionCondition: 'AA = B',
-  description: name,
-  executionUser: 'INITIATING_USER',
-})
+export type BeforeAfterInstances = {
+  before: InstanceElement
+  after: InstanceElement
+}

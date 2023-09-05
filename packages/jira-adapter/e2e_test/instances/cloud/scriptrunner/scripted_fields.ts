@@ -21,7 +21,7 @@ import { ISSUE_TYPE_NAME, JIRA } from '../../../../src/constants'
 export const createScriptedFieldValues = (name: string, allElements: Element[]): Values => ({
   name,
   projectKeys: [
-    createReference(new ElemID(JIRA, 'Project', 'instance', 'Test_Project@s'), allElements, ['key']),
+    createReference(new ElemID(JIRA, 'Project', 'instance', 'Test_Project@s'), allElements),
   ],
   issueTypes: [
     createReference(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'Story'), allElements),

@@ -13,7 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { DeployResult, Element, getChangeData, InstanceElement, isAdditionChange, isInstanceElement, isObjectType, ReadOnlyElementsSource, toChange } from '@salto-io/adapter-api'
+import { DeployResult, Element, getChangeData, InstanceElement, isAdditionChange, isInstanceElement, isObjectType,
+  ReadOnlyElementsSource, toChange } from '@salto-io/adapter-api'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { buildElementsSourceFromElements, getParents, resolveValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -22,12 +24,14 @@ import { Credentials } from '../src/auth'
 import { credsLease, realAdapter } from './adapter'
 import 'jest-extended'
 import JiraAdapter from '../src/adapter'
-import { createInstances } from './instances'
+import { createInstances, createModifyInstances } from './instances'
 import { findInstance } from './utils'
 import { getLookUpName } from '../src/reference_mapping'
 import { getDefaultConfig } from '../src/config/config'
+import { BeforeAfterInstances } from './instances/types'
 
 const { awu } = collections.asynciterable
+const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
 
 jest.setTimeout(600 * 1000)
 
@@ -75,6 +79,12 @@ each([
     it.each(Object.keys(getDefaultConfig({ isDataCenter }).apiDefinitions.types))('%s', expectedType => {
       expect(fetchedTypes).toContain(expectedType)
     })
+    const scriptRunnerTypes = getDefaultConfig({ isDataCenter }).scriptRunnerApiDefinitions?.types
+    if (scriptRunnerTypes !== undefined) {
+      it.each(Object.keys(scriptRunnerTypes))('%s', expectedType => {
+        expect(fetchedTypes).toContain(expectedType)
+      })
+    }
   })
   it('should fetch project with schemes', () => {
     const projectInstance = fetchedElements
@@ -89,8 +99,10 @@ each([
   })
 
   describe('deploy', () => {
-    let deployResults: DeployResult[]
-    let instanceGroups: InstanceElement[][]
+    let addDeployResults: DeployResult[]
+    let modifyDeployResults: DeployResult[]
+    let addInstanceGroups: InstanceElement[][]
+    let modifyInstanceGroups: BeforeAfterInstances[][]
 
     beforeAll(async () => {
       elementsSource = buildElementsSourceFromElements(fetchedElements)
@@ -102,9 +114,9 @@ each([
         },
       )
       adapter = adapterAttr.adapter
-      instanceGroups = createInstances(fetchedElements, isDataCenter)
+      addInstanceGroups = createInstances(fetchedElements, isDataCenter)
 
-      deployResults = await awu(instanceGroups).map(async group => {
+      addDeployResults = await awu(addInstanceGroups).map(async group => {
         const res = await adapter.deploy({
           changeGroup: {
             groupID: group[0].elemID.getFullName(),
@@ -114,9 +126,32 @@ each([
 
         res.appliedChanges.forEach(appliedChange => {
           const appliedInstance = getChangeData(appliedChange)
-          instanceGroups
+          addInstanceGroups
             .flat()
             .flatMap(getParents)
+            .filter(parent => parent.elemID.isEqual(appliedInstance.elemID))
+            .forEach(parent => {
+              parent.resValue = appliedInstance
+            })
+        })
+        return res
+      }).toArray()
+
+      modifyInstanceGroups = createModifyInstances(fetchedElements, isDataCenter)
+
+      modifyDeployResults = await awu(modifyInstanceGroups).map(async group => {
+        const res = await adapter.deploy({
+          changeGroup: {
+            groupID: group[0].after.elemID.getFullName(),
+            changes: group.map(({ before, after }) => toChange({ before, after })),
+          },
+        })
+
+        res.appliedChanges.forEach(appliedChange => {
+          const appliedInstance = getChangeData(appliedChange)
+          modifyInstanceGroups
+            .flat()
+            .flatMap(({ after }) => getParents(after))
             .filter(parent => parent.elemID.isEqual(appliedInstance.elemID))
             .forEach(parent => {
               parent.resValue = appliedInstance
@@ -127,7 +162,8 @@ each([
     })
 
     it('should have no errors', () => {
-      expect(deployResults.flatMap(res => res.errors)).toHaveLength(0)
+      expect(addDeployResults.flatMap(res => res.errors)).toHaveLength(0)
+      expect(modifyDeployResults.flatMap(res => res.errors)).toHaveLength(0)
     })
 
     it('fetch should return the new changes', async () => {
@@ -139,17 +175,45 @@ each([
       const resolvedFetchedElements = await Promise.all(
         elements.map(e => resolveValues(e, getLookUpName))
       )
-      const resolvedDeployedElements = await Promise.all(
-        instanceGroups.flat().map(e => resolveValues(e, getLookUpName))
+      const { scriptRunnerApiDefinitions } = getDefaultConfig({ isDataCenter })
+
+      const typeFixedAddInstanceGroups = addInstanceGroups
+        .flat()
+        .map(instance =>
+          (scriptRunnerApiDefinitions?.types[instance.elemID.typeName] === undefined
+            ? instance
+            : replaceInstanceTypeForDeploy({
+              instance,
+              config: scriptRunnerApiDefinitions,
+            })))
+      const resolvedAddedElements = await Promise.all(
+        typeFixedAddInstanceGroups.map(e => resolveValues(e, getLookUpName))
       )
-      resolvedDeployedElements.forEach(instance => {
+      resolvedAddedElements.forEach(instance => {
+        expect(findInstance(instance.elemID, resolvedFetchedElements).value)
+          .toMatchObject(instance.value)
+      })
+
+      const typeFixedModifyInstanceGroups = modifyInstanceGroups
+        .flat()
+        .map(({ after }) =>
+          (scriptRunnerApiDefinitions?.types[after.elemID.typeName] === undefined
+            ? after
+            : replaceInstanceTypeForDeploy({
+              instance: after,
+              config: scriptRunnerApiDefinitions,
+            })))
+      const resolvedModifiedElements = await Promise.all(
+        typeFixedModifyInstanceGroups.map(e => resolveValues(e, getLookUpName))
+      )
+      resolvedModifiedElements.forEach(instance => {
         expect(findInstance(instance.elemID, resolvedFetchedElements).value)
           .toMatchObject(instance.value)
       })
     })
 
     afterAll(async () => {
-      const removalChanges = deployResults
+      const removalChanges = addDeployResults
         .flatMap(res => res.appliedChanges)
         .filter(isAdditionChange)
         .map(change => toChange({ before: getChangeData(change) }))
@@ -165,7 +229,7 @@ each([
           })
       })
 
-      deployResults = await Promise.all(removalChanges.map(change =>
+      addDeployResults = await Promise.all(removalChanges.map(change =>
         adapter.deploy({
           changeGroup: {
             groupID: getChangeData(change).elemID.getFullName(),
@@ -173,7 +237,7 @@ each([
           },
         })))
 
-      const errors = deployResults.flatMap(res => res.errors)
+      const errors = addDeployResults.flatMap(res => res.errors)
       if (errors.length) {
         throw new Error(`Failed to clean e2e changes: ${errors.join(', ')}`)
       }

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-// import { v4 as uuidv4 } from 'uuid'
+import { v4 as uuidv4 } from 'uuid'
 import { InstanceElement, Element, ElemID, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { CUSTOM_FIELDS_SUFFIX } from '../../src/filters/fields/field_name_filter'
@@ -26,12 +26,13 @@ import { createScreenValues } from './screen'
 import { createWorkflowSchemeValues } from './workflowScheme'
 import { createWebhookValues } from './webhook'
 import { createStatusValues } from './status'
-import { createInstances as createDataCenterInstances } from './datacenter'
-import { createInstances as createCloudInstances } from './cloud'
+import { createInstances as createDataCenterInstances, modifyDataCenterInstances } from './datacenter'
+import { createInstances as createCloudInstances, modifyCloudInstances } from './cloud'
+import { BeforeAfterInstances } from './types'
 
 export const createInstances = (fetchedElements: Element[], isDataCenter: boolean): InstanceElement[][] => {
   const randomString = `createdByOssE2e${String(Date.now()).substring(6)}`
-  // const uuid = uuidv4()
+  const uuid = uuidv4()
 
   const issueType = new InstanceElement(
     randomString,
@@ -137,8 +138,7 @@ export const createInstances = (fetchedElements: Element[], isDataCenter: boolea
     ...(
       isDataCenter
         ? createDataCenterInstances(randomString, fetchedElements)
-        : createCloudInstances(randomString, fetchedElements)
-        // : createCloudInstances(randomString, uuid, fetchedElements)
+        : createCloudInstances(randomString, uuid, fetchedElements)
     ),
     [issueType],
     [field],
@@ -155,3 +155,11 @@ export const createInstances = (fetchedElements: Element[], isDataCenter: boolea
     [status],
   ]
 }
+
+export const createModifyInstances = (fetchedElements: Element[], isDataCenter: boolean): BeforeAfterInstances[][] => [
+  ...(
+    isDataCenter
+      ? modifyDataCenterInstances(fetchedElements)
+      : modifyCloudInstances(fetchedElements)
+  ),
+]

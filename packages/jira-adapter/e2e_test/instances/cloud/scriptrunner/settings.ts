@@ -13,12 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, Values, Element } from '@salto-io/adapter-api'
+import { ElemID, Element, InstanceElement, Values, isInstanceElement } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { createReference } from '../../../utils'
-import { JIRA } from '../../../../src/constants'
+import { JIRA, SCRIPT_RUNNER_SETTINGS_TYPE } from '../../../../src/constants'
 
+export type BeforeAfterInstances = {
+  before: InstanceElement
+  after: InstanceElement
+}
 
-export const createScriptRunnerSettingsValues = (allElements: Element[]): Values => ({
+const createScriptRunnerSettingsValues = (allElements: Element[]): Values => ({
   'jql_search_view@b': true,
   'filter_sync_interval@b': 10,
   'notifications_group@b': createReference(new ElemID(JIRA, 'Group', 'instance', 'system_administrators@b'), allElements, ['name']),
@@ -29,3 +34,18 @@ export const createScriptRunnerSettingsValues = (allElements: Element[]): Values
   ],
   'notify_assignee_reporter@b': false,
 })
+
+export const createScriptRunnerSettingsInstances = (allElements: Element[]): BeforeAfterInstances => {
+  const fetchSettings = allElements
+    .filter(isInstanceElement)
+    .find(instance => instance.elemID.typeName === SCRIPT_RUNNER_SETTINGS_TYPE)
+  if (fetchSettings === undefined) {
+    throw new Error('ScriptRunner settings instance not found')
+  }
+  const before = _.cloneDeep(fetchSettings)
+  before.value = createScriptRunnerSettingsValues(allElements)
+  before.value['issue_polling@b'] = !fetchSettings.value['issue_polling@b']
+  const after = _.cloneDeep(fetchSettings)
+  after.value = createScriptRunnerSettingsValues(allElements)
+  return { before, after }
+}

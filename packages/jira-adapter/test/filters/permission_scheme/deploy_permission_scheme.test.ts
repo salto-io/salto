@@ -15,9 +15,10 @@
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { JIRA } from '../../../src/constants'
 import deployPermissionScheme from '../../../src/filters/permission_scheme/deploy_permission_scheme_filter'
-import { getFilterParams, getLicenseElementSource } from '../../utils'
+import { createEmptyType, getFilterParams, getLicenseElementSource } from '../../utils'
 
 describe('deploy permission scheme', () => {
   let filter: filterUtils.FilterWith<'deploy'>
@@ -69,6 +70,44 @@ describe('deploy permission scheme', () => {
   })
   it('should not mock deploy on paid license', async () => {
     const elementsSource = getLicenseElementSource(false)
+    filter = deployPermissionScheme(getFilterParams({ elementsSource })) as typeof filter
+    const { deployResult, leftoverChanges } = await filter.deploy(changes)
+    expect(deployResult).toEqual({
+      appliedChanges: [],
+      errors: [],
+    })
+    expect(leftoverChanges).toEqual(changes)
+  })
+  it('should not mock deploy on paid license due to account info with some paid app', async () => {
+    const accountInfoWithSomePaidApp = new InstanceElement(
+      '_config',
+      createEmptyType('AccountInfo'),
+      {
+        license: {
+          applications: [
+            {
+              id: 'jira-serviceDesk',
+              plan: 'PAID',
+            },
+            {
+              id: 'jira-software',
+              plan: 'FREE',
+            },
+          ],
+        },
+      }
+    )
+    const elementsSource = buildElementsSourceFromElements([accountInfoWithSomePaidApp])
+    filter = deployPermissionScheme(getFilterParams({ elementsSource })) as typeof filter
+    const { deployResult, leftoverChanges } = await filter.deploy(changes)
+    expect(deployResult).toEqual({
+      appliedChanges: [],
+      errors: [],
+    })
+    expect(leftoverChanges).toEqual(changes)
+  })
+  it('should not mock deploy on paid license due to missing account info', async () => {
+    const elementsSource = buildElementsSourceFromElements([])
     filter = deployPermissionScheme(getFilterParams({ elementsSource })) as typeof filter
     const { deployResult, leftoverChanges } = await filter.deploy(changes)
     expect(deployResult).toEqual({

@@ -114,7 +114,7 @@ export const isJiraSoftwareFreeLicense = async (
   const accountInfo = await elementsSource.get(ACCOUNT_INFO_ELEM_ID)
   if (!isInstanceElement(accountInfo)
   || accountInfo.value.license?.applications === undefined) {
-    log.error('account info instance or its license not found in elements source, treating the account as paid one')
+    log.error('account info instance or its license not found in elements source, treating the account as free one')
     return true
   }
   const mainApplication = accountInfo.value.license.applications.find((app: Value) => app.id === 'jira-software')

@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 
-import { InstanceElement, ReadOnlyElementsSource, toChange, SeverityLevel, ElemID, ObjectType } from '@salto-io/adapter-api'
+import { InstanceElement, ReadOnlyElementsSource, toChange, SeverityLevel } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { ISSUE_TYPE_NAME, JIRA } from '../../src/constants'
+import { ISSUE_TYPE_NAME } from '../../src/constants'
 import { createEmptyType, getAccountInfoInstance } from '../utils'
 import { issueTypeHierarchyValidator } from '../../src/change_validators/issue_type_hierarchy'
 
@@ -93,9 +93,7 @@ describe('issue type hierarchy validator', () => {
     it('should return error if there is no jira-software in the account info instance because it considered free acount', async () => {
       const accountInfoWithNoJiraSoftware = new InstanceElement(
         '_config',
-        new ObjectType({
-          elemID: new ElemID(JIRA, 'AccountInfo'),
-        }),
+        createEmptyType('AccountInfo'),
         {
           license: {
             applications: [

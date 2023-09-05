@@ -15,39 +15,34 @@
 */
 
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { isJiraSoftwareFreeLicense } from '../src/utils'
-import { getAccountInfoInstance } from './utils'
+import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
+import { isAllFreeLicense, isJiraSoftwareFreeLicense } from '../src/utils'
+import { createEmptyType, getAccountInfoInstance } from './utils'
 import { JIRA } from '../src/constants'
 
 describe('utils', () => {
   let accountInfo: InstanceElement
   let elementsSource: ReadOnlyElementsSource
-  let isFree: boolean
+  const accountInfoType = createEmptyType('AccountInfo')
   describe('isJiraSoftwareFreeLicense', () => {
     it('should return true if license is free', async () => {
       const accountInfoInstanceFree = getAccountInfoInstance(true)
       elementsSource = buildElementsSourceFromElements([accountInfoInstanceFree])
-      isFree = await isJiraSoftwareFreeLicense(elementsSource)
-      expect(isFree).toBeTruthy()
+      expect(await isJiraSoftwareFreeLicense(elementsSource)).toBeTruthy()
     })
     it('should return false if license is not free', async () => {
       const accountInfoInstanceFree = getAccountInfoInstance(false)
       elementsSource = buildElementsSourceFromElements([accountInfoInstanceFree])
-      isFree = await isJiraSoftwareFreeLicense(elementsSource)
-      expect(isFree).toBeFalsy()
+      expect(await isJiraSoftwareFreeLicense(elementsSource)).toBeFalsy()
     })
     it('should return true if there is no account info instance', async () => {
       elementsSource = buildElementsSourceFromElements([])
-      isFree = await isJiraSoftwareFreeLicense(elementsSource)
-      expect(isFree).toBeTruthy()
+      expect(await isJiraSoftwareFreeLicense(elementsSource)).toBeTruthy()
     })
     it('should return true if there is no jira software license', async () => {
       accountInfo = new InstanceElement(
         '_config',
-        new ObjectType({
-          elemID: new ElemID(JIRA, 'AccountInfo'),
-        }),
+        accountInfoType,
         {
           license: {
             applications: [
@@ -60,8 +55,18 @@ describe('utils', () => {
         }
       )
       elementsSource = buildElementsSourceFromElements([accountInfo])
-      isFree = await isJiraSoftwareFreeLicense(elementsSource)
-      expect(isFree).toBeTruthy()
+      expect(await isJiraSoftwareFreeLicense(elementsSource)).toBeTruthy()
+    })
+    it('should return true if account info does not have applications', async () => {
+      accountInfo = new InstanceElement(
+        '_config',
+        accountInfoType,
+        {
+          license: {},
+        }
+      )
+      elementsSource = buildElementsSourceFromElements([accountInfo])
+      expect(await isJiraSoftwareFreeLicense(elementsSource)).toBeTruthy()
     })
   })
   describe('isAllFreeLicense', () => {
@@ -87,8 +92,7 @@ describe('utils', () => {
         }
       )
       elementsSource = buildElementsSourceFromElements([accountInfo])
-      isFree = await isJiraSoftwareFreeLicense(elementsSource)
-      expect(isFree).toBeTruthy()
+      expect(await isAllFreeLicense(elementsSource)).toBeTruthy()
     })
     it('should return false if one license is not free', async () => {
       accountInfo = new InstanceElement(
@@ -112,8 +116,22 @@ describe('utils', () => {
         }
       )
       elementsSource = buildElementsSourceFromElements([accountInfo])
-      isFree = await isJiraSoftwareFreeLicense(elementsSource)
-      expect(isFree).toBeFalsy()
+      expect(await isAllFreeLicense(elementsSource)).toBeFalsy()
+    })
+    it('should return true if account info does not have applications', async () => {
+      accountInfo = new InstanceElement(
+        '_config',
+        accountInfoType,
+        {
+          license: {},
+        }
+      )
+      elementsSource = buildElementsSourceFromElements([accountInfo])
+      expect(await isAllFreeLicense(elementsSource)).toBeFalsy()
+    })
+    it('should return true if there is no account info instance', async () => {
+      elementsSource = buildElementsSourceFromElements([])
+      expect(await isAllFreeLicense(elementsSource)).toBeFalsy()
     })
   })
 })

@@ -174,11 +174,7 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) =>
     const projectIdToProject = Object.fromEntries(
       (await Promise.all(elements.filter(e => e.elemID.typeName === PROJECT_TYPE)
         .filter(isInstanceElement)
-        .filter(project => {
-          const { simplified } = project.value
-          delete project.value.simplified
-          return !simplified && project.value.projectTypeKey === 'software'
-        })
+        .filter(project => !project.value.simplified && project.value.projectTypeKey === 'software')
         .map(async project => [project.value.id, project])))
         .filter(isDefined)
     )

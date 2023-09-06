@@ -29,7 +29,7 @@ import {
   getChangeData,
   InstanceElement,
   isAdditionOrModificationChange,
-  isField,
+  isField, isInstanceChange,
   isInstanceElement,
   isObjectType,
   isReferenceExpression,
@@ -49,7 +49,7 @@ import SalesforceClient from '../client/client'
 import { INSTANCE_SUFFIXES, OptionalFeatures } from '../types'
 import {
   API_NAME,
-  API_NAME_SEPARATOR,
+  API_NAME_SEPARATOR, CUSTOM_FIELD,
   CUSTOM_METADATA_SUFFIX,
   CUSTOM_OBJECT,
   INSTANCE_FULL_NAME_FIELD,
@@ -456,3 +456,27 @@ export const getInstanceAlias = async (
     ? label
     : `${label} (${namespace})`
 }
+
+export const metadataTypeSync = (element: Readonly<Element>): string => {
+  if (isInstanceElement(element)) {
+    return metadataTypeSync(element.getTypeSync())
+  }
+  if (isField(element)) {
+    // We expect to reach to this place only with field of CustomObject
+    return CUSTOM_FIELD
+  }
+  return element.annotations[METADATA_TYPE] || 'unknown'
+}
+
+export const isCustomObjectSync = (element: Readonly<Element>): boolean => {
+  const res = isObjectType(element)
+    && metadataTypeSync(element) === CUSTOM_OBJECT
+    // The last part is so we can tell the difference between a custom object
+    // and the original "CustomObject" type from salesforce (the latter will not have an API_NAME)
+    && element.annotations[API_NAME] !== undefined
+  return res
+}
+
+export const isInstanceOfCustomObjectSync = (element: Element): element is InstanceElement => (
+  isInstanceElement(element) && isCustomObjectSync(element.getTypeSync())
+)

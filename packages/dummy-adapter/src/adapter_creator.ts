@@ -33,6 +33,7 @@ export const configType = new ObjectType({
     extraNaclPath: { refType: BuiltinTypes.STRING },
     generateEnvName: { refType: BuiltinTypes.STRING },
     fieldsToOmitOnDeploy: { refType: new ListType(BuiltinTypes.STRING) },
+    // Exclude elements from the fetch by their elemIDs
     elementsToExclude: { refType: new ListType(BuiltinTypes.STRING) },
   },
 })

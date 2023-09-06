@@ -49,7 +49,7 @@ describe('client_http_client', () => {
         mockCreateConnection,
         {
           pageSize: { get: 123 },
-          rateLimit: { total: -1, get: 3, deploy: 4 },
+          rateLimit: { total: -1, get: 3, deploy: 4, gqlPost: 5 },
           maxRequestsPerMinute: -1,
           retry: { maxAttempts: 3, retryDelay: 123, additionalStatusCodesToRetry: STATUSES_TO_RETRY },
         }

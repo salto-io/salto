@@ -16,26 +16,7 @@
 export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerId: Long!) {
     ...CMPJSWLayoutConfigurationFragment
   }
-  
-  fragment JiraIssueLayoutOwnerFragment on JiraIssueLayoutOwner {
-    ... on JiraIssueLayoutIssueTypeOwner {
-      id
-    }
-    ... on JiraIssueLayoutRequestTypeOwner {
-      id
-    }
-  }
-  
-  fragment JiraIssueLayoutUsageInfo on JiraIssueLayoutUsageInfoConnection {
-    edges {
-      node {
-        layoutOwners {
-          ... JiraIssueLayoutOwnerFragment
-        }
-      }
-    }
-  }
-  
+    
     fragment JiraIssueLayoutActivePanelItemFragment on JiraIssueItemPanelItem {
       panelItemId
     }
@@ -61,9 +42,6 @@ export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerI
         issueLayoutResult {
           id
           name
-          usageInfo {
-             ...JiraIssueLayoutUsageInfo
-          }
           containers {
               ...JiraIssueLayoutItemContainerFragment
           }

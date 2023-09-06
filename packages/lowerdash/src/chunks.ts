@@ -16,14 +16,19 @@
 export const weightedChunks = <T>(
   values: T[],
   size: number,
-  weightFunc: (val: T) => number
+  weightFunc: (val: T) => number,
+  maxItemsPerChunk = Infinity
 ): T[][] => {
   const chunks: T[][] = []
 
   values.reduce((chunkWeight, val) => {
     const valWeight = weightFunc(val)
 
-    if (valWeight + chunkWeight > size || chunks.length === 0) {
+    if (
+      valWeight + chunkWeight > size
+      || chunks.length === 0
+      || chunks[chunks.length - 1].length >= maxItemsPerChunk
+    ) {
       chunks.push([val])
       return valWeight
     }

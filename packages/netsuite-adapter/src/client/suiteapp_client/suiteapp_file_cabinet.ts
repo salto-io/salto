@@ -160,6 +160,7 @@ type FileCabinetResults = {
 }
 
 const FILES_CHUNK_SIZE = 5 * 1024 * 1024
+const MAX_FILES_IN_READ_REQUEST = 10000
 const MAX_DEPLOYABLE_FILE_SIZE = 10 * 1024 * 1024
 const DEPLOY_CHUNK_SIZE = 50
 const MAX_ITEMS_IN_WHERE_QUERY = 200
@@ -467,7 +468,8 @@ SuiteAppFileCabinetOperations => {
     const fileChunks = chunks.weightedChunks(
       filesCustomizationWithoutContent,
       FILES_CHUNK_SIZE,
-      file => file.size
+      file => file.size,
+      MAX_FILES_IN_READ_REQUEST
     )
 
     const filesContent = (await Promise.all(

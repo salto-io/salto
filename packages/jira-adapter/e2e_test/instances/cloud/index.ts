@@ -26,6 +26,7 @@ import { createNotificationSchemeValues } from './notificationScheme'
 import { createAutomationValues } from './automation'
 import { createKanbanBoardValues, createScrumBoardValues } from './board'
 import { createFilterValues } from './filter'
+import { createIssueLayoutValues } from './issueLayout'
 
 export const createInstances = (randomString: string, fetchedElements: Element[]): InstanceElement[][] => {
   const dashboard = new InstanceElement(
@@ -115,6 +116,11 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
     findType('Filter', fetchedElements),
     createFilterValues(randomString, fetchedElements),
   )
+  const issueLayout = new InstanceElement(
+    randomString,
+    findType('IssueLayout', fetchedElements),
+    createIssueLayoutValues(fetchedElements),
+  )
 
   return [
     [dashboard],
@@ -129,5 +135,6 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
     [kanbanBoard],
     [scrumBoard],
     [filter],
+    [issueLayout],
   ]
 }

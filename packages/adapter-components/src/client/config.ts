@@ -21,6 +21,7 @@ export type ClientRateLimitConfig = Partial<{
   total: number
   get: number
   deploy: number
+  gqlPost: number
 }>
 
 export type ClientPageSizeConfig = Partial<{

@@ -61,6 +61,7 @@ export type CustomObjectFetchSetting = {
   aliasFields: Field[]
   invalidIdFields: string[]
   invalidAliasFields: string[]
+  invalidManagedBySaltoField?: string
   managedBySaltoField?: string
 }
 
@@ -454,12 +455,23 @@ export const getCustomObjectsFetchSettings = async (
   types: ObjectType[],
   dataManagement: DataManagement,
 ): Promise<CustomObjectFetchSetting[]> => {
-  const typeToFetchSettings = async (type: ObjectType): Promise<CustomObjectFetchSetting> => ({
-    objectType: type,
-    isBase: await dataManagement.shouldFetchObjectType(type) === 'Always',
-    ...await getIdFields(type, dataManagement),
-    managedBySaltoField: dataManagement.managedBySaltoFieldForType(type),
-  })
+  const isInvalidManagedBySaltoField = (type: ObjectType): boolean => {
+    const managedBySaltoFieldName = dataManagement.managedBySaltoFieldForType(type)
+    if (managedBySaltoFieldName === undefined) {
+      return false
+    }
+    return (type.fields[managedBySaltoFieldName].annotations[FIELD_ANNOTATIONS.QUERYABLE] ?? true) === false
+  }
+  const typeToFetchSettings = async (type: ObjectType): Promise<CustomObjectFetchSetting> => {
+    const managedBySaltoFieldName = dataManagement.managedBySaltoFieldForType(type)
+    return {
+      objectType: type,
+      isBase: await dataManagement.shouldFetchObjectType(type) === 'Always',
+      ...await getIdFields(type, dataManagement),
+      managedBySaltoField: managedBySaltoFieldName,
+      invalidManagedBySaltoField: isInvalidManagedBySaltoField(type) ? managedBySaltoFieldName : undefined,
+    }
+  }
 
   return awu(types)
     .filter(async type => await dataManagement.shouldFetchObjectType(type) !== 'Never')
@@ -509,6 +521,13 @@ const createInvalidAliasFieldFetchWarning = async (
   severity: 'Warning',
 })
 
+const createInvalidManagedBySaltoFieldFetchWarning = async (
+  { objectType, invalidManagedBySaltoField }: CustomObjectFetchSetting
+): Promise<SaltoError> => ({
+  message: `The type ${await safeApiName(objectType)} has the field ${invalidManagedBySaltoField}, which is configured as the 'managed by Salto' field, but the field is not queryable. Records of this type will not be fetched.`,
+  severity: 'Warning',
+})
+
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   name: 'customObjectsInstancesFilter',
   remote: true,
@@ -524,7 +543,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     )
     const [validFetchSettings, invalidFetchSettings] = _.partition(
       customObjectFetchSetting,
-      setting => setting.invalidIdFields.length === 0
+      setting => setting.invalidIdFields.length === 0 && setting.invalidManagedBySaltoField === undefined
     )
     const validChangesFetchSettings = await keyByAsync(
       validFetchSettings,
@@ -553,15 +572,23 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
           makeArray(setting.invalidIdFields),
         ))
       .toArray()
+
+    const invalidAliasFieldWarnings = awu(customObjectFetchSetting)
+      .filter(setting => setting.invalidAliasFields.length > 0)
+      .map(createInvalidAliasFieldFetchWarning)
+
+    const invalidManagedBySaltoFieldWarnings = awu(invalidFetchSettings)
+      .filter(setting => setting.invalidManagedBySaltoField !== undefined)
+      .map(createInvalidManagedBySaltoFieldFetchWarning)
+
     return {
       configSuggestions: [
         ...invalidFieldSuggestions,
         ...heavyTypesSuggestions,
         ...configChangeSuggestions,
       ],
-      errors: await awu(customObjectFetchSetting)
-        .filter(setting => setting.invalidAliasFields.length > 0)
-        .map(createInvalidAliasFieldFetchWarning)
+      errors: await invalidAliasFieldWarnings
+        .concat(invalidManagedBySaltoFieldWarnings)
         .toArray(),
     }
   },

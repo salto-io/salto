@@ -34,7 +34,6 @@ const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitC
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
   get: 60,
   deploy: 2,
-  gqlPost: 60,
 }
 
 const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
@@ -132,7 +131,7 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
   }
 
   // Sends a post request to Jira with GQL body
-  @clientUtils.throttle<clientUtils.ClientRateLimitConfig>({ bucketName: 'gqlPost', keys: ['url', 'queryParams'] })
+  @clientUtils.throttle<clientUtils.ClientRateLimitConfig>({ bucketName: 'get', keys: ['url', 'queryParams'] })
   @clientUtils.logDecorator(['url', 'queryParams'])
   @clientUtils.requiresLogin()
   public async gqlPost(

@@ -242,25 +242,6 @@ describe('issue layout filter', () => {
       const instances = elements.filter(isInstanceElement)
       const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
       expect(issueLayoutInstance).toBeDefined()
-      expect(issueLayoutInstance?.value).toEqual({
-        id: '2',
-        projectId: new ReferenceExpression(projectInstance.elemID, projectInstance),
-        extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
-        issueLayoutConfig: {
-          items: [
-            {
-              type: 'FIELD',
-              sectionType: 'PRIMARY',
-              key: new ReferenceExpression(fieldInstance1.elemID, fieldInstance1),
-            },
-            {
-              type: 'FIELD',
-              sectionType: 'SECONDARY',
-              key: new ReferenceExpression(fieldInstance2.elemID, fieldInstance2),
-            },
-          ],
-        },
-      })
     })
     it('should not add issue layout if there is no issueTypeScreenScheme', async () => {
       projectInstance.value.issueTypeScreenScheme = undefined
@@ -288,14 +269,6 @@ describe('issue layout filter', () => {
       const instances = elements.filter(isInstanceElement)
       const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
       expect(issueLayoutInstance).toBeUndefined()
-    })
-    it('should add key as missing ref if there is no field', async () => {
-      fieldInstance1.value.id = 'testField3'
-      await filter.onFetch(elements)
-      const instances = elements.filter(isInstanceElement)
-      const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
-      expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].key).toBeInstanceOf(ReferenceExpression)
-      expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].key.elemID.getFullName()).toEqual('jira.Field.instance.missing_testField1')
     })
     it('should not add missing reference if enableMissingRef is false', async () => {
       mockGet.mockImplementation(params => {

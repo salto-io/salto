@@ -17,7 +17,7 @@ import { CORE_ANNOTATIONS, Change, Element, InstanceElement, ReferenceExpression
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard, isResolvedReferenceExpression, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
-import { elements as adapterElements, references as referenceUtils } from '@salto-io/adapter-components'
+import { elements as adapterElements } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import JiraClient, { graphQLResponseType } from '../../client/client'
 import { ISSUE_LAYOUT_TYPE, JIRA, PROJECT_TYPE } from '../../constants'
@@ -25,8 +25,6 @@ import { FilterCreator } from '../../filter'
 import { QUERY } from './issue_layout_query'
 import { ISSUE_LAYOUT_CONFIG_ITEM_SCHEME, ISSUE_LAYOUT_RESPONSE_SCHEME, IssueLayoutConfig, IssueLayoutConfigItem, IssueLayoutResponse, containerIssueLayoutResponse, createIssueLayoutType } from './issue_layout_types'
 import { addAnnotationRecursively, setTypeDeploymentAnnotations } from '../../utils'
-import { JiraConfig } from '../../config/config'
-import { referencesRules, JiraFieldReferenceResolver, contextStrategyLookup } from '../../reference_mapping'
 import { deployChanges } from '../../deployment/standard_deployment'
 
 const { isDefined } = lowerDashValues
@@ -79,22 +77,6 @@ IssueLayoutConfig => {
   }))).filter(isIssueLayoutConfigItem)
 
   return { items }
-}
-
-const createReferences = async (
-  config: JiraConfig, elements: Element[], contextElements: Element[]): Promise<void> => {
-  const fixedDefs = referencesRules
-    .map(def => (
-      config.fetch.enableMissingReferences ? def : _.omit(def, 'jiraMissingRefStrategy')
-    ))
-  await referenceUtils.addReferences({
-    elements,
-    contextElements,
-    fieldsToGroupBy: ['id'],
-    defs: fixedDefs,
-    contextStrategyLookup,
-    fieldReferenceResolverCreator: defs => new JiraFieldReferenceResolver(defs),
-  })
 }
 
 const getProjectToScreenMapping = async (elements: Element[]): Promise<Record<string, number[]>> => {
@@ -214,7 +196,6 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) =>
         return undefined
       })))).filter(isDefined)
     issueLayouts.forEach(layout => { elements.push(layout) })
-    await createReferences(config, issueLayouts, elements)
     setTypeDeploymentAnnotations(issueLayoutType)
     await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.CREATABLE)
     await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.UPDATABLE)

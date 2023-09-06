@@ -133,6 +133,7 @@ import addAliasFilter from './filters/add_alias'
 import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_specific_duplicate_roles'
 import issueLayoutFilter from './filters/issue_layout/issue_layout'
 import removeSimpleFieldProjectFilter from './filters/remove_simplified_field_project'
+import createReferencesIssueLayoutFilter from './filters/issue_layout/create_references_issue_layout'
 import issueTypeHierarchyFilter from './filters/issue_type_hierarchy_filter'
 import projectFieldContextOrder from './filters/project_field_contexts_order'
 import scriptedFieldsIssueTypesFilter from './filters/script_runner/scripted_fields_issue_types'
@@ -258,6 +259,7 @@ export const DEFAULT_FILTERS = [
   issueLayoutFilter,
   // Must run after issueLayoutFilter
   removeSimpleFieldProjectFilter,
+  createReferencesIssueLayoutFilter,
   // Must run after fieldReferencesFilter
   contextsProjectsFilter,
   // must run after contextsProjectsFilter

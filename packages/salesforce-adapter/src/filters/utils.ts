@@ -29,7 +29,7 @@ import {
   getChangeData,
   InstanceElement,
   isAdditionOrModificationChange,
-  isField, isInstanceChange,
+  isField,
   isInstanceElement,
   isObjectType,
   isReferenceExpression,
@@ -51,7 +51,7 @@ import {
   API_NAME,
   API_NAME_SEPARATOR, CUSTOM_FIELD,
   CUSTOM_METADATA_SUFFIX,
-  CUSTOM_OBJECT,
+  CUSTOM_OBJECT, CUSTOM_OBJECT_ID_FIELD,
   INSTANCE_FULL_NAME_FIELD,
   INTERNAL_ID_ANNOTATION,
   INTERNAL_ID_FIELD,
@@ -75,6 +75,7 @@ import {
   Types,
 } from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
+import * as transformer from '../transformers/transformer'
 
 const { toArrayAsync, awu } = collections.asynciterable
 const { weightedChunks } = chunks
@@ -480,3 +481,17 @@ export const isCustomObjectSync = (element: Readonly<Element>): boolean => {
 export const isInstanceOfCustomObjectSync = (element: Element): element is InstanceElement => (
   isInstanceElement(element) && isCustomObjectSync(element.getTypeSync())
 )
+
+
+const fullApiNameSync = (elem: Readonly<Element>): string | undefined => {
+  if (isInstanceElement(elem)) {
+    return (isCustomObjectSync(elem.getTypeSync()))
+      ? elem.value[CUSTOM_OBJECT_ID_FIELD] : elem.value[INSTANCE_FULL_NAME_FIELD]
+  }
+  return elem.annotations[API_NAME] ?? elem.annotations[METADATA_TYPE]
+}
+
+export const apiNameSync = (elem: Readonly<Element>, relative = false): string | undefined => {
+  const name = fullApiNameSync(elem)
+  return name && relative ? transformer.relativeApiName(name) : name
+}

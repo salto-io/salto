@@ -27,7 +27,8 @@ import {
   AdditionChange,
 } from '@salto-io/adapter-api'
 import wu from 'wu'
-import { isInstanceOfCustomObjectSync, isInstanceOfTypeChange, isMetadataChange, safeApiName } from './filters/utils'
+import { isInstanceOfCustomObjectChange } from './custom_object_instances_deploy'
+import { isInstanceOfTypeChange, safeApiName } from './filters/utils'
 import {
   ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP, SBAA_APPROVAL_CONDITION,
   SBAA_APPROVAL_RULE,
@@ -37,11 +38,10 @@ import {
 const { awu } = collections.asynciterable
 
 const getGroupId = async (change: Change): Promise<string> => {
-  const element = getChangeData(change)
-  if (!isInstanceOfCustomObjectSync(element)) {
+  if (!isInstanceChange(change) || !(await isInstanceOfCustomObjectChange(change))) {
     return 'salesforce_metadata'
   }
-  const typeName = apiNameSync(element.getTypeSync()) ?? 'UNKNOWN'
+  const typeName = await safeApiName(await getChangeData(change).getType()) ?? 'UNKNOWN'
   return `${change.action}_${typeName}_instances`
 }
 

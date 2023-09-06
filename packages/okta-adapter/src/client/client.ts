@@ -62,21 +62,29 @@ const initRateLimits = {
   currentlyRunning: 0,
 }
 
+// according to okta, the way to tell if it is an id is that includes both letters and numbers
+// this regex makes sure there is at least 1 letter and at least 1 number, and no slashes
+const idRegex = '(?=.*[a-zA-Z])(?=.*\\d)(?!.*\\/).+'
 // According to https://developer.okta.com/docs/reference/rl-global-mgmt/
 const rateLimitUrls = [
-  new RegExp('/api/v1/apps/.+/(?:logo|groups)'), // has to be before /api/v1/apps.*
-  new RegExp('/api/v1/apps.*'),
-  new RegExp('/api/v1/groups/.+/roles'), // has to be before /api/v1/groups.*
-  new RegExp('/api/v1/groups.*'),
-  new RegExp('/api/v1/users.*'),
-  new RegExp('/api/v1/users'),
-  new RegExp('/api/v1/logs.*'),
-  new RegExp('/api/v1/events.*'),
-  new RegExp('/api/v1/certificateAuthorities.*'),
-  new RegExp('/api/v1/devices.*'),
-  new RegExp('/api/v1/org/email/bounces/remove-list'),
-  new RegExp('/oauth2/v1/clients.*'),
-  new RegExp('/api/v1.*'), // Has to be last
+  new RegExp(`^/api/v1/apps/${idRegex}$`), // has to be before /api/v1/apps.*
+  new RegExp('^/api/v1/apps.*'),
+  new RegExp(`^/api/v1/groups/${idRegex}$`), // has to be before /api/v1/groups.*
+  new RegExp('^/api/v1/groups.*'),
+  new RegExp('^/api/v1/users.*'),
+  new RegExp('^/api/v1/users'),
+  new RegExp('^/api/v1/logs.*'),
+  new RegExp('^/api/v1/events.*'),
+  new RegExp('^/api/v1/certificateAuthorities.*'),
+  new RegExp('^/api/v1/devices.*'),
+  new RegExp('^/api/v1/org/email/bounces/remove-list'),
+  new RegExp('^/oauth2/v1/clients.*'),
+  /* these endpoints are not documented, but have their own rate limit */
+  new RegExp('^/api/v1/iam.*'),
+  new RegExp('^/api/v1/domains'),
+  new RegExp('^/api/v1/device-assurances'),
+  /**/
+  new RegExp('^/api/v1.*'), // Has to be last
 ]
 
 const waitForRateLimit = async (rateLimitReset: number): Promise<void> => {
@@ -97,7 +105,7 @@ const updateRateLimits = (
     return
   }
   // If this is a new limitation, reset the remaining count
-  if (updatedRateLimitReset !== rateLimits.rateLimitReset) {
+  if (updatedRateLimitReset * 1000 !== rateLimits.rateLimitReset) {
     rateLimits.rateLimitRemaining = updatedRateLimitRemaining
     rateLimits.rateLimitReset = updatedRateLimitReset * 1000 // Convert to milliseconds
   } else {

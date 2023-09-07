@@ -15,8 +15,18 @@
 */
 import _ from 'lodash'
 import {
-  Change, getChangeData, InstanceElement, isInstanceElement, Element,
-  isObjectType, Field, BuiltinTypes, ReferenceExpression, isRemovalChange, isReferenceExpression,
+  Change,
+  getChangeData,
+  InstanceElement,
+  isInstanceElement,
+  Element,
+  isObjectType,
+  Field,
+  BuiltinTypes,
+  ReferenceExpression,
+  isRemovalChange,
+  isReferenceExpression,
+  isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { getParents, replaceTemplatesWithValues } from '@salto-io/adapter-utils'
@@ -138,6 +148,13 @@ export const createCustomFieldOptionsFilterCreator = (
       relevantChanges,
       change => getChangeData(change).elemID.typeName === parentTypeName,
     )
+
+    childrenChanges.filter(isAdditionOrModificationChange).forEach(change => {
+      // Zendesk API automatically translates the dynamic_content value of raw_name to name
+      // On deploy we need to do the opposite to make sure we don't override the dynamic_content value
+      getChangeData(change).value.name = getChangeData(change).value.raw_name
+    })
+
     if (parentChanges.length === 0) {
       // The service does not allow us to have an field with no options - therefore, we need to do
       //  the removal changes last

@@ -17,9 +17,16 @@ import _ from 'lodash'
 import Joi from 'joi'
 import {
   Change, ChangeDataType, getChangeData, InstanceElement,
-  isAdditionOrModificationChange, isInstanceChange, ReferenceExpression, toChange,
+  isAdditionOrModificationChange, isInstanceChange, isReferenceExpression, ReferenceExpression, toChange,
 } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData, createSchemeGuard, getParents, resolveChangeElement, references } from '@salto-io/adapter-utils'
+import {
+  applyFunctionToChangeData,
+  createSchemeGuard,
+  getParents,
+  resolveChangeElement,
+  references,
+  isResolvedReferenceExpression,
+} from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { lookupFunc } from './field_references'
@@ -40,23 +47,9 @@ export type SubjectCondition = {
 
 const TYPES_WITH_SUBJECT_CONDITIONS = ['routing_attribute_value']
 
-export const applyforInstanceChangesOfType = async (
-  changes: Change<ChangeDataType>[],
-  typeNames: string[],
-  func: (arg: InstanceElement) => Promise<InstanceElement> | InstanceElement,
-): Promise<void> => {
-  await awu(changes)
-    .filter(isAdditionOrModificationChange)
-    .filter(isInstanceChange)
-    .filter(change => typeNames.includes(getChangeData(change).elemID.typeName))
-    .forEach(change => applyFunctionToChangeData<Change<InstanceElement>>(
-      change,
-      func,
-    ))
-}
-
 export const createAdditionalParentChanges = async (
   childrenChanges: Change<InstanceElement>[],
+  childrenField: string,
   shouldResolve = true,
 ): Promise<Change<InstanceElement>[] | undefined> => {
   const childrenInstance = getChangeData(childrenChanges[0])
@@ -70,9 +63,42 @@ export const createAdditionalParentChanges = async (
   const changes = parents.map(parent => toChange({
     before: parent.value.clone(), after: parent.value.clone(),
   }))
+
+  // The children in the parents are the instances at the beginning of the deployment
+  // If the child change was changed during the preDeploy stage, we want to use the updated one
+  const childrenChangesByElemId = _.keyBy(childrenChanges.map(getChangeData), change => change.elemID.getFullName())
+  changes.map(getChangeData).forEach(parent => {
+    const children = parent.value[childrenField] ?? []
+    if (_.isArray(children) && children.every(isReferenceExpression)) {
+      children
+        .filter(isResolvedReferenceExpression)
+        .filter(child => childrenChangesByElemId[child.value.elemID.getFullName()] !== undefined)
+        .forEach(child => {
+          child.value.value = childrenChangesByElemId[child.value.elemID.getFullName()].value
+        })
+    } else {
+      log.error(`children field '${childrenField}' of ${parent.elemID.getFullName()} is invalid`)
+    }
+  })
+
   return shouldResolve
     ? awu(changes).map(change => resolveChangeElement(change, lookupFunc)).toArray()
     : changes
+}
+
+export const applyforInstanceChangesOfType = async (
+  changes: Change<ChangeDataType>[],
+  typeNames: string[],
+  func: (arg: InstanceElement) => Promise<InstanceElement> | InstanceElement,
+): Promise<void> => {
+  await awu(changes)
+    .filter(isAdditionOrModificationChange)
+    .filter(isInstanceChange)
+    .filter(change => typeNames.includes(getChangeData(change).elemID.typeName))
+    .forEach(change => applyFunctionToChangeData<Change<InstanceElement>>(
+      change,
+      func,
+    ))
 }
 
 const CONDITION_SCHEMA = Joi.array().items(Joi.object({

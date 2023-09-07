@@ -266,7 +266,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       change => getChangeData(change).elemID.typeName === MACRO_ATTACHMENT_TYPE_NAME
     )
     const additionalParentChanges = parentChanges.length === 0 && childrenChanges.length > 0
-      ? await createAdditionalParentChanges(childrenChanges, false)
+      ? await createAdditionalParentChanges(childrenChanges, ATTACHMENTS_FIELD_NAME, false)
       : []
     if (additionalParentChanges === undefined) {
       return {

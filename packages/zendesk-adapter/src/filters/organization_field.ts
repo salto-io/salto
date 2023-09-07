@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Change, getChangeData, InstanceElement } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges } from '../deployment'
 import { API_DEFINITIONS_CONFIG } from '../config'
@@ -36,8 +36,15 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       relevantChanges,
       change => getChangeData(change).elemID.typeName === ORG_FIELD_TYPE_NAME,
     )
+
+    childrenChanges.filter(isAdditionOrModificationChange).forEach(change => {
+      // Zendesk API automatically translates the dynamic_content value of raw_name to name
+      // On deploy we need to do the opposite to make sure we don't override the dynamic_content value
+      getChangeData(change).value.name = getChangeData(change).value.raw_name
+    })
+
     const additionalParentChanges = parentChanges.length === 0 && childrenChanges.length > 0
-      ? await createAdditionalParentChanges(childrenChanges)
+      ? await createAdditionalParentChanges(childrenChanges, CUSTOM_FIELD_OPTIONS_FIELD_NAME)
       : []
     if (additionalParentChanges === undefined) {
       return {

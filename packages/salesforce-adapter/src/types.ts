@@ -148,6 +148,13 @@ export type SaltoManagementFieldSettings = {
   defaultFieldName: string
 }
 
+export type OutgoingReferenceBehavior = 'ExcludeInstance' | 'BrokenReference' | 'InternalId'
+
+export type BrokenOutgoingReferencesSettings = {
+  defaultBehavior: string
+  perTargetTypeOverrides: Record<string, OutgoingReferenceBehavior>
+}
+
 const objectIdSettings = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'objectIdSettings'),
   fields: {
@@ -236,6 +243,21 @@ const saltoManagementFieldSettingsType = new ObjectType({
   },
 })
 
+const brokenOutgoingReferencesSettingsType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'brokenOutgoingReferencesSettings'),
+  fields: {
+    defaultBehavior: {
+      refType: BuiltinTypes.STRING,
+    },
+    perTargetOverrides: {
+      refType: new MapType(BuiltinTypes.STRING),
+    },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 export type DataManagementConfig = {
   includeObjects: string[]
   excludeObjects?: string[]
@@ -245,6 +267,7 @@ export type DataManagementConfig = {
   showReadOnlyValues?: boolean
   saltoAliasSettings?: SaltoAliasSettings
   saltoManagementFieldSettings?: SaltoManagementFieldSettings
+  brokenOutgoingReferencesSettings?: BrokenOutgoingReferencesSettings
 }
 
 export type FetchParameters = {
@@ -494,6 +517,9 @@ const dataManagementType = new ObjectType({
     },
     saltoManagementFieldSettings: {
       refType: saltoManagementFieldSettingsType,
+    },
+    brokenOutgoingReferencesSettings: {
+      refType: brokenOutgoingReferencesSettingsType,
     },
   } as Record<keyof DataManagementConfig, FieldDefinition>,
   annotations: {

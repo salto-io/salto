@@ -88,6 +88,15 @@ describe('issue type icon filter', () => {
       const iconInstanse = elements.filter(isInstanceElement).find(e => e.elemID.typeName === ISSUE_TYPE_ICON_NAME)
       expect(iconInstanse).toBeUndefined()
     })
+    it('should not add issue layoutif error has been thrown from client', async () => {
+      mockGet.mockClear()
+      mockGet.mockImplementation(() => {
+        throw new Error('Error')
+      })
+      await filter.onFetch(elements)
+      const iconInstanse = elements.filter(isInstanceElement).find(e => e.elemID.typeName === ISSUE_TYPE_ICON_NAME)
+      expect(iconInstanse).toBeUndefined()
+    })
   })
   describe('deploy', () => {
     const issueTypeIconType = new ObjectType({ elemID: new ElemID(JIRA, ISSUE_TYPE_ICON_NAME) })

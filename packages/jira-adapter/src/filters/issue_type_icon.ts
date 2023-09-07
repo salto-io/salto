@@ -31,6 +31,9 @@ type IssueTypeIconResponse = {
         id: string
     }
 }
+type queryParamsType = {
+  foramt: string
+}
 
 const createIconType = (): ObjectType =>
   new ObjectType({
@@ -47,9 +50,10 @@ const createIconType = (): ObjectType =>
     path: [JIRA, adapterElements.TYPES_PATH, adapterElements.SUBTYPES_PATH, ISSUE_TYPE_ICON_NAME],
   })
 
-const getLogoContent = async (link: string, client: JiraClient): Promise<Buffer | Error> => {
+const getLogoContent = async (link: string, client: JiraClient, queryParams: queryParamsType):
+Promise<Buffer | Error> => {
   try {
-    const res = await client.getSinglePage({ url: link, responseType: 'arraybuffer' })
+    const res = await client.getSinglePage({ url: link, queryParams, responseType: 'arraybuffer' })
     const content = _.isString(res.data) ? Buffer.from(res.data) : res.data
     if (!Buffer.isBuffer(content)) {
       return new Error('Received invalid response from Jira API for attachment content')
@@ -68,6 +72,7 @@ const getLogo = async ({
   logoName,
   link,
   id,
+  queryParams,
 }:{
     client: JiraClient
     parents: InstanceElement[]
@@ -76,9 +81,10 @@ const getLogo = async ({
     logoName: string
     link: string
     id: number
+    queryParams: queryParamsType
   }):
   Promise<InstanceElement | Error> => {
-  const logoContent = await getLogoContent(link, client)
+  const logoContent = await getLogoContent(link, client, queryParams)
   if (logoContent instanceof Error) {
     return logoContent
   }
@@ -160,6 +166,9 @@ const filter: FilterCreator = ({ client }) => ({
     elements.push(logoType)
     await Promise.all(issueTypes.map(async issueType => {
       const url = `/rest/api/3/universal_avatar/view/type/issuetype/avatar/${issueType.value.avatarId}?format=png`
+      const queryParams = {
+        foramt: 'png',
+      }
       const logo = await getLogo({
         client,
         parents: [issueType],
@@ -168,6 +177,7 @@ const filter: FilterCreator = ({ client }) => ({
         logoName: `${issueType.elemID.name}Icon`,
         link: url,
         id: issueType.value.avatarId,
+        queryParams,
       })
       if (logo instanceof Error) {
         return logo

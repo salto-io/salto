@@ -115,7 +115,11 @@ const isAdminProfileChange = async (change: Change): Promise<boolean> => {
 
 /**
  * Profile permissions filter.
- * creates default Admin Profile.fieldsPermissions and Profile.objectsPermissions.
+ * If any object types were added, add them to the Admin profile's objectPermissions section. Do the same with added
+ * fields and fieldPermissions. This ensures that at least one user will have permissions to view/edit the newly created
+ * objects/fields.
+ * Typically, this also ensures that the next fetch will contain the new objects/fields, because the fetching user is
+ * usually an Admin.
  */
 const filterCreator: LocalFilterCreator = () => {
   let isPartialAdminProfile = false

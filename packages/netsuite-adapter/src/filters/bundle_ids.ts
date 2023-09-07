@@ -75,7 +75,7 @@ const addBundleToRecords = (
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'bundleIds',
   onFetch: async elements => {
-    if (!config.fetch?.addBundles) {
+    if (!config.fetch.addBundles) {
       return
     }
     const [bundleInstances, nonBundleElements] = _.partition(elements, isBundleInstance)

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
-import { DetailedChange, ObjectType } from '@salto-io/adapter-api'
+import { DetailedChange, ObjectType, ReferenceInfo, Element, GLOBAL_ADAPTER } from '@salto-io/adapter-api'
 import { exists, isEmptyDir, rm } from '@salto-io/file'
 import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl, remoteMap,
   configSource as cs, staticFiles, dirStore, WorkspaceComponents, errors, elementSource,
@@ -30,7 +30,7 @@ import { localState } from './state'
 import { workspaceConfigSource } from './workspace_config'
 import { buildLocalStaticFilesCache } from './static_files_cache'
 import { createRemoteMapCreator } from './remote_map'
-import { getAdaptersConfigTypesMap } from '../core/adapters'
+import { adapterCreators, getAdaptersConfigTypesMap } from '../core/adapters'
 import { buildLocalAdaptersConfigSource } from './adapters_config'
 
 const { awu } = collections.asynciterable
@@ -245,6 +245,23 @@ export const getAdapterConfigsPerAccount = async (envs: EnvConfig[]): Promise<Ob
   return Object.values(configTypesByAccount).flat()
 }
 
+export const getCustomReferences = async (
+  elements: Element[],
+  accountToServiceName: Record<string, string>,
+): Promise<ReferenceInfo[]> => {
+  const accountToElements = _.groupBy(elements.filter(e => e.elemID.adapter !== GLOBAL_ADAPTER), e => e.elemID.adapter)
+  return (await Promise.all(Object.entries(accountToElements).map(async ([account, accountElements]) => {
+    const serviceName = accountToServiceName[account] ?? account
+    try {
+      return await adapterCreators[serviceName]?.getCustomReferences?.(accountElements) ?? []
+    } catch (err) {
+      log.error('failed to get custom references for %s: %o', account, err)
+      return []
+    }
+  }))).flat()
+}
+
+
 type LoadLocalWorkspaceArgs = {
   path: string
   configOverrides?: DetailedChange[]
@@ -295,7 +312,9 @@ const loadLocalWorkspaceImpl = async ({
     elemSources,
     remoteMapCreator,
     false,
-    persistent
+    persistent,
+    undefined,
+    getCustomReferences,
   )
 
   return {
@@ -396,6 +415,7 @@ Promise<Workspace> => {
     adaptersConfig,
     credentials,
     elemSources,
-    remoteMapCreator
+    remoteMapCreator,
+    getCustomReferences,
   )
 }

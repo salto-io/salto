@@ -33,7 +33,7 @@ const GADGET_VALUE_SCHEME = Joi.object({
   value: Joi.string().allow('').required(),
 }).unknown(true)
 
-const isGadgetObject = createSchemeGuard<GadgetValue>(GADGET_VALUE_SCHEME, 'Invalid gadget value')
+const isGadgetObject = createSchemeGuard<GadgetValue>(GADGET_VALUE_SCHEME)
 
 export const gadgetValuesContextFunc: referenceUtils.ContextFunc = async ({ instance, fieldPath }) => {
   if (fieldPath === undefined) {

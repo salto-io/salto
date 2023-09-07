@@ -24,6 +24,10 @@ describe('weightedChunks', () => {
     const chunks = weightedChunks(['eeeeeeeeee', 'dddddd', 'cccc', 'bb', 'a'], 7, val => val.length)
     expect(chunks).toEqual([['eeeeeeeeee'], ['dddddd'], ['cccc', 'bb', 'a']])
   })
+  it('should split chunks correctly with max items per chunk limitation', () => {
+    const chunks = weightedChunks(['eeeeeeeeee', 'dddddd', 'cccc', 'bb', 'a'], 7, val => val.length, 2)
+    expect(chunks).toEqual([['eeeeeeeeee'], ['dddddd'], ['cccc', 'bb'], ['a']])
+  })
 })
 
 describe('chunkByEvenly', () => {

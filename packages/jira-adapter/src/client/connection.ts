@@ -53,12 +53,16 @@ Based on the current implementation of the Jira API, we can't know if the accoun
 account, but in some cases we can know that it's not a production account.
 */
 export const validateCredentials = async (
-  { connection }: { connection: clientUtils.APIConnection },
+  { connection, isDataCenter }: { connection: clientUtils.APIConnection; isDataCenter: boolean },
 ): Promise<AccountInfo> => {
   if (await isAuthorized(connection)) {
     const accountId = await getBaseUrl(connection)
     if (accountId.includes('-sandbox-')) {
       return { accountId, isProduction: false, accountType: 'Sandbox' }
+    }
+
+    if (isDataCenter) {
+      return { accountId }
     }
     const response = await connection.get('/rest/api/3/instance/license')
     log.info(`Jira application's info: ${safeJsonStringify(response.data.applications)}`)

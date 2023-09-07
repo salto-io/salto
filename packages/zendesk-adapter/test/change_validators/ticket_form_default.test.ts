@@ -15,8 +15,8 @@
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { ZENDESK } from '../../src/constants'
-import { onlyOneTicketFormDefaultValidator, TICKET_FORM_TYPE_NAME } from '../../src/change_validators/ticket_form_default'
+import { ZENDESK, TICKET_FORM_TYPE_NAME } from '../../src/constants'
+import { onlyOneTicketFormDefaultValidator } from '../../src/change_validators/ticket_form_default'
 
 describe('onlyOneTicketFormDefaultValidator', () => {
   const ticketFormType = new ObjectType({

@@ -21,7 +21,9 @@ import { logger } from '@salto-io/logging'
 import { ElemID, LIST_ID_PREFIX, MAP_ID_PREFIX, GLOBAL_ADAPTER } from './element_id'
 // There is a real cycle here and alternatively values.ts should be defined in the same file
 // eslint-disable-next-line import/no-cycle
-import { Values, isEqualValues, Value, TypeReference, isTypeReference, cloneDeepWithoutRefs, CompareOptions } from './values'
+import { Values, Value, TypeReference, isTypeReference, cloneDeepWithoutRefs, CompareOptions } from './values'
+// eslint-disable-next-line import/no-cycle
+import { isEqualValues } from './comparison'
 
 const { awu } = collections.asynciterable
 const { mapValuesAsync } = promises.object

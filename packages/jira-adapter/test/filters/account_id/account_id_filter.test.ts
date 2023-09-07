@@ -200,7 +200,7 @@ describe('account_id_filter', () => {
       common.checkDisplayNames((displayChanges[1] as ModificationChange<InstanceElement>).data.before, '1')
       common.checkObjectedInstanceIds((displayChanges[1] as ModificationChange<InstanceElement>).data.after, '2')
       common.checkDisplayNames((displayChanges[1] as ModificationChange<InstanceElement>).data.after, '2')
-    }, 1000000)
+    })
     it('returns even wrong structure instances on OnDeploy', async () => {
       const elementInstance = displayNamesInstances[0]
       elementInstance.value.accountId.wrong = 'wrong'

@@ -21,8 +21,8 @@ import {
   getChangeData, InstanceElement, isAdditionChange,
   isAdditionOrModificationChange, isInstanceElement, ReferenceExpression,
 } from '@salto-io/adapter-api'
+import { inspectValue } from '@salto-io/adapter-utils'
 import { retry } from '@salto-io/lowerdash'
-import { safeJsonStringify, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
@@ -49,7 +49,7 @@ const EXPECTED_APP_SCHEMA = Joi.object({
 const isJobStatus = (value: unknown): value is JobStatus => {
   const { error } = EXPECTED_APP_SCHEMA.validate(value)
   if (error !== undefined) {
-    log.error(`Received an invalid response for the job status: ${error.message}, ${safeJsonStringify(value, elementExpressionStringifyReplacer)}`)
+    log.error(`Received an invalid response for the job status: ${error.message}, ${inspectValue(value)}`)
     return false
   }
   return true
@@ -58,18 +58,17 @@ const isJobStatus = (value: unknown): value is JobStatus => {
 const checkIfJobIsDone = async (
   client: ZendeskClient, jobId: string, change: Change
 ): Promise<boolean> => {
-  const fullName = getChangeData(change).elemID.getFullName()
   const res = (await client.getSinglePage({ url: `/api/v2/apps/job_statuses/${jobId}` })).data
   if (!isJobStatus(res)) {
     throw createSaltoElementError({ // caught by deployChanges
-      message: `Got an invalid response for job status. Element: ${fullName}. Job ID: ${jobId}`,
+      message: `Got an invalid response for job status. Job ID: ${jobId}`,
       severity: 'Error',
       elemID: getChangeData(change).elemID,
     })
   }
   if (['failed', 'killed'].includes(res.status)) {
     throw createSaltoElementError({ // caught by deployChanges
-      message: `Job status is failed. Element: ${fullName}. Job ID: ${jobId}. Error: ${res.message}`,
+      message: `Job status is failed. Job ID: ${jobId}. Error: ${res.message}`,
       severity: 'Error',
       elemID: getChangeData(change).elemID,
     })
@@ -131,12 +130,11 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     const deployResult = await deployChanges(
       relevantChanges,
       async change => {
-        const fullName = getChangeData(change).elemID.getFullName()
         const response = await deployChange(change, client, config.apiDefinitions, ['app', 'settings.title', 'settings_objects'])
         if (isAdditionChange(change)) {
           if (response == null || _.isArray(response) || !_.isString(response.pending_job_id)) {
             throw createSaltoElementError({ // caught by deployChanges
-              message: `Got an invalid response when tried to install app ${fullName}`,
+              message: 'Got an invalid response when tried to install app',
               severity: 'Error',
               elemID: getChangeData(change).elemID,
             })

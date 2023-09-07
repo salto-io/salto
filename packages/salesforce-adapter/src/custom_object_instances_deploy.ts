@@ -26,7 +26,7 @@ import {
   SeverityLevel,
   isInstanceElement, isInstanceChange, toChange,
 } from '@salto-io/adapter-api'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { inspectValue, safeJsonStringify } from '@salto-io/adapter-utils'
 import { BatchResultInfo } from 'jsforce-types'
 import { EOL } from 'os'
 import {
@@ -69,7 +69,7 @@ const logErroredInstances = (instancesAndResults: InstanceAndResult[]): void => 
       log.error(`Instance ${instance.elemID.getFullName()} had deploy errors - ${['', ...result.errors].join('\n\t')}
 
 and values -
-${safeJsonStringify(instance.value, undefined, 2,)}
+${inspectValue(instance.value)}
 `)
     }
   })

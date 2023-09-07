@@ -47,7 +47,7 @@ import { permissionSchemeDeploymentValidator } from './permission_scheme'
 import { statusMigrationChangeValidator } from './status_migration'
 import { activeSchemeChangeValidator } from './active_scheme_change'
 import { activeSchemeDeletionValidator } from './active_scheme_deletion'
-import { automationProjectUnresolvedReferenceValidator } from './automation_unresolved_references'
+import { brokenReferenceValidator } from './broken_references'
 import { unresolvedReferenceValidator } from './unresolved_references'
 import { sameIssueTypeNameChangeValidator } from './same_issue_type_name'
 import { issueTypeSchemeMigrationValidator } from './issue_type_scheme_migration'
@@ -56,6 +56,7 @@ import { projectCategoryValidator } from './project_category'
 import { unresolvedFieldConfigurationItemsValidator } from './unresolved_field_configuration_items'
 import { fieldSecondGlobalContextValidator } from './field_contexts/second_global_context'
 import { customFieldsWith10KOptionValidator } from './field_contexts/custom_field_with_10K_options'
+import { issueTypeHierarchyValidator } from './issue_type_hierarchy'
 
 const {
   deployTypesNotSupportedValidator,
@@ -69,7 +70,7 @@ export default (
   const validators: Record<ChangeValidatorName, ChangeValidator> = {
     ...deployment.changeValidators.getDefaultChangeValidators(['outgoingUnresolvedReferencesValidator']),
     unresolvedReference: unresolvedReferenceValidator,
-    automationProjectUnresolvedReference: automationProjectUnresolvedReferenceValidator,
+    brokenReferences: brokenReferenceValidator,
     deployTypesNotSupported: deployTypesNotSupportedValidator,
     readOnlyProjectRoleChange: readOnlyProjectRoleChangeValidator,
     defaultFieldConfiguration: defaultFieldConfigurationValidator,
@@ -109,6 +110,7 @@ export default (
     projectCategory: projectCategoryValidator(client),
     unresolvedFieldConfigurationItems: unresolvedFieldConfigurationItemsValidator,
     customFieldsWith10KOptions: customFieldsWith10KOptionValidator,
+    issueTypeHierarchy: issueTypeHierarchyValidator,
   }
 
   return createChangeValidator({

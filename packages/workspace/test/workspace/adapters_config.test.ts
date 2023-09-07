@@ -197,7 +197,7 @@ describe('adapters config', () => {
     validationErrorsMap.values.mockReturnValue(awu([[new validator.InvalidValueValidationError({ elemID: new ElemID('someID'), value: 'val', fieldName: 'field', expectedValue: 'expVal' })]]))
 
     const errs = await configSource.getErrors()
-    expect(wu(errs.all()).every(err => err.source === 'config')).toBeTruthy()
+    expect(wu(errs.all()).every(err => err.type === 'config')).toBeTruthy()
   })
 
   it('should remove undefined values when setting the configuration', async () => {

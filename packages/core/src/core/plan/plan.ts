@@ -20,9 +20,8 @@ import {
   ChangeValidator, Change, ChangeError, DependencyChanger, ChangeGroupIdFunction,
   ReadOnlyElementsSource, ElemID, isVariable,
   Value, isReferenceExpression, compareSpecialValues, BuiltinTypesByFullName, isAdditionChange,
-  isModificationChange, isRemovalChange, ReferenceExpression, changeId,
-  shouldResolve,
-  isTemplateExpression,
+  isModificationChange, isRemovalChange, changeId,
+  isTemplateExpression, areReferencesEqual,
   CompareOptions,
 } from '@salto-io/adapter-api'
 import { DataNodeMap, DiffNode, DiffGraph, GroupDAG } from '@salto-io/dag'
@@ -41,87 +40,7 @@ const { resolve } = expressions
 
 const log = logger(module)
 
-type ReferenceCompareReturnValue = {
-  returnCode: 'return'
-  returnValue: boolean
-} | {
-  returnCode: 'recurse'
-  returnValue: {
-    firstValue: Value
-    secondValue: Value
-  }
-}
-
 export type IDFilter = (id: ElemID) => boolean | Promise<boolean>
-
-
-const getReferenceValue = async (
-  reference: ReferenceExpression,
-  elementsSource: ReadOnlyElementsSource,
-  visitedReferences: Set<string>,
-): Promise<Value> => {
-  const targetId = reference.elemID.getFullName()
-  if (visitedReferences.has(targetId)) {
-    // Circular reference, to avoid infinite recursion we need to return something
-    // the chosen behavior for now is to return "undefined"
-    // this may cause circular references to compare equal if we compare to undefined
-    // but this shouldn't matter much as we assume the user has already seen the warning
-    // about having a circular reference before getting to this point
-    return undefined
-  }
-  visitedReferences.add(targetId)
-  const refValue = reference.value ?? await elementsSource.get(reference.elemID)
-  return isVariable(refValue) ? refValue.value : refValue
-}
-
-
-const areReferencesEqual = async (
-  first: Value,
-  second: Value,
-  firstSrc: ReadOnlyElementsSource,
-  secondSrc: ReadOnlyElementsSource,
-  firstVisitedReferences: Set<string>,
-  secondVisitedReferences: Set<string>,
-  compareOptions?: CompareOptions,
-): Promise<ReferenceCompareReturnValue> => {
-  if (compareOptions?.compareByValue && shouldResolve(first) && shouldResolve(second)) {
-    const shouldResolveFirst = isReferenceExpression(first)
-
-    const firstValue = shouldResolveFirst
-      ? await getReferenceValue(first, firstSrc, firstVisitedReferences)
-      : first
-
-    const shouldResolveSecond = isReferenceExpression(second)
-
-    const secondValue = shouldResolveSecond
-      ? await getReferenceValue(second, secondSrc, secondVisitedReferences)
-      : second
-
-    if (shouldResolveFirst || shouldResolveSecond) {
-      return {
-        returnCode: 'recurse',
-        returnValue: {
-          firstValue,
-          secondValue,
-        },
-      }
-    }
-  }
-
-  if (isReferenceExpression(first) && isReferenceExpression(second)) {
-    return {
-      returnCode: 'return',
-      returnValue: first.elemID.isEqual(second.elemID),
-    }
-  }
-
-  // if we got here, as we assume that one of the compared values is a ReferenceExpression,
-  // we need to return false because a non-resolved reference isn't equal to a non-reference value
-  return {
-    returnCode: 'return',
-    returnValue: false,
-  }
-}
 
 /**
  * Check if 2 nodes in the DAG are equals or not
@@ -144,16 +63,22 @@ const compareValuesAndLazyResolveRefs = async (
     // to make a copy here
     const firstVisited = new Set(firstVisitedReferences)
     const secondVisited = new Set(secondVisitedReferences)
-    const referencesCompareResult = await areReferencesEqual(
-      first, second, firstSrc, secondSrc, firstVisited, secondVisited, compareOptions
-    )
+    const referencesCompareResult = areReferencesEqual({
+      first,
+      second,
+      firstSrc,
+      secondSrc,
+      firstVisitedReferences: firstVisited,
+      secondVisitedReferences: secondVisited,
+      compareOptions,
+    })
     if (referencesCompareResult.returnCode === 'return') {
       return referencesCompareResult.returnValue
     }
     const { firstValue, secondValue } = referencesCompareResult.returnValue
     return compareValuesAndLazyResolveRefs(
-      firstValue,
-      secondValue,
+      await firstValue,
+      await secondValue,
       firstSrc,
       secondSrc,
       compareOptions,

@@ -92,6 +92,18 @@ const toMinifiedChange = async (
       newLayoutAssignmentNames,
     )
   }
+
+  /**
+   * Other filters downstream may rely on the presence of specific sections, so let's make sure we don't completely
+   * remove them even if we don't deploy any of their contents.
+   */
+  const profileSections = _(after.value)
+    .pickBy(_.isPlainObject)
+    .mapValues(() => ({}))
+    .value()
+
+  minifiedAfter.value = _.assign(profileSections, minifiedAfter.value)
+
   return toChange({
     before,
     after: minifiedAfter,

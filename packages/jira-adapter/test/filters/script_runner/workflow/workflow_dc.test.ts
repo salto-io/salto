@@ -17,10 +17,10 @@ import { filterUtils } from '@salto-io/adapter-components'
 import { ElemID, InstanceElement, ObjectType, toChange, Value } from '@salto-io/adapter-api'
 import _ from 'lodash'
 
-import { getFilterParams, mockClient } from '../../utils'
-import workflowFilter from '../../../src/filters/script_runner/workflow/workflow_filter'
-import { CONDITION_CONFIGURATION, JIRA, POST_FUNCTION_CONFIGURATION, WORKFLOW_TYPE_NAME } from '../../../src/constants'
-import { getDefaultConfig } from '../../../src/config/config'
+import { getFilterParams, mockClient } from '../../../utils'
+import workflowFilter from '../../../../src/filters/script_runner/workflow/workflow_filter'
+import { CONDITION_CONFIGURATION, JIRA, POST_FUNCTION_CONFIGURATION, WORKFLOW_TYPE_NAME } from '../../../../src/constants'
+import { getDefaultConfig } from '../../../../src/config/config'
 
 
 const compareScriptObjectsBase64 = (obj1: string, obj2: string): void => {

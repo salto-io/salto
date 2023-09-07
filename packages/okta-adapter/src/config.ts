@@ -41,6 +41,7 @@ export type OktaActionName = ActionName | OktaStatusActionName
 export type OktaFetchConfig = configUtils.UserFetchConfig & {
   convertUsersIds?: boolean
   enableMissingReferences?: boolean
+  includeGroupMemberships?: boolean
 }
 
 export type OktaSwaggerApiConfig = configUtils.AdapterSwaggerApiConfig<OktaActionName>
@@ -261,13 +262,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   api__v1__groups: {
     request: {
       url: '/api/v1/groups',
-      recurseInto: [
-        {
-          type: 'api__v1__groups___groupId___roles@uuuuuu_00123_00125uu',
-          toField: 'roles',
-          context: [{ name: 'groupId', fromField: 'id' }],
-        },
-      ],
     },
   },
   Group: {
@@ -310,6 +304,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       },
     },
   },
+  // group-roles are not fetched by default
   'api__v1__groups___groupId___roles@uuuuuu_00123_00125uu': {
     request: {
       url: '/api/v1/groups/{groupId}/roles',
@@ -744,11 +739,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           toField: 'theme',
           context: [{ name: 'brandId', fromField: 'id' }],
         },
-        {
-          type: 'api__v1__brands___brandId___templates__email@uuuuuu_00123_00125uuuu',
-          toField: 'emailTemplates',
-          context: [{ name: 'brandId', fromField: 'id' }],
-        },
       ],
     },
     transformation: {
@@ -758,14 +748,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   'api__v1__brands___brandId___themes@uuuuuu_00123_00125uu': {
     request: {
       url: '/api/v1/brands/{brandId}/themes',
-    },
-    transformation: {
-      dataField: '.',
-    },
-  },
-  'api__v1__brands___brandId___templates__email@uuuuuu_00123_00125uuuu': {
-    request: {
-      url: '/api/v1/brands/{brandId}/templates/email',
     },
     transformation: {
       dataField: '.',
@@ -850,11 +832,10 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
-      standaloneFields: [{ fieldName: 'theme' }, { fieldName: 'emailTemplates' }],
+      standaloneFields: [{ fieldName: 'theme' }],
       nestStandaloneInstances: false,
       fieldTypeOverrides: [
         { fieldName: 'theme', fieldType: 'list<BrandTheme>' },
-        { fieldName: 'emailTemplates', fieldType: 'list<EmailTemplate>' },
       ],
       serviceUrl: '/admin/customizations/footer',
     },
@@ -950,14 +931,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           brandId: '_parent.1.id',
         },
       },
-    },
-  },
-  EmailTemplate: {
-    transformation: {
-      idFields: ['name'],
-      extendsParentId: true,
-      serviceIdField: 'name',
-      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
     },
   },
   Authenticator: {
@@ -1481,7 +1454,6 @@ export const SUPPORTED_TYPES = {
   AuthorizationServerPolicy: ['api__v1__authorizationServers___authServerId___policies@uuuuuu_00123_00125uu'],
   Brand: ['api__v1__brands'],
   BrandTheme: ['api__v1__brands___brandId___themes@uuuuuu_00123_00125uu'],
-  EmailTemplate: ['api__v1__brands___brandId___templates__email@uuuuuu_00123_00125uuuu'],
   EventHook: ['api__v1__eventHooks'],
   Feature: ['api__v1__features'],
   Group: ['api__v1__groups'],
@@ -1674,6 +1646,7 @@ export const DEFAULT_CONFIG: OktaConfig = {
     hideTypes: true,
     convertUsersIds: true,
     enableMissingReferences: true,
+    includeGroupMemberships: false,
   },
   [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
   [PRIVATE_API_DEFINITIONS_CONFIG]: DUCKTYPE_API_DEFINITIONS,
@@ -1747,6 +1720,7 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
         {
           convertUsersIds: { refType: BuiltinTypes.BOOLEAN },
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
+          includeGroupMemberships: { refType: BuiltinTypes.BOOLEAN },
         }
       ),
     },
@@ -1775,6 +1749,7 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
       `${FETCH_CONFIG}.hideTypes`,
       `${FETCH_CONFIG}.convertUsersIds`,
       `${FETCH_CONFIG}.enableMissingReferences`,
+      `${FETCH_CONFIG}.includeGroupMemberships`,
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },

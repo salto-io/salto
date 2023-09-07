@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, InstanceElement, toChange, UnresolvedReference, ReferenceExpression } from '@salto-io/adapter-api'
-import { automationProjectUnresolvedReferenceValidator } from '../../src/change_validators/automation_unresolved_references'
+import { brokenReferenceValidator } from '../../src/change_validators/broken_references'
 import { AUTOMATION_TYPE, JIRA, PROJECT_TYPE } from '../../src/constants'
 
 describe('automationProjectUnresolvedReferenceValidator', () => {
@@ -51,7 +51,7 @@ describe('automationProjectUnresolvedReferenceValidator', () => {
   })
 
   it('should return a warning when project reference is unresolved', async () => {
-    expect(await automationProjectUnresolvedReferenceValidator(
+    expect(await brokenReferenceValidator(
       [toChange({ after: automationInstance })]
     )).toEqual([
       {
@@ -70,7 +70,7 @@ describe('automationProjectUnresolvedReferenceValidator', () => {
       },
     ]
 
-    expect(await automationProjectUnresolvedReferenceValidator(
+    expect(await brokenReferenceValidator(
       [toChange({ after: automationInstance })]
     )).toEqual([])
   })
@@ -82,7 +82,7 @@ describe('automationProjectUnresolvedReferenceValidator', () => {
       },
     ]
 
-    expect(await automationProjectUnresolvedReferenceValidator(
+    expect(await brokenReferenceValidator(
       [toChange({ after: automationInstance })]
     )).toEqual([
       {

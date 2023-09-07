@@ -15,8 +15,8 @@
 */
 import _ from 'lodash'
 import Joi from 'joi'
-import { safeJsonStringify, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
 import { InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { APP_OWNED_TYPE_NAME } from '../constants'
@@ -37,7 +37,7 @@ const isParameters = (values: unknown): values is AppOwnedParameter[] => {
   }
   const { error } = EXPECTED_PARAMETERS_SCHEMA.validate(values)
   if (error !== undefined) {
-    log.error(`Received an invalid response for the app_owned parameters value: ${error.message}, ${safeJsonStringify(values, elementExpressionStringifyReplacer)}`)
+    log.error(`Received an invalid response for the app_owned parameters value: ${error.message}, ${inspectValue(values)}`)
     return false
   }
   return true

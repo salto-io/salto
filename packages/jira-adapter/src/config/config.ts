@@ -70,6 +70,7 @@ type JiraFetchConfig = configUtils.UserFetchConfig<JiraFetchFilters> & {
   addAlias?: boolean
   splitFieldConfiguration?: boolean
   enableMissingReferences?: boolean
+  enableIssueLayouts?: boolean
 }
 
 export type MaskingConfig = {
@@ -151,6 +152,7 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     hideTypes: true,
     enableMissingReferences: true,
     removeDuplicateProjectRoles: true,
+    addAlias: true,
 
   },
   deploy: {
@@ -185,7 +187,7 @@ const createClientConfigType = (): ObjectType => {
 
 export type ChangeValidatorName = (
   | 'unresolvedReference'
-  | 'automationProjectUnresolvedReference'
+  | 'brokenReferences'
   | 'deployTypesNotSupported'
   | 'readOnlyProjectRoleChange'
   | 'defaultFieldConfiguration'
@@ -224,6 +226,7 @@ export type ChangeValidatorName = (
   | 'projectCategory'
   | 'unresolvedFieldConfigurationItems'
   | 'customFieldsWith10KOptions'
+  | 'issueTypeHierarchy'
   )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -232,7 +235,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
   elemID: new ElemID(JIRA, 'changeValidatorConfig'),
   fields: {
     unresolvedReference: { refType: BuiltinTypes.BOOLEAN },
-    automationProjectUnresolvedReference: { refType: BuiltinTypes.BOOLEAN },
+    brokenReferences: { refType: BuiltinTypes.BOOLEAN },
     deployTypesNotSupported: { refType: BuiltinTypes.BOOLEAN },
     readOnlyProjectRoleChange: { refType: BuiltinTypes.BOOLEAN },
     defaultFieldConfiguration: { refType: BuiltinTypes.BOOLEAN },
@@ -271,6 +274,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     projectCategory: { refType: BuiltinTypes.BOOLEAN },
     unresolvedFieldConfigurationItems: { refType: BuiltinTypes.BOOLEAN },
     customFieldsWith10KOptions: { refType: BuiltinTypes.BOOLEAN },
+    issueTypeHierarchy: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -309,6 +313,7 @@ const fetchConfigType = createUserFetchConfigType(
     addAlias: { refType: BuiltinTypes.BOOLEAN },
     splitFieldConfiguration: { refType: BuiltinTypes.BOOLEAN },
     enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
+    enableIssueLayouts: { refType: BuiltinTypes.BOOLEAN },
   },
   fetchFiltersType,
 )
@@ -347,6 +352,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
       'masking',
       'fetch.hideTypes',
       'fetch.enableMissingReferences',
+      'fetch.addAlias',
       SCRIPT_RUNNER_API_DEFINITIONS]),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },

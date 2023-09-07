@@ -15,6 +15,8 @@
 */
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
+import Joi from 'joi'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { handleDeploymentErrors } from '../deployment/deployment_error_handling'
 import { createConnection } from './connection'
 import { JIRA } from '../constants'
@@ -37,6 +39,18 @@ const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitC
 const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
   get: 1000,
 }
+
+export type graphQLResponseType = {
+  data: unknown
+  errors?: unknown
+}
+
+const GRAPHQL_RESPONSE_SCHEME = Joi.object({
+  data: Joi.required(),
+  errors: Joi.optional(),
+}).unknown(true).required()
+
+const isGraphQLResponse = createSchemeGuard<graphQLResponseType>(GRAPHQL_RESPONSE_SCHEME, 'Failed to get graphql response')
 
 export default class JiraClient extends clientUtils.AdapterHTTPClient<
   Credentials, clientUtils.ClientRateLimitConfig
@@ -114,6 +128,24 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
         ...(args.headers ?? {}),
       },
     })
+  }
+
+  // Sends a post request to Jira with GQL body
+  public async gqlPost(
+    args: {url: string; query: string; variables?: Record<string, unknown> },
+  ): Promise<graphQLResponseType> {
+    const response = await this.post({
+      url: args.url,
+      data: {
+        query: args.query,
+        variables: args.variables,
+      },
+      headers: PRIVATE_API_HEADERS,
+    })
+    if (isGraphQLResponse(response.data)) {
+      return response.data
+    }
+    throw new Error('Failed to get issue layout response')
   }
 
   public async getPrivate(

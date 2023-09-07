@@ -57,6 +57,8 @@ export const multiLanguageErrorDetectors: Record<SupportedLanguage, ErrorDetecto
     configureFeatureFailRegex: RegExp(`Configure feature -- (Enabling|Disabling) of the (?<${FEATURE_NAME}>\\w+)\\(.*?\\) feature has FAILED`),
     otherErrorRegexes: [
       RegExp('An error occurred during account settings validation.'),
+      RegExp('An error occured during validation of Custom Objects against the account'),
+      RegExp('An error occurred during manifest validation.'),
     ],
   },
   // NOTE: all non-english letters are replaced with a dot
@@ -80,6 +82,8 @@ export const multiLanguageErrorDetectors: Record<SupportedLanguage, ErrorDetecto
     configureFeatureFailRegex: RegExp(`Configurer la fonction -- (L'activation|La d.sactivation) de la fonction (?<${FEATURE_NAME}>\\w+)\\(.*?\\) a .chou.`),
     otherErrorRegexes: [
       RegExp('An error occurred during account settings validation.'),
+      RegExp('An error occured during validation of Custom Objects against the account'),
+      RegExp('An error occurred during manifest validation.'),
     ],
   },
 }

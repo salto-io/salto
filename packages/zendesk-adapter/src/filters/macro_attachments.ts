@@ -33,8 +33,8 @@ import {
   SaltoElementError,
   StaticFile,
 } from '@salto-io/adapter-api'
-import { normalizeFilePathPart, naclCase, elementExpressionStringifyReplacer,
-  resolveChangeElement, safeJsonStringify, pathNaclCase, references } from '@salto-io/adapter-utils'
+import { normalizeFilePathPart, naclCase,
+  resolveChangeElement, safeJsonStringify, pathNaclCase, references, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
@@ -75,7 +75,7 @@ const EXPECTED_ATTACHMENT_SCHEMA = Joi.array().items(Joi.object({
 const isAttachments = (value: unknown): value is Attachment[] => {
   const { error } = EXPECTED_ATTACHMENT_SCHEMA.validate(value)
   if (error !== undefined) {
-    log.error(`Received an invalid response for the attachments values: ${error.message}, ${safeJsonStringify(value, elementExpressionStringifyReplacer)}`)
+    log.error(`Received an invalid response for the attachments values: ${error.message}, ${inspectValue(value)}`)
     return false
   }
   return true
@@ -91,9 +91,9 @@ const replaceAttachmentId = (
   }
   if (!isArrayOfRefExprToInstances(attachments)) {
     log.error(`Failed to deploy macro because its attachment field has an invalid format: ${
-      safeJsonStringify(attachments, elementExpressionStringifyReplacer)}`)
+      inspectValue(attachments)}`)
     throw createSaltoElementError({ // caught in try block
-      message: 'Failed to deploy macro because its attachment field has an invalid format',
+      message: 'Macro attachment field has an invalid format',
       severity: 'Error',
       elemID: parentInstance.elemID,
     })
@@ -275,7 +275,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           errors: childrenChanges
             .map(getChangeData)
             .map(e => createSaltoElementError({
-              message: `Failed to update ${e.elemID.getFullName()} since it has no valid parent`,
+              message: 'Attachment is not linked to a valid macro',
               severity: 'Error',
               elemID: e.elemID,
             })),

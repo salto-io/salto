@@ -16,9 +16,8 @@
 
 import { ElemID, InstanceElement, ObjectType, toChange, ReferenceExpression, UnresolvedReference } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { ProjectType } from '../../../src/change_validators/automation_unresolved_references'
 import { getFilterParams } from '../../utils'
-import automationProjectBrokenReferenceFilter from '../../../src/filters/automation/automation_project_broken_reference'
+import automationProjectBrokenReferenceFilter, { ProjectType } from '../../../src/filters/broken_reference_filter'
 import { AUTOMATION_TYPE, JIRA, PROJECT_TYPE } from '../../../src/constants'
 
 describe('automationProjectBrokenReferenceFilter', () => {

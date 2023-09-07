@@ -17,7 +17,7 @@ import { AdditionChange, ChangeError, ChangeValidator, ElemID, getChangeData, In
   isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isModificationChange, ModificationChange, SeverityLevel } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
-import { isFreeLicense } from '../utils'
+import { isAllFreeLicense } from '../utils'
 import JiraClient from '../client/client'
 import { PERMISSION_SCHEME_TYPE_NAME, PROJECT_TYPE } from '../constants'
 
@@ -71,7 +71,7 @@ const isPermissionSchemeAssociationChange = (
 export const permissionSchemeDeploymentValidator = (client: JiraClient): ChangeValidator =>
   async (changes, elementsSource) => {
     if (client.isDataCenter || elementsSource === undefined
-      || (!await isFreeLicense(elementsSource))
+      || (!await isAllFreeLicense(elementsSource))
       || !changes) {
       return []
     }

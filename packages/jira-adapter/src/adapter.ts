@@ -38,7 +38,7 @@ import boardColumnsFilter from './filters/board/board_columns'
 import boardSubQueryFilter from './filters/board/board_subquery'
 import boardEstimationFilter from './filters/board/board_estimation'
 import boardDeploymentFilter from './filters/board/board_deployment'
-import automationBrokenReferenceFilter from './filters/automation/automation_project_broken_reference'
+import brokenReferences from './filters/broken_reference_filter'
 import automationDeploymentFilter from './filters/automation/automation_deployment'
 import smartValueReferenceFilter from './filters/automation/smart_values/smart_value_reference_filter'
 import webhookFilter from './filters/webhook/webhook'
@@ -131,7 +131,18 @@ import storeUsersFilter from './filters/store_users'
 import projectCategoryFilter from './filters/project_category'
 import addAliasFilter from './filters/add_alias'
 import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_specific_duplicate_roles'
+import issueLayoutFilter from './filters/issue_layout/issue_layout'
+import removeSimpleFieldProjectFilter from './filters/remove_simplified_field_project'
+import createReferencesIssueLayoutFilter from './filters/issue_layout/create_references_issue_layout'
+import issueTypeHierarchyFilter from './filters/issue_type_hierarchy_filter'
 import projectFieldContextOrder from './filters/project_field_contexts_order'
+import scriptedFieldsIssueTypesFilter from './filters/script_runner/scripted_fields_issue_types'
+import scriptRunnerFilter from './filters/script_runner/script_runner_filter'
+import scriptRunnerListenersDeployFilter from './filters/script_runner/script_runner_listeners_deploy'
+import scriptedFragmentsDeployFilter from './filters/script_runner/scripted_fragments_deploy'
+import scriptRunnerInstancesDeploy from './filters/script_runner/script_runner_instances_deploy'
+import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
+import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uuid'
 import ScriptRunnerClient from './client/script_runner_client'
 
 const { getAllElements } = elementUtils.ducktype
@@ -156,7 +167,7 @@ export const DEFAULT_FILTERS = [
   automationFetchFilter,
   automationStructureFilter,
   // Should run before automationDeploymentFilter
-  automationBrokenReferenceFilter,
+  brokenReferences,
   automationDeploymentFilter,
   webhookFilter,
   // Should run before duplicateIdsFilter
@@ -182,15 +193,21 @@ export const DEFAULT_FILTERS = [
   iconUrlFilter,
   triggersFilter,
   resolutionPropertyFilter,
+  scriptRunnerFilter,
+  // must run before references are transformed
+  scriptedFieldsIssueTypesFilter,
+  behaviorsMappingsFilter,
+  behaviorsFieldUuidFilter,
   scriptRunnerWorkflowFilter,
   // must run after scriptRunnerWorkflowFilter
   scriptRunnerWorkflowListsFilter,
-  // must run after scriptRunnerWorkflowListsFilter
-  scriptRunnerWorkflowReferencesFilter,
   scriptRunnerTemplateExpressionFilter,
   scriptRunnerEmptyAccountIdsFilter,
-  transitionIdsFilter,
+  // resolves references in workflow instances!
   workflowPropertiesFilter,
+  // must run after scriptRunnerWorkflowListsFilter and workflowPropertiesFilter
+  scriptRunnerWorkflowReferencesFilter,
+  transitionIdsFilter,
   workflowDeployFilter,
   workflowModificationFilter,
   emptyValidatorWorkflowFilter,
@@ -225,6 +242,7 @@ export const DEFAULT_FILTERS = [
   notificationSchemeStructureFilter,
   notificationSchemeDeploymentFilter,
   issueTypeScreenSchemeFilter,
+  issueTypeHierarchyFilter,
   fieldConfigurationFilter,
   fieldConfigurationItemsFilter,
   fieldConfigurationSchemeFilter,
@@ -238,6 +256,10 @@ export const DEFAULT_FILTERS = [
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,
   fieldReferencesFilter,
+  issueLayoutFilter,
+  // Must run after issueLayoutFilter
+  removeSimpleFieldProjectFilter,
+  createReferencesIssueLayoutFilter,
   // Must run after fieldReferencesFilter
   contextsProjectsFilter,
   // must run after contextsProjectsFilter
@@ -272,6 +294,11 @@ export const DEFAULT_FILTERS = [
   wrongUserPermissionSchemeFilter,
   deployDcIssueEventsFilter,
   addAliasFilter,
+  // must be done before scriptRunnerInstances
+  scriptRunnerListenersDeployFilter,
+  // must be done before scriptRunnerInstances
+  scriptedFragmentsDeployFilter,
+  scriptRunnerInstancesDeploy,
   // Must be last
   defaultInstancesDeployFilter,
   ...Object.values(otherCommonFilters),
@@ -343,6 +370,7 @@ export default class JiraAdapter implements AdapterOperations {
           fetchQuery: this.fetchQuery,
           adapterContext: filterContext,
           getUserMapFunc: this.getUserMapFunc,
+          scriptRunnerClient,
         },
         filterCreators,
         objects.concatObjects

@@ -15,17 +15,30 @@
 */
 import _ from 'lodash'
 import {
-  AdapterOperations, ElemIdGetter, AdapterOperationsContext, ElemID, InstanceElement,
-  Adapter, AdapterAuthentication, Element, ReadOnlyElementsSource, GLOBAL_ADAPTER, ObjectType,
+  AdapterOperations,
+  ElemIdGetter,
+  AdapterOperationsContext,
+  ElemID,
+  InstanceElement,
+  Adapter,
+  AdapterAuthentication,
+  Element,
+  ReadOnlyElementsSource,
+  GLOBAL_ADAPTER,
+  ObjectType,
+  isInstanceElement,
+  isType,
+  TypeElement,
 } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, getSubtypes, safeJsonStringify } from '@salto-io/adapter-utils'
+import { createDefaultInstanceFromType, getSubtypes, resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { createAdapterReplacedID, merger, updateElementsWithAlternativeAccount } from '@salto-io/workspace'
+import { createAdapterReplacedID, expressions, merger, updateElementsWithAlternativeAccount, elementSource as workspaceElementSource } from '@salto-io/workspace'
 import { collections, promises } from '@salto-io/lowerdash'
 import adapterCreators from './creators'
 
 const { awu } = collections.asynciterable
 const { mapValuesAsync } = promises.object
+const { buildContainerType } = workspaceElementSource
 const log = logger(module)
 
 export const getAdaptersCredentialsTypes = (
@@ -181,6 +194,70 @@ const filterElementsSource = (
   }
 }
 
+export const createResolvedTypesElementsSource = (
+  elementsSource: ReadOnlyElementsSource
+): ReadOnlyElementsSource => {
+  const resolvedTypes: Map<string, TypeElement> = new Map()
+  let typesWereResolved = false
+  const resolveTypes = async (): Promise<void> => {
+    typesWereResolved = true
+    const typeElements = await awu(await elementsSource.getAll()).filter(isType).toArray()
+    // Resolve all the types together for better performance
+    const resolved = await expressions.resolve(
+      typeElements,
+      elementsSource,
+      {
+        shouldResolveReferences: false,
+      }
+    )
+    resolved.filter(isType)
+      .forEach(typeElement => {
+        resolvedTypes.set(typeElement.elemID.getFullName(), typeElement)
+      })
+  }
+
+  const getResolved = async (id: ElemID): Promise<Element> => {
+    if (!typesWereResolved) {
+      await resolveTypes()
+    }
+    // Container types
+    const containerInfo = id.getContainerPrefixAndInnerType()
+    if (containerInfo !== undefined) {
+      const resolvedInner = await getResolved(ElemID.fromFullName(containerInfo.innerTypeName))
+      if (isType(resolvedInner)) {
+        return buildContainerType(containerInfo.prefix, resolvedInner)
+      }
+    }
+    const { parent } = id.createTopLevelParentID()
+    const alreadyResolvedType = resolvedTypes.get(parent.getFullName())
+    if (alreadyResolvedType !== undefined) {
+      // resolvePath here to handle cases where the input ID was for a field or attribute inside the type
+      return resolvePath(alreadyResolvedType, id)
+    }
+    const value = await elementsSource.get(id)
+    // Instances
+    if (isInstanceElement(value)) {
+      const instance = value.clone()
+      const resolvedType = resolvedTypes.get(instance.refType.elemID.getFullName())
+      // The type of the Element must be resolved here, otherwise we have a bug
+      if (resolvedType === undefined) {
+        log.warn('Expected type of Instance %s to be resolved. Type elemID: %s. Returning Instance with non fully resolved type.', instance.elemID.getFullName(), instance.refType.elemID.getFullName())
+        return instance
+      }
+      // If the type of the Element is resolved, simply set the type on the instance
+      instance.refType.type = resolvedType
+      return instance
+    }
+    return value
+  }
+  return {
+    get: getResolved,
+    getAll: async () => awu(await elementsSource.list()).map(getResolved),
+    list: elementsSource.list,
+    has: elementsSource.has,
+  }
+}
+
 type AdapterConfigGetter = (
   adapter: string, defaultValue?: InstanceElement
 ) => Promise<InstanceElement | undefined>
@@ -202,9 +279,9 @@ export const getAdaptersCreatorConfigs = async (
         {
           credentials: credentials[account],
           config: await getConfig(account, defaultConfig),
-          elementsSource: createElemIDReplacedElementsSource(filterElementsSource(
+          elementsSource: createResolvedTypesElementsSource(createElemIDReplacedElementsSource(filterElementsSource(
             elementsSource, account
-          ), account, accountToServiceName[account]),
+          ), account, accountToServiceName[account])),
           getElemIdFunc: elemIdGetters[account],
         },
       ]

@@ -18,12 +18,12 @@ import { ElemID, InstanceElement, ObjectType, toChange, Value } from '@salto-io/
 import _ from 'lodash'
 import { gzip } from 'pako'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { getFilterParams } from '../../utils'
-import { isCompressedObject } from '../../../src/filters/script_runner/workflow/workflow_cloud'
-import workflowFilter from '../../../src/filters/script_runner/workflow/workflow_filter'
-import { WORKFLOW_TYPE_NAME } from '../../../src/constants'
-import { getDefaultConfig } from '../../../src/config/config'
-import { renameKey } from '../../../src/utils'
+import { getFilterParams } from '../../../utils'
+import { isCompressedObject } from '../../../../src/filters/script_runner/workflow/workflow_cloud'
+import workflowFilter from '../../../../src/filters/script_runner/workflow/workflow_filter'
+import { WORKFLOW_TYPE_NAME } from '../../../../src/constants'
+import { getDefaultConfig } from '../../../../src/config/config'
+import { renameKey } from '../../../../src/utils'
 
 const SCRIPT_RUNNER_SEND_NOTIFICATIONS = 'com.adaptavist.sr.cloud.workflow.SendNotification'
 

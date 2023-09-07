@@ -263,7 +263,7 @@ export class EditorWorkspace {
             // in this class to avoid recalculating the entire workspace validation errors on
             // each update. Thus, we take from workspace.errors only the config validation errors
             ...validation,
-            ...workspaceErrors.validation.filter((err: SaltoError) => err.source === 'config'),
+            ...workspaceErrors.validation.filter((err: SaltoError) => err.type === 'config'),
           ],
         }))
       }

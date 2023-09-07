@@ -86,7 +86,7 @@ describe('deployment.ts', () => {
           toChange({ after: instance }),
           client,
           DEFAULT_API_DEFINITIONS,
-        )).rejects.toThrow(new Error('Deployment of GroupRule instance instance failed with status code 400: some okta error. More info: cause1,cause2'))
+        )).rejects.toThrow(new Error('some okta error. More info: cause1,cause2 (status code: 400)'))
       })
     })
 
@@ -304,7 +304,7 @@ describe('deployment.ts', () => {
       }
       const error = new clientUtils.HTTPError('error', { data: errorData, status: 404 })
       const oktaError = getOktaError(elemID, error)
-      expect(oktaError.message).toEqual('Deployment of GroupRule instance name failed with status code 404: error summary. More info: nested error summary 1,nested error summary 1')
+      expect(oktaError.message).toEqual('error summary. More info: nested error summary 1,nested error summary 1 (status code: 404)')
     })
   })
 

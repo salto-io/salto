@@ -16,8 +16,8 @@
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
-import { NetsuiteQueryParameters } from '../src/query'
-import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, fetchDefault, LARGE_FOLDERS_EXCLUDED_MESSAGE, instanceLimiterCreator, UNLIMITED_INSTANCES_VALUE, LARGE_TYPES_EXCLUDED_MESSAGE, validateClientConfig, DEFAULT_MAX_INSTANCES_VALUE, InstanceLimiterFunc } from '../src/config'
+import { NetsuiteQueryParameters, emptyQueryParams, fullQueryParams, fullFetchConfig } from '../src/query'
+import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, fetchDefault, LARGE_FOLDERS_EXCLUDED_MESSAGE, instanceLimiterCreator, UNLIMITED_INSTANCES_VALUE, LARGE_TYPES_EXCLUDED_MESSAGE, validateClientConfig, DEFAULT_MAX_INSTANCES_VALUE, InstanceLimiterFunc, netsuiteConfigFromConfig } from '../src/config'
 
 describe('config', () => {
   const skipList: NetsuiteQueryParameters = {
@@ -81,13 +81,14 @@ describe('config', () => {
         failedTypes: { lockedError: lockedTypes, unexpectedError: suggestedSkipListTypes, excludedTypes: [] },
         failedCustomRecords: [],
       },
-      {}
+      { fetch: fullFetchConfig() }
     )?.config as InstanceElement[]
     expect(configFromConfigChanges[0].isEqual(new InstanceElement(
       ElemID.CONFIG_NAME,
       configType,
       {
         fetch: {
+          include: fullQueryParams(),
           exclude: {
             types: Object.entries(suggestedSkipListTypes).map(([name, ids]) => ({ name, ids })),
             fileCabinet: [newFailedFilePath],
@@ -173,6 +174,7 @@ describe('config', () => {
       typesToSkip: ['someType'],
       filePathRegexSkipList: ['someRegex'],
       fileCabinet: ['SomeRegex', _.escapeRegExp(newFailedFilePath), newLargeFolderExclusion],
+      fetch: fullFetchConfig(),
     }
 
     const configChange = getConfigFromConfigChanges(
@@ -188,10 +190,50 @@ describe('config', () => {
     expect(configChange?.message)
       .toBe(formatConfigSuggestionsReasons([STOP_MANAGING_ITEMS_MSG, LARGE_FOLDERS_EXCLUDED_MESSAGE]))
   })
+  describe('Fetch validation', () => {
+    const configWithoutFetch = new InstanceElement('empty', configType, {})
+    const configWithoutInclude = new InstanceElement('noInclude', configType, {
+      fetch: {
+        exclude: emptyQueryParams(),
+      },
+    })
+    const configWithInvalidInclude = new InstanceElement('invalidInclude', configType, {
+      fetch: {
+        include: {},
+        exclude: emptyQueryParams(),
+      },
+    })
+    const configWithoutExclude = new InstanceElement('noExclude', configType, {
+      fetch: {
+        include: emptyQueryParams(),
+      },
+    })
+    const configWithInvalidExclude = new InstanceElement('invalidExclude', configType, {
+      fetch: {
+        include: emptyQueryParams(),
+        exclude: {},
+      },
+    })
+
+    it('Should throw an error if the fetch is undefined', () =>
+      expect(() => netsuiteConfigFromConfig(configWithoutFetch)).toThrow('Failed to load Netsuite config: fetch should be defined'))
+
+    it('Should throw an error if the include is undefined', () =>
+      expect(() => netsuiteConfigFromConfig(configWithoutInclude)).toThrow('Failed to load Netsuite config: fetch.include should be defined'))
+
+    it('Should throw an error if the include is non-valid', () =>
+      expect(() => netsuiteConfigFromConfig(configWithInvalidInclude)).toThrow('Failed to load Netsuite config: Received invalid adapter config input. "types" field is expected to be an array\n "fileCabinet" field is expected to be an array\n'))
+
+    it('Should throw an error if the exclude is undefined', () =>
+      expect(() => netsuiteConfigFromConfig(configWithoutExclude)).toThrow('Failed to load Netsuite config: fetch.exclude should be defined'))
+
+    it('Should throw an error if the exclude is non-valid', () =>
+      expect(() => netsuiteConfigFromConfig(configWithInvalidExclude)).toThrow('Failed to load Netsuite config: Received invalid adapter config input. "types" field is expected to be an array\n "fileCabinet" field is expected to be an array\n'))
+  })
 
   describe('should have a correct default fetch config', () => {
     it('should exclude all types in a correct syntax', () => {
-      expect(fetchDefault.exclude?.types)
+      expect(fetchDefault.exclude.types)
         .toContainEqual({
           name: 'assemblyItem|lotNumberedAssemblyItem|serializedAssemblyItem|descriptionItem|discountItem|kitItem|markupItem|nonInventoryPurchaseItem|nonInventorySaleItem|nonInventoryResaleItem|otherChargeSaleItem|otherChargeResaleItem|otherChargePurchaseItem|paymentItem|serviceResaleItem|servicePurchaseItem|serviceSaleItem|subtotalItem|inventoryItem|lotNumberedInventoryItem|serializedInventoryItem|itemGroup',
         })

@@ -28,7 +28,9 @@ const { mapValuesAsync } = promises.object
 
 
 const FIELD_DEFAULT_NAME = 'FIELD_DEFAULT_NAME'
-const WORKFLOW_RESTRICTED_PATH = ['workflowcustomfields', 'workflowcustomfield']
+const WORKFLOW_CUSTOM_FIELDS_PATH = ['workflowcustomfields', 'workflowcustomfield']
+const WORKFLOW_STATES_PATH = ['workflowstates', 'workflowstate']
+const WORKFLOW_STATES_CUSTOM_FIELDS_PATH = ['workflowstatecustomfields', 'workflowstatecustomfield']
 const SCRIPT_RESTRICTED_PATH = ['scriptcustomfields', 'scriptcustomfield']
 
 type RestrictedType = 'savedSearch' | 'financialLayout' | 'customRecordField' | 'workflow' | 'script'
@@ -81,6 +83,14 @@ const getNestedScriptIDField = async (
   _.values(await elementsSource.get(elemID.createNestedID(...nestPath)))
     .map(val => val[SCRIPT_ID])
 
+const getWorkflowFields = (elem: ChangeDataType): string[] => {
+  const customFieldsScriptid = getChangeNestedScriptIDField(elem, WORKFLOW_CUSTOM_FIELDS_PATH)
+  const stateFieldsScriptid = _.values(getChangeNestedField(elem, WORKFLOW_STATES_PATH))
+    .flatMap(state => _.values(_.get(state, WORKFLOW_STATES_CUSTOM_FIELDS_PATH)))
+    .map(val => val[SCRIPT_ID])
+  return customFieldsScriptid.concat(stateFieldsScriptid)
+}
+
 const savedSearchGetters: RestrictedTypeGetters = {
   getChangeRestrictedFields: change => [getChangeNestedField(change, [FIELD_DEFAULT_NAME])],
   getSourceRestrictedFields: params => getNestedField(params, FIELD_DEFAULT_NAME),
@@ -106,8 +116,11 @@ const customRecordGetters: RestrictedTypeGetters = {
 }
 
 const workflowGetters: RestrictedTypeGetters = {
-  getChangeRestrictedFields: change => getChangeNestedScriptIDField(change, WORKFLOW_RESTRICTED_PATH),
-  getSourceRestrictedFields: params => getNestedScriptIDField(params, WORKFLOW_RESTRICTED_PATH),
+  // We use the same getter and list for both workflow's custom fields and state's custom fields
+  // because they must have a different prefix: "custworkflow" and "custwfstate"
+  // thus there will not be any overlap between them
+  getChangeRestrictedFields: getWorkflowFields,
+  getSourceRestrictedFields: async ({ elemID, elementsSource }) => getWorkflowFields(await elementsSource.get(elemID)),
   getMessage: () => 'Workflow contains custom fields with non-unique IDs',
   getDetailedMessage: scriptids => `Can't deploy this workflow as it contains custom fields with IDs that are not unique within this environment: "${scriptids.join(', ')}".`
   + ' To deploy it, change their IDs to unique ones.',

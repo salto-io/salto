@@ -74,9 +74,11 @@ import {
   duplicateRoutingAttributeValueValidator,
   triggerCategoryRemovalValidator,
   ticketFieldDeactivationValidator,
+  duplicateIdFieldValuesValidator,
+  notEnabledMissingReferencesValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
-import { ChangeValidatorName, ZedneskDeployConfig, ZendeskFetchConfig } from './config'
+import { ChangeValidatorName, ZedneskDeployConfig, ZendeskFetchConfig, ZendeskConfig } from './config'
 
 const {
   deployTypesNotSupportedValidator,
@@ -87,6 +89,7 @@ const {
 
 export default ({
   client,
+  config,
   apiConfig,
   fetchConfig,
   deployConfig,
@@ -94,6 +97,7 @@ export default ({
   typesWithNoDeploy,
 }: {
   client: ZendeskClient
+  config: ZendeskConfig
   apiConfig: configUtils.AdapterDuckTypeApiConfig
   fetchConfig: ZendeskFetchConfig
   deployConfig?: ZedneskDeployConfig
@@ -146,7 +150,7 @@ export default ({
     helpCenterCreationOrRemoval: helpCenterCreationOrRemovalValidator(client, apiConfig),
     externalSourceWebhook: externalSourceWebhookValidator,
     defaultGroupChange: defaultGroupChangeValidator,
-    organizationExistence: organizationExistenceValidator(client, fetchConfig),
+    organizationExistence: organizationExistenceValidator(client, fetchConfig, deployConfig),
     badFormatWebhookAction: badFormatWebhookActionValidator,
     guideDisabled: guideDisabledValidator(fetchConfig),
     additionOfTicketStatusForTicketForm: additionOfTicketStatusForTicketFormValidator,
@@ -159,6 +163,8 @@ export default ({
     attachmentWithoutContent: attachmentWithoutContentValidator,
     duplicateRoutingAttributeValue: duplicateRoutingAttributeValueValidator,
     triggerCategoryRemoval: triggerCategoryRemovalValidator(apiConfig),
+    duplicateIdFieldValues: duplicateIdFieldValuesValidator(apiConfig),
+    notEnabledMissingReferences: notEnabledMissingReferencesValidator(config),
     // *** Guide Order Validators ***
     childInOrder: childInOrderValidator,
     childrenReferences: childrenReferencesValidator,

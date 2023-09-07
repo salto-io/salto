@@ -330,7 +330,7 @@ describe('adapter', () => {
             fetch: {
               ...DEFAULT_CONFIG.fetch,
               include: [
-                { type: 'Settings_TaxEngine' },
+                { type: 'Settings_TaxEngine.*' }, // not a good example - should remove the parent instance and update the test
                 { type: 'Settings_TaxCode', criteria: { name: 'A.*' } },
               ],
             },
@@ -343,6 +343,7 @@ describe('adapter', () => {
         'zuora_billing.Settings_TaxCode.instance.Avalara_Sales_Tax@s',
         'zuora_billing.Settings_TaxEngine.instance.unnamed_0__Zuora_SE@uuus',
         'zuora_billing.Settings_TaxEngine.instance.unnamed_0__Zuora_Tax@uuus',
+        'zuora_billing.Settings_TaxEngines.instance.unnamed_0',
       ])
     })
     describe('without settings types', () => {

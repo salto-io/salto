@@ -31,7 +31,7 @@ import {
   OPEN_CATEGORY,
   HOLD_CATEGORY, SOLVED_CATEGORY,
 } from '../constants'
-import { FETCH_CONFIG } from '../config'
+import { FETCH_CONFIG, ZendeskConfig } from '../config'
 import { ZendeskMissingReferenceStrategyLookup, ZendeskMissingReferenceStrategyName } from './references/missing_references'
 
 const { neighborContextGetter } = referenceUtils
@@ -473,11 +473,13 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
   {
     src: { field: 'ticket_field_ids' },
     serializationStrategy: 'id',
+    zendeskMissingRefStrategy: 'typeAndValue',
     target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'parent_field_id' },
     serializationStrategy: 'id',
+    zendeskMissingRefStrategy: 'typeAndValue',
     target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
@@ -489,6 +491,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     serializationStrategy: 'id',
+    zendeskMissingRefStrategy: 'typeAndValue',
     target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
@@ -529,6 +532,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     zendeskSerializationStrategy: 'ticketField',
+    zendeskMissingRefStrategy: 'startsWith',
     target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
@@ -967,6 +971,7 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
       ],
     },
     zendeskSerializationStrategy: 'ticketFieldOption',
+    zendeskMissingRefStrategy: 'typeAndValue',
     target: { typeContext: 'neighborReferenceTicketFormCondition' },
   },
   {
@@ -1042,32 +1047,32 @@ export const lookupFunc = referenceUtils.generateLookupFunc(
   defs => new ZendeskFieldReferenceResolver(defs)
 )
 
+export const fieldReferencesOnFetch = async (elements: Element[], config: ZendeskConfig): Promise<void> => {
+  const addReferences = async (refDefs: ZendeskFieldReferenceDefinition[]):
+      Promise<void> => {
+    const fixedDefs = refDefs
+      .map(def => (
+        config[FETCH_CONFIG].enableMissingReferences ? def : _.omit(def, 'zendeskMissingRefStrategy')
+      ))
+    await referenceUtils.addReferences({
+      elements,
+      defs: fixedDefs,
+      fieldsToGroupBy: ['id', 'name', 'key', 'value', 'locale'],
+      contextStrategyLookup,
+      // since ids and references to ids vary inconsistently between string/number, allow both
+      fieldReferenceResolverCreator: defs => new ZendeskFieldReferenceResolver(defs),
+    })
+  }
+  await addReferences(
+    [...firstIterationFieldNameToTypeMappingDefs, ...commonFieldNameToTypeMappingDefs]
+  )
+  await addReferences(secondIterationFieldNameToTypeMappingDefs)
+}
 /**
  * Convert field values into references, based on predefined rules.
  */
 const filter: FilterCreator = ({ config }) => ({
   name: 'fieldReferencesFilter',
-  onFetch: async (elements: Element[]) => {
-    const addReferences = async (refDefs: ZendeskFieldReferenceDefinition[]):
-    Promise<void> => {
-      const fixedDefs = refDefs
-        .map(def => (
-          config[FETCH_CONFIG].enableMissingReferences ? def : _.omit(def, 'zendeskMissingRefStrategy')
-        ))
-      await referenceUtils.addReferences({
-        elements,
-        defs: fixedDefs,
-        fieldsToGroupBy: ['id', 'name', 'key', 'value', 'locale'],
-        contextStrategyLookup,
-        // since ids and references to ids vary inconsistently between string/number, allow both
-        fieldReferenceResolverCreator: defs => new ZendeskFieldReferenceResolver(defs),
-      })
-    }
-    await addReferences(
-      [...firstIterationFieldNameToTypeMappingDefs, ...commonFieldNameToTypeMappingDefs]
-    )
-    await addReferences(secondIterationFieldNameToTypeMappingDefs)
-  },
-
+  onFetch: async (elements: Element[]) => fieldReferencesOnFetch(elements, config),
 })
 export default filter

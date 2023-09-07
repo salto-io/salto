@@ -22,7 +22,7 @@ import { FilterCreator } from '../filter'
 const filterCreators: Record<string, FilterCreator> = {
   hideTypes: filters.hideTypesFilterCreator(),
   referencedInstanceNames: filters.referencedInstanceNamesFilterCreator(),
-  query: filters.queryFilterCreator(),
+  query: filters.queryFilterCreator({}),
 }
 
 export default filterCreators

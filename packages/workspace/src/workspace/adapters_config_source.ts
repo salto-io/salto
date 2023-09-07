@@ -178,7 +178,7 @@ export const buildAdaptersConfigSource = async ({
 
   const createConfigError = <T extends SaltoError>(error: T): T => {
     const configError = _.clone(error)
-    configError.source = 'config'
+    configError.type = 'config'
     return configError
   }
 

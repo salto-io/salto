@@ -17,7 +17,7 @@ import wu from 'wu'
 import _ from 'lodash'
 
 import { DataNodeMap, DiffGraph, DiffNode } from '@salto-io/dag'
-import { ChangeError, ChangeValidator, getChangeData, ElemID, ObjectType, ChangeDataType, isField, isObjectType, ReadOnlyElementsSource, SeverityLevel, DependencyError, Change, isAdditionChange, isRemovalChange, toChange, isFieldChange, Field, isObjectTypeChange, cloneDeepWithoutRefs } from '@salto-io/adapter-api'
+import { ChangeError, ChangeValidator, getChangeData, ElemID, ObjectType, ChangeDataType, isField, isObjectType, ReadOnlyElementsSource, SeverityLevel, DependencyError, Change, isAdditionChange, isRemovalChange, toChange, isFieldChange, Field, isObjectTypeChange, cloneDeepWithoutRefs, SaltoErrorType } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 
@@ -93,6 +93,7 @@ const createDependencyErr = (causeID: ElemID, droppedID: ElemID): DependencyErro
   message: 'Element cannot be deployed due to an error in its dependency',
   detailedMessage: `${droppedID.getFullName()} cannot be deployed due to an error in its dependency ${causeID.getFullName()}. Please resolve that error and try again.`,
   severity: 'Error' as SeverityLevel,
+  type: 'dependency' as SaltoErrorType,
 })
 
 const buildValidDiffGraph = (

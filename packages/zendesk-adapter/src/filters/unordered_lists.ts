@@ -93,28 +93,28 @@ const orderTriggerDefinitions = (instances: InstanceElement[]): void => {
   })
 }
 
-const isValidMacroIds = (ids: unknown, groupInstancesById: Record<string, InstanceElement>)
+const isValidRestrictionIds = (ids: unknown, groupInstancesById: Record<string, InstanceElement>)
   : ids is ReferenceExpression[] =>
   _.isArray(ids) && ids.every(
     id => isReferenceExpression(id) && (groupInstancesById[id.elemID.getFullName()]?.value.name !== undefined)
   )
 
-const orderMacros = (instances: InstanceElement[]): void => {
-  const macroInstances = instances.filter(e => e.refType.elemID.name === MACRO_TYPE_NAME)
+const orderMacroAndViewRestrictions = (instances: InstanceElement[]): void => {
+  const relevantInstances = instances.filter(e => [MACRO_TYPE_NAME, VIEW_TYPE_NAME].includes(e.refType.elemID.name))
   const groupInstancesById = getInstanceByFullName(GROUP_TYPE_NAME, instances)
-  macroInstances.forEach(macro => {
-    const ids = macro.value.restriction?.ids
+  relevantInstances.forEach(instance => {
+    const ids = instance.value.restriction?.ids
     if (ids === undefined) { // the restriction does not have to be by ids
       return
     }
-    if (isValidMacroIds(ids, groupInstancesById)) {
-      macro.value.restriction.ids = _.sortBy(
+    if (isValidRestrictionIds(ids, groupInstancesById)) {
+      instance.value.restriction.ids = _.sortBy(
         ids,
         // at most one variant is allowed per locale
         id => ([groupInstancesById[id.elemID.getFullName()].value.name])
       )
     } else {
-      log.warn(`could not sort ids for ${macro.elemID.getFullName()}`)
+      log.warn(`could not sort ids for ${instance.elemID.getFullName()}`)
     }
   })
 }
@@ -223,7 +223,7 @@ const filterCreator: FilterCreator = () => ({
     const instances = elements.filter(isInstanceElement)
     orderDynamicContentItems(instances)
     orderTriggerDefinitions(instances)
-    orderMacros(instances)
+    orderMacroAndViewRestrictions(instances)
     orderFormCondition(instances)
     orderViewCustomFields(instances)
   },

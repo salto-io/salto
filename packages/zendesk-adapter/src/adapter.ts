@@ -35,6 +35,7 @@ import {
 import { client as clientUtils, config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import {
   getElemIdFuncWrapper,
+  inspectValue,
   logDuration,
   resolveChangeElement,
   resolveValues,
@@ -100,7 +101,6 @@ import routingAttributeFilter from './filters/routing_attribute'
 import serviceUrlFilter from './filters/service_url'
 import slaPolicyFilter from './filters/sla_policy'
 import macroAttachmentsFilter from './filters/macro_attachments'
-import omitInactiveFilter from './filters/omit_inactive'
 import tagsFilter from './filters/tag'
 import guideLocalesFilter from './filters/guide_locale'
 import webhookFilter from './filters/webhook'
@@ -144,6 +144,7 @@ import customRoleDeployFilter from './filters/custom_role_deploy'
 import routingAttributeValueDeployFilter from './filters/routing_attribute_value'
 import localeFilter from './filters/locale'
 import ticketStatusCustomStatusDeployFilter from './filters/ticket_status_custom_status'
+import { filterOutInactiveInstancesForType } from './inactive'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -160,18 +161,12 @@ const { awu } = collections.asynciterable
 const { concatObjects } = objects
 const SECTIONS_TYPE_NAME = 'sections'
 
-const { query: queryFilter, ...otherCommonFilters } = commonFilters
-
 export const DEFAULT_FILTERS = [
-  queryFilter,
   ticketStatusCustomStatusDeployFilter,
   ticketFieldFilter,
   userFieldFilter,
   viewFilter,
   workspaceFilter,
-  // omitInactiveFilter should be before:
-  //  order filters, collisionErrorsFilter and fieldReferencesFilter
-  omitInactiveFilter,
   ticketFormOrderFilter,
   userFieldOrderFilter,
   organizationFieldOrderFilter,
@@ -236,7 +231,8 @@ export const DEFAULT_FILTERS = [
   dynamicContentReferencesFilter,
   guideParentSection,
   serviceUrlFilter,
-  ...Object.values(otherCommonFilters),
+  // referencedIdFieldsFilter and queryFilter should run after element references are resolved
+  ...Object.values(commonFilters),
   articleBodyFilter,
   handleAppInstallationsFilter,
   handleTemplateExpressionFilter,
@@ -517,18 +513,21 @@ export default class ZendeskAdapter implements AdapterOperations {
     const supportedTypes = isGuideEnabledInConfig
       ? _.omit(allSupportedTypes, ...Object.keys(GUIDE_BRAND_SPECIFIC_TYPES))
       : _.omit(allSupportedTypes, ...Object.keys(GUIDE_SUPPORTED_TYPES))
+
     // Zendesk Support and (if enabled) global Zendesk Guide types
     const defaultSubdomainResult = await getAllElements({
       adapterName: ZENDESK,
       types: this.userConfig.apiDefinitions.types,
       shouldAddRemainingTypes: !isGuideInFetch,
-      supportedTypes,
+      // tags are "fetched" in a filter
+      supportedTypes: _.omit(supportedTypes, 'tag'),
       fetchQuery: this.fetchQuery,
       paginator: this.paginator,
       nestedFieldFinder: findDataField,
       computeGetArgs,
       typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
       getElemIdFunc: this.getElemIdFunc,
+      customInstanceFilter: filterOutInactiveInstancesForType(this.userConfig),
     })
 
     if (!isGuideInFetch) {
@@ -612,6 +611,25 @@ export default class ZendeskAdapter implements AdapterOperations {
     return undefined
   }
 
+  private async logSubscriptionData(): Promise<void> {
+    try {
+      const { data } = await this.client.getSinglePage({ url: '/api/v2/account/subscription.json' })
+      const subscriptionData = !_.isArray(data) ? data.subscription : undefined
+      if (subscriptionData) {
+        log.info(`Account subscription data: ${inspectValue(subscriptionData)}`)
+      } else {
+        log.info(`Account subscription data invalid: ${inspectValue(data)}`)
+      }
+    // This log is not crucial for the fetch to succeed, so we don't want to fail the fetch if it fails
+    } catch (e) {
+      if (e.response?.status === 422) {
+        log.info('Account subscription data unavailable because this is a sandbox environment')
+      } else {
+        log.info(`Account subscription data unavailable because of an error ${inspectValue(e)}`)
+      }
+    }
+  }
+
   /**
    * Fetch configuration elements in the given account.
    * Account credentials were given in the constructor.
@@ -620,6 +638,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch zendesk account configuration..')
     progressReporter.reportProgress({ message: 'Fetching types and instances' })
+    await this.logSubscriptionData()
     const localeError = await this.isLocaleEnUs()
     const { elements, configChanges, errors } = await this.getElements()
     log.debug('going to run filters on %d fetched elements', elements.length)
@@ -799,6 +818,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     return {
       changeValidator: createChangeValidator({
         client: this.client,
+        config: this.userConfig,
         apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
         fetchConfig: this.userConfig[FETCH_CONFIG],
         deployConfig: this.userConfig[DEPLOY_CONFIG],

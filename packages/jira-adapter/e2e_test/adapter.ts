@@ -53,6 +53,7 @@ export const realAdapter = (
   )
   const config = jiraConfig ?? getDefaultConfig({ isDataCenter })
   config.fetch.enableScriptRunnerAddon = enableScriptRunner
+  config.fetch.enableIssueLayouts = true
   const adapter = new JiraAdapter({
     client,
     config,

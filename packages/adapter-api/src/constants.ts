@@ -33,6 +33,8 @@ export const CORE_ANNOTATIONS = {
   DELETABLE: '_deletable',
   ADDITIONAL_PROPERTIES: '_additional_properties',
   ALIAS: '_alias',
+  IMPORTANT_VALUES: '_important_values',
+  SELF_IMPORTANT_VALUES: '_self_important_values',
 }
 
 export const BUILTIN_TYPE_NAMES = {
@@ -48,4 +50,5 @@ export const BUILTIN_TYPE_NAMES = {
   DEPENDENCY: 'dependency',
   HIDDEN_STRING: 'hidden_string',
   HIDDEN_BOOLEAN: 'hidden_boolean',
+  IMPORTANT_VALUE: 'importantValue',
 }

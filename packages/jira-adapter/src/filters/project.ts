@@ -22,7 +22,7 @@ import JiraClient from '../client/client'
 import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 import { getLookUpName } from '../reference_mapping'
 import { FilterCreator } from '../filter'
-import { findObject, isFreeLicense, setFieldDeploymentAnnotations } from '../utils'
+import { findObject, isAllFreeLicense, setFieldDeploymentAnnotations } from '../utils'
 import { PROJECT_CONTEXTS_FIELD } from './fields/contexts_projects_filter'
 
 const PROJECT_TYPE_NAME = 'Project'
@@ -255,7 +255,7 @@ const filter: FilterCreator = ({ config, client, elementsSource }) => ({
       if (shouldSeparateSchemeDeployment(change, client.isDataCenter)) {
         fieldsToIgnore.push(WORKFLOW_SCHEME_FIELD, ISSUE_TYPE_SCREEN_SCHEME_FIELD, ISSUE_TYPE_SCHEME)
       }
-      if (await isFreeLicense(elementsSource)) {
+      if (await isAllFreeLicense(elementsSource)) {
         fieldsToIgnore.push(PERMISSION_SCHEME_FIELD)
       }
       return fieldsToIgnore

@@ -48,9 +48,9 @@ import schemaFieldsRemovalFilter from './filters/schema_field_removal'
 import appLogoFilter from './filters/app_logo'
 import brandThemeFilesFilter from './filters/brand_theme_files'
 import groupMembersFilter from './filters/group_members'
+import unorderedListsFilter from './filters/unordered_lists'
 import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
-
 
 const { awu } = collections.asynciterable
 
@@ -80,6 +80,8 @@ export const DEFAULT_FILTERS = [
   appLogoFilter,
   brandThemeFilesFilter,
   fieldReferencesFilter,
+  // should run after fieldReferencesFilter
+  unorderedListsFilter,
   // should run before appDeploymentFilter and after userSchemaFilter
   serviceUrlFilter,
   appDeploymentFilter,

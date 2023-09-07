@@ -184,6 +184,7 @@ export const axiosConnection = <TCredentials>({
     const httpClient = axios.create({
       baseURL: await baseURLFunc(creds),
       ...await authParamsFunc(creds),
+      maxBodyLength: Infinity,
     })
     axiosRetry(httpClient, retryOptions)
 

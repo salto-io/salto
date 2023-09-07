@@ -151,8 +151,8 @@ export type SaltoManagementFieldSettings = {
 export type OutgoingReferenceBehavior = 'ExcludeInstance' | 'BrokenReference' | 'InternalId'
 
 export type BrokenOutgoingReferencesSettings = {
-  defaultBehavior: string
-  perTargetTypeOverrides: Record<string, OutgoingReferenceBehavior>
+  defaultBehavior: OutgoingReferenceBehavior
+  perTargetTypeOverrides?: Record<string, OutgoingReferenceBehavior>
 }
 
 const objectIdSettings = new ObjectType({

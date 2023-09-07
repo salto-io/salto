@@ -206,10 +206,10 @@ salesforce {
 
 #### Broken outgoing references settings
 
-| Name                   | Default when undefined | Description                                                                                    |
-|------------------------|------------------------|------------------------------------------------------------------------------------------------|
-| defaultBehavior        | "BrokenReference"      | Action to take when a record has a lookup field that refers to a record that was not fetched   |
-| perTargetTypeOverrides | {}                     | A map where the key is a type name and the value is the broken reference behavior for the type |
+| Name                   | Default when undefined | Description                                                                                                     |
+|------------------------|------------------------|-----------------------------------------------------------------------------------------------------------------|
+| defaultBehavior        | "BrokenReference"      | Action to take when a record has a lookup field that refers to a record that was not fetched                    |
+| perTargetTypeOverrides | { User: "InternalId" } | A map where the key is a type name and the value is the broken reference behavior for the reference target type |
 
 ##### Broken reference behaviors
 

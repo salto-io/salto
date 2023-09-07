@@ -16,7 +16,10 @@
 import { collections, types } from '@salto-io/lowerdash'
 import { ObjectType } from '@salto-io/adapter-api'
 import { ConfigValidationError, validateRegularExpressions } from '../config_validation'
-import { DataManagementConfig } from '../types'
+import {
+  DataManagementConfig,
+  OutgoingReferenceBehavior,
+} from '../types'
 import { DETECTS_PARENTS_INDICATOR } from '../constants'
 import { apiName } from '../transformers/transformer'
 
@@ -26,6 +29,7 @@ export type TypeFetchCategory = 'Always' | 'IfReferenced' | 'Never'
 
 export type DataManagement = {
   shouldFetchObjectType: (objectType: ObjectType) => Promise<TypeFetchCategory>
+  brokenReferenceBehaviorForTargetType: (typeName: string) => OutgoingReferenceBehavior
   isReferenceAllowed: (name: string) => boolean
   getObjectIdsFields: (name: string) => string[]
   getObjectAliasFields: (name: string) => types.NonEmptyArray<string>
@@ -71,6 +75,11 @@ const ALIAS_FIELDS_BY_TYPE: Record<string, types.NonEmptyArray<string>> = {
   ],
 }
 
+const DEFAULT_BROKEN_REFS_BEHAVIOR: OutgoingReferenceBehavior = 'BrokenReference'
+const DEFAULT_PER_TYPE_BROKEN_REFS_BEHAVIOR: Record<string, OutgoingReferenceBehavior> = {
+  User: 'InternalId',
+}
+
 export const buildDataManagement = (params: DataManagementConfig): DataManagement => {
   const isReferenceAllowed = (name: string): boolean => (
     params.allowReferenceTo?.some(re => new RegExp(`^${re}$`).test(name)) ?? false
@@ -112,6 +121,16 @@ export const buildDataManagement = (params: DataManagementConfig): DataManagemen
       }
 
       return 'Never'
+    },
+
+    brokenReferenceBehaviorForTargetType: typeName => {
+      const typeOverrides = params.brokenOutgoingReferencesSettings?.perTargetTypeOverrides
+        ?? DEFAULT_PER_TYPE_BROKEN_REFS_BEHAVIOR
+      const perTypeBehavior = typeOverrides[typeName]
+      if (perTypeBehavior !== undefined) {
+        return perTypeBehavior
+      }
+      return params.brokenOutgoingReferencesSettings?.defaultBehavior ?? DEFAULT_BROKEN_REFS_BEHAVIOR
     },
 
     managedBySaltoFieldForType: objType => {

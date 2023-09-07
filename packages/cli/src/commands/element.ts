@@ -23,7 +23,7 @@ import { collections, promises } from '@salto-io/lowerdash'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
 import { CliOutput, CliExitCode, KeyedOption } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
-import { formatTargetEnvRequired, formatUnknownTargetEnv, formatInvalidEnvTargetCurrent, formatCloneToEnvFailed, formatInvalidFilters, formatMoveFailed, formatListFailed, emptyLine, formatListUnresolvedFound, formatListUnresolvedMissing, formatElementListUnresolvedFailed, formatChangeErrors, formatNonTopLevelFilters } from '../formatter'
+import { formatTargetEnvRequired, formatUnknownTargetEnv, formatInvalidEnvTargetCurrent, formatCloneToEnvFailed, formatInvalidFilters, formatMoveFailed, formatListFailed, emptyLine, formatListUnresolvedFound, formatListUnresolvedMissing, formatElementListUnresolvedFailed, formatChangeErrors, formatNonTopLevelSelectors } from '../formatter'
 import { isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
@@ -814,7 +814,7 @@ export const fixElementsAction: WorkspaceCommandAction<FixElementsArgs> = async 
     return CliExitCode.Success
   } catch (err) {
     if (err instanceof SelectorsError) {
-      errorOutputLine(formatNonTopLevelFilters(err.invalidSelectors), output)
+      errorOutputLine(formatNonTopLevelSelectors(err.invalidSelectors), output)
       return CliExitCode.UserInputError
     }
     throw err

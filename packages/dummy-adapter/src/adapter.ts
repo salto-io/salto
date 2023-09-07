@@ -80,8 +80,8 @@ export default class DummyAdapter implements AdapterOperations {
     return {
       fixedElements: [clonedInstance],
       errors: [{
-        message: 'Fixed FullInst1.strField',
-        detailedMessage: 'Removed FullInst1.strField',
+        message: 'Fixed instance',
+        detailedMessage: 'Removed strField from instance',
         severity: 'Info',
         elemID: fullInst1.elemID,
       }],

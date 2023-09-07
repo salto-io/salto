@@ -17,8 +17,9 @@ import open from 'open'
 import { Element, ElemID, ObjectType, CORE_ANNOTATIONS, isInstanceElement, InstanceElement, isObjectType } from '@salto-io/adapter-api'
 import { errors, UnresolvedElemIDs, createElementSelector } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
+import { SelectorsError, fixElements } from '@salto-io/core'
 import { CliExitCode } from '../../src/types'
-import { cloneAction, moveToEnvsAction, moveToCommonAction, listUnresolvedAction, openAction, listAction, renameAction, printElementAction } from '../../src/commands/element'
+import { cloneAction, moveToEnvsAction, moveToCommonAction, listUnresolvedAction, openAction, listAction, renameAction, printElementAction, fixElementsAction } from '../../src/commands/element'
 import * as mocks from '../mocks'
 import * as callbacks from '../../src/callbacks'
 import Prompts from '../../src/prompts'
@@ -38,6 +39,12 @@ const mockedList = async (completeFromEnv?: string): Promise<UnresolvedElemIDs> 
       missing: [new ElemID('salesforce', 'fail')],
     })
 )
+
+jest.mock('@salto-io/core', () => ({
+  ...jest.requireActual<{}>('@salto-io/core'),
+  fixElements: jest.fn(),
+}))
+
 jest.mock('open')
 describe('Element command group', () => {
   describe('Clone command', () => {
@@ -1581,6 +1588,114 @@ Moving the specified elements to common.
           expect(output.stdout.content).toContain(field.annotations.label)
         })
       })
+    })
+  })
+
+  describe('fix command', () => {
+    const commandName = 'fix'
+    let cliArgs: mocks.MockCliArgs
+    let workspace: MockWorkspace
+    let fixElementsMock: jest.MockedFunction<typeof fixElements>
+    let type: ObjectType
+
+    beforeEach(() => {
+      type = new ObjectType({
+        elemID: new ElemID('salto', 'type'),
+      })
+      cliArgs = mocks.mockCliArgs()
+      workspace = mocks.mockWorkspace({ getElements: () => [type] })
+      workspace.getValue.mockResolvedValue(type)
+      fixElementsMock = fixElements as jest.Mock
+      fixElementsMock.mockClear()
+      fixElementsMock.mockResolvedValue({
+        changes: [],
+        errors: [],
+      })
+    })
+
+    it('should do nothing where there are no fixes', async () => {
+      const result = await fixElementsAction({
+        ...mocks.mockCliCommandArgs(commandName, cliArgs),
+        input: { selectors: [type.elemID.getFullName()] },
+        workspace,
+      })
+
+      expect(result).toBe(CliExitCode.Success)
+      expect(workspace.updateNaclFiles).not.toHaveBeenCalled()
+      expect(workspace.flush).not.toHaveBeenCalled()
+      expect(cliArgs.output.stdout.content)
+        .toContain('Nothing to do.')
+    })
+
+    it('should return an error for invalid selector', async () => {
+      const result = await fixElementsAction({
+        ...mocks.mockCliCommandArgs(commandName, cliArgs),
+        input: { selectors: ['a.b.c.d'] },
+        workspace,
+      })
+
+      expect(result).toBe(CliExitCode.UserInputError)
+    })
+
+    it('should return an error for non top level selector', async () => {
+      fixElementsMock.mockRejectedValue(new SelectorsError('message', []))
+      const result = await fixElementsAction({
+        ...mocks.mockCliCommandArgs(commandName, cliArgs),
+        input: { selectors: ['salto.type.attr.d'] },
+        workspace,
+      })
+
+      expect(result).toBe(CliExitCode.UserInputError)
+    })
+
+    it('should apply the fixes to the workspace', async () => {
+      const typeWithFix = type.clone()
+      typeWithFix.annotations.fix1 = 'fix1'
+
+      fixElementsMock.mockResolvedValue({
+        changes: [{
+          action: 'add',
+          data: { after: 'fix1' },
+          id: typeWithFix.elemID.createNestedID('attr', 'fix1'),
+          elemIDs: {
+            before: typeWithFix.elemID.createNestedID('attr', 'fix1'),
+            after: typeWithFix.elemID.createNestedID('attr', 'fix1'),
+          },
+        }],
+        errors: [
+          {
+            elemID: typeWithFix.elemID,
+            severity: 'Info',
+            message: 'Fix1',
+            detailedMessage: 'Detailed fix1',
+          },
+        ],
+      })
+
+      const result = await fixElementsAction({
+        ...mocks.mockCliCommandArgs(commandName, cliArgs),
+        input: { selectors: [type.elemID.getFullName()] },
+        workspace,
+      })
+
+      expect(result).toBe(CliExitCode.Success)
+      expect(cliArgs.output.stdout.content)
+        .toContain('Fix1')
+      expect(cliArgs.output.stdout.content)
+        .toContain('Detailed fix1')
+
+      expect(workspace.updateNaclFiles).toHaveBeenCalledWith([
+        {
+          id: type.elemID.createNestedID('attr', 'fix1'),
+          action: 'add',
+          data: { after: 'fix1' },
+          elemIDs: {
+            before: type.elemID.createNestedID('attr', 'fix1'),
+            after: type.elemID.createNestedID('attr', 'fix1'),
+          },
+        },
+      ])
+      expect(workspace.flush).toHaveBeenCalled()
     })
   })
 })

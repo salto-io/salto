@@ -48,7 +48,6 @@ const getCustomReferences: GetCustomReferencesFunc = async elements => (
     : []
 )
 
-
 export const adapter: Adapter = {
   operations: context => new DummyAdapter(context.config?.value as GeneratorParams),
   validateCredentials: async () => ({ accountId: '' }),

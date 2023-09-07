@@ -34,15 +34,18 @@ import {
   ReferenceMapping,
   AccountInfo,
   isAdditionOrModificationChange,
+  ChangeError,
+  AdapterOperations,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { promises, collections, values } from '@salto-io/lowerdash'
-import { Workspace, ElementSelector, elementSource, expressions, merger } from '@salto-io/workspace'
+import { promises, collections, values, objects } from '@salto-io/lowerdash'
+import { Workspace, ElementSelector, elementSource, expressions, merger, selectElementIdsByTraversal, isTopLevelSelector } from '@salto-io/workspace'
 import { EOL } from 'os'
 import {
   buildElementsSourceFromElements,
+  detailedCompare,
   getDetailedChanges as getDetailedChangesFromChange,
 } from '@salto-io/adapter-utils'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
@@ -75,6 +78,8 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 const { mapValuesAsync } = promises.object
+
+const MAX_FIX_RUNS = 10
 
 const getAdapterFromLoginConfig = (loginConfig: Readonly<InstanceElement>): Adapter =>
   adapterCreators[loginConfig.elemID.adapter]
@@ -691,4 +696,115 @@ export const getAdditionalReferences = async (
   return referenceGroups
     .flat()
     .filter(values.isDefined)
+}
+
+const getFixedElements = (
+  elements: Element[],
+  fixedElements: Element[],
+): Element[] => {
+  const elementFixesByElemID = _.keyBy(
+    fixedElements,
+    element => element.elemID.getFullName()
+  )
+  return elements.map(element => elementFixesByElemID[element.elemID.getFullName()] ?? element)
+}
+
+const fixElementsContinuously = async (
+  workspace: Workspace,
+  elements: Element[],
+  adapters: Record<string, AdapterOperations>,
+  runsLeft: number
+): Promise<{ errors: ChangeError[]; fixedElements: Element[] }> => {
+  log.debug(`Fixing elements. ${runsLeft} runs left.`)
+
+  const elementGroups = _.groupBy(elements, element => element.elemID.adapter)
+
+  const elementFixGroups = await Promise.all(
+    Object.entries(elementGroups).map(async ([account, elementGroup]) => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/return-await
+        return await adapters[account]?.fixElements?.(elementGroup)
+          ?? { errors: [], fixedElements: [] }
+      } catch (e) {
+        log.error(`Failed to fix elements for ${account} adapter: ${e}`)
+        return { errors: [], fixedElements: [] }
+      }
+    })
+  )
+
+  const fixes = objects.concatObjects(elementFixGroups)
+
+  const fixedElements = getFixedElements(elements, fixes.fixedElements)
+
+  if (fixes.errors.length > 0 && runsLeft > 0) {
+    const elementFixes = await fixElementsContinuously(workspace, fixedElements, adapters, runsLeft - 1)
+
+    const ids = new Set(elementFixes.fixedElements.map(element => element.elemID.getFullName()))
+
+    return {
+      errors: fixes.errors.concat(elementFixes.errors),
+      fixedElements: fixes.fixedElements
+        .filter(element => !ids.has(element.elemID.getFullName()))
+        .concat(elementFixes.fixedElements),
+    }
+  }
+
+  if (fixes.errors.length > 0) {
+    log.warn('Max element fix runs reached')
+  }
+
+  return fixes
+}
+
+export class SelectorsError extends Error {
+  constructor(message: string, readonly invalidSelectors: string[]) {
+    super(message)
+  }
+}
+
+export const fixElements = async (
+  workspace: Workspace,
+  selectors: ElementSelector[],
+): Promise<{ errors: ChangeError[]; changes: DetailedChange[] }> => {
+  const accounts = workspace.accounts()
+  const adapters = await getAdapters(
+    accounts,
+    await workspace.accountCredentials(accounts),
+    workspace.accountConfig.bind(workspace),
+    await workspace.elements(),
+    getAccountToServiceNameMap(workspace, accounts)
+  )
+
+  const nonTopLevelSelectors = selectors.filter(selector => !isTopLevelSelector(selector))
+
+  if (!_.isEmpty(nonTopLevelSelectors)) {
+    throw new SelectorsError(
+      'Fixing elements by selectors that are not top level is not supported',
+      nonTopLevelSelectors.map(selector => selector.origin)
+    )
+  }
+
+  const relevantIds = await selectElementIdsByTraversal({
+    selectors,
+    source: await workspace.elements(),
+    referenceSourcesIndex: await workspace.getReferenceSourcesIndex(),
+  })
+
+  const elements = await awu(relevantIds)
+    .map(id => workspace.getValue(id))
+    .filter(values.isDefined)
+    .toArray()
+
+  const idToElement = _.keyBy(
+    elements,
+    e => e.elemID.getFullName()
+  )
+
+  const fixes = await fixElementsContinuously(workspace, elements, adapters, MAX_FIX_RUNS)
+  const changes = fixes.fixedElements
+    .flatMap(element => detailedCompare(
+      idToElement[element.elemID.getFullName()],
+      element
+    ))
+  return { errors: fixes.errors, changes }
 }

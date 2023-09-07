@@ -22,14 +22,11 @@ import { apiName } from '../transformers/transformer'
 
 const { makeArray } = collections.array
 
-const defaultIgnoreReferenceTo = ['User']
-
 export type TypeFetchCategory = 'Always' | 'IfReferenced' | 'Never'
 
 export type DataManagement = {
   shouldFetchObjectType: (objectType: ObjectType) => Promise<TypeFetchCategory>
   isReferenceAllowed: (name: string) => boolean
-  shouldIgnoreReference: (name: string) => boolean
   getObjectIdsFields: (name: string) => string[]
   getObjectAliasFields: (name: string) => types.NonEmptyArray<string>
   showReadOnlyValues?: boolean
@@ -128,9 +125,6 @@ export const buildDataManagement = (params: DataManagementConfig): DataManagemen
     },
 
     isReferenceAllowed,
-
-    shouldIgnoreReference: name =>
-      (params.ignoreReferenceTo ?? defaultIgnoreReferenceTo).includes(name),
 
     getObjectIdsFields: name => {
       const matchedOverride = params.saltoIDSettings.overrides

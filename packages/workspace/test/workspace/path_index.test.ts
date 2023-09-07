@@ -404,6 +404,17 @@ describe('split element by path', () => {
     path: ['salto', 'obj2', 'field'],
   })
 
+  const fieldWithoutPathIndexAnnotations = new ObjectType({
+    elemID: fieldWithoutPathIndexElemId,
+    annotationRefsOrTypes: {
+      anno: createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+    annotations: {
+      anno: 'Bye',
+    },
+    path: ['salto', 'obj2', 'annotations'],
+  })
+
   const fieldWithoutPathIndexFull = new ObjectType({
     elemID: fieldWithoutPathIndexElemId,
     fields: {
@@ -419,6 +430,12 @@ describe('split element by path', () => {
           test: 'test',
         },
       },
+    },
+    annotationRefsOrTypes: {
+      anno: createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+    annotations: {
+      anno: 'Bye',
     },
   })
 
@@ -480,12 +497,11 @@ describe('split element by path', () => {
     singleFieldObj, singleFieldObjAnnotations,
   ]
   const fieldWithoutPathIndexFrags = [
-    fieldWithoutPathIndex, fieldWithoutPathIndexFull,
+    fieldWithoutPathIndex, fieldWithPathIndex, fieldWithoutPathIndexAnnotations,
   ]
-
   const unmergedElements = [
-    ...fullObjFrags, ...singleFieldObjFrags,
-    singlePathObj, noPathObj, multiPathInstanceA, multiPathInstanceB, fieldWithPathIndex,
+    ...fullObjFrags, ...singleFieldObjFrags, singlePathObj, noPathObj, multiPathInstanceA, multiPathInstanceB,
+    fieldWithPathIndex, fieldWithoutPathIndexAnnotations,
   ]
   const pi = new InMemoryRemoteMap<Path[]>()
 

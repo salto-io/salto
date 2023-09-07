@@ -1,0 +1,26 @@
+type dummy.FullWithIA {
+    annotations {
+        string strAnno {
+        }
+        number numAnno {
+        }
+        boolean boolAnno {
+        }
+    }
+    dummy.customFieldWithIA Active__c {
+        apiName = "Active__c"
+        externalId = false
+        label = "Active"
+      }
+
+    string strField {
+    }
+    number numField {
+    }
+    boolean boolField {
+    }
+
+    strAnno = "ANNO"
+    numAnno = 12
+    boolAnno = true
+}

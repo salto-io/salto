@@ -82,6 +82,9 @@ salesforce {
         ".*SBQQ__CustomAction__c.*",
         ".*PricebookEntry.*",
       ]
+      saltoManagementFieldSettings = {
+        defaultFieldName = "ManagedBySalto__c"
+      }
       saltoIDSettings = {
         defaultIdFields = [
           "##allMasterDetailFields##",

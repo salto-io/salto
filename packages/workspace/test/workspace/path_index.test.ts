@@ -22,7 +22,7 @@ import {
   TypeReference,
   createRefToElmWithValue,
   CORE_ANNOTATIONS,
-  Element, PrimitiveType, PrimitiveTypes,
+  Element, PrimitiveType, PrimitiveTypes, Field,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import {
@@ -323,6 +323,12 @@ describe('split element by path', () => {
           test: 'test',
         },
       },
+      newCustomField: {
+        refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+        annotations: {
+          test: 'test',
+        },
+      },
     },
     annotationRefsOrTypes: {
       anno: createRefToElmWithValue(BuiltinTypes.STRING),
@@ -362,68 +368,6 @@ describe('split element by path', () => {
   const singleFieldObjFull = new ObjectType({
     elemID: singleFieldObjElemId,
     fields: {
-      uriField: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-          test: 'test',
-        },
-      },
-    },
-    annotationRefsOrTypes: {
-      anno: createRefToElmWithValue(BuiltinTypes.STRING),
-    },
-    annotations: {
-      anno: 'Bye',
-    },
-  })
-
-  const fieldWithoutPathIndexElemId = new ElemID('salto', 'obj3')
-  const fieldWithoutPathIndex = new ObjectType({
-    elemID: fieldWithoutPathIndexElemId,
-    fields: {
-      uriField: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-          test: 'test',
-        },
-      },
-    },
-    path: ['salto', 'obj2', 'field', 'noPath'],
-  })
-
-  const fieldWithPathIndex = new ObjectType({
-    elemID: fieldWithoutPathIndexElemId,
-    fields: {
-      barField: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-          yo: 'yo',
-        },
-      },
-    },
-    path: ['salto', 'obj2', 'field'],
-  })
-
-  const fieldWithoutPathIndexAnnotations = new ObjectType({
-    elemID: fieldWithoutPathIndexElemId,
-    annotationRefsOrTypes: {
-      anno: createRefToElmWithValue(BuiltinTypes.STRING),
-    },
-    annotations: {
-      anno: 'Bye',
-    },
-    path: ['salto', 'obj2', 'annotations'],
-  })
-
-  const fieldWithoutPathIndexFull = new ObjectType({
-    elemID: fieldWithoutPathIndexElemId,
-    fields: {
-      barField: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-          yo: 'yo',
-        },
-      },
       uriField: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
@@ -491,17 +435,13 @@ describe('split element by path', () => {
   })
 
   const fullObjFrags = [
-    objFragStdFields, objFragCustomFields, objFragAnnotationsOne, objFragAnnotationsTwo,
+    objFragCustomFields, objFragStdFields, objFragAnnotationsOne, objFragAnnotationsTwo,
   ]
   const singleFieldObjFrags = [
     singleFieldObj, singleFieldObjAnnotations,
   ]
-  const fieldWithoutPathIndexFrags = [
-    fieldWithoutPathIndex, fieldWithPathIndex, fieldWithoutPathIndexAnnotations,
-  ]
   const unmergedElements = [
     ...fullObjFrags, ...singleFieldObjFrags, singlePathObj, noPathObj, multiPathInstanceA, multiPathInstanceB,
-    fieldWithPathIndex, fieldWithoutPathIndexAnnotations,
   ]
   const pi = new InMemoryRemoteMap<Path[]>()
 
@@ -511,7 +451,16 @@ describe('split element by path', () => {
 
   it('should split an element with multiple paths', async () => {
     const splitElements = await splitElementByPath(objFull, pi)
-    fullObjFrags.forEach(
+    // this test mock the situation where a new field is added via a deployment and not included in the PathIndex
+    // we want to make sure that the new field is added to the correct file after the split
+    const newObjFragCustomFields = objFragCustomFields.clone()
+    newObjFragCustomFields.fields.newCustomField = new Field(
+      newObjFragCustomFields, objFull.fields.newCustomField.name,
+      objFull.fields.newCustomField.refType, objFull.fields.newCustomField.annotations
+    )
+    const newFullObjFrags = [objFragStdFields, newObjFragCustomFields, objFragAnnotationsOne, objFragAnnotationsTwo,
+    ]
+    newFullObjFrags.forEach(
       frag => expect(splitElements.filter(elem => elem.isEqual(frag))).toHaveLength(1)
     )
   })
@@ -519,13 +468,6 @@ describe('split element by path', () => {
   it('should split an element with one fields file', async () => {
     const splitElements = await splitElementByPath(singleFieldObjFull, pi)
     singleFieldObjFrags.forEach(
-      frag => expect(splitElements.filter(elem => elem.isEqual(frag))).toHaveLength(1)
-    )
-  })
-
-  it('should find file to a field that is not is the path index', async () => {
-    const splitElements = await splitElementByPath(fieldWithoutPathIndexFull, pi)
-    fieldWithoutPathIndexFrags.forEach(
       frag => expect(splitElements.filter(elem => elem.isEqual(frag))).toHaveLength(1)
     )
   })

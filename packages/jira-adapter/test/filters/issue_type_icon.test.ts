@@ -22,16 +22,9 @@ import JiraClient from '../../src/client/client'
 import issueTypeIconFilter from '../../src/filters/issue_type_icon'
 import { ISSUE_TYPE_ICON_NAME, JIRA } from '../../src/constants'
 
-jest.mock('sharp', () => jest.fn().mockImplementation(content => ({
-  png: jest.fn().mockReturnThis(),
-  toBuffer: jest.fn().mockResolvedValue(content),
-})))
-
-jest.setTimeout(10000)
 describe('issue type icon filter', () => {
   let client: JiraClient
   let mockGet: jest.SpyInstance
-  // let connection: MockInterface<clientUtils.APIConnection>
   const mockCli = mockClient()
   type FilterType = filterUtils.FilterWith<'deploy' | 'onFetch'>
   let filter: FilterType
@@ -42,7 +35,6 @@ describe('issue type icon filter', () => {
 
   beforeEach(async () => {
     client = mockCli.client
-    // connection = mockCli.connection
     filter = issueTypeIconFilter(getFilterParams({ client })) as typeof filter
     issueTypeInstance = new InstanceElement(
       'issueType1',
@@ -50,6 +42,7 @@ describe('issue type icon filter', () => {
       {
         id: '100',
         name: 'OwnerTest',
+        avatarId: 101,
       }
     )
   })
@@ -61,19 +54,7 @@ describe('issue type icon filter', () => {
 
     it('should add issue type icon to elements', async () => {
       mockGet.mockImplementationOnce(params => {
-        if (params.url === '/rest/api/3/issuetype/100') {
-          return {
-            status: 200,
-            data: {
-              iconUrl: 'https://salto-idoamit.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/100?size=medium',
-              avatarId: 101,
-            },
-          }
-        }
-        throw new Error('Err')
-      })
-      mockGet.mockImplementationOnce(params => {
-        if (params.url === '/rest/api/2/universal_avatar/view/type/issuetype/avatar/100') {
+        if (params.url === '/rest/api/3/universal_avatar/view/type/issuetype/avatar/101?format=png') {
           return {
             status: 200,
             data: content,

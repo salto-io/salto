@@ -1335,7 +1335,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'untranslatedName', fieldType: 'string' },
       ],
       fieldsToOmit: [
-        { fieldName: 'avatarId' },
+        // { fieldName: 'avatarId' },
         { fieldName: 'iconUrl' },
       ],
       fieldsToHide: [

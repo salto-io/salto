@@ -14,11 +14,9 @@
 * limitations under the License.
 */
 
-import Joi from 'joi'
 import { BuiltinTypes, CORE_ANNOTATIONS, Change, ElemID, InstanceElement, ObjectType, ReferenceExpression, StaticFile, getChangeData, isAdditionOrModificationChange, isInstanceElement, isStaticFile } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import sharp from 'sharp'
-import { createSchemeGuard, getParent, pathNaclCase } from '@salto-io/adapter-utils'
+import { getParent, pathNaclCase } from '@salto-io/adapter-utils'
 import { elements as adapterElements } from '@salto-io/adapter-components'
 import { ResponseValue } from '@salto-io/adapter-components/src/client'
 import { FilterCreator } from '../filter'
@@ -28,25 +26,11 @@ import { deployChanges } from '../deployment/standard_deployment'
 import { addAnnotationRecursively, setTypeDeploymentAnnotations } from '../utils'
 import { PRIVATE_API_HEADERS } from '../client/headers'
 
-type IssueTypeResponse = {
-    data: {
-        iconUrl: string
-        avatarId: number
-    }
-}
 type IssueTypeIconResponse = {
     data: {
         id: string
     }
 }
-
-const ISSUE_TYPE_RESPONSE_SCHEMA = Joi.object({
-  data: Joi.object({
-    iconUrl: Joi.string().required(),
-  }).unknown().required(),
-}).unknown().required()
-
-const isIssueTypeResponse = createSchemeGuard<IssueTypeResponse>(ISSUE_TYPE_RESPONSE_SCHEMA)
 
 const createIconType = (): ObjectType =>
   new ObjectType({
@@ -70,7 +54,7 @@ const getLogoContent = async (link: string, client: JiraClient): Promise<Buffer 
     if (!Buffer.isBuffer(content)) {
       return new Error('Received invalid response from Jira API for attachment content')
     }
-    return await sharp(content).png().toBuffer()
+    return content
   } catch (e) {
     return new Error('Failed to fetch attachment content from Jira API')
   }
@@ -175,20 +159,15 @@ const filter: FilterCreator = ({ client }) => ({
     const logoType = createIconType()
     elements.push(logoType)
     await Promise.all(issueTypes.map(async issueType => {
-      const url = `/rest/api/3/issuetype/${issueType.value.id}`
-      const response = await client.getSinglePage({ url })
-      if (!isIssueTypeResponse(response)) {
-        return undefined
-      }
-      const iconUrl = new URL(response.data.iconUrl).pathname
+      const url = `/rest/api/3/universal_avatar/view/type/issuetype/avatar/${issueType.value.avatarId}?format=png`
       const logo = await getLogo({
         client,
         parents: [issueType],
         logoType,
         contentType: 'png',
         logoName: `${issueType.elemID.name}Icon`,
-        link: iconUrl,
-        id: response.data.avatarId,
+        link: url,
+        id: issueType.value.avatarId,
       })
       if (logo instanceof Error) {
         return logo

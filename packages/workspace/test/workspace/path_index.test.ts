@@ -377,6 +377,51 @@ describe('split element by path', () => {
     },
   })
 
+  const fieldWithoutPathIndexElemId = new ElemID('salto', 'obj3')
+  const fieldWithoutPathIndex = new ObjectType({
+    elemID: fieldWithoutPathIndexElemId,
+    fields: {
+      uriField: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: {
+          test: 'test',
+        },
+      },
+    },
+    path: ['salto', 'obj2', 'field', 'noPath'],
+  })
+
+  const fieldWithPathIndex = new ObjectType({
+    elemID: fieldWithoutPathIndexElemId,
+    fields: {
+      barField: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: {
+          yo: 'yo',
+        },
+      },
+    },
+    path: ['salto', 'obj2', 'field'],
+  })
+
+  const fieldWithoutPathIndexFull = new ObjectType({
+    elemID: fieldWithoutPathIndexElemId,
+    fields: {
+      barField: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: {
+          yo: 'yo',
+        },
+      },
+      uriField: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: {
+          test: 'test',
+        },
+      },
+    },
+  })
+
   const singlePathObj = new ObjectType({
     elemID: new ElemID('salto', 'singlePath'),
     fields: {
@@ -434,8 +479,13 @@ describe('split element by path', () => {
   const singleFieldObjFrags = [
     singleFieldObj, singleFieldObjAnnotations,
   ]
+  const fieldWithoutPathIndexFrags = [
+    fieldWithoutPathIndex, fieldWithoutPathIndexFull,
+  ]
+
   const unmergedElements = [
-    ...fullObjFrags, ...singleFieldObjFrags, singlePathObj, noPathObj, multiPathInstanceA, multiPathInstanceB,
+    ...fullObjFrags, ...singleFieldObjFrags,
+    singlePathObj, noPathObj, multiPathInstanceA, multiPathInstanceB, fieldWithPathIndex,
   ]
   const pi = new InMemoryRemoteMap<Path[]>()
 
@@ -453,6 +503,13 @@ describe('split element by path', () => {
   it('should split an element with one fields file', async () => {
     const splitElements = await splitElementByPath(singleFieldObjFull, pi)
     singleFieldObjFrags.forEach(
+      frag => expect(splitElements.filter(elem => elem.isEqual(frag))).toHaveLength(1)
+    )
+  })
+
+  it('should find file to a field that is not is the path index', async () => {
+    const splitElements = await splitElementByPath(fieldWithoutPathIndexFull, pi)
+    fieldWithoutPathIndexFrags.forEach(
       frag => expect(splitElements.filter(elem => elem.isEqual(frag))).toHaveLength(1)
     )
   })

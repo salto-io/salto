@@ -688,6 +688,43 @@ export const generateElements = async (
       })
       return parsedNaclFile.elements
     })).flat().toArray()
+    // add important attributes
+    const objectsWithAI: ObjectType[] = elements.filter(element => element.elemID.name.includes('WithIA')).filter(isObjectType)
+    const objWithIA = objectsWithAI.find(obj => obj.elemID.name === 'FullWithIA')
+    const fieldObjWithIA = objectsWithAI.find(obj => obj.elemID.name === 'customFieldWithIA')
+    if (objWithIA !== undefined && fieldObjWithIA !== undefined) {
+      objWithIA.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] = [
+        {
+          value: 'strAnno',
+          indexed: false,
+        },
+        {
+          value: 'boolAnno',
+          indexed: true,
+        },
+      ]
+      objWithIA.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] = [
+        {
+          value: 'strField',
+          indexed: false,
+        },
+        {
+          value: 'boolField',
+          indexed: true,
+        },
+      ]
+      fieldObjWithIA.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] = [
+        {
+          value: 'apiName',
+          indexed: false,
+        },
+        {
+          value: 'label',
+          indexed: true,
+        },
+      ]
+    }
+
     const mergedElements = await merger.mergeElements(awu(elements))
     const inMemElemSource = elementSource.createInMemoryElementSource(
       await awu(mergedElements.merged.values()).toArray()

@@ -1,4 +1,4 @@
-dummy.Full FullInst1WithIA {
+dummy.FullWithIA FullInst1WithIA {
     strField = "STR1"
     numField = 111
     boolField = false

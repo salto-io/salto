@@ -1,0 +1,10 @@
+type dummy.customFieldWithIA {
+    annotations {
+        string apiName {
+        }
+        string label {
+        }
+        boolean externalId {
+        }
+    }
+}

@@ -25,8 +25,14 @@ import {
 import SalesforceClient from '../client/client'
 import { SalesforceRecord } from '../client/types'
 import {
-  SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH, CUSTOM_OBJECT_ID_FIELD,
-  FIELD_ANNOTATIONS, UNLIMITED_INSTANCES_VALUE, DETECTS_PARENTS_INDICATOR,
+  SALESFORCE,
+  RECORDS_PATH,
+  INSTALLED_PACKAGES_PATH,
+  CUSTOM_OBJECT_ID_FIELD,
+  FIELD_ANNOTATIONS,
+  UNLIMITED_INSTANCES_VALUE,
+  DETECTS_PARENTS_INDICATOR,
+  API_NAME_SEPARATOR,
 } from '../constants'
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField } from '../transformers/transformer'
@@ -524,7 +530,7 @@ const createInvalidAliasFieldFetchWarning = async (
 const createInvalidManagedBySaltoFieldFetchWarning = async (
   { objectType, invalidManagedBySaltoField }: CustomObjectFetchSetting
 ): Promise<SaltoError> => ({
-  message: `The type ${await safeApiName(objectType)} has the field ${invalidManagedBySaltoField}, which is configured as the 'managed by Salto' field, but the field is not queryable. Records of this type will not be fetched.`,
+  message: `The field ${await apiName(objectType)}${API_NAME_SEPARATOR}${invalidManagedBySaltoField} is configured as the filter field in the saltoManagementFieldSettings.defaultFieldName section of the Salto environment configuration. However, the user configured for fetch does not have read access to this field. Records of type ${await apiName(objectType)} will not be fetched.`,
   severity: 'Warning',
 })
 

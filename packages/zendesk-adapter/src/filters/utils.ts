@@ -47,6 +47,21 @@ export type SubjectCondition = {
 
 const TYPES_WITH_SUBJECT_CONDITIONS = ['routing_attribute_value']
 
+export const applyforInstanceChangesOfType = async (
+  changes: Change<ChangeDataType>[],
+  typeNames: string[],
+  func: (arg: InstanceElement) => Promise<InstanceElement> | InstanceElement,
+): Promise<void> => {
+  await awu(changes)
+    .filter(isAdditionOrModificationChange)
+    .filter(isInstanceChange)
+    .filter(change => typeNames.includes(getChangeData(change).elemID.typeName))
+    .forEach(change => applyFunctionToChangeData<Change<InstanceElement>>(
+      change,
+      func,
+    ))
+}
+
 export const createAdditionalParentChanges = async (
   childrenChanges: Change<InstanceElement>[],
   shouldResolve = true,
@@ -89,22 +104,6 @@ export const updateParentChildrenFromChanges = (
       log.error(`children field '${childrenField}' of ${parent.elemID.getFullName()} is invalid`)
     }
   })
-}
-
-
-export const applyforInstanceChangesOfType = async (
-  changes: Change<ChangeDataType>[],
-  typeNames: string[],
-  func: (arg: InstanceElement) => Promise<InstanceElement> | InstanceElement,
-): Promise<void> => {
-  await awu(changes)
-    .filter(isAdditionOrModificationChange)
-    .filter(isInstanceChange)
-    .filter(change => typeNames.includes(getChangeData(change).elemID.typeName))
-    .forEach(change => applyFunctionToChangeData<Change<InstanceElement>>(
-      change,
-      func,
-    ))
 }
 
 const CONDITION_SCHEMA = Joi.array().items(Joi.object({

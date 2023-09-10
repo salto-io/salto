@@ -1,20 +1,20 @@
 type dummy.customFieldWithIA {
-    annotations {
-        string apiName {
-        }
-        string label {
-        }
-        boolean externalId {
-        }
+  annotations {
+    string apiName {
     }
-    _important_values = [
-        {
-          value = "apiName"
-          indexed = false
-        },
-        {
-          value = "label"
-          indexed = true
-        },
-      ]
+    string label {
+    }
+    boolean externalId {
+    }
+  }
+  _important_values = [
+    {
+      value = "apiName"
+      indexed = false
+    },
+    {
+      value = "label"
+      indexed = true
+    },
+  ]
 }

@@ -24,23 +24,23 @@ type dummy.FullWithIA {
     numAnno = 12
     boolAnno = true
     _self_important_values = [
-        {
-          value = "strAnno"
-          indexed = false
-        },
-        {
-          value = "boolAnno"
-          indexed = true
-        },
-      ]
-      _important_values = [
-        {
-          value = "strField"
-          indexed = false
-        },
-        {
-          value = "boolField"
-          indexed = true
-        },
-      ]
+      {
+        value = "strAnno"
+        indexed = false
+      },
+      {
+        value = "boolAnno"
+        indexed = true
+      },
+    ]
+    _important_values = [
+      {
+        value = "strField"
+        indexed = false
+      },
+      {
+        value = "boolField"
+        indexed = true
+      },
+    ]
 }

@@ -49,7 +49,6 @@ const TYPES_WITH_SUBJECT_CONDITIONS = ['routing_attribute_value']
 
 export const createAdditionalParentChanges = async (
   childrenChanges: Change<InstanceElement>[],
-  childrenField: string,
   shouldResolve = true,
 ): Promise<Change<InstanceElement>[] | undefined> => {
   const childrenInstance = getChangeData(childrenChanges[0])
@@ -64,10 +63,20 @@ export const createAdditionalParentChanges = async (
     before: parent.value.clone(), after: parent.value.clone(),
   }))
 
-  // The children in the parents are the instances at the beginning of the deployment
-  // If the child change was changed during the preDeploy stage, we want to use the updated one
+  return shouldResolve
+    ? awu(changes).map(change => resolveChangeElement(change, lookupFunc)).toArray()
+    : changes
+}
+
+// The children in the parents are the instances at the beginning of the deployment
+// If the child change was changed during the preDeploy stage, we want to use the updated one
+export const updateParentChildrenFromChanges = (
+  parentChanges: Change<InstanceElement>[],
+  childrenChanges: Change<InstanceElement>[],
+  childrenField: string,
+): void => {
   const childrenChangesByElemId = _.keyBy(childrenChanges.map(getChangeData), change => change.elemID.getFullName())
-  changes.map(getChangeData).forEach(parent => {
+  parentChanges.map(getChangeData).forEach(parent => {
     const children = parent.value[childrenField] ?? []
     if (_.isArray(children) && children.every(isReferenceExpression)) {
       children
@@ -80,11 +89,8 @@ export const createAdditionalParentChanges = async (
       log.error(`children field '${childrenField}' of ${parent.elemID.getFullName()} is invalid`)
     }
   })
-
-  return shouldResolve
-    ? awu(changes).map(change => resolveChangeElement(change, lookupFunc)).toArray()
-    : changes
 }
+
 
 export const applyforInstanceChangesOfType = async (
   changes: Change<ChangeDataType>[],

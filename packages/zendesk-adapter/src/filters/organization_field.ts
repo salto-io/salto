@@ -18,7 +18,7 @@ import { Change, getChangeData, InstanceElement, isAdditionOrModificationChange 
 import { FilterCreator } from '../filter'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges } from '../deployment'
 import { API_DEFINITIONS_CONFIG } from '../config'
-import { createAdditionalParentChanges } from './utils'
+import { createAdditionalParentChanges, updateParentChildrenFromChanges } from './utils'
 import { ORG_FIELD_TYPE_NAME } from '../constants'
 
 export const CUSTOM_FIELD_OPTIONS_FIELD_NAME = 'custom_field_options'
@@ -44,7 +44,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     })
 
     const additionalParentChanges = parentChanges.length === 0 && childrenChanges.length > 0
-      ? await createAdditionalParentChanges(childrenChanges, CUSTOM_FIELD_OPTIONS_FIELD_NAME)
+      ? await createAdditionalParentChanges(childrenChanges)
       : []
     if (additionalParentChanges === undefined) {
       return {
@@ -61,8 +61,12 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         leftoverChanges,
       }
     }
+
+    const allParentChanges = [...parentChanges, ...additionalParentChanges]
+    updateParentChildrenFromChanges(allParentChanges, childrenChanges, CUSTOM_FIELD_OPTIONS_FIELD_NAME)
+
     const deployResult = await deployChanges(
-      [...parentChanges, ...additionalParentChanges],
+      allParentChanges,
       async change => {
         const response = await deployChange(
           change, client, config.apiDefinitions

@@ -44,7 +44,7 @@ import { addId, deployChange, deployChanges } from '../deployment'
 import { getZendeskError } from '../errors'
 import { lookupFunc } from './field_references'
 import ZendeskClient from '../client/client'
-import { createAdditionalParentChanges } from './utils'
+import { createAdditionalParentChanges, updateParentChildrenFromChanges } from './utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -266,7 +266,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       change => getChangeData(change).elemID.typeName === MACRO_ATTACHMENT_TYPE_NAME
     )
     const additionalParentChanges = parentChanges.length === 0 && childrenChanges.length > 0
-      ? await createAdditionalParentChanges(childrenChanges, ATTACHMENTS_FIELD_NAME, false)
+      ? await createAdditionalParentChanges(childrenChanges, false)
       : []
     if (additionalParentChanges === undefined) {
       return {
@@ -330,6 +330,9 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         .map(change => replaceAttachmentId(change, childFullNameToInstance))
         .map(change => resolveChangeElement(change, lookupFunc))
         .toArray()
+
+      updateParentChildrenFromChanges(resolvedParentChanges, childrenChanges, ATTACHMENTS_FIELD_NAME)
+
       const macroDeployResult = await deployChanges(
         resolvedParentChanges,
         async change => {

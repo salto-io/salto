@@ -363,4 +363,92 @@ describe('fields_structure', () => {
 
     expect(fieldContextOptionType.fields.position).toBeDefined()
   })
+  it('should not fail for cascading field options with no parent', async () => {
+    const instance = new InstanceElement(
+      'instance',
+      fieldType,
+      {
+        contexts: [
+          {
+            name: 'name',
+            id: 'id1',
+            options: [
+              {
+                id: '1',
+                value: 'someValue',
+              },
+              {
+                id: '2',
+                value: 'someValue2',
+              },
+              {
+                id: '3',
+                value: 'someValue3',
+                optionId: '1',
+              },
+              {
+                id: '4',
+                value: 'someValue4',
+                optionId: '100',
+              },
+              {
+                id: '5',
+                value: 'someValue5',
+                optionId: '2',
+              },
+              {
+                id: '6',
+                value: 'someValue6',
+                optionId: '2',
+              },
+            ],
+          },
+        ],
+      }
+    )
+    const elements = [
+      instance,
+      fieldType,
+      fieldContextType,
+      fieldContextOptionType,
+      fieldContextDefaultValueType,
+    ]
+    await filter.onFetch(elements)
+    const contextInstance = elements[elements.length - 1] as InstanceElement
+    expect(contextInstance.value).toEqual({
+      name: 'name',
+      id: 'id1',
+      options: {
+        someValue: {
+          id: '1',
+          value: 'someValue',
+          position: 0,
+          cascadingOptions: {
+            someValue3: {
+              id: '3',
+              value: 'someValue3',
+              position: 0,
+            },
+          },
+        },
+        someValue2: {
+          id: '2',
+          value: 'someValue2',
+          position: 1,
+          cascadingOptions: {
+            someValue5: {
+              id: '5',
+              value: 'someValue5',
+              position: 0,
+            },
+            someValue6: {
+              id: '6',
+              value: 'someValue6',
+              position: 1,
+            },
+          },
+        },
+      },
+    })
+  })
 })

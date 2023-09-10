@@ -700,6 +700,11 @@ export const formatInvalidFilters = (invalidFilters: string[]): string => [
   emptyLine(),
 ].join('\n')
 
+export const formatNonTopLevelSelectors = (invalidSelectors: string[]): string => [
+  formatSimpleError(Prompts.NON_TOP_LEVEL_SELECTORS(formatWordsSeries(invalidSelectors))),
+  emptyLine(),
+].join('\n')
+
 export const formatMissingElementSelectors = (): string => [
   formatSimpleError(Prompts.MISSING_ELEMENT_SELECTORS),
   emptyLine(),

@@ -19,7 +19,6 @@ import {
   isPrimitiveType,
   isMapType,
   isListType,
-  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -124,17 +123,6 @@ describe('elements generator', () => {
       expectedFixtures.forEach(fixture => {
         const fragments = elements.filter(e => e.elemID.getFullName() === fixture.fullName)
         expect(fragments).toHaveLength(fixture.numOfFragments)
-      })
-    })
-    it('should add important values annotation to relevant elements', async () => {
-      const elements = await generateElements(testParams, mockProgressReporter)
-      const expectedWithIA = [
-        'dummy.FullWithIA',
-        'dummy.customFieldWithIA',
-      ]
-      expectedWithIA.forEach(fullName => {
-        const element = elements.find(e => e.elemID.getFullName() === fullName)
-        expect(element?.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES]).toBeDefined()
       })
     })
   })

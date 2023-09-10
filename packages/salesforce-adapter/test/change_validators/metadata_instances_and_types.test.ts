@@ -43,7 +43,7 @@ describe('metadataInstancesAndTypes Change Validator', () => {
 
 
     const changes = [
-      // addition of data instance should yield error
+      // addition of data instance should not yield error
       toChange({ after: dataInstance }),
       // addition of CustomObject should not yield error
       toChange({ after: mockTypes.SBQQ__Template__c }),

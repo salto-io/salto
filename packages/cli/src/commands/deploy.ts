@@ -151,7 +151,7 @@ const deployPlan = async (
         startAction(itemName, item)
       } else if (actions[itemName] !== undefined && status === 'finished') {
         endAction(itemName)
-      } else if (actions[itemName] !== undefined && status === 'error' && _.isString(details)) {
+      } else if (actions[itemName] !== undefined && status === 'error' && details !== undefined) {
         errorAction(itemName, details)
       } else if (status === 'cancelled' && details) {
         cancelAction(itemName, details)

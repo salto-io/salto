@@ -26,52 +26,52 @@ import _ from 'lodash'
 type ImportantValue = { value: string; indexed: boolean }
 type ImportantValues = ImportantValue[]
 
-const getRelevantIA = (importantValues: ImportantValues, indexed?: boolean): ImportantValues => (indexed === true
-  ? importantValues.filter(value => value.indexed === true)
-  : importantValues)
+const getRelevantImportantValues = (importantValues: ImportantValues, indexedOnly?: boolean): ImportantValues => (
+  indexedOnly === true
+    ? importantValues.filter(value => value.indexed === true)
+    : importantValues)
 
-const extractIAFromElement = ({
+const extractImportantValuesFromElement = ({
   importantValues,
   element,
-  indexed,
+  indexedOnly,
 }:{
   importantValues: ImportantValues
   element: Element
-  indexed?: boolean
+  indexedOnly?: boolean
 }): Values => {
   if (_.isEmpty(importantValues)) {
     return {}
   }
-  const relevantImportantValues = getRelevantIA(importantValues, indexed)
+  const relevantImportantValues = getRelevantImportantValues(importantValues, indexedOnly)
+  const getFrom = isInstanceElement(element) ? element.value : element.annotations
   const finalImportantValues = _.mapValues(
     _.keyBy(relevantImportantValues, obj => obj.value),
-    obj => _.get(
-      (isInstanceElement(element) ? element.value : element.annotations),
-      obj.value,
-      null
-    ),
+    obj => _.get(getFrom, obj.value, undefined),
   )
-  return _.omitBy(finalImportantValues, _.isNull)
+  return finalImportantValues
 }
 
-
+// this function returns the important values of an element. if the element is an instance or a field the important
+// values will be calculated from the type. When the flag indexedOnly is on, only values with indexed = true will be
+// returned
 export const getImportantValues = async ({
   element,
   elementSource,
-  indexed,
+  indexedOnly,
 }:{
   element: Element
   elementSource?: ReadOnlyElementsSource
-  indexed?: boolean
+  indexedOnly?: boolean
 }): Promise<Values> => {
   if (isObjectType(element)) {
     const importantValues = element.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES]
-    return extractIAFromElement({ importantValues, element, indexed })
+    return extractImportantValuesFromElement({ importantValues, element, indexedOnly })
   }
   if (isField(element) || isInstanceElement(element)) {
     const typeObj = await element.getType(elementSource)
     const importantValues = typeObj?.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES]
-    return extractIAFromElement({ importantValues, element, indexed })
+    return extractImportantValuesFromElement({ importantValues, element, indexedOnly })
   }
   return {}
 }

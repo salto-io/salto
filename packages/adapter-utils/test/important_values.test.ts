@@ -78,6 +78,10 @@ const obj = new ObjectType({
         value: 'apiName',
         indexed: true,
       },
+      {
+        value: 'doesNotExist',
+        indexed: true,
+      },
     ],
   },
 })
@@ -104,6 +108,7 @@ describe('getImportantValues', () => {
     expect(res).toEqual({
       name: 'test',
       apiName: 123,
+      doesNotExist: undefined,
     })
   })
   it('should get the right important values for an instance', async () => {
@@ -114,6 +119,7 @@ describe('getImportantValues', () => {
     expect(res).toEqual({
       active: true,
       name: 'test inst',
+      doesNotExist: undefined,
     })
   })
   it('should get the right important values for a field', async () => {
@@ -128,7 +134,7 @@ describe('getImportantValues', () => {
     const res = await getImportantValues({
       element: field,
       elementSource,
-      indexed: false,
+      indexedOnly: false,
     })
     expect(res).toEqual({
       label: 'Active',
@@ -168,7 +174,7 @@ describe('getImportantValues', () => {
     const res = await getImportantValues({
       element: inst,
       elementSource,
-      indexed: true,
+      indexedOnly: true,
     })
     expect(res).toEqual({
       active: true,

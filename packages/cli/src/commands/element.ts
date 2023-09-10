@@ -17,13 +17,13 @@ import _ from 'lodash'
 import open from 'open'
 import { ElemID, isElement, CORE_ANNOTATIONS, isModificationChange } from '@salto-io/adapter-api'
 import { Workspace, ElementSelector, createElementSelectors, FromSource, selectElementIdsByTraversal, parser, nacl, staticFiles } from '@salto-io/workspace'
-import { getEnvsDeletionsDiff, RenameElementIdError, rename } from '@salto-io/core'
+import { getEnvsDeletionsDiff, RenameElementIdError, rename, fixElements, SelectorsError } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
+import { collections, promises } from '@salto-io/lowerdash'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
 import { CliOutput, CliExitCode, KeyedOption } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
-import { formatTargetEnvRequired, formatUnknownTargetEnv, formatInvalidEnvTargetCurrent, formatCloneToEnvFailed, formatInvalidFilters, formatMoveFailed, formatListFailed, emptyLine, formatListUnresolvedFound, formatListUnresolvedMissing, formatElementListUnresolvedFailed } from '../formatter'
+import { formatTargetEnvRequired, formatUnknownTargetEnv, formatInvalidEnvTargetCurrent, formatCloneToEnvFailed, formatInvalidFilters, formatMoveFailed, formatListFailed, emptyLine, formatListUnresolvedFound, formatListUnresolvedMissing, formatElementListUnresolvedFailed, formatChangeErrors, formatNonTopLevelSelectors } from '../formatter'
 import { isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
@@ -775,6 +775,71 @@ const printElementDef = createWorkspaceCommand({
   action: printElementAction,
 })
 
+type FixElementsArgs = {
+  selectors: string[]
+} & EnvArg
+
+export const fixElementsAction: WorkspaceCommandAction<FixElementsArgs> = async ({
+  workspace,
+  input,
+  output,
+}) => {
+  const { validSelectors, invalidSelectors } = createElementSelectors(input.selectors)
+  if (!_.isEmpty(invalidSelectors)) {
+    errorOutputLine(formatInvalidFilters(invalidSelectors), output)
+    return CliExitCode.UserInputError
+  }
+
+  await validateAndSetEnv(workspace, input, output)
+
+  try {
+    const { changes, errors } = await fixElements(workspace, validSelectors)
+
+    if (changes.length === 0) {
+      outputLine(Prompts.EMPTY_PLAN, output)
+      return CliExitCode.Success
+    }
+
+    const changeErrors = await promises.array.withLimitedConcurrency(
+      errors
+        .map(error => () => workspace.transformToWorkspaceError(error)),
+      20
+    )
+
+    outputLine(formatChangeErrors(changeErrors), output)
+
+    await workspace.updateNaclFiles(changes)
+    await workspace.flush()
+
+    return CliExitCode.Success
+  } catch (err) {
+    if (err instanceof SelectorsError) {
+      errorOutputLine(formatNonTopLevelSelectors(err.invalidSelectors), output)
+      return CliExitCode.UserInputError
+    }
+    throw err
+  }
+}
+
+const fixElementsDef = createWorkspaceCommand({
+  properties: {
+    name: 'fix',
+    description: 'Apply a set of service specific fixes to the NaCls in the workspace',
+    keyedOptions: [
+      ENVIRONMENT_OPTION,
+    ],
+    positionalOptions: [
+      {
+        name: 'selectors',
+        type: 'stringsList',
+        required: true,
+      },
+    ],
+  },
+  action: fixElementsAction,
+})
+
+
 const elementGroupDef = createCommandGroupDef({
   properties: {
     name: 'element',
@@ -789,6 +854,7 @@ const elementGroupDef = createCommandGroupDef({
     listElementsDef,
     renameElementsDef,
     printElementDef,
+    fixElementsDef,
   ],
 })
 

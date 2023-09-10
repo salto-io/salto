@@ -99,9 +99,15 @@ function isElementContainer(value: any): value is ElementIDContainer {
   return value && value.elemID && value.elemID instanceof ElemID
 }
 
+const isWildcardSelector = (selector: string): boolean => selector.includes('*')
+
+const hasReferencedBy = (selector: ElementSelector): boolean =>
+  selector.referencedBy !== undefined
+
 export const validateSelectorsMatches = (selectors: ElementSelector[],
   matches: Record<string, boolean>): void => {
-  const invalidDeterminedMatchers = selectors.filter(selector => !selector.origin.includes('*') && !matches[selector.origin])
+  const invalidDeterminedMatchers = selectors.filter(selector =>
+    !isWildcardSelector(selector.origin) && !matches[selector.origin])
   if (invalidDeterminedMatchers.length > 0) {
     throw new Error(`The following salto ids were not found: ${invalidDeterminedMatchers.map(selector => selector.origin)}`)
   }
@@ -198,7 +204,7 @@ const isValidSelector = (selector: string): boolean => {
 export const createElementSelectors = (selectors: string[], caseInSensitive = false):
   {validSelectors: ElementSelector[]; invalidSelectors: string[]} => {
   const [validSelectors, invalidSelectors] = _.partition(selectors, isValidSelector)
-  const [wildcardSelectors, determinedSelectors] = _.partition(validSelectors, selector => selector.includes('*'))
+  const [wildcardSelectors, determinedSelectors] = _.partition(validSelectors, isWildcardSelector)
   const orderedSelectors = determinedSelectors.concat(wildcardSelectors)
   return {
     validSelectors: orderedSelectors
@@ -207,7 +213,7 @@ export const createElementSelectors = (selectors: string[], caseInSensitive = fa
   }
 }
 
-const isTopLevelSelector = (selector: ElementSelector): boolean =>
+export const isTopLevelSelector = (selector: ElementSelector): boolean =>
   ElemID.fromFullName(selector.origin).isTopLevel()
 
 export const createTopLevelSelector = (selector: ElementSelector): ElementSelector => {
@@ -254,7 +260,7 @@ const isBaseIdSelector = (selector: ElementSelector): boolean =>
 const validateSelector = (
   selector: ElementSelector,
 ): void => {
-  if (selector.referencedBy !== undefined) {
+  if (hasReferencedBy(selector)) {
     if (!isBaseIdSelector(selector)) {
       throw new Error(`Unsupported selector: referencedBy is only supported for selector of base ids (types, fields or instances), received: ${selector.origin}`)
     }
@@ -276,8 +282,10 @@ export const selectElementIdsByTraversal = async ({
 }): Promise<AsyncIterable<ElemID>> =>
   (log.time(
     async () => {
-      if (selectors.length === 0) {
-        return awu([])
+      const determinedSelectors = selectors.filter(selector =>
+        !isWildcardSelector(selector.origin) && !hasReferencedBy(selector))
+      if (determinedSelectors.length === selectors.length) {
+        return awu(determinedSelectors).map(selector => ElemID.fromFullName(selector.origin))
       }
       selectors.forEach(selector => validateSelector(selector))
 
@@ -313,10 +321,10 @@ export const selectElementIdsByTraversal = async ({
         ? possibleParentIDs.filter(id => !currentIds.has(id.getFullName()))
         : possibleParentIDs
 
-      const [subSelectorsWithReferencedBy, subSelectorsWithoutReferencedBy] = _.partition(
-        subElementSelectors,
-        selector => selector.referencedBy !== undefined
-      )
+      const [
+        subSelectorsWithReferencedBy,
+        subSelectorsWithoutReferencedBy,
+      ] = _.partition(subElementSelectors, hasReferencedBy)
 
       const subElementIDs = new Set<string>()
       const selectFromSubElements: WalkOnFunc = ({ path }) => {

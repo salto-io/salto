@@ -238,14 +238,14 @@ describe.each([
         pluralLabel = "TestDiffObjozkjqxojoxhfs"
         sharingModel = "ReadWrite"
         deploymentStatus = "Deployed"
-        apiName = "NewObjectName"
+        apiName = "${newObjectApiName}"
         ${accountName}.Text Alpha {
-          apiName = "NewObjectName.Alpha"
+          apiName = "${newObjectApiName}.Alpha"
           label = "Alpha"
           _required = false
         }
         ${accountName}.Text Beta {
-          apiName = "NewObjectName.Beta"
+          apiName = "${newObjectApiName}.Beta"
           label = "Beta"
           _required = false
         }
@@ -254,14 +254,14 @@ describe.each([
       ${accountName}.Role NewInstanceName {
         description = "To Be Modified"
         name = "New Role Instance"
-        fullName = "NewInstanceName"
+        fullName = "${newInstanceElemName}"
       }
       
       ${accountName}.Role NewInstance2Name {
         description = var.desc
         name = "Another new Role Instance"
         mayForecastManagerShare = var.isStaging
-        fullName = "NewInstance2Name"
+        fullName = "${newInstance2ElemName}"
       }
 
       ${accountName}.StaticResource ${newInstanceWithStaticFileElemName} {

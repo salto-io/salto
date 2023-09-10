@@ -706,10 +706,28 @@ export const generateElements = async (
       elemID: new ElemID('dummy', 'PrimWithAnnos'),
       primitive: PrimitiveTypes.STRING,
       annotationRefsOrTypes: {
+        active: BuiltinTypes.BOOLEAN,
+        name: BuiltinTypes.STRING,
         SharedHidden: BuiltinTypes.HIDDEN_STRING,
         DiffHidden: BuiltinTypes.HIDDEN_STRING,
       },
       path: [DUMMY_ADAPTER, 'EnvStuff', 'PrimWithAnnos'],
+      annotations: {
+        [CORE_ANNOTATIONS.IMPORTANT_VALUES]: [
+          {
+            value: 'active',
+            indexed: true,
+          },
+          {
+            value: 'name',
+            indexed: false,
+          },
+          {
+            value: 'doesNotExist',
+            indexed: false,
+          },
+        ],
+      },
     })
 
     const sharedObj = new ObjectType({
@@ -727,6 +745,8 @@ export const generateElements = async (
         [`${envID}FieldWithHidden`]: {
           refType: PrimWithHiddenAnnos,
           annotations: {
+            active: true,
+            name: 'test',
             SharedHidden: 'HIDDEN!',
             DiffHidden: `${envID}-HIDDENNNN!!!!`,
           },
@@ -746,6 +766,34 @@ export const generateElements = async (
         SharedHidden: 'HIDDEN!',
         DiffHidden: `${envID}-HIDDENNNN!!!!`,
         [CORE_ANNOTATIONS.ALIAS]: 'EnvObj_alias',
+        [CORE_ANNOTATIONS.IMPORTANT_VALUES]: [
+          {
+            value: 'SharedButDiffField',
+            indexed: true,
+          },
+          {
+            value: 'SharedField',
+            indexed: false,
+          },
+          {
+            value: 'doesNotExist',
+            indexed: false,
+          },
+        ],
+        [CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES]: [
+          {
+            value: 'SharedButDiffAnno',
+            indexed: true,
+          },
+          {
+            value: 'SharedAnno',
+            indexed: false,
+          },
+          {
+            value: 'doesNotExist',
+            indexed: false,
+          },
+        ],
       },
       path: [DUMMY_ADAPTER, 'EnvStuff', 'EnvObj'],
     })
@@ -769,16 +817,36 @@ export const generateElements = async (
         Field: {
           refType: BuiltinTypes.STRING,
         },
+        active: {
+          refType: BuiltinTypes.BOOLEAN,
+        },
       },
       path: [DUMMY_ADAPTER, 'EnvStuff', `${envID}EnvObj`],
       annotations: {
         [CORE_ANNOTATIONS.ALIAS]: `${envID}EnvObj_alias`,
+        [CORE_ANNOTATIONS.IMPORTANT_VALUES]: [
+          {
+            value: 'Field',
+            indexed: false,
+          },
+          {
+            value: 'active',
+            indexed: true,
+          },
+          {
+            value: 'doesNotExist',
+            indexed: false,
+          },
+        ],
       },
     })
     const envSpecificInst = new InstanceElement(
       `${envID}EnvInst`,
       envSpecificObj,
-      { Field: 'FieldValue' },
+      {
+        Field: 'FieldValue',
+        active: true,
+      },
       [DUMMY_ADAPTER, 'EnvStuff', `${envID}EnvInst`],
       {
         [CORE_ANNOTATIONS.ALIAS]: `${envID}EnvInst_alias`,

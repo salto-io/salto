@@ -20,7 +20,6 @@ import {
   TransformFunc,
   getAndLogCollisionWarnings,
   getInstanceDesc,
-  getInstancesDetailsMsg,
   createWarningFromMsg,
   getInstancesWithCollidingElemID,
   safeJsonStringify,
@@ -37,8 +36,8 @@ import {
   CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { FilterResult, RemoteFilterCreator } from '../filter'
-import { apiName, isInstanceOfCustomObject, isCustomObject } from '../transformers/transformer'
-import { FIELD_ANNOTATIONS, KEY_PREFIX, KEY_PREFIX_LENGTH, SALESFORCE } from '../constants'
+import { apiName, isInstanceOfCustomObject } from '../transformers/transformer'
+import { FIELD_ANNOTATIONS, SALESFORCE } from '../constants'
 import { isLookupField, isMasterDetailField, safeApiName } from './utils'
 import { DataManagement } from '../fetch_profile/data_management'
 
@@ -47,8 +46,7 @@ const { isDefined } = lowerdashValues
 const { DefaultMap } = collections.map
 const { keyByAsync } = collections.asynciterable
 const { removeAsync } = promises.array
-const { mapValuesAsync } = promises.object
-type RefOrigin = { type: string; id: string; field?: string }
+type RefOrigin = { type: string; id: string; field?: Field }
 type MissingRef = {
   origin: RefOrigin
   targetId: string
@@ -82,10 +80,44 @@ const createWarnings = async (
   instancesWithEmptyIds: InstanceElement[],
   missingRefs: MissingRef[],
   illegalRefSources: Set<string>,
-  customObjectPrefixKeyMap: Record<string, string>,
   dataManagement: DataManagement,
   baseUrl?: string,
 ): Promise<SaltoError[]> => {
+  const createOmittedInstancesWarning = async (
+    originTypeName: string,
+    missingRefsFromOriginType: MissingRef[],
+  ): Promise<SaltoError> => {
+    const typesOfMissingRefsTargets: string[] = _(missingRefsFromOriginType)
+      .map(missingRef => missingRef.origin.field?.annotations[FIELD_ANNOTATIONS.REFERENCE_TO])
+      .filter(isDefined)
+      .uniq()
+      .value()
+    const numMissingInstances = _.uniqBy(missingRefsFromOriginType, missingRef => missingRef.targetId).length
+    const header = `Your Salto environment is configured to manage records of the ${originTypeName} object. ${numMissingInstances} ${originTypeName} records were not fetched because they have a lookup relationship to one of the following objects:`
+    const perTargetTypeMsgs = typesOfMissingRefsTargets.join('\n')
+    const perInstancesPreamble = 'and these objects are not part of your Salto configuration. \n\nHere are the records:'
+    const perMissingInstanceMsgs = missingRefs
+      .map(missingRef => `${getInstanceDesc(missingRef.origin.id, baseUrl)} relates to ${getInstanceDesc(missingRef.targetId, baseUrl)}`)
+      .slice(0, MAX_BREAKDOWN_ELEMENTS)
+      .sort() // this effectively sorts by origin instance ID
+
+    const epilogue = 'To resolve this issue, follow the steps outlined here: https://help.salto.io/en/articles/8283155-data-records-were-not-fetched'
+    const overflowMsg = numMissingInstances > MAX_BREAKDOWN_ELEMENTS ? ['', `... and ${numMissingInstances - MAX_BREAKDOWN_ELEMENTS} more missing records`] : []
+    return createWarningFromMsg([
+      header,
+      '',
+      perTargetTypeMsgs,
+      '',
+      perInstancesPreamble,
+      '',
+      ...perMissingInstanceMsgs,
+      ...overflowMsg,
+      '',
+      epilogue,
+    ].join('\n'))
+  }
+
+
   const collisionWarnings = await getAndLogCollisionWarnings({
     adapterName: SALESFORCE,
     baseUrl,
@@ -112,37 +144,11 @@ const createWarnings = async (
     })
     .toArray()
 
-  const typeToInstanceIdToMissingRefs = _.mapValues(
-    _.groupBy(
-      missingRefs,
-      missingRef => customObjectPrefixKeyMap[missingRef.targetId.substring(0, KEY_PREFIX_LENGTH)],
-    ),
-    typeMissingRefs => _.groupBy(typeMissingRefs, missingRef => missingRef.targetId)
-  )
+  const originTypeToMissingRef = _.groupBy(missingRefs, missingRef => missingRef.origin.type)
 
-  const missingRefsWarnings = Object.entries(typeToInstanceIdToMissingRefs)
-    .map(([type, instanceIdToMissingRefs]) => {
-      const numMissingInstances = Object.keys(instanceIdToMissingRefs).length
-      const header = `Identified references to ${numMissingInstances} missing instances of ${type}`
-      const perMissingInstToDisplay = Object.entries(instanceIdToMissingRefs)
-        .slice(0, MAX_BREAKDOWN_ELEMENTS)
-      const perMissingInstanceMsgs = perMissingInstToDisplay
-        .map(([instanceId, instanceMissingRefs]) => `${getInstanceDesc(instanceId, baseUrl)} referenced from -
-  ${getInstancesDetailsMsg(instanceMissingRefs.map(instanceMissingRef => instanceMissingRef.origin.id), baseUrl)}`)
-      const epilogue = `To resolve this issue please edit the salesforce.nacl file to include ${type} instances in the data management configuration and fetch again.
-
-      Alternatively, you can exclude the referring types from the data management configuration in salesforce.nacl`
-      const missingInstCount = Object.keys(instanceIdToMissingRefs).length
-      const overflowMsg = missingInstCount > MAX_BREAKDOWN_ELEMENTS ? ['', `And ${missingInstCount - MAX_BREAKDOWN_ELEMENTS} more missing Instances`] : []
-      return createWarningFromMsg([
-        header,
-        '',
-        ...perMissingInstanceMsgs,
-        ...overflowMsg,
-        '',
-        epilogue,
-      ].join('\n'))
-    })
+  const missingRefsWarnings = await awu(Object.entries(originTypeToMissingRef))
+    .map(([originType, missingRefsFromType]) => createOmittedInstancesWarning(originType, missingRefsFromType))
+    .toArray()
 
   const typesOfIllegalRefSources = _.uniq([...illegalRefSources]
     .map(deserializeInternalID)
@@ -210,7 +216,7 @@ const replaceLookupsWithRefsAndCreateRefMap = async (
             origin: {
               type: await apiName(await instance.getType(), true),
               id: await apiName(instance),
-              field: field.name,
+              field,
             },
             targetId: instance.value[field.name],
           })
@@ -266,25 +272,6 @@ const getIllegalRefSources = (
   return illegalRefSources
 }
 
-const buildCustomObjectPrefixKeyMap = async (
-  elements: Element[]
-): Promise<Record<string, string>> => {
-  const customObjects = await awu(elements)
-    .filter(isCustomObject)
-    .filter(customObject => isDefined(customObject.annotations[KEY_PREFIX]))
-    .toArray()
-  const keyPrefixToCustomObject = _.keyBy(
-    customObjects,
-    customObject => customObject.annotations[KEY_PREFIX] as string,
-  )
-  return mapValuesAsync(
-    keyPrefixToCustomObject,
-    // Looking at Salesforce's keyPrefix results duplicate types with
-    // the same prefix exist but are not relevant/important to differentiate between
-    keyCustomObject => apiName(keyCustomObject),
-  )
-}
-
 const filter: RemoteFilterCreator = ({ client, config }) => ({
   name: 'customObjectInstanceReferencesFilter',
   remote: true,
@@ -332,14 +319,12 @@ const filter: RemoteFilterCreator = ({ client, config }) => ({
         && invalidInstances.has(await serializeInstanceInternalID(element as InstanceElement))),
     )
     const baseUrl = await client.getUrl()
-    const customObjectPrefixKeyMap = await buildCustomObjectPrefixKeyMap(elements)
     return {
       errors: await createWarnings(
         instancesWithCollidingElemID,
         instancesWithEmptyId,
         missingRefs,
         illegalRefSources,
-        customObjectPrefixKeyMap,
         dataManagement,
         baseUrl?.origin,
       ),

@@ -22,7 +22,7 @@ import {
   TypeReference,
   createRefToElmWithValue,
   CORE_ANNOTATIONS,
-  Element, PrimitiveType, PrimitiveTypes,
+  Element, PrimitiveType, PrimitiveTypes, Field,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import {
@@ -323,6 +323,12 @@ describe('split element by path', () => {
           test: 'test',
         },
       },
+      newCustomField: {
+        refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+        annotations: {
+          test: 'test',
+        },
+      },
     },
     annotationRefsOrTypes: {
       anno: createRefToElmWithValue(BuiltinTypes.STRING),
@@ -429,7 +435,7 @@ describe('split element by path', () => {
   })
 
   const fullObjFrags = [
-    objFragStdFields, objFragCustomFields, objFragAnnotationsOne, objFragAnnotationsTwo,
+    objFragCustomFields, objFragStdFields, objFragAnnotationsOne, objFragAnnotationsTwo,
   ]
   const singleFieldObjFrags = [
     singleFieldObj, singleFieldObjAnnotations,
@@ -445,7 +451,16 @@ describe('split element by path', () => {
 
   it('should split an element with multiple paths', async () => {
     const splitElements = await splitElementByPath(objFull, pi)
-    fullObjFrags.forEach(
+    // this test mock the situation where a new field is added via a deployment and not included in the PathIndex
+    // we want to make sure that the new field is added to the correct file after the split
+    const newObjFragCustomFields = objFragCustomFields.clone()
+    newObjFragCustomFields.fields.newCustomField = new Field(
+      newObjFragCustomFields, objFull.fields.newCustomField.name,
+      objFull.fields.newCustomField.refType, objFull.fields.newCustomField.annotations
+    )
+    const newFullObjFrags = [objFragStdFields, newObjFragCustomFields, objFragAnnotationsOne, objFragAnnotationsTwo,
+    ]
+    newFullObjFrags.forEach(
       frag => expect(splitElements.filter(elem => elem.isEqual(frag))).toHaveLength(1)
     )
   })

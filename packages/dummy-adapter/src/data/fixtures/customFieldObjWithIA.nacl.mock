@@ -7,4 +7,14 @@ type dummy.customFieldWithIA {
         boolean externalId {
         }
     }
+    _important_values = [
+        {
+          value = "apiName"
+          indexed = false
+        },
+        {
+          value = "label"
+          indexed = true
+        },
+      ]
 }

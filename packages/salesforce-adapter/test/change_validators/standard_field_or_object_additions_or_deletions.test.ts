@@ -22,7 +22,7 @@ import changeValidator from '../../src/change_validators/standard_field_or_objec
 describe('standardCustomFieldOrObject Change Validator', () => {
   describe('Addition or removal of standard object', () => {
     it('should have error for standard object addition', async () => {
-      // A real scenario of CustomObject addition will also include addition of each of it's fields
+      // A real scenario of CustomObject addition will also include addition of each of its fields
       const changeErrors = await changeValidator([
         toChange({ after: mockTypes.Account }),
         ...Object.values(mockTypes.Account.fields).map(field => toChange({ after: field })),
@@ -37,7 +37,7 @@ describe('standardCustomFieldOrObject Change Validator', () => {
     })
 
     it('should have error for standard object removals', async () => {
-      // A real scenario of CustomObject removal will also include removal of each of it's fields
+      // A real scenario of CustomObject removal will also include removal of each of its fields
       const changeErrors = await changeValidator([
         toChange({ before: mockTypes.Account }),
         ...Object.values(mockTypes.Account.fields).map(field => toChange({ before: field })),
@@ -53,7 +53,7 @@ describe('standardCustomFieldOrObject Change Validator', () => {
   })
   describe('Addition or removal of custom object', () => {
     it('should not have error for standard object addition', async () => {
-      // A real scenario of CustomObject addition will also include addition of each of it's fields
+      // A real scenario of CustomObject addition will also include addition of each of its fields
       const changeErrors = await changeValidator([
         toChange({ after: mockTypes.TestCustomObject__c }),
         ...Object.values(mockTypes.TestCustomObject__c.fields).map(field => toChange({ after: field })),
@@ -62,7 +62,7 @@ describe('standardCustomFieldOrObject Change Validator', () => {
     })
 
     it('should not have error for standard object removals', async () => {
-      // A real scenario of CustomObject removal will also include removal of each of it's fields
+      // A real scenario of CustomObject removal will also include removal of each of its fields
       const changeErrors = await changeValidator([
         toChange({ before: mockTypes.TestCustomObject__c }),
         ...Object.values(mockTypes.TestCustomObject__c.fields).map(field => toChange({ before: field })),

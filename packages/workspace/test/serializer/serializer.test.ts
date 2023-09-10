@@ -27,7 +27,7 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { TestFuncImpl } from '../utils'
 
-import { serialize, deserialize, SALTO_CLASS_FIELD, deserializeMergeErrors, deserializeValidationErrors, deserializeParsed } from '../../src/serializer/elements'
+import { serialize, deserialize, SALTO_CLASS_FIELD, deserializeMergeErrors, deserializeValidationErrors, deserializeParsed, deserializeValues } from '../../src/serializer/elements'
 import { resolve } from '../../src/expressions'
 import { AbsoluteStaticFile, LazyStaticFile } from '../../src/workspace/static_files/source'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
@@ -291,6 +291,65 @@ describe('State/cache serialization', () => {
     const shuffledDeserializedElements = await deserialize(await serialize(shuffledElements))
     expect(shuffledDeserializedElements.map(e => e.elemID.getFullName()))
       .toEqual(shuffledElements.map(e => e.elemID.getFullName()))
+  })
+
+  describe('serialize and deserialize values', () => {
+    it('should serialize and deserialize primitives', async () => {
+      const values = ['abc', 123, '123', true, 'true', null, 'null']
+      const deserialized = await deserializeValues(await serialize(values))
+      expect(deserialized).toEqual(values)
+    })
+    it('should serialize and deserialize plain objects', async () => {
+      const plainObject = [{
+        name: 'abc',
+        number: 123,
+      }]
+      const deserialized = await deserializeValues(await serialize(plainObject))
+      expect(deserialized).toEqual(plainObject)
+    })
+    it('should serialize and deserialize arrays', async () => {
+      const arrayValue = [
+        [1, 2, 'a', true, { test: 'false' }],
+      ]
+      const deserialized = await deserializeValues(await serialize(arrayValue))
+      expect(deserialized).toEqual(arrayValue)
+    })
+    it('should serialize and deserialize reference expressions', async () => {
+      const type = new ObjectType({ elemID: new ElemID('salto', 'type') })
+      const reference = new ReferenceExpression(type.elemID, type)
+      const serialized = await serialize([reference])
+      expect(serialized).toContain('ReferenceExpression')
+      expect(serialized).not.toContain('ObjectType')
+      expect(await deserializeValues(serialized)).toEqual([reference.createWithValue(undefined)])
+    })
+    it('should serialize and deserialize type references', async () => {
+      const type = new ObjectType({ elemID: new ElemID('salto', 'type') })
+      const reference = new TypeReference(type.elemID, type)
+      const serialized = await serialize([reference])
+      expect(serialized).toContain('TypeReference')
+      expect(serialized).not.toContain('ObjectType')
+      expect(await deserializeValues(serialized)).toEqual([new TypeReference(reference.elemID)])
+    })
+    it('should serialize and deserialize static files', async () => {
+      const mockStoreStaticFile = jest.fn()
+      const staticFile = new StaticFile({ filepath: 'abc', content: Buffer.from('hello world!') })
+      const serialized = await serialize([staticFile], undefined, mockStoreStaticFile)
+      expect(serialized).toContain('StaticFile')
+      expect(serialized).not.toContain('internalContent')
+      expect(await deserializeValues(serialized)).toEqual([
+        new StaticFile({ filepath: staticFile.filepath, hash: staticFile.hash }),
+      ])
+      expect(mockStoreStaticFile).toHaveBeenCalledWith(staticFile)
+    })
+    it('should deserialize static files - with a reviver', async () => {
+      const staticFile = new StaticFile({ filepath: 'abc', content: Buffer.from('hello world!') })
+      const mockStaticFileReviver = jest.fn().mockResolvedValue(staticFile)
+      const deserialized = await deserializeValues(await serialize([staticFile]), mockStaticFileReviver)
+      expect(deserialized[0]).toBe(staticFile)
+      expect(mockStaticFileReviver).toHaveBeenCalledWith(
+        new StaticFile({ filepath: staticFile.filepath, hash: staticFile.hash }),
+      )
+    })
   })
 
   describe('validate deserialization', () => {

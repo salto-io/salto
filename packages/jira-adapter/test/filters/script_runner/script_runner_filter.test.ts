@@ -19,7 +19,7 @@ import _ from 'lodash'
 import scriptRunnerFilter from '../../../src/filters/script_runner/script_runner_filter'
 import { createEmptyType, getFilterParams } from '../../utils'
 import { getDefaultConfig } from '../../../src/config/config'
-import { JIRA, SCRIPTED_FIELD_TYPE, SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE } from '../../../src/constants'
+import { JIRA, SCRIPTED_FIELD_TYPE, SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE, SCRIPT_RUNNER_SETTINGS_TYPE } from '../../../src/constants'
 import * as users from '../../../src/users'
 
 type FilterType = filterUtils.FilterWith<'preDeploy' | 'onFetch'>
@@ -70,14 +70,50 @@ describe('script_runner_filter', () => {
           notImportant: { refType: BuiltinTypes.STRING },
         },
       })
-      await filter.onFetch([scriptedFields])
-      expect(scriptedFields.annotations[CORE_ANNOTATIONS.CREATABLE]).toEqual(true)
-      expect(scriptedFields.annotations[CORE_ANNOTATIONS.UPDATABLE]).toEqual(true)
-      expect(scriptedFields.annotations[CORE_ANNOTATIONS.DELETABLE]).toEqual(true)
-      expect(scriptedFields.fields.notImportant.annotations[CORE_ANNOTATIONS.CREATABLE]).toEqual(true)
-      expect(scriptedFields.fields.notImportant.annotations[CORE_ANNOTATIONS.UPDATABLE]).toEqual(true)
-      expect(scriptedFields.fields.notImportant.annotations[CORE_ANNOTATIONS.DELETABLE]).toEqual(true)
+      const settings = new ObjectType({
+        elemID: new ElemID(JIRA, SCRIPT_RUNNER_SETTINGS_TYPE),
+        fields: {
+          notImportant: { refType: BuiltinTypes.STRING },
+        },
+      })
+      await filter.onFetch([scriptedFields, settings])
+      expect(scriptedFields.annotations[CORE_ANNOTATIONS.CREATABLE]).toBeTrue()
+      expect(scriptedFields.annotations[CORE_ANNOTATIONS.UPDATABLE]).toBeTrue()
+      expect(scriptedFields.annotations[CORE_ANNOTATIONS.DELETABLE]).toBeTrue()
+      expect(scriptedFields.fields.notImportant.annotations[CORE_ANNOTATIONS.CREATABLE]).toBeTrue()
+      expect(scriptedFields.fields.notImportant.annotations[CORE_ANNOTATIONS.UPDATABLE]).toBeTrue()
+      expect(scriptedFields.fields.notImportant.annotations[CORE_ANNOTATIONS.DELETABLE]).toBeTrue()
+      expect(settings.annotations[CORE_ANNOTATIONS.CREATABLE]).toBeFalse()
+      expect(settings.annotations[CORE_ANNOTATIONS.UPDATABLE]).toBeTrue()
+      expect(settings.annotations[CORE_ANNOTATIONS.DELETABLE]).toBeFalse()
+      expect(settings.fields.notImportant.annotations[CORE_ANNOTATIONS.UPDATABLE]).toBeTrue()
     })
+    it('should remove empty instances', async () => {
+      const emptyListenerInstance = new InstanceElement(
+        'unnamed_0',
+        createEmptyType(SCRIPT_RUNNER_LISTENER_TYPE),
+        {
+          spaceRemaining: 99.9,
+        }
+      )
+      const elements = [emptyListenerInstance]
+      await filter.onFetch(elements)
+      expect(elements).toHaveLength(0)
+    })
+    it('should not remove non empty instances', async () => {
+      const nonEmptyListenerInstance = new InstanceElement(
+        'unnamed_0',
+        createEmptyType(SCRIPT_RUNNER_LISTENER_TYPE),
+        {
+          description: 'not empty',
+        }
+      )
+      const elements = [nonEmptyListenerInstance]
+      await filter.onFetch(elements)
+      expect(elements).toHaveLength(1)
+    })
+
+
     describe('on creation', () => {
       it('should add audit info to relevant types', async () => {
         await filter.preDeploy([
@@ -86,7 +122,7 @@ describe('script_runner_filter', () => {
           toChange({ after: fragmentInstance })])
         expect(auditInstance.value.auditData).toEqual({
           createdByAccountId: 'salto',
-          createdTimestamp: '10',
+          createdTimestamp: 10,
         })
         expect(listenerInstance.value.createdByAccountId).toEqual('salto')
         expect(listenerInstance.value.createdTimestamp).toEqual('10')
@@ -107,18 +143,20 @@ describe('script_runner_filter', () => {
         await filter.preDeploy([toChange({ after: auditInstance })])
         expect(auditInstance.value.auditData).toEqual({
           createdByAccountId: '',
-          createdTimestamp: '10',
+          createdTimestamp: 10,
         })
       })
     })
     describe('on update', () => {
       beforeEach(() => {
-        const auditData = {
+        auditInstance.value.auditData = {
+          createdByAccountId: 'not-salto',
+          createdTimestamp: 1,
+        }
+        listenerInstance.value = {
           createdByAccountId: 'not-salto',
           createdTimestamp: '1',
         }
-        auditInstance.value.auditData = auditData
-        listenerInstance.value = auditData
       })
       it('should add audit info for relevant types', async () => {
         await filter.preDeploy([
@@ -126,9 +164,9 @@ describe('script_runner_filter', () => {
           toChange({ before: listenerInstance, after: listenerInstance })])
         expect(auditInstance.value.auditData).toEqual({
           createdByAccountId: 'not-salto',
-          createdTimestamp: '1',
+          createdTimestamp: 1,
           updatedByAccountId: 'salto',
-          updatedTimestamp: '10',
+          updatedTimestamp: 10,
         })
         expect(listenerInstance.value.updatedByAccountId).toEqual('salto')
         expect(listenerInstance.value.updatedTimestamp).toEqual('10')
@@ -152,9 +190,9 @@ describe('script_runner_filter', () => {
         await filter.preDeploy([toChange({ before: auditInstance, after: auditInstance })])
         expect(auditInstance.value.auditData).toEqual({
           createdByAccountId: 'not-salto',
-          createdTimestamp: '1',
+          createdTimestamp: 1,
           updatedByAccountId: '',
-          updatedTimestamp: '10',
+          updatedTimestamp: 10,
         })
       })
     })

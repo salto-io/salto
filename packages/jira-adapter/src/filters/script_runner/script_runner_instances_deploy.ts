@@ -13,10 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeData, isInstanceChange } from '@salto-io/adapter-api'
+import { elements as elementUtils } from '@salto-io/adapter-components'
+import { Change, InstanceElement, getChangeData, isInstanceChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { FilterCreator } from '../../filter'
+
+const {
+  replaceInstanceTypeForDeploy,
+} = elementUtils.ducktype
 
 // This filter deploys script runner instances
 const filter: FilterCreator = ({ scriptRunnerClient, config }) => ({
@@ -41,8 +46,17 @@ const filter: FilterCreator = ({ scriptRunnerClient, config }) => ({
         deployResult: { errors: [], appliedChanges: [] },
       }
     }
+    const typeFixedChanges = relevantChanges
+      .map(change => ({
+        action: change.action,
+        data: _.mapValues(change.data, (instance: InstanceElement) =>
+          replaceInstanceTypeForDeploy({
+            instance,
+            config: scriptRunnerApiDefinitions,
+          })),
+      })) as Change<InstanceElement>[]
     const deployResult = await deployChanges(
-      relevantChanges.filter(isInstanceChange),
+      typeFixedChanges.filter(isInstanceChange),
       async change => {
         await defaultDeployChange({
           change,

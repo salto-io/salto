@@ -75,7 +75,7 @@ const getSrTokenFromHtml = (html: string): string => {
   // Find the meta tag with name="sr-token"
   const srTokenElement = root.querySelector('meta[name="sr-token"]')
   if (srTokenElement === null) {
-    log.error('Failed to get script runner token from scriptRunner service, could not find meta tag with name="sr-token"')
+    log.error('Failed to get script runner token from scriptRunner service, could not find meta tag with name="sr-token"', html)
     throw new ScriptRunnerLoginError('Failed to get script runner token from scriptRunner service, could not find meta tag with name="sr-token"')
   }
 
@@ -83,7 +83,7 @@ const getSrTokenFromHtml = (html: string): string => {
   const srToken = srTokenElement.getAttribute('content')
 
   if (srToken === undefined) {
-    log.error('Failed to get script runner token from scriptRunner service, could not find content attribute"')
+    log.error('Failed to get script runner token from scriptRunner service, could not find content attribute"', html)
     throw new ScriptRunnerLoginError('Failed to get script runner token from scriptRunner service, could not find content attribute')
   }
   return srToken

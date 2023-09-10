@@ -51,7 +51,9 @@ describe('issue layout filter', () => {
   beforeEach(async () => {
     client = mockCli.client
     connection = mockCli.connection
-    filter = issueLayoutFilter(getFilterParams({ client })) as typeof filter
+    const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+    config.fetch.enableIssueLayouts = true
+    filter = issueLayoutFilter(getFilterParams({ client, config })) as typeof filter
   })
   describe('on fetch', () => {
     beforeEach(async () => {
@@ -115,6 +117,7 @@ describe('issue layout filter', () => {
         elemID: new ElemID(JIRA, PROJECT_TYPE),
         fields: {
           id: { refType: BuiltinTypes.NUMBER },
+          simplified: { refType: BuiltinTypes.BOOLEAN },
           issueTypeScreenScheme: { refType: issueTypeScreenSchemeType },
         },
       })
@@ -124,6 +127,8 @@ describe('issue layout filter', () => {
         {
           id: 11111,
           name: 'project1',
+          simplified: false,
+          projectTypeKey: 'software',
           issueTypeScreenScheme:
           new ReferenceExpression(issueTypeScreenSchemeInstance.elemID, issueTypeScreenSchemeInstance),
         },
@@ -169,19 +174,6 @@ describe('issue layout filter', () => {
                 issueLayoutResult: {
                   id: '2',
                   name: 'Default Issue Layout',
-                  usageInfo: {
-                    edges: [{
-                      node: {
-                        layoutOwners: [{
-                          avatarId: '3',
-                          description: 'ownerTest',
-                          iconUrl: 'www.icon.com',
-                          id: '100',
-                          name: 'ownerTest',
-                        }],
-                      },
-                    }],
-                  },
                   containers: [
                     {
                       containerType: 'PRIMARY',
@@ -234,8 +226,6 @@ describe('issue layout filter', () => {
         .toEqual([
           'jira.Field',
           'jira.IssueLayout',
-          'jira.IssueLayoutDataOwner',
-          'jira.IssueLayoutOwner',
           'jira.IssueType',
           'jira.IssueTypeScreenScheme',
           'jira.IssueTypeScreenSchemeItem',
@@ -252,28 +242,6 @@ describe('issue layout filter', () => {
       const instances = elements.filter(isInstanceElement)
       const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
       expect(issueLayoutInstance).toBeDefined()
-      expect(issueLayoutInstance?.value).toEqual({
-        id: '2',
-        projectId: new ReferenceExpression(projectInstance.elemID, projectInstance),
-        extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
-        owners: [
-          new ReferenceExpression(issueTypeInstance.elemID, issueTypeInstance),
-        ],
-        issueLayoutConfig: {
-          items: [
-            {
-              type: 'FIELD',
-              sectionType: 'PRIMARY',
-              key: new ReferenceExpression(fieldInstance1.elemID, fieldInstance1),
-            },
-            {
-              type: 'FIELD',
-              sectionType: 'SECONDARY',
-              key: new ReferenceExpression(fieldInstance2.elemID, fieldInstance2),
-            },
-          ],
-        },
-      })
     })
     it('should not add issue layout if there is no issueTypeScreenScheme', async () => {
       projectInstance.value.issueTypeScreenScheme = undefined
@@ -302,14 +270,6 @@ describe('issue layout filter', () => {
       const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
       expect(issueLayoutInstance).toBeUndefined()
     })
-    it('should add key as missing ref if there is no field', async () => {
-      fieldInstance1.value.id = 'testField3'
-      await filter.onFetch(elements)
-      const instances = elements.filter(isInstanceElement)
-      const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
-      expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].key).toBeInstanceOf(ReferenceExpression)
-      expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].key.elemID.getFullName()).toEqual('jira.Field.instance.missing_testField1')
-    })
     it('should not add missing reference if enableMissingRef is false', async () => {
       mockGet.mockImplementation(params => {
         if (params.url === '/rest/gira/1') {
@@ -319,19 +279,6 @@ describe('issue layout filter', () => {
                 issueLayoutResult: {
                   id: '2',
                   name: 'Default Issue Layout',
-                  usageInfo: {
-                    edges: [{
-                      node: {
-                        layoutOwners: [{
-                          avatarId: '3',
-                          description: 'ownerTest',
-                          iconUrl: 'www.icon.com',
-                          id: '100',
-                          name: 'ownerTest',
-                        }],
-                      },
-                    }],
-                  },
                   containers: [
                     {
                       containerType: 'PRIMARY',
@@ -363,6 +310,7 @@ describe('issue layout filter', () => {
       })
       const configWithMissingRefs = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       configWithMissingRefs.fetch.enableMissingReferences = false
+      configWithMissingRefs.fetch.enableIssueLayouts = true
       filter = issueLayoutFilter(getFilterParams({ config: configWithMissingRefs, client })) as FilterType
       await filter.onFetch(elements)
       const instances = elements.filter(isInstanceElement)
@@ -385,10 +333,12 @@ describe('issue layout filter', () => {
   })
   it('should not fetch issue layouts if it is a data center instance', async () => {
     const configWithDataCenterTrue = _.cloneDeep(getDefaultConfig({ isDataCenter: true }))
+    configWithDataCenterTrue.fetch.enableIssueLayouts = true
     filter = issueLayoutFilter(getFilterParams({
       client,
       config: configWithDataCenterTrue,
     })) as FilterType
+
     filter = issueLayoutFilter(getFilterParams({ config: configWithDataCenterTrue, client })) as FilterType
     await filter.onFetch(elements)
     expect(connection.post).not.toHaveBeenCalled()
@@ -417,9 +367,6 @@ describe('issue layout filter', () => {
           id: '2',
           projectId: new ReferenceExpression(projectInstance.elemID, projectInstance),
           extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
-          owners: [
-            new ReferenceExpression(issueTypeInstance.elemID, issueTypeInstance),
-          ],
           issueLayoutConfig: {
             items: [
               {
@@ -448,9 +395,6 @@ describe('issue layout filter', () => {
         {
           projectId: new ReferenceExpression(projectInstance.elemID, projectInstance),
           extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
-          owners: [
-            new ReferenceExpression(issueTypeInstance.elemID, issueTypeInstance),
-          ],
           issueLayoutConfig: {
             items: [
               {
@@ -586,9 +530,6 @@ describe('issue layout filter', () => {
         {
           projectId: 11111,
           extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
-          owners: [
-            new ReferenceExpression(issueTypeInstance.elemID, issueTypeInstance),
-          ],
           issueLayoutConfig: {
             items: [
               {

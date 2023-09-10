@@ -16,7 +16,7 @@
 import { ChangeError, ChangeValidator, getChangeData, InstanceElement, isInstanceChange, SeverityLevel, Change, ModificationChange, AdditionChange, isAdditionOrModificationChange, isAdditionChange, isModificationChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { ISSUE_TYPE_NAME } from '../constants'
-import { isFreeLicense } from '../utils'
+import { isJiraSoftwareFreeLicense } from '../utils'
 
 const { awu } = collections.asynciterable
 
@@ -72,7 +72,7 @@ export const issueTypeHierarchyValidator: ChangeValidator = async (changes, elem
     return []
   }
   const relevantChanges = getIssueTypeWithHierachyChanges(changes)
-  const isLicenseFree = await isFreeLicense(elementSource)
+  const isLicenseFree = await isJiraSoftwareFreeLicense(elementSource)
   return awu(relevantChanges)
     .map(change => {
       const instance = getChangeData(change)

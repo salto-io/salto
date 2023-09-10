@@ -48,16 +48,6 @@ const filter: FilterCreator = ({ client }) => ({
       if (!isInfoResonse(response.data)) {
         throw new Error('Invalid pluginInfo response')
       }
-      if (semver.gt(response.data.version, PLUGIN_VERSION_NUMBER)) {
-        return {
-          errors: [
-            {
-              message: 'The Salto for Jira DC addon version number is higher than expected. You may be running an outdated Salto CLI; please update it to the latest version from https://github.com/salto-io/salto/releases',
-              severity: 'Info',
-            },
-          ],
-        }
-      }
       if (semver.lt(response.data.version, PLUGIN_VERSION_NUMBER)) {
         return {
           errors: [

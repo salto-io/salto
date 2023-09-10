@@ -103,6 +103,24 @@ const restrictionType = new ObjectType({
   },
 })
 
+const importantValueType = new ObjectType({
+  elemID: new ElemID(GLOBAL_ADAPTER, BUILTIN_TYPE_NAMES.IMPORTANT_VALUE),
+  fields: {
+    value: {
+      refType: new TypeReference(
+        StandardBuiltinTypes.STRING.elemID,
+        StandardBuiltinTypes.STRING,
+      ),
+    },
+    indexed: {
+      refType: new TypeReference(
+        StandardBuiltinTypes.BOOLEAN.elemID,
+        StandardBuiltinTypes.BOOLEAN,
+      ),
+    },
+  },
+})
+
 const dependencyOccurrenceType = new ObjectType({
   elemID: new ElemID(GLOBAL_ADAPTER, BUILTIN_TYPE_NAMES.DEPENDENCY_OCCURRENCE),
   fields: {
@@ -140,6 +158,8 @@ const StandardCoreAnnotationTypes: TypeMap = {
   [CORE_ANNOTATIONS.RESTRICTION]: restrictionType,
   [CORE_ANNOTATIONS.HIDDEN]: StandardBuiltinTypes.BOOLEAN,
   [CORE_ANNOTATIONS.HIDDEN_VALUE]: StandardBuiltinTypes.BOOLEAN,
+  [CORE_ANNOTATIONS.IMPORTANT_VALUES]: new ListType(importantValueType),
+  [CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES]: new ListType(importantValueType),
 }
 
 export const BuiltinTypes = {

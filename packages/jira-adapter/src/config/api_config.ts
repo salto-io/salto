@@ -838,13 +838,10 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'fieldContexts', fieldType: `list<${FIELD_CONTEXT_TYPE_NAME}>` },
       ],
       fieldsToHide: [
-        {
-          fieldName: 'id',
-        },
+        { fieldName: 'id' },
       ],
       fieldsToOmit: [
         { fieldName: 'style' },
-        { fieldName: 'simplified' },
         { fieldName: 'isPrivate' },
         { fieldName: 'expand' },
         { fieldName: 'archived' },
@@ -1862,7 +1859,7 @@ const SUPPORTED_TYPES = {
   Automation: [],
   Webhook: [],
   [AUTOMATION_LABEL_TYPE]: [],
-  // IssueLayout: [],
+  IssueLayout: [],
 }
 
 export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {

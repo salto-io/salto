@@ -262,13 +262,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   api__v1__groups: {
     request: {
       url: '/api/v1/groups',
-      recurseInto: [
-        {
-          type: 'api__v1__groups___groupId___roles@uuuuuu_00123_00125uu',
-          toField: 'roles',
-          context: [{ name: 'groupId', fromField: 'id' }],
-        },
-      ],
     },
   },
   Group: {
@@ -311,6 +304,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       },
     },
   },
+  // group-roles are not fetched by default
   'api__v1__groups___groupId___roles@uuuuuu_00123_00125uu': {
     request: {
       url: '/api/v1/groups/{groupId}/roles',

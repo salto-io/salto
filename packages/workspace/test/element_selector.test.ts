@@ -449,7 +449,21 @@ describe('select elements recursively', () => {
     const elementIds = await testSelect(selectors, true)
     expect(elementIds).toEqual([ElemID.fromFullName('mockAdapter.test.instance.mockInstance.bool')])
   })
-  it('should not return non-existent element id', async () => {
+  it('should not return non-existent element id when some selectors have wildcard', async () => {
+    const selectors = createElementSelectors([
+      'mockAdapter.test.instance.mockInstance.thispropertydoesntexist',
+      'mockAdapter.test.field.strMap',
+      'mockAdapter.*.field.strMap',
+    ]).validSelectors
+    const elementIds = await awu(await selectElementIdsByTraversal({
+      selectors,
+      source: createInMemoryElementSource([mockInstance, mockType]),
+      referenceSourcesIndex: createMockRemoteMap<ElemID[]>(),
+      compact: false,
+    })).toArray()
+    expect(elementIds).toEqual([ElemID.fromFullName('mockAdapter.test.field.strMap')])
+  })
+  it('should return all element ids when there are no wildcards', async () => {
     const selectors = createElementSelectors([
       'mockAdapter.test.instance.mockInstance.thispropertydoesntexist',
       'mockAdapter.test.field.strMap',
@@ -460,7 +474,10 @@ describe('select elements recursively', () => {
       referenceSourcesIndex: createMockRemoteMap<ElemID[]>(),
       compact: false,
     })).toArray()
-    expect(elementIds).toEqual([ElemID.fromFullName('mockAdapter.test.field.strMap')])
+    expect(elementIds).toEqual([
+      ElemID.fromFullName('mockAdapter.test.instance.mockInstance.thispropertydoesntexist'),
+      ElemID.fromFullName('mockAdapter.test.field.strMap'),
+    ])
   })
 })
 

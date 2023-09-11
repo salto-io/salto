@@ -41,7 +41,7 @@ const CHILD_FIELD_SCHEMA = Joi.object({
     statuses: Joi.array().items(Joi.string()),
     custom_statuses: Joi.array(),
   }),
-})
+}).unknown()
 
 type Condition = {
   // eslint-disable-next-line camelcase
@@ -50,7 +50,7 @@ type Condition = {
 
 const CONDITION_SCHEMA = Joi.object({
   child_fields: Joi.array().items(CHILD_FIELD_SCHEMA).required(),
-})
+}).unknown()
 
 type TicketFormValue = {
   // eslint-disable-next-line camelcase

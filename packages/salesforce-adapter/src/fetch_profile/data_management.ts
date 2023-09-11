@@ -14,21 +14,26 @@
 * limitations under the License.
 */
 import { collections, types } from '@salto-io/lowerdash'
+import { ObjectType } from '@salto-io/adapter-api'
 import { ConfigValidationError, validateRegularExpressions } from '../config_validation'
 import { DataManagementConfig } from '../types'
 import { DETECTS_PARENTS_INDICATOR } from '../constants'
+import { apiName } from '../transformers/transformer'
 
 const { makeArray } = collections.array
 
 const defaultIgnoreReferenceTo = ['User']
 
+export type TypeFetchCategory = 'Always' | 'IfReferenced' | 'Never'
+
 export type DataManagement = {
-  isObjectMatch: (name: string) => boolean
+  shouldFetchObjectType: (objectType: ObjectType) => Promise<TypeFetchCategory>
   isReferenceAllowed: (name: string) => boolean
   shouldIgnoreReference: (name: string) => boolean
   getObjectIdsFields: (name: string) => string[]
   getObjectAliasFields: (name: string) => types.NonEmptyArray<string>
   showReadOnlyValues?: boolean
+  managedBySaltoFieldForType: (objType: ObjectType) => string | undefined
 }
 
 
@@ -69,13 +74,60 @@ const ALIAS_FIELDS_BY_TYPE: Record<string, types.NonEmptyArray<string>> = {
   ],
 }
 
-export const buildDataManagement = (params: DataManagementConfig): DataManagement => (
-  {
-    isObjectMatch: name => params.includeObjects.some(re => new RegExp(`^${re}$`).test(name))
-      && !params.excludeObjects?.some(re => new RegExp(`^${re}$`).test(name)),
+export const buildDataManagement = (params: DataManagementConfig): DataManagement => {
+  const isReferenceAllowed = (name: string): boolean => (
+    params.allowReferenceTo?.some(re => new RegExp(`^${re}$`).test(name)) ?? false
+  )
 
-    isReferenceAllowed: name => params.allowReferenceTo?.some(re => new RegExp(`^${re}$`).test(name))
-      ?? false,
+  return {
+    shouldFetchObjectType: async objectType => {
+      /* See details in https://salto-io.atlassian.net/browse/SALTO-4579?focusedCommentId=97852 but the upshot is:
+      - If we allow references and the type has the 'managed by Salto' field, always fetch instances that are managed
+       by Salto (even if they are not referenced anywhere).
+      - If we allow references to a type that has no 'managed by Salto' field, only fetch if there are references
+       to the instance (even if it's excluded)
+      - If the object is excluded, don't fetch it (even if it's explicitly included)
+      - Finally, only fetch the Salto-managed instances if the object is explicitly included
+      */
+      const managedBySaltoFieldName = params.saltoManagementFieldSettings?.defaultFieldName
+      const typeName = await apiName(objectType)
+      const hasManagedBySaltoField = managedBySaltoFieldName !== undefined
+        && objectType.fields[managedBySaltoFieldName] !== undefined
+      const refsAllowed = isReferenceAllowed(typeName)
+      const excluded = params.excludeObjects?.some(re => new RegExp(`^${re}$`).test(typeName)) ?? false
+      const included = params.includeObjects?.some(re => new RegExp(`^${re}$`).test(typeName)) ?? false
+
+      if (refsAllowed) {
+        // we have to check all the 'refsAllowed' cases here because `refsAllowed` should take precedence over
+        // `excluded`
+        if (hasManagedBySaltoField || included) {
+          return 'Always'
+        }
+        return 'IfReferenced'
+      }
+
+      if (excluded) {
+        return 'Never'
+      }
+
+      if (included) {
+        return 'Always'
+      }
+
+      return 'Never'
+    },
+
+    managedBySaltoFieldForType: objType => {
+      if (params.saltoManagementFieldSettings?.defaultFieldName === undefined) {
+        return undefined
+      }
+      if (objType.fields[params.saltoManagementFieldSettings.defaultFieldName] === undefined) {
+        return undefined
+      }
+      return params.saltoManagementFieldSettings.defaultFieldName
+    },
+
+    isReferenceAllowed,
 
     shouldIgnoreReference: name =>
       (params.ignoreReferenceTo ?? defaultIgnoreReferenceTo).includes(name),
@@ -95,7 +147,7 @@ export const buildDataManagement = (params: DataManagementConfig): DataManagemen
     },
     showReadOnlyValues: params.showReadOnlyValues,
   }
-)
+}
 
 export const validateDataManagementConfig = (
   dataManagementConfig: Partial<DataManagementConfig>,

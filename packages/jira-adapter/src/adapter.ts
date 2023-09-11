@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, ProgressReporter } from '@salto-io/adapter-api'
+import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, ProgressReporter, isInstanceElement } from '@salto-io/adapter-api'
 import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, getElemIdFuncWrapper, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { objects } from '@salto-io/lowerdash'
+import { collections, objects } from '@salto-io/lowerdash'
 import JiraClient from './client/client'
 import changeValidator from './change_validators'
 import { JiraConfig, getApiDefinitions } from './config/config'
@@ -133,6 +133,7 @@ import addAliasFilter from './filters/add_alias'
 import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_specific_duplicate_roles'
 import issueLayoutFilter from './filters/issue_layout/issue_layout'
 import removeSimpleFieldProjectFilter from './filters/remove_simplified_field_project'
+import changeServiceDeskIdFieldProjectFilter from './filters/change_projects_service_desk_id'
 import createReferencesIssueLayoutFilter from './filters/issue_layout/create_references_issue_layout'
 import issueTypeHierarchyFilter from './filters/issue_type_hierarchy_filter'
 import projectFieldContextOrder from './filters/project_field_contexts_order'
@@ -145,9 +146,9 @@ import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
 import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uuid'
 import ScriptRunnerClient from './client/script_runner_client'
 
-const { getAllElements } = elementUtils.ducktype
+const { getAllElements, getEntriesResponseValues } = elementUtils.ducktype
 const { findDataField, computeGetArgs } = elementUtils
-
+const { makeArray } = collections.array
 const {
   generateTypes,
   getAllInstances,
@@ -166,6 +167,7 @@ export const DEFAULT_FILTERS = [
   automationLabelDeployFilter,
   automationFetchFilter,
   automationStructureFilter,
+  changeServiceDeskIdFieldProjectFilter,
   // Should run before automationDeploymentFilter
   brokenReferences,
   automationDeploymentFilter,
@@ -318,6 +320,57 @@ type AdapterSwaggers = {
   jira: elementUtils.swagger.LoadedSwagger
 }
 
+/**
+ * Fetch JSM elements of service desk project.
+*/
+const jiraJSMEntriesFunc = (
+  projectInstance: InstanceElement,
+): elementUtils.ducktype.EntriesRequester => {
+  const getJiraJSMEntriesResponseValues = async ({
+    paginator,
+    args,
+    typeName,
+    typesConfig,
+  } : {
+    paginator: clientUtils.Paginator
+    args: clientUtils.ClientGetWithPaginationParams
+    typeName: string
+    typesConfig: Record<string, configUtils.TypeDuckTypeConfig>
+  }): Promise<clientUtils.ResponseValue[]> => {
+    log.debug(`Fetching type ${typeName} entries for service desk project ${projectInstance.elemID.name}`)
+    const serviceDeskProjectPaginatorResponseValues = (await getEntriesResponseValues({
+      paginator,
+      args,
+      typeName,
+      typesConfig,
+    })).flat()
+    const responseEntryName = typesConfig[typeName].transformation?.dataField
+    return serviceDeskProjectPaginatorResponseValues.flatMap(response => {
+      if (responseEntryName === undefined) {
+        return makeArray(response)
+      }
+      const responseEntries = makeArray(
+        (responseEntryName !== configUtils.DATA_FIELD_ENTIRE_OBJECT)
+          ? response[responseEntryName]
+          : response
+      ) as clientUtils.ResponseValue[]
+      // Defining JSM element to its corresponding project
+      responseEntries.forEach(entry => {
+        entry.projectKey = projectInstance.value.key
+      })
+      if (responseEntryName === configUtils.DATA_FIELD_ENTIRE_OBJECT) {
+        return responseEntries
+      }
+      return {
+        ...response,
+        [responseEntryName]: responseEntries,
+      }
+    }) as clientUtils.ResponseValue[]
+  }
+
+  return getJiraJSMEntriesResponseValues
+}
+
 export default class JiraAdapter implements AdapterOperations {
   private createFiltersRunner: () => Required<Filter>
   private client: JiraClient
@@ -463,6 +516,63 @@ export default class JiraAdapter implements AdapterOperations {
     })
   }
 
+  private async getJSMElements(serviceDeskProjects: InstanceElement[]): Promise<elementUtils.FetchElements<Element[]>> {
+    const { duckTypeApiDefinitions } = this.userConfig
+    // duckTypeApiDefinitions is currently undefined for DC
+    if (this.client === undefined
+      || duckTypeApiDefinitions === undefined
+      || !this.userConfig.fetch.enableJSM) {
+      return { elements: [] }
+    }
+
+    const fetchResults = await Promise.all(serviceDeskProjects.map(async projectInstance => {
+      const serviceDeskProjRecord: Record<string, string> = {
+        projectkey: projectInstance.value.key,
+        serviceDeskId: projectInstance.value.serviceDeskId.id,
+      }
+      log.debug(`Fetching elements for brand ${projectInstance.elemID.name}`)
+      return getAllElements({
+        adapterName: JIRA,
+        types: duckTypeApiDefinitions.types,
+        shouldAddRemainingTypes: false,
+        supportedTypes: duckTypeApiDefinitions.supportedTypes,
+        fetchQuery: this.fetchQuery,
+        paginator: this.paginator,
+        nestedFieldFinder: findDataField,
+        computeGetArgs,
+        typeDefaults: duckTypeApiDefinitions.typeDefaults,
+        getElemIdFunc: this.getElemIdFunc,
+        requestContext: serviceDeskProjRecord,
+        getEntriesResponseValuesFunc: jiraJSMEntriesFunc(projectInstance),
+      })
+    }))
+
+    const typeNameToJSMInstances = _.groupBy(
+      fetchResults.flatMap(result => result.elements).filter(isInstanceElement),
+      instance => instance.elemID.typeName
+    )
+
+    const jiraJSMElements = Object.entries(typeNameToJSMInstances).flatMap(([typeName, instances]) => {
+      const jsmElements = elementUtils.ducktype.getNewElementsFromInstances({
+        adapterName: JIRA,
+        typeName,
+        instances,
+        transformationConfigByType: configUtils.getTransformationConfigByType(duckTypeApiDefinitions.types),
+        transformationDefaultConfig: duckTypeApiDefinitions.typeDefaults.transformation,
+      })
+      return _.concat(jsmElements.instances as Element[], jsmElements.nestedTypes, jsmElements.type)
+    })
+    const allConfigChangeSuggestions = fetchResults
+      .flatMap(fetchResult => fetchResult.configChanges ?? [])
+    const jsmErrors = fetchResults.flatMap(fetchResult => fetchResult.errors ?? [])
+
+    return {
+      elements: jiraJSMElements,
+      configChanges: elementUtils.ducktype.getUniqueConfigSuggestions(allConfigChangeSuggestions),
+      errors: jsmErrors,
+    }
+  }
+
   @logDuration('generating instances from service')
   private async getAllJiraElements(
     progressReporter: ProgressReporter,
@@ -477,12 +587,22 @@ export default class JiraAdapter implements AdapterOperations {
       this.getScriptRunnerElements(),
     ])
 
+    const serviceDeskProjects = swaggerResponse.elements
+      .filter(isInstanceElement)
+      .filter(project => project.value.projectTypeKey === 'service_desk')
+
+    const jsmElements = await this.getJSMElements(serviceDeskProjects)
+
     const elements: Element[] = [
       ...Object.values(swaggerTypes),
       ...swaggerResponse.elements,
       ...scriptRunnerElements.elements,
+      ...jsmElements.elements,
     ]
-    return { elements, errors: (swaggerResponse.errors ?? []).concat(scriptRunnerElements.errors ?? []) }
+    return { elements,
+      errors: (swaggerResponse.errors ?? [])
+        .concat(scriptRunnerElements.errors ?? [])
+        .concat(jsmElements.errors ?? []) }
   }
 
   @logDuration('fetching account configuration')
@@ -540,4 +660,8 @@ export default class JiraAdapter implements AdapterOperations {
       getChangeGroupIds,
     }
   }
+}
+
+export const exportedForTesting = {
+  jiraJSMEntriesFunc,
 }

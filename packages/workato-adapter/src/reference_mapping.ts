@@ -18,9 +18,10 @@ import { cloneDeepWithoutRefs, isInstanceElement, isReferenceExpression } from '
 import { GetLookupNameFunc, GetLookupNameFuncArgs, resolveValues } from '@salto-io/adapter-utils'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
-import { CONNECTION_TYPE, FOLDER_TYPE, NETSUITE, RECIPE_CODE_TYPE, RECIPE_CONFIG_TYPE, RECIPE_TYPE, SALESFORCE, WORKATO } from './constants'
+import { CONNECTION_TYPE, FOLDER_TYPE, NETSUITE, RECIPE_CODE_TYPE, RECIPE_CONFIG_TYPE, RECIPE_TYPE, SALESFORCE, WORKATO, ZENDESK } from './constants'
 import { resolveReference as salesforceResolver } from './filters/cross_service/salesforce/resolve'
 import { resolveReference as netsuiteResolver } from './filters/cross_service/netsuite/resolve'
+import { resolveReference as zendeskResolver } from './filters/cross_service/zendesk/resolve'
 import { getFolderPath, getRootFolderID } from './utils'
 import { fieldNameToTypeMappingDefs } from './filters/field_references'
 
@@ -112,6 +113,7 @@ export const getCrossServiceLookUpNameFuncs = (
 ): GetLookupNameFunc[] => (accountToServiceNameMap ? [
   getCrossServiceLookupNameFunc(netsuiteResolver, accountToServiceNameMap, NETSUITE),
   getCrossServiceLookupNameFunc(salesforceResolver, accountToServiceNameMap, SALESFORCE),
+  getCrossServiceLookupNameFunc(zendeskResolver, accountToServiceNameMap, ZENDESK),
 ] : [])
 
 export const mergeLookUpNameFuncs = (

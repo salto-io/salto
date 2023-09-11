@@ -15,12 +15,11 @@
 */
 
 import {
-  ChangeError,
   ChangeValidator,
   getChangeData,
   isInstanceChange,
 } from '@salto-io/adapter-api'
-import { isFromType } from '../utils'
+import { isInstanceFromType } from '../utils'
 import { DEPLOY_SUPPORTED_TYPES } from '../constants'
 
 
@@ -28,13 +27,13 @@ export const changeValidator: ChangeValidator = async changes => (
   changes
     .filter(isInstanceChange)
     .map(getChangeData)
-    .filter(elem => !isFromType(DEPLOY_SUPPORTED_TYPES)(elem))
+    .filter(elem => !isInstanceFromType(DEPLOY_SUPPORTED_TYPES)(elem))
     .map(element => ({
       elemID: element.elemID,
       severity: 'Error',
       message: `Deploying element of type '${element.elemID.typeName}' is not supported`,
       detailedMessage: `Deploying element of type '${element.elemID.typeName}' is not supported`,
-    } as ChangeError))
+    }))
 )
 
 export default changeValidator

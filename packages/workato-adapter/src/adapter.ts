@@ -27,6 +27,8 @@ import { FETCH_CONFIG, WorkatoConfig } from './config'
 import addRootFolderFilter from './filters/add_root_folder'
 import fieldReferencesFilter from './filters/field_references'
 import jiraProjectIssueTypeFilter from './filters/cross_service/jira/project_issuetypes'
+import recipeBlockInputFormatFilter from './filters/recipe_format/block_input_format'
+import recipeBlockExtendedOutputSchemaFormatFilter from './filters/recipe_format/block_extended_output_format'
 import recipeCrossServiceReferencesFilter from './filters/cross_service/recipe_references'
 import serviceUrlFilter from './filters/service_url'
 import commonFilters from './filters/common'
@@ -36,7 +38,7 @@ import { paginate } from './client/pagination'
 import { getChangeGroupIds } from './group_change'
 import { resolveValuesCheckRecipeFunc as resolveValuesRecipeCodeWrapper, RLMDeploy } from './rlm'
 import { getCrossServiceLookUpNameFuncs, mergeLookUpNameFuncs, workatoLookUpName } from './reference_mapping'
-import { isFromType } from './utils'
+import { isChangeFromType } from './utils'
 
 const log = logger(module)
 const { createPaginator } = clientUtils
@@ -47,6 +49,8 @@ const { awu } = collections.asynciterable
 export const DEFAULT_FILTERS = [
   addRootFolderFilter,
   jiraProjectIssueTypeFilter,
+  recipeBlockInputFormatFilter,
+  recipeBlockExtendedOutputSchemaFormatFilter,
   // fieldReferencesFilter should run after all element manipulations are done
   fieldReferencesFilter,
   recipeCrossServiceReferencesFilter,
@@ -177,8 +181,8 @@ export default class WorkatoAdapter implements AdapterOperations {
     const appliedChanges = changeGroup.changes.filter(change => {
       const changeData = getChangeData(change)
       return appliedChangeIDsBeforeRestore.has(isInstanceChange(change)
-      && isFromType([RECIPE_CODE_TYPE])(change)
-        ? getParent(changeData).elemID.getFullName()
+      && isChangeFromType([RECIPE_CODE_TYPE])(change)
+        ? getParent(changeData).elemID.getFullName() // TODO getParent could thorw error. change
         : changeData.elemID.getFullName())
     })
 

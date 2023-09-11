@@ -741,6 +741,7 @@ describe('adapter', () => {
           )
 
           recipe = new InstanceElement('recipe1InstanceName', recipeType)
+          const inst = new InstanceElement('inst', opportunitySalesforceType) // TODO remove
           recipeCode = new InstanceElement('recipe1CodeInstanceName', recipeCodeType, { block: {
             dynamicPickListSelection: {
               sobject_name: new ReferenceExpression(
@@ -758,6 +759,10 @@ describe('adapter', () => {
                 new ReferenceExpression(
                   salesforceOpportunity.value.Custom__c.elemID,
                   salesforceOpportunity.value.Custom__c
+                ),
+                new ReferenceExpression( // TODO remove only for checking non existing fields
+                  inst.elemID,
+                  inst
                 ),
               ],
               table_list: [

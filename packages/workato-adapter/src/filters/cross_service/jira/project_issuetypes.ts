@@ -13,10 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isInstanceElement } from '@salto-io/adapter-api'
+import { Element, getChangeData, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { createSchemeGuard, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import Joi from 'joi'
-import { CROSS_SERVICE_SUPPORTED_APPS, JIRA, RECIPE_CODE_TYPE } from '../../../constants'
+import { isInstanceFromType } from '../../../utils'
+import { CROSS_SERVICE_SUPPORTED_APPS, JIRA, RECIPE_CODE_TYPE, RECIPE_TYPE } from '../../../constants'
 import { FilterCreator } from '../../../filter'
 import { BlockBase } from '../recipe_block_types'
 
@@ -102,7 +103,7 @@ const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)
-      .filter(inst => inst.elemID.typeName === RECIPE_CODE_TYPE)
+      .filter(isInstanceFromType([RECIPE_CODE_TYPE]))
       .forEach(inst => walkOnElement({
         element: inst,
         func: ({ value }) => {
@@ -116,6 +117,20 @@ const filter: FilterCreator = () => ({
         },
       }))
   },
+  preDeploy: async changes => {
+    changes
+      .filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeData)
+      .filter(isInstanceFromType([RECIPE_CODE_TYPE, RECIPE_TYPE]))
+      .forEach(inst => walkOnElement({
+        element: inst,
+        func: ({ value }) => { // TODO finish this. after checking what is the strategy for deployment
+          const objValues = isInstanceElement(value) ? value.value : value
+          console.log(objValues.input)
+          return WALK_NEXT_STEP.EXIT
+        },
+      }))
+  },
 })
-
 export default filter

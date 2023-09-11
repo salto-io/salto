@@ -15,7 +15,6 @@
 */
 
 import {
-  ChangeError,
   ChangeValidator,
   getChangeData,
   isInstanceChange,
@@ -34,7 +33,7 @@ export const changeValidator: ChangeValidator = async changes => (
       severity: 'Error',
       message: `Removing element of type '${element.elemID.typeName}' is not supported`,
       detailedMessage: `Removing element of type '${element.elemID.typeName}' is not supported`,
-    } as ChangeError))
+    }))
 )
 
 export default changeValidator

@@ -14,13 +14,16 @@
 * limitations under the License.
 */
 
-import { Change, getChangeData, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement } from '@salto-io/adapter-api'
 
-export function isFromType(type: string[]) {
-  return (change: Change<InstanceElement> | InstanceElement): boolean => type.includes(
-    (isInstanceElement(change) ? change : getChangeData(change)).elemID.typeName
-  )
-}
+export const isInstanceFromType = (type: string[]) => (
+  (inst: InstanceElement): boolean => type.includes(inst.elemID.typeName)
+)
+
+export const isChangeFromType = (type: string[]) => (
+  (change: Change<InstanceElement>): boolean => type.includes(getChangeData(change).elemID.typeName)
+)
+
 
 export const getRootFolderID = (folder: InstanceElement): number => {
   if (folder.value.parent_id === undefined) return folder.value.id

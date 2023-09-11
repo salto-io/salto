@@ -72,7 +72,7 @@ const indexByKey = (
   e => e.value.key,
 )
 
-const isOptionValueInstance = (
+export const isOptionValueInstance = (
   element: Readonly<Element>
 ): element is InstanceElement & { value: { value: string }} => (
   isInstanceElement(element) && element.value.value !== undefined && _.isString(element.value.value)

@@ -34,8 +34,8 @@ describe('change validator creator', () => {
           after: new InstanceElement('inst1', anotherNonInFolderType) }),
       ])).toMatchObject([{
         severity: 'Error',
-        message: expect.stringContaining('not supported'),
-      }, {
+        message: expect.stringContaining('not supported'), // TODO check after chagne to SaltoError X all places X all fiels (here, actions_not_supported, recipe_overwritten_values, types_not_supported, cross_services_not_supported)
+      }, { // TODO add tests to cross_services_not_supported
         severity: 'Error',
         message: expect.stringContaining('not supported'),
       }])

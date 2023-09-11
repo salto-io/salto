@@ -44,6 +44,6 @@ export const resolveReference : GetLookupNameFunc = async ({ ref }) => {
     }
   }
 
-  log.warn('get cross-service netsuite reference which is not ObjectType or InstanceElement') // TODO do we want to stop the deployment?
+  log.warn('get cross-service unknown netsuite reference') // TODO do we want to stop the deployment?
   return ref
 }

@@ -26,7 +26,7 @@ import Joi from 'joi'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import WorkatoClient from './client/client'
 import { CONNECTION_TYPE, RECIPE_CODE_TYPE, RECIPE_TYPE } from './constants'
-import { isFromType } from './utils'
+import { isChangeFromType, isInstanceFromType } from './utils'
 
 const { withRetry } = retry
 const { intervals } = retry.retryStrategies
@@ -143,12 +143,12 @@ export const isRecipe = createSchemeGuardForInstance<JsonRecipe & InstanceElemen
 export const resolveValuesCheckRecipeFunc: ResolveValuesFunc = async <T extends Element>(
   changeData: T, getLookUpNameFunc: GetLookupNameFunc, elementSource?: ReadOnlyElementsSource
 ) : Promise<T> => {
-  if (isInstanceElement(changeData) && isFromType([RECIPE_CODE_TYPE, RECIPE_TYPE])(changeData)) {
-    const codeData = isFromType([RECIPE_CODE_TYPE])(changeData) ? changeData : changeData.value.code.value
-    const recipeData = isFromType([RECIPE_TYPE])(changeData) ? changeData : getParent(changeData)
+  if (isInstanceElement(changeData) && isInstanceFromType([RECIPE_CODE_TYPE, RECIPE_TYPE])(changeData)) {
+    const codeData = isInstanceFromType([RECIPE_CODE_TYPE])(changeData) ? changeData : changeData.value.code.value
+    const recipeData = isInstanceFromType([RECIPE_TYPE])(changeData) ? changeData : getParent(changeData)
     const resolvedCodeData = await resolveValues(codeData, getLookUpNameFunc, elementSource)
     const resolvedRecipeData = await resolveValues(recipeData, getLookUpNameFunc, elementSource)
-    if (isInstanceElement(resolvedRecipeData) && isFromType([RECIPE_TYPE])(resolvedRecipeData)) {
+    if (isInstanceElement(resolvedRecipeData) && isInstanceFromType([RECIPE_TYPE])(resolvedRecipeData)) {
       resolvedRecipeData.value.code = resolvedCodeData.value
       return resolvedRecipeData as unknown as T
     }
@@ -251,8 +251,8 @@ const connectionToZipFormat = (zip: JSZip, connection: InstanceElement) : void =
  */
 const convertChangesToRLMFormat = (changes: Change<InstanceElement>[]) : [JSZip, DeployResult] => {
   const zip = new JSZip()
-  const [connectionChanges, nonConnectionChanges] = _.partition(changes, isFromType([CONNECTION_TYPE]))
-  const [recipeChanges, otherChanges] = _.partition(nonConnectionChanges, isFromType([RECIPE_TYPE, RECIPE_CODE_TYPE]))
+  const [connectionChanges, nonConnectionChanges] = _.partition(changes, isChangeFromType([CONNECTION_TYPE]))
+  const [recipeChanges, otherChanges] = _.partition(nonConnectionChanges, isChangeFromType([RECIPE_TYPE, RECIPE_CODE_TYPE]))
 
   if (otherChanges.length !== 0) {
     return [
@@ -333,12 +333,14 @@ export const RLMDeploy = async (changes: Change<InstanceElement>[], client: Work
 
   if (!_.isEmpty(deployResult.appliedChanges)) {
     try {
-      await RLMImportZip({
-        zip,
-        client,
-        rootId: getChangeData(changes[0]).value.folder_id.rootId,
-        elemList: changes.map(change => getChangeData(change).elemID),
-      })
+      // await RLMImportZip({
+      //   zip,
+      //   client,
+      //   rootId: getChangeData(changes[0]).value.folder_id.rootId,
+      //   elemList: changes.map(change => getChangeData(change).elemID),
+      // })
+      // eslint-disable-next-line no-console
+      console.log('RLMImportZip', RLMImportZip, zip.arguments, client.delete) // TODO remove
     } catch (e) {
       return {
         appliedChanges: [],

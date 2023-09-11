@@ -20,13 +20,13 @@ import {
   DEPLOY_USING_RLM_GROUP,
   RLM_DEPLOY_SUPPORTED_TYPES,
 } from './constants'
-import { isFromType } from './utils'
+import { isChangeFromType } from './utils'
 
 
 export const getRLMGroupId: deployment.ChangeIdFunction = async change => (
   (isAdditionOrModificationChange(change)
     && isInstanceChange(change)
-    && isFromType(RLM_DEPLOY_SUPPORTED_TYPES)(change))
+    && isChangeFromType(RLM_DEPLOY_SUPPORTED_TYPES)(change))
     ? DEPLOY_USING_RLM_GROUP : undefined
 )
 

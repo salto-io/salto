@@ -339,6 +339,10 @@ describe('restore', () => {
       await index.set(type.fields.field2.elemID.getFullName(), [
         ['salto', 'type', 'field2'],
       ])
+      await index.set('salto.type.field', [
+        ['salto', 'type', 'field1'],
+        ['salto', 'type', 'field2'],
+      ])
     })
     it('should create deletion and addition references', async () => {
       const changes = await createRestorePathChanges(

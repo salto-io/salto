@@ -56,7 +56,7 @@ const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
 // The expression match AppUserSchema endpoint used for fetch
 const APP_USER_SCHEMA_URL = /(\/api\/v1\/meta\/schemas\/apps\/[a-zA-Z0-9]+\/default)/
 
-const initRateLimits = {
+const INIT_RATE_LIMITS = {
   rateLimitRemaining: 0,
   rateLimitReset: 0,
   currentlyRunning: 0,
@@ -64,12 +64,12 @@ const initRateLimits = {
 
 // according to okta, the way to tell if it is an id is that includes both letters and numbers
 // this regex makes sure there is at least 1 letter and at least 1 number, and no slashes
-const idRegex = '(?=.*[a-zA-Z])(?=.*\\d)(?!.*\\/).+'
+const ID_REGEX = '(?=.*[a-zA-Z])(?=.*\\d)(?!.*\\/).+'
 // According to https://developer.okta.com/docs/reference/rl-global-mgmt/
-const rateLimitUrls = [
-  new RegExp(`^/api/v1/apps/${idRegex}$`), // has to be before /api/v1/apps.*
+const RATE_LIMIT_BUCKETS = [
+  new RegExp(`^/api/v1/apps/${ID_REGEX}$`), // has to be before /api/v1/apps.*
   new RegExp('^/api/v1/apps.*'),
-  new RegExp(`^/api/v1/groups/${idRegex}$`), // has to be before /api/v1/groups.*
+  new RegExp(`^/api/v1/groups/${ID_REGEX}$`), // has to be before /api/v1/groups.*
   new RegExp('^/api/v1/groups.*'),
   new RegExp('^/api/v1/users.*'),
   new RegExp('^/api/v1/users'),
@@ -87,7 +87,7 @@ const rateLimitUrls = [
   new RegExp('^/api/v1.*'), // Has to be last
 ]
 
-const waitForRateLimit = async (rateLimitReset: number): Promise<void> => {
+export const waitForRateLimit = async (rateLimitReset: number): Promise<void> => {
   // Calculate the time to wait until the rate limit is reset and wait
   const currentTime = Date.now()
   const rateLimitResetTime = Math.max(rateLimitReset - currentTime, 100)
@@ -100,7 +100,7 @@ const updateRateLimits = (
 ): void => {
   const updatedRateLimitRemaining = Number(headers['x-rate-limit-remaining'])
   const updatedRateLimitReset = Number(headers['x-rate-limit-reset'])
-  if (!_.isNumber(updatedRateLimitRemaining) || !_.isNumber(updatedRateLimitReset)) {
+  if (!_.isFinite(updatedRateLimitRemaining) || !_.isFinite(updatedRateLimitReset)) {
     log.error(`Invalid getSinglePage response headers, remaining: ${updatedRateLimitRemaining}, reset: ${updatedRateLimitReset}`)
     return
   }
@@ -119,12 +119,12 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
 > {
   private readonly rateLimitBuffer: number
 
-  private rateLimits = rateLimitUrls.map(url => ({
+  private rateLimits = RATE_LIMIT_BUCKETS.map(url => ({
     url,
-    limits: { ...initRateLimits },
+    limits: { ...INIT_RATE_LIMITS },
   }))
 
-  private defaultRateLimits = { ...initRateLimits } // All other endpoints share the same rate limit
+  private defaultRateLimits = { ...INIT_RATE_LIMITS } // All other endpoints share the same rate limit
 
   constructor(
     clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig> & OktaRateLimitConfig
@@ -155,14 +155,18 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
     const rateLimits = this.rateLimits.find(({ url }) => args.url.match(url))?.limits ?? this.defaultRateLimits
-    // If this is the initial request, don't wait
-    if (!_.isEqual(rateLimits, initRateLimits)
-      // If nothing is running, and we passed the rate limit reset time, don't wait
-      && !(rateLimits.currentlyRunning === 0 && rateLimits.rateLimitReset < Date.now())
-      // If we are at the rate limit with the buffer, wait
-      && rateLimits.rateLimitRemaining - rateLimits.currentlyRunning <= this.rateLimitBuffer) {
+
+    while (
+      // -1 means unlimited
+      this.rateLimitBuffer !== -1
+      // If this is the initial request, don't wait
+      && !_.isEqual(rateLimits, INIT_RATE_LIMITS)
+      // If we are at the rate limit with the buffer and did not pass the reset time, wait
+      && rateLimits.rateLimitRemaining - rateLimits.currentlyRunning <= this.rateLimitBuffer
+      && (rateLimits.rateLimitReset === INIT_RATE_LIMITS.rateLimitReset || rateLimits.rateLimitReset > Date.now())
+    ) {
+      // eslint-disable-next-line no-await-in-loop
       await waitForRateLimit(rateLimits.rateLimitReset)
-      return this.getSinglePage(args)
     }
     try {
       rateLimits.currentlyRunning += 1

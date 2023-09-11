@@ -238,22 +238,26 @@ describe.each([
         pluralLabel = "TestDiffObjozkjqxojoxhfs"
         sharingModel = "ReadWrite"
         deploymentStatus = "Deployed"
+        apiName = "@@@TEST@@@"
         ${accountName}.Text Alpha {
           label = "Alpha"
           _required = false
         }
         ${accountName}.Text Beta {
+          apiName === "@@@TEST@@@"
           label = "Beta"
           _required = false
         }
       }
       
       ${accountName}.Role NewInstanceName {
+        fullName = "@@@TEST@@@"
         description = "To Be Modified"
         name = "New Role Instance"
       }
       
       ${accountName}.Role NewInstance2Name {
+        fullName = "@@@TEST@@@"
         description = var.desc
         name = "Another new Role Instance"
         mayForecastManagerShare = var.isStaging

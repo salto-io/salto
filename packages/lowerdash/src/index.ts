@@ -30,6 +30,7 @@ import * as validators from './validators'
 import * as values from './values'
 import * as objects from './objects'
 import * as serialize from './serialize'
+import * as merge from './merge'
 
 export {
   collections,
@@ -49,4 +50,5 @@ export {
   validators,
   values,
   objects,
+  merge,
 }

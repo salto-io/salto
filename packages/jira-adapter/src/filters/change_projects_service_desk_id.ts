@@ -13,20 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export const FORCE_ACCEPT_LANGUAGE_HEADERS = {
-  'Accept-Language': 'en-US',
-  'X-Force-Accept-Language': 'true',
-}
 
-export const EXPERIMENTAL_API_HEADERS = {
-  'X-ExperimentalApi': 'opt-in',
-}
+import { isInstanceElement } from '@salto-io/adapter-api'
+import { FilterCreator } from '../filter'
+import { PROJECT_TYPE } from '../constants'
 
-export const PRIVATE_API_HEADERS = {
-  'X-Atlassian-Token': 'no-check',
-}
-
-export const JSP_API_HEADERS = {
-  ...PRIVATE_API_HEADERS,
-  'Content-Type': 'application/x-www-form-urlencoded',
-}
+const filter: FilterCreator = () => ({
+  name: 'changeServiceDeskIdFieldProjectFilter',
+  onFetch: async elements => {
+    elements.filter(isInstanceElement)
+      .filter(e => e.elemID.typeName === PROJECT_TYPE)
+      .filter(project => project.value.projectTypeKey === 'service_desk')
+      .forEach(project => { project.value.serviceDeskId = project.value.serviceDeskId.id })
+  },
+})
+export default filter

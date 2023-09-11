@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { config } from '@salto-io/adapter-components'
-import { DEFAULT_API_DEFINITIONS, DUCKTYPE_API_DEFINITIONS, JiraApiConfig } from '../config/api_config'
+import { DEFAULT_API_DEFINITIONS, SCRIPT_RUNNER_DUCKTYPE_API_DEFINITIONS, JiraApiConfig, DUCKTYPE_API_DEFINITIONS } from '../config/api_config'
 import { ProductSettings } from './product_settings'
 import { addTypeNameOverrides } from './utils'
 
@@ -112,6 +112,16 @@ const CLOUD_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
             context: [{ name: 'projectId', fromField: 'id' }],
             isSingle: true,
           },
+          {
+            type: 'ServiceDeskId',
+            toField: 'serviceDeskId',
+            context: [{ name: 'projectId', fromField: 'id' }],
+            isSingle: true,
+            conditions: [{
+              fromField: 'projectTypeKey',
+              match: ['service_desk'],
+            }],
+          },
         ],
       },
     },
@@ -138,7 +148,16 @@ const CLOUD_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
         query: '/rest/api/3/notificationscheme/{id}?expand=all',
       },
     },
+    ServiceDeskId: {
+      request: {
+        url: 'rest/servicedeskapi/servicedesk/projectId:{projectId}',
+      },
+      transformation: {
+        dataField: '.',
+      },
+    },
   },
+
 }
 
 const CLOUD_ADDITIONAL_TYPE_NAME_OVERRIDES = [
@@ -159,5 +178,6 @@ export const CLOUD_SETTINGS: ProductSettings = {
   ) as JiraApiConfig,
   wrapConnection: _.identity,
   type: 'cloud',
-  defaultScriptRunnerApiDefinitions: DUCKTYPE_API_DEFINITIONS,
+  defaultScriptRunnerApiDefinitions: SCRIPT_RUNNER_DUCKTYPE_API_DEFINITIONS,
+  defualtDuckTypeApiDefinitions: DUCKTYPE_API_DEFINITIONS,
 }

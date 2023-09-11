@@ -63,12 +63,10 @@ type TicketForm = InstanceElement & {
 
 const TICKET_FORM_SCHEMA = Joi.object({
   agent_conditions: Joi.array().items(CONDITION_SCHEMA),
-})
+  end_user_conditions: Joi.array().items(CONDITION_SCHEMA),
+}).unknown().or('agent_conditions', 'end_user_conditions')
 
-const isTicketForm = createSchemeGuardForInstance<TicketForm>(
-  TICKET_FORM_SCHEMA,
-  'Received an invalid value for TicketForm instance'
-)
+const isTicketFormWithConditions = createSchemeGuardForInstance<TicketForm>(TICKET_FORM_SCHEMA)
 
 /**
   * If this function fails to identify whether custom statuses are enabled
@@ -134,11 +132,11 @@ const isTicketFormWithCustomStatus = (change: Change<ChangeDataType>): boolean =
   const data = getChangeData(change)
   if (data.elemID.typeName !== TICKET_FORM_TYPE_NAME
     || !isInstanceElement(data)
-    || !isTicketForm(data)) {
+    || !isTicketFormWithConditions(data)) {
     return false
   }
 
-  return hasConditionWithCustomStatuses(data.value.agent_conditions ?? [])
+  return hasConditionWithCustomStatuses([...data.value.agent_conditions ?? [], ...data.value.end_user_conditions ?? []])
 }
 
 const createErrorsForTicketFormsWithCustomStatuses = (

@@ -28,6 +28,7 @@ import { AUTOMATION_TYPE, SCRIPT_RUNNER_API_DEFINITIONS, WEBHOOK_TYPE } from './
 import { getProductSettings } from './product_settings'
 import { configCreator } from './config_creator'
 import ScriptRunnerClient from './client/script_runner_client'
+import { getCustomReferences } from './weak_references'
 
 const log = logger(module)
 const { validateClientConfig, createRetryOptions, DEFAULT_RETRY_OPTS } = clientUtils
@@ -150,6 +151,7 @@ export const adapter: Adapter = {
         }
       },
       deployModifiers: adapterOperations.deployModifiers,
+      fixElements: adapterOperations.fixElements.bind(adapterOperations),
     }
   },
   validateCredentials: async config => {
@@ -169,4 +171,5 @@ export const adapter: Adapter = {
   },
   configType,
   configCreator,
+  getCustomReferences,
 }

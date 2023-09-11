@@ -13,14 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export * as auth from './src/auth'
-export * as client from './src/client'
-export * as config from './src/config'
-export * as deployment from './src/deployment'
-export * as elements from './src/elements'
-export * as filters from './src/filters'
-export * as filterUtils from './src/filter_utils'
-export * as references from './src/references'
-export * from './src/add_alias'
-export * from './src/element_fixers'
-export * from './src/custom_references'
+import { FixElementsFunc, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { combineCustomReferenceGetters, combineElementFixers } from '@salto-io/adapter-components'
+import { getAutomationProjectsReferences, removeMissingAutomationProjects } from './automation_projects'
+
+export const getCustomReferences = combineCustomReferenceGetters([
+  getAutomationProjectsReferences,
+])
+
+export const getElementFixer = (elementsSource: ReadOnlyElementsSource): FixElementsFunc => combineElementFixers([
+  removeMissingAutomationProjects(elementsSource),
+])

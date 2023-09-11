@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, ProgressReporter } from '@salto-io/adapter-api'
+import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, ProgressReporter, FixElementsFunc } from '@salto-io/adapter-api'
 import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, getElemIdFuncWrapper, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -144,6 +144,7 @@ import scriptRunnerInstancesDeploy from './filters/script_runner/script_runner_i
 import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
 import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uuid'
 import ScriptRunnerClient from './client/script_runner_client'
+import { getElementFixer } from './weak_references'
 
 const { getAllElements } = elementUtils.ducktype
 const { findDataField, computeGetArgs } = elementUtils
@@ -328,6 +329,7 @@ export default class JiraAdapter implements AdapterOperations {
   private logIdsFunc?: () => void
   private fetchQuery: elementUtils.query.ElementQuery
   private getUserMapFunc: GetUserMapFunc
+  private fixElementsFunc: FixElementsFunc
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -376,6 +378,8 @@ export default class JiraAdapter implements AdapterOperations {
         objects.concatObjects
       )
     )
+
+    this.fixElementsFunc = getElementFixer(elementsSource)
   }
 
   private async generateSwaggers(): Promise<AdapterSwaggers> {
@@ -540,4 +544,6 @@ export default class JiraAdapter implements AdapterOperations {
       getChangeGroupIds,
     }
   }
+
+  fixElements: FixElementsFunc = elements => this.fixElementsFunc(elements)
 }

@@ -226,17 +226,26 @@ describe('ticket field filter', () => {
       await filter?.onDeploy([toChange({ after: clonedParentWithNoDefault })])
       expect(clonedParentWithNoDefault).toEqual(expectedInstance)
     })
+    it('should remove name field from custom field options', async () => {
+      const child = new InstanceElement(
+        'child1',
+        childObjType,
+        { name: 'name', raw_name: 'raw_name', value: 'v1' },
+      )
+      await filter.onDeploy([toChange({ after: child })])
+      expect(child.value).toEqual({ raw_name: 'raw_name', value: 'v1' })
+    })
   })
   describe('deploy', () => {
     const option1 = new InstanceElement(
       'option1',
       childObjType,
-      { name: 'option1', raw_name: 'option11', value: 'v3', default: false },
+      { raw_name: 'option11', value: 'v3', default: false },
     )
     const option2 = new InstanceElement(
       'option2',
       childObjType,
-      { name: 'option2', raw_name: 'option22', value: 'v4', default: true },
+      { raw_name: 'option22', value: 'v4', default: true },
     )
     const ticketField = new InstanceElement(
       'ticketField',

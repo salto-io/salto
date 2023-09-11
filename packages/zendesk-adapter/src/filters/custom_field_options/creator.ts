@@ -27,6 +27,7 @@ import {
   isRemovalChange,
   isReferenceExpression,
   isAdditionOrModificationChange,
+  isInstanceChange,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { getParents, replaceTemplatesWithValues } from '@salto-io/adapter-utils'
@@ -137,6 +138,13 @@ export const createCustomFieldOptionsFilterCreator = (
         return instance
       }
     )
+    changes
+      .filter(isAdditionOrModificationChange)
+      .filter(isInstanceChange)
+      .filter(change => change.data.after.elemID.typeName === childTypeName)
+      .forEach(change => {
+        delete getChangeData(change).value.name
+      })
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [relevantChanges, leftoverChanges] = _.partition(

@@ -14,7 +14,13 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Change, getChangeData, InstanceElement, isAdditionOrModificationChange } from '@salto-io/adapter-api'
+import {
+  Change,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+} from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges } from '../deployment'
 import { API_DEFINITIONS_CONFIG } from '../config'
@@ -93,6 +99,15 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       },
       leftoverChanges,
     }
+  },
+  onDeploy: async changes => {
+    changes
+      .filter(isAdditionOrModificationChange)
+      .filter(isInstanceChange)
+      .filter(change => change.data.after.elemID.typeName === ORG_FIELD_OPTION_TYPE_NAME)
+      .forEach(change => {
+        delete getChangeData(change).value.name
+      })
   },
 })
 

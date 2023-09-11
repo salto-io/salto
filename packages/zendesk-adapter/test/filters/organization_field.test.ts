@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, ElemID, InstanceElement,
-  ReferenceExpression, CORE_ANNOTATIONS, toChange,
+  ReferenceExpression, CORE_ANNOTATIONS, toChange, Value,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 
@@ -39,7 +39,7 @@ jest.mock('@salto-io/adapter-components', () => {
 })
 
 describe('organization field filter', () => {
-  type FilterType = filterUtils.FilterWith<'deploy'>
+  type FilterType = filterUtils.FilterWith<'deploy' | 'onDeploy'>
   let filter: FilterType
   const parentTypeName = ORG_FIELD_TYPE_NAME
   const childTypeName = ORG_FIELD_OPTION_TYPE_NAME
@@ -63,20 +63,20 @@ describe('organization field filter', () => {
         type: 'dropdown',
         key: 'parent',
         [CUSTOM_FIELD_OPTIONS_FIELD_NAME]: [
-          { name: 'name1', raw_name: 'name11', value: 'v1' },
-          { name: 'name2', raw_name: 'name22', value: 'v2' },
+          { raw_name: 'name1', value: 'v1' },
+          { raw_name: 'name2', value: 'v2' },
         ],
       },
     )
     const child1Resolved = new InstanceElement(
       'child1',
       childObjType,
-      { name: 'name1', raw_name: 'name11', value: 'v1' },
+      { raw_name: 'name1', value: 'v1' },
     )
     const child2Resolved = new InstanceElement(
       'child2',
       childObjType,
-      { name: 'name2', raw_name: 'name22', value: 'v2' },
+      { raw_name: 'name2', value: 'v2' },
     );
     [child1Resolved, child2Resolved].forEach(resolved => {
       resolved.annotations[CORE_ANNOTATIONS.PARENT] = [
@@ -183,6 +183,7 @@ describe('organization field filter', () => {
         action: 'modify', data: { before: e, after: afterElements[i] },
       })))
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      clonedResolvedParent.value.custom_field_options.forEach((e: Value) => { e.name = e.raw_name })
       expect(mockDeployChange).toHaveBeenCalledWith({
         change: { action: 'modify', data: { before: clonedResolvedParent, after: clonedResolvedParent } },
         client: expect.anything(),
@@ -227,6 +228,17 @@ describe('organization field filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)
+    })
+  })
+  describe('onDeploy', () => {
+    it('should remove name field from custom field options', async () => {
+      const child = new InstanceElement(
+        'child1',
+        childObjType,
+        { name: 'name', raw_name: 'raw_name', value: 'v1' },
+      )
+      await filter.onDeploy([toChange({ after: child })])
+      expect(child.value).toEqual({ raw_name: 'raw_name', value: 'v1' })
     })
   })
 })

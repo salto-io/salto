@@ -251,11 +251,6 @@ const createRefIfExistingOrAnyAccess = (valueBefore: Value, valueAfter: Value): 
   || valueAfter.viewAllRecords
 )
 
-const createRefIfFieldsExistingOrAnyAccess = (valueBefore: Value, valueAfter: Value): boolean => (
-  valueBefore !== undefined
-  || (_.isPlainObject(valueAfter) && Object.values(valueAfter).some(val => val !== 'NoAccess'))
-)
-
 const alwaysCreateRefs = (): boolean => true
 
 
@@ -357,15 +352,6 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
     instancesIndex.byTypeAndElemId,
   )
 
-  const objectFieldRefs = await instanceRefsFromProfileOrPermissionSet(
-    profilesAndPermSetsChanges,
-    FIELD_PERMISSIONS,
-    (_object, key) => ([{ typeName: key, refName: key }]),
-    createRefIfFieldsExistingOrAnyAccess,
-    instancesIndex.byTypeAndApiName,
-    instancesIndex.byTypeAndElemId,
-  )
-
   const fieldPermissionsRefs = awu(relevantFieldChanges)
     .flatMap(async field => fieldRefsFromProfileOrPermissionSet(profilesAndPermSetsChanges, field))
 
@@ -397,7 +383,6 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
     .concat(flowRefs)
     .concat(layoutRefs)
     .concat(objectRefs)
-    .concat(objectFieldRefs)
     .concat(apexPageRefs)
     .concat(recordTypeRefs)
     .toArray()

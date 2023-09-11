@@ -37,6 +37,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       change => getChangeData(change).elemID.typeName === ORG_FIELD_TYPE_NAME,
     )
 
+    // This is in deploy and not preDeploy because we want to copy the final value after preDeploy processing
     childrenChanges.filter(isAdditionOrModificationChange).forEach(change => {
       // Zendesk API automatically translates the dynamic_content value of raw_name to name
       // On deploy we need to do the opposite to make sure we don't override the dynamic_content value

@@ -136,7 +136,9 @@ const isTicketFormWithCustomStatus = (change: Change<ChangeDataType>): boolean =
     return false
   }
 
-  return hasConditionWithCustomStatuses([...data.value.agent_conditions ?? [], ...data.value.end_user_conditions ?? []])
+  return hasConditionWithCustomStatuses(
+    (data.value.agent_conditions ?? []).concat(data.value.end_user_conditions ?? [])
+  )
 }
 
 const createErrorsForTicketFormsWithCustomStatuses = (

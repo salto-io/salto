@@ -63,20 +63,20 @@ describe('organization field filter', () => {
         type: 'dropdown',
         key: 'parent',
         [CUSTOM_FIELD_OPTIONS_FIELD_NAME]: [
-          { name: 'name1', value: 'v1' },
-          { name: 'name2', value: 'v2' },
+          { name: 'name1', raw_name: 'name11', value: 'v1' },
+          { name: 'name2', raw_name: 'name22', value: 'v2' },
         ],
       },
     )
     const child1Resolved = new InstanceElement(
       'child1',
       childObjType,
-      { name: 'name1', value: 'v1' },
+      { name: 'name1', raw_name: 'name11', value: 'v1' },
     )
     const child2Resolved = new InstanceElement(
       'child2',
       childObjType,
-      { name: 'name2', value: 'v2' },
+      { name: 'name2', raw_name: 'name22', value: 'v2' },
     );
     [child1Resolved, child2Resolved].forEach(resolved => {
       resolved.annotations[CORE_ANNOTATIONS.PARENT] = [
@@ -105,6 +105,8 @@ describe('organization field filter', () => {
       expectedElements[0].value.id = 11
       expectedElements[1].value.id = 22
       expectedElements[2].value.id = 33
+      expectedElements[1].value.name = expectedElements[1].value.raw_name
+      expectedElements[2].value.name = expectedElements[2].value.raw_name
       expect(res.deployResult.appliedChanges).toHaveLength(3)
       expect(res.deployResult.appliedChanges)
         .toEqual(expectedElements.map(e => ({ action: 'add', data: { after: e } })))

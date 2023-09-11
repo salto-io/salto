@@ -231,12 +231,12 @@ describe('ticket field filter', () => {
     const option1 = new InstanceElement(
       'option1',
       childObjType,
-      { name: 'option1', value: 'v3', default: false },
+      { name: 'option1', raw_name: 'option11', value: 'v3', default: false },
     )
     const option2 = new InstanceElement(
       'option2',
       childObjType,
-      { name: 'option2', value: 'v4', default: true },
+      { name: 'option2', raw_name: 'option22', value: 'v4', default: true },
     )
     const ticketField = new InstanceElement(
       'ticketField',
@@ -267,6 +267,8 @@ describe('ticket field filter', () => {
         expectedElements[0].value.id = 1
         expectedElements[1].value.id = 2
         expectedElements[2].value.id = 3
+        expectedElements[1].value.name = expectedElements[1].value.raw_name
+        expectedElements[2].value.name = expectedElements[2].value.raw_name
         expect(res.deployResult.appliedChanges).toHaveLength(3)
         expect(res.deployResult.appliedChanges)
           .toEqual(expectedElements.map(e => ({ action: 'add', data: { after: e } })))
@@ -364,6 +366,8 @@ describe('ticket field filter', () => {
         expect(res.deployResult.errors).toHaveLength(0)
         const expectedElements = [ticketField, option1, option2].map(e => e.clone())
         expectedElements[0].value.id = 1
+        expectedElements[1].value.name = expectedElements[1].value.raw_name
+        expectedElements[2].value.name = expectedElements[2].value.raw_name
         expect(res.deployResult.appliedChanges).toHaveLength(3)
         expect(res.deployResult.appliedChanges)
           .toEqual(expectedElements.map(e => ({ action: 'add', data: { after: e } })))

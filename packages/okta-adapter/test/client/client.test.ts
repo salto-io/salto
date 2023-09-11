@@ -158,7 +158,10 @@ describe('client', () => {
       const unlimitedClient = new OktaClient({ credentials: { baseUrl: 'http://my.okta.net', token: 'token' }, rateLimitBuffer: -1 })
       const requests = Array(5).fill(0).map((_, i) => `/api/v1/org${i}`)
       requests.forEach(_ => {
-        clientGetSinglePageSpy.mockImplementationOnce(async () => ({}))
+        clientGetSinglePageSpy.mockImplementationOnce(async () => {
+          await sleep(100)
+          return {}
+        })
       })
 
       const promise = requests.map(async request => unlimitedClient.getSinglePage({ url: request }))

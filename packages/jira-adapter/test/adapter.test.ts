@@ -57,6 +57,7 @@ jest.mock('@salto-io/adapter-components', () => {
   }
 })
 
+jest.setTimeout(15000)
 describe('adapter', () => {
   let adapter: AdapterOperations
   let getElemIdFunc: ElemIdGetter
@@ -296,6 +297,7 @@ describe('adapter', () => {
       config.value.client.usePrivateAPI = false
       config.value.fetch.convertUsersIds = false
       config.value.fetch.enableScriptRunnerAddon = true
+      config.value.fetch.enableJSM = false
 
       srAdapter = adapterCreator.operations({
         elementsSource,

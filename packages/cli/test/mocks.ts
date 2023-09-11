@@ -760,7 +760,7 @@ export const deploy = async (
     numOfChangesReported += 1
     if (numOfChangesReported / 3 === 1) {
       reportProgress(change, 'started')
-      reportProgress(change, 'error', 'details')
+      reportProgress(change, 'error', '')
       return
     }
     if (numOfChangesReported / 2 === 1) {
@@ -769,7 +769,7 @@ export const deploy = async (
       return
     }
     reportProgress(change, 'started')
-    reportProgress(change, 'cancelled', 'details')
+    reportProgress(change, 'cancelled', '')
   })
 
   return {

@@ -535,11 +535,6 @@ describe.each([
       salesforceConfPath = `${fetchOutputDir}/salto.config/adapters/${accountName}/${accountName}.nacl`
       await writeFile(`${fetchOutputDir}/salto.config/adapters/${accountName}/${accountName}.nacl`,
         `${accountName} {
-        deploy = {
-          changeValidators = {
-            metadataInstancesAndTypes = false
-          }
-        }
         fetch = {
           exclude = [
             {

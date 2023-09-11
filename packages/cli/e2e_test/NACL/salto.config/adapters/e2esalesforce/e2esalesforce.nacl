@@ -1,9 +1,4 @@
 salesforce {
-  deploy = {
-    changeValidators = {
-      metadataInstancesAndTypes = false
-    }
-  }
   fetch = {
     exclude = [
       {

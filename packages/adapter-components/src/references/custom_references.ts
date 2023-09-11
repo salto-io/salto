@@ -14,19 +14,22 @@
 * limitations under the License.
 */
 import { GetCustomReferencesFunc, ReferenceInfo } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-
-const { awu } = collections.asynciterable
 
 const getReferenceInfoIdentifier = (ref: ReferenceInfo): string =>
   `${ref.source.getFullName()}-${ref.target.getFullName()}`
 
+/**
+ * Combine several getCustomReferences functions into one that will run all of them.
+ * When a reference is returned twice with different types the last one will override the previous ones.
+ */
 export const combineCustomReferenceGetters = (customReferenceGetters: GetCustomReferencesFunc[])
 : GetCustomReferencesFunc => async elements => {
   const idToRef: Record<string, ReferenceInfo> = {}
-  await awu(customReferenceGetters).forEach(async customReferenceGetter => {
-    const refs = await customReferenceGetter(elements)
+  const refGroups = await Promise.all(customReferenceGetters.map(getCustomReferences => getCustomReferences(elements)))
+
+  // We don't use _.uniqBy to ensure that the last reference will override the previous ones.
+  refGroups.forEach(refs => {
     _.assign(idToRef, _.keyBy(refs, getReferenceInfoIdentifier))
   })
   return Object.values(idToRef)

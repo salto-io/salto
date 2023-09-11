@@ -33,6 +33,9 @@ const getFixedElements = (
     .concat(fixedElements.filter(element => !elementIds.has(element.elemID.getFullName())))
 }
 
+/**
+ * Combine several fixElements functions into one that will run all of them.
+ */
 export const combineElementFixers = (fixers: FixElementsFunc[]): FixElementsFunc => async elements =>
   awu(fixers).reduce(
     async (fixes, fixer) => {

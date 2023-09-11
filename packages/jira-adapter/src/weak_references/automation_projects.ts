@@ -51,6 +51,9 @@ const getProjectReferences = async (
     .toArray()
 }
 
+/**
+ * Marks each project reference in automation as a weak reference.
+ */
 export const getAutomationProjectsReferences: GetCustomReferencesFunc = async elements =>
   awu(elements)
     .filter(isInstanceElement)
@@ -58,6 +61,9 @@ export const getAutomationProjectsReferences: GetCustomReferencesFunc = async el
     .flatMap(instance => getProjectReferences(instance))
     .toArray()
 
+/**
+ * Remove invalid projects (not references or missing references) from automations.
+ */
 export const removeMissingAutomationProjects = (elementsSource: ReadOnlyElementsSource)
 : FixElementsFunc => async elements => {
   const fixedElements = await awu(elements)

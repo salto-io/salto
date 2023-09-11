@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID } from '@salto-io/adapter-api'
-import { combineCustomReferenceGetters } from '../src/custom_references'
+import { combineCustomReferenceGetters } from '../../src/references/custom_references'
 
 describe('combineCustomReferenceGetters', () => {
   it('should run all the custom reference getters', async () => {

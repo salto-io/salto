@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, ObjectType } from '@salto-io/adapter-api'
-import { combineElementFixers } from '../src/element_fixers'
+import { combineElementFixers } from '../../src/references/element_fixers'
 
 describe('combineElementFixers', () => {
   let type1: ObjectType

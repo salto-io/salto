@@ -311,9 +311,12 @@ const getIllegalRefSources = (
 const buildCustomObjectPrefixKeyMap = async (
   elements: Element[]
 ): Promise<Record<string, string>> => {
-  const objectTypesWithKeyPrefix = elements
-    .filter(isObjectType)
+  const objectTypes = elements.filter(isObjectType)
+  const objectTypesWithKeyPrefix = objectTypes
     .filter(objectType => isDefined(objectType.annotations[KEY_PREFIX]))
+
+  log.debug('%d/%d object types have a key prefix', objectTypesWithKeyPrefix.length, objectTypes.length)
+
   const typeMap = _.keyBy(
     objectTypesWithKeyPrefix,
     objectType => objectType.annotations[KEY_PREFIX] as string,

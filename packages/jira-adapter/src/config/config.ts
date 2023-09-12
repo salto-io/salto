@@ -153,6 +153,7 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     enableMissingReferences: true,
     removeDuplicateProjectRoles: true,
     addAlias: true,
+    enableIssueLayouts: true,
 
   },
   deploy: {

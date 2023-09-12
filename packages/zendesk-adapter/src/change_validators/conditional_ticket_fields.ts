@@ -14,10 +14,11 @@
 * limitations under the License.
 */
 import {
+  ChangeError,
   ChangeValidator,
   getChangeData,
   isAdditionOrModificationChange,
-  isInstanceChange, Value,
+  isInstanceChange, ReferenceExpression, Value,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
@@ -27,6 +28,11 @@ import { isTicketFormCondition } from './ticket_field_deactivation'
 
 const { isDefined } = values
 
+const extractId = (id: number | ReferenceExpression): number => (_.isNumber(id) ? id : id.value.value.id)
+
+/**
+ * When deploying a ticket form, validate that all conditional ticket fields are in the form's ticket field ids list
+ */
 export const conditionalTicketFieldsValidator: ChangeValidator = async changes => {
   const relevantForms = changes
     .filter(isAdditionOrModificationChange)
@@ -34,17 +40,16 @@ export const conditionalTicketFieldsValidator: ChangeValidator = async changes =
     .map(getChangeData)
     .filter(form => form.elemID.typeName === TICKET_FORM_TYPE_NAME)
     .filter(form => form.value.end_user_conditions !== undefined || form.value.agent_conditions !== undefined)
-    .filter(form => _.isArray(form.value.ticket_field_ids)) // shouldn't be needed, but used for type checking
+    .filter(form => _.isArray(form.value.ticket_field_ids)) // used for type checking
 
   if (relevantForms.length === 0) {
     return []
   }
 
-  const errors = relevantForms.map(form => {
-    const existingTicketFieldIds = new Set<number>(form.value.ticket_field_ids
+  const errors = relevantForms.map((form): ChangeError | undefined => {
+    const existingTicketFieldIds = new Set(form.value.ticket_field_ids
       .filter((id: Value) => _.isNumber(id) || isResolvedReferenceExpression(id))
-      .map((id: Value) => (_.isNumber(id) ? id : id.value.id))
-      .filter(_.isNumber))
+      .map(extractId))
 
     const conditions = [
       _.isArray(form.value.end_user_conditions) ? form.value.end_user_conditions : [],
@@ -55,10 +60,10 @@ export const conditionalTicketFieldsValidator: ChangeValidator = async changes =
       condition.parent_field_id,
       (condition.child_fields ?? []).map(child => child.id),
     ]).flat()
-      .filter(condition => !existingTicketFieldIds.has(_.isNumber(condition) ? condition : condition.value.id))
+      .filter(condition => !existingTicketFieldIds.has(extractId(condition)))
 
     if (invalidConditions.length > 0) {
-      const invalidConditionsStr = invalidConditions.map(id => (_.isNumber(id) ? id : id.elemID.name)).join(', ')
+      const invalidConditionsStr = _.uniq(invalidConditions.map(id => (_.isNumber(id) ? id : id.elemID.name))).join(', ')
       return {
         elemID: form.elemID,
         severity: 'Error',

@@ -193,6 +193,7 @@ const replaceLookupsWithRefsAndCreateRefMap = async (
 }> => {
   const reverseReferencesMap = new DefaultMap<string, Set<string>>(() => new Set())
   const missingRefs: MissingRef[] = []
+  const fieldsWithUnknownTargetType = new DefaultMap<string, Set<string>>(() => new Set())
   const replaceLookups = async (
     instance: InstanceElement
   ): Promise<Values> => {
@@ -221,6 +222,11 @@ const replaceLookupsWithRefsAndCreateRefMap = async (
           return value
         }
         const targetTypeName = refTo.length === 1 ? refTo[0] : internalToTypeName(value)
+
+        if (targetTypeName === undefined) {
+          fieldsWithUnknownTargetType.get(field.elemID.getFullName()).add(value)
+        }
+
         const brokenRefBehavior = dataManagement.brokenReferenceBehaviorForTargetType(targetTypeName)
         switch (brokenRefBehavior) {
           case 'InternalId': {
@@ -262,12 +268,20 @@ const replaceLookupsWithRefsAndCreateRefMap = async (
     ) ?? instance.value
   }
 
+  if (fieldsWithUnknownTargetType.size > 0) {
+    log.warn('The following fields have multiple %s annotations and contained internal IDs with an unknown key prefix. The default broken references behavior was used for them.', FIELD_ANNOTATIONS.REFERENCE_TO)
+    fieldsWithUnknownTargetType.forEach((internalIds, fieldElemId) => {
+      log.warn('Field %s: %o', fieldElemId, internalIds)
+    })
+  }
+
   await awu(instances).forEach(async (instance, index) => {
     instance.value = await replaceLookups(instance)
     if (index > 0 && index % 500 === 0) {
       log.debug(`Replaced lookup with references for ${index} instances`)
     }
   })
+
   return { reverseReferencesMap, missingRefs }
 }
 

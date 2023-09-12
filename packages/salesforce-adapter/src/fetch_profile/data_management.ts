@@ -29,7 +29,7 @@ export type TypeFetchCategory = 'Always' | 'IfReferenced' | 'Never'
 
 export type DataManagement = {
   shouldFetchObjectType: (objectType: ObjectType) => Promise<TypeFetchCategory>
-  brokenReferenceBehaviorForTargetType: (typeName: string) => OutgoingReferenceBehavior
+  brokenReferenceBehaviorForTargetType: (typeName: string | undefined) => OutgoingReferenceBehavior
   isReferenceAllowed: (name: string) => boolean
   getObjectIdsFields: (name: string) => string[]
   getObjectAliasFields: (name: string) => types.NonEmptyArray<string>
@@ -124,6 +124,9 @@ export const buildDataManagement = (params: DataManagementConfig): DataManagemen
     },
 
     brokenReferenceBehaviorForTargetType: typeName => {
+      if (typeName === undefined) {
+        return DEFAULT_BROKEN_REFS_BEHAVIOR
+      }
       const typeOverrides = params.brokenOutgoingReferencesSettings?.perTargetTypeOverrides
         ?? DEFAULT_PER_TYPE_BROKEN_REFS_BEHAVIOR
       const perTypeBehavior = typeOverrides[typeName]

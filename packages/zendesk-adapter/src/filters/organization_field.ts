@@ -69,7 +69,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       }
     }
 
-    const allParentChanges = [...parentChanges, ...additionalParentChanges]
+    const allParentChanges = parentChanges.concat(additionalParentChanges)
     updateParentChildrenFromChanges(allParentChanges, childrenChanges, CUSTOM_FIELD_OPTIONS_FIELD_NAME)
 
     const deployResult = await deployChanges(

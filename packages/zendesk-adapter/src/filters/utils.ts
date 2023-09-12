@@ -25,7 +25,6 @@ import {
   getParents,
   resolveChangeElement,
   references,
-  isResolvedReferenceExpression,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -92,13 +91,17 @@ export const updateParentChildrenFromChanges = (
 ): void => {
   const childrenChangesByElemId = _.keyBy(childrenChanges.map(getChangeData), change => change.elemID.getFullName())
   parentChanges.map(getChangeData).forEach(parent => {
-    const children = parent.value[childrenField] ?? []
-    if (_.isArray(children) && children.every(isReferenceExpression)) {
-      children
-        .filter(isResolvedReferenceExpression)
-        .filter(child => childrenChangesByElemId[child.value.elemID.getFullName()] !== undefined)
-        .forEach(child => {
-          child.value.value = childrenChangesByElemId[child.value.elemID.getFullName()].value
+    const children = parent.value[childrenField]
+    if (_.isArray(children)) {
+      parent.value[childrenField] = children
+        .map(child => {
+          if (isReferenceExpression(child)) {
+            const childFromChange = childrenChangesByElemId[child.elemID.getFullName()]
+            return childFromChange !== undefined
+              ? new ReferenceExpression(childFromChange.elemID, childFromChange)
+              : child
+          }
+          return child
         })
     } else {
       log.error(`children field '${childrenField}' of ${parent.elemID.getFullName()} is invalid`)

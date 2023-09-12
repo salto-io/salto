@@ -19,6 +19,11 @@
 
 const LINE_BREAK = '\n'
 
+const CURRENT_SECTION = '<<<<<<<'
+const BASE_TOP_SECTION = '|||||||'
+const BASE_BOTTOM_SECTION = '======='
+const INCOMING_SECTION = '>>>>>>>'
+
 type Candidate = {
   buffer1index: number
   buffer2index: number
@@ -67,11 +72,12 @@ const getNextCandidateIndex = (
   buffer2index: number
 ): number => {
   const nextCandidateIndex = candidates
-    .slice(currentCandidateIndex)
-    .findIndex((candidate, index) => candidate.buffer2index < buffer2index
+    .findIndex((candidate, index) =>
+      index >= currentCandidateIndex
+      && candidate.buffer2index < buffer2index
       && (index === candidates.length - 1 || candidates[index + 1].buffer2index > buffer2index))
 
-  return nextCandidateIndex !== -1 ? nextCandidateIndex + currentCandidateIndex : candidates.length
+  return nextCandidateIndex !== -1 ? nextCandidateIndex : candidates.length
 }
 
 const getLineIndices = (buffer: string[]): Record<string, number[]> =>
@@ -104,14 +110,10 @@ const getLongestCommonSequence = (buffer1: string[], buffer2: string[]): Candida
         return current
       }
       const nextCandidateIndex = getNextCandidateIndex(current.index, candidates, buffer2index)
-      if (nextCandidateIndex >= candidates.length) {
+      if (nextCandidateIndex === candidates.length) {
         return current
       }
-      if (current.index === candidates.length) {
-        candidates.push(current.candidate)
-      } else {
-        candidates[current.index] = current.candidate
-      }
+      candidates[current.index] = current.candidate
       return {
         index: nextCandidateIndex + 1,
         candidate: {
@@ -332,46 +334,31 @@ const diff3MergeBlocks = ({
   return cursor.getMergeBlocks()
 }
 
-// Applies the output of diff3MergeBlocks to actually
-// construct the merged buffer the returned result alternates
-// between 'ok' and 'conflict' blocks.
-const diff3Merge = ({
-  current, base, incoming, allowConflicts,
+const toConflictSection = (conflict: Conflict): string[] => [
+  CURRENT_SECTION,
+  ...conflict.current,
+  BASE_TOP_SECTION,
+  ...conflict.base,
+  BASE_BOTTOM_SECTION,
+  ...conflict.incoming,
+  INCOMING_SECTION,
+]
+
+export const mergeDiffs = ({
+  current, base, incoming, allowConflicts = false,
 }: {
   current: string
   base: string
   incoming: string
-  allowConflicts: boolean
-}): MergeBlock[] => {
-  const blocks = diff3MergeBlocks({
+  allowConflicts?: boolean
+}): string => {
+  const mergeBlocks = diff3MergeBlocks({
     current: current.split(LINE_BREAK),
     base: base.split(LINE_BREAK),
     incoming: incoming.split(LINE_BREAK),
     allowConflicts,
   })
-
-  const { results, okBuffer } = blocks.reduce((acc, block) => {
-    if ('ok' in block) {
-      return { ...acc, okBuffer: acc.okBuffer.concat(block.ok) }
-    }
-    return {
-      results: acc.results
-        .concat(acc.okBuffer.length > 0 ? { ok: acc.okBuffer } : [])
-        .concat(block),
-      okBuffer: [],
-    }
-  }, { results: [] as MergeBlock[], okBuffer: [] as string[] })
-
-  return results.concat(okBuffer.length > 0 ? { ok: okBuffer } : [])
-}
-
-export const mergeDiffs = ({
-  current, base, incoming,
-}: {
-  current: string
-  base: string
-  incoming: string
-}): string => {
-  const mergeBlocks = diff3Merge({ current, base, incoming, allowConflicts: false })
-  return mergeBlocks.flatMap(block => ('ok' in block ? block.ok : [])).join(LINE_BREAK)
+  return mergeBlocks
+    .flatMap(block => ('ok' in block ? block.ok : toConflictSection(block.conflict)))
+    .join(LINE_BREAK)
 }

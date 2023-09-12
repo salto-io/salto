@@ -130,6 +130,9 @@ of everything.
     it('should return current when incoming equals current', () => {
       expect(merge.mergeDiffs({ current, base, incoming: current })).toEqual(current)
     })
+    it('should return base when all equals', () => {
+      expect(merge.mergeDiffs({ current: base, base, incoming: base })).toEqual(base)
+    })
     it('should throw on conflict', () => {
       const incoming =
 `hello world!
@@ -157,6 +160,53 @@ of everything.
           'of everything.',
         ],
       }))
+    })
+    it('should return merged with conflicts', () => {
+      const incoming =
+`hello world!
+this file is
+it is
+not the base
+of everything.
+`
+      const expected =
+`Hello World!
+this file is
+it is
+${'<<<<<<<'}
+the base
+of everything
+and beyond.
+${'|||||||'}
+the base
+of everything.
+${'======='}
+not the base
+of everything.
+${'>>>>>>>'}
+`
+
+      expect(merge.mergeDiffs({ current, base, incoming, allowConflicts: true })).toEqual(expected)
+    })
+    it('should return conflict on all when base is empty', () => {
+      const expected =
+`${'<<<<<<<'}
+Hello World!
+this file is
+it is
+the base
+of everything
+and beyond.
+${'|||||||'}
+${'======='}
+hello world!
+this file is
+it is
+the base
+of everything.
+${'>>>>>>>'}
+`
+      expect(merge.mergeDiffs({ current, base: '', incoming: base, allowConflicts: true })).toEqual(expected)
     })
   })
 })

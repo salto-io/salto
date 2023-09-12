@@ -21,12 +21,14 @@ describe('merge', () => {
     const base =
 `hello world!
 this file is
+this file is
 it is
 the base
 of everything.
 `
     const current =
 `Hello World!
+this file is
 this file is
 it is
 the base
@@ -37,6 +39,7 @@ and beyond.
       const incoming =
 `hello world!
 this file is
+this file is
 not
 the base.
 it is
@@ -46,6 +49,7 @@ of everything.
 `
       const expected =
 `Hello World!
+this file is
 this file is
 not
 the base.
@@ -62,6 +66,7 @@ and beyond.
       const incoming =
 `Hello World!
 this file is
+this file is
 it is
 not
 the base
@@ -69,6 +74,7 @@ of everything.
 `
       const expected =
 `Hello World!
+this file is
 this file is
 it is
 not
@@ -83,11 +89,13 @@ and beyond.
       const incoming =
 `hello world!
 this file is
+this file is
 the base
 of everything.
 `
       const expected =
 `Hello World!
+this file is
 this file is
 the base
 of everything
@@ -100,12 +108,14 @@ and beyond.
 `-- title --
 hello world!
 this file is
+this file is
 it is
 the base
 of everything.
 `
       const incomingWithAdditions =
 `hello world!
+this file is
 this file is
 it is
 the base
@@ -115,6 +125,7 @@ of everything.
       const expected =
 `-- title --
 hello world!
+this file is
 this file is
 it is
 the base
@@ -137,24 +148,25 @@ of everything.
       const incoming =
 `hello world!
 this file is
+this file is
 it is
 not the base
 of everything.
 `
 
       expect(() => merge.mergeDiffs({ current, base, incoming })).toThrow(new merge.ConflictError({
-        currentIndex: 3,
+        currentIndex: 4,
         current: [
           'the base',
           'of everything',
           'and beyond.',
         ],
-        baseIndex: 3,
+        baseIndex: 4,
         base: [
           'the base',
           'of everything.',
         ],
-        incomingIndex: 3,
+        incomingIndex: 4,
         incoming: [
           'not the base',
           'of everything.',
@@ -165,12 +177,14 @@ of everything.
       const incoming =
 `hello world!
 this file is
+this file is
 it is
 not the base
 of everything.
 `
       const expected =
 `Hello World!
+this file is
 this file is
 it is
 ${'<<<<<<<'}
@@ -193,6 +207,7 @@ ${'>>>>>>>'}
 `${'<<<<<<<'}
 Hello World!
 this file is
+this file is
 it is
 the base
 of everything
@@ -200,6 +215,7 @@ and beyond.
 ${'|||||||'}
 ${'======='}
 hello world!
+this file is
 this file is
 it is
 the base

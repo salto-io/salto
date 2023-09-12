@@ -118,6 +118,7 @@ export type ChangeValidatorName = (
   | 'unknownPicklistValues'
   | 'installedPackages'
   | 'dataCategoryGroup'
+  | 'standardFieldOrObjectAdditionsOrDeletions'
   | 'metadataInstancesAndTypes'
 )
 
@@ -694,6 +695,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     unknownPicklistValues: { refType: BuiltinTypes.BOOLEAN },
     dataCategoryGroup: { refType: BuiltinTypes.BOOLEAN },
     installedPackages: { refType: BuiltinTypes.BOOLEAN },
+    standardFieldOrObjectAdditionsOrDeletions: { refType: BuiltinTypes.BOOLEAN },
     metadataInstancesAndTypes: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {

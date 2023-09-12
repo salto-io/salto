@@ -46,6 +46,7 @@ import accountSettings from './change_validators/account_settings'
 import installedPackages from './change_validators/installed_packages'
 import metadataInstancesAndTypes from './change_validators/metadata_instances_and_types'
 import dataCategoryGroupValidator from './change_validators/data_category_group'
+import standardFieldOrObjectAdditionsOrDeletions from './change_validators/standard_field_or_object_additions_or_deletions'
 import SalesforceClient from './client/client'
 import { ChangeValidatorName, DEPLOY_CONFIG, SalesforceConfig } from './types'
 
@@ -90,6 +91,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   unknownPicklistValues: () => unknownPicklistValues,
   installedPackages: () => installedPackages,
   dataCategoryGroup: () => dataCategoryGroupValidator,
+  standardFieldOrObjectAdditionsOrDeletions: () => standardFieldOrObjectAdditionsOrDeletions,
   metadataInstancesAndTypes: () => metadataInstancesAndTypes,
   ..._.mapValues(getDefaultChangeValidators(), validator => (() => validator)),
 }

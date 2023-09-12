@@ -33,11 +33,11 @@ export const customObject = (
     fields: {
       alpha: {
         refType: sfText,
-        annotations: { label: data.alphaLabel },
+        annotations: { label: data.alphaLabel, apiName: 'alpha__c' },
       },
       beta: {
         refType: sfText,
-        annotations: { label: data.betaLabel },
+        annotations: { label: data.betaLabel, apiName: 'beta__c' },
       },
     },
     annotations: {
@@ -45,6 +45,7 @@ export const customObject = (
       pluralLabel: 'Tests',
       sharingModel: 'ReadWrite',
       nameField: { type: 'Text', label: 'Name' },
+      apiName: data.objName,
     },
     annotationRefsOrTypes: {
       deploymentStatus: BuiltinTypes.STRING,
@@ -79,5 +80,6 @@ export const instance = (
   return new InstanceElement(data.instName, sfRole, {
     description: data.description,
     name: data.instName,
+    fullName: data.instName,
   })
 }

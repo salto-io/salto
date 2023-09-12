@@ -38,8 +38,8 @@ type OktaRateLimitConfig = {
 
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-  // There is a concurrent rate limit of minimum 15, depending on the plan, we take a buffer
-  get: 10,
+  // the smallest concurrent rate limit is 15 (by plan)
+  get: 15,
   deploy: 2,
 }
 
@@ -56,10 +56,18 @@ const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
 // The expression match AppUserSchema endpoint used for fetch
 const APP_USER_SCHEMA_URL = /(\/api\/v1\/meta\/schemas\/apps\/[a-zA-Z0-9]+\/default)/
 
-const INIT_RATE_LIMITS = {
+type OktaRateLimits = {
+  rateLimitRemaining: number
+  rateLimitReset: number
+  currentlyRunning: number
+  maxPerMinute: number
+}
+
+const INIT_RATE_LIMITS: OktaRateLimits = {
   rateLimitRemaining: 0,
   rateLimitReset: 0,
   currentlyRunning: 0,
+  maxPerMinute: 0,
 }
 
 // according to okta, the way to tell if it is an id is that includes both letters and numbers
@@ -94,13 +102,31 @@ export const waitForRateLimit = async (rateLimitReset: number): Promise<void> =>
   await sleep(rateLimitResetTime)
 }
 
+const shouldRunRequest = (rateLimits: OktaRateLimits, rateLimitBuffer: number): boolean => {
+  const isRateLimitDisabled = rateLimitBuffer === -1
+  const isInitialRequest = _.isEqual(rateLimits, INIT_RATE_LIMITS)
+  const isWithinRateLimitBuffer = rateLimits.rateLimitRemaining - rateLimits.currentlyRunning > rateLimitBuffer
+  const didRateLimitReset = rateLimits.rateLimitReset < Date.now()
+  const isRateLimitResetSet = rateLimits.rateLimitReset !== INIT_RATE_LIMITS.rateLimitReset
+  const isMaxPerMinuteReached = rateLimits.currentlyRunning >= rateLimits.maxPerMinute - rateLimitBuffer
+
+  return isRateLimitDisabled
+    || isInitialRequest
+    || isWithinRateLimitBuffer
+    || (
+      didRateLimitReset
+      && isRateLimitResetSet // We need to make sure we have a valid reset time
+      && !isMaxPerMinuteReached // In case there were more waiting than the max per minute, we need this safety
+    )
+}
 const updateRateLimits = (
-  rateLimits: { rateLimitRemaining: number; rateLimitReset: number },
+  rateLimits: OktaRateLimits,
   headers: Record<string, string>
 ): void => {
   const updatedRateLimitRemaining = Number(headers['x-rate-limit-remaining'])
   const updatedRateLimitReset = Number(headers['x-rate-limit-reset'])
-  if (!_.isFinite(updatedRateLimitRemaining) || !_.isFinite(updatedRateLimitReset)) {
+  const updateMaxPerMinute = Number(headers['x-rate-limit-limit'])
+  if (!_.isFinite(updatedRateLimitRemaining) || !_.isFinite(updatedRateLimitReset) || !_.isFinite(updateMaxPerMinute)) {
     log.error(`Invalid getSinglePage response headers, remaining: ${updatedRateLimitRemaining}, reset: ${updatedRateLimitReset}`)
     return
   }
@@ -112,6 +138,7 @@ const updateRateLimits = (
     // In case an older request returned after a newer one, we want to take the minimum because it is the most updated
     rateLimits.rateLimitRemaining = Math.min(updatedRateLimitRemaining, rateLimits.rateLimitRemaining)
   }
+  rateLimits.maxPerMinute = updateMaxPerMinute
 }
 
 export default class OktaClient extends clientUtils.AdapterHTTPClient<
@@ -156,15 +183,7 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
     const rateLimits = this.rateLimits.find(({ url }) => args.url.match(url))?.limits ?? this.defaultRateLimits
 
-    while (
-      // -1 means unlimited
-      this.rateLimitBuffer !== -1
-      // If this is the initial request, don't wait
-      && !_.isEqual(rateLimits, INIT_RATE_LIMITS)
-      // If we are at the rate limit with the buffer and did not pass the reset time, wait
-      && rateLimits.rateLimitRemaining - rateLimits.currentlyRunning <= this.rateLimitBuffer
-      && (rateLimits.rateLimitReset === INIT_RATE_LIMITS.rateLimitReset || rateLimits.rateLimitReset > Date.now())
-    ) {
+    while (!shouldRunRequest(rateLimits, this.rateLimitBuffer)) {
       // eslint-disable-next-line no-await-in-loop
       await waitForRateLimit(rateLimits.rateLimitReset)
     }

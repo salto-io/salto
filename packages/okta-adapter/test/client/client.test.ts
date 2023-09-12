@@ -74,26 +74,23 @@ describe('client', () => {
     let clientGetSinglePageSpy: jest.SpyInstance
     let waitSpy: jest.SpyInstance
     beforeEach(() => {
-      jest.clearAllMocks()
+      jest.restoreAllMocks()
       oktaGetSinglePageSpy = jest.spyOn(client, 'getSinglePage')
       clientGetSinglePageSpy = jest.spyOn(clientUtils.AdapterHTTPClient.prototype, 'getSinglePage')
       waitSpy = jest.spyOn(clientModule, 'waitForRateLimit')
-
-      mockAxios.onGet().replyOnce(200, {}) // First request is for client authentication
-    })
-    afterAll(() => {
-      oktaGetSinglePageSpy.mockRestore()
-      clientGetSinglePageSpy.mockRestore()
-      waitSpy.mockRestore()
     })
     it('should wait for first request, then wait according to rate limit', async () => {
       for (let i = 1; i <= 2; i += 1) {
         for (let j = 1; j <= 5; j += 1) {
-          const resetTime = Math.floor((Date.now() + 1000 * i) / 1000)
+          const resetTime = Math.floor((Date.now() + 1500 * i) / 1000)
           // eslint-disable-next-line no-loop-func
           clientGetSinglePageSpy.mockImplementationOnce(async () => {
             await sleep(100)
-            return { headers: { 'x-rate-limit-remaining': (DEFAULT_RATE_LIMIT_BUFFER + 5 - j).toString(), 'x-rate-limit-reset': resetTime } }
+            return { headers: {
+              'x-rate-limit-remaining': (DEFAULT_RATE_LIMIT_BUFFER + 5 - j).toString(),
+              'x-rate-limit-reset': resetTime,
+              'x-rate-limit-limit': 100,
+            } }
           })
         }
       }
@@ -113,22 +110,24 @@ describe('client', () => {
           headers: {
             'x-rate-limit-remaining': '99',
             'x-rate-limit-reset': '123',
+            'x-rate-limit-limit': 100,
           },
           status: 410,
         },
       })
       clientGetSinglePageSpy.mockImplementationOnce(async () => {
         await sleep(100)
-        return { headers: { 'x-rate-limit-remaining': '98', 'x-rate-limit-reset': '123' } }
+        return { headers: { 'x-rate-limit-remaining': '98', 'x-rate-limit-reset': '123', 'x-rate-limit-limit': 100 } }
       })
       clientGetSinglePageSpy.mockImplementationOnce(async () => {
         await sleep(100)
-        return { headers: { 'x-rate-limit-remaining': '97', 'x-rate-limit-reset': '123' } }
+        return { headers: { 'x-rate-limit-remaining': '97', 'x-rate-limit-reset': '123', 'x-rate-limit-limit': 100 } }
       })
       clientGetSinglePageSpy.mockImplementationOnce(async () => ({
         headers: {
           'x-rate-limit-remaining': '96',
           'x-rate-limit-reset': '123',
+          'x-rate-limit-limit': 100,
         },
       }))
       const firstRequest = client.getSinglePage({ url: '/api/v1/org1' })
@@ -168,6 +167,28 @@ describe('client', () => {
       await Promise.all(promise)
 
       expect(waitSpy).toHaveBeenCalledTimes(0)
+    })
+    it('should not pass max rate-limit-limit', async () => {
+      const unlimitedClient = new OktaClient({ credentials: { baseUrl: 'http://my.okta.net', token: 'token' }, rateLimitBuffer: 0 })
+      const requests = Array(5).fill(0).map((_, i) => `/api/v1/org${i}`)
+      requests.forEach(_ => {
+        clientGetSinglePageSpy.mockImplementationOnce(async () => {
+          await sleep(100)
+          return {
+            headers: {
+              'x-rate-limit-remaining': '3',
+              'x-rate-limit-reset': '123',
+              'x-rate-limit-limit': 3,
+            },
+          }
+        })
+      })
+
+      const promise = requests.map(async request => unlimitedClient.getSinglePage({ url: request }))
+      await Promise.all(promise)
+
+      // 1 enter and 4 wait, then 3 enter and 1 wait
+      expect(waitSpy).toHaveBeenCalledTimes(4 + 1)
     })
   })
 

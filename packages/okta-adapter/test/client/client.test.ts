@@ -25,13 +25,15 @@ const { sleep } = promises.timeout
 describe('client', () => {
   let client: OktaClient
   let mockAxios: MockAdapter
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const clearValuesFromResponseDataFunc = jest.spyOn(OktaClient.prototype as any, 'clearValuesFromResponseData')
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const extractHeadersFunc = jest.spyOn(OktaClient.prototype as any, 'extractHeaders')
+  let clearValuesFromResponseDataFunc: jest.SpyInstance
+  let extractHeadersFunc: jest.SpyInstance
   beforeEach(() => {
     mockAxios = new MockAdapter(axios)
     client = new OktaClient({ credentials: { baseUrl: 'http://my.okta.net', token: 'token' } })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    clearValuesFromResponseDataFunc = jest.spyOn(OktaClient.prototype as any, 'clearValuesFromResponseData')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    extractHeadersFunc = jest.spyOn(OktaClient.prototype as any, 'extractHeaders')
   })
   afterEach(() => {
     mockAxios.restore()

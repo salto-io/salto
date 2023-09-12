@@ -240,11 +240,12 @@ describe.each([
         deploymentStatus = "Deployed"
         apiName = "NewObjectName__c"
         ${accountName}.Text Alpha {
+          apiName = "Alpha__c"
           label = "Alpha"
           _required = false
         }
         ${accountName}.Text Beta {
-          apiName === "@@@TEST@@@"
+          apiName = "Beta__c"
           label = "Beta"
           _required = false
         }

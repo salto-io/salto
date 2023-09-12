@@ -143,6 +143,10 @@ export type SaltoAliasSettings = {
   overrides?: ObjectAliasSettings[]
 }
 
+export type SaltoManagementFieldSettings = {
+  defaultFieldName: string
+}
+
 const objectIdSettings = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'objectIdSettings'),
   fields: {
@@ -219,6 +223,18 @@ const saltoAliasSettingsType = new ObjectType({
   },
 })
 
+const saltoManagementFieldSettingsType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'saltoManagementFieldSettings'),
+  fields: {
+    defaultFieldName: {
+      refType: BuiltinTypes.STRING,
+    },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 export type DataManagementConfig = {
   includeObjects: string[]
   excludeObjects?: string[]
@@ -227,6 +243,7 @@ export type DataManagementConfig = {
   saltoIDSettings: SaltoIDSettings
   showReadOnlyValues?: boolean
   saltoAliasSettings?: SaltoAliasSettings
+  saltoManagementFieldSettings?: SaltoManagementFieldSettings
 }
 
 export type FetchParameters = {
@@ -473,6 +490,9 @@ const dataManagementType = new ObjectType({
     },
     saltoAliasSettings: {
       refType: saltoAliasSettingsType,
+    },
+    saltoManagementFieldSettings: {
+      refType: saltoManagementFieldSettingsType,
     },
   } as Record<keyof DataManagementConfig, FieldDefinition>,
   annotations: {

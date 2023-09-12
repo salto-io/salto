@@ -30,7 +30,12 @@ import {
   ServiceIds,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { ConfigChangeSuggestion, isDataManagementConfigSuggestions, SaltoAliasSettings } from '../../src/types'
+import {
+  ConfigChangeSuggestion,
+  FetchParameters,
+  isDataManagementConfigSuggestions,
+  SaltoAliasSettings,
+} from '../../src/types'
 import { buildSelectQueries, getFieldNamesForQuery } from '../../src/filters/utils'
 import { FilterResult } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
@@ -39,7 +44,9 @@ import filterCreator from '../../src/filters/custom_objects_instances'
 import mockAdapter from '../adapter'
 import {
   API_NAME,
-  CUSTOM_OBJECT, DETECTS_PARENTS_INDICATOR,
+  CUSTOM_OBJECT,
+  CUSTOM_OBJECT_ID_FIELD,
+  DETECTS_PARENTS_INDICATOR,
   FIELD_ANNOTATIONS,
   INSTALLED_PACKAGES_PATH,
   LABEL,
@@ -49,8 +56,13 @@ import {
   SALESFORCE,
 } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
-import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
-import { defaultFilterContext } from '../utils'
+import {
+  buildFetchProfile,
+  FetchProfile,
+} from '../../src/fetch_profile/fetch_profile'
+import {
+  defaultFilterContext,
+} from '../utils'
 import { mockTypes } from '../mock_elements'
 import { FilterWith } from './mocks'
 
@@ -65,6 +77,8 @@ const stringType = new PrimitiveType({
   elemID: new ElemID(SALESFORCE, 'string'),
   primitive: PrimitiveTypes.STRING,
 })
+
+const MANAGED_BY_SALTO_FIELD_NAME = 'ManagedBySalto__c'
 
 const createCustomObject = (
   name: string,
@@ -124,7 +138,7 @@ describe('Custom Object Instances filter', () => {
   const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
     ElemID => new ElemID(adapterName, `${NAME_FROM_GET_ELEM_ID}${name}`)
 
-  const TestCustomRecords = [
+  const TestCustomRecords: Record<string, unknown>[] = [
     {
       attributes: {
         type: 'Test',
@@ -180,19 +194,282 @@ describe('Custom Object Instances filter', () => {
   const emptyRefToObjectName = 'EmptyRefTo'
   const notInNamespaceName = 'NotInNamespace__c'
 
+  const createMockQueryImplementation = (testRecords: Record<string, unknown>[]) => (
+    async (soql: string): Promise<Record<string, unknown>> => {
+      if (soql.includes(`${MANAGED_BY_SALTO_FIELD_NAME}=TRUE`)) {
+        const filteredRecords = testRecords.filter(record => record[MANAGED_BY_SALTO_FIELD_NAME] === true)
+        return {
+          totalSize: filteredRecords.length,
+          done: true,
+          records: filteredRecords,
+        }
+      }
+      return {
+        totalSize: testRecords.length,
+        done: true,
+        records: testRecords,
+      }
+    }
+  )
+
+  const setMockQueryResults = (testRecords: Record<string, unknown>[]): void => {
+    basicQueryImplementation = jest.fn().mockImplementation(createMockQueryImplementation(testRecords))
+    connection.query = basicQueryImplementation
+  }
+
   beforeEach(async () => {
     ({ connection, client } = mockAdapter({
       adapterParams: {
         getElemIdFunc: mockGetElemIdFunc,
       },
     }))
-    basicQueryImplementation = jest.fn().mockImplementation(async () => (
+    setMockQueryResults(TestCustomRecords)
+  })
+
+  type TestFetchProfileParams = {
+    typeName: string
+    included: boolean
+    excluded: boolean
+    allowRef: boolean
+  }
+  const buildTestFetchProfile = (
+    types: TestFetchProfileParams[],
+  ): FetchProfile => {
+    const fetchProfileParams: FetchParameters = {
+      data: {
+        includeObjects: types
+          .filter(typeParams => typeParams.included)
+          .map(typeParams => typeParams.typeName),
+        excludeObjects: types
+          .filter(typeParams => typeParams.excluded)
+          .map(typeParams => typeParams.typeName),
+        allowReferenceTo: types
+          .filter(typeParams => typeParams.allowRef)
+          .map(typeParams => typeParams.typeName),
+        saltoIDSettings: {
+          defaultIdFields: [],
+        },
+        saltoManagementFieldSettings: {
+          defaultFieldName: MANAGED_BY_SALTO_FIELD_NAME,
+        },
+      },
+    }
+    return buildFetchProfile(fetchProfileParams)
+  }
+
+  describe('config interactions', () => {
+    // ref: https://salto-io.atlassian.net/browse/SALTO-4579?focusedCommentId=97852
+    const testTypeName = 'TestType'
+    const refererTypeName = 'RefererType'
+    const testInstanceId = 'some_id'
+    const testType = createCustomObject(testTypeName, {
+      [MANAGED_BY_SALTO_FIELD_NAME]: {
+        refType: BuiltinTypes.BOOLEAN,
+        annotations: {
+          [LABEL]: 'Managed By Salto',
+          [API_NAME]: MANAGED_BY_SALTO_FIELD_NAME,
+          [FIELD_ANNOTATIONS.QUERYABLE]: true,
+        },
+      },
+    })
+    const refererType = createCustomObject(refererTypeName, {
+      ReferenceField: {
+        refType: Types.primitiveDataTypes.MasterDetail,
+        annotations: {
+          [LABEL]: 'Reference Origin',
+          [API_NAME]: 'ReferenceField',
+          [FIELD_ANNOTATIONS.REFERENCE_TO]: [testTypeName],
+          [FIELD_ANNOTATIONS.QUERYABLE]: true,
+        },
+      },
+    })
+    const testRecords: Record<string, unknown>[] = [
       {
-        totalSize: 2,
-        done: true,
-        records: TestCustomRecords,
-      }))
-    connection.query = basicQueryImplementation
+        attributes: {
+          type: testTypeName,
+        },
+        Id: testInstanceId,
+        Name: 'Name',
+      },
+    ]
+    let elements: Element[]
+
+    describe.each([
+      { // ref table row 1
+        included: false,
+        excluded: false,
+        allowRef: false,
+        managedBySalto: false,
+      },
+      { // ref table row 1 (alternative option)
+        included: false,
+        excluded: true,
+        allowRef: false,
+        managedBySalto: false,
+      },
+      { // ref table row 1 (alternative option)
+        included: false,
+        excluded: true,
+        allowRef: false,
+        managedBySalto: true,
+      },
+      { // ref table row 3
+        included: false,
+        excluded: false,
+        allowRef: true,
+        managedBySalto: false,
+      },
+      { // ref table row 6
+        included: false,
+        excluded: true,
+        allowRef: true,
+        managedBySalto: false,
+      },
+      { // ref table row 7
+        included: false,
+        excluded: true,
+        allowRef: true,
+        managedBySalto: true,
+      },
+      { // ref table row 9
+        included: true,
+        excluded: false,
+        allowRef: false,
+        managedBySalto: false,
+      },
+      { // ref table row 12
+        included: true,
+        excluded: false,
+        allowRef: true,
+        managedBySalto: false,
+      },
+      { // ref table row 14
+        included: true,
+        excluded: true,
+        allowRef: false,
+        managedBySalto: false,
+      },
+      { // ref table row 14 (alternative option)
+        included: true,
+        excluded: true,
+        allowRef: false,
+        managedBySalto: true,
+      },
+      { // ref table row 16
+        included: true,
+        excluded: true,
+        allowRef: true,
+        managedBySalto: false,
+      },
+    ])('When there are no refs to the instance and inc=$included exc=$excluded, ref=$allowRef', ({ included, excluded, allowRef, managedBySalto }) => {
+      beforeEach(async () => {
+        filter = filterCreator(
+          {
+            client,
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: buildTestFetchProfile([{ typeName: testTypeName, included, excluded, allowRef }]),
+            },
+          }
+        ) as FilterType
+
+        elements = [testType]
+
+        testRecords.forEach(record => { record[MANAGED_BY_SALTO_FIELD_NAME] = managedBySalto })
+        setMockQueryResults(testRecords)
+
+        await filter.onFetch(elements)
+      })
+      it('should not fetch the instance', () => {
+        expect(elements.filter(e => e.annotations[API_NAME] === testInstanceId)).toBeEmpty()
+      })
+    })
+
+    describe.each([
+      { // ref table row 4
+        included: false,
+        excluded: false,
+        allowRef: true,
+      },
+      { // ref table row 7
+        included: false,
+        excluded: true,
+        allowRef: true,
+      },
+      { // ref table row 10
+        included: true,
+        excluded: false,
+        allowRef: false,
+      },
+      { // ref table row 13
+        included: true,
+        excluded: false,
+        allowRef: true,
+      },
+      { // ref table row 17
+        included: true,
+        excluded: true,
+        allowRef: true,
+      },
+    ])('When there are no refs to an instance that is managed by Salto and inc=$included, exc=$excluded, ref=$allowRef', ({ included, excluded, allowRef }) => {
+      beforeEach(async () => {
+        filter = filterCreator(
+          {
+            client,
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: buildTestFetchProfile(([{ typeName: testTypeName, included, excluded, allowRef }])),
+            },
+          }
+        ) as FilterType
+
+        elements = [testType]
+
+        testRecords.forEach(record => { record[MANAGED_BY_SALTO_FIELD_NAME] = true })
+        setMockQueryResults(testRecords)
+
+        await filter.onFetch(elements)
+      })
+      it('should fetch the instance', () => {
+        const fetchedTestInstances = elements
+          .filter(e => isInstanceElement(e) && e.value[CUSTOM_OBJECT_ID_FIELD] === testInstanceId)
+        expect(fetchedTestInstances).toHaveLength(1)
+      })
+    })
+
+    describe.each([
+      { // ref table row 3
+        excluded: false,
+      },
+      { // ref table row 6
+        excluded: true,
+      },
+    ])('When there are refs to the instance and exc=$excluded', ({ excluded }) => {
+      beforeEach(async () => {
+        filter = filterCreator(
+          {
+            client,
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: buildTestFetchProfile([
+                { typeName: testTypeName, included: false, excluded, allowRef: true },
+                { typeName: refererTypeName, included: true, excluded: false, allowRef: false },
+              ]),
+            },
+          }
+        ) as FilterType
+
+        elements = [testType, refererType]
+
+        testRecords.forEach(record => { record[MANAGED_BY_SALTO_FIELD_NAME] = false })
+        setMockQueryResults(testRecords)
+
+        await filter.onFetch(elements)
+      })
+      it('should fetch the referred instance', () => {
+        expect(elements.filter(e => e.annotations[API_NAME] === testInstanceId)).toBeEmpty()
+      })
+    })
   })
 
   describe('Without includeObjects', () => {
@@ -1130,6 +1407,7 @@ describe('Custom Object Instances filter', () => {
       })
     })
   })
+
   describe('Aliases', () => {
     let instances: InstanceElement[]
 
@@ -1258,6 +1536,67 @@ describe('Custom Object Instances filter', () => {
           expect(instance.annotations).not.toContainKey(CORE_ANNOTATIONS.ALIAS)
         })
       })
+    })
+  })
+
+  describe('Managed by Salto', () => {
+    let elements: Element[]
+    let filterResult: FilterResult
+    const testTypeName = 'TestType'
+    const testInstanceId = 'some_id'
+    const testType = createCustomObject(testTypeName, {
+      [MANAGED_BY_SALTO_FIELD_NAME]: {
+        refType: BuiltinTypes.BOOLEAN,
+        annotations: {
+          [LABEL]: 'Managed By Salto',
+          [API_NAME]: MANAGED_BY_SALTO_FIELD_NAME,
+          [FIELD_ANNOTATIONS.QUERYABLE]: false,
+        },
+      },
+    })
+    const testRecords: Record<string, unknown>[] = [
+      {
+        attributes: {
+          type: testTypeName,
+        },
+        Id: testInstanceId,
+        Name: 'Name',
+      },
+    ]
+    beforeEach(async () => {
+      filter = filterCreator(
+        {
+          client,
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildTestFetchProfile([
+              {
+                typeName: testTypeName,
+                included: true,
+                excluded: false,
+                allowRef: false,
+              },
+            ]),
+          },
+        }
+      ) as FilterType
+
+      elements = [testType]
+
+      testRecords.forEach(record => { record[MANAGED_BY_SALTO_FIELD_NAME] = true })
+      setMockQueryResults(testRecords)
+
+      filterResult = await filter.onFetch(elements) as FilterResult
+    })
+
+    it('Should warn if the field is not queryable', () => {
+      expect(filterResult.errors ?? []).not.toBeEmpty()
+      expect(filterResult.errors).toEqual([{
+        message: expect.stringContaining('TestType') && expect.stringContaining(MANAGED_BY_SALTO_FIELD_NAME),
+        severity: 'Warning',
+      }])
+      expect(elements).toHaveLength(1)
+      expect(basicQueryImplementation).not.toHaveBeenCalled()
     })
   })
 })

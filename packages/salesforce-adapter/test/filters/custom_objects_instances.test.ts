@@ -20,6 +20,7 @@ import {
   createRefToElmWithValue,
   Element,
   ElemID,
+  FetchResult,
   FieldDefinition,
   InstanceElement,
   isInstanceElement,
@@ -597,15 +598,44 @@ describe('Custom Object Instances filter', () => {
       const includedNamespaceObjName = `${testNamespace}__Included__c`
       const includedNameSpaceObj = createCustomObject(includedNamespaceObjName)
 
-      const includedObject = createCustomObject(includeObjectName)
+      const includedObject = createCustomObject(includeObjectName, {
+        NonQueryable: {
+          refType: stringType,
+          annotations: {
+            [FIELD_ANNOTATIONS.QUERYABLE]: false,
+            [LABEL]: 'Non-queryable field',
+            [API_NAME]: 'NonQueryableField',
+          },
+        },
+        HiddenNonQueryable: {
+          refType: stringType,
+          annotations: {
+            [FIELD_ANNOTATIONS.QUERYABLE]: false,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+            [LABEL]: 'Hidden non-queryable field',
+            [API_NAME]: 'HiddenNonQueryableField',
+          },
+        },
+      })
       const excludedObject = createCustomObject(excludeObjectName)
       const excludeOverrideObject = createCustomObject(excludeOverrideObjectName)
+      let fetchResult: FetchResult
       beforeEach(async () => {
         elements = [
           notConfiguredObj, includedNameSpaceObj,
           includedObject, excludedObject, excludeOverrideObject,
         ]
-        await filter.onFetch(elements)
+        fetchResult = await filter.onFetch(elements) as FetchResult
+      })
+
+      describe('when an object has non-queryable fields', () => {
+        it('should issue a warning', () => {
+          expect(fetchResult.errors).toEqual([{
+            message: expect.stringContaining(includeObjectName) && expect.stringContaining('NonQueryable'),
+            severity: 'Warning',
+          }])
+          expect(fetchResult.errors?.[0].message).not.toInclude('HiddenNonQueryable')
+        })
       })
 
       describe('should add instances per configured object', () => {
@@ -1623,7 +1653,7 @@ describe('Custom Object Instances filter', () => {
 
     it('Should warn if the field is not queryable', () => {
       expect(filterResult.errors ?? []).not.toBeEmpty()
-      expect(filterResult.errors).toEqual([{
+      expect(filterResult.errors).toIncludeAllPartialMembers([{
         message: expect.stringContaining('TestType') && expect.stringContaining(MANAGED_BY_SALTO_FIELD_NAME),
         severity: 'Warning',
       }])

@@ -532,6 +532,13 @@ const filterTypesWithManyInstances = async (
   }
 }
 
+const getInaccessibleCustomFields = (objectType: ObjectType): string[] => (
+  Object.entries(objectType.fields)
+    .filter(([, field]) => !isQueryableField(field))
+    .filter(([, field]) => !field.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE])
+    .map(([name]) => name)
+)
+
 const createInvalidAliasFieldFetchWarning = async (
   { objectType, invalidAliasFields }: CustomObjectFetchSetting
 ): Promise<SaltoError> => ({
@@ -543,6 +550,14 @@ const createInvalidManagedBySaltoFieldFetchWarning = async (
   { objectType, invalidManagedBySaltoField }: CustomObjectFetchSetting
 ): Promise<SaltoError> => ({
   message: `The field ${await apiName(objectType)}${API_NAME_SEPARATOR}${invalidManagedBySaltoField} is configured as the filter field in the saltoManagementFieldSettings.defaultFieldName section of the Salto environment configuration. However, the user configured for fetch does not have read access to this field. Records of type ${await apiName(objectType)} will not be fetched.`,
+  severity: 'Warning',
+})
+
+const createInaccessibleFieldsFetchWarning = async (
+  objectType: ObjectType,
+  inaccessibleFields: string[],
+): Promise<SaltoError> => ({
+  message: `The following fields are not accessible and will not appear in records of type ${await apiName(objectType)}: ${inaccessibleFields.join(',')}'`,
   severity: 'Warning',
 })
 
@@ -599,6 +614,13 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       .filter(setting => setting.invalidManagedBySaltoField !== undefined)
       .map(createInvalidManagedBySaltoFieldFetchWarning)
 
+    const invalidPermissionsWarnings = awu(customObjectFetchSetting)
+      .map(fetchSettings => fetchSettings.objectType)
+      .filter(isCustomObject)
+      .map(objectType => ({ type: objectType, fields: getInaccessibleCustomFields(objectType) }))
+      .filter(({ fields }) => fields.length > 0)
+      .map(({ type, fields }) => createInaccessibleFieldsFetchWarning(type, fields))
+
     return {
       configSuggestions: [
         ...invalidFieldSuggestions,
@@ -607,6 +629,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       ],
       errors: await invalidAliasFieldWarnings
         .concat(invalidManagedBySaltoFieldWarnings)
+        .concat(invalidPermissionsWarnings)
         .toArray(),
     }
   },

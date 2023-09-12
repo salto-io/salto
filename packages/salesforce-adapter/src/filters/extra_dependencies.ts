@@ -64,8 +64,8 @@ const createQueries = (
   if (!toolingDepsOfCurrentNamespace) {
     return baseQueries
   }
-  const nonNamespaceDepsQueries = baseQueries.map(query => `${query} AND MetadataComponentNamespacePrefix = '${orgNamespace}'`)
-  const namespaceDepsQueries = baseQueries.map(query => `${query} AND MetadataComponentNamespacePrefix != '${orgNamespace}'`)
+  const nonNamespaceDepsQueries = baseQueries.map(query => `${query} AND MetadataComponentNamespace = '${orgNamespace}'`)
+  const namespaceDepsQueries = baseQueries.map(query => `${query} AND MetadataComponentNamespace != '${orgNamespace}'`)
   return nonNamespaceDepsQueries.concat(namespaceDepsQueries)
 }
 

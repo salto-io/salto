@@ -69,9 +69,9 @@ const TICKET_FORM_SCHEMA = Joi.object({
 const isTicketFormWithConditions = createSchemeGuardForInstance<TicketForm>(TICKET_FORM_SCHEMA)
 
 /**
-  * If this function fails to identify whether custom statuses are enabled
-* it will log an error and return true to skip the validator.
-  */
+ * If this function fails to identify whether custom statuses are enabled
+ * it will log an error and return true to skip the validator.
+ */
 const areCustomStatusesEnabled = async (
   elementSource?: ReadOnlyElementsSource
 ): Promise<boolean> => {

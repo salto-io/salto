@@ -38,12 +38,12 @@ const getFixedElements = (
  */
 export const combineElementFixers = (fixers: FixElementsFunc[]): FixElementsFunc => async elements =>
   awu(fixers).reduce(
-    async (fixes, fixer) => {
-      const updatedElements = getFixedElements(elements, fixes.fixedElements)
-      const newFixes = await fixer(updatedElements)
+    async (allFixes, currentFixer) => {
+      const updatedElements = getFixedElements(elements, allFixes.fixedElements)
+      const newFixes = await currentFixer(updatedElements)
       return {
-        fixedElements: getFixedElements(fixes.fixedElements, newFixes.fixedElements),
-        errors: fixes.errors.concat(newFixes.errors),
+        fixedElements: getFixedElements(allFixes.fixedElements, newFixes.fixedElements),
+        errors: allFixes.errors.concat(newFixes.errors),
       }
     },
     { fixedElements: [] as Element[], errors: [] as ChangeError[] }

@@ -14,11 +14,12 @@
 * limitations under the License.
 */
 
-import { FixElementsFunc, GetCustomReferencesFunc, InstanceElement, ReadOnlyElementsSource, ReferenceInfo, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
+import { FixElementsFunc, GetCustomReferencesFunc, InstanceElement, ReferenceInfo, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { collections, values } from '@salto-io/lowerdash'
 import { AUTOMATION_TYPE } from '../constants'
+import { WeakReferencesHandler } from './weak_references_handler'
 
 const { awu } = collections.asynciterable
 
@@ -54,7 +55,7 @@ const getProjectReferences = async (
 /**
  * Marks each project reference in automation as a weak reference.
  */
-export const getAutomationProjectsReferences: GetCustomReferencesFunc = async elements =>
+const getAutomationProjectsReferences: GetCustomReferencesFunc = async elements =>
   awu(elements)
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
@@ -64,7 +65,7 @@ export const getAutomationProjectsReferences: GetCustomReferencesFunc = async el
 /**
  * Remove invalid projects (not references or missing references) from automations.
  */
-export const removeMissingAutomationProjects = (elementsSource: ReadOnlyElementsSource)
+const removeMissingAutomationProjects: WeakReferencesHandler['removeWeakReferences'] = ({ elementsSource })
 : FixElementsFunc => async elements => {
   const fixedElements = await awu(elements)
     .filter(isInstanceElement)
@@ -101,4 +102,9 @@ export const removeMissingAutomationProjects = (elementsSource: ReadOnlyElements
     detailedMessage: 'Automation included projects that do not exist in the current environment. These projects were removed from the automation.',
   }))
   return { fixedElements, errors }
+}
+
+export const automationProjectsHandler: WeakReferencesHandler = {
+  findWeakReferences: getAutomationProjectsReferences,
+  removeWeakReferences: removeMissingAutomationProjects,
 }

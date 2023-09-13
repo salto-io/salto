@@ -13,14 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { FixElementsFunc, ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { combineCustomReferenceGetters, combineElementFixers } from '@salto-io/adapter-components'
-import { getAutomationProjectsReferences, removeMissingAutomationProjects } from './automation_projects'
+import { automationProjectsHandler } from './automation_projects'
 
-export const getCustomReferences = combineCustomReferenceGetters([
-  getAutomationProjectsReferences,
-])
-
-export const getElementFixer = (elementsSource: ReadOnlyElementsSource): FixElementsFunc => combineElementFixers([
-  removeMissingAutomationProjects(elementsSource),
-])
+export const weakReferenceHandlers = [
+  automationProjectsHandler,
+]

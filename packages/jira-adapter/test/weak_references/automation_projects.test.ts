@@ -16,7 +16,7 @@
 import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { AUTOMATION_TYPE, JIRA, PROJECT_TYPE } from '../../src/constants'
-import { getAutomationProjectsReferences, removeMissingAutomationProjects } from '../../src/weak_references/automation_projects'
+import { automationProjectsHandler } from '../../src/weak_references/automation_projects'
 
 describe('automation_projects', () => {
   let projectInstance: InstanceElement
@@ -44,9 +44,9 @@ describe('automation_projects', () => {
       }
     )
   })
-  describe('getAutomationProjectsReferences', () => {
+  describe('findWeakReferences', () => {
     it('should return weak references projects', async () => {
-      const references = await getAutomationProjectsReferences([instance])
+      const references = await automationProjectsHandler.findWeakReferences([instance])
 
       expect(references).toEqual([
         { source: instance.elemID.createNestedID('1', 'projectId'), target: projectInstance.elemID, type: 'weak' },
@@ -56,15 +56,15 @@ describe('automation_projects', () => {
 
     it('should do nothing if received invalid automation', async () => {
       instance.value.projects = 'invalid'
-      const references = await getAutomationProjectsReferences([instance])
+      const references = await automationProjectsHandler.findWeakReferences([instance])
 
       expect(references).toEqual([])
     })
   })
 
-  describe('removeMissingAutomationProjects', () => {
+  describe('removeWeakReferences', () => {
     it('should remove the invalid projects', async () => {
-      const fixes = await removeMissingAutomationProjects(elementsSource)([instance])
+      const fixes = await automationProjectsHandler.removeWeakReferences({ elementsSource })([instance])
 
       expect(fixes.errors).toEqual([
         {
@@ -84,7 +84,7 @@ describe('automation_projects', () => {
 
     it('should do nothing if received invalid automation', async () => {
       instance.value.projects = 'invalid'
-      const fixes = await removeMissingAutomationProjects(elementsSource)([instance])
+      const fixes = await automationProjectsHandler.removeWeakReferences({ elementsSource })([instance])
 
       expect(fixes.errors).toEqual([])
       expect(fixes.fixedElements).toEqual([])
@@ -95,7 +95,7 @@ describe('automation_projects', () => {
         { projectId: new ReferenceExpression(new ElemID(JIRA, PROJECT_TYPE, 'instance', 'proj1')) },
         { projectType: 'software' },
       ]
-      const fixes = await removeMissingAutomationProjects(elementsSource)([instance])
+      const fixes = await automationProjectsHandler.removeWeakReferences({ elementsSource })([instance])
 
       expect(fixes.errors).toEqual([])
       expect(fixes.fixedElements).toEqual([])

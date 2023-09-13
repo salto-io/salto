@@ -131,10 +131,13 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
   }
 
   // Sends a post request to Jira with GQL body
+  @clientUtils.throttle<clientUtils.ClientRateLimitConfig>({ bucketName: 'get', keys: ['url', 'queryParams'] })
+  @clientUtils.logDecorator(['url', 'queryParams'])
+  @clientUtils.requiresLogin()
   public async gqlPost(
     args: {url: string; query: string; variables?: Record<string, unknown> },
   ): Promise<graphQLResponseType> {
-    const response = await this.post({
+    const response = await this.sendRequest('post', {
       url: args.url,
       data: {
         query: args.query,

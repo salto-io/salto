@@ -81,20 +81,22 @@ const objectAnnotationSupplier = async (
     Object.assign(object.annotations,
       getAuthorAnnotations(customTypeFilePropertiesMap[objectApiName]))
   }
-  Object.values(customFieldsFilePropertiesMap[objectApiName])
-    .forEach(fileProp => {
-      const field = getObjectFieldByFileProperties(fileProp, object)
-      if (field === undefined) {
-        return
-      }
-      addAuthorAnnotationsToField(
-        fileProp,
-        field
-      )
-      if (fileProp.id !== undefined && fileProp.id !== '') {
-        field.annotations[INTERNAL_ID_ANNOTATION] = fileProp.id
-      }
-    })
+  if (objectApiName in customFieldsFilePropertiesMap) {
+    Object.values(customFieldsFilePropertiesMap[objectApiName])
+      .forEach(fileProp => {
+        const field = getObjectFieldByFileProperties(fileProp, object)
+        if (field === undefined) {
+          return
+        }
+        addAuthorAnnotationsToField(
+          fileProp,
+          field
+        )
+        if (fileProp.id !== undefined && fileProp.id !== '') {
+          field.annotations[INTERNAL_ID_ANNOTATION] = fileProp.id
+        }
+      })
+  }
 }
 
 export const WARNING_MESSAGE = 'Encountered an error while trying to populate author information in some of the Salesforce configuration elements.'

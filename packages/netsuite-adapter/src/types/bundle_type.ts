@@ -29,9 +29,8 @@ type BundlePublisher = {
   name?: string
 }
 
-export type BundleType = {
+export type SuiteAppBundleType = {
   id: string
-  isPrivate?: boolean
   name?: string
   version?: string
   description?: string
@@ -42,6 +41,8 @@ export type BundleType = {
   publisher?: BundlePublisher
   installedBy?: BundleInstalledBy
 }
+
+type BundleType = SuiteAppBundleType & { isPrivate?: boolean }
 
 export const bundleType = (): TypeAndInnerTypes => {
   const innerTypes: Record<string, ObjectType> = {}

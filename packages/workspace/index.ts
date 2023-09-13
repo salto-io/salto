@@ -35,7 +35,7 @@ import * as pathIndex from './src/workspace/path_index'
 import { Author } from './src/workspace/changed_by_index'
 import { createElementSelector, ElementSelector, validateSelectorsMatches, createTopLevelSelector,
   selectElementsBySelectorsWithoutReferences, selectElementsBySelectors,
-  selectElementIdsByTraversal, createElementSelectors, ElementIDToValue } from './src/workspace/element_selector'
+  selectElementIdsByTraversal, createElementSelectors, ElementIDToValue, isTopLevelSelector } from './src/workspace/element_selector'
 import * as validator from './src/validator'
 import * as elementSource from './src/workspace/elements_source'
 import * as remoteMap from './src/workspace/remote_map'
@@ -83,6 +83,7 @@ export {
   selectElementsBySelectors,
   createElementSelectors,
   createTopLevelSelector,
+  isTopLevelSelector,
   selectElementIdsByTraversal,
   ElementIDToValue,
   RemoteElementSource,

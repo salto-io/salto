@@ -244,6 +244,33 @@ describe('issueTypeScheme', () => {
       )
     })
 
+    it('should not call the delete issue type ids endpoint if the scheme is the default scheme', async () => {
+      const beforeInstance = new InstanceElement(
+        'instance',
+        type,
+        {
+          id: '1',
+          name: 'name1',
+          issueTypeIds: ['1', '2', '3'],
+          isDefault: true,
+        }
+      )
+
+      const afterInstance = new InstanceElement(
+        'instance',
+        type,
+        {
+          id: '1',
+          name: 'name2',
+          issueTypeIds: ['1', '2'],
+          isDefault: true,
+        }
+      )
+
+      await filter.deploy?.([toChange({ before: beforeInstance, after: afterInstance })])
+      expect(mockConnection.delete).not.toHaveBeenCalled()
+    })
+
     it('should not call the re-order endpoint of there are no changes in the ids', async () => {
       const beforeInstance = new InstanceElement(
         'instance',

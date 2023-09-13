@@ -334,7 +334,7 @@ describe('extra dependencies filter', () => {
       it('should have individual queries for types marked for individual query', () => {
         expect(mockQueryAll).toHaveBeenCalledTimes(6)
         mockQueryAll.mock.calls.forEach(([query]: [string, boolean]) => {
-          expect(query).not.toContain('MetadataComponentNamespacePrefix')
+          expect(query).not.toContain('MetadataComponentNamespace')
         })
       })
 
@@ -366,7 +366,7 @@ describe('extra dependencies filter', () => {
       it('should have individual queries for types marked for individual query', () => {
         expect(mockQueryAll).toHaveBeenCalledTimes(12)
         mockQueryAll.mock.calls.forEach(([query]: [string, boolean]) => {
-          expect(query).toContain('MetadataComponentNamespacePrefix')
+          expect(query).toContain('MetadataComponentNamespace')
         })
       })
     })

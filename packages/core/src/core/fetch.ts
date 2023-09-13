@@ -15,6 +15,7 @@
 */
 import wu from 'wu'
 import _ from 'lodash'
+import * as diff3 from 'node-diff3'
 import { EventEmitter } from 'pietile-eventemitter'
 import {
   Element, ElemID, AdapterOperations, Values, ServiceIds, ObjectType,
@@ -23,6 +24,8 @@ import {
   isSaltoElementError, ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId,
   AdapterOperationsContext, FetchResult, isAdditionChange, isStaticFile,
   isAdditionOrModificationChange, Value, StaticFile, isElement, AuthorInformation, getAuthorInformation,
+  isModificationChange,
+  toChange,
 } from '@salto-io/adapter-api'
 import { applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements, safeJsonStringify, walkOnElement, WalkOnFunc, WALK_NEXT_STEP, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -169,6 +172,68 @@ const addFetchChangeMetadata = (
     await updatedElementSource.get(change.change.id.createBaseID().parent)
   ),
 }])
+
+const toMergedChange = (change: FetchChange, value: Value): FetchChange => ({
+  ...change,
+  change: {
+    ...change.change,
+    ...toChange({ ...change.change.data, after: value }),
+  },
+  pendingChanges: [],
+})
+
+const resolveConflict: ChangeTransformFunction = async change => {
+  const { serviceChanges, pendingChanges = [] } = change
+  if (serviceChanges.length !== 1 || pendingChanges.length !== 1
+  || !change.change.id.isEqual(serviceChanges[0].id) || !change.change.id.isEqual(pendingChanges[0].id)
+  || !isModificationChange(serviceChanges[0]) || !isModificationChange(pendingChanges[0])) {
+    return [change]
+  }
+  const versions = [
+    // current
+    serviceChanges[0].data.after,
+    // base
+    serviceChanges[0].data.before,
+    // incoming
+    pendingChanges[0].data.after,
+  ]
+  const options = { excludeFalseConflicts: true, stringSeparator: '\n' }
+  if (versions.every(isStaticFile)) {
+    const { filepath, encoding } = versions[0]
+    if (!versions.every(file => file.filepath === filepath && file.encoding === encoding)) {
+      return [change]
+    }
+    const [current, base, incoming] = await awu(versions)
+      .map(async file => await file.getContent() ?? Buffer.from(''))
+      .map(buffer => buffer.toString(encoding))
+      .toArray()
+    log.debug('trying to merge static files - path: %s', filepath)
+    const merged = diff3.mergeDiff3(current, base, incoming, options)
+    if (merged.conflict) {
+      log.debug('conflict found')
+      return [change]
+    }
+    log.debug('merged successfully')
+    const mergedChange = toMergedChange(change, new StaticFile({
+      filepath,
+      content: Buffer.from(merged.result.join(options.stringSeparator), encoding),
+    }))
+    return [mergedChange]
+  }
+  if (versions.every(_.isString)) {
+    const [current, base, incoming] = versions
+    log.debug('trying to merge strings - path: %s', change.change.id.getFullName())
+    const merged = diff3.mergeDiff3(current, base, incoming, options)
+    if (merged.conflict) {
+      log.debug('conflict found')
+      return [change]
+    }
+    log.debug('merged successfully')
+    const mergedChange = toMergedChange(change, merged.result.join(options.stringSeparator))
+    return [mergedChange]
+  }
+  return [change]
+}
 
 const getChangesNestedUnderID = (
   id: ElemID, changesTree: collections.treeMap.TreeMap<WorkspaceDetailedChange>
@@ -694,6 +759,7 @@ export const calcFetchChanges = async (
   )
 
   const changes = await awu(fetchChanges)
+    .flatMap(resolveConflict)
     .flatMap(toChangesWithPath(async name => serviceElementsMap[name.getFullName()] ?? []))
     .flatMap(addFetchChangeMetadata(partialFetchElementSource))
     .toArray()

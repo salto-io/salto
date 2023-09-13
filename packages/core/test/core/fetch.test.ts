@@ -183,6 +183,10 @@ describe('fetch', () => {
 
   describe('fetchChanges', () => {
     const mockAdapters = {
+      [testID.adapter]: {
+        fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
+        deploy: mockFunction<AdapterOperations['deploy']>(),
+      },
       [newTypeDifferentAdapterID.adapter]: {
         fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
         deploy: mockFunction<AdapterOperations['deploy']>(),
@@ -816,6 +820,126 @@ describe('fetch', () => {
           const [conflictChange, normalChange] = changes
           expect(conflictChange.pendingChanges?.length).toBeGreaterThan(0)
           expect(normalChange.pendingChanges).toHaveLength(0)
+        })
+      })
+      describe('when the working copy has some mergeable changes in static file', () => {
+        const instanceName = 'name'
+        const filepath = 'abc.txt'
+        const stateStaticFile = new StaticFile({ filepath, content: Buffer.from('hello world!\nmy name is:\nNaCls') })
+        const serviceStaticFile = new StaticFile({ filepath, content: Buffer.from('Hello World!\nmy name is:\nNaCls') })
+        beforeEach(async () => {
+          const stateInstance = new InstanceElement(
+            instanceName,
+            typeWithField,
+            {
+              mergeableContent: stateStaticFile,
+              unmergeableContent: stateStaticFile,
+              otherFile: stateStaticFile,
+            }
+          )
+          const serviceInstance = new InstanceElement(
+            instanceName,
+            typeWithField,
+            {
+              mergeableContent: serviceStaticFile,
+              unmergeableContent: serviceStaticFile,
+              otherFile: serviceStaticFile,
+            }
+          )
+          const workspaceInstance = new InstanceElement(
+            instanceName,
+            typeWithField,
+            {
+              mergeableContent: new StaticFile({ filepath, content: Buffer.from('hello world!\nmy name is:\nNaCls the great!') }),
+              unmergeableContent: new StaticFile({ filepath, content: Buffer.from('HELLO WORLD!\nmy name is:\nNaCls the great!') }),
+              otherFile: new StaticFile({ filepath: 'def.txt', content: Buffer.from('hello world!\nmy name is:\nNaCls the great!') }),
+            }
+          )
+          mockAdapters[testID.adapter].fetch.mockResolvedValueOnce(
+            Promise.resolve({ elements: [serviceInstance] })
+          )
+          const result = await fetchChanges(
+            mockAdapters,
+            createElementSource([workspaceInstance]),
+            createElementSource([stateInstance]),
+            { [testID.adapter]: 'dummy' },
+            [],
+          )
+          changes = [...result.changes]
+        })
+        it('should merge content if possible', async () => {
+          expect(changes).toHaveLength(3)
+          const [mergeableChange, unmergeableChange, otherFileChange] = changes
+          expect(mergeableChange.pendingChanges).toHaveLength(0)
+          expect(mergeableChange.change.id).toEqual(testID.createNestedID('instance', instanceName, 'mergeableContent'))
+          expect(getChangeData(mergeableChange.change)).toEqual(new StaticFile({
+            filepath,
+            content: Buffer.from('Hello World!\nmy name is:\nNaCls the great!'),
+          }))
+          expect(unmergeableChange.pendingChanges).toHaveLength(1)
+          expect(unmergeableChange.change.id).toEqual(testID.createNestedID('instance', instanceName, 'unmergeableContent'))
+          expect(getChangeData(unmergeableChange.change)).toEqual(serviceStaticFile)
+          expect(otherFileChange.pendingChanges).toHaveLength(1)
+          expect(otherFileChange.change.id).toEqual(testID.createNestedID('instance', instanceName, 'otherFile'))
+          expect(getChangeData(otherFileChange.change)).toEqual(serviceStaticFile)
+        })
+      })
+      describe('when the working copy has some mergeable changes in multiline strings', () => {
+        const instanceName = 'name'
+        const stateString = 'hello world!\nmy name is:\nNaCls'
+        const serviceString = 'Hello World!\nmy name is:\nNaCls'
+        beforeEach(async () => {
+          const stateInstance = new InstanceElement(
+            instanceName,
+            typeWithField,
+            {
+              mergeableContent: stateString,
+              unmergeableContent: stateString,
+              otherField: stateString,
+            }
+          )
+          const serviceInstance = new InstanceElement(
+            instanceName,
+            typeWithField,
+            {
+              mergeableContent: serviceString,
+              unmergeableContent: serviceString,
+              otherField: serviceString,
+            }
+          )
+          const workspaceInstance = new InstanceElement(
+            instanceName,
+            typeWithField,
+            {
+              mergeableContent: 'hello world!\nmy name is:\nNaCls the great!',
+              unmergeableContent: 'HELLO WORLD!\nmy name is:\nNaCls the great!',
+              otherField: 1234,
+            }
+          )
+          mockAdapters[testID.adapter].fetch.mockResolvedValueOnce(
+            Promise.resolve({ elements: [serviceInstance] })
+          )
+          const result = await fetchChanges(
+            mockAdapters,
+            createElementSource([workspaceInstance]),
+            createElementSource([stateInstance]),
+            { [testID.adapter]: 'dummy' },
+            [],
+          )
+          changes = [...result.changes]
+        })
+        it('should merge content if possible', async () => {
+          expect(changes).toHaveLength(3)
+          const [mergeableChange, unmergeableChange, otherFieldChange] = changes
+          expect(mergeableChange.pendingChanges).toHaveLength(0)
+          expect(mergeableChange.change.id).toEqual(testID.createNestedID('instance', instanceName, 'mergeableContent'))
+          expect(getChangeData(mergeableChange.change)).toEqual('Hello World!\nmy name is:\nNaCls the great!')
+          expect(unmergeableChange.pendingChanges).toHaveLength(1)
+          expect(unmergeableChange.change.id).toEqual(testID.createNestedID('instance', instanceName, 'unmergeableContent'))
+          expect(getChangeData(unmergeableChange.change)).toEqual(serviceString)
+          expect(otherFieldChange.pendingChanges).toHaveLength(1)
+          expect(otherFieldChange.change.id).toEqual(testID.createNestedID('instance', instanceName, 'otherField'))
+          expect(getChangeData(otherFieldChange.change)).toEqual(serviceString)
         })
       })
       describe('when the changed element is removed in the working copy', () => {

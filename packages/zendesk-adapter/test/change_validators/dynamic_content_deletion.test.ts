@@ -83,6 +83,8 @@ describe('dynamicContentDeletionValidator', () => {
     trigger.value = {}
     const elementsSource = elementSource.createInMemoryElementSource([dynamicContent, trigger, macro, automation])
     const errors = await dynamicContentDeletionValidator(changes, elementsSource)
+
+    // Notice there are only 2 used by now, instead of 3
     expect(errors).toMatchObject([
       {
         elemID: dynamicContent.elemID,

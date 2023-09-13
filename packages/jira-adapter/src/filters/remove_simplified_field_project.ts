@@ -13,18 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export * from './src/change'
-export * from './src/compare'
-export * from './src/decorators'
-export * from './src/dependencies'
-export * from './src/element_source'
-export * from './src/element'
-export * as filter from './src/filter'
-export * from './src/nacl_case_utils'
-export * from './src/utils'
-export * from './src/template'
-export * from './src/walk_element'
-export * from './src/collisions'
-export * as references from './src/references'
-export * from './src/elem_id_discrepancy'
-export * from './src/important_values'
+
+import { isInstanceElement } from '@salto-io/adapter-api'
+import { FilterCreator } from '../filter'
+import { PROJECT_TYPE } from '../constants'
+
+const filter: FilterCreator = () => ({
+  name: 'removeSimplifiedFieldProjectFilter',
+  onFetch: async elements => {
+    elements.filter(isInstanceElement).filter(e => e.elemID.typeName === PROJECT_TYPE).forEach(project => {
+      delete project.value.simplified
+    })
+  },
+})
+export default filter

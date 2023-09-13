@@ -40,17 +40,21 @@ const deployNewAndDeletedIssueTypeIds = async (
   )
 
   const instance = getChangeData(change)
-  if (addedIds.length > 0) {
-    if (!instance.value.isDefault) {
-      await client.put({
-        url: `/rest/api/3/issuetypescheme/${instance.value.id}/issuetype`,
-        data: {
-          issueTypeIds: Array.from(addedIds),
-        },
-      })
-    } else {
-      log.info('Skipping adding issues to default issue type scheme because they are automatically added')
+
+  if (instance.value.isDefault) {
+    if (removedIds.length > 0 || addedIds.length > 0) {
+      log.info('Skipping adding and removing issues to default issue type scheme because they are automatically synced')
     }
+    return
+  }
+
+  if (addedIds.length > 0) {
+    await client.put({
+      url: `/rest/api/3/issuetypescheme/${instance.value.id}/issuetype`,
+      data: {
+        issueTypeIds: Array.from(addedIds),
+      },
+    })
   }
 
   // We run this sequentially and not in parallel because there is a bug in Jira which lets you

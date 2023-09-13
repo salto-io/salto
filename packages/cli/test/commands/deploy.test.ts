@@ -253,6 +253,7 @@ describe('deploy command', () => {
         })
         expect(result).toBe(CliExitCode.AppError)
         expect(callbacks.getUserBooleanInput).not.toHaveBeenCalled()
+        expect(output.stderr.content).toContain('Failed')
       })
     })
   })

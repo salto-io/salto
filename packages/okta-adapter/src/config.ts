@@ -1115,36 +1115,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       },
     },
   },
-  UserType: {
-    transformation: {
-      serviceIdField: 'id',
-      fieldsToHide: [
-        { fieldName: 'id' },
-        { fieldName: '_links' },
-      ],
-      serviceUrl: 'admin/universaldirectory#okta/{id}',
-    },
-    deployRequests: {
-      add: {
-        url: '/api/v1/meta/types/user',
-        method: 'post',
-      },
-      modify: {
-        url: '/api/v1/meta/types/user/{typeId}',
-        method: 'put',
-        urlParamsToFields: {
-          typeId: 'id',
-        },
-      },
-      remove: {
-        url: '/api/v1/meta/types/user/{typeId}',
-        method: 'delete',
-        urlParamsToFields: {
-          typeId: 'id',
-        },
-      },
-    },
-  },
   GroupSchemaAttribute: {
     transformation: {
       fieldTypeOverrides: [
@@ -1468,7 +1438,7 @@ export const SUPPORTED_TYPES = {
   LinkedObjectDefinitions: ['api__v1__meta__schemas__user__linkedObjects'],
   GroupSchema: ['GroupSchema'],
   UserSchema: ['UserSchema'],
-  UserType: ['api__v1__meta__types__user'],
+  // UserType: ['api__v1__meta__types__user'],
   OrgSettings: ['OrgSetting'],
   ...Object.fromEntries(
     Object.keys(POLICY_TYPE_NAME_TO_PARAMS).map(typeName => ([typeName, [getPolicyItemsName(typeName)]]))
@@ -1610,6 +1580,91 @@ const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
       },
     },
   },
+  // moved here from the swagger config in order to reuse in dependsOn
+  UserType: {
+    request: {
+      url: '/api/v1/meta/types/user',
+    },
+    transformation: {
+      // by default there is an unwanted traversal here
+      dataField: '.',
+      serviceIdField: 'id',
+      fieldsToHide: [
+        { fieldName: 'id' },
+        { fieldName: '_links' },
+      ],
+      serviceUrl: 'admin/universaldirectory#okta/{id}',
+    },
+    deployRequests: {
+      add: {
+        url: '/api/v1/meta/types/user',
+        method: 'post',
+      },
+      modify: {
+        url: '/api/v1/meta/types/user/{typeId}',
+        method: 'put',
+        urlParamsToFields: {
+          typeId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/meta/types/user/{typeId}',
+        method: 'delete',
+        urlParamsToFields: {
+          typeId: 'id',
+        },
+      },
+    },
+  },
+  AppUserType: {
+    request: {
+      url: '/api/v1/apps/user/types',
+    },
+    transformation: {
+      // by default there is an unwanted traversal here
+      dataField: '.',
+      serviceIdField: 'id',
+      fieldsToHide: [
+        { fieldName: 'id' },
+        { fieldName: '_links' },
+        { fieldName: 'schemas' },
+      ],
+      serviceUrl: 'admin/universaldirectory#okta/{id}',
+      fieldTypeOverrides: [
+        { fieldName: 'schemas', fieldType: 'map<string>' },
+      ],
+    },
+  },
+  AppUserTypeToUserTypeMapping: {
+    request: {
+      // TODON move to queryParams if possible
+      url: '/api/internal/v1/mappings?source={app_user_type_id}',
+      dependsOn: [
+        { pathParam: 'app_user_type_id', from: { type: 'AppUserType', field: 'id' } },
+      ],
+
+    },
+    transformation: {
+      idFields: ['&sourceId', '&targetId'],
+      dataField: '.',
+    },
+  },
+  UserTypeToAppUserTypeMapping: {
+    request: {
+      // TODON move to queryParams if possible
+      url: '/api/internal/v1/mappings?source={user_type_id}&target={app_user_type_id}',
+      dependsOn: [
+        { pathParam: 'app_user_type_id', from: { type: 'AppUserType', field: 'id' } },
+        { pathParam: 'user_type_id', from: { type: 'UserType', field: 'id' } },
+      ],
+
+    },
+    transformation: {
+      idFields: ['&sourceId', '&targetId'],
+      dataField: '.',
+      extendsParentId: true,
+    },
+  },
 }
 
 export const DUCKTYPE_SUPPORTED_TYPES = {
@@ -1621,6 +1676,11 @@ export const DUCKTYPE_SUPPORTED_TYPES = {
   BrowserPlugin: ['BrowserPlugin'],
   DisplayLanguage: ['DisplayLanguage'],
   Reauthentication: ['Reauthentication'],
+  //
+  UserType: ['UserType'], // moved to ducktype in order to rely on it for UserTypeToAppUserTypeMapping
+  AppUserType: ['AppUserType'],
+  AppUserTypeToUserTypeMapping: ['AppUserTypeToUserTypeMapping'],
+  UserTypeToAppUserTypeMapping: ['UserTypeToAppUserTypeMapping'],
 }
 
 export const DUCKTYPE_API_DEFINITIONS: OktaDuckTypeApiConfig = {

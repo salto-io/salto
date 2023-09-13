@@ -17,27 +17,43 @@ import _ from 'lodash'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { Element, isInstanceElement, InstanceElement } from '@salto-io/adapter-api'
-import { APPLICATION_TYPE_NAME } from '../constants'
+import { APPLICATION_TYPE_NAME, APP_USER_TYPE_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
 import { extractIdFromUrl } from '../utils'
 
-type linkProperty = {
+type LinkProperty = {
     href: string
+}
+
+type NamedLinksProperty = {
+  name: string
+  link: LinkProperty
 }
 
 const LINK_PROPERTY_SCHEME = Joi.object({
   href: Joi.string().required(),
 }).unknown(true).required()
 
-const isLinkProperty = createSchemeGuard<linkProperty>(LINK_PROPERTY_SCHEME, 'Received invalid link property')
+const NAMED_LINKS_PROPERTY_SCHEME = Joi.array().items(
+  Joi.object({
+    name: Joi.string().required(),
+    link: LINK_PROPERTY_SCHEME,
+  }).unknown(true)
+).required()
 
-const RELEVAT_FIELDS = ['profileEnrollment', 'accessPolicy']
+const isLinkProperty = createSchemeGuard<LinkProperty>(LINK_PROPERTY_SCHEME, 'Received invalid link property')
+const isNamedLinksProperty = createSchemeGuard<NamedLinksProperty[]>(NAMED_LINKS_PROPERTY_SCHEME, 'Received invalid named links property')
+
+const RELEVAT_FIELDS_BY_TYPE: Record<string, string[]> = {
+  [APPLICATION_TYPE_NAME]: ['profileEnrollment', 'accessPolicy'],
+  AppUserType: ['app'],
+}
 const INSTANCE_LINKS_PATH = ['_links']
 
 const extractIdsFromUrls = (instance: InstanceElement): void => {
   const linksObject = _.get(instance.value, INSTANCE_LINKS_PATH)
   Object.keys(linksObject)
-    .filter(field => RELEVAT_FIELDS.includes(field))
+    .filter(field => RELEVAT_FIELDS_BY_TYPE[instance.elemID.typeName]?.includes(field))
     .forEach(field => {
       if (isLinkProperty(linksObject[field])) {
         const url = _.get(linksObject, [field, 'href'])
@@ -49,16 +65,29 @@ const extractIdsFromUrls = (instance: InstanceElement): void => {
     })
 }
 
+const extractSchemaIds = (instance: InstanceElement): void => {
+  const linksObject = _.get(instance.value, INSTANCE_LINKS_PATH.concat('schemas'))
+  if (!isNamedLinksProperty(linksObject)) {
+    return
+  }
+  const namedSchemas = Object.fromEntries(linksObject.map(obj => ([obj.name, extractIdFromUrl(obj.link.href)])))
+  _.set(instance.value, 'schemas', namedSchemas)
+}
+
 /**
- * The filter extract ids from urls in _links object in application type
+ * The filter extract ids from urls in _links object in relevant types (application, app user type)
  */
 const filter: FilterCreator = () => ({
   name: 'urlReferencesFilter',
   onFetch: async (elements: Element[]) => {
-    elements
+    const relevantTypes = Object.keys(RELEVAT_FIELDS_BY_TYPE)
+    const relevantElements = elements
       .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === APPLICATION_TYPE_NAME)
-      .forEach(instance => extractIdsFromUrls(instance))
+      .filter(instance => relevantTypes.includes(instance.elemID.typeName))
+
+    // TODO currently not used, can remove
+    relevantElements.forEach(instance => extractIdsFromUrls(instance))
+    relevantElements.filter(instance => instance.elemID.typeName === APP_USER_TYPE_TYPE_NAME).forEach(extractSchemaIds)
   },
 })
 

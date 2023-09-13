@@ -89,6 +89,7 @@ describe('conditionalTicketFieldsValidator', () => {
     const ticketForm1 = ticketForm.clone()
     const ticketForm2 = ticketForm.clone()
     ticketForm1.value.agent_conditions = { parent_field_id: 1, child_fields: [{ id: 2 }] }
+    ticketForm1.value.end_user_conditions = [{ parent_field_id: new ReferenceExpression(ticketField1.elemID) }]
     ticketForm2.value.ticket_field_ids = 1
 
     const changes = [

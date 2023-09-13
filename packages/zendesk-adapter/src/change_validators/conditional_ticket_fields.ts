@@ -60,6 +60,7 @@ export const conditionalTicketFieldsValidator: ChangeValidator = async changes =
       condition.parent_field_id,
       (condition.child_fields ?? []).map(child => child.id),
     ]).flat()
+      .filter(condition => _.isNumber(condition) || isResolvedReferenceExpression(condition))
       .filter(condition => !existingTicketFieldIds.has(extractId(condition)))
 
     if (invalidConditions.length > 0) {

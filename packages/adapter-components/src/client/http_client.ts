@@ -256,7 +256,11 @@ export abstract class AdapterHTTPClient<
       }
       if (e.response !== undefined) {
         logResponse(e.response)
-        throw new HTTPError(`Failed to ${method} ${url} with error: ${e}`, { status: e.response.status, data: e.response.data, headers: this.extractHeaders(e.response.headers) })
+        throw new HTTPError(`Failed to ${method} ${url} with error: ${e}`, {
+          status: e.response.status,
+          data: e.response.data,
+          headers: this.extractHeaders(e.response.headers),
+        })
       }
       throw new Error(`Failed to ${method} ${url} with error: ${e}`)
     }

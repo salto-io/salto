@@ -17,7 +17,7 @@ import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { promises } from '@salto-io/lowerdash'
-import OktaClient, { DEFAULT_RATE_LIMIT_BUFFER } from '../../src/client/client'
+import OktaClient, { DEFAULT_RATE_LIMIT_BUFFER, UNLIMITED_MAX_REQUESTS_PER_MINUTE } from '../../src/client/client'
 import * as clientModule from '../../src/client/client'
 
 const { sleep } = promises.timeout
@@ -158,7 +158,7 @@ describe('client', () => {
       expect(clientGetSinglePageSpy).toHaveBeenNthCalledWith(4, { url: '/api/v1/org3' })
     })
     it('should skip the rate limit code if rateLimitBuffer is set to -1', async () => {
-      const unlimitedClient = new OktaClient({ credentials: { baseUrl: 'http://my.okta.net', token: 'token' }, rateLimitBuffer: -1 })
+      const unlimitedClient = new OktaClient({ credentials: { baseUrl: 'http://my.okta.net', token: 'token' }, config: { rateLimit: { rateLimitBuffer: UNLIMITED_MAX_REQUESTS_PER_MINUTE } } })
       const requests = Array(5).fill(0).map((_, i) => `/api/v1/org${i}`)
       requests.forEach(_ => {
         clientGetSinglePageSpy.mockImplementationOnce(async () => {
@@ -174,7 +174,7 @@ describe('client', () => {
       expect(updateRateLimitsSpy).toHaveBeenCalledTimes(0)
     })
     it('should not pass max rate-limit-limit', async () => {
-      const unlimitedClient = new OktaClient({ credentials: { baseUrl: 'http://my.okta.net', token: 'token' }, rateLimitBuffer: 0 })
+      const unlimitedClient = new OktaClient({ credentials: { baseUrl: 'http://my.okta.net', token: 'token' }, config: { rateLimit: { rateLimitBuffer: 0 } } })
       const requests = Array(5).fill(0).map((_, i) => `/api/v1/org${i}`)
       requests.forEach(_ => {
         clientGetSinglePageSpy.mockImplementationOnce(async () => {

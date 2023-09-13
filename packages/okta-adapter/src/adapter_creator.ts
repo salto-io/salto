@@ -118,7 +118,6 @@ const createAdminClient = (credentials: Credentials, config: OktaConfig): OktaCl
     ? new OktaClient({
       credentials: { ...credentials, baseUrl: adminUrl },
       config: clientConfig,
-      rateLimitBuffer: config[FETCH_CONFIG].rateLimitBuffer,
     })
     : undefined
 }
@@ -133,7 +132,6 @@ export const adapter: Adapter = {
       client: new OktaClient({
         credentials,
         config: config.client,
-        rateLimitBuffer: config[FETCH_CONFIG].rateLimitBuffer,
       }),
       config,
       getElemIdFunc: context.getElemIdFunc,

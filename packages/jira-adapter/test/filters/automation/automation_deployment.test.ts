@@ -26,7 +26,6 @@ import { PRIVATE_API_HEADERS } from '../../../src/client/headers'
 import JiraClient from '../../../src/client/client'
 import { CLOUD_RESOURCE_FIELD } from '../../../src/filters/automation/cloud_id'
 
-
 describe('automationDeploymentFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'deploy'>
   let type: ObjectType
@@ -106,6 +105,16 @@ describe('automationDeploymentFilter', () => {
 
   describe('deploy', () => {
     let existingAutomationValues: Values
+    const cloudIdResponse = {
+      status: 200,
+      data: {
+        unparsedData: {
+          [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
+            tenantId: 'cloudId',
+          }),
+        },
+      },
+    }
 
     beforeEach(() => {
       existingAutomationValues = {
@@ -117,16 +126,7 @@ describe('automationDeploymentFilter', () => {
 
       connection.post.mockImplementation(async url => {
         if (url === '/rest/webResources/1.0/resources') {
-          return {
-            status: 200,
-            data: {
-              unparsedData: {
-                [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
-                  tenantId: 'cloudId',
-                }),
-              },
-            },
-          }
+          return cloudIdResponse
         }
 
         if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/import') {
@@ -284,6 +284,82 @@ describe('automationDeploymentFilter', () => {
       expect(instance.value.created).toBe(1)
     })
 
+    describe('retries on create', () => {
+      const emptyAnswer = {
+        status: 200,
+        data: {
+          total: 1,
+          values: [{
+            id: 12,
+            name: 'someOther',
+            created: 1,
+            projects: [{
+              projectId: '1',
+            }],
+          }],
+        },
+      }
+      const correctAnswer = {
+        status: 200,
+        data: {
+          total: 1,
+          values: [{
+            id: 3,
+            name: 'someName',
+            created: 1,
+            projects: [{
+              projectId: '1',
+            }],
+          }],
+        },
+      }
+      beforeEach(() => {
+        const { client: cli, paginator, connection: conn } = mockClient()
+        client = cli
+        connection = conn
+        config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+        config.client.retry = {
+          maxAttempts: 2,
+          retryDelay: 10,
+        }
+
+        filter = automationDeploymentFilter(getFilterParams({
+          client,
+          paginator,
+          config,
+        })) as filterUtils.FilterWith<'onFetch' | 'deploy'>
+        connection.post.mockClear()
+        connection.post.mockResolvedValueOnce(cloudIdResponse)
+        connection.post.mockResolvedValueOnce({
+          status: 200,
+          data: null,
+        })
+        connection.post.mockResolvedValueOnce(cloudIdResponse)
+        connection.post.mockResolvedValueOnce(emptyAnswer)
+        connection.post.mockResolvedValueOnce(cloudIdResponse)
+        connection.post.mockResolvedValueOnce(emptyAnswer)
+        connection.post.mockResolvedValueOnce(cloudIdResponse)
+      })
+      it('should retry on create', async () => {
+        connection.post.mockResolvedValueOnce(correctAnswer)
+        await filter.deploy([toChange({ after: instance })])
+        expect(connection.post).toHaveBeenCalledTimes(8)
+        expect(instance.value.id).toBe(3)
+        expect(instance.value.created).toBe(1)
+      })
+      it('should fail after too many retires', async () => {
+        connection.post.mockResolvedValueOnce(emptyAnswer)
+        const result = await filter.deploy([toChange({ after: instance })])
+        expect(connection.post).toHaveBeenCalledTimes(8)
+        expect(result.deployResult.errors).toHaveLength(1)
+        expect(result.deployResult.errors[0]).toEqual({
+          severity: 'Error',
+          elemID: instance.elemID,
+          message: 'Error: Cannot find id of automation after the deployment',
+        })
+      })
+    })
+
 
     it('should create automation in jira DC', async () => {
       const { client: cli, connection: conn } = mockClient(true)
@@ -402,6 +478,38 @@ describe('automationDeploymentFilter', () => {
 
     it('should deploy automation of all projects', async () => {
       delete instance.value.projects
+      connection.post.mockClear()
+      connection.post.mockImplementation(async url => {
+        if (url === '/rest/webResources/1.0/resources') {
+          return cloudIdResponse
+        }
+
+        if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/import') {
+          return {
+            status: 200,
+            data: null,
+          }
+        }
+
+        if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules') {
+          return {
+            status: 200,
+            data: {
+              total: 2,
+              values: [
+                existingAutomationValues,
+                {
+                  name: 'someName',
+                  id: 3,
+                  created: 1,
+                  projects: [],
+                },
+              ],
+            },
+          }
+        }
+        throw new Error(`Unexpected url ${url}`)
+      })
       await filter.deploy([toChange({ after: instance })])
 
       expect(connection.post).toHaveBeenCalledWith(
@@ -427,6 +535,40 @@ describe('automationDeploymentFilter', () => {
       instance.value.projects = [{
         projectTypeKey: 'business',
       }]
+      connection.post.mockClear()
+      connection.post.mockImplementation(async url => {
+        if (url === '/rest/webResources/1.0/resources') {
+          return cloudIdResponse
+        }
+
+        if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/import') {
+          return {
+            status: 200,
+            data: null,
+          }
+        }
+
+        if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules') {
+          return {
+            status: 200,
+            data: {
+              total: 2,
+              values: [
+                existingAutomationValues,
+                {
+                  name: 'someName',
+                  id: 3,
+                  created: 1,
+                  projects: [{
+                    projectTypeKey: 'business',
+                  }],
+                },
+              ],
+            },
+          }
+        }
+        throw new Error(`Unexpected url ${url}`)
+      })
       await filter.deploy([toChange({ after: instance })])
 
       expect(connection.post).toHaveBeenCalledWith(

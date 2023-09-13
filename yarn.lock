@@ -9767,6 +9767,11 @@ node-cleanup@^2.1.2:
   resolved "https://registry.yarnpkg.com/node-cleanup/-/node-cleanup-2.1.2.tgz#7ac19abd297e09a7f72a71545d951b517e4dde2c"
   integrity sha1-esGavSl+Caf3KnFUXZUbUX5N3iw=
 
+node-diff3@3.1.0:
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/node-diff3/-/node-diff3-3.1.0.tgz#df2c949447d3314e9d263bd6106768bd8cfcb722"
+  integrity sha512-Po+8MaiOAJkT3YJZPiBEszjpxs29mzIQtk2Idi+Xl0x8WIhkg2Rcinhy/wi8r2YMyPTd6IH86seUQAfj1USPiA==
+
 node-fetch@^2.6.1, node-fetch@^2.6.7:
   version "2.6.7"
   resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.7.tgz#24de9fba827e3b4ae44dc8b20256a379160052ad"

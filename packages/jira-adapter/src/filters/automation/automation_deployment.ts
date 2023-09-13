@@ -41,7 +41,7 @@ type AutomationResponse = {
   projects: {
     projectId: string
   }[]
-}[]
+}
 
 const IMPORT_RESPONSE_SCHEME = Joi.array().items(
   Joi.object({
@@ -56,7 +56,7 @@ const IMPORT_RESPONSE_SCHEME = Joi.array().items(
   }).unknown(true),
 )
 
-const isAutomationsResponse = createSchemeGuard<AutomationResponse>(IMPORT_RESPONSE_SCHEME, 'Received an invalid automation import response')
+const isAutomationsResponse = createSchemeGuard<AutomationResponse[]>(IMPORT_RESPONSE_SCHEME, 'Received an invalid automation import response')
 
 const generateRuleScopesResources = (
   instance: InstanceElement,
@@ -113,7 +113,7 @@ const importAutomation = async (
       ...ruleScopes,
     }],
   }
-
+  log.trace('Importing automation %o', data)
   return client.postPrivate({
     url: `${getUrlPrefix(cloudId)}/rule/import`,
     data,
@@ -123,14 +123,24 @@ const importAutomation = async (
 const getAutomationIdentifier = (values: Values): string =>
   [values.name, ...(_.sortBy((values.projects ?? []).map((project: Values) => project.projectId)))].join('_')
 
-const setInstanceId = async (
-  instance: InstanceElement,
-  automations: Values[]
-): Promise<void> => {
+const getAutomationIdentifierFromService = async ({
+  instance,
+  client,
+  config,
+  retries,
+  delay,
+}: {
+  instance: InstanceElement
+  client: JiraClient
+  config: JiraConfig
+  retries: number
+  delay: number
+}): Promise<AutomationResponse> => {
+  log.trace(`Getting automation identifier for ${instance.elemID.getFullName()}, retries left: ${retries}`)
+  const automations = await getAutomations(client, config)
   if (!isAutomationsResponse(automations)) {
-    throw new Error(`Received an invalid automation response when attempting to create automation: ${instance.elemID.getFullName()}`)
+    throw new Error('Received an invalid automation response when attempting to create automation')
   }
-
   const automationById = _.groupBy(automations, automation => getAutomationIdentifier(automation))
 
   const instanceIdentifier = getAutomationIdentifier(
@@ -141,15 +151,18 @@ const setInstanceId = async (
   log.info('Deployed Automation identifier: %o', instanceIdentifier)
 
   if (automationById[instanceIdentifier] === undefined) {
-    throw new Error(`Deployment failed for automation: ${instance.elemID.getFullName()}`)
+    if (retries === 0) {
+      throw new Error('Cannot find id of automation after the deployment')
+    }
+    log.warn('Automation id not found, retrying')
+    await new Promise(resolve => setTimeout(resolve, delay))
+    return getAutomationIdentifierFromService({ instance, client, config, retries: retries - 1, delay })
   }
 
   if (automationById[instanceIdentifier].length > 1) {
-    throw new Error(`Cannot find if of automation: ${instance.elemID.getFullName()} after the deployment, there is more than one automation with the same name ${instance.value.name}`)
+    throw new Error(`Cannot find id of automation after the deployment, there is more than one automation with the same name ${instance.value.name}`)
   }
-
-  instance.value.id = automationById[instanceIdentifier][0].id
-  instance.value.created = automationById[instanceIdentifier][0].created
+  return automationById[instanceIdentifier][0]
 }
 
 const removeAutomation = async (
@@ -244,8 +257,15 @@ const createAutomation = async (
   config: JiraConfig,
 ): Promise<void> => {
   await importAutomation(instance, client, cloudId)
-  const automations = await getAutomations(client, config)
-  await setInstanceId(instance, automations)
+  const automationResponse = await getAutomationIdentifierFromService({
+    instance,
+    client,
+    config,
+    retries: config.client.retry?.maxAttempts ?? 3,
+    delay: config.client.retry?.retryDelay ?? 5000,
+  })
+  instance.value.id = automationResponse.id
+  instance.value.created = automationResponse.created
   if (instance.value.state === 'ENABLED') {
     // Import automation ignore the state and always create the automation as disabled
     await updateAutomation(instance, client, cloudId)

@@ -40,7 +40,7 @@ type AutomationResponse = {
   created: number
   projects: {
     projectId: string
-  }
+  }[]
 }
 
 const IMPORT_RESPONSE_SCHEME = Joi.array().items(

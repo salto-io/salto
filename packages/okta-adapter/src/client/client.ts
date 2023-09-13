@@ -46,8 +46,8 @@ const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitC
 // We have a buffer to prevent reaching the rate limit with the initial request on parallel or consecutive fetches
 export const DEFAULT_RATE_LIMIT_BUFFER = 6
 
-// Unlimited because the rate max requests is calculated dynamically
-const DEFAULT_MAX_REQUESTS_PER_MINUTE = -1
+const DEFAULT_MAX_REQUESTS_PER_MINUTE = 700
+const UNLIMITED_MAX_REQUESTS_PER_MINUTE = -1
 
 const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
   get: 50,
@@ -95,15 +95,16 @@ const RATE_LIMIT_BUCKETS = [
   new RegExp('^/api/v1.*'), // Has to be last
 ]
 
-export const waitForRateLimit = async (rateLimitReset: number): Promise<void> => {
+export const waitForRateLimit = async (rateLimitReset: number, url: string): Promise<void> => {
   // Calculate the time to wait until the rate limit is reset and wait
   const currentTime = Date.now()
-  const rateLimitResetTime = Math.max(rateLimitReset - currentTime, 100)
+  const rateLimitResetTime = Math.max(rateLimitReset - currentTime, 1000)
+  log.debug(`Waiting ${rateLimitResetTime}ms until rate limit is reset for ${url}`)
   await sleep(rateLimitResetTime)
 }
 
 const shouldRunRequest = (rateLimits: OktaRateLimits, rateLimitBuffer: number): boolean => {
-  const isRateLimitDisabled = rateLimitBuffer === -1
+  const isRateLimitDisabled = rateLimitBuffer === UNLIMITED_MAX_REQUESTS_PER_MINUTE
   const isInitialRequest = _.isEqual(rateLimits, INIT_RATE_LIMITS)
   const isWithinRateLimitBuffer = rateLimits.rateLimitRemaining - rateLimits.currentlyRunning > rateLimitBuffer
   const didRateLimitReset = rateLimits.rateLimitReset < Date.now()
@@ -119,7 +120,7 @@ const shouldRunRequest = (rateLimits: OktaRateLimits, rateLimitBuffer: number): 
       && !isMaxPerMinuteReached // In case there were more waiting than the max per minute, we need this safety
     )
 }
-const updateRateLimits = (
+export const updateRateLimits = (
   rateLimits: OktaRateLimits,
   headers: Record<string, string>
 ): void => {
@@ -145,6 +146,7 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
   Credentials, clientUtils.ClientRateLimitConfig
 > {
   private readonly rateLimitBuffer: number
+  private readonly useDynamicRateLimit: boolean
 
   private rateLimits = RATE_LIMIT_BUCKETS.map(url => ({
     url,
@@ -163,11 +165,14 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
       {
         pageSize: DEFAULT_PAGE_SIZE,
         rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
-        maxRequestsPerMinute: DEFAULT_MAX_REQUESTS_PER_MINUTE,
+        maxRequestsPerMinute: clientOpts.rateLimitBuffer === UNLIMITED_MAX_REQUESTS_PER_MINUTE
+          ? DEFAULT_MAX_REQUESTS_PER_MINUTE // This means the dynamic calculation is disabled, so we use the default
+          : UNLIMITED_MAX_REQUESTS_PER_MINUTE, // Unlimited because the rate max requests is calculated dynamically
         retry: DEFAULT_RETRY_OPTS,
       }
     )
     this.rateLimitBuffer = clientOpts.rateLimitBuffer ?? DEFAULT_RATE_LIMIT_BUFFER
+    this.useDynamicRateLimit = this.rateLimitBuffer !== UNLIMITED_MAX_REQUESTS_PER_MINUTE
   }
 
   public get baseUrl(): string {
@@ -183,19 +188,21 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
     const rateLimits = this.rateLimits.find(({ url }) => args.url.match(url))?.limits ?? this.defaultRateLimits
 
-    while (!shouldRunRequest(rateLimits, this.rateLimitBuffer)) {
-      // eslint-disable-next-line no-await-in-loop
-      await waitForRateLimit(rateLimits.rateLimitReset)
+    if (this.useDynamicRateLimit) {
+      while (!shouldRunRequest(rateLimits, this.rateLimitBuffer)) {
+        // eslint-disable-next-line no-await-in-loop
+        await waitForRateLimit(rateLimits.rateLimitReset, args.url)
+      }
     }
     try {
       rateLimits.currentlyRunning += 1
       const res = await super.getSinglePage(args)
-      if (res.headers) {
+      if (res.headers && this.useDynamicRateLimit) {
         updateRateLimits(rateLimits, res.headers)
       }
       return res
     } catch (e) {
-      if (e.response?.headers) {
+      if (e.response?.headers && this.useDynamicRateLimit) {
         updateRateLimits(rateLimits, e.response?.headers)
       }
       const status = e.response?.status

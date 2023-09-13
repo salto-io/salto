@@ -75,16 +75,18 @@ describe('client', () => {
     let oktaGetSinglePageSpy: jest.SpyInstance
     let clientGetSinglePageSpy: jest.SpyInstance
     let waitSpy: jest.SpyInstance
+    let updateRateLimitsSpy: jest.SpyInstance
     beforeEach(() => {
       jest.restoreAllMocks()
       oktaGetSinglePageSpy = jest.spyOn(client, 'getSinglePage')
       clientGetSinglePageSpy = jest.spyOn(clientUtils.AdapterHTTPClient.prototype, 'getSinglePage')
       waitSpy = jest.spyOn(clientModule, 'waitForRateLimit')
+      updateRateLimitsSpy = jest.spyOn(clientModule, 'updateRateLimits')
     })
     it('should wait for first request, then wait according to rate limit', async () => {
       for (let i = 1; i <= 2; i += 1) {
         for (let j = 1; j <= 5; j += 1) {
-          const resetTime = Math.floor((Date.now() + 1500 * i) / 1000)
+          const resetTime = Math.floor((Date.now() + 2500 * i) / 1000)
           // eslint-disable-next-line no-loop-func
           clientGetSinglePageSpy.mockImplementationOnce(async () => {
             await sleep(100)
@@ -155,7 +157,7 @@ describe('client', () => {
       expect(clientGetSinglePageSpy).toHaveBeenNthCalledWith(3, { url: '/api/v1/org2' })
       expect(clientGetSinglePageSpy).toHaveBeenNthCalledWith(4, { url: '/api/v1/org3' })
     })
-    it('should not wait with rateLimitBuffer of -1', async () => {
+    it('should skip the rate limit code if rateLimitBuffer is set to -1', async () => {
       const unlimitedClient = new OktaClient({ credentials: { baseUrl: 'http://my.okta.net', token: 'token' }, rateLimitBuffer: -1 })
       const requests = Array(5).fill(0).map((_, i) => `/api/v1/org${i}`)
       requests.forEach(_ => {
@@ -169,6 +171,7 @@ describe('client', () => {
       await Promise.all(promise)
 
       expect(waitSpy).toHaveBeenCalledTimes(0)
+      expect(updateRateLimitsSpy).toHaveBeenCalledTimes(0)
     })
     it('should not pass max rate-limit-limit', async () => {
       const unlimitedClient = new OktaClient({ credentials: { baseUrl: 'http://my.okta.net', token: 'token' }, rateLimitBuffer: 0 })

@@ -85,15 +85,14 @@ describe('client', () => {
     })
     it('should wait for first request, then wait according to rate limit', async () => {
       for (let i = 1; i <= 2; i += 1) {
-        for (let j = 1; j <= 5; j += 1) {
-          const resetTime = Math.floor((Date.now() + 2500 * i) / 1000)
+        for (let j = 1; j <= 4; j += 1) {
           // eslint-disable-next-line no-loop-func
           clientGetSinglePageSpy.mockImplementationOnce(async () => {
             await sleep(100)
             return { headers: {
               'x-rate-limit-remaining': (DEFAULT_RATE_LIMIT_BUFFER + 5 - j).toString(),
-              'x-rate-limit-reset': resetTime,
-              'x-rate-limit-limit': 100,
+              'x-rate-limit-reset': Date.now() / 1000 + 1, // 1 in order to be longer than the total length of the test
+              'x-rate-limit-limit': 1, // 1 in order to cancel this condition
             } }
           })
         }

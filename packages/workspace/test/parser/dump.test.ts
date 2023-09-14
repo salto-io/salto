@@ -419,12 +419,12 @@ describe('Salto Dump', () => {
     it('should serialize strings and escape correctly', async () => {
       expect(await dumpValues('"aaa"', functions)).toEqual('"\\"aaa\\""\n')
     })
-    it('should serialize booleans', async () => {
-      expect(await dumpValues(false, functions)).toEqual('false\n')
-    })
     it('should serialize multi line string and escape correctly', async () => {
       // eslint-disable-next-line no-template-curly-in-string
       expect(await dumpValues("a${a}a\n'''aaa", functions)).toEqual("'''\na\\${a}a\n\\'''aaa\n'''\n")
+    })
+    it('should serialize booleans', async () => {
+      expect(await dumpValues(false, functions)).toEqual('false\n')
     })
     it('should dump list', async () => {
       expect(await dumpValues(

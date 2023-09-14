@@ -30,7 +30,11 @@ import customObjectsFromDescribeFilter from '../src/filters/custom_objects_from_
 import customObjectsToObjectTypeFilter from '../src/filters/custom_objects_to_object_type'
 import customObjectsInstancesFilter from '../src/filters/custom_objects_instances'
 import { createCustomSettingsObject } from '../test/utils'
-import { CUSTOM_OBJECT, LIST_CUSTOM_SETTINGS_TYPE } from '../src/constants'
+import {
+  CUSTOM_OBJECT,
+  LIST_CUSTOM_SETTINGS_TYPE,
+  OWNER_ID,
+} from '../src/constants'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 import { testHelpers } from './jest_environment'
 
@@ -76,8 +80,6 @@ describe('custom object instances e2e', () => {
 
   const accountInstanceValue = {
     AccountNumber: '12345',
-    IsActive: true,
-    IsArchived: false,
     Name: 'Test Account',
     fullName: 'TestAccount',
     // TODO OwnerId
@@ -199,6 +201,7 @@ describe('custom object instances e2e', () => {
           .find(async e => isObjectType(e) && (await apiName(e, true) === accountMetadataName))
         expect(accountObjectType).toBeDefined()
         expect(isObjectType(accountObjectType)).toBeTruthy()
+        expect((accountObjectType as ObjectType).fields).toHaveProperty(OWNER_ID)
         const instance = createInstance({
           value: accountInstanceValue,
           type: accountObjectType as ObjectType,
@@ -207,25 +210,27 @@ describe('custom object instances e2e', () => {
           adapter,
           instance,
         )
-        const result = await getRecordOfInstance(client, createdProduct2Instance)
+        const result = await getRecordOfInstance(client, createdAccountInstance, ['OwnerId'])
         expect(result).toBeDefined()
-        expect((result as SalesforceRecord).Id).toEqual(createdProduct2Instance.value.Id)
+        expect((result as SalesforceRecord).Id).toEqual(createdAccountInstance.value.Id)
+        expect(result).toHaveProperty('OwnerId')
+        expect((result as SalesforceRecord).OwnerId).not.toBeEmpty()
       })
     })
     describe('should update values of a custom object instance', () => {
       it('should update values of a custom object instance', async () => {
-        const updatedInstance = createdProduct2Instance.clone()
-        updatedInstance.value.isActive = false
-        updatedInstance.value.ProductCode = 'newCode'
+        const updatedInstance = createdAccountInstance.clone()
+        updatedInstance.value.AccountNumber = '5678'
         await adapter.deploy({
           changeGroup: {
             groupID: updatedInstance.elemID.getFullName(),
-            changes: [{ action: 'modify', data: { before: createdProduct2Instance, after: updatedInstance } }],
+            changes: [{ action: 'modify', data: { before: createdAccountInstance, after: updatedInstance } }],
           },
         })
-        const fields = ['IsActive', 'ProductCode', 'IsArchived']
-        const result = await getRecordOfInstance(client, createdProduct2Instance, fields)
+        const fields = ['AccountNumber']
+        const result = await getRecordOfInstance(client, createdAccountInstance, fields)
         expect(result).toBeDefined()
+        // TODO why does this fail?!
         expect(result).toMatchObject(_.pick(updatedInstance.value, fields))
       })
     })

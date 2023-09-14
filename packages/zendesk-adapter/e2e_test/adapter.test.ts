@@ -424,7 +424,6 @@ describe('Zendesk adapter E2E', () => {
         `${userFieldInstance.elemID.name}__${userFieldOption1Value}`,
         userFieldOptionType,
         {
-          userFieldOption1Name,
           raw_name: userFieldOption1Name,
           value: userFieldOption1Value,
         },

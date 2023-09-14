@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, ElemID, InstanceElement,
-  ReferenceExpression, CORE_ANNOTATIONS, toChange, Value,
+  ReferenceExpression, CORE_ANNOTATIONS, toChange,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 
@@ -39,7 +39,7 @@ jest.mock('@salto-io/adapter-components', () => {
 })
 
 describe('organization field filter', () => {
-  type FilterType = filterUtils.FilterWith<'deploy' | 'onDeploy'>
+  type FilterType = filterUtils.FilterWith<'deploy'>
   let filter: FilterType
   const parentTypeName = ORG_FIELD_TYPE_NAME
   const childTypeName = ORG_FIELD_OPTION_TYPE_NAME
@@ -105,8 +105,6 @@ describe('organization field filter', () => {
       expectedElements[0].value.id = 11
       expectedElements[1].value.id = 22
       expectedElements[2].value.id = 33
-      expectedElements[1].value.name = expectedElements[1].value.raw_name
-      expectedElements[2].value.name = expectedElements[2].value.raw_name
       expect(res.deployResult.appliedChanges).toHaveLength(3)
       expect(res.deployResult.appliedChanges)
         .toEqual(expectedElements.map(e => ({ action: 'add', data: { after: e } })))
@@ -166,12 +164,7 @@ describe('organization field filter', () => {
       clonedResolvedParent.value.id = 11
       beforeElements[0].value.id = 22
       beforeElements[1].value.id = 33
-      const afterElements = beforeElements
-        .map(e => e.clone())
-        .map(e => {
-          e.value.name = `${e.value.name}-edited`
-          return e
-        })
+      const afterElements = beforeElements.map(e => e.clone())
       clonedResolvedParent.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] = afterElements.map(e => e.value)
       afterElements.forEach(e => {
         e.annotations[CORE_ANNOTATIONS.PARENT] = [
@@ -183,7 +176,6 @@ describe('organization field filter', () => {
         action: 'modify', data: { before: e, after: afterElements[i] },
       })))
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      clonedResolvedParent.value.custom_field_options.forEach((e: Value) => { e.name = e.raw_name })
       expect(mockDeployChange).toHaveBeenCalledWith({
         change: { action: 'modify', data: { before: clonedResolvedParent, after: clonedResolvedParent } },
         client: expect.anything(),
@@ -228,17 +220,6 @@ describe('organization field filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)
-    })
-  })
-  describe('onDeploy', () => {
-    it('should remove name field from custom field options', async () => {
-      const child = new InstanceElement(
-        'child1',
-        childObjType,
-        { name: 'name', raw_name: 'raw_name', value: 'v1' },
-      )
-      await filter.onDeploy([toChange({ after: child })])
-      expect(child.value).toEqual({ raw_name: 'raw_name', value: 'v1' })
     })
   })
 })

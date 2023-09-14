@@ -81,13 +81,12 @@ export const duplicateIdFieldValuesValidator = (
       const instanceZendeskId = toZendeskId(typeName, instance)
       const instanceElemName = generateInstanceNameFromConfig(instance.value, typeName, apiConfig)
 
-      const instancesWithSameZendeskId = _.uniq(instancesByZendeskId[instanceZendeskId]
-        .filter(i => i.elemID.getFullName() !== instance.elemID.getFullName()))
+      const instancesWithSameZendeskId = instancesByZendeskId[instanceZendeskId]
+        .filter(i => i.elemID.getFullName() !== instance.elemID.getFullName())
       const instancesWithSameName = instanceElemName === undefined
         ? []
-        : _.uniq(
-          instancesByIdFields[instanceElemName].filter(i => i.elemID.getFullName() !== instance.elemID.getFullName())
-        )
+        : instancesByIdFields[instanceElemName].filter(i => i.elemID.getFullName() !== instance.elemID.getFullName())
+
 
       if (instancesWithSameZendeskId.length === 0) {
         return undefined

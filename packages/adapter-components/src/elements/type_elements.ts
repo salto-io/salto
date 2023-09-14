@@ -34,14 +34,16 @@ const log = logger(module)
 export const hideFields = (
   fieldsToHide: FieldToHideType[],
   type: ObjectType,
-  typeName: string,
 ): void => {
   const typeFields = type.fields
   fieldsToHide.forEach(({ fieldName, fieldType }) => {
-    if (fieldType !== undefined && fieldType !== typeFields[fieldName]?.refType.elemID.name) {
+    if (fieldType !== undefined
+      && Object.prototype.hasOwnProperty.call(typeFields, fieldName)
+      && fieldType !== typeFields[fieldName].refType.elemID.name) {
       return
     }
     if (!Object.prototype.hasOwnProperty.call(typeFields, fieldName)) {
+      log.debug(`Creating hidden field ${type.elemID.name}.${fieldName} with type ${fieldType}`)
       typeFields[fieldName] = new Field(
         type,
         fieldName,
@@ -49,7 +51,7 @@ export const hideFields = (
       )
     }
     const field = typeFields[fieldName]
-    log.debug('Hiding values for field %s.%s', typeName, fieldName)
+    log.debug('Hiding values for field %s.%s', type.elemID.name, fieldName)
     field.annotations = {
       ...(field.annotations ?? {}),
       [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,

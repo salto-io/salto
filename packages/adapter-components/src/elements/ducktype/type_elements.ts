@@ -272,7 +272,7 @@ export const generateType = ({
 
   // mark fields as hidden based on config
   if (Array.isArray(fieldsToHide)) {
-    hideFields(fieldsToHide, type, typeName)
+    hideFields(fieldsToHide, type)
   }
 
   if (serviceIdField) {

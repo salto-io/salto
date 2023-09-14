@@ -18,17 +18,29 @@ import {
   Change,
   getChangeData,
   InstanceElement,
-  isAdditionOrModificationChange,
-  isInstanceChange,
+  Value,
 } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges } from '../deployment'
 import { API_DEFINITIONS_CONFIG } from '../config'
-import { createAdditionalParentChanges, updateParentChildrenFromChanges } from './utils'
+import { createAdditionalParentChanges } from './utils'
 import { ORG_FIELD_TYPE_NAME } from '../constants'
 
 export const CUSTOM_FIELD_OPTIONS_FIELD_NAME = 'custom_field_options'
 export const ORG_FIELD_OPTION_TYPE_NAME = 'organization_field__custom_field_options'
+
+type CustomFieldOption = {
+  // eslint-disable-next-line camelcase
+  raw_name: string
+  name?: string
+}
+
+const getParentsChildren = (parentChanges: Change<InstanceElement>[]): CustomFieldOption[] =>
+  parentChanges.flatMap(getChangeData)
+    .filter(parent => _.isArray(parent.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME]))
+    .flatMap(parent => parent.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME]
+      .filter((child: Value) => child.raw_name !== undefined))
+
 
 const filterCreator: FilterCreator = ({ config, client }) => ({
   name: 'organizationFieldFilter',
@@ -42,13 +54,6 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       relevantChanges,
       change => getChangeData(change).elemID.typeName === ORG_FIELD_TYPE_NAME,
     )
-
-    // This is in deploy and not preDeploy because we want to copy the final value after preDeploy processing
-    childrenChanges.filter(isAdditionOrModificationChange).forEach(change => {
-      // Zendesk API automatically translates the dynamic_content value of raw_name to name
-      // On deploy we need to do the opposite to make sure we don't override the dynamic_content value
-      getChangeData(change).value.name = getChangeData(change).value.raw_name
-    })
 
     const additionalParentChanges = parentChanges.length === 0 && childrenChanges.length > 0
       ? await createAdditionalParentChanges(childrenChanges)
@@ -70,7 +75,13 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     }
 
     const allParentChanges = parentChanges.concat(additionalParentChanges)
-    updateParentChildrenFromChanges(allParentChanges, childrenChanges, CUSTOM_FIELD_OPTIONS_FIELD_NAME)
+
+    // This is here and not in preDeploy because we want to copy the final value after preDeploy processing
+    getParentsChildren(allParentChanges)
+      .forEach(child => {
+      // Zendesk API automatically translates the dynamic_content value of raw_name to name
+        child.name = child.raw_name
+      })
 
     const deployResult = await deployChanges(
       allParentChanges,
@@ -88,6 +99,13 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         })
       }
     )
+
+    getParentsChildren(allParentChanges)
+      .forEach(child => {
+        // Zendesk API automatically translates the dynamic_content value of raw_name to name
+        delete child.name
+      })
+
     const additionalParentIds = new Set(
       additionalParentChanges.map(getChangeData).map(e => e.elemID.getFullName())
     )
@@ -99,15 +117,6 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       },
       leftoverChanges,
     }
-  },
-  onDeploy: async changes => {
-    changes
-      .filter(isAdditionOrModificationChange)
-      .filter(isInstanceChange)
-      .filter(change => change.data.after.elemID.typeName === ORG_FIELD_OPTION_TYPE_NAME)
-      .forEach(change => {
-        delete getChangeData(change).value.name
-      })
   },
 })
 

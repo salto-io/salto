@@ -17,7 +17,7 @@ import _ from 'lodash'
 import Joi from 'joi'
 import {
   Change, ChangeDataType, getChangeData, InstanceElement,
-  isAdditionOrModificationChange, isInstanceChange, isReferenceExpression, ReferenceExpression, toChange,
+  isAdditionOrModificationChange, isInstanceChange, ReferenceExpression, toChange,
 } from '@salto-io/adapter-api'
 import {
   applyFunctionToChangeData,
@@ -80,33 +80,6 @@ export const createAdditionalParentChanges = async (
   return shouldResolve
     ? awu(changes).map(change => resolveChangeElement(change, lookupFunc)).toArray()
     : changes
-}
-
-// The children in the parents are the instances at the beginning of the deployment
-// If the child change was changed during the preDeploy stage, we want to use the updated one
-export const updateParentChildrenFromChanges = (
-  parentChanges: Change<InstanceElement>[],
-  childrenChanges: Change<InstanceElement>[],
-  childrenField: string,
-): void => {
-  const childrenChangesByElemId = _.keyBy(childrenChanges.map(getChangeData), change => change.elemID.getFullName())
-  parentChanges.map(getChangeData).forEach(parent => {
-    const children = parent.value[childrenField]
-    if (_.isArray(children)) {
-      parent.value[childrenField] = children
-        .map(child => {
-          if (isReferenceExpression(child)) {
-            const childFromChange = childrenChangesByElemId[child.elemID.getFullName()]
-            return childFromChange !== undefined
-              ? new ReferenceExpression(childFromChange.elemID, childFromChange)
-              : child
-          }
-          return child
-        })
-    } else {
-      log.error(`children field '${childrenField}' of ${parent.elemID.getFullName()} is invalid`)
-    }
-  })
 }
 
 const CONDITION_SCHEMA = Joi.array().items(Joi.object({

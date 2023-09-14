@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, InstanceElement, ReferenceExpression, toChange, getChangeData } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { ZENDESK, BRAND_TYPE_NAME } from '../../src/constants'
-import { getBrandsForGuide, updateParentChildrenFromChanges } from '../../src/filters/utils'
+import { getBrandsForGuide } from '../../src/filters/utils'
 
 describe('Zendesk utils', () => {
   describe('getBrandsForGuide', () => {
@@ -83,47 +83,6 @@ describe('Zendesk utils', () => {
       }
       const res = getBrandsForGuide(brandInstances, fetchConfig)
       expect(res).toEqual([])
-    })
-  })
-  describe('updateParentChildrenFromChanges', () => {
-    let parent: InstanceElement
-    let child: InstanceElement
-    const CHILDREN_FIELD = 'children'
-    beforeEach(() => {
-      child = new InstanceElement(
-        'child',
-        new ObjectType({ elemID: new ElemID(ZENDESK, 'child', 'instance', 'child') }),
-        { value: 'before' }
-      )
-      parent = new InstanceElement(
-        'parent',
-        new ObjectType({ elemID: new ElemID(ZENDESK, 'parent', 'instance', 'parent') }),
-        { [CHILDREN_FIELD]: [] }
-      )
-    })
-    it('should update parent children that are reference expressions', async () => {
-      parent.value[CHILDREN_FIELD].push(new ReferenceExpression(child.elemID, child))
-      const newChild = child.clone()
-      newChild.value.value = 'after'
-      const parentChange = toChange({ after: parent })
-      const childChange = toChange({ before: child, after: newChild })
-      updateParentChildrenFromChanges([parentChange], [childChange], CHILDREN_FIELD)
-
-      expect(getChangeData(parentChange).value[CHILDREN_FIELD][0].value.value).toMatchObject({ value: 'after' })
-    })
-    it('should not update parent children that are reference expression if were are not changed', async () => {
-      parent.value[CHILDREN_FIELD].push(new ReferenceExpression(child.elemID, child))
-      const parentChange = toChange({ after: parent })
-      updateParentChildrenFromChanges([parentChange], [], CHILDREN_FIELD)
-
-      expect(getChangeData(parentChange).value[CHILDREN_FIELD][0].value.value).toMatchObject({ value: 'before' })
-    })
-    it('should not update parent children that are not reference expressions', async () => {
-      parent.value[CHILDREN_FIELD].push(child.value)
-      const parentChange = toChange({ after: parent })
-      updateParentChildrenFromChanges([parentChange], [], CHILDREN_FIELD)
-
-      expect(getChangeData(parentChange).value[CHILDREN_FIELD][0]).toMatchObject({ value: 'before' })
     })
   })
 })

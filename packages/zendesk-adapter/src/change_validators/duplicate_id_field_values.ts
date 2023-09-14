@@ -87,7 +87,6 @@ export const duplicateIdFieldValuesValidator = (
         ? []
         : instancesByIdFields[instanceElemName].filter(i => i.elemID.getFullName() !== instance.elemID.getFullName())
 
-
       if (instancesWithSameZendeskId.length === 0) {
         return undefined
       }

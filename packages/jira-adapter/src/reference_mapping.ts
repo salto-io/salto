@@ -906,16 +906,34 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: PROJECT_TYPE },
   },
   {
+    src: { field: 'projectId', parentTypes: [REQUEST_FORM_TYPE] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: PROJECT_TYPE },
+  },
+  {
+    src: { field: 'projectId', parentTypes: [ISSUE_VIEW_TYPE] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: PROJECT_TYPE },
+  },
+  {
     src: { field: 'extraDefinerId', parentTypes: [ISSUE_LAYOUT_TYPE] },
     serializationStrategy: 'id',
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: 'Screen' },
   },
   {
-    src: { field: 'owners', parentTypes: [ISSUE_LAYOUT_TYPE] },
+    src: { field: 'extraDefinerId', parentTypes: [REQUEST_FORM_TYPE] },
     serializationStrategy: 'id',
     jiraMissingRefStrategy: 'typeAndValue',
-    target: { type: ISSUE_TYPE_NAME },
+    target: { type: 'RequestType' },
+  },
+  {
+    src: { field: 'extraDefinerId', parentTypes: [ISSUE_VIEW_TYPE] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: 'RequestType' },
   },
   {
     src: { field: 'key', parentTypes: ['issueLayoutItem'] },

@@ -131,11 +131,14 @@ import storeUsersFilter from './filters/store_users'
 import projectCategoryFilter from './filters/project_category'
 import addAliasFilter from './filters/add_alias'
 import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_specific_duplicate_roles'
-import issueLayoutFilter from './filters/issue_layout/issue_layout'
+import issueLayoutFilter from './filters/layouts/issue_layout'
+import requestTypeRequestFormFilter from './filters/layouts/request_type_request_form'
+import requestTypeIssueViewFilter from './filters/layouts/request_type_issue_view'
 import removeSimpleFieldProjectFilter from './filters/remove_simplified_field_project'
 import changeServiceDeskIdFieldProjectFilter from './filters/change_projects_service_desk_id'
-import createReferencesIssueLayoutFilter from './filters/issue_layout/create_references_issue_layout'
 import addJsmTypesAsFieldsFilter from './filters/add_jsm_types_as_fields'
+import createReferencesIssueLayoutFilter from './filters/layouts/create_references_layouts'
+import requestTypelayoutsToValuesFilter from './filters/layouts/request_type_layouts_to_value'
 import issueTypeHierarchyFilter from './filters/issue_type_hierarchy_filter'
 import projectFieldContextOrder from './filters/project_field_contexts_order'
 import scriptedFieldsIssueTypesFilter from './filters/script_runner/scripted_fields_issue_types'
@@ -269,6 +272,8 @@ export const DEFAULT_FILTERS = [
   // Must run after issueLayoutFilter
   removeSimpleFieldProjectFilter,
   createReferencesIssueLayoutFilter,
+  // Must run after createReferencesIssueLayoutFilter
+  requestTypelayoutsToValuesFilter,
   // Must run after fieldReferencesFilter
   contextsProjectsFilter,
   // must run after contextsProjectsFilter

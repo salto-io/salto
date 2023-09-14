@@ -18,7 +18,7 @@ import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement,
 import { config as configUtils, elements as elementUtils, client as clientUtils, combineElementFixers } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, getElemIdFuncWrapper, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections, objects } from '@salto-io/lowerdash'
+import { objects } from '@salto-io/lowerdash'
 import JiraClient from './client/client'
 import changeValidator from './change_validators'
 import { JiraConfig, getApiDefinitions } from './config/config'
@@ -146,10 +146,10 @@ import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
 import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uuid'
 import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
+import { jiraJSMEntriesFunc } from './jsm_utils'
 
-const { getAllElements, getEntriesResponseValues } = elementUtils.ducktype
+const { getAllElements } = elementUtils.ducktype
 const { findDataField, computeGetArgs } = elementUtils
-const { makeArray } = collections.array
 const {
   generateTypes,
   getAllInstances,
@@ -321,57 +321,6 @@ type AdapterSwaggers = {
   jira: elementUtils.swagger.LoadedSwagger
 }
 
-/**
- * Fetch JSM elements of service desk project.
-*/
-const jiraJSMEntriesFunc = (
-  projectInstance: InstanceElement,
-): elementUtils.ducktype.EntriesRequester => {
-  const getJiraJSMEntriesResponseValues = async ({
-    paginator,
-    args,
-    typeName,
-    typesConfig,
-  } : {
-    paginator: clientUtils.Paginator
-    args: clientUtils.ClientGetWithPaginationParams
-    typeName: string
-    typesConfig: Record<string, configUtils.TypeDuckTypeConfig>
-  }): Promise<clientUtils.ResponseValue[]> => {
-    log.debug(`Fetching type ${typeName} entries for service desk project ${projectInstance.elemID.name}`)
-    const serviceDeskProjectPaginatorResponseValues = (await getEntriesResponseValues({
-      paginator,
-      args,
-      typeName,
-      typesConfig,
-    })).flat()
-    const responseEntryName = typesConfig[typeName].transformation?.dataField
-    return serviceDeskProjectPaginatorResponseValues.flatMap(response => {
-      if (responseEntryName === undefined) {
-        return makeArray(response)
-      }
-      const responseEntries = makeArray(
-        (responseEntryName !== configUtils.DATA_FIELD_ENTIRE_OBJECT)
-          ? response[responseEntryName]
-          : response
-      ) as clientUtils.ResponseValue[]
-      // Defining JSM element to its corresponding project
-      responseEntries.forEach(entry => {
-        entry.projectKey = projectInstance.value.key
-      })
-      if (responseEntryName === configUtils.DATA_FIELD_ENTIRE_OBJECT) {
-        return responseEntries
-      }
-      return {
-        ...response,
-        [responseEntryName]: responseEntries,
-      }
-    }) as clientUtils.ResponseValue[]
-  }
-
-  return getJiraJSMEntriesResponseValues
-}
-
 export default class JiraAdapter implements AdapterOperations {
   private createFiltersRunner: () => Required<Filter>
   private client: JiraClient
@@ -522,14 +471,18 @@ export default class JiraAdapter implements AdapterOperations {
     })
   }
 
-  private async getJSMElements(serviceDeskProjects: InstanceElement[]): Promise<elementUtils.FetchElements<Element[]>> {
-    const { duckTypeApiDefinitions } = this.userConfig
-    // duckTypeApiDefinitions is currently undefined for DC
+  private async getJSMElements(swagerResponseElements: InstanceElement[]):
+  Promise<elementUtils.FetchElements<Element[]>> {
+    const { jsmApiDefinitions } = this.userConfig
+    // jsmApiDefinitions is currently undefined for DC
     if (this.client === undefined
-      || duckTypeApiDefinitions === undefined
+      || jsmApiDefinitions === undefined
       || !this.userConfig.fetch.enableJSM) {
       return { elements: [] }
     }
+    const serviceDeskProjects = swagerResponseElements
+      .filter(isInstanceElement)
+      .filter(project => project.value.projectTypeKey === 'service_desk')
 
     const fetchResults = await Promise.all(serviceDeskProjects.map(async projectInstance => {
       const serviceDeskProjRecord: Record<string, string> = {
@@ -539,16 +492,16 @@ export default class JiraAdapter implements AdapterOperations {
       log.debug(`Fetching elements for brand ${projectInstance.elemID.name}`)
       return getAllElements({
         adapterName: JIRA,
-        types: duckTypeApiDefinitions.types,
+        types: jsmApiDefinitions.types,
         shouldAddRemainingTypes: false,
-        supportedTypes: duckTypeApiDefinitions.supportedTypes,
+        supportedTypes: jsmApiDefinitions.supportedTypes,
         fetchQuery: this.fetchQuery,
         paginator: this.paginator,
         nestedFieldFinder: findDataField,
         computeGetArgs,
-        typeDefaults: duckTypeApiDefinitions.typeDefaults,
+        typeDefaults: jsmApiDefinitions.typeDefaults,
         getElemIdFunc: this.getElemIdFunc,
-        requestContext: serviceDeskProjRecord,
+        additionalRequestContext: serviceDeskProjRecord,
         getEntriesResponseValuesFunc: jiraJSMEntriesFunc(projectInstance),
       })
     }))
@@ -563,8 +516,8 @@ export default class JiraAdapter implements AdapterOperations {
         adapterName: JIRA,
         typeName,
         instances,
-        transformationConfigByType: configUtils.getTransformationConfigByType(duckTypeApiDefinitions.types),
-        transformationDefaultConfig: duckTypeApiDefinitions.typeDefaults.transformation,
+        transformationConfigByType: configUtils.getTransformationConfigByType(jsmApiDefinitions.types),
+        transformationDefaultConfig: jsmApiDefinitions.typeDefaults.transformation,
       })
       return _.concat(jsmElements.instances as Element[], jsmElements.nestedTypes, jsmElements.type)
     })
@@ -593,11 +546,7 @@ export default class JiraAdapter implements AdapterOperations {
       this.getScriptRunnerElements(),
     ])
 
-    const serviceDeskProjects = swaggerResponse.elements
-      .filter(isInstanceElement)
-      .filter(project => project.value.projectTypeKey === 'service_desk')
-
-    const jsmElements = await this.getJSMElements(serviceDeskProjects)
+    const jsmElements = await this.getJSMElements(swaggerResponse.elements)
 
     const elements: Element[] = [
       ...Object.values(swaggerTypes),
@@ -668,8 +617,4 @@ export default class JiraAdapter implements AdapterOperations {
   }
 
   fixElements: FixElementsFunc = elements => this.fixElementsFunc(elements)
-}
-
-export const exportedForTesting = {
-  jiraJSMEntriesFunc,
 }

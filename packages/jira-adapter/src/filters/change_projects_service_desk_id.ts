@@ -24,6 +24,7 @@ const filter: FilterCreator = () => ({
     elements.filter(isInstanceElement)
       .filter(e => e.elemID.typeName === PROJECT_TYPE)
       .filter(project => project.value.projectTypeKey === 'service_desk')
+      .filter(project => project.value.serviceDeskId !== undefined)
       .forEach(project => { project.value.serviceDeskId = project.value.serviceDeskId.id })
   },
 })

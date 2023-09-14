@@ -1819,6 +1819,13 @@ const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'projectName' },
         { fieldName: 'emailAddress' },
         { fieldName: 'portalUrl' },
+        { fieldName: 'portalId' },
+        { fieldName: 'anonymousAccessLinkedConfluenceSpace' },
+        { fieldName: 'unlicensedAccessLinkedConfluenceSpace' },
+        { fieldName: 'globalPublicSignup' },
+        { fieldName: 'globalAnonymousAccess' },
+        { fieldName: 'canAdministerJIRA' },
+        { fieldName: 'customerRoleMisconfigured' },
       ],
       fieldsToHide: [
         { fieldName: 'id' },
@@ -1919,7 +1926,7 @@ const TRANSFORMATION_DEFAULTS: configUtils.TransformationDefaultConfig = {
   nestStandaloneInstances: true,
 }
 
-export const DUCKTYPE_API_DEFINITIONS: JiraDuckTypeConfig = {
+export const JSM_DUCKTYPE_API_DEFINITIONS: JiraDuckTypeConfig = {
   typeDefaults: {
     transformation: TRANSFORMATION_DEFAULTS,
   },

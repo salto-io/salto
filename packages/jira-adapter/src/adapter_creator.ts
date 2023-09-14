@@ -40,7 +40,7 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
 )
 
 function validateConfig(config: Values): asserts config is JiraConfig {
-  const { client, apiDefinitions, fetch, scriptRunnerApiDefinitions, duckTypeApiDefinitions } = config
+  const { client, apiDefinitions, fetch, scriptRunnerApiDefinitions, jsmApiDefinitions } = config
 
   validateClientConfig('client', client)
   if (!_.isPlainObject(apiDefinitions)) {
@@ -56,7 +56,7 @@ function validateConfig(config: Values): asserts config is JiraConfig {
     fetchConfig: fetch,
     apiDefinitions,
     scriptRunnerApiDefinitions,
-    duckTypeApiDefinitions,
+    jsmApiDefinitions,
   })
   if (scriptRunnerApiDefinitions !== undefined) {
     validateDuckTypeApiDefinitionConfig(SCRIPT_RUNNER_API_DEFINITIONS, scriptRunnerApiDefinitions)
@@ -86,7 +86,7 @@ const adapterConfigFromConfig = (
     deploy: null,
     masking: null,
     scriptRunnerApiDefinitions: null,
-    duckTypeApiDefinitions: null,
+    jsmApiDefinitions: null,
   }
   Object.keys(fullConfig)
     .filter(k => !Object.keys(adapterConfig).includes(k))

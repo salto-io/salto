@@ -24,7 +24,7 @@ import { adapter as adapterCreator } from '../src/adapter_creator'
 import { getDefaultConfig } from '../src/config/config'
 import { ISSUE_TYPE_NAME, JIRA } from '../src/constants'
 import { createCredentialsInstance, createConfigInstance, mockClient } from './utils'
-import { exportedForTesting } from '../src/adapter'
+import { jiraJSMEntriesFunc } from '../src/jsm_utils'
 
 const { getAllElements, getEntriesResponseValues } = elements.ducktype
 const { generateTypes, getAllInstances, loadSwagger } = elements.swagger
@@ -57,7 +57,6 @@ jest.mock('@salto-io/adapter-components', () => {
   }
 })
 
-jest.setTimeout(15000)
 describe('adapter', () => {
   let adapter: AdapterOperations
   let getElemIdFunc: ElemIdGetter
@@ -464,7 +463,7 @@ describe('adapter', () => {
         }];
         (getEntriesResponseValues as jest.MockedFunction<typeof getEntriesResponseValues>)
           .mockResolvedValue(responseValue)
-        EntriesRequesterFunc = exportedForTesting.jiraJSMEntriesFunc(serviceDeskProjectInstance)
+        EntriesRequesterFunc = jiraJSMEntriesFunc(serviceDeskProjectInstance)
       })
       it('should add projectKey to the response with all dataField', async () => {
         const result = await EntriesRequesterFunc({

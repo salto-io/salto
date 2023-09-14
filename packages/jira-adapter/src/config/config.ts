@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
-import { JIRA, SCRIPT_RUNNER_API_DEFINITIONS, DUCKTYPE_API_DEFINITIONS } from '../constants'
+import { JIRA, SCRIPT_RUNNER_API_DEFINITIONS, JSM_DUCKTYPE_API_DEFINITIONS } from '../constants'
 import { getProductSettings } from '../product_settings'
 import { JiraDuckTypeConfig } from './api_config'
 
@@ -88,7 +88,7 @@ export type JiraConfig = {
   apiDefinitions: JiraApiConfig
   masking: MaskingConfig
   [SCRIPT_RUNNER_API_DEFINITIONS]?: JiraDuckTypeConfig
-  [DUCKTYPE_API_DEFINITIONS]?: JiraDuckTypeConfig
+  [JSM_DUCKTYPE_API_DEFINITIONS]?: JiraDuckTypeConfig
 }
 
 const jspUrlsType = createMatchingObjectType<Partial<JspUrls>>({
@@ -175,7 +175,7 @@ export const getDefaultConfig = ({ isDataCenter }: { isDataCenter: boolean }): J
   ...PARTIAL_DEFAULT_CONFIG,
   apiDefinitions: getProductSettings({ isDataCenter }).defaultApiDefinitions,
   [SCRIPT_RUNNER_API_DEFINITIONS]: getProductSettings({ isDataCenter }).defaultScriptRunnerApiDefinitions,
-  [DUCKTYPE_API_DEFINITIONS]: getProductSettings({ isDataCenter }).defualtDuckTypeApiDefinitions,
+  [JSM_DUCKTYPE_API_DEFINITIONS]: getProductSettings({ isDataCenter }).defualtDuckTypeApiDefinitions,
 })
 
 const createClientConfigType = (): ObjectType => {
@@ -356,7 +356,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
       adapter: JIRA,
       elemIdPrefix: 'ducktype',
     }) },
-    [DUCKTYPE_API_DEFINITIONS]: { refType: createDucktypeAdapterApiConfigType({
+    [JSM_DUCKTYPE_API_DEFINITIONS]: { refType: createDucktypeAdapterApiConfigType({
       adapter: JIRA,
       elemIdPrefix: 'ducktype',
     }) },
@@ -373,7 +373,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
       'deploy.taskMaxRetries',
       'deploy.taskRetryDelay',
       SCRIPT_RUNNER_API_DEFINITIONS,
-      DUCKTYPE_API_DEFINITIONS]),
+      JSM_DUCKTYPE_API_DEFINITIONS]),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
@@ -393,17 +393,17 @@ export const validateJiraFetchConfig = ({
   fetchConfig,
   apiDefinitions,
   scriptRunnerApiDefinitions,
-  duckTypeApiDefinitions,
+  jsmApiDefinitions,
 }: {
   fetchConfig: JiraFetchConfig
   apiDefinitions: JiraApiConfig
   scriptRunnerApiDefinitions: JiraDuckTypeConfig
-  duckTypeApiDefinitions: JiraDuckTypeConfig
+  jsmApiDefinitions: JiraDuckTypeConfig
 }): void => {
   const supportedTypes = fetchConfig.enableScriptRunnerAddon
     ? Object.keys(apiDefinitions.supportedTypes).concat(Object.keys(scriptRunnerApiDefinitions.supportedTypes))
-      .concat(Object.keys(duckTypeApiDefinitions.supportedTypes))
-    : Object.keys(apiDefinitions.supportedTypes).concat(Object.keys(duckTypeApiDefinitions.supportedTypes))
+      .concat(Object.keys(jsmApiDefinitions.supportedTypes))
+    : Object.keys(apiDefinitions.supportedTypes).concat(Object.keys(jsmApiDefinitions.supportedTypes))
   configUtils.validateSupportedTypes(
     FETCH_CONFIG,
     fetchConfig,

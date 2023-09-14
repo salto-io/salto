@@ -86,7 +86,7 @@ export const dynamicContentDeletionValidator: ChangeValidator = async (changes, 
       elemID: elemId,
       severity: 'Error',
       message: 'Dynamic content is being used',
-      detailedMessage: `This dynamic content cannot be deleted because it is being used by ${_.uniq(usages.map(u => u.createTopLevelParentID().parent.getFullName())).join(', ')}`,
+      detailedMessage: `This dynamic content cannot be deleted because it is being used by ${_.uniq(usages).join(', ')}`,
     }
   }).filter(isDefined)
 

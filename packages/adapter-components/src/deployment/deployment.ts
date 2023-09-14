@@ -132,7 +132,7 @@ export const deployChange = async ({
   if (_.isEmpty(valuesToDeploy) && isAdditionOrModificationChange(change)) {
     return undefined
   }
-  log.trace(`deploying instance ${instance.elemID.getFullName()} with params ${inspectValue({ method: endpoint.method, url, queryParams, data: inspect(data, { depth: 6 }) }, { compact: true })}`)
+  log.trace(`deploying instance ${instance.elemID.getFullName()} with params ${inspectValue({ method: endpoint.method, url, queryParams, data, { compact: true, depth: 6 })}`)
   const response = await client[endpoint.method]({ url, data, queryParams })
   return response.data
 }

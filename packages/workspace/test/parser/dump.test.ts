@@ -96,7 +96,7 @@ describe('Salto Dump', () => {
       ],
     },
     // eslint-disable-next-line no-template-curly-in-string
-    multiLineString: 'This\nis\nmultilinestring\n${foo} "needs" Escaping',
+    multiLineString: "This\nis\nmultilinestring\n${foo}&\\n''' 'needs' Escaping",
     // eslint-disable-next-line no-template-curly-in-string
     stringNeedsEscaping: 'This string ${needs} escaping',
   })
@@ -222,7 +222,7 @@ describe('Salto Dump', () => {
       })
       it('has multiline string', () => {
         expect(body).toMatch(
-          /multiLineString = '''\n\s*This\s*\nis\s*\nmultilinestring\s*\n\s*\\\$\{foo\} "needs" Escaping\s*\n'''/m,
+          /multiLineString = '''\n\s*This\s*\nis\s*\nmultilinestring\s*\n\s*\\\$\{foo\}&\\n\\''' 'needs' Escaping\s*\n'''/m,
         )
       })
       it('Has escaped string', () => {
@@ -419,14 +419,6 @@ describe('Salto Dump', () => {
     })
     it('should serialize strings and escape correctly', async () => {
       expect(await dumpValues('"aaa"', functions)).toEqual('"\\"aaa\\""\n')
-    })
-    it('should serialize multi line string and escape correctly', async () => {
-      // eslint-disable-next-line no-template-curly-in-string
-      expect(await dumpValues("a${a}a\n'''aaa", functions)).toEqual("'''\na\\${a}a\n\\'''aaa\n'''\n")
-    })
-    it('should unescape multi line string correctly', async () => {
-      // eslint-disable-next-line no-template-curly-in-string
-      expect(unescapeMultilineString(await dumpValues("a${a}a\n'''aaa", functions))).toEqual("'''\na${a}a\n'''aaa\n'''\n")
     })
     it('should serialize booleans', async () => {
       expect(await dumpValues(false, functions)).toEqual('false\n')

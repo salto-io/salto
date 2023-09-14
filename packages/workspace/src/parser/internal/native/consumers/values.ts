@@ -262,7 +262,7 @@ const consumeArrayItems = (
 
 const unescapeMultilineMarker = (prim: string): string => prim.replace(/\\'''/g, "'''")
 
-export const unescapeMultilineString = (text: string): string =>
+const unescapeMultilineString = (text: string): string =>
   unescapeMultilineMarker(unescapeTemplateMarker(text))
 
 const consumeMultilineString: Consumer<string | TemplateExpression> = context => {

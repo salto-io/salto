@@ -15,20 +15,18 @@
 */
 import { CORE_ANNOTATIONS, Change, Element, InstanceElement, ReferenceExpression, getChangeData, isAdditionChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { logger } from '@salto-io/logging'
-import { createSchemeGuard, isResolvedReferenceExpression, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
-import { elements as adapterElements } from '@salto-io/adapter-components'
+import { createSchemeGuard, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import JiraClient, { graphQLResponseType } from '../../client/client'
-import { ISSUE_LAYOUT_TYPE, JIRA, PROJECT_TYPE } from '../../constants'
+import JiraClient from '../../client/client'
+import { ISSUE_LAYOUT_TYPE, PROJECT_TYPE } from '../../constants'
 import { FilterCreator } from '../../filter'
-import { QUERY } from './issue_layout_query'
-import { ISSUE_LAYOUT_CONFIG_ITEM_SCHEME, ISSUE_LAYOUT_RESPONSE_SCHEME, IssueLayoutConfig, IssueLayoutConfigItem, IssueLayoutResponse, containerIssueLayoutResponse, createIssueLayoutType } from './issue_layout_types'
+import { ISSUE_LAYOUT_RESPONSE_SCHEME, IssueLayoutConfigItem, IssueLayoutResponse, createLayoutType } from './layout_types'
 import { addAnnotationRecursively, setTypeDeploymentAnnotations } from '../../utils'
 import { deployChanges } from '../../deployment/standard_deployment'
+import { getLayout, getLayoutResponse } from './layoutsUtils'
 
 const { isDefined } = lowerDashValues
-const log = logger(module)
+
 
 type issueTypeMappingStruct = {
     issueTypeId: string
@@ -36,48 +34,6 @@ type issueTypeMappingStruct = {
 }
 
 const isIssueLayoutResponse = createSchemeGuard<IssueLayoutResponse>(ISSUE_LAYOUT_RESPONSE_SCHEME)
-const isIssueLayoutConfigItem = createSchemeGuard<IssueLayoutConfigItem>(ISSUE_LAYOUT_CONFIG_ITEM_SCHEME)
-
-const getIssueLayout = async ({
-  projectId,
-  screenId,
-  client,
-}:{
-    projectId: number
-    screenId: number
-    client: JiraClient
-  }):
-  Promise<graphQLResponseType> => {
-  const baseUrl = '/rest/gira/1'
-  const variables = {
-    projectId,
-    extraDefinerId: screenId,
-  }
-  try {
-    const response = await client.gqlPost({
-      url: baseUrl,
-      query: QUERY,
-      variables,
-    })
-    return response
-  } catch (e) {
-    log.error(`Failed to get issue layout for project ${projectId} and screen ${screenId}: ${e}`)
-  }
-  return { data: undefined }
-}
-
-const fromIssueLayoutConfigRespToIssueLayoutConfig = (
-  containers: containerIssueLayoutResponse[]
-):
-IssueLayoutConfig => {
-  const items = containers.flatMap(container => container.items.nodes.map(node => ({
-    type: 'FIELD',
-    sectionType: container.containerType,
-    key: node.fieldItemId,
-  }))).filter(isIssueLayoutConfigItem)
-
-  return { items }
-}
 
 const getProjectToScreenMapping = async (elements: Element[]): Promise<Record<string, number[]>> => {
   const projectToScreenId: Record<string, number[]> = Object.fromEntries(
@@ -130,9 +86,11 @@ const deployIssueLayoutChanges = async (
       },
     }
     if (isAdditionChange(change)) {
-      const response = await getIssueLayout({ projectId: issueLayout.value.projectId.value.value.id,
-        screenId: issueLayout.value.extraDefinerId.value.value.id,
-        client })
+      const variables = {
+        projectId: issueLayout.value.projectId.value.value.id,
+        extraDefinerId: issueLayout.value.extraDefinerId.value.value.id,
+      }
+      const response = await getLayoutResponse({ variables, client })
       if (!isIssueLayoutResponse(response.data)) {
         throw Error('Failed to deploy issue layout changes due to bad response from jira service')
       }
@@ -162,38 +120,28 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) =>
     )
     const projectToScreenId = Object.fromEntries(Object.entries(await getProjectToScreenMapping(elements))
       .filter(([key]) => Object.keys(projectIdToProject).includes(key)))
-    const { issueLayoutType, subTypes } = createIssueLayoutType()
+    const { issueLayoutType, subTypes } = createLayoutType(ISSUE_LAYOUT_TYPE)
     elements.push(issueLayoutType)
     subTypes.forEach(type => elements.push(type))
 
     const issueLayouts = (await Promise.all(Object.entries(projectToScreenId)
       .flatMap(([projectId, screenIds]) => screenIds.map(async screenId => {
-        const response = await getIssueLayout({
-          projectId: Number(projectId),
-          screenId,
+        const variables = {
+          projectId,
+          extraDefinerId: screenId,
+        }
+        const response = await getLayoutResponse({
+          variables,
           client,
         })
-        if (!Array.isArray(response.data) && isIssueLayoutResponse(response.data)) {
-          const { issueLayoutResult } = response.data.issueLayoutConfiguration
-          const { containers } = issueLayoutResult
-          const value = {
-            id: issueLayoutResult.id,
-            projectId,
-            extraDefinerId: screenId,
-            issueLayoutConfig: fromIssueLayoutConfigRespToIssueLayoutConfig(containers),
-          }
-          const name = `${projectIdToProject[projectId].value.name}_${issueLayoutResult.name}`
-          const serviceIds = adapterElements.createServiceIds(value, 'id', issueLayoutType.elemID)
-          const instanceName = getElemIdFunc ? getElemIdFunc(JIRA, serviceIds, naclCase(name)).name
-            : naclCase(name)
-          return new InstanceElement(
-            instanceName,
-            issueLayoutType,
-            value,
-            [...projectIdToProject[projectId].path.slice(0, -1), 'layouts', pathNaclCase(instanceName)],
-          )
-        }
-        return undefined
+        return getLayout({
+          variables,
+          response,
+          instance: projectIdToProject[projectId],
+          layoutType: issueLayoutType,
+          getElemIdFunc,
+          typeName: ISSUE_LAYOUT_TYPE,
+        })
       })))).filter(isDefined)
     issueLayouts.forEach(layout => { elements.push(layout) })
     setTypeDeploymentAnnotations(issueLayoutType)

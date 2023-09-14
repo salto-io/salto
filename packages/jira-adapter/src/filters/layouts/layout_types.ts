@@ -17,9 +17,9 @@
 import Joi from 'joi'
 import { ObjectType, ElemID, BuiltinTypes, ListType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { elements as adapterElements } from '@salto-io/adapter-components'
-import { ISSUE_LAYOUT_TYPE, JIRA } from '../../constants'
+import { JIRA } from '../../constants'
 
-export const createIssueLayoutType = (): {
+export const createLayoutType = (typeName: string): {
   issueLayoutType: ObjectType
   subTypes: ObjectType[]
 } => {
@@ -40,7 +40,7 @@ export const createIssueLayoutType = (): {
   })
 
   const issueLayoutType = new ObjectType({
-    elemID: new ElemID(JIRA, ISSUE_LAYOUT_TYPE),
+    elemID: new ElemID(JIRA, typeName),
     fields: {
       id: {
         refType: BuiltinTypes.SERVICE_ID,
@@ -56,7 +56,7 @@ export const createIssueLayoutType = (): {
         refType: issueLayoutConfigType,
       },
     },
-    path: [JIRA, adapterElements.TYPES_PATH, ISSUE_LAYOUT_TYPE],
+    path: [JIRA, adapterElements.TYPES_PATH, typeName],
   })
 
   return {
@@ -114,7 +114,7 @@ export type IssueLayoutConfigItem = {
 
 export const ISSUE_LAYOUT_CONFIG_ITEM_SCHEME = Joi.object({
   type: Joi.string().required(),
-  sectionType: Joi.string().valid('PRIMARY', 'SECONDARY', 'CONTENT').required(),
+  sectionType: Joi.string().required(),
   key: Joi.string().required(),
 }).unknown(true).required()
 

@@ -1791,6 +1791,13 @@ const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   RequestType: {
     request: {
       url: '/rest/servicedeskapi/servicedesk/{serviceDeskId}/requesttype',
+      recurseInto: [
+        {
+          type: 'RequestType__workflowStatuses',
+          toField: 'workflowStatuses',
+          context: [{ name: 'requestTypeId', fromField: 'id' }],
+        },
+      ],
     },
     transformation: {
       idFields: ['name', 'projectKey'],
@@ -1804,6 +1811,10 @@ const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
       fieldsToHide: [
         { fieldName: 'id' },
+      ],
+      // Need to update logic
+      standaloneFields: [
+        { fieldName: 'InOrderToCreateAFolder' },
       ],
     },
   },
@@ -1865,6 +1876,21 @@ const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       dataField: 'calendars',
       fieldsToHide: [
         { fieldName: 'id' },
+      ],
+    },
+  },
+  RequestType__workflowStatuses: {
+    request: {
+      url: '/rest/servicedesk/1/servicedesk-data/{projectkey}/request-type/{requestTypeId}/workflow',
+    },
+    transformation: {
+      dataField: 'statuses',
+      fieldsToHide: [
+        { fieldName: 'id' },
+        { fieldName: 'statusNameId' },
+      ],
+      fieldsToOmit: [
+        { fieldName: 'projectKey' },
       ],
     },
   },

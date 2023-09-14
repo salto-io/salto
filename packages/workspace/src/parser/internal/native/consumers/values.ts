@@ -262,6 +262,9 @@ const consumeArrayItems = (
 
 const unescapeMultilineMarker = (prim: string): string => prim.replace(/\\'''/g, "'''")
 
+export const unescapeMultilineString = (text: string): string =>
+  unescapeMultilineMarker(unescapeTemplateMarker(text))
+
 const consumeMultilineString: Consumer<string | TemplateExpression> = context => {
   // Getting the position of the start marker
   const start = positionAtStart(context.lexer.next())
@@ -279,7 +282,7 @@ const consumeMultilineString: Consumer<string | TemplateExpression> = context =>
     context,
     tokens,
     true,
-    (_c, t) => unescapeMultilineMarker(unescapeTemplateMarker(t.text))
+    (_c, t) => unescapeMultilineString(t.text)
   )
   return {
     value,

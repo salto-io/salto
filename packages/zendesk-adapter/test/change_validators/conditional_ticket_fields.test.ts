@@ -74,13 +74,13 @@ describe('conditionalTicketFieldsValidator', () => {
       {
         elemID: ticketForm.elemID,
         severity: 'Error',
-        message: 'The conditional ticket field is not present in the form\'s tickets',
+        message: 'The conditional ticket field is not present in the form\'s ticket_field_ids',
         detailedMessage: 'To utilize a ticket field as a conditional ticket field, it must be included in the \'ticket_field_ids\' list. Invalid fields include: 1, ticketField1, ticketField2, 2',
       },
       {
         elemID: ticketForm.elemID,
         severity: 'Error',
-        message: 'The conditional ticket field is not present in the form\'s tickets',
+        message: 'The conditional ticket field is not present in the form\'s ticket_field_ids',
         detailedMessage: 'To utilize a ticket field as a conditional ticket field, it must be included in the \'ticket_field_ids\' list. Invalid fields include: 1, ticketField1, ticketField2, 2',
       },
     ])

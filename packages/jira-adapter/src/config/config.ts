@@ -54,6 +54,8 @@ type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
 
 type JiraDeployConfig = configUtils.UserDeployConfig & configUtils.DefaultMissingUserFallbackConfig & {
   forceDelete: boolean
+  taskMaxRetries: number
+  taskRetryDelay: number
 }
 
 type JiraFetchFilters = configUtils.DefaultFetchCriteria & {
@@ -158,6 +160,8 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
   },
   deploy: {
     forceDelete: false,
+    taskMaxRetries: 120,
+    taskRetryDelay: 1000,
   },
   masking: {
     automationHeaders: [],

@@ -501,6 +501,7 @@ describe('local workspace', () => {
 
   describe('getCustomReferences', () => {
     let instance: InstanceElement
+
     beforeEach(() => {
       const type = new ObjectType({
         elemID: new ElemID('test2', 'type'),

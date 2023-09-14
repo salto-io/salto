@@ -13,15 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export * as auth from './src/auth'
-export * as client from './src/client'
-export * as config from './src/config'
-export * as deployment from './src/deployment'
-export * as elements from './src/elements'
-export * as filters from './src/filters'
-export * as filterUtils from './src/filter_utils'
-export * as references from './src/references'
-export * from './src/add_alias'
-export * from './src/references/element_fixers'
-export * from './src/references/custom_references'
-export * from './src/references/weak_reference_handler'
+import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { WeakReferencesHandler as ComponentsWeakReferencesHandler } from '@salto-io/adapter-components'
+
+export type WeakReferencesHandler = ComponentsWeakReferencesHandler<{
+  elementsSource: ReadOnlyElementsSource
+}>

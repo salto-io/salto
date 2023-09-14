@@ -42,7 +42,7 @@ const IMPORT_RESPONSE_SCHEME = Joi.object({
 
 const isImportResponse = createSchemeGuard<ImportResponse>(IMPORT_RESPONSE_SCHEME, 'Received an invalid automation import response')
 
-type ProgressREsponse = {
+type ProgressResponse = {
   taskState: string
 }
 
@@ -50,7 +50,7 @@ const PROGRESS_RESPONSE_SCHEME = Joi.object({
   taskState: Joi.string().required(),
 }).unknown(true)
 
-const isProgressResponse = createSchemeGuard<ProgressREsponse>(PROGRESS_RESPONSE_SCHEME, 'Received an invalid automation progress response')
+const isProgressResponse = createSchemeGuard<ProgressResponse>(PROGRESS_RESPONSE_SCHEME, 'Received an invalid automation progress response')
 
 type AutomationResponse = {
   id: number

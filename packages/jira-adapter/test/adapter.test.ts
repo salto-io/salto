@@ -57,7 +57,6 @@ jest.mock('@salto-io/adapter-components', () => {
   }
 })
 
-jest.setTimeout(15000)
 describe('adapter', () => {
   let adapter: AdapterOperations
   let getElemIdFunc: ElemIdGetter

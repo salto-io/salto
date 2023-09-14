@@ -18,7 +18,7 @@ import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement,
 import { config as configUtils, elements as elementUtils, client as clientUtils, combineElementFixers } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, getElemIdFuncWrapper, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections, objects } from '@salto-io/lowerdash'
+import { objects } from '@salto-io/lowerdash'
 import JiraClient from './client/client'
 import changeValidator from './change_validators'
 import { JiraConfig, configType, getApiDefinitions } from './config/config'
@@ -148,7 +148,7 @@ import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
 import { jiraJSMEntriesFunc } from './jsm_utils'
 
-const { getAllElements, getEntriesResponseValues } = elementUtils.ducktype
+const { getAllElements } = elementUtils.ducktype
 const { findDataField, computeGetArgs } = elementUtils
 const {
   generateTypes,
@@ -633,8 +633,4 @@ export default class JiraAdapter implements AdapterOperations {
   }
 
   fixElements: FixElementsFunc = elements => this.fixElementsFunc(elements)
-}
-
-export const exportedForTesting = {
-  jiraJSMEntriesFunc,
 }

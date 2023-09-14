@@ -1625,7 +1625,7 @@ export const DUCKTYPE_SUPPORTED_TYPES = {
   Reauthentication: ['Reauthentication'],
 }
 
-export const DUCKTYPE_API_DEFINITIONS: OktaDuckTypeApiConfig = {
+export const JSM_DUCKTYPE_API_DEFINITIONS: OktaDuckTypeApiConfig = {
   typeDefaults: {
     transformation: TRANSFORMATION_DEFAULTS,
   },
@@ -1651,7 +1651,7 @@ export const DEFAULT_CONFIG: OktaConfig = {
     includeGroupMemberships: false,
   },
   [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
-  [PRIVATE_API_DEFINITIONS_CONFIG]: DUCKTYPE_API_DEFINITIONS,
+  [PRIVATE_API_DEFINITIONS_CONFIG]: JSM_DUCKTYPE_API_DEFINITIONS,
   [CLIENT_CONFIG]: {
     usePrivateAPI: true,
   },

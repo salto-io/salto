@@ -416,8 +416,11 @@ describe('Salto Dump', () => {
     it('should serialize numbers', async () => {
       expect(await dumpValues(123, functions)).toEqual('123\n')
     })
-    it('should serialize strings', async () => {
-      expect(await dumpValues('aaa', functions)).toEqual('"aaa"\n')
+    it('should serialize strings and escape correctly', async () => {
+      expect(await dumpValues('"aaa"', functions)).toEqual('"\\"aaa\\""\n')
+    })
+    it('should serialize multi line string and escape correctly', async () => {
+      expect(await dumpValues("aaa\n'''aaa", functions)).toEqual("'''\naaa\n\\'''aaa\n'''\n")
     })
     it('should serialize booleans', async () => {
       expect(await dumpValues(false, functions)).toEqual('false\n')

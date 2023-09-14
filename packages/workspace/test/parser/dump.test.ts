@@ -20,7 +20,6 @@ import { parse } from '../../src/parser'
 import { dumpAnnotationTypes, dumpElements, dumpSingleAnnotationType, dumpValues } from '../../src/parser/dump'
 import { Functions } from '../../src/parser/functions'
 import { registerTestFunction, TestFuncImpl } from '../utils'
-import { unescapeMultilineString } from '../../src/parser/internal/native/consumers/values'
 
 const funcName = 'ZOMG'
 let functions: Functions
@@ -422,6 +421,10 @@ describe('Salto Dump', () => {
     })
     it('should serialize booleans', async () => {
       expect(await dumpValues(false, functions)).toEqual('false\n')
+    })
+    it('should serialize multi line string and escape correctly', async () => {
+      // eslint-disable-next-line no-template-curly-in-string
+      expect(await dumpValues("a${a}a\n'''aaa", functions)).toEqual("'''\na\\${a}a\n\\'''aaa\n'''\n")
     })
     it('should dump list', async () => {
       expect(await dumpValues(

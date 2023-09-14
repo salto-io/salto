@@ -42,6 +42,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   generateRefsInProfiles: false,
   skipAliases: false,
   toolingDepsOfCurrentNamespace: false,
+  fixRetrieveFilePaths: false,
 }
 
 export const buildFetchProfile = ({

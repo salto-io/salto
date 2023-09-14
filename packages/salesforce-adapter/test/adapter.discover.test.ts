@@ -64,6 +64,7 @@ import SalesforceClient from '../src/client/client'
 import createMockClient from './client'
 import { mockTypes } from './mock_elements'
 import { buildMetadataQuery } from '../src/fetch_profile/metadata_query'
+import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -744,6 +745,7 @@ describe('SalesforceAdapter fetch', () => {
           ]),
           expect.anything(),
           expect.anything(),
+          false,
         )
       })
     })
@@ -1758,6 +1760,7 @@ public class LargeClass${index} {
           ]),
           expect.anything(),
           expect.anything(),
+          false,
         )
       })
     })
@@ -1851,7 +1854,7 @@ describe('Fetch via retrieve API', () => {
           types: [mockTypes.ApexClass],
           maxItemsInRetrieveRequest: DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
           metadataQuery: buildMetadataQuery({}),
-          addNamespacePrefixToFullName: false,
+          fetchProfile: buildFetchProfile({ addNamespacePrefixToFullName: false }),
           typesToSkip: new Set(),
         }
       )
@@ -1882,7 +1885,7 @@ describe('Fetch via retrieve API', () => {
           types: [mockTypes.ApexClass, mockTypes.CustomObject],
           maxItemsInRetrieveRequest: chunkSize,
           metadataQuery: buildMetadataQuery({}),
-          addNamespacePrefixToFullName: false,
+          fetchProfile: buildFetchProfile({ addNamespacePrefixToFullName: false }),
           typesToSkip: new Set(),
         }
       )
@@ -1917,7 +1920,7 @@ describe('Fetch via retrieve API', () => {
           types: [mockTypes.CustomObject, mockTypes.Profile],
           maxItemsInRetrieveRequest: chunkSize,
           metadataQuery: buildMetadataQuery({}),
-          addNamespacePrefixToFullName: false,
+          fetchProfile: buildFetchProfile({ addNamespacePrefixToFullName: false }),
           typesToSkip: new Set(),
         }
       )
@@ -1960,7 +1963,7 @@ describe('Fetch via retrieve API', () => {
           types: [mockTypes.CustomObject, mockTypes.Profile],
           maxItemsInRetrieveRequest: 3,
           metadataQuery: buildMetadataQuery({}),
-          addNamespacePrefixToFullName: false,
+          fetchProfile: buildFetchProfile({ addNamespacePrefixToFullName: false }),
           typesToSkip: new Set(),
         }
       )

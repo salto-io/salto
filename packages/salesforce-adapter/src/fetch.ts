@@ -44,6 +44,7 @@ import {
 import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements, getAuthorAnnotations } from './transformers/transformer'
 import { fromRetrieveResult, toRetrieveRequest, getManifestTypeName } from './transformers/xml_transformer'
 import { MetadataQuery } from './fetch_profile/metadata_query'
+import { FetchProfile } from './fetch_profile/fetch_profile'
 
 const { isDefined } = lowerDashValues
 const { makeArray, splitDuplicates } = collections.array
@@ -339,13 +340,12 @@ type RetrieveMetadataInstancesArgs = {
   types: ReadonlyArray<MetadataObjectType>
   maxItemsInRetrieveRequest: number
   metadataQuery: MetadataQuery
-  addNamespacePrefixToFullName: boolean
-
   // Some types are retrieved via filters and should not be fetched in the normal fetch flow. However, we need these
   // types as context for profiles - when fetching profiles using retrieve we only get information about the types that
   // are included in the same retrieve request as the profile. Thus typesToSkip - a list of types that will be retrieved
   // along with the profiles, but discarded.
   typesToSkip: ReadonlySet<string>
+  fetchProfile: FetchProfile
 }
 
 export const retrieveMetadataInstances = async ({
@@ -353,7 +353,7 @@ export const retrieveMetadataInstances = async ({
   types,
   maxItemsInRetrieveRequest,
   metadataQuery,
-  addNamespacePrefixToFullName,
+  fetchProfile,
   typesToSkip,
 }: RetrieveMetadataInstancesArgs): Promise<FetchElements<InstanceElement[]>> => {
   const configChanges: ConfigChangeSuggestion[] = []
@@ -367,7 +367,7 @@ export const retrieveMetadataInstances = async ({
     configChanges.push(...listObjectsConfigChanges)
     return _(res)
       .uniqBy(file => file.fullName)
-      .map(file => getPropsWithFullName(file, addNamespacePrefixToFullName, client.orgNamespace))
+      .map(file => getPropsWithFullName(file, fetchProfile.addNamespacePrefixToFullName, client.orgNamespace))
       .value()
   }
 
@@ -442,6 +442,7 @@ export const retrieveMetadataInstances = async ({
       allFileProps,
       typesWithMetaFile,
       typesWithContent,
+      fetchProfile.isFeatureEnabled('fixRetrieveFilePaths')
     )
     return allValues.map(({ file, values }) => (
       createInstanceElement(values, typesByName[file.type], file.namespacePrefix,

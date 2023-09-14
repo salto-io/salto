@@ -89,6 +89,7 @@ export type OptionalFeatures = {
   fetchProfilesUsingReadApi?: boolean
   toolingDepsOfCurrentNamespace?: boolean
   useLabelAsAlias?: boolean
+  fixRetrieveFilePaths?: boolean
 }
 
 export type ChangeValidatorName = (
@@ -659,6 +660,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     fetchProfilesUsingReadApi: { refType: BuiltinTypes.BOOLEAN },
     toolingDepsOfCurrentNamespace: { refType: BuiltinTypes.BOOLEAN },
     useLabelAsAlias: { refType: BuiltinTypes.BOOLEAN },
+    fixRetrieveFilePaths: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

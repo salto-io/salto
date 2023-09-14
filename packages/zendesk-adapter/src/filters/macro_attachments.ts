@@ -330,7 +330,6 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         .map(change => replaceAttachmentId(change, childFullNameToInstance))
         .map(change => resolveChangeElement(change, lookupFunc))
         .toArray()
-
       const macroDeployResult = await deployChanges(
         resolvedParentChanges,
         async change => {

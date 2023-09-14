@@ -17,7 +17,6 @@ import _ from 'lodash'
 import { ActionName, Change, ElemID, getChangeData, InstanceElement, ReadOnlyElementsSource, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { transformElement, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { inspect } from 'util'
 import { createUrl } from '../elements/request_parameters'
 import { HTTPWriteClientInterface } from '../client/http_client'
 import { DeploymentRequestsByAction } from '../config/request'
@@ -132,7 +131,7 @@ export const deployChange = async ({
   if (_.isEmpty(valuesToDeploy) && isAdditionOrModificationChange(change)) {
     return undefined
   }
-  log.trace(`deploying instance ${instance.elemID.getFullName()} with params ${inspectValue({ method: endpoint.method, url, queryParams, data, { compact: true, depth: 6 })}`)
+  log.trace(`deploying instance ${instance.elemID.getFullName()} with params ${inspectValue({ method: endpoint.method, url, queryParams, data }, { compact: true, depth: 6 })}`)
   const response = await client[endpoint.method]({ url, data, queryParams })
   return response.data
 }

@@ -74,7 +74,7 @@ describe('dynamicContentDeletionValidator', () => {
         elemID: dynamicContent.elemID,
         severity: 'Error',
         message: 'Dynamic content is being used',
-        detailedMessage: 'This dynamic content is being used and cannot be deleted, used by: zendesk.automation.instance.automation, zendesk.macro.instance.macro, zendesk.trigger.instance.trigger',
+        detailedMessage: 'This dynamic content cannot be deleted because it is being used by zendesk.automation.instance.automation, zendesk.macro.instance.macro, zendesk.trigger.instance.trigger',
       },
     ])
   })
@@ -90,7 +90,7 @@ describe('dynamicContentDeletionValidator', () => {
         elemID: dynamicContent.elemID,
         severity: 'Error',
         message: 'Dynamic content is being used',
-        detailedMessage: 'This dynamic content is being used and cannot be deleted, used by: zendesk.automation.instance.automation, zendesk.macro.instance.macro',
+        detailedMessage: 'This dynamic content cannot be deleted because it is being used by zendesk.automation.instance.automation, zendesk.macro.instance.macro',
       },
     ])
   })

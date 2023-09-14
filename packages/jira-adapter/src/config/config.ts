@@ -354,6 +354,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
       'fetch.hideTypes',
       'fetch.enableMissingReferences',
       'fetch.addAlias',
+      'fetch.enableIssueLayouts',
       SCRIPT_RUNNER_API_DEFINITIONS]),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },

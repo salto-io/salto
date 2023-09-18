@@ -195,7 +195,7 @@ describe('custom object instances e2e', () => {
       })
     })
 
-    describe('should create the new instance with OwnerId', () => {
+    describe('instances with OwnerId', () => {
       it('should create the new instance', async () => {
         const accountObjectType = await awu(elements)
           .find(async e => isObjectType(e) && (await apiName(e, true) === accountMetadataName))
@@ -216,21 +216,37 @@ describe('custom object instances e2e', () => {
         expect(result).toHaveProperty('OwnerId')
         expect((result as SalesforceRecord).OwnerId).not.toBeEmpty()
       })
-    })
-    describe('should update values of a custom object instance', () => {
       it('should update values of a custom object instance', async () => {
         const updatedInstance = createdAccountInstance.clone()
         updatedInstance.value.AccountNumber = '5678'
-        await adapter.deploy({
+        updatedInstance.value.OwnerId = null
+        const deployResult = await adapter.deploy({
           changeGroup: {
             groupID: updatedInstance.elemID.getFullName(),
             changes: [{ action: 'modify', data: { before: createdAccountInstance, after: updatedInstance } }],
           },
         })
+        expect(deployResult.errors).toBeEmpty()
         const fields = ['AccountNumber']
         const result = await getRecordOfInstance(client, createdAccountInstance, fields)
         expect(result).toBeDefined()
-        // TODO why does this fail?!
+        expect(result).toMatchObject(_.pick(updatedInstance.value, fields))
+      })
+    })
+    describe('should update values of a custom object instance', () => {
+      it('should update values of a custom object instance', async () => {
+        const updatedInstance = createdProduct2Instance.clone()
+        updatedInstance.value.isActive = false
+        updatedInstance.value.ProductCode = 'newCode'
+        await adapter.deploy({
+          changeGroup: {
+            groupID: updatedInstance.elemID.getFullName(),
+            changes: [{ action: 'modify', data: { before: createdProduct2Instance, after: updatedInstance } }],
+          },
+        })
+        const fields = ['IsActive', 'ProductCode', 'IsArchived']
+        const result = await getRecordOfInstance(client, createdProduct2Instance, fields)
+        expect(result).toBeDefined()
         expect(result).toMatchObject(_.pick(updatedInstance.value, fields))
       })
     })

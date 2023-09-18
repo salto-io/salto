@@ -51,6 +51,11 @@ export const dynamicContentDeletionValidator: ChangeValidator = async (changes, 
     .filter(isRemovalChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME)
+
+  if (dynamicContentRemovals.length === 0) {
+    return []
+  }
+
   const relevantTypesInstances = await getInstancesFromElementSource(elementSource, TYPES_WITH_DC)
 
   const dynamicContentToUsages = _.keyBy(

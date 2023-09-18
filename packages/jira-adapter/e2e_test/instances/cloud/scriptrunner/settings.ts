@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { ElemID, Element, InstanceElement, ModificationChange, Values, isInstanceElement, toChange } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import { createReference } from '../../../utils'
 import { JIRA, SCRIPT_RUNNER_SETTINGS_TYPE } from '../../../../src/constants'
 
@@ -37,10 +36,10 @@ export const createScriptRunnerSettingsInstances = (allElements: Element[]): Mod
   if (fetchSettings === undefined) {
     throw new Error('ScriptRunner settings instance not found')
   }
-  const before = _.cloneDeep(fetchSettings)
+  const before = fetchSettings.clone()
   before.value = createScriptRunnerSettingsValues(allElements)
   before.value['issue_polling@b'] = !fetchSettings.value['issue_polling@b']
-  const after = _.cloneDeep(fetchSettings)
+  const after = fetchSettings.clone()
   after.value = createScriptRunnerSettingsValues(allElements)
   return toChange({ before, after }) as ModificationChange<InstanceElement>
 }

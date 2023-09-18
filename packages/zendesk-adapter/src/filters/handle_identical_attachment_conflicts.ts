@@ -23,6 +23,10 @@ import { ARTICLE_ATTACHMENT_TYPE_NAME } from '../constants'
 
 const log = logger(module)
 
+/**
+ * when handleIdenticalAttachmentConflicts flag is true, this filter will omit article attachments with the same elemId
+ * and hash, and keep only one attachment of this type in the elements.
+ */
 const filterCreator: FilterCreator = ({ config }) => ({
   name: 'handleIdenticalAttachmentConflictsFilter',
   onFetch: async elements => {
@@ -38,17 +42,21 @@ const filterCreator: FilterCreator = ({ config }) => ({
         && isStaticFile(attachment.value.content)
         && attachment.value.content.hash !== undefined)
     const attachmentsByElemId = _.groupBy(articleAttachmentInstances, elem => elem.elemID.getFullName())
+    const duplicateElemIds = Object.keys(attachmentsByElemId).filter(key => attachmentsByElemId[key].length > 1)
     const idsToRemove = new Set(Object.values(attachmentsByElemId)
       .filter(attachments => attachments.length > 1)
       .flatMap(attachments => {
         const hashSet = new Set(attachments.map(attachment => attachment.value.content.hash))
         // check if there are different files with the same name
         if (hashSet.size !== 1) {
+          log.debug(`hashSet.size is not 1, meaning that there are different attachments with the same elemId. will not remove duplicates for attachment ${attachments[0].elemID.name}`)
           return []
         }
         // all files have the same hash, so we can remove the duplicates and keep only one
         return attachments.slice(1).map(att => att.value.id)
       }))
+    log.debug(`going to remove duplicates for attachments: ${duplicateElemIds.join(',')}`)
+    log.debug(`ids removed: ${Array.from(idsToRemove).join(',')}`)
     _.remove(elements, elem =>
       isInstanceElement(elem)
       && elem.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME

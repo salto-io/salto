@@ -99,7 +99,7 @@ import changedAtSingletonFilter from './filters/changed_at_singleton'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
-import { addDefaults, isCustomType } from './filters/utils'
+import { addDefaults, isCustomObjectSync, isCustomType } from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, listMetadataObjects } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 import { getLookUpName, getLookupNameWithFallbackToElement } from './transformers/reference_mapping'
@@ -323,6 +323,7 @@ const getMetadataTypesFromElementsSource = async (
 ): Promise<MetadataObjectType[]> => (
   awu(await elementsSource.getAll())
     .filter(isMetadataObjectType)
+    .filter(metadataType => !isCustomObjectSync(metadataType))
     // Custom types shouldn't be caught here (CustomMetadata / CustomObject / CustomSettings)
     .filter(metadataType => !isCustomType(metadataType))
     .toArray()

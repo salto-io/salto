@@ -27,7 +27,7 @@ import {
   addDefaults, getChangedAtSingleton,
   getNamespace,
   isCustomMetadataRecordInstance,
-  isCustomMetadataRecordType,
+  isCustomMetadataRecordType, isCustomType,
   isMetadataValues,
   isStandardObject,
   layoutObjAndName,
@@ -341,6 +341,17 @@ describe('addDefaults', () => {
       it('should return undefined', async () => {
         expect(await getChangedAtSingleton(elementsSource)).toBeUndefined()
       })
+    })
+  })
+  describe('isCustomType', () => {
+    it('should return true for custom types', () => {
+      expect(isCustomType(mockTypes.SBQQ__Template__c)).toBeTrue()
+      expect(isCustomType(mockTypes.CustomMetadataRecordType)).toBeTrue()
+    })
+    it('should return false for non custom types', () => {
+      expect(isCustomType(mockTypes.Profile)).toBeFalse()
+      expect(isCustomType(mockTypes.ApexPage)).toBeFalse()
+      expect(isCustomType(mockTypes.CustomObject)).toBeFalse()
     })
   })
 })

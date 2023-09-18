@@ -118,7 +118,7 @@ export const metadataTypeSync = (element: Readonly<Element>): string => {
   }
   return element.annotations[METADATA_TYPE] || 'unknown'
 }
-export const isCustomObjectSync = (element: Readonly<Element>): boolean => {
+export const isCustomObjectSync = (element: Readonly<Element>): element is ObjectType => {
   const res = isObjectType(element)
     && metadataTypeSync(element) === CUSTOM_OBJECT
     // The last part is so we can tell the difference between a custom object

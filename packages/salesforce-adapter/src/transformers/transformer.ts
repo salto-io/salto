@@ -124,8 +124,8 @@ export const isFieldOfCustomObject = async (field: Field): Promise<boolean> =>
 export const isInstanceOfCustomObject = async (element: Readonly<Element>): Promise<boolean> =>
   isInstanceElement(element) && isCustomObject(await element.getType())
 
-export const isCustom = (fullName: string): boolean =>
-  fullName.endsWith(SALESFORCE_CUSTOM_SUFFIX)
+export const isCustom = (fullName: string | undefined): boolean =>
+  fullName?.endsWith(SALESFORCE_CUSTOM_SUFFIX) ?? false
 
 export const isCustomSettings = (instance: Readonly<InstanceElement>): boolean =>
   instance.value[CUSTOM_SETTINGS_TYPE]

@@ -57,6 +57,7 @@ import { unresolvedFieldConfigurationItemsValidator } from './unresolved_field_c
 import { fieldSecondGlobalContextValidator } from './field_contexts/second_global_context'
 import { customFieldsWith10KOptionValidator } from './field_contexts/custom_field_with_10K_options'
 import { issueTypeHierarchyValidator } from './issue_type_hierarchy'
+import { automationProjectsValidator } from './automation_projects'
 
 const {
   deployTypesNotSupportedValidator,
@@ -111,6 +112,7 @@ export default (
     unresolvedFieldConfigurationItems: unresolvedFieldConfigurationItemsValidator,
     customFieldsWith10KOptions: customFieldsWith10KOptionValidator,
     issueTypeHierarchy: issueTypeHierarchyValidator,
+    automationProjects: automationProjectsValidator,
   }
 
   return createChangeValidator({

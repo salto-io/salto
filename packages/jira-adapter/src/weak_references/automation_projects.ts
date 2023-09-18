@@ -98,8 +98,8 @@ const removeMissingAutomationProjects: WeakReferencesHandler['removeWeakReferenc
   const errors = fixedElements.map(instance => ({
     elemID: instance.elemID.createNestedID('projects'),
     severity: 'Info' as const,
-    message: 'Removed missing projects',
-    detailedMessage: 'Automation included projects that do not exist in the current environment. These projects were removed from the automation.',
+    message: 'Deploying automation without all attached projects',
+    detailedMessage: 'This automation is attached to some projects that do not exist in the target environment. It will be deployed without referencing these projects.',
   }))
   return { fixedElements, errors }
 }

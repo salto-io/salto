@@ -123,6 +123,9 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   name: 'organizationWideSharingDefaultsFilter',
   remote: true,
   onFetch: async elements => {
+    if (config.fetchProfile.metadataQuery.isFetchWithChangesDetection()) {
+      return
+    }
     const objectType = createOrganizationType()
     const fieldsToIgnore = new Set(FIELDS_TO_IGNORE.concat(config.systemFields ?? []))
     await enrichTypeWithFields(client, objectType, fieldsToIgnore)

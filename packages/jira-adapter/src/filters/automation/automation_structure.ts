@@ -302,11 +302,11 @@ const getScope = (resource: string): { projectId?: string; projectTypeKey?: stri
     }
     return { projectTypeKey }
   }
-  if (!resource.match(GLOBAL_SCOPE_REGEX)) {
-    log.error(`Failed to convert automation rule scope, found unknown pattern: ${resource}`)
-    return undefined
+  if (resource.match(GLOBAL_SCOPE_REGEX)) {
+    return 'GLOBAL'
   }
-  return 'GLOBAL'
+  log.error(`Failed to convert automation rule scope, found unknown pattern: ${resource}`)
+  return undefined
 }
 
 export const convertRuleScopeValueToProjects = (values: Values): {

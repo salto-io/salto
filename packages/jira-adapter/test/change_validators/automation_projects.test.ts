@@ -37,25 +37,25 @@ describe('automationProjectsValidator', () => {
     )
   })
 
-  it('should return an error when there is no projects', async () => {
+  it('should return an error when there are no projects', async () => {
     expect(await automationProjectsValidator([toChange({ after: instance })], elementsSource))
       .toEqual([
         {
           elemID: instance.elemID,
           severity: 'Error',
-          message: 'Cannot deploy automation without projects',
-          detailedMessage: 'Cannot deploy an automation that is not assigned to at least one project or project type or is global',
+          message: 'Cannot deploy automation without projects.',
+          detailedMessage: 'In order to deploy an automation it must be either global, assigned to at least one project type, or assigned to at least one project that exist in the current environment.',
         },
       ])
   })
 
-  it('not should return not an error when assigned to a project', async () => {
+  it('should not return an error when assigned to a project', async () => {
     instance.value.projects = ['someProject']
     expect(await automationProjectsValidator([toChange({ after: instance })], elementsSource))
       .toEqual([])
   })
 
-  it('not should return not an error when global', async () => {
+  it('should not return an error when global', async () => {
     delete instance.value.projects
     expect(await automationProjectsValidator([toChange({ after: instance })], elementsSource))
       .toEqual([])

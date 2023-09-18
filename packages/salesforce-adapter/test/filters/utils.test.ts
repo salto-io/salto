@@ -352,6 +352,7 @@ describe('addDefaults', () => {
       expect(isCustomType(mockTypes.Profile)).toBeFalse()
       expect(isCustomType(mockTypes.ApexPage)).toBeFalse()
       expect(isCustomType(mockTypes.CustomObject)).toBeFalse()
+      expect(isCustomType(mockTypes.Product2)).toBeFalse()
     })
   })
 })

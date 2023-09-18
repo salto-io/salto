@@ -18,7 +18,7 @@ import { FileProperties } from 'jsforce-types'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { CUSTOM_FIELD, CUSTOM_OBJECT } from '../../constants'
+import { CUSTOM_FIELD, CUSTOM_OBJECT, INTERNAL_ID_ANNOTATION } from '../../constants'
 import { apiName, getAuthorAnnotations, isCustomObject } from '../../transformers/transformer'
 import { RemoteFilterCreator } from '../../filter'
 import SalesforceClient from '../../client/client'
@@ -51,17 +51,6 @@ const addAuthorAnnotationsToField = (
   Object.assign(field.annotations, getAuthorAnnotations(fileProperties))
 }
 
-const addAuthorAnnotationsToFields = (
-  fileProperties: FilePropertiesMap,
-  object: ObjectType
-): void => {
-  Object.values(fileProperties)
-    .forEach(fileProp => addAuthorAnnotationsToField(
-      fileProp,
-      getObjectFieldByFileProperties(fileProp, object)
-    ))
-}
-
 const getCustomObjectFileProperties = async (client: SalesforceClient):
   Promise<FilePropertiesMap> => {
   const { result, errors } = await client.listMetadataObjects({ type: CUSTOM_OBJECT })
@@ -82,7 +71,7 @@ const getCustomFieldFileProperties = async (client: SalesforceClient):
       (fileProps:FileProperties) => getFieldNameParts(fileProps).fieldName)).value()
 }
 
-const objectAuthorInformationSupplier = async (
+const objectAnnotationSupplier = async (
   customTypeFilePropertiesMap: FilePropertiesMap,
   customFieldsFilePropertiesMap: Record<string, FilePropertiesMap>,
   object: ObjectType
@@ -93,7 +82,20 @@ const objectAuthorInformationSupplier = async (
       getAuthorAnnotations(customTypeFilePropertiesMap[objectApiName]))
   }
   if (objectApiName in customFieldsFilePropertiesMap) {
-    addAuthorAnnotationsToFields(customFieldsFilePropertiesMap[objectApiName], object)
+    Object.values(customFieldsFilePropertiesMap[objectApiName])
+      .forEach(fileProp => {
+        const field = getObjectFieldByFileProperties(fileProp, object)
+        if (field === undefined) {
+          return
+        }
+        addAuthorAnnotationsToField(
+          fileProp,
+          field
+        )
+        if (fileProp.id !== undefined && fileProp.id !== '') {
+          field.annotations[INTERNAL_ID_ANNOTATION] = fileProp.id
+        }
+      })
   }
 }
 
@@ -115,7 +117,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       await (awu(elements)
         .filter(isCustomObject) as AwuIterable<ObjectType>)
         .forEach(async object => {
-          await objectAuthorInformationSupplier(customTypeFilePropertiesMap,
+          await objectAnnotationSupplier(customTypeFilePropertiesMap,
             customFieldsFilePropertiesMap,
             object)
         })

@@ -255,7 +255,7 @@ export const getFromPathIndex = async (
 }
 
 export const filterByPathHint = async (index: PathIndex, hint:Path, id: ElemID): Promise<FILTER_FUNC_NEXT_STEP> => {
-  const idHints = await index.get(id.getFullName()) ?? []
+  const idHints = await getFromPathIndex(id, index)
   const isHintMatch = idHints.some(idHint => _.isEqual(idHint, hint))
   if (!isHintMatch) {
     // This case will be removed, when we fix the .annotation and .field keys in the path index

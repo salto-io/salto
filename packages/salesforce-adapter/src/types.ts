@@ -119,6 +119,7 @@ export type ChangeValidatorName = (
   | 'unknownPicklistValues'
   | 'installedPackages'
   | 'dataCategoryGroup'
+  | 'standardFieldOrObjectAdditionsOrDeletions'
 )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -141,6 +142,10 @@ export type SaltoIDSettings = {
 export type SaltoAliasSettings = {
   defaultAliasFields?: types.NonEmptyArray<string>
   overrides?: ObjectAliasSettings[]
+}
+
+export type SaltoManagementFieldSettings = {
+  defaultFieldName: string
 }
 
 const objectIdSettings = new ObjectType({
@@ -219,6 +224,18 @@ const saltoAliasSettingsType = new ObjectType({
   },
 })
 
+const saltoManagementFieldSettingsType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'saltoManagementFieldSettings'),
+  fields: {
+    defaultFieldName: {
+      refType: BuiltinTypes.STRING,
+    },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 export type DataManagementConfig = {
   includeObjects: string[]
   excludeObjects?: string[]
@@ -227,6 +244,7 @@ export type DataManagementConfig = {
   saltoIDSettings: SaltoIDSettings
   showReadOnlyValues?: boolean
   saltoAliasSettings?: SaltoAliasSettings
+  saltoManagementFieldSettings?: SaltoManagementFieldSettings
 }
 
 export type FetchParameters = {
@@ -474,6 +492,9 @@ const dataManagementType = new ObjectType({
     saltoAliasSettings: {
       refType: saltoAliasSettingsType,
     },
+    saltoManagementFieldSettings: {
+      refType: saltoManagementFieldSettingsType,
+    },
   } as Record<keyof DataManagementConfig, FieldDefinition>,
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -674,6 +695,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     unknownPicklistValues: { refType: BuiltinTypes.BOOLEAN },
     dataCategoryGroup: { refType: BuiltinTypes.BOOLEAN },
     installedPackages: { refType: BuiltinTypes.BOOLEAN },
+    standardFieldOrObjectAdditionsOrDeletions: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

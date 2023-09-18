@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, ProgressReporter } from '@salto-io/adapter-api'
-import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, ProgressReporter, FixElementsFunc } from '@salto-io/adapter-api'
+import { config as configUtils, elements as elementUtils, client as clientUtils, combineElementFixers } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, getElemIdFuncWrapper, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { objects } from '@salto-io/lowerdash'
@@ -132,6 +132,8 @@ import projectCategoryFilter from './filters/project_category'
 import addAliasFilter from './filters/add_alias'
 import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_specific_duplicate_roles'
 import issueLayoutFilter from './filters/issue_layout/issue_layout'
+import removeSimpleFieldProjectFilter from './filters/remove_simplified_field_project'
+import createReferencesIssueLayoutFilter from './filters/issue_layout/create_references_issue_layout'
 import issueTypeHierarchyFilter from './filters/issue_type_hierarchy_filter'
 import projectFieldContextOrder from './filters/project_field_contexts_order'
 import scriptedFieldsIssueTypesFilter from './filters/script_runner/scripted_fields_issue_types'
@@ -141,8 +143,8 @@ import scriptedFragmentsDeployFilter from './filters/script_runner/scripted_frag
 import scriptRunnerInstancesDeploy from './filters/script_runner/script_runner_instances_deploy'
 import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
 import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uuid'
-
 import ScriptRunnerClient from './client/script_runner_client'
+import { weakReferenceHandlers } from './weak_references'
 
 const { getAllElements } = elementUtils.ducktype
 const { findDataField, computeGetArgs } = elementUtils
@@ -256,6 +258,9 @@ export const DEFAULT_FILTERS = [
   removeSelfFilter,
   fieldReferencesFilter,
   issueLayoutFilter,
+  // Must run after issueLayoutFilter
+  removeSimpleFieldProjectFilter,
+  createReferencesIssueLayoutFilter,
   // Must run after fieldReferencesFilter
   contextsProjectsFilter,
   // must run after contextsProjectsFilter
@@ -324,6 +329,7 @@ export default class JiraAdapter implements AdapterOperations {
   private logIdsFunc?: () => void
   private fetchQuery: elementUtils.query.ElementQuery
   private getUserMapFunc: GetUserMapFunc
+  private fixElementsFunc: FixElementsFunc
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -371,6 +377,10 @@ export default class JiraAdapter implements AdapterOperations {
         filterCreators,
         objects.concatObjects
       )
+    )
+
+    this.fixElementsFunc = combineElementFixers(
+      weakReferenceHandlers.map(handler => handler.removeWeakReferences({ elementsSource }))
     )
   }
 
@@ -536,4 +546,6 @@ export default class JiraAdapter implements AdapterOperations {
       getChangeGroupIds,
     }
   }
+
+  fixElements: FixElementsFunc = elements => this.fixElementsFunc(elements)
 }

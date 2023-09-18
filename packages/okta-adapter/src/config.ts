@@ -33,7 +33,9 @@ export const DEPLOY_CONFIG = 'deploy'
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 export const PRIVATE_API_DEFINITIONS_CONFIG = 'privateApiDefinitions'
 
-export type OktaClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig> & {
+export type OktaClientRateLimitConfig = clientUtils.ClientRateLimitConfig & { rateLimitBuffer?: number }
+
+export type OktaClientConfig = clientUtils.ClientBaseConfig<OktaClientRateLimitConfig> & {
   usePrivateAPI: boolean
 }
 export type OktaStatusActionName = 'activate' | 'deactivate'
@@ -262,13 +264,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   api__v1__groups: {
     request: {
       url: '/api/v1/groups',
-      recurseInto: [
-        {
-          type: 'api__v1__groups___groupId___roles@uuuuuu_00123_00125uu',
-          toField: 'roles',
-          context: [{ name: 'groupId', fromField: 'id' }],
-        },
-      ],
     },
   },
   Group: {
@@ -311,6 +306,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       },
     },
   },
+  // group-roles are not fetched by default
   'api__v1__groups___groupId___roles@uuuuuu_00123_00125uu': {
     request: {
       url: '/api/v1/groups/{groupId}/roles',
@@ -1708,7 +1704,8 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
 })
 
 const createClientConfigType = (): ObjectType => {
-  const configType = clientUtils.createClientConfigType(OKTA)
+  const rateLimitBufferField = { rateLimitBuffer: { refType: BuiltinTypes.NUMBER } }
+  const configType = clientUtils.createClientConfigType(OKTA, undefined, rateLimitBufferField)
   configType.fields.usePrivateAPI = new Field(
     configType, 'usePrivateAPI', BuiltinTypes.BOOLEAN
   )

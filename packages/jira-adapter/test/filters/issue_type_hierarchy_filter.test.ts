@@ -76,6 +76,13 @@ describe('issue Type Hierarchy Filter', () => {
       await filter.preDeploy(changes)
       expect(getChangeData(changes[0]).value.hierarchyLevel).toEqual(2)
     })
+    it('should not convert hierarchy level to 0 if it is free account without account info', async () => {
+      elementsSource = buildElementsSourceFromElements([])
+      filter = issueTypeHierarchyFilter(getFilterParams({ elementsSource })) as FilterType
+      const changes = [toChange({ after: issueTypeInstanceLevelTwo })]
+      await filter.preDeploy(changes)
+      expect(getChangeData(changes[0]).value.hierarchyLevel).toEqual(2)
+    })
   })
   describe('onDeploy', () => {
     it('should restore hierarchy level to original value', async () => {

@@ -17,7 +17,7 @@ import { CORE_ANNOTATIONS, Change, Element, InstanceElement, ReferenceExpression
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard, isResolvedReferenceExpression, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
-import { elements as adapterElements, references as referenceUtils } from '@salto-io/adapter-components'
+import { elements as adapterElements } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import JiraClient, { graphQLResponseType } from '../../client/client'
 import { ISSUE_LAYOUT_TYPE, JIRA, PROJECT_TYPE } from '../../constants'
@@ -25,8 +25,6 @@ import { FilterCreator } from '../../filter'
 import { QUERY } from './issue_layout_query'
 import { ISSUE_LAYOUT_CONFIG_ITEM_SCHEME, ISSUE_LAYOUT_RESPONSE_SCHEME, IssueLayoutConfig, IssueLayoutConfigItem, IssueLayoutResponse, containerIssueLayoutResponse, createIssueLayoutType } from './issue_layout_types'
 import { addAnnotationRecursively, setTypeDeploymentAnnotations } from '../../utils'
-import { JiraConfig } from '../../config/config'
-import { referencesRules, JiraFieldReferenceResolver, contextStrategyLookup } from '../../reference_mapping'
 import { deployChanges } from '../../deployment/standard_deployment'
 
 const { isDefined } = lowerDashValues
@@ -37,7 +35,7 @@ type issueTypeMappingStruct = {
     screenSchemeId: ReferenceExpression
 }
 
-const isIssueLayoutResponse = createSchemeGuard<IssueLayoutResponse>(ISSUE_LAYOUT_RESPONSE_SCHEME, 'Failed to get issue layout from jira service')
+const isIssueLayoutResponse = createSchemeGuard<IssueLayoutResponse>(ISSUE_LAYOUT_RESPONSE_SCHEME)
 const isIssueLayoutConfigItem = createSchemeGuard<IssueLayoutConfigItem>(ISSUE_LAYOUT_CONFIG_ITEM_SCHEME)
 
 const getIssueLayout = async ({
@@ -79,22 +77,6 @@ IssueLayoutConfig => {
   }))).filter(isIssueLayoutConfigItem)
 
   return { items }
-}
-
-const createReferences = async (
-  config: JiraConfig, elements: Element[], contextElements: Element[]): Promise<void> => {
-  const fixedDefs = referencesRules
-    .map(def => (
-      config.fetch.enableMissingReferences ? def : _.omit(def, 'jiraMissingRefStrategy')
-    ))
-  await referenceUtils.addReferences({
-    elements,
-    contextElements,
-    fieldsToGroupBy: ['id'],
-    defs: fixedDefs,
-    contextStrategyLookup,
-    fieldReferenceResolverCreator: defs => new JiraFieldReferenceResolver(defs),
-  })
 }
 
 const getProjectToScreenMapping = async (elements: Element[]): Promise<Record<string, number[]>> => {
@@ -171,18 +153,20 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) =>
       || !config.fetch.enableIssueLayouts) {
       return
     }
-    const projectToScreenId = await getProjectToScreenMapping(elements)
     const projectIdToProject = Object.fromEntries(
       (await Promise.all(elements.filter(e => e.elemID.typeName === PROJECT_TYPE)
         .filter(isInstanceElement)
+        .filter(project => !project.value.simplified && project.value.projectTypeKey === 'software')
         .map(async project => [project.value.id, project])))
         .filter(isDefined)
     )
+    const projectToScreenId = Object.fromEntries(Object.entries(await getProjectToScreenMapping(elements))
+      .filter(([key]) => Object.keys(projectIdToProject).includes(key)))
     const { issueLayoutType, subTypes } = createIssueLayoutType()
     elements.push(issueLayoutType)
     subTypes.forEach(type => elements.push(type))
 
-    await Promise.all(Object.entries(projectToScreenId)
+    const issueLayouts = (await Promise.all(Object.entries(projectToScreenId)
       .flatMap(([projectId, screenIds]) => screenIds.map(async screenId => {
         const response = await getIssueLayout({
           projectId: Number(projectId),
@@ -196,28 +180,26 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) =>
             id: issueLayoutResult.id,
             projectId,
             extraDefinerId: screenId,
-            owners: issueLayoutResult.usageInfo.edges[0].node.layoutOwners.map(owner => owner.id),
             issueLayoutConfig: fromIssueLayoutConfigRespToIssueLayoutConfig(containers),
           }
           const name = `${projectIdToProject[projectId].value.name}_${issueLayoutResult.name}`
           const serviceIds = adapterElements.createServiceIds(value, 'id', issueLayoutType.elemID)
           const instanceName = getElemIdFunc ? getElemIdFunc(JIRA, serviceIds, naclCase(name)).name
             : naclCase(name)
-          const issueLayout = new InstanceElement(
+          return new InstanceElement(
             instanceName,
             issueLayoutType,
             value,
             [...projectIdToProject[projectId].path.slice(0, -1), 'layouts', pathNaclCase(instanceName)],
           )
-          elements.push(issueLayout)
-          await createReferences(config, [issueLayout], elements)
-          setTypeDeploymentAnnotations(issueLayoutType)
-          await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.CREATABLE)
-          await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.UPDATABLE)
-          issueLayoutType.fields.owners.annotations[CORE_ANNOTATIONS.UPDATABLE] = false
-          await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.DELETABLE)
         }
-      })))
+        return undefined
+      })))).filter(isDefined)
+    issueLayouts.forEach(layout => { elements.push(layout) })
+    setTypeDeploymentAnnotations(issueLayoutType)
+    await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.CREATABLE)
+    await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.UPDATABLE)
+    await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.DELETABLE)
   },
   deploy: async changes => {
     const [issueLayoutsChanges, leftoverChanges] = _.partition(

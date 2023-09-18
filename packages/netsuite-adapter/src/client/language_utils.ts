@@ -58,6 +58,7 @@ export const multiLanguageErrorDetectors: Record<SupportedLanguage, ErrorDetecto
     otherErrorRegexes: [
       RegExp('An error occurred during account settings validation.'),
       RegExp('An error occured during validation of Custom Objects against the account'),
+      RegExp('An error occurred during manifest validation.'),
     ],
   },
   // NOTE: all non-english letters are replaced with a dot
@@ -82,6 +83,7 @@ export const multiLanguageErrorDetectors: Record<SupportedLanguage, ErrorDetecto
     otherErrorRegexes: [
       RegExp('An error occurred during account settings validation.'),
       RegExp('An error occured during validation of Custom Objects against the account'),
+      RegExp('An error occurred during manifest validation.'),
     ],
   },
 }

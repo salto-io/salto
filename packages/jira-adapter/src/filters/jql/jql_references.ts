@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ElemID, InstanceElement, isInstanceChange, isInstanceElement, isTemplateExpression, TemplateExpression } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData, setPath, walkOnElement, WALK_NEXT_STEP, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { ElemID, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isTemplateExpression, TemplateExpression } from '@salto-io/adapter-api'
+import { setPath, walkOnElement, WALK_NEXT_STEP, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -150,54 +150,44 @@ const filter: FilterCreator = ({ config }) => {
     preDeploy: async changes => {
       await awu(changes)
         .filter(isInstanceChange)
-        .forEach(async change => {
-          await applyFunctionToChangeData<Change<InstanceElement>>(
-            change,
-            async instance => {
-              getJqls(instance)
-                .filter((jql): jql is TemplateJqlDetails =>
-                  isTemplateExpression(jql.jql))
-                .forEach(jql => {
-                  const resolvedJql = jql.jql.parts.map(part => {
-                    if (!isResolvedReferenceExpression(part)) {
-                      return part
-                    }
+        .map(getChangeData)
+        .forEach(async instance => {
+          getJqls(instance)
+            .filter((jql): jql is TemplateJqlDetails =>
+              isTemplateExpression(jql.jql))
+            .forEach(jql => {
+              const resolvedJql = jql.jql.parts.map(part => {
+                if (!isResolvedReferenceExpression(part)) {
+                  return part
+                }
 
-                    if (part.elemID.isTopLevel()) {
-                      return removeCustomFieldPrefix(part.value.value.id)
-                    }
+                if (part.elemID.isTopLevel()) {
+                  return removeCustomFieldPrefix(part.value.value.id)
+                }
 
-                    return part.value
-                  }).join('')
+                return part.value
+              }).join('')
 
 
-                  jqlToTemplateExpression[jql.path.getFullName()] = jql.jql
+              jqlToTemplateExpression[jql.path.getFullName()] = jql.jql
 
-                  setPath(instance, jql.path, resolvedJql)
-                })
-              return instance
-            }
-          )
+              setPath(instance, jql.path, resolvedJql)
+            })
         })
     },
 
     onDeploy: async changes => {
       await awu(changes)
         .filter(isInstanceChange)
-        .forEach(async change => {
-          await applyFunctionToChangeData<Change<InstanceElement>>(
-            change,
-            async instance => {
-              getJqls(instance)
-                .filter((jql): jql is JqlDetails & { jql: string } =>
-                  _.isString(jql.jql))
-                .filter(jql => jqlToTemplateExpression[jql.path.getFullName()] !== undefined)
-                .forEach(jql => {
-                  setPath(instance, jql.path, jqlToTemplateExpression[jql.path.getFullName()])
-                })
-              return instance
-            }
-          )
+        .map(getChangeData)
+        .forEach(async instance => {
+          getJqls(instance)
+            .filter((jql): jql is JqlDetails & { jql: string } =>
+              _.isString(jql.jql))
+            .filter(jql => jqlToTemplateExpression[jql.path.getFullName()] !== undefined)
+            .forEach(jql => {
+              setPath(instance, jql.path, jqlToTemplateExpression[jql.path.getFullName()])
+            })
         })
     },
   }

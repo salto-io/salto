@@ -601,8 +601,8 @@ describe('SuiteAppClient', () => {
       })
       it('should return an array of bundles', async () => {
         const results = [
-          { id: 47492, name: 'Tax Audit Files', version: '1.86.2', isManaged: true, description: 'Description', publisher: { id: '3838953', name: 'NetSuite Platform Solutions Group - Tax Audit Files' } },
-          { id: 53195, name: 'Last SalesActivity', version: '1.11.2', isManaged: false, description: 'Description', publisher: { id: '3912261', name: 'NetSuite Platform Solutions Group - Tax Audit Files' } },
+          { id: 47492, name: 'Tax Audit Files', version: '1.86.2', isManaged: true, description: 'Description', publisher: { id: '3838953', name: 'NetSuite Platform Solutions Group - Tax Audit Files' }, installedFrom: 'Production' },
+          { id: 53195, name: 'Last SalesActivity', version: '1.11.2', isManaged: false, description: 'Description', publisher: { id: '3912261', name: 'NetSuite Platform Solutions Group - Tax Audit Files' }, installedFrom: 'Sandbox' },
         ]
         mockAxiosAdapter.onPost().replyOnce(200, {
           status: 'success',

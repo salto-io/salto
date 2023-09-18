@@ -18,7 +18,7 @@ import { getChangeData, isAdditionChange, isInstanceChange } from '@salto-io/ada
 import { collections } from '@salto-io/lowerdash'
 import { ISSUE_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
-import { isFreeLicense } from '../utils'
+import { isJiraSoftwareFreeLicense } from '../utils'
 
 const { awu } = collections.asynciterable
 
@@ -27,7 +27,7 @@ const filter: FilterCreator = ({ elementsSource }) => {
   return {
     name: 'issueTypeHierarchyFilter',
     preDeploy: async changes => {
-      const isLicenseFree = await isFreeLicense(elementsSource)
+      const isLicenseFree = await isJiraSoftwareFreeLicense(elementsSource)
       if (isLicenseFree) {
         return
       }

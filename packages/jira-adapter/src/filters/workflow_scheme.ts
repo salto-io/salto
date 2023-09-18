@@ -33,9 +33,6 @@ const { awu } = collections.asynciterable
 const WORKFLOW_SCHEME_TYPE = 'WorkflowScheme'
 const WORKFLOW_SCHEME_ITEM_TYPE = 'WorkflowSchemeItem'
 
-export const MAX_TASK_CHECKS = 60
-const TASK_CHECK_INTERVAL_MILLI = 1000
-
 const log = logger(module)
 
 class PublishDraftError extends Error {
@@ -71,6 +68,7 @@ function validateTaskResponse(
 const waitForWorkflowSchemePublish = async (
   taskResponse: clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>,
   client: JiraClient,
+  retryDelay: number,
   checksLeft: number,
 ): Promise<void> => {
   validateTaskResponse(taskResponse)
@@ -89,12 +87,13 @@ const waitForWorkflowSchemePublish = async (
   }
 
   await new Promise(resolve => {
-    setTimeout(resolve, TASK_CHECK_INTERVAL_MILLI)
+    setTimeout(resolve, retryDelay)
   })
 
   await waitForWorkflowSchemePublish(
     await client.getSinglePage({ url: taskResponse.data.self }),
     client,
+    retryDelay,
     checksLeft - 1,
   )
 }
@@ -102,6 +101,7 @@ const waitForWorkflowSchemePublish = async (
 const publishDraft = async (
   change: Change<InstanceElement>,
   client: JiraClient,
+  config: JiraConfig,
   statusMigrations?: Values[]
 ): Promise<void> => {
   const response = await client.post({
@@ -113,7 +113,7 @@ const publishDraft = async (
       : {},
   })
 
-  await waitForWorkflowSchemePublish(response, client, MAX_TASK_CHECKS)
+  await waitForWorkflowSchemePublish(response, client, config.deploy.taskRetryDelay, config.deploy.taskMaxRetries)
 }
 
 export const updateSchemeId = async (
@@ -240,7 +240,7 @@ export const deployWorkflowScheme = async (
 
   if (isModificationChange(change) && !Array.isArray(response) && response?.draft) {
     try {
-      await publishDraft(change, client, statusMigrations)
+      await publishDraft(change, client, config, statusMigrations)
     } catch (err) {
       if (shouldThrowError(err)) {
         throw err

@@ -75,7 +75,9 @@ import {
   triggerCategoryRemovalValidator,
   ticketFieldDeactivationValidator,
   duplicateIdFieldValuesValidator,
-  notEnabledMissingReferencesValidator, dynamicContentDeletionValidator,
+  notEnabledMissingReferencesValidator,
+  conditionalTicketFieldsValidator,
+  dynamicContentDeletionValidator
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ChangeValidatorName, ZedneskDeployConfig, ZendeskFetchConfig, ZendeskConfig } from './config'
@@ -165,6 +167,7 @@ export default ({
     triggerCategoryRemoval: triggerCategoryRemovalValidator(apiConfig),
     duplicateIdFieldValues: duplicateIdFieldValuesValidator(apiConfig),
     notEnabledMissingReferences: notEnabledMissingReferencesValidator(config),
+    conditionalTicketFields: conditionalTicketFieldsValidator,
     dynamicContentDeletion: dynamicContentDeletionValidator,
     // *** Guide Order Validators ***
     childInOrder: childInOrderValidator,

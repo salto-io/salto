@@ -49,9 +49,9 @@ import SalesforceClient from '../client/client'
 import { INSTANCE_SUFFIXES, OptionalFeatures } from '../types'
 import {
   API_NAME,
-  API_NAME_SEPARATOR,
+  API_NAME_SEPARATOR, CUSTOM_FIELD,
   CUSTOM_METADATA_SUFFIX,
-  CUSTOM_OBJECT,
+  CUSTOM_OBJECT, CUSTOM_OBJECT_ID_FIELD,
   INSTANCE_FULL_NAME_FIELD,
   INTERNAL_ID_ANNOTATION,
   INTERNAL_ID_FIELD,
@@ -68,12 +68,13 @@ import { JSONBool, SalesforceRecord } from '../client/types'
 import {
   apiName,
   defaultApiName,
-  isCustomObject,
+  isCustomObject, isMetadataObjectType,
   isNameField, MetadataInstanceElement,
   metadataType,
   MetadataValues,
   Types,
 } from '../transformers/transformer'
+import * as transformer from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
 
 const { toArrayAsync, awu } = collections.asynciterable
@@ -104,6 +105,47 @@ export const isInstanceOfTypeChange = (...types: string[]) => (
 export const safeApiName = async (elem: Readonly<Element>, relative = false): Promise<string | undefined> => (
   apiName(elem, relative)
 )
+
+
+export const metadataTypeSync = (element: Readonly<Element>): string => {
+  if (isInstanceElement(element)) {
+    return metadataTypeSync(element.getTypeSync())
+  }
+  if (isField(element)) {
+    // We expect to reach to this place only with field of CustomObject
+    return CUSTOM_FIELD
+  }
+  return element.annotations[METADATA_TYPE] || 'unknown'
+}
+export const isCustomObjectSync = (element: Readonly<Element>): boolean => {
+  const res = isObjectType(element)
+    && metadataTypeSync(element) === CUSTOM_OBJECT
+    // The last part is so we can tell the difference between a custom object
+    // and the original "CustomObject" type from salesforce (the latter will not have an API_NAME)
+    && element.annotations[API_NAME] !== undefined
+  return res
+}
+
+
+const fullApiNameSync = (elem: Readonly<Element>): string | undefined => {
+  if (isInstanceElement(elem)) {
+    return (isCustomObjectSync(elem.getTypeSync()))
+      ? elem.value[CUSTOM_OBJECT_ID_FIELD] : elem.value[INSTANCE_FULL_NAME_FIELD]
+  }
+  return elem.annotations[API_NAME] ?? elem.annotations[METADATA_TYPE]
+}
+
+export const apiNameSync = (elem: Readonly<Element>, relative = false): string | undefined => {
+  const name = fullApiNameSync(elem)
+  return name && relative ? transformer.relativeApiName(name) : name
+}
+
+export const isMetadataInstanceElementSync = (elem: Element): elem is MetadataInstanceElement => (
+  isInstanceElement(elem)
+  && isMetadataObjectType(elem.getTypeSync())
+  && elem.value[INSTANCE_FULL_NAME_FIELD] !== undefined
+)
+
 
 export const isCustomMetadataRecordType = async (elem: Element): Promise<boolean> => {
   const elementApiName = await apiName(elem)

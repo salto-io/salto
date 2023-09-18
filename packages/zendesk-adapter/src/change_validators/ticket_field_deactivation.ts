@@ -45,7 +45,7 @@ type TicketFormCondition = {
 const isConditionChildField = (value: Value): value is ConditionChildField =>
   _.isPlainObject(value) && (_.isNumber(value.id) || isReferenceExpression(value.id))
 
-const isTicketFormCondition = (value: Value): value is TicketFormCondition =>
+export const isTicketFormCondition = (value: Value): value is TicketFormCondition =>
   _.isPlainObject(value)
   && (_.isNumber(value.parent_field_id) || isReferenceExpression(value.parent_field_id))
   && (

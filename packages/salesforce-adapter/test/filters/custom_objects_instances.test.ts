@@ -31,7 +31,6 @@ import {
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { ConfigChangeSuggestion, isDataManagementConfigSuggestions, SaltoAliasSettings } from '../../src/types'
 import {
   ConfigChangeSuggestion,
   FetchParameters,
@@ -256,7 +255,11 @@ describe('Custom Object Instances filter', () => {
         },
       },
     }
-    return buildFetchProfile(fetchProfileParams)
+    return buildFetchProfile({
+      fetchParams: fetchProfileParams,
+      isFetchWithChangesDetection: false,
+      elementsSource: buildElementsSourceFromElements([]),
+    })
   }
 
   describe('config interactions', () => {

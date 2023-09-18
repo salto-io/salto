@@ -32,7 +32,12 @@ import { logger } from '@salto-io/logging'
 import { collections, values, promises, objects } from '@salto-io/lowerdash'
 import SalesforceClient from './client/client'
 import * as constants from './constants'
-import { apiName, Types, isMetadataObjectType, MetadataObjectType, isCustomObject } from './transformers/transformer'
+import {
+  apiName,
+  Types,
+  isMetadataObjectType,
+  MetadataObjectType,
+} from './transformers/transformer'
 import layoutFilter from './filters/layouts'
 import customObjectsFromDescribeFilter from './filters/custom_objects_from_soap_describe'
 import customObjectsToObjectTypeFilter, { NESTED_INSTANCE_VALUE_TO_TYPE_NAME } from './filters/custom_objects_to_object_type'
@@ -94,7 +99,7 @@ import changedAtSingletonFilter from './filters/changed_at_singleton'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
-import { addDefaults } from './filters/utils'
+import { addDefaults, isCustomType } from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, listMetadataObjects } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 import { getLookUpName, getLookupNameWithFallbackToElement } from './transformers/reference_mapping'
@@ -318,7 +323,8 @@ const getMetadataTypesFromElementsSource = async (
 ): Promise<MetadataObjectType[]> => (
   awu(await elementsSource.getAll())
     .filter(isMetadataObjectType)
-    .filter(async metadataType => !await isCustomObject(metadataType))
+    // Custom types shouldn't be caught here (CustomMetadata / CustomObject / CustomSettings)
+    .filter(metadataType => !isCustomType(metadataType))
     .toArray()
 )
 

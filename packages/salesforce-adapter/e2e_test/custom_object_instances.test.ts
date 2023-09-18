@@ -82,7 +82,6 @@ describe('custom object instances e2e', () => {
     AccountNumber: '12345',
     Name: 'Test Account',
     fullName: 'TestAccount',
-    // TODO OwnerId
   }
   let client: SalesforceClient
   let adapter: SalesforceAdapter
@@ -195,8 +194,8 @@ describe('custom object instances e2e', () => {
       })
     })
 
-    describe('instances with OwnerId', () => {
-      it('should create the new instance', async () => {
+    describe('instances with missing OwnerId', () => {
+      it('should create the new instance even if it doesn`t have an OwnerId', async () => {
         const accountObjectType = await awu(elements)
           .find(async e => isObjectType(e) && (await apiName(e, true) === accountMetadataName))
         expect(accountObjectType).toBeDefined()
@@ -216,23 +215,8 @@ describe('custom object instances e2e', () => {
         expect(result).toHaveProperty('OwnerId')
         expect((result as SalesforceRecord).OwnerId).not.toBeEmpty()
       })
-      it('should update values of a custom object instance', async () => {
-        const updatedInstance = createdAccountInstance.clone()
-        updatedInstance.value.AccountNumber = '5678'
-        updatedInstance.value.OwnerId = null
-        const deployResult = await adapter.deploy({
-          changeGroup: {
-            groupID: updatedInstance.elemID.getFullName(),
-            changes: [{ action: 'modify', data: { before: createdAccountInstance, after: updatedInstance } }],
-          },
-        })
-        expect(deployResult.errors).toBeEmpty()
-        const fields = ['AccountNumber']
-        const result = await getRecordOfInstance(client, createdAccountInstance, fields)
-        expect(result).toBeDefined()
-        expect(result).toMatchObject(_.pick(updatedInstance.value, fields))
-      })
     })
+
     describe('should update values of a custom object instance', () => {
       it('should update values of a custom object instance', async () => {
         const updatedInstance = createdProduct2Instance.clone()

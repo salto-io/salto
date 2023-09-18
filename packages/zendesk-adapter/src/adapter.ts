@@ -145,6 +145,7 @@ import routingAttributeValueDeployFilter from './filters/routing_attribute_value
 import localeFilter from './filters/locale'
 import ticketStatusCustomStatusDeployFilter from './filters/ticket_status_custom_status'
 import { filterOutInactiveInstancesForType } from './inactive'
+import articleAttachmentsFilter from './filters/article/article_attachment'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -207,6 +208,7 @@ export const DEFAULT_FILTERS = [
   // everyoneUserSegmentFilter needs to be before articleFilter
   everyoneUserSegmentFilter,
   articleFilter,
+  articleAttachmentsFilter,
   guideSectionCategoryFilter,
   guideTranslationFilter,
   guideGuideSettings,

@@ -27,7 +27,6 @@ import { ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, USER_
 import filterCreator from '../../../src/filters/article/article'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../../src/config'
 import { createEveryoneUserSegmentInstance } from '../../../src/filters/everyone_user_segment'
-import * as articleUtils from '../../../src/filters/article/utils'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -477,60 +476,6 @@ describe('article filter', () => {
       expect(filteredArticle.value.body).toBe('')
       expect(getChangeData(TranslationAddition)).toBe(clonedTranslation)
     })
-    it('should run the creation of unassociated attachment', async () => {
-      const mockAttachmentCreation = jest.spyOn(articleUtils, 'createUnassociatedAttachment')
-        .mockImplementation(jest.fn())
-      const clonedArticle = articleWithAttachmentInstance.clone()
-      const clonedAttachment = notInlineArticleAttachmentInstance.clone()
-      await filter.preDeploy([
-        { action: 'add', data: { after: clonedArticle } },
-        { action: 'add', data: { after: clonedAttachment } },
-      ])
-      expect(mockAttachmentCreation).toHaveBeenCalledTimes(1)
-      expect(mockAttachmentCreation).toHaveBeenCalledWith(client, clonedAttachment)
-    })
-    it('should create and associate modified attachments', async () => {
-      const mockAttachmentCreation = jest.spyOn(articleUtils, 'createUnassociatedAttachment')
-        .mockImplementation(jest.fn())
-      const clonedArticle = articleWithAttachmentInstance.clone()
-      const beforeClonedAttachment = notInlineArticleAttachmentInstance.clone()
-      const afterClonedAttachment = notInlineArticleAttachmentInstance.clone()
-      afterClonedAttachment.value.content = new StaticFile({
-        filepath: 'zendesk/article_attachment/title/modified.png', encoding: 'binary', content: Buffer.from('modified'),
-      })
-      clonedArticle.value.attachments = [
-        new ReferenceExpression(afterClonedAttachment.elemID, afterClonedAttachment),
-      ]
-      await filter.preDeploy([
-        { action: 'modify', data: { before: beforeClonedAttachment, after: afterClonedAttachment } },
-      ])
-
-      expect(mockDeployChange).toHaveBeenCalledTimes(0)
-      expect(mockDelete).toHaveBeenCalledTimes(1)
-      expect(mockAttachmentCreation).toHaveBeenCalledTimes(1)
-      expect(mockAttachmentCreation).toHaveBeenCalledWith(client, afterClonedAttachment)
-    })
-    it('should delete new attachment in case associate fails', async () => {
-      const mockAttachmentDeletion = jest.spyOn(articleUtils, 'deleteArticleAttachment')
-        .mockImplementation(jest.fn())
-      mockPost.mockReturnValueOnce({ status: 400 })
-      const clonedArticle = articleWithAttachmentInstance.clone()
-      const beforeClonedAttachment = notInlineArticleAttachmentInstance.clone()
-      const afterClonedAttachment = notInlineArticleAttachmentInstance.clone()
-      afterClonedAttachment.value.content = new StaticFile({
-        filepath: 'zendesk/article_attachment/title/modified.png', encoding: 'binary', content: Buffer.from('modified'),
-      })
-      clonedArticle.value.attachments = [
-        new ReferenceExpression(afterClonedAttachment.elemID, afterClonedAttachment),
-      ]
-      await filter.preDeploy([
-        { action: 'modify', data: { before: beforeClonedAttachment, after: afterClonedAttachment } },
-      ])
-
-      expect(mockDeployChange).toHaveBeenCalledTimes(0)
-      expect(mockAttachmentDeletion).toHaveBeenCalledTimes(1)
-      expect(mockAttachmentDeletion).toHaveBeenCalledWith(client, afterClonedAttachment)
-    })
   })
 
   describe('deploy', () => {
@@ -622,82 +567,6 @@ describe('article filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)
-    })
-
-    it('should associate attachments to articles on creation', async () => {
-      const mockAttachmentCreation = jest.spyOn(articleUtils, 'createUnassociatedAttachment')
-        .mockImplementation(jest.fn())
-      const clonedArticle = articleWithAttachmentInstance.clone()
-      const clonedAttachment = notInlineArticleAttachmentInstance.clone()
-      clonedArticle.value.attachments = [
-        new ReferenceExpression(clonedAttachment.elemID, clonedAttachment),
-      ]
-      const id = 2
-      mockDeployChange.mockImplementation(async () => ({ workspace: { id } }))
-      await filter.preDeploy([
-        { action: 'add', data: { after: clonedArticle } },
-        { action: 'add', data: { after: clonedAttachment } },
-      ])
-      expect(mockAttachmentCreation).toHaveBeenCalledTimes(1)
-      const res = await filter.deploy([
-        { action: 'add', data: { after: clonedArticle } },
-        { action: 'add', data: { after: clonedAttachment } },
-      ])
-      expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockPost).toHaveBeenCalledTimes(1)
-      expect(res.leftoverChanges).toHaveLength(0)
-      expect(res.deployResult.errors).toHaveLength(0)
-      expect(res.deployResult.appliedChanges).toHaveLength(2)
-      expect(res.deployResult.appliedChanges)
-        .toEqual([
-          { action: 'add', data: { after: clonedArticle } },
-          { action: 'add', data: { after: clonedAttachment } },
-        ])
-    })
-    it('should not associate attachments to articles if attachment was not modified', async () => {
-      const clonedArticle = new InstanceElement(
-        'articleWithAttachment',
-        new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }),
-        {
-          id: 333333,
-          author_id: 'author@salto.io',
-          comments_disabled: false,
-          draft: false,
-          promoted: false,
-          position: 0,
-          section_id: '12345',
-          source_locale: 'en-us',
-          locale: 'en-us',
-          outdated: false,
-          permission_group_id: '666',
-          brand: brandInstance.value.id,
-          title: 'title',
-          attachments: [{
-            id: 20222022,
-            filename: 'attachmentFileName.png',
-            contentType: 'image/png',
-            content: new StaticFile({
-              filepath: 'zendesk/article_attachment/title/attachmentFileName.png', encoding: 'binary', content,
-            }),
-            inline: false,
-            brand: brandInstance.value.id,
-          }],
-        }
-      )
-      const id = 2
-      mockDeployChange.mockImplementation(async () => ({ workspace: { id } }))
-      const res = await filter.deploy([
-        { action: 'modify', data: { before: clonedArticle, after: clonedArticle } },
-      ])
-      expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockPost).toHaveBeenCalledTimes(0)
-      expect(res.leftoverChanges).toHaveLength(0)
-      expect(res.deployResult.errors).toHaveLength(0)
-      expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges)
-        .toEqual([
-          { action: 'modify', data: { before: clonedArticle, after: clonedArticle } },
-        ])
     })
   })
 

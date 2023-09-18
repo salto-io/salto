@@ -22,7 +22,7 @@ import {
   normalizeFilePathPart,
   replaceTemplatesWithValues,
   safeJsonStringify,
-  inspectValue,
+  inspectValue, isResolvedReferenceExpression,
 } from '@salto-io/adapter-utils'
 import { collections, promises, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
@@ -34,15 +34,17 @@ import {
   ObjectType,
   ReferenceExpression,
   SaltoElementError,
-  StaticFile,
+  StaticFile, Value,
   Values,
 } from '@salto-io/adapter-api'
+import { references } from '@salto-io/adapter-components'
 import ZendeskClient from '../../client/client'
 import { ZENDESK } from '../../constants'
 import { getZendeskError } from '../../errors'
 import { CLIENT_CONFIG, ZendeskApiConfig, ZendeskConfig } from '../../config'
 import { prepRef } from './article_body'
 
+const { checkMissingRef } = references
 const { isDefined } = lowerDashValues
 
 const { sleep } = promises.timeout
@@ -50,6 +52,7 @@ const log = logger(module)
 const { awu } = collections.asynciterable
 
 const RESULT_MAXIMUM_OUTPUT_SIZE = 100
+export const SUCCESS_STATUS_CODE = 200
 
 type Attachment = InstanceElement & {
   value: {
@@ -64,7 +67,7 @@ type Attachment = InstanceElement & {
   }
 }
 
-type AttachmentResponse = {
+export type AttachmentResponse = {
   id: number
   // eslint-disable-next-line camelcase
   file_name: string
@@ -183,7 +186,7 @@ export const getArticleAttachments = async ({ brandIdToClient, articleById, atta
 export const createUnassociatedAttachment = async (
   client: ZendeskClient,
   attachmentInstance: InstanceElement,
-): Promise<void> => {
+): Promise<{ id?: number; error?: string }> => {
   try {
     log.info(`Creating unassociated article attachment: ${attachmentInstance.value.file_name}`)
     const fileContent = isStaticFile(attachmentInstance.value.content)
@@ -198,29 +201,74 @@ export const createUnassociatedAttachment = async (
       headers: { ...form.getHeaders() },
     })
     if (res === undefined) {
-      log.error('Received an empty response from Zendesk API. Not adding article attachments')
-      return
+      const error = 'Received an empty response from Zendesk API. Not adding article attachments'
+      log.error(error)
+      return { error }
     }
     if (Array.isArray(res.data)) {
-      log.error(`Received an invalid response from Zendesk API, ${safeJsonStringify(res.data, undefined, 2).slice(0, RESULT_MAXIMUM_OUTPUT_SIZE)}. Not adding article attachments`)
-      return
+      const error = `Received an invalid response from Zendesk API, ${safeJsonStringify(res.data, undefined, 2).slice(0, RESULT_MAXIMUM_OUTPUT_SIZE)}`
+      log.error(`${error}, Not adding article attachments`)
+      return { error }
     }
     const createdAttachment = [res.data.article_attachment]
     if (!isAttachmentsResponse(createdAttachment)) {
-      return
+      const error = `Received an attachment in an unexpected format from Zendesk API: ${safeJsonStringify(createdAttachment)}`
+      log.error(error)
+      return { error }
     }
-    attachmentInstance.value.id = createdAttachment[0].id
+    return { id: createdAttachment[0].id }
   } catch (err) {
     throw getZendeskError(attachmentInstance.elemID, err) // caught in adapter.ts
   }
 }
 
+export const MAX_BULK_SIZE = 20
+export const associateAttachments = async (
+  client: ZendeskClient,
+  article: InstanceElement,
+  attachmentsIds: number[]
+): Promise<{ status: number; ids: number[]; error: string }[]> => {
+  const attachChunk = _.chunk(attachmentsIds, MAX_BULK_SIZE)
+  const articleId = article.value.id
+  log.debug(`there are ${attachmentsIds.length} attachments to associate for article ${article.elemID.name}, associating in chunks of 20`)
+  const allRes = await Promise.all(attachChunk.map(async (chunk: number[], index: number) => {
+    log.debug(`starting article attachment associate chunk ${index + 1}/${attachChunk.length} for article ${article.elemID.name}`)
+
+    const createErrorMsg = (error: Value, status?: number): string => (
+      [
+        `could not associate chunk number ${index} for article '${article.elemID.name}'`,
+        status !== undefined ? `, status: ${status}` : '',
+        `, The unassociated attachment ids are: ${chunk}, error: ${safeJsonStringify(error)}`,
+      ].join(''))
+
+    try {
+      const res = await client.post({
+        url: `/api/v2/help_center/articles/${articleId}/bulk_attachments`,
+        data: { attachment_ids: chunk },
+      })
+      if (res.status !== SUCCESS_STATUS_CODE) {
+        const error = createErrorMsg(res.data, res.status)
+        log.warn(error)
+        return { status: res.status, ids: chunk, error }
+      }
+      return { status: res.status, ids: chunk, error: '' }
+    } catch (e) {
+      const error = e.reponse?.data ?? e
+      const status = e.reponse?.status
+
+      log.error(createErrorMsg(error, status))
+      return { status, ids: chunk, error }
+    }
+  }))
+  return allRes
+}
+
 export const deleteArticleAttachment = async (
   client: ZendeskClient,
-  attachmentInstance: InstanceElement,
+  attachmentId: number,
 ): Promise<void> => {
   const res = await client.delete({
-    url: `/api/v2/help_center/articles/attachments/${attachmentInstance.value.id}`,
+    url: `/api/v2/help_center/articles/attachments/${attachmentId}`,
   })
   if (res === undefined) {
     log.error('Received an empty response from Zendesk API when deleting an article attachment')
@@ -246,6 +294,19 @@ export const updateArticleTranslationBody = async ({
     .filter(isReferenceExpression)
     .filter(translationInstance => isTemplateExpression(translationInstance.value.value.body))
     .forEach(async translationInstance => {
+      // Because this is a translation deployment called from attachment, we don't catch missing references by default
+      // We need to catch them manually and throw an error
+      const missingReferencesInTranslation = translationInstance.value.value.body.parts.filter(isReferenceExpression)
+        .filter((ref: ReferenceExpression) => !isResolvedReferenceExpression(ref) || checkMissingRef(ref.value))
+      if (missingReferencesInTranslation.length > 0) {
+        const error = 'This article translation is needed to be deployed in order to deploy this attachment, but has missing references'
+        log.error(`${error} (${translationInstance.elemID.getFullName()})`)
+        throw createSaltoElementError({
+          message: error,
+          severity: 'Error',
+          elemID: translationInstance.elemID,
+        })
+      }
       try {
         replaceTemplatesWithValues(
           { values: [translationInstance.value.value], fieldName: 'body' },

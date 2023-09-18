@@ -30,6 +30,7 @@ const log = logger(module)
 
 /**
  * Annotate fields with _hidden_value=true if they match the specified configuration.
+ * Also add fields with _hidden_value=true if they are not defined in the type.
  */
 export const hideFields = (
   fieldsToHide: FieldToHideType[],

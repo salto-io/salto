@@ -2437,6 +2437,14 @@ describe('adapter', () => {
                   refType: BuiltinTypes.UNKNOWN,
                   annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
                 },
+                created_at: {
+                  refType: BuiltinTypes.UNKNOWN,
+                  annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+                },
+                updated_at: {
+                  refType: BuiltinTypes.UNKNOWN,
+                  annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+                },
               },
               // generateType function creates path
               path: [ZENDESK, elementsUtils.TYPES_PATH, 'group'],
@@ -2477,6 +2485,14 @@ describe('adapter', () => {
                 annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
               },
               updated_by_id: {
+                refType: BuiltinTypes.UNKNOWN,
+                annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+              },
+              created_at: {
+                refType: BuiltinTypes.UNKNOWN,
+                annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+              },
+              updated_at: {
                 refType: BuiltinTypes.UNKNOWN,
                 annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
               },

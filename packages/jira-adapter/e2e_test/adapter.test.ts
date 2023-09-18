@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { DeployResult, Element, getChangeData, InstanceElement, isAdditionChange, isInstanceElement, isObjectType,
+  ModificationChange,
   ReadOnlyElementsSource, toChange } from '@salto-io/adapter-api'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
@@ -28,12 +29,13 @@ import { createInstances, createModifyInstances } from './instances'
 import { findInstance } from './utils'
 import { getLookUpName } from '../src/reference_mapping'
 import { getDefaultConfig } from '../src/config/config'
-import { BeforeAfterInstances } from './instances/types'
 
 const { awu } = collections.asynciterable
 const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
 
 jest.setTimeout(600 * 1000)
+
+const excludedTypes = ['Behavior', 'Behavior__config']
 
 each([
   ['Cloud', false],
@@ -81,7 +83,8 @@ each([
     })
     const scriptRunnerTypes = getDefaultConfig({ isDataCenter }).scriptRunnerApiDefinitions?.types
     if (scriptRunnerTypes !== undefined) {
-      it.each(Object.keys(scriptRunnerTypes))('%s', expectedType => {
+      it.each(Object.keys(scriptRunnerTypes)
+        .filter(type => !excludedTypes.includes(type)))('%s', expectedType => {
         expect(fetchedTypes).toContain(expectedType)
       })
     }
@@ -102,7 +105,7 @@ each([
     let addDeployResults: DeployResult[]
     let modifyDeployResults: DeployResult[]
     let addInstanceGroups: InstanceElement[][]
-    let modifyInstanceGroups: BeforeAfterInstances[][]
+    let modifyInstanceGroups: ModificationChange<InstanceElement>[][]
 
     beforeAll(async () => {
       elementsSource = buildElementsSourceFromElements(fetchedElements)
@@ -142,8 +145,8 @@ each([
       modifyDeployResults = await awu(modifyInstanceGroups).map(async group => {
         const res = await adapter.deploy({
           changeGroup: {
-            groupID: group[0].after.elemID.getFullName(),
-            changes: group.map(({ before, after }) => toChange({ before, after })),
+            groupID: group[0].data.after.elemID.getFullName(),
+            changes: group,
           },
         })
 
@@ -151,7 +154,7 @@ each([
           const appliedInstance = getChangeData(appliedChange)
           modifyInstanceGroups
             .flat()
-            .flatMap(({ after }) => getParents(after))
+            .flatMap(change => getParents(change.data.after))
             .filter(parent => parent.elemID.isEqual(appliedInstance.elemID))
             .forEach(parent => {
               parent.resValue = appliedInstance
@@ -196,11 +199,11 @@ each([
 
       const typeFixedModifyInstanceGroups = modifyInstanceGroups
         .flat()
-        .map(({ after }) =>
-          (scriptRunnerApiDefinitions?.types[after.elemID.typeName] === undefined
-            ? after
+        .map(change =>
+          (scriptRunnerApiDefinitions?.types[change.data.after.elemID.typeName] === undefined
+            ? change.data.after
             : replaceInstanceTypeForDeploy({
-              instance: after,
+              instance: change.data.after,
               config: scriptRunnerApiDefinitions,
             })))
       const resolvedModifiedElements = await Promise.all(

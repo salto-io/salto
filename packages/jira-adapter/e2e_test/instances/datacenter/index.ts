@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, Element } from '@salto-io/adapter-api'
+import { InstanceElement, Element, ModificationChange } from '@salto-io/adapter-api'
 import { AUTOMATION_TYPE, PRIORITY_SCHEME_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { findType } from '../../utils'
 import { createAutomationValues } from './automation'
@@ -22,7 +22,6 @@ import { createFieldConfigurationValues } from './fieldConfiguration'
 import { createFilterValues } from './filter'
 import { createPrioritySchemeValues } from './priorityScheme'
 import { createWorkflowValues } from './workflow'
-import { BeforeAfterInstances } from '../types'
 
 export const createInstances = (randomString: string, fetchedElements: Element[]): InstanceElement[][] => {
   const fieldConfiguration = new InstanceElement(
@@ -78,4 +77,4 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
   ]
 }
 
-export const modifyDataCenterInstances = (_fetchedElements: Element[]): BeforeAfterInstances[][] => []
+export const modifyDataCenterInstances = (_fetchedElements: Element[]):ModificationChange<InstanceElement>[][] => []

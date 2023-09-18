@@ -13,15 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, Element, InstanceElement, Values, isInstanceElement } from '@salto-io/adapter-api'
+import { ElemID, Element, InstanceElement, ModificationChange, Values, isInstanceElement, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { createReference } from '../../../utils'
 import { JIRA, SCRIPT_RUNNER_SETTINGS_TYPE } from '../../../../src/constants'
-
-export type BeforeAfterInstances = {
-  before: InstanceElement
-  after: InstanceElement
-}
 
 const createScriptRunnerSettingsValues = (allElements: Element[]): Values => ({
   'jql_search_view@b': true,
@@ -35,7 +30,7 @@ const createScriptRunnerSettingsValues = (allElements: Element[]): Values => ({
   'notify_assignee_reporter@b': false,
 })
 
-export const createScriptRunnerSettingsInstances = (allElements: Element[]): BeforeAfterInstances => {
+export const createScriptRunnerSettingsInstances = (allElements: Element[]): ModificationChange<InstanceElement> => {
   const fetchSettings = allElements
     .filter(isInstanceElement)
     .find(instance => instance.elemID.typeName === SCRIPT_RUNNER_SETTINGS_TYPE)
@@ -47,5 +42,5 @@ export const createScriptRunnerSettingsInstances = (allElements: Element[]): Bef
   before.value['issue_polling@b'] = !fetchSettings.value['issue_polling@b']
   const after = _.cloneDeep(fetchSettings)
   after.value = createScriptRunnerSettingsValues(allElements)
-  return { before, after }
+  return toChange({ before, after }) as ModificationChange<InstanceElement>
 }

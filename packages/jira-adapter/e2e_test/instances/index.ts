@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { v4 as uuidv4 } from 'uuid'
-import { InstanceElement, Element, ElemID, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
+import { InstanceElement, Element, ElemID, CORE_ANNOTATIONS, ReferenceExpression, ModificationChange } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { CUSTOM_FIELDS_SUFFIX } from '../../src/filters/fields/field_name_filter'
 import { ISSUE_TYPE_NAME, JIRA, WEBHOOK_TYPE, STATUS_TYPE_NAME } from '../../src/constants'
@@ -28,7 +28,6 @@ import { createWebhookValues } from './webhook'
 import { createStatusValues } from './status'
 import { createInstances as createDataCenterInstances, modifyDataCenterInstances } from './datacenter'
 import { createInstances as createCloudInstances, modifyCloudInstances } from './cloud'
-import { BeforeAfterInstances } from './types'
 
 export const createInstances = (fetchedElements: Element[], isDataCenter: boolean): InstanceElement[][] => {
   const randomString = `createdByOssE2e${String(Date.now()).substring(6)}`
@@ -156,7 +155,10 @@ export const createInstances = (fetchedElements: Element[], isDataCenter: boolea
   ]
 }
 
-export const createModifyInstances = (fetchedElements: Element[], isDataCenter: boolean): BeforeAfterInstances[][] => [
+export const createModifyInstances = (
+  fetchedElements: Element[],
+  isDataCenter: boolean
+): ModificationChange<InstanceElement>[][] => [
   ...(
     isDataCenter
       ? modifyDataCenterInstances(fetchedElements)

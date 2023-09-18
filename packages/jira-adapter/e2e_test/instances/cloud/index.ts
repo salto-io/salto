@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, Element, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
+import { InstanceElement, Element, CORE_ANNOTATIONS, ReferenceExpression, ModificationChange } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { AUTOMATION_TYPE, ESCALATION_SERVICE_TYPE, ISSUE_TYPE_SCHEMA_NAME, NOTIFICATION_SCHEME_TYPE_NAME,
   SCHEDULED_JOB_TYPE, SCRIPTED_FIELD_TYPE, SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE,
@@ -35,7 +35,6 @@ import { createScriptRunnerListenerValues } from './scriptrunner/listener'
 import { createScheduledJobsValues } from './scriptrunner/scheduled_jobs'
 import { createEscalationServiceValues } from './scriptrunner/escalation_service'
 import { createScriptedFragmentsValues } from './scriptrunner/scripted_fragments'
-import { BeforeAfterInstances } from '../types'
 import { createScriptRunnerSettingsInstances } from './scriptrunner/settings'
 
 export const createInstances = (
@@ -193,12 +192,6 @@ export const createInstances = (
   ]
 }
 
-export const modifyCloudInstances = (fetchedElements: Element[]): BeforeAfterInstances[][] => {
-  const {
-    before: scriptRunnerSettingsBefore,
-    after: scriptRunnerSettingsAfter,
-  } = createScriptRunnerSettingsInstances(fetchedElements)
-  return [
-    [{ before: scriptRunnerSettingsBefore, after: scriptRunnerSettingsAfter }],
-  ]
-}
+export const modifyCloudInstances = (fetchedElements: Element[]): ModificationChange<InstanceElement>[][] => [
+  [createScriptRunnerSettingsInstances(fetchedElements)],
+]

@@ -326,7 +326,7 @@ describe('automationStructureFilter', () => {
       })
       it('should covert global rule scope', async () => {
         await filter.onFetch([globalScopeInstance])
-        expect(globalScopeInstance.value.projects).toEqual([])
+        expect(globalScopeInstance.value.projects).toBeUndefined()
       })
       it('should not covert if unknown project type', async () => {
         ruleScopeInstance.value.ruleScope.resources[1] = 'ari:cloud:jira-none::site/128baddc-c238-4857-b249-cfc84bd10c4b'

@@ -289,7 +289,7 @@ const revertCompareFieldValueStructure = async (instance: InstanceElement): Prom
   })).value
 }
 
-const getScope = (resource: string): { projectId?: string; projectTypeKey?: string } | undefined => {
+const getScope = (resource: string): { projectId?: string; projectTypeKey?: string } | 'GLOBAL' | undefined => {
   const projectScope = resource.match(PROJECT_SCOPE_REGEX)
   if (projectScope) {
     return { projectId: projectScope[1] }
@@ -304,8 +304,9 @@ const getScope = (resource: string): { projectId?: string; projectTypeKey?: stri
   }
   if (!resource.match(GLOBAL_SCOPE_REGEX)) {
     log.error(`Failed to convert automation rule scope, found unknown pattern: ${resource}`)
+    return undefined
   }
-  return undefined
+  return 'GLOBAL'
 }
 
 export const convertRuleScopeValueToProjects = (values: Values): {
@@ -316,9 +317,17 @@ export const convertRuleScopeValueToProjects = (values: Values): {
   if (!isRuleScope(ruleScope)) {
     return undefined
   }
-  return ruleScope.resources
+  const rules = ruleScope.resources
     .map(getScope)
     .filter(isDefined)
+
+  const [globalRules, nonGlobalRules] = _.partition(rules, (rule): rule is 'GLOBAL' => rule === 'GLOBAL')
+
+  if (globalRules.length > 0) {
+    return undefined
+  }
+
+  return nonGlobalRules
 }
 
 

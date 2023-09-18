@@ -232,6 +232,7 @@ export type ChangeValidatorName = (
   | 'unresolvedFieldConfigurationItems'
   | 'customFieldsWith10KOptions'
   | 'issueTypeHierarchy'
+  | 'automationProjects'
   )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -280,6 +281,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     unresolvedFieldConfigurationItems: { refType: BuiltinTypes.BOOLEAN },
     customFieldsWith10KOptions: { refType: BuiltinTypes.BOOLEAN },
     issueTypeHierarchy: { refType: BuiltinTypes.BOOLEAN },
+    automationProjects: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

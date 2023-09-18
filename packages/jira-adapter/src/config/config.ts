@@ -54,6 +54,8 @@ type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
 
 type JiraDeployConfig = configUtils.UserDeployConfig & configUtils.DefaultMissingUserFallbackConfig & {
   forceDelete: boolean
+  taskMaxRetries: number
+  taskRetryDelay: number
 }
 
 type JiraFetchFilters = configUtils.DefaultFetchCriteria & {
@@ -153,10 +155,13 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     enableMissingReferences: true,
     removeDuplicateProjectRoles: true,
     addAlias: true,
+    enableIssueLayouts: true,
 
   },
   deploy: {
     forceDelete: false,
+    taskMaxRetries: 120,
+    taskRetryDelay: 1000,
   },
   masking: {
     automationHeaders: [],
@@ -353,6 +358,10 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
       'fetch.hideTypes',
       'fetch.enableMissingReferences',
       'fetch.addAlias',
+      'fetch.enableIssueLayouts',
+      'fetch.removeDuplicateProjectRoles',
+      'deploy.taskMaxRetries',
+      'deploy.taskRetryDelay',
       SCRIPT_RUNNER_API_DEFINITIONS]),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },

@@ -21,7 +21,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { ISSUE_TYPE_NAME, JIRA, STATUS_TYPE_NAME } from '../../src/constants'
 import { getFilterParams, mockClient } from '../utils'
-import workflowSchemeFilter, { MAX_TASK_CHECKS } from '../../src/filters/workflow_scheme'
+import workflowSchemeFilter from '../../src/filters/workflow_scheme'
 import { Filter } from '../../src/filter'
 import { getDefaultConfig } from '../../src/config/config'
 import JiraClient from '../../src/client/client'
@@ -568,7 +568,7 @@ describe('workflowScheme', () => {
       const res = await filter.deploy?.([toChange({ before: instanceBefore, after: instance })])
 
       // + 1 is for the internal id check
-      expect(connection.get).toHaveBeenCalledTimes(MAX_TASK_CHECKS + 1)
+      expect(connection.get).toHaveBeenCalledTimes(getDefaultConfig({ isDataCenter: false }).deploy.taskMaxRetries + 1)
 
       expect(res?.deployResult.appliedChanges).toEqual([])
       expect(res?.deployResult.errors).toHaveLength(1)

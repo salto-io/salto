@@ -313,8 +313,8 @@ const calculateAndRemoveDeletedAttachments = ({
   articleInstances: InstanceElement[]
   attachmentById: Record<number, InstanceElement>
   translationsByName: Record<string, InstanceElement>
-}): Set<string> => {
-  const allRemovedAttachmentsNames = new Set<string>()
+}): Set<number> => {
+  const allRemovedAttachmentsIds = new Set<number>()
   articleInstances.forEach(article => {
     const articleRemovedAttachmentsIds = new Set<number>()
     const attachmentData = getAttachmentData(article, attachmentById, translationsByName)
@@ -322,15 +322,15 @@ const calculateAndRemoveDeletedAttachments = ({
       const numberId = Number(id)
       if (!attachmentData.attachmentIdsFromArticleBody.has(numberId)) {
         articleRemovedAttachmentsIds.add(numberId)
-        allRemovedAttachmentsNames.add(attachmentData.inlineAttachmentsNameById[numberId])
+        allRemovedAttachmentsIds.add(numberId)
       }
     })
     article.value.attachments = makeArray(article.value.attachments).filter(
       (attachment: unknown) => !isRemovedAttachment(attachment, articleRemovedAttachmentsIds)
     )
   })
-  log.info(`the following article attachments are not going to be included in the fetch, since they are inline but do not appear in the body: ${Array.from(allRemovedAttachmentsNames)}`)
-  return allRemovedAttachmentsNames
+  log.info(`the following article attachments are not going to be included in the fetch, since they are inline but do not appear in the body: ${Array.from(allRemovedAttachmentsIds)}`)
+  return allRemovedAttachmentsIds
 }
 
 /**
@@ -380,7 +380,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
       })
       _.remove(
         attachments,
-        (attachment => allRemovedAttachmentsIds.has(attachment.elemID.name))
+        (attachment => isInstanceElement(attachment) && allRemovedAttachmentsIds.has(getId(attachment)))
       )
       // If in the future articles could share attachments this would have to be changed! We delete attachments that
       // do not appear in one article, we currently do not check across all articles.
@@ -388,7 +388,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
         elements,
         (element => element.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME
           && isInstanceElement(element)
-          && allRemovedAttachmentsIds.has(element.elemID.name))
+          && allRemovedAttachmentsIds.has(getId(element)))
       )
       const attachmentErrors = await getArticleAttachments({
         brandIdToClient,

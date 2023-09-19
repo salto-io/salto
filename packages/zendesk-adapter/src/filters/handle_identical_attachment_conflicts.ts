@@ -15,13 +15,38 @@
 */
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { isInstanceElement, isStaticFile } from '@salto-io/adapter-api'
+import {
+  Element,
+  isInstanceElement,
+  isStaticFile,
+  ReferenceExpression,
+} from '@salto-io/adapter-api'
+import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { FETCH_CONFIG } from '../config'
-import { ARTICLE_ATTACHMENT_TYPE_NAME } from '../constants'
+import { ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TYPE_NAME } from '../constants'
 
 
 const log = logger(module)
+
+
+const uniqueAttachmentField = (
+  elements: Element[],
+  idsToRemove: Set<number>,
+): void => {
+  const articleInstances = elements
+    .filter(isInstanceElement)
+    .filter(elem => elem.elemID.typeName === ARTICLE_TYPE_NAME)
+    .filter(article => !_.isEmpty(article.value.attachments))
+
+  articleInstances.forEach(article => {
+    article.value.attachments = article.value.attachments
+      .filter((attachment: ReferenceExpression | number) => {
+        const id = isResolvedReferenceExpression(attachment) ? attachment.value.value.id : attachment
+        return !idsToRemove.has(id)
+      })
+  })
+}
 
 /**
  * when handleIdenticalAttachmentConflicts flag is true, this filter will omit article attachments with the same elemId
@@ -42,7 +67,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
         && isStaticFile(attachment.value.content)
         && attachment.value.content.hash !== undefined)
     const attachmentsByElemId = _.groupBy(articleAttachmentInstances, elem => elem.elemID.getFullName())
-    const duplicateElemIds = Object.keys(attachmentsByElemId).filter(key => attachmentsByElemId[key].length > 1)
+    const duplicateElemIds = new Set<string>()
     const idsToRemove = new Set(Object.values(attachmentsByElemId)
       .filter(attachments => attachments.length > 1)
       .flatMap(attachments => {
@@ -53,16 +78,20 @@ const filterCreator: FilterCreator = ({ config }) => ({
           return []
         }
         // all files have the same hash, so we can remove the duplicates and keep only one
+        duplicateElemIds.add(attachments[0].elemID.getFullName())
         return attachments.slice(1).map(att => att.value.id)
       }))
-    log.debug(`going to remove duplicates for attachments: ${duplicateElemIds.join(',')}`)
-    log.debug(`ids removed: ${Array.from(idsToRemove).join(',')}`)
+    log.debug(`going to remove duplicates for attachments: ${Array.from(duplicateElemIds).join(',')}`)
+
+    // remove duplicates from attachments field in article
+    uniqueAttachmentField(elements, idsToRemove)
+
     _.remove(elements, elem =>
       isInstanceElement(elem)
       && elem.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME
       && idsToRemove.has(elem.value.id))
 
-    // remove duplicates from attachments
+    log.debug(`ids removed: ${Array.from(idsToRemove).join(',')}`)
   },
 })
 

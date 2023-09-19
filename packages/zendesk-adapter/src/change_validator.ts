@@ -77,7 +77,7 @@ import {
   duplicateIdFieldValuesValidator,
   notEnabledMissingReferencesValidator,
   conditionalTicketFieldsValidator,
-  dynamicContentDeletionValidator
+  dynamicContentDeletionValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ChangeValidatorName, ZedneskDeployConfig, ZendeskFetchConfig, ZendeskConfig } from './config'

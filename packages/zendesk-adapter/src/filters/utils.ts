@@ -85,9 +85,11 @@ export const createAdditionalParentChanges = async (
     // In case the children were changed during the preDeploy, we need to update their values here
     newParent.value[childrenField] = _.isArray(newParent.value[childrenField])
       ? newParent.value[childrenField].map((child: Value) => {
-        const childFromChanges = childrenToFullName[child.elemID.getFullName()]
-        if (isResolvedReferenceExpression(child) && childFromChanges !== undefined) {
-          return new ReferenceExpression(child.elemID, childFromChanges)
+        if (isResolvedReferenceExpression(child)) {
+          const childFromChanges = childrenToFullName[child.elemID.getFullName()]
+          if (childFromChanges !== undefined) {
+            return new ReferenceExpression(child.elemID, childFromChanges)
+          }
         }
         return child
       })

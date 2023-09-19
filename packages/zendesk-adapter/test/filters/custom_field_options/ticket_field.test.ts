@@ -20,7 +20,7 @@ import {
 import { filterUtils } from '@salto-io/adapter-components'
 import { createTemplateExpression } from '@salto-io/adapter-utils'
 import { elementSource } from '@salto-io/workspace'
-import { ZENDESK, CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../../src/constants'
+import { ZENDESK, CUSTOM_FIELD_OPTIONS_FIELD_NAME, DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../../../src/constants'
 import filterCreator from '../../../src/filters/custom_field_options/ticket_field'
 import { DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME } from '../../../src/filters/custom_field_options/creator'
 import { createFilterCreatorParams } from '../../utils'
@@ -151,6 +151,13 @@ describe('ticket field filter', () => {
     })
   })
   describe('preDeploy', () => {
+    const dynamicContent = new InstanceElement(
+      'dynamicContent',
+      new ObjectType({ elemID: new ElemID(ZENDESK, DYNAMIC_CONTENT_ITEM_TYPE_NAME, 'instance', 'dc') }),
+      {
+        placeholder: '{{dc.dc}}',
+      }
+    )
     const resolvedParent = new InstanceElement(
       'parent',
       parentObjType,
@@ -158,7 +165,7 @@ describe('ticket field filter', () => {
         id: 11,
         name: 'parent',
         [CUSTOM_FIELD_OPTIONS_FIELD_NAME]: [
-          { id: 22, name: 'child1', value: 'v1', raw_name: 'aaa' },
+          { id: 22, name: 'child1', value: 'v1', raw_name: createTemplateExpression({ parts: ['{{', new ReferenceExpression(dynamicContent.elemID, dynamicContent), '}}'] }) },
           { id: 33, name: 'child2', value: 'v2', raw_name: createTemplateExpression({ parts: [`aaa ${TICKET_TICKET_FIELD}_`, new ReferenceExpression(parent.elemID, parent)] }) },
         ],
         [DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME]: 'v2',
@@ -172,8 +179,8 @@ describe('ticket field filter', () => {
 
     it('should add default to the options and resolve template expressions', async () => {
       expect(clonedResolvedParent.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME]).toEqual([
-        { id: 22, name: 'child1', value: 'v1', default: false, raw_name: 'aaa' },
-        { id: 33, name: 'child2', value: 'v2', default: true, raw_name: 'aaa ticket.ticket_field_11' },
+        { id: 22, name: '{{dc.dc}}', value: 'v1', default: false, raw_name: '{{dc.dc}}' },
+        { id: 33, name: 'aaa ticket.ticket_field_11', value: 'v2', default: true, raw_name: 'aaa ticket.ticket_field_11' },
       ])
     })
     it('should add default as false to all the options if there is no default', async () => {
@@ -181,8 +188,8 @@ describe('ticket field filter', () => {
       delete clonedParentWithNoDefault.value[DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME]
       await filter?.preDeploy([toChange({ after: clonedParentWithNoDefault })])
       expect(clonedParentWithNoDefault.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME]).toEqual([
-        { id: 22, name: 'child1', value: 'v1', default: false, raw_name: 'aaa' },
-        { id: 33, name: 'child2', value: 'v2', default: false, raw_name: 'aaa ticket.ticket_field_11' },
+        { id: 22, name: '{{dc.dc}}', value: 'v1', default: false, raw_name: '{{dc.dc}}' },
+        { id: 33, name: 'aaa ticket.ticket_field_11', value: 'v2', default: false, raw_name: 'aaa ticket.ticket_field_11' },
       ])
     })
   })
@@ -273,8 +280,6 @@ describe('ticket field filter', () => {
         expectedElements[0].value.id = 1
         expectedElements[1].value.id = 2
         expectedElements[2].value.id = 3
-        expectedElements[1].value.name = expectedElements[1].value.raw_name
-        expectedElements[2].value.name = expectedElements[2].value.raw_name
         expect(res.deployResult.appliedChanges).toHaveLength(3)
         expect(res.deployResult.appliedChanges)
           .toEqual(expectedElements.map(e => ({ action: 'add', data: { after: e } })))
@@ -372,8 +377,6 @@ describe('ticket field filter', () => {
         expect(res.deployResult.errors).toHaveLength(0)
         const expectedElements = [ticketField, option1, option2].map(e => e.clone())
         expectedElements[0].value.id = 1
-        expectedElements[1].value.name = expectedElements[1].value.raw_name
-        expectedElements[2].value.name = expectedElements[2].value.raw_name
         expect(res.deployResult.appliedChanges).toHaveLength(3)
         expect(res.deployResult.appliedChanges)
           .toEqual(expectedElements.map(e => ({ action: 'add', data: { after: e } })))

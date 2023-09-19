@@ -2696,6 +2696,7 @@ export type ChangeValidatorName = (
   | 'duplicateIdFieldValues'
   | 'notEnabledMissingReferences'
   | 'conditionalTicketFields'
+  | 'dynamicContentDeletion'
   )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -2766,6 +2767,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     duplicateIdFieldValues: { refType: BuiltinTypes.BOOLEAN },
     notEnabledMissingReferences: { refType: BuiltinTypes.BOOLEAN },
     conditionalTicketFields: { refType: BuiltinTypes.BOOLEAN },
+    dynamicContentDeletion: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

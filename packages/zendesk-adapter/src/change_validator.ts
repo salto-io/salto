@@ -77,6 +77,7 @@ import {
   duplicateIdFieldValuesValidator,
   notEnabledMissingReferencesValidator,
   conditionalTicketFieldsValidator,
+  dynamicContentDeletionValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ChangeValidatorName, ZedneskDeployConfig, ZendeskFetchConfig, ZendeskConfig } from './config'
@@ -167,6 +168,7 @@ export default ({
     duplicateIdFieldValues: duplicateIdFieldValuesValidator(apiConfig),
     notEnabledMissingReferences: notEnabledMissingReferencesValidator(config),
     conditionalTicketFields: conditionalTicketFieldsValidator,
+    dynamicContentDeletion: dynamicContentDeletionValidator,
     // *** Guide Order Validators ***
     childInOrder: childInOrderValidator,
     childrenReferences: childrenReferencesValidator,

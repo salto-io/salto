@@ -17,7 +17,7 @@ import _ from 'lodash'
 import Joi from 'joi'
 import {
   Change, ChangeDataType, getChangeData, InstanceElement,
-  isAdditionOrModificationChange, isInstanceChange, ReferenceExpression, toChange,
+  isAdditionOrModificationChange, isInstanceChange, ReferenceExpression, toChange, Value,
 } from '@salto-io/adapter-api'
 import {
   applyFunctionToChangeData,
@@ -25,12 +25,14 @@ import {
   getParents,
   resolveChangeElement,
   references,
+  replaceTemplatesWithValues,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { lookupFunc } from './field_references'
 import { ZendeskFetchConfig } from '../config'
-import { BRAND_TYPE_NAME } from '../constants'
+import { BRAND_TYPE_NAME, CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../constants'
+import { prepRef } from './handle_template_expressions'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -76,7 +78,6 @@ export const createAdditionalParentChanges = async (
   const changes = parents.map(parent => toChange({
     before: parent.value.clone(), after: parent.value.clone(),
   }))
-
   return shouldResolve
     ? awu(changes).map(change => resolveChangeElement(change, lookupFunc)).toArray()
     : changes
@@ -117,4 +118,41 @@ export const getBrandsForGuide = (
     .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
     .filter(brandInstance => brandInstance.value.has_help_center)
     .filter(brandInstance => brandsRegexList.some(regex => new RegExp(regex).test(brandInstance.value.name)))
+}
+
+type CustomFieldOption = {
+  // eslint-disable-next-line camelcase
+  raw_name: string
+  name?: string
+}
+
+const isCustomFieldOption = (value: Value): value is CustomFieldOption =>
+  _.isPlainObject(value) && _.isString(value.raw_name)
+
+export const getCustomFieldOptionsFromChanges = (parentTypeName: string, childTypeName: string, changes: Change[])
+  : CustomFieldOption[] => {
+  const relevantInstances = changes
+    .filter(isAdditionOrModificationChange)
+    .filter(isInstanceChange)
+    .map(getChangeData)
+    .filter(instance => [parentTypeName, childTypeName].includes(instance.elemID.typeName))
+
+  const [parentInstances, childrenInstances] = _.partition(
+    relevantInstances,
+    instance => instance.elemID.typeName === parentTypeName,
+  )
+
+  parentInstances.map(instance => instance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] ?? []).forEach((options: Value[]) => {
+    replaceTemplatesWithValues(
+      { values: options, fieldName: 'raw_name' },
+      // onDeploy this value will not exist, so we don't need the shared context
+      {},
+      prepRef,
+    )
+  })
+
+  return childrenInstances.map(instance => instance.value)
+    .concat(parentInstances.map(instance => instance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] ?? []))
+    .flat()
+    .filter(isCustomFieldOption)
 }

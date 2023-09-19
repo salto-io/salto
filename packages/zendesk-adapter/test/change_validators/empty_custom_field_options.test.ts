@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { ZENDESK } from '../../src/constants'
+import { ZENDESK, CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../src/constants'
 import { emptyCustomFieldOptionsValidator } from '../../src/change_validators/empty_custom_field_options'
-import { CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../src/filters/custom_field_options/creator'
+
 
 describe('emptyCustomFieldOptionsValidator', () => {
   const userFieldType = new ObjectType({ elemID: new ElemID(ZENDESK, 'user_field') })

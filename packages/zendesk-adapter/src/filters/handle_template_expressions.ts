@@ -22,11 +22,10 @@ import { references as referencesUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
-import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from './dynamic_content'
 import {
   ZENDESK,
   TICKET_FIELD_TYPE_NAME,
-  ORG_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, GROUP_TYPE_NAME,
+  ORG_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, GROUP_TYPE_NAME, DYNAMIC_CONTENT_ITEM_TYPE_NAME,
 } from '../constants'
 import { FETCH_CONFIG, ZendeskConfig } from '../config'
 

@@ -14,13 +14,12 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { ZENDESK } from '../../src/constants'
+import { DYNAMIC_CONTENT_ITEM_TYPE_NAME, ZENDESK } from '../../src/constants'
 import {
   noDuplicateLocaleIdInDynamicContentItemValidator,
 } from '../../src/change_validators/unique_locale_per_variant'
 import {
   VARIANTS_FIELD_NAME,
-  DYNAMIC_CONTENT_ITEM_TYPE_NAME,
   DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME,
 } from '../../src/filters/dynamic_content'
 

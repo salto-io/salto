@@ -20,12 +20,9 @@ import {
 import { filterUtils } from '@salto-io/adapter-components'
 import { createTemplateExpression } from '@salto-io/adapter-utils'
 import { elementSource } from '@salto-io/workspace'
-import { ZENDESK } from '../../../src/constants'
+import { ZENDESK, CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../../src/constants'
 import filterCreator from '../../../src/filters/custom_field_options/ticket_field'
-import {
-  CUSTOM_FIELD_OPTIONS_FIELD_NAME,
-  DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME,
-} from '../../../src/filters/custom_field_options/creator'
+import { DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME } from '../../../src/filters/custom_field_options/creator'
 import { createFilterCreatorParams } from '../../utils'
 import { TICKET_TICKET_FIELD } from '../../../src/filters/handle_template_expressions'
 

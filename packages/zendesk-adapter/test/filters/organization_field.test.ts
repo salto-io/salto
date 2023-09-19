@@ -19,11 +19,9 @@ import {
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 
-import { ZENDESK, ORG_FIELD_TYPE_NAME } from '../../src/constants'
+import { ZENDESK, ORG_FIELD_TYPE_NAME, CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../src/constants'
 
-import filterCreator, {
-  ORG_FIELD_OPTION_TYPE_NAME, CUSTOM_FIELD_OPTIONS_FIELD_NAME,
-} from '../../src/filters/organization_field'
+import filterCreator, { ORG_FIELD_OPTION_TYPE_NAME } from '../../src/filters/organization_field'
 import { createFilterCreatorParams } from '../utils'
 
 const mockDeployChange = jest.fn()

@@ -13,9 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, InstanceElement, toChange } from '@salto-io/adapter-api'
+import {
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  toChange,
+  CORE_ANNOTATIONS,
+  ReferenceExpression, getChangeData, AdditionChange,
+} from '@salto-io/adapter-api'
 import { ZENDESK, BRAND_TYPE_NAME, CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../src/constants'
-import { getBrandsForGuide, getCustomFieldOptionsFromChanges } from '../../src/filters/utils'
+import {
+  createAdditionalParentChanges,
+  getBrandsForGuide,
+  getCustomFieldOptionsFromChanges,
+} from '../../src/filters/utils'
 
 describe('Zendesk utils', () => {
   describe('getBrandsForGuide', () => {
@@ -87,7 +98,42 @@ describe('Zendesk utils', () => {
   })
 
   describe('createAdditionalParentChanges', () => {
+    let parentInstance: InstanceElement
+    let childInstance: InstanceElement
+    beforeAll(() => {
+      parentInstance = new InstanceElement(
+        'parentInstance',
+        new ObjectType({ elemID: new ElemID(ZENDESK, 'parent') }),
+        {}
+      )
+      childInstance = new InstanceElement(
+        'childInstance',
+        new ObjectType({ elemID: new ElemID(ZENDESK, 'child') }),
+        {},
+        undefined,
+        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentInstance.elemID, parentInstance)] }
+      )
+      parentInstance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] = [
+        new ReferenceExpression(childInstance.elemID, childInstance),
+      ]
+    })
+    it('should create additional parent with an updated child inside of it', async () => {
+      const changedChild = childInstance.clone()
+      changedChild.value = { value: 'new value' }
+      const newParentChanges = await createAdditionalParentChanges([toChange({ after: changedChild })])
 
+      expect(newParentChanges).toHaveLength(1)
+      const newParent = getChangeData((newParentChanges as AdditionChange<InstanceElement>[])[0])
+      expect(newParent.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME][0].value).toBe('new value')
+    })
+    it('should not change the original parent on change of the generated parent', async () => {
+      const newParentChanges = await createAdditionalParentChanges([toChange({ after: childInstance })])
+
+      expect(newParentChanges).toHaveLength(1)
+      const newParent = getChangeData((newParentChanges as AdditionChange<InstanceElement>[])[0])
+      newParent.value = { value: 'new value' }
+      expect(parentInstance.value).not.toBe('new value')
+    })
   })
   describe('getCustomFieldOptionsFromChanges', () => {
     let parentInstance: InstanceElement

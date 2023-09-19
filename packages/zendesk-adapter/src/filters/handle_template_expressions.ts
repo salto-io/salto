@@ -25,7 +25,11 @@ import { FilterCreator } from '../filter'
 import {
   ZENDESK,
   TICKET_FIELD_TYPE_NAME,
-  ORG_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, GROUP_TYPE_NAME, DYNAMIC_CONTENT_ITEM_TYPE_NAME,
+  ORG_FIELD_TYPE_NAME,
+  USER_FIELD_TYPE_NAME,
+  GROUP_TYPE_NAME,
+  DYNAMIC_CONTENT_ITEM_TYPE_NAME,
+  CUSTOM_FIELD_OPTIONS_FIELD_NAME,
 } from '../constants'
 import { FETCH_CONFIG, ZendeskConfig } from '../config'
 
@@ -148,6 +152,19 @@ const potentialTemplates: PotentialTemplateField[] = [
     containerValidator: (container: Values): boolean =>
       container.name === 'uri_templates',
   },
+  ...[ORG_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, TICKET_FIELD_TYPE_NAME].flatMap(instanceType => [
+    {
+      instanceType: `${instanceType}${CUSTOM_FIELD_OPTIONS_FIELD_NAME}`,
+      fieldName: 'raw_name',
+      containerValidator: NoValidator,
+    },
+    {
+      instanceType,
+      pathToContainer: [CUSTOM_FIELD_OPTIONS_FIELD_NAME],
+      fieldName: 'raw_name',
+      containerValidator: NoValidator,
+    },
+  ]),
 ]
 
 const seekAndMarkPotentialReferences = (formula: string): string => {

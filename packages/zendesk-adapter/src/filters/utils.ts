@@ -25,14 +25,13 @@ import {
   getParents,
   resolveChangeElement,
   references,
-  replaceTemplatesWithValues, isResolvedReferenceExpression,
+  isResolvedReferenceExpression,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { lookupFunc } from './field_references'
 import { ZendeskFetchConfig } from '../config'
 import { BRAND_TYPE_NAME, CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../constants'
-import { prepRef } from './handle_template_expressions'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -161,15 +160,6 @@ export const getCustomFieldOptionsFromChanges = (parentTypeName: string, childTy
     relevantInstances,
     instance => instance.elemID.typeName === parentTypeName,
   )
-
-  parentInstances.map(instance => instance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] ?? []).forEach((options: Value[]) => {
-    replaceTemplatesWithValues(
-      { values: options, fieldName: 'raw_name' },
-      // onDeploy this value will not exist, so we don't need the shared context
-      {},
-      prepRef,
-    )
-  })
 
   return childrenInstances.map(instance => instance.value)
     .concat(parentInstances.map(instance => instance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] ?? []))

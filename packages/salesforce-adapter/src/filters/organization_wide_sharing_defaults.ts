@@ -119,7 +119,7 @@ const createOrganizationInstance = (objectType: ObjectType, fieldValues: Values)
   )
 )
 
-export const WARNING_MESSAGE = 'Failed to fetch OrganizationSettings. Please make sure you have the correct permissions to the Organization object.'
+export const WARNING_MESSAGE = 'Failed to fetch OrganizationSettings.'
 
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   name: 'organizationWideSharingDefaultsFilter',

@@ -529,6 +529,7 @@ describe('guide arrange paths', () => {
         'article_name',
         GUIDE_ELEMENT_DIRECTORY[ARTICLE_ATTACHMENT_TYPE_NAME],
         'attachment',
+        `${staticFile.hash}_attachment`,
       ].join('/'))
       expect(staticFile.isEqual(articleAttachmentInstance.value.content)).toBeTruthy()
     })

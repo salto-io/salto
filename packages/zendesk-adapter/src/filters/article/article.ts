@@ -266,24 +266,23 @@ const getInline = (attachment: InstanceElement | undefined): boolean => attachme
 const isRemovedAttachment = (
   attachment: unknown,
   articleRemovedAttachmentsIds: Set<number>,
-  attachmentByName: Record<string, InstanceElement>
 ): boolean => {
-  const name = isReferenceExpression(attachment) ? getName(attachment) : undefined
-  const attachmentInstance = name ? attachmentByName[name] : undefined
-  return isInstanceElement(attachmentInstance) && articleRemovedAttachmentsIds.has(attachmentInstance.value.id)
+  const id = isReferenceExpression(attachment) ? getId(attachment.value) : undefined
+  return id !== undefined && articleRemovedAttachmentsIds.has(id)
 }
 
 const getAttachmentData = (
   article: InstanceElement,
-  attachmentByName: Record<string, InstanceElement>,
+  attachmentById: Record<number, InstanceElement>,
   translationByName: Record<string, InstanceElement>
 ): {
   inlineAttachmentsNameById: Record<number, string>
   attachmentIdsFromArticleBody: Set<number | undefined>
 } => {
-  const attachmentsNames = makeArray(article.value.attachments).filter(isReferenceExpression).map(getName)
-  const inlineAttachmentInstances = attachmentsNames
-    .map(name => attachmentByName[name])
+  const attachmentsIds = makeArray(article.value.attachments)
+    .filter(isReferenceExpression).map(ref => getId(ref.value))
+  const inlineAttachmentInstances = attachmentsIds
+    .map(id => attachmentById[id])
     .filter(isInstanceElement)
     .filter(attachment => attachment.value.inline)
     .filter(attachment => getId(attachment) !== undefined)
@@ -306,15 +305,19 @@ const getAttachmentData = (
  * we do not want to include these orphaned attachments in the fetch results, so we omit inline attachments that are not
  * referenced from the article body.
  */
-const calculateAndRemoveDeletedAttachments = (
-  articleInstances: InstanceElement[],
-  attachmentByName: Record<string, InstanceElement>,
-  translationByName: Record<string, InstanceElement>
-): Set<string> => {
+const calculateAndRemoveDeletedAttachments = ({
+  articleInstances,
+  attachmentById,
+  translationsByName,
+}: {
+  articleInstances: InstanceElement[]
+  attachmentById: Record<number, InstanceElement>
+  translationsByName: Record<string, InstanceElement>
+}): Set<string> => {
   const allRemovedAttachmentsNames = new Set<string>()
   articleInstances.forEach(article => {
     const articleRemovedAttachmentsIds = new Set<number>()
-    const attachmentData = getAttachmentData(article, attachmentByName, translationByName)
+    const attachmentData = getAttachmentData(article, attachmentById, translationsByName)
     Object.keys(attachmentData.inlineAttachmentsNameById).forEach(id => {
       const numberId = Number(id)
       if (!attachmentData.attachmentIdsFromArticleBody.has(numberId)) {
@@ -323,7 +326,7 @@ const calculateAndRemoveDeletedAttachments = (
       }
     })
     article.value.attachments = makeArray(article.value.attachments).filter(
-      (attachment: unknown) => !isRemovedAttachment(attachment, articleRemovedAttachmentsIds, attachmentByName)
+      (attachment: unknown) => !isRemovedAttachment(attachment, articleRemovedAttachmentsIds)
     )
   })
   log.info(`the following article attachments are not going to be included in the fetch, since they are inline but do not appear in the body: ${Array.from(allRemovedAttachmentsNames)}`)
@@ -358,17 +361,23 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
           .filter(attachment => getName(attachment) !== undefined),
         getName,
       )
+      const attachmentById: Record<string, InstanceElement> = _.keyBy(
+        attachments
+          .filter(isInstanceElement)
+          .filter(attachment => getId(attachment) !== undefined),
+        getId,
+      )
       const translationsByName = _.keyBy(
         elements
           .filter(isInstanceElement)
           .filter(instance => instance.elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME),
         getName,
       )
-      const allRemovedAttachmentsIds = calculateAndRemoveDeletedAttachments(
+      const allRemovedAttachmentsIds = calculateAndRemoveDeletedAttachments({
         articleInstances,
-        attachmentByName,
+        attachmentById,
         translationsByName,
-      )
+      })
       _.remove(
         attachments,
         (attachment => allRemovedAttachmentsIds.has(attachment.elemID.name))

@@ -61,6 +61,8 @@ const filterCreator: FilterCreator = ({ config }) => ({
       isInstanceElement(elem)
       && elem.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME
       && idsToRemove.has(elem.value.id))
+
+    // remove duplicates from attachments
   },
 })
 

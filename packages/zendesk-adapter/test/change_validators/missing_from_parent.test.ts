@@ -20,7 +20,6 @@ import {
   createParentReferencesError,
   missingFromParentValidatorCreator,
 } from '../../src/change_validators/child_parent/missing_from_parent'
-
 import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../src/config'
 
 describe('missingFromParentValidatorCreator', () => {

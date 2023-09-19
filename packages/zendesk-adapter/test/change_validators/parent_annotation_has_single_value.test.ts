@@ -15,10 +15,7 @@
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { ZENDESK, CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../src/constants'
-import {
-  parentAnnotationToHaveSingleValueValidatorCreator,
-} from '../../src/change_validators/child_parent/parent_annotation_has_single_value'
-
+import { parentAnnotationToHaveSingleValueValidatorCreator } from '../../src/change_validators'
 import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../src/config'
 
 describe('parentAnnotationToHaveSingleValueValidatorCreator', () => {

@@ -15,8 +15,7 @@
 */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { ZENDESK, CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../src/constants'
-import { emptyCustomFieldOptionsValidator } from '../../src/change_validators/empty_custom_field_options'
-
+import { emptyCustomFieldOptionsValidator } from '../../src/change_validators'
 
 describe('emptyCustomFieldOptionsValidator', () => {
   const userFieldType = new ObjectType({ elemID: new ElemID(ZENDESK, 'user_field') })

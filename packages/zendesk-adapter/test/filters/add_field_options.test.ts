@@ -19,7 +19,6 @@ import {
 import { filterUtils } from '@salto-io/adapter-components'
 import { ZENDESK, USER_FIELD_TYPE_NAME, ORG_FIELD_TYPE_NAME, CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../src/constants'
 import filterCreator from '../../src/filters/add_field_options'
-
 import { createFilterCreatorParams } from '../utils'
 
 describe('add field options filter', () => {

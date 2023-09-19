@@ -68,10 +68,8 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       }
     }
 
-    const allParentChanges = parentChanges.concat(additionalParentChanges)
-
     const deployResult = await deployChanges(
-      allParentChanges,
+      [...parentChanges, ...additionalParentChanges],
       async change => {
         const response = await deployChange(
           change, client, config.apiDefinitions

@@ -1826,10 +1826,27 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'globalAnonymousAccess' },
         { fieldName: 'canAdministerJIRA' },
         { fieldName: 'customerRoleMisconfigured' },
+        { fieldName: 'serviceDeskPublicSignup' },
       ],
       fieldsToHide: [
         { fieldName: 'id' },
       ],
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/servicedesk/1/servicedesk/{projectkey}/settings/requestsecurity',
+        method: 'post',
+        urlParamsToFields: {
+          projectkey: '_parent.0.key',
+        },
+      },
+      modify: {
+        url: '/rest/servicedesk/1/servicedesk/{projectkey}/settings/requestsecurity',
+        method: 'post',
+        urlParamsToFields: {
+          projectkey: '_parent.0.key',
+        },
+      },
     },
   },
   Queue: {

@@ -58,6 +58,7 @@ import { fieldSecondGlobalContextValidator } from './field_contexts/second_globa
 import { customFieldsWith10KOptionValidator } from './field_contexts/custom_field_with_10K_options'
 import { issueTypeHierarchyValidator } from './issue_type_hierarchy'
 import { automationProjectsValidator } from './automation_projects'
+import { deleteCustomerPermissionValidator } from './delete_customer_permissions'
 
 const {
   deployTypesNotSupportedValidator,
@@ -113,6 +114,7 @@ export default (
     customFieldsWith10KOptions: customFieldsWith10KOptionValidator,
     issueTypeHierarchy: issueTypeHierarchyValidator,
     automationProjects: automationProjectsValidator,
+    deleteCustomerPermission: deleteCustomerPermissionValidator,
   }
 
   return createChangeValidator({

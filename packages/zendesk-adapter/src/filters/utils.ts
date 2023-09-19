@@ -25,7 +25,7 @@ import {
   getParents,
   resolveChangeElement,
   references,
-  replaceTemplatesWithValues,
+  replaceTemplatesWithValues, isResolvedReferenceExpression,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -66,6 +66,7 @@ export const applyforInstanceChangesOfType = async (
 export const createAdditionalParentChanges = async (
   childrenChanges: Change<InstanceElement>[],
   shouldResolve = true,
+  childrenField = CUSTOM_FIELD_OPTIONS_FIELD_NAME
 ): Promise<Change<InstanceElement>[] | undefined> => {
   const childrenInstance = getChangeData(childrenChanges[0])
   const parents = getParents(childrenInstance)
@@ -75,9 +76,26 @@ export const createAdditionalParentChanges = async (
       childrenChanges.map(getChangeData).map(e => e.elemID.getFullName())}`)
     return undefined
   }
-  const changes = parents.map(parent => toChange({
-    before: parent.value.clone(), after: parent.value.clone(),
-  }))
+
+  const changes = parents.map(parent => {
+    const newParent = parent.value.clone()
+
+    const childrenToFullName = _.keyBy(childrenChanges.map(getChangeData), child => child.elemID.getFullName())
+    // the children are the instances from the elementsSource, which are the instances at the start of the deployment
+    // In case the children were changed during the preDeploy, we need to update their values here
+    newParent.value[childrenField] = _.isArray(newParent.value[childrenField])
+      ? newParent.value[childrenField].map((child: Value) => {
+        const childFromChanges = childrenToFullName[child.elemID.getFullName()]
+        if (isResolvedReferenceExpression(child) && childFromChanges !== undefined) {
+          return new ReferenceExpression(child.elemID, childFromChanges)
+        }
+        return child
+      })
+      : newParent.value[childrenField]
+
+    return toChange({ before: newParent.clone(), after: newParent.clone() })
+  })
+
   return shouldResolve
     ? awu(changes).map(change => resolveChangeElement(change, lookupFunc)).toArray()
     : changes

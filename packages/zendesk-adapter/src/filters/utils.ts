@@ -148,6 +148,7 @@ type CustomFieldOption = {
 const isCustomFieldOption = (value: Value): value is CustomFieldOption =>
   _.isPlainObject(value) && _.isString(value.raw_name)
 
+// Get all the custom field options from the changes, including the ones nested inside the children of the parent
 export const getCustomFieldOptionsFromChanges = (parentTypeName: string, childTypeName: string, changes: Change[])
   : CustomFieldOption[] => {
   const relevantInstances = changes

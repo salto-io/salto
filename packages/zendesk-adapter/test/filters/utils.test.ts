@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { ZENDESK, BRAND_TYPE_NAME } from '../../src/constants'
-import { getBrandsForGuide } from '../../src/filters/utils'
+import { ObjectType, ElemID, InstanceElement, toChange } from '@salto-io/adapter-api'
+import { ZENDESK, BRAND_TYPE_NAME, CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../src/constants'
+import { getBrandsForGuide, getCustomFieldOptionsFromChanges } from '../../src/filters/utils'
 
 describe('Zendesk utils', () => {
   describe('getBrandsForGuide', () => {
@@ -83,6 +83,58 @@ describe('Zendesk utils', () => {
       }
       const res = getBrandsForGuide(brandInstances, fetchConfig)
       expect(res).toEqual([])
+    })
+  })
+
+  describe('createAdditionalParentChanges', () => {
+
+  })
+  describe('getCustomFieldOptionsFromChanges', () => {
+    let parentInstance: InstanceElement
+
+    const createCustomFieldOptions = (id: number): InstanceElement => new InstanceElement(
+      `customFieldOptions${id}`,
+      new ObjectType({ elemID: new ElemID(ZENDESK, 'customFieldOptions') }),
+      {
+        raw_name: 'name',
+      }
+    )
+    beforeAll(() => {
+      parentInstance = new InstanceElement(
+        'parentInstance',
+        new ObjectType({ elemID: new ElemID(ZENDESK, 'parent') }),
+        {}
+      )
+    })
+    it('should return all custom field options from changes', () => {
+      const customFieldOptions1 = createCustomFieldOptions(1)
+      const customFieldOptions2 = createCustomFieldOptions(2)
+      parentInstance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] = [
+        customFieldOptions1.value,
+        customFieldOptions2.value,
+      ]
+      const changes = [
+        toChange({ after: parentInstance }),
+        toChange({ before: customFieldOptions2, after: customFieldOptions2 }),
+      ]
+      const res = getCustomFieldOptionsFromChanges('parent', 'customFieldOptions', changes)
+      expect(res).toMatchObject([customFieldOptions1.value, customFieldOptions2.value, customFieldOptions2.value])
+    })
+    it('should ignore invalid custom field options', () => {
+      const customFieldOptions1 = createCustomFieldOptions(1)
+      const customFieldOptions2 = createCustomFieldOptions(2)
+      customFieldOptions1.value.raw_name = 123
+      customFieldOptions2.value.raw_name = ['name']
+      parentInstance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] = [
+        customFieldOptions1.value,
+        customFieldOptions2.value,
+      ]
+      const changes = [
+        toChange({ after: parentInstance }),
+        toChange({ before: customFieldOptions2, after: customFieldOptions2 }),
+      ]
+      const res = getCustomFieldOptionsFromChanges('parent', 'customFieldOptions', changes)
+      expect(res).toMatchObject([])
     })
   })
 })

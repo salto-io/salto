@@ -296,7 +296,6 @@ describe('adapter', () => {
       config.value.client.usePrivateAPI = false
       config.value.fetch.convertUsersIds = false
       config.value.fetch.enableScriptRunnerAddon = true
-      config.value.fetch.enableJSM = false
 
       srAdapter = adapterCreator.operations({
         elementsSource,

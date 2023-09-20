@@ -155,6 +155,7 @@ const getAttachmentContent = async ({
     filepath: `${ZENDESK}/${attachmentType.elemID.name}/${resourcePathName}`,
     content,
   })
+  attachment.value.hash = attachment.value.content.hash
   return undefined
 }
 

@@ -26,8 +26,7 @@ import {
 } from '@salto-io/adapter-api'
 import { getInstancesFromElementSource, WALK_NEXT_STEP, walkOnElement, WalkOnFunc } from '@salto-io/adapter-utils'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../filters/dynamic_content'
-import { AUTOMATION_TYPE_NAME, MACRO_TYPE_NAME, TRIGGER_TYPE_NAME } from '../constants'
+import { AUTOMATION_TYPE_NAME, MACRO_TYPE_NAME, TRIGGER_TYPE_NAME, DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../constants'
 
 const { isDefined } = lowerDashValues
 

@@ -212,7 +212,7 @@ const depromise = async (value: Value): Promise<Value> => {
     return value
   }
   if (Array.isArray(value) && value.some(item => item instanceof Promise)) {
-    return Promise.all(value)
+    return awu(value).toArray()
   }
   if (_.isPlainObject(value)) {
     return mapValuesAsync(value, async val => depromise(val))

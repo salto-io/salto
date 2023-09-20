@@ -16,6 +16,7 @@
 import wu from 'wu'
 import _ from 'lodash'
 import * as diff3 from 'node-diff3'
+import { isBinary } from 'istextorbinary'
 import { EventEmitter } from 'pietile-eventemitter'
 import {
   Element, ElemID, AdapterOperations, Values, ServiceIds, ObjectType,
@@ -251,19 +252,42 @@ const mergeStaticFiles = async (
   const { filepath, encoding } = current
   if (incoming.encoding !== encoding || incoming.filepath !== filepath
     || (base !== undefined && (base.encoding !== encoding || base.filepath !== filepath))) {
-    log.warn(
+    log.debug(
       'skipping merge of %s since static files filepath & encoding does not match',
       changeId
     )
     return undefined
   }
-  const currentString = (await current.getContent())?.toString(encoding) ?? ''
-  const incomingString = (await incoming.getContent())?.toString(encoding) ?? ''
-  const baseString = base !== undefined ? (await base.getContent())?.toString(encoding) ?? '' : undefined
+  const isBinaryFilepath = isBinary(filepath)
+  if (isBinaryFilepath) {
+    log.debug(
+      'skipping merge of %s since the file extension of %s indicates binary file',
+      changeId, filepath
+    )
+    return undefined
+  }
+  const currentBuffer = await current.getContent()
+  const incomingBuffer = await incoming.getContent()
+  const baseBuffer = base !== undefined ? await base.getContent() : null
+  if (currentBuffer === undefined || incomingBuffer === undefined || baseBuffer === undefined) {
+    log.warn(
+      'skipping merge of %s since some static file contents are missing',
+      changeId
+    )
+    return undefined
+  }
+  if (isBinaryFilepath === null && (isBinary(null, currentBuffer)
+  || isBinary(null, incomingBuffer) || isBinary(null, baseBuffer))) {
+    log.debug(
+      'skipping merge of %s since some static file contents are binary',
+      changeId
+    )
+    return undefined
+  }
   const merged = mergeStrings(changeId, {
-    current: currentString,
-    base: baseString,
-    incoming: incomingString,
+    current: currentBuffer.toString(encoding),
+    base: baseBuffer?.toString(encoding),
+    incoming: incomingBuffer.toString(encoding),
   })
   return merged !== undefined
     ? new StaticFile({ filepath, encoding, content: Buffer.from(merged, encoding) })
@@ -289,9 +313,9 @@ const autoMergeTextChange: ChangeTransformFunction = async change => {
 
   const changeId = change.change.id.getFullName()
   const current = change.pendingChanges[0].data.after
+  const incoming = change.serviceChanges[0].data.after
   const base = isModificationChange(change.serviceChanges[0])
     ? change.serviceChanges[0].data.before : undefined
-  const incoming = change.serviceChanges[0].data.after
 
   if (isStaticFile(current) && isStaticFile(incoming) && isTypeOfOrUndefined(base, isStaticFile)) {
     const merged = await mergeStaticFiles(changeId, { current, base, incoming })

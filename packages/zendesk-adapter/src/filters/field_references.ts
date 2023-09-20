@@ -29,12 +29,14 @@ import {
   DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
   CUSTOM_STATUS_TYPE_NAME,
   OPEN_CATEGORY,
-  HOLD_CATEGORY, SOLVED_CATEGORY,
+  HOLD_CATEGORY, SOLVED_CATEGORY, CUSTOM_OBJECT_FIELD_TYPE_NAME, CUSTOM_OBJECT_TYPE_NAME,
 } from '../constants'
 import { FETCH_CONFIG, ZendeskConfig } from '../config'
 import { ZendeskMissingReferenceStrategyLookup, ZendeskMissingReferenceStrategyName } from './references/missing_references'
 
 const { neighborContextGetter } = referenceUtils
+
+const CUSTOM_OBJECT_PREFIX = 'zen:custom_object:'
 
 const neighborContextFunc = (args: {
   contextFieldName: string
@@ -187,6 +189,7 @@ type ZendeskReferenceSerializationStrategyName = 'ticketField'
   | 'userFieldOption'
   | 'locale'
   | 'idString'
+  | 'customObjectKey'
 const ZendeskReferenceSerializationStrategyLookup: Record<
   ZendeskReferenceSerializationStrategyName
   | referenceUtils.ReferenceSerializationStrategyName,
@@ -232,6 +235,12 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
     serialize: async ({ ref }) => _.toString(ref.value.value.id),
     lookup: val => val,
     lookupIndexName: 'id',
+  },
+  customObjectKey: {
+    serialize: ({ ref }) => (isInstanceElement(ref.value) ? `zen:custom_object:${ref.value.value.key}` : ref.value),
+    lookup: val =>
+      ((_.isString(val) && val.startsWith(CUSTOM_OBJECT_PREFIX)) ? val.slice(CUSTOM_OBJECT_PREFIX.length) : val),
+    lookupIndexName: 'key',
   },
 }
 
@@ -1027,6 +1036,14 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
     },
     serializationStrategy: 'id',
     target: { type: 'oauth_global_client' },
+  },
+  {
+    src: {
+      field: 'relationship_target_type',
+      parentTypes: [CUSTOM_OBJECT_FIELD_TYPE_NAME, TICKET_FIELD_TYPE_NAME],
+    },
+    zendeskSerializationStrategy: 'customObjectKey',
+    target: { type: CUSTOM_OBJECT_TYPE_NAME },
   },
 ]
 

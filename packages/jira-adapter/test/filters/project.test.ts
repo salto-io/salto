@@ -231,7 +231,7 @@ describe('projectFilter', () => {
         endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.Project.deployRequests,
         fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme',
-          'workflowScheme', 'issueTypeScreenScheme', 'issueTypeScheme', 'permissionScheme'],
+          'customerPermissions', 'workflowScheme', 'issueTypeScreenScheme', 'issueTypeScheme', 'permissionScheme'],
       })
     })
 
@@ -314,7 +314,7 @@ describe('projectFilter', () => {
         client,
         endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.Project.deployRequests,
-        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme', 'permissionScheme'],
+        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme', 'customerPermissions', 'permissionScheme'],
       })
     })
 
@@ -435,7 +435,7 @@ describe('projectFilter', () => {
         client,
         endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.Project.deployRequests,
-        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme', 'permissionScheme'],
+        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme', 'customerPermissions', 'permissionScheme'],
       })
     })
 
@@ -533,7 +533,7 @@ describe('projectFilter', () => {
         client,
         endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.Project.deployRequests,
-        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme', 'permissionScheme'],
+        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme', 'customerPermissions', 'permissionScheme'],
       })
     })
 
@@ -638,7 +638,7 @@ describe('projectFilter', () => {
           endpointDetails: getDefaultConfig({ isDataCenter: true })
             .apiDefinitions.types.Project.deployRequests,
           fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme',
-            'workflowScheme', 'issueTypeScreenScheme', 'issueTypeScheme'],
+            'customerPermissions', 'workflowScheme', 'issueTypeScreenScheme', 'issueTypeScheme'],
         })
       })
       it('should call the endpoint to set the scheme', () => {

@@ -142,7 +142,6 @@ import scriptedFieldsIssueTypesFilter from './filters/script_runner/scripted_fie
 import scriptRunnerFilter from './filters/script_runner/script_runner_filter'
 import scriptRunnerListenersDeployFilter from './filters/script_runner/script_runner_listeners_deploy'
 import scriptedFragmentsDeployFilter from './filters/script_runner/scripted_fragments_deploy'
-import deleteCustomerPermissionsFilter from './filters/delete_customer_permissions_filter'
 import deployJsmTypesFilter from './filters/jsm_types_filter'
 import scriptRunnerInstancesDeploy from './filters/script_runner/script_runner_instances_deploy'
 import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
@@ -307,7 +306,6 @@ export const DEFAULT_FILTERS = [
   // must be done before scriptRunnerInstances
   scriptedFragmentsDeployFilter,
   scriptRunnerInstancesDeploy,
-  deleteCustomerPermissionsFilter,
   deployJsmTypesFilter,
   // Must be last
   defaultInstancesDeployFilter,

@@ -234,7 +234,6 @@ export type ChangeValidatorName = (
   | 'customFieldsWith10KOptions'
   | 'issueTypeHierarchy'
   | 'automationProjects'
-  | 'deleteCustomerPermission'
   )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -284,7 +283,6 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     customFieldsWith10KOptions: { refType: BuiltinTypes.BOOLEAN },
     issueTypeHierarchy: { refType: BuiltinTypes.BOOLEAN },
     automationProjects: { refType: BuiltinTypes.BOOLEAN },
-    deleteCustomerPermission: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

@@ -16,7 +16,7 @@
 
 import { InstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { PROJECT_TYPE } from '../../src/constants'
+import { PROJECT_TYPE, SERVICE_DESK } from '../../src/constants'
 import { createEmptyType, getFilterParams } from '../utils'
 import changeServiceDeskIdFieldProjectFilter from '../../src/filters/change_projects_service_desk_id'
 
@@ -29,7 +29,7 @@ describe('changeServiceDeskIdFieldProjectFilter', () => {
       {
         id: '11111',
         name: 'project1',
-        projectTypeKey: 'service_desk',
+        projectTypeKey: SERVICE_DESK,
         serviceDeskId: {
           id: '12345',
         },
@@ -42,7 +42,7 @@ describe('changeServiceDeskIdFieldProjectFilter', () => {
       expect(projectInstance.value).toEqual({
         id: '11111',
         name: 'project1',
-        projectTypeKey: 'service_desk',
+        projectTypeKey: SERVICE_DESK,
         serviceDeskId: '12345',
       })
     })

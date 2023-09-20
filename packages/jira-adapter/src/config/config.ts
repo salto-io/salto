@@ -26,7 +26,7 @@ const { createUserFetchConfigType,
   createDucktypeAdapterApiConfigType,
   defaultMissingUserFallbackField } = configUtils
 
-const FETCH_CONFIG = 'fetch'
+export const FETCH_CONFIG = 'fetch'
 
 type JiraClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
   & {
@@ -400,10 +400,12 @@ export const validateJiraFetchConfig = ({
   scriptRunnerApiDefinitions: JiraDuckTypeConfig
   jsmApiDefinitions: JiraDuckTypeConfig
 }): void => {
+  const jsmSupportedTypes = fetchConfig.enableJSM ? Object.keys(jsmApiDefinitions.supportedTypes) : []
   const supportedTypes = fetchConfig.enableScriptRunnerAddon
     ? Object.keys(apiDefinitions.supportedTypes).concat(Object.keys(scriptRunnerApiDefinitions.supportedTypes))
-      .concat(Object.keys(jsmApiDefinitions.supportedTypes))
-    : Object.keys(apiDefinitions.supportedTypes).concat(Object.keys(jsmApiDefinitions.supportedTypes))
+      .concat(jsmSupportedTypes)
+    : Object.keys(apiDefinitions.supportedTypes).concat(jsmSupportedTypes)
+
   configUtils.validateSupportedTypes(
     FETCH_CONFIG,
     fetchConfig,

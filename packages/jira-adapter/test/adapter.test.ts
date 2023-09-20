@@ -22,8 +22,8 @@ import { mockFunction } from '@salto-io/test-utils'
 import JiraClient from '../src/client/client'
 import { adapter as adapterCreator } from '../src/adapter_creator'
 import { getDefaultConfig } from '../src/config/config'
-import { ISSUE_TYPE_NAME, JIRA } from '../src/constants'
-import { createCredentialsInstance, createConfigInstance, mockClient } from './utils'
+import { ISSUE_TYPE_NAME, JIRA, PROJECT_TYPE, SERVICE_DESK } from '../src/constants'
+import { createCredentialsInstance, createConfigInstance, mockClient, createEmptyType } from './utils'
 import { jiraJSMEntriesFunc } from '../src/jsm_utils'
 
 const { getAllElements, getEntriesResponseValues } = elements.ducktype
@@ -296,7 +296,6 @@ describe('adapter', () => {
       config.value.client.usePrivateAPI = false
       config.value.fetch.convertUsersIds = false
       config.value.fetch.enableScriptRunnerAddon = true
-      config.value.fetch.enableJSM = false
 
       srAdapter = adapterCreator.operations({
         elementsSource,
@@ -381,9 +380,7 @@ describe('adapter', () => {
         config,
         getElemIdFunc,
       })
-      projectTestType = new ObjectType({
-        elemID: new ElemID(JIRA, 'project'),
-      })
+      projectTestType = createEmptyType(PROJECT_TYPE)
       serviceDeskProjectInstance = new InstanceElement(
         'serviceDeskProject',
         projectTestType,
@@ -391,7 +388,7 @@ describe('adapter', () => {
           id: '10000',
           key: 'SD',
           name: 'Service Desk',
-          projectTypeKey: 'service_desk',
+          projectTypeKey: SERVICE_DESK,
           serviceDeskId: {
             id: '1',
           },
@@ -497,6 +494,17 @@ describe('adapter', () => {
             id: '1',
             projectKey: 'SD',
           }],
+        })
+      })
+      it('should not add projectKey to the response when no dataField was given', async () => {
+        const result = await EntriesRequesterFunc({
+          paginator,
+          args: { url: '/rest/servicedeskapi/servicedesk/2/requesttype' },
+          typeName: 'RequestType',
+          typesConfig: { RequestType: {} },
+        })
+        expect(result[0]).toEqual({
+          id: '1',
         })
       })
     })

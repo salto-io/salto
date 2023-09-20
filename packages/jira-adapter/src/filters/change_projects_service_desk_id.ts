@@ -16,14 +16,15 @@
 
 import { isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { PROJECT_TYPE } from '../constants'
+import { PROJECT_TYPE, SERVICE_DESK } from '../constants'
 
 const filter: FilterCreator = () => ({
   name: 'changeServiceDeskIdFieldProjectFilter',
   onFetch: async elements => {
-    elements.filter(isInstanceElement)
+    elements
+      .filter(isInstanceElement)
       .filter(e => e.elemID.typeName === PROJECT_TYPE)
-      .filter(project => project.value.projectTypeKey === 'service_desk')
+      .filter(project => project.value.projectTypeKey === SERVICE_DESK)
       .filter(project => project.value.serviceDeskId !== undefined)
       .forEach(project => { project.value.serviceDeskId = project.value.serviceDeskId.id })
   },

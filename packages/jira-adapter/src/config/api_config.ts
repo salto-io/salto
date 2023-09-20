@@ -1787,7 +1787,7 @@ const SCRIPT_RUNNER_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
     },
   },
 }
-const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
+const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   RequestType: {
     request: {
       url: '/rest/servicedeskapi/servicedesk/{serviceDeskId}/requesttype',
@@ -1809,7 +1809,7 @@ const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   },
   CustomerPermissions: {
     request: {
-      url: '/rest/servicedesk/1/servicedesk/{projectkey}/settings/requestsecurity',
+      url: '/rest/servicedesk/1/servicedesk/{projectKey}/settings/requestsecurity',
     },
     transformation: {
       idFields: ['projectName'],
@@ -1845,7 +1845,6 @@ const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
       fieldsToOmit: [
         { fieldName: '_links' },
-        { fieldName: 'jql' },
       ],
     },
   },
@@ -1864,7 +1863,7 @@ const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   },
   Calendar: {
     request: {
-      url: '/rest/workinghours/1/internal/dialog/{projectkey}',
+      url: '/rest/workinghours/1/internal/dialog/{projectKey}',
     },
     transformation: {
       idFields: ['name', 'projectKey'],
@@ -1877,7 +1876,7 @@ const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   },
 }
 
-const DUCKTYPE_SUPPORTED_TYPES = {
+const JSM_DUCKTYPE_SUPPORTED_TYPES = {
   RequestType: ['RequestType'],
   CustomerPermissions: ['CustomerPermissions'],
   Queue: ['Queue'],
@@ -1920,7 +1919,7 @@ export const SCRIPT_RUNNER_DUCKTYPE_API_DEFINITIONS: JiraDuckTypeConfig = {
   supportedTypes: SCRIPT_RUNNER_DUCKTYPE_SUPPORTED_TYPES,
 }
 
-const TRANSFORMATION_DEFAULTS: configUtils.TransformationDefaultConfig = {
+const JSM_TRANSFORMATION_DEFAULTS: configUtils.TransformationDefaultConfig = {
   idFields: DEFAULT_ID_FIELDS,
   fieldsToOmit: FIELDS_TO_OMIT,
   nestStandaloneInstances: true,
@@ -1928,10 +1927,10 @@ const TRANSFORMATION_DEFAULTS: configUtils.TransformationDefaultConfig = {
 
 export const JSM_DUCKTYPE_API_DEFINITIONS: JiraDuckTypeConfig = {
   typeDefaults: {
-    transformation: TRANSFORMATION_DEFAULTS,
+    transformation: JSM_TRANSFORMATION_DEFAULTS,
   },
-  types: DUCKTYPE_TYPES,
-  supportedTypes: DUCKTYPE_SUPPORTED_TYPES,
+  types: JSM_DUCKTYPE_TYPES,
+  supportedTypes: JSM_DUCKTYPE_SUPPORTED_TYPES,
 }
 
 const SUPPORTED_TYPES = {
@@ -2116,6 +2115,8 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
       // Needed to create a different transformation configuration for security scheme
       // that is fetched from the recurse into of a project and a normal security scheme
       { typeName: 'ProjectSecurityScheme', cloneFrom: 'SecurityScheme' },
+      // Nedded to create a supported type for serviceDeskId
+      // that are fetched from the recurse into of a project.
       { typeName: 'ServiceDeskId', cloneFrom: 'SecurityScheme' },
     ],
   },

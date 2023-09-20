@@ -43,14 +43,14 @@ export const jiraJSMEntriesFunc = (
       typesConfig: Record<string, configUtils.TypeDuckTypeConfig>
     }): Promise<clientUtils.ResponseValue[]> => {
     log.debug(`Fetching type ${typeName} entries for service desk project ${projectInstance.elemID.name}`)
-    const serviceDeskProjectPaginatorResponseValues = (await getEntriesResponseValues({
+    const jsmResponseValues = (await getEntriesResponseValues({
       paginator,
       args,
       typeName,
       typesConfig,
     })).flat()
     const responseEntryName = typesConfig[typeName].transformation?.dataField
-    return serviceDeskProjectPaginatorResponseValues.flatMap(response => {
+    return jsmResponseValues.flatMap(response => {
       if (responseEntryName === undefined) {
         return makeArray(response)
       }

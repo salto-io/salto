@@ -140,6 +140,7 @@ export const adapter: Adapter = {
       config,
       getElemIdFunc: context.getElemIdFunc,
       elementsSource: context.elementsSource,
+      configInstance: context.config,
       scriptRunnerClient,
     })
 

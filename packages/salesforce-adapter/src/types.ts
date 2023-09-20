@@ -90,6 +90,7 @@ export type OptionalFeatures = {
   toolingDepsOfCurrentNamespace?: boolean
   useLabelAsAlias?: boolean
   fixRetrieveFilePaths?: boolean
+  organizationWideSharingDefaults?: boolean
 }
 
 export type ChangeValidatorName = (
@@ -692,6 +693,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     toolingDepsOfCurrentNamespace: { refType: BuiltinTypes.BOOLEAN },
     useLabelAsAlias: { refType: BuiltinTypes.BOOLEAN },
     fixRetrieveFilePaths: { refType: BuiltinTypes.BOOLEAN },
+    organizationWideSharingDefaults: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

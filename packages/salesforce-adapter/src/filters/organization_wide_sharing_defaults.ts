@@ -119,15 +119,16 @@ const createOrganizationInstance = (objectType: ObjectType, fieldValues: Values)
   )
 )
 
+const FILTER_NAME = 'organizationWideSharingDefaults'
 export const WARNING_MESSAGE = 'Failed to fetch OrganizationSettings.'
 
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
-  name: 'organizationWideSharingDefaultsFilter',
+  name: FILTER_NAME,
   remote: true,
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,
-    filterName: 'authorInformation',
+    filterName: FILTER_NAME,
     fetchFilterFunc: async elements => {
       const objectType = createOrganizationType()
       const fieldsToIgnore = new Set(FIELDS_TO_IGNORE.concat(config.systemFields ?? []))

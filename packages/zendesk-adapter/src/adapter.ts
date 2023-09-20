@@ -60,6 +60,7 @@ import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
   BRAND_LOGO_TYPE_NAME,
   BRAND_TYPE_NAME,
+  CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
   DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
   ZENDESK,
 } from './constants'
@@ -145,7 +146,8 @@ import routingAttributeValueDeployFilter from './filters/routing_attribute_value
 import localeFilter from './filters/locale'
 import ticketStatusCustomStatusDeployFilter from './filters/ticket_status_custom_status'
 import { filterOutInactiveInstancesForType } from './inactive'
-import isCustomObjectFieldOptionsFilter from './filters/custom_object_field_options'
+import customObjectFieldFilter from './filters/custom_object_fields'
+import customObjectFieldOptionsFilter from './filters/custom_object_field_options'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -195,7 +197,6 @@ export const DEFAULT_FILTERS = [
   guideAddBrandToArticleTranslation,
   macroFilter,
   macroAttachmentsFilter,
-  isCustomObjectFieldOptionsFilter,
   ticketFormDeploy,
   customRoleDeployFilter,
   sideConversationsFilter,
@@ -215,7 +216,10 @@ export const DEFAULT_FILTERS = [
   guideDefaultLanguage, // needs to be after guideGuideSettings
   guideServiceUrl,
   guideLocalesFilter, // Needs to be after guideServiceUrl
-  // fieldReferencesFilter should be after usersFilter, macroAttachmentsFilter, tagsFilter and guideLocalesFilter
+  customObjectFieldOptionsFilter,
+  customObjectFieldFilter, // need to be after customObjectFieldOptionsFilter
+  // fieldReferencesFilter should be after usersFilter, macroAttachmentsFilter, tagsFilter
+  // and guideLocalesFilter, customObjectFieldFilter
   fieldReferencesFilter,
   addAliasFilter, // should run after fieldReferencesFilter
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
@@ -824,7 +828,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
         fetchConfig: this.userConfig[FETCH_CONFIG],
         deployConfig: this.userConfig[DEPLOY_CONFIG],
-        typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment', BRAND_LOGO_TYPE_NAME],
+        typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment', BRAND_LOGO_TYPE_NAME, CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME],
         // article_attachment additions supported in a filter
         typesWithNoDeploy: ['tag', ARTICLE_ATTACHMENT_TYPE_NAME, ...GUIDE_ORDER_TYPES, DEFAULT_CUSTOM_STATUSES_TYPE_NAME],
       }),

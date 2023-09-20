@@ -82,4 +82,4 @@ export const DEFLECTION_TYPE = 'deflection'
 export const VIEW_TYPE_NAME = 'view'
 export const CUSTOM_OBJECT_TYPE_NAME = 'custom_object'
 export const CUSTOM_OBJECT_FIELD_TYPE_NAME = 'custom_object_field'
-export const CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME = 'custom_object_field_option'
+export const CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME = `${CUSTOM_OBJECT_FIELD_TYPE_NAME}__custom_field_options`

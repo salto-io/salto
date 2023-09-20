@@ -315,6 +315,7 @@ const calculateAndRemoveDeletedAttachments = ({
   translationsByName: Record<string, InstanceElement>
 }): Set<number> => {
   const allRemovedAttachmentsIds = new Set<number>()
+  const allRemovedAttachmentsNames = new Set<string>()
   articleInstances.forEach(article => {
     const articleRemovedAttachmentsIds = new Set<number>()
     const attachmentData = getAttachmentData(article, attachmentById, translationsByName)
@@ -322,6 +323,7 @@ const calculateAndRemoveDeletedAttachments = ({
       const numberId = Number(id)
       if (!attachmentData.attachmentIdsFromArticleBody.has(numberId)) {
         articleRemovedAttachmentsIds.add(numberId)
+        allRemovedAttachmentsNames.add(attachmentData.inlineAttachmentsNameById[numberId])
         allRemovedAttachmentsIds.add(numberId)
       }
     })
@@ -329,7 +331,7 @@ const calculateAndRemoveDeletedAttachments = ({
       (attachment: unknown) => !isRemovedAttachment(attachment, articleRemovedAttachmentsIds)
     )
   })
-  log.info(`the following article attachments are not going to be included in the fetch, since they are inline but do not appear in the body: ${Array.from(allRemovedAttachmentsIds)}`)
+  log.info(`the following article attachments are not going to be included in the fetch, since they are inline but do not appear in the body: ${Array.from(allRemovedAttachmentsNames)}`)
   return allRemovedAttachmentsIds
 }
 

@@ -151,6 +151,9 @@ export const buildDataManagement = (params: DataManagementConfig): DataManagemen
     omittedFieldsForType: name => (
       name === undefined ? [] : makeArray(omittedFieldsByType[name])
     ),
+    isWarningEnabled: name => (
+      params.warningSettings?.[name] ?? true
+    ),
   }
 }
 

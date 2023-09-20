@@ -635,13 +635,17 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         .map(instance => instance.getTypeSync())
     )
 
-    const invalidPermissionsWarnings = awu(customObjectFetchSetting)
-      .map(fetchSettings => fetchSettings.objectType)
-      .filter(isCustomObject)
-      .map(objectType => ({ type: objectType, fields: getInaccessibleCustomFields(objectType) }))
-      .filter(({ fields }) => fields.length > 0)
-      .filter(({ type }) => typesOfFetchedInstances.has(type))
-      .map(({ type, fields }) => createInaccessibleFieldsFetchWarning(type, fields))
+    let invalidPermissionsWarnings: collections.asynciterable.AwuIterable<SaltoError> = awu([])
+
+    if (config.fetchProfile.dataManagement?.isWarningEnabled('nonQueryableFields') ?? false) {
+      invalidPermissionsWarnings = awu(customObjectFetchSetting)
+        .map(fetchSettings => fetchSettings.objectType)
+        .filter(isCustomObject)
+        .map(objectType => ({ type: objectType, fields: getInaccessibleCustomFields(objectType) }))
+        .filter(({ fields }) => fields.length > 0)
+        .filter(({ type }) => typesOfFetchedInstances.has(type))
+        .map(({ type, fields }) => createInaccessibleFieldsFetchWarning(type, fields))
+    }
 
     return {
       configSuggestions: [

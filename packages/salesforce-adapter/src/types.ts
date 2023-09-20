@@ -267,6 +267,19 @@ const brokenOutgoingReferencesSettingsType = new ObjectType({
   },
 })
 
+const warningSettingsType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'saltoWarningSettings'),
+  fields: {
+    nonQueryableFields: {
+      refType: BuiltinTypes.BOOLEAN,
+    },
+  },
+})
+
+export type WarningSettings = {
+  nonQueryableFields: boolean
+}
+
 export type DataManagementConfig = {
   includeObjects: string[]
   excludeObjects?: string[]
@@ -277,6 +290,7 @@ export type DataManagementConfig = {
   saltoManagementFieldSettings?: SaltoManagementFieldSettings
   brokenOutgoingReferencesSettings?: BrokenOutgoingReferencesSettings
   omittedFields?: string[]
+  warningSettings?: WarningSettings
 }
 
 export type FetchParameters = {
@@ -532,6 +546,9 @@ const dataManagementType = new ObjectType({
     },
     omittedFields: {
       refType: new ListType(BuiltinTypes.STRING),
+    },
+    warningSettings: {
+      refType: warningSettingsType,
     },
   } as Record<keyof DataManagementConfig, FieldDefinition>,
   annotations: {
@@ -867,6 +884,7 @@ export type DataManagement = {
   showReadOnlyValues?: boolean
   managedBySaltoFieldForType: (objType: ObjectType) => string | undefined
   omittedFieldsForType: (name: string) => string[]
+  isWarningEnabled: (name: keyof WarningSettings) => boolean
 }
 
 export type FetchProfile = {

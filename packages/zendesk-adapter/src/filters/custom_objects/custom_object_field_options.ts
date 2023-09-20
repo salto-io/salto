@@ -25,12 +25,12 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { inspectValue } from '@salto-io/adapter-utils'
-import { FilterCreator } from '../filter'
+import { FilterCreator } from '../../filter'
 import {
   CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
   CUSTOM_OBJECT_FIELD_TYPE_NAME,
   ZENDESK,
-} from '../constants'
+} from '../../constants'
 
 const { RECORDS_PATH } = elementsUtils
 const log = logger(module)

@@ -22,38 +22,27 @@ import {
 import _ from 'lodash'
 import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { references as referencesUtils } from '@salto-io/adapter-components'
-import { FilterCreator } from '../filter'
+import { FilterCreator } from '../../filter'
 import {
   CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
   CUSTOM_OBJECT_TYPE_NAME,
   TICKET_FIELD_TYPE_NAME,
   TRIGGER_TYPE_NAME,
   ZENDESK,
-} from '../constants'
-import { FETCH_CONFIG } from '../config'
-import { CUSTOM_FIELD_OPTIONS_FIELD_NAME } from './organization_field'
+} from '../../constants'
+import { FETCH_CONFIG } from '../../config'
+import { CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../organization_field'
+import { LOOKUP_REGEX, transformCustomObjectField, TransformResult } from './utils'
 
 const { createMissingInstance } = referencesUtils
-
-const LOOKUP_REGEX = /lookup:ticket\.ticket_field_(?<ticketFieldId>\d+).+\.(?<optionKey>[^.]+)$/
-const CUSTOM_OBJECT_REGEX = /zen:custom_object:(?<customObjectKey>.+)/
-
-const buildFieldTemplate = (ticketField: string | ReferenceExpression, option: string | ReferenceExpression)
-  : TemplateExpression =>
-  new TemplateExpression({
-    parts: [
-      'lookup:ticket.',
-      ticketField,
-      '.',
-      option,
-    ],
-  })
 
 type CustomObjectCondition = {
   field: string | TemplateExpression
   operator: string
   value?: string | ReferenceExpression
 }
+
+const isCustomFieldValue = (value: Value): boolean => _.isString(value) && LOOKUP_REGEX.test(value)
 
 const isRelevantCondition = (condition: Value): condition is CustomObjectCondition =>
   _.isPlainObject(condition)
@@ -67,68 +56,42 @@ const transformTriggerValue = (
   customObjectsByKey: Record<string, InstanceElement>,
   enableMissingReferences: boolean
 ): void => {
-  const conditions = (trigger.value.conditions?.all ?? [])
-    .concat(trigger.value.conditions?.any ?? [])
-  // const actions = trigger.value.actions ?? []
+  const transformField = (value: string): TransformResult => transformCustomObjectField(
+    value,
+    ticketFieldsById,
+    customObjectsByKey,
+    enableMissingReferences
+  )
+  const conditions = (_.isArray(trigger.value.conditions?.all) ? trigger.value.conditions?.all : [])
+    .concat(_.isArray(trigger.value.conditions?.any) ? trigger.value.conditions?.any : [])
+  const actions = _.isArray(trigger.value.actions) ? trigger.value.actions : []
+
+  actions
+    .filter(action => isCustomFieldValue(action.value))
+    .forEach(action => { action.value = transformField(action.value).result })
 
   conditions
     .filter(isRelevantCondition)
+    .filter((condition: CustomObjectCondition) => isCustomFieldValue(condition.field))
     .forEach((condition: CustomObjectCondition) => {
-      // This is always false, used for type checking
       if (!_.isString(condition.field)) {
         return
       }
-      const { ticketFieldId, optionKey } = condition.field.match(LOOKUP_REGEX)?.groups ?? {}
-      const ticketField = ticketFieldsById[ticketFieldId]
-      if (ticketField === undefined) {
-        if (enableMissingReferences) {
-          const missingTicket = createMissingInstance(ZENDESK, TICKET_FIELD_TYPE_NAME, ticketFieldId)
-          condition.field = buildFieldTemplate(new ReferenceExpression(missingTicket.elemID), optionKey)
-        }
-      }
-      const ticketFieldRef = new ReferenceExpression(ticketField.elemID, ticketField)
+      const { result, ticketField, customObjectField } = transformField(condition.field)
 
-      const { customObjectKey } = ticketField.value.relationship_target_type?.match(CUSTOM_OBJECT_REGEX)?.groups ?? {}
-      const customObject = customObjectsByKey[customObjectKey]
-      if (customObjectKey === undefined || customObject === undefined) {
-        if (enableMissingReferences) {
-          const missingCustomObjectName = customObjectsByKey === undefined ? 'unknown' : customObjectKey
-          const missingCustomObject = createMissingInstance(ZENDESK, CUSTOM_OBJECT_TYPE_NAME, missingCustomObjectName)
-          condition.field = buildFieldTemplate(ticketFieldRef, new ReferenceExpression(missingCustomObject.elemID))
-        }
+      condition.field = result
+
+      if (
+        condition.operator !== 'is'
+        || !_.isString(condition.value)
+        || ticketField === undefined
+        || customObjectField === undefined
+      ) {
         return
       }
 
-      const customObjectFields = customObject.value.custom_object_fields ?? []
-      const customObjectFieldRef = customObjectFields
-        .filter(isResolvedReferenceExpression)
-        .find((field: ReferenceExpression) => field.value.value.key === optionKey)
-
-      if (customObjectFieldRef === undefined) {
-        if (enableMissingReferences) {
-          const missingCustomObjectFieldName = `${customObjectKey}__${optionKey}`
-          const missingCustomObjectField = createMissingInstance(
-            ZENDESK,
-            CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
-            missingCustomObjectFieldName
-          )
-          condition.field = buildFieldTemplate(ticketFieldRef, new ReferenceExpression(missingCustomObjectField.elemID))
-        }
-        return
-      }
-
-      condition.field = buildFieldTemplate(ticketFieldRef, customObjectFieldRef)
-
-      if (condition.operator !== 'is' || condition.value === undefined) {
-        return
-      }
-      // This is always false, used for type checkin
-      if (!_.isString(condition.value)) {
-        return
-      }
-
-      if (customObjectFieldRef.value.value.type === 'dropdown') {
-        const fieldCustomOptions = customObjectFieldRef.value.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] ?? []
+      if (customObjectField.value.type === 'dropdown') {
+        const fieldCustomOptions = customObjectField.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] ?? []
         const customOptionRef = fieldCustomOptions
           .filter(isResolvedReferenceExpression)
           .find((option: ReferenceExpression) => String(option.value.value.id) === condition.value)

@@ -16,7 +16,15 @@
 import _ from 'lodash'
 import { collections, values, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { InstanceElement, ObjectType, Element, Field, CORE_ANNOTATIONS, SaltoError } from '@salto-io/adapter-api'
+import {
+  InstanceElement,
+  ObjectType,
+  Element,
+  Field,
+  CORE_ANNOTATIONS,
+  SaltoError,
+  isInstanceElement,
+} from '@salto-io/adapter-api'
 import { pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import {
   createInvlidIdFieldConfigChange, createManyInstancesExcludeConfigChange,
@@ -45,8 +53,10 @@ import {
   buildSelectQueries,
   getFieldNamesForQuery,
   safeApiName,
-  isQueryableField,
   apiNameSync,
+  isQueryableField,
+  isHiddenField,
+  isReadOnlyField,
 } from './utils'
 import { ConfigChangeSuggestion, DataManagement } from '../types'
 
@@ -77,6 +87,10 @@ export type CustomObjectFetchSetting = {
 const defaultRecordKeysToOmit = ['attributes']
 const nameSeparator = '___'
 const aliasSeparator = ' '
+
+const isSystemField = (field: Field): boolean => (
+  isHiddenField(field) || isReadOnlyField(field)
+)
 
 const getQueryableFields = (object: ObjectType): Field[] => (
   Object.values(object.fields).filter(isQueryableField)
@@ -533,10 +547,11 @@ const filterTypesWithManyInstances = async (
 }
 
 const getInaccessibleCustomFields = (objectType: ObjectType): string[] => (
-  Object.entries(objectType.fields)
-    .filter(([, field]) => !isQueryableField(field))
-    .filter(([, field]) => !field.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE])
-    .map(([name]) => name)
+  Object.values(objectType.fields)
+    .filter(field => !isQueryableField(field))
+    .filter(field => !isSystemField(field)) // the value of system fields won't be visible anyway
+    .map(field => apiNameSync(field))
+    .filter(isDefined)
 )
 
 const createInvalidAliasFieldFetchWarning = async (
@@ -557,8 +572,8 @@ const createInaccessibleFieldsFetchWarning = async (
   objectType: ObjectType,
   inaccessibleFields: string[],
 ): Promise<SaltoError> => ({
-  message: `The following fields are not accessible and will not appear in records of type ${await apiName(objectType)}: ${inaccessibleFields.join(',')}'`,
-  severity: 'Warning',
+  message: `The following fields are not accessible and will not be fetched for records of type ${await apiName(objectType)}: ${inaccessibleFields.join(',')}. Values of these fields will appear as 'deleted' if these data records are ever deployed`,
+  severity: 'Info',
 })
 
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
@@ -614,11 +629,18 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       .filter(setting => setting.invalidManagedBySaltoField !== undefined)
       .map(createInvalidManagedBySaltoFieldFetchWarning)
 
+    const typesOfFetchedInstances = new Set(
+      elements
+        .filter(isInstanceElement)
+        .map(instance => instance.getTypeSync())
+    )
+
     const invalidPermissionsWarnings = awu(customObjectFetchSetting)
       .map(fetchSettings => fetchSettings.objectType)
       .filter(isCustomObject)
       .map(objectType => ({ type: objectType, fields: getInaccessibleCustomFields(objectType) }))
       .filter(({ fields }) => fields.length > 0)
+      .filter(({ type }) => typesOfFetchedInstances.has(type))
       .map(({ type, fields }) => createInaccessibleFieldsFetchWarning(type, fields))
 
     return {

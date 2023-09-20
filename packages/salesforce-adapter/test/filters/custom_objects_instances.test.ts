@@ -617,24 +617,40 @@ describe('Custom Object Instances filter', () => {
           },
         },
       })
+
+      const refToObject = createCustomObject(refToObjectName, {
+        NonQueryable: {
+          refType: stringType,
+          annotations: {
+            [FIELD_ANNOTATIONS.QUERYABLE]: false,
+            [LABEL]: 'Non-queryable field',
+            [API_NAME]: 'NonQueryableField',
+          },
+        },
+      })
       const excludedObject = createCustomObject(excludeObjectName)
       const excludeOverrideObject = createCustomObject(excludeOverrideObjectName)
       let fetchResult: FetchResult
       beforeEach(async () => {
         elements = [
           notConfiguredObj, includedNameSpaceObj,
-          includedObject, excludedObject, excludeOverrideObject,
+          includedObject, excludedObject, excludeOverrideObject, refToObject,
         ]
         fetchResult = await filter.onFetch(elements) as FetchResult
       })
 
       describe('when an object has non-queryable fields', () => {
-        it('should issue a warning', () => {
+        it('should issue a warning if there are instances of the object', () => {
           expect(fetchResult.errors).toEqual([{
             message: expect.stringContaining(includeObjectName) && expect.stringContaining('NonQueryable'),
-            severity: 'Warning',
+            severity: 'Info',
           }])
           expect(fetchResult.errors?.[0].message).not.toInclude('HiddenNonQueryable')
+        })
+        it('should not issue a warning if there are no instances of the object', () => {
+          expect(fetchResult.errors).not.toIncludeAllPartialMembers([{
+            message: expect.stringContaining(refToObjectName),
+          }])
         })
       })
 

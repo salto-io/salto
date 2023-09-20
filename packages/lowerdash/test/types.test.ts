@@ -14,9 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import {
-  AtLeastOne, RequiredMember, hasMember, filterHasMember, ValueOf, Bean, isArrayOfType, TypeGuard, isNonEmptyArray, isTypeOfOrUndefined,
-} from '../src/types'
+import { AtLeastOne, RequiredMember, hasMember, filterHasMember, ValueOf, Bean, isArrayOfType, TypeGuard, isNonEmptyArray, isTypeOfOrUndefined } from '../src/types'
 
 // Note: some of the tests here are compile-time, so the actual assertions may look weird.
 

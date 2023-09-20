@@ -37,6 +37,7 @@ import {
 } from '../src/constants'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 import { testHelpers } from './jest_environment'
+import { safeApiName } from '../src/filters/utils'
 
 const { awu } = collections.asynciterable
 
@@ -197,7 +198,7 @@ describe('custom object instances e2e', () => {
     describe('instances with missing OwnerId', () => {
       it('should create the new instance even if it doesn`t have an OwnerId', async () => {
         const accountObjectType = await awu(elements)
-          .find(async e => isObjectType(e) && (await apiName(e, true) === accountMetadataName))
+          .find(async e => isObjectType(e) && (await safeApiName(e, true) === accountMetadataName))
         expect(accountObjectType).toBeDefined()
         expect(isObjectType(accountObjectType)).toBeTruthy()
         expect((accountObjectType as ObjectType).fields).toHaveProperty(OWNER_ID)

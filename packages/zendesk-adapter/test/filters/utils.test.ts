@@ -117,22 +117,17 @@ describe('Zendesk utils', () => {
         new ReferenceExpression(childInstance.elemID, childInstance),
       ]
     })
-    it('should create additional parent with an updated child inside of it', async () => {
-      const changedChild = childInstance.clone()
-      changedChild.value = { value: 'new value' }
-      const newParentChanges = await createAdditionalParentChanges([toChange({ after: changedChild })])
-
-      expect(newParentChanges).toHaveLength(1)
-      const newParent = getChangeData((newParentChanges as AdditionChange<InstanceElement>[])[0])
-      expect(newParent.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME][0].value).toBe('new value')
-    })
-    it('should not change the original parent on change of the generated parent', async () => {
+    it('should clone the parent and not change the original parent on change of the generated parent', async () => {
       const newParentChanges = await createAdditionalParentChanges([toChange({ after: childInstance })])
 
       expect(newParentChanges).toHaveLength(1)
       const newParent = getChangeData((newParentChanges as AdditionChange<InstanceElement>[])[0])
+
+      parentInstance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME][0] = childInstance.value
+      expect(newParent).toMatchObject(parentInstance)
+
       newParent.value = { value: 'new value' }
-      expect(parentInstance.value).not.toBe('new value')
+      expect(parentInstance.value).not.toBe({ value: 'new value' })
     })
   })
   describe('getCustomFieldOptionsFromChanges', () => {

@@ -19,11 +19,13 @@ import {
   getChangeData,
   InstanceElement,
 } from '@salto-io/adapter-api'
+import { replaceTemplatesWithValues } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges } from '../deployment'
 import { API_DEFINITIONS_CONFIG } from '../config'
 import { createAdditionalParentChanges, getCustomFieldOptionsFromChanges } from './utils'
 import { CUSTOM_FIELD_OPTIONS_FIELD_NAME, ORG_FIELD_TYPE_NAME } from '../constants'
+import { prepRef } from './handle_template_expressions'
 
 export const ORG_FIELD_OPTION_TYPE_NAME = 'organization_field__custom_field_options'
 
@@ -67,6 +69,19 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         leftoverChanges,
       }
     }
+
+    // Because this is a fake change, it did not pass preDeploy and the templateExpressions were not converted to values
+    additionalParentChanges.forEach(change => {
+      const customFieldOptions = getChangeData(change).value[CUSTOM_FIELD_OPTIONS_FIELD_NAME]
+      if (_.isArray(customFieldOptions)) {
+        // These are fake changes, so we don't need to worry about reverting to templates later on
+        replaceTemplatesWithValues(
+          { values: customFieldOptions, fieldName: 'raw_name' },
+          {},
+          prepRef,
+        )
+      }
+    })
 
     const deployResult = await deployChanges(
       [...parentChanges, ...additionalParentChanges],

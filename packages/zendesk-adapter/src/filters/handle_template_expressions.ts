@@ -154,7 +154,7 @@ const potentialTemplates: PotentialTemplateField[] = [
   },
   ...[ORG_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, TICKET_FIELD_TYPE_NAME].flatMap(instanceType => [
     {
-      instanceType: `${instanceType}${CUSTOM_FIELD_OPTIONS_FIELD_NAME}`,
+      instanceType: `${instanceType}__${CUSTOM_FIELD_OPTIONS_FIELD_NAME}`,
       fieldName: 'raw_name',
       containerValidator: NoValidator,
     },

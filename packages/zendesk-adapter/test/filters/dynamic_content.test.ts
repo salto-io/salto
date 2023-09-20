@@ -19,10 +19,8 @@ import {
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { createFilterCreatorParams } from '../utils'
-import { ZENDESK } from '../../src/constants'
-import filterCreator, {
-  DYNAMIC_CONTENT_ITEM_TYPE_NAME, DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME, VARIANTS_FIELD_NAME,
-} from '../../src/filters/dynamic_content'
+import { DYNAMIC_CONTENT_ITEM_TYPE_NAME, ZENDESK } from '../../src/constants'
+import filterCreator, { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME, VARIANTS_FIELD_NAME } from '../../src/filters/dynamic_content'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {

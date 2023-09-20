@@ -377,7 +377,6 @@ describe('Zendesk adapter E2E', () => {
         `${ticketFieldInstance.elemID.name}__${ticketFieldOption1Value}`,
         ticketFieldOptionType,
         {
-          name: ticketFieldOption1Name,
           raw_name: ticketFieldOption1Name,
           value: ticketFieldOption1Value,
         },
@@ -394,7 +393,6 @@ describe('Zendesk adapter E2E', () => {
         `${ticketFieldInstance.elemID.name}__${ticketFieldOption2Value}`,
         ticketFieldOptionType,
         {
-          name: ticketFieldOption2Name,
           raw_name: ticketFieldOption2Name,
           value: ticketFieldOption2Value,
         },
@@ -426,7 +424,6 @@ describe('Zendesk adapter E2E', () => {
         `${userFieldInstance.elemID.name}__${userFieldOption1Value}`,
         userFieldOptionType,
         {
-          name: userFieldOption1Name,
           raw_name: userFieldOption1Name,
           value: userFieldOption1Value,
         },
@@ -443,7 +440,6 @@ describe('Zendesk adapter E2E', () => {
         `${userFieldInstance.elemID.name}__${userFieldOption2Value}`,
         userFieldOptionType,
         {
-          name: userFieldOption2Name,
           raw_name: userFieldOption2Name,
           value: userFieldOption2Value,
         },

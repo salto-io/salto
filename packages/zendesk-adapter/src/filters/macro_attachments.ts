@@ -33,8 +33,10 @@ import {
   SaltoElementError,
   StaticFile,
 } from '@salto-io/adapter-api'
-import { normalizeFilePathPart, naclCase,
-  resolveChangeElement, safeJsonStringify, pathNaclCase, references, inspectValue } from '@salto-io/adapter-utils'
+import {
+  normalizeFilePathPart, naclCase,
+  resolveChangeElement, safeJsonStringify, pathNaclCase, references, inspectValue,
+} from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
@@ -283,6 +285,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         leftoverChanges,
       }
     }
+
     const childFullNameToInstance: Record<string, InstanceElement> = {}
     const resolvedChildrenChanges = await awu(childrenChanges)
       .map(change => resolveChangeElement(change, lookupFunc))

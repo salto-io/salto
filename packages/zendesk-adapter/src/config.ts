@@ -874,6 +874,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       idFields: ['value'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'name', fieldType: 'string' },
+      ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
         {
@@ -971,6 +974,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'default', fieldType: 'boolean' },
       ),
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'name', fieldType: 'string' },
+      ),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
     },
   },
@@ -1036,10 +1042,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['value'],
       fieldsToHide: FIELDS_TO_HIDE.concat(
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'name', fieldType: 'string' },
       ),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
-      fieldsToOmit: FIELDS_TO_OMIT,
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'name', fieldType: 'string' },
+      ),
     },
   },
   organization_field_order: {

@@ -20,14 +20,10 @@ import {
 import { filterUtils } from '@salto-io/adapter-components'
 import { createTemplateExpression } from '@salto-io/adapter-utils'
 import { elementSource } from '@salto-io/workspace'
-import { ZENDESK } from '../../../src/constants'
+import { ZENDESK, CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../../src/constants'
 import filterCreator from '../../../src/filters/custom_field_options/ticket_field'
-import {
-  CUSTOM_FIELD_OPTIONS_FIELD_NAME,
-  DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME,
-} from '../../../src/filters/custom_field_options/creator'
+import { DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME } from '../../../src/filters/custom_field_options/creator'
 import { createFilterCreatorParams } from '../../utils'
-import { TICKET_TICKET_FIELD } from '../../../src/filters/handle_template_expressions'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -161,8 +157,7 @@ describe('ticket field filter', () => {
         id: 11,
         name: 'parent',
         [CUSTOM_FIELD_OPTIONS_FIELD_NAME]: [
-          { id: 22, name: 'child1', value: 'v1', raw_name: 'aaa' },
-          { id: 33, name: 'child2', value: 'v2', raw_name: createTemplateExpression({ parts: [`aaa ${TICKET_TICKET_FIELD}_`, new ReferenceExpression(parent.elemID, parent)] }) },
+          { id: 22, value: 'v1', raw_name: 'aaa' },
         ],
         [DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME]: 'v2',
       },
@@ -173,10 +168,9 @@ describe('ticket field filter', () => {
       await filter?.preDeploy([change])
     })
 
-    it('should add default to the options and resolve template expressions', async () => {
+    it('should add default to the options', async () => {
       expect(clonedResolvedParent.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME]).toEqual([
-        { id: 22, name: 'child1', value: 'v1', default: false, raw_name: 'aaa' },
-        { id: 33, name: 'child2', value: 'v2', default: true, raw_name: 'aaa ticket.ticket_field_11' },
+        { id: 22, name: 'aaa', value: 'v1', default: false, raw_name: 'aaa' },
       ])
     })
     it('should add default as false to all the options if there is no default', async () => {
@@ -184,8 +178,7 @@ describe('ticket field filter', () => {
       delete clonedParentWithNoDefault.value[DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME]
       await filter?.preDeploy([toChange({ after: clonedParentWithNoDefault })])
       expect(clonedParentWithNoDefault.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME]).toEqual([
-        { id: 22, name: 'child1', value: 'v1', default: false, raw_name: 'aaa' },
-        { id: 33, name: 'child2', value: 'v2', default: false, raw_name: 'aaa ticket.ticket_field_11' },
+        { id: 22, name: 'aaa', value: 'v1', default: false, raw_name: 'aaa' },
       ])
     })
   })
@@ -226,17 +219,26 @@ describe('ticket field filter', () => {
       await filter?.onDeploy([toChange({ after: clonedParentWithNoDefault })])
       expect(clonedParentWithNoDefault).toEqual(expectedInstance)
     })
+    it('should remove name field from custom field options', async () => {
+      const child = new InstanceElement(
+        'child1',
+        childObjType,
+        { name: 'name', raw_name: 'raw_name', value: 'v1' },
+      )
+      await filter.onDeploy([toChange({ after: child })])
+      expect(child.value).toEqual({ raw_name: 'raw_name', value: 'v1' })
+    })
   })
   describe('deploy', () => {
     const option1 = new InstanceElement(
       'option1',
       childObjType,
-      { name: 'option1', value: 'v3', default: false },
+      { raw_name: 'option11', value: 'v3', default: false },
     )
     const option2 = new InstanceElement(
       'option2',
       childObjType,
-      { name: 'option2', value: 'v4', default: true },
+      { raw_name: 'option22', value: 'v4', default: true },
     )
     const ticketField = new InstanceElement(
       'ticketField',

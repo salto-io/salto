@@ -19,9 +19,8 @@ import {
   ListType,
 } from '@salto-io/adapter-api'
 import { filterUtils, references as referencesUtils } from '@salto-io/adapter-components'
-import { ZENDESK } from '../../src/constants'
+import { DYNAMIC_CONTENT_ITEM_TYPE_NAME, ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/dynamic_content_references'
-import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../../src/filters/dynamic_content'
 import { createFilterCreatorParams } from '../utils'
 
 const { createMissingInstance } = referencesUtils

@@ -246,7 +246,8 @@ export const getFromPathIndex = async (
       // If this is not an exact match we want to return a single hint
       // because otherwise, splitElementByPath will make it appear in multiple fragments
       // and cause merge errors.
-      return isExactMatch ? pathHints : [pathHints[0]]
+      const uniquePathHints = _.uniqWith(pathHints, _.isEqual)
+      return isExactMatch ? uniquePathHints : [uniquePathHints[0]]
     }
     idParts.pop()
     isExactMatch = false

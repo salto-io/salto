@@ -236,7 +236,7 @@ describe('getFromPathIndex', () => {
   beforeAll(async () => {
     await index.setAll([
       { key: parentID.getFullName(), value: [nestedPath, parentPath] },
-      { key: nestedID.getFullName(), value: [nestedPath] },
+      { key: nestedID.getFullName(), value: [nestedPath, nestedPath] },
     ])
   })
 

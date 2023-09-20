@@ -74,7 +74,8 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     additionalParentChanges.forEach(change => {
       const customFieldOptions = getChangeData(change).value[CUSTOM_FIELD_OPTIONS_FIELD_NAME]
       if (_.isArray(customFieldOptions)) {
-        // These are fake changes, so we don't need to worry about reverting to templates later on
+        // These are fake changes which do not show in appliedChanges
+        // so we don't need to worry about reverting to templates later on
         replaceTemplatesWithValues(
           { values: customFieldOptions, fieldName: 'raw_name' },
           {},

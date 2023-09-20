@@ -35,19 +35,18 @@ import {
 } from '@salto-io/adapter-api'
 import {
   normalizeFilePathPart, naclCase,
-  resolveChangeElement, safeJsonStringify, pathNaclCase, references, inspectValue, replaceTemplatesWithValues,
+  resolveChangeElement, safeJsonStringify, pathNaclCase, references, inspectValue,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
-import { ZENDESK, MACRO_TYPE_NAME, CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../constants'
+import { ZENDESK, MACRO_TYPE_NAME } from '../constants'
 import { addId, deployChange, deployChanges } from '../deployment'
 import { getZendeskError } from '../errors'
 import { lookupFunc } from './field_references'
 import ZendeskClient from '../client/client'
 import { createAdditionalParentChanges } from './utils'
-import { prepRef } from './handle_template_expressions'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -286,19 +285,6 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         leftoverChanges,
       }
     }
-
-    // Because this is a fake change, it did not pass preDeploy and the templateExpressions were not converted to values
-    additionalParentChanges.forEach(change => {
-      const customFieldOptions = getChangeData(change).value[CUSTOM_FIELD_OPTIONS_FIELD_NAME]
-      if (_.isArray(customFieldOptions)) {
-        // These are fake changes, so we don't need to worry about reverting to templates later on
-        replaceTemplatesWithValues(
-          { values: customFieldOptions, fieldName: 'raw_name' },
-          {},
-          prepRef,
-        )
-      }
-    })
 
     const childFullNameToInstance: Record<string, InstanceElement> = {}
     const resolvedChildrenChanges = await awu(childrenChanges)

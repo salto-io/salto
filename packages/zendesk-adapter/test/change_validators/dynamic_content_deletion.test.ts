@@ -25,8 +25,8 @@ import {
   MACRO_TYPE_NAME,
   TRIGGER_TYPE_NAME,
   ZENDESK,
+  DYNAMIC_CONTENT_ITEM_TYPE_NAME,
 } from '../../src/constants'
-import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../../src/filters/dynamic_content'
 import { dynamicContentDeletionValidator } from '../../src/change_validators'
 
 const createDynamicContentInstance = (name: string): InstanceElement =>

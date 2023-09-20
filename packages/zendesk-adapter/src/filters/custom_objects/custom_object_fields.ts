@@ -22,8 +22,10 @@ import {
 import _ from 'lodash'
 import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { references as referencesUtils } from '@salto-io/adapter-components'
+import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
 import {
+  CUSTOM_FIELD_OPTIONS_FIELD_NAME,
   CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
   CUSTOM_OBJECT_TYPE_NAME,
   TICKET_FIELD_TYPE_NAME,
@@ -31,9 +33,9 @@ import {
   ZENDESK,
 } from '../../constants'
 import { FETCH_CONFIG } from '../../config'
-import { CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../organization_field'
 import { LOOKUP_REGEX, transformCustomObjectField, TransformResult } from './utils'
 
+const { makeArray } = collections.array
 const { createMissingInstance } = referencesUtils
 
 type CustomObjectCondition = {
@@ -67,8 +69,14 @@ const transformTriggerValue = (
   const actions = _.isArray(trigger.value.actions) ? trigger.value.actions : []
 
   actions
-    .filter(action => isCustomFieldValue(action.value))
-    .forEach(action => { action.value = transformField(action.value).result })
+    .filter(action => isCustomFieldValue(makeArray(action.value)[0]))
+    .forEach(action => {
+      if (_.isArray(action.value)) {
+        action.value[0] = transformField(action.value[0]).result
+      } else {
+        action.value = transformField(action.value).result
+      }
+    })
 
   conditions
     .filter(isRelevantCondition)
@@ -108,9 +116,12 @@ const transformTriggerValue = (
           return
         }
         condition.value = customOptionRef
+      } else if (customObjectField.value.type === 'lookup') {
+        // zen:user
+        // zen:organization
+        // zen:ticket
+        // zen:custom_object???
       }
-
-      // TODO - check field type, lookup - relationship_target_type
     })
 }
 

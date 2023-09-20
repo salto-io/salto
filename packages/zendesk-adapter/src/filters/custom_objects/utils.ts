@@ -32,9 +32,9 @@ const buildFieldTemplate = (ticketField: string | ReferenceExpression, option: s
   : TemplateExpression =>
   new TemplateExpression({
     parts: [
-      'lookup:',
+      'lookup:ticket.ticket_field_:',
       ticketField,
-      '.',
+      '.custom_fields.',
       option,
     ],
   })

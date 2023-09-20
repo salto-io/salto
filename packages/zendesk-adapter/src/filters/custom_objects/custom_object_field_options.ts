@@ -38,7 +38,7 @@ const log = logger(module)
 const customObjectFieldOptionType = new ObjectType({
   elemID: new ElemID(ZENDESK, CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME),
   fields: {
-    id: { refType: BuiltinTypes.NUMBER, annotations: { [CORE_ANNOTATIONS.HIDDEN]: true } },
+    id: { refType: BuiltinTypes.SERVICE_ID_NUMBER, annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true } },
     // name: { refType: BuiltinTypes.STRING }, Omitted because it's not needed
     raw_name: { refType: BuiltinTypes.STRING },
     value: { refType: BuiltinTypes.STRING },

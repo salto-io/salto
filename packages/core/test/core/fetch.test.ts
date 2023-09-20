@@ -24,6 +24,7 @@ import {
   TypeReference,
   StaticFile,
   isStaticFile,
+  toChange,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -822,98 +823,90 @@ describe('fetch', () => {
           expect(normalChange.pendingChanges).toHaveLength(0)
         })
       })
-      describe('when the working copy has some mergeable changes in static file', () => {
+      describe.each(['static files', 'multiline strings'] as const)('when the working copy has some mergeable changes in %s', type => {
         const instanceName = 'name'
-        const filepath = 'abc.txt'
-        const stateStaticFile = new StaticFile({ filepath, content: Buffer.from('hello world!\nmy name is:\nNaCls') })
-        const serviceStaticFile = new StaticFile({ filepath, content: Buffer.from('Hello World!\nmy name is:\nNaCls') })
-        beforeEach(async () => {
-          const stateInstance = new InstanceElement(
-            instanceName,
-            typeWithField,
-            {
-              mergeableContent: stateStaticFile,
-              unmergeableContent: stateStaticFile,
-              otherFile: stateStaticFile,
-            }
-          )
-          const serviceInstance = new InstanceElement(
-            instanceName,
-            typeWithField,
-            {
-              mergeableContent: serviceStaticFile,
-              unmergeableContent: serviceStaticFile,
-              otherFile: serviceStaticFile,
-            }
-          )
-          const workspaceInstance = new InstanceElement(
-            instanceName,
-            typeWithField,
-            {
-              mergeableContent: new StaticFile({ filepath, content: Buffer.from('hello world!\nmy name is:\nNaCls the great!') }),
-              unmergeableContent: new StaticFile({ filepath, content: Buffer.from('HELLO WORLD!\nmy name is:\nNaCls the great!') }),
-              otherFile: new StaticFile({ filepath: 'def.txt', content: Buffer.from('hello world!\nmy name is:\nNaCls the great!') }),
-            }
-          )
-          mockAdapters[testID.adapter].fetch.mockResolvedValueOnce(
-            Promise.resolve({ elements: [serviceInstance] })
-          )
-          const result = await fetchChanges(
-            mockAdapters,
-            createElementSource([workspaceInstance]),
-            createElementSource([stateInstance]),
-            { [testID.adapter]: 'dummy' },
-            [],
-          )
-          changes = [...result.changes]
+        const filepath = 'abc'
+        const strings = {
+          stateValue: 'hello world!\nmy name is:\nNaCls',
+          serviceValue: 'Hello World!\nmy name is:\nNaCls',
+          mergeableValue: 'hello world!\nmy name is:\nNaCls the great!',
+          unmergeableValue: 'HELLO WORLD!\nmy name is:\nNaCls the great!',
+          addedValue: 'my name is:\nNaCls\nthe great!',
+          mergedModifiedValue: 'Hello World!\nmy name is:\nNaCls the great!',
+          mergedAddedValue: 'Hello World!\nmy name is:\nNaCls\nthe great!',
+          tooLongValue: 'hello world!\nmy name is:\nNaCls the great!'.padEnd(10 * 1024 * 1024 + 1, '!'),
+        }
+
+        const allValues = type === 'static files'
+          ? {
+            ..._.mapValues(strings, content => new StaticFile({ filepath, content: Buffer.from(content) })),
+            mismatchValue: new StaticFile({ filepath: 'def', content: Buffer.from(strings.mergeableValue) }),
+          }
+          : { ...strings, mismatchValue: 1234 }
+
+        const binaryFilePath = `${filepath}.png`
+        const stateBinaryFilePath = new StaticFile({
+          filepath: binaryFilePath,
+          content: Buffer.from(strings.stateValue),
         })
-        it('should merge content if possible', async () => {
-          expect(changes).toHaveLength(3)
-          const [mergeableChange, unmergeableChange, otherFileChange] = changes
-          expect(mergeableChange.pendingChanges).toHaveLength(0)
-          expect(mergeableChange.change.id).toEqual(testID.createNestedID('instance', instanceName, 'mergeableContent'))
-          expect(getChangeData(mergeableChange.change)).toEqual(new StaticFile({
+        const serviceBinaryFilePath = new StaticFile({
+          filepath: binaryFilePath,
+          content: Buffer.from(strings.serviceValue),
+        })
+        const specialFileValues = {
+          binaryFilePath: new StaticFile({
+            filepath: binaryFilePath,
+            content: Buffer.from(strings.mergeableValue),
+          }),
+          binaryFileContent: new StaticFile({
             filepath,
-            content: Buffer.from('Hello World!\nmy name is:\nNaCls the great!'),
-          }))
-          expect(unmergeableChange.pendingChanges).toHaveLength(1)
-          expect(unmergeableChange.change.id).toEqual(testID.createNestedID('instance', instanceName, 'unmergeableContent'))
-          expect(getChangeData(unmergeableChange.change)).toEqual(serviceStaticFile)
-          expect(otherFileChange.pendingChanges).toHaveLength(1)
-          expect(otherFileChange.change.id).toEqual(testID.createNestedID('instance', instanceName, 'otherFile'))
-          expect(getChangeData(otherFileChange.change)).toEqual(serviceStaticFile)
-        })
-      })
-      describe('when the working copy has some mergeable changes in multiline strings', () => {
-        const instanceName = 'name'
-        const stateString = 'hello world!\nmy name is:\nNaCls'
-        const serviceString = 'Hello World!\nmy name is:\nNaCls'
+            content: Buffer.concat([Buffer.from(strings.mergeableValue), Buffer.from([200])]),
+          }),
+          noContent: new StaticFile({ filepath, hash: '1234' }),
+        }
+
         beforeEach(async () => {
           const stateInstance = new InstanceElement(
             instanceName,
             typeWithField,
             {
-              mergeableContent: stateString,
-              unmergeableContent: stateString,
-              otherField: stateString,
+              mergeableContent: allValues.stateValue,
+              unmergeableContent: allValues.stateValue,
+              mismatchValue: allValues.stateValue,
+              tooLongValue: allValues.stateValue,
+              binaryFilePath: stateBinaryFilePath,
+              binaryFileContent: allValues.stateValue,
+              noContent: allValues.stateValue,
             }
           )
           const serviceInstance = new InstanceElement(
             instanceName,
             typeWithField,
             {
-              mergeableContent: serviceString,
-              unmergeableContent: serviceString,
-              otherField: serviceString,
+              mergeableContent: allValues.serviceValue,
+              unmergeableContent: allValues.serviceValue,
+              mergeableAddedContent: allValues.serviceValue,
+              unmergeableAddedContent: allValues.serviceValue,
+              mismatchValue: allValues.serviceValue,
+              tooLongValue: allValues.serviceValue,
+              binaryFilePath: serviceBinaryFilePath,
+              binaryFileContent: allValues.serviceValue,
+              noContent: allValues.serviceValue,
             }
           )
           const workspaceInstance = new InstanceElement(
             instanceName,
             typeWithField,
             {
-              mergeableContent: 'hello world!\nmy name is:\nNaCls the great!',
-              unmergeableContent: 'HELLO WORLD!\nmy name is:\nNaCls the great!',
-              otherField: 1234,
+              mergeableContent: allValues.mergeableValue,
+              unmergeableContent: allValues.unmergeableValue,
+              mergeableAddedContent: allValues.addedValue,
+              unmergeableAddedContent: allValues.unmergeableValue,
+              mismatchValue: allValues.mismatchValue,
+              tooLongValue: allValues.tooLongValue,
+              binaryFilePath: specialFileValues.binaryFilePath,
+              binaryFileContent: specialFileValues.binaryFileContent,
+              noContent: specialFileValues.noContent,
             }
           )
           mockAdapters[testID.adapter].fetch.mockResolvedValueOnce(
@@ -928,19 +921,53 @@ describe('fetch', () => {
           )
           changes = [...result.changes]
         })
-        it('should merge content if possible', async () => {
-          expect(changes).toHaveLength(3)
-          const [mergeableChange, unmergeableChange, otherFieldChange] = changes
-          expect(mergeableChange.pendingChanges).toHaveLength(0)
-          expect(mergeableChange.change.id).toEqual(testID.createNestedID('instance', instanceName, 'mergeableContent'))
-          expect(getChangeData(mergeableChange.change)).toEqual('Hello World!\nmy name is:\nNaCls the great!')
-          expect(unmergeableChange.pendingChanges).toHaveLength(1)
-          expect(unmergeableChange.change.id).toEqual(testID.createNestedID('instance', instanceName, 'unmergeableContent'))
-          expect(getChangeData(unmergeableChange.change)).toEqual(serviceString)
-          expect(otherFieldChange.pendingChanges).toHaveLength(1)
-          expect(otherFieldChange.change.id).toEqual(testID.createNestedID('instance', instanceName, 'otherField'))
-          expect(getChangeData(otherFieldChange.change)).toEqual(serviceString)
+        it('should calculate fetch changes', () => {
+          expect(changes).toHaveLength(9)
         })
+        it.each(['modification', 'addition'] as const)('should merge content successfully on %s', action => {
+          const name = action === 'modification' ? 'mergeableContent' : 'mergeableAddedContent'
+          const mergeableChange = changes.find(change => change.change.id.name === name)
+          expect(mergeableChange).toEqual(expect.objectContaining({
+            pendingChanges: [],
+            change: expect.objectContaining({
+              id: testID.createNestedID('instance', instanceName, name),
+              ...toChange({
+                before: action === 'modification' ? allValues.mergeableValue : allValues.addedValue,
+                after: action === 'modification' ? allValues.mergedModifiedValue : allValues.mergedAddedValue,
+              }),
+            }),
+          }))
+        })
+        it.each(['modification', 'addition'] as const)('should not merge content on %s conflict', action => {
+          const name = action === 'modification' ? 'unmergeableContent' : 'unmergeableAddedContent'
+          const unmergeableChange = changes.find(change => change.change.id.name === name)
+          expect(unmergeableChange?.pendingChanges).not.toBeEmpty()
+          expect(unmergeableChange?.change).toEqual(expect.objectContaining({
+            id: testID.createNestedID('instance', instanceName, name),
+            ...toChange({ before: allValues.unmergeableValue, after: allValues.serviceValue }),
+          }))
+        })
+        it.each(['mismatchValue', 'tooLongValue'] as const)('should not merge content on %s', name => {
+          const unmergeableChange = changes.find(change => change.change.id.name === name)
+          expect(unmergeableChange?.pendingChanges).not.toBeEmpty()
+          expect(unmergeableChange?.change).toEqual(expect.objectContaining({
+            id: testID.createNestedID('instance', instanceName, name),
+            ...toChange({ before: allValues[name], after: allValues.serviceValue }),
+          }))
+        })
+        if (type === 'static files') {
+          it.each(['binaryFilePath', 'binaryFileContent', 'noContent'] as const)('should not merge static file on %s', name => {
+            const unmergeableChange = changes.find(change => change.change.id.name === name)
+            expect(unmergeableChange?.pendingChanges).not.toBeEmpty()
+            expect(unmergeableChange?.change).toEqual(expect.objectContaining({
+              id: testID.createNestedID('instance', instanceName, name),
+              ...toChange({
+                before: specialFileValues[name],
+                after: name === 'binaryFilePath' ? serviceBinaryFilePath : allValues.serviceValue,
+              }),
+            }))
+          })
+        }
       })
       describe('when the changed element is removed in the working copy', () => {
         beforeEach(async () => {

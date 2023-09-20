@@ -27,6 +27,7 @@ import {
   isModificationChange,
   toChange,
   ModificationChange,
+  AdditionChange,
 } from '@salto-io/adapter-api'
 import { applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements, safeJsonStringify, walkOnElement, WalkOnFunc, WALK_NEXT_STEP, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -43,6 +44,7 @@ const { mapValuesAsync } = promises.object
 const { withLimitedConcurrency } = promises.array
 const { mergeElements } = merger
 const { humanFileSize } = strings
+const { isTypeOfOrUndefined } = types
 const log = logger(module)
 
 const MAX_SPLIT_CONCURRENCY = 2000
@@ -176,24 +178,42 @@ const addFetchChangeMetadata = (
   ),
 }])
 
-type ThreeWayDiffChange = FetchChange & {
-  serviceChanges: [ModificationChange<Value>]
-  pendingChanges: [ModificationChange<Value>]
+type MergeableDiffChange = FetchChange & {
+  serviceChanges: [ModificationChange<Value> | AdditionChange<Value>]
+  pendingChanges: [ModificationChange<Value> | AdditionChange<Value>]
 }
-const isThreeWayDiffChange = (change: FetchChange): change is ThreeWayDiffChange =>
+const isMergeableDiffChange = (change: FetchChange): change is MergeableDiffChange =>
   change.serviceChanges.length === 1
   && change.pendingChanges?.length === 1
   && change.change.id.isEqual(change.serviceChanges[0].id)
   && change.change.id.isEqual(change.pendingChanges[0].id)
-  && isModificationChange(change.serviceChanges[0])
-  && isModificationChange(change.pendingChanges[0])
+  && isAdditionOrModificationChange(change.serviceChanges[0])
+  && isAdditionOrModificationChange(change.pendingChanges[0])
 
-const toMergedTextChange = (
-  change: FetchChange,
-  contents: string[],
-  mergedTextToValue?: (merged: string) => Value
-): FetchChange => {
-  const changeId = change.change.id.getFullName()
+const merge2Strings = (
+  first: string,
+  second: string,
+  { stringSeparator }: { stringSeparator: string }
+): { conflict: boolean; result: string[] } => {
+  const lines1 = first.split(stringSeparator)
+  const lines2 = second.split(stringSeparator)
+  const patch = diff3.diffPatch(lines1, lines2)
+  if (patch.some(({ buffer1, buffer2 }) => buffer1.length && buffer2.length)) {
+    return { conflict: true, result: [] }
+  }
+  const additions = patch.filter(({ buffer2 }) => buffer2.length)
+  return { conflict: false, result: diff3.patch(lines1, additions) }
+}
+
+const mergeStrings = (
+  changeId: string,
+  { current, base, incoming }: {
+    current: string
+    base: string | undefined
+    incoming: string
+  },
+): string | undefined => {
+  const contents = [current, base ?? '', incoming]
   log.debug(
     'trying to merge contents of %s - sizes: %s',
     changeId,
@@ -204,68 +224,82 @@ const toMergedTextChange = (
       'skipping merge since contents size has reached the limit of %s',
       humanFileSize(MAX_MERGE_CONTENT_SIZE),
     )
-    return change
+    return undefined
   }
-  const [current, base, incoming] = contents
   const options = { excludeFalseConflicts: true, stringSeparator: '\n' }
-  const { conflict, result } = log.time(
-    () => diff3.mergeDiff3(current, base, incoming, options),
-    'merging contents of %s', changeId
-  )
+  const { conflict, result } = log.time(() => (
+    base !== undefined
+      ? diff3.mergeDiff3(current, base, incoming, options)
+      : merge2Strings(current, incoming, options)
+  ), 'merging contents of %s', changeId)
   if (conflict) {
     log.debug('conflict found in %s', changeId)
-    return change
+    return undefined
   }
   log.debug('merged %s successfully', changeId)
-  const merged = result.join(options.stringSeparator)
-  return {
-    ...change,
-    change: {
-      ...change.change,
-      ...toChange({
-        ...change.change.data,
-        after: mergedTextToValue?.(merged) ?? merged,
-      }),
-    },
-    pendingChanges: [],
-  }
+  return result.join(options.stringSeparator)
 }
 
-const autoMergeTextChanges: ChangeTransformFunction = async change => {
-  if (!isThreeWayDiffChange(change)) {
+const mergeStaticFiles = async (
+  changeId: string,
+  { current, base, incoming }: {
+    current: StaticFile
+    base: StaticFile | undefined
+    incoming: StaticFile
+  },
+): Promise<StaticFile | undefined> => {
+  const { filepath, encoding } = current
+  if (incoming.encoding !== encoding || incoming.filepath !== filepath
+    || (base !== undefined && (base.encoding !== encoding || base.filepath !== filepath))) {
+    log.warn(
+      'skipping merge of %s since static files filepath & encoding does not match',
+      changeId
+    )
+    return undefined
+  }
+  const currentString = (await current.getContent())?.toString(encoding) ?? ''
+  const incomingString = (await incoming.getContent())?.toString(encoding) ?? ''
+  const baseString = base !== undefined ? (await base.getContent())?.toString(encoding) ?? '' : undefined
+  const merged = mergeStrings(changeId, {
+    current: currentString,
+    base: baseString,
+    incoming: incomingString,
+  })
+  return merged !== undefined
+    ? new StaticFile({ filepath, encoding, content: Buffer.from(merged, encoding) })
+    : undefined
+}
+
+const toMergedTextChange = (change: FetchChange, after: string | StaticFile): FetchChange => ({
+  ...change,
+  change: {
+    ...change.change,
+    ...toChange({
+      ...change.change.data,
+      after,
+    }),
+  },
+  pendingChanges: [],
+})
+
+const autoMergeTextChange: ChangeTransformFunction = async change => {
+  if (!isMergeableDiffChange(change)) {
     return [change]
   }
-  const versions = [
-    // current
-    change.serviceChanges[0].data.after,
-    // base
-    change.serviceChanges[0].data.before,
-    // incoming
-    change.pendingChanges[0].data.after,
-  ]
-  if (versions.every(isStaticFile)) {
-    const { filepath, encoding } = versions[0]
-    if (!versions.every(file => file.filepath === filepath && file.encoding === encoding)) {
-      log.warn(
-        'skipping merge of %s since static files filepath & encoding does not match',
-        change.change.id.getFullName()
-      )
-      return [change]
-    }
-    const contents = await awu(versions)
-      .map(async file => await file.getContent() ?? Buffer.from(''))
-      .map(buffer => buffer.toString(encoding))
-      .toArray()
-    return [
-      toMergedTextChange(
-        change,
-        contents,
-        merged => new StaticFile({ filepath, content: Buffer.from(merged, encoding), encoding })
-      ),
-    ]
+
+  const changeId = change.change.id.getFullName()
+  const current = change.pendingChanges[0].data.after
+  const base = isModificationChange(change.serviceChanges[0])
+    ? change.serviceChanges[0].data.before : undefined
+  const incoming = change.serviceChanges[0].data.after
+
+  if (isStaticFile(current) && isStaticFile(incoming) && isTypeOfOrUndefined(base, isStaticFile)) {
+    const merged = await mergeStaticFiles(changeId, { current, base, incoming })
+    return [merged !== undefined ? toMergedTextChange(change, merged) : change]
   }
-  if (versions.every(_.isString)) {
-    return [toMergedTextChange(change, versions)]
+  if (_.isString(current) && _.isString(incoming) && isTypeOfOrUndefined(base, _.isString)) {
+    const merged = mergeStrings(changeId, { current, base, incoming })
+    return [merged !== undefined ? toMergedTextChange(change, merged) : change]
   }
   return [change]
 }
@@ -794,7 +828,7 @@ export const calcFetchChanges = async (
   )
 
   const changes = await awu(fetchChanges)
-    .flatMap(autoMergeTextChanges)
+    .flatMap(autoMergeTextChange)
     .flatMap(toChangesWithPath(async name => serviceElementsMap[name.getFullName()] ?? []))
     .flatMap(addFetchChangeMetadata(partialFetchElementSource))
     .toArray()

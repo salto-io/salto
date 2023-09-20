@@ -135,6 +135,7 @@ import issueLayoutFilter from './filters/issue_layout/issue_layout'
 import removeSimpleFieldProjectFilter from './filters/remove_simplified_field_project'
 import changeServiceDeskIdFieldProjectFilter from './filters/change_projects_service_desk_id'
 import createReferencesIssueLayoutFilter from './filters/issue_layout/create_references_issue_layout'
+import addJsmTypesAsFieldsFilter from './filters/add_jsm_types_as_fields'
 import issueTypeHierarchyFilter from './filters/issue_type_hierarchy_filter'
 import projectFieldContextOrder from './filters/project_field_contexts_order'
 import scriptedFieldsIssueTypesFilter from './filters/script_runner/scripted_fields_issue_types'
@@ -259,6 +260,8 @@ export const DEFAULT_FILTERS = [
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,
   fieldReferencesFilter,
+  // Must run after fieldReferencesFilter
+  addJsmTypesAsFieldsFilter,
   issueLayoutFilter,
   // Must run after issueLayoutFilter
   removeSimpleFieldProjectFilter,

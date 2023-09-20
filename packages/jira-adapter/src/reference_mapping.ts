@@ -151,7 +151,7 @@ ReferenceContextStrategyName
 
 export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
-    src: { field: 'issueTypeId', parentTypes: ['IssueTypeScreenSchemeItem', 'FieldConfigurationIssueTypeItem', SCRIPT_RUNNER_TYPE] },
+    src: { field: 'issueTypeId', parentTypes: ['IssueTypeScreenSchemeItem', 'FieldConfigurationIssueTypeItem', SCRIPT_RUNNER_TYPE, REQUEST_TYPE_NAME] },
     serializationStrategy: 'id',
     // No missing references strategy - field can be a string
     target: { type: ISSUE_TYPE_NAME },
@@ -964,12 +964,6 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     jiraSerializationStrategy: 'key',
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: PROJECT_TYPE },
-  },
-  {
-    src: { field: 'issueTypeId', parentTypes: [REQUEST_TYPE_NAME] },
-    serializationStrategy: 'id',
-    jiraMissingRefStrategy: 'typeAndValue',
-    target: { type: ISSUE_TYPE_NAME },
   },
   {
     src: { field: 'groupIds', parentTypes: [REQUEST_TYPE_NAME] },

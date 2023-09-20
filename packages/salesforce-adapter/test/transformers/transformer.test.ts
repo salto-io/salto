@@ -25,7 +25,7 @@ import {
   getValueTypeFieldElement, createMetadataTypeElements, MetadataObjectType,
   METADATA_TYPES_TO_RENAME, instancesToDeleteRecords, instancesToCreateRecords,
   isMetadataObjectType, isMetadataInstanceElement, toDeployableInstance, transformPrimitive,
-  getAuthorAnnotations,
+  getAuthorAnnotations, isCustom,
 } from '../../src/transformers/transformer'
 import { getLookUpName } from '../../src/transformers/reference_mapping'
 import {
@@ -2337,6 +2337,17 @@ describe('transformer', () => {
           value: { bla: 'foo' }, field: mockObjType.fields.string,
         })).toEqual({ bla: 'foo' })
       })
+    })
+  })
+  describe('isCustom', () => {
+    it('should return true for custom apiNames', () => {
+      expect(isCustom('Custom__c')).toBeTrue()
+    })
+    it('should return false for undefined', () => {
+      expect(isCustom(undefined)).toBeFalse()
+    })
+    it('should return false for standard apiNames', () => {
+      expect(isCustom('Name')).toBeFalse()
     })
   })
 })

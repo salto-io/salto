@@ -19,11 +19,14 @@ import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import axios from 'axios'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { promises } from '@salto-io/lowerdash'
 import { createConnection } from './connection'
 import { OKTA } from '../constants'
 import { Credentials } from '../auth'
 import { LINK_HEADER_NAME } from './pagination'
+import { OktaClientRateLimitConfig } from '../config'
 
+const { sleep } = promises.timeout
 const {
   RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS, DEFAULT_RETRY_OPTS,
   throttle, logDecorator,
@@ -32,11 +35,17 @@ const log = logger(module)
 
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-  // TODO SALTO-2649: add better handling for rate limits
-  get: 2,
+  // the smallest concurrent rate limit is 15 (by plan)
+  get: 15,
   deploy: 2,
 }
-const DEFAULT_MAX_REQUESTS_PER_MINUTE = 700
+
+// We have a buffer to prevent reaching the rate limit with the initial request on parallel or consecutive fetches
+export const DEFAULT_RATE_LIMIT_BUFFER = 6
+
+// This is the most common rate limit according to https://developer.okta.com/docs/reference/rl-global-mgmt/
+const DEFAULT_MAX_REQUESTS_PER_MINUTE = 600
+export const UNLIMITED_MAX_REQUESTS_PER_MINUTE = -1
 
 const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
   get: 50,
@@ -45,11 +54,106 @@ const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
 // The expression match AppUserSchema endpoint used for fetch
 const APP_USER_SCHEMA_URL = /(\/api\/v1\/meta\/schemas\/apps\/[a-zA-Z0-9]+\/default)/
 
+type OktaRateLimits = {
+  rateLimitRemaining: number
+  rateLimitReset: number
+  currentlyRunning: number
+  maxPerMinute: number
+}
+
+const INIT_RATE_LIMITS: OktaRateLimits = {
+  rateLimitRemaining: 0,
+  rateLimitReset: 0,
+  currentlyRunning: 0,
+  maxPerMinute: 0,
+}
+
+// according to okta, the way to tell if it is an id is that includes both letters and numbers
+// this regex makes sure there is at least 1 letter and at least 1 number, and no slashes
+const ID_REGEX = '(?=.*[a-zA-Z])(?=.*\\d)(?!.*\\/).+'
+// According to https://developer.okta.com/docs/reference/rl-global-mgmt/
+const RATE_LIMIT_BUCKETS = [
+  new RegExp(`^/api/v1/apps/${ID_REGEX}$`), // has to be before /api/v1/apps.*
+  new RegExp('^/api/v1/apps.*'),
+  new RegExp(`^/api/v1/groups/${ID_REGEX}$`), // has to be before /api/v1/groups.*
+  new RegExp('^/api/v1/groups.*'),
+  new RegExp('^/api/v1/users.*'),
+  new RegExp('^/api/v1/users'),
+  new RegExp('^/api/v1/logs.*'),
+  new RegExp('^/api/v1/events.*'),
+  new RegExp('^/api/v1/certificateAuthorities.*'),
+  new RegExp('^/api/v1/devices.*'),
+  new RegExp('^/api/v1/org/email/bounces/remove-list'),
+  new RegExp('^/oauth2/v1/clients.*'),
+  /* these endpoints are not documented, but have their own rate limit */
+  new RegExp('^/api/v1/iam.*'),
+  new RegExp('^/api/v1/domains'),
+  new RegExp('^/api/v1/device-assurances'),
+  /**/
+  new RegExp('^/api/v1.*'), // Has to be last
+]
+
+export const waitForRateLimit = async (rateLimitReset: number, url: string): Promise<void> => {
+  // Calculate the time to wait until the rate limit is reset and wait
+  const currentTime = Date.now()
+  const rateLimitResetTime = Math.max(rateLimitReset - currentTime, 1000)
+  log.debug(`Waiting ${rateLimitResetTime}ms until rate limit is reset for ${url}`)
+  await sleep(rateLimitResetTime)
+}
+
+const shouldRunRequest = (rateLimits: OktaRateLimits, rateLimitBuffer: number): boolean => {
+  const isRateLimitDisabled = rateLimitBuffer === UNLIMITED_MAX_REQUESTS_PER_MINUTE
+  const isInitialRequest = _.isEqual(rateLimits, INIT_RATE_LIMITS)
+  const isWithinRateLimitBuffer = rateLimits.rateLimitRemaining - rateLimits.currentlyRunning > rateLimitBuffer
+  const didRateLimitReset = rateLimits.rateLimitReset < Date.now()
+  const isRateLimitResetSet = rateLimits.rateLimitReset !== INIT_RATE_LIMITS.rateLimitReset
+  const isMaxPerMinuteReached = rateLimits.currentlyRunning >= rateLimits.maxPerMinute - rateLimitBuffer
+
+  return isRateLimitDisabled
+    || isInitialRequest
+    || isWithinRateLimitBuffer
+    || (
+      didRateLimitReset
+      && isRateLimitResetSet // We need to make sure we have a valid reset time
+      && !isMaxPerMinuteReached // In case there were more waiting than the max per minute, we need this safety
+    )
+}
+export const updateRateLimits = (
+  rateLimits: OktaRateLimits,
+  headers: Record<string, string>
+): void => {
+  const updatedRateLimitRemaining = Number(headers['x-rate-limit-remaining'])
+  const updatedRateLimitReset = Number(headers['x-rate-limit-reset'])
+  const updateMaxPerMinute = Number(headers['x-rate-limit-limit'])
+  if (!_.isFinite(updatedRateLimitRemaining) || !_.isFinite(updatedRateLimitReset) || !_.isFinite(updateMaxPerMinute)) {
+    log.error(`Invalid getSinglePage response headers, remaining: ${updatedRateLimitRemaining}, reset: ${updatedRateLimitReset}`)
+    return
+  }
+  // If this is a new limitation, reset the remaining count
+  if (updatedRateLimitReset * 1000 !== rateLimits.rateLimitReset) {
+    rateLimits.rateLimitRemaining = updatedRateLimitRemaining
+    rateLimits.rateLimitReset = updatedRateLimitReset * 1000 // Convert to milliseconds
+  } else {
+    // In case an older request returned after a newer one, we want to take the minimum because it is the most updated
+    rateLimits.rateLimitRemaining = Math.min(updatedRateLimitRemaining, rateLimits.rateLimitRemaining)
+  }
+  rateLimits.maxPerMinute = updateMaxPerMinute
+}
+
 export default class OktaClient extends clientUtils.AdapterHTTPClient<
   Credentials, clientUtils.ClientRateLimitConfig
 > {
+  private readonly rateLimitBuffer: number
+
+  private rateLimits = RATE_LIMIT_BUCKETS.map(url => ({
+    url,
+    limits: { ...INIT_RATE_LIMITS },
+  }))
+
+  private defaultRateLimits = { ...INIT_RATE_LIMITS } // All other endpoints share the same rate limit
+
   constructor(
-    clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig>
+    clientOpts: clientUtils.ClientOpts<Credentials, OktaClientRateLimitConfig>
   ) {
     super(
       OKTA,
@@ -58,24 +162,47 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
       {
         pageSize: DEFAULT_PAGE_SIZE,
         rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
-        // TODO SALTO-2649: add better handling for rate limits
-        maxRequestsPerMinute: DEFAULT_MAX_REQUESTS_PER_MINUTE,
-        // wait for 10s before trying again, change after SALTO-2649
-        retry: { ...DEFAULT_RETRY_OPTS, retryDelay: 10000 },
+        maxRequestsPerMinute: clientOpts.config?.rateLimit?.rateLimitBuffer === UNLIMITED_MAX_REQUESTS_PER_MINUTE
+          ? DEFAULT_MAX_REQUESTS_PER_MINUTE // This means the dynamic calculation is disabled, so we use the default
+          : UNLIMITED_MAX_REQUESTS_PER_MINUTE, // Unlimited because the rate max requests is calculated dynamically
+        retry: DEFAULT_RETRY_OPTS,
       }
     )
+    this.rateLimitBuffer = clientOpts.config?.rateLimit?.rateLimitBuffer ?? DEFAULT_RATE_LIMIT_BUFFER
   }
 
   public get baseUrl(): string {
     return this.credentials.baseUrl
   }
 
+  private shouldUseDynamicRateLimit = (): boolean => this.rateLimitBuffer !== UNLIMITED_MAX_REQUESTS_PER_MINUTE
+
+  // This getSinglePage tracks the number of running requests per endpoint, with their rate limits and reset times
+  // It Pauses new requests when running requests approach the rate limit, factoring in a buffer
+  // Then it resumes when the rate limit resets.
+  // For more information: SALTO-4350
   public async getSinglePage(
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    const rateLimits = this.rateLimits.find(({ url }) => args.url.match(url))?.limits ?? this.defaultRateLimits
+
+    if (this.shouldUseDynamicRateLimit()) {
+      while (!shouldRunRequest(rateLimits, this.rateLimitBuffer)) {
+        // eslint-disable-next-line no-await-in-loop
+        await waitForRateLimit(rateLimits.rateLimitReset, args.url)
+      }
+    }
     try {
-      return await super.getSinglePage(args)
+      rateLimits.currentlyRunning += 1
+      const res = await super.getSinglePage(args)
+      if (res.headers && this.shouldUseDynamicRateLimit()) {
+        updateRateLimits(rateLimits, res.headers)
+      }
+      return res
     } catch (e) {
+      if (e.response?.headers && this.shouldUseDynamicRateLimit()) {
+        updateRateLimits(rateLimits, e.response?.headers)
+      }
       const status = e.response?.status
       // Okta returns 404 when trying fetch AppUserSchema for built-in apps
       if (status === 404 && args.url.match(APP_USER_SCHEMA_URL)) {
@@ -88,6 +215,9 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
         return { data: [], status }
       }
       throw e
+    } finally {
+      // Make sure to always decrease the counter
+      rateLimits.currentlyRunning -= 1
     }
   }
 

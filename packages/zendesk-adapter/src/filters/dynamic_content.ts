@@ -22,9 +22,9 @@ import { FilterCreator } from '../filter'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges, deployChangesByGroups } from '../deployment'
 import { API_DEFINITIONS_CONFIG } from '../config'
 import { applyforInstanceChangesOfType } from './utils'
+import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../constants'
 
 export const VARIANTS_FIELD_NAME = 'variants'
-export const DYNAMIC_CONTENT_ITEM_TYPE_NAME = 'dynamic_content_item'
 export const DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME = 'dynamic_content_item__variants'
 
 const { makeArray } = collections.array

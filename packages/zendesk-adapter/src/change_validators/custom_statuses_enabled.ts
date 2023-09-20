@@ -41,7 +41,7 @@ const CHILD_FIELD_SCHEMA = Joi.object({
     statuses: Joi.array().items(Joi.string()),
     custom_statuses: Joi.array(),
   }),
-})
+}).unknown()
 
 type Condition = {
   // eslint-disable-next-line camelcase
@@ -50,7 +50,7 @@ type Condition = {
 
 const CONDITION_SCHEMA = Joi.object({
   child_fields: Joi.array().items(CHILD_FIELD_SCHEMA).required(),
-})
+}).unknown()
 
 type TicketFormValue = {
   // eslint-disable-next-line camelcase
@@ -63,17 +63,15 @@ type TicketForm = InstanceElement & {
 
 const TICKET_FORM_SCHEMA = Joi.object({
   agent_conditions: Joi.array().items(CONDITION_SCHEMA),
-})
+  end_user_conditions: Joi.array().items(CONDITION_SCHEMA),
+}).unknown().or('agent_conditions', 'end_user_conditions')
 
-const isTicketForm = createSchemeGuardForInstance<TicketForm>(
-  TICKET_FORM_SCHEMA,
-  'Received an invalid value for TicketForm instance'
-)
+const isTicketFormWithConditions = createSchemeGuardForInstance<TicketForm>(TICKET_FORM_SCHEMA)
 
 /**
-  * If this function fails to identify whether custom statuses are enabled
-* it will log an error and return true to skip the validator.
-  */
+ * If this function fails to identify whether custom statuses are enabled
+ * it will log an error and return true to skip the validator.
+ */
 const areCustomStatusesEnabled = async (
   elementSource?: ReadOnlyElementsSource
 ): Promise<boolean> => {
@@ -134,11 +132,13 @@ const isTicketFormWithCustomStatus = (change: Change<ChangeDataType>): boolean =
   const data = getChangeData(change)
   if (data.elemID.typeName !== TICKET_FORM_TYPE_NAME
     || !isInstanceElement(data)
-    || !isTicketForm(data)) {
+    || !isTicketFormWithConditions(data)) {
     return false
   }
 
-  return hasConditionWithCustomStatuses(data.value.agent_conditions ?? [])
+  return hasConditionWithCustomStatuses(
+    (data.value.agent_conditions ?? []).concat(data.value.end_user_conditions ?? [])
+  )
 }
 
 const createErrorsForTicketFormsWithCustomStatuses = (

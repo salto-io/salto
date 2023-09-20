@@ -94,17 +94,17 @@ describe('scriptRunnerClient', () => {
       it('should fail when not html response', async () => {
         mockAxios.onGet(SCRIPT_RUNNER_VALID_URL).replyOnce(200, 'not another html answer')
         expect(await scriptRunnerClient.getSinglePage({ url: '/myPath' })).toEqual({ status: 401, data: [] })
-        expect(logErrorSpy).toHaveBeenCalledWith('Failed to get script runner token from scriptRunner service, could not find meta tag with name="sr-token"')
+        expect(logErrorSpy).toHaveBeenCalledWith('Failed to get script runner token from scriptRunner service, could not find meta tag with name="sr-token"', 'not another html answer')
       })
       it('should fail when not SR token', async () => {
         mockAxios.onGet(SCRIPT_RUNNER_VALID_URL).replyOnce(200, NO_SR_HTML)
         expect(await scriptRunnerClient.getSinglePage({ url: '/myPath' })).toEqual({ status: 401, data: [] })
-        expect(logErrorSpy).toHaveBeenCalledWith('Failed to get script runner token from scriptRunner service, could not find meta tag with name="sr-token"')
+        expect(logErrorSpy).toHaveBeenCalledWith('Failed to get script runner token from scriptRunner service, could not find meta tag with name="sr-token"', '<!DOCTYPE html><html><head></head></html>')
       })
       it('should fail when sr element does not have context', async () => {
         mockAxios.onGet(SCRIPT_RUNNER_VALID_URL).replyOnce(200, NO_CONTENT_HTML)
         expect(await scriptRunnerClient.getSinglePage({ url: '/myPath' })).toEqual({ status: 401, data: [] })
-        expect(logErrorSpy).toHaveBeenCalledWith('Failed to get script runner token from scriptRunner service, could not find content attribute"')
+        expect(logErrorSpy).toHaveBeenCalledWith('Failed to get script runner token from scriptRunner service, could not find content attribute"', '<!DOCTYPE html><html><head><meta name="sr-token"></head></html>')
       })
       it('should call send request decorator for page', async () => {
         mockAxios.onGet(SCRIPT_RUNNER_VALID_URL).replyOnce(200, VALID_HTML)

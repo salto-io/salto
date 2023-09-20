@@ -181,7 +181,7 @@ const aliasMap: Record<string, AliasData> = {
   },
   organization_field__custom_field_options: {
     aliasComponents: [{
-      fieldName: 'name',
+      fieldName: 'raw_name',
     }],
   },
   routing_attribute: {
@@ -221,7 +221,7 @@ const aliasMap: Record<string, AliasData> = {
   },
   [TICKET_FIELD_CUSTOM_FIELD_OPTION]: {
     aliasComponents: [{
-      fieldName: 'name',
+      fieldName: 'raw_name',
     }],
   },
   [TICKET_FORM_TYPE_NAME]: {
@@ -246,7 +246,7 @@ const aliasMap: Record<string, AliasData> = {
   },
   user_field__custom_field_options: {
     aliasComponents: [{
-      fieldName: 'name',
+      fieldName: 'raw_name',
     }],
   },
   view: {

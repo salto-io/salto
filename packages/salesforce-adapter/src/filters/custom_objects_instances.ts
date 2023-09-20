@@ -25,8 +25,14 @@ import {
 import SalesforceClient from '../client/client'
 import { SalesforceRecord } from '../client/types'
 import {
-  SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH, CUSTOM_OBJECT_ID_FIELD,
-  FIELD_ANNOTATIONS, UNLIMITED_INSTANCES_VALUE, DETECTS_PARENTS_INDICATOR,
+  SALESFORCE,
+  RECORDS_PATH,
+  INSTALLED_PACKAGES_PATH,
+  CUSTOM_OBJECT_ID_FIELD,
+  FIELD_ANNOTATIONS,
+  UNLIMITED_INSTANCES_VALUE,
+  DETECTS_PARENTS_INDICATOR,
+  API_NAME_SEPARATOR,
 } from '../constants'
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField } from '../transformers/transformer'
@@ -61,6 +67,8 @@ export type CustomObjectFetchSetting = {
   aliasFields: Field[]
   invalidIdFields: string[]
   invalidAliasFields: string[]
+  invalidManagedBySaltoField?: string
+  managedBySaltoField?: string
 }
 
 const defaultRecordKeysToOmit = ['attributes']
@@ -85,18 +93,24 @@ const getQueryableFields = (object: ObjectType): Field[] => (
 const buildQueryStrings = async (
   typeName: string,
   fields: Field[],
-  ids?: string[]
+  ids?: string[],
+  managedBySaltoField?: string,
 ): Promise<string[]> => {
   const fieldNames = await awu(fields)
     .flatMap(getFieldNamesForQuery)
     .toArray()
-  return buildSelectQueries(typeName, fieldNames, ids?.map(id => ({ Id: `'${id}'` })))
+  const queryConditions: Record<string, string>[] = [
+    ...makeArray(ids).map(id => ({ Id: `'${id}'` })),
+    ...(managedBySaltoField !== undefined ? [{ [managedBySaltoField]: 'TRUE' }] : []),
+  ]
+  return buildSelectQueries(typeName, fieldNames, queryConditions)
 }
 
 const getRecords = async (
   client: SalesforceClient,
   type: ObjectType,
   ids?: string[],
+  managedBySaltoField?: string,
 ): Promise<RecordById> => {
   const queryableFields = getQueryableFields(type)
   const typeName = await apiName(type)
@@ -104,7 +118,9 @@ const getRecords = async (
     log.debug(`Type ${typeName} had no queryable fields`)
     return {}
   }
-  const queries = await buildQueryStrings(typeName, queryableFields, ids)
+  log.debug('Fetching records for type %s%s', typeName, managedBySaltoField ? `, filtering by ${managedBySaltoField}` : '')
+  const queries = await buildQueryStrings(typeName, queryableFields, ids, managedBySaltoField)
+  log.debug('Queries: %o', queries)
   const records = await queryClient(client, queries)
   log.debug(`Fetched ${records.length} records of type ${typeName}`)
   return _.keyBy(
@@ -387,9 +403,10 @@ export const getAllInstances = async (
     customObjectFetchSetting,
     setting => setting.isBase
   )
+  log.debug('Base types: %o', _.keys(baseTypesSettings))
   const baseRecordByTypeAndId = await mapValuesAsync(
     baseTypesSettings,
-    setting => getRecords(client, setting.objectType)
+    setting => getRecords(client, setting.objectType, undefined, setting.managedBySaltoField)
   )
   // Get reference to records
   const referencedRecordsByTypeAndId = await getReferencedRecords(
@@ -444,15 +461,26 @@ export const getCustomObjectsFetchSettings = async (
   types: ObjectType[],
   dataManagement: DataManagement,
 ): Promise<CustomObjectFetchSetting[]> => {
-  const typeToFetchSettings = async (type: ObjectType): Promise<CustomObjectFetchSetting> => ({
-    objectType: type,
-    isBase: dataManagement.isObjectMatch(await apiName(type)),
-    ...await getIdFields(type, dataManagement),
-  })
+  const isInvalidManagedBySaltoField = (type: ObjectType): boolean => {
+    const managedBySaltoFieldName = dataManagement.managedBySaltoFieldForType(type)
+    if (managedBySaltoFieldName === undefined) {
+      return false
+    }
+    return (type.fields[managedBySaltoFieldName].annotations[FIELD_ANNOTATIONS.QUERYABLE] ?? true) === false
+  }
+  const typeToFetchSettings = async (type: ObjectType): Promise<CustomObjectFetchSetting> => {
+    const managedBySaltoFieldName = dataManagement.managedBySaltoFieldForType(type)
+    return {
+      objectType: type,
+      isBase: await dataManagement.shouldFetchObjectType(type) === 'Always',
+      ...await getIdFields(type, dataManagement),
+      managedBySaltoField: managedBySaltoFieldName,
+      invalidManagedBySaltoField: isInvalidManagedBySaltoField(type) ? managedBySaltoFieldName : undefined,
+    }
+  }
 
   return awu(types)
-    .filter(async type => dataManagement.isObjectMatch(await apiName(type))
-      || dataManagement.isReferenceAllowed(await apiName(type)))
+    .filter(async type => await dataManagement.shouldFetchObjectType(type) !== 'Never')
     .map(typeToFetchSettings)
     .toArray()
 }
@@ -499,6 +527,13 @@ const createInvalidAliasFieldFetchWarning = async (
   severity: 'Warning',
 })
 
+const createInvalidManagedBySaltoFieldFetchWarning = async (
+  { objectType, invalidManagedBySaltoField }: CustomObjectFetchSetting
+): Promise<SaltoError> => ({
+  message: `The field ${await apiName(objectType)}${API_NAME_SEPARATOR}${invalidManagedBySaltoField} is configured as the filter field in the saltoManagementFieldSettings.defaultFieldName section of the Salto environment configuration. However, the user configured for fetch does not have read access to this field. Records of type ${await apiName(objectType)} will not be fetched.`,
+  severity: 'Warning',
+})
+
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   name: 'customObjectsInstancesFilter',
   remote: true,
@@ -514,7 +549,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     )
     const [validFetchSettings, invalidFetchSettings] = _.partition(
       customObjectFetchSetting,
-      setting => setting.invalidIdFields.length === 0
+      setting => setting.invalidIdFields.length === 0 && setting.invalidManagedBySaltoField === undefined
     )
     const validChangesFetchSettings = await keyByAsync(
       validFetchSettings,
@@ -543,15 +578,23 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
           makeArray(setting.invalidIdFields),
         ))
       .toArray()
+
+    const invalidAliasFieldWarnings = awu(customObjectFetchSetting)
+      .filter(setting => setting.invalidAliasFields.length > 0)
+      .map(createInvalidAliasFieldFetchWarning)
+
+    const invalidManagedBySaltoFieldWarnings = awu(invalidFetchSettings)
+      .filter(setting => setting.invalidManagedBySaltoField !== undefined)
+      .map(createInvalidManagedBySaltoFieldFetchWarning)
+
     return {
       configSuggestions: [
         ...invalidFieldSuggestions,
         ...heavyTypesSuggestions,
         ...configChangeSuggestions,
       ],
-      errors: await awu(customObjectFetchSetting)
-        .filter(setting => setting.invalidAliasFields.length > 0)
-        .map(createInvalidAliasFieldFetchWarning)
+      errors: await invalidAliasFieldWarnings
+        .concat(invalidManagedBySaltoFieldWarnings)
         .toArray(),
     }
   },

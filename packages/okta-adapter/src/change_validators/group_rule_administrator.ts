@@ -26,6 +26,7 @@ const log = logger(module)
 
 /**
  * Verifies that the target groups for a GroupRule has no administrator roles.
+ * Notice RoleAssignment are not fetched by default.
  */
 export const groupRuleAdministratorValidator: ChangeValidator = async (changes, elementSource) => {
   if (elementSource === undefined) {
@@ -42,6 +43,9 @@ export const groupRuleAdministratorValidator: ChangeValidator = async (changes, 
   }
 
   const roleAssignments = await getInstancesFromElementSource(elementSource, [ROLE_ASSIGNMENT_TYPE_NAME])
+  if (_.isEmpty(roleAssignments)) {
+    return []
+  }
 
   const groupNamesWithRoles = new Set(roleAssignments.map(role => {
     const parent = getParents(role)?.[0]

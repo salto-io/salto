@@ -16,7 +16,8 @@
 import _ from 'lodash'
 import { ChangeValidator, getChangeData,
   isAdditionOrModificationChange, isInstanceElement } from '@salto-io/adapter-api'
-import { VARIANTS_FIELD_NAME, DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../filters/dynamic_content'
+import { VARIANTS_FIELD_NAME } from '../filters/dynamic_content'
+import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../constants'
 
 export const emptyVariantsValidator: ChangeValidator = async changes => (
   changes

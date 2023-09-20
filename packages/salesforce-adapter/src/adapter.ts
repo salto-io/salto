@@ -41,7 +41,6 @@ import customTypeSplit from './filters/custom_type_split'
 import customObjectAuthorFilter from './filters/author_information/custom_objects'
 import dataInstancesAuthorFilter from './filters/author_information/data_instances'
 import sharingRulesAuthorFilter from './filters/author_information/sharing_rules'
-import validationRulesAuthorFilter from './filters/author_information/validation_rules'
 import profileInstanceSplitFilter from './filters/profile_instance_split'
 import customObjectsInstancesFilter from './filters/custom_objects_instances'
 import profilePermissionsFilter from './filters/profile_permissions'
@@ -99,6 +98,7 @@ import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, l
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 import { getLookUpName, getLookupNameWithFallbackToElement } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
+import nestedInstancesAuthorInformation from './filters/author_information/nested_instances'
 import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
 import {
   CUSTOM_OBJECT,
@@ -159,10 +159,10 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: profilePathsFilter, addsNewInformation: true },
   { creator: territoryFilter },
   { creator: elementsUrlFilter, addsNewInformation: true },
+  { creator: nestedInstancesAuthorInformation, addsNewInformation: true },
   { creator: customObjectAuthorFilter, addsNewInformation: true },
   { creator: dataInstancesAuthorFilter, addsNewInformation: true },
   { creator: sharingRulesAuthorFilter, addsNewInformation: true },
-  { creator: validationRulesAuthorFilter, addsNewInformation: true },
   { creator: hideReadOnlyValuesFilter },
   { creator: currencyIsoCodeFilter },
   { creator: splitCustomLabels },
@@ -599,7 +599,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         types: metadataTypesToRetrieve,
         metadataQuery: this.fetchProfile.metadataQuery,
         maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest,
-        addNamespacePrefixToFullName: this.fetchProfile.addNamespacePrefixToFullName,
+        fetchProfile: this.fetchProfile,
         typesToSkip: new Set(this.metadataTypesOfInstancesFetchedInFilters),
       }),
       readInstances(metadataTypesToRead),

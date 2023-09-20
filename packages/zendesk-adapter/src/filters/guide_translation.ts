@@ -84,10 +84,23 @@ const needToOmit = (change: Change<InstanceElement>, languageSettingsByIds: Reco
 const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
   name: 'guideTranslationFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
+    const translationInstances = changes
+      .filter(change => TRANSLATION_TYPE_NAMES.includes(getChangeData(change).elemID.typeName))
+    if (_.isEmpty(translationInstances)) {
+      log.debug('there are no translation instances, not running guideTranslationFilter')
+      return {
+        deployResult: {
+          appliedChanges: [],
+          errors: [],
+        },
+        leftoverChanges: changes,
+      }
+    }
     const guideLanguageSettingsInstances = await (awu(await elementsSource.list())
       .filter(id => id.typeName === GUIDE_LANGUAGE_SETTINGS_TYPE_NAME)
       .map(async id => elementsSource.get(id))
       .toArray())
+    log.debug(`there are ${guideLanguageSettingsInstances.length} guide language setting instances`)
     const languageSettingsByIds = _.keyBy(guideLanguageSettingsInstances, instance => instance.elemID.name)
     const [translationChangesToIgnore, leftoverChanges] = _.partition(
       changes,

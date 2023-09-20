@@ -117,7 +117,12 @@ const filter: FilterCreator = ({ client, scriptRunnerClient, config, elementsSou
         },
       }
     }
-    const { errors, appliedChanges, valuesToDeploy: fragmentValuesToDeploy } = await getValuesToDeploy(relevantChanges, fragmentsFromService, 'id')
+    const { errors, appliedChanges, valuesToDeploy: fragmentValuesToDeploy } = await getValuesToDeploy({
+      changes: relevantChanges,
+      valuesFromService: fragmentsFromService,
+      identifier: 'id',
+      scriptRunnerApiDefinitions,
+    })
     if (!isFragmentsArray(fragmentValuesToDeploy)) {
       return {
         leftoverChanges,

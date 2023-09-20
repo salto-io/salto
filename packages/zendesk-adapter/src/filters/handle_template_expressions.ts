@@ -22,11 +22,14 @@ import { references as referencesUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
-import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from './dynamic_content'
 import {
   ZENDESK,
   TICKET_FIELD_TYPE_NAME,
-  ORG_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, GROUP_TYPE_NAME,
+  ORG_FIELD_TYPE_NAME,
+  USER_FIELD_TYPE_NAME,
+  GROUP_TYPE_NAME,
+  DYNAMIC_CONTENT_ITEM_TYPE_NAME,
+  CUSTOM_FIELD_OPTIONS_FIELD_NAME,
 } from '../constants'
 import { FETCH_CONFIG, ZendeskConfig } from '../config'
 
@@ -149,6 +152,19 @@ const potentialTemplates: PotentialTemplateField[] = [
     containerValidator: (container: Values): boolean =>
       container.name === 'uri_templates',
   },
+  ...[ORG_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, TICKET_FIELD_TYPE_NAME].flatMap(instanceType => [
+    {
+      instanceType: `${instanceType}__${CUSTOM_FIELD_OPTIONS_FIELD_NAME}`,
+      fieldName: 'raw_name',
+      containerValidator: NoValidator,
+    },
+    {
+      instanceType,
+      pathToContainer: [CUSTOM_FIELD_OPTIONS_FIELD_NAME],
+      fieldName: 'raw_name',
+      containerValidator: NoValidator,
+    },
+  ]),
 ]
 
 const seekAndMarkPotentialReferences = (formula: string): string => {

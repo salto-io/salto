@@ -17,14 +17,20 @@ import _ from 'lodash'
 import Joi from 'joi'
 import {
   Change, ChangeDataType, getChangeData, InstanceElement,
-  isAdditionOrModificationChange, isInstanceChange, ReferenceExpression, toChange,
+  isAdditionOrModificationChange, isInstanceChange, ReferenceExpression, toChange, Value,
 } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData, createSchemeGuard, getParents, resolveChangeElement, references } from '@salto-io/adapter-utils'
+import {
+  applyFunctionToChangeData,
+  createSchemeGuard,
+  getParents,
+  resolveChangeElement,
+  references,
+} from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { lookupFunc } from './field_references'
 import { ZendeskFetchConfig } from '../config'
-import { BRAND_TYPE_NAME } from '../constants'
+import { BRAND_TYPE_NAME, CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -110,4 +116,33 @@ export const getBrandsForGuide = (
     .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
     .filter(brandInstance => brandInstance.value.has_help_center)
     .filter(brandInstance => brandsRegexList.some(regex => new RegExp(regex).test(brandInstance.value.name)))
+}
+
+type CustomFieldOption = {
+  // eslint-disable-next-line camelcase
+  raw_name: string
+  name?: string
+}
+
+const isCustomFieldOption = (value: Value): value is CustomFieldOption =>
+  _.isPlainObject(value) && _.isString(value.raw_name)
+
+// Get all the custom field options from the changes, including the ones nested inside the children of the parent
+export const getCustomFieldOptionsFromChanges = (parentTypeName: string, childTypeName: string, changes: Change[])
+  : CustomFieldOption[] => {
+  const relevantInstances = changes
+    .filter(isAdditionOrModificationChange)
+    .filter(isInstanceChange)
+    .map(getChangeData)
+    .filter(instance => [parentTypeName, childTypeName].includes(instance.elemID.typeName))
+
+  const [parentInstances, childrenInstances] = _.partition(
+    relevantInstances,
+    instance => instance.elemID.typeName === parentTypeName,
+  )
+
+  return childrenInstances.map(instance => instance.value)
+    .concat(parentInstances.map(instance => instance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] ?? []))
+    .flat()
+    .filter(isCustomFieldOption)
 }

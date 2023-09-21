@@ -17,11 +17,16 @@
 
 import { isObjectType, CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { CUSTOMER_PERMISSIONS_TYPE } from '../constants'
+import { CALENDAR_TYPE, CUSTOMER_PERMISSIONS_TYPE, PORTAL_GROUP_TYPE, QUEUE_TYPE, REQUEST_TYPE_NAME } from '../constants'
 import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../utils'
 
 
-const jsmSupportedTypes = [CUSTOMER_PERMISSIONS_TYPE]
+const jsmSupportedTypes = [
+  CUSTOMER_PERMISSIONS_TYPE,
+  QUEUE_TYPE,
+  CALENDAR_TYPE,
+  REQUEST_TYPE_NAME,
+  PORTAL_GROUP_TYPE]
 
 const filterCreator: FilterCreator = ({ config }) => ({
   name: 'jsmTypesFetchFilter',

@@ -30,7 +30,7 @@ describe('errors', () => {
           { data: 'err' as unknown as clientUtils.ResponseValue, status: 400 }
         )
       )).toEqual(createSaltoElementError({
-        message: `Deployment of ${elemId.typeName} instance ${elemId.name} failed: Error: err`,
+        message: 'Error: err',
         severity: 'Error',
         elemID: elemId,
       }))
@@ -41,7 +41,7 @@ describe('errors', () => {
         elemId,
         new clientUtils.HTTPError('err', { data, status: 400 })
       )).toEqual(createSaltoElementError({
-        message: `Deployment of ${elemId.typeName} instance ${elemId.name} failed:${EOL}Error: err${EOL}{${EOL}  "error": "err"${EOL}}`,
+        message: `Error: err${EOL}{${EOL}  "error": "err"${EOL}}`,
         severity: 'Error',
         elemID: elemId,
       }))
@@ -52,7 +52,7 @@ describe('errors', () => {
         elemId,
         new clientUtils.HTTPError('err', { data, status: 403 })
       )).toEqual(createSaltoElementError({
-        message: `Deployment of ${elemId.typeName} instance ${elemId.name} failed:${EOL}${EOL}Error details:${EOL}* Title: one${EOL}  Detail: one detail${EOL}${EOL}* Title: two${EOL}  Detail: two detail${EOL}`,
+        message: `${EOL}Error details:${EOL}* Title: one${EOL}  Detail: one detail${EOL}${EOL}* Title: two${EOL}  Detail: two detail${EOL}`,
         severity: 'Error',
         elemID: elemId,
       }))
@@ -69,7 +69,7 @@ describe('errors', () => {
         elemId,
         new clientUtils.HTTPError('err', { data, status: 422 })
       )).toEqual(createSaltoElementError({
-        message: `Deployment of ${elemId.typeName} instance ${elemId.name} failed:${EOL}${EOL}${data.description}${EOL}${EOL}Error details:${EOL}* a-one des${EOL}* a-two des${EOL}* b-one des${EOL}* b-two des`,
+        message: `${EOL}${data.description}${EOL}${EOL}Error details:${EOL}* a-one des${EOL}* a-two des${EOL}* b-one des${EOL}* b-two des`,
         severity: 'Error',
         elemID: elemId,
       }))
@@ -80,7 +80,7 @@ describe('errors', () => {
         elemId,
         new clientUtils.HTTPError('err', { data, status: 400 })
       )).toEqual(createSaltoElementError({
-        message: `Deployment of ${elemId.typeName} instance ${elemId.name} failed:${EOL}${EOL}Error details:${EOL}* Title: a${EOL}  Detail: b${EOL}`,
+        message: `${EOL}Error details:${EOL}* Title: a${EOL}  Detail: b${EOL}`,
         severity: 'Error',
         elemID: elemId,
       }))

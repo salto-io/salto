@@ -13,70 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  CORE_ANNOTATIONS,
-  Element,
-  isElement,
-  isReferenceExpression,
-  ReadOnlyElementsSource,
-} from '@salto-io/adapter-api'
-import { getParents } from '@salto-io/adapter-utils'
-import _ from 'lodash'
-import { collections, values } from '@salto-io/lowerdash'
+import { CORE_ANNOTATIONS, Element } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { LocalFilterCreator } from '../filter'
-import {
-  namePartsFromApiName,
-  buildElementsSourceForFetch,
-  removeCustomSuffix,
-  getNamespace,
-} from './utils'
-import { NAMESPACE_SEPARATOR } from '../constants'
+import { getInstanceAlias } from './utils'
 import { isMetadataInstanceElement, MetadataInstanceElement } from '../transformers/transformer'
 
 
 const { awu } = collections.asynciterable
-const { isDefined } = values
 const log = logger(module)
-
-const getAliasFromFullName = (instanceFullName: string): string => {
-  const nameWithoutParent = _.last(namePartsFromApiName(instanceFullName)) ?? instanceFullName
-  return _.last(removeCustomSuffix(nameWithoutParent)
-    .split(NAMESPACE_SEPARATOR)) ?? instanceFullName
-}
-
-const getParentAlias = async (
-  instance: MetadataInstanceElement,
-  elementsSource: ReadOnlyElementsSource
-): Promise<string | undefined> => {
-  const [parent] = getParents(instance)
-  if (parent === undefined) {
-    return undefined
-  }
-  if (!isReferenceExpression(parent)) {
-    log.debug('parent is not a reference expression. parent: %o', parent)
-    return undefined
-  }
-  const resolvedParent = await parent.getResolvedValue(elementsSource)
-  return isElement(resolvedParent)
-    ? resolvedParent.annotations[CORE_ANNOTATIONS.ALIAS]
-    : undefined
-}
-
-const setInstanceAlias = async (
-  instance: MetadataInstanceElement,
-  elementsSource: ReadOnlyElementsSource
-): Promise<void> => {
-  const namespace = await getNamespace(instance)
-  const parentAlias = await getParentAlias(instance, elementsSource)
-  instance.annotations[CORE_ANNOTATIONS.ALIAS] = [
-    namespace ? `${namespace}:` : undefined,
-    getAliasFromFullName(instance.value.fullName),
-    parentAlias ? `(${parentAlias})` : undefined,
-  ].filter(isDefined)
-    .join(' ')
-    .replace(/_/g, ' ') // replace all underscores with spaces
-}
 
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'metadataInstancesAliases',
@@ -85,10 +31,14 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
       log.debug('not adding aliases to metadata instances.')
       return
     }
-    const elementsSource = buildElementsSourceForFetch(elements, config)
     await awu(elements)
       .filter(isMetadataInstanceElement)
-      .forEach(metadataInstance => setInstanceAlias(metadataInstance as MetadataInstanceElement, elementsSource))
+      .forEach(async instance => {
+        instance.annotations[CORE_ANNOTATIONS.ALIAS] = await getInstanceAlias(
+          instance as MetadataInstanceElement,
+          config.fetchProfile.isFeatureEnabled('useLabelAsAlias'),
+        )
+      })
   },
 })
 

@@ -35,6 +35,7 @@ import {
 import { client as clientUtils, config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import {
   getElemIdFuncWrapper,
+  inspectValue,
   logDuration,
   resolveChangeElement,
   resolveValues,
@@ -144,6 +145,7 @@ import routingAttributeValueDeployFilter from './filters/routing_attribute_value
 import localeFilter from './filters/locale'
 import ticketStatusCustomStatusDeployFilter from './filters/ticket_status_custom_status'
 import { filterOutInactiveInstancesForType } from './inactive'
+import handleIdenticalAttachmentConflicts from './filters/handle_identical_attachment_conflicts'
 import articleAttachmentsFilter from './filters/article/article_attachment'
 
 const { makeArray } = collections.array
@@ -237,6 +239,9 @@ export const DEFAULT_FILTERS = [
   articleBodyFilter,
   handleAppInstallationsFilter,
   handleTemplateExpressionFilter,
+  // handleIdenticalAttachmentConflicts needs to be before collisionErrorsFilter and after referencedIdFieldsFilter
+  // and articleBodyFilter
+  handleIdenticalAttachmentConflicts,
   collisionErrorsFilter, // needs to be after referencedIdFieldsFilter (which is part of the common filters)
   deployBrandedGuideTypesFilter,
   guideArrangePaths,
@@ -520,7 +525,8 @@ export default class ZendeskAdapter implements AdapterOperations {
       adapterName: ZENDESK,
       types: this.userConfig.apiDefinitions.types,
       shouldAddRemainingTypes: !isGuideInFetch,
-      supportedTypes,
+      // tags are "fetched" in a filter
+      supportedTypes: _.omit(supportedTypes, 'tag'),
       fetchQuery: this.fetchQuery,
       paginator: this.paginator,
       nestedFieldFinder: findDataField,
@@ -611,6 +617,25 @@ export default class ZendeskAdapter implements AdapterOperations {
     return undefined
   }
 
+  private async logSubscriptionData(): Promise<void> {
+    try {
+      const { data } = await this.client.getSinglePage({ url: '/api/v2/account/subscription.json' })
+      const subscriptionData = !_.isArray(data) ? data.subscription : undefined
+      if (subscriptionData) {
+        log.info(`Account subscription data: ${inspectValue(subscriptionData)}`)
+      } else {
+        log.info(`Account subscription data invalid: ${inspectValue(data)}`)
+      }
+    // This log is not crucial for the fetch to succeed, so we don't want to fail the fetch if it fails
+    } catch (e) {
+      if (e.response?.status === 422) {
+        log.info('Account subscription data unavailable because this is a sandbox environment')
+      } else {
+        log.info(`Account subscription data unavailable because of an error ${inspectValue(e)}`)
+      }
+    }
+  }
+
   /**
    * Fetch configuration elements in the given account.
    * Account credentials were given in the constructor.
@@ -619,6 +644,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch zendesk account configuration..')
     progressReporter.reportProgress({ message: 'Fetching types and instances' })
+    await this.logSubscriptionData()
     const localeError = await this.isLocaleEnUs()
     const { elements, configChanges, errors } = await this.getElements()
     log.debug('going to run filters on %d fetched elements', elements.length)
@@ -798,6 +824,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     return {
       changeValidator: createChangeValidator({
         client: this.client,
+        config: this.userConfig,
         apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
         fetchConfig: this.userConfig[FETCH_CONFIG],
         deployConfig: this.userConfig[DEPLOY_CONFIG],

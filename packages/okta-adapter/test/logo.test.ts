@@ -163,7 +163,7 @@ describe('logo filter', () => {
       }))
       const appLogoChange = toChange({ after: appLogoInstance })
       await expect(() => deployLogo(appLogoChange, client)).rejects.toThrow(
-        new Error('Deployment of AppLogo instance app1 failed with status code 400: some okta error. More info: cause1,cause2')
+        new Error('some okta error. More info: cause1,cause2 (status code: 400)')
       )
     })
   })

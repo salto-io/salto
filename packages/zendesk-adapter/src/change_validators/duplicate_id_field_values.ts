@@ -17,7 +17,7 @@ import {
   ChangeError,
   ChangeValidator,
   getChangeData, InstanceElement,
-  isAdditionChange, isInstanceChange,
+  isAdditionOrRemovalChange, isInstanceChange, isRemovalChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { elements as elementUtils } from '@salto-io/adapter-components'
@@ -53,7 +53,7 @@ export const duplicateIdFieldValuesValidator = (
 
   const changedInstancesByType = _.groupBy(
     changes
-      .filter(isAdditionChange)
+      .filter(isAdditionOrRemovalChange)
       .filter(isInstanceChange)
       .map(getChangeData)
       .filter(instance => Object.keys(ZENDESK_ID_FIELDS).includes(instance.elemID.typeName)),
@@ -61,7 +61,13 @@ export const duplicateIdFieldValuesValidator = (
   )
 
   const errors = await Promise.all(Object.entries(changedInstancesByType).map(async ([typeName, instances]) => {
-    const typeInstances = await getInstancesFromElementSource(elementSource, [typeName])
+    // Removals are not in the elementSource
+    const typeRemovals = changes
+      .filter(isRemovalChange)
+      .filter(isInstanceChange)
+      .map(getChangeData)
+      .filter(instance => instance.elemID.typeName === typeName)
+    const typeInstances = typeRemovals.concat(await getInstancesFromElementSource(elementSource, [typeName]))
     const instancesByZendeskId = _.groupBy(
       typeInstances,
       instance => toZendeskId(typeName, instance)
@@ -91,7 +97,7 @@ export const duplicateIdFieldValuesValidator = (
           elemID: instance.elemID,
           severity: 'Error',
           message: `${typeName} duplication detected`,
-          detailedMessage: `This ${typeName} cannot be deployed as it is a duplicate of '${instancesWithSameName.map(i => i.elemID.name).join(', ')}'. This likely indicates a misalignment of Salto IDs. To address this, please execute a fetch on both the source and target environments. Ensure you select the 'Regenerate Salto IDs' option in the advanced settings.`,
+          detailedMessage: `This ${typeName} cannot be deployed as it is a duplicate of '${instancesWithSameName.map(i => i.elemID.name).join(', ')}'. This likely indicates a misalignment of Salto IDs. To address this, please execute a fetch on both the source and target environments. Ensure you select the 'Regenerate Salto IDs' option in the advanced settings. More details can be found here: https://help.salto.io/en/articles/8290892-misalignment-of-salto-element-ids`,
         }
       // This is probably a duplication created by the user, we prevent it from being deployed
         : {

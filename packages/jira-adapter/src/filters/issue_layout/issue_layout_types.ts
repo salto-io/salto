@@ -23,20 +23,6 @@ export const createIssueLayoutType = (): {
   issueLayoutType: ObjectType
   subTypes: ObjectType[]
 } => {
-  const dataOwnerIssueLayoutType = new ObjectType({
-    elemID: new ElemID(JIRA, 'IssueLayoutDataOwner'),
-    fields: {
-      id: { refType: BuiltinTypes.STRING },
-    },
-  })
-  const onwerIssueLayoutType = new ObjectType({
-    elemID: new ElemID(JIRA, 'IssueLayoutOwner'),
-    fields: {
-      type: { refType: BuiltinTypes.STRING },
-      dataOwner: { refType: dataOwnerIssueLayoutType },
-    },
-  })
-
   const issueLayoutItemType = new ObjectType({
     elemID: new ElemID(JIRA, 'issueLayoutItem'),
     fields: {
@@ -66,9 +52,6 @@ export const createIssueLayoutType = (): {
       extraDefinerId: {
         refType: BuiltinTypes.NUMBER,
       },
-      owners: {
-        refType: new ListType(onwerIssueLayoutType),
-      },
       issueLayoutConfig: {
         refType: issueLayoutConfigType,
       },
@@ -79,8 +62,6 @@ export const createIssueLayoutType = (): {
   return {
     issueLayoutType,
     subTypes: [
-      dataOwnerIssueLayoutType,
-      onwerIssueLayoutType,
       issueLayoutItemType,
       issueLayoutConfigType,
     ],
@@ -94,15 +75,6 @@ export type screenScheme = {
   screens: {
   }
 }
-
-export type LayoutOwners = {
-  id: string
-}[]
-
-const LAYOUT_OWNER_RESPONSE_SCHEME = Joi.object({
-  id: Joi.string().required(),
-}).unknown(true).required()
-
 
 export type containerIssueLayoutResponse = {
   containerType: string
@@ -129,13 +101,6 @@ export type IssueLayoutResponse = {
       issueLayoutResult: {
           id: string
           name: string
-          usageInfo: {
-              edges: {
-                  node: {
-                      layoutOwners: LayoutOwners
-                  }
-              }[]
-          }
           containers: containerIssueLayoutResponse[]
       }
     }
@@ -160,13 +125,6 @@ export type IssueLayoutConfig = {
 export const ISSUE_LAYOUT_RESPONSE_SCHEME = Joi.object({
   issueLayoutConfiguration: Joi.object({
     issueLayoutResult: Joi.object({
-      usageInfo: Joi.object({
-        edges: Joi.array().items(Joi.object({
-          node: Joi.object({
-            layoutOwners: Joi.array().items(LAYOUT_OWNER_RESPONSE_SCHEME).required(),
-          }).unknown(true).required(),
-        }).unknown(true)).required(),
-      }).unknown(true).required(),
       containers: Joi.array().items(CONTAINER_ISSUE_LAYOUT_RESPONSE_SCHEME).required(),
     }).unknown(true).required(),
   }).unknown(true).required(),

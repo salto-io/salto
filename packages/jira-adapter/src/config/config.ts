@@ -54,6 +54,8 @@ type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
 
 type JiraDeployConfig = configUtils.UserDeployConfig & configUtils.DefaultMissingUserFallbackConfig & {
   forceDelete: boolean
+  taskMaxRetries: number
+  taskRetryDelay: number
 }
 
 type JiraFetchFilters = configUtils.DefaultFetchCriteria & {
@@ -70,6 +72,7 @@ type JiraFetchConfig = configUtils.UserFetchConfig<JiraFetchFilters> & {
   addAlias?: boolean
   splitFieldConfiguration?: boolean
   enableMissingReferences?: boolean
+  enableIssueLayouts?: boolean
 }
 
 export type MaskingConfig = {
@@ -152,10 +155,13 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     enableMissingReferences: true,
     removeDuplicateProjectRoles: true,
     addAlias: true,
+    enableIssueLayouts: true,
 
   },
   deploy: {
     forceDelete: false,
+    taskMaxRetries: 120,
+    taskRetryDelay: 1000,
   },
   masking: {
     automationHeaders: [],
@@ -225,6 +231,8 @@ export type ChangeValidatorName = (
   | 'projectCategory'
   | 'unresolvedFieldConfigurationItems'
   | 'customFieldsWith10KOptions'
+  | 'issueTypeHierarchy'
+  | 'automationProjects'
   )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -272,6 +280,8 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     projectCategory: { refType: BuiltinTypes.BOOLEAN },
     unresolvedFieldConfigurationItems: { refType: BuiltinTypes.BOOLEAN },
     customFieldsWith10KOptions: { refType: BuiltinTypes.BOOLEAN },
+    issueTypeHierarchy: { refType: BuiltinTypes.BOOLEAN },
+    automationProjects: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -310,6 +320,7 @@ const fetchConfigType = createUserFetchConfigType(
     addAlias: { refType: BuiltinTypes.BOOLEAN },
     splitFieldConfiguration: { refType: BuiltinTypes.BOOLEAN },
     enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
+    enableIssueLayouts: { refType: BuiltinTypes.BOOLEAN },
   },
   fetchFiltersType,
 )
@@ -349,6 +360,10 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
       'fetch.hideTypes',
       'fetch.enableMissingReferences',
       'fetch.addAlias',
+      'fetch.enableIssueLayouts',
+      'fetch.removeDuplicateProjectRoles',
+      'deploy.taskMaxRetries',
+      'deploy.taskRetryDelay',
       SCRIPT_RUNNER_API_DEFINITIONS]),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },

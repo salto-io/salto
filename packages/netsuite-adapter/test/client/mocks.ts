@@ -106,7 +106,7 @@ export const OBJECT_XML_WITH_HTML_CHARS = '<entitycustomfield scriptid="custenti
   + '<label>Golf &#x26; Co&#x2019;Co element&#x200B;Name</label>'
   + '</entitycustomfield>'
 
-export const readDirMockFunction = (): string[] => ['a.xml', 'b.xml', 'a.template.html']
+export const OBJECTS_DIR_FILES = ['a.xml', 'b.xml', 'a.template.html']
 
 export const readFileMockFunction = (filePath: string): string | Buffer => {
   if (filePath.includes('.template.')) {

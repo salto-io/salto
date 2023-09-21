@@ -14,9 +14,16 @@
 * limitations under the License.
 */
 import {
-  Change, DeployResult, ElemID,
+  Change,
+  DeployResult,
+  ElemID,
   getChangeData,
-  InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, ReadOnlyElementsSource,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  isInstanceElement,
+  isModificationChange, ModificationChange,
+  ReadOnlyElementsSource, toChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -25,7 +32,7 @@ import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import {
-  ACCOUNT_FEATURES_TYPE_NAME,
+  ACCOUNT_FEATURES_TYPE_NAME, TICKET_FIELD_TYPE_NAME,
   TICKET_FORM_TYPE_NAME,
   ZENDESK,
 } from '../constants'
@@ -121,6 +128,22 @@ const returnValidInstance = (inst: InstanceElement): InstanceElement => {
   return clonedInst
 }
 
+// this function returns an instance that contains the removed field. This is because zendesk does not allow removing
+// field and condition at the same time
+const getChangeWithoutRemovedFields = (change: ModificationChange<InstanceElement>): InstanceElement | undefined => {
+  const { before } = change.data
+  const { after } = change.data
+  const beforeFields: number[] = before.value.ticket_field_ids ?? []
+  const afterFields = new Set(after.value.ticket_field_ids ?? [])
+  const removedFields = beforeFields.filter(field => !afterFields.has(field))
+  if (_.isEmpty(removedFields)) {
+    return undefined
+  }
+  const clonedInst = after.clone()
+  clonedInst.value.ticket_field_ids = (clonedInst.value.ticket_field_ids ?? []).concat(removedFields)
+  return clonedInst
+}
+
 /**
  * this filter deploys ticket_form changes. if the instance has both statuses and custom_statuses under
  * required_on_statuses then it removes the statuses field.
@@ -143,9 +166,21 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
       .map(change => applyFunctionToChangeData(change, returnValidInstance))
       .toArray()
 
+    const allChanges = fixedTicketFormChanges.concat(otherTicketFormChanges)
+
     const tempDeployResult = await deployChanges(
-      [...fixedTicketFormChanges, ...otherTicketFormChanges],
+      allChanges,
       async change => {
+        if (isModificationChange(change)) {
+          const newAfter = getChangeWithoutRemovedFields(change)
+          const intermediateChange = newAfter !== undefined
+            ? toChange({ before: change.data.before, after: newAfter })
+            : undefined
+          if (intermediateChange !== undefined) {
+            // first deploy is without the removed fields
+            await deployChange(intermediateChange, client, config.apiDefinitions)
+          }
+        }
         await deployChange(change, client, config.apiDefinitions)
       }
     )
@@ -158,6 +193,55 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
       errors: tempDeployResult.errors,
     }
     return { deployResult, leftoverChanges }
+  },
+  // this onDeploy filter should be temporary and deleted once SALTO-4726 is implemented. This is because when
+  // custom_status ticket_field does not exist in the env and is referenced by a form, it is removed from the form and
+  // the deploy fails due to summarizeDeployChanges. This onDeploy filter restores ticket_field_ids to its initial state
+  onDeploy: async (changes: Change<InstanceElement>[]) => {
+    const ticketFormChanges = changes
+      .filter(isAdditionOrModificationChange)
+      .filter(change => TICKET_FORM_TYPE_NAME === getChangeData(change).elemID.typeName)
+    if (_.isEmpty(ticketFormChanges)) {
+      return
+    }
+
+    const ticketFields = await awu(await elementsSource.list())
+      .filter(id => id.typeName === TICKET_FIELD_TYPE_NAME)
+      .map(id => elementsSource.get(id))
+      .filter(isInstanceElement)
+      .toArray()
+    const ticketStatusTicketField = ticketFields.find(field => field.value.type === 'custom_status')
+    if (ticketStatusTicketField === undefined) {
+      log.error('could not find field of type custom_status not running on deploy of ticket_form')
+      return
+    }
+
+    // ticket status field exists in the account and therefore there is no need for the onDeploy
+    if (ticketStatusTicketField.value.id !== undefined) {
+      return
+    }
+
+    const ticketFormsToFieldIds = Object.fromEntries(await awu(ticketFormChanges)
+      .map(change => getChangeData(change).elemID)
+      .map(async id => {
+        const form = await elementsSource.get(id)
+        if (!isInstanceElement(form)) {
+          return [id.getFullName(), undefined]
+        }
+        const ticketFieldIds = form.value.ticket_field_ids // the references are unresolved
+        return [id.getFullName(), ticketFieldIds]
+      })
+      .toArray())
+
+    ticketFormChanges.forEach(change => {
+      const form = getChangeData(change)
+      const ticketFieldIds = ticketFormsToFieldIds[form.elemID.getFullName()]
+      if (ticketFieldIds === undefined) {
+        log.error(`could not find ticketFieldIds for form ${form.elemID.name}`)
+        return
+      }
+      form.value.ticket_field_ids = ticketFieldIds
+    })
   },
 })
 export default filterCreator

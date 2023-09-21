@@ -33,8 +33,10 @@ import {
   SaltoElementError,
   StaticFile,
 } from '@salto-io/adapter-api'
-import { normalizeFilePathPart, naclCase,
-  resolveChangeElement, safeJsonStringify, pathNaclCase, references, inspectValue } from '@salto-io/adapter-utils'
+import {
+  normalizeFilePathPart, naclCase,
+  resolveChangeElement, safeJsonStringify, pathNaclCase, references, inspectValue,
+} from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
@@ -93,7 +95,7 @@ const replaceAttachmentId = (
     log.error(`Failed to deploy macro because its attachment field has an invalid format: ${
       inspectValue(attachments)}`)
     throw createSaltoElementError({ // caught in try block
-      message: 'Failed to deploy macro because its attachment field has an invalid format',
+      message: 'Macro attachment field has an invalid format',
       severity: 'Error',
       elemID: parentInstance.elemID,
     })
@@ -275,7 +277,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           errors: childrenChanges
             .map(getChangeData)
             .map(e => createSaltoElementError({
-              message: `Failed to update ${e.elemID.getFullName()} since it has no valid parent`,
+              message: 'Attachment is not linked to a valid macro',
               severity: 'Error',
               elemID: e.elemID,
             })),
@@ -283,6 +285,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         leftoverChanges,
       }
     }
+
     const childFullNameToInstance: Record<string, InstanceElement> = {}
     const resolvedChildrenChanges = await awu(childrenChanges)
       .map(change => resolveChangeElement(change, lookupFunc))

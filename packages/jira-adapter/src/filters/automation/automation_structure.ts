@@ -289,7 +289,7 @@ const revertCompareFieldValueStructure = async (instance: InstanceElement): Prom
   })).value
 }
 
-const getScope = (resource: string): { projectId?: string; projectTypeKey?: string } | undefined => {
+const getScope = (resource: string): { projectId?: string; projectTypeKey?: string } | 'GLOBAL' | undefined => {
   const projectScope = resource.match(PROJECT_SCOPE_REGEX)
   if (projectScope) {
     return { projectId: projectScope[1] }
@@ -302,20 +302,37 @@ const getScope = (resource: string): { projectId?: string; projectTypeKey?: stri
     }
     return { projectTypeKey }
   }
-  if (!resource.match(GLOBAL_SCOPE_REGEX)) {
-    log.error(`Failed to convert automation rule scope, found unknown pattern: ${resource}`)
+  if (resource.match(GLOBAL_SCOPE_REGEX)) {
+    return 'GLOBAL'
   }
+  log.error(`Failed to convert automation rule scope, found unknown pattern: ${resource}`)
   return undefined
 }
 
-const convertRuleScopeToProjects = (instance: InstanceElement): void => {
-  const { ruleScope } = instance.value
+export const convertRuleScopeValueToProjects = (values: Values): {
+  projectId?: string
+  projectTypeKey?: string
+}[] | undefined => {
+  const { ruleScope } = values
   if (!isRuleScope(ruleScope)) {
-    return
+    return undefined
   }
-  instance.value.projects = ruleScope.resources
+  const rules = ruleScope.resources
     .map(getScope)
     .filter(isDefined)
+
+  const [globalRules, nonGlobalRules] = _.partition(rules, (rule): rule is 'GLOBAL' => rule === 'GLOBAL')
+
+  if (globalRules.length > 0) {
+    return undefined
+  }
+
+  return nonGlobalRules
+}
+
+
+const convertRuleScopeToProjects = (instance: InstanceElement): void => {
+  instance.value.projects = convertRuleScopeValueToProjects(instance.value)
 }
 
 const filter: FilterCreator = ({ client }) => {

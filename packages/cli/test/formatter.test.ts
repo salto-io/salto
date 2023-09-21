@@ -79,25 +79,25 @@ describe('formatter', () => {
     severity: 'Info',
   }
   const workspaceDeployProblems: DeployError[] = [{
-    elemID: new ElemID('salesforce', 'TestType'),
+    elemID: new ElemID('salesforce', 'TestType1'),
     message: 'my error message 1',
     severity: 'Error',
     groupId: 'test group',
   },
   {
-    elemID: new ElemID('salesforce', 'TestType'),
+    elemID: new ElemID('salesforce', 'TestType2'),
     message: 'my error message 2',
     severity: 'Error',
     groupId: 'test group',
   },
   {
-    elemID: new ElemID('salesforce', 'TestType'),
+    elemID: new ElemID('salesforce', 'TestType3'),
     message: 'my warning message',
     severity: 'Warning',
     groupId: 'test group',
   },
   {
-    elemID: new ElemID('salesforce', 'TestType'),
+    elemID: new ElemID('salesforce', 'TestType4'),
     message: 'my info message',
     severity: 'Info',
     groupId: 'test group',
@@ -576,6 +576,12 @@ describe('formatter', () => {
       expect(formattedErrors).toContain('my error message 2')
       expect(formattedErrors).toContain('my warning message')
       expect(formattedErrors).toContain('my info message')
+    })
+    it('should contain element ID for salto element errors', () => {
+      expect(formattedErrors).toContain('salesforce.TestType1')
+      expect(formattedErrors).toContain('salesforce.TestType2')
+      expect(formattedErrors).toContain('salesforce.TestType3')
+      expect(formattedErrors).toContain('salesforce.TestType4')
     })
   })
 })

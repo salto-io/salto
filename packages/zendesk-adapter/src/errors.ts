@@ -94,12 +94,11 @@ export const getZendeskError = (elemID: ElemID, error: Error): SaltoElementError
       elemID,
     })
   }
-  const baseErrorMessage = `Deployment of ${elemID.typeName} instance ${elemID.name} failed:`
   const logBaseErrorMessage = `Deployment of ${elemID.getFullName()} failed:`
   const errorData = error.response.data
   if (!_.isPlainObject(errorData)) {
     return createSaltoElementError({
-      message: `${baseErrorMessage} ${error}`,
+      message: `${error}`,
       severity: 'Error',
       elemID,
     })
@@ -108,14 +107,14 @@ export const getZendeskError = (elemID: ElemID, error: Error): SaltoElementError
   const errorGenerated = generateErrorMessage(errorData)
   if (!_.isEmpty(errorGenerated)) {
     return createSaltoElementError({
-      message: [baseErrorMessage, ...errorGenerated].join(EOL),
+      message: [...errorGenerated].join(EOL),
       severity: 'Error',
       elemID,
     })
   }
   const errorMessage = [`${error}`, safeJsonStringify(error.response.data, undefined, 2)].join(EOL)
   return createSaltoElementError({
-    message: [baseErrorMessage, errorMessage].join(EOL),
+    message: errorMessage,
     severity: 'Error',
     elemID,
   })

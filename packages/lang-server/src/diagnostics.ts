@@ -26,22 +26,25 @@ export interface SaltoDiagnostic {
   severity: SeverityLevel
 }
 
-export type WorkspaceSaltoDiagnostics = Record<string, SaltoDiagnostic[]>
+export type WorkspaceSaltoDiagnostics = {
+  errors: Record<string, SaltoDiagnostic[]>
+  totalNumberOfErrors: number
+}
 
-const MAX_WORKSPACE_ERRORS = 30
+const MAX_WORKSPACE_ERRORS = 50
 
 export const getDiagnostics = async (
   workspace: EditorWorkspace,
 ): Promise<WorkspaceSaltoDiagnostics> => {
-  const emptyDiagFiles: WorkspaceSaltoDiagnostics = _.fromPairs(
+  const emptyDiagFiles: Record<string, SaltoDiagnostic[]> = _.fromPairs(
     (await workspace.listNaclFiles())
       .map(filename => [filename, []])
   )
-  const errors = Array.from(wu((await workspace.errors()).all())
+  const errorsAndWarnings = Array.from((await workspace.errors()).all())
+  const errors = errorsAndWarnings
     .filter(e => e.severity === 'Error')
-    .slice(0, MAX_WORKSPACE_ERRORS))
-  const errorsAndWarnings = (await workspace.errors()).all()
   const errorsToDisplay = _.isEmpty(errors) ? errorsAndWarnings : errors
+  const totalNumberOfErrors = _.isEmpty(errors) ? errorsAndWarnings.length : errors.length
   const workspaceErrors = await Promise.all(
     wu(errorsToDisplay)
       .slice(0, MAX_WORKSPACE_ERRORS)
@@ -67,5 +70,5 @@ export const getDiagnostics = async (
     .flatten()
     .groupBy('filename')
     .value()
-  return { ...emptyDiagFiles, ...diag }
+  return { errors: { ...emptyDiagFiles, ...diag }, totalNumberOfErrors }
 }

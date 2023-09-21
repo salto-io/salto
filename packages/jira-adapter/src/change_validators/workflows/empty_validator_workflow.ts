@@ -22,8 +22,6 @@ export const CONFIGURATION_VALIDATOR_TYPE = new Set([
   'FieldChangedValidator',
   'FieldHasSingleValueValidator',
   'ParentStatusValidator',
-  'ProFormaFormsAttachedValidator',
-  'ProFormaFormsSubmittedValidator',
   'DateFieldValidator',
   'PermissionValidator',
   'PreviousStatusValidator',

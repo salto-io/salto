@@ -15,7 +15,7 @@
 */
 import { isInstanceChange, getChangeData, isAdditionChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { isFreeLicense } from '../../utils'
+import { isAllFreeLicense } from '../../utils'
 import { PERMISSION_SCHEME_TYPE_NAME } from '../../constants'
 import { FilterCreator } from '../../filter'
 
@@ -29,7 +29,7 @@ const filter: FilterCreator = ({ client, elementsSource }) => ({
   name: 'deployPermissionSchemeFilter',
   deploy: async changes => {
     if (client.isDataCenter
-      || !await isFreeLicense(elementsSource)) {
+      || !await isAllFreeLicense(elementsSource)) {
       return {
         leftoverChanges: changes,
         deployResult: {

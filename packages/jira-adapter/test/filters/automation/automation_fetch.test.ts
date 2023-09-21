@@ -50,6 +50,9 @@ describe('automationFetchFilter', () => {
               projectId: '2',
             },
           ],
+          ruleScope: {
+            resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8:project/2'],
+          },
         },
       ],
     },
@@ -131,6 +134,9 @@ describe('automationFetchFilter', () => {
             projectId: '2',
           },
         ],
+        ruleScope: {
+          resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8:project/2'],
+        },
       })
 
       expect(connection.post).toHaveBeenCalledWith(
@@ -197,6 +203,9 @@ describe('automationFetchFilter', () => {
             projectId: '2',
           },
         ],
+        ruleScope: {
+          resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8:project/2'],
+        },
       })
 
       expect(connection.post).not.toHaveBeenCalled()

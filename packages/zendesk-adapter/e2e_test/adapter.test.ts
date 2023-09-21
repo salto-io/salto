@@ -377,7 +377,6 @@ describe('Zendesk adapter E2E', () => {
         `${ticketFieldInstance.elemID.name}__${ticketFieldOption1Value}`,
         ticketFieldOptionType,
         {
-          name: ticketFieldOption1Name,
           raw_name: ticketFieldOption1Name,
           value: ticketFieldOption1Value,
         },
@@ -394,7 +393,6 @@ describe('Zendesk adapter E2E', () => {
         `${ticketFieldInstance.elemID.name}__${ticketFieldOption2Value}`,
         ticketFieldOptionType,
         {
-          name: ticketFieldOption2Name,
           raw_name: ticketFieldOption2Name,
           value: ticketFieldOption2Value,
         },
@@ -426,7 +424,6 @@ describe('Zendesk adapter E2E', () => {
         `${userFieldInstance.elemID.name}__${userFieldOption1Value}`,
         userFieldOptionType,
         {
-          name: userFieldOption1Name,
           raw_name: userFieldOption1Name,
           value: userFieldOption1Value,
         },
@@ -443,7 +440,6 @@ describe('Zendesk adapter E2E', () => {
         `${userFieldInstance.elemID.name}__${userFieldOption2Value}`,
         userFieldOptionType,
         {
-          name: userFieldOption2Name,
           raw_name: userFieldOption2Name,
           value: userFieldOption2Value,
         },
@@ -738,7 +734,7 @@ describe('Zendesk adapter E2E', () => {
           file_name: fileName,
           content_type: 'image/png',
           content: new StaticFile({
-            filepath: `${ZENDESK}/${ARTICLE_ATTACHMENTS_FIELD}/${GUIDE}/brands/${HELP_CENTER_BRAND_NAME}/categories/${categoryName}/sections/${sectionName}/articles/${articleName}/article_attachment/${fileName}`,
+            filepath: `${ZENDESK}/${ARTICLE_ATTACHMENTS_FIELD}/${GUIDE}/brands/${HELP_CENTER_BRAND_NAME}/categories/${categoryName}/sections/${sectionName}/articles/${articleName}/article_attachment/${fileName}/80f6f478ed_${fileName}`,
             content: fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/images/nacl.png`)),
           }),
           inline: false,
@@ -754,7 +750,7 @@ describe('Zendesk adapter E2E', () => {
           file_name: inlineFileName,
           content_type: 'image/png',
           content: new StaticFile({
-            filepath: `${ZENDESK}/${ARTICLE_ATTACHMENTS_FIELD}/${GUIDE}/brands/${HELP_CENTER_BRAND_NAME}/categories/${categoryName}/sections/${sectionName}/articles/${articleName}/article_attachment/${inlineFileName}`,
+            filepath: `${ZENDESK}/${ARTICLE_ATTACHMENTS_FIELD}/${GUIDE}/brands/${HELP_CENTER_BRAND_NAME}/categories/${categoryName}/sections/${sectionName}/articles/${articleName}/article_attachment/${inlineFileName}/80f6f478ed_${inlineFileName}`,
             content: fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/images/nacl.png`)),
           }),
           inline: true,

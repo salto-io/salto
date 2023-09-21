@@ -128,11 +128,12 @@ export const buildInMemState = (
       const updatedElem = (await state.get(elemTopLevel)).clone()
       applyDetailedChanges(updatedElem, elemChanges)
       await state.set(updatedElem)
-      await deleteRemovedStaticFiles(elemChanges)
     })
+    await deleteRemovedStaticFiles(changes)
   }, 'updateStateElements')
 
   // Sets the element and delete all the static files that no longer exists on it
+  // should not be used in case of regenerate salto ids since it looks only at one element
   const setElement = async (element: Element): Promise<void> => {
     const state = await stateData()
     const beforeElement = await state.elements.get(element.elemID)

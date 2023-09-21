@@ -2735,6 +2735,7 @@ describe('Salesforce adapter E2E with real account', () => {
             fileProps,
             new Set((await instance.getType()).annotations.hasMetaFile ? [type] : []),
             new Set(constants.METADATA_CONTENT_FIELD in instance.value ? [type] : []),
+            false,
           )
           return awu(instances)
             .filter(async ({ file }) => file.fullName === await apiName(instance))

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Adapter, ElemID, CORE_ANNOTATIONS, BuiltinTypes, ObjectType, ListType } from '@salto-io/adapter-api'
+import { Adapter, ElemID, CORE_ANNOTATIONS, BuiltinTypes, ObjectType, ListType, GetCustomReferencesFunc } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import DummyAdapter from './adapter'
 import { GeneratorParams, DUMMY_ADAPTER, defaultParams, changeErrorType } from './generator'
@@ -33,8 +33,20 @@ export const configType = new ObjectType({
     extraNaclPath: { refType: BuiltinTypes.STRING },
     generateEnvName: { refType: BuiltinTypes.STRING },
     fieldsToOmitOnDeploy: { refType: new ListType(BuiltinTypes.STRING) },
+    // Exclude elements from the fetch by their elemIDs
+    elementsToExclude: { refType: new ListType(BuiltinTypes.STRING) },
   },
 })
+
+const getCustomReferences: GetCustomReferencesFunc = async elements => (
+  elements.find(e => e.elemID.getFullName() === 'dummy.Full.instance.FullInst1')
+    ? [{
+      source: ElemID.fromFullName('dummy.Full.instance.FullInst1.strField'),
+      target: ElemID.fromFullName('dummy.Full.instance.FullInst2.strField'),
+      type: 'weak',
+    }]
+    : []
+)
 
 export const adapter: Adapter = {
   operations: context => new DummyAdapter(context.config?.value as GeneratorParams),
@@ -43,4 +55,5 @@ export const adapter: Adapter = {
     credentialsType: new ObjectType({ elemID: new ElemID(DUMMY_ADAPTER) }),
   } }),
   configType,
+  getCustomReferences,
 }

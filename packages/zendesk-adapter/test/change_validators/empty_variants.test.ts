@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { ZENDESK } from '../../src/constants'
+import { DYNAMIC_CONTENT_ITEM_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { emptyVariantsValidator } from '../../src/change_validators/empty_variants'
-import { VARIANTS_FIELD_NAME, DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../../src/filters/dynamic_content'
+import { VARIANTS_FIELD_NAME } from '../../src/filters/dynamic_content'
 
 describe('emptyVariantsValidator', () => {
   const itemType = new ObjectType({

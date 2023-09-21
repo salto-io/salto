@@ -195,7 +195,7 @@ export const deployFuncCreator = (fieldName: string): DeployFuncType =>
     const { ids } = instance.value
     if (!idsAreNumbers(ids)) {
       throw createSaltoElementError({ // caught in try block
-        message: `Not all the ids of ${instance.elemID.getFullName()} are numbers: ${inspectValue(ids, { maxArrayLength: null })}`,
+        message: `Not all the ids are numbers: ${inspectValue(ids, { maxArrayLength: null })}`,
         severity: 'Error',
         elemID: getChangeData(change).elemID,
       })

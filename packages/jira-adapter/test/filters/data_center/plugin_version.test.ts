@@ -61,7 +61,7 @@ describe('plugin_version', () => {
       }],
     })
   })
-  it('should raise an info if plugin version is newer', async () => {
+  it('should not raise an error if plugin version is newer', async () => {
     const newerVersion = changeVersion(PLUGIN_VERSION_NUMBER, 1)
     mockConnection.get.mockResolvedValueOnce({
       status: 200,
@@ -70,12 +70,7 @@ describe('plugin_version', () => {
       },
     })
     const errors = await filter.onFetch([])
-    expect(errors).toEqual({
-      errors: [{
-        message: 'The Salto for Jira DC addon version number is higher than expected. You may be running an outdated Salto CLI; please update it to the latest version from https://github.com/salto-io/salto/releases',
-        severity: 'Info',
-      }],
-    })
+    expect(errors).toEqual(undefined)
   })
   it('should raise a warning if server answer is not in the correct format', async () => {
     mockConnection.get.mockResolvedValueOnce({

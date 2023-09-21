@@ -100,8 +100,10 @@ describe(customStatusesEnabledValidator.name, () => {
         const ticketFormInstance = new InstanceElement('test', ticketFormObjectType, {
           agent_conditions: [
             {
+              parent_field_id: '123',
               child_fields: [
                 {
+                  id: '123',
                   required_on_statuses: {
                     type: 'testType',
                     custom_statuses: ['custom status 1'],

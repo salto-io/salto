@@ -161,6 +161,7 @@ export type GeneratorParams = {
     extraNaclPath?: string
     generateEnvName? : string
     fieldsToOmitOnDeploy?: string[]
+    elementsToExclude?: string[]
 }
 
 export const defaultParams: Omit<GeneratorParams, 'extraNaclPath'> = {
@@ -805,6 +806,7 @@ export const generateElements = async (
   )
   const envObjects = generateEnvElements()
   progressReporter.reportProgress({ message: 'Generation done' })
+  const elementsToExclude = new Set(params.elementsToExclude ?? [])
   return [
     ...defaultTypes,
     ...primtiveTypes,
@@ -816,5 +818,5 @@ export const generateElements = async (
     ...extraElements,
     ...defaultExtraElements,
     ...envObjects,
-  ]
+  ].filter(e => !elementsToExclude.has(e.elemID.getFullName()))
 }

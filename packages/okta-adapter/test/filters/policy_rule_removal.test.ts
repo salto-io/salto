@@ -112,7 +112,7 @@ describe('policyRuleRemoval', () => {
       const result = await filter.deploy([toChange({ before: accessRuleInstance })])
       expect(result.deployResult.appliedChanges).toHaveLength(0)
       expect(result.deployResult.errors).toHaveLength(1)
-      expect(result.deployResult.errors.map(e => e.message)).toEqual(['Deployment of AccessPolicyRule instance accessPolicyRule failed with status code 400: cannot remove rule for some reason. More info: reason 1,reason 2'])
+      expect(result.deployResult.errors.map(e => e.message)).toEqual(['cannot remove rule for some reason. More info: reason 1,reason 2 (status code: 400)'])
     })
 
     it('should return changes if policy rule removal succeeded', async () => {

@@ -21,7 +21,7 @@ import JSZip from 'jszip'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { Values, StaticFile, InstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { MapKeyFunc, mapKeysRecursive, TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import { MapKeyFunc, mapKeysRecursive, safeJsonStringify, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { API_VERSION } from '../client/client'
 import {
   INSTANCE_FULL_NAME_FIELD, IS_ATTRIBUTE, METADATA_CONTENT_FIELD, SALESFORCE, XML_ATTRIBUTE_PREFIX,
@@ -248,11 +248,34 @@ export const xmlToValues = (xmlAsString: string): { values: Values; typeName: st
   return { typeName, values: _.omit(values, xmlnsAttributes) }
 }
 
-const extractFileNameToData = async (zip: JSZip, fileName: string, withMetadataSuffix: boolean,
-  complexType: boolean, namespacePrefix?: string): Promise<Record<string, Buffer>> => {
+type ExtractFileNameToDataParams = {
+  zip: JSZip
+  fileName: string
+  withMetadataSuffix: boolean
+  complexType: boolean
+  namespacePrefix?: string
+  fixRetrieveFilePaths: boolean
+}
+
+
+const fixPath = (path: string): string => (
+  // The fileName of Workflow instances on Custom Objects return as "Workflow/WorkflowName.workflow"
+  // while the actual file in the zip is "workflows/WorkflowName.workflow"
+  path.replace('Workflow/', 'workflows/')
+)
+
+const extractFileNameToData = async ({
+  zip, fileName, withMetadataSuffix, complexType, namespacePrefix, fixRetrieveFilePaths,
+}: ExtractFileNameToDataParams): Promise<Record<string, Buffer>> => {
   if (!complexType) { // this is a single file
-    const zipFile = zip.file(`${PACKAGE}/${fileName}${withMetadataSuffix ? METADATA_XML_SUFFIX : ''}`)
-    return zipFile === null ? {} : { [zipFile.name]: await zipFile.async('nodebuffer') }
+    const path = `${PACKAGE}/${fileName}${withMetadataSuffix ? METADATA_XML_SUFFIX : ''}`
+    const fixedFilePath = fixRetrieveFilePaths ? fixPath(path) : path
+    const zipFile = zip.file(fixedFilePath)
+    if (zipFile === null) {
+      log.warn('Could not find file %s in zip', fixedFilePath)
+      return {}
+    }
+    return { [zipFile.name]: await zipFile.async('nodebuffer') }
   }
   // bring all matching files from the fileName directory
   const instanceFolderName = namespacePrefix === undefined ? fileName : fileName.replace(`${namespacePrefix}${NAMESPACE_SEPARATOR}`, '')
@@ -268,12 +291,18 @@ export const fromRetrieveResult = async (
   fileProps: ReadonlyArray<FileProperties>,
   typesWithMetaFile: Set<string>,
   typesWithContent: Set<string>,
+  fixRetrieveFilePaths: boolean,
 ): Promise<{ file: FileProperties; values: MetadataValues}[]> => {
   const fromZip = async (zip: JSZip, file: FileProperties): Promise<MetadataValues | undefined> => {
     // extract metadata values
-    const fileNameToValuesBuffer = await extractFileNameToData(zip, file.fileName,
-      typesWithMetaFile.has(file.type) || isComplexType(file.type), isComplexType(file.type),
-      file.namespacePrefix)
+    const fileNameToValuesBuffer = await extractFileNameToData({
+      zip,
+      fileName: file.fileName,
+      withMetadataSuffix: typesWithMetaFile.has(file.type) || isComplexType(file.type),
+      complexType: isComplexType(file.type),
+      namespacePrefix: file.namespacePrefix,
+      fixRetrieveFilePaths,
+    })
     if (Object.values(fileNameToValuesBuffer).length !== 1) {
       if (file.fullName !== UNFILED_PUBLIC_FOLDER) {
         log.warn(`Expected to retrieve only single values file for instance (type:${file.type}, fullName:${file.fullName}), found ${Object.values(fileNameToValuesBuffer).length}`)
@@ -288,8 +317,14 @@ export const fromRetrieveResult = async (
 
     // add content fields
     if (typesWithContent.has(file.type) || isComplexType(file.type)) {
-      const fileNameToContent = await extractFileNameToData(zip, file.fileName, false,
-        isComplexType(file.type), file.namespacePrefix)
+      const fileNameToContent = await extractFileNameToData({
+        zip,
+        fileName: file.fileName,
+        withMetadataSuffix: false,
+        complexType: isComplexType(file.type),
+        namespacePrefix: file.namespacePrefix,
+        fixRetrieveFilePaths,
+      })
       if (_.isEmpty(fileNameToContent)) {
         log.warn(`Could not find content files for instance (type:${file.type}, fullName:${file.fullName})`)
         return undefined
@@ -312,6 +347,7 @@ export const fromRetrieveResult = async (
   }
 
   const zip = await new JSZip().loadAsync(Buffer.from(result.zipFile, 'base64'))
+  log.debug(`retrieved zip contains the following files: ${safeJsonStringify(Object.keys(zip.files))}`)
   const instances = await Promise.all(fileProps.map(
     async file => {
       const values = await fromZip(zip, file)

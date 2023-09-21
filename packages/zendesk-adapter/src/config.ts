@@ -79,6 +79,7 @@ export type ZendeskFetchConfig = configUtils.UserFetchConfig
   enableMissingReferences?: boolean
   includeAuditDetails?: boolean
   addAlias?: boolean
+  handleIdenticalAttachmentConflicts?: boolean
   greedyAppReferences?: boolean
   appReferenceLocators?: IdLocator[]
   guide?: Guide
@@ -873,6 +874,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       idFields: ['value'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'name', fieldType: 'string' },
+      ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
         {
@@ -970,6 +974,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'default', fieldType: 'boolean' },
       ),
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'name', fieldType: 'string' },
+      ),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
     },
   },
@@ -1035,10 +1042,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['value'],
       fieldsToHide: FIELDS_TO_HIDE.concat(
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'name', fieldType: 'string' },
       ),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
-      fieldsToOmit: FIELDS_TO_OMIT,
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'name', fieldType: 'string' },
+      ),
     },
   },
   organization_field_order: {
@@ -1274,6 +1282,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
   },
 
+  // placeholder for config validation (the type is created by a filter)
+  tag: {
+    transformation: {
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'string' }],
+    },
+  },
 
   // api types
   groups: {
@@ -1718,6 +1732,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   oauth_clients: {
     request: {
       url: '/api/v2/oauth/clients',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
+    },
+    transformation: {
+      dataField: 'clients',
     },
   },
   // eslint-disable-next-line camelcase
@@ -1892,11 +1911,13 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'content_url', fieldType: 'string' },
         { fieldName: 'size', fieldType: 'number' },
+        { fieldName: 'hash', fieldType: 'string' },
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'article_attachments', fieldType: 'List<article_attachment>' },
         { fieldName: 'content', fieldType: 'string' },
+        { fieldName: 'hash', fieldType: 'string' },
       ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'article_id', fieldType: 'number' },
@@ -2343,8 +2364,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   user_segments: {
     request: {
       url: '/api/v2/help_center/user_segments',
-      queryParams: { per_page: String(PAGE_SIZE) },
-      paginationField: 'next_page',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'user_segments',
@@ -2426,6 +2447,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   oauth_tokens: {
     request: {
       url: '/api/v2/oauth/tokens',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'tokens',
@@ -2502,6 +2525,8 @@ export const SUPPORTED_TYPES = {
   webhook: ['webhooks'],
   workspace: ['workspaces'],
   account_features: ['features'],
+  // tags are included in supportedTypes so that they can be easily omitted, but are fetched separately
+  tag: ['tags'],
 }
 
 // Types in Zendesk Guide which relate to a certain brand
@@ -2549,6 +2574,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     resolveOrganizationIDs: false,
     includeAuditDetails: false,
     addAlias: true,
+    handleIdenticalAttachmentConflicts: false,
   },
   [DEPLOY_CONFIG]: {
     createMissingOrganizations: false,
@@ -2677,6 +2703,9 @@ export type ChangeValidatorName = (
   | 'duplicateRoutingAttributeValue'
   | 'ticketFieldDeactivation'
   | 'duplicateIdFieldValues'
+  | 'notEnabledMissingReferences'
+  | 'conditionalTicketFields'
+  | 'dynamicContentDeletion'
   )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -2745,6 +2774,9 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     duplicateRoutingAttributeValue: { refType: BuiltinTypes.BOOLEAN },
     ticketFieldDeactivation: { refType: BuiltinTypes.BOOLEAN },
     duplicateIdFieldValues: { refType: BuiltinTypes.BOOLEAN },
+    notEnabledMissingReferences: { refType: BuiltinTypes.BOOLEAN },
+    conditionalTicketFields: { refType: BuiltinTypes.BOOLEAN },
+    dynamicContentDeletion: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -2764,6 +2796,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
           includeAuditDetails: { refType: BuiltinTypes.BOOLEAN },
           addAlias: { refType: BuiltinTypes.BOOLEAN },
+          handleIdenticalAttachmentConflicts: { refType: BuiltinTypes.BOOLEAN },
           greedyAppReferences: { refType: BuiltinTypes.BOOLEAN },
           appReferenceLocators: { refType: IdLocatorType },
           guide: { refType: GuideType },
@@ -2798,6 +2831,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       `${FETCH_CONFIG}.resolveOrganizationIDs`,
       `${FETCH_CONFIG}.includeAuditDetails`,
       `${FETCH_CONFIG}.addAlias`,
+      `${FETCH_CONFIG}.handleIdenticalAttachmentConflicts`,
       DEPLOY_CONFIG,
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -2810,7 +2844,23 @@ export type FilterContext = {
   [API_DEFINITIONS_CONFIG]: ZendeskApiConfig
 }
 
-export const validateFetchConfig = validateDuckTypeFetchConfig
+export const validateFetchConfig = (
+  fetchConfigPath: string,
+  userFetchConfig: configUtils.UserFetchConfig,
+  adapterApiConfig: configUtils.AdapterApiConfig,
+): void => validateDuckTypeFetchConfig(
+  fetchConfigPath,
+  userFetchConfig,
+  _.defaults(
+    {},
+    adapterApiConfig,
+    {
+      supportedTypes: {
+        tag: ['tags'],
+      },
+    },
+  ),
+)
 
 /**
  * Validating each Zendesk Guide type has a dataField property in the configuration

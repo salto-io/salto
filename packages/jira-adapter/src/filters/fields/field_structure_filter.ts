@@ -115,6 +115,17 @@ const addCascadingOptionsToOptions = (instance: InstanceElement): void => {
     .forEach((context: Values) => {
       const idToOption = _.keyBy(context.options, option => option.id)
 
+      const invalidCascadeOptionIds = new Set(context.options
+        .filter((option: Values) => option.optionId !== undefined
+          && idToOption[option.optionId] === undefined)
+        .map((option: Values) => option.id))
+
+      if (invalidCascadeOptionIds.size > 0) {
+        log.error(`Invalid optionId found in instance ${instance.elemID.getFullName()} under context ${context.id}`)
+        context.options = context.options
+          .filter((option: Values) => !invalidCascadeOptionIds.has(option.id))
+      }
+
       context.options
         .filter((option: Values) => option.optionId !== undefined)
         .forEach((option: Values) => {

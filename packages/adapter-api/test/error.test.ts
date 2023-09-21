@@ -17,21 +17,12 @@
 import {
   createSaltoElementError,
   createSaltoElementErrorFromError,
-  CredentialError,
-  isCredentialError, isSaltoError,
+  isSaltoError,
 } from '../src/error'
 import { ElemID } from '../src/element_id'
 import { toChange } from '../src/change'
 import { InstanceElement, ObjectType } from '../src/elements'
 
-describe('is credential error', () => {
-  it('should return false', () => {
-    expect(isCredentialError(new Error('test'))).toBeFalsy()
-  })
-  it('should return true', () => {
-    expect(isCredentialError(new CredentialError('test'))).toBeTruthy()
-  })
-})
 describe('create saltoElementError', () => {
   const elemId = new ElemID('adapter', 'test')
   it('should create correctly from error', () => {

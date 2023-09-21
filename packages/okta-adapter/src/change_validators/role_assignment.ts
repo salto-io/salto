@@ -43,6 +43,7 @@ export const getTargetGroupsForRule = (groupRule: InstanceElement): string[] => 
 /**
  * prevents the assignment of admin roles to groups that are defined as "target groups" in other
  * group rules.
+ * Notice RoleAssignment are not fetched by default.
  */
 export const roleAssignmentValidator: ChangeValidator = async (changes, elementSource) => {
   if (elementSource === undefined) {

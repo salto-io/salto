@@ -167,8 +167,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly additionalDependencies: AdditionalDependencies
   private readonly userConfig: NetsuiteConfig
   private getElemIdFunc?: ElemIdGetter
-  private readonly fetchInclude?: QueryParams
-  private readonly fetchExclude?: QueryParams
+  private readonly fetchInclude: QueryParams
+  private readonly fetchExclude: QueryParams
   private readonly lockedElements?: QueryParams
   private readonly fetchTarget?: NetsuiteQueryParameters
   private readonly withPartialDeletion?: boolean
@@ -198,9 +198,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
       .concat(makeArray(config.filePathRegexSkipList))
     this.userConfig = config
     this.getElemIdFunc = getElemIdFunc
-    this.fetchInclude = config.fetch?.include
-    this.fetchExclude = config.fetch?.exclude
-    this.lockedElements = config.fetch?.lockedElementsToExclude
+    this.fetchInclude = config.fetch.include
+    this.fetchExclude = config.fetch.exclude
+    this.lockedElements = config.fetch.lockedElementsToExclude
     this.fetchTarget = getFixedTargetFetch(config.fetchTarget)
     this.withPartialDeletion = config.withPartialDeletion
     this.skipList = config.skipList // old version
@@ -281,7 +281,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const bundlesCustomInfo = (await this.client.getInstalledBundles())
       .map(bundle => ({ typeName: BUNDLE, values: { ...bundle, id: bundle.id.toString() } }))
     // TODO: remove this log when SALTO-2602 is open for all customers
-    log.debug('The following bundle ids are missing in the bundle record: %o', bundlesCustomInfo.map(bundle => bundle.values.id))
+    log.debug('The following bundle ids are missing in the bundle record: %o', bundlesCustomInfo.map(bundle => [bundle.values.id, bundle.values.installedFrom?.toUpperCase(), bundle.values.publisher]))
     const {
       elements: fileCabinetContent,
       failedPaths: failedFilePaths,
@@ -300,7 +300,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const elementsToCreate = [
       ...customObjects,
       ...fileCabinetContent,
-      ...(this.userConfig?.fetch?.addBundles ? bundlesCustomInfo : []),
+      ...(this.userConfig.fetch.addBundles ? bundlesCustomInfo : []),
     ]
     const baseElements = await createElements(
       elementsToCreate,
@@ -395,9 +395,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
       filePaths: this.filePathRegexSkipList.map(reg => `.*${reg}.*`),
     }))
     const fetchQuery = [
-      this.fetchInclude && buildNetsuiteQuery(this.fetchInclude),
+      buildNetsuiteQuery(this.fetchInclude),
       this.fetchTarget && buildNetsuiteQuery(convertToQueryParams(this.fetchTarget)),
-      this.fetchExclude && notQuery(buildNetsuiteQuery(this.fetchExclude)),
+      notQuery(buildNetsuiteQuery(this.fetchExclude)),
       this.lockedElements && notQuery(buildNetsuiteQuery(this.lockedElements)),
       this.skipList && notQuery(buildNetsuiteQuery(convertToQueryParams(this.skipList))),
       notQuery(deprecatedSkipList),

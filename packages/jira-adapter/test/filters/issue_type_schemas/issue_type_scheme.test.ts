@@ -244,6 +244,33 @@ describe('issueTypeScheme', () => {
       )
     })
 
+    it('should not call the delete issue type ids endpoint if the scheme is the default scheme', async () => {
+      const beforeInstance = new InstanceElement(
+        'instance',
+        type,
+        {
+          id: '1',
+          name: 'name1',
+          issueTypeIds: ['1', '2', '3'],
+          isDefault: true,
+        }
+      )
+
+      const afterInstance = new InstanceElement(
+        'instance',
+        type,
+        {
+          id: '1',
+          name: 'name2',
+          issueTypeIds: ['1', '2'],
+          isDefault: true,
+        }
+      )
+
+      await filter.deploy?.([toChange({ before: beforeInstance, after: afterInstance })])
+      expect(mockConnection.delete).not.toHaveBeenCalled()
+    })
+
     it('should not call the re-order endpoint of there are no changes in the ids', async () => {
       const beforeInstance = new InstanceElement(
         'instance',
@@ -324,7 +351,7 @@ describe('issueTypeScheme', () => {
         [toChange({ before: beforeInstance, after: afterInstance })]
       )
       expect(res?.deployResult.errors).toEqual([{
-        message: 'Deployment of jira.IssueTypeScheme.instance.instance failed: Error: Failed to delete /rest/api/3/issuetypescheme/1/issuetype/1 with error: Error: some error',
+        message: 'Error: Failed to delete /rest/api/3/issuetypescheme/1/issuetype/1 with error: Error: some error',
         severity: 'Error',
         elemID: afterInstance.elemID,
       }])

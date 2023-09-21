@@ -226,8 +226,12 @@ export const serializeStream = async <T = Element>(
     return undefined
   }
   const clonedElements = elements.map(element => {
-    const clone = _.cloneDeepWith(element, replacer)
-    return isSaltoSerializable(element) ? saltoClassReplacer(clone) : clone
+    if (isElement(element)) {
+      const clone = _.cloneDeepWith(element, replacer)
+      return isSaltoSerializable(element) ? saltoClassReplacer(clone) : clone
+    }
+    const clone = _.cloneDeepWith({ element }, replacer)
+    return clone.element
   })
 
   // Avoiding Promise.all to not reach Promise.all limit
@@ -526,7 +530,7 @@ const generalDeserializeParsed = async <T>(
   if (!Array.isArray(parsed)) {
     throw new Error('got non-array JSON data')
   }
-  const elements = parsed.map(restoreClasses)
+  const elements = restoreClasses(parsed)
   if (staticFiles.length > 0) {
     await Promise.all(staticFiles.map(
       async ({ obj, key }) => {
@@ -560,6 +564,11 @@ export const deserializeValidationErrors = async (data: string): Promise<Validat
   }
   return errors
 }
+
+export const deserializeValues = async (
+  data: string,
+  staticFileReviver?: StaticFileReviver,
+): Promise<Value> => generalDeserialize(data, staticFileReviver)
 
 export const deserialize = async (
   data: string,

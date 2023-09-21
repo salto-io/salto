@@ -71,14 +71,13 @@ describe('duplicateIdFieldValuesValidator', () => {
 
     const changes = [
       toChange({ after: duplicateGroup1 }),
-      toChange({ after: duplicateGroup3 }),
+      toChange({ before: duplicateGroup3 }),
       toChange({ after: duplicateGroup4 }),
       toChange({ after: uniqueGroup }),
     ]
     const elementSource = createInMemoryElementSource([
       duplicateGroup1,
       duplicateGroup2,
-      duplicateGroup3,
       duplicateGroup4,
       duplicateGroup5,
       uniqueGroup,
@@ -89,19 +88,19 @@ describe('duplicateIdFieldValuesValidator', () => {
         elemID: duplicateGroup1.elemID,
         severity: 'Error',
         message: 'group duplication detected',
-        detailedMessage: 'This group cannot be deployed as it is a duplicate of \'duplicate2\'. This likely indicates a misalignment of Salto IDs. To address this, please execute a fetch on both the source and target environments. Ensure you select the \'Regenerate Salto IDs\' option in the advanced settings.',
+        detailedMessage: 'This group cannot be deployed as it is a duplicate of \'duplicate2\'. This likely indicates a misalignment of Salto IDs. To address this, please execute a fetch on both the source and target environments. Ensure you select the \'Regenerate Salto IDs\' option in the advanced settings. More details can be found here: https://help.salto.io/en/articles/8290892-misalignment-of-salto-element-ids',
       },
       {
         elemID: duplicateGroup3.elemID,
         severity: 'Error',
         message: 'group duplication detected',
-        detailedMessage: 'This group cannot be deployed as it is a duplicate of \'duplicate4, duplicate5\'. This likely indicates a misalignment of Salto IDs. To address this, please execute a fetch on both the source and target environments. Ensure you select the \'Regenerate Salto IDs\' option in the advanced settings.',
+        detailedMessage: 'This group cannot be deployed as it is a duplicate of \'duplicate4, duplicate5\'. This likely indicates a misalignment of Salto IDs. To address this, please execute a fetch on both the source and target environments. Ensure you select the \'Regenerate Salto IDs\' option in the advanced settings. More details can be found here: https://help.salto.io/en/articles/8290892-misalignment-of-salto-element-ids',
       },
       {
         elemID: duplicateGroup4.elemID,
         severity: 'Error',
         message: 'group duplication detected',
-        detailedMessage: 'This group cannot be deployed as it is a duplicate of \'duplicate3, duplicate5\'. This likely indicates a misalignment of Salto IDs. To address this, please execute a fetch on both the source and target environments. Ensure you select the \'Regenerate Salto IDs\' option in the advanced settings.',
+        detailedMessage: 'This group cannot be deployed as it is a duplicate of \'duplicate3, duplicate5\'. This likely indicates a misalignment of Salto IDs. To address this, please execute a fetch on both the source and target environments. Ensure you select the \'Regenerate Salto IDs\' option in the advanced settings. More details can be found here: https://help.salto.io/en/articles/8290892-misalignment-of-salto-element-ids',
       },
     ])
   })

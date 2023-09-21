@@ -16,14 +16,11 @@
 
 import { isAdditionOrModificationChange, ChangeValidator, getChangeData, isInstanceChange, SeverityLevel, Value } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { isResolvedReferenceExpression, prettifyName } from '@salto-io/adapter-utils'
+import { prettifyName } from '@salto-io/adapter-utils'
 import { BROKEN_REFERENCE_TYPE_MAP } from '../filters/broken_reference_filter'
 
 const capitalizeFirstLetter = (input: string): string =>
   input.charAt(0).toUpperCase() + input.slice(1)
-
-export const isReferenceBroken = (reference: Value): boolean =>
-  !isResolvedReferenceExpression(reference)
 
 export const brokenReferenceValidator: ChangeValidator = async changes =>
   Object.entries(BROKEN_REFERENCE_TYPE_MAP).flatMap(([typeName, typeInfos]) =>

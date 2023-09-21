@@ -22,12 +22,25 @@ import {
   isObjectType,
   ReadOnlyElementsSource, Values,
 } from '@salto-io/adapter-api'
+import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 
 const log = logger(module)
+const { isDefined } = values
 
 type ImportantValue = { value: string; indexed: boolean; highlighted: boolean }
 type ImportantValues = ImportantValue[]
+
+const isValidIndexedValueData = (ImportantValue: ImportantValue, valueData: unknown): boolean => {
+  if (ImportantValue.indexed !== true) {
+    return true
+  }
+  if (_.isArray(valueData)) {
+    return valueData.every(part => _.isString(part) || _.isNumber(part))
+  }
+
+  return _.isString(valueData) || _.isNumber(valueData) || _.isBoolean(valueData) || valueData === undefined
+}
 
 
 const getRelevantImportantValues = (
@@ -40,6 +53,13 @@ const getRelevantImportantValues = (
     : importantValues
   return highlightedOnly === true
     ? indexedValues.filter(value => value.highlighted === true)
+      .filter(value => {
+        if (value.value.includes('.')) {
+          log.warn(`${value.value} is an inner value, we do not support inner values as highlighted important values`)
+          return false
+        }
+        return true
+      })
     : indexedValues
 }
 
@@ -63,8 +83,13 @@ const extractImportantValuesFromElement = ({
   const finalImportantValues = relevantImportantValues.map(ImportantValue => {
     const { value } = ImportantValue
     const valueData = _.get(getFrom, value, undefined)
+    if (!isValidIndexedValueData(ImportantValue, valueData)) {
+      log.warn(`${ImportantValue.value} for element ${element.elemID.getFullName()} is not a primitive value,
+      we do not support non primitive values as indexed important values`)
+      return undefined
+    }
     return { [value]: valueData }
-  })
+  }).filter(isDefined)
 
   return finalImportantValues
 }

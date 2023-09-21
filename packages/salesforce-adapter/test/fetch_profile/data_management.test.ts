@@ -32,6 +32,12 @@ describe('buildDataManagement', () => {
       saltoManagementFieldSettings: {
         defaultFieldName: 'ManagedBySalto__c',
       },
+      brokenOutgoingReferencesSettings: {
+        defaultBehavior: 'BrokenReference',
+        perTargetTypeOverrides: {
+          User: 'InternalId',
+        },
+      },
       saltoIDSettings: {
         defaultIdFields: ['default'],
         overrides: [{
@@ -82,6 +88,14 @@ describe('buildDataManagement', () => {
     })
     it('should not fetch objects that are both included and excluded', async () => {
       expect(await dataManagement.shouldFetchObjectType(createCustomObjectType('aaabbb', {}))).toEqual('Never')
+    })
+  })
+  describe('brokenReferenceBehaviorForTargetType', () => {
+    it('should return the default for target types that are not overridden', () => {
+      expect(dataManagement.brokenReferenceBehaviorForTargetType('SomeType')).toEqual('BrokenReference')
+    })
+    it('should return the overridden value for target types that are overridden', () => {
+      expect(dataManagement.brokenReferenceBehaviorForTargetType('User')).toEqual('InternalId')
     })
   })
 

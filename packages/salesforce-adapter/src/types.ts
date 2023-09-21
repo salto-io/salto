@@ -148,6 +148,14 @@ export type SaltoManagementFieldSettings = {
   defaultFieldName: string
 }
 
+const outgoingReferenceBehaviors = ['ExcludeInstance', 'BrokenReference', 'InternalId'] as const
+export type OutgoingReferenceBehavior = typeof outgoingReferenceBehaviors[number]
+
+export type BrokenOutgoingReferencesSettings = {
+  defaultBehavior: OutgoingReferenceBehavior
+  perTargetTypeOverrides?: Record<string, OutgoingReferenceBehavior>
+}
+
 const objectIdSettings = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'objectIdSettings'),
   fields: {
@@ -236,15 +244,40 @@ const saltoManagementFieldSettingsType = new ObjectType({
   },
 })
 
+const brokenOutgoingReferencesSettingsType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'brokenOutgoingReferencesSettings'),
+  fields: {
+    defaultBehavior: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          values: outgoingReferenceBehaviors,
+        }),
+      },
+    },
+    perTargetTypeOverrides: {
+      refType: new MapType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          values: outgoingReferenceBehaviors,
+        }),
+      },
+    },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 export type DataManagementConfig = {
   includeObjects: string[]
   excludeObjects?: string[]
   allowReferenceTo?: string[]
-  ignoreReferenceTo?: string[]
   saltoIDSettings: SaltoIDSettings
   showReadOnlyValues?: boolean
   saltoAliasSettings?: SaltoAliasSettings
   saltoManagementFieldSettings?: SaltoManagementFieldSettings
+  brokenOutgoingReferencesSettings?: BrokenOutgoingReferencesSettings
 }
 
 export type FetchParameters = {
@@ -494,6 +527,9 @@ const dataManagementType = new ObjectType({
     },
     saltoManagementFieldSettings: {
       refType: saltoManagementFieldSettingsType,
+    },
+    brokenOutgoingReferencesSettings: {
+      refType: brokenOutgoingReferencesSettingsType,
     },
   } as Record<keyof DataManagementConfig, FieldDefinition>,
   annotations: {

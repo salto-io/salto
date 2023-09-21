@@ -20,12 +20,10 @@ import {
   ReferenceExpression, Value, TemplateExpression,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
-import { references as referencesUtils } from '@salto-io/adapter-components'
+import { references as referencesUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
 import {
-  CUSTOM_FIELD_OPTIONS_FIELD_NAME,
   CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
   CUSTOM_OBJECT_TYPE_NAME,
   TICKET_FIELD_TYPE_NAME,
@@ -33,10 +31,19 @@ import {
   ZENDESK,
 } from '../../constants'
 import { FETCH_CONFIG } from '../../config'
-import { LOOKUP_REGEX, transformCustomObjectField, TransformResult } from './utils'
+import {
+  LOOKUP_REGEX,
+  RELATIONSHIP_FILTER_REGEX,
+  transformCustomObjectLookupField,
+  transformFilterField,
+  TransformResult,
+} from './utils'
+import { paginate } from '../../client/pagination'
+import { getIdByEmail } from '../../user_utils'
 
 const { makeArray } = collections.array
 const { createMissingInstance } = referencesUtils
+const { createPaginator } = clientUtils
 
 type CustomObjectCondition = {
   field: string | TemplateExpression
@@ -44,7 +51,28 @@ type CustomObjectCondition = {
   value?: string | ReferenceExpression
 }
 
+const relationTypeToType = (relationshipTargetType: Value): string => {
+  if (!_.isString(relationshipTargetType)) {
+    return 'unknown'
+  }
+  switch (relationshipTargetType) {
+    case 'zen:user':
+      return 'user'
+    case 'zen:organization':
+      return 'organization'
+    case 'zen:ticket':
+      return TICKET_FIELD_TYPE_NAME
+    // case 'zen:custom_object':
+    // return CUSTOM_OBJECT_TYPE_NAME // TODO - is this possible? if so - is it by id or by key?
+    default:
+      return 'unknown'
+  }
+}
+
 const isCustomFieldValue = (value: Value): boolean => _.isString(value) && LOOKUP_REGEX.test(value)
+
+const isRelevantFilter = (filter: Value): filter is { field: string } =>
+  _.isPlainObject(filter) && RELATIONSHIP_FILTER_REGEX.test(filter.field)
 
 const isRelevantCondition = (condition: Value): condition is CustomObjectCondition =>
   _.isPlainObject(condition)
@@ -54,13 +82,14 @@ const isRelevantCondition = (condition: Value): condition is CustomObjectConditi
 
 const transformTriggerValue = (
   trigger: InstanceElement,
-  ticketFieldsById: Record<string, InstanceElement>,
+  instancesById: Record<string, InstanceElement>,
+  usersById: Record<string, string>,
   customObjectsByKey: Record<string, InstanceElement>,
   enableMissingReferences: boolean
 ): void => {
-  const transformField = (value: string): TransformResult => transformCustomObjectField(
+  const transformField = (value: string): TransformResult => transformCustomObjectLookupField(
     value,
-    ticketFieldsById,
+    instancesById,
     customObjectsByKey,
     enableMissingReferences
   )
@@ -98,50 +127,71 @@ const transformTriggerValue = (
         return
       }
 
-      if (customObjectField.value.type === 'dropdown') {
-        const fieldCustomOptions = customObjectField.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] ?? []
-        const customOptionRef = fieldCustomOptions
-          .filter(isResolvedReferenceExpression)
-          .find((option: ReferenceExpression) => String(option.value.value.id) === condition.value)
-
-        if (customOptionRef === undefined) {
+      if (['dropdown', 'lookup'].includes(customObjectField.value.type)) {
+        const referencesElement = instancesById[condition.value] ?? usersById[condition.value]
+        if (referencesElement === undefined) {
           if (enableMissingReferences) {
+            const missingType = customObjectField.value.type === 'dropdown'
+              ? CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME
+              : relationTypeToType(customObjectField.value.relationship_target_type)
             const missingCustomOption = createMissingInstance(
               ZENDESK,
-              CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
+              missingType,
               condition.value
             )
             condition.value = new ReferenceExpression(missingCustomOption.elemID)
           }
           return
         }
-        condition.value = customOptionRef
-      } else if (customObjectField.value.type === 'lookup') {
-        // zen:user
-        // zen:organization
-        // zen:ticket
-        // zen:custom_object???
+        condition.value = _.isString(referencesElement)
+          ? referencesElement
+          : new ReferenceExpression(referencesElement.elemID, referencesElement)
       }
     })
 }
 
+const transformTicketFieldValue = (
+  ticketField: InstanceElement,
+  customObjectsByKey: Record<string, InstanceElement>,
+  enableMissingReferences: boolean
+): void => {
+  const relevantRelationShipFilters = (ticketField.value.relationship_filter?.all ?? [])
+    .concat(ticketField.value.relationship_filter?.any ?? [])
+    .filter(isRelevantFilter)
 
+  relevantRelationShipFilters.forEach((filter: { field: string | TemplateExpression }) => {
+    if (!_.isString(filter.field)) {
+      return
+    }
+    filter.field = transformFilterField(filter.field, enableMissingReferences, customObjectsByKey)
+  })
+}
 /**
  *  Convert custom object field values to reference expressions
  */
-const customObjectFieldsFilter: FilterCreator = ({ config }) => ({
+const customObjectFieldsFilter: FilterCreator = ({ config, client }) => ({
   name: 'customObjectFieldOptionsFilter',
   onFetch: async (elements: Element[]) => {
     const enableMissingReferences = config[FETCH_CONFIG].enableMissingReferences ?? false
 
+
     const instances = elements.filter(isInstanceElement)
-    const ticketFieldsById = _.keyBy<InstanceElement>(
-      instances.filter(instance => instance.elemID.typeName === TICKET_FIELD_TYPE_NAME),
+
+    const instancesById = _.keyBy<InstanceElement>(
+      instances.filter(instance => instance.value.id !== undefined),
       instance => instance.value.id
     )
 
+    const paginator = createPaginator({
+      client,
+      paginationFuncCreator: paginate,
+    })
+    const usersById = await getIdByEmail(paginator)
+
     const triggers = instances
       .filter(instance => instance.elemID.typeName === TRIGGER_TYPE_NAME)
+    const ticketFields = instances
+      .filter(instance => instance.elemID.typeName === TICKET_FIELD_TYPE_NAME)
 
     const customObjectsByKey = _.keyBy<InstanceElement>(
       instances.filter(instance => instance.elemID.typeName === CUSTOM_OBJECT_TYPE_NAME),
@@ -149,7 +199,10 @@ const customObjectFieldsFilter: FilterCreator = ({ config }) => ({
     )
 
     triggers.forEach(
-      trigger => transformTriggerValue(trigger, ticketFieldsById, customObjectsByKey, enableMissingReferences)
+      trigger => transformTriggerValue(trigger, instancesById, usersById, customObjectsByKey, enableMissingReferences)
+    )
+    ticketFields.forEach(
+      ticketField => transformTicketFieldValue(ticketField, customObjectsByKey, enableMissingReferences)
     )
   },
 })

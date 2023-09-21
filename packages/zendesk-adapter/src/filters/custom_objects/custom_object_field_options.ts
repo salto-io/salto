@@ -27,6 +27,7 @@ import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { inspectValue } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import {
+  CUSTOM_FIELD_OPTIONS_FIELD_NAME,
   CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
   CUSTOM_OBJECT_FIELD_TYPE_NAME,
   ZENDESK,
@@ -74,7 +75,7 @@ const customObjectFieldOptionsFilter: FilterCreator = () => ({
       .filter(obj => obj.elemID.typeName === CUSTOM_OBJECT_FIELD_TYPE_NAME)
 
     customObjectFields.forEach(field => {
-      const options = field.value.custom_field_options
+      const options = field.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME]
       if (options === undefined) {
         return
       }

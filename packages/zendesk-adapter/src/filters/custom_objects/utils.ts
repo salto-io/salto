@@ -17,7 +17,7 @@ import { InstanceElement, ReferenceExpression, TemplateExpression } from '@salto
 import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { references as referencesUtils } from '@salto-io/adapter-components'
 import {
-  CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
+  CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME, CUSTOM_OBJECT_FIELD_TYPE_NAME,
   CUSTOM_OBJECT_TYPE_NAME,
   TICKET_FIELD_TYPE_NAME,
   ZENDESK,
@@ -27,6 +27,8 @@ const { createMissingInstance } = referencesUtils
 
 export const LOOKUP_REGEX = /lookup:ticket\.ticket_field_(?<ticketFieldId>\d+).+\.(?<optionKey>[^.]+)$/
 const CUSTOM_OBJECT_REGEX = /zen:custom_object:(?<customObjectKey>.+)/
+
+export const RELATIONSHIP_FILTER_REGEX = /custom_object\.(?<customObjectKey>.+)\.custom_fields\.(?<fieldKey>.+)/
 
 const buildFieldTemplate = (ticketField: string | ReferenceExpression, option: string | ReferenceExpression)
   : TemplateExpression =>
@@ -39,20 +41,31 @@ const buildFieldTemplate = (ticketField: string | ReferenceExpression, option: s
     ],
   })
 
+const buildFilterTemplate = (customObject: string | ReferenceExpression, field: string | ReferenceExpression)
+  : TemplateExpression =>
+  new TemplateExpression({
+    parts: [
+      'custom_object.',
+      customObject,
+      '.custom_fields.',
+      field,
+    ],
+  })
+
 
 export type TransformResult = {
   result: string | TemplateExpression
   ticketField?: InstanceElement
   customObjectField?: InstanceElement
 }
-export const transformCustomObjectField = (
+export const transformCustomObjectLookupField = (
   field: string,
-  ticketFieldsById: Record<string, InstanceElement>,
+  instancesById: Record<string, InstanceElement>,
   customObjectsByKey: Record<string, InstanceElement>,
   enableMissingReferences: boolean
 ): TransformResult => {
   const { ticketFieldId, optionKey } = field.match(LOOKUP_REGEX)?.groups ?? {}
-  const ticketField = ticketFieldsById[ticketFieldId]
+  const ticketField = instancesById[ticketFieldId]
   if (ticketField === undefined) {
     if (enableMissingReferences) {
       const missingTicket = createMissingInstance(ZENDESK, TICKET_FIELD_TYPE_NAME, ticketFieldId)
@@ -110,4 +123,38 @@ export const transformCustomObjectField = (
     ticketField,
     customObjectField: customObjectFieldRef.value,
   }
+}
+
+export const transformFilterField = (
+  field: string,
+  enableMissingReferences: boolean,
+  customObjectsByKey: Record<string, InstanceElement>
+): TemplateExpression | string => {
+  const { customObjectKey, fieldKey } = field.match(RELATIONSHIP_FILTER_REGEX)?.groups ?? {}
+
+  const customObject = customObjectsByKey[customObjectKey]
+  if (customObject === undefined) {
+    if (enableMissingReferences) {
+      const missingCustomObject = createMissingInstance(ZENDESK, CUSTOM_OBJECT_TYPE_NAME, customObjectKey)
+      return buildFilterTemplate(new ReferenceExpression(missingCustomObject.elemID), fieldKey)
+    }
+    return field
+  }
+
+  const customObjectFieldRef = (customObject.value.custom_object_fields ?? []).filter(isResolvedReferenceExpression)
+    .find((customField: ReferenceExpression) => customField.value.value.key === fieldKey)
+  if (customObjectFieldRef === undefined) {
+    if (enableMissingReferences) {
+      const missingCustomObjectField = createMissingInstance(ZENDESK, CUSTOM_OBJECT_FIELD_TYPE_NAME, fieldKey)
+      return buildFilterTemplate(
+        new ReferenceExpression(customObject.elemID, customObject),
+        new ReferenceExpression(missingCustomObjectField.elemID)
+      )
+    }
+    return field
+  }
+  return buildFilterTemplate(
+    new ReferenceExpression(customObject.elemID, customObject),
+    customObjectFieldRef
+  )
 }

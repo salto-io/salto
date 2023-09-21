@@ -63,7 +63,7 @@ const relationTypeToType = (relationshipTargetType: Value): string => {
     case 'zen:ticket':
       return TICKET_FIELD_TYPE_NAME
     // case 'zen:custom_object':
-    // return CUSTOM_OBJECT_TYPE_NAME // TODO - is this possible? if so - is it by id or by key?
+    // return CUSTOM_OBJECT_TYPE_NAME // TODO Seroussi - is this possible? if so - is it by id or by key?
     default:
       return 'unknown'
   }

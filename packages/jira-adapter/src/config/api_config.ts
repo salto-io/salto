@@ -1855,6 +1855,23 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: '_links' },
       ],
     },
+    deployRequests: {
+      add: {
+        url: '/rest/servicedesk/1/servicedesk/{projectKey}/queues',
+        method: 'post',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+      },
+      modify: {
+        url: '/rest/servicedesk/1/servicedesk/{projectKey}/queues/{queueId}',
+        method: 'put',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+          queueId: 'id',
+        },
+      },
+    },
   },
   PortalGroup: {
     request: {

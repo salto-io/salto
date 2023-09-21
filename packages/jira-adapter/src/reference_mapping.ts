@@ -971,6 +971,12 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: STATUS_TYPE_NAME },
   },
+  {
+    src: { field: 'fields', parentTypes: [QUEUE_TYPE] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: FIELD_TYPE_NAME },
+  },
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [

@@ -177,16 +177,18 @@ const customObjectFieldsFilter: FilterCreator = ({ config, client }) => ({
 
     const instances = elements.filter(isInstanceElement)
 
+    const paginator = createPaginator({
+      client,
+      paginationFuncCreator: paginate,
+    })
+
+    // This is possible because according to Zendesk, the internal Id is unique across all types (SALTO-4805)
+    const usersById = await getIdByEmail(paginator)
     const instancesById = _.keyBy<InstanceElement>(
       instances.filter(instance => instance.value.id !== undefined),
       instance => instance.value.id
     )
 
-    const paginator = createPaginator({
-      client,
-      paginationFuncCreator: paginate,
-    })
-    const usersById = await getIdByEmail(paginator)
 
     const triggers = instances
       .filter(instance => instance.elemID.typeName === TRIGGER_TYPE_NAME)

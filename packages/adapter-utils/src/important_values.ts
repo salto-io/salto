@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { logger } from '@salto-io/logging'
 import {
   CORE_ANNOTATIONS,
   Element,
@@ -23,32 +24,48 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 
+const log = logger(module)
+
 type ImportantValue = { value: string; indexed: boolean; highlighted: boolean }
 type ImportantValues = ImportantValue[]
 
-const getRelevantImportantValues = (importantValues: ImportantValues, indexedOnly?: boolean): ImportantValues => (
-  indexedOnly === true
+
+const getRelevantImportantValues = (
+  importantValues: ImportantValues,
+  indexedOnly?: boolean,
+  highlightedOnly?: boolean
+): ImportantValues => {
+  const indexedValues = indexedOnly === true
     ? importantValues.filter(value => value.indexed === true)
-    : importantValues)
+    : importantValues
+  return highlightedOnly === true
+    ? indexedValues.filter(value => value.highlighted === true)
+    : indexedValues
+}
+
 
 const extractImportantValuesFromElement = ({
   importantValues,
   element,
   indexedOnly,
+  highlightedOnly,
 }:{
   importantValues: ImportantValues
   element: Element
   indexedOnly?: boolean
+  highlightedOnly?: boolean
 }): Values => {
   if (_.isEmpty(importantValues)) {
     return {}
   }
-  const relevantImportantValues = getRelevantImportantValues(importantValues, indexedOnly)
+  const relevantImportantValues = getRelevantImportantValues(importantValues, indexedOnly, highlightedOnly)
   const getFrom = isInstanceElement(element) ? element.value : element.annotations
-  const finalImportantValues = _.mapValues(
-    _.keyBy(relevantImportantValues, obj => obj.value),
-    obj => _.get(getFrom, obj.value, undefined),
-  )
+  const finalImportantValues = relevantImportantValues.map(ImportantValue => {
+    const { value } = ImportantValue
+    const valueData = _.get(getFrom, value, undefined)
+    return { [value]: valueData }
+  })
+
   return finalImportantValues
 }
 
@@ -59,19 +76,21 @@ export const getImportantValues = async ({
   element,
   elementSource,
   indexedOnly,
+  highlightedOnly,
 }:{
   element: Element
   elementSource?: ReadOnlyElementsSource
   indexedOnly?: boolean
+  highlightedOnly?: boolean
 }): Promise<Values> => {
   if (isObjectType(element)) {
     const importantValues = element.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES]
-    return extractImportantValuesFromElement({ importantValues, element, indexedOnly })
+    return extractImportantValuesFromElement({ importantValues, element, indexedOnly, highlightedOnly })
   }
   if (isField(element) || isInstanceElement(element)) {
     const typeObj = await element.getType(elementSource)
     const importantValues = typeObj?.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES]
-    return extractImportantValuesFromElement({ importantValues, element, indexedOnly })
+    return extractImportantValuesFromElement({ importantValues, element, indexedOnly, highlightedOnly })
   }
   return {}
 }

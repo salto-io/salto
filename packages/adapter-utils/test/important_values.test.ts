@@ -30,6 +30,7 @@ const userType = new ObjectType({
       {
         value: 'label',
         indexed: true,
+        highlighted: true,
       },
     ],
   },
@@ -59,28 +60,34 @@ const obj = new ObjectType({
       {
         value: 'name',
         indexed: false,
+        highlighted: true,
       },
       {
         value: 'active',
         indexed: true,
+        highlighted: false,
       },
       {
         value: 'doesNotExist',
         indexed: true,
+        highlighted: true,
       },
     ],
     [CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES]: [
       {
         value: 'name',
         indexed: false,
+        highlighted: true,
       },
       {
         value: 'apiName',
         indexed: true,
+        highlighted: false,
       },
       {
         value: 'doesNotExist',
         indexed: true,
+        highlighted: true,
       },
     ],
   },
@@ -105,22 +112,22 @@ describe('getImportantValues', () => {
       element: obj,
       elementSource,
     })
-    expect(res).toEqual({
-      name: 'test',
-      apiName: 123,
-      doesNotExist: undefined,
-    })
+    expect(res).toEqual([
+      { name: 'test' },
+      { apiName: 123 },
+      { doesNotExist: undefined },
+    ])
   })
   it('should get the right important values for an instance', async () => {
     const res = await getImportantValues({
       element: inst,
       elementSource,
     })
-    expect(res).toEqual({
-      active: true,
-      name: 'test inst',
-      doesNotExist: undefined,
-    })
+    expect(res).toEqual([
+      { name: 'test inst' },
+      { active: true },
+      { doesNotExist: undefined },
+    ])
   })
   it('should get the right important values for a field', async () => {
     const field = new Field(
@@ -136,9 +143,7 @@ describe('getImportantValues', () => {
       elementSource,
       indexedOnly: false,
     })
-    expect(res).toEqual({
-      label: 'Active',
-    })
+    expect(res).toEqual([{ label: 'Active' }])
   })
   it('should return an empty object if no important values are defined', async () => {
     const objNoImportant = new ObjectType({
@@ -176,8 +181,14 @@ describe('getImportantValues', () => {
       elementSource,
       indexedOnly: true,
     })
-    expect(res).toEqual({
-      active: true,
+    expect(res).toEqual([{ active: true }, { doesNotExist: undefined }])
+  })
+  it('should return only highlighted values', async () => {
+    const res = await getImportantValues({
+      element: inst,
+      elementSource,
+      highlightedOnly: true,
     })
+    expect(res).toEqual([{ name: 'test inst' }, { doesNotExist: undefined }])
   })
 })

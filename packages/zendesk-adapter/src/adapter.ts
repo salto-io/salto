@@ -146,6 +146,7 @@ import routingAttributeValueDeployFilter from './filters/routing_attribute_value
 import localeFilter from './filters/locale'
 import ticketStatusCustomStatusDeployFilter from './filters/ticket_status_custom_status'
 import { filterOutInactiveInstancesForType } from './inactive'
+import handleIdenticalAttachmentConflicts from './filters/handle_identical_attachment_conflicts'
 import customObjectFieldFilter from './filters/custom_objects/custom_object_fields'
 import customObjectFieldOptionsFilter from './filters/custom_objects/custom_object_field_options'
 
@@ -242,6 +243,9 @@ export const DEFAULT_FILTERS = [
   articleBodyFilter,
   handleAppInstallationsFilter,
   handleTemplateExpressionFilter,
+  // handleIdenticalAttachmentConflicts needs to be before collisionErrorsFilter and after referencedIdFieldsFilter
+  // and articleBodyFilter
+  handleIdenticalAttachmentConflicts,
   collisionErrorsFilter, // needs to be after referencedIdFieldsFilter (which is part of the common filters)
   deployBrandedGuideTypesFilter,
   guideArrangePaths,

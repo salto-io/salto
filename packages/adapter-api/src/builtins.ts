@@ -118,6 +118,12 @@ const importantValueType = new ObjectType({
         StandardBuiltinTypes.BOOLEAN,
       ),
     },
+    highlighted: {
+      refType: new TypeReference(
+        StandardBuiltinTypes.BOOLEAN.elemID,
+        StandardBuiltinTypes.BOOLEAN,
+      ),
+    },
   },
 })
 

@@ -23,7 +23,7 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 
-type ImportantValue = { value: string; indexed: boolean }
+type ImportantValue = { value: string; indexed: boolean; highlighted: boolean }
 type ImportantValues = ImportantValue[]
 
 const getRelevantImportantValues = (importantValues: ImportantValues, indexedOnly?: boolean): ImportantValues => (

@@ -443,6 +443,7 @@ This annotation is used to define what are these element's most important values
 Type: `Array` of objects of type
 - value: `string` - The name of the important value.
 - indexed: `boolean` - Specifies if the value is index for easy searchability.
+- highlighted: `boolean` - Specifies if the value is highlighted in the display.
 
 Default: `undefined` Applicable to: Types
 Example:
@@ -452,12 +453,14 @@ type salto.example {
     {
       value = "active"
       indexed = true
+      highlighted = true
     },
   ]
   _self_important_values = [
     {
       value = "name"
       indexed = false
+      highlighted = true
     },
   ]
 }

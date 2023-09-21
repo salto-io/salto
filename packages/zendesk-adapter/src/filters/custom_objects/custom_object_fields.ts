@@ -25,6 +25,8 @@ import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
 import {
   CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
+  CUSTOM_FIELD_OPTIONS_FIELD_NAME,
+  CUSTOM_OBJECT_FIELD_TYPE_NAME,
   CUSTOM_OBJECT_TYPE_NAME,
   TICKET_FIELD_TYPE_NAME,
   TRIGGER_TYPE_NAME,
@@ -57,7 +59,7 @@ const relationTypeToType = (relationshipTargetType: Value): string => {
   }
   // TODO Seroussi - is this possible?
   if (relationshipTargetType.startsWith('zen:custom_object')) {
-    return CUSTOM_OBJECT_TYPE_NAME
+    return CUSTOM_FIELD_OPTIONS_FIELD_NAME
   }
   switch (relationshipTargetType) {
     case 'zen:user':
@@ -73,8 +75,15 @@ const relationTypeToType = (relationshipTargetType: Value): string => {
 
 const isCustomFieldValue = (value: Value): boolean => _.isString(value) && LOOKUP_REGEX.test(value)
 
-const isRelevantFilter = (filter: Value): filter is { field: string } =>
+type Filter = {
+  field: string | TemplateExpression
+  operator: string
+  value?: string | ReferenceExpression
+}
+
+const isRelevantFilter = (filter: Value): filter is Filter =>
   _.isPlainObject(filter) && RELATIONSHIP_FILTER_REGEX.test(filter.field)
+  && _.isString(filter.operator)
 
 const isRelevantCondition = (condition: Value): condition is CustomObjectCondition =>
   _.isPlainObject(condition)
@@ -82,13 +91,63 @@ const isRelevantCondition = (condition: Value): condition is CustomObjectConditi
   && _.isString(condition.operator)
   && LOOKUP_REGEX.test(condition.field)
 
-const transformTriggerValue = (
-  trigger: InstanceElement,
-  instancesById: Record<string, InstanceElement>,
-  usersById: Record<string, string>,
-  customObjectsByKey: Record<string, InstanceElement>,
+const transformConditionValue = ({
+  customObjectField,
+  condition,
+  enableMissingReferences,
+  instancesById,
+  usersById,
+}: {
+  customObjectField?: InstanceElement
+  condition: { operator: string; value?: string | ReferenceExpression }
   enableMissingReferences: boolean
-): void => {
+  instancesById: Record<string, InstanceElement>
+  usersById: Record<string, string>
+}): void => {
+  if (customObjectField === undefined
+    // These are special cases where the value is a reference to an element
+    || !['is', 'is_not'].includes(condition.operator) || !_.isString(condition.value)
+    || !['dropdown', 'lookup'].includes(customObjectField.value.type)) {
+    return
+  }
+
+  // TODO seroussi - it might be possible that we need to check custom object by key
+  const referencesElement = instancesById[condition.value] ?? usersById[condition.value]
+
+  if (referencesElement === undefined) {
+    if (enableMissingReferences) {
+      const missingType = customObjectField.value.type === 'dropdown'
+        ? CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME
+        : relationTypeToType(customObjectField.value.relationship_target_type)
+      const missingCustomOption = createMissingInstance(
+        ZENDESK,
+        missingType,
+        condition.value
+      )
+      condition.value = new ReferenceExpression(missingCustomOption.elemID)
+    }
+    return
+  }
+
+  condition.value = _.isString(referencesElement)
+    ? referencesElement // This is a user
+    : new ReferenceExpression(referencesElement.elemID, referencesElement) // This is anything else
+}
+
+const transformTriggerValue = ({
+  trigger,
+  instancesById,
+  usersById,
+  customObjectsByKey,
+  enableMissingReferences,
+}:
+{
+  trigger: InstanceElement
+  instancesById: Record<string, InstanceElement>
+  usersById: Record<string, string>
+  customObjectsByKey: Record<string, InstanceElement>
+  enableMissingReferences: boolean
+}): void => {
   const transformField = (value: string): TransformResult => transformCustomObjectLookupField(
     value,
     instancesById,
@@ -121,51 +180,53 @@ const transformTriggerValue = (
 
       condition.field = result
 
-      if (ticketField === undefined || customObjectField === undefined
-        // These are special cases where the value is a reference to an element
-        || !['is', 'is_not'].includes(condition.operator) || !_.isString(condition.value)
-        || !['dropdown', 'lookup'].includes(customObjectField.value.type)) {
-        return
+      if (ticketField !== undefined) {
+        transformConditionValue({
+          customObjectField,
+          condition,
+          enableMissingReferences,
+          instancesById,
+          usersById,
+        })
       }
-
-      // TODO seroussi - it might be possible that we need to check custom object by key
-      const referencesElement = instancesById[condition.value] ?? usersById[condition.value]
-
-      if (referencesElement === undefined) {
-        if (enableMissingReferences) {
-          const missingType = customObjectField.value.type === 'dropdown'
-            ? CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME
-            : relationTypeToType(customObjectField.value.relationship_target_type)
-          const missingCustomOption = createMissingInstance(
-            ZENDESK,
-            missingType,
-            condition.value
-          )
-          condition.value = new ReferenceExpression(missingCustomOption.elemID)
-        }
-        return
-      }
-
-      condition.value = _.isString(referencesElement)
-        ? referencesElement // This is a user
-        : new ReferenceExpression(referencesElement.elemID, referencesElement) // This is anything else
     })
 }
 
-const transformTicketFieldValue = (
-  ticketField: InstanceElement,
-  customObjectsByKey: Record<string, InstanceElement>,
+const transformRelationshipValue = ({
+  ticketField,
+  instancesById,
+  usersById,
+  customObjectsByKey,
+  enableMissingReferences,
+}:
+{
+  ticketField: InstanceElement
+  instancesById: Record<string, InstanceElement>
+  usersById: Record<string, string>
+  customObjectsByKey: Record<string, InstanceElement>
   enableMissingReferences: boolean
-): void => {
+}): void => {
   const relevantRelationShipFilters = (ticketField.value.relationship_filter?.all ?? [])
     .concat(ticketField.value.relationship_filter?.any ?? [])
     .filter(isRelevantFilter)
 
-  relevantRelationShipFilters.forEach((filter: { field: string | TemplateExpression }) => {
+  relevantRelationShipFilters.forEach((filter: Filter) => {
     if (!_.isString(filter.field)) {
       return
     }
-    filter.field = transformFilterField(filter.field, enableMissingReferences, customObjectsByKey)
+
+    const { result, customObjectField } = transformFilterField(
+      filter.field, enableMissingReferences, customObjectsByKey
+    )
+    filter.field = result
+
+    transformConditionValue({
+      customObjectField,
+      condition: filter,
+      enableMissingReferences,
+      instancesById,
+      usersById,
+    })
   })
 }
 /**
@@ -194,6 +255,8 @@ const customObjectFieldsFilter: FilterCreator = ({ config, client }) => ({
       .filter(instance => instance.elemID.typeName === TRIGGER_TYPE_NAME)
     const ticketFields = instances
       .filter(instance => instance.elemID.typeName === TICKET_FIELD_TYPE_NAME)
+    const customObjectFields = instances
+      .filter(instance => instance.elemID.typeName === CUSTOM_OBJECT_FIELD_TYPE_NAME)
 
     const customObjectsByKey = _.keyBy(
       instances
@@ -203,10 +266,22 @@ const customObjectFieldsFilter: FilterCreator = ({ config, client }) => ({
     )
 
     triggers.forEach(
-      trigger => transformTriggerValue(trigger, instancesById, usersById, customObjectsByKey, enableMissingReferences)
+      trigger => transformTriggerValue({
+        trigger,
+        customObjectsByKey,
+        enableMissingReferences,
+        instancesById,
+        usersById,
+      })
     )
-    ticketFields.forEach(
-      ticketField => transformTicketFieldValue(ticketField, customObjectsByKey, enableMissingReferences)
+    ticketFields.concat(customObjectFields).forEach(
+      ticketField => transformRelationshipValue({
+        ticketField,
+        customObjectsByKey,
+        enableMissingReferences,
+        instancesById,
+        usersById,
+      })
     )
   },
 })

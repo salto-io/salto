@@ -117,7 +117,6 @@ export const transformCustomObjectLookupField = (
   const { customObjectKey } = ticketField.value.relationship_target_type?.match(CUSTOM_OBJECT_REGEX)?.groups ?? {}
   const customObject = customObjectsByKey[customObjectKey]
   if (customObjectKey === undefined || customObject === undefined) {
-    // TODO seroussi - is this needed and correct?
     return {
       result: createMissingRefTemplate({
         firstInstance: ticketFieldRef,
@@ -157,7 +156,7 @@ export const transformFilterField = (
   field: string,
   enableMissingReferences: boolean,
   customObjectsByKey: Record<string, InstanceElement>
-): TemplateExpression | string => {
+): TransformResult => {
   const createMissingRefTemplate = (args: MissingTemplateArgs): TemplateExpression | string => createMissingTemplate({
     ...args,
     enableMissingReferences,
@@ -168,12 +167,14 @@ export const transformFilterField = (
   // Lookup of the custom_object
   const customObject = customObjectsByKey[customObjectKey]
   if (customObject === undefined) {
-    return createMissingRefTemplate({
-      firstInstance: customObjectKey,
-      secondInstance: fieldKey,
-      missingInstanceName: customObjectKey,
-      missingInstanceType: CUSTOM_OBJECT_TYPE_NAME,
-    })
+    return {
+      result: createMissingRefTemplate({
+        firstInstance: customObjectKey,
+        secondInstance: fieldKey,
+        missingInstanceName: customObjectKey,
+        missingInstanceType: CUSTOM_OBJECT_TYPE_NAME,
+      }),
+    }
   }
 
   const customObjectRef = new ReferenceExpression(customObject.elemID, customObject)
@@ -182,13 +183,18 @@ export const transformFilterField = (
   const customObjectFieldRef = (customObject.value.custom_object_fields ?? []).filter(isResolvedReferenceExpression)
     .find((customField: ReferenceExpression) => customField.value.value.key === fieldKey)
   if (customObjectFieldRef === undefined) {
-    return createMissingRefTemplate({
-      firstInstance: customObjectRef,
-      secondInstance: fieldKey,
-      missingInstanceName: fieldKey,
-      missingInstanceType: CUSTOM_OBJECT_FIELD_TYPE_NAME,
-    })
+    return {
+      result: createMissingRefTemplate({
+        firstInstance: customObjectRef,
+        secondInstance: fieldKey,
+        missingInstanceName: fieldKey,
+        missingInstanceType: CUSTOM_OBJECT_FIELD_TYPE_NAME,
+      }),
+    }
   }
 
-  return buildFilterTemplate(customObjectRef, customObjectFieldRef)
+  return {
+    result: buildFilterTemplate(customObjectRef, customObjectFieldRef),
+    customObjectField: customObjectFieldRef.value,
+  }
 }

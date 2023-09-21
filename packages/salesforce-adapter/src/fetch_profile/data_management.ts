@@ -19,6 +19,7 @@ import { ConfigValidationError, validateRegularExpressions } from '../config_val
 import {
   DataManagementConfig,
   OutgoingReferenceBehavior,
+  outgoingReferenceBehaviors,
 } from '../types'
 import { DETECTS_PARENTS_INDICATOR } from '../constants'
 import { apiName } from '../transformers/transformer'
@@ -192,6 +193,15 @@ export const validateDataManagementConfig = (
     validateRegularExpressions(
       saltoAliasOverrides.map(override => override.objectsRegex),
       [...fieldPath, 'saltoAliasSettings', 'overrides'],
+    )
+  }
+  if (dataManagementConfig.brokenOutgoingReferencesSettings?.perTargetTypeOverrides !== undefined) {
+    Object.entries(dataManagementConfig.brokenOutgoingReferencesSettings.perTargetTypeOverrides).forEach(
+      ([type, outgoingRefBehavior]) => {
+        if (!outgoingReferenceBehaviors.includes(outgoingRefBehavior)) {
+          throw new ConfigValidationError([...fieldPath, 'brokenOutgoingReferencesSettings', 'perTargetTypeOverrides', type], `Per-target broken reference behavior must be one of ${outgoingReferenceBehaviors.join(',')}`)
+        }
+      }
     )
   }
 }

@@ -285,7 +285,7 @@ export const getTypeAndInstances = async ({
   getEntriesResponseValuesFunc,
   reversedSupportedTypes,
   customInstanceFilter,
-  requestContext,
+  additionalRequestContext,
 }: {
   adapterName: string
   typeName: string
@@ -299,7 +299,7 @@ export const getTypeAndInstances = async ({
   getEntriesResponseValuesFunc?: EntriesRequester
   reversedSupportedTypes: Record<string, string[]>
   customInstanceFilter?: (instances: InstanceElement[]) => InstanceElement[]
-  requestContext?: Record<string, unknown>
+  additionalRequestContext?: Record<string, unknown>
 }): Promise<Element[]> => {
   const entries = await getEntriesForType({
     adapterName,
@@ -313,7 +313,7 @@ export const getTypeAndInstances = async ({
     getElemIdFunc,
     getEntriesResponseValuesFunc,
     reversedSupportedTypes,
-    requestContext,
+    requestContext: additionalRequestContext,
   })
   const { type, nestedTypes, instances } = entries
   const filteredInstances = customInstanceFilter !== undefined ? customInstanceFilter(instances) : instances

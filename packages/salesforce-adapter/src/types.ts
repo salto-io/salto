@@ -148,7 +148,7 @@ export type SaltoManagementFieldSettings = {
   defaultFieldName: string
 }
 
-const outgoingReferenceBehaviors = ['ExcludeInstance', 'BrokenReference', 'InternalId'] as const
+export const outgoingReferenceBehaviors = ['ExcludeInstance', 'BrokenReference', 'InternalId'] as const
 export type OutgoingReferenceBehavior = typeof outgoingReferenceBehaviors[number]
 
 export type BrokenOutgoingReferencesSettings = {
@@ -257,11 +257,6 @@ const brokenOutgoingReferencesSettingsType = new ObjectType({
     },
     perTargetTypeOverrides: {
       refType: new MapType(BuiltinTypes.STRING),
-      annotations: {
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-          values: outgoingReferenceBehaviors,
-        }),
-      },
     },
   },
   annotations: {

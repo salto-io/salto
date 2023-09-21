@@ -55,6 +55,10 @@ const relationTypeToType = (relationshipTargetType: Value): string => {
   if (!_.isString(relationshipTargetType)) {
     return 'unknown'
   }
+  // TODO Seroussi - is this possible?
+  if (relationshipTargetType.startsWith('zen:custom_object')) {
+    return CUSTOM_OBJECT_TYPE_NAME
+  }
   switch (relationshipTargetType) {
     case 'zen:user':
       return 'user'
@@ -62,8 +66,6 @@ const relationTypeToType = (relationshipTargetType: Value): string => {
       return 'organization'
     case 'zen:ticket':
       return TICKET_FIELD_TYPE_NAME
-    // case 'zen:custom_object':
-    // return CUSTOM_OBJECT_TYPE_NAME // TODO Seroussi - is this possible? if so - is it by id or by key?
     default:
       return 'unknown'
   }
@@ -93,14 +95,14 @@ const transformTriggerValue = (
     customObjectsByKey,
     enableMissingReferences
   )
-  const conditions = (_.isArray(trigger.value.conditions?.all) ? trigger.value.conditions?.all : [])
-    .concat(_.isArray(trigger.value.conditions?.any) ? trigger.value.conditions?.any : [])
+  const conditions = (trigger.value.conditions?.all ?? []).concat(trigger.value.conditions?.any ?? [])
   const actions = _.isArray(trigger.value.actions) ? trigger.value.actions : []
 
   actions
     .filter(action => isCustomFieldValue(makeArray(action.value)[0]))
     .forEach(action => {
-      if (_.isArray(action.value)) {
+      // notification_user is a special case, value is an array and the first element is the custom_object field
+      if (action.field === 'notification_user') {
         action.value[0] = transformField(action.value[0]).result
       } else {
         action.value = transformField(action.value).result
@@ -111,6 +113,7 @@ const transformTriggerValue = (
     .filter(isRelevantCondition)
     .filter((condition: CustomObjectCondition) => isCustomFieldValue(condition.field))
     .forEach((condition: CustomObjectCondition) => {
+      // always false, used for type casting
       if (!_.isString(condition.field)) {
         return
       }
@@ -118,35 +121,34 @@ const transformTriggerValue = (
 
       condition.field = result
 
-      if (
-        condition.operator !== 'is'
-        || !_.isString(condition.value)
-        || ticketField === undefined
-        || customObjectField === undefined
-      ) {
+      if (ticketField === undefined || customObjectField === undefined
+        // These are special cases where the value is a reference to an element
+        || !['is', 'is_not'].includes(condition.operator) || !_.isString(condition.value)
+        || !['dropdown', 'lookup'].includes(customObjectField.value.type)) {
         return
       }
 
-      if (['dropdown', 'lookup'].includes(customObjectField.value.type)) {
-        const referencesElement = instancesById[condition.value] ?? usersById[condition.value]
-        if (referencesElement === undefined) {
-          if (enableMissingReferences) {
-            const missingType = customObjectField.value.type === 'dropdown'
-              ? CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME
-              : relationTypeToType(customObjectField.value.relationship_target_type)
-            const missingCustomOption = createMissingInstance(
-              ZENDESK,
-              missingType,
-              condition.value
-            )
-            condition.value = new ReferenceExpression(missingCustomOption.elemID)
-          }
-          return
+      // TODO seroussi - it might be possible that we need to check custom object by key
+      const referencesElement = instancesById[condition.value] ?? usersById[condition.value]
+
+      if (referencesElement === undefined) {
+        if (enableMissingReferences) {
+          const missingType = customObjectField.value.type === 'dropdown'
+            ? CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME
+            : relationTypeToType(customObjectField.value.relationship_target_type)
+          const missingCustomOption = createMissingInstance(
+            ZENDESK,
+            missingType,
+            condition.value
+          )
+          condition.value = new ReferenceExpression(missingCustomOption.elemID)
         }
-        condition.value = _.isString(referencesElement)
-          ? referencesElement
-          : new ReferenceExpression(referencesElement.elemID, referencesElement)
+        return
       }
+
+      condition.value = _.isString(referencesElement)
+        ? referencesElement // This is a user
+        : new ReferenceExpression(referencesElement.elemID, referencesElement) // This is anything else
     })
 }
 
@@ -174,7 +176,6 @@ const customObjectFieldsFilter: FilterCreator = ({ config, client }) => ({
   onFetch: async (elements: Element[]) => {
     const enableMissingReferences = config[FETCH_CONFIG].enableMissingReferences ?? false
 
-
     const instances = elements.filter(isInstanceElement)
 
     const paginator = createPaginator({
@@ -182,22 +183,23 @@ const customObjectFieldsFilter: FilterCreator = ({ config, client }) => ({
       paginationFuncCreator: paginate,
     })
 
-    // This is possible because according to Zendesk, the internal Id is unique across all types (SALTO-4805)
+    // It is possible to key all instance by id because the internal Id is unique across all types (SALTO-4805)
     const usersById = await getIdByEmail(paginator)
-    const instancesById = _.keyBy<InstanceElement>(
-      instances.filter(instance => instance.value.id !== undefined),
-      instance => instance.value.id
+    const instancesById = _.keyBy(
+      instances.filter(instance => _.isNumber(instance.value.id)),
+      instance => _.parseInt(instance.value.id)
     )
-
 
     const triggers = instances
       .filter(instance => instance.elemID.typeName === TRIGGER_TYPE_NAME)
     const ticketFields = instances
       .filter(instance => instance.elemID.typeName === TICKET_FIELD_TYPE_NAME)
 
-    const customObjectsByKey = _.keyBy<InstanceElement>(
-      instances.filter(instance => instance.elemID.typeName === CUSTOM_OBJECT_TYPE_NAME),
-      instance => instance.value.key
+    const customObjectsByKey = _.keyBy(
+      instances
+        .filter(instance => instance.elemID.typeName === CUSTOM_OBJECT_TYPE_NAME)
+        .filter(instance => _.isString(instance.value.key)),
+      instance => String(instance.value.key)
     )
 
     triggers.forEach(

@@ -37,6 +37,7 @@ const getCpqError = (
         'In Salesforce, navigate to Setup > Installed Packages > Salesforce CPQ > Configure > Additional Settings tab',
         'Check the "Triggers Disabled" checkbox',
         'Click "Save"',
+        'There may also be custom Apex triggers created by your team that fire on events on CPQ objects. If you have such triggers, you may consider disabling them too. Note that Salesforce only allows disabling Apex triggers in sandbox orgs, but your development team may have other mechanisms for disabling them in production, such as custom metadata types. ',
       ],
     },
     postAction: {
@@ -47,6 +48,7 @@ const getCpqError = (
         'In Salesforce, navigate to Setup > Installed Packages > Salesforce CPQ > Configure > Additional Settings tab',
         'Uncheck the "Triggers Disabled" checkbox',
         'Click "Save"',
+        'If you disabled any custom Apex triggers before deploying, re-enable them now',
       ],
     },
   },

@@ -77,7 +77,7 @@ zendesk {
 | [guide]                            | undefined (Guide will be disabled)| Configuration for defining which brands will be included in Zendesk Guide fetch
 | [resolveOrganizationIDs]           | false                             | When enabled, organization IDs will be replaced with organization names
 | includeAuditDetails                | false                             | When enabled, changed_at and changed_by information will be added to instances
-| handleIdenticalAttachmentConflicts | false                             | When enabled, one attachment will be kept from each set of duplicate article attachments
+| handleIdenticalAttachmentConflicts | false                             | When enabled, one attachment will be kept from each set of identical attachments (having the same hash) associated with the same article
 
 
 ## Fetch entry options

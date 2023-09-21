@@ -30,7 +30,11 @@ import { ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TYPE_NAME } from '../constants'
 const log = logger(module)
 
 
-const uniqueAttachmentField = (
+/**
+ * This function removed duplicates of attachments from the attachments field in article. It removes all the references
+ * that point to an attachment that has been removed previously.
+ */
+const makeAttachmentFieldUnique = (
   elements: Element[],
   idsToRemove: Set<number>,
 ): void => {
@@ -81,17 +85,17 @@ const filterCreator: FilterCreator = ({ config }) => ({
         duplicateElemIds.add(attachments[0].elemID.getFullName())
         return attachments.slice(1).map(att => att.value.id)
       }))
-    log.debug(`going to remove duplicates for attachments: ${Array.from(duplicateElemIds).join(',')}`)
+    log.debug('going to remove duplicates for attachments: %s', Array.from(duplicateElemIds).join(','))
 
     // remove duplicates from attachments field in article
-    uniqueAttachmentField(elements, idsToRemove)
+    makeAttachmentFieldUnique(elements, idsToRemove)
 
     _.remove(elements, elem =>
       isInstanceElement(elem)
       && elem.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME
       && idsToRemove.has(elem.value.id))
 
-    log.debug(`ids removed: ${Array.from(idsToRemove).join(',')}`)
+    log.debug('ids removed: %s', Array.from(idsToRemove).join(','))
   },
 })
 

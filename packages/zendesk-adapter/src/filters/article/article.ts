@@ -267,7 +267,9 @@ const isRemovedAttachment = (
   attachment: unknown,
   articleRemovedAttachmentsIds: Set<number>,
 ): boolean => {
-  const id = isReferenceExpression(attachment) ? getId(attachment.value) : undefined
+  const id = isReferenceExpression(attachment) && isInstanceElement(attachment.value)
+    ? getId(attachment.value)
+    : undefined
   return id !== undefined && articleRemovedAttachmentsIds.has(id)
 }
 
@@ -280,7 +282,7 @@ const getAttachmentData = (
   attachmentIdsFromArticleBody: Set<number | undefined>
 } => {
   const attachmentsIds = makeArray(article.value.attachments)
-    .filter(isReferenceExpression).map(ref => getId(ref.value))
+    .filter(isReferenceExpression).filter(ref => isInstanceElement(ref.value)).map(ref => getId(ref.value))
   const inlineAttachmentInstances = attachmentsIds
     .map(id => attachmentById[id])
     .filter(isInstanceElement)
@@ -363,7 +365,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
           .filter(attachment => getName(attachment) !== undefined),
         getName,
       )
-      const attachmentById: Record<string, InstanceElement> = _.keyBy(
+      const attachmentById: Record<number, InstanceElement> = _.keyBy(
         attachments
           .filter(isInstanceElement)
           .filter(attachment => getId(attachment) !== undefined),

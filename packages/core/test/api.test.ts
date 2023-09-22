@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression, Field, getChangeData, toChange, SeverityLevel, GetAdditionalReferencesFunc, Change, FixElementsFunc } from '@salto-io/adapter-api'
+import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression, Field, getChangeData, toChange, SeverityLevel, GetAdditionalReferencesFunc, Change, FixElementsFunc, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
@@ -859,6 +859,172 @@ describe('api.ts', () => {
         const accountsUsed = mockFetchChangesFromWorkspace.mock.calls[0][1]
         expect(accountsUsed).toEqual(['salto', 'netsuite'])
       })
+    })
+  })
+
+  describe('calculatePatchFromChanges', () => {
+    const type = new ObjectType({ elemID: new ElemID('salto', 'type') })
+    const modifiedInstance = toChange({
+      before: new InstanceElement('modified', type, { name: 'before', label: 'before' }),
+      after: new InstanceElement('modified', type, { name: 'after', label: 'after' }),
+    })
+    const nonExistModifiedInstance = toChange({
+      before: new InstanceElement('nonExistModified', type, { name: 'before' }),
+      after: new InstanceElement('nonExistModified', type, { name: 'after' }),
+    })
+    const addedInstance = toChange({
+      after: new InstanceElement('added', type, { name: 'after' }),
+    })
+    const existingAddedInstance = toChange({
+      after: new InstanceElement('existingAdded', type, { name: 'after' }),
+    })
+    const deletedInstance = toChange({
+      before: new InstanceElement('deleted', type, { name: 'before' }),
+    })
+    const nonExistDeletedInstance = toChange({
+      before: new InstanceElement('nonExistDeleted', type, { name: 'before' }),
+    })
+    const changes = [
+      modifiedInstance,
+      nonExistModifiedInstance,
+      addedInstance,
+      existingAddedInstance,
+      deletedInstance,
+      nonExistDeletedInstance,
+    ]
+    const pathIndex = new workspace.remoteMap.InMemoryRemoteMap<workspace.pathIndex.Path[]>(
+      changes
+        .filter(isAdditionOrModificationChange)
+        .map(getChangeData)
+        .map(element => ({ key: element.elemID.getFullName(), value: [['test']] }))
+    )
+
+    let patchChanges: fetch.FetchChange[]
+    beforeEach(async () => {
+      const elements = [
+        new InstanceElement('modified', type, { name: 'other', label: 'before' }),
+        new InstanceElement('existingAdded', type, { name: 'other' }),
+        new InstanceElement('deleted', type, { name: 'other' }),
+      ]
+      const ws = mockWorkspace({
+        elements,
+        stateElements: elements,
+        name: 'workspace',
+        accounts: ['salto'],
+        accountToServiceName: { salto: 'salto' },
+      })
+
+      patchChanges = await api.calculatePatchFromChanges({
+        workspace: ws,
+        changes,
+        pathIndex,
+      })
+    })
+
+    it('should calculate changes', () => {
+      expect(patchChanges).toHaveLength(6)
+    })
+    it('should calculate instance modification (conflict)', () => {
+      expect(patchChanges).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          change: expect.objectContaining({
+            id: new ElemID('salto', 'type', 'instance', 'modified', 'name'),
+            data: { before: 'other', after: 'after' },
+          }),
+          serviceChanges: [expect.objectContaining({
+            id: new ElemID('salto', 'type', 'instance', 'modified', 'name'),
+            data: { before: 'before', after: 'after' },
+          })],
+          pendingChanges: [expect.objectContaining({
+            id: new ElemID('salto', 'type', 'instance', 'modified', 'name'),
+            data: { before: 'before', after: 'other' },
+          })],
+        }),
+      ]))
+    })
+    it('should calculate instance modification', () => {
+      expect(patchChanges).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          change: expect.objectContaining({
+            id: new ElemID('salto', 'type', 'instance', 'modified', 'label'),
+            data: { before: 'before', after: 'after' },
+          }),
+          serviceChanges: [expect.objectContaining({
+            id: new ElemID('salto', 'type', 'instance', 'modified', 'label'),
+            data: { before: 'before', after: 'after' },
+          })],
+          pendingChanges: [],
+        }),
+      ]))
+    })
+    it('should calculate non existed instance modification (conflict)', () => {
+      expect(patchChanges).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          change: expect.objectContaining({
+            id: new ElemID('salto', 'type', 'instance', 'nonExistModified'),
+            data: { after: expect.objectContaining({ path: ['test'] }) },
+          }),
+          serviceChanges: [expect.objectContaining({
+            id: new ElemID('salto', 'type', 'instance', 'nonExistModified', 'name'),
+            data: { before: 'before', after: 'after' },
+          })],
+          pendingChanges: [expect.objectContaining({
+            id: new ElemID('salto', 'type', 'instance', 'nonExistModified'),
+            data: { before: expect.any(InstanceElement) },
+          })],
+        }),
+      ]))
+    })
+    it('should calculate existing instance addition (conflict)', () => {
+      expect(patchChanges).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          change: expect.objectContaining({
+            id: new ElemID('salto', 'type', 'instance', 'existingAdded', 'name'),
+            data: { before: 'other', after: 'after' },
+          }),
+          serviceChanges: [expect.objectContaining({
+            id: new ElemID('salto', 'type', 'instance', 'existingAdded'),
+            data: { after: expect.any(InstanceElement) },
+          })],
+          pendingChanges: [expect.objectContaining({
+            id: new ElemID('salto', 'type', 'instance', 'existingAdded'),
+            data: { after: expect.any(InstanceElement) },
+          })],
+        }),
+      ]))
+    })
+    it('should calculate instance addition', () => {
+      expect(patchChanges).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          change: expect.objectContaining({
+            id: new ElemID('salto', 'type', 'instance', 'added'),
+            data: { after: expect.objectContaining({ path: ['test'] }) },
+          }),
+          serviceChanges: [expect.objectContaining({
+            id: new ElemID('salto', 'type', 'instance', 'added'),
+            data: { after: expect.any(InstanceElement) },
+          })],
+          pendingChanges: [],
+        }),
+      ]))
+    })
+    it('should calculate instance deletion (conflict)', () => {
+      expect(patchChanges).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          change: expect.objectContaining({
+            id: new ElemID('salto', 'type', 'instance', 'deleted'),
+            data: { before: expect.any(InstanceElement) },
+          }),
+          serviceChanges: [expect.objectContaining({
+            id: new ElemID('salto', 'type', 'instance', 'deleted'),
+            data: { before: expect.any(InstanceElement) },
+          })],
+          pendingChanges: [expect.objectContaining({
+            id: new ElemID('salto', 'type', 'instance', 'deleted', 'name'),
+            data: { before: 'before', after: 'other' },
+          })],
+        }),
+      ]))
     })
   })
 

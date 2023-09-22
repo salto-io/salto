@@ -36,12 +36,15 @@ import {
   isAdditionOrModificationChange,
   ChangeError,
   AdapterOperations,
+  TopLevelElement,
+  isAdditionChange,
+  isRemovalChange,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises, collections, values, objects } from '@salto-io/lowerdash'
-import { Workspace, ElementSelector, elementSource, expressions, merger, selectElementIdsByTraversal, isTopLevelSelector } from '@salto-io/workspace'
+import { Workspace, ElementSelector, elementSource, expressions, merger, selectElementIdsByTraversal, isTopLevelSelector, pathIndex as pathIndexModule } from '@salto-io/workspace'
 import { EOL } from 'os'
 import {
   buildElementsSourceFromElements,
@@ -356,6 +359,42 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
     accountNameToConfigMessage,
     progressEmitter,
   }
+}
+
+type CalculatePatchFromChangesArgs = {
+  workspace: Workspace
+  changes: Change<TopLevelElement>[]
+  pathIndex: pathIndexModule.PathIndex
+}
+
+export const calculatePatchFromChanges = async (
+  {
+    workspace,
+    changes,
+    pathIndex,
+  }: CalculatePatchFromChangesArgs,
+): Promise<FetchChange[]> => {
+  const [additions, removalAndModifications] = _.partition(changes, isAdditionChange)
+  const [removals, modifications] = _.partition(removalAndModifications, isRemovalChange)
+  const beforeElements = [...removals, ...modifications].map(change => change.data.before)
+  const afterElements = [...additions, ...modifications].map(change => change.data.after)
+  const unmergedAfterElements = await awu(afterElements)
+    .flatMap(element => pathIndexModule.splitElementByPath(element, pathIndex))
+    .toArray()
+  const accounts = [...beforeElements, ...afterElements].map(element => element.elemID.adapter)
+  const partialFetchData = new Map(accounts.map(account => [account, { deletedElements: new Set<string>() }]))
+  removals.map(change => getChangeData(change).elemID).forEach(id => {
+    partialFetchData.get(id.adapter)?.deletedElements.add(id.getFullName())
+  })
+  const result = await calcFetchChanges(
+    unmergedAfterElements,
+    afterElements,
+    elementSource.createInMemoryElementSource(beforeElements),
+    await workspace.elements(),
+    partialFetchData,
+    new Set(accounts),
+  )
+  return result.changes
 }
 
 type CalculatePatchArgs = {

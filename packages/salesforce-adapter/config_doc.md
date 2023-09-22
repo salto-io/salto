@@ -91,6 +91,9 @@ salesforce {
             User = "InternalId"
         }
       }
+      omittedFields = [
+        "PricebookEntry.Price",
+      ]
       saltoIDSettings = {
         defaultIdFields = [
           "##allMasterDetailFields##",
@@ -183,6 +186,8 @@ salesforce {
 | [saltoAliasSettings](#salto-alias-settings-configuration-options)             | N/A                                              | Configuration for data record aliases                                                                     |
 | [saltoManagementFieldSettings](#salto-management-field-configuration-options) | {}                                               | Configuration for managed-by-Salto field                                                                  |
 | [brokenOutgoingReferencesSettings](#broken-outgoing-references-settings)      | {}                                               | Configuration for handling broken references                                                              |
+| omittedFields                                                                 | []                                               | List of fields to discard when fetching data records. Entries are of the form "<Type>.<FieldName>".       |
+
 
 #### Salto ID settings configuration options
 

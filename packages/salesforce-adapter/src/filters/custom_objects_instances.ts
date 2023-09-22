@@ -45,6 +45,7 @@ import {
   getFieldNamesForQuery,
   safeApiName,
   isQueryableField,
+  apiNameSync,
 } from './utils'
 import { ConfigChangeSuggestion, DataManagement } from '../types'
 
@@ -69,6 +70,7 @@ export type CustomObjectFetchSetting = {
   invalidAliasFields: string[]
   invalidManagedBySaltoField?: string
   managedBySaltoField?: string
+  omittedFields?: string[]
 }
 
 const defaultRecordKeysToOmit = ['attributes']
@@ -107,11 +109,13 @@ const getRecords = async (
   type: ObjectType,
   ids?: string[],
   managedBySaltoField?: string,
+  omittedFields: string[] = [],
 ): Promise<RecordById> => {
   const queryableFields = getQueryableFields(type)
+    .filter(field => !omittedFields.includes(apiNameSync(field) ?? ''))
   const typeName = await apiName(type)
   if (_.isEmpty(queryableFields)) {
-    log.debug(`Type ${typeName} had no queryable fields`)
+    log.debug('Type %s had no queryable fields (%d fields omitted)', typeName, omittedFields.length)
     return {}
   }
   log.debug('Fetching records for type %s%s', typeName, managedBySaltoField ? `, filtering by ${managedBySaltoField}` : '')
@@ -379,7 +383,10 @@ const getReferencedRecords = async (
     const typeToMissingIds = getMissingReferencedIds(currentLevelRecords)
     const newReferencedRecords = await mapValuesAsync(
       typeToMissingIds,
-      (ids, typeName) => getRecords(client, customObjectFetchSetting[typeName].objectType, ids)
+      (ids, typeName) => {
+        const fetchSettings = customObjectFetchSetting[typeName]
+        return getRecords(client, fetchSettings.objectType, ids, undefined, fetchSettings.omittedFields)
+      }
     )
     if (_.isEmpty(newReferencedRecords)) {
       return
@@ -402,7 +409,7 @@ export const getAllInstances = async (
   log.debug('Base types: %o', _.keys(baseTypesSettings))
   const baseRecordByTypeAndId = await mapValuesAsync(
     baseTypesSettings,
-    setting => getRecords(client, setting.objectType, undefined, setting.managedBySaltoField)
+    setting => getRecords(client, setting.objectType, undefined, setting.managedBySaltoField, setting.omittedFields)
   )
   // Get reference to records
   const referencedRecordsByTypeAndId = await getReferencedRecords(
@@ -472,6 +479,7 @@ export const getCustomObjectsFetchSettings = async (
       ...await getIdFields(type, dataManagement),
       managedBySaltoField: managedBySaltoFieldName,
       invalidManagedBySaltoField: isInvalidManagedBySaltoField(type) ? managedBySaltoFieldName : undefined,
+      omittedFields: dataManagement.omittedFieldsForType(apiNameSync(type)),
     }
   }
 

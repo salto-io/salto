@@ -21,7 +21,6 @@ import { apiName } from '../transformers/transformer'
 
 const { makeArray } = collections.array
 
-
 const DEFAULT_ALIAS_FIELDS: types.NonEmptyArray<string> = [DETECTS_PARENTS_INDICATOR, 'Name']
 const ALIAS_FIELDS_BY_TYPE: Record<string, types.NonEmptyArray<string>> = {
   SBQQ__ProductFeature__c: [
@@ -146,6 +145,15 @@ export const buildDataManagement = (params: DataManagementConfig): DataManagemen
         : ALIAS_FIELDS_BY_TYPE[name] ?? defaultFields
     },
     showReadOnlyValues: params.showReadOnlyValues,
+    omittedFieldsForType: name => {
+      if (name === undefined) {
+        return []
+      }
+      const typePrefix = `${name}.`
+      return (params.omittedFields ?? [])
+        .filter(fieldName => fieldName.startsWith(typePrefix))
+        .map(fieldName => fieldName.slice(typePrefix.length))
+    },
   }
 }
 

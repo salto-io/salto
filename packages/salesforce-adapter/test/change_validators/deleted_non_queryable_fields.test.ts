@@ -18,6 +18,7 @@ import {
   ChangeError,
   ChangeValidator,
   CORE_ANNOTATIONS,
+  getChangeData,
   InstanceElement,
   ModificationChange,
   ObjectType,
@@ -125,16 +126,25 @@ describe('deletedNonQueryableFields', () => {
       })
     })
     describe('there are non-system non-queryable fields', () => {
+      let changes: ModificationChange<InstanceElement>[]
       beforeEach(async () => {
         const typeWithQueryableFields = createTypeForTest({
           fieldIsQueryable: false,
           fieldIsHidden: false,
           fieldIsReadOnly: false,
         })
-        warnings = await changeValidator([createInstanceChangeForType(typeWithQueryableFields)])
+        changes = [createInstanceChangeForType(typeWithQueryableFields)]
+        warnings = await changeValidator(changes)
       })
       it('should warn', () => {
-        expect(warnings).not.toBeEmpty()
+        expect(warnings).toEqual([
+          {
+            elemID: getChangeData(changes[0]).elemID,
+            severity: 'Warning',
+            message: expect.stringContaining('SomeType'),
+            detailedMessage: expect.stringContaining('SomeField'),
+          },
+        ])
       })
     })
   })

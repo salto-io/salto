@@ -196,14 +196,22 @@ const merge2Strings = (
   second: string,
   { stringSeparator }: { stringSeparator: string }
 ): { conflict: boolean; result: string[] } => {
-  const lines1 = first.split(stringSeparator)
-  const lines2 = second.split(stringSeparator)
-  const patch = diff3.diffPatch(lines1, lines2)
-  if (patch.some(({ buffer1, buffer2 }) => buffer1.length && buffer2.length)) {
+  const result = diff3.diffComm(
+    first.split(stringSeparator),
+    second.split(stringSeparator)
+  // the casting will be fixed in @salto-io/node-diff3 package
+  ) as Array<{ buffer1: string[]; buffer2: string[] } | { common: string[] }>
+  if (result.some(chunk => !('common' in chunk) && chunk.buffer1.length && chunk.buffer2.length)) {
     return { conflict: true, result: [] }
   }
-  const additions = patch.filter(({ buffer2 }) => buffer2.length)
-  return { conflict: false, result: diff3.patch(lines1, additions) }
+  return {
+    conflict: false,
+    result: result.flatMap(chunk => (
+      'common' in chunk
+        ? chunk.common
+        : chunk.buffer1.concat(chunk.buffer2)
+    )),
+  }
 }
 
 const mergeStrings = (

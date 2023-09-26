@@ -36,8 +36,6 @@ import { ZendeskMissingReferenceStrategyLookup, ZendeskMissingReferenceStrategyN
 
 const { neighborContextGetter } = referenceUtils
 
-const CUSTOM_OBJECT_PREFIX = 'zen:custom_object:'
-
 const neighborContextFunc = (args: {
   contextFieldName: string
   levelsUp?: number
@@ -113,6 +111,7 @@ const ALTERNATE_USER_FIELD_PREFIX = 'user.custom_fields.'
 const TICKET_FIELD_OPTION_TYPE_NAME = 'ticket_field__custom_field_options'
 const ORG_FIELD_OPTION_TYPE_NAME = 'organization_field__custom_field_options'
 const USER_FIELD_OPTION_TYPE_NAME = 'user_field__custom_field_options'
+const CUSTOM_OBJECT_PREFIX = 'zen:custom_object:'
 
 const customFieldOptionSerialization: GetLookupNameFunc = ({ ref }) => {
   const fieldName = ref.elemID.typeName === TICKET_FIELD_OPTION_TYPE_NAME ? 'value' : 'id'
@@ -1048,6 +1047,7 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
       parentTypes: [CUSTOM_OBJECT_FIELD_TYPE_NAME, TICKET_FIELD_TYPE_NAME],
     },
     zendeskSerializationStrategy: 'customObjectKey',
+    zendeskMissingRefStrategy: 'startsWith',
     target: { type: CUSTOM_OBJECT_TYPE_NAME },
   },
 ]

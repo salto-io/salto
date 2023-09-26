@@ -106,7 +106,8 @@ const transformConditionValue = ({
 }): void => {
   if (customObjectField === undefined
     // These are special cases where the value is a reference to an element
-    || !['is', 'is_not'].includes(condition.operator) || !_.isString(condition.value)
+    || !['is', 'is_not'].includes(condition.operator)
+    || !(_.isString(condition.value) || _.isNumber(condition.value))
     || !['dropdown', 'lookup'].includes(customObjectField.value.type)) {
     return
   }
@@ -116,13 +117,14 @@ const transformConditionValue = ({
 
   if (referencesElement === undefined) {
     if (enableMissingReferences) {
-      const missingType = customObjectField.value.type === 'dropdown'
-        ? CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME
-        : relationTypeToType(customObjectField.value.relationship_target_type)
+      const missingType = customObjectField.value.type === 'lookup'
+        // lookup value type is based on the relationship_target_type of the custom object field
+        ? relationTypeToType(customObjectField.value.relationship_target_type)
+        : CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME
       const missingCustomOption = createMissingInstance(
         ZENDESK,
         missingType,
-        condition.value
+        condition.value.toString(),
       )
       condition.value = new ReferenceExpression(missingCustomOption.elemID)
     }
@@ -193,21 +195,21 @@ const transformTriggerValue = ({
 }
 
 const transformRelationshipValue = ({
-  ticketField,
+  instance,
   instancesById,
   usersById,
   customObjectsByKey,
   enableMissingReferences,
 }:
 {
-  ticketField: InstanceElement
+  instance: InstanceElement
   instancesById: Record<string, InstanceElement>
   usersById: Record<string, string>
   customObjectsByKey: Record<string, InstanceElement>
   enableMissingReferences: boolean
 }): void => {
-  const relevantRelationShipFilters = (ticketField.value.relationship_filter?.all ?? [])
-    .concat(ticketField.value.relationship_filter?.any ?? [])
+  const relevantRelationShipFilters = (instance.value.relationship_filter?.all ?? [])
+    .concat(instance.value.relationship_filter?.any ?? [])
     .filter(isRelevantFilter)
 
   relevantRelationShipFilters.forEach((filter: Filter) => {
@@ -275,8 +277,8 @@ const customObjectFieldsFilter: FilterCreator = ({ config, client }) => ({
       })
     )
     ticketFields.concat(customObjectFields).forEach(
-      ticketField => transformRelationshipValue({
-        ticketField,
+      instance => transformRelationshipValue({
+        instance,
         customObjectsByKey,
         enableMissingReferences,
         instancesById,

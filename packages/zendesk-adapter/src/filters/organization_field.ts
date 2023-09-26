@@ -51,7 +51,6 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       relevantChanges,
       change => getChangeData(change).elemID.typeName === ORG_FIELD_TYPE_NAME,
     )
-    // TODO - make this generic and add custom object?
     const additionalParentChanges = parentChanges.length === 0 && childrenChanges.length > 0
       ? await createAdditionalParentChanges(childrenChanges)
       : []

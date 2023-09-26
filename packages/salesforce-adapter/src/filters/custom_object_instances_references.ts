@@ -53,6 +53,8 @@ import {
   isLookupField,
   isMasterDetailField,
   isReadOnlyField,
+  apiNameSync,
+  isHierarchyField,
   safeApiName,
 } from './utils'
 import { DataManagement } from '../types'
@@ -185,8 +187,22 @@ const createWarnings = async (
 }
 
 const isReferenceField = (field?: Field): field is Field => (
-  isDefined(field) && (isLookupField(field) || isMasterDetailField(field))
+  isDefined(field) && (isLookupField(field) || isMasterDetailField(field) || isHierarchyField(field))
 )
+
+const referenceFieldTargetTypes = (field: Field): string[] => {
+  if (isLookupField(field) || isMasterDetailField(field)) {
+    return makeArray(field.annotations?.[FIELD_ANNOTATIONS.REFERENCE_TO])
+  }
+  if (isHierarchyField(field)) {
+    // hierarchy fields always reference the type that contains them
+    return makeArray(apiNameSync(field.parent))
+  }
+  log.warn('Unknown reference field type %s for field %s',
+    field.refType.elemID.getFullName(),
+    field.elemID.getFullName())
+  return []
+}
 
 const replaceLookupsWithRefsAndCreateRefMap = async (
   instances: InstanceElement[],
@@ -207,7 +223,7 @@ const replaceLookupsWithRefsAndCreateRefMap = async (
       if (!isReferenceField(field)) {
         return value
       }
-      const refTo = makeArray(field?.annotations?.[FIELD_ANNOTATIONS.REFERENCE_TO])
+      const refTo = referenceFieldTargetTypes(field)
 
       const refTarget = refTo
         .map(targetTypeName => internalToInstance[serializeInternalID(targetTypeName, value)])

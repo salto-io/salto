@@ -197,7 +197,11 @@ export const isHiddenField = (field: Field): boolean => (
 )
 
 export const isReadOnlyField = (field: Field): boolean => (
-  !field.annotations[FIELD_ANNOTATIONS.CREATABLE] && !field.annotations[FIELD_ANNOTATIONS.UPDATEABLE]
+  field.annotations[FIELD_ANNOTATIONS.CREATABLE] === false && field.annotations[FIELD_ANNOTATIONS.UPDATEABLE] === false
+)
+
+export const isHierarchyField = (field: Field): boolean => (
+  field.refType.elemID.isEqual(Types.primitiveDataTypes.Hierarchy.elemID)
 )
 
 export const getInstancesOfMetadataType = async (elements: Element[], metadataTypeName: string):

@@ -113,7 +113,6 @@ import handleAppInstallationsFilter from './filters/handle_app_installations'
 import brandLogoFilter from './filters/brand_logo'
 import articleFilter from './filters/article/article'
 import articleBodyFilter from './filters/article/article_body'
-// import { getConfigFromConfigChanges } from './config_change'
 import { dependencyChanger } from './dependency_changers'
 import deployBrandedGuideTypesFilter from './filters/deploy_branded_guide_types'
 import { Credentials } from './auth'
@@ -662,8 +661,12 @@ export default class ZendeskAdapter implements AdapterOperations {
     const result = await (await this.createFiltersRunner({ brandIdToClient }))
       .onFetch(elements) as FilterResult
     const updatedConfig = this.configInstance && configChanges
-      ? configUtils.getConfigFromConfigChanges(configChanges, this.configInstance, configType, ZENDESK)
-      : undefined
+      ? configUtils.getConfigWithExcludeFromConfigChanges({
+        configChanges,
+        currentConfig: this.configInstance,
+        configType,
+        adapterName: ZENDESK,
+      }) : undefined
 
     const fetchErrors = (errors ?? []).concat(result.errors ?? []).concat(localeError ?? [])
     if (this.logIdsFunc !== undefined) {

@@ -15,7 +15,7 @@
 */
 
 import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
-import { createAdapterApiConfigType, createTransformationConfigTypes, getConfigFromConfigChanges } from '../../src/config'
+import { createAdapterApiConfigType, createTransformationConfigTypes, getConfigWithExcludeFromConfigChanges } from '../../src/config'
 
 describe('config_change', () => {
   let config: InstanceElement
@@ -38,15 +38,15 @@ describe('config_change', () => {
     )
   })
   it('should return undefined when no changes are suggested', () => {
-    expect(getConfigFromConfigChanges([], config, configType, 'Defualt')).toBeUndefined()
+    expect(getConfigWithExcludeFromConfigChanges({ configChanges: [], currentConfig: config, configType, adapterName: 'Defualt' })).toBeUndefined()
   })
-  it('should return new config when changes are suggested amd a message', () => {
-    const configChange = getConfigFromConfigChanges(
-      [{ typeToExclude: 'bType' }],
-      config,
+  it('should return new config when changes are suggested and a message', () => {
+    const configChange = getConfigWithExcludeFromConfigChanges({
+      configChanges: [{ typeToExclude: 'bType' }],
+      currentConfig: config,
       configType,
-      'Defualt'
-    )
+      adapterName: 'Defualt',
+    })
     expect(configChange?.config).toHaveLength(1)
     expect(configChange?.config[0].value.fetch.include).toEqual([{ type: 'aType' }])
     expect(configChange?.config[0].value.fetch.exclude).toEqual([{ type: 'Type1' }, { type: 'bType' }])

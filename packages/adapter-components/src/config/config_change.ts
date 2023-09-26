@@ -17,18 +17,26 @@ import { collections } from '@salto-io/lowerdash'
 import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
 
 import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
-import { ConfigChangeSuggestion } from './shared'
-
 
 const { makeArray } = collections.array
 const FETCH_CONFIG = 'fetch'
 
-export const getConfigFromConfigChanges = (
-  configChanges: ConfigChangeSuggestion[],
-  currentConfig: InstanceElement,
-  configType: ObjectType,
-  adapterName: string,
-): { config: InstanceElement[]; message: string } | undefined => {
+export type ConfigChangeSuggestion = {
+  typeToExclude: string
+}
+
+// When some items cannot be fetched, they are excluded from the fetch process, and the user is notified.
+export const getConfigWithExcludeFromConfigChanges = ({
+  configChanges,
+  currentConfig,
+  configType,
+  adapterName,
+}: {
+  configChanges: ConfigChangeSuggestion[]
+  currentConfig: InstanceElement
+  configType: ObjectType
+  adapterName: string
+}): { config: InstanceElement[]; message: string } | undefined => {
   const typesToRemove = makeArray(configChanges).map(e => e.typeToExclude)
 
   if (typesToRemove.length === 0) {

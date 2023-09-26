@@ -92,7 +92,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   installedPackages: () => installedPackages,
   dataCategoryGroup: () => dataCategoryGroupValidator,
   standardFieldOrObjectAdditionsOrDeletions: () => standardFieldOrObjectAdditionsOrDeletions,
-  deletedNonQueryableFields,
+  deletedNonQueryableFields: () => deletedNonQueryableFields,
   ..._.mapValues(getDefaultChangeValidators(), validator => (() => validator)),
 }
 

@@ -16,7 +16,6 @@
 import {
   BuiltinTypes,
   ChangeError,
-  ChangeValidator,
   CORE_ANNOTATIONS,
   getChangeData,
   InstanceElement,
@@ -30,10 +29,9 @@ import {
 } from '../utils'
 import { createInstanceElement } from '../../src/transformers/transformer'
 import { FIELD_ANNOTATIONS } from '../../src/constants'
-import deletedNonQueryableFields from '../../src/change_validators/deleted_non_queryable_fields'
+import changeValidator from '../../src/change_validators/deleted_non_queryable_fields'
 
 describe('deletedNonQueryableFields', () => {
-  let changeValidator: ChangeValidator
   let warnings: ReadonlyArray<ChangeError>
 
   const createTypeForTest = (
@@ -56,11 +54,6 @@ describe('deletedNonQueryableFields', () => {
     })
     return type
   }
-
-
-  beforeEach(() => {
-    changeValidator = deletedNonQueryableFields()
-  })
 
   describe('addition change', () => {
     describe('some fields are non-queryable', () => {

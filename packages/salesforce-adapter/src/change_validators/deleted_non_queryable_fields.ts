@@ -68,7 +68,7 @@ const createNonQueryableFieldsWarning = (
  * will be fetched without values for said fields. If we later try to deploy these instances, these missing values are
  * interpreted as if we want to delete the values of these fields. This is probably not what the user wants.
  * */
-const changeValidator = (): ChangeValidator => async changes => (
+const changeValidator: ChangeValidator = async changes => (
   changes
     .filter(isInstanceChange)
     .filter(isModificationChange)

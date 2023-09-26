@@ -20,29 +20,17 @@ import {
   getChangeData,
   InstanceElement,
   ChangeError,
-  Field,
-  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { values, types } from '@salto-io/lowerdash'
-import { FIELD_ANNOTATIONS } from '../constants'
 import {
   apiNameSync,
+  isHiddenField,
+  isQueryableField,
+  isReadOnlyField,
 } from '../filters/utils'
 
 const { isDefined } = values
 const { isNonEmptyArray } = types
-
-const isQueryableField = (field: Field): boolean => (
-  field.annotations[FIELD_ANNOTATIONS.QUERYABLE] === true
-)
-
-const isHiddenField = (field: Field): boolean => (
-  field.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] === true
-)
-
-const isReadOnlyField = (field: Field): boolean => (
-  !field.annotations[FIELD_ANNOTATIONS.CREATABLE] && !field.annotations[FIELD_ANNOTATIONS.UPDATEABLE]
-)
 
 const getVisibleNonQueryableFieldsOfInstanceType = (instance: InstanceElement): string[] => (
   Object.values(instance.getTypeSync().fields)

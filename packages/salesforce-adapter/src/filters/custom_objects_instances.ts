@@ -44,6 +44,7 @@ import {
   buildSelectQueries,
   getFieldNamesForQuery,
   safeApiName,
+  isQueryableField,
 } from './utils'
 import { ConfigChangeSuggestion } from '../types'
 import { DataManagement } from '../fetch_profile/data_management'
@@ -81,10 +82,6 @@ const isReferenceField = (field: Field): boolean => (
 
 const getReferenceTo = (field: Field): string[] =>
   makeArray(field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]) as string[]
-
-const isQueryableField = (field: Field): boolean => (
-  field.annotations[FIELD_ANNOTATIONS.QUERYABLE] === true
-)
 
 const getQueryableFields = (object: ObjectType): Field[] => (
   Object.values(object.fields).filter(isQueryableField)

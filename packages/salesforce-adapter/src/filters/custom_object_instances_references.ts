@@ -49,7 +49,12 @@ import {
   KEY_PREFIX_LENGTH,
   SALESFORCE,
 } from '../constants'
-import { isLookupField, isMasterDetailField, safeApiName } from './utils'
+import {
+  isLookupField,
+  isMasterDetailField,
+  isReadOnlyField,
+  safeApiName,
+} from './utils'
 import { DataManagement } from '../fetch_profile/data_management'
 
 const { makeArray } = collections.array
@@ -198,11 +203,6 @@ const replaceLookupsWithRefsAndCreateRefMap = async (
     instance: InstanceElement
   ): Promise<Values> => {
     const transformFunc: TransformFunc = async ({ value, field }) => {
-      const isReadOnlyField = (fieldToCheck: Field): boolean => (
-        !(fieldToCheck?.annotations?.[FIELD_ANNOTATIONS.CREATABLE] ?? true)
-        && !(fieldToCheck?.annotations?.[FIELD_ANNOTATIONS.UPDATEABLE] ?? true)
-      )
-
       if (!isReferenceField(field)) {
         return value
       }

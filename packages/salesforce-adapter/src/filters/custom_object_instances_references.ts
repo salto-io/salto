@@ -37,6 +37,7 @@ import {
   CORE_ANNOTATIONS,
   isObjectType,
   ObjectType,
+  isInstanceElement,
 } from '@salto-io/adapter-api'
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import {
@@ -329,9 +330,9 @@ const filter: RemoteFilterCreator = ({ client, config }) => ({
     if (dataManagement === undefined) {
       return {}
     }
-    const customObjectInstances = await awu(elements).filter(isInstanceOfCustomObject)
-      .toArray() as InstanceElement[]
-    const internalToInstance = await keyByAsync(customObjectInstances, serializeInstanceInternalID)
+    const allInstances = elements.filter(isInstanceElement)
+    const customObjectInstances = await awu(allInstances).filter(isInstanceOfCustomObject).toArray()
+    const internalToInstance = await keyByAsync(allInstances, serializeInstanceInternalID)
     const internalIdPrefixToType = await buildCustomObjectPrefixKeyMap(elements)
     const { reverseReferencesMap, missingRefs } = await replaceLookupsWithRefsAndCreateRefMap(
       customObjectInstances,

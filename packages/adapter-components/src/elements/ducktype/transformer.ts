@@ -388,7 +388,7 @@ export const getAllElements = async ({
     paginator,
     nestedFieldFinder,
     computeGetArgs,
-    requestContext: additionalRequestContext,
+    additionalRequestContext,
     typesConfig: types,
     typeDefaultConfig: typeDefaults,
     getElemIdFunc,

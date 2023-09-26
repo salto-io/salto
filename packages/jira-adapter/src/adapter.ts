@@ -147,7 +147,6 @@ import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uu
 import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
 import { jiraJSMEntriesFunc } from './jsm_utils'
-import { getConfigFromConfigChanges } from './config_change'
 
 const { getAllElements } = elementUtils.ducktype
 const { findDataField, computeGetArgs } = elementUtils

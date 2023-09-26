@@ -27,71 +27,59 @@ import { BlockBase } from '../cross_service/recipe_block_types'
 
 const log = logger(module)
 
-type keyValue = {
+type KeyValue = {
   key: string
   value: Value
+  toggleCfg?: boolean
 }
 
-type recipeInputBlock = BlockBase & {
+type RecipeToggleCfgBlock = BlockBase & {
   as: string
   provider: string
-  newInput: Array<keyValue>
-  input: {
-    [key: string]: Value
+  content: Array<KeyValue>
+  toggleCfg: {
+    [key: string]: boolean
    }
 }
-
-const RECIPE_INPUT_BLOCK_SCHEMA = Joi.object({
-  keyword: Joi.string().invalid('if').required(),
-  as: Joi.string().required(),
-  provider: Joi.string().required(),
-  input: Joi.object().min(1).unknown(true).required(),
-}).unknown(true).required()
 
 const KEY_VALUE_SCHEMA = Joi.object({
   key: Joi.string().required(),
   value: Joi.any().required(),
 }).unknown(true).required()
 
-const RECIPE_NEW_INPUT_BLOCK_SCHEMA = Joi.object({
+const RECIPE_TOGGLE_CFG_BLOCK_SCHEMA = Joi.object({
   keyword: Joi.string().invalid('if').required(),
   as: Joi.string().required(),
   provider: Joi.string().required(),
-  newInput: Joi.array().items(KEY_VALUE_SCHEMA).min(1).required(),
+  content: Joi.array().items(KEY_VALUE_SCHEMA).min(1).required(),
+  toggleCfg: Joi.object().min(1).required(),
 }).unknown(true).required()
+
+// const RECIPE_NEW_INPUT_BLOCK_SCHEMA = Joi.object({
+//   keyword: Joi.string().invalid('if').required(),
+//   as: Joi.string().required(),
+//   provider: Joi.string().required(),
+//   content: Joi.array().items(KEY_VALUE_SCHEMA).min(1).required(),
+// }).unknown(true).required()
 
 
 const transformServerToNacl: TransformFunc = async ({ value }) => {
-  if (createSchemeGuard<recipeInputBlock>(RECIPE_INPUT_BLOCK_SCHEMA)(value)) {
-    value.newInput = [] // TODO if we change to second version change it to the 'content' item
-    Object.keys(value.input).forEach(key => {
-      value.newInput.push({
-        key,
-        value: value.input[key],
-      })
+  if (createSchemeGuard<RecipeToggleCfgBlock>(RECIPE_TOGGLE_CFG_BLOCK_SCHEMA)(value)) {
+    value.content.forEach(item => {
+      if (value.toggleCfg[item.key] !== undefined) {
+        item.toggleCfg = value.toggleCfg[item.key]
+        delete value.toggleCfg[item.key]
+      }
     })
-    if (Object.keys(value.input).length !== 0) {
-      log.warn(`Unknown input keys found in recipe block ${value.as}: ${Object.keys(value.input)}`)
+    if (Object.keys(value.toggleCfg).length !== 0) {
+      log.warn(`Found unknown toggleCfg keys: ${Object.keys(value.toggleCfg)}`)
     }
-    return _.omit(value, 'input')
+    return _.omit(value, 'toggleCfg')
   }
   return value
 }
 
-const transformNaclToServer: TransformFunc = async ({ value }) => {
-  if (createSchemeGuard<recipeInputBlock>(RECIPE_NEW_INPUT_BLOCK_SCHEMA)(value)) {
-    value.input = {}
-    value.newInput.forEach(item => { // TODO if we change to second version change it to the 'content' item
-      value.input[item.key] = item.value
-    })
-    if (Object.keys(value.newInput).length !== 0) {
-      log.warn(`Unknown newInput keys found in recipe block ${value.as}: ${Object.keys(value.input)}`)
-    }
-    return _.omit(value, 'newInput')
-  }
-  return value
-}
-
+const transformNaclToServer: TransformFunc = async ({ value }) => value
 const transformRecipeBlock = async (instance: InstanceElement, transformFunc: TransformFunc): Promise<void> => {
   instance.value = await transformValues({
     values: instance.value,
@@ -103,31 +91,18 @@ const transformRecipeBlock = async (instance: InstanceElement, transformFunc: Tr
 }
 
 /**
- * Change the input format of recipe blocks to support cross-service references addition.
- * From each input key-value we will create a new item with key and value.
- * For example:
- * input: {
- *  <key_name1> : <value_name1>,
- *  ...
- * }
- * will be changed to:
- * input: [
- *  {
- *    key: <key_name1>
- *    value: <value_name1>
- *  },
- *  ...
- * ]
+ * Change the toggleCfg format of recipe blocks to support cross-service references addition.
+ * Each toggleCFG key will be addws to content item.
  */
 const filterCreator: FilterCreator = () => ({
-  name: 'recipeBlockInputFormatFilter',
+  name: 'recipeBlockToggleCfgFormatFilter',
   onFetch: async (elements: Element[]) => {
     await Promise.all(elements
       .filter(isInstanceElement)
       .filter(isInstanceFromType([RECIPE_CODE_TYPE]))
       .map(instance => transformRecipeBlock(instance, transformServerToNacl)))
   },
-  preDeploy: async changes => {
+  preDeploy: async changes => { // TODO
     await Promise.all(changes
       .filter(isInstanceChange)
       .map(getChangeData)

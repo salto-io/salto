@@ -16,11 +16,11 @@
 import { ElemID, InstanceElement, ObjectType, Element } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { WORKATO } from '../../src/constants'
-import WorkatoClient from '../../src/client/client'
-import { paginate } from '../../src/client/pagination'
-import { DEFAULT_CONFIG } from '../../src/config'
-import filterCreator from '../../src/filters/recipe_format/block_extended_output_format'
+import { WORKATO } from '../../../src/constants'
+import WorkatoClient from '../../../src/client/client'
+import { paginate } from '../../../src/client/pagination'
+import { DEFAULT_CONFIG } from '../../../src/config'
+import filterCreator from '../../../src/filters/recipe_block_format/block_input_format'
 
 describe('blockInputFilter filter', () => {
   let client: WorkatoClient
@@ -221,7 +221,7 @@ describe('blockInputFilter filter', () => {
 
     elements = [recipeCodeServerSide, notRecipeCode]
   })
-  describe('onFetch', () => {
+  describe('onFetch', () => { // TODO add tests for toggleCFG
     it('should keep elements from non recipe__code type', async () => {
       const notRecipeCodeBefore = _.cloneDeep(notRecipeCode)
 

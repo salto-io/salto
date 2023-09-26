@@ -14,46 +14,38 @@
 * limitations under the License.
 */
 import {
-  Element, InstanceElement, Value, Values, getChangeData, isInstanceChange, isInstanceElement,
+  Element, InstanceElement, Value, getChangeData, isInstanceChange, isInstanceElement,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { TransformFunc, WALK_NEXT_STEP, createSchemeGuard, transformValues, walkOnElement } from '@salto-io/adapter-utils'
+import { TransformFunc, createSchemeGuard, transformValues } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import _ from 'lodash'
 import { RECIPE_CODE_TYPE, RECIPE_TYPE } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { isInstanceFromType } from '../../utils'
 import { BlockBase } from '../cross_service/recipe_block_types'
-import { createMatcher } from '../cross_service/reference_finders'
 
 const log = logger(module)
 
+type KeyValue = {
+  key: string
+  value: Value
+}
 
-type BlockFormula = { block: string; path: string }
-const isBlockFormula = (val: Values): val is BlockFormula => (
-  _.isString(val.block)
-  && _.isString(val.path)
-)
-
-const formulaMatcher = createMatcher(
-  [new RegExp('\\{_\\(\'data\\.[^\\.]*?\\.(?<block>\\w+)\\.(?<path>\\w+)\'\\)\\}', 'g')],
-  isBlockFormula,
-)
-
-type recipeExtendedOutputSchemaBlock = BlockBase & {
+type RecipeInputBlock = BlockBase & {
   as: string
   provider: string
-  // eslint-disable-next-line camelcase
-  extended_output_schema: {
+  content: Array<KeyValue>
+  input: {
     [key: string]: Value
    }
 }
 
-const RECIPE_EXTENDED_OUTPUT_SCHEMA_BLOCK_SCHEMA = Joi.object({
-  keyword: Joi.string().required(),
+const RECIPE_INPUT_BLOCK_SCHEMA = Joi.object({
+  keyword: Joi.string().invalid('if').required(),
   as: Joi.string().required(),
   provider: Joi.string().required(),
-  extended_output_schema: Joi.object().min(1).unknown(true).required(),
+  input: Joi.object().min(1).unknown(true).required(),
 }).unknown(true).required()
 
 const KEY_VALUE_SCHEMA = Joi.object({
@@ -61,16 +53,19 @@ const KEY_VALUE_SCHEMA = Joi.object({
   value: Joi.any().required(),
 }).unknown(true).required()
 
-const getTransformToMinimalExtendedOutputSchemaFunc = ( 
-  formulasByBlock: Record<string, Array<Object>> // TODO Im here
-): TransformFunc => async ({ value }) => {
-  if (createSchemeGuard<recipeExtendedOutputSchemaBlock>(
-    RECIPE_EXTENDED_OUTPUT_SCHEMA_BLOCK_SCHEMA
-  )(value)) {
-    const minimalOutputSchema = {}
-    const formulas = formulasByBlock[value.as] ?? []
-    Object.keys(value.extended_output_schema).forEach(key => {
-      value.newInput.push({
+const RECIPE_NEW_INPUT_BLOCK_SCHEMA = Joi.object({
+  keyword: Joi.string().invalid('if').required(),
+  as: Joi.string().required(),
+  provider: Joi.string().required(),
+  content: Joi.array().items(KEY_VALUE_SCHEMA).min(1).required(),
+}).unknown(true).required()
+
+
+const transformServerToNacl: TransformFunc = async ({ value }) => {
+  if (createSchemeGuard<RecipeInputBlock>(RECIPE_INPUT_BLOCK_SCHEMA)(value)) {
+    value.content = []
+    Object.keys(value.input).forEach(key => {
+      value.content.push({
         key,
         value: value.input[key],
       })
@@ -84,15 +79,15 @@ const getTransformToMinimalExtendedOutputSchemaFunc = (
 }
 
 const transformNaclToServer: TransformFunc = async ({ value }) => {
-  if (createSchemeGuard<recipeExtendedOutputSchemaBlock>(RECIPE_NEW_INPUT_BLOCK_SCHEMA)(value)) {
+  if (createSchemeGuard<RecipeInputBlock>(RECIPE_NEW_INPUT_BLOCK_SCHEMA)(value)) {
     value.input = {}
-    value.newInput.forEach(item => { // TODO if we change to second version change it to the 'content' item
+    value.content.forEach(item => {
       value.input[item.key] = item.value
     })
-    if (Object.keys(value.newInput).length !== 0) {
-      log.warn(`Unknown newInput keys found in recipe block ${value.as}: ${Object.keys(value.input)}`)
+    if (Object.keys(value.content).length !== 0) {
+      log.warn(`Unknown content keys found in recipe block ${value.as}: ${Object.keys(value.input)}`)
     }
-    return _.omit(value, 'newInput')
+    return _.omit(value, 'content')
   }
   return value
 }
@@ -106,38 +101,33 @@ const transformRecipeBlock = async (instance: InstanceElement, transformFunc: Tr
     transformFunc,
   }) ?? instance.value
 }
-const addFormulaPath = (formulasByBlock: Record<string, Array<Object>>, block: string, path: string): void => { // TODO Im here 
-  
-}
 
+/**
+ * Change the input format of recipe blocks to support cross-service references addition.
+ * From each input key-value we will create a new item with key and value.
+ * For example:
+ * input: {
+ *  <key_name1> : <value_name1>,
+ *  ...
+ * }
+ * will be changed to:
+ * input: [
+ *  {
+ *    key: <key_name1>
+ *    value: <value_name1>
+ *  },
+ *  ...
+ * ]
+ */
 const filterCreator: FilterCreator = () => ({
-  name: 'recipeBlockExtendedOutputSchemaFormatFilter',
+  name: 'recipeBlockInputFormatFilter',
   onFetch: async (elements: Element[]) => {
     await Promise.all(elements
       .filter(isInstanceElement)
       .filter(isInstanceFromType([RECIPE_CODE_TYPE]))
-      .map(instance => {
-        const formulasByBlock: Record<string, Array<string>> = {}
-        walkOnElement({
-          element: instance,
-          func: ({ value }) => {
-            if (_.isString(value)) {
-              const formulas = formulaMatcher(value)
-              formulas.forEach(({ block, path }) => {
-                addFormulaPath(formulasByBlock, block, path)
-              })
-              return WALK_NEXT_STEP.SKIP
-            }
-            return WALK_NEXT_STEP.RECURSE
-          },
-        })
-        return transformRecipeBlock(
-          instance,
-          getTransformToMinimalExtendedOutputSchemaFunc(formulasByBlock)
-        )
-      }))
+      .map(instance => transformRecipeBlock(instance, transformServerToNacl)))
   },
-  preDeploy: async changes => { // TODO
+  preDeploy: async changes => {
     await Promise.all(changes
       .filter(isInstanceChange)
       .map(getChangeData)

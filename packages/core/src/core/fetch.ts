@@ -15,7 +15,7 @@
 */
 import wu from 'wu'
 import _ from 'lodash'
-import * as diff3 from 'node-diff3'
+import * as diff3 from '@salto-io/node-diff3'
 import { isBinary } from 'istextorbinary'
 import { EventEmitter } from 'pietile-eventemitter'
 import {
@@ -50,6 +50,7 @@ const log = logger(module)
 
 const MAX_SPLIT_CONCURRENCY = 2000
 const MAX_MERGE_CONTENT_SIZE = 10 * 1024 * 1024
+const MERGE_TIMEOUT = 10 * 1000
 
 export type FetchChangeMetadata = AuthorInformation
 
@@ -194,13 +195,10 @@ const isMergeableDiffChange = (change: FetchChange): change is MergeableDiffChan
 const merge2Strings = (
   first: string,
   second: string,
-  { stringSeparator }: { stringSeparator: string }
+  { stringSeparator }: { stringSeparator: string },
+  timeout: number
 ): { conflict: boolean; result: string[] } => {
-  const result = diff3.diffComm(
-    first.split(stringSeparator),
-    second.split(stringSeparator)
-  // the casting will be fixed in @salto-io/node-diff3 package
-  ) as Array<{ buffer1: string[]; buffer2: string[] } | { common: string[] }>
+  const result = diff3.diffComm(first.split(stringSeparator), second.split(stringSeparator), timeout)
   if (result.some(chunk => !('common' in chunk) && chunk.buffer1.length && chunk.buffer2.length)) {
     return { conflict: true, result: [] }
   }
@@ -236,11 +234,23 @@ const mergeStrings = (
     return undefined
   }
   const options = { excludeFalseConflicts: true, stringSeparator: '\n' }
-  const { conflict, result } = log.time(() => (
-    base !== undefined
-      ? diff3.mergeDiff3(current, base, incoming, options)
-      : merge2Strings(current, incoming, options)
-  ), 'merging contents of %s', changeId)
+  const { conflict, result, timeout } = log.time(() => {
+    try {
+      const res = base !== undefined
+        ? diff3.mergeDiff3(current, base, incoming, options, MERGE_TIMEOUT)
+        : merge2Strings(current, incoming, options, MERGE_TIMEOUT)
+      return { ...res, timeout: false }
+    } catch (e) {
+      if (e instanceof diff3.TimeoutError) {
+        return { conflict: false, result: [], timeout: true }
+      }
+      throw e
+    }
+  }, 'merging contents of %s', changeId)
+  if (timeout) {
+    log.debug('merging %s reached timeout', changeId)
+    return undefined
+  }
   if (conflict) {
     log.debug('conflict found in %s', changeId)
     return undefined

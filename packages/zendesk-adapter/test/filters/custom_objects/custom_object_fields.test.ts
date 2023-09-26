@@ -17,6 +17,7 @@
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, TemplateExpression } from '@salto-io/adapter-api'
 import { filterUtils, references as referenceUtils } from '@salto-io/adapter-components'
 import {
+  CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
   CUSTOM_OBJECT_FIELD_TYPE_NAME,
   CUSTOM_OBJECT_TYPE_NAME,
   TICKET_FIELD_TYPE_NAME,
@@ -237,16 +238,89 @@ describe('customObjectFieldsFilter', () => {
       })
     })
     describe('ticket_field and custom_object_field', () => {
-      it('should create reference expressions in ticket_field relationships', () => {
+      let customObjectFieldOptions: InstanceElement
+      beforeEach(() => {
+        customObjectField.value.type = 'dropdown'
+        customObjectFieldOptions = new InstanceElement(
+          'options',
+          new ObjectType({ elemID: new ElemID(ZENDESK, CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME) }),
+          { id: 123123 }
+        )
       })
-      it('should create reference expressions in custom_object_field relationships', () => {
+      const createInstance = ({ type = TICKET_FIELD_TYPE_NAME, relationshipFilter = {} }): InstanceElement =>
+        new InstanceElement(
+          type,
+          new ObjectType({ elemID: new ElemID(ZENDESK, type) }),
+          {
+            relationship_filter: { all: relationshipFilter },
+          }
+        )
+      it('should create reference expressions in ticket_field and custom_object_field relationships', async () => {
+        const relationshipFilter = [{
+          field: `custom_object.${customObject.value.key}.custom_fields.${customObjectField.value.key}`,
+          operator: 'is',
+          value: '123123',
+        }]
+        const ticketFieldInstance = createInstance({ relationshipFilter })
+        const customObjectFieldInstance = createInstance({ type: CUSTOM_OBJECT_FIELD_TYPE_NAME, relationshipFilter })
+        await customObjectFieldsFilter.onFetch([
+          customObject, customObjectField, customObjectFieldOptions,
+          ticketFieldInstance, customObjectFieldInstance,
+        ])
+        const templateExpression = new TemplateExpression({ parts: [
+          'custom_object.',
+          new ReferenceExpression(customObject.elemID, customObject),
+          '.custom_fields.',
+          new ReferenceExpression(customObjectField.elemID, customObjectField),
+        ] })
 
+        expect(ticketFieldInstance.value.relationship_filter.all[0].field).toMatchObject(templateExpression)
+        expect(customObjectFieldInstance.value.relationship_filter.all[0].field).toMatchObject(templateExpression)
+        const optionsRef = new ReferenceExpression(customObjectFieldOptions.elemID, customObjectFieldOptions)
+        expect(ticketFieldInstance.value.relationship_filter.all[0].value).toMatchObject(optionsRef)
+        expect(customObjectFieldInstance.value.relationship_filter.all[0].value).toMatchObject(optionsRef)
       })
-      it('should create reference expressions in relationship\'s value', () => {
-
-      })
-      it('should create missing reference', () => {
-
+      it('should create missing reference', async () => {
+        const MISSING_ID = '999'
+        const relationshipFilter = [
+          {
+            field: `custom_object.missing_object.custom_fields.${customObjectField.value.key}`,
+            operator: 'is',
+            value: '123123',
+          },
+          {
+            field: `custom_object.${customObject.value.key}.custom_fields.missing_object_field`,
+            operator: 'is',
+            value: '123123',
+          },
+          {
+            field: `custom_object.${customObject.value.key}.custom_fields.${customObjectField.value.key}`,
+            operator: 'is',
+            value: MISSING_ID,
+          },
+        ]
+        const ticketFieldInstance = createInstance({ relationshipFilter })
+        const customObjectFieldInstance = createInstance({ type: CUSTOM_OBJECT_FIELD_TYPE_NAME, relationshipFilter })
+        await customObjectFieldsFilter.onFetch([
+          customObject, customObjectField, customObjectFieldOptions,
+          ticketFieldInstance, customObjectFieldInstance,
+        ])
+        expect(ticketFieldInstance.value.relationship_filter.all[0].field)
+          .toMatchObject(new TemplateExpression({ parts: [
+            'custom_object.',
+            missingRef(CUSTOM_OBJECT_TYPE_NAME, 'missing_object'),
+            '.custom_fields.',
+            customObjectField.value.key,
+          ] }))
+        expect(customObjectFieldInstance.value.relationship_filter.all[1].field)
+          .toMatchObject(new TemplateExpression({ parts: [
+            'custom_object.',
+            new ReferenceExpression(customObject.elemID, customObject),
+            '.custom_fields.',
+            missingRef(CUSTOM_OBJECT_FIELD_TYPE_NAME, 'missing_object_field'),
+          ] }))
+        const missingOptionsRef = missingRef(CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME, MISSING_ID)
+        expect(customObjectFieldInstance.value.relationship_filter.all[2].value).toMatchObject(missingOptionsRef)
       })
     })
   })

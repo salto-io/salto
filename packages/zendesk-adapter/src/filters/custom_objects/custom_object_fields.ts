@@ -208,11 +208,11 @@ const transformRelationshipValue = ({
   customObjectsByKey: Record<string, InstanceElement>
   enableMissingReferences: boolean
 }): void => {
-  const relevantRelationShipFilters = (instance.value.relationship_filter?.all ?? [])
+  const relevantRelationshipFilters = (instance.value.relationship_filter?.all ?? [])
     .concat(instance.value.relationship_filter?.any ?? [])
     .filter(isRelevantFilter)
 
-  relevantRelationShipFilters.forEach((filter: Filter) => {
+  relevantRelationshipFilters.forEach((filter: Filter) => {
     if (!_.isString(filter.field)) {
       return
     }

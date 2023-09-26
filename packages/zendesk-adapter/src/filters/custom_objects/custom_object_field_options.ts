@@ -36,7 +36,7 @@ import {
 const { RECORDS_PATH } = elementsUtils
 const log = logger(module)
 
-const customObjectFieldOptionType = new ObjectType({
+export const customObjectFieldOptionType = new ObjectType({
   elemID: new ElemID(ZENDESK, CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME),
   fields: {
     id: { refType: BuiltinTypes.SERVICE_ID_NUMBER, annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true } },

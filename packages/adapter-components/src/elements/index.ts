@@ -22,7 +22,7 @@ import { RECORDS_PATH, TYPES_PATH, SUBTYPES_PATH, SETTINGS_NESTED_PATH } from '.
 import { findDataField, returnFullEntry, FindNestedFieldFunc } from './field_finder'
 import { filterTypes } from './type_elements'
 import { getInstanceName, generateInstanceNameFromConfig, createServiceIds, removeNullValues, toBasicInstance } from './instance_elements'
-import { FetchElements, ConfigChangeSuggestion } from './element_getter'
+import { FetchElements } from './element_getter'
 
 export {
   ducktype,
@@ -39,6 +39,6 @@ export {
   replaceUrlParams,
   removeNullValues,
   query,
-  FetchElements, ConfigChangeSuggestion,
+  FetchElements,
   toBasicInstance,
 }

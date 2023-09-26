@@ -14,26 +14,27 @@
 * limitations under the License.
 */
 import { collections } from '@salto-io/lowerdash'
-import { InstanceElement, ElemID } from '@salto-io/adapter-api'
-import { elements as elementsUtils } from '@salto-io/adapter-components'
+import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
 
 import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
-import { configType, FETCH_CONFIG } from './config'
+import { ConfigChangeSuggestion } from './shared'
+
 
 const { makeArray } = collections.array
-
-const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from Zendesk.'
-  + ' Failed items must be excluded from the fetch.'
+const FETCH_CONFIG = 'fetch'
 
 export const getConfigFromConfigChanges = (
-  configChanges: elementsUtils.ConfigChangeSuggestion[],
+  configChanges: ConfigChangeSuggestion[],
   currentConfig: InstanceElement,
+  configType: ObjectType,
+  adapterName: string,
 ): { config: InstanceElement[]; message: string } | undefined => {
   const typesToRemove = makeArray(configChanges).map(e => e.typeToExclude)
 
   if (typesToRemove.length === 0) {
     return undefined
   }
+  const stopManagingItmesMsg = `Salto failed to fetch some items from ${adapterName}. Failed items must be excluded from the fetch.`
 
   return {
     config: [new InstanceElement(
@@ -50,6 +51,6 @@ export const getConfigFromConfigChanges = (
         },
       },
     )],
-    message: formatConfigSuggestionsReasons([STOP_MANAGING_ITEMS_MSG]),
+    message: formatConfigSuggestionsReasons([stopManagingItmesMsg]),
   }
 }

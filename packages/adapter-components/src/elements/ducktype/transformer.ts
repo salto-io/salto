@@ -25,12 +25,13 @@ import { TypeConfig, getConfigWithDefault, getTransformationConfigByType } from 
 import { FindNestedFieldFunc } from '../field_finder'
 import { TypeDuckTypeDefaultsConfig, TypeDuckTypeConfig, DuckTypeTransformationConfig, DuckTypeTransformationDefaultConfig } from '../../config/ducktype'
 import { ComputeGetArgsFunc } from '../request_parameters'
-import { ConfigChangeSuggestion, FetchElements, getElementsWithContext } from '../element_getter'
+import { FetchElements, getElementsWithContext } from '../element_getter'
 import { extractStandaloneFields } from './standalone_field_extractor'
 import { shouldRecurseIntoEntry } from '../instance_elements'
 import { addRemainingTypes } from './add_remaining_types'
 import { ElementQuery } from '../query'
 import { InvalidSingletonType } from '../../config/shared'
+import { ConfigChangeSuggestion } from '../../config/config_change'
 
 const { makeArray } = collections.array
 const { toArrayAsync, awu } = collections.asynciterable

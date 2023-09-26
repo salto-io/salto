@@ -94,7 +94,8 @@ const createInstance = (
     values.name,
     ...(convertRuleScopeValueToProjects(values) ?? [])
       .map((project: Values) => idToProject[project.projectId]?.value.name)
-      .filter(lowerdashValues.isDefined),
+      .filter(lowerdashValues.isDefined)
+      .sort(),
   ].join('_'))
 
   const instanceName = getElemIdFunc && serviceIds

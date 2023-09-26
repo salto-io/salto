@@ -192,6 +192,13 @@ const updateIndex = async (
     { getHintsFunction: (unmergedElements: Element[]) => RemoteMapEntry<Path[]>[] }
 ): Promise<void> => {
   const entriesToSet = getHintsFunction(unmergedElements)
+  const uniqueEntriesToSet = entriesToSet.map(entry => {
+    const uniquePaths = _.uniqWith(entry.value, _.isEqual)
+    return {
+      key: entry.key,
+      value: uniquePaths,
+    }
+  })
 
   // Entries that are related to an element that was removed should be deleted
   const entriesToDelete = await awu(pathIndex.keys()).filter(key => {
@@ -206,7 +213,7 @@ const updateIndex = async (
   }).toArray()
 
   await pathIndex.deleteAll(entriesToDelete)
-  await pathIndex.setAll(entriesToSet)
+  await pathIndex.setAll(uniqueEntriesToSet)
 }
 
 export const updatePathIndex = async (args: PathIndexArgs): Promise<void> => log.time(async () => {

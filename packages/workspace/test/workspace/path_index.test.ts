@@ -236,7 +236,7 @@ describe('getFromPathIndex', () => {
   beforeAll(async () => {
     await index.setAll([
       { key: parentID.getFullName(), value: [nestedPath, parentPath] },
-      { key: nestedID.getFullName(), value: [nestedPath, nestedPath] },
+      { key: nestedID.getFullName(), value: [nestedPath] },
     ])
   })
 
@@ -257,6 +257,13 @@ describe('getFromPathIndex', () => {
 
   it('should return an empty array if no parent matches are found', async () => {
     expect(await getFromPathIndex(new ElemID('salto', 'nothing'), index)).toEqual([])
+  })
+
+  it('should remove duplicate keys from the path index', async () => {
+    await index.setAll([
+      { key: nestedID.getFullName(), value: [nestedPath, nestedPath] },
+    ])
+    expect(await getFromPathIndex(nestedID, index)).toEqual([nestedPath])
   })
 })
 

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { FieldDefinition, BuiltinTypes, ObjectType, ElemID, createRefToElmWithValue, Value } from '@salto-io/adapter-api'
+import { FieldDefinition, BuiltinTypes, ObjectType, ElemID, createRefToElmWithValue, Value, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { SUBTYPES_PATH, TYPES_PATH } from '../../src/elements/constants'
 import { filterTypes, getContainerForType, hideFields, markServiceIdField } from '../../src/elements/type_elements'
 
@@ -27,7 +27,7 @@ describe('type_elements', () => {
       myCustomType = new ObjectType({
         elemID: new ElemID('adapter', 'myCustomType'),
         fields: {
-          str: { refType: BuiltinTypes.STRING },
+          str: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.REQUIRED]: true } },
           num: { refType: BuiltinTypes.NUMBER },
         },
       })
@@ -62,7 +62,7 @@ describe('type_elements', () => {
       hideFields([
         { fieldName: 'str', fieldType: 'something' },
       ], myCustomType)
-      expect(myCustomType.fields.str.annotations).toEqual({})
+      expect(myCustomType.fields.str.annotations).toEqual({ [CORE_ANNOTATIONS.REQUIRED]: true })
       expect(myCustomType.fields.num.annotations).toEqual({})
 
       hideFields([
@@ -78,10 +78,12 @@ describe('type_elements', () => {
         { fieldName: 'missing' },
       ], myCustomType)
       expect(Object.keys(myCustomType.fields)).toHaveLength(3)
-      expect(myCustomType.fields.str.annotations).toEqual({})
+      expect(myCustomType.fields.str.annotations).toEqual({ [CORE_ANNOTATIONS.REQUIRED]: true })
       expect(myCustomType.fields.num.annotations).toEqual({})
       // eslint-disable-next-line no-underscore-dangle
       expect(myCustomType.fields.missing.annotations._hidden_value).toBeTruthy()
+      expect(myCustomType.fields.missing.refType.elemID.name).toEqual('unknown')
+
 
       hideFields([
         { fieldName: 'missing' },
@@ -92,13 +94,30 @@ describe('type_elements', () => {
       expect(myParentCustomType.fields.custom.annotations).toEqual({})
       // eslint-disable-next-line no-underscore-dangle
       expect(myParentCustomType.fields.missing.annotations._hidden_value).toBeTruthy()
+      expect(myCustomType.fields.missing.refType.elemID.name).toEqual('unknown')
+    })
+    it('should not add specific type fields that are not found', () => {
+      hideFields([
+        { fieldName: 'missing', fieldType: 'string' },
+      ], myCustomType)
+      expect(Object.keys(myCustomType.fields)).toHaveLength(2)
+      expect(myCustomType.fields.str.annotations).toEqual({ [CORE_ANNOTATIONS.REQUIRED]: true })
+      expect(myCustomType.fields.num.annotations).toEqual({})
+
+      hideFields([
+        { fieldName: 'missing', fieldType: 'string' },
+      ], myParentCustomType)
+      expect(Object.keys(myParentCustomType.fields)).toHaveLength(3)
+      expect(myParentCustomType.fields.str.annotations).toEqual({})
+      expect(myParentCustomType.fields.num.annotations).toEqual({})
+      expect(myParentCustomType.fields.custom.annotations).toEqual({})
     })
     it('should add build-in object names as fields', () => {
       hideFields([
         { fieldName: 'toString' },
       ], myCustomType)
       expect(Object.keys(myCustomType.fields)).toHaveLength(3)
-      expect(myCustomType.fields.str.annotations).toEqual({})
+      expect(myCustomType.fields.str.annotations).toEqual({ [CORE_ANNOTATIONS.REQUIRED]: true })
       expect(myCustomType.fields.num.annotations).toEqual({})
       // to avoid transpilation errors
       const toStringField: Value = myCustomType.fields.toString

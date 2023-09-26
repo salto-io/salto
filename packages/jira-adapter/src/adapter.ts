@@ -21,7 +21,7 @@ import { logger } from '@salto-io/logging'
 import { objects } from '@salto-io/lowerdash'
 import JiraClient from './client/client'
 import changeValidator from './change_validators'
-import { JiraConfig, getApiDefinitions } from './config/config'
+import { JiraConfig, configType, getApiDefinitions } from './config/config'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import localeFilter from './filters/locale'
 import fieldReferencesFilter from './filters/field_references'
@@ -147,7 +147,6 @@ import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uu
 import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
 import { jiraJSMEntriesFunc } from './jsm_utils'
-import { getConfigFromConfigChanges } from './config_change'
 
 const { getAllElements } = elementUtils.ducktype
 const { findDataField, computeGetArgs } = elementUtils
@@ -476,7 +475,7 @@ export default class JiraAdapter implements AdapterOperations {
     })
   }
 
-  @logDuration('generating Jsm instances and types from service')
+  @logDuration('generating JSM instances and types from service')
   private async getJSMElements(swaggerResponseElements: InstanceElement[]):
   Promise<elementUtils.FetchElements<Element[]>> {
     const { jsmApiDefinitions } = this.userConfig
@@ -513,13 +512,13 @@ export default class JiraAdapter implements AdapterOperations {
       })
     }))
 
-    /* Remove all the duplicated types and create map from type to it's instances  */
+    /* Remove all the duplicate types and create map from type to it's instances  */
     const typeNameToJSMInstances = _.groupBy(
       fetchResultWithDuplicateTypes.flatMap(result => result.elements).filter(isInstanceElement),
       instance => instance.elemID.typeName
     )
 
-    /* create a list of all the JSM elemntsneeded to be fetch */
+    /* create a list of all the JSM elements and change their types */
     const jiraJSMElements = Object.entries(typeNameToJSMInstances).flatMap(([typeName, instances]) => {
       const jsmElements = elementUtils.ducktype.getNewElementsFromInstances({
         adapterName: JIRA,
@@ -580,8 +579,12 @@ export default class JiraAdapter implements AdapterOperations {
     const filterResult = await this.createFiltersRunner().onFetch(elements) || {}
 
     const updatedConfig = this.configInstance && configChanges
-      ? getConfigFromConfigChanges(configChanges, this.configInstance)
-      : undefined
+      ? configUtils.getConfigWithExcludeFromConfigChanges({
+        configChanges,
+        currentConfig: this.configInstance,
+        configType,
+        adapterName: JIRA,
+      }) : undefined
     // This needs to happen after the onFetch since some filters
     // may add fields that deployment annotation should be added to
     await addDeploymentAnnotations(

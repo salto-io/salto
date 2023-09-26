@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
-import { JIRA, SCRIPT_RUNNER_API_DEFINITIONS, JSM_DUCKTYPE_API_DEFINITIONS } from '../constants'
+import { JIRA, SCRIPT_RUNNER_API_DEFINITIONS, JSM_DUCKTYPE_API_DEFINITIONS, FETCH_CONFIG } from '../constants'
 import { getProductSettings } from '../product_settings'
 import { JiraDuckTypeConfig } from './api_config'
 
@@ -25,8 +25,6 @@ const { createUserFetchConfigType,
   createSwaggerAdapterApiConfigType,
   createDucktypeAdapterApiConfigType,
   defaultMissingUserFallbackField } = configUtils
-
-export const FETCH_CONFIG = 'fetch'
 
 type JiraClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
   & {
@@ -401,10 +399,10 @@ export const validateJiraFetchConfig = ({
   jsmApiDefinitions: JiraDuckTypeConfig
 }): void => {
   const jsmSupportedTypes = fetchConfig.enableJSM ? Object.keys(jsmApiDefinitions.supportedTypes) : []
-  const supportedTypes = fetchConfig.enableScriptRunnerAddon
-    ? Object.keys(apiDefinitions.supportedTypes).concat(Object.keys(scriptRunnerApiDefinitions.supportedTypes))
-      .concat(jsmSupportedTypes)
-    : Object.keys(apiDefinitions.supportedTypes).concat(jsmSupportedTypes)
+  const scriptRunnerSupportedTypes = fetchConfig.enableScriptRunnerAddon
+    ? Object.keys(scriptRunnerApiDefinitions.supportedTypes) : []
+  const supportedTypes = Object.keys(apiDefinitions.supportedTypes)
+    .concat(jsmSupportedTypes).concat(scriptRunnerSupportedTypes)
 
   configUtils.validateSupportedTypes(
     FETCH_CONFIG,

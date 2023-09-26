@@ -34,8 +34,7 @@ const { isNonEmptyArray } = types
 
 const getVisibleNonQueryableFieldsOfInstanceType = (instance: InstanceElement): string[] => (
   Object.values(instance.getTypeSync().fields)
-    .filter(field => !isQueryableField(field))
-    .filter(field => !isReadOnlyField(field) && !isHiddenField(field))
+    .filter(field => !isQueryableField(field) && !isReadOnlyField(field) && !isHiddenField(field))
     .map(field => apiNameSync(field))
     .filter(isDefined)
 )

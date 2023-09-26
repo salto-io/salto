@@ -33,7 +33,7 @@ import Joi from 'joi'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from './walk_element'
 
 const { mapValuesAsync } = promises.object
-const { awu } = collections.asynciterable
+const { awu, mapAsync, toArrayAsync } = collections.asynciterable
 const { isDefined } = lowerDashValues
 
 const log = logger(module)
@@ -142,6 +142,7 @@ const recurseIntoValue = (
   transformFunc: (value: Value, keyPathID?: ElemID, field?: Field) => Value,
   strict: boolean,
   allowEmpty: boolean,
+  isAsync: boolean,
   keyPathID?: ElemID,
   field?: Field,
   fieldType?: TypeElement,
@@ -153,6 +154,14 @@ const recurseIntoValue = (
   if (isReferenceExpression(newVal)) {
     return newVal
   }
+
+  const listMapFunc = isAsync
+    ? (list: Iterable<Value>,
+      mapFunc: (t: Value, index: number) => Promise<unknown>) => toArrayAsync(mapAsync(list, mapFunc))
+    : _.map
+  const objMapFunc = isAsync
+    ? (obj: Iterable<Value>, mapFunc: (val: Value, key: string) => Promise<unknown>) => mapValuesAsync(obj, mapFunc)
+    : _.mapValues
 
   if (field && isListType(fieldType)) {
     const transformListInnerValue = (item: Value, index?: number): Value => (
@@ -173,11 +182,13 @@ const recurseIntoValue = (
       }
       return transformListInnerValue(newVal)
     }
-    return newVal.map((v, i) => transformListInnerValue(v, i))
+    return listMapFunc(newVal, (v: Value, i: number) => transformListInnerValue(v, i))
   }
   if (_.isArray(newVal)) {
     // Even fields that are not defined as ListType can have array values
-    return newVal.map((item, index) => transformFunc(item, keyPathID?.createNestedID(String(index)), field))
+    return listMapFunc(
+      newVal, (item: Value, index: number) => transformFunc(item, keyPathID?.createNestedID(String(index)), field)
+    )
   }
 
   if (isObjectType(fieldType) || isMapType(fieldType)) {
@@ -193,15 +204,15 @@ const recurseIntoValue = (
       return (valueIsEmpty && !allowEmpty) ? undefined : newVal
     }
     const fieldMapper = fieldMapperGenerator(fieldType, newVal)
-    return _.mapValues(
+    return objMapFunc(
       newVal,
-      (value, key) => transformFunc(value, keyPathID?.createNestedID(key), fieldMapper(key))
+      (value: Value, key: string) => transformFunc(value, keyPathID?.createNestedID(key), fieldMapper(key))
     )
   }
   if (_.isPlainObject(newVal) && !strict) {
-    return _.mapValues(
+    return objMapFunc(
       newVal,
-      (value, key) => transformFunc(value, keyPathID?.createNestedID(key))
+      (value: Value, key: string) => transformFunc(value, keyPathID?.createNestedID(key))
     )
   }
   return newVal
@@ -247,6 +258,7 @@ export const transformValues = async (
       transformValue,
       strict,
       allowEmpty,
+      true,
       keyPathID,
       field,
       await field?.getType(elementsSource)
@@ -307,6 +319,7 @@ export const transformValuesSync = (
       transformValue,
       strict,
       allowEmpty,
+      false,
       keyPathID,
       field,
       field?.getTypeSync()

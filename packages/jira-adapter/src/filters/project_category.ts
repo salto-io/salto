@@ -27,7 +27,7 @@ export const isNeedToDeleteCategory = (change: Change<InstanceElement>): boolean
 
 const convertProjectCategoryToCategoryId = async (
   instance: InstanceElement,
-  projectIdToCategory: Record<string, unknown>
+  projectKeyToCategory: Record<string, unknown>
 ): Promise<void> => {
   if (instance.value.projectCategory === undefined) {
     return
@@ -35,7 +35,7 @@ const convertProjectCategoryToCategoryId = async (
   instance.value.categoryId = isResolvedReferenceExpression(instance.value.projectCategory)
     ? (await instance.value.projectCategory.getResolvedValue()).value.id
     : instance.value.projectCategory
-  projectIdToCategory[instance.value.id] = instance.value.projectCategory
+  projectKeyToCategory[instance.value.key] = instance.value.projectCategory
   delete instance.value.projectCategory
 }
 
@@ -43,7 +43,7 @@ const convertProjectCategoryToCategoryId = async (
  * Restructures ProjectCategory to fit the deployment endpoint
  */
 const filter: FilterCreator = ({ client }) => {
-  const projectIdToCategory: Record<string, unknown> = {}
+  const projectKeyToCategory: Record<string, unknown> = {}
   return {
     name: 'projectCategoryFilter',
     preDeploy: async changes => {
@@ -58,7 +58,7 @@ const filter: FilterCreator = ({ client }) => {
               // Jira DC does not support removing projectCategory from a project
               instance.value.categoryId = DELETED_CATEGORY
             }
-            await convertProjectCategoryToCategoryId(instance, projectIdToCategory)
+            await convertProjectCategoryToCategoryId(instance, projectKeyToCategory)
           })
       )
     },
@@ -72,7 +72,7 @@ const filter: FilterCreator = ({ client }) => {
         .forEach(instance => {
           if (instance.value.categoryId !== undefined) {
             // if somehow the category not in the Record, we will at least keep the id
-            instance.value.projectCategory = projectIdToCategory[instance.value.id] ?? instance.value.categoryId
+            instance.value.projectCategory = projectKeyToCategory[instance.value.key] ?? instance.value.categoryId
             delete instance.value.categoryId
           }
         })

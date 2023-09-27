@@ -157,39 +157,23 @@ const getElementPathHints = (
 export const getElementsPathHints = (unmergedElements: Element[]):
 RemoteMapEntry<Path[]>[] => {
   const elementsByID = _.groupBy(unmergedElements, e => e.elemID.getFullName())
-  const pathHints = Object.values(elementsByID)
+  return Object.values(elementsByID)
     .flatMap(elementFragments => getElementPathHints(
       elementFragments
         .filter(element => values.isDefined(element.path))
         .map(element => ({ value: element, path: element.path as Path }))
-    ))
-  const uniqueEntriesToSet = pathHints.map(entry => {
-    const uniquePaths = _.uniqWith(entry.value, _.isEqual)
-    return {
-      key: entry.key,
-      value: uniquePaths,
-    }
-  })
-  return uniqueEntriesToSet
+    )).map(entry => ({ key: entry.key, value: _.uniqWith(entry.value, _.isEqual) }))
 }
 
 export const getTopLevelPathHints = (unmergedElements: Element[]): PathHint[] => {
   const topLevelElementsWithPath = unmergedElements
     .filter(e => e.path !== undefined)
   const elementsByID = _.groupBy(topLevelElementsWithPath, e => e.elemID.getFullName())
-  const pathHints = Object.entries(elementsByID)
+  return Object.entries(elementsByID)
     .map(([key, value]) => ({
       key,
       value: value.map(e => e.path as Path),
-    }))
-  const uniqueEntriesToSet = pathHints.map(entry => {
-    const uniquePaths = _.uniqWith(entry.value, _.isEqual)
-    return {
-      key: entry.key,
-      value: uniquePaths,
-    }
-  })
-  return uniqueEntriesToSet
+    })).map(entry => ({ key: entry.key, value: _.uniqWith(entry.value, _.isEqual) }))
 }
 
 export type PathIndexArgs = {
@@ -258,11 +242,14 @@ export const getFromPathIndex = async (
     // eslint-disable-next-line no-await-in-loop
     const pathHints = await index.get(key)
     if (pathHints !== undefined && pathHints.length > 0) {
+      // We want to return only unique path hints for every key
+      // because otherwise, multiple fragments will appear in the same file
+      // and it will cause merge errors.
+      const uniquePathHints = _.uniqWith(pathHints, _.isEqual)
       // If we found this elemID in the pathIndex we want to return all the hints.
       // If this is not an exact match we want to return a single hint
       // because otherwise, splitElementByPath will make it appear in multiple fragments
       // and cause merge errors.
-      const uniquePathHints = _.uniqWith(pathHints, _.isEqual)
       return isExactMatch ? uniquePathHints : [uniquePathHints[0]]
     }
     idParts.pop()

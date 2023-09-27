@@ -19,7 +19,7 @@ import {
   Element,
   isField,
   isInstanceElement,
-  isObjectType, isReferenceExpression,
+  isObjectType, isPrimitiveValue, isReferenceExpression,
   ReadOnlyElementsSource, Values,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
@@ -31,19 +31,15 @@ const { isDefined } = values
 type ImportantValue = { value: string; indexed: boolean; highlighted: boolean }
 type ImportantValues = ImportantValue[]
 
-const isValidIndexedValueData = (ImportantValue: ImportantValue, valueData: unknown): boolean => {
-  if (ImportantValue.indexed !== true) {
+const isValidIndexedValueData = (importantValue: ImportantValue, valueData: unknown): boolean => {
+  if (importantValue.indexed !== true) {
     return true
   }
   if (_.isArray(valueData)) {
-    return valueData.every(part => _.isString(part) || _.isNumber(part))
+    return valueData.every(part => isPrimitiveValue(part) || isReferenceExpression(part))
   }
 
-  return _.isString(valueData)
-    || _.isNumber(valueData)
-    || _.isBoolean(valueData)
-    || valueData === undefined
-    || isReferenceExpression(valueData)
+  return isPrimitiveValue(valueData) || isReferenceExpression(valueData)
 }
 
 
@@ -84,16 +80,16 @@ const extractImportantValuesFromElement = ({
   }
   const relevantImportantValues = getRelevantImportantValues(importantValues, indexedOnly, highlightedOnly)
   const getFrom = isInstanceElement(element) ? element.value : element.annotations
-  const finalImportantValues = relevantImportantValues.map(ImportantValue => {
-    const { value } = ImportantValue
+  const finalImportantValues = relevantImportantValues.map(importantValue => {
+    const { value } = importantValue
     const valueData = _.get(getFrom, value, undefined)
-    if (!isValidIndexedValueData(ImportantValue, valueData)) {
-      log.warn(`${ImportantValue.value} for element ${element.elemID.getFullName()} is not a primitive value,
+    if (!isValidIndexedValueData(importantValue, valueData)) {
+      log.warn(`${importantValue.value} for element ${element.elemID.getFullName()} is not a primitive value,
       we do not support non primitive values as indexed important values`)
       return undefined
     }
     const valueSplit = value.split('.')
-    const finalValue = indexedOnly === true ? valueSplit[valueSplit.length - 1] : value
+    const finalValue = indexedOnly === true ? valueSplit.pop() ?? value : value
     return { [finalValue]: valueData }
   }).filter(isDefined)
 

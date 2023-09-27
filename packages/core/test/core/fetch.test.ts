@@ -27,7 +27,6 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
-import * as diff3 from '@salto-io/node-diff3'
 import { collections } from '@salto-io/lowerdash'
 import { elementSource, pathIndex, remoteMap, createAdapterReplacedID } from '@salto-io/workspace'
 import { mockFunction } from '@salto-io/test-utils'
@@ -48,10 +47,6 @@ jest.mock('pietile-eventemitter')
 jest.mock('@salto-io/adapter-utils', () => ({
   ...jest.requireActual<{}>('@salto-io/adapter-utils'),
   applyInstancesDefaults: jest.fn().mockImplementation(e => mockAwu(e)),
-}))
-jest.mock('@salto-io/node-diff3', () => ({
-  __esModule: true,
-  ...jest.requireActual<{}>('@salto-io/node-diff3'),
 }))
 
 describe('fetch', () => {
@@ -830,7 +825,6 @@ describe('fetch', () => {
       })
       describe.each(['static files', 'multiline strings'] as const)('when the working copy has some mergeable changes in %s', type => {
         const instanceName = 'name'
-        const filepath = 'abc'
         const strings = {
           stateValue: 'hello world!\nmy name is:\nNaCls',
           serviceValue: 'Hello World!\nmy name is:\nNaCls',
@@ -844,31 +838,10 @@ describe('fetch', () => {
 
         const allValues = type === 'static files'
           ? {
-            ..._.mapValues(strings, content => new StaticFile({ filepath, content: Buffer.from(content) })),
+            ..._.mapValues(strings, content => new StaticFile({ filepath: 'abc', content: Buffer.from(content) })),
             mismatchValue: new StaticFile({ filepath: 'def', content: Buffer.from(strings.mergeableValue) }),
           }
           : { ...strings, mismatchValue: 1234 }
-
-        const binaryFilePath = `${filepath}.png`
-        const stateBinaryFilePath = new StaticFile({
-          filepath: binaryFilePath,
-          content: Buffer.from(strings.stateValue),
-        })
-        const serviceBinaryFilePath = new StaticFile({
-          filepath: binaryFilePath,
-          content: Buffer.from(strings.serviceValue),
-        })
-        const specialFileValues = {
-          binaryFilePath: new StaticFile({
-            filepath: binaryFilePath,
-            content: Buffer.from(strings.mergeableValue),
-          }),
-          binaryFileContent: new StaticFile({
-            filepath,
-            content: Buffer.concat([Buffer.from(strings.mergeableValue), Buffer.from([200])]),
-          }),
-          noContent: new StaticFile({ filepath, hash: '1234' }),
-        }
 
         const stateInstance = new InstanceElement(
           instanceName,
@@ -877,10 +850,6 @@ describe('fetch', () => {
             mergeableContent: allValues.stateValue,
             unmergeableContent: allValues.stateValue,
             mismatchValue: allValues.stateValue,
-            tooLongValue: allValues.stateValue,
-            binaryFilePath: stateBinaryFilePath,
-            binaryFileContent: allValues.stateValue,
-            noContent: allValues.stateValue,
           }
         )
         const serviceInstance = new InstanceElement(
@@ -892,10 +861,6 @@ describe('fetch', () => {
             mergeableAddedContent: allValues.serviceValue,
             unmergeableAddedContent: allValues.serviceValue,
             mismatchValue: allValues.serviceValue,
-            tooLongValue: allValues.serviceValue,
-            binaryFilePath: serviceBinaryFilePath,
-            binaryFileContent: allValues.serviceValue,
-            noContent: allValues.serviceValue,
           }
         )
         const workspaceInstance = new InstanceElement(
@@ -907,10 +872,6 @@ describe('fetch', () => {
             mergeableAddedContent: allValues.addedValue,
             unmergeableAddedContent: allValues.unmergeableValue,
             mismatchValue: allValues.mismatchValue,
-            tooLongValue: allValues.tooLongValue,
-            binaryFilePath: specialFileValues.binaryFilePath,
-            binaryFileContent: specialFileValues.binaryFileContent,
-            noContent: specialFileValues.noContent,
           }
         )
         beforeEach(async () => {
@@ -927,7 +888,7 @@ describe('fetch', () => {
           changes = [...result.changes]
         })
         it('should calculate fetch changes', () => {
-          expect(changes).toHaveLength(9)
+          expect(changes).toHaveLength(5)
         })
         it.each(['modification', 'addition'] as const)('should merge content successfully on %s', action => {
           const name = action === 'modification' ? 'mergeableContent' : 'mergeableAddedContent'
@@ -952,7 +913,8 @@ describe('fetch', () => {
             ...toChange({ before: allValues.unmergeableValue, after: allValues.serviceValue }),
           }))
         })
-        it.each(['mismatchValue', 'tooLongValue'] as const)('should not merge content on %s', name => {
+        it('should not merge content on mismatch value', () => {
+          const name = 'mismatchValue'
           const unmergeableChange = changes.find(change => change.change.id.name === name)
           expect(unmergeableChange?.pendingChanges).not.toBeEmpty()
           expect(unmergeableChange?.change).toEqual(expect.objectContaining({
@@ -960,48 +922,6 @@ describe('fetch', () => {
             ...toChange({ before: allValues[name], after: allValues.serviceValue }),
           }))
         })
-        describe('on merge timeout', () => {
-          beforeEach(async () => {
-            jest.spyOn(diff3, 'mergeDiff3').mockImplementationOnce(() => { throw new diff3.TimeoutError() })
-            jest.spyOn(diff3, 'diffComm').mockImplementationOnce(() => { throw new diff3.TimeoutError() })
-            mockAdapters[testID.adapter].fetch.mockResolvedValueOnce(
-              Promise.resolve({ elements: [serviceInstance] })
-            )
-            const result = await fetchChanges(
-              mockAdapters,
-              createElementSource([workspaceInstance]),
-              createElementSource([stateInstance]),
-              { [testID.adapter]: 'dummy' },
-              [],
-            )
-            changes = [...result.changes]
-          })
-          it.each(['modification', 'addition'] as const)('should not merge content on %s', action => {
-            const name = action === 'modification' ? 'mergeableContent' : 'mergeableAddedContent'
-            const mergeableChange = changes.find(change => change.change.id.name === name)
-            expect(mergeableChange?.pendingChanges).not.toBeEmpty()
-            expect(mergeableChange?.change).toEqual(expect.objectContaining({
-              id: testID.createNestedID('instance', instanceName, name),
-              ...toChange({
-                before: action === 'modification' ? allValues.mergeableValue : allValues.addedValue,
-                after: allValues.serviceValue,
-              }),
-            }))
-          })
-        })
-        if (type === 'static files') {
-          it.each(['binaryFilePath', 'binaryFileContent', 'noContent'] as const)('should not merge static file on %s', name => {
-            const unmergeableChange = changes.find(change => change.change.id.name === name)
-            expect(unmergeableChange?.pendingChanges).not.toBeEmpty()
-            expect(unmergeableChange?.change).toEqual(expect.objectContaining({
-              id: testID.createNestedID('instance', instanceName, name),
-              ...toChange({
-                before: specialFileValues[name],
-                after: name === 'binaryFilePath' ? serviceBinaryFilePath : allValues.serviceValue,
-              }),
-            }))
-          })
-        }
       })
       describe('when the changed element is removed in the working copy', () => {
         beforeEach(async () => {

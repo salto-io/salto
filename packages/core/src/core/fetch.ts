@@ -15,8 +15,6 @@
 */
 import wu from 'wu'
 import _ from 'lodash'
-import * as diff3 from '@salto-io/node-diff3'
-import { isBinary } from 'istextorbinary'
 import { EventEmitter } from 'pietile-eventemitter'
 import {
   Element, ElemID, AdapterOperations, Values, ServiceIds, ObjectType,
@@ -33,24 +31,22 @@ import {
 import { applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements, safeJsonStringify, walkOnElement, WalkOnFunc, WALK_NEXT_STEP, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { merger, elementSource, expressions, Workspace, pathIndex, updateElementsWithAlternativeAccount, createAdapterReplacedID, remoteMap, adaptersConfigSource as acs } from '@salto-io/workspace'
-import { collections, promises, types, values, strings } from '@salto-io/lowerdash'
+import { collections, promises, types, values } from '@salto-io/lowerdash'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
 import { AdapterEvents, createAdapterProgressReporter } from './adapters/progress'
 import { IDFilter } from './plan/plan'
 import { getAdaptersCreatorConfigs } from './adapters'
+import { mergeStaticFiles, mergeStrings } from './merge_content'
 
 const { awu, groupByAsync } = collections.asynciterable
 const { mapValuesAsync } = promises.object
 const { withLimitedConcurrency } = promises.array
 const { mergeElements } = merger
-const { humanFileSize } = strings
 const { isTypeOfOrUndefined } = types
 const log = logger(module)
 
 const MAX_SPLIT_CONCURRENCY = 2000
-const MAX_MERGE_CONTENT_SIZE = 10 * 1024 * 1024
-const MERGE_TIMEOUT = 10 * 1000
 
 export type FetchChangeMetadata = AuthorInformation
 
@@ -191,126 +187,6 @@ const isMergeableDiffChange = (change: FetchChange): change is MergeableDiffChan
   && change.change.id.isEqual(change.pendingChanges[0].id)
   && isAdditionOrModificationChange(change.serviceChanges[0])
   && isAdditionOrModificationChange(change.pendingChanges[0])
-
-const merge2Strings = (
-  first: string,
-  second: string,
-  { stringSeparator }: { stringSeparator: string },
-  timeout: number
-): { conflict: boolean; result: string[] } => {
-  const result = diff3.diffComm(first.split(stringSeparator), second.split(stringSeparator), timeout)
-  if (result.some(chunk => !('common' in chunk) && chunk.buffer1.length && chunk.buffer2.length)) {
-    return { conflict: true, result: [] }
-  }
-  return {
-    conflict: false,
-    result: result.flatMap(chunk => (
-      'common' in chunk
-        ? chunk.common
-        : chunk.buffer1.concat(chunk.buffer2)
-    )),
-  }
-}
-
-const mergeStrings = (
-  changeId: string,
-  { current, base, incoming }: {
-    current: string
-    base: string | undefined
-    incoming: string
-  },
-): string | undefined => {
-  const contents = [current, base ?? '', incoming]
-  log.debug(
-    'trying to merge contents of %s - sizes: %s',
-    changeId,
-    contents.map(item => humanFileSize(item.length)).join(', ')
-  )
-  if (contents.some(item => item.length > MAX_MERGE_CONTENT_SIZE)) {
-    log.warn(
-      'skipping merge since contents size has reached the limit of %s',
-      humanFileSize(MAX_MERGE_CONTENT_SIZE),
-    )
-    return undefined
-  }
-  const options = { excludeFalseConflicts: true, stringSeparator: '\n' }
-  const { conflict, result, timeout } = log.time(() => {
-    try {
-      const res = base !== undefined
-        ? diff3.mergeDiff3(current, base, incoming, options, MERGE_TIMEOUT)
-        : merge2Strings(current, incoming, options, MERGE_TIMEOUT)
-      return { ...res, timeout: false }
-    } catch (e) {
-      if (e instanceof diff3.TimeoutError) {
-        return { conflict: false, result: [], timeout: true }
-      }
-      throw e
-    }
-  }, 'merging contents of %s', changeId)
-  if (timeout) {
-    log.debug('merging %s reached timeout', changeId)
-    return undefined
-  }
-  if (conflict) {
-    log.debug('conflict found in %s', changeId)
-    return undefined
-  }
-  log.debug('merged %s successfully', changeId)
-  return result.join(options.stringSeparator)
-}
-
-const mergeStaticFiles = async (
-  changeId: string,
-  { current, base, incoming }: {
-    current: StaticFile
-    base: StaticFile | undefined
-    incoming: StaticFile
-  },
-): Promise<StaticFile | undefined> => {
-  const { filepath, encoding } = current
-  if (incoming.encoding !== encoding || incoming.filepath !== filepath
-    || (base !== undefined && (base.encoding !== encoding || base.filepath !== filepath))) {
-    log.debug(
-      'skipping merge of %s since static files filepath & encoding does not match',
-      changeId
-    )
-    return undefined
-  }
-  const isBinaryFilepath = isBinary(filepath)
-  if (isBinaryFilepath) {
-    log.debug(
-      'skipping merge of %s since the file extension of %s indicates binary file',
-      changeId, filepath
-    )
-    return undefined
-  }
-  const currentBuffer = await current.getContent()
-  const incomingBuffer = await incoming.getContent()
-  const baseBuffer = base !== undefined ? await base.getContent() : null
-  if (currentBuffer === undefined || incomingBuffer === undefined || baseBuffer === undefined) {
-    log.warn(
-      'skipping merge of %s since some static file contents are missing',
-      changeId
-    )
-    return undefined
-  }
-  if (isBinaryFilepath === null && (isBinary(null, currentBuffer)
-  || isBinary(null, incomingBuffer) || isBinary(null, baseBuffer))) {
-    log.debug(
-      'skipping merge of %s since some static file contents are binary',
-      changeId
-    )
-    return undefined
-  }
-  const merged = mergeStrings(changeId, {
-    current: currentBuffer.toString(encoding),
-    base: baseBuffer?.toString(encoding),
-    incoming: incomingBuffer.toString(encoding),
-  })
-  return merged !== undefined
-    ? new StaticFile({ filepath, encoding, content: Buffer.from(merged, encoding) })
-    : undefined
-}
 
 const toMergedTextChange = (change: FetchChange, after: string | StaticFile): FetchChange => ({
   ...change,

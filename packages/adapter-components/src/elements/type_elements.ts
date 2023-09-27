@@ -30,25 +30,35 @@ const log = logger(module)
 
 /**
  * Annotate fields with _hidden_value=true if they match the specified configuration.
+ * Also add fields with _hidden_value=true if they are not defined in the type.
  */
 export const hideFields = (
   fieldsToHide: FieldToHideType[],
-  typeFields: Record<string, FieldDefinition | Field>,
-  typeName: string,
+  type: ObjectType,
 ): void => {
+  const typeFields = type.fields
   fieldsToHide.forEach(({ fieldName, fieldType }) => {
-    const field = Object.prototype.hasOwnProperty.call(typeFields, fieldName)
-      ? typeFields[fieldName]
-      : undefined
-    if (field === undefined) {
+    if (fieldType !== undefined
+      && fieldType !== typeFields[fieldName]?.refType?.elemID.name) {
+      const endLogString = typeFields[fieldName]?.refType !== undefined
+        ? `type is ${typeFields[fieldName].refType.elemID.name}`
+        : 'field is not defined'
+      log.warn(`Failed to hide field ${type.elemID.name}.${fieldName}- override type is ${fieldType} while ${endLogString}`)
       return
     }
-    if (fieldType === undefined || fieldType === field.refType.elemID.name) {
-      log.debug('Hiding values for field %s.%s', typeName, fieldName)
-      field.annotations = {
-        ...(field.annotations ?? {}),
-        [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
-      }
+    if (!Object.prototype.hasOwnProperty.call(typeFields, fieldName)) {
+      log.debug(`Creating hidden field ${type.elemID.name}.${fieldName} with type unknown`)
+      typeFields[fieldName] = new Field(
+        type,
+        fieldName,
+        BuiltinTypes.UNKNOWN,
+      )
+    }
+    const field = typeFields[fieldName]
+    log.debug(`Hiding values for field ${type.elemID.name}.${fieldName}`)
+    field.annotations = {
+      ...field.annotations,
+      [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
     }
   })
 }

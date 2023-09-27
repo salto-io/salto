@@ -2598,6 +2598,14 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
+  // Created in custom_object_field_options.ts
+  custom_object_field__custom_field_options: {
+    transformation: {
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'number' },
+      ),
+    },
+  },
 }
 
 export const SUPPORTED_TYPES = {

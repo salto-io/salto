@@ -39,7 +39,10 @@ const log = logger(module)
 export const customObjectFieldOptionType = new ObjectType({
   elemID: new ElemID(ZENDESK, CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME),
   fields: {
-    id: { refType: BuiltinTypes.SERVICE_ID_NUMBER, annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true } },
+    id: {
+      refType: BuiltinTypes.SERVICE_ID_NUMBER,
+      annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+    },
     // name: { refType: BuiltinTypes.STRING }, Omitted because it's not needed
     raw_name: { refType: BuiltinTypes.STRING },
     value: { refType: BuiltinTypes.STRING },
@@ -74,28 +77,29 @@ const customObjectFieldOptionsFilter: FilterCreator = () => ({
       .filter(isInstanceElement)
       .filter(obj => obj.elemID.typeName === CUSTOM_OBJECT_FIELD_TYPE_NAME)
 
-    customObjectFields.forEach(field => {
-      const options = field.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME]
+    customObjectFields.forEach(customObjectField => {
+      const options = customObjectField.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME]
       if (options === undefined) {
         return
       }
       if (!isCustomObjectFieldOptions(options)) {
-        log.error(`custom_field_options of ${field.elemID.getFullName()} is not in the expected format - ${inspectValue(options)}`)
+        log.error(`custom_field_options of ${customObjectField.elemID.getFullName()} is not in the expected format - ${inspectValue(options)}`)
         return
       }
-      const instanceOptions = options.map(option => {
-        const instanceName = `${field.elemID.name}__${option.value}`
+      const optionInstances = options.map(option => {
+        const instanceName = `${customObjectField.elemID.name}__${option.value}`
         return new InstanceElement(
           instanceName,
           customObjectFieldOptionType,
           option,
           [ZENDESK, RECORDS_PATH, CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME, instanceName],
-          { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(field.elemID, field)] }
+          { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(customObjectField.elemID, customObjectField)] }
         )
       })
 
-      field.value.custom_field_options = instanceOptions.map(option => new ReferenceExpression(option.elemID, option))
-      elements.push(...instanceOptions)
+      customObjectField.value.custom_field_options = optionInstances
+        .map(option => new ReferenceExpression(option.elemID, option))
+      elements.push(...optionInstances)
     })
   },
 })

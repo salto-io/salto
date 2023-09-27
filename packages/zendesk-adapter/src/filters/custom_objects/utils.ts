@@ -29,6 +29,40 @@ export const RELATIONSHIP_FILTER_REGEX = /custom_object\.(?<customObjectKey>.+)\
 export const LOOKUP_REGEX = /lookup:ticket\.ticket_field_(?<ticketFieldId>\d+)\.custom_fields\.(?<optionKey>[^.]+)$/
 const CUSTOM_OBJECT_REGEX = /zen:custom_object:(?<customObjectKey>.+)/
 
+type MissingTemplateArgs = {
+  ticketField: string | ReferenceExpression
+  customKey: string
+  missingInstanceName: string
+  missingInstanceType: string
+}
+
+export const createMissingTemplate = ({
+  ticketField,
+  customKey,
+  missingInstanceName,
+  missingInstanceType,
+  enableMissingReferences,
+  buildTemplateFunc,
+}: MissingTemplateArgs & {
+  enableMissingReferences: boolean
+  buildTemplateFunc:
+    (firstInstance: string | ReferenceExpression, secondInstance: string | ReferenceExpression) => TemplateExpression
+}): TemplateExpression | string => {
+  if (!enableMissingReferences) {
+    return buildTemplateFunc(ticketField, customKey).parts.join()
+  }
+  const missingInstance = createMissingInstance(ZENDESK, missingInstanceType, missingInstanceName)
+  const missingInstanceRef = new ReferenceExpression(missingInstance.elemID)
+  return isReferenceExpression(ticketField)
+    ? buildTemplateFunc(ticketField, missingInstanceRef)
+    : buildTemplateFunc(missingInstanceRef, customKey)
+}
+
+type TransformResult = {
+  result: string | TemplateExpression
+  ticketField?: InstanceElement
+  customObjectField?: InstanceElement
+}
 
 const buildFieldTemplate = (ticketField: string | ReferenceExpression, option: string | ReferenceExpression)
   : TemplateExpression => new TemplateExpression({
@@ -40,58 +74,17 @@ const buildFieldTemplate = (ticketField: string | ReferenceExpression, option: s
   ],
 })
 
-const buildFilterTemplate = (customObject: string | ReferenceExpression, field: string | ReferenceExpression)
-  : TemplateExpression => new TemplateExpression({
-  parts: [
-    'custom_object.',
-    customObject,
-    '.custom_fields.',
-    field,
-  ],
-})
-
-type MissingTemplateArgs = {
-  firstInstance: string | ReferenceExpression
-  secondInstance: string
-  missingInstanceName: string
-  missingInstanceType: string
-}
-
-
-export const createMissingTemplate = ({
-  firstInstance,
-  secondInstance,
-  missingInstanceName,
-  missingInstanceType,
+export const transformCustomObjectLookupField = ({
+  field,
+  instancesById,
+  customObjectsByKey,
   enableMissingReferences,
-  buildTemplateFunc,
-}: MissingTemplateArgs & {
+} : {
+  field: string
+  instancesById: Record<string, InstanceElement>
+  customObjectsByKey: Record<string, InstanceElement>
   enableMissingReferences: boolean
-  buildTemplateFunc:
-    (firstInstance: string | ReferenceExpression, secondInstance: string | ReferenceExpression) => TemplateExpression
-}): TemplateExpression | string => {
-  if (!enableMissingReferences) {
-    return buildTemplateFunc(firstInstance, secondInstance).parts.join()
-  }
-  const missingInstance = createMissingInstance(ZENDESK, missingInstanceType, missingInstanceName)
-  const missingInstanceRef = new ReferenceExpression(missingInstance.elemID)
-  return isReferenceExpression(firstInstance)
-    ? buildTemplateFunc(firstInstance, missingInstanceRef)
-    : buildTemplateFunc(missingInstanceRef, secondInstance)
-}
-
-
-export type TransformResult = {
-  result: string | TemplateExpression
-  ticketField?: InstanceElement
-  customObjectField?: InstanceElement
-}
-export const transformCustomObjectLookupField = (
-  field: string,
-  instancesById: Record<string, InstanceElement>,
-  customObjectsByKey: Record<string, InstanceElement>,
-  enableMissingReferences: boolean
-): TransformResult => {
+}): TransformResult => {
   const createMissingRefTemplate = (args: MissingTemplateArgs): TemplateExpression | string => createMissingTemplate({
     ...args,
     enableMissingReferences,
@@ -104,8 +97,8 @@ export const transformCustomObjectLookupField = (
   if (ticketField === undefined) {
     return {
       result: createMissingRefTemplate({
-        firstInstance: ticketFieldId,
-        secondInstance: optionKey,
+        ticketField: ticketFieldId,
+        customKey: optionKey,
         missingInstanceName: ticketFieldId,
         missingInstanceType: TICKET_FIELD_TYPE_NAME,
       }),
@@ -119,8 +112,8 @@ export const transformCustomObjectLookupField = (
   if (customObjectKey === undefined || customObject === undefined) {
     return {
       result: createMissingRefTemplate({
-        firstInstance: ticketFieldRef,
-        secondInstance: optionKey,
+        ticketField: ticketFieldRef,
+        customKey: optionKey,
         missingInstanceName: customObjectsByKey === undefined ? 'unknown' : customObjectKey,
         missingInstanceType: CUSTOM_OBJECT_TYPE_NAME,
       }),
@@ -136,8 +129,8 @@ export const transformCustomObjectLookupField = (
   if (customObjectFieldRef === undefined) {
     return {
       result: createMissingRefTemplate({
-        firstInstance: ticketFieldRef,
-        secondInstance: optionKey,
+        ticketField: ticketFieldRef,
+        customKey: optionKey,
         missingInstanceName: `${customObjectKey}__${optionKey}`,
         missingInstanceType: CUSTOM_OBJECT_FIELD_TYPE_NAME,
       }),
@@ -151,6 +144,16 @@ export const transformCustomObjectLookupField = (
     customObjectField: customObjectFieldRef.value,
   }
 }
+
+const buildFilterTemplate = (customObject: string | ReferenceExpression, field: string | ReferenceExpression)
+  : TemplateExpression => new TemplateExpression({
+  parts: [
+    'custom_object.',
+    customObject,
+    '.custom_fields.',
+    field,
+  ],
+})
 
 export const transformFilterField = (
   field: string,
@@ -169,8 +172,8 @@ export const transformFilterField = (
   if (customObject === undefined) {
     return {
       result: createMissingRefTemplate({
-        firstInstance: customObjectKey,
-        secondInstance: fieldKey,
+        ticketField: customObjectKey,
+        customKey: fieldKey,
         missingInstanceName: customObjectKey,
         missingInstanceType: CUSTOM_OBJECT_TYPE_NAME,
       }),
@@ -185,8 +188,8 @@ export const transformFilterField = (
   if (customObjectFieldRef === undefined) {
     return {
       result: createMissingRefTemplate({
-        firstInstance: customObjectRef,
-        secondInstance: fieldKey,
+        ticketField: customObjectRef,
+        customKey: fieldKey,
         missingInstanceName: fieldKey,
         missingInstanceType: CUSTOM_OBJECT_FIELD_TYPE_NAME,
       }),

@@ -427,7 +427,7 @@ describe('adapter', () => {
         (getAllElements as jest.MockedFunction<typeof getAllElements>)
           .mockResolvedValue({ elements: [testInstance2] });
         (getAllInstances as jest.MockedFunction<typeof getAllInstances>)
-          .mockResolvedValue({ elements: [serviceDeskProjectInstance] });
+          .mockResolvedValue({ elements: [serviceDeskProjectInstance], errors: [{ message: 'some error', severity: 'Error' }] });
         (loadSwagger as jest.MockedFunction<typeof loadSwagger>)
           .mockResolvedValue({ document: {}, parser: {} } as elements.swagger.LoadedSwagger)
         mockAxiosAdapter = new MockAdapter(axios)
@@ -446,6 +446,12 @@ describe('adapter', () => {
       })
       it('should call getAllElements', () => {
         expect(getAllElements).toHaveBeenCalledTimes(1)
+      })
+      it('should return error', async () => {
+        expect(result.errors).toEqual([{
+          message: 'some error',
+          severity: 'Error',
+        }])
       })
     })
     describe('jiraJSMEntriesFunc', () => {

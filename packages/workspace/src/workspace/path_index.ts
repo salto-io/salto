@@ -172,8 +172,8 @@ export const getTopLevelPathHints = (unmergedElements: Element[]): PathHint[] =>
   return Object.entries(elementsByID)
     .map(([key, value]) => ({
       key,
-      value: value.map(e => e.path as Path),
-    })).map(entry => ({ key: entry.key, value: _.uniqWith(entry.value, _.isEqual) }))
+      value: _.uniqWith(value.map(e => e.path as Path), _.isEqual),
+    }))
 }
 
 export type PathIndexArgs = {

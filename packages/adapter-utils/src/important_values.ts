@@ -92,7 +92,9 @@ const extractImportantValuesFromElement = ({
       we do not support non primitive values as indexed important values`)
       return undefined
     }
-    return { [value]: valueData }
+    const valueSplit = value.split('.')
+    const finalValue = indexedOnly === true ? valueSplit[valueSplit.length - 1] : value
+    return { [finalValue]: valueData }
   }).filter(isDefined)
 
   return finalImportantValues

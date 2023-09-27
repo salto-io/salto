@@ -344,7 +344,7 @@ describe('getImportantValues', () => {
       { stringArray: ['1', '2'] },
       { undefinedVal: undefined },
       { reference: new ReferenceExpression(inst.elemID) },
-      { 'obj.id': 12345 },
+      { id: 12345 },
     ])
   })
 })

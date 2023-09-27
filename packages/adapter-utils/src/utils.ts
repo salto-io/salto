@@ -137,16 +137,27 @@ const removeEmptyParts = (value: Value, allowEmpty: boolean): Value => {
   return value
 }
 
-const recurseIntoValue = (
-  newVal: Value,
-  transformFunc: (value: Value, keyPathID?: ElemID, field?: Field) => Value,
-  strict: boolean,
-  allowEmpty: boolean,
-  isAsync: boolean,
-  keyPathID?: ElemID,
-  field?: Field,
-  fieldType?: TypeElement,
-): Value => {
+type recurseIntoValueArgs = {
+  newVal: Value
+  transformFunc: (value: Value, keyPathID?: ElemID, field?: Field) => Value
+  strict: boolean
+  allowEmpty: boolean
+  isAsync: boolean
+  keyPathID?: ElemID
+  field?: Field
+  fieldType?: TypeElement
+}
+
+const recurseIntoValue = ({
+  newVal,
+  transformFunc,
+  strict,
+  allowEmpty,
+  isAsync,
+  keyPathID,
+  field,
+  fieldType,
+}: recurseIntoValueArgs): Value => {
   if (newVal === undefined) {
     return undefined
   }
@@ -155,12 +166,12 @@ const recurseIntoValue = (
     return newVal
   }
 
+  type AsyncMapFunc<K> = (t: Value, key: K) => Promise<unknown>
   const listMapFunc = isAsync
-    ? (list: Iterable<Value>,
-      mapFunc: (t: Value, index: number) => Promise<unknown>) => toArrayAsync(mapAsync(list, mapFunc))
+    ? (list: Iterable<Value>, mapFunc: AsyncMapFunc<number>) => toArrayAsync(mapAsync(list, mapFunc))
     : _.map
   const objMapFunc = isAsync
-    ? (obj: Iterable<Value>, mapFunc: (val: Value, key: string) => Promise<unknown>) => mapValuesAsync(obj, mapFunc)
+    ? (obj: Record<string, Value>, mapFunc: AsyncMapFunc<string>) => mapValuesAsync(obj, mapFunc)
     : _.mapValues
 
   if (field && isListType(fieldType)) {
@@ -182,7 +193,7 @@ const recurseIntoValue = (
       }
       return transformListInnerValue(newVal)
     }
-    return listMapFunc(newVal, (v: Value, i: number) => transformListInnerValue(v, i))
+    return listMapFunc(newVal, (item: Value, index: number) => transformListInnerValue(item, index))
   }
   if (_.isArray(newVal)) {
     // Even fields that are not defined as ListType can have array values
@@ -218,19 +229,6 @@ const recurseIntoValue = (
   return newVal
 }
 
-const depromise = async (value: Value): Promise<Value> => {
-  if (value instanceof Promise) {
-    return value
-  }
-  if (Array.isArray(value) && value.some(item => item instanceof Promise)) {
-    return awu(value).toArray()
-  }
-  if (_.isPlainObject(value)) {
-    return mapValuesAsync(value, async val => depromise(val))
-  }
-  return value
-}
-
 export const transformValues = async (
   {
     values,
@@ -253,17 +251,19 @@ export const transformValues = async (
     }
 
     const newVal = await transformFunc({ value, path: keyPathID, field })
-    const recursed = recurseIntoValue(
-      newVal,
-      transformValue,
-      strict,
-      allowEmpty,
-      true,
-      keyPathID,
-      field,
-      await field?.getType(elementsSource)
+    const recursed = await recurseIntoValue(
+      {
+        newVal,
+        transformFunc: transformValue,
+        strict,
+        allowEmpty,
+        isAsync: true,
+        keyPathID,
+        field,
+        fieldType: await field?.getType(elementsSource),
+      }
     )
-    return removeEmptyParts(await depromise(recursed), allowEmpty)
+    return removeEmptyParts(recursed, allowEmpty)
   }
 
   const fieldMapper = fieldMapperGenerator(type, values)
@@ -314,16 +314,16 @@ export const transformValuesSync = (
     }
 
     const newVal = transformFunc({ value, path: keyPathID, field })
-    const recursed = recurseIntoValue(
+    const recursed = recurseIntoValue({
       newVal,
-      transformValue,
+      transformFunc: transformValue,
       strict,
       allowEmpty,
-      false,
+      isAsync: false,
       keyPathID,
       field,
-      field?.getTypeSync()
-    )
+      fieldType: field?.getTypeSync(),
+    })
     return removeEmptyParts(recursed, allowEmpty)
   }
 

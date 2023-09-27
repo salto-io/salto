@@ -15,19 +15,16 @@
 */
 
 import { logger } from '@salto-io/logging'
-import { ElemIdGetter, InstanceElement, ObjectType, Element, isInstanceElement, CORE_ANNOTATIONS, Change, DeployResult, getChangeData, isInstanceChange, isAdditionChange } from '@salto-io/adapter-api'
+import { ElemIdGetter, InstanceElement, ObjectType, Change, DeployResult, getChangeData, isInstanceChange, isAdditionChange } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { createSchemeGuard, isResolvedReferenceExpression, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { elements as adapterElements } from '@salto-io/adapter-components'
-import { FilterResult } from '@salto-io/adapter-utils/src/filter'
 import _ from 'lodash'
 import { deployChanges } from '../../deployment/standard_deployment'
-import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../../utils'
-import { JiraConfig } from '../../config/config'
 import JiraClient, { graphQLResponseType } from '../../client/client'
 import { QUERY } from './layout_queries'
-import { ISSUE_LAYOUT_CONFIG_ITEM_SCHEME, ISSUE_LAYOUT_RESPONSE_SCHEME, IssueLayoutConfig, IssueLayoutConfigItem, IssueLayoutResponse, containerIssueLayoutResponse, createLayoutType } from './layout_types'
-import { ISSUE_LAYOUT_TYPE, ISSUE_VIEW_TYPE, JIRA, REQUEST_FORM_TYPE, REQUEST_TYPE_NAME } from '../../constants'
+import { ISSUE_LAYOUT_CONFIG_ITEM_SCHEME, ISSUE_LAYOUT_RESPONSE_SCHEME, IssueLayoutConfig, IssueLayoutConfigItem, IssueLayoutResponse, containerIssueLayoutResponse } from './layout_types'
+import { ISSUE_LAYOUT_TYPE, JIRA } from '../../constants'
 
 const log = logger(module)
 const { isDefined } = lowerDashValues
@@ -44,16 +41,8 @@ type QueryVariables = {
   }
 
 const layoutTypeNameToDetails: Record<string, layoutTypeDetails> = {
-  [REQUEST_FORM_TYPE]: {
-    layoutTypeParam: 'REQUEST_FORM',
-    pathParam: 'RequestForm',
-  },
   [ISSUE_LAYOUT_TYPE]: {
     pathParam: 'layouts',
-  },
-  [ISSUE_VIEW_TYPE]: {
-    layoutTypeParam: 'ISSUE_VIEW',
-    pathParam: 'IssueView',
   },
 }
 
@@ -130,64 +119,6 @@ export const getLayout = async ({
     )
   }
   return undefined
-}
-
-export const fetchRequestTypeDetails = async ({
-  elements,
-  client,
-  config,
-  fetchQuery,
-  getElemIdFunc,
-  typeName,
-}: {
-    elements: Element[]
-    client: JiraClient
-    config: JiraConfig
-    fetchQuery: adapterElements.query.ElementQuery
-    getElemIdFunc?: ElemIdGetter | undefined
-    typeName: string
-}): Promise<void | FilterResult> => {
-  if (client.isDataCenter
-  || !fetchQuery.isTypeMatch(typeName)
-  || !config.fetch.enableJSM) {
-    return
-  }
-  const requestTypeIdToRequestType: Record<string, InstanceElement> = Object.fromEntries(
-    (await Promise.all(elements.filter(e => e.elemID.typeName === REQUEST_TYPE_NAME)
-      .filter(isInstanceElement)
-      .map(async requestType => [requestType.value.id, requestType])))
-      .filter(isDefined)
-  )
-
-  const { issueLayoutType } = createLayoutType(typeName)
-  elements.push(issueLayoutType)
-
-  const layouts = (await Promise.all(Object.entries(requestTypeIdToRequestType)
-    .flatMap(async ([requestTypeId, requestTypeInstance]) => {
-      const projectInstance = requestTypeInstance.value.projectKey.value
-      const variables = {
-        projectId: projectInstance.value.id,
-        extraDefinerId: requestTypeId,
-        layoutTypeParam: layoutTypeNameToDetails[typeName].layoutTypeParam,
-      }
-      const response = await getLayoutResponse({
-        variables,
-        client,
-      })
-      return getLayout({
-        variables,
-        response,
-        instance: requestTypeInstance,
-        layoutType: issueLayoutType,
-        getElemIdFunc,
-        typeName,
-      })
-    }))).filter(isDefined)
-  layouts.forEach(layout => { elements.push(layout) })
-  setTypeDeploymentAnnotations(issueLayoutType)
-  await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.CREATABLE)
-  await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.UPDATABLE)
-  await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.DELETABLE)
 }
 
 const deployIssueLayoutChanges = async (

@@ -18,10 +18,10 @@ import { isInstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../filter'
-import { ISSUE_LAYOUT_TYPE, ISSUE_VIEW_TYPE, REQUEST_FORM_TYPE } from '../../constants'
+import { ISSUE_LAYOUT_TYPE } from '../../constants'
 import { JiraFieldReferenceResolver, contextStrategyLookup, referencesRules } from '../../reference_mapping'
 
-const supportedLayouts = [ISSUE_LAYOUT_TYPE, REQUEST_FORM_TYPE, ISSUE_VIEW_TYPE]
+const supportedLayouts = [ISSUE_LAYOUT_TYPE]
 
 const filter: FilterCreator = ({ config }) => ({
   name: 'createReferencesIssueLayoutFilter',

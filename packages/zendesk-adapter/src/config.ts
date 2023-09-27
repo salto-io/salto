@@ -2510,9 +2510,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['key'],
       sourceTypeName: 'custom_objects__custom_objects',
       standaloneFields: [{ fieldName: 'custom_object_fields' }],
-      fieldsToHide: FIELDS_TO_HIDE.concat(
-        { fieldName: 'id', fieldType: 'number' },
-      ),
+      fieldsToHide: FIELDS_TO_HIDE,
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'created_by_user_id', fieldType: 'string' },
         { fieldName: 'updated_by_user_id', fieldType: 'string' },
@@ -2551,9 +2549,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { pathParam: 'custom_object_key', from: { type: 'custom_objects', field: 'key' } },
       ],
       queryParams: {
-        per_page: String(PAGE_SIZE),
+        ...DEFAULT_QUERY_PARAMS,
         include_standard_fields: 'true',
       },
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'custom_object_fields',

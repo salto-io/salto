@@ -157,23 +157,39 @@ const getElementPathHints = (
 export const getElementsPathHints = (unmergedElements: Element[]):
 RemoteMapEntry<Path[]>[] => {
   const elementsByID = _.groupBy(unmergedElements, e => e.elemID.getFullName())
-  return Object.values(elementsByID)
+  const pathHints = Object.values(elementsByID)
     .flatMap(elementFragments => getElementPathHints(
       elementFragments
         .filter(element => values.isDefined(element.path))
         .map(element => ({ value: element, path: element.path as Path }))
     ))
+  const uniqueEntriesToSet = pathHints.map(entry => {
+    const uniquePaths = _.uniqWith(entry.value, _.isEqual)
+    return {
+      key: entry.key,
+      value: uniquePaths,
+    }
+  })
+  return uniqueEntriesToSet
 }
 
 export const getTopLevelPathHints = (unmergedElements: Element[]): PathHint[] => {
   const topLevelElementsWithPath = unmergedElements
     .filter(e => e.path !== undefined)
   const elementsByID = _.groupBy(topLevelElementsWithPath, e => e.elemID.getFullName())
-  return Object.entries(elementsByID)
+  const pathHints = Object.entries(elementsByID)
     .map(([key, value]) => ({
       key,
       value: value.map(e => e.path as Path),
     }))
+  const uniqueEntriesToSet = pathHints.map(entry => {
+    const uniquePaths = _.uniqWith(entry.value, _.isEqual)
+    return {
+      key: entry.key,
+      value: uniquePaths,
+    }
+  })
+  return uniqueEntriesToSet
 }
 
 export type PathIndexArgs = {
@@ -192,13 +208,6 @@ const updateIndex = async (
     { getHintsFunction: (unmergedElements: Element[]) => RemoteMapEntry<Path[]>[] }
 ): Promise<void> => {
   const entriesToSet = getHintsFunction(unmergedElements)
-  const uniqueEntriesToSet = entriesToSet.map(entry => {
-    const uniquePaths = _.uniqWith(entry.value, _.isEqual)
-    return {
-      key: entry.key,
-      value: uniquePaths,
-    }
-  })
 
   // Entries that are related to an element that was removed should be deleted
   const entriesToDelete = await awu(pathIndex.keys()).filter(key => {
@@ -213,7 +222,7 @@ const updateIndex = async (
   }).toArray()
 
   await pathIndex.deleteAll(entriesToDelete)
-  await pathIndex.setAll(uniqueEntriesToSet)
+  await pathIndex.setAll(entriesToSet)
 }
 
 export const updatePathIndex = async (args: PathIndexArgs): Promise<void> => log.time(async () => {

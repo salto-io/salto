@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { RemoteFilterCreator } from '../filter'
-import { queryClient } from './utils'
+import { ensureSafeFilterFetch, queryClient } from './utils'
 import { apiName, getSObjectFieldElement, getTypePath } from '../transformers/transformer'
 import {
   API_NAME,
@@ -119,24 +119,32 @@ const createOrganizationInstance = (objectType: ObjectType, fieldValues: Values)
   )
 )
 
+const FILTER_NAME = 'organizationWideSharingDefaults'
+export const WARNING_MESSAGE = 'Failed to fetch OrganizationSettings.'
+
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
-  name: 'organizationWideSharingDefaultsFilter',
+  name: FILTER_NAME,
   remote: true,
-  onFetch: async elements => {
-    const objectType = createOrganizationType()
-    const fieldsToIgnore = new Set(FIELDS_TO_IGNORE.concat(config.systemFields ?? []))
-    await enrichTypeWithFields(client, objectType, fieldsToIgnore)
+  onFetch: ensureSafeFilterFetch({
+    warningMessage: WARNING_MESSAGE,
+    config,
+    filterName: FILTER_NAME,
+    fetchFilterFunc: async elements => {
+      const objectType = createOrganizationType()
+      const fieldsToIgnore = new Set(FIELDS_TO_IGNORE.concat(config.systemFields ?? []))
+      await enrichTypeWithFields(client, objectType, fieldsToIgnore)
 
-    const queryResult = await queryClient(client, ['SELECT FIELDS(ALL) FROM Organization LIMIT 200'])
-    if (queryResult.length !== 1) {
-      log.error(`Expected Organization object to be a singleton. Got ${queryResult.length} elements`)
-      return
-    }
+      const queryResult = await queryClient(client, ['SELECT FIELDS(ALL) FROM Organization LIMIT 200'])
+      if (queryResult.length !== 1) {
+        log.error(`Expected Organization object to be a singleton. Got ${queryResult.length} elements`)
+        return
+      }
 
-    const organizationInstance = createOrganizationInstance(objectType, queryResult[0])
+      const organizationInstance = createOrganizationInstance(objectType, queryResult[0])
 
-    elements.push(objectType, organizationInstance)
-  },
+      elements.push(objectType, organizationInstance)
+    },
+  }),
 })
 
 export default filterCreator

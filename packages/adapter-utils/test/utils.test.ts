@@ -689,10 +689,10 @@ describe('Test utils.ts', () => {
     })
 
     describe('when called with pathID', () => {
-      const paths = new Set<string>()
+      const paths: string[] = []
       const createPathsSet: TransformFunc = ({ value, field, path }) => {
         if (value && field && path) {
-          paths.add(path.getFullName())
+          paths.push(path.getFullName())
         }
         return value
       }
@@ -720,6 +720,72 @@ describe('Test utils.ts', () => {
           .toContain(mockInstance.elemID.createNestedID('obj', '0', 'mapOfStringList', 'l1').getFullName())
         expect(paths)
           .toContain(mockInstance.elemID.createNestedID('obj', '0', 'mapOfStringList', 'l1', '0').getFullName())
+      })
+
+      it('should traverse paths in DFS order', () => {
+        const resPaths = [
+          'mockAdapter.test.instance.mockInstance.ref',
+          'mockAdapter.test.instance.mockInstance.str',
+          'mockAdapter.test.instance.mockInstance.bool',
+          'mockAdapter.test.instance.mockInstance.num',
+          'mockAdapter.test.instance.mockInstance.numArray',
+          'mockAdapter.test.instance.mockInstance.numArray.0',
+          'mockAdapter.test.instance.mockInstance.numArray.1',
+          'mockAdapter.test.instance.mockInstance.numArray.2',
+          'mockAdapter.test.instance.mockInstance.strArray',
+          'mockAdapter.test.instance.mockInstance.strArray',
+          'mockAdapter.test.instance.mockInstance.numMap',
+          'mockAdapter.test.instance.mockInstance.numMap.key12',
+          'mockAdapter.test.instance.mockInstance.numMap.num13',
+          'mockAdapter.test.instance.mockInstance.strMap',
+          'mockAdapter.test.instance.mockInstance.strMap.a',
+          'mockAdapter.test.instance.mockInstance.strMap.bla',
+          'mockAdapter.test.instance.mockInstance.file',
+          'mockAdapter.test.instance.mockInstance.obj',
+          'mockAdapter.test.instance.mockInstance.obj.0',
+          'mockAdapter.test.instance.mockInstance.obj.0.field',
+          'mockAdapter.test.instance.mockInstance.obj.0.otherField',
+          'mockAdapter.test.instance.mockInstance.obj.0.value',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList.l1',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList.l1.0',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList.l1.1',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList.l2',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList.l2.0',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList.l2.1',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.name',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.listOfNames',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.listOfNames.0',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.listOfNames.1',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.listOfNames.2',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.magical',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.magical.deepNumber',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.magical.deepName',
+          'mockAdapter.test.instance.mockInstance.obj.1',
+          'mockAdapter.test.instance.mockInstance.obj.1.field',
+          'mockAdapter.test.instance.mockInstance.obj.1.value',
+          'mockAdapter.test.instance.mockInstance.obj.1.value.0',
+          'mockAdapter.test.instance.mockInstance.obj.1.value.1',
+          'mockAdapter.test.instance.mockInstance.obj.1.mapOfStringList',
+          'mockAdapter.test.instance.mockInstance.obj.1.mapOfStringList.something',
+          'mockAdapter.test.instance.mockInstance.obj.1.innerObj',
+          'mockAdapter.test.instance.mockInstance.obj.1.innerObj.name',
+          'mockAdapter.test.instance.mockInstance.obj.1.innerObj.listOfNames',
+          'mockAdapter.test.instance.mockInstance.obj.1.innerObj.magical',
+          'mockAdapter.test.instance.mockInstance.obj.1.innerObj.magical.deepName',
+          'mockAdapter.test.instance.mockInstance.obj.2',
+          'mockAdapter.test.instance.mockInstance.obj.2.field',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj.name',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj.listOfNames',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj.listOfNames.0',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj.listOfNames.1',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj.listOfNames.2',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj.magical',
+          'mockAdapter.test.instance.mockInstance.obj.3',
+        ]
+        expect(paths).toEqual(resPaths)
       })
     })
 
@@ -1201,10 +1267,10 @@ describe('Test utils.ts', () => {
     })
 
     describe('when called with pathID', () => {
-      const paths = new Set<string>()
+      const paths: string[] = []
       const createPathsSet: TransformFuncSync = ({ value, field, path }) => {
         if (value && field && path) {
-          paths.add(path.getFullName())
+          paths.push(path.getFullName())
         }
         return value
       }
@@ -1232,6 +1298,72 @@ describe('Test utils.ts', () => {
           .toContain(mockInstance.elemID.createNestedID('obj', '0', 'mapOfStringList', 'l1').getFullName())
         expect(paths)
           .toContain(mockInstance.elemID.createNestedID('obj', '0', 'mapOfStringList', 'l1', '0').getFullName())
+      })
+
+      it('should traverse paths in DFS order', () => {
+        const resPaths = [
+          'mockAdapter.test.instance.mockInstance.ref',
+          'mockAdapter.test.instance.mockInstance.str',
+          'mockAdapter.test.instance.mockInstance.bool',
+          'mockAdapter.test.instance.mockInstance.num',
+          'mockAdapter.test.instance.mockInstance.numArray',
+          'mockAdapter.test.instance.mockInstance.numArray.0',
+          'mockAdapter.test.instance.mockInstance.numArray.1',
+          'mockAdapter.test.instance.mockInstance.numArray.2',
+          'mockAdapter.test.instance.mockInstance.strArray',
+          'mockAdapter.test.instance.mockInstance.strArray',
+          'mockAdapter.test.instance.mockInstance.numMap',
+          'mockAdapter.test.instance.mockInstance.numMap.key12',
+          'mockAdapter.test.instance.mockInstance.numMap.num13',
+          'mockAdapter.test.instance.mockInstance.strMap',
+          'mockAdapter.test.instance.mockInstance.strMap.a',
+          'mockAdapter.test.instance.mockInstance.strMap.bla',
+          'mockAdapter.test.instance.mockInstance.file',
+          'mockAdapter.test.instance.mockInstance.obj',
+          'mockAdapter.test.instance.mockInstance.obj.0',
+          'mockAdapter.test.instance.mockInstance.obj.0.field',
+          'mockAdapter.test.instance.mockInstance.obj.0.otherField',
+          'mockAdapter.test.instance.mockInstance.obj.0.value',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList.l1',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList.l1.0',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList.l1.1',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList.l2',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList.l2.0',
+          'mockAdapter.test.instance.mockInstance.obj.0.mapOfStringList.l2.1',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.name',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.listOfNames',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.listOfNames.0',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.listOfNames.1',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.listOfNames.2',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.magical',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.magical.deepNumber',
+          'mockAdapter.test.instance.mockInstance.obj.0.innerObj.magical.deepName',
+          'mockAdapter.test.instance.mockInstance.obj.1',
+          'mockAdapter.test.instance.mockInstance.obj.1.field',
+          'mockAdapter.test.instance.mockInstance.obj.1.value',
+          'mockAdapter.test.instance.mockInstance.obj.1.value.0',
+          'mockAdapter.test.instance.mockInstance.obj.1.value.1',
+          'mockAdapter.test.instance.mockInstance.obj.1.mapOfStringList',
+          'mockAdapter.test.instance.mockInstance.obj.1.mapOfStringList.something',
+          'mockAdapter.test.instance.mockInstance.obj.1.innerObj',
+          'mockAdapter.test.instance.mockInstance.obj.1.innerObj.name',
+          'mockAdapter.test.instance.mockInstance.obj.1.innerObj.listOfNames',
+          'mockAdapter.test.instance.mockInstance.obj.1.innerObj.magical',
+          'mockAdapter.test.instance.mockInstance.obj.1.innerObj.magical.deepName',
+          'mockAdapter.test.instance.mockInstance.obj.2',
+          'mockAdapter.test.instance.mockInstance.obj.2.field',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj.name',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj.listOfNames',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj.listOfNames.0',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj.listOfNames.1',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj.listOfNames.2',
+          'mockAdapter.test.instance.mockInstance.obj.2.innerObj.magical',
+          'mockAdapter.test.instance.mockInstance.obj.3',
+        ]
+        expect(paths).toEqual(resPaths)
       })
     })
 

@@ -19,7 +19,7 @@ import {
   Element,
   isField,
   isInstanceElement,
-  isObjectType,
+  isObjectType, isReferenceExpression,
   ReadOnlyElementsSource, Values,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
@@ -39,7 +39,11 @@ const isValidIndexedValueData = (ImportantValue: ImportantValue, valueData: unkn
     return valueData.every(part => _.isString(part) || _.isNumber(part))
   }
 
-  return _.isString(valueData) || _.isNumber(valueData) || _.isBoolean(valueData) || valueData === undefined
+  return _.isString(valueData)
+    || _.isNumber(valueData)
+    || _.isBoolean(valueData)
+    || valueData === undefined
+    || isReferenceExpression(valueData)
 }
 
 

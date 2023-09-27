@@ -343,6 +343,7 @@ describe('getImportantValues', () => {
       { boolean: true },
       { stringArray: ['1', '2'] },
       { undefinedVal: undefined },
+      { reference: new ReferenceExpression(inst.elemID) },
       { 'obj.id': 12345 },
     ])
   })

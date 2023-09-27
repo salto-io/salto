@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, Element } from '@salto-io/adapter-api'
+import { InstanceElement, Element, ModificationChange } from '@salto-io/adapter-api'
 import { AUTOMATION_TYPE, PRIORITY_SCHEME_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { findType } from '../../utils'
 import { createAutomationValues } from './automation'
@@ -76,3 +76,5 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
     [priorityScheme],
   ]
 }
+
+export const modifyDataCenterInstances = (_fetchedElements: Element[]):ModificationChange<InstanceElement>[][] => []

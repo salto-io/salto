@@ -402,7 +402,8 @@ export const validateJiraFetchConfig = ({
   const scriptRunnerSupportedTypes = fetchConfig.enableScriptRunnerAddon
     ? Object.keys(scriptRunnerApiDefinitions.supportedTypes) : []
   const supportedTypes = Object.keys(apiDefinitions.supportedTypes)
-    .concat(jsmSupportedTypes).concat(scriptRunnerSupportedTypes)
+    .concat(jsmSupportedTypes)
+    .concat(scriptRunnerSupportedTypes)
 
   configUtils.validateSupportedTypes(
     FETCH_CONFIG,

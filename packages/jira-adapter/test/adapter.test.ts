@@ -371,7 +371,7 @@ describe('adapter', () => {
       const config = createConfigInstance(getDefaultConfig({ isDataCenter: false }))
       config.value.client.usePrivateAPI = false
       config.value.fetch.convertUsersIds = false
-      config.value.fetch.enableScriptRunnerAddon = false
+      config.value.fetch.enableScriptRunnerAddon = true
       config.value.fetch.enableJSM = true
 
       srAdapter = adapterCreator.operations({
@@ -425,7 +425,9 @@ describe('adapter', () => {
           });
 
         (getAllElements as jest.MockedFunction<typeof getAllElements>)
-          .mockResolvedValue({ elements: [testInstance2] });
+          .mockResolvedValueOnce({ elements: [], errors: [{ message: 'scriptRunnerError', severity: 'Error' }] });
+        (getAllElements as jest.MockedFunction<typeof getAllElements>)
+          .mockResolvedValueOnce({ elements: [testInstance2], errors: [{ message: 'jsmError', severity: 'Error' }] });
         (getAllInstances as jest.MockedFunction<typeof getAllInstances>)
           .mockResolvedValue({ elements: [serviceDeskProjectInstance], errors: [{ message: 'some error', severity: 'Error' }] });
         (loadSwagger as jest.MockedFunction<typeof loadSwagger>)
@@ -445,13 +447,22 @@ describe('adapter', () => {
         expect(result.elements).toContain(serviceDeskProjectInstance)
       })
       it('should call getAllElements', () => {
-        expect(getAllElements).toHaveBeenCalledTimes(1)
+        expect(getAllElements).toHaveBeenCalledTimes(2)
       })
       it('should return error', async () => {
         expect(result.errors).toEqual([{
           message: 'some error',
           severity: 'Error',
-        }])
+        },
+        {
+          message: 'scriptRunnerError',
+          severity: 'Error',
+        },
+        {
+          message: 'jsmError',
+          severity: 'Error',
+        },
+        ])
       })
     })
     describe('jiraJSMEntriesFunc', () => {

@@ -1848,13 +1848,13 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
     },
   },
-  RequestTypeGroup: {
+  PortalGroup: {
     request: {
       url: '/rest/servicedeskapi/servicedesk/{serviceDeskId}/requesttypegroup',
     },
     transformation: {
       idFields: ['name', 'projectKey'],
-      sourceTypeName: 'RequestTypeGroup__values',
+      sourceTypeName: 'PortalGroup__values',
       dataField: 'values',
       fieldsToHide: [
         { fieldName: 'id' },
@@ -1880,7 +1880,7 @@ const JSM_DUCKTYPE_SUPPORTED_TYPES = {
   RequestType: ['RequestType'],
   CustomerPermissions: ['CustomerPermissions'],
   Queue: ['Queue'],
-  RequestTypeGroup: ['RequestTypeGroup'],
+  PortalGroup: ['PortalGroup'],
   Calendar: ['Calendar'],
 }
 

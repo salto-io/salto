@@ -745,7 +745,7 @@ describe('SalesforceAdapter fetch', () => {
           ]),
           expect.anything(),
           expect.anything(),
-          false,
+          true,
         )
       })
     })
@@ -1840,7 +1840,7 @@ public class LargeClass${index} {
           ]),
           expect.anything(),
           expect.anything(),
-          false,
+          true,
         )
       })
     })

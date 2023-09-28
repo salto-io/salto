@@ -14,8 +14,7 @@
 * limitations under the License.
 */
 
-import { ObjectType, ReferenceExpression, getChangeData, isInstanceChange, isObjectType, isReferenceExpression } from '@salto-io/adapter-api'
-import _ from 'lodash'
+import { InstanceElement, ObjectType, ReadOnlyElementsSource, ReferenceExpression, getChangeData, isInstanceChange, isObjectType, isReferenceExpression } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values, collections } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
@@ -24,6 +23,80 @@ import { ROLE, SCRIPT_ID } from '../constants'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
+
+const addPermissionField = (custRecordMap: Map<string, ObjectType>): void =>
+  custRecordMap.forEach(value => {
+    if (value.annotations.permissions?.permission === undefined) {
+      value.annotations.permissions = {
+        permission: {},
+      }
+    }
+  })
+
+const createRoleToPermittedroleMap = async (
+  roles: InstanceElement[],
+  elementsSource: ReadOnlyElementsSource,
+): Promise<Map<string, ReferenceExpression>> =>
+  new Map<string, ReferenceExpression>(
+    await awu(roles)
+      .map(async (role): Promise<[string, ReferenceExpression]> => {
+        const roleFullNameList = role.elemID.getFullNameParts()
+        const roleName = roleFullNameList[roleFullNameList.length - 1]
+        const permittedrole = new ReferenceExpression(role.elemID.createNestedID(SCRIPT_ID))
+        permittedrole.topLevelParent = await elementsSource.get(
+          permittedrole.elemID.createTopLevelParentID().parent
+        )
+        return [roleName, permittedrole]
+      })
+      .toArray()
+  )
+
+const addPermissionToCustomRecordTypes = (
+  val: Record<string, unknown>,
+  customRecordChangedMap: Map<string, ObjectType>,
+  roleName: string,
+  roleToPermittedroleMap: Map<string, ReferenceExpression>,
+): void => {
+  if (isReferenceExpression(val.permkey)
+      && isObjectType(val.permkey.topLevelParent)
+      && isCustomRecordType(val.permkey.topLevelParent)) {
+    const custRecord = customRecordChangedMap.get(val.permkey.topLevelParent.elemID.typeName)
+    if (custRecord !== undefined) {
+      custRecord.annotations.permissions.permission[roleName] = {
+        permittedlevel: val.permlevel,
+        permittedrole: roleToPermittedroleMap.get(roleName),
+      }
+    }
+  }
+}
+const addPermissionsToCustomRecordTypes = (
+  roles: InstanceElement[],
+  customRecordChangedMap: Map<string, ObjectType>,
+  roleToPermittedroleMap: Map<string, ReferenceExpression>,
+): void =>
+  roles.forEach(role => {
+    const permissionObject = role.value.permissions?.permission
+    const roleFullNameList = role.elemID.getFullNameParts()
+    const roleName = roleFullNameList[roleFullNameList.length - 1]
+    if (values.isPlainRecord(permissionObject)) {
+      Object.values(permissionObject)
+        .filter(values.isPlainRecord)
+        .forEach(async val => {
+          addPermissionToCustomRecordTypes(val, customRecordChangedMap, roleName, roleToPermittedroleMap)
+          // if (isReferenceExpression(val.permkey)
+          //   && isObjectType(val.permkey.topLevelParent)
+          //   && isCustomRecordType(val.permkey.topLevelParent)) {
+          //   const custRecord = customRecordChangedMap.get(val.permkey.topLevelParent.elemID.typeName)
+          //   if (custRecord !== undefined) {
+          //     custRecord.annotations.permissions.permission[roleName] = {
+          //       permittedlevel: val.permlevel,
+          //       permittedrole: roleToPermittedroleMap.get(role.elemID.getFullName()),
+          //     }
+          //   }
+          // }
+        })
+    }
+  })
 
 const filterCreator: LocalFilterCreator = ({ elementsSource }) => ({
   name: 'addPermissions',
@@ -40,60 +113,13 @@ const filterCreator: LocalFilterCreator = ({ elementsSource }) => ({
       .filter(instance => instance.elemID.typeName === ROLE)
 
     if (customRecordChangedMap.size > 0 && roleChanged.length > 0) {
-      customRecordChangedMap.forEach(value => {
-        if (value.annotations.permissions?.permission === undefined) {
-          value.annotations.permissions = {
-            permission: {},
-          }
-        }
-      })
+      addPermissionField(customRecordChangedMap)
 
-      const roleToPermittedroleMap = new Map<string, ReferenceExpression>(
-        await awu(roleChanged)
-          .map(async (role): Promise<[string, ReferenceExpression]> => {
-            const permittedrole = new ReferenceExpression(role.elemID.createNestedID(SCRIPT_ID))
-            permittedrole.topLevelParent = await elementsSource.get(
-              permittedrole.elemID.createTopLevelParentID().parent
-            )
-            return [role.elemID.getFullName(), permittedrole]
-          })
-          .toArray()
-      )
+      const roleToPermittedroleMap = await createRoleToPermittedroleMap(roleChanged, elementsSource)
 
-      roleChanged.forEach(role => {
-        const permissionObject = role.value.permissions?.permission
-        const roleFullNameList = role.elemID.getFullNameParts()
-        const roleName = roleFullNameList[roleFullNameList.length - 1]
-        const regex = /^\[scriptid=(.+)\]$/
-        if (values.isPlainRecord(permissionObject)) {
-          Object.values(permissionObject)
-            .filter(values.isPlainRecord)
-            .forEach(async val => {
-              if (isReferenceExpression(val.permkey)
-                && isObjectType(val.permkey.topLevelParent)
-                && isCustomRecordType(val.permkey.topLevelParent)) {
-                const custRecord = customRecordChangedMap.get(val.permkey.topLevelParent.elemID.typeName)
-                if (custRecord !== undefined) {
-                  custRecord.annotations.permissions.permission[roleName] = {
-                    permittedlevel: val.permlevel,
-                    permittedrole: roleToPermittedroleMap.get(role.elemID.getFullName()),
-                  }
-                }
-                log.debug('', custRecord)
-              } else if (_.isString(val.permkey) && regex.test(val.permkey)) {
-                const match = regex.exec(val.permkey)
-                const custRecord = match ? customRecordChangedMap.get(match[1]) : undefined
-                if (custRecord !== undefined) {
-                  custRecord.annotations.permissions.permission[roleName] = {
-                    permittedlevel: val.permlevel,
-                    permittedrole: roleToPermittedroleMap.get(role.elemID.getFullName()),
-                  }
-                }
-              }
-            })
-        }
-      })
+      addPermissionsToCustomRecordTypes(roleChanged, customRecordChangedMap, roleToPermittedroleMap)
     }
+    log.debug('')
   },
 })
 

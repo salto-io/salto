@@ -93,6 +93,7 @@ import { createListMetadataObjectsConfigChange } from '../config_change'
 
 const { toArrayAsync, awu } = collections.asynciterable
 const { splitDuplicates } = collections.array
+const { makeArray } = collections.array
 const { weightedChunks } = chunks
 const log = logger(module)
 
@@ -203,6 +204,25 @@ export const isReadOnlyField = (field: Field): boolean => (
 export const isHierarchyField = (field: Field): boolean => (
   field.refType.elemID.isEqual(Types.primitiveDataTypes.Hierarchy.elemID)
 )
+
+
+export const isReferenceField = (field?: Field): field is Field => (
+  (field !== undefined) && (isLookupField(field) || isMasterDetailField(field) || isHierarchyField(field))
+)
+
+export const referenceFieldTargetTypes = (field: Field): string[] => {
+  if (isLookupField(field) || isMasterDetailField(field)) {
+    return makeArray(field.annotations?.[FIELD_ANNOTATIONS.REFERENCE_TO])
+  }
+  if (isHierarchyField(field)) {
+    // hierarchy fields always reference the type that contains them
+    return makeArray(apiNameSync(field.parent))
+  }
+  log.warn('Unknown reference field type %s for field %s',
+    field.refType.elemID.getFullName(),
+    field.elemID.getFullName())
+  return []
+}
 
 export const getInstancesOfMetadataType = async (elements: Element[], metadataTypeName: string):
  Promise<InstanceElement[]> => awu(elements).filter(isInstanceElement)

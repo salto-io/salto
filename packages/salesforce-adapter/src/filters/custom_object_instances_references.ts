@@ -50,16 +50,13 @@ import {
   SALESFORCE,
 } from '../constants'
 import {
-  isLookupField,
-  isMasterDetailField,
   isReadOnlyField,
-  apiNameSync,
-  isHierarchyField,
+  isReferenceField,
+  referenceFieldTargetTypes,
   safeApiName,
 } from './utils'
 import { DataManagement } from '../types'
 
-const { makeArray } = collections.array
 const { awu } = collections.asynciterable
 const { isDefined } = lowerdashValues
 const { DefaultMap } = collections.map
@@ -184,24 +181,6 @@ const createWarnings = async (
     ...missingRefsWarnings,
     ...illegalOriginsWarnings,
   ]
-}
-
-const isReferenceField = (field?: Field): field is Field => (
-  isDefined(field) && (isLookupField(field) || isMasterDetailField(field) || isHierarchyField(field))
-)
-
-const referenceFieldTargetTypes = (field: Field): string[] => {
-  if (isLookupField(field) || isMasterDetailField(field)) {
-    return makeArray(field.annotations?.[FIELD_ANNOTATIONS.REFERENCE_TO])
-  }
-  if (isHierarchyField(field)) {
-    // hierarchy fields always reference the type that contains them
-    return makeArray(apiNameSync(field.parent))
-  }
-  log.warn('Unknown reference field type %s for field %s',
-    field.refType.elemID.getFullName(),
-    field.elemID.getFullName())
-  return []
 }
 
 const replaceLookupsWithRefsAndCreateRefMap = async (

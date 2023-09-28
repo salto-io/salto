@@ -66,6 +66,7 @@ import {
 } from '../utils'
 import { mockTypes } from '../mock_elements'
 import { FilterWith } from './mocks'
+import { SalesforceRecord } from '../../src/client/types'
 
 const { awu } = collections.asynciterable
 
@@ -139,7 +140,7 @@ describe('Custom Object Instances filter', () => {
   const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
     ElemID => new ElemID(adapterName, `${NAME_FROM_GET_ELEM_ID}${name}`)
 
-  const TestCustomRecords: Record<string, unknown>[] = [
+  const TestCustomRecords: SalesforceRecord[] = [
     {
       attributes: {
         type: 'Test',
@@ -195,26 +196,34 @@ describe('Custom Object Instances filter', () => {
   const emptyRefToObjectName = 'EmptyRefTo'
   const notInNamespaceName = 'NotInNamespace__c'
 
-  const createMockQueryImplementation = (testRecords: Record<string, unknown>[]) => (
+  const createMockQueryImplementation = (testRecords: SalesforceRecord[], strict: boolean) => (
     async (soql: string): Promise<Record<string, unknown>> => {
-      if (soql.includes(`${MANAGED_BY_SALTO_FIELD_NAME}=TRUE`)) {
-        const filteredRecords = testRecords.filter(record => record[MANAGED_BY_SALTO_FIELD_NAME] === true)
-        return {
-          totalSize: filteredRecords.length,
-          done: true,
-          records: filteredRecords,
+      let records = testRecords
+      if (strict) {
+        if (soql.includes(`${MANAGED_BY_SALTO_FIELD_NAME}=TRUE`)) {
+          records = testRecords.filter(record => record[MANAGED_BY_SALTO_FIELD_NAME] === true)
+        }
+        const fromClause = soql.match(/FROM\s*(\w+,?\s*)+(?:WHERE|$)/)
+        const idClause = soql.match(/Id IN\s*\(([^)]+)\)/)
+        if (idClause) {
+          const idsToFind = idClause[1].replace(/'/g, '').replace(/\s+/g, '').split(',')
+          records = records.filter(record => idsToFind.includes(record.Id))
+        }
+        if (fromClause) {
+          const typesToFind = fromClause[1].replace(/\s+/g, '').split(',')
+          records = records.filter(record => typesToFind.includes(record.attributes.type))
         }
       }
       return {
-        totalSize: testRecords.length,
+        totalSize: records.length,
         done: true,
-        records: testRecords,
+        records,
       }
     }
   )
 
-  const setMockQueryResults = (testRecords: Record<string, unknown>[]): void => {
-    basicQueryImplementation = jest.fn().mockImplementation(createMockQueryImplementation(testRecords))
+  const setMockQueryResults = (testRecords: SalesforceRecord[], strict = true): void => {
+    basicQueryImplementation = jest.fn().mockImplementation(createMockQueryImplementation(testRecords, strict))
     connection.query = basicQueryImplementation
   }
 
@@ -224,7 +233,7 @@ describe('Custom Object Instances filter', () => {
         getElemIdFunc: mockGetElemIdFunc,
       },
     }))
-    setMockQueryResults(TestCustomRecords)
+    setMockQueryResults(TestCustomRecords, false)
   })
 
   type TestFetchProfileParams = {
@@ -249,7 +258,9 @@ describe('Custom Object Instances filter', () => {
           .filter(typeParams => typeParams.allowRef)
           .map(typeParams => typeParams.typeName),
         saltoIDSettings: {
-          defaultIdFields: [],
+          defaultIdFields: [
+            'Id',
+          ],
         },
         saltoManagementFieldSettings: {
           defaultFieldName: MANAGED_BY_SALTO_FIELD_NAME,
@@ -289,7 +300,7 @@ describe('Custom Object Instances filter', () => {
         },
       },
     })
-    const testRecords: Record<string, unknown>[] = [
+    const testRecords: SalesforceRecord[] = [
       {
         attributes: {
           type: testTypeName,
@@ -1575,7 +1586,7 @@ describe('Custom Object Instances filter', () => {
         },
       },
     })
-    const testRecords: Record<string, unknown>[] = [
+    const testRecords: SalesforceRecord[] = [
       {
         attributes: {
           type: testTypeName,
@@ -1625,7 +1636,7 @@ describe('Custom Object Instances filter', () => {
     const testTypeName = 'TestType'
     const testInstanceId = 'some_id'
     const testType: ObjectType = createCustomObject(testTypeName)
-    const testRecords: Record<string, unknown>[] = [
+    const testRecords: SalesforceRecord[] = [
       {
         attributes: {
           type: testTypeName,
@@ -1672,6 +1683,101 @@ describe('Custom Object Instances filter', () => {
         .pop()
       expect(queryString).not.toContain('TestField')
       expect(queryString).toContain('Name')
+    })
+  })
+
+  describe('Hierarchy fields', () => {
+    describe('Types with Hierarchy fields', () => {
+      let elements: Element[]
+      const testTypeName = 'TestType'
+      const refFromTypeName = 'RefFrom'
+      const testInstanceId1 = 'some_id1'
+      const testInstanceId2 = 'some_id2'
+      const refFromType = createCustomObject(refFromTypeName, {
+        RefField: {
+          refType: Types.primitiveDataTypes.Lookup,
+          annotations: {
+            [LABEL]: 'Lookup Field',
+            [API_NAME]: 'RefField',
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
+            [FIELD_ANNOTATIONS.REFERENCE_TO]: [testTypeName],
+          },
+        },
+      })
+      const typeWithHierarchy = createCustomObject(testTypeName, {
+        HierarchyField: {
+          refType: Types.primitiveDataTypes.Hierarchy,
+          annotations: {
+            [LABEL]: 'Hierarchy Field',
+            [API_NAME]: 'HierarchyField',
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
+          },
+        },
+      })
+      const testRecords: SalesforceRecord[] = [
+        {
+          attributes: {
+            type: refFromTypeName,
+          },
+          Id: 'refFromId',
+          Name: 'RefFromName',
+          RefField: testInstanceId1,
+        },
+        {
+          attributes: {
+            type: testTypeName,
+          },
+          Id: testInstanceId1,
+          Name: 'TestInstance1Name',
+          HierarchyField: testInstanceId2,
+        },
+        {
+          attributes: {
+            type: testTypeName,
+          },
+          Id: testInstanceId2,
+          Name: 'TestInstance2Name',
+          HierarchyField: testInstanceId1,
+        },
+      ]
+      beforeEach(async () => {
+        filter = filterCreator(
+          {
+            client,
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: buildTestFetchProfile([
+                {
+                  typeName: testTypeName,
+                  included: false,
+                  excluded: false,
+                  allowRef: true,
+                },
+                {
+                  typeName: refFromTypeName,
+                  included: true,
+                  excluded: false,
+                  allowRef: false,
+                },
+              ]),
+            },
+          }
+        ) as FilterType
+
+        elements = [refFromType, typeWithHierarchy]
+
+        setMockQueryResults(testRecords)
+
+        await filter.onFetch(elements)
+      })
+      it('should follow references from Hierarchy fields', () => {
+        expect(elements).toHaveLength(2 + testRecords.length)
+        expect(elements).toIncludeAllPartialMembers([
+          { elemID: new ElemID(SALESFORCE, refFromTypeName, 'instance', `${NAME_FROM_GET_ELEM_ID}refFromId`) },
+          { elemID: new ElemID(SALESFORCE, testTypeName, 'instance', `${NAME_FROM_GET_ELEM_ID}${testInstanceId1}`) },
+          { elemID: new ElemID(SALESFORCE, testTypeName, 'instance', `${NAME_FROM_GET_ELEM_ID}${testInstanceId2}`) },
+        ])
+      })
     })
   })
 })

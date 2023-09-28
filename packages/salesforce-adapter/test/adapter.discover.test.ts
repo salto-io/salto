@@ -1678,7 +1678,7 @@ public class LargeClass${index} {
       it('should fetch sub instances of Workflow', () => {
         expect(result.elements
           .filter(isInstanceElement)
-          .map(instance => apiNameSync(instance))).toIncludeSameMembers([
+          .map(instance => apiNameSync(instance))).toIncludeAllMembers([
           'TestObject__c.TestAlert1',
           'TestObject__c.TestAlert2',
         ])

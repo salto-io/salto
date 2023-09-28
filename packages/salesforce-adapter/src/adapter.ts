@@ -323,9 +323,12 @@ const getMetadataTypesFromElementsSource = async (
 ): Promise<MetadataObjectType[]> => (
   awu(await elementsSource.getAll())
     .filter(isMetadataObjectType)
+    // standard and custom objects
     .filter(metadataType => !isCustomObjectSync(metadataType))
-    // Custom types shouldn't be caught here (CustomMetadata / CustomObject / CustomSettings)
+    // custom types (CustomMetadata / CustomObject (non standard) / CustomSettings)
     .filter(metadataType => !isCustomType(metadataType))
+    // settings types
+    .filter(metadataType => !metadataType.isSettings)
     .toArray()
 )
 

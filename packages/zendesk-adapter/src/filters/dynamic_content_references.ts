@@ -30,8 +30,7 @@ import { references as referencesUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
-import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from './dynamic_content'
-import { ZENDESK } from '../constants'
+import { DYNAMIC_CONTENT_ITEM_TYPE_NAME, ZENDESK } from '../constants'
 import { FETCH_CONFIG, ZendeskConfig } from '../config'
 
 const { awu } = collections.asynciterable

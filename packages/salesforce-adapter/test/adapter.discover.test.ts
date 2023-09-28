@@ -28,6 +28,7 @@ import {
   ListType,
   ObjectType,
   ServiceIds,
+  isInstanceElement,
 } from '@salto-io/adapter-api'
 import { MetadataInfo } from 'jsforce'
 import { collections, values } from '@salto-io/lowerdash'
@@ -40,13 +41,6 @@ import { apiName, MetadataObjectType, Types } from '../src/transformers/transfor
 import { findElements, ZipFile } from './utils'
 import mockAdapter from './adapter'
 import * as constants from '../src/constants'
-import {
-  CUSTOM_OBJECT,
-  DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
-  SALESFORCE,
-  SALESFORCE_ERRORS,
-  SOCKET_TIMEOUT,
-} from '../src/constants'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 import {
   mockDescribeResult,
@@ -63,12 +57,20 @@ import * as fetchModule from '../src/fetch'
 import { fetchMetadataInstances, retrieveMetadataInstances } from '../src/fetch'
 import * as xmlTransformerModule from '../src/transformers/xml_transformer'
 import * as metadataQueryModule from '../src/fetch_profile/metadata_query'
-import { buildMetadataQuery } from '../src/fetch_profile/metadata_query'
-import { isInstanceOfType } from '../src/filters/utils'
+import {
+  CUSTOM_OBJECT,
+  DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
+  SALESFORCE,
+  SALESFORCE_ERRORS,
+  SOCKET_TIMEOUT,
+} from '../src/constants'
+import { apiNameSync, isInstanceOfType } from '../src/filters/utils'
 import { NON_TRANSIENT_SALESFORCE_ERRORS } from '../src/config_change'
 import SalesforceClient from '../src/client/client'
 import createMockClient from './client'
 import { mockInstances, mockTypes } from './mock_elements'
+import { buildMetadataQuery } from '../src/fetch_profile/metadata_query'
+import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -757,6 +759,7 @@ describe('SalesforceAdapter fetch', () => {
           ]),
           expect.anything(),
           expect.anything(),
+          false,
         )
       })
     })
@@ -1602,6 +1605,86 @@ public class LargeClass${index} {
       })
     })
 
+    describe('when fetching Workflow instance on CustomObject', () => {
+      let result: FetchResult
+      beforeEach(async () => {
+        ({ connection, adapter } = mockAdapter({
+          adapterParams: {
+            getElemIdFunc: mockGetElemIdFunc,
+            config: {
+              fetch: {
+                optionalFeatures: {
+                  fixRetrieveFilePaths: true,
+                },
+                metadata: {
+                  include: [
+                    { metadataType: '.*' },
+                  ],
+                },
+              },
+              maxItemsInRetrieveRequest: testMaxItemsInRetrieveRequest,
+              client: {
+                readMetadataChunkSize: { default: 3, overrides: { Test: 2 } },
+              },
+            },
+          },
+        }))
+        mockMetadataTypes(
+          [
+            { xmlName: 'Workflow', directoryName: 'workflows' },
+          ],
+
+          {
+            valueTypeFields: [
+              {
+                name: 'fullName',
+                soapType: 'string',
+              },
+            ],
+          },
+          {
+            Workflow: [
+              {
+                props: {
+                  fullName: 'TestObject__c',
+                  fileName: 'Workflow/TestObject__c.workflow',
+                },
+                values: {
+                  fullName: 'TestObject__c',
+                },
+                zipFiles: [
+                  {
+                    path: 'unpackaged/workflows/TestObject__c.workflow',
+                    content: `
+                      <?xml version="1.0" encoding="UTF-8"?>
+                      <Workflow xmlns="http://soap.sforce.com/2006/04/metadata">
+                        <apiVersion>58.0</apiVersion>
+                        <fullName>TestObject__c</fullName>
+                        <alerts>
+                          <fullName>TestAlert1</fullName>
+                        </alerts>
+                        <alerts>
+                          <fullName>TestAlert2</fullName>
+                        </alerts>
+                      </Workflow>`,
+                  },
+                ],
+              },
+            ],
+          },
+        )
+        result = await adapter.fetch(mockFetchOpts)
+      })
+      it('should fetch sub instances of Workflow', () => {
+        expect(result.elements
+          .filter(isInstanceElement)
+          .map(instance => apiNameSync(instance))).toIncludeSameMembers([
+          'TestObject__c.TestAlert1',
+          'TestObject__c.TestAlert2',
+        ])
+      })
+    })
+
     describe('with error that creates config suggestions', () => {
       const ROLE_INSTANCE_NAMES = [
         'CEO',
@@ -1774,6 +1857,7 @@ public class LargeClass${index} {
           ]),
           expect.anything(),
           expect.anything(),
+          false,
         )
       })
     })
@@ -1878,7 +1962,11 @@ describe('Fetch via retrieve API', () => {
             isFetchWithChangesDetection: false,
             elementsSource: buildElementsSourceFromElements([]),
           }),
-          addNamespacePrefixToFullName: false,
+          fetchProfile: buildFetchProfile({
+            fetchParams: { addNamespacePrefixToFullName: false },
+            isFetchWithChangesDetection: false,
+            elementsSource: buildElementsSourceFromElements([]),
+          }),
           typesToSkip: new Set(),
         }
       )
@@ -1913,7 +2001,11 @@ describe('Fetch via retrieve API', () => {
             isFetchWithChangesDetection: false,
             elementsSource: buildElementsSourceFromElements([]),
           }),
-          addNamespacePrefixToFullName: false,
+          fetchProfile: buildFetchProfile({
+            fetchParams: { addNamespacePrefixToFullName: false },
+            isFetchWithChangesDetection: false,
+            elementsSource: buildElementsSourceFromElements([]),
+          }),
           typesToSkip: new Set(),
         }
       )
@@ -1952,7 +2044,11 @@ describe('Fetch via retrieve API', () => {
             isFetchWithChangesDetection: false,
             elementsSource: buildElementsSourceFromElements([]),
           }),
-          addNamespacePrefixToFullName: false,
+          fetchProfile: buildFetchProfile({
+            fetchParams: { addNamespacePrefixToFullName: false },
+            isFetchWithChangesDetection: false,
+            elementsSource: buildElementsSourceFromElements([]),
+          }),
           typesToSkip: new Set(),
         }
       )
@@ -1999,7 +2095,11 @@ describe('Fetch via retrieve API', () => {
             isFetchWithChangesDetection: false,
             elementsSource: buildElementsSourceFromElements([]),
           }),
-          addNamespacePrefixToFullName: false,
+          fetchProfile: buildFetchProfile({
+            fetchParams: { addNamespacePrefixToFullName: false },
+            isFetchWithChangesDetection: false,
+            elementsSource: buildElementsSourceFromElements([]),
+          }),
           typesToSkip: new Set(),
         }
       )

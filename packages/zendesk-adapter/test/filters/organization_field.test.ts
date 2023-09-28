@@ -19,11 +19,9 @@ import {
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 
-import { ZENDESK, ORG_FIELD_TYPE_NAME } from '../../src/constants'
+import { ZENDESK, ORG_FIELD_TYPE_NAME, CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../src/constants'
 
-import filterCreator, {
-  ORG_FIELD_OPTION_TYPE_NAME, CUSTOM_FIELD_OPTIONS_FIELD_NAME,
-} from '../../src/filters/organization_field'
+import filterCreator, { ORG_FIELD_OPTION_TYPE_NAME } from '../../src/filters/organization_field'
 import { createFilterCreatorParams } from '../utils'
 
 const mockDeployChange = jest.fn()
@@ -63,20 +61,20 @@ describe('organization field filter', () => {
         type: 'dropdown',
         key: 'parent',
         [CUSTOM_FIELD_OPTIONS_FIELD_NAME]: [
-          { name: 'name1', value: 'v1' },
-          { name: 'name2', value: 'v2' },
+          { raw_name: 'name1', value: 'v1' },
+          { raw_name: 'name2', value: 'v2' },
         ],
       },
     )
     const child1Resolved = new InstanceElement(
       'child1',
       childObjType,
-      { name: 'name1', value: 'v1' },
+      { raw_name: 'name1', value: 'v1' },
     )
     const child2Resolved = new InstanceElement(
       'child2',
       childObjType,
-      { name: 'name2', value: 'v2' },
+      { raw_name: 'name2', value: 'v2' },
     );
     [child1Resolved, child2Resolved].forEach(resolved => {
       resolved.annotations[CORE_ANNOTATIONS.PARENT] = [
@@ -164,12 +162,7 @@ describe('organization field filter', () => {
       clonedResolvedParent.value.id = 11
       beforeElements[0].value.id = 22
       beforeElements[1].value.id = 33
-      const afterElements = beforeElements
-        .map(e => e.clone())
-        .map(e => {
-          e.value.name = `${e.value.name}-edited`
-          return e
-        })
+      const afterElements = beforeElements.map(e => e.clone())
       clonedResolvedParent.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] = afterElements.map(e => e.value)
       afterElements.forEach(e => {
         e.annotations[CORE_ANNOTATIONS.PARENT] = [

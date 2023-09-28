@@ -16,8 +16,7 @@
 import _ from 'lodash'
 import { ChangeValidator, getChangeData,
   isAdditionOrModificationChange, isInstanceElement } from '@salto-io/adapter-api'
-import { CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../filters/custom_field_options/creator'
-import { FIELD_TYPE_NAMES } from '../constants'
+import { CUSTOM_FIELD_OPTIONS_FIELD_NAME, FIELD_TYPE_NAMES } from '../constants'
 
 const RELEVANT_FIELD_TYPES = ['dropdown', 'tagger', 'multiselect']
 

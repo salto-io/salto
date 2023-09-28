@@ -16,15 +16,11 @@
 import _ from 'lodash'
 import { Element, SaltoError } from '@salto-io/adapter-api'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
-import { TypeConfig } from '../config'
+import { TypeConfig, ConfigChangeSuggestion } from '../config'
 import { ElementQuery } from './query'
 
 
 const { isDefined } = lowerdashValues
-
-export type ConfigChangeSuggestion = {
-  typeToExclude: string
-}
 
 export type FetchElements<T> = {
   elements: T

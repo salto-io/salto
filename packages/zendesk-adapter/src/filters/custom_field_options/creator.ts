@@ -15,19 +15,27 @@
 */
 import _ from 'lodash'
 import {
-  Change, getChangeData, InstanceElement, isInstanceElement, Element,
-  isObjectType, Field, BuiltinTypes, ReferenceExpression, isRemovalChange, isReferenceExpression,
+  Change,
+  getChangeData,
+  InstanceElement,
+  isInstanceElement,
+  Element,
+  isObjectType,
+  Field,
+  BuiltinTypes,
+  ReferenceExpression,
+  isRemovalChange,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { getParents, replaceTemplatesWithValues } from '@salto-io/adapter-utils'
+import { getParents } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges, deployChangesByGroups } from '../../deployment'
-import { applyforInstanceChangesOfType } from '../utils'
+import { applyforInstanceChangesOfType, getCustomFieldOptionsFromChanges } from '../utils'
 import { API_DEFINITIONS_CONFIG } from '../../config'
-import { prepRef } from '../handle_template_expressions'
+import { CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../constants'
 
-export const CUSTOM_FIELD_OPTIONS_FIELD_NAME = 'custom_field_options'
 export const DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME = 'default_custom_field_option'
 
 const log = logger(module)
@@ -88,15 +96,6 @@ export const createCustomFieldOptionsFilterCreator = (
         const defaultValue = instance.value[DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME]
         const options = makeArray(instance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME])
         if (options.length > 0) {
-          // if there is a template expression in raw_name, resolve it
-          // (workaround until template expressions can be resolved in core).
-          replaceTemplatesWithValues(
-            { values: options, fieldName: 'raw_name' },
-            // onDeploy this value will not exist, so we don't need the shared context
-            {},
-            prepRef,
-          )
-
           options.forEach(option => {
             option.default = (defaultValue !== undefined) && (option.value === defaultValue)
           })
@@ -104,6 +103,9 @@ export const createCustomFieldOptionsFilterCreator = (
         return instance
       }
     )
+    getCustomFieldOptionsFromChanges(parentTypeName, childTypeName, changes).forEach(option => {
+      option.name = option.raw_name
+    })
   },
   onDeploy: async changes => {
     await applyforInstanceChangesOfType(
@@ -127,6 +129,9 @@ export const createCustomFieldOptionsFilterCreator = (
         return instance
       }
     )
+    getCustomFieldOptionsFromChanges(parentTypeName, childTypeName, changes).forEach(option => {
+      delete option.name
+    })
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [relevantChanges, leftoverChanges] = _.partition(
@@ -138,6 +143,7 @@ export const createCustomFieldOptionsFilterCreator = (
       relevantChanges,
       change => getChangeData(change).elemID.typeName === parentTypeName,
     )
+
     if (parentChanges.length === 0) {
       // The service does not allow us to have an field with no options - therefore, we need to do
       //  the removal changes last

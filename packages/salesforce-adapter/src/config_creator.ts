@@ -109,6 +109,12 @@ export const configWithCPQ = new InstanceElement(
             metadataType: 'Layout',
             name: 'CaseInteraction-Case Feed Layout',
           },
+          {
+            metadataType: 'EclairGeoData',
+          },
+          {
+            metadataType: 'OmniUiCard|OmniDataTransform|OmniIntegrationProcedure|OmniInteractionAccessConfig|OmniInteractionConfig|OmniScript',
+          },
         ],
       },
       data: {
@@ -151,6 +157,12 @@ export const configWithCPQ = new InstanceElement(
           defaultIdFields: [
             CUSTOM_OBJECT_ID_FIELD,
           ],
+        },
+        brokenOutgoingReferencesSettings: {
+          defaultBehavior: 'BrokenReference',
+          perTargetTypeOverrides: {
+            User: 'InternalId',
+          },
         },
       },
     },

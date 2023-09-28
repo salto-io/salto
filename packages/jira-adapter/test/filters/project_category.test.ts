@@ -36,6 +36,7 @@ jest.mock('@salto-io/adapter-components', () => {
 describe('projectCategoryFilter', () => {
   let filter: filterUtils.FilterWith<'onDeploy' | 'preDeploy'>
   let projectInstance: InstanceElement
+  let project2Instance: InstanceElement
   let firstCategoryInstance: InstanceElement
   let secondCategoryInstance: InstanceElement
   let client: JiraClient
@@ -85,24 +86,32 @@ describe('projectCategoryFilter', () => {
       projectType,
       {
         projectCategory: new ReferenceExpression(firstCategoryInstance.elemID, firstCategoryInstance),
+        id: '1',
+        key: 'key1',
+      }
+    )
+    project2Instance = new InstanceElement(
+      'project2',
+      projectType,
+      {
+        projectCategory: new ReferenceExpression(secondCategoryInstance.elemID, secondCategoryInstance),
+        key: 'key2',
+        id: '2',
       }
     )
   })
   describe('preDeploy using cloud', () => {
     it('should convert projectCategory to categoryId when its an addition change', async () => {
-      await filter.preDeploy([toChange({ after: projectInstance })])
+      await filter.preDeploy([toChange({ after: projectInstance }), toChange({ after: project2Instance })])
       expect(projectInstance.value.categoryId).toEqual('10000')
       expect(projectInstance.value.projectCategory).toBeUndefined()
     })
     it('should convert projectCategory to categoryId when its a modification change', async () => {
-      const afterInstance = projectInstance.clone()
-      afterInstance.value.projectCategory = new ReferenceExpression(
-        secondCategoryInstance.elemID,
-        secondCategoryInstance
+      await filter.preDeploy(
+        [toChange({ before: projectInstance, after: project2Instance }), toChange({ after: projectInstance })]
       )
-      await filter.preDeploy([toChange({ before: projectInstance, after: afterInstance })])
-      expect(afterInstance.value.categoryId).toEqual('10001')
-      expect(afterInstance.value.projectCategory).toBeUndefined()
+      expect(project2Instance.value.categoryId).toEqual('10001')
+      expect(project2Instance.value.projectCategory).toBeUndefined()
     })
     it('should convert projectCategory to categoryId when deleting the category', async () => {
       const afterInstance = projectInstance.clone()
@@ -139,6 +148,12 @@ describe('projectCategoryFilter', () => {
       expect(afterInstance.value.categoryId).toEqual('10001')
       expect(afterInstance.value.projectCategory).toBeUndefined()
     })
+    it('should convert projectCategory to categoryId when not a reference', async () => {
+      projectInstance.value.projectCategory = '10000'
+      await filter.preDeploy([toChange({ after: projectInstance })])
+      expect(projectInstance.value.categoryId).toEqual('10000')
+      expect(projectInstance.value.projectCategory).toBeUndefined()
+    })
     it('should not convert projectCategory to categoryId when deleting the category', async () => {
       const afterInstance = projectInstance.clone()
       afterInstance.value.projectCategory = undefined
@@ -149,22 +164,25 @@ describe('projectCategoryFilter', () => {
 
   describe('onDeploy', () => {
     it('should convert back categoryId to projectCategory when its an addition change', async () => {
-      await filter.preDeploy([toChange({ after: projectInstance })])
-      await filter.onDeploy([toChange({ after: projectInstance })])
+      delete projectInstance.value.id
+      delete project2Instance.value.id
+      await filter.preDeploy([toChange({ after: projectInstance }), toChange({ after: project2Instance })])
+      await filter.onDeploy([toChange({ after: projectInstance }), toChange({ after: project2Instance })])
       expect(projectInstance.value.categoryId).toBeUndefined()
       expect(projectInstance.value.projectCategory)
         .toEqual(new ReferenceExpression(firstCategoryInstance.elemID, firstCategoryInstance))
+      expect(project2Instance.value.projectCategory)
+        .toEqual(new ReferenceExpression(secondCategoryInstance.elemID, secondCategoryInstance))
     })
     it('should convert back categoryId to projectCategory when its a modification change', async () => {
-      const afterInstance = projectInstance.clone()
-      afterInstance.value.projectCategory = new ReferenceExpression(
-        secondCategoryInstance.elemID,
-        secondCategoryInstance
+      await filter.preDeploy(
+        [toChange({ before: projectInstance, after: project2Instance }), toChange({ after: projectInstance })]
       )
-      await filter.preDeploy([toChange({ before: projectInstance, after: afterInstance })])
-      await filter.onDeploy([toChange({ before: projectInstance, after: afterInstance })])
-      expect(afterInstance.value.categoryId).toBeUndefined()
-      expect(afterInstance.value.projectCategory)
+      await filter.onDeploy(
+        [toChange({ before: projectInstance, after: project2Instance }), toChange({ after: projectInstance })]
+      )
+      expect(project2Instance.value.categoryId).toBeUndefined()
+      expect(project2Instance.value.projectCategory)
         .toEqual(new ReferenceExpression(secondCategoryInstance.elemID, secondCategoryInstance))
     })
     it('should do nothing when its a removing change', async () => {
@@ -176,11 +194,15 @@ describe('projectCategoryFilter', () => {
     })
     it('should insert categoryId to projectCategory when the project was not found in the Record', async () => {
       const afterInstance = projectInstance.clone()
-      afterInstance.value.id = '1'
+      afterInstance.value.key = 'key3'
       afterInstance.value.categoryId = '10000'
+      delete afterInstance.value.projectCategory
       await filter.onDeploy([toChange({ before: projectInstance, after: afterInstance })])
       expect(afterInstance.value.categoryId).toBeUndefined()
       expect(afterInstance.value.projectCategory).toEqual('10000')
+    })
+    it('should not crash when no categoryID', async () => {
+      await filter.onDeploy([toChange({ after: projectInstance })])
     })
   })
 })

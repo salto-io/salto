@@ -16,20 +16,22 @@
 import { collections, types } from '@salto-io/lowerdash'
 import { ObjectType } from '@salto-io/adapter-api'
 import { ConfigValidationError, validateRegularExpressions } from '../config_validation'
-import { DataManagementConfig } from '../types'
+import {
+  DataManagementConfig,
+  OutgoingReferenceBehavior,
+  outgoingReferenceBehaviors,
+} from '../types'
 import { DETECTS_PARENTS_INDICATOR } from '../constants'
 import { apiName } from '../transformers/transformer'
 
 const { makeArray } = collections.array
 
-const defaultIgnoreReferenceTo = ['User']
-
 export type TypeFetchCategory = 'Always' | 'IfReferenced' | 'Never'
 
 export type DataManagement = {
   shouldFetchObjectType: (objectType: ObjectType) => Promise<TypeFetchCategory>
+  brokenReferenceBehaviorForTargetType: (typeName: string | undefined) => OutgoingReferenceBehavior
   isReferenceAllowed: (name: string) => boolean
-  shouldIgnoreReference: (name: string) => boolean
   getObjectIdsFields: (name: string) => string[]
   getObjectAliasFields: (name: string) => types.NonEmptyArray<string>
   showReadOnlyValues?: boolean
@@ -72,6 +74,11 @@ const ALIAS_FIELDS_BY_TYPE: Record<string, types.NonEmptyArray<string>> = {
     'sbaa__ApprovalRule__c',
     'sbaa__Index__c',
   ],
+}
+
+const DEFAULT_BROKEN_REFS_BEHAVIOR: OutgoingReferenceBehavior = 'ExcludeInstance'
+const DEFAULT_PER_TYPE_BROKEN_REFS_BEHAVIOR: Record<string, OutgoingReferenceBehavior> = {
+  User: 'InternalId',
 }
 
 export const buildDataManagement = (params: DataManagementConfig): DataManagement => {
@@ -117,6 +124,19 @@ export const buildDataManagement = (params: DataManagementConfig): DataManagemen
       return 'Never'
     },
 
+    brokenReferenceBehaviorForTargetType: typeName => {
+      if (typeName === undefined) {
+        return DEFAULT_BROKEN_REFS_BEHAVIOR
+      }
+      const typeOverrides = params.brokenOutgoingReferencesSettings?.perTargetTypeOverrides
+        ?? DEFAULT_PER_TYPE_BROKEN_REFS_BEHAVIOR
+      const perTypeBehavior = typeOverrides[typeName]
+      if (perTypeBehavior !== undefined) {
+        return perTypeBehavior
+      }
+      return params.brokenOutgoingReferencesSettings?.defaultBehavior ?? DEFAULT_BROKEN_REFS_BEHAVIOR
+    },
+
     managedBySaltoFieldForType: objType => {
       if (params.saltoManagementFieldSettings?.defaultFieldName === undefined) {
         return undefined
@@ -128,9 +148,6 @@ export const buildDataManagement = (params: DataManagementConfig): DataManagemen
     },
 
     isReferenceAllowed,
-
-    shouldIgnoreReference: name =>
-      (params.ignoreReferenceTo ?? defaultIgnoreReferenceTo).includes(name),
 
     getObjectIdsFields: name => {
       const matchedOverride = params.saltoIDSettings.overrides
@@ -176,6 +193,15 @@ export const validateDataManagementConfig = (
     validateRegularExpressions(
       saltoAliasOverrides.map(override => override.objectsRegex),
       [...fieldPath, 'saltoAliasSettings', 'overrides'],
+    )
+  }
+  if (dataManagementConfig.brokenOutgoingReferencesSettings?.perTargetTypeOverrides !== undefined) {
+    Object.entries(dataManagementConfig.brokenOutgoingReferencesSettings.perTargetTypeOverrides).forEach(
+      ([type, outgoingRefBehavior]) => {
+        if (!outgoingReferenceBehaviors.includes(outgoingRefBehavior)) {
+          throw new ConfigValidationError([...fieldPath, 'brokenOutgoingReferencesSettings', 'perTargetTypeOverrides', type], `Per-target broken reference behavior must be one of ${outgoingReferenceBehaviors.join(',')}`)
+        }
+      }
     )
   }
 }

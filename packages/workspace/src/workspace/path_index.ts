@@ -162,7 +162,7 @@ RemoteMapEntry<Path[]>[] => {
       elementFragments
         .filter(element => values.isDefined(element.path))
         .map(element => ({ value: element, path: element.path as Path }))
-    ))
+    )).map(entry => ({ key: entry.key, value: _.uniqWith(entry.value, _.isEqual) }))
 }
 
 export const getTopLevelPathHints = (unmergedElements: Element[]): PathHint[] => {
@@ -172,7 +172,7 @@ export const getTopLevelPathHints = (unmergedElements: Element[]): PathHint[] =>
   return Object.entries(elementsByID)
     .map(([key, value]) => ({
       key,
-      value: value.map(e => e.path as Path),
+      value: _.uniqWith(value.map(e => e.path as Path), _.isEqual),
     }))
 }
 
@@ -242,11 +242,15 @@ export const getFromPathIndex = async (
     // eslint-disable-next-line no-await-in-loop
     const pathHints = await index.get(key)
     if (pathHints !== undefined && pathHints.length > 0) {
+      // We want to return only unique path hints for every key
+      // because otherwise, multiple fragments will appear in the same file
+      // and it will cause merge errors.
+      const uniquePathHints = _.uniqWith(pathHints, _.isEqual)
       // If we found this elemID in the pathIndex we want to return all the hints.
       // If this is not an exact match we want to return a single hint
       // because otherwise, splitElementByPath will make it appear in multiple fragments
       // and cause merge errors.
-      return isExactMatch ? pathHints : [pathHints[0]]
+      return isExactMatch ? uniquePathHints : [uniquePathHints[0]]
     }
     idParts.pop()
     isExactMatch = false

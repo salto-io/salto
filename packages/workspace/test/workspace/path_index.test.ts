@@ -223,6 +223,43 @@ describe('topLevelPathIndex', () => {
       ]
     )
   })
+
+  it('should remove duplicate paths from the path index', () => {
+    const onePath = ['salto', 'obj', 'one']
+    const elemId = new ElemID('salto', 'obj')
+    const objFragFieldOne = new ObjectType({
+      elemID: elemId,
+      fields: {
+        myField: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          annotations: {
+            test: 'test',
+          },
+        },
+      },
+      path: onePath,
+    })
+    const objFragFieldTwo = new ObjectType({
+      elemID: elemId,
+      fields: {
+        myField: {
+          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          annotations: {
+            yo: 'yo',
+          },
+        },
+      },
+      path: onePath,
+    })
+    const pathHints = getElementsPathHints([objFragFieldOne, objFragFieldTwo])
+    expect(pathHints).toEqual(expect.arrayContaining([
+      expect.objectContaining({ key: 'salto.obj', value: [onePath] }),
+      expect.objectContaining({ key: 'salto.obj.field', value: [onePath] }),
+      expect.objectContaining({ key: 'salto.obj.field.myField', value: [onePath] }),
+      expect.objectContaining({ key: 'salto.obj.field.myField.test', value: [onePath] }),
+      expect.objectContaining({ key: 'salto.obj.field.myField.yo', value: [onePath] }),
+    ]))
+  })
 })
 
 describe('getFromPathIndex', () => {
@@ -257,6 +294,13 @@ describe('getFromPathIndex', () => {
 
   it('should return an empty array if no parent matches are found', async () => {
     expect(await getFromPathIndex(new ElemID('salto', 'nothing'), index)).toEqual([])
+  })
+
+  it('should remove duplicate keys from the path index', async () => {
+    await index.setAll([
+      { key: nestedID.getFullName(), value: [nestedPath, nestedPath] },
+    ])
+    expect(await getFromPathIndex(nestedID, index)).toEqual([nestedPath])
   })
 })
 
@@ -793,6 +837,42 @@ describe('getElementsPathHints', () => {
       expect.objectContaining({ key: 'salto.primitive.attr.a', value: [aFilePath] }),
       expect.objectContaining({ key: 'salto.primitive.attr.b', value: [bFilePath] }),
       expect.objectContaining({ key: 'salto.primitive', value: [aFilePath, bFilePath] }),
+    ]))
+  })
+
+  it('should remove duplicate paths from the path index', () => {
+    const onePath = ['salto', 'obj', 'one']
+    const objFragFieldOne = new ObjectType({
+      elemID: elemId,
+      fields: {
+        myField: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          annotations: {
+            test: 'test',
+          },
+        },
+      },
+      path: onePath,
+    })
+    const objFragFieldTwo = new ObjectType({
+      elemID: elemId,
+      fields: {
+        myField: {
+          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          annotations: {
+            yo: 'yo',
+          },
+        },
+      },
+      path: onePath,
+    })
+    const pathHints = getElementsPathHints([objFragFieldOne, objFragFieldTwo])
+    expect(pathHints).toEqual(expect.arrayContaining([
+      expect.objectContaining({ key: 'salto.obj', value: [onePath] }),
+      expect.objectContaining({ key: 'salto.obj.field', value: [onePath] }),
+      expect.objectContaining({ key: 'salto.obj.field.myField', value: [onePath] }),
+      expect.objectContaining({ key: 'salto.obj.field.myField.test', value: [onePath] }),
+      expect.objectContaining({ key: 'salto.obj.field.myField.yo', value: [onePath] }),
     ]))
   })
 })

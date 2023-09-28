@@ -90,6 +90,8 @@ export type OptionalFeatures = {
   fetchProfilesUsingReadApi?: boolean
   toolingDepsOfCurrentNamespace?: boolean
   useLabelAsAlias?: boolean
+  fixRetrieveFilePaths?: boolean
+  organizationWideSharingDefaults?: boolean
 }
 
 export type ChangeValidatorName = (
@@ -146,6 +148,14 @@ export type SaltoAliasSettings = {
 
 export type SaltoManagementFieldSettings = {
   defaultFieldName: string
+}
+
+export const outgoingReferenceBehaviors = ['ExcludeInstance', 'BrokenReference', 'InternalId'] as const
+export type OutgoingReferenceBehavior = typeof outgoingReferenceBehaviors[number]
+
+export type BrokenOutgoingReferencesSettings = {
+  defaultBehavior: OutgoingReferenceBehavior
+  perTargetTypeOverrides?: Record<string, OutgoingReferenceBehavior>
 }
 
 const objectIdSettings = new ObjectType({
@@ -236,15 +246,35 @@ const saltoManagementFieldSettingsType = new ObjectType({
   },
 })
 
+const brokenOutgoingReferencesSettingsType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'brokenOutgoingReferencesSettings'),
+  fields: {
+    defaultBehavior: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          values: outgoingReferenceBehaviors,
+        }),
+      },
+    },
+    perTargetTypeOverrides: {
+      refType: new MapType(BuiltinTypes.STRING),
+    },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 export type DataManagementConfig = {
   includeObjects: string[]
   excludeObjects?: string[]
   allowReferenceTo?: string[]
-  ignoreReferenceTo?: string[]
   saltoIDSettings: SaltoIDSettings
   showReadOnlyValues?: boolean
   saltoAliasSettings?: SaltoAliasSettings
   saltoManagementFieldSettings?: SaltoManagementFieldSettings
+  brokenOutgoingReferencesSettings?: BrokenOutgoingReferencesSettings
 }
 
 export type FetchParameters = {
@@ -495,6 +525,9 @@ const dataManagementType = new ObjectType({
     saltoManagementFieldSettings: {
       refType: saltoManagementFieldSettingsType,
     },
+    brokenOutgoingReferencesSettings: {
+      refType: brokenOutgoingReferencesSettingsType,
+    },
   } as Record<keyof DataManagementConfig, FieldDefinition>,
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -660,6 +693,8 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     fetchProfilesUsingReadApi: { refType: BuiltinTypes.BOOLEAN },
     toolingDepsOfCurrentNamespace: { refType: BuiltinTypes.BOOLEAN },
     useLabelAsAlias: { refType: BuiltinTypes.BOOLEAN },
+    fixRetrieveFilePaths: { refType: BuiltinTypes.BOOLEAN },
+    organizationWideSharingDefaults: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

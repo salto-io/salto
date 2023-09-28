@@ -93,7 +93,7 @@ describe('automationFetchFilter', () => {
     )
 
     project3Instance = new InstanceElement(
-      'project2InstanceOther',
+      'project3Instance',
       projectType,
       {
         name: 'otherName',

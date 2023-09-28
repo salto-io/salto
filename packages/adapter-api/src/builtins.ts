@@ -111,12 +111,21 @@ const importantValueType = new ObjectType({
         StandardBuiltinTypes.STRING.elemID,
         StandardBuiltinTypes.STRING,
       ),
+      annotations: { [CORE_ANNOTATIONS.REQUIRED]: true },
     },
     indexed: {
       refType: new TypeReference(
         StandardBuiltinTypes.BOOLEAN.elemID,
         StandardBuiltinTypes.BOOLEAN,
       ),
+      annotations: { [CORE_ANNOTATIONS.REQUIRED]: true },
+    },
+    highlighted: {
+      refType: new TypeReference(
+        StandardBuiltinTypes.BOOLEAN.elemID,
+        StandardBuiltinTypes.BOOLEAN,
+      ),
+      annotations: { [CORE_ANNOTATIONS.REQUIRED]: true },
     },
   },
 })

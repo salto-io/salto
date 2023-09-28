@@ -17,6 +17,7 @@ import { CORE_ANNOTATIONS, Element, InstanceElement } from '@salto-io/adapter-ap
 import { FileProperties } from 'jsforce-types'
 import { collections } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/create_missing_installed_packages_instances'
 import { SalesforceClient } from '../../index'
 import Connection from '../../src/client/jsforce'
@@ -107,6 +108,7 @@ describe('createMissingInstalledPackagesInstancesFilter', () => {
                 },
               },
               isFetchWithChangesDetection: false,
+              elementsSource: buildElementsSourceFromElements([]),
             }),
           }
           filter = filterCreator({ client, config: filterContext }) as FilterWith<'onFetch'>

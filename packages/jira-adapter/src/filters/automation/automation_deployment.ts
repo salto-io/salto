@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isRemovalOrModificationChange, ModificationChange, Values } from '@salto-io/adapter-api'
-import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { createSchemeGuard, resolveValues } from '@salto-io/adapter-utils'
@@ -31,8 +30,27 @@ import { getAutomations } from './automation_fetch'
 import { JiraConfig } from '../../config/config'
 import { PROJECT_TYPE_TO_RESOURCE_TYPE } from './automation_structure'
 
-
 const log = logger(module)
+
+type ImportResponse = {
+  id: string
+}
+
+const IMPORT_RESPONSE_SCHEME = Joi.object({
+  id: Joi.string().required(),
+}).unknown(true)
+
+const isImportResponse = createSchemeGuard<ImportResponse>(IMPORT_RESPONSE_SCHEME, 'Received an invalid automation import response')
+
+type ProgressResponse = {
+  taskState: string
+}
+
+const PROGRESS_RESPONSE_SCHEME = Joi.object({
+  taskState: Joi.string().required(),
+}).unknown(true)
+
+const isProgressResponse = createSchemeGuard<ProgressResponse>(PROGRESS_RESPONSE_SCHEME, 'Received an invalid automation progress response')
 
 type AutomationResponse = {
   id: number
@@ -41,9 +59,9 @@ type AutomationResponse = {
   projects: {
     projectId: string
   }[]
-}[]
+}
 
-const IMPORT_RESPONSE_SCHEME = Joi.array().items(
+const AUTOMATION_RESPONSE_SCHEME = Joi.array().items(
   Joi.object({
     id: Joi.number().required(),
     name: Joi.string().required(),
@@ -56,7 +74,7 @@ const IMPORT_RESPONSE_SCHEME = Joi.array().items(
   }).unknown(true),
 )
 
-const isAutomationsResponse = createSchemeGuard<AutomationResponse>(IMPORT_RESPONSE_SCHEME, 'Received an invalid automation import response')
+const isAutomationsResponse = createSchemeGuard<AutomationResponse[]>(AUTOMATION_RESPONSE_SCHEME, 'Received an invalid automation import response')
 
 const generateRuleScopesResources = (
   instance: InstanceElement,
@@ -94,15 +112,54 @@ const generateRuleScopes = (
 
 const getUrlPrefix = (cloudId: string | undefined): string => (
   cloudId === undefined
-    ? '/rest/cb-automation/latest/project/GLOBAL'
-    : `/gateway/api/automation/internal-api/jira/${cloudId}/pro/rest/GLOBAL`
+    ? '/rest/cb-automation/latest/project'
+    : `/gateway/api/automation/internal-api/jira/${cloudId}/pro/rest`
 )
+
+const awaitSuccessfulImport = async ({
+  client,
+  cloudId,
+  importId,
+  retries,
+  delay,
+} : {
+  client: JiraClient
+  cloudId: string | undefined
+  importId: string
+  retries: number
+  delay: number
+}): Promise<boolean> => {
+  await new Promise(resolve => setTimeout(resolve, delay))
+  const progressResponse = (await client.getPrivate({
+    url: `${getUrlPrefix(cloudId)}/task/${importId}/progress`,
+  })).data
+  if (!isProgressResponse(progressResponse)) {
+    log.error('Received an invalid automation progress response')
+    return false
+  }
+  if (progressResponse.taskState === 'SUCCESS') {
+    return true
+  }
+  if (retries === 0) {
+    log.error('Failed to import automation- did not received success response after await timeout')
+    return false
+  }
+  log.info('Automation import not finished, retrying')
+  return awaitSuccessfulImport({
+    client,
+    cloudId,
+    importId,
+    retries: retries - 1,
+    delay,
+  })
+}
 
 const importAutomation = async (
   instance: InstanceElement,
   client: JiraClient,
   cloudId: string | undefined,
-): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> => {
+  config: JiraConfig
+): Promise<boolean> => {
   const resolvedInstance = await resolveValues(instance, getLookUpName, undefined, true)
 
   const ruleScopes = generateRuleScopes(resolvedInstance, cloudId)
@@ -113,24 +170,47 @@ const importAutomation = async (
       ...ruleScopes,
     }],
   }
-
-  return client.postPrivate({
-    url: `${getUrlPrefix(cloudId)}/rule/import`,
+  log.trace('Importing automation %o', data)
+  const importResponse = (await client.postPrivate({
+    url: `${getUrlPrefix(cloudId)}/GLOBAL/rule/import`,
     data,
+  })).data
+
+  // DC call import in a sync manner, cloud in an async
+  if (cloudId === undefined) {
+    return true
+  }
+
+  if (!isImportResponse(importResponse)) {
+    throw new Error('Received an invalid automation import response')
+  }
+
+  return awaitSuccessfulImport({
+    client,
+    cloudId,
+    importId: importResponse.id,
+    retries: config.deploy.taskMaxRetries,
+    delay: config.deploy.taskRetryDelay,
   })
 }
 
 const getAutomationIdentifier = (values: Values): string =>
   [values.name, ...(_.sortBy((values.projects ?? []).map((project: Values) => project.projectId)))].join('_')
 
-const setInstanceId = async (
-  instance: InstanceElement,
-  automations: Values[]
-): Promise<void> => {
+const getAutomationIdentifierFromService = async ({
+  instance,
+  client,
+  config,
+}: {
+  instance: InstanceElement
+  client: JiraClient
+  config: JiraConfig
+}): Promise<AutomationResponse> => {
+  log.info(`Getting automation identifier for ${instance.elemID.getFullName()}`)
+  const automations = await getAutomations(client, config)
   if (!isAutomationsResponse(automations)) {
-    throw new Error(`Received an invalid automation response when attempting to create automation: ${instance.elemID.getFullName()}`)
+    throw new Error('Received an invalid automation response when attempting to create automation')
   }
-
   const automationById = _.groupBy(automations, automation => getAutomationIdentifier(automation))
 
   const instanceIdentifier = getAutomationIdentifier(
@@ -141,15 +221,13 @@ const setInstanceId = async (
   log.info('Deployed Automation identifier: %o', instanceIdentifier)
 
   if (automationById[instanceIdentifier] === undefined) {
-    throw new Error(`Deployment failed for automation: ${instance.elemID.getFullName()}`)
+    throw new Error('Cannot find id of automation after the deployment')
   }
 
   if (automationById[instanceIdentifier].length > 1) {
-    throw new Error(`Cannot find if of automation: ${instance.elemID.getFullName()} after the deployment, there is more than one automation with the same name ${instance.value.name}`)
+    throw new Error(`Cannot find id of automation after the deployment, there is more than one automation with the same name ${instance.value.name}`)
   }
-
-  instance.value.id = automationById[instanceIdentifier][0].id
-  instance.value.created = automationById[instanceIdentifier][0].created
+  return automationById[instanceIdentifier][0]
 }
 
 const removeAutomation = async (
@@ -158,7 +236,7 @@ const removeAutomation = async (
   cloudId: string | undefined,
 ): Promise<void> => {
   await client.deletePrivate({
-    url: `${getUrlPrefix(cloudId)}/rule/${instance.value.id}`,
+    url: `${getUrlPrefix(cloudId)}/GLOBAL/rule/${instance.value.id}`,
   })
 }
 
@@ -168,8 +246,8 @@ const getLabelsUrl = (
   labelID: string
 ): string => (
   cloudId === undefined
-    ? `${getUrlPrefix(cloudId)}/rule/${instance.value.id}/label/${labelID}`
-    : `${getUrlPrefix(cloudId)}/rules/${instance.value.id}/labels/${labelID}`
+    ? `${getUrlPrefix(cloudId)}/GLOBAL/rule/${instance.value.id}/label/${labelID}`
+    : `${getUrlPrefix(cloudId)}/GLOBAL/rules/${instance.value.id}/labels/${labelID}`
 )
 
 const addAutomationLabels = async (
@@ -232,7 +310,7 @@ const updateAutomation = async (
     : resolvedInstance.value
 
   await client.putPrivate({
-    url: `${getUrlPrefix(cloudId)}/rule/${instance.value.id}`,
+    url: `${getUrlPrefix(cloudId)}/GLOBAL/rule/${instance.value.id}`,
     data,
   })
 }
@@ -243,9 +321,17 @@ const createAutomation = async (
   cloudId: string | undefined,
   config: JiraConfig,
 ): Promise<void> => {
-  await importAutomation(instance, client, cloudId)
-  const automations = await getAutomations(client, config)
-  await setInstanceId(instance, automations)
+  const successfulImport = await importAutomation(instance, client, cloudId, config)
+  if (!successfulImport) {
+    log.warn('Failed to import automation, trying to continue deployment')
+  }
+  const automationResponse = await getAutomationIdentifierFromService({
+    instance,
+    client,
+    config,
+  })
+  instance.value.id = automationResponse.id
+  instance.value.created = automationResponse.created
   if (instance.value.state === 'ENABLED') {
     // Import automation ignore the state and always create the automation as disabled
     await updateAutomation(instance, client, cloudId)

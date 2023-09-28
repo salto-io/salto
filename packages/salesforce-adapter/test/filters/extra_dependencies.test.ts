@@ -148,7 +148,11 @@ describe('extra dependencies filter', () => {
       client,
       config: {
         ...defaultFilterContext,
-        fetchProfile: buildFetchProfile({ fetchParams: { target: ['meta'] }, isFetchWithChangesDetection: false }),
+        fetchProfile: buildFetchProfile({
+          fetchParams: { target: ['meta'] },
+          isFetchWithChangesDetection: false,
+          elementsSource: buildElementsSourceFromElements([]),
+        }),
         elementsSource,
       },
     }) as FilterType
@@ -287,6 +291,7 @@ describe('extra dependencies filter', () => {
                 optionalFeatures: { toolingDepsOfCurrentNamespace: false },
               },
               isFetchWithChangesDetection: false,
+              elementsSource: buildElementsSourceFromElements([]),
             }),
             elementsSource,
           },
@@ -337,7 +342,7 @@ describe('extra dependencies filter', () => {
       it('should have individual queries for types marked for individual query', () => {
         expect(mockQueryAll).toHaveBeenCalledTimes(6)
         mockQueryAll.mock.calls.forEach(([query]: [string, boolean]) => {
-          expect(query).not.toContain('MetadataComponentNamespacePrefix')
+          expect(query).not.toContain('MetadataComponentNamespace')
         })
       })
 
@@ -363,6 +368,7 @@ describe('extra dependencies filter', () => {
                 optionalFeatures: { toolingDepsOfCurrentNamespace: true },
               },
               isFetchWithChangesDetection: false,
+              elementsSource: buildElementsSourceFromElements([]),
             }),
             elementsSource: buildElementsSourceFromElements(elements),
           },
@@ -372,7 +378,7 @@ describe('extra dependencies filter', () => {
       it('should have individual queries for types marked for individual query', () => {
         expect(mockQueryAll).toHaveBeenCalledTimes(12)
         mockQueryAll.mock.calls.forEach(([query]: [string, boolean]) => {
-          expect(query).toContain('MetadataComponentNamespacePrefix')
+          expect(query).toContain('MetadataComponentNamespace')
         })
       })
     })
@@ -408,6 +414,7 @@ describe('extra dependencies filter', () => {
           fetchProfile: buildFetchProfile({
             fetchParams: { optionalFeatures: { extraDependencies: false } },
             isFetchWithChangesDetection: false,
+            elementsSource: buildElementsSourceFromElements([]),
           }),
           elementsSource: buildElementsSourceFromElements(elements),
         },

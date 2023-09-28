@@ -15,7 +15,12 @@
 */
 
 import { buildDataManagement, DataManagement } from '../../src/fetch_profile/data_management'
-import { DETECTS_PARENTS_INDICATOR } from '../../src/constants'
+import {
+  API_NAME,
+  DETECTS_PARENTS_INDICATOR,
+} from '../../src/constants'
+import { createCustomObjectType } from '../utils'
+import { Types } from '../../src/transformers/transformer'
 
 describe('buildDataManagement', () => {
   let dataManagement: DataManagement
@@ -24,6 +29,15 @@ describe('buildDataManagement', () => {
       includeObjects: ['aaa.*'],
       excludeObjects: ['.*bbb'],
       allowReferenceTo: ['ccc'],
+      saltoManagementFieldSettings: {
+        defaultFieldName: 'ManagedBySalto__c',
+      },
+      brokenOutgoingReferencesSettings: {
+        defaultBehavior: 'BrokenReference',
+        perTargetTypeOverrides: {
+          User: 'InternalId',
+        },
+      },
       saltoIDSettings: {
         defaultIdFields: ['default'],
         overrides: [{
@@ -47,18 +61,44 @@ describe('buildDataManagement', () => {
       },
     })
   })
-
-  it('isObjectMatch should return currect results for matched objects', () => {
-    expect(dataManagement.isObjectMatch('aaa')).toBeTruthy()
-    expect(dataManagement.isObjectMatch('ccc')).toBeFalsy()
-    expect(dataManagement.isObjectMatch('aaabbb')).toBeFalsy()
+  describe('shouldFetchObjectType', () => {
+    it('should fetch included objects', async () => {
+      expect(await dataManagement.shouldFetchObjectType(createCustomObjectType('aaa', {}))).toEqual('Always')
+      expect(await dataManagement.shouldFetchObjectType(createCustomObjectType('aaaccc', {}))).toEqual('Always')
+    })
+    it('should fetch objects we allow refs to if they are not managed by Salto', async () => {
+      expect(await dataManagement.shouldFetchObjectType(createCustomObjectType('ccc', {}))).toEqual('IfReferenced')
+    })
+    it('should fetch objects we allow refs to if they may be managed by Salto', async () => {
+      const objType = createCustomObjectType('ccc', {
+        fields: {
+          ManagedBySalto__c: {
+            refType: Types.primitiveDataTypes.Checkbox,
+            annotations: {
+              [API_NAME]: 'ManagedBySalto__c',
+            },
+          },
+        },
+      })
+      expect(await dataManagement.shouldFetchObjectType(objType)).toEqual('Always')
+    })
+    it('should not fetch objects that are excluded', async () => {
+      expect(await dataManagement.shouldFetchObjectType(createCustomObjectType('bbb', {}))).toEqual('Never')
+      expect(await dataManagement.shouldFetchObjectType(createCustomObjectType('cccbbb', {}))).toEqual('Never')
+    })
+    it('should not fetch objects that are both included and excluded', async () => {
+      expect(await dataManagement.shouldFetchObjectType(createCustomObjectType('aaabbb', {}))).toEqual('Never')
+    })
+  })
+  describe('brokenReferenceBehaviorForTargetType', () => {
+    it('should return the default for target types that are not overridden', () => {
+      expect(dataManagement.brokenReferenceBehaviorForTargetType('SomeType')).toEqual('BrokenReference')
+    })
+    it('should return the overridden value for target types that are overridden', () => {
+      expect(dataManagement.brokenReferenceBehaviorForTargetType('User')).toEqual('InternalId')
+    })
   })
 
-  it('isReferenceAllowed should return currect results for allowed references', () => {
-    expect(dataManagement.isReferenceAllowed('aaa')).toBeFalsy()
-    expect(dataManagement.isReferenceAllowed('ccc')).toBeTruthy()
-    expect(dataManagement.isReferenceAllowed('aaabbb')).toBeFalsy()
-  })
 
   it('getObjectIdsFields should return currect results', () => {
     expect(dataManagement.getObjectIdsFields('aaa')).toEqual(['default'])

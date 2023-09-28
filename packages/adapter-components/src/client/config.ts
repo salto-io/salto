@@ -44,6 +44,7 @@ export type ClientBaseConfig<RateLimitConfig extends ClientRateLimitConfig> = Pa
 export const createClientConfigType = <RateLimitConfig extends ClientRateLimitConfig>(
   adapter: string,
   bucketNames?: (keyof RateLimitConfig)[],
+  additionRateLimitFields?: Record<string, FieldDefinition>
 ): ObjectType => {
   const createFieldDefWithMin = (min: number): FieldDefinition => ({
     refType: BuiltinTypes.NUMBER,
@@ -59,6 +60,7 @@ export const createClientConfigType = <RateLimitConfig extends ClientRateLimitCo
       total: createFieldDefWithMin(-1),
       get: createFieldDefWithMin(-1),
       ...Object.fromEntries((bucketNames ?? []).map(name => [name, createFieldDefWithMin(-1)])),
+      ...additionRateLimitFields,
     },
     annotations: {
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

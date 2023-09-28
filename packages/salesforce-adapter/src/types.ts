@@ -27,6 +27,7 @@ import {
 } from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { types } from '@salto-io/lowerdash'
+import { FileProperties } from 'jsforce-types'
 import { SUPPORTED_METADATA_TYPES } from './fetch_profile/metadata_types'
 import * as constants from './constants'
 import { DEFAULT_MAX_INSTANCES_PER_TYPE, SALESFORCE } from './constants'
@@ -66,6 +67,7 @@ export type MetadataInstance = {
   name: string
   isFolderType: boolean
   changedAt: string | undefined
+  subInstancesFileProperties?: FileProperties[]
 }
 
 export type MetadataQueryParams = Partial<Omit<MetadataInstance, 'isFolderType'>>
@@ -90,6 +92,8 @@ export type OptionalFeatures = {
   fetchProfilesUsingReadApi?: boolean
   toolingDepsOfCurrentNamespace?: boolean
   useLabelAsAlias?: boolean
+  fixRetrieveFilePaths?: boolean
+  organizationWideSharingDefaults?: boolean
 }
 
 export type ChangeValidatorName = (
@@ -119,6 +123,7 @@ export type ChangeValidatorName = (
   | 'unknownPicklistValues'
   | 'installedPackages'
   | 'dataCategoryGroup'
+  | 'standardFieldOrObjectAdditionsOrDeletions'
 )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -141,6 +146,18 @@ export type SaltoIDSettings = {
 export type SaltoAliasSettings = {
   defaultAliasFields?: types.NonEmptyArray<string>
   overrides?: ObjectAliasSettings[]
+}
+
+export type SaltoManagementFieldSettings = {
+  defaultFieldName: string
+}
+
+export const outgoingReferenceBehaviors = ['ExcludeInstance', 'BrokenReference', 'InternalId'] as const
+export type OutgoingReferenceBehavior = typeof outgoingReferenceBehaviors[number]
+
+export type BrokenOutgoingReferencesSettings = {
+  defaultBehavior: OutgoingReferenceBehavior
+  perTargetTypeOverrides?: Record<string, OutgoingReferenceBehavior>
 }
 
 const objectIdSettings = new ObjectType({
@@ -219,14 +236,47 @@ const saltoAliasSettingsType = new ObjectType({
   },
 })
 
+const saltoManagementFieldSettingsType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'saltoManagementFieldSettings'),
+  fields: {
+    defaultFieldName: {
+      refType: BuiltinTypes.STRING,
+    },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
+const brokenOutgoingReferencesSettingsType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'brokenOutgoingReferencesSettings'),
+  fields: {
+    defaultBehavior: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          values: outgoingReferenceBehaviors,
+        }),
+      },
+    },
+    perTargetTypeOverrides: {
+      refType: new MapType(BuiltinTypes.STRING),
+    },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 export type DataManagementConfig = {
   includeObjects: string[]
   excludeObjects?: string[]
   allowReferenceTo?: string[]
-  ignoreReferenceTo?: string[]
   saltoIDSettings: SaltoIDSettings
   showReadOnlyValues?: boolean
   saltoAliasSettings?: SaltoAliasSettings
+  saltoManagementFieldSettings?: SaltoManagementFieldSettings
+  brokenOutgoingReferencesSettings?: BrokenOutgoingReferencesSettings
 }
 
 export type FetchParameters = {
@@ -474,6 +524,12 @@ const dataManagementType = new ObjectType({
     saltoAliasSettings: {
       refType: saltoAliasSettingsType,
     },
+    saltoManagementFieldSettings: {
+      refType: saltoManagementFieldSettingsType,
+    },
+    brokenOutgoingReferencesSettings: {
+      refType: brokenOutgoingReferencesSettingsType,
+    },
   } as Record<keyof DataManagementConfig, FieldDefinition>,
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -639,6 +695,8 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     fetchProfilesUsingReadApi: { refType: BuiltinTypes.BOOLEAN },
     toolingDepsOfCurrentNamespace: { refType: BuiltinTypes.BOOLEAN },
     useLabelAsAlias: { refType: BuiltinTypes.BOOLEAN },
+    fixRetrieveFilePaths: { refType: BuiltinTypes.BOOLEAN },
+    organizationWideSharingDefaults: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -674,6 +732,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     unknownPicklistValues: { refType: BuiltinTypes.BOOLEAN },
     dataCategoryGroup: { refType: BuiltinTypes.BOOLEAN },
     installedPackages: { refType: BuiltinTypes.BOOLEAN },
+    standardFieldOrObjectAdditionsOrDeletions: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

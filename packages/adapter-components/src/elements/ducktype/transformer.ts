@@ -25,12 +25,13 @@ import { TypeConfig, getConfigWithDefault, getTransformationConfigByType } from 
 import { FindNestedFieldFunc } from '../field_finder'
 import { TypeDuckTypeDefaultsConfig, TypeDuckTypeConfig, DuckTypeTransformationConfig, DuckTypeTransformationDefaultConfig } from '../../config/ducktype'
 import { ComputeGetArgsFunc } from '../request_parameters'
-import { ConfigChangeSuggestion, FetchElements, getElementsWithContext } from '../element_getter'
+import { FetchElements, getElementsWithContext } from '../element_getter'
 import { extractStandaloneFields } from './standalone_field_extractor'
 import { shouldRecurseIntoEntry } from '../instance_elements'
 import { addRemainingTypes } from './add_remaining_types'
 import { ElementQuery } from '../query'
 import { InvalidSingletonType } from '../../config/shared'
+import { ConfigChangeSuggestion } from '../../config/config_change'
 
 const { makeArray } = collections.array
 const { toArrayAsync, awu } = collections.asynciterable
@@ -143,7 +144,8 @@ const getEntriesForType = async (
   const requestWithDefaults = getConfigWithDefault(request, typeDefaultConfig.request ?? {})
 
   const getEntries = async (context: Values | undefined): Promise<Values[]> => {
-    const getArgs = computeGetArgs(requestWithDefaults, contextElements, context, reversedSupportedTypes)
+    const getArgs = computeGetArgs(requestWithDefaults, contextElements, _.assign({}, context, requestContext),
+      reversedSupportedTypes)
     return (await Promise.all(
       getArgs.map(async args => (
         getEntriesResponseValuesFunc
@@ -284,6 +286,7 @@ export const getTypeAndInstances = async ({
   getEntriesResponseValuesFunc,
   reversedSupportedTypes,
   customInstanceFilter,
+  additionalRequestContext,
 }: {
   adapterName: string
   typeName: string
@@ -297,6 +300,7 @@ export const getTypeAndInstances = async ({
   getEntriesResponseValuesFunc?: EntriesRequester
   reversedSupportedTypes: Record<string, string[]>
   customInstanceFilter?: (instances: InstanceElement[]) => InstanceElement[]
+  additionalRequestContext?: Record<string, unknown>
 }): Promise<Element[]> => {
   const entries = await getEntriesForType({
     adapterName,
@@ -310,6 +314,7 @@ export const getTypeAndInstances = async ({
     getElemIdFunc,
     getEntriesResponseValuesFunc,
     reversedSupportedTypes,
+    requestContext: additionalRequestContext,
   })
   const { type, nestedTypes, instances } = entries
   const filteredInstances = customInstanceFilter !== undefined ? customInstanceFilter(instances) : instances
@@ -349,6 +354,7 @@ export const getAllElements = async ({
   getEntriesResponseValuesFunc,
   isErrorTurnToConfigSuggestion,
   customInstanceFilter,
+  additionalRequestContext,
 }: {
   adapterName: string
   fetchQuery: ElementQuery
@@ -363,6 +369,7 @@ export const getAllElements = async ({
   getEntriesResponseValuesFunc?: EntriesRequester
   isErrorTurnToConfigSuggestion?: (error: Error) => boolean
   customInstanceFilter?: (instances: InstanceElement[]) => InstanceElement[]
+  additionalRequestContext? : Record<string, unknown>
 }): Promise<FetchElements<Element[]>> => {
   const supportedTypesWithEndpoints = _.mapValues(
     supportedTypes,
@@ -382,6 +389,7 @@ export const getAllElements = async ({
     paginator,
     nestedFieldFinder,
     computeGetArgs,
+    additionalRequestContext,
     typesConfig: types,
     typeDefaultConfig: typeDefaults,
     getElemIdFunc,

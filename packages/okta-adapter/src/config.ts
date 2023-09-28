@@ -33,7 +33,9 @@ export const DEPLOY_CONFIG = 'deploy'
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 export const PRIVATE_API_DEFINITIONS_CONFIG = 'privateApiDefinitions'
 
-export type OktaClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig> & {
+export type OktaClientRateLimitConfig = clientUtils.ClientRateLimitConfig & { rateLimitBuffer?: number }
+
+export type OktaClientConfig = clientUtils.ClientBaseConfig<OktaClientRateLimitConfig> & {
   usePrivateAPI: boolean
 }
 export type OktaStatusActionName = 'activate' | 'deactivate'
@@ -1702,7 +1704,8 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
 })
 
 const createClientConfigType = (): ObjectType => {
-  const configType = clientUtils.createClientConfigType(OKTA)
+  const rateLimitBufferField = { rateLimitBuffer: { refType: BuiltinTypes.NUMBER } }
+  const configType = clientUtils.createClientConfigType(OKTA, undefined, rateLimitBufferField)
   configType.fields.usePrivateAPI = new Field(
     configType, 'usePrivateAPI', BuiltinTypes.BOOLEAN
   )

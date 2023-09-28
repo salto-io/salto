@@ -42,7 +42,7 @@ import SoapClient from './soap_client/soap_client'
 import { CustomRecordResponse, RecordResponse } from './soap_client/types'
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError, RetryableError, retryOnRetryableError } from './errors'
 import { InvalidSuiteAppCredentialsError } from '../types'
-import { BundleType } from '../../types/bundle_type'
+import { SuiteAppBundleType } from '../../types/bundle_type'
 
 const { isDefined } = values
 const { DEFAULT_RETRY_OPTS, createRetryOptions } = clientUtils
@@ -375,8 +375,8 @@ export default class SuiteAppClient {
     }
   }
 
-  public async getInstalledBundles(): Promise<BundleType[]> {
-    return this.getInstalledBundlesOrSuiteApps<BundleType>('listBundles', GET_BUNDLES_RESULT_SCHEMA)
+  public async getInstalledBundles(): Promise<SuiteAppBundleType[]> {
+    return this.getInstalledBundlesOrSuiteApps<SuiteAppBundleType>('listBundles', GET_BUNDLES_RESULT_SCHEMA)
   }
 
   public async getInstalledSuiteApps(): Promise<SuiteAppType[]> {

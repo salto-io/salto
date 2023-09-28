@@ -27,6 +27,7 @@ import {
   Field, getChangeData, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/custom_metadata_to_object_type'
 import { defaultFilterContext } from '../utils'
 import {
@@ -58,6 +59,7 @@ describe('customMetadataToObjectTypeFilter', () => {
       fetchProfile: buildFetchProfile({
         fetchParams: { optionalFeatures: { skipAliases: false } },
         isFetchWithChangesDetection: false,
+        elementsSource: buildElementsSourceFromElements([]),
       }),
     },
   }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>

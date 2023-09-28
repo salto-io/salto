@@ -32,7 +32,12 @@ import { logger } from '@salto-io/logging'
 import { collections, values, promises, objects } from '@salto-io/lowerdash'
 import SalesforceClient from './client/client'
 import * as constants from './constants'
-import { apiName, Types, isMetadataObjectType, MetadataObjectType, isCustomObject } from './transformers/transformer'
+import {
+  apiName,
+  Types,
+  isMetadataObjectType,
+  MetadataObjectType,
+} from './transformers/transformer'
 import layoutFilter from './filters/layouts'
 import customObjectsFromDescribeFilter from './filters/custom_objects_from_soap_describe'
 import customObjectsToObjectTypeFilter, { NESTED_INSTANCE_VALUE_TO_TYPE_NAME } from './filters/custom_objects_to_object_type'
@@ -94,7 +99,7 @@ import changedAtSingletonFilter from './filters/changed_at_singleton'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
-import { addDefaults } from './filters/utils'
+import { addDefaults, isCustomObjectSync, isCustomType } from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, listMetadataObjects } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 import { getLookUpName, getLookupNameWithFallbackToElement } from './transformers/reference_mapping'
@@ -238,8 +243,6 @@ export interface SalesforceAdapterParams {
   elementsSource: ReadOnlyElementsSource
 
   isFetchWithChangesDetection: boolean
-
-  changedAtSingleton?: InstanceElement
 }
 
 const METADATA_TO_RETRIEVE = [
@@ -320,7 +323,9 @@ const getMetadataTypesFromElementsSource = async (
 ): Promise<MetadataObjectType[]> => (
   awu(await elementsSource.getAll())
     .filter(isMetadataObjectType)
-    .filter(async metadataType => !await isCustomObject(metadataType))
+    .filter(metadataType => !isCustomObjectSync(metadataType))
+    // Custom types shouldn't be caught here (CustomMetadata / CustomObject / CustomSettings)
+    .filter(metadataType => !isCustomType(metadataType))
     .toArray()
 )
 
@@ -386,7 +391,6 @@ export default class SalesforceAdapter implements AdapterOperations {
     unsupportedSystemFields = UNSUPPORTED_SYSTEM_FIELDS,
     config,
     isFetchWithChangesDetection,
-    changedAtSingleton,
   }: SalesforceAdapterParams) {
     this.maxItemsInRetrieveRequest = config.maxItemsInRetrieveRequest ?? maxItemsInRetrieveRequest
     this.metadataToRetrieve = metadataToRetrieve
@@ -399,7 +403,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     const fetchProfile = buildFetchProfile({
       fetchParams: config.fetch ?? {},
       isFetchWithChangesDetection,
-      changedAtSingleton,
+      elementsSource,
     })
     this.fetchProfile = fetchProfile
     if (!this.fetchProfile.isFeatureEnabled('fetchCustomObjectUsingRetrieveApi')) {
@@ -438,6 +442,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   @logDuration('fetching account configuration')
   async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch salesforce account configuration..')
+    await this.fetchProfile.metadataQuery.prepare()
     const fieldTypes = Types.getAllFieldTypes()
     const hardCodedTypes = [
       // Missing Metadata subtypes will come from the elementsSource. We want to avoid duplicates
@@ -628,7 +633,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         types: metadataTypesToRetrieve,
         metadataQuery: this.fetchProfile.metadataQuery,
         maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest,
-        addNamespacePrefixToFullName: this.fetchProfile.addNamespacePrefixToFullName,
+        fetchProfile: this.fetchProfile,
         typesToSkip: new Set(this.metadataTypesOfInstancesFetchedInFilters),
       }),
       readInstances(metadataTypesToRead),

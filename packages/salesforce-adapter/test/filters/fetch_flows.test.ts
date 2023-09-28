@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { defaultFilterContext } from '../utils'
 import mockClient from '../client'
 import fetchFlowFilter, { createActiveVersionFileProperties } from '../../src/filters/fetch_flows'
@@ -61,6 +62,7 @@ describe('fetch flows filter', () => {
             fetchProfile: buildFetchProfile({
               fetchParams: { preferActiveFlowVersions: true },
               isFetchWithChangesDetection: false,
+              elementsSource: buildElementsSourceFromElements([]),
             }) },
           client },
         ) as FilterWith<'onFetch'>

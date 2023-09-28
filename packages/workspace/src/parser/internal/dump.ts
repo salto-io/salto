@@ -59,8 +59,10 @@ const escapeTemplateMarker = (prim: string): string => prim.replace(/\$\{/gi, '\
 // Double escaping happens when we stringify after escaping.
 const fixDoubleTemplateMarkerEscaping = (prim: string): string => prim.replace(/\\\\\$\{/g, '\\${')
 
+const escapeMultilineMarker = (prim: string): string => prim.replace(/'''/g, "\\'''")
+
 const dumpMultilineString = (prim: string): string =>
-  [MULTILINE_STRING_PREFIX, prim, MULTILINE_STRING_SUFFIX].join('')
+  [MULTILINE_STRING_PREFIX, escapeMultilineMarker(prim), MULTILINE_STRING_SUFFIX].join('')
 
 const dumpString = (prim: string, indentationLevel = 0): string => {
   const dumpedString = isMultilineString(prim)

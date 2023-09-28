@@ -14,26 +14,35 @@
 * limitations under the License.
 */
 import { collections } from '@salto-io/lowerdash'
-import { InstanceElement, ElemID } from '@salto-io/adapter-api'
-import { elements as elementsUtils } from '@salto-io/adapter-components'
+import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
 
 import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
-import { configType, FETCH_CONFIG } from './config'
 
 const { makeArray } = collections.array
+const FETCH_CONFIG = 'fetch'
 
-const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from Zendesk.'
-  + ' Failed items must be excluded from the fetch.'
+export type ConfigChangeSuggestion = {
+  typeToExclude: string
+}
 
-export const getConfigFromConfigChanges = (
-  configChanges: elementsUtils.ConfigChangeSuggestion[],
-  currentConfig: InstanceElement,
-): { config: InstanceElement[]; message: string } | undefined => {
+// When some items cannot be fetched, they are excluded from the fetch process, and the user is notified.
+export const getConfigWithExcludeFromConfigChanges = ({
+  configChanges,
+  currentConfig,
+  configType,
+  adapterName,
+}: {
+  configChanges: ConfigChangeSuggestion[]
+  currentConfig: InstanceElement
+  configType: ObjectType
+  adapterName: string
+}): { config: InstanceElement[]; message: string } | undefined => {
   const typesToRemove = makeArray(configChanges).map(e => e.typeToExclude)
 
   if (typesToRemove.length === 0) {
     return undefined
   }
+  const stopManagingItmesMsg = `Salto failed to fetch some items from ${adapterName}. Failed items must be excluded from the fetch.`
 
   return {
     config: [new InstanceElement(
@@ -50,6 +59,6 @@ export const getConfigFromConfigChanges = (
         },
       },
     )],
-    message: formatConfigSuggestionsReasons([STOP_MANAGING_ITEMS_MSG]),
+    message: formatConfigSuggestionsReasons([stopManagingItmesMsg]),
   }
 }

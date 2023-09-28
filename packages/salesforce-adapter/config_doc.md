@@ -82,6 +82,15 @@ salesforce {
         ".*SBQQ__CustomAction__c.*",
         ".*PricebookEntry.*",
       ]
+      saltoManagementFieldSettings = {
+        defaultFieldName = "ManagedBySalto__c"
+      }
+      brokenOutgoingReferencesSettings = {
+        defaultBehavior = "BrokenReference"
+        perTargetTypeOverrides = {
+            User = "InternalId"
+        }
+      }
       saltoIDSettings = {
         defaultIdFields = [
           "##allMasterDetailFields##",
@@ -165,13 +174,15 @@ salesforce {
 
 ### Data management configuration options
 
-| Name                                                              | Default when undefined                           | Description                                                                                               |
-|-------------------------------------------------------------------|--------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
-| includeObjects                                                    | N/A (required when dataManagement is configured) | Data records of matched object names will be fetched                                                      |
-| excludeObjects                                                    | []                                               | Data records of matched object names will not be fetched in case they are matched in includeObjects       |
-| allowReferenceTo                                                  | []                                               | Data records of matched object names will be fetched only when referenced from other fetched data records |
-| [saltoIDSettings](#salto-id-settings-configuration-options)       | N/A (required when dataManagement is configured) | Configuration for cross environments data record ids management                                           |
-| [saltoAliasSettings](#salto-alias-settings-configuration-options) | N/A                                              | Configuration for data record aliases                                                                     |
+| Name                                                                          | Default when undefined                           | Description                                                                                               |
+|-------------------------------------------------------------------------------|--------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| includeObjects                                                                | N/A (required when dataManagement is configured) | Data records of matched object names will be fetched                                                      |
+| excludeObjects                                                                | []                                               | Data records of matched object names will not be fetched in case they are matched in includeObjects       |
+| allowReferenceTo                                                              | []                                               | Data records of matched object names will be fetched only when referenced from other fetched data records |
+| [saltoIDSettings](#salto-id-settings-configuration-options)                   | N/A (required when dataManagement is configured) | Configuration for cross environments data record ids management                                           |
+| [saltoAliasSettings](#salto-alias-settings-configuration-options)             | N/A                                              | Configuration for data record aliases                                                                     |
+| [saltoManagementFieldSettings](#salto-management-field-configuration-options) | {}                                               | Configuration for managed-by-Salto field                                                                  |
+| [brokenOutgoingReferencesSettings](#broken-outgoing-references-settings)      | {}                                               | Configuration for handling broken references                                                              |
 
 #### Salto ID settings configuration options
 
@@ -186,6 +197,28 @@ salesforce {
 |-----------------------------------------------------------|------------------------|----------------------------------------------------------|
 | defaultAliasFields                                        | N/A                    | Default fields list for defining the data record's alias |
 | [overrides](#object-alias-settings-configuration-options) | []                     | Overrides the default alias fields for specific objects  |
+
+#### Salto management field configuration options
+
+| Name             | Default when undefined | Description                                                                                        |
+|------------------|------------------------|----------------------------------------------------------------------------------------------------|
+| defaultFieldName | N/A                    | If this entry is set, Salto will not fetch records where this field exists and is equal to `false` |
+
+#### Broken outgoing references settings
+
+| Name                   | Default when undefined | Description                                                                                                     |
+|------------------------|------------------------|-----------------------------------------------------------------------------------------------------------------|
+| defaultBehavior        | "BrokenReference"      | Action to take when a record has a lookup field that refers to a record that was not fetched                    |
+| perTargetTypeOverrides | { User: "InternalId" } | A map where the key is a type name and the value is the broken reference behavior for the reference target type |
+
+##### Broken reference behaviors
+
+| Name              | Behavior                                                                                          |
+|-------------------|---------------------------------------------------------------------------------------------------|
+| "ExcludeInstance" | Do not fetch instances that contain a reference whose target was not fetched                      |
+| "BrokenReference" | Fetch the instance and create Salto references to non-existant targets.                           |
+| "InternalId"      | Fetch the instance and keep the existing field value (the internal ID of the referenced instance) |
+
 
 #### Object ID settings configuration options
 
@@ -207,7 +240,7 @@ salesforce {
 |---------------------------------------------------------------|-------------------------------------------------------|----------------------------------------------------------------------------------------------------|
 | [polling](#client-polling-options)                            | `{}` (no overrides)                                   | Configuration for polling asynchronous operations (deploy, retrieve, bulk data operations)         |
 | [deploy](#client-deploy-options)                              | `{}` (no overrides)                                   | Deploy options                                                                                     |
-| [retry](#retry-configuration-options)                         | `{}` (no overrides)                                   | Configuration for retrying on errors                                                               |
+| [retry](#client-retry-options)                                | `{}` (no overrides)                                   | Configuration for retrying on errors                                                               |
 | [maxConcurrentApiRequests](#rate-limit-configuration-options) | `{}` (no overrides)                                   | Limits on the number of concurrent requests of different types                                     |
 | [dataRetry](#client-data-retry-options)                       | `{}` (no overrides)                                   | Configuration for retrying on specific errors regarding data objects (for custom object instances) |
 | [readMetadataChunkSize](#read-metadata-chunk-size)            | 10 except for Profile and PermissionSet (which are 1) | Configuration for specifing the size of the chunk in readMetadata                                  |

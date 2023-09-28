@@ -15,11 +15,8 @@
 */
 
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { ZENDESK } from '../../src/constants'
-import {
-  DYNAMIC_CONTENT_ITEM_TYPE_NAME,
-  DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME,
-} from '../../src/filters/dynamic_content'
+import { DYNAMIC_CONTENT_ITEM_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from '../../src/filters/dynamic_content'
 import { defaultDynamicContentItemVariantValidator } from '../../src/change_validators'
 
 const dynamicContentItem = new InstanceElement(

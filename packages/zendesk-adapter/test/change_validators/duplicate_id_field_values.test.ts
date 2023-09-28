@@ -71,14 +71,13 @@ describe('duplicateIdFieldValuesValidator', () => {
 
     const changes = [
       toChange({ after: duplicateGroup1 }),
-      toChange({ after: duplicateGroup3 }),
+      toChange({ before: duplicateGroup3 }),
       toChange({ after: duplicateGroup4 }),
       toChange({ after: uniqueGroup }),
     ]
     const elementSource = createInMemoryElementSource([
       duplicateGroup1,
       duplicateGroup2,
-      duplicateGroup3,
       duplicateGroup4,
       duplicateGroup5,
       uniqueGroup,

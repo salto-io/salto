@@ -17,7 +17,7 @@ import {
   ChangeError,
   ChangeValidator,
   getChangeData, InstanceElement,
-  isAdditionChange, isInstanceChange,
+  isAdditionOrRemovalChange, isInstanceChange, isRemovalChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { elements as elementUtils } from '@salto-io/adapter-components'
@@ -53,7 +53,7 @@ export const duplicateIdFieldValuesValidator = (
 
   const changedInstancesByType = _.groupBy(
     changes
-      .filter(isAdditionChange)
+      .filter(isAdditionOrRemovalChange)
       .filter(isInstanceChange)
       .map(getChangeData)
       .filter(instance => Object.keys(ZENDESK_ID_FIELDS).includes(instance.elemID.typeName)),
@@ -61,7 +61,13 @@ export const duplicateIdFieldValuesValidator = (
   )
 
   const errors = await Promise.all(Object.entries(changedInstancesByType).map(async ([typeName, instances]) => {
-    const typeInstances = await getInstancesFromElementSource(elementSource, [typeName])
+    // Removals are not in the elementSource
+    const typeRemovals = changes
+      .filter(isRemovalChange)
+      .filter(isInstanceChange)
+      .map(getChangeData)
+      .filter(instance => instance.elemID.typeName === typeName)
+    const typeInstances = typeRemovals.concat(await getInstancesFromElementSource(elementSource, [typeName]))
     const instancesByZendeskId = _.groupBy(
       typeInstances,
       instance => toZendeskId(typeName, instance)

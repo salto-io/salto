@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import {
   INSTANCE_FULL_NAME_FIELD, INTERNAL_ID_FIELD, METADATA_TYPE, PROFILE_METADATA_TYPE, RECORDS_PATH,
   SALESFORCE,
@@ -117,6 +118,7 @@ describe('profile paths filter', () => {
           fetchProfile: buildFetchProfile({
             fetchParams: { optionalFeatures: { profilePaths: false } },
             isFetchWithChangesDetection: false,
+            elementsSource: buildElementsSourceFromElements([]),
           }),
         },
       }) as FilterWith<'onFetch'>

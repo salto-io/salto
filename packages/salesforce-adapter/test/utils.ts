@@ -70,13 +70,14 @@ export const createCustomObjectType = (
 ): ObjectType => new ObjectType({
   ...params,
   fields: {
-    Id: { refType: BuiltinTypes.SERVICE_ID, annotations: { [FIELD_ANNOTATIONS.QUERYABLE]: true } },
+    Id: { refType: BuiltinTypes.SERVICE_ID, annotations: { [FIELD_ANNOTATIONS.QUERYABLE]: true, [constants.API_NAME]: 'Id' } },
     Name: {
       refType: BuiltinTypes.STRING,
       annotations: {
         [FIELD_ANNOTATIONS.QUERYABLE]: true,
         [FIELD_ANNOTATIONS.CREATABLE]: true,
         [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+        [constants.API_NAME]: 'Name',
       },
     },
     ...params.fields,
@@ -365,7 +366,11 @@ export const createCustomSettingsObject = (
 
 export const defaultFilterContext: FilterContext = {
   systemFields: SYSTEM_FIELDS,
-  fetchProfile: buildFetchProfile({ fetchParams: {}, isFetchWithChangesDetection: false }),
+  fetchProfile: buildFetchProfile({
+    fetchParams: {},
+    isFetchWithChangesDetection: false,
+    elementsSource: buildElementsSourceFromElements([]),
+  }),
   elementsSource: buildElementsSourceFromElements([]),
   enumFieldPermissions: false,
 }

@@ -47,8 +47,8 @@ export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
 export const FIELDS_TO_HIDE: configUtils.FieldToHideType[] = [
   { fieldName: 'created_at', fieldType: 'string' },
   { fieldName: 'updated_at', fieldType: 'string' },
-  { fieldName: 'created_by_id' },
-  { fieldName: 'updated_by_id' },
+  { fieldName: 'created_by_id', fieldType: 'number' },
+  { fieldName: 'updated_by_id', fieldType: 'number' },
 ]
 export const PAGE_SIZE = 100
 export const DEFAULT_QUERY_PARAMS = {
@@ -79,6 +79,7 @@ export type ZendeskFetchConfig = configUtils.UserFetchConfig
   enableMissingReferences?: boolean
   includeAuditDetails?: boolean
   addAlias?: boolean
+  handleIdenticalAttachmentConflicts?: boolean
   greedyAppReferences?: boolean
   appReferenceLocators?: IdLocator[]
   guide?: Guide
@@ -873,6 +874,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       idFields: ['value'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'name', fieldType: 'string' },
+      ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
         {
@@ -970,6 +974,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'default', fieldType: 'boolean' },
       ),
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'name', fieldType: 'string' },
+      ),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
     },
   },
@@ -1035,10 +1042,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['value'],
       fieldsToHide: FIELDS_TO_HIDE.concat(
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'name', fieldType: 'string' },
       ),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
-      fieldsToOmit: FIELDS_TO_OMIT,
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'name', fieldType: 'string' },
+      ),
     },
   },
   organization_field_order: {
@@ -1903,11 +1911,13 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'content_url', fieldType: 'string' },
         { fieldName: 'size', fieldType: 'number' },
+        { fieldName: 'hash', fieldType: 'string' },
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'article_attachments', fieldType: 'List<article_attachment>' },
         { fieldName: 'content', fieldType: 'string' },
+        { fieldName: 'hash', fieldType: 'string' },
       ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'article_id', fieldType: 'number' },
@@ -2564,6 +2574,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     resolveOrganizationIDs: false,
     includeAuditDetails: false,
     addAlias: true,
+    handleIdenticalAttachmentConflicts: false,
   },
   [DEPLOY_CONFIG]: {
     createMissingOrganizations: false,
@@ -2693,6 +2704,8 @@ export type ChangeValidatorName = (
   | 'ticketFieldDeactivation'
   | 'duplicateIdFieldValues'
   | 'notEnabledMissingReferences'
+  | 'conditionalTicketFields'
+  | 'dynamicContentDeletion'
   )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -2762,6 +2775,8 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     ticketFieldDeactivation: { refType: BuiltinTypes.BOOLEAN },
     duplicateIdFieldValues: { refType: BuiltinTypes.BOOLEAN },
     notEnabledMissingReferences: { refType: BuiltinTypes.BOOLEAN },
+    conditionalTicketFields: { refType: BuiltinTypes.BOOLEAN },
+    dynamicContentDeletion: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -2781,6 +2796,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
           includeAuditDetails: { refType: BuiltinTypes.BOOLEAN },
           addAlias: { refType: BuiltinTypes.BOOLEAN },
+          handleIdenticalAttachmentConflicts: { refType: BuiltinTypes.BOOLEAN },
           greedyAppReferences: { refType: BuiltinTypes.BOOLEAN },
           appReferenceLocators: { refType: IdLocatorType },
           guide: { refType: GuideType },
@@ -2815,6 +2831,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       `${FETCH_CONFIG}.resolveOrganizationIDs`,
       `${FETCH_CONFIG}.includeAuditDetails`,
       `${FETCH_CONFIG}.addAlias`,
+      `${FETCH_CONFIG}.handleIdenticalAttachmentConflicts`,
       DEPLOY_CONFIG,
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

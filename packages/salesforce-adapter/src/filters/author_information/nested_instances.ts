@@ -13,8 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-import { collections } from '@salto-io/lowerdash'
 import { Element } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -22,10 +20,9 @@ import { RemoteFilterCreator } from '../../filter'
 import { apiNameSync, ensureSafeFilterFetch, isMetadataInstanceElementSync } from '../utils'
 import { WORKFLOW_FIELD_TO_TYPE } from '../workflow'
 import { NESTED_INSTANCE_VALUE_TO_TYPE_NAME } from '../custom_objects_to_object_type'
-import { SalesforceClient } from '../../../index'
 import { getAuthorAnnotations, MetadataInstanceElement } from '../../transformers/transformer'
+import SalesforceClient from '../../client/client'
 
-const { awu } = collections.asynciterable
 const log = logger(module)
 
 export const WARNING_MESSAGE = 'Encountered an error while trying to populate author information in some of the Salesforce configuration elements.'
@@ -88,10 +85,10 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         elements.filter(isMetadataInstanceElementSync),
         e => apiNameSync(e.getTypeSync())
       )
-      await awu(Object.entries(instancesByType))
-        .forEach(([typeName, instances]) => (
+      await Promise.all(Object.entries(instancesByType)
+        .map(([typeName, instances]) => (
           setAuthorInformationForInstancesOfType({ client, typeName, instances })
-        ))
+        )))
     },
   }),
 })

@@ -361,7 +361,8 @@ const filterCreator: FilterCreator = () => ({
           ZENDESK,
           ARTICLE_ATTACHMENTS_FIELD,
           ...path.slice(2, -1),
-          normalizeFilePathPart(attachment.value.file_name),
+          normalizeFilePathPart(attachment.value.file_name.split('.')[0]), // file name
+          normalizeFilePathPart(`${staticFile.hash.slice(0, 10)}_${attachment.value.file_name}`), // <hash>_file_name
         ]
         attachment.value.content = new StaticFile({
           filepath: staticFilePath.join('/'),

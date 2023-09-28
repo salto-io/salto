@@ -360,7 +360,7 @@ describe('XML Transformer', () => {
 
       it('should transform zip to MetadataInfo', async () => {
         const values = await fromRetrieveResult(
-          retrieveResult, fileProperties, new Set(['ApexClass']), new Set(['ApexClass']),
+          retrieveResult, fileProperties, new Set(['ApexClass']), new Set(['ApexClass']), false
         )
         expect(values).toHaveLength(1)
         const [apex] = values
@@ -405,7 +405,7 @@ describe('XML Transformer', () => {
 
       it('should transform zip to MetadataInfo', async () => {
         const values = await fromRetrieveResult(
-          retrieveResult, fileProperties, new Set(['ApexClass']), new Set(['ApexClass']),
+          retrieveResult, fileProperties, new Set(['ApexClass']), new Set(['ApexClass']), false
         )
         expect(values).toHaveLength(1)
         const [apex] = values
@@ -466,6 +466,7 @@ describe('XML Transformer', () => {
           fileProperties,
           new Set(['EmailTemplate', 'EmailFolder']),
           new Set(['EmailTemplate']),
+          false,
         )
         emailFolder = values.find(value => value.file.type === 'EmailFolder')?.values
         emailTemplate = values.find(value => value.file.type === 'EmailTemplate')?.values
@@ -557,7 +558,7 @@ describe('XML Transformer', () => {
         it('should transform zip to MetadataInfo', async () => {
           const fileProperties = createFileProperties()
           const values = await fromRetrieveResult(
-            await createRetrieveResult([fileProperties]), [fileProperties], new Set(), new Set(),
+            await createRetrieveResult([fileProperties]), [fileProperties], new Set(), new Set(), false,
           )
           await verifyMetadataValues(
             values,
@@ -569,7 +570,7 @@ describe('XML Transformer', () => {
         it('should transform zip to MetadataInfo for instance with namespace', async () => {
           const fileProperties = createFileProperties('myNamespace')
           const values = await fromRetrieveResult(
-            await createRetrieveResult([fileProperties]), [fileProperties], new Set(), new Set(),
+            await createRetrieveResult([fileProperties]), [fileProperties], new Set(), new Set(), false,
           )
           await verifyMetadataValues(
             values,
@@ -694,7 +695,7 @@ describe('XML Transformer', () => {
         it('should transform zip to MetadataInfo', async () => {
           const fileProperties = createFileProperties()
           const values = await fromRetrieveResult(
-            await createRetrieveResult([fileProperties]), [fileProperties], new Set(), new Set(),
+            await createRetrieveResult([fileProperties]), [fileProperties], new Set(), new Set(), false,
           )
           await verifyMetadataValues(
             values,
@@ -706,7 +707,7 @@ describe('XML Transformer', () => {
         it('should transform zip to MetadataInfo for instance with namespace', async () => {
           const fileProperties = createFileProperties('myNamespace')
           const values = await fromRetrieveResult(
-            await createRetrieveResult([fileProperties]), [fileProperties], new Set(), new Set(),
+            await createRetrieveResult([fileProperties]), [fileProperties], new Set(), new Set(), false,
           )
           await verifyMetadataValues(
             values,
@@ -744,6 +745,7 @@ describe('XML Transformer', () => {
           fileProperties,
           new Set(),
           new Set(),
+          false,
         )
         expect(values).toContainEqual(
           expect.objectContaining({ values: expect.objectContaining({ fullName: 'MyReportType' }) })

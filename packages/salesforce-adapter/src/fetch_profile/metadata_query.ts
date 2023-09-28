@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { collections, regex, values } from '@salto-io/lowerdash'
+import { regex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { InstanceElement } from '@salto-io/adapter-api'
-import { FileProperties } from 'jsforce-types'
+import { ElemID, InstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { makeArray } from '@salto-io/lowerdash/dist/src/collections/array'
 import {
   DEFAULT_NAMESPACE,
   SETTINGS_METADATA_TYPE,
@@ -25,23 +25,24 @@ import {
   MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD,
   FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
+  CUSTOM_FIELD,
+  SALESFORCE,
+  CHANGED_AT_SINGLETON,
+  PROFILE_METADATA_TYPE, CUSTOM_METADATA,
 } from '../constants'
 import { validateRegularExpressions, ConfigValidationError } from '../config_validation'
 import { MetadataInstance, MetadataParams, MetadataQueryParams, METADATA_INCLUDE_LIST, METADATA_EXCLUDE_LIST, METADATA_SEPARATE_FIELD_LIST } from '../types'
 
 const { isDefined } = values
-const { makeArray } = collections.array
 
 
 // According to Salesforce Metadata API docs, folder names can only contain alphanumeric characters and underscores.
 const VALID_FOLDER_PATH_RE = /^[a-zA-Z\d_/]+$/
 
 export type MetadataQuery = {
+  prepare: () => Promise<void>
   isTypeMatch: (type: string) => boolean
-  isInstanceMatch: (
-    instance: MetadataInstance,
-    customObjectSubInstancesPropsByParent?: Record<string, FileProperties[]>
-  ) => boolean
+  isInstanceMatch: (instance: MetadataInstance) => boolean
   isTargetedFetch: () => boolean
   isFetchWithChangesDetection: () => boolean
   isPartialFetch: () => boolean
@@ -71,7 +72,11 @@ const DEFAULT_NAMESPACE_MATCH_ALL_TYPE_LIST = [
 
 // Instances of this type won't be fetched in fetchWithChangesDetection mode
 const UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES = [
-  FLOW_METADATA_TYPE,
+  PROFILE_METADATA_TYPE,
+  CUSTOM_OBJECT,
+  // Since we don't retrieve the CustomMetadata types (CustomObjects), we shouldn't retrieve the Records
+  CUSTOM_METADATA,
+  CUSTOM_FIELD,
 ]
 
 const getDefaultNamespace = (metadataType: string): string =>
@@ -95,19 +100,21 @@ const isFolderMetadataTypeNameMatch = ({ name: instanceName }: MetadataInstance,
 
 type BuildMetadataQueryParams = {
   metadataParams: MetadataParams
-  changedAtSingleton?: InstanceElement
   target?: string[]
+  elementsSource: ReadOnlyElementsSource
   isFetchWithChangesDetection: boolean
 }
 
 export const buildMetadataQuery = ({
   metadataParams,
-  changedAtSingleton,
+  elementsSource,
   target,
   isFetchWithChangesDetection,
 }: BuildMetadataQueryParams): MetadataQuery => {
   const { include = [{}], exclude = [] } = metadataParams
   const fullExcludeList = [...exclude, ...PERMANENT_SKIP_LIST]
+
+  let changedAtSingleton: InstanceElement | undefined
 
   const isInstanceMatchQueryParams = (
     instance: MetadataInstance,
@@ -150,31 +157,19 @@ export const buildMetadataQuery = ({
     if (UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES.includes(instance.metadataType)) {
       return false
     }
-    if (changedAtSingleton === undefined || instance.changedAt === undefined) {
+    if (changedAtSingleton === undefined) {
       return true
     }
-    const lastChangedAt = _.get(changedAtSingleton.value, [instance.metadataType, instance.name])
-    return _.isString(lastChangedAt)
-      ? new Date(lastChangedAt).getTime() < new Date(instance.changedAt).getTime()
-      : true
-  }
-  const isCustomObjectIncludedInFetchWithChangesDetection = (
-    instance: MetadataInstance,
-    customObjectSubInstancesPropsByParent?: Record<string, FileProperties[]>
-  ): boolean => {
-    if (
-      changedAtSingleton === undefined || customObjectSubInstancesPropsByParent === undefined) {
-      return true
-    }
-    const allChangedAtValues = makeArray(customObjectSubInstancesPropsByParent[instance.name])
-      .map(fileProps => fileProps.lastModifiedDate)
-    if (instance.changedAt !== undefined) {
-      allChangedAtValues.push(instance.changedAt)
-    }
-    const changedAtFromSingleton = _.get(changedAtSingleton.value, [CUSTOM_OBJECT, instance.name])
-    const latestChangedAt = _.maxBy(allChangedAtValues, date => new Date(date).getTime())
-    return _.isString(changedAtFromSingleton) && latestChangedAt !== undefined && latestChangedAt !== ''
-      ? new Date(changedAtFromSingleton).getTime() < new Date(latestChangedAt).getTime()
+    const changedAtFrmSingleton = _.get(changedAtSingleton.value, [instance.metadataType, instance.name])
+    const lastChangedAt = _.maxBy(
+      makeArray(instance.subInstancesFileProperties)
+        .map(prop => prop.lastModifiedDate)
+        .concat(instance.changedAt ?? '')
+        .filter(changedAt => changedAt !== '' && changedAt !== undefined)
+        .map(changedAt => new Date(changedAt).getTime())
+    )
+    return changedAtFrmSingleton && lastChangedAt
+      ? new Date(changedAtFrmSingleton).getTime() < lastChangedAt
       : true
   }
   const isTypeIncluded = (type: string): boolean => (
@@ -188,22 +183,18 @@ export const buildMetadataQuery = ({
   )
 
   return {
+    prepare: async () => {
+      if (isFetchWithChangesDetection) {
+        changedAtSingleton = await elementsSource.get(new ElemID(SALESFORCE, CHANGED_AT_SINGLETON, 'instance', ElemID.CONFIG_NAME))
+      }
+    },
     isTypeMatch: type => isTypeIncluded(type) && !isTypeExcluded(type),
 
-    isInstanceMatch: (instance, customObjectSubInstancesPropsByParent) => {
-      const isIncluded = include.some(params => isInstanceMatchQueryParams(instance, params))
-      const isExcluded = fullExcludeList.some(params => isInstanceMatchQueryParams(instance, params))
-      if (!isIncluded || isExcluded) {
-        return false
-      }
-      if (!isFetchWithChangesDetection) {
-        return true
-      }
-      // Fetch With Changes Detection
-      return instance.metadataType === CUSTOM_OBJECT
-        ? isCustomObjectIncludedInFetchWithChangesDetection(instance, customObjectSubInstancesPropsByParent)
-        : isIncludedInFetchWithChangesDetection(instance)
-    },
+    isInstanceMatch: instance => (
+      include.some(params => isInstanceMatchQueryParams(instance, params))
+      && !fullExcludeList.some(params => isInstanceMatchQueryParams(instance, params))
+      && (!isFetchWithChangesDetection || isIncludedInFetchWithChangesDetection(instance))
+    ),
 
     isTargetedFetch: () => target !== undefined,
 
@@ -229,7 +220,7 @@ const validateMetadataQueryParams = (params: MetadataQueryParams[], fieldPath: s
   params.forEach(
     queryParams => Object.entries(queryParams)
       .forEach(([queryField, pattern]) => {
-        if (pattern === undefined) {
+        if (!_.isString(pattern)) {
           return
         }
         validateRegularExpressions([pattern], [...fieldPath, queryField])

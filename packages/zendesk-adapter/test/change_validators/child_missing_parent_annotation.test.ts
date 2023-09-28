@@ -14,11 +14,8 @@
 * limitations under the License.
 */
 import { AdditionChange, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange, ModificationChange } from '@salto-io/adapter-api'
-import { ZENDESK } from '../../src/constants'
-import {
-  childMissingParentAnnotationValidatorCreator,
-} from '../../src/change_validators/child_parent/child_missing_parent_annotation'
-import { CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../src/filters/custom_field_options/creator'
+import { ZENDESK, CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../src/constants'
+import { childMissingParentAnnotationValidatorCreator } from '../../src/change_validators'
 import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../src/config'
 
 describe('childMissingParentAnnotationValidatorCreator', () => {

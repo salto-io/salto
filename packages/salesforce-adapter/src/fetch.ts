@@ -45,6 +45,7 @@ import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeE
 import { fromRetrieveResult, toRetrieveRequest, getManifestTypeName } from './transformers/xml_transformer'
 import { MetadataQuery } from './fetch_profile/metadata_query'
 import { NESTED_INSTANCE_TYPE_NAME } from './filters/custom_objects_to_object_type'
+import { FetchProfile } from './fetch_profile/fetch_profile'
 
 const { isDefined } = lowerDashValues
 const { makeArray, splitDuplicates } = collections.array
@@ -149,7 +150,8 @@ export const notInSkipList = (
     name: file.fullName,
     isFolderType,
     changedAt: file.lastModifiedDate,
-  }, customObjectSubInstancesPropsByParent)
+    subInstancesFileProperties: customObjectSubInstancesPropsByParent?.[file.fullName],
+  })
 )
 
 const listMetadataObjectsWithinFolders = async (
@@ -352,13 +354,12 @@ type RetrieveMetadataInstancesArgs = {
   types: ReadonlyArray<MetadataObjectType>
   maxItemsInRetrieveRequest: number
   metadataQuery: MetadataQuery
-  addNamespacePrefixToFullName: boolean
-
   // Some types are retrieved via filters and should not be fetched in the normal fetch flow. However, we need these
   // types as context for profiles - when fetching profiles using retrieve we only get information about the types that
   // are included in the same retrieve request as the profile. Thus typesToSkip - a list of types that will be retrieved
   // along with the profiles, but discarded.
   typesToSkip: ReadonlySet<string>
+  fetchProfile: FetchProfile
 }
 
 export const retrieveMetadataInstances = async ({
@@ -366,7 +367,7 @@ export const retrieveMetadataInstances = async ({
   types,
   maxItemsInRetrieveRequest,
   metadataQuery,
-  addNamespacePrefixToFullName,
+  fetchProfile,
   typesToSkip,
 }: RetrieveMetadataInstancesArgs): Promise<FetchElements<InstanceElement[]>> => {
   const configChanges: ConfigChangeSuggestion[] = []
@@ -380,7 +381,7 @@ export const retrieveMetadataInstances = async ({
     configChanges.push(...listObjectsConfigChanges)
     return _(res)
       .uniqBy(file => file.fullName)
-      .map(file => getPropsWithFullName(file, addNamespacePrefixToFullName, client.orgNamespace))
+      .map(file => getPropsWithFullName(file, fetchProfile.addNamespacePrefixToFullName, client.orgNamespace))
       .value()
   }
 
@@ -455,6 +456,7 @@ export const retrieveMetadataInstances = async ({
       allFileProps,
       typesWithMetaFile,
       typesWithContent,
+      fetchProfile.isFeatureEnabled('fixRetrieveFilePaths')
     )
     return allValues.map(({ file, values }) => (
       createInstanceElement(values, typesByName[file.type], file.namespacePrefix,
@@ -507,6 +509,13 @@ export const retrieveMetadataInstances = async ({
       .filter(type => type.annotations.folderContentType === undefined)
       .map(listFilesOfType)
   )).filter(props => notInSkipList(metadataQuery, props, false, customObjectSubInstancesPropsByParent))
+
+  // Avoid sending empty requests for types that had no instances that were changed from the previous fetch
+  // This is a common case for fetchWithChangesDetection mode for types that had no changes on their instances
+  if (filesToRetrieve.length === 0) {
+    log.debug('No files to retrieve, skipping')
+    return { elements: [], configChanges }
+  }
 
   // Avoid sending empty requests for types that had no instances that were changed from the previous fetch
   // This is a common case for fetchWithChangesDetection mode for types that had no changes on their instances

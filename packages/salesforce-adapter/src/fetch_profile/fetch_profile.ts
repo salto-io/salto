@@ -15,7 +15,7 @@
 */
 
 import { values } from '@salto-io/lowerdash'
-import { InstanceElement } from '@salto-io/adapter-api'
+import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { DATA_CONFIGURATION, FetchParameters, METADATA_CONFIG, OptionalFeatures } from '../types'
 import { buildDataManagement, DataManagement, validateDataManagementConfig } from './data_management'
 import { buildMetadataQuery, MetadataQuery, validateMetadataParams } from './metadata_query'
@@ -43,18 +43,19 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   generateRefsInProfiles: false,
   skipAliases: false,
   toolingDepsOfCurrentNamespace: false,
+  fixRetrieveFilePaths: false,
 }
 
 type BuildFetchProfileParams = {
   fetchParams: FetchParameters
   isFetchWithChangesDetection: boolean
-  changedAtSingleton?: InstanceElement
+  elementsSource: ReadOnlyElementsSource
 }
 
 export const buildFetchProfile = ({
   fetchParams,
   isFetchWithChangesDetection,
-  changedAtSingleton,
+  elementsSource,
 }: BuildFetchProfileParams): FetchProfile => {
   const {
     metadata = {},
@@ -69,7 +70,7 @@ export const buildFetchProfile = ({
   return {
     metadataQuery: buildMetadataQuery({
       metadataParams: metadata,
-      changedAtSingleton,
+      elementsSource,
       isFetchWithChangesDetection,
       target: isDefined(target)
         ? getFetchTargets(target as SupportedMetadataType[])

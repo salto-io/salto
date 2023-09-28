@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, InstanceElement, Element } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/metadata_instances_aliases'
 import { defaultFilterContext } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
@@ -71,6 +72,7 @@ describe('metadataInstancesAliases filter', () => {
           fetchProfile: buildFetchProfile({
             fetchParams: { optionalFeatures: { skipAliases: true } },
             isFetchWithChangesDetection: false,
+            elementsSource: buildElementsSourceFromElements([]),
           }),
         },
       }) as typeof filter
@@ -89,6 +91,7 @@ describe('metadataInstancesAliases filter', () => {
           fetchProfile: buildFetchProfile({
             fetchParams: { optionalFeatures: { skipAliases: false } },
             isFetchWithChangesDetection: false,
+            elementsSource: buildElementsSourceFromElements([]),
           }),
         },
       }) as typeof filter
@@ -107,6 +110,7 @@ describe('metadataInstancesAliases filter', () => {
             fetchProfile: buildFetchProfile({
               fetchParams: { optionalFeatures: { skipAliases: false, useLabelAsAlias: false } },
               isFetchWithChangesDetection: false,
+              elementsSource: buildElementsSourceFromElements([]),
             }),
           },
         }) as typeof filter

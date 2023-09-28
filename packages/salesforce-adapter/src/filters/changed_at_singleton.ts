@@ -17,19 +17,22 @@ import {
   CORE_ANNOTATIONS,
   Element,
   ElemID,
-  InstanceElement, ObjectType,
+  InstanceElement,
+  isInstanceElement,
   ReadOnlyElementsSource,
   Values,
 } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { LocalFilterCreator } from '../filter'
-import { ArtificialTypes, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD } from '../constants'
-import { apiNameSync, getChangedAtSingleton, isCustomObjectSync, isMetadataInstanceElementSync } from './utils'
+import { apiName, isMetadataInstanceElement } from '../transformers/transformer'
+import { ArtificialTypes, INSTANCE_FULL_NAME_FIELD } from '../constants'
+import { getChangedAtSingleton } from './utils'
 
-const createChangedAtSingletonInstanceValues = (
-  metadataInstancesByType: Record<string, InstanceElement[]>,
-  customObjectTypeByName: Record<string, ObjectType>,
-): Values => {
+const { groupByAsync, awu } = collections.asynciterable
+
+
+const createChangedAtSingletonInstanceValues = (metadataInstancesByType: Record<string, InstanceElement[]>): Values => {
   const instanceValues: Values = {}
   Object.entries(metadataInstancesByType).forEach(([metadataType, instances]) => {
     instanceValues[metadataType] = {}
@@ -38,10 +41,6 @@ const createChangedAtSingletonInstanceValues = (
       instanceValues[metadataType][instanceName] = instance.annotations[CORE_ANNOTATIONS.CHANGED_AT]
     })
   })
-  instanceValues[CUSTOM_OBJECT] = _.mapValues(
-    customObjectTypeByName,
-    objectType => objectType.annotations[CORE_ANNOTATIONS.CHANGED_AT]
-  )
   return instanceValues
 }
 
@@ -64,11 +63,13 @@ const getChangedAtSingletonInstance = async (
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'changedAtSingletonFilter',
   onFetch: async (elements: Element[]) => {
-    const metadataInstancesByType = _.groupBy(
-      elements
-        .filter(isMetadataInstanceElementSync)
-        .filter(instance => _.isString(instance.annotations[CORE_ANNOTATIONS.CHANGED_AT])),
-      async instance => apiNameSync(instance.getTypeSync())
+    const metadataInstancesByType = await groupByAsync(
+      await awu(elements)
+        .filter(isInstanceElement)
+        .filter(isMetadataInstanceElement)
+        .filter(instance => _.isString(instance.annotations[CORE_ANNOTATIONS.CHANGED_AT]))
+        .toArray(),
+      async instance => apiName(await instance.getType())
     )
     const changedAtInstance = await getChangedAtSingletonInstance(config.elementsSource)
     elements.push(changedAtInstance)
@@ -76,12 +77,8 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
     if (Object.values(metadataInstancesByType).flat().length === 0) {
       return
     }
-    const customObjectTypeByName: Record<string, ObjectType> = _.keyBy(
-      elements.filter(isCustomObjectSync),
-      e => apiNameSync(e) ?? '',
-    )
     changedAtInstance.value = _.defaultsDeep(
-      createChangedAtSingletonInstanceValues(metadataInstancesByType, customObjectTypeByName),
+      createChangedAtSingletonInstanceValues(metadataInstancesByType),
       changedAtInstance.value,
     )
   },

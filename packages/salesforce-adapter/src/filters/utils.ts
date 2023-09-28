@@ -28,7 +28,7 @@ import {
   Field,
   getChangeData,
   InstanceElement,
-  isAdditionOrModificationChange,
+  isAdditionOrModificationChange, isElement,
   isField,
   isInstanceElement,
   isObjectType,
@@ -309,12 +309,13 @@ export const parentApiName = async (elem: Element): Promise<string> =>
   (await apiNameParts(elem))[0]
 
 export const addElementParentReference = (instance: InstanceElement,
-  { elemID }: Element): void => {
+  element: Element): void => {
+  const { elemID } = element
   const instanceDeps = getParents(instance)
   if (instanceDeps.filter(isReferenceExpression).some(ref => ref.elemID.isEqual(elemID))) {
     return
   }
-  instanceDeps.push(new ReferenceExpression(elemID))
+  instanceDeps.push(new ReferenceExpression(elemID, element))
   instance.annotations[CORE_ANNOTATIONS.PARENT] = instanceDeps
 }
 
@@ -513,13 +514,13 @@ export const isCustomType = (element: Element): element is ObjectType => (
 
 export type ElementWithParent<T extends Element> = T & {
   annotations: {
-    _parent: types.NonEmptyArray<ReferenceExpression>
+    _parent: types.NonEmptyArray<ReferenceExpression & {value: Element}>
   }
 }
 
 
 export const isElementWithParent = <T extends Element>(element: T): element is ElementWithParent<T> => (
-  getParents(element).some(isReferenceExpression)
+  getParents(element).some(parent => isReferenceExpression(parent) && isElement(parent.value))
 )
 
 type AuthorInformation = Partial<{

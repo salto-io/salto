@@ -121,8 +121,10 @@ const setObjectAuthorInformation = (
   if (mostRecentAuthorInformation) {
     object.annotations[CORE_ANNOTATIONS.CHANGED_BY] = mostRecentAuthorInformation.changedBy
     object.annotations[CORE_ANNOTATIONS.CHANGED_AT] = mostRecentAuthorInformation.changedAt
-    object.annotations[CORE_ANNOTATIONS.CREATED_BY] = mostRecentAuthorInformation.createdBy
-    object.annotations[CORE_ANNOTATIONS.CREATED_AT] = mostRecentAuthorInformation.createdAt
+    // This info should always come from the FileProperties of the CustomObject.
+    // Standard Objects won't have values here
+    object.annotations[CORE_ANNOTATIONS.CREATED_BY] = typeFileProperties.createdByName
+    object.annotations[CORE_ANNOTATIONS.CREATED_AT] = typeFileProperties.createdDate
   }
 }
 
@@ -154,7 +156,9 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
           .filter(isMetadataInstanceElementSync)
           .filter(isElementWithParent),
         instance => {
-          const [parent] = instance.annotations[CORE_ANNOTATIONS.PARENT]
+          // SALTO-4824
+          // eslint-disable-next-line no-underscore-dangle
+          const [parent] = instance.annotations._parent
           return apiNameSync(parent.value)
         }
       )

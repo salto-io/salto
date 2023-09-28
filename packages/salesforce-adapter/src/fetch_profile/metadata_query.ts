@@ -73,7 +73,6 @@ const DEFAULT_NAMESPACE_MATCH_ALL_TYPE_LIST = [
 // Instances of this type won't be fetched in fetchWithChangesDetection mode
 const UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES = [
   PROFILE_METADATA_TYPE,
-  CUSTOM_OBJECT,
   // Since we don't retrieve the CustomMetadata types (CustomObjects), we shouldn't retrieve the Records
   CUSTOM_METADATA,
   CUSTOM_FIELD,
@@ -160,16 +159,16 @@ export const buildMetadataQuery = ({
     if (changedAtSingleton === undefined) {
       return true
     }
-    const changedAtFrmSingleton = _.get(changedAtSingleton.value, [instance.metadataType, instance.name])
-    const lastChangedAt = _.maxBy(
+    const changedAtFromSingleton = _.get(changedAtSingleton.value, [instance.metadataType, instance.name])
+    const lastChangedAt = _.max(
       makeArray(instance.subInstancesFileProperties)
         .map(prop => prop.lastModifiedDate)
         .concat(instance.changedAt ?? '')
-        .filter(changedAt => changedAt !== '' && changedAt !== undefined)
+        .filter(changedAt => changedAt)
         .map(changedAt => new Date(changedAt).getTime())
     )
-    return changedAtFrmSingleton && lastChangedAt
-      ? new Date(changedAtFrmSingleton).getTime() < lastChangedAt
+    return changedAtFromSingleton && lastChangedAt
+      ? new Date(changedAtFromSingleton).getTime() < lastChangedAt
       : true
   }
   const isTypeIncluded = (type: string): boolean => (

@@ -63,6 +63,7 @@ import {
   NAMESPACE_SEPARATOR,
   PLURAL_LABEL,
   SALESFORCE,
+  CHANGED_AT_SINGLETON,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
 import {
@@ -117,7 +118,7 @@ export const metadataTypeSync = (element: Readonly<Element>): string => {
   }
   return element.annotations[METADATA_TYPE] || 'unknown'
 }
-export const isCustomObjectSync = (element: Readonly<Element>): boolean => {
+export const isCustomObjectSync = (element: Readonly<Element>): element is ObjectType => {
   const res = isObjectType(element)
     && metadataTypeSync(element) === CUSTOM_OBJECT
     // The last part is so we can tell the difference between a custom object
@@ -498,3 +499,14 @@ export const getInstanceAlias = async (
     ? label
     : `${label} (${namespace})`
 }
+
+export const getChangedAtSingleton = async (
+  elementsSource: ReadOnlyElementsSource
+): Promise<InstanceElement | undefined> => {
+  const element = await elementsSource.get(new ElemID(SALESFORCE, CHANGED_AT_SINGLETON, 'instance', ElemID.CONFIG_NAME))
+  return isInstanceElement(element) ? element : undefined
+}
+
+export const isCustomType = (element: Element): element is ObjectType => (
+  isObjectType(element) && ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(apiNameSync(element) ?? '')
+)

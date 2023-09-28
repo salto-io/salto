@@ -15,40 +15,46 @@
 */
 import _ from 'lodash'
 import {
-  ObjectType, InstanceElement, ServiceIds, ElemID, BuiltinTypes, FetchOptions,
-  Element, CORE_ANNOTATIONS, FetchResult, isListType, ListType, getRestriction, isServiceId, isInstanceElement,
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  Element,
+  ElemID,
+  FetchOptions,
+  FetchResult,
+  getRestriction,
+  InstanceElement,
+  isListType,
+  isServiceId,
+  ListType,
+  ObjectType,
+  ServiceIds,
+  isInstanceElement,
 } from '@salto-io/adapter-api'
 import { MetadataInfo } from 'jsforce'
-import { values, collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
 import { FileProperties } from 'jsforce-types'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
-import {
-  apiName,
-  MetadataObjectType,
-  Types,
-} from '../src/transformers/transformer'
+import { apiName, MetadataObjectType, Types } from '../src/transformers/transformer'
 import { findElements, ZipFile } from './utils'
 import mockAdapter from './adapter'
 import * as constants from '../src/constants'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 import {
-  MockFilePropertiesInput,
-  MockDescribeResultInput,
-  MockDescribeValueResultInput,
   mockDescribeResult,
+  MockDescribeResultInput,
   mockDescribeValueResult,
+  MockDescribeValueResultInput,
   mockFileProperties,
+  MockFilePropertiesInput,
   mockRetrieveLocator,
   mockRetrieveResult,
 } from './connection'
 import { FetchElements, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
-import {
-  fetchMetadataInstances,
-  retrieveMetadataInstances,
-} from '../src/fetch'
 import * as fetchModule from '../src/fetch'
+import { fetchMetadataInstances, retrieveMetadataInstances } from '../src/fetch'
 import * as xmlTransformerModule from '../src/transformers/xml_transformer'
 import * as metadataQueryModule from '../src/fetch_profile/metadata_query'
 import {
@@ -62,7 +68,7 @@ import { apiNameSync, isInstanceOfType } from '../src/filters/utils'
 import { NON_TRANSIENT_SALESFORCE_ERRORS } from '../src/config_change'
 import SalesforceClient from '../src/client/client'
 import createMockClient from './client'
-import { mockTypes } from './mock_elements'
+import { mockInstances, mockTypes } from './mock_elements'
 import { buildMetadataQuery } from '../src/fetch_profile/metadata_query'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 
@@ -74,6 +80,8 @@ describe('SalesforceAdapter fetch', () => {
   let connection: MockInterface<Connection>
   let adapter: SalesforceAdapter
   let fetchMetadataInstancesSpy: jest.SpyInstance
+  let changedAtSingletonElemID: ElemID
+  let elementsSourceGetSpy: jest.SpyInstance
 
   class SFError extends Error {
     constructor(name: string, message?: string) {
@@ -101,6 +109,9 @@ describe('SalesforceAdapter fetch', () => {
     ElemID => new ElemID(adapterName, name)
 
   beforeEach(() => {
+    const changedAtSingleton = mockInstances().ChangedAtSingleton
+    changedAtSingletonElemID = changedAtSingleton.elemID
+    const elementsSource = buildElementsSourceFromElements([changedAtSingleton]);
     ({ connection, adapter } = mockAdapter({
       adapterParams: {
         getElemIdFunc: mockGetElemIdFunc,
@@ -115,8 +126,10 @@ describe('SalesforceAdapter fetch', () => {
             readMetadataChunkSize: { default: 3, overrides: { Test: 2 } },
           },
         },
+        elementsSource,
       },
     }))
+    elementsSourceGetSpy = jest.spyOn(elementsSource, 'get')
     fetchMetadataInstancesSpy = jest.spyOn(fetchModule, 'fetchMetadataInstances')
   })
 
@@ -336,7 +349,8 @@ describe('SalesforceAdapter fetch', () => {
         + 1 /* treat blank as */
         + 1 /* value set */
         + 2 /* field dependency & value settings */
-        + 7 /* range restrictions */)
+        + 7 /* range restrictions */
+        + 2 /* ChangedAtSingleton type & instance */)
 
       const elementsMap = _.keyBy(result, element => element.elemID.getFullName())
       const nestingType = elementsMap['salesforce.NestingType'] as ObjectType
@@ -1437,9 +1451,12 @@ public class LargeClass${index} {
         },
       } as unknown as ObjectType
       const metadataQuery = {
+        prepare: jest.fn(),
         isTypeMatch: jest.fn(),
-        isInstanceMatch: jest.fn(),
-        isPartialFetch: jest.fn(),
+        isInstanceMatch: () => true,
+        isPartialFetch: () => false,
+        isTargetedFetch: jest.fn(),
+        isFetchWithChangesDetection: jest.fn(),
         getFolderPathsByName: jest.fn(),
       }
       const excludeFilePropMock = mockFileProperties({ fullName: 'fullName', type: 'excludeMe' })
@@ -1661,7 +1678,7 @@ public class LargeClass${index} {
       it('should fetch sub instances of Workflow', () => {
         expect(result.elements
           .filter(isInstanceElement)
-          .map(instance => apiNameSync(instance))).toIncludeSameMembers([
+          .map(instance => apiNameSync(instance))).toIncludeAllMembers([
           'TestObject__c.TestAlert1',
           'TestObject__c.TestAlert2',
         ])
@@ -1845,6 +1862,13 @@ public class LargeClass${index} {
       })
     })
   })
+
+  describe('fetchWithChangesDetection', () => {
+    it('should get the ChangedAtSingleton from the ElementsSource when fetchWithChangesDetection is true', async () => {
+      await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
+      expect(elementsSourceGetSpy).toHaveBeenCalledWith(changedAtSingletonElemID)
+    })
+  })
 })
 
 
@@ -1933,8 +1957,16 @@ describe('Fetch via retrieve API', () => {
           client,
           types: [mockTypes.ApexClass],
           maxItemsInRetrieveRequest: DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
-          metadataQuery: buildMetadataQuery({}),
-          fetchProfile: buildFetchProfile({ addNamespacePrefixToFullName: false }),
+          metadataQuery: buildMetadataQuery({
+            metadataParams: {},
+            isFetchWithChangesDetection: false,
+            elementsSource: buildElementsSourceFromElements([]),
+          }),
+          fetchProfile: buildFetchProfile({
+            fetchParams: { addNamespacePrefixToFullName: false },
+            isFetchWithChangesDetection: false,
+            elementsSource: buildElementsSourceFromElements([]),
+          }),
           typesToSkip: new Set(),
         }
       )
@@ -1964,8 +1996,16 @@ describe('Fetch via retrieve API', () => {
           client,
           types: [mockTypes.ApexClass, mockTypes.CustomObject],
           maxItemsInRetrieveRequest: chunkSize,
-          metadataQuery: buildMetadataQuery({}),
-          fetchProfile: buildFetchProfile({ addNamespacePrefixToFullName: false }),
+          metadataQuery: buildMetadataQuery({
+            metadataParams: {},
+            isFetchWithChangesDetection: false,
+            elementsSource: buildElementsSourceFromElements([]),
+          }),
+          fetchProfile: buildFetchProfile({
+            fetchParams: { addNamespacePrefixToFullName: false },
+            isFetchWithChangesDetection: false,
+            elementsSource: buildElementsSourceFromElements([]),
+          }),
           typesToSkip: new Set(),
         }
       )
@@ -1999,8 +2039,16 @@ describe('Fetch via retrieve API', () => {
           client,
           types: [mockTypes.CustomObject, mockTypes.Profile],
           maxItemsInRetrieveRequest: chunkSize,
-          metadataQuery: buildMetadataQuery({}),
-          fetchProfile: buildFetchProfile({ addNamespacePrefixToFullName: false }),
+          metadataQuery: buildMetadataQuery({
+            metadataParams: {},
+            isFetchWithChangesDetection: false,
+            elementsSource: buildElementsSourceFromElements([]),
+          }),
+          fetchProfile: buildFetchProfile({
+            fetchParams: { addNamespacePrefixToFullName: false },
+            isFetchWithChangesDetection: false,
+            elementsSource: buildElementsSourceFromElements([]),
+          }),
           typesToSkip: new Set(),
         }
       )
@@ -2042,8 +2090,16 @@ describe('Fetch via retrieve API', () => {
           client,
           types: [mockTypes.CustomObject, mockTypes.Profile],
           maxItemsInRetrieveRequest: 3,
-          metadataQuery: buildMetadataQuery({}),
-          fetchProfile: buildFetchProfile({ addNamespacePrefixToFullName: false }),
+          metadataQuery: buildMetadataQuery({
+            metadataParams: {},
+            isFetchWithChangesDetection: false,
+            elementsSource: buildElementsSourceFromElements([]),
+          }),
+          fetchProfile: buildFetchProfile({
+            fetchParams: { addNamespacePrefixToFullName: false },
+            isFetchWithChangesDetection: false,
+            elementsSource: buildElementsSourceFromElements([]),
+          }),
           typesToSkip: new Set(),
         }
       )

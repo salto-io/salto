@@ -125,7 +125,9 @@ describe('Custom Objects to Object Type filter', () => {
         config: {
           ...defaultFilterContext,
           fetchProfile: buildFetchProfile({
-            optionalFeatures: { skipAliases: false },
+            fetchParams: { optionalFeatures: { skipAliases: false } },
+            isFetchWithChangesDetection: false,
+            elementsSource: buildElementsSourceFromElements([]),
           }),
           unsupportedSystemFields: ['UnsupportedField'],
           systemFields: ['SystemField', 'NameSystemField'],
@@ -873,7 +875,11 @@ describe('Custom Objects to Object Type filter', () => {
           filter = filterCreator({
             config: {
               ...defaultFilterContext,
-              fetchProfile: buildFetchProfile({ target: ['SharingRules'] }),
+              fetchProfile: buildFetchProfile({
+                fetchParams: { target: ['SharingRules'] },
+                isFetchWithChangesDetection: false,
+                elementsSource: buildElementsSourceFromElements([]),
+              }),
               elementsSource,
             },
           }) as typeof filter

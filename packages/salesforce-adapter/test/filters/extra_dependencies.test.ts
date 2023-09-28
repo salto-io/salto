@@ -148,7 +148,11 @@ describe('extra dependencies filter', () => {
       client,
       config: {
         ...defaultFilterContext,
-        fetchProfile: buildFetchProfile({ target: ['meta'] }),
+        fetchProfile: buildFetchProfile({
+          fetchParams: { target: ['meta'] },
+          isFetchWithChangesDetection: false,
+          elementsSource: buildElementsSourceFromElements([]),
+        }),
         elementsSource,
       },
     }) as FilterType
@@ -282,8 +286,12 @@ describe('extra dependencies filter', () => {
           config: {
             ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
-              target: ['meta'],
-              optionalFeatures: { toolingDepsOfCurrentNamespace: false },
+              fetchParams: {
+                target: ['meta'],
+                optionalFeatures: { toolingDepsOfCurrentNamespace: false },
+              },
+              isFetchWithChangesDetection: false,
+              elementsSource: buildElementsSourceFromElements([]),
             }),
             elementsSource,
           },
@@ -355,8 +363,12 @@ describe('extra dependencies filter', () => {
           config: {
             ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
-              target: ['meta'],
-              optionalFeatures: { toolingDepsOfCurrentNamespace: true },
+              fetchParams: {
+                target: ['meta'],
+                optionalFeatures: { toolingDepsOfCurrentNamespace: true },
+              },
+              isFetchWithChangesDetection: false,
+              elementsSource: buildElementsSourceFromElements([]),
             }),
             elementsSource: buildElementsSourceFromElements(elements),
           },
@@ -399,7 +411,11 @@ describe('extra dependencies filter', () => {
         client,
         config: {
           ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({ optionalFeatures: { extraDependencies: false } }),
+          fetchProfile: buildFetchProfile({
+            fetchParams: { optionalFeatures: { extraDependencies: false } },
+            isFetchWithChangesDetection: false,
+            elementsSource: buildElementsSourceFromElements([]),
+          }),
           elementsSource: buildElementsSourceFromElements(elements),
         },
       }) as FilterType

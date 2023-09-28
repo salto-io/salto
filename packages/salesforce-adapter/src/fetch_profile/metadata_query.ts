@@ -15,7 +15,20 @@
 */
 import { regex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { DEFAULT_NAMESPACE, SETTINGS_METADATA_TYPE, TOPICS_FOR_OBJECTS_METADATA_TYPE, CUSTOM_OBJECT, MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD, FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from '../constants'
+import { ElemID, InstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import {
+  DEFAULT_NAMESPACE,
+  SETTINGS_METADATA_TYPE,
+  TOPICS_FOR_OBJECTS_METADATA_TYPE,
+  CUSTOM_OBJECT,
+  MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD,
+  FLOW_DEFINITION_METADATA_TYPE,
+  FLOW_METADATA_TYPE,
+  CUSTOM_FIELD,
+  SALESFORCE,
+  CHANGED_AT_SINGLETON,
+  PROFILE_METADATA_TYPE, CUSTOM_METADATA,
+} from '../constants'
 import { validateRegularExpressions, ConfigValidationError } from '../config_validation'
 import { MetadataInstance, MetadataParams, MetadataQueryParams, METADATA_INCLUDE_LIST, METADATA_EXCLUDE_LIST, METADATA_SEPARATE_FIELD_LIST } from '../types'
 
@@ -26,8 +39,11 @@ const { isDefined } = values
 const VALID_FOLDER_PATH_RE = /^[a-zA-Z\d_/]+$/
 
 export type MetadataQuery = {
+  prepare: () => Promise<void>
   isTypeMatch: (type: string) => boolean
   isInstanceMatch: (instance: MetadataInstance) => boolean
+  isTargetedFetch: () => boolean
+  isFetchWithChangesDetection: () => boolean
   isPartialFetch: () => boolean
   getFolderPathsByName: (folderType: string) => Record<string, string>
 }
@@ -53,6 +69,15 @@ const DEFAULT_NAMESPACE_MATCH_ALL_TYPE_LIST = [
 ]
 
 
+// Instances of this type won't be fetched in fetchWithChangesDetection mode
+const UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES = [
+  PROFILE_METADATA_TYPE,
+  CUSTOM_OBJECT,
+  // Since we don't retrieve the CustomMetadata types (CustomObjects), we shouldn't retrieve the Records
+  CUSTOM_METADATA,
+  CUSTOM_FIELD,
+]
+
 const getDefaultNamespace = (metadataType: string): string =>
   (DEFAULT_NAMESPACE_MATCH_ALL_TYPE_LIST.includes(metadataType)
     ? '.*'
@@ -72,11 +97,23 @@ const isFolderMetadataTypeNameMatch = ({ name: instanceName }: MetadataInstance,
   || regex.isFullRegexMatch(instanceName, name)
 )
 
-export const buildMetadataQuery = (
-  { include = [{}], exclude = [] }: MetadataParams,
-  target?: string[],
-): MetadataQuery => {
+type BuildMetadataQueryParams = {
+  metadataParams: MetadataParams
+  target?: string[]
+  elementsSource: ReadOnlyElementsSource
+  isFetchWithChangesDetection: boolean
+}
+
+export const buildMetadataQuery = ({
+  metadataParams,
+  elementsSource,
+  target,
+  isFetchWithChangesDetection,
+}: BuildMetadataQueryParams): MetadataQuery => {
+  const { include = [{}], exclude = [] } = metadataParams
   const fullExcludeList = [...exclude, ...PERMANENT_SKIP_LIST]
+
+  let changedAtSingleton: InstanceElement | undefined
 
   const isInstanceMatchQueryParams = (
     instance: MetadataInstance,
@@ -115,6 +152,18 @@ export const buildMetadataQuery = (
     }
     return false
   }
+  const isIncludedInFetchWithChangesDetection = (instance: MetadataInstance): boolean => {
+    if (UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES.includes(instance.metadataType)) {
+      return false
+    }
+    if (changedAtSingleton === undefined || instance.changedAt === undefined) {
+      return true
+    }
+    const lastChangedAt = _.get(changedAtSingleton.value, [instance.metadataType, instance.name])
+    return _.isString(lastChangedAt)
+      ? new Date(lastChangedAt).getTime() < new Date(instance.changedAt).getTime()
+      : true
+  }
   const isTypeIncluded = (type: string): boolean => (
     include.some(({ metadataType = '.*' }) => new RegExp(`^${metadataType}$`).test(type))
     && isIncludedInPartialFetch(type)
@@ -126,14 +175,24 @@ export const buildMetadataQuery = (
   )
 
   return {
+    prepare: async () => {
+      if (isFetchWithChangesDetection) {
+        changedAtSingleton = await elementsSource.get(new ElemID(SALESFORCE, CHANGED_AT_SINGLETON, 'instance', ElemID.CONFIG_NAME))
+      }
+    },
     isTypeMatch: type => isTypeIncluded(type) && !isTypeExcluded(type),
 
     isInstanceMatch: instance => (
       include.some(params => isInstanceMatchQueryParams(instance, params))
       && !fullExcludeList.some(params => isInstanceMatchQueryParams(instance, params))
+      && (!isFetchWithChangesDetection || isIncludedInFetchWithChangesDetection(instance))
     ),
 
-    isPartialFetch: () => target !== undefined,
+    isTargetedFetch: () => target !== undefined,
+
+    isFetchWithChangesDetection: () => isFetchWithChangesDetection,
+
+    isPartialFetch: () => target !== undefined || isFetchWithChangesDetection,
 
     getFolderPathsByName: (folderType: string) => {
       const folderPaths = include

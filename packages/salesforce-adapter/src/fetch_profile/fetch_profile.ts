@@ -15,6 +15,7 @@
 */
 
 import { values } from '@salto-io/lowerdash'
+import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { DATA_CONFIGURATION, FetchParameters, METADATA_CONFIG, OptionalFeatures } from '../types'
 import { buildDataManagement, DataManagement, validateDataManagementConfig } from './data_management'
 import { buildMetadataQuery, MetadataQuery, validateMetadataParams } from './metadata_query'
@@ -45,26 +46,44 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   fixRetrieveFilePaths: false,
 }
 
+type BuildFetchProfileParams = {
+  fetchParams: FetchParameters
+  isFetchWithChangesDetection: boolean
+  elementsSource: ReadOnlyElementsSource
+}
+
 export const buildFetchProfile = ({
-  metadata = {},
-  data,
-  fetchAllCustomSettings,
-  optionalFeatures,
-  target,
-  maxInstancesPerType,
-  preferActiveFlowVersions,
-  addNamespacePrefixToFullName,
-}: FetchParameters): FetchProfile => ({
-  metadataQuery: buildMetadataQuery(metadata, isDefined(target)
-    ? getFetchTargets(target as SupportedMetadataType[])
-    : undefined),
-  dataManagement: data && buildDataManagement(data),
-  isFeatureEnabled: name => optionalFeatures?.[name] ?? optionalFeaturesDefaultValues[name] ?? true,
-  shouldFetchAllCustomSettings: () => fetchAllCustomSettings ?? true,
-  maxInstancesPerType: maxInstancesPerType ?? DEFAULT_MAX_INSTANCES_PER_TYPE,
-  preferActiveFlowVersions: preferActiveFlowVersions ?? false,
-  addNamespacePrefixToFullName: addNamespacePrefixToFullName ?? true,
-})
+  fetchParams,
+  isFetchWithChangesDetection,
+  elementsSource,
+}: BuildFetchProfileParams): FetchProfile => {
+  const {
+    metadata = {},
+    data,
+    fetchAllCustomSettings,
+    optionalFeatures,
+    target,
+    maxInstancesPerType,
+    preferActiveFlowVersions,
+    addNamespacePrefixToFullName,
+  } = fetchParams
+  return {
+    metadataQuery: buildMetadataQuery({
+      metadataParams: metadata,
+      elementsSource,
+      isFetchWithChangesDetection,
+      target: isDefined(target)
+        ? getFetchTargets(target as SupportedMetadataType[])
+        : undefined,
+    }),
+    dataManagement: data && buildDataManagement(data),
+    isFeatureEnabled: name => optionalFeatures?.[name] ?? optionalFeaturesDefaultValues[name] ?? true,
+    shouldFetchAllCustomSettings: () => fetchAllCustomSettings ?? true,
+    maxInstancesPerType: maxInstancesPerType ?? DEFAULT_MAX_INSTANCES_PER_TYPE,
+    preferActiveFlowVersions: preferActiveFlowVersions ?? false,
+    addNamespacePrefixToFullName: addNamespacePrefixToFullName ?? true,
+  }
+}
 
 export const validateFetchParameters = (
   params: Partial<FetchParameters>,

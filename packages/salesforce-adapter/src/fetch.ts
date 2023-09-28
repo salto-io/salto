@@ -143,6 +143,7 @@ export const notInSkipList = (metadataQuery: MetadataQuery, file: FileProperties
     metadataType: file.type,
     name: file.fullName,
     isFolderType,
+    changedAt: file.lastModifiedDate,
   })
 )
 
@@ -288,8 +289,14 @@ export const fetchMetadataInstances = async ({
       metadataType: metadataTypeName,
       name: prop.fullName,
       isFolderType: isDefined(metadataType.annotations[FOLDER_CONTENT_TYPE]),
+      changedAt: prop.lastModifiedDate,
     }))
 
+  // Avoid sending empty requests for types that had no instances that were changed from the previous fetch
+  // This is a common case for fetchWithChangesDetection mode for types that had no changes on their instances
+  if (filePropsToRead.length === 0) {
+    return { elements: [], configChanges: [] }
+  }
 
   const { result: metadataInfos, errors } = await client.readMetadata(
     metadataTypeName,
@@ -480,6 +487,13 @@ export const retrieveMetadataInstances = async ({
       .filter(type => type.annotations.folderContentType === undefined)
       .map(listFilesOfType)
   )).filter(props => notInSkipList(metadataQuery, props, false))
+
+  // Avoid sending empty requests for types that had no instances that were changed from the previous fetch
+  // This is a common case for fetchWithChangesDetection mode for types that had no changes on their instances
+  if (filesToRetrieve.length === 0) {
+    log.debug('No files to retrieve, skipping')
+    return { elements: [], configChanges }
+  }
 
   log.info('going to retrieve %d files', filesToRetrieve.length)
 

@@ -14,17 +14,18 @@
 * limitations under the License.
 */
 
-import { ElemID, ObjectType, ReferenceExpression, getChangeData, isInstanceChange, isObjectType, isReferenceExpression } from '@salto-io/adapter-api'
+import { ObjectType, ReferenceExpression, getChangeData, isInstanceChange, isObjectType, isReferenceExpression } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { values } from '@salto-io/lowerdash'
+import { values, collections } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
 import { isCustomRecordType } from '../types'
 import { ROLE, SCRIPT_ID } from '../constants'
 
 const log = logger(module)
+const { awu } = collections.asynciterable
 
-const filterCreator: LocalFilterCreator = () => ({
+const filterCreator: LocalFilterCreator = ({ elementsSource }) => ({
   name: 'addPermissions',
   preDeploy: async changes => {
     const customRecordChangedMap = new Map<string, ObjectType>(changes
@@ -46,6 +47,19 @@ const filterCreator: LocalFilterCreator = () => ({
           }
         }
       })
+
+      const roleToPermittedroleMap = new Map<string, ReferenceExpression>(
+        await awu(roleChanged)
+          .map(async (role): Promise<[string, ReferenceExpression]> => {
+            const permittedrole = new ReferenceExpression(role.elemID.createNestedID(SCRIPT_ID))
+            permittedrole.topLevelParent = await elementsSource.get(
+              permittedrole.elemID.createTopLevelParentID().parent
+            )
+            return [role.elemID.getFullName(), permittedrole]
+          })
+          .toArray()
+      )
+
       roleChanged.forEach(role => {
         const permissionObject = role.value.permissions?.permission
         const roleFullNameList = role.elemID.getFullNameParts()
@@ -62,7 +76,7 @@ const filterCreator: LocalFilterCreator = () => ({
                 if (custRecord !== undefined) {
                   custRecord.annotations.permissions.permission[roleName] = {
                     permittedlevel: val.permlevel,
-                    permittedrole: new ReferenceExpression(role.elemID.createNestedID(SCRIPT_ID)),
+                    permittedrole: roleToPermittedroleMap.get(role.elemID.getFullName()),
                   }
                 }
                 log.debug('', custRecord)
@@ -72,107 +86,14 @@ const filterCreator: LocalFilterCreator = () => ({
                 if (custRecord !== undefined) {
                   custRecord.annotations.permissions.permission[roleName] = {
                     permittedlevel: val.permlevel,
-                    permittedrole: new ReferenceExpression(new ElemID(`${role.elemID.getFullName()}.${SCRIPT_ID}`)),
+                    permittedrole: roleToPermittedroleMap.get(role.elemID.getFullName()),
                   }
                 }
               }
-              log.debug('')
             })
         }
       })
     }
-
-
-    // const customRecordChangesList = changes
-    //   .map(getChangeData)
-    //   .filter(isObjectType)
-    //   .filter(isCustomRecordType)
-
-    // const customRecordScriptIdsList = customRecordChangesList
-    //   .map(change => change.elemID.typeName)
-    // const roleChanges = changes
-    //   .filter(isInstanceChange)
-    //   .map(getChangeData)
-    //   .filter(instance => instance.elemID.typeName === ROLE)
-    // if (customRecordScriptIdsList.length !== 0 && !_.isEmpty(roleChanges)) {
-    //   customRecordChangesList
-    //     .forEach(custRecordType => {
-    //       if (_.isUndefined(custRecordType.annotations.permissions?.permission)) {
-    //         custRecordType.annotations.permissions = {
-    //           permission: {},
-    //         }
-    //       }
-    //     })
-    //   // for (const role of roleChanges) {
-    //   //   const permissionObject = role.value.permissions?.permission
-    //   //   if (_.isPlainObject(permissionObject)) {
-    //   //     for (const val of Object.values(permissionObject)) {
-    //   //       if (values.isPlainRecord(val)) {
-    //   //         if (isReferenceExpression(val.permkey)) {
-    //   //           if (isObjectType(val.permkey.topLevelParent)
-    //   //           && isCustomRecordType(val.permkey.topLevelParent)) {
-    //   //             val.permkey.topLevelParent
-    //   //               .annotations.permissions.permission[role.elemID.getFullNameParts()[0]] = {
-    //   //                 permittedlevel: val.permlevel,
-    //   //                 permittedrole: new ReferenceExpression(new ElemID(
-    //   //                   `${role.elemID.getFullName()}.${SCRIPT_ID}`
-    //   //                 )),
-    //   //               }
-    //   //             log.debug('')
-    //   //           }
-    //   //         } else if (_.isString(val.permkey) && regex.test(val.permkey)) {
-    //   //           const match = regex.exec(val.permkey)
-    //   //           const indexOfCustomRecord = match
-    //   //             ? customRecordScriptIdsList.findIndex(scriptid => scriptid === match[1]) : -1
-    //   //           if (indexOfCustomRecord !== -1) {
-    //   //             const roleFullNameList = role.elemID.getFullNameParts()
-    //   //             const roleName = roleFullNameList[roleFullNameList.length - 1]
-    //   //             customRecordChangesList[indexOfCustomRecord]
-    //   //               .annotations.permissions.permission[roleName] = {
-    //   //                 permittedlevel: val.permlevel,
-    //   //                 permittedrole: new ReferenceExpression(new ElemID(
-    //   //                   `${role.elemID.getFullName()}.${SCRIPT_ID}`
-    //   //                 )),
-    //   //               }
-    //   //           }
-    //   //         }
-    //   //       }
-    //   //     }
-    //   //   }
-    //   // }
-    //   roleChanges
-    //     .forEach(role => {
-    //       const permissionObject = role.value.permissions?.permission
-    //       Object.values(permissionObject)
-    //         .filter(values.isPlainRecord)
-    //         .forEach(async val => {
-    //           const roleFullNameList = role.elemID.getFullNameParts()
-    //           const roleName = roleFullNameList[roleFullNameList.length - 1]
-    //           if (isReferenceExpression(val.permkey)
-    //             && isObjectType(val.permkey.topLevelParent)
-    //             && isCustomRecordType(val.permkey.topLevelParent)) {
-    //             val.permkey.topLevelParent.annotations.permissions.permission[roleName] = {
-    //               permittedlevel: val.permlevel,
-    //               permittedrole: new ReferenceExpression(new ElemID(`${role.elemID.getFullName()}.${SCRIPT_ID}`)),
-    //             }
-    //             log.debug('')
-    //           } else if (_.isString(val.permkey) && regex.test(val.permkey)) {
-    //             const match = regex.exec(val.permkey)
-    //             const indexOfCustomRecord = match
-    //               ? customRecordScriptIdsList.findIndex(scriptid => scriptid === match[1]) : -1
-    //             if (indexOfCustomRecord !== -1) {
-    //               customRecordChangesList[indexOfCustomRecord]
-    //                 .annotations.permissions.permission[roleName] = {
-    //                   permittedlevel: val.permlevel,
-    //                   permittedrole:
-    //                     new ReferenceExpression(new ElemID(`${role.elemID.getFullName()}.${SCRIPT_ID}`)),
-    //                 }
-    //             }
-    //           }
-    //         })
-    //     })
-    // }
-    log.debug('')
   },
 })
 

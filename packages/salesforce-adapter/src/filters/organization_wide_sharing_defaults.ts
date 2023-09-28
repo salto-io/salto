@@ -130,6 +130,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     config,
     filterName: FILTER_NAME,
     fetchFilterFunc: async elements => {
+      // SALTO-4821
       if (config.fetchProfile.metadataQuery.isFetchWithChangesDetection()) {
         return
       }

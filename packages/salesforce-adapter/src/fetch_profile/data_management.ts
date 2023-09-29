@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { collections, types } from '@salto-io/lowerdash'
 import { ConfigValidationError, validateRegularExpressions } from '../config_validation'
 import { DataManagement, DataManagementConfig, OutgoingReferenceBehavior, outgoingReferenceBehaviors } from '../types'
@@ -67,6 +68,8 @@ export const buildDataManagement = (params: DataManagementConfig): DataManagemen
   const isReferenceAllowed = (name: string): boolean => (
     params.allowReferenceTo?.some(re => new RegExp(`^${re}$`).test(name)) ?? false
   )
+
+  const omittedFieldsByType = _.groupBy(params.omittedFields, fieldApiName => fieldApiName.split('.')[0])
 
   return {
     shouldFetchObjectType: async objectType => {
@@ -145,15 +148,9 @@ export const buildDataManagement = (params: DataManagementConfig): DataManagemen
         : ALIAS_FIELDS_BY_TYPE[name] ?? defaultFields
     },
     showReadOnlyValues: params.showReadOnlyValues,
-    omittedFieldsForType: name => {
-      if (name === undefined) {
-        return []
-      }
-      const typePrefix = `${name}.`
-      return (params.omittedFields ?? [])
-        .filter(fieldName => fieldName.startsWith(typePrefix))
-        .map(fieldName => fieldName.slice(typePrefix.length))
-    },
+    omittedFieldsForType: name => (
+      name === undefined ? [] : makeArray(omittedFieldsByType[name])
+    ),
   }
 }
 
@@ -194,5 +191,10 @@ export const validateDataManagementConfig = (
         }
       }
     )
+  }
+  const invalidFieldNames = makeArray(dataManagementConfig.omittedFields)
+    .filter(omittedFieldName => !omittedFieldName.match(/\w+(?:\.\w+)/))
+  if (invalidFieldNames) {
+    throw new ConfigValidationError([...fieldPath, 'omittedFields'], `The following entries are not valid Salesforce API names: ${invalidFieldNames.join(',')}`)
   }
 }

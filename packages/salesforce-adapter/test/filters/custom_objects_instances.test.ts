@@ -92,7 +92,7 @@ const createCustomObject = (
         [CORE_ANNOTATIONS.REQUIRED]: false,
         [FIELD_ANNOTATIONS.QUERYABLE]: true,
         [LABEL]: 'Id',
-        [API_NAME]: 'Id',
+        [API_NAME]: `${name}.Id`,
       },
     },
     Name: {
@@ -101,7 +101,7 @@ const createCustomObject = (
         [CORE_ANNOTATIONS.REQUIRED]: false,
         [FIELD_ANNOTATIONS.QUERYABLE]: true,
         [LABEL]: 'description label',
-        [API_NAME]: 'Name',
+        [API_NAME]: `${name}.Name`,
       },
     },
     TestField: {
@@ -109,7 +109,7 @@ const createCustomObject = (
       annotations: {
         [FIELD_ANNOTATIONS.QUERYABLE]: true,
         [LABEL]: 'Test field',
-        [API_NAME]: 'TestField',
+        [API_NAME]: `${name}.TestField`,
       },
     },
   }

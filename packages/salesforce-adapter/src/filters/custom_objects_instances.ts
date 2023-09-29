@@ -70,7 +70,7 @@ export type CustomObjectFetchSetting = {
   invalidAliasFields: string[]
   invalidManagedBySaltoField?: string
   managedBySaltoField?: string
-  omittedFields?: string[]
+  omittedFields: string[]
 }
 
 const defaultRecordKeysToOmit = ['attributes']
@@ -104,20 +104,33 @@ const buildQueryStrings = async (
   return buildSelectQueries(typeName, fieldNames, queryConditions)
 }
 
+type GetRecordsParams = {
+  client: SalesforceClient
+  typeAndFetchSettings: CustomObjectFetchSetting
+  ids?: string[]
+}
+
 const getRecords = async (
-  client: SalesforceClient,
-  type: ObjectType,
-  ids?: string[],
-  managedBySaltoField?: string,
-  omittedFields: string[] = [],
+  {
+    client,
+    typeAndFetchSettings: { objectType, managedBySaltoField, omittedFields },
+    ids,
+  } : GetRecordsParams,
 ): Promise<RecordById> => {
-  const queryableFields = getQueryableFields(type)
-    .filter(field => !omittedFields.includes(apiNameSync(field) ?? ''))
-  const typeName = await apiName(type)
-  if (_.isEmpty(queryableFields)) {
-    log.debug('Type %s had no queryable fields (%d fields omitted)', typeName, omittedFields.length)
+  const typeName = apiNameSync(objectType)
+  if (!typeName) {
+    log.warn('Object %s has no API name', objectType.elemID.getFullName())
     return {}
   }
+
+  const queryableFields = getQueryableFields(objectType)
+    .filter(field => !omittedFields.includes(apiNameSync(field) ?? ''))
+  if (_.isEmpty(queryableFields)) {
+    const queryableFieldNames = queryableFields.map(field => apiNameSync(field))
+    log.debug('Type %s had no queryable fields or they were all omitted. %o', typeName, { omittedFields, queryableFieldNames })
+    return {}
+  }
+
   log.debug('Fetching records for type %s%s', typeName, managedBySaltoField ? `, filtering by ${managedBySaltoField}` : '')
   const queries = await buildQueryStrings(typeName, queryableFields, ids, managedBySaltoField)
   log.debug('Queries: %o', queries)
@@ -385,7 +398,7 @@ const getReferencedRecords = async (
       typeToMissingIds,
       (ids, typeName) => {
         const fetchSettings = customObjectFetchSetting[typeName]
-        return getRecords(client, fetchSettings.objectType, ids, undefined, fetchSettings.omittedFields)
+        return getRecords({ client, typeAndFetchSettings: fetchSettings, ids })
       }
     )
     if (_.isEmpty(newReferencedRecords)) {
@@ -409,7 +422,7 @@ export const getAllInstances = async (
   log.debug('Base types: %o', _.keys(baseTypesSettings))
   const baseRecordByTypeAndId = await mapValuesAsync(
     baseTypesSettings,
-    setting => getRecords(client, setting.objectType, undefined, setting.managedBySaltoField, setting.omittedFields)
+    setting => getRecords({ client, typeAndFetchSettings: setting })
   )
   // Get reference to records
   const referencedRecordsByTypeAndId = await getReferencedRecords(

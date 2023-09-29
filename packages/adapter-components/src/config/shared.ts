@@ -14,9 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import {
-  ElemID, ObjectType, BuiltinTypes, FieldDefinition, ListType, MapType, Field, CORE_ANNOTATIONS, ActionName,
-} from '@salto-io/adapter-api'
+import { ElemID, ObjectType, BuiltinTypes, FieldDefinition, ListType, MapType, Field, CORE_ANNOTATIONS, ActionName,
+  SeverityLevel } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import type { TransformationConfig, TransformationDefaultConfig } from './transformation'
 import { createRequestConfigs, DeploymentRequestsByAction, FetchRequestConfig, FetchRequestDefaultConfig, getConfigTypeName } from './request'
@@ -25,6 +24,12 @@ import { ValidatorsActivationConfig } from '../deployment/change_validators'
 export const DEPLOYER_FALLBACK_VALUE = '##DEPLOYER##'
 
 export class InvalidSingletonType extends Error {}
+
+export class FetchError extends Error {
+  constructor(message: string, readonly severity: SeverityLevel) {
+    super(message)
+  }
+}
 
 export type TypeConfig<T extends TransformationConfig = TransformationConfig, A extends string = ActionName> = {
   request?: FetchRequestConfig

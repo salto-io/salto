@@ -17,20 +17,27 @@ import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { logger } from '@salto-io/logging'
 import * as clientUtils from '@salto-io/adapter-components'
+import { config } from '@salto-io/adapter-components'
 import JiraClient from '../../src/client/client'
 
 import ScriptRunnerClient from '../../src/client/script_runner_client'
+
+const { AdapterFetchError } = config
 
 const SCRIPT_RUNNER_VALID_URL = 'https://my.scriptrunner.net/myUrlPath'
 
 const VALID_HTML = '<!DOCTYPE html><html><head><meta name="sr-token" content="validSR"></head></html>'
 const NO_CONTENT_HTML = '<!DOCTYPE html><html><head><meta name="sr-token"></head></html>'
 const NO_SR_HTML = '<!DOCTYPE html><html><head></head></html>'
+const SURVEY_HTML = '<!DOCTYPE html><html><head><title>Post Install Complete</title></head></html>'
 
 const JWT_ACCESS_URL = '/plugins/servlet/ac/com.onresolve.jira.groovy.groovyrunner/scriptrunner-home?classifier=json&s=com.onresolve.jira.groovy.groovyrunner__scriptrunner-home'
 
 const logging = logger('jira-adapter/src/client/script_runner_connection')
 const logErrorSpy = jest.spyOn(logging, 'error')
+
+const getLoginError = (): Error =>
+  new AdapterFetchError('Failed to get ScriptRunner token, the response from the jira service was not as expected. Please try again later. Our support team was notified about this, and we will investigate it as well.', 'Error')
 
 describe('scriptRunnerClient', () => {
   let jiraClient: JiraClient
@@ -38,7 +45,7 @@ describe('scriptRunnerClient', () => {
   let mockAxios: MockAdapter
   beforeEach(() => {
     mockAxios = new MockAdapter(axios)
-    jiraClient = new JiraClient({ credentials: { baseUrl: 'http://myjira.net', user: 'me', token: 'tok' }, isDataCenter: false })
+    jiraClient = new JiraClient({ credentials: { baseUrl: 'http://myjira.net/', user: 'me', token: 'tok' }, isDataCenter: false })
     scriptRunnerClient = new ScriptRunnerClient(
       { credentials: {},
         jiraClient,
@@ -64,15 +71,13 @@ describe('scriptRunnerClient', () => {
       })
       it('should fail when JWT address object is not in the right format', async () => {
         mockAxios.onGet(JWT_ACCESS_URL).reply(200, { xurl: SCRIPT_RUNNER_VALID_URL })
-        const result = await scriptRunnerClient.get({ url: '/myPath' })
-        expect(result).toEqual({ status: 401, data: [] })
-        expect(logErrorSpy).toHaveBeenCalledWith('Failed to get script runner token, the response from the jira service was not as expected')
+        await expect(async () => scriptRunnerClient.get({ url: '/myPath' })).rejects.toThrow(getLoginError())
+        expect(logErrorSpy).toHaveBeenCalledWith('Failed to get scriptRunner token, the response from the jira service was not as expected')
       })
       it('should fail when JWT address object is not a valid url', async () => {
         mockAxios.onGet(JWT_ACCESS_URL).reply(200, { url: 'http' })
-        const result = await scriptRunnerClient.get({ url: '/myPath' })
-        expect(result).toEqual({ status: 401, data: [] })
-        expect(logErrorSpy).toHaveBeenCalledWith('Failed to parse script runner token, the response from the jira service was not a valid url', 'http')
+        await expect(async () => scriptRunnerClient.get({ url: '/myPath' })).rejects.toThrow(getLoginError())
+        expect(logErrorSpy).toHaveBeenCalledWith('Failed to parse scriptRunner token, the response from the jira service was not a valid url', 'http')
       })
       it('should not call the address endpoint again', async () => {
         mockAxios.onGet(JWT_ACCESS_URL).reply(200, { url: SCRIPT_RUNNER_VALID_URL })
@@ -90,27 +95,35 @@ describe('scriptRunnerClient', () => {
       })
       it('should fail when cannot access JWT address', async () => {
         mockAxios.onGet(SCRIPT_RUNNER_VALID_URL).reply(400, { response: 'asd', errorMessages: ['error message'] })
-        expect(await scriptRunnerClient.get({ url: '/myPath' })).toEqual({ status: 401, data: [] })
-        expect(logErrorSpy).toHaveBeenCalledWith('Failed to get script runner token from scriptRunner service', new Error('Request failed with status code 400'))
+        await expect(async () => scriptRunnerClient.get({ url: '/myPath' })).rejects.toThrow(getLoginError())
+        expect(logErrorSpy).toHaveBeenCalledWith('Failed to get scriptRunner token from scriptRunner service', new Error('Request failed with status code 400'))
       })
       it('should fail when sr not in correct format', async () => {
         mockAxios.onGet(SCRIPT_RUNNER_VALID_URL).replyOnce(200, { response: 'asd' })
-        expect(await scriptRunnerClient.get({ url: '/myPath' })).toEqual({ status: 401, data: [] })
+        await expect(async () => scriptRunnerClient.get({ url: '/myPath' })).rejects.toThrow(getLoginError())
       })
       it('should fail when not html response', async () => {
         mockAxios.onGet(SCRIPT_RUNNER_VALID_URL).replyOnce(200, 'not another html answer')
-        expect(await scriptRunnerClient.get({ url: '/myPath' })).toEqual({ status: 401, data: [] })
-        expect(logErrorSpy).toHaveBeenCalledWith('Failed to get script runner token from scriptRunner service, could not find meta tag with name="sr-token"', 'not another html answer')
+        await expect(async () => scriptRunnerClient.get({ url: '/myPath' })).rejects.toThrow(getLoginError())
+        expect(logErrorSpy).toHaveBeenCalledWith('Failed to get scriptRunner token from scriptRunner service, could not find meta tag with name="sr-token"', 'not another html answer')
       })
       it('should fail when not SR token', async () => {
         mockAxios.onGet(SCRIPT_RUNNER_VALID_URL).replyOnce(200, NO_SR_HTML)
-        expect(await scriptRunnerClient.get({ url: '/myPath' })).toEqual({ status: 401, data: [] })
-        expect(logErrorSpy).toHaveBeenCalledWith('Failed to get script runner token from scriptRunner service, could not find meta tag with name="sr-token"', '<!DOCTYPE html><html><head></head></html>')
+        await expect(async () => scriptRunnerClient.get({ url: '/myPath' })).rejects.toThrow(getLoginError())
+        expect(logErrorSpy).toHaveBeenCalledWith('Failed to get scriptRunner token from scriptRunner service, could not find meta tag with name="sr-token"', '<!DOCTYPE html><html><head></head></html>')
+      })
+      it('should fail with correct info when a survey screen is active', async () => {
+        mockAxios.onGet(SCRIPT_RUNNER_VALID_URL).replyOnce(200, SURVEY_HTML)
+        await expect(async () => scriptRunnerClient.get({ url: '/myPath' })).rejects.toThrow(
+          new AdapterFetchError('Fetch failed as ScriptRunner was not fully installed in the Jira Instance. To continue, please open the ScriptRunner app at '
+            + 'http://myjira.net/plugins/servlet/ac/com.onresolve.jira.groovy.groovyrunner/post-install-nav-link, fill and send the survey, and try again.', 'Error')
+        )
+        expect(logErrorSpy).toHaveBeenCalledWith('Failed to get scriptRunner token from scriptRunner service, could not find meta tag with name="sr-token"', SURVEY_HTML)
       })
       it('should fail when sr element does not have context', async () => {
         mockAxios.onGet(SCRIPT_RUNNER_VALID_URL).replyOnce(200, NO_CONTENT_HTML)
-        expect(await scriptRunnerClient.get({ url: '/myPath' })).toEqual({ status: 401, data: [] })
-        expect(logErrorSpy).toHaveBeenCalledWith('Failed to get script runner token from scriptRunner service, could not find content attribute"', '<!DOCTYPE html><html><head><meta name="sr-token"></head></html>')
+        await expect(async () => scriptRunnerClient.get({ url: '/myPath' })).rejects.toThrow(getLoginError())
+        expect(logErrorSpy).toHaveBeenCalledWith('Failed to get scriptRunner token from scriptRunner service, could not find content attribute"', '<!DOCTYPE html><html><head><meta name="sr-token"></head></html>')
       })
       it('should call send request decorator for page', async () => {
         mockAxios.onGet(SCRIPT_RUNNER_VALID_URL).replyOnce(200, VALID_HTML)
@@ -144,7 +157,7 @@ describe('scriptRunnerClient', () => {
     it('should request the correct path with auth headers', () => {
       expect(mockAxios.history.get).toHaveLength(6)
       const jiraAddress = mockAxios.history.get.find(r => r.url === JWT_ACCESS_URL)
-      expect(jiraAddress?.baseURL).toEqual('http://myjira.net')
+      expect(jiraAddress?.baseURL).toEqual('http://myjira.net/')
       expect(jiraAddress?.url).toEqual(JWT_ACCESS_URL)
       const srRequest = mockAxios.history.get.find(r => r.url === '/myUrlPath')
       expect(srRequest?.auth).toBeUndefined()

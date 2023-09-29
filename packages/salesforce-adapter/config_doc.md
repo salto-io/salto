@@ -187,7 +187,7 @@ salesforce {
 | [saltoManagementFieldSettings](#salto-management-field-configuration-options) | {}                                               | Configuration for managed-by-Salto field                                                                  |
 | [brokenOutgoingReferencesSettings](#broken-outgoing-references-settings)      | {}                                               | Configuration for handling broken references                                                              |
 | omittedFields                                                                 | []                                               | List of API names of fields to discard when fetching data records.                                        |
-
+| [warningSettings](#data-warning-settings)                                     | {}                                               | Enabling/disabling specific warnings                                                                      | 
 
 #### Salto ID settings configuration options
 
@@ -223,6 +223,13 @@ salesforce {
 | "ExcludeInstance" | Do not fetch instances that contain a reference whose target was not fetched                      |
 | "BrokenReference" | Fetch the instance and create Salto references to non-existant targets.                           |
 | "InternalId"      | Fetch the instance and keep the existing field value (the internal ID of the referenced instance) |
+
+
+#### Data warning settings
+
+| Name                | Default when undefined | Description                                                       |
+|---------------------|------------------------|-------------------------------------------------------------------|
+| nonQueryableFields  | true                   | Warn when fetching records of an object with non-queryable fields |
 
 
 #### Object ID settings configuration options

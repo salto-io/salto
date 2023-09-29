@@ -49,9 +49,12 @@ import SalesforceClient from '../client/client'
 import { INSTANCE_SUFFIXES, OptionalFeatures } from '../types'
 import {
   API_NAME,
-  API_NAME_SEPARATOR, CUSTOM_FIELD,
+  API_NAME_SEPARATOR,
+  CUSTOM_FIELD,
   CUSTOM_METADATA_SUFFIX,
-  CUSTOM_OBJECT, CUSTOM_OBJECT_ID_FIELD,
+  CUSTOM_OBJECT,
+  CUSTOM_OBJECT_ID_FIELD,
+  FIELD_ANNOTATIONS,
   INSTANCE_FULL_NAME_FIELD,
   INTERNAL_ID_ANNOTATION,
   INTERNAL_ID_FIELD,
@@ -169,6 +172,18 @@ export const isMasterDetailField = (field: Field): boolean => (
 
 export const isLookupField = (field: Field): boolean => (
   field.refType.elemID.isEqual(Types.primitiveDataTypes.Lookup.elemID)
+)
+
+export const isQueryableField = (field: Field): boolean => (
+  field.annotations[FIELD_ANNOTATIONS.QUERYABLE] === true
+)
+
+export const isHiddenField = (field: Field): boolean => (
+  field.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] === true
+)
+
+export const isReadOnlyField = (field: Field): boolean => (
+  !field.annotations[FIELD_ANNOTATIONS.CREATABLE] && !field.annotations[FIELD_ANNOTATIONS.UPDATEABLE]
 )
 
 export const getInstancesOfMetadataType = async (elements: Element[], metadataTypeName: string):

@@ -46,6 +46,7 @@ import accountSettings from './change_validators/account_settings'
 import installedPackages from './change_validators/installed_packages'
 import dataCategoryGroupValidator from './change_validators/data_category_group'
 import standardFieldOrObjectAdditionsOrDeletions from './change_validators/standard_field_or_object_additions_or_deletions'
+import deletedNonQueryableFields from './change_validators/deleted_non_queryable_fields'
 import SalesforceClient from './client/client'
 import { ChangeValidatorName, DEPLOY_CONFIG, SalesforceConfig } from './types'
 
@@ -91,6 +92,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   installedPackages: () => installedPackages,
   dataCategoryGroup: () => dataCategoryGroupValidator,
   standardFieldOrObjectAdditionsOrDeletions: () => standardFieldOrObjectAdditionsOrDeletions,
+  deletedNonQueryableFields: () => deletedNonQueryableFields,
   ..._.mapValues(getDefaultChangeValidators(), validator => (() => validator)),
 }
 

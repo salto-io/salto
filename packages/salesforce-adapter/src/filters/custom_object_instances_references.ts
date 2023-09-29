@@ -115,6 +115,7 @@ const createWarnings = async (
     const perTargetTypeMsgs = typesOfMissingRefsTargets.join('\n')
     const perInstancesPreamble = 'and these objects are not part of your Salto configuration. \n\nHere are the records:'
     const perMissingInstanceMsgs = missingRefs
+      .filter(missingRef => missingRef.origin.type === originTypeName)
       .map(missingRef => `${getInstanceDesc(missingRef.origin.id, baseUrl)} relates to ${getInstanceDesc(missingRef.targetId, baseUrl)}`)
       .slice(0, MAX_BREAKDOWN_ELEMENTS)
       .sort() // this effectively sorts by origin instance ID

@@ -1,4 +1,4 @@
-type dummy.FullWithIA {
+type dummy.FullWithIV {
     annotations {
         string strAnno {
         }
@@ -7,11 +7,11 @@ type dummy.FullWithIA {
         boolean boolAnno {
         }
     }
-    dummy.customFieldWithIA Active__c {
+    dummy.customFieldWithIV Active__c {
         apiName = "Active__c"
         externalId = false
         label = "Active"
-      }
+    }
 
     string strField {
     }
@@ -27,20 +27,24 @@ type dummy.FullWithIA {
       {
         value = "strAnno"
         indexed = false
+        highlighted = true
       },
       {
         value = "boolAnno"
         indexed = true
+        highlighted = true
       },
     ]
     _important_values = [
       {
         value = "strField"
         indexed = false
+        highlighted = true
       },
       {
         value = "boolField"
         indexed = true
+        highlighted = false
       },
     ]
 }

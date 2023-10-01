@@ -22,6 +22,7 @@ import {
 import { FileProperties } from 'jsforce-types'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
+import { collections, values } from '@salto-io/lowerdash'
 import { CUSTOM_FIELD, CUSTOM_OBJECT, INTERNAL_ID_ANNOTATION } from '../../constants'
 import { getAuthorAnnotations, MetadataInstanceElement } from '../../transformers/transformer'
 import { RemoteFilterCreator } from '../../filter'
@@ -40,6 +41,9 @@ import { NESTED_INSTANCE_VALUE_TO_TYPE_NAME } from '../custom_objects_to_object_
 type FilePropertiesMap = Record<string, FileProperties>
 type FieldFileNameParts = {fieldName: string; objectName: string}
 const log = logger(module)
+
+const { makeArray } = collections.array
+const { isDefined } = values
 
 const getFieldNameParts = (fileProperties: FileProperties): FieldFileNameParts =>
   ({ fieldName: fileProperties.fullName.split('.')[1],
@@ -77,13 +81,13 @@ const getCustomFieldFileProperties = async (client: SalesforceClient):
     log.warn(`Encountered errors while listing file properties for CustomFields: ${errors}`)
   }
   return _(result).groupBy((fileProps: FileProperties) => getFieldNameParts(fileProps).objectName)
-    .mapValues((values: FileProperties[]) => _.keyBy(values,
+    .mapValues((v: FileProperties[]) => _.keyBy(v,
       (fileProps:FileProperties) => getFieldNameParts(fileProps).fieldName)).value()
 }
 
 type ObjectAuthorInformationSupplierArgs = {
   object: ObjectType
-  typeFileProperties: FileProperties
+  typeFileProperties?: FileProperties
   customFieldsFileProperties: FileProperties[]
   nestedInstances: MetadataInstanceElement[]
 }
@@ -107,9 +111,10 @@ const setObjectAuthorInformation = (
       addAuthorAnnotationsToField(fileProp, field)
     })
   // Set the latest AuthorInformation on the CustomObject
-  const allAuthorInformation = [getAuthorInformationFromFileProps(typeFileProperties)]
+  const allAuthorInformation = [typeFileProperties ? getAuthorInformationFromFileProps(typeFileProperties) : undefined]
     .concat(customFieldsFileProperties.map(getAuthorInformationFromFileProps))
     .concat(nestedInstances.map(getElementAuthorInformation))
+    .filter(isDefined)
   const mostRecentAuthorInformation = _.maxBy(
     allAuthorInformation,
     authorInfo => (
@@ -123,8 +128,10 @@ const setObjectAuthorInformation = (
     object.annotations[CORE_ANNOTATIONS.CHANGED_AT] = mostRecentAuthorInformation.changedAt
     // This info should always come from the FileProperties of the CustomObject.
     // Standard Objects won't have values here
-    object.annotations[CORE_ANNOTATIONS.CREATED_BY] = typeFileProperties.createdByName
-    object.annotations[CORE_ANNOTATIONS.CREATED_AT] = typeFileProperties.createdDate
+    if (typeFileProperties) {
+      object.annotations[CORE_ANNOTATIONS.CREATED_BY] = typeFileProperties.createdByName
+      object.annotations[CORE_ANNOTATIONS.CREATED_AT] = typeFileProperties.createdDate
+    }
   }
 }
 
@@ -167,20 +174,12 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         .filter(isCustomObjectSync)
         .forEach(object => {
           const typeFileProperties = customTypeFilePropertiesMap[apiNameSync(object) ?? '']
-          if (typeFileProperties === undefined) {
-            log.warn(`Not adding author information on the CustomObject ${apiNameSync(object)} and it's fields because it has no file properties`)
-            return
-          }
-          const fieldsPropertiesMap = customFieldsFilePropertiesMap[apiNameSync(object) ?? '']
-          if (fieldsPropertiesMap === undefined) {
-            log.warn(`Not adding author information on the CustomObject ${apiNameSync(object)} and it's fields because it's fields has no file properties`)
-            return
-          }
+          const fieldsPropertiesMap = customFieldsFilePropertiesMap[apiNameSync(object) ?? ''] ?? {}
           setObjectAuthorInformation({
             object,
             typeFileProperties,
             customFieldsFileProperties: Object.values(fieldsPropertiesMap),
-            nestedInstances: instancesByParent[apiNameSync(object) ?? ''].filter(isCustomObjectSubInstance) ?? [],
+            nestedInstances: makeArray(instancesByParent[apiNameSync(object) ?? '']).filter(isCustomObjectSubInstance),
           })
         })
     },

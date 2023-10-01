@@ -24,7 +24,13 @@ import {
 import _ from 'lodash'
 import { LocalFilterCreator } from '../filter'
 import { ArtificialTypes } from '../constants'
-import { apiNameSync, getChangedAtSingleton, metadataTypeSync } from './utils'
+import {
+  apiNameSync,
+  getChangedAtSingleton,
+  isCustomObjectSync,
+  isMetadataInstanceElementSync,
+  metadataTypeSync,
+} from './utils'
 
 const createChangedAtSingletonInstanceValues = (metadataInstancesByType: Record<string, Element[]>): Values => {
   const instanceValues: Values = {}
@@ -57,7 +63,9 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'changedAtSingletonFilter',
   onFetch: async (elements: Element[]) => {
     const elementsByType = _.groupBy(
-      elements.filter(element => element.annotations[CORE_ANNOTATIONS.CHANGED_AT]),
+      elements
+        .filter(element => isMetadataInstanceElementSync(element) || isCustomObjectSync(element))
+        .filter(element => element.annotations[CORE_ANNOTATIONS.CHANGED_AT]),
       metadataTypeSync
     )
     const changedAtInstance = await getChangedAtSingletonInstance(config.elementsSource)

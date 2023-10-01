@@ -13,10 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { regex, values } from '@salto-io/lowerdash'
+import { collections, regex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { ElemID, InstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { makeArray } from '@salto-io/lowerdash/dist/src/collections/array'
 import {
   DEFAULT_NAMESPACE,
   SETTINGS_METADATA_TYPE,
@@ -34,6 +33,7 @@ import { validateRegularExpressions, ConfigValidationError } from '../config_val
 import { MetadataInstance, MetadataParams, MetadataQueryParams, METADATA_INCLUDE_LIST, METADATA_EXCLUDE_LIST, METADATA_SEPARATE_FIELD_LIST } from '../types'
 
 const { isDefined } = values
+const { makeArray } = collections.array
 
 
 // According to Salesforce Metadata API docs, folder names can only contain alphanumeric characters and underscores.

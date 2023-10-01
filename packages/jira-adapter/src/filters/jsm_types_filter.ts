@@ -15,9 +15,7 @@
 */
 
 import _ from 'lodash'
-import {
-  getChangeData, isInstanceChange, Change, InstanceElement, isObjectType, CORE_ANNOTATIONS, isInstanceElement,
-} from '@salto-io/adapter-api'
+import { getChangeData, isInstanceChange, Change, InstanceElement, isObjectType, CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { resolveChangeElement } from '@salto-io/adapter-utils'
 import { deployChanges } from '../deployment/standard_deployment'
@@ -34,18 +32,21 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     if (!config.fetch.enableJSM) {
       return
     }
-    elements.filter(obj => jsmSupportedTypes.includes(obj.elemID.typeName))
+    elements
+      .filter(obj => jsmSupportedTypes.includes(obj.elemID.typeName))
+      .filter(isObjectType)
       .map(async obj => {
-        if (isObjectType(obj)) {
-          setTypeDeploymentAnnotations(obj)
-          await addAnnotationRecursively(obj, CORE_ANNOTATIONS.CREATABLE)
-          await addAnnotationRecursively(obj, CORE_ANNOTATIONS.UPDATABLE)
-          await addAnnotationRecursively(obj, CORE_ANNOTATIONS.DELETABLE)
-        }
-        if (isInstanceElement(obj)) {
-          obj.annotations[CORE_ANNOTATIONS.PARENT] = [obj.value.projectKey]
-          delete obj.value.projectKey
-        }
+        setTypeDeploymentAnnotations(obj)
+        await addAnnotationRecursively(obj, CORE_ANNOTATIONS.CREATABLE)
+        await addAnnotationRecursively(obj, CORE_ANNOTATIONS.UPDATABLE)
+        await addAnnotationRecursively(obj, CORE_ANNOTATIONS.DELETABLE)
+      })
+    elements
+      .filter(obj => jsmSupportedTypes.includes(obj.elemID.typeName))
+      .filter(isInstanceElement)
+      .forEach(obj => {
+        obj.annotations[CORE_ANNOTATIONS.PARENT] = [obj.value.projectKey]
+        delete obj.value.projectKey
       })
   },
   deploy: async (changes: Change<InstanceElement>[]) => {

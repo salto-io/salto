@@ -14,13 +14,13 @@
 * limitations under the License.
 */
 
-import { filterUtils, elements as adapterElements } from '@salto-io/adapter-components'
+import { filterUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { InstanceElement, ReferenceExpression, Element, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { getDefaultConfig } from '../../src/config/config'
 import jsmTypesFilter from '../../src/filters/jsm_types_filter'
 import { createEmptyType, getFilterParams } from '../utils'
-import { CUSTOMER_PERMISSIONS_TYPE, JIRA, PROJECT_TYPE } from '../../src/constants'
+import { CUSTOMER_PERMISSIONS_TYPE, PROJECT_TYPE } from '../../src/constants'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -55,7 +55,6 @@ describe('jsmTypesFilter', () => {
           name: 'project1',
           projectTypeKey: 'service_desk',
         },
-        [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1']
       )
     })
     describe('on fetch', () => {

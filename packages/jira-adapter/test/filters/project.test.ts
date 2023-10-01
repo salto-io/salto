@@ -16,6 +16,7 @@
 import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils, deployment } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
+import _ from 'lodash'
 import { getDefaultConfig } from '../../src/config/config'
 import JiraClient from '../../src/client/client'
 import { JIRA } from '../../src/constants'
@@ -51,10 +52,13 @@ describe('projectFilter', () => {
 
     deployChangeMock.mockClear()
     const elementsSource = getLicenseElementSource(true)
+    const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+    config.fetch.enableJSM = true
     filter = projectFilter(getFilterParams({
       client,
       paginator,
       elementsSource,
+      config,
     })) as typeof filter
 
     type = new ObjectType({
@@ -216,6 +220,7 @@ describe('projectFilter', () => {
     let change: Change
 
     beforeEach(async () => {
+      instance.value.key = 'P1'
       const afterInstance = instance.clone()
       afterInstance.value.workflowScheme = 1
       afterInstance.value.id = 2
@@ -278,6 +283,25 @@ describe('projectFilter', () => {
         '/rest/api/2/project/2/priorityscheme',
         {
           id: 10,
+        },
+        undefined,
+      )
+    })
+    it('should deploy customerPermissions modification', async () => {
+      instance.value.customerPermissions = {
+        serviceDeskOpenAccess: true,
+      }
+      const afterInstance = instance.clone()
+      afterInstance.value.customerPermissions = {
+        serviceDeskOpenAccess: false,
+      }
+      change = toChange({ before: instance, after: afterInstance })
+      await filter.deploy([change])
+      expect(deployChangeMock).toHaveBeenCalledTimes(0)
+      expect(connection.post).toHaveBeenCalledWith(
+        '/rest/servicedesk/1/servicedesk/P1/settings/requestsecurity',
+        {
+          serviceDeskOpenAccess: false,
         },
         undefined,
       )

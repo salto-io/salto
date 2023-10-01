@@ -83,17 +83,6 @@ const addPermissionsToCustomRecordTypes = (
         .filter(values.isPlainRecord)
         .forEach(async val => {
           addPermissionToCustomRecordTypes(val, customRecordChangedMap, roleName, roleToPermittedroleMap)
-          // if (isReferenceExpression(val.permkey)
-          //   && isObjectType(val.permkey.topLevelParent)
-          //   && isCustomRecordType(val.permkey.topLevelParent)) {
-          //   const custRecord = customRecordChangedMap.get(val.permkey.topLevelParent.elemID.typeName)
-          //   if (custRecord !== undefined) {
-          //     custRecord.annotations.permissions.permission[roleName] = {
-          //       permittedlevel: val.permlevel,
-          //       permittedrole: roleToPermittedroleMap.get(role.elemID.getFullName()),
-          //     }
-          //   }
-          // }
         })
     }
   })

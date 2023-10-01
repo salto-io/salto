@@ -66,12 +66,12 @@ describe('elements generator', () => {
       expect(types).toHaveLength(testParams.numOfTypes)
       expect(
         _.uniq(objects.map(obj => obj.elemID.getFullName()))
-      ).toHaveLength(testParams.numOfObjs + 9) // 7 default types + 2q additional type
+      ).toHaveLength(testParams.numOfObjs + 11) // 7 default types + 2q additional type
       expect(profiles).toHaveLength(testParams.numOfProfiles * 4)
       expect(_.uniq(profiles.map(p => p.elemID.getFullName()))).toHaveLength(
         testParams.numOfProfiles
       )
-      expect(records).toHaveLength(testParams.numOfRecords + 6) // 6 default instance fragments
+      expect(records).toHaveLength(testParams.numOfRecords + 7) // 7 default instance fragments
     })
     // eslint-disable-next-line
     it.skip('should create list and map types', async () => {
@@ -114,9 +114,12 @@ describe('elements generator', () => {
         { fullName: 'dummy.Full.instance.FullInst1', numOfFragments: 1 },
         { fullName: 'dummy.Full.instance.FullInst2', numOfFragments: 1 },
         { fullName: 'dummy.Full', numOfFragments: 1 },
-        { fullName: 'dummy.FullWithIA.instance.FullInst1WithIA', numOfFragments: 1 },
-        { fullName: 'dummy.FullWithIA', numOfFragments: 1 },
-        { fullName: 'dummy.customFieldWithIA', numOfFragments: 1 },
+        { fullName: 'dummy.FullWithIV.instance.FullInst1WithIV', numOfFragments: 1 },
+        { fullName: 'dummy.FullWithIV', numOfFragments: 1 },
+        { fullName: 'dummy.customFieldWithIV', numOfFragments: 1 },
+        { fullName: 'dummy.FullComplexWithIV.instance.FullComplexInstWithIV', numOfFragments: 1 },
+        { fullName: 'dummy.FullComplexWithIV', numOfFragments: 1 },
+        { fullName: 'dummy.FullComplexWithIV__userObj', numOfFragments: 1 },
         { fullName: 'dummy.Partial', numOfFragments: 2 },
         { fullName: 'dummy.Partial.instance.PartialInst', numOfFragments: 2 },
       ]

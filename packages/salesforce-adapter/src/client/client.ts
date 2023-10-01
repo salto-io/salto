@@ -489,6 +489,8 @@ export const getConnectionDetails = async (
   }
 }
 
+const ACCOUNT_ID_VERSION = '1'
+
 export const validateCredentials = async (
   creds: Credentials, minApiRequestsRemaining = 0, connection?: Connection,
 ): Promise<AccountInfo> => {
@@ -502,13 +504,13 @@ export const validateCredentials = async (
   }
   if (creds.isSandbox) {
     if (connection?.instanceUrl === undefined) {
-      throw new Error('Salesforve sandboxes must have an instance url')
+      throw new Error('Salesforce sandboxes must have an instance url')
     }
     return {
       accountId: connection.instanceUrl,
       accountType,
       isProduction,
-      extraInformation: { orgId },
+      extraInformation: { orgId, accountIdVersion: ACCOUNT_ID_VERSION },
     }
   }
   return {

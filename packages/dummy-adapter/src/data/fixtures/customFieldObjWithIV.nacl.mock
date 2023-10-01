@@ -1,4 +1,4 @@
-type dummy.customFieldWithIA {
+type dummy.customFieldWithIV {
   annotations {
     string apiName {
     }
@@ -11,10 +11,12 @@ type dummy.customFieldWithIA {
     {
       value = "apiName"
       indexed = false
+      highlighted = true
     },
     {
       value = "label"
       indexed = true
+      highlighted = false
     },
   ]
 }

@@ -163,11 +163,11 @@ export const buildMetadataQuery = ({
     const lastChangedAt = _.max(
       makeArray(instance.subInstancesFileProperties)
         .map(prop => prop.lastModifiedDate)
-        .concat(instance.changedAt ?? '')
+        .concat(makeArray(instance.changedAt))
         .filter(changedAt => changedAt)
         .map(changedAt => new Date(changedAt).getTime())
     )
-    return changedAtFromSingleton && lastChangedAt
+    return changedAtFromSingleton !== undefined && lastChangedAt !== undefined
       ? new Date(changedAtFromSingleton).getTime() < lastChangedAt
       : true
   }

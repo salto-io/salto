@@ -196,11 +196,11 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: installedPackageGeneratedDependencies },
   { creator: customTypeSplit },
   { creator: profileInstanceSplitFilter },
-  // Any filter that relies on _created_at or _changed_at should run after removeUnixTimeZero
-  { creator: removeUnixTimeZeroFilter },
-  { creator: metadataInstancesAliasesFilter },
-  // createChangedAtSingletonInstanceFilter should run last
+  // createChangedAtSingletonInstanceFilter before removeUnixTimeZeroFilter
   { creator: changedAtSingletonFilter },
+  { creator: metadataInstancesAliasesFilter },
+  // removeUnixTimeZeroFilter should run last
+  { creator: removeUnixTimeZeroFilter },
 ]
 
 // By default we run all filters and provide a client

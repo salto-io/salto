@@ -30,10 +30,10 @@ import {
   InstanceElement,
   isAdditionOrModificationChange, isElement,
   isField,
-  isInstanceElement,
+  isInstanceElement, isListType,
   isObjectType,
   isReferenceExpression,
-  isRemovalOrModificationChange,
+  isRemovalOrModificationChange, ListType,
   ObjectType,
   ReadOnlyElementsSource,
   ReferenceExpression,
@@ -558,3 +558,7 @@ export const getElementAuthorInformation = ({ annotations }: Element): AuthorInf
   changedBy: annotations[CORE_ANNOTATIONS.CHANGED_BY],
   changedAt: annotations[CORE_ANNOTATIONS.CHANGED_AT],
 })
+
+export const asListType = (type: TypeElement): ListType => (
+  isListType(type) ? type : new ListType(type)
+)

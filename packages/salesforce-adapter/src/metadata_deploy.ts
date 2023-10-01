@@ -356,7 +356,7 @@ export const deployMetadata = async (
     return { appliedChanges: [], errors: validationErrors }
   }
   const changeToDeployedIds: Record<string, MetadataIdsMap> = {}
-  const typeAndNameToElemId: Record<string, NameToElemIDMap> = {}
+  const deployedComponentsElemIdsByType: Record<string, NameToElemIDMap> = {}
 
   await awu(validChanges).forEach(async change => {
     const deployedIds = await addChangeToPackage(pkg, change, nestedMetadataTypes)
@@ -368,7 +368,7 @@ export const deployMetadata = async (
       names.forEach(name => {
         nameToElemId[name] = elemID
       })
-      typeAndNameToElemId[type] = nameToElemId
+      deployedComponentsElemIdsByType[type] = nameToElemId
     })
   })
 
@@ -397,7 +397,7 @@ export const deployMetadata = async (
   }, undefined, 2))
 
   const { errors, successfulFullNames } = processDeployResponse(
-    sfDeployRes, pkg.getDeletionsPackageName(), typeAndNameToElemId
+    sfDeployRes, pkg.getDeletionsPackageName(), deployedComponentsElemIdsByType
   )
   const isSuccessfulChange = (change: Change<MetadataInstanceElement>): boolean => {
     const changeElem = getChangeData(change)

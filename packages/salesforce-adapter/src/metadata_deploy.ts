@@ -27,7 +27,8 @@ import { SaltoError,
   isContainerType,
   isAdditionChange,
   SaltoElementError,
-  SeverityLevel } from '@salto-io/adapter-api'
+  SeverityLevel,
+  ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 
 
@@ -55,6 +56,8 @@ export const DEPLOY_WRAPPER_INSTANCE_MARKER = '_magic_constant_that_means_this_i
 
 // Mapping of metadata type to fullNames
 type MetadataIdsMap = Record<string, Set<string>>
+
+type NameToElemIDMap = Record<string, ElemID>
 
 export type NestedMetadataTypeInfo = {
   nestedInstanceFields: string[]
@@ -177,8 +180,6 @@ type MetadataId = {
   fullName: string
 }
 
-type FailureMetadata = MetadataId & { deployMessage: DeployMessage }
-
 const getUnFoundDeleteName = (
   message: DeployMessage,
   deletionsPackageName: string
@@ -199,17 +200,21 @@ const isUnFoundDelete = (message: DeployMessage, deletionsPackageName: string): 
 const processDeployResponse = (
   result: SFDeployResult,
   deletionsPackageName: string,
+  typeAndNameToElemId: Record<string, NameToElemIDMap>
+
 ): { successfulFullNames: ReadonlyArray<MetadataId>
-  nonComponentErrors: ReadonlyArray<SaltoError | SaltoElementError>
-  componentErrorsFullNames: ReadonlyArray<FailureMetadata> } => {
+  errors: ReadonlyArray<SaltoError | SaltoElementError> } => {
   const allFailureMessages = makeArray(result.details)
     .flatMap(detail => makeArray(detail.componentFailures))
 
-  const componentErrorsFullNames = allFailureMessages
-    .map(failure => (
-      { type: failure.componentType,
-        fullName: failure.fullName,
-        deployMessage: getUserFriendlyDeployMessage(failure) }))
+  const componentErrors = allFailureMessages
+    .filter(failure => !isUnFoundDelete(failure, deletionsPackageName))
+    .map(getUserFriendlyDeployMessage)
+    .map(failure => ({
+      elemID: typeAndNameToElemId[failure.componentType]?.[failure.fullName],
+      message: failure.problem,
+      severity: 'Error' as SeverityLevel,
+    }))
 
   const testFailures = makeArray(result.details)
     .flatMap(detail => makeArray((detail.runTestResult as RunTestsResult)?.failures))
@@ -230,16 +235,16 @@ const processDeployResponse = (
     .map(codeCoverageWarning => codeCoverageWarning.message)
     .map(message => ({ message, severity: 'Error' as SeverityLevel }))
 
-  const nonComponentErrors = [...testErrors, ...codeCoverageWarningErrors]
+  const errors = [...testErrors, ...componentErrors, ...codeCoverageWarningErrors]
 
   if (isDefined(result.errorMessage)) {
-    nonComponentErrors.push({ message: result.errorMessage, severity: 'Error' as SeverityLevel })
+    errors.push({ message: result.errorMessage, severity: 'Error' as SeverityLevel })
   }
 
   // In checkOnly none of the changes are actually applied
   if (!result.checkOnly && result.rollbackOnError && !result.success) {
     // if rollbackOnError and we did not succeed, nothing was applied as well
-    return { successfulFullNames: [], componentErrorsFullNames, nonComponentErrors }
+    return { successfulFullNames: [], errors }
   }
 
   const allSuccessMessages = makeArray(result.details)
@@ -256,7 +261,7 @@ const processDeployResponse = (
     .map(success => ({ type: success.componentType, fullName: success.fullName }))
     .concat(unFoundDeleteNames)
 
-  return { successfulFullNames, componentErrorsFullNames, nonComponentErrors }
+  return { successfulFullNames, errors }
 }
 
 const getChangeError = async (change: Change): Promise<SaltoElementError | undefined> => {
@@ -351,9 +356,20 @@ export const deployMetadata = async (
     return { appliedChanges: [], errors: validationErrors }
   }
   const changeToDeployedIds: Record<string, MetadataIdsMap> = {}
+  const typeAndNameToElemId: Record<string, NameToElemIDMap> = {}
+
   await awu(validChanges).forEach(async change => {
     const deployedIds = await addChangeToPackage(pkg, change, nestedMetadataTypes)
-    changeToDeployedIds[getChangeData(change).elemID.getFullName()] = deployedIds
+    const { elemID } = getChangeData(change)
+    changeToDeployedIds[elemID.getFullName()] = deployedIds
+
+    Object.entries(deployedIds).forEach(([type, names]) => {
+      const nameToElemId: NameToElemIDMap = {}
+      names.forEach(name => {
+        nameToElemId[name] = elemID
+      })
+      typeAndNameToElemId[type] = nameToElemId
+    })
   })
 
   const pkgData = await pkg.getZip()
@@ -380,8 +396,8 @@ export const deployMetadata = async (
     })),
   }, undefined, 2))
 
-  const { nonComponentErrors, componentErrorsFullNames, successfulFullNames } = processDeployResponse(
-    sfDeployRes, pkg.getDeletionsPackageName()
+  const { errors, successfulFullNames } = processDeployResponse(
+    sfDeployRes, pkg.getDeletionsPackageName(), typeAndNameToElemId
   )
   const isSuccessfulChange = (change: Change<MetadataInstanceElement>): boolean => {
     const changeElem = getChangeData(change)
@@ -393,36 +409,10 @@ export const deployMetadata = async (
     )
   }
 
-  const isComponentFailureChange = (change: Change<MetadataInstanceElement>): boolean => {
-    const changeElem = getChangeData(change)
-    const changeDeployedIds = changeToDeployedIds[changeElem.elemID.getFullName()]
-    // TODO - this logic is not perfect, it might produce false positives when there are
-    // child xml instances (because we pass in everything with a single change)
-    return (componentErrorsFullNames.some(
-      failureId => changeDeployedIds[failureId.type]?.has(failureId.fullName)
-    ))
-  }
-
-  const componentErrorsValidChanges = validChanges.filter(isComponentFailureChange)
-
-  const componentErrors = componentErrorsValidChanges
-    .flatMap(change => {
-      const changeElem = getChangeData(change)
-      return componentErrorsFullNames.filter(error =>
-        !isUnFoundDelete(error.deployMessage, pkg.getDeletionsPackageName())
-        && error.type === changeElem.elemID.typeName
-        && error.fullName === changeElem.elemID.name)
-        .map(error => (
-          { elemID: changeElem.elemID,
-            message: error.deployMessage.problem,
-            severity: 'Error' as SeverityLevel }
-        ))
-    })
-
   const deploymentUrl = await getDeployStatusUrl(sfDeployRes, client)
   return {
     appliedChanges: validChanges.filter(isSuccessfulChange),
-    errors: [...validationErrors, ...nonComponentErrors, ...componentErrors],
+    errors: [...validationErrors, ...errors],
     extraProperties: {
       groups: isQuickDeployable(sfDeployRes)
         ? [{ id: groupId, requestId: sfDeployRes.id, hash: planHash, url: deploymentUrl }]

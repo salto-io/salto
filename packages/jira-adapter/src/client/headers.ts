@@ -18,6 +18,10 @@ export const FORCE_ACCEPT_LANGUAGE_HEADERS = {
   'X-Force-Accept-Language': 'true',
 }
 
+export const EXPERIMENTAL_API_HEADERS = {
+  'X-ExperimentalApi': 'opt-in',
+}
+
 export const PRIVATE_API_HEADERS = {
   'X-Atlassian-Token': 'no-check',
 }

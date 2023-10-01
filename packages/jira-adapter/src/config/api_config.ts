@@ -836,9 +836,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'priorityScheme', fieldType: 'number' },
         { fieldName: 'issueTypeScheme', fieldType: ISSUE_TYPE_SCHEMA_NAME },
         { fieldName: 'fieldContexts', fieldType: `list<${FIELD_CONTEXT_TYPE_NAME}>` },
+        { fieldName: 'serviceDeskId', fieldType: 'list<unknown>' },
       ],
       fieldsToHide: [
         { fieldName: 'id' },
+        { fieldName: 'serviceDeskId' },
       ],
       fieldsToOmit: [
         { fieldName: 'style' },
@@ -1644,7 +1646,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
 }
 
-const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
+const SCRIPT_RUNNER_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   ScriptRunnerListener: {
     request: {
       url: '/sr-dispatcher/jira/admin/token/scriptevents',
@@ -1785,8 +1787,104 @@ const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
     },
   },
 }
+const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
+  RequestType: {
+    request: {
+      url: '/rest/servicedeskapi/servicedesk/{serviceDeskId}/requesttype',
+    },
+    transformation: {
+      idFields: ['name', 'projectKey'],
+      sourceTypeName: 'RequestType__values',
+      dataField: 'values',
+      fieldsToOmit: [
+        { fieldName: 'icon' },
+        { fieldName: '_expands' },
+        { fieldName: 'serviceDeskId' },
+        { fieldName: 'portalId' },
+      ],
+      fieldsToHide: [
+        { fieldName: 'id' },
+      ],
+    },
+  },
+  CustomerPermissions: {
+    request: {
+      url: '/rest/servicedesk/1/servicedesk/{projectKey}/settings/requestsecurity',
+    },
+    transformation: {
+      idFields: ['projectName'],
+      dataField: '.',
+      fieldsToOmit: [
+        { fieldName: '_links' },
+        { fieldName: 'projectName' },
+        { fieldName: 'emailAddress' },
+        { fieldName: 'portalUrl' },
+        { fieldName: 'portalId' },
+        { fieldName: 'anonymousAccessLinkedConfluenceSpace' },
+        { fieldName: 'unlicensedAccessLinkedConfluenceSpace' },
+        { fieldName: 'globalPublicSignup' },
+        { fieldName: 'globalAnonymousAccess' },
+        { fieldName: 'canAdministerJIRA' },
+        { fieldName: 'customerRoleMisconfigured' },
+      ],
+      fieldsToHide: [
+        { fieldName: 'id' },
+      ],
+    },
+  },
+  Queue: {
+    request: {
+      url: '/rest/servicedeskapi/servicedesk/{serviceDeskId}/queue',
+    },
+    transformation: {
+      idFields: ['name', 'projectKey'],
+      sourceTypeName: 'Queue__values',
+      dataField: 'values',
+      fieldsToHide: [
+        { fieldName: 'id' },
+      ],
+      fieldsToOmit: [
+        { fieldName: '_links' },
+      ],
+    },
+  },
+  PortalGroup: {
+    request: {
+      url: '/rest/servicedeskapi/servicedesk/{serviceDeskId}/requesttypegroup',
+    },
+    transformation: {
+      idFields: ['name', 'projectKey'],
+      sourceTypeName: 'PortalGroup__values',
+      dataField: 'values',
+      fieldsToHide: [
+        { fieldName: 'id' },
+      ],
+    },
+  },
+  Calendar: {
+    request: {
+      url: '/rest/workinghours/1/internal/dialog/{projectKey}',
+    },
+    transformation: {
+      idFields: ['name', 'projectKey'],
+      sourceTypeName: 'Calendar__calendars',
+      dataField: 'calendars',
+      fieldsToHide: [
+        { fieldName: 'id' },
+      ],
+    },
+  },
+}
 
-export const DUCKTYPE_SUPPORTED_TYPES = {
+const JSM_DUCKTYPE_SUPPORTED_TYPES = {
+  RequestType: ['RequestType'],
+  CustomerPermissions: ['CustomerPermissions'],
+  Queue: ['Queue'],
+  PortalGroup: ['PortalGroup'],
+  Calendar: ['Calendar'],
+}
+
+export const SCRIPT_RUNNER_DUCKTYPE_SUPPORTED_TYPES = {
   ScriptRunnerListener: ['ScriptRunnerListener'],
   ScriptFragment: ['ScriptFragment'],
   ScheduledJob: ['ScheduledJob'],
@@ -1813,12 +1911,26 @@ const SCRIPT_RUNNER_TRANSFORMATION_DEFAULTS: configUtils.TransformationDefaultCo
   nestStandaloneInstances: true,
 }
 
-export const DUCKTYPE_API_DEFINITIONS: JiraDuckTypeConfig = {
+export const SCRIPT_RUNNER_DUCKTYPE_API_DEFINITIONS: JiraDuckTypeConfig = {
   typeDefaults: {
     transformation: SCRIPT_RUNNER_TRANSFORMATION_DEFAULTS,
   },
-  types: DUCKTYPE_TYPES,
-  supportedTypes: DUCKTYPE_SUPPORTED_TYPES,
+  types: SCRIPT_RUNNER_DUCKTYPE_TYPES,
+  supportedTypes: SCRIPT_RUNNER_DUCKTYPE_SUPPORTED_TYPES,
+}
+
+const JSM_TRANSFORMATION_DEFAULTS: configUtils.TransformationDefaultConfig = {
+  idFields: DEFAULT_ID_FIELDS,
+  fieldsToOmit: FIELDS_TO_OMIT,
+  nestStandaloneInstances: true,
+}
+
+export const JSM_DUCKTYPE_API_DEFINITIONS: JiraDuckTypeConfig = {
+  typeDefaults: {
+    transformation: JSM_TRANSFORMATION_DEFAULTS,
+  },
+  types: JSM_DUCKTYPE_TYPES,
+  supportedTypes: JSM_DUCKTYPE_SUPPORTED_TYPES,
 }
 
 const SUPPORTED_TYPES = {
@@ -2003,6 +2115,9 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
       // Needed to create a different transformation configuration for security scheme
       // that is fetched from the recurse into of a project and a normal security scheme
       { typeName: 'ProjectSecurityScheme', cloneFrom: 'SecurityScheme' },
+      // Nedded to create a supported type for serviceDeskId
+      // that are fetched from the recurse into of a project.
+      { typeName: 'ServiceDeskId', cloneFrom: 'SecurityScheme' },
     ],
   },
   jiraSwagger: {

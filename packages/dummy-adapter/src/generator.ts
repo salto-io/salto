@@ -714,14 +714,17 @@ export const generateElements = async (
           {
             value: 'active',
             indexed: true,
+            highlighted: true,
           },
           {
             value: 'name',
             indexed: false,
+            highlighted: false,
           },
           {
             value: 'doesNotExist',
             indexed: false,
+            highlighted: true,
           },
         ],
       },
@@ -767,28 +770,34 @@ export const generateElements = async (
           {
             value: 'SharedButDiffField',
             indexed: true,
+            highlighted: true,
           },
           {
             value: 'SharedField',
             indexed: false,
+            highlighted: false,
           },
           {
             value: 'doesNotExist',
             indexed: false,
+            highlighted: true,
           },
         ],
         [CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES]: [
           {
             value: 'SharedButDiffAnno',
             indexed: true,
+            highlighted: false,
           },
           {
             value: 'SharedAnno',
             indexed: false,
+            highlighted: true,
           },
           {
             value: 'doesNotExist',
             indexed: false,
+            highlighted: false,
           },
         ],
       },
@@ -825,14 +834,17 @@ export const generateElements = async (
           {
             value: 'Field',
             indexed: false,
+            highlighted: true,
           },
           {
             value: 'active',
             indexed: true,
+            highlighted: false,
           },
           {
             value: 'doesNotExist',
             indexed: false,
+            highlighted: true,
           },
         ],
       },

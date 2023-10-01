@@ -23,7 +23,7 @@ import _ from 'lodash'
 import { deployChanges } from '../../deployment/standard_deployment'
 import JiraClient, { graphQLResponseType } from '../../client/client'
 import { QUERY } from './layout_queries'
-import { ISSUE_LAYOUT_CONFIG_ITEM_SCHEME, ISSUE_LAYOUT_RESPONSE_SCHEME, IssueLayoutConfig, IssueLayoutConfigItem, IssueLayoutResponse, containerIssueLayoutResponse } from './layout_types'
+import { ISSUE_LAYOUT_CONFIG_ITEM_SCHEME, ISSUE_LAYOUT_RESPONSE_SCHEME, issueLayoutConfig, layoutConfigItem, IssueLayoutResponse, containerIssueLayoutResponse } from './layout_types'
 import { ISSUE_LAYOUT_TYPE, JIRA } from '../../constants'
 
 const log = logger(module)
@@ -47,7 +47,7 @@ const layoutTypeNameToDetails: Record<string, layoutTypeDetails> = {
 }
 
 const isIssueLayoutResponse = createSchemeGuard<IssueLayoutResponse>(ISSUE_LAYOUT_RESPONSE_SCHEME)
-const isIssueLayoutConfigItem = createSchemeGuard<IssueLayoutConfigItem>(ISSUE_LAYOUT_CONFIG_ITEM_SCHEME)
+const islayoutConfigItem = createSchemeGuard<layoutConfigItem>(ISSUE_LAYOUT_CONFIG_ITEM_SCHEME)
 
 export const getLayoutResponse = async ({
   variables,
@@ -70,15 +70,15 @@ export const getLayoutResponse = async ({
   return { data: undefined }
 }
 
-const fromIssueLayoutConfigRespToIssueLayoutConfig = (
+const fromlayoutConfigRespTolayoutConfig = (
   containers: containerIssueLayoutResponse[]
 ):
-  IssueLayoutConfig => {
+issueLayoutConfig => {
   const items = containers.flatMap(container => container.items.nodes.map(node => ({
     type: 'FIELD',
     sectionType: container.containerType,
     key: node.fieldItemId,
-  }))).filter(isIssueLayoutConfigItem)
+  }))).filter(islayoutConfigItem)
 
   return { items }
 }
@@ -105,7 +105,7 @@ export const getLayout = async ({
       id: issueLayoutResult.id,
       projectId: variables.projectId,
       extraDefinerId: variables.extraDefinerId,
-      issueLayoutConfig: fromIssueLayoutConfigRespToIssueLayoutConfig(containers),
+      issueLayoutConfig: fromlayoutConfigRespTolayoutConfig(containers),
     }
     const name = `${instance.value.name}_${issueLayoutResult.name}`
     const serviceIds = adapterElements.createServiceIds(value, 'id', layoutType.elemID)
@@ -121,12 +121,12 @@ export const getLayout = async ({
   return undefined
 }
 
-const deployIssueLayoutChanges = async (
+const deployLayoutChange = async (
   change: Change<InstanceElement>,
   client: JiraClient,
 ): Promise<void> => {
-  const issueLayout = getChangeData(change)
-  const items = issueLayout.value.issueLayoutConfig.items.map((item: IssueLayoutConfigItem) => {
+  const layout = getChangeData(change)
+  const items = layout.value.issueLayoutConfig.items.map((item: layoutConfigItem) => {
     if (isResolvedReferenceExpression(item.key)) {
       const key = item.key.value.value.id
       return {
@@ -142,11 +142,11 @@ const deployIssueLayoutChanges = async (
     return undefined
   }).filter(isDefined)
 
-  if (isResolvedReferenceExpression(issueLayout.value.projectId)
-    && isResolvedReferenceExpression(issueLayout.value.extraDefinerId)) {
+  if (isResolvedReferenceExpression(layout.value.projectId)
+    && isResolvedReferenceExpression(layout.value.extraDefinerId)) {
     const data = {
-      projectId: issueLayout.value.projectId.value.value.id,
-      extraDefinerId: issueLayout.value.extraDefinerId.value.value.id,
+      projectId: layout.value.projectId.value.value.id,
+      extraDefinerId: layout.value.extraDefinerId.value.value.id,
       issueLayoutType: 'ISSUE_VIEW',
       owners: [],
       issueLayoutConfig: {
@@ -155,16 +155,16 @@ const deployIssueLayoutChanges = async (
     }
     if (isAdditionChange(change)) {
       const variables = {
-        projectId: issueLayout.value.projectId.value.value.id,
-        extraDefinerId: issueLayout.value.extraDefinerId.value.value.id,
+        projectId: layout.value.projectId.value.value.id,
+        extraDefinerId: layout.value.extraDefinerId.value.value.id,
       }
       const response = await getLayoutResponse({ variables, client })
       if (!isIssueLayoutResponse(response.data)) {
         throw Error('Failed to deploy issue layout changes due to bad response from jira service')
       }
-      issueLayout.value.id = response.data.issueLayoutConfiguration.issueLayoutResult.id
+      layout.value.id = response.data.issueLayoutConfiguration.issueLayoutResult.id
     }
-    const url = `/rest/internal/1.0/issueLayouts/${issueLayout.value.id}`
+    const url = `/rest/internal/1.0/issueLayouts/${layout.value.id}`
     await client.put({ url, data })
     return undefined
   }
@@ -188,7 +188,7 @@ export const deployLayoutChanges = async ({
     change => isInstanceChange(change) && getChangeData(change).elemID.typeName === typeName
   )
   const deployResult = await deployChanges(issueLayoutsChanges.filter(isInstanceChange),
-    async change => deployIssueLayoutChanges(change, client))
+    async change => deployLayoutChange(change, client))
 
   return {
     leftoverChanges,

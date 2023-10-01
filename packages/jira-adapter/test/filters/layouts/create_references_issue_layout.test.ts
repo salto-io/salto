@@ -111,21 +111,21 @@ describe('createReferencesIssueLayoutFilter', () => {
         type: 'testField1',
       }
     )
-    const issueLayoutConfigItemType = new ObjectType({
-      elemID: new ElemID(JIRA, 'IssueLayoutConfigItem'),
+    const layoutConfigItemType = new ObjectType({
+      elemID: new ElemID(JIRA, 'layoutConfigItem'),
       fields: {
         key: { refType: fieldType },
         sectionType: { refType: BuiltinTypes.STRING },
         type: { refType: BuiltinTypes.STRING },
       },
     })
-    const issueLayoutConfigType = new ObjectType({
-      elemID: new ElemID(JIRA, 'IssueLayoutConfig'),
+    const layoutConfigType = new ObjectType({
+      elemID: new ElemID(JIRA, 'issueLayoutConfig'),
       fields: {
-        items: { refType: new ListType(issueLayoutConfigItemType) },
+        items: { refType: new ListType(layoutConfigItemType) },
       },
     })
-    const { issueLayoutType } = createLayoutType(ISSUE_LAYOUT_TYPE)
+    const issueLayoutType = createLayoutType(ISSUE_LAYOUT_TYPE).layoutType
 
     const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     config.fetch.enableIssueLayouts = true
@@ -160,8 +160,8 @@ describe('createReferencesIssueLayoutFilter', () => {
         projectInstance,
         fieldType,
         fieldInstance1,
-        issueLayoutConfigItemType,
-        issueLayoutConfigType,
+        layoutConfigItemType,
+        layoutConfigType,
         issueLayoutType,
         issueLayoutInstance,
       ]

@@ -20,7 +20,7 @@ import { ISSUE_LAYOUT_TYPE, PROJECT_TYPE } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { createLayoutType } from './layout_types'
 import { addAnnotationRecursively, setTypeDeploymentAnnotations } from '../../utils'
-import { deployLayoutChanges, getLayout, getLayoutResponse } from './layouts_utils'
+import { deployLayoutChanges, getLayout, getLayoutResponse } from './layout_service_operations'
 
 const { isDefined } = lowerDashValues
 
@@ -66,7 +66,8 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) =>
     )
     const projectToScreenId = Object.fromEntries(Object.entries(await getProjectToScreenMapping(elements))
       .filter(([key]) => Object.keys(projectIdToProject).includes(key)))
-    const { issueLayoutType, subTypes } = createLayoutType(ISSUE_LAYOUT_TYPE)
+    const { subTypes } = createLayoutType(ISSUE_LAYOUT_TYPE)
+    const issueLayoutType = createLayoutType(ISSUE_LAYOUT_TYPE).layoutType
     elements.push(issueLayoutType)
     subTypes.forEach(type => elements.push(type))
 

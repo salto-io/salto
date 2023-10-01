@@ -79,7 +79,7 @@ describe('client', () => {
   })
   it('check if gqlpost returns a response if it is as expected', async () => {
     const innerData = {
-      issueLayoutConfiguration: {
+      layoutConfiguration: {
         issueLayoutResult: {
           id: '2',
           name: 'Default Issue Layout',

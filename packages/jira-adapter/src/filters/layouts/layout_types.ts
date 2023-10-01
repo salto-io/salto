@@ -20,10 +20,10 @@ import { elements as adapterElements } from '@salto-io/adapter-components'
 import { JIRA } from '../../constants'
 
 export const createLayoutType = (typeName: string): {
-  issueLayoutType: ObjectType
+  layoutType: ObjectType
   subTypes: ObjectType[]
 } => {
-  const issueLayoutItemType = new ObjectType({
+  const layoutItemType = new ObjectType({
     elemID: new ElemID(JIRA, 'issueLayoutItem'),
     fields: {
       type: { refType: BuiltinTypes.STRING },
@@ -32,14 +32,14 @@ export const createLayoutType = (typeName: string): {
     },
   })
 
-  const issueLayoutConfigType = new ObjectType({
+  const layoutConfigType = new ObjectType({
     elemID: new ElemID(JIRA, 'issueLayoutConfig'),
     fields: {
-      items: { refType: new ListType(issueLayoutItemType) },
+      items: { refType: new ListType(layoutItemType) },
     },
   })
 
-  const issueLayoutType = new ObjectType({
+  const layoutType = new ObjectType({
     elemID: new ElemID(JIRA, typeName),
     fields: {
       id: {
@@ -53,17 +53,17 @@ export const createLayoutType = (typeName: string): {
         refType: BuiltinTypes.NUMBER,
       },
       issueLayoutConfig: {
-        refType: issueLayoutConfigType,
+        refType: layoutConfigType,
       },
     },
     path: [JIRA, adapterElements.TYPES_PATH, typeName],
   })
 
   return {
-    issueLayoutType,
+    layoutType,
     subTypes: [
-      issueLayoutItemType,
-      issueLayoutConfigType,
+      layoutItemType,
+      layoutConfigType,
     ],
   }
 }
@@ -106,7 +106,7 @@ export type IssueLayoutResponse = {
     }
   }
 
-export type IssueLayoutConfigItem = {
+export type layoutConfigItem = {
   type: string
   sectionType: 'PRIMARY' | 'SECONDARY' | 'CONTENT'
   key: string
@@ -118,8 +118,8 @@ export const ISSUE_LAYOUT_CONFIG_ITEM_SCHEME = Joi.object({
   key: Joi.string().required(),
 }).unknown(true).required()
 
-export type IssueLayoutConfig = {
-    items: IssueLayoutConfigItem[]
+export type issueLayoutConfig = {
+    items: layoutConfigItem[]
 }
 
 export const ISSUE_LAYOUT_RESPONSE_SCHEME = Joi.object({

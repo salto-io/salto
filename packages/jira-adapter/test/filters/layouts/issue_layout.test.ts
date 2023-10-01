@@ -356,7 +356,7 @@ describe('issue layout filter', () => {
   describe('deploy', () => {
     let issueLayoutInstance: InstanceElement
     let afterIssueLayoutInstance: InstanceElement
-    const { issueLayoutType } = createLayoutType(ISSUE_LAYOUT_TYPE)
+    const issueLayoutType = createLayoutType(ISSUE_LAYOUT_TYPE).layoutType
     beforeEach(() => {
       client = mockCli.client
       connection = mockCli.connection

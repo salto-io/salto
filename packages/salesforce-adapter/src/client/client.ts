@@ -500,6 +500,17 @@ export const validateCredentials = async (
       `Remaining limits: ${remainingDailyRequests}, needed: ${minApiRequestsRemaining}`
     )
   }
+  if (creds.isSandbox) {
+    if (connection?.instanceUrl === undefined) {
+      throw new Error('Salesforve sandboxes must have an instance url')
+    }
+    return {
+      accountId: connection.instanceUrl,
+      accountType,
+      isProduction,
+      extraInformation: { orgId },
+    }
+  }
   return {
     accountId: orgId,
     accountType,

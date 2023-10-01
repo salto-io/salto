@@ -18,7 +18,7 @@ import { filterUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { InstanceElement, ReferenceExpression, Element, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { getDefaultConfig } from '../../src/config/config'
-import jsmTypesFilter from '../../src/filters/jsm_types_filter'
+import jsmTypesFetchFilter from '../../src/filters/jsm_types_fetch_filter'
 import { createEmptyType, getFilterParams } from '../utils'
 import { CUSTOMER_PERMISSIONS_TYPE, PROJECT_TYPE } from '../../src/constants'
 
@@ -34,8 +34,8 @@ jest.mock('@salto-io/adapter-components', () => {
   }
 })
 
-describe('jsmTypesFilter', () => {
-    type FilterType = filterUtils.FilterWith<'deploy' | 'onFetch'>
+describe('jsmTypesFetchFilter', () => {
+    type FilterType = filterUtils.FilterWith<'onFetch'>
     let filter: FilterType
     let elements: Element[]
     const projectType = createEmptyType(PROJECT_TYPE)
@@ -46,7 +46,7 @@ describe('jsmTypesFilter', () => {
     beforeEach(() => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
-      filter = jsmTypesFilter(getFilterParams({ config })) as typeof filter
+      filter = jsmTypesFetchFilter(getFilterParams({ config })) as typeof filter
       projectInstance = new InstanceElement(
         'project1',
         projectType,
@@ -87,74 +87,11 @@ describe('jsmTypesFilter', () => {
       it('should do nothing if enableJSM is false', async () => {
         const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
         config.fetch.enableJSM = false
-        filter = jsmTypesFilter(getFilterParams({ config })) as typeof filter
+        filter = jsmTypesFetchFilter(getFilterParams({ config })) as typeof filter
         await filter.onFetch(elements)
         expect(customerPermissionsInstance.annotations[CORE_ANNOTATIONS.PARENT]).toBeUndefined()
         expect(customerPermissionsInstance.value.projectKey)
           .toEqual(new ReferenceExpression(projectInstance.elemID, projectInstance))
-      })
-    })
-    describe('deploy', () => {
-      beforeEach(async () => {
-        jest.clearAllMocks()
-        customerPermissionsInstance = new InstanceElement(
-          'customerPermissions1',
-          customerPermissionsType,
-          {
-            id: 11111,
-            manageEnabled: false,
-            autocompleteEnabled: false,
-            serviceDeskOpenAccess: true,
-          },
-          undefined,
-          {
-            [CORE_ANNOTATIONS.PARENT]: [
-              new ReferenceExpression(projectInstance.elemID, projectInstance),
-            ],
-          },
-        )
-        elements = [projectType, projectInstance, customerPermissionsType, customerPermissionsInstance]
-      })
-      it('should pass the correct params to deployChange on update', async () => {
-        const clonedCustomerPermissionsBefore = customerPermissionsInstance.clone()
-        const clonedCustomerPermissionsAfter = customerPermissionsInstance.clone()
-        clonedCustomerPermissionsAfter.value.serviceDeskOpenAccess = false
-        mockDeployChange.mockImplementation(async () => ({}))
-        const res = await filter
-          .deploy([{ action: 'modify', data: { before: clonedCustomerPermissionsBefore, after: clonedCustomerPermissionsAfter } }])
-        expect(mockDeployChange).toHaveBeenCalledTimes(1)
-        expect(res.leftoverChanges).toHaveLength(0)
-        expect(res.deployResult.errors).toHaveLength(0)
-        expect(res.deployResult.appliedChanges).toHaveLength(1)
-        expect(res.deployResult.appliedChanges)
-          .toEqual([
-            {
-              action: 'modify',
-              data: { before: clonedCustomerPermissionsBefore, after: clonedCustomerPermissionsAfter },
-            },
-          ])
-      })
-      it('should not deploy if enableJSM is false', async () => {
-        const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-        config.fetch.enableJSM = false
-        const clonedCustomerPermissionsBefore = customerPermissionsInstance.clone()
-        const clonedCustomerPermissionsAfter = customerPermissionsInstance.clone()
-        clonedCustomerPermissionsAfter.value.serviceDeskOpenAccess = false
-        filter = jsmTypesFilter(getFilterParams({ config })) as typeof filter
-        mockDeployChange.mockImplementation(async () => ({}))
-        const res = await filter
-          .deploy([{ action: 'modify', data: { before: clonedCustomerPermissionsBefore, after: clonedCustomerPermissionsAfter } }])
-        expect(mockDeployChange).toHaveBeenCalledTimes(0)
-        expect(res.leftoverChanges).toHaveLength(1)
-        expect(res.leftoverChanges)
-          .toEqual([
-            {
-              action: 'modify',
-              data: { before: clonedCustomerPermissionsBefore, after: clonedCustomerPermissionsAfter },
-            },
-          ])
-        expect(res.deployResult.errors).toHaveLength(0)
-        expect(res.deployResult.appliedChanges).toHaveLength(0)
       })
     })
 })

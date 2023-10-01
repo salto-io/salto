@@ -142,7 +142,8 @@ import scriptedFieldsIssueTypesFilter from './filters/script_runner/scripted_fie
 import scriptRunnerFilter from './filters/script_runner/script_runner_filter'
 import scriptRunnerListenersDeployFilter from './filters/script_runner/script_runner_listeners_deploy'
 import scriptedFragmentsDeployFilter from './filters/script_runner/scripted_fragments_deploy'
-import deployJsmTypesFilter from './filters/jsm_types_filter'
+import fetchJsmTypesFilter from './filters/jsm_types_fetch_filter'
+import deployJsmTypesFilter from './filters/jsm_types_deploy_filter'
 import scriptRunnerInstancesDeploy from './filters/script_runner/script_runner_instances_deploy'
 import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
 import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uuid'
@@ -264,6 +265,7 @@ export const DEFAULT_FILTERS = [
   // Must run after fieldReferencesFilter
   addJsmTypesAsFieldsFilter,
   issueLayoutFilter,
+  fetchJsmTypesFilter,
   // Must run after issueLayoutFilter
   removeSimpleFieldProjectFilter,
   createReferencesIssueLayoutFilter,

@@ -17,7 +17,7 @@ import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, Object
 import { filterUtils, client as clientUtils, deployment } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
-import { getDefaultConfig } from '../../src/config/config'
+import { getDefaultConfig, JiraConfig } from '../../src/config/config'
 import JiraClient from '../../src/client/client'
 import { JIRA } from '../../src/constants'
 import projectFilter from '../../src/filters/project'
@@ -40,6 +40,7 @@ describe('projectFilter', () => {
   let instance: InstanceElement
   let client: JiraClient
   let type: ObjectType
+  let config: JiraConfig
   let connection: MockInterface<clientUtils.APIConnection>
   const deployChangeMock = deployment.deployChange as jest.MockedFunction<
     typeof deployment.deployChange
@@ -52,13 +53,10 @@ describe('projectFilter', () => {
 
     deployChangeMock.mockClear()
     const elementsSource = getLicenseElementSource(true)
-    const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    config.fetch.enableJSM = true
     filter = projectFilter(getFilterParams({
       client,
       paginator,
       elementsSource,
-      config,
     })) as typeof filter
 
     type = new ObjectType({
@@ -287,7 +285,7 @@ describe('projectFilter', () => {
         undefined,
       )
     })
-    it('should deploy customerPermissions modification', async () => {
+    it('should deploy customerPermissions modification when enableJSM is true', async () => {
       instance.value.customerPermissions = {
         serviceDeskOpenAccess: true,
       }
@@ -296,6 +294,16 @@ describe('projectFilter', () => {
         serviceDeskOpenAccess: false,
       }
       change = toChange({ before: instance, after: afterInstance })
+      const { paginator } = mockClient()
+      const elementsSource = getLicenseElementSource(true)
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config.fetch.enableJSM = true
+      filter = projectFilter(getFilterParams({
+        client,
+        paginator,
+        elementsSource,
+        config,
+      })) as typeof filter
       await filter.deploy([change])
       expect(deployChangeMock).toHaveBeenCalledTimes(0)
       expect(connection.post).toHaveBeenCalledWith(
@@ -305,6 +313,29 @@ describe('projectFilter', () => {
         },
         undefined,
       )
+    })
+    it('should not deploy customerPermissions modification when enableJSM is false', async () => {
+      instance.value.customerPermissions = {
+        serviceDeskOpenAccess: true,
+      }
+      const afterInstance = instance.clone()
+      afterInstance.value.customerPermissions = {
+        serviceDeskOpenAccess: false,
+      }
+      change = toChange({ before: instance, after: afterInstance })
+      const { paginator } = mockClient()
+      const elementsSource = getLicenseElementSource(true)
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config.fetch.enableJSM = false
+      filter = projectFilter(getFilterParams({
+        client,
+        paginator,
+        elementsSource,
+        config,
+      })) as typeof filter
+      await filter.deploy([change])
+      expect(deployChangeMock).toHaveBeenCalledTimes(0)
+      expect(connection.post).toHaveBeenCalledTimes(0)
     })
   })
 

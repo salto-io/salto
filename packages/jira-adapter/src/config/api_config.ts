@@ -1826,6 +1826,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'globalAnonymousAccess' },
         { fieldName: 'canAdministerJIRA' },
         { fieldName: 'customerRoleMisconfigured' },
+        { fieldName: 'serviceDeskPublicSignup' },
       ],
       fieldsToHide: [
         { fieldName: 'id' },

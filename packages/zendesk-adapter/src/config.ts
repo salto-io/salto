@@ -2545,9 +2545,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   custom_object_fields: {
     request: {
       url: '/api/v2/custom_objects/{custom_object_key}/fields',
-      dependsOn: [
-        { pathParam: 'custom_object_key', from: { type: 'custom_objects', field: 'key' } },
-      ],
       queryParams: {
         ...DEFAULT_QUERY_PARAMS,
         include_standard_fields: 'true',

@@ -14,10 +14,13 @@
 * limitations under the License.
 */
 
-import { isInstanceElement } from '@salto-io/adapter-api'
+import { SeverityLevel, isInstanceElement } from '@salto-io/adapter-api'
 import { getParent, pathNaclCase } from '@salto-io/adapter-utils'
+import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { CALENDAR_TYPE, QUEUE_TYPE, PORTAL_GROUP_TYPE, REQUEST_TYPE_NAME } from '../constants'
+
+const { isDefined } = lowerDashValues
 
 const JSM_ELEMENT_DIRECTORY: Record<string, string> = {
   [QUEUE_TYPE]: 'queues',
@@ -29,17 +32,26 @@ const filter: FilterCreator = ({ config }) => ({
   name: 'jsmArrangePathsFilter',
   onFetch: async elements => {
     if (!config.fetch.enableJSM) {
-      return
+      return undefined
     }
-    const jsmInstances = elements
+    const fetchResults = elements
       .filter(isInstanceElement)
-      .filter(inst => Object.keys(JSM_ELEMENT_DIRECTORY).includes(inst.elemID.typeName))
-    jsmInstances.forEach(inst => {
-      const parent = getParent(inst)
-      const parentPath = (parent.path ?? []).slice(0, -1)
-      const dirName = JSM_ELEMENT_DIRECTORY[inst.elemID.typeName]
-      inst.path = [...parentPath, dirName, pathNaclCase(inst.elemID.name)]
-    })
+      .filter(instance => Object.keys(JSM_ELEMENT_DIRECTORY).includes(instance.elemID.typeName))
+      .map(inst => {
+        const parent = getParent(inst)
+        const parentPath = parent.path
+        if (parentPath === undefined) {
+          return {
+            message: `Failed to find parent path for ${inst.elemID.getFullName()}`,
+            severity: 'Warning' as SeverityLevel,
+          }
+        }
+        const dirName = JSM_ELEMENT_DIRECTORY[inst.elemID.typeName]
+        inst.path = [...parentPath.slice(0, -1), dirName, pathNaclCase(inst.elemID.name)]
+        return undefined
+      })
+    const errors = fetchResults.filter(isDefined)
+    return { errors }
   },
 })
 export default filter

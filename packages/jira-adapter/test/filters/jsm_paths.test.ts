@@ -16,27 +16,24 @@
 import { filterUtils, elements as adapterElements } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { InstanceElement, ReferenceExpression, Element, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { FilterResult } from '../../src/filter'
 import { getDefaultConfig } from '../../src/config/config'
-import jsmArrangePathsFilter from '../../src/filters/jsm_arrange_paths'
+import jsmArrangePathsFilter from '../../src/filters/jsm_paths'
 import { createEmptyType, getFilterParams } from '../utils'
-import { JIRA, PROJECT_TYPE, QUEUE_TYPE } from '../../src/constants'
+import { JIRA, PORTAL_GROUP_TYPE, PROJECT_TYPE, QUEUE_TYPE } from '../../src/constants'
 
 describe('jsmArrangePathsFilter', () => {
-    type FilterType = filterUtils.FilterWith<'deploy' | 'onFetch'>
+    type FilterType = filterUtils.FilterWith<'deploy' | 'onFetch', FilterResult>
     let filter: FilterType
     let elements: Element[]
-    const projectType = createEmptyType(PROJECT_TYPE)
     let projectInstance: InstanceElement
-    const queueType = createEmptyType(QUEUE_TYPE)
     let queueInstance: InstanceElement
+    let portalInstance: InstanceElement
 
     beforeEach(() => {
-      const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-      config.fetch.enableJSM = true
-      filter = jsmArrangePathsFilter(getFilterParams({ config })) as typeof filter
       projectInstance = new InstanceElement(
         'project1',
-        projectType,
+        createEmptyType(PROJECT_TYPE),
         {
           id: 11111,
           name: 'project1',
@@ -47,33 +44,59 @@ describe('jsmArrangePathsFilter', () => {
     })
     describe('on fetch', () => {
       beforeEach(async () => {
+        const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+        config.fetch.enableJSM = true
+        filter = jsmArrangePathsFilter(getFilterParams({ config })) as typeof filter
         queueInstance = new InstanceElement(
           'queue1',
-          queueType,
+          createEmptyType(QUEUE_TYPE),
           {
             id: 11111,
             name: 'All open',
 
           },
-          [JIRA, adapterElements.RECORDS_PATH, QUEUE_TYPE, 'queue1'],
+          undefined,
           {
             [CORE_ANNOTATIONS.PARENT]: [
               new ReferenceExpression(projectInstance.elemID, projectInstance),
             ],
           },
         )
-        elements = [projectType, projectInstance, queueType, queueInstance]
+        portalInstance = new InstanceElement(
+          'portal1',
+          createEmptyType(PORTAL_GROUP_TYPE),
+          {
+            id: 2222,
+            name: 'portal1',
+            projectTypeKey: 'service_desk',
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [
+              new ReferenceExpression(projectInstance.elemID, projectInstance),
+            ],
+          },
+        )
+        elements = [projectInstance, queueInstance, portalInstance]
       })
       it('should change path to be subdirectory of parent', async () => {
         await filter.onFetch(elements)
         expect(queueInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1', 'queues', 'queue1'])
+        expect(portalInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1', 'portalGroups', 'portal1'])
       })
       it('should not change path to be subdirectory of parent if enableJSM is false', async () => {
         const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
         config.fetch.enableJSM = false
         filter = jsmArrangePathsFilter(getFilterParams({ config })) as typeof filter
         await filter.onFetch(elements)
-        expect(queueInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, QUEUE_TYPE, 'queue1'])
+        expect(queueInstance.path).toEqual(undefined)
+        expect(portalInstance.path).toEqual(undefined)
+      })
+      it('should return an error if parent path is undefined', async () => {
+        projectInstance.path = undefined
+        const res = await filter.onFetch(elements) as FilterResult
+        expect(res.errors).toHaveLength(2)
+        expect(res.errors?.[0].message).toContain('Failed to find parent path for jira.Queue.instance.queue1')
       })
     })
 })

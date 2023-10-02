@@ -52,5 +52,4 @@ const filterCreator: FilterCreator = ({ config }) => ({
       })
   },
 })
-
 export default filterCreator

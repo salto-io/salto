@@ -32,6 +32,7 @@ import { applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSo
 import { logger } from '@salto-io/logging'
 import { merger, elementSource, expressions, Workspace, pathIndex, updateElementsWithAlternativeAccount, createAdapterReplacedID, remoteMap, adaptersConfigSource as acs } from '@salto-io/workspace'
 import { collections, promises, types, values } from '@salto-io/lowerdash'
+import { isAutoMergeEnabled } from '../app_config'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
 import { AdapterEvents, createAdapterProgressReporter } from './adapters/progress'
@@ -201,7 +202,7 @@ const toMergedTextChange = (change: FetchChange, after: string | StaticFile): Fe
 })
 
 const autoMergeTextChange: ChangeTransformFunction = async change => {
-  if (!isMergeableDiffChange(change)) {
+  if (!isAutoMergeEnabled() || !isMergeableDiffChange(change)) {
     return [change]
   }
 

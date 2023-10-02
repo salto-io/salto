@@ -25,6 +25,7 @@ import {
   StaticFile,
   isStaticFile,
   toChange,
+  isModificationChange,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -874,53 +875,81 @@ describe('fetch', () => {
             mismatchValue: allValues.mismatchValue,
           }
         )
-        beforeEach(async () => {
-          mockAdapters[testID.adapter].fetch.mockResolvedValueOnce(
-            Promise.resolve({ elements: [serviceInstance] })
-          )
-          const result = await fetchChanges(
-            mockAdapters,
-            createElementSource([workspaceInstance]),
-            createElementSource([stateInstance]),
-            { [testID.adapter]: 'dummy' },
-            [],
-          )
-          changes = [...result.changes]
+        describe('when auto merge is disabled', () => {
+          beforeEach(async () => {
+            mockAdapters[testID.adapter].fetch.mockResolvedValueOnce(
+              Promise.resolve({ elements: [serviceInstance] })
+            )
+            const result = await fetchChanges(
+              mockAdapters,
+              createElementSource([workspaceInstance]),
+              createElementSource([stateInstance]),
+              { [testID.adapter]: 'dummy' },
+              [],
+            )
+            changes = [...result.changes]
+          })
+          it('should calculate fetch changes', () => {
+            expect(changes).toHaveLength(5)
+          })
+          it('should not merge any change', () => {
+            expect(changes.every(change => isModificationChange(change.change)
+              && _.isEqual(change.change.data.after, allValues.serviceValue))).toBeTrue()
+          })
         })
-        it('should calculate fetch changes', () => {
-          expect(changes).toHaveLength(5)
-        })
-        it.each(['modification', 'addition'] as const)('should merge content successfully on %s', action => {
-          const name = action === 'modification' ? 'mergeableContent' : 'mergeableAddedContent'
-          const mergeableChange = changes.find(change => change.change.id.name === name)
-          expect(mergeableChange).toEqual(expect.objectContaining({
-            pendingChanges: [],
-            change: expect.objectContaining({
-              id: testID.createNestedID('instance', instanceName, name),
-              ...toChange({
-                before: action === 'modification' ? allValues.mergeableValue : allValues.addedValue,
-                after: action === 'modification' ? allValues.mergedModifiedValue : allValues.mergedAddedValue,
+        describe('when auto merge is enabled', () => {
+          beforeEach(async () => {
+            process.env.SALTO_FETCH_AUTO_MERGE = '1'
+            mockAdapters[testID.adapter].fetch.mockResolvedValueOnce(
+              Promise.resolve({ elements: [serviceInstance] })
+            )
+            const result = await fetchChanges(
+              mockAdapters,
+              createElementSource([workspaceInstance]),
+              createElementSource([stateInstance]),
+              { [testID.adapter]: 'dummy' },
+              [],
+            )
+            changes = [...result.changes]
+          })
+          afterEach(() => {
+            delete process.env.SALTO_FETCH_AUTO_MERGE
+          })
+          it('should calculate fetch changes', () => {
+            expect(changes).toHaveLength(5)
+          })
+          it.each(['modification', 'addition'] as const)('should merge content successfully on %s', action => {
+            const name = action === 'modification' ? 'mergeableContent' : 'mergeableAddedContent'
+            const mergeableChange = changes.find(change => change.change.id.name === name)
+            expect(mergeableChange).toEqual(expect.objectContaining({
+              pendingChanges: [],
+              change: expect.objectContaining({
+                id: testID.createNestedID('instance', instanceName, name),
+                ...toChange({
+                  before: action === 'modification' ? allValues.mergeableValue : allValues.addedValue,
+                  after: action === 'modification' ? allValues.mergedModifiedValue : allValues.mergedAddedValue,
+                }),
               }),
-            }),
-          }))
-        })
-        it.each(['modification', 'addition'] as const)('should not merge content on %s conflict', action => {
-          const name = action === 'modification' ? 'unmergeableContent' : 'unmergeableAddedContent'
-          const unmergeableChange = changes.find(change => change.change.id.name === name)
-          expect(unmergeableChange?.pendingChanges).not.toBeEmpty()
-          expect(unmergeableChange?.change).toEqual(expect.objectContaining({
-            id: testID.createNestedID('instance', instanceName, name),
-            ...toChange({ before: allValues.unmergeableValue, after: allValues.serviceValue }),
-          }))
-        })
-        it('should not merge content on mismatch value', () => {
-          const name = 'mismatchValue'
-          const unmergeableChange = changes.find(change => change.change.id.name === name)
-          expect(unmergeableChange?.pendingChanges).not.toBeEmpty()
-          expect(unmergeableChange?.change).toEqual(expect.objectContaining({
-            id: testID.createNestedID('instance', instanceName, name),
-            ...toChange({ before: allValues[name], after: allValues.serviceValue }),
-          }))
+            }))
+          })
+          it.each(['modification', 'addition'] as const)('should not merge content on %s conflict', action => {
+            const name = action === 'modification' ? 'unmergeableContent' : 'unmergeableAddedContent'
+            const unmergeableChange = changes.find(change => change.change.id.name === name)
+            expect(unmergeableChange?.pendingChanges).not.toBeEmpty()
+            expect(unmergeableChange?.change).toEqual(expect.objectContaining({
+              id: testID.createNestedID('instance', instanceName, name),
+              ...toChange({ before: allValues.unmergeableValue, after: allValues.serviceValue }),
+            }))
+          })
+          it('should not merge content on mismatch value', () => {
+            const name = 'mismatchValue'
+            const unmergeableChange = changes.find(change => change.change.id.name === name)
+            expect(unmergeableChange?.pendingChanges).not.toBeEmpty()
+            expect(unmergeableChange?.change).toEqual(expect.objectContaining({
+              id: testID.createNestedID('instance', instanceName, name),
+              ...toChange({ before: allValues[name], after: allValues.serviceValue }),
+            }))
+          })
         })
       })
       describe('when the changed element is removed in the working copy', () => {

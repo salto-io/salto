@@ -150,6 +150,7 @@ import scriptRunnerInstancesDeploy from './filters/script_runner/script_runner_i
 import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
 import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uuid'
 import changeQueueFieldsFilter from './filters/change_queue_fields'
+import portalGroupsFilter from './filters/portal_groups'
 import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
 import { jiraJSMEntriesFunc } from './jsm_utils'
@@ -313,6 +314,7 @@ export const DEFAULT_FILTERS = [
   scriptedFragmentsDeployFilter,
   scriptRunnerInstancesDeploy,
   queueDeleteFilter,
+  portalGroupsFilter,
   deployJsmTypesFilter,
   // Must be done after JsmTypesFilter
   jsmPathFilter,

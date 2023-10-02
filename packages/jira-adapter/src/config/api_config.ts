@@ -1894,6 +1894,34 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'id' },
       ],
     },
+    deployRequests: {
+      add: {
+        url: '/rest/servicedesk/{serviceDeskId}/servicedesk/{projectId}/portal-groups',
+        method: 'post',
+        urlParamsToFields: {
+          serviceDeskId: '_parent.0.serviceDeskId',
+          projectId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/rest/servicedesk/{serviceDeskId}/servicedesk/{projectId}/portal-groups/{portalGroupId}',
+        method: 'put',
+        urlParamsToFields: {
+          serviceDeskId: '_parent.0.serviceDeskId',
+          projectId: '_parent.0.id',
+          portalGroupId: 'id',
+        },
+      },
+      remove: {
+        url: '/rest/servicedesk/{serviceDeskId}/servicedesk/{projectId}/portal-groups/{portalGroupId}',
+        method: 'delete',
+        urlParamsToFields: {
+          serviceDeskId: '_parent.0.serviceDeskId',
+          projectId: '_parent.0.id',
+          portalGroupId: 'id',
+        },
+      },
+    },
   },
   Calendar: {
     request: {

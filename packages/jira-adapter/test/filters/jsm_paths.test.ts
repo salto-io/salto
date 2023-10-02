@@ -20,15 +20,17 @@ import { FilterResult } from '../../src/filter'
 import { getDefaultConfig } from '../../src/config/config'
 import jsmArrangePathsFilter from '../../src/filters/jsm_paths'
 import { createEmptyType, getFilterParams } from '../utils'
-import { JIRA, PORTAL_GROUP_TYPE, PROJECT_TYPE, QUEUE_TYPE } from '../../src/constants'
+import { CALENDAR_TYPE, JIRA, PORTAL_GROUP_TYPE, PROJECT_TYPE, QUEUE_TYPE, REQUEST_TYPE_NAME } from '../../src/constants'
 
-describe('jsmArrangePathsFilter', () => {
+describe('jsmPathsFilter', () => {
     type FilterType = filterUtils.FilterWith<'deploy' | 'onFetch', FilterResult>
     let filter: FilterType
     let elements: Element[]
     let projectInstance: InstanceElement
     let queueInstance: InstanceElement
     let portalInstance: InstanceElement
+    let requestTypeInstance: InstanceElement
+    let calendarInstance: InstanceElement
 
     beforeEach(() => {
       projectInstance = new InstanceElement(
@@ -55,7 +57,7 @@ describe('jsmArrangePathsFilter', () => {
             name: 'All open',
 
           },
-          undefined,
+          [JIRA, adapterElements.RECORDS_PATH, QUEUE_TYPE, 'queue1'],
           {
             [CORE_ANNOTATIONS.PARENT]: [
               new ReferenceExpression(projectInstance.elemID, projectInstance),
@@ -70,33 +72,68 @@ describe('jsmArrangePathsFilter', () => {
             name: 'portal1',
             projectTypeKey: 'service_desk',
           },
-          undefined,
+          [JIRA, adapterElements.RECORDS_PATH, PORTAL_GROUP_TYPE, 'portal1'],
           {
             [CORE_ANNOTATIONS.PARENT]: [
               new ReferenceExpression(projectInstance.elemID, projectInstance),
             ],
           },
         )
-        elements = [projectInstance, queueInstance, portalInstance]
+        requestTypeInstance = new InstanceElement(
+          'requestType1',
+          createEmptyType(REQUEST_TYPE_NAME),
+          {
+            id: 11111,
+            name: 'requestType1',
+            description: 'requestType1',
+          },
+          [JIRA, adapterElements.RECORDS_PATH, REQUEST_TYPE_NAME, 'requestType1'],
+          {
+            [CORE_ANNOTATIONS.PARENT]: [
+              new ReferenceExpression(projectInstance.elemID, projectInstance),
+            ],
+          },
+        )
+        calendarInstance = new InstanceElement(
+          'calendar1',
+          createEmptyType(CALENDAR_TYPE),
+          {
+            id: 11111,
+            name: 'calendar1',
+          },
+          [JIRA, adapterElements.RECORDS_PATH, CALENDAR_TYPE, 'calendar1'],
+          {
+            [CORE_ANNOTATIONS.PARENT]: [
+              new ReferenceExpression(projectInstance.elemID, projectInstance),
+            ],
+          },
+        )
+        elements = [projectInstance, queueInstance, portalInstance, requestTypeInstance, calendarInstance]
       })
       it('should change path to be subdirectory of parent', async () => {
         await filter.onFetch(elements)
         expect(queueInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1', 'queues', 'queue1'])
         expect(portalInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1', 'portalGroups', 'portal1'])
+        expect(requestTypeInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1', 'requestTypes', 'requestType1'])
+        expect(calendarInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1', 'calendars', 'calendar1'])
       })
       it('should not change path to be subdirectory of parent if enableJSM is false', async () => {
         const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
         config.fetch.enableJSM = false
         filter = jsmArrangePathsFilter(getFilterParams({ config })) as typeof filter
         await filter.onFetch(elements)
-        expect(queueInstance.path).toEqual(undefined)
-        expect(portalInstance.path).toEqual(undefined)
+        expect(queueInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, QUEUE_TYPE, 'queue1'])
+        expect(portalInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, PORTAL_GROUP_TYPE, 'portal1'])
+        expect(requestTypeInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, REQUEST_TYPE_NAME, 'requestType1'])
+        expect(calendarInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, CALENDAR_TYPE, 'calendar1'])
       })
-      it('should return an error if parent path is undefined', async () => {
+      it('hould not change path to be subdirectory of parent if parent path is undefined', async () => {
         projectInstance.path = undefined
-        const res = await filter.onFetch(elements) as FilterResult
-        expect(res.errors).toHaveLength(2)
-        expect(res.errors?.[0].message).toContain('Failed to find parent path for jira.Queue.instance.queue1')
+        await filter.onFetch(elements)
+        expect(queueInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, QUEUE_TYPE, 'queue1'])
+        expect(portalInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, PORTAL_GROUP_TYPE, 'portal1'])
+        expect(requestTypeInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, REQUEST_TYPE_NAME, 'requestType1'])
+        expect(calendarInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, CALENDAR_TYPE, 'calendar1'])
       })
     })
 })

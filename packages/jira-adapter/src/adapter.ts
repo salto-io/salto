@@ -144,7 +144,7 @@ import scriptRunnerListenersDeployFilter from './filters/script_runner/script_ru
 import scriptedFragmentsDeployFilter from './filters/script_runner/scripted_fragments_deploy'
 import fetchJsmTypesFilter from './filters/jsm_types_fetch_filter'
 import deployJsmTypesFilter from './filters/jsm_types_deploy_filter'
-import jsmArrangePathsFilter from './filters/jsm_paths'
+import jsmPathFilter from './filters/jsm_paths'
 import scriptRunnerInstancesDeploy from './filters/script_runner/script_runner_instances_deploy'
 import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
 import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uuid'
@@ -311,7 +311,7 @@ export const DEFAULT_FILTERS = [
   scriptRunnerInstancesDeploy,
   deployJsmTypesFilter,
   // Must be done after JsmTypesFilter
-  jsmArrangePathsFilter,
+  jsmPathFilter,
   // Must be last
   defaultInstancesDeployFilter,
   ...Object.values(otherCommonFilters),

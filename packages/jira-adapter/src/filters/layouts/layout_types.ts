@@ -114,7 +114,7 @@ export type layoutConfigItem = {
 
 export const ISSUE_LAYOUT_CONFIG_ITEM_SCHEME = Joi.object({
   type: Joi.string().required(),
-  sectionType: Joi.string().required(),
+  sectionType: Joi.string().invalid('HIDDEN_ITEMS').required(),
   key: Joi.string().required(),
 }).unknown(true).required()
 

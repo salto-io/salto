@@ -47,7 +47,7 @@ const layoutTypeNameToDetails: Record<string, layoutTypeDetails> = {
 }
 
 const isIssueLayoutResponse = createSchemeGuard<IssueLayoutResponse>(ISSUE_LAYOUT_RESPONSE_SCHEME)
-const islayoutConfigItem = createSchemeGuard<layoutConfigItem>(ISSUE_LAYOUT_CONFIG_ITEM_SCHEME)
+const isLayoutConfigItem = createSchemeGuard<layoutConfigItem>(ISSUE_LAYOUT_CONFIG_ITEM_SCHEME)
 
 export const getLayoutResponse = async ({
   variables,
@@ -72,13 +72,14 @@ export const getLayoutResponse = async ({
 
 const fromlayoutConfigRespTolayoutConfig = (
   containers: containerIssueLayoutResponse[]
-):
-issueLayoutConfig => {
-  const items = containers.flatMap(container => container.items.nodes.map(node => ({
-    type: 'FIELD',
-    sectionType: container.containerType,
-    key: node.fieldItemId,
-  }))).filter(islayoutConfigItem)
+): issueLayoutConfig => {
+  const items = containers
+    .flatMap(container => container.items.nodes.map(node => ({
+      type: 'FIELD',
+      sectionType: container.containerType,
+      key: node.fieldItemId,
+    })))
+    .filter(isLayoutConfigItem)
 
   return { items }
 }

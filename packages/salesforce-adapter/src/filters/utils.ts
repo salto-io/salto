@@ -47,7 +47,7 @@ import {
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements, createSchemeGuard, detailedCompare, getParents } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
-import { chunks, collections, types } from '@salto-io/lowerdash'
+import { chunks, collections, types, values } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import SalesforceClient, { ErrorFilter } from '../client/client'
 import { FetchElements, INSTANCE_SUFFIXES, OptionalFeatures } from '../types'
@@ -95,6 +95,7 @@ const { toArrayAsync, awu } = collections.asynciterable
 const { splitDuplicates } = collections.array
 const { makeArray } = collections.array
 const { weightedChunks } = chunks
+const { isDefined } = values
 const log = logger(module)
 
 const METADATA_VALUES_SCHEME = Joi.object({
@@ -205,14 +206,19 @@ export const isHierarchyField = (field: Field): boolean => (
   field.refType.elemID.isEqual(Types.primitiveDataTypes.Hierarchy.elemID)
 )
 
-
 export const isReferenceField = (field?: Field): field is Field => (
   (field !== undefined) && (isLookupField(field) || isMasterDetailField(field) || isHierarchyField(field))
 )
 
 export const referenceFieldTargetTypes = (field: Field): string[] => {
   if (isLookupField(field) || isMasterDetailField(field)) {
-    return makeArray(field.annotations?.[FIELD_ANNOTATIONS.REFERENCE_TO])
+    const referredTypes = field.annotations?.[FIELD_ANNOTATIONS.REFERENCE_TO]
+    if (referredTypes === undefined) {
+      return []
+    }
+    return makeArray(referredTypes)
+      .map(ref => (_.isString(ref) ? ref : apiNameSync(ref.value)))
+      .filter(isDefined)
   }
   if (isHierarchyField(field)) {
     // hierarchy fields always reference the type that contains them
@@ -338,9 +344,9 @@ export const getNamespace = async (
     : getNamespaceFromString(elementApiName)
 }
 
-export const extractFullNamesFromValueList = (values: { [INSTANCE_FULL_NAME_FIELD]: string }[]):
+export const extractFullNamesFromValueList = (instanceValues: { [INSTANCE_FULL_NAME_FIELD]: string }[]):
   string[] =>
-  values.map(v => v[INSTANCE_FULL_NAME_FIELD])
+  instanceValues.map(v => v[INSTANCE_FULL_NAME_FIELD])
 
 
 export const buildAnnotationsObjectType = (annotationTypes: TypeMap): ObjectType => {

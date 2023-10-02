@@ -74,9 +74,9 @@ const extractImportantValuesFromElement = ({
   element: Element
   indexedOnly?: boolean
   highlightedOnly?: boolean
-}): Values => {
+}): Values[] => {
   if (_.isEmpty(importantValues)) {
-    return {}
+    return []
   }
   const relevantImportantValues = getRelevantImportantValues(importantValues, indexedOnly, highlightedOnly)
   const getFrom = isInstanceElement(element) ? element.value : element.annotations
@@ -109,7 +109,7 @@ export const getImportantValues = async ({
   elementSource?: ReadOnlyElementsSource
   indexedOnly?: boolean
   highlightedOnly?: boolean
-}): Promise<Values> => {
+}): Promise<Values[]> => {
   if (isObjectType(element)) {
     const importantValues = element.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES]
     return extractImportantValuesFromElement({ importantValues, element, indexedOnly, highlightedOnly })
@@ -119,5 +119,5 @@ export const getImportantValues = async ({
     const importantValues = typeObj?.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES]
     return extractImportantValuesFromElement({ importantValues, element, indexedOnly, highlightedOnly })
   }
-  return {}
+  return []
 }

@@ -182,7 +182,7 @@ describe('getImportantValues', () => {
       element: inst,
       elementSource: elementSourceNoImportant,
     })
-    expect(res).toEqual({})
+    expect(res).toEqual([])
   })
   it('should return only indexed values', async () => {
     const res = await getImportantValues({

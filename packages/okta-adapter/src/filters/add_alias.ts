@@ -67,7 +67,7 @@ const aliasMap: Record<string, AliasData> = {
     aliasComponents: [{ fieldName: 'label' }],
   },
   [USERTYPE_TYPE_NAME]: {
-    aliasComponents: [{ fieldName: 'label' }],
+    aliasComponents: [{ fieldName: 'displayName' }],
   },
   [USER_SCHEMA_TYPE_NAME]: {
     aliasComponents: [

@@ -1,6 +1,6 @@
 type dummy.FullComplexWithIV__userObj {
-    string name {
-    }
-    number id {
-    }
+  string name {
+  }
+  number id {
+  }
 }

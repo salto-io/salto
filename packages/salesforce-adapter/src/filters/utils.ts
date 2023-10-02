@@ -527,14 +527,14 @@ export const isCustomType = (element: Element): element is ObjectType => (
   isObjectType(element) && ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(apiNameSync(element) ?? '')
 )
 
-export type ElementWithParent<T extends Element> = T & {
+export type ElementWithResolvedParent<T extends Element> = T & {
   annotations: {
     _parent: types.NonEmptyArray<ReferenceExpression & {value: Element}>
   }
 }
 
 
-export const isElementWithResolvedParent = <T extends Element>(element: T): element is ElementWithParent<T> => (
+export const isElementWithResolvedParent = <T extends Element>(element: T): element is ElementWithResolvedParent<T> => (
   getParents(element).some(parent => isReferenceExpression(parent) && isElement(parent.value))
 )
 

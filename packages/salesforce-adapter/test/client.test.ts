@@ -542,7 +542,7 @@ describe('salesforce client', () => {
               accountId: 'https://url.com/',
               isProduction: false,
               accountType: PRODUCTION_ORGANIZATION_TYPE,
-              extraInformation: { orgId: '' },
+              extraInformation: { orgId: '', accountIdVersion: '1' },
             })
           })
         })
@@ -555,7 +555,7 @@ describe('salesforce client', () => {
               accountId: 'https://url.com/',
               isProduction: false,
               accountType: NON_PRODUCTION_ORGANIZATION_TYPE,
-              extraInformation: { orgId: '' },
+              extraInformation: { orgId: '', accountIdVersion: '1' },
             })
           })
         })

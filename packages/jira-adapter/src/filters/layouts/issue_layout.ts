@@ -66,8 +66,7 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) =>
     )
     const projectToScreenId = Object.fromEntries(Object.entries(await getProjectToScreenMapping(elements))
       .filter(([key]) => Object.keys(projectIdToProject).includes(key)))
-    const { subTypes } = createLayoutType(ISSUE_LAYOUT_TYPE)
-    const issueLayoutType = createLayoutType(ISSUE_LAYOUT_TYPE).layoutType
+    const { subTypes, layoutType: issueLayoutType } = createLayoutType(ISSUE_LAYOUT_TYPE)
     elements.push(issueLayoutType)
     subTypes.forEach(type => elements.push(type))
 

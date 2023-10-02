@@ -560,9 +560,7 @@ describe('salesforce client', () => {
           })
           it('should throw an error when there is no instanceUrl', async () => {
             const mockConnection = mockClient().connection
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            mockConnection.instanceUrl = undefined
+            _.set(mockConnection, 'instanceUrl', undefined)
             await expect(validateCredentials(sandboxCredentials, 3, mockConnection))
               .rejects.toThrow('Expected Salesforce organization URL to exist in the connection')
           })

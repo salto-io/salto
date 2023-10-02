@@ -750,7 +750,7 @@ const isSideEffectRemoval = (
 }
 
 const typesToMergeFromInstance = async (elements: Element[]): Promise<TypesFromInstance> => {
-  const fixTypesDefinitions = async (typesFromInstance: TypeMap): Promise<void> => {
+  const fixTypesDefinitions = (typesFromInstance: TypeMap): void => {
     const listViewType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS] as
       ObjectType
     listViewType.fields.columns.refType = createRefToElmWithValue(
@@ -790,7 +790,7 @@ const typesToMergeFromInstance = async (elements: Element[]): Promise<TypesFromI
         .map(async ([name, field]) => [name, await field.getType()])
         .toArray()
     )
-    await fixTypesDefinitions(typesFromInstance)
+    fixTypesDefinitions(typesFromInstance)
     return typesFromInstance
   }
 

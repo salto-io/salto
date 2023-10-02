@@ -56,7 +56,7 @@ import {
   isInstanceOfType,
   isMasterDetailField,
   buildElementsSourceForFetch,
-  addKeyPrefix, addPluralLabel, getInstanceAlias,
+  addKeyPrefix, addPluralLabel, getInstanceAlias, asListType,
 } from './utils'
 import { convertList } from './convert_lists'
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../metadata_deploy'
@@ -754,23 +754,23 @@ const typesToMergeFromInstance = async (elements: Element[]): Promise<TypesFromI
     const listViewType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS] as
       ObjectType
     listViewType.fields.columns.refType = createRefToElmWithValue(
-      new ListType(await listViewType.fields.columns.getType())
+      asListType(listViewType.fields.columns.getTypeSync())
     )
     listViewType.fields.filters.refType = createRefToElmWithValue(
-      new ListType(await listViewType.fields.filters.getType())
+      asListType(listViewType.fields.filters.getTypeSync())
     )
     const fieldSetType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.FIELD_SETS] as
       ObjectType
-    fieldSetType.fields.availableFields.refType = createRefToElmWithValue(new ListType(
-      await fieldSetType.fields.availableFields.getType()
-    ))
-    fieldSetType.fields.displayedFields.refType = createRefToElmWithValue(new ListType(
-      await fieldSetType.fields.displayedFields.getType()
-    ))
+    fieldSetType.fields.availableFields.refType = createRefToElmWithValue(
+      asListType(fieldSetType.fields.availableFields.getTypeSync())
+    )
+    fieldSetType.fields.displayedFields.refType = createRefToElmWithValue(
+      asListType(fieldSetType.fields.displayedFields.getTypeSync())
+    )
     const compactLayoutType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.COMPACT_LAYOUTS] as
       ObjectType
     compactLayoutType.fields.fields.refType = createRefToElmWithValue(
-      new ListType(await compactLayoutType.fields.fields.getType())
+      asListType(compactLayoutType.fields.fields.getTypeSync())
     )
     // internalId is also the name of a field on the custom object instances, therefore
     // we override it here to have the right type for the annotation.

@@ -30,10 +30,10 @@ import {
   InstanceElement,
   isAdditionOrModificationChange,
   isField,
-  isInstanceElement,
+  isInstanceElement, isListType,
   isObjectType,
   isReferenceExpression,
-  isRemovalOrModificationChange,
+  isRemovalOrModificationChange, ListType,
   ObjectType,
   ReadOnlyElementsSource,
   ReferenceExpression,
@@ -524,4 +524,8 @@ export const getChangedAtSingleton = async (
 
 export const isCustomType = (element: Element): element is ObjectType => (
   isObjectType(element) && ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(apiNameSync(element) ?? '')
+)
+
+export const asListType = (type: TypeElement): ListType => (
+  isListType(type) ? type : new ListType(type)
 )

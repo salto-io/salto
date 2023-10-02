@@ -14,9 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import {
-  AtLeastOne, RequiredMember, hasMember, filterHasMember, ValueOf, Bean, isArrayOfType, TypeGuard, isNonEmptyArray,
-} from '../src/types'
+import { AtLeastOne, RequiredMember, hasMember, filterHasMember, ValueOf, Bean, isArrayOfType, TypeGuard, isNonEmptyArray, isTypeOfOrUndefined } from '../src/types'
 
 // Note: some of the tests here are compile-time, so the actual assertions may look weird.
 
@@ -133,6 +131,18 @@ describe('types', () => {
     })
     it('should return false for empty array', () => {
       expect(isNonEmptyArray([])).toEqual(false)
+    })
+  })
+  describe('isTypeOfOrUndefined', () => {
+    it('should return true', () => {
+      const test: unknown = [1, 2, 3]
+      const res = isTypeOfOrUndefined(test, Array.isArray) ? test?.length : 0
+      expect(res).toEqual(3)
+    })
+    it('should return false', () => {
+      const test: unknown = '123'
+      const res = isTypeOfOrUndefined(test, Array.isArray) ? test?.length : 0
+      expect(res).toEqual(0)
     })
   })
 })

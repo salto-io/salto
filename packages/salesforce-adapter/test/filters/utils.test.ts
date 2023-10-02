@@ -14,20 +14,20 @@
 * limitations under the License.
 */
 import {
-  BuiltinTypes,
+  BuiltinTypes, CORE_ANNOTATIONS,
   createRefToElmWithValue,
   ElemID,
   Field,
   InstanceElement,
   ObjectType,
-  ReadOnlyElementsSource,
+  ReadOnlyElementsSource, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import {
-  addDefaults, getChangedAtSingleton,
+  addDefaults, getAuthorInformationFromFileProps, getChangedAtSingleton, getElementAuthorInformation,
   getNamespace,
   isCustomMetadataRecordInstance,
-  isCustomMetadataRecordType, isCustomType,
+  isCustomMetadataRecordType, isCustomType, isElementWithResolvedParent,
   isMetadataValues,
   isStandardObject,
   layoutObjAndName,
@@ -46,6 +46,7 @@ import { CustomObject } from '../../src/client/types'
 import { mockInstances, mockTypes } from '../mock_elements'
 import { createCustomObjectType } from '../utils'
 import { INSTANCE_SUFFIXES } from '../../src/types'
+import { mockFileProperties } from '../connection'
 
 describe('addDefaults', () => {
   describe('when called with instance', () => {
@@ -353,6 +354,108 @@ describe('addDefaults', () => {
       expect(isCustomType(mockTypes.ApexPage)).toBeFalse()
       expect(isCustomType(mockTypes.CustomObject)).toBeFalse()
       expect(isCustomType(mockTypes.Product2)).toBeFalse()
+    })
+  })
+  describe('isElementWithResolvedParent', () => {
+    let instance: InstanceElement
+    let parent: ObjectType
+
+    beforeEach(() => {
+      instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: 'TestFullName' }, mockTypes.WebLink)
+      parent = mockTypes.Account
+    })
+    it('should return false for element with unresolved parent', () => {
+      instance.annotations[CORE_ANNOTATIONS.PARENT] = new ReferenceExpression(parent.elemID)
+      expect(isElementWithResolvedParent(instance)).toBeFalse()
+    })
+    it('should return false for element with no parent', () => {
+      expect(isElementWithResolvedParent(instance)).toBeFalse()
+    })
+    it('should return false when parent is not an Element', () => {
+      instance.annotations[CORE_ANNOTATIONS.PARENT] = 'Account'
+      expect(isElementWithResolvedParent(instance)).toBeFalse()
+    })
+    it('should return true when parent is an Element', () => {
+      instance.annotations[CORE_ANNOTATIONS.PARENT] = new ReferenceExpression(parent.elemID, parent)
+      expect(isElementWithResolvedParent(instance)).toBeTrue()
+    })
+  })
+
+  describe('getAuthorInformationFromFileProps', () => {
+    it('should return correct author information when values are non empty strings', () => {
+      const fileProps = mockFileProperties({
+        fullName: 'Custom__c',
+        type: 'test',
+        // The _created_at and _created_By values should be these
+        createdByName: 'test',
+        createdDate: '2023-01-01T16:28:30.000Z',
+        lastModifiedByName: 'test2',
+        lastModifiedDate: '2023-02-01T16:28:30.000Z',
+      })
+      expect(getAuthorInformationFromFileProps(fileProps)).toEqual({
+        createdBy: 'test',
+        createdAt: '2023-01-01T16:28:30.000Z',
+        changedBy: 'test2',
+        changedAt: '2023-02-01T16:28:30.000Z',
+      })
+    })
+    it('should return correct author information when values are empty strings', () => {
+      const fileProps = mockFileProperties({
+        fullName: 'Custom__c',
+        type: 'test',
+        // The _created_at and _created_By values should be these
+        createdByName: '',
+        createdDate: '',
+        lastModifiedByName: '',
+        lastModifiedDate: '',
+      })
+      expect(getAuthorInformationFromFileProps(fileProps)).toEqual({
+        createdBy: '',
+        createdAt: '',
+        changedBy: '',
+        changedAt: '',
+      })
+    })
+  })
+
+  describe('getElementAuthorInformation', () => {
+    let instance: InstanceElement
+
+    beforeEach(() => {
+      instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: 'TestFullName' }, mockTypes.WebLink)
+    })
+
+    it('should return undefined on all properties when element is not annotated with any', () => {
+      expect(getElementAuthorInformation(instance)).toEqual({
+        createdBy: undefined,
+        createdAt: undefined,
+        changedBy: undefined,
+        changedAt: undefined,
+      })
+    })
+
+    it('should return correct properties when element is annotated with some', () => {
+      instance.annotations[CORE_ANNOTATIONS.CREATED_BY] = 'test'
+      instance.annotations[CORE_ANNOTATIONS.CREATED_AT] = '2023-01-01T16:28:30.000Z'
+      expect(getElementAuthorInformation(instance)).toEqual({
+        createdBy: 'test',
+        createdAt: '2023-01-01T16:28:30.000Z',
+        changedBy: undefined,
+        changedAt: undefined,
+      })
+    })
+
+    it('should return correct properties when element is annotated with all', () => {
+      instance.annotations[CORE_ANNOTATIONS.CREATED_BY] = 'test'
+      instance.annotations[CORE_ANNOTATIONS.CREATED_AT] = '2023-01-01T16:28:30.000Z'
+      instance.annotations[CORE_ANNOTATIONS.CHANGED_BY] = 'test2'
+      instance.annotations[CORE_ANNOTATIONS.CHANGED_AT] = '2023-01-01T16:28:30.000Z'
+      expect(getElementAuthorInformation(instance)).toEqual({
+        createdBy: 'test',
+        createdAt: '2023-01-01T16:28:30.000Z',
+        changedBy: 'test2',
+        changedAt: '2023-01-01T16:28:30.000Z',
+      })
     })
   })
 })

@@ -504,7 +504,7 @@ export const validateCredentials = async (
   }
   if (creds.isSandbox) {
     if (connection?.instanceUrl === undefined) {
-      throw new Error('Salesforce sandboxes must have an instance url')
+      throw new Error('Expected Salesforce organization URL to exist in the connection')
     }
     return {
       accountId: connection.instanceUrl,

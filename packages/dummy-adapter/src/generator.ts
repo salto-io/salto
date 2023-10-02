@@ -685,6 +685,7 @@ export const generateElements = async (
       })
       return parsedNaclFile.elements
     })).flat().toArray()
+
     const mergedElements = await merger.mergeElements(awu(elements))
     const inMemElemSource = elementSource.createInMemoryElementSource(
       await awu(mergedElements.merged.values()).toArray()
@@ -702,10 +703,31 @@ export const generateElements = async (
       elemID: new ElemID('dummy', 'PrimWithAnnos'),
       primitive: PrimitiveTypes.STRING,
       annotationRefsOrTypes: {
+        active: BuiltinTypes.BOOLEAN,
+        name: BuiltinTypes.STRING,
         SharedHidden: BuiltinTypes.HIDDEN_STRING,
         DiffHidden: BuiltinTypes.HIDDEN_STRING,
       },
       path: [DUMMY_ADAPTER, 'EnvStuff', 'PrimWithAnnos'],
+      annotations: {
+        [CORE_ANNOTATIONS.IMPORTANT_VALUES]: [
+          {
+            value: 'active',
+            indexed: true,
+            highlighted: true,
+          },
+          {
+            value: 'name',
+            indexed: false,
+            highlighted: false,
+          },
+          {
+            value: 'doesNotExist',
+            indexed: false,
+            highlighted: true,
+          },
+        ],
+      },
     })
 
     const sharedObj = new ObjectType({
@@ -723,6 +745,8 @@ export const generateElements = async (
         [`${envID}FieldWithHidden`]: {
           refType: PrimWithHiddenAnnos,
           annotations: {
+            active: true,
+            name: 'test',
             SharedHidden: 'HIDDEN!',
             DiffHidden: `${envID}-HIDDENNNN!!!!`,
           },
@@ -742,6 +766,40 @@ export const generateElements = async (
         SharedHidden: 'HIDDEN!',
         DiffHidden: `${envID}-HIDDENNNN!!!!`,
         [CORE_ANNOTATIONS.ALIAS]: 'EnvObj_alias',
+        [CORE_ANNOTATIONS.IMPORTANT_VALUES]: [
+          {
+            value: 'SharedButDiffField',
+            indexed: true,
+            highlighted: true,
+          },
+          {
+            value: 'SharedField',
+            indexed: false,
+            highlighted: false,
+          },
+          {
+            value: 'doesNotExist',
+            indexed: false,
+            highlighted: true,
+          },
+        ],
+        [CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES]: [
+          {
+            value: 'SharedButDiffAnno',
+            indexed: true,
+            highlighted: false,
+          },
+          {
+            value: 'SharedAnno',
+            indexed: false,
+            highlighted: true,
+          },
+          {
+            value: 'doesNotExist',
+            indexed: false,
+            highlighted: false,
+          },
+        ],
       },
       path: [DUMMY_ADAPTER, 'EnvStuff', 'EnvObj'],
     })
@@ -765,16 +823,39 @@ export const generateElements = async (
         Field: {
           refType: BuiltinTypes.STRING,
         },
+        active: {
+          refType: BuiltinTypes.BOOLEAN,
+        },
       },
       path: [DUMMY_ADAPTER, 'EnvStuff', `${envID}EnvObj`],
       annotations: {
         [CORE_ANNOTATIONS.ALIAS]: `${envID}EnvObj_alias`,
+        [CORE_ANNOTATIONS.IMPORTANT_VALUES]: [
+          {
+            value: 'Field',
+            indexed: false,
+            highlighted: true,
+          },
+          {
+            value: 'active',
+            indexed: true,
+            highlighted: false,
+          },
+          {
+            value: 'doesNotExist',
+            indexed: false,
+            highlighted: true,
+          },
+        ],
       },
     })
     const envSpecificInst = new InstanceElement(
       `${envID}EnvInst`,
       envSpecificObj,
-      { Field: 'FieldValue' },
+      {
+        Field: 'FieldValue',
+        active: true,
+      },
       [DUMMY_ADAPTER, 'EnvStuff', `${envID}EnvInst`],
       {
         [CORE_ANNOTATIONS.ALIAS]: `${envID}EnvInst_alias`,

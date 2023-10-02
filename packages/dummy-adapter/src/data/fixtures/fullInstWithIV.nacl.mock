@@ -1,0 +1,6 @@
+dummy.FullWithIV FullInst1WithIV {
+  strField = "STR1"
+  numField = 111
+  boolField = false
+  _alias = "Inst with Important Values"
+}

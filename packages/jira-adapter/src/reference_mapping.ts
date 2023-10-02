@@ -972,7 +972,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: STATUS_TYPE_NAME },
   },
   {
-    src: { field: 'fields', parentTypes: [QUEUE_TYPE] },
+    src: { field: 'columns', parentTypes: [QUEUE_TYPE] },
     serializationStrategy: 'id',
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: FIELD_TYPE_NAME },

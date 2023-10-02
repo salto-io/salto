@@ -21,19 +21,18 @@ import _ from 'lodash'
 import { PROJECT_TYPE, JIRA, QUEUE_TYPE } from '../../src/constants'
 import { createEmptyType } from '../utils'
 import { deleteLastQueueValidator } from '../../src/change_validators/last_queue'
-import { getDefaultConfig } from '../../src/config/config'
+import { JiraConfig, getDefaultConfig } from '../../src/config/config'
 
-describe('deleteCustomerPermissionsValidator', () => {
-  const projectType = createEmptyType(PROJECT_TYPE)
+describe('lastQueueValidator', () => {
   let projectInstance: InstanceElement
   const queueType = createEmptyType(QUEUE_TYPE)
   let elementsSource: ReadOnlyElementsSource
   let queueInstance: InstanceElement
-
+  let config: JiraConfig
   beforeEach(async () => {
     projectInstance = new InstanceElement(
       'project1',
-      projectType,
+      createEmptyType(PROJECT_TYPE),
       {
         id: 11111,
         name: 'project1',
@@ -56,10 +55,10 @@ describe('deleteCustomerPermissionsValidator', () => {
       },
     )
     elementsSource = buildElementsSourceFromElements([projectInstance])
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+    config.fetch.enableJSM = true
   })
   it('should return error if trying delete the last queue of a project', async () => {
-    const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    config.fetch.enableJSM = true
     const validator = deleteLastQueueValidator(config)
     const changeErrors = await validator(
       [toChange({ before: queueInstance, after: undefined })],
@@ -69,8 +68,8 @@ describe('deleteCustomerPermissionsValidator', () => {
     expect(changeErrors[0]).toEqual({
       elemID: queueInstance.elemID,
       severity: 'Error' as SeverityLevel,
-      message: 'Cannot delete a queue if its related project has no remaining queues.',
-      detailedMessage: 'Cannot delete queue queue1 as its related project project1 must have at least one remaining queue.',
+      message: 'Cannot delete a project’s only queue',
+      detailedMessage: 'Cannot delete this queue, as its the last remaining queue in project project1.',
     })
   })
   it('should not return error if trying delete a queue of a project with other queues', async () => {
@@ -88,8 +87,6 @@ describe('deleteCustomerPermissionsValidator', () => {
         ],
       },
     )
-    const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    config.fetch.enableJSM = true
     const validator = deleteLastQueueValidator(config)
     const changeErrors = await validator(
       [toChange({ before: queueInstance, after: undefined })],
@@ -98,11 +95,18 @@ describe('deleteCustomerPermissionsValidator', () => {
     expect(changeErrors).toHaveLength(0)
   })
   it('should not return error if enableJSM is false', async () => {
-    const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     config.fetch.enableJSM = false
     const validator = deleteLastQueueValidator(config)
     const changeErrors = await validator(
       [toChange({ before: queueInstance, after: undefined })],
+      elementsSource
+    )
+    expect(changeErrors).toHaveLength(0)
+  })
+  it('should not return error if not a removal change', async () => {
+    const validator = deleteLastQueueValidator(config)
+    const changeErrors = await validator(
+      [toChange({ before: undefined, after: queueInstance })],
       elementsSource
     )
     expect(changeErrors).toHaveLength(0)

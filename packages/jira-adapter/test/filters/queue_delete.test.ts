@@ -14,14 +14,14 @@
 * limitations under the License.
 */
 
-import { filterUtils, elements as adapterElements, client as clientUtils } from '@salto-io/adapter-components'
+import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { InstanceElement, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { getDefaultConfig } from '../../src/config/config'
-import queueFilter from '../../src/filters/queue'
+import queueFilter from '../../src/filters/queue_delete'
 import { createEmptyType, getFilterParams, mockClient } from '../utils'
-import { JIRA, PROJECT_TYPE, QUEUE_TYPE } from '../../src/constants'
+import { PROJECT_TYPE, QUEUE_TYPE } from '../../src/constants'
 import JiraClient from '../../src/client/client'
 
 
@@ -36,14 +36,6 @@ describe('queue filter', () => {
     let queueInstance: InstanceElement
     const fieldType = createEmptyType('field')
     const fieldInstanceOne = new InstanceElement(
-      'field1',
-      fieldType,
-      {
-        id: 'field1',
-        name: 'field1',
-      },
-    )
-    const fieldInstanceTwo = new InstanceElement(
       'field1',
       fieldType,
       {
@@ -68,7 +60,6 @@ describe('queue filter', () => {
             projectTypeKey: 'service_desk',
             key: 'project1Key',
           },
-          [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1']
         )
         queueInstance = new InstanceElement(
           'queue1',
@@ -84,27 +75,12 @@ describe('queue filter', () => {
           },
         )
       })
-
-      it('should deploy modification of a queue', async () => {
-        const queueAfter = queueInstance.clone()
-        queueAfter.value.fields.concat([new ReferenceExpression(fieldInstanceTwo.elemID, fieldInstanceTwo)])
-        const res = await filter.deploy([{ action: 'modify', data: { before: queueInstance, after: queueAfter } }])
-        expect(res.leftoverChanges).toHaveLength(0)
-        expect(res.deployResult.errors).toHaveLength(0)
-        expect(res.deployResult.appliedChanges).toHaveLength(1)
-        expect(connection.put).toHaveBeenCalledOnce()
-      })
-      it('should deploy addition of a queue', async () => {
-        const res = await filter.deploy([{ action: 'add', data: { after: queueInstance } }])
-        expect(res.leftoverChanges).toHaveLength(0)
-        expect(res.deployResult.errors).toHaveLength(0)
-        expect(res.deployResult.appliedChanges).toHaveLength(1)
-      })
       it('should deploy removal of a queue', async () => {
         const res = await filter.deploy([{ action: 'remove', data: { before: queueInstance } }])
         expect(res.leftoverChanges).toHaveLength(0)
         expect(res.deployResult.errors).toHaveLength(0)
         expect(res.deployResult.appliedChanges).toHaveLength(1)
+        expect(connection.put).toHaveBeenCalledOnce()
       })
       it('should not deploy if enableJSM is false', async () => {
         const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))

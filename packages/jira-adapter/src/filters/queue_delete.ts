@@ -14,56 +14,21 @@
 * limitations under the License.
 */
 
-import { Change, InstanceElement, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isRemovalChange } from '@salto-io/adapter-api'
+import { Change, InstanceElement, getChangeData, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
 import { getParent, resolveValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { logger } from '@salto-io/logging'
 import { deployChanges } from '../deployment/standard_deployment'
 import { FilterCreator } from '../filter'
 import { QUEUE_TYPE } from '../constants'
 import { getLookUpName } from '../reference_mapping'
 import JiraClient from '../client/client'
-import { JiraConfig } from '../config/config'
 
-const log = logger(module)
-
-const deployQueueChange = async (
+const deployQueueRemovalChange = async (
   change: Change<InstanceElement>,
   client: JiraClient,
-  config: JiraConfig,
 ): Promise<void> => {
-  const { jsmApiDefinitions } = config
-  if (jsmApiDefinitions === undefined) {
-    return
-  }
   const parent = getParent(getChangeData(change))
   const instance = await resolveValues(getChangeData(change), getLookUpName)
-  if (isAdditionOrModificationChange(change)) {
-    instance.value.columns = instance.value.fields
-    delete instance.value.fields
-    if (isAdditionChange(change)) {
-      const response = await client.post({
-        url: `/rest/servicedesk/1/servicedesk/${parent.value.key}/queues`,
-        data: instance.value,
-      })
-      if (!Array.isArray(response.data)) {
-        const serviceIdField = jsmApiDefinitions.types[getChangeData(change).elemID.typeName]?.transformation?.serviceIdField ?? 'id'
-        if (response.data?.[serviceIdField] !== undefined) {
-          getChangeData(change).value[serviceIdField] = response.data[serviceIdField]
-        }
-      } else {
-        log.warn('Received unexpected response from deployChange: %o', response)
-      }
-    }
-    if (isModificationChange(change)) {
-      await client.put({
-        url: `/rest/servicedesk/1/servicedesk/${parent.value.key}/queues/${instance.value.id}`,
-        data: instance.value,
-      })
-    }
-    instance.value.fields = instance.value.columns
-    delete instance.value.columns
-  }
   if (isRemovalChange(change)) {
     await client.put({
       url: `/rest/servicedesk/1/servicedesk/${parent.value.key}/queues/`,
@@ -73,7 +38,7 @@ const deployQueueChange = async (
 }
 
 const filter: FilterCreator = ({ config, client }) => ({
-  name: 'queueFilter',
+  name: 'queueDeleteFilter',
   deploy: async changes => {
     if (!config.fetch.enableJSM) {
       return {
@@ -84,9 +49,10 @@ const filter: FilterCreator = ({ config, client }) => ({
     const [queueChanges, leftoverChanges] = _.partition(
       changes,
       change => isInstanceChange(change) && getChangeData(change).elemID.typeName === QUEUE_TYPE
+      && isRemovalChange(change)
     )
     const deployResult = await deployChanges(queueChanges.filter(isInstanceChange),
-      async change => deployQueueChange(change, client, config))
+      async change => deployQueueRemovalChange(change, client))
 
     return {
       leftoverChanges,

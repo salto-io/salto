@@ -145,10 +145,11 @@ import scriptedFragmentsDeployFilter from './filters/script_runner/scripted_frag
 import fetchJsmTypesFilter from './filters/jsm_types_fetch_filter'
 import deployJsmTypesFilter from './filters/jsm_types_deploy_filter'
 import jsmPathFilter from './filters/jsm_paths'
-import queueFilter from './filters/queue'
+import queueDeleteFilter from './filters/queue_delete'
 import scriptRunnerInstancesDeploy from './filters/script_runner/script_runner_instances_deploy'
 import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
 import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uuid'
+import changeQueueFieldsFilter from './filters/change_queue_fields'
 import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
 import { jiraJSMEntriesFunc } from './jsm_utils'
@@ -170,6 +171,7 @@ export const DEFAULT_FILTERS = [
   accountInfoFilter,
   storeUsersFilter,
   changeServiceDeskIdFieldProjectFilter,
+  changeQueueFieldsFilter,
   automationLabelFetchFilter,
   automationLabelDeployFilter,
   automationFetchFilter,
@@ -310,7 +312,7 @@ export const DEFAULT_FILTERS = [
   // must be done before scriptRunnerInstances
   scriptedFragmentsDeployFilter,
   scriptRunnerInstancesDeploy,
-  queueFilter,
+  queueDeleteFilter,
   deployJsmTypesFilter,
   // Must be done after JsmTypesFilter
   jsmPathFilter,

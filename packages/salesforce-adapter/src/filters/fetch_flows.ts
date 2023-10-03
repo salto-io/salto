@@ -21,10 +21,11 @@ import { findObjectType } from '@salto-io/adapter-utils'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE, SALESFORCE } from '../constants'
-import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
+import { fetchMetadataInstances } from '../fetch'
 import { createInstanceElement } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import { FetchElements, FetchProfile } from '../types'
+import { listMetadataObjects } from './utils'
 
 const { isDefined } = lowerdashValues
 

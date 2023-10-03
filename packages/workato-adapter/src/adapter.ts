@@ -32,6 +32,10 @@ import { FETCH_CONFIG, WorkatoConfig } from './config'
 import addRootFolderFilter from './filters/add_root_folder'
 import fieldReferencesFilter from './filters/field_references'
 import jiraProjectIssueTypeFilter from './filters/cross_service/jira/project_issuetypes'
+import recipeBlockInputFormatFilter from './filters/recipe_block_format/block_input_format'
+import recipeBlockToggleCfgFormatFilter from './filters/recipe_block_format/block_toggle_cfg_format'
+import recipeBlockExtendedOutputSchemaFormatFilter from './filters/recipe_block_format/block_extended_output_format'
+import recipeBlockExtendedInputSchemaFormatFilter from './filters/recipe_block_format/block_extended_input_format'
 import recipeCrossServiceReferencesFilter from './filters/cross_service/recipe_references'
 import serviceUrlFilter from './filters/service_url'
 import commonFilters from './filters/common'
@@ -48,6 +52,11 @@ const { simpleGetArgs } = fetchUtils.resource
 export const DEFAULT_FILTERS = [
   addRootFolderFilter,
   jiraProjectIssueTypeFilter,
+  recipeBlockExtendedInputSchemaFormatFilter,
+  recipeBlockExtendedOutputSchemaFormatFilter,
+  recipeBlockInputFormatFilter,
+  // recipeBlockToggleCfgFormatFilter should run after recipeBlockInputFormatFilter
+  recipeBlockToggleCfgFormatFilter,
   // fieldReferencesFilter should run after all element manipulations are done
   fieldReferencesFilter,
   recipeCrossServiceReferencesFilter,

@@ -823,8 +823,9 @@ export const LARGE_TYPES_EXCLUDED_MESSAGE = 'Some types were excluded from the f
  + ' To include them, increase the types elements\' size limitations and remove their exclusion rules.'
 
 const SUPPORT_BINS_DATE = '2023-10-10'
-export const EXCLUDE_BINS_MESSAGE = `The "Bin" type instances are now supported and will be automatically fetched from ${SUPPORT_BINS_DATE}`
- + ' if removed from "fetch.exclude". In order to fetch them before that, remove "bin" from "fetch.exclude" and add it explicitly to "fetch.include".'
+export const EXCLUDE_BINS_MESSAGE = `Starting October 10th, 2023, "Bin" type instances can be fetched by Salto.
+
+To start fetching these instances in your environment, go to your environment configuration, remove "{ name = "bin" }" from the fetch.exclude.types section, then add it to the fetch.include.types section.`
 
 const createFolderExclude = (folderPaths: NetsuiteFilePathsQueryParams): string[] =>
   folderPaths.map(folder => `^${_.escapeRegExp(folder)}.*`)
@@ -1017,6 +1018,7 @@ const splitConfig = (config: NetsuiteConfig): InstanceElement[] => {
   ]
 }
 
+// TODO: remove at December '23 (SALTO-4798)
 export const shouldExcludeBins = async (
   config: NetsuiteConfig,
   elementsSource: ReadOnlyElementsSource
@@ -1039,6 +1041,7 @@ export const getConfigFromConfigChanges = (
   const didUpdateLargeFolders = updateConfigFromLargeFolders(config, failures.failedFilePaths)
   const didUpdateLargeTypes = updateConfigFromLargeTypes(config, failures)
 
+  // TODO: remove at December '23 (SALTO-4798)
   if (excludeBins) {
     config.fetch = {
       ...config.fetch,

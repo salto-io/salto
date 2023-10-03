@@ -15,13 +15,11 @@
 */
 
 import { InstanceElement, ObjectType, ReadOnlyElementsSource, ReferenceExpression, getChangeData, isInstanceChange, isObjectType, isReferenceExpression } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import { values, collections } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
 import { isCustomRecordType } from '../types'
 import { ROLE, SCRIPT_ID } from '../constants'
 
-const log = logger(module)
 const { awu } = collections.asynciterable
 
 const addPermissionField = (custRecordMap: Map<string, ObjectType>): void =>
@@ -51,7 +49,7 @@ const createRoleToPermittedroleMap = async (
       .toArray()
   )
 
-const addPermissionToCustomRecordTypes = (
+const addPermission = (
   val: Record<string, unknown>,
   customRecordChangedMap: Map<string, ObjectType>,
   roleName: string,
@@ -69,6 +67,7 @@ const addPermissionToCustomRecordTypes = (
     }
   }
 }
+
 const addPermissionsToCustomRecordTypes = (
   roles: InstanceElement[],
   customRecordChangedMap: Map<string, ObjectType>,
@@ -82,7 +81,7 @@ const addPermissionsToCustomRecordTypes = (
       Object.values(permissionObject)
         .filter(values.isPlainRecord)
         .forEach(async val => {
-          addPermissionToCustomRecordTypes(val, customRecordChangedMap, roleName, roleToPermittedroleMap)
+          addPermission(val, customRecordChangedMap, roleName, roleToPermittedroleMap)
         })
     }
   })
@@ -108,7 +107,6 @@ const filterCreator: LocalFilterCreator = ({ elementsSource }) => ({
 
       addPermissionsToCustomRecordTypes(roleChanged, customRecordChangedMap, roleToPermittedroleMap)
     }
-    log.debug('')
   },
 })
 

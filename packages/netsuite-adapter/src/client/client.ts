@@ -36,7 +36,7 @@ import { isSdfCreateOrUpdateGroupId, isSdfDeleteGroupId, isSuiteAppCreateRecords
   isSuiteAppUpdateRecordsGroupId, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID,
   SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../group_changes'
 import { DeployResult, getElementValueOrAnnotations, getServiceId } from '../types'
-import { APPLICATION_ID, CONFIG_FEATURES } from '../constants'
+import { APPLICATION_ID, CONFIG_FEATURES, CUSTOM_RECORD_TYPE, ROLE } from '../constants'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
 import { FeaturesDeployError, MissingManifestFeaturesError, getChangesElemIdsToRemove, toFeaturesDeployPartialSuccessResult } from './errors'
 import { Graph, GraphNode } from './graph_utils'
@@ -63,12 +63,22 @@ type DependencyInfo = {
   dependencyGraph: Graph<SDFObjectNode>
 }
 
+const isRoleToCustomRecordType = (
+  startNode: GraphNode<SDFObjectNode>,
+  endNode: GraphNode<SDFObjectNode>,
+): boolean =>
+  (startNode.value.customizationInfo.typeName === ROLE
+    && endNode.value.customizationInfo.typeName === CUSTOM_RECORD_TYPE)
+
 const isLegalEdge = (
   startNode: GraphNode<SDFObjectNode>,
   endNode: GraphNode<SDFObjectNode>,
 ): boolean =>
-  startNode.value.changeType === 'addition'
-  && (startNode.id !== endNode.id)
+  (startNode.id !== endNode.id)
+  && (
+    startNode.value.changeType === 'addition'
+    || isRoleToCustomRecordType(startNode, endNode)
+  )
 
 export default class NetsuiteClient {
   private sdfClient: SdfClient

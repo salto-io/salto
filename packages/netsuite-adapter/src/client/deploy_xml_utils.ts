@@ -21,7 +21,6 @@ import { Graph } from './graph_utils'
 import { SDFObjectNode } from './types'
 import { isCustomTypeInfo } from './utils'
 import { OBJECTS_DIR, getCustomTypeInfoPath } from './sdf_parser'
-import { ROLE } from '../constants'
 
 
 const log = logger(module)
@@ -38,16 +37,6 @@ export const reorderDeployXml = (
   const custInfosInTopologicalOrder = dependencyGraph.getTopologicalOrder()
     .filter(node => !nodesInCycle.has(node.id))
     .map(node => node.value.customizationInfo)
-
-  custInfosInTopologicalOrder.sort((obj1, obj2) => {
-    if (obj1.typeName === ROLE && obj2.typeName !== ROLE) {
-      return -1
-    }
-    if (obj1.typeName !== ROLE && obj2.typeName === ROLE) {
-      return 1
-    }
-    return 0
-  })
 
   const customTypeInfos = custInfosInTopologicalOrder.filter(isCustomTypeInfo)
   const deployXml = xmlParser.parse(deployContent, { ignoreAttributes: false })

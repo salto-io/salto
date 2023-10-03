@@ -104,7 +104,7 @@ export const SERVICE_DESK = 'service_desk'
 export const FETCH_CONFIG = 'fetch'
 export const QUEUE_TYPE = 'Queue'
 export const REQUEST_TYPE_NAME = 'RequestType'
-export const PORTAL_GROUP_TYPE = 'PortalGroupType'
+export const PORTAL_GROUP_TYPE = 'PortalGroup'
 export const CALENDAR_TYPE = 'Calendar'
 export const CUSTOMER_PERMISSIONS_TYPE = 'CustomerPermissions'
 // almost constant functions

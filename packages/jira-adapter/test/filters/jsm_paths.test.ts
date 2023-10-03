@@ -135,17 +135,20 @@ describe('jsmPathsFilter', () => {
         expect(requestTypeInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, REQUEST_TYPE_NAME, 'requestType1'])
         expect(calendarInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, CALENDAR_TYPE, 'calendar1'])
       })
-      it('should add path for all types but portal not for calendar', async () => {
+      it('should add path for all types except portalGroup and Calendar', async () => {
         const projectWithPathUndefined = projectInstance.clone()
         projectWithPathUndefined.path = undefined
         portalInstance.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(
+          projectWithPathUndefined.elemID, projectWithPathUndefined
+        )]
+        calendarInstance.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(
           projectWithPathUndefined.elemID, projectWithPathUndefined
         )]
         await filter.onFetch(elements)
         expect(queueInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1', 'queues', 'queue1'])
         expect(portalInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, PORTAL_GROUP_TYPE, 'portal1'])
         expect(requestTypeInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1', 'requestTypes', 'requestType1'])
-        expect(calendarInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1', 'calendars', 'calendar1'])
+        expect(calendarInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, CALENDAR_TYPE, 'calendar1'])
       })
     })
 })

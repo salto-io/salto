@@ -15,9 +15,10 @@
 */
 
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { buildMetadataQuery, validateMetadataParams, MetadataQuery } from '../../src/fetch_profile/metadata_query'
+import { buildMetadataQuery, validateMetadataParams } from '../../src/fetch_profile/metadata_query'
 import { CUSTOM_OBJECT, TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../../src/constants'
 import { mockInstances } from '../mock_elements'
+import { MetadataQuery } from '../../src/types'
 
 describe('validateMetadataParams', () => {
   describe('invalid regex in include list', () => {

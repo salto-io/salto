@@ -44,7 +44,8 @@ import { getIdFields, transformRecordToValues } from './filters/custom_objects_i
 import { buildSelectQueries, getFieldNamesForQuery, isInstanceOfTypeChange } from './filters/utils'
 import { isListCustomSettingsObject } from './filters/custom_settings_filter'
 import { SalesforceRecord } from './client/types'
-import { buildDataManagement, DataManagement } from './fetch_profile/data_management'
+import { buildDataManagement } from './fetch_profile/data_management'
+import { DataManagement } from './types'
 
 const { toArrayAsync } = collections.asynciterable
 const { partition } = promises.array

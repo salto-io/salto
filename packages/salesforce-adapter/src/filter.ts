@@ -16,8 +16,7 @@
 import { ReadOnlyElementsSource, SaltoError } from '@salto-io/adapter-api'
 import { filter } from '@salto-io/adapter-utils'
 import SalesforceClient from './client/client'
-import { FetchProfile } from './fetch_profile/fetch_profile'
-import { ConfigChangeSuggestion } from './types'
+import { ConfigChangeSuggestion, FetchProfile } from './types'
 
 export type FilterContext = {
   unsupportedSystemFields?: string[]

@@ -19,7 +19,13 @@ import { FileProperties, MetadataInfo, MetadataObject } from 'jsforce-types'
 import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { FetchElements, ConfigChangeSuggestion, MAX_ITEMS_IN_RETRIEVE_REQUEST, MAX_INSTANCES_PER_TYPE } from './types'
+import {
+  FetchElements,
+  ConfigChangeSuggestion,
+  MAX_ITEMS_IN_RETRIEVE_REQUEST,
+  MAX_INSTANCES_PER_TYPE,
+  MetadataQuery, FetchProfile,
+} from './types'
 import {
   METADATA_CONTENT_FIELD,
   NAMESPACE_SEPARATOR,
@@ -43,8 +49,6 @@ import {
 } from './config_change'
 import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements, getAuthorAnnotations } from './transformers/transformer'
 import { fromRetrieveResult, toRetrieveRequest, getManifestTypeName } from './transformers/xml_transformer'
-import { MetadataQuery } from './fetch_profile/metadata_query'
-import { FetchProfile } from './fetch_profile/fetch_profile'
 
 const { isDefined } = lowerDashValues
 const { makeArray, splitDuplicates } = collections.array

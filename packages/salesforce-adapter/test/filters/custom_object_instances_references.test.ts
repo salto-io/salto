@@ -17,7 +17,7 @@
 import { references } from '@salto-io/adapter-components'
 import { Element, ElemID, ObjectType, PrimitiveTypes, PrimitiveType, CORE_ANNOTATIONS, InstanceElement, ReferenceExpression, isInstanceElement, SaltoError } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { buildFetchProfile, FetchProfile } from '../../src/fetch_profile/fetch_profile'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import SalesforceClient from '../../src/client/client'
 import filterCreator from '../../src/filters/custom_object_instances_references'
 import mockClient from '../client'
@@ -34,7 +34,7 @@ import { Types } from '../../src/transformers/transformer'
 import { defaultFilterContext } from '../utils'
 import { mockTypes } from '../mock_elements'
 import { FilterWith } from './mocks'
-import { OutgoingReferenceBehavior } from '../../src/types'
+import { FetchProfile, OutgoingReferenceBehavior } from '../../src/types'
 
 const { MISSING_REF_PREFIX } = references
 

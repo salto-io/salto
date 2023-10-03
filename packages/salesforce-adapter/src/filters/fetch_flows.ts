@@ -24,8 +24,7 @@ import { FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE, SALESFORCE } from '.
 import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
 import { createInstanceElement } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
-import { FetchElements } from '../types'
-import { FetchProfile } from '../fetch_profile/fetch_profile'
+import { FetchElements, FetchProfile } from '../types'
 
 const { isDefined } = lowerdashValues
 

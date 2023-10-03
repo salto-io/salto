@@ -14,29 +14,12 @@
 * limitations under the License.
 */
 import { collections, types } from '@salto-io/lowerdash'
-import { ObjectType } from '@salto-io/adapter-api'
 import { ConfigValidationError, validateRegularExpressions } from '../config_validation'
-import {
-  DataManagementConfig,
-  OutgoingReferenceBehavior,
-  outgoingReferenceBehaviors,
-} from '../types'
+import { DataManagement, DataManagementConfig, OutgoingReferenceBehavior, outgoingReferenceBehaviors } from '../types'
 import { DETECTS_PARENTS_INDICATOR } from '../constants'
 import { apiName } from '../transformers/transformer'
 
 const { makeArray } = collections.array
-
-export type TypeFetchCategory = 'Always' | 'IfReferenced' | 'Never'
-
-export type DataManagement = {
-  shouldFetchObjectType: (objectType: ObjectType) => Promise<TypeFetchCategory>
-  brokenReferenceBehaviorForTargetType: (typeName: string | undefined) => OutgoingReferenceBehavior
-  isReferenceAllowed: (name: string) => boolean
-  getObjectIdsFields: (name: string) => string[]
-  getObjectAliasFields: (name: string) => types.NonEmptyArray<string>
-  showReadOnlyValues?: boolean
-  managedBySaltoFieldForType: (objType: ObjectType) => string | undefined
-}
 
 
 const DEFAULT_ALIAS_FIELDS: types.NonEmptyArray<string> = [DETECTS_PARENTS_INDICATOR, 'Name']

@@ -96,7 +96,7 @@ import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
 import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
 import centralizeTrackingInfoFilter from './filters/centralize_tracking_info'
 import changedAtSingletonFilter from './filters/changed_at_singleton'
-import { FetchElements, SalesforceConfig } from './types'
+import { FetchElements, FetchProfile, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
 import { addDefaults, isCustomObjectSync, isCustomType } from './filters/utils'
@@ -105,7 +105,7 @@ import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from 
 import { getLookUpName, getLookupNameWithFallbackToElement } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import nestedInstancesAuthorInformation from './filters/author_information/nested_instances'
-import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
+import { buildFetchProfile } from './fetch_profile/fetch_profile'
 import {
   ArtificialTypes,
   CUSTOM_OBJECT,

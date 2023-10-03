@@ -24,7 +24,7 @@ import {
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import {
-  addDefaults, asListType, getChangedAtSingleton,
+  addDefaults, toListType, getChangedAtSingleton,
   getNamespace,
   isCustomMetadataRecordInstance,
   isCustomMetadataRecordType, isCustomType,
@@ -355,12 +355,12 @@ describe('addDefaults', () => {
       expect(isCustomType(mockTypes.Product2)).toBeFalse()
     })
   })
-  describe('asListType', () => {
+  describe('toListType', () => {
     it('should wrap a non List type', () => {
-      expect(asListType(mockTypes.Profile)).toEqual(new ListType(mockTypes.Profile))
+      expect(toListType(mockTypes.Profile)).toEqual(new ListType(mockTypes.Profile))
     })
     it('should not wrap a List type', () => {
-      expect(asListType(new ListType(mockTypes.Profile))).toEqual(new ListType(mockTypes.Profile))
+      expect(toListType(new ListType(mockTypes.Profile))).toEqual(new ListType(mockTypes.Profile))
     })
   })
 })

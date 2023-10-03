@@ -526,6 +526,6 @@ export const isCustomType = (element: Element): element is ObjectType => (
   isObjectType(element) && ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(apiNameSync(element) ?? '')
 )
 
-export const asListType = (type: TypeElement): ListType => (
+export const toListType = (type: TypeElement): ListType => (
   isListType(type) ? type : new ListType(type)
 )

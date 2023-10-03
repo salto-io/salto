@@ -58,6 +58,10 @@ const telemetryDisabled = (): boolean => (
     && process.env.SALTO_TELEMETRY_DISABLE === '1') || telemetryURL() === ''
 )
 
+export const isAutoMergeEnabled = (): boolean => (
+  process.env.SALTO_FETCH_AUTO_MERGE === '1'
+)
+
 const DEFAULT_TELEMETRY_CONFIG: TelemetryConfig = {
   url: telemetryURL(),
   token: telemetryToken(),

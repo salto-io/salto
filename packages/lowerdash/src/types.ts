@@ -100,6 +100,11 @@ export const isNonEmptyArray = <T> (array: T[]): array is NonEmptyArray<T> => (
   array.length > 0
 )
 
+export const isTypeOfOrUndefined = <T, S extends T>(
+  value: T | undefined,
+  typeGuard: TypeGuard<T, S>
+): value is S | undefined => value === undefined || typeGuard(value)
+
 export type AllowOnly<T, K extends keyof T> = Pick<T, K> & { [P in keyof Omit<T, K>]?: never };
 export type OneOf<T, K = keyof T> = K extends keyof T ? AllowOnly<T, K> : never
 export type XOR<A, B> = AllowOnly<A & B, keyof A> | AllowOnly<A & B, keyof B>

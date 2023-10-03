@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeDataType, DeployResult, ElemID, getChangeData, InstanceElement, isAdditionChange, isEqualValues, isModificationChange, ReadOnlyElementsSource, SaltoElementError } from '@salto-io/adapter-api'
+import { AdditionChange, Change, ChangeDataType, DeployResult, ElemID, getChangeData, InstanceElement, isAdditionChange, isEqualValues, isModificationChange, ReadOnlyElementsSource, SaltoElementError } from '@salto-io/adapter-api'
 import { config, deployment, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { invertNaclCase, resolveChangeElement, resolveValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -42,6 +42,37 @@ const invertKeysNames = (instance: Record<string, unknown>): void => {
     })
 }
 
+export const addIdToAdditionChange = (
+  response: deployment.ResponseResult,
+  change: AdditionChange<InstanceElement>,
+  apiDefinitions: config.AdapterApiConfig
+): void => {
+  if (!Array.isArray(response)) {
+    const serviceIdField = apiDefinitions.types[getChangeData(change).elemID.typeName]?.transformation?.serviceIdField ?? 'id'
+    if (response?.[serviceIdField] !== undefined) {
+      getChangeData(change).value[serviceIdField] = response[serviceIdField]
+    }
+  } else {
+    log.warn('Received unexpected response from deployChange: %o', response)
+  }
+}
+
+export const getResolvedChange = async ({
+  change,
+  elementsSource,
+}: {
+  change: Change<InstanceElement>
+  elementsSource?: ReadOnlyElementsSource | undefined
+}): Promise<Change<InstanceElement>> => {
+  const resolvedChange = await resolveChangeElement(change, getLookUpName, resolveValues, elementsSource)
+  invertKeysNames(getChangeData(resolvedChange).value)
+  const changeToDeploy = await elementUtils.swagger.flattenAdditionalProperties(
+    resolvedChange,
+    elementsSource,
+  )
+  return changeToDeploy
+}
+
 /**
  * Deploy change with the standard "add", "modify", "remove" endpoints
  */
@@ -55,12 +86,7 @@ export const defaultDeployChange = async ({
 }: DeployChangeParam): Promise<
   clientUtils.ResponseValue | clientUtils.ResponseValue[] | undefined
 > => {
-  const resolvedChange = await resolveChangeElement(change, getLookUpName, resolveValues, elementsSource)
-  invertKeysNames(getChangeData(resolvedChange).value)
-  const changeToDeploy = await elementUtils.swagger.flattenAdditionalProperties(
-    resolvedChange,
-    elementsSource,
-  )
+  const changeToDeploy = await getResolvedChange({ change, elementsSource })
 
   if (isModificationChange(changeToDeploy)) {
     const valuesBefore = (await deployment.filterIgnoredValues(
@@ -91,14 +117,7 @@ export const defaultDeployChange = async ({
   })
 
   if (isAdditionChange(change)) {
-    if (!Array.isArray(response)) {
-      const serviceIdField = apiDefinitions.types[getChangeData(change).elemID.typeName]?.transformation?.serviceIdField ?? 'id'
-      if (response?.[serviceIdField] !== undefined) {
-        getChangeData(change).value[serviceIdField] = response[serviceIdField]
-      }
-    } else {
-      log.warn('Received unexpected response from deployChange: %o', response)
-    }
+    addIdToAdditionChange(response, change, apiDefinitions)
   }
   return response
 }

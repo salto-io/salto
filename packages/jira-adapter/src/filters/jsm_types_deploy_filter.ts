@@ -15,17 +15,17 @@
 */
 
 import _ from 'lodash'
-import { getChangeData, isInstanceChange, Change, InstanceElement } from '@salto-io/adapter-api'
+import { getChangeData, isInstanceChange, Change, InstanceElement, isAdditionChange } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
-import { resolveChangeElement } from '@salto-io/adapter-utils'
-import { deployChanges } from '../deployment/standard_deployment'
+import { addIdToAdditionChange, deployChanges, getResolvedChange } from '../deployment/standard_deployment'
 import { FilterCreator } from '../filter'
 import { CUSTOMER_PERMISSIONS_TYPE } from '../constants'
-import { getLookUpName } from '../reference_mapping'
 
-const jsmSupportedTypes = [CUSTOMER_PERMISSIONS_TYPE]
+const jsmSupportedTypes = [
+  CUSTOMER_PERMISSIONS_TYPE,
+]
 
-const filterCreator: FilterCreator = ({ config, client }) => ({
+const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
   name: 'jsmTypesFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const { jsmApiDefinitions } = config
@@ -45,10 +45,16 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     const deployResult = await deployChanges(
       jsmTypesChanges,
       async change => {
-        const resolvedChange = await resolveChangeElement(change, getLookUpName)
-        await deployment.deployChange({ change: resolvedChange,
+        const resolvedChange = await getResolvedChange({
+          change,
+          elementsSource,
+        })
+        const response = await deployment.deployChange({ change: resolvedChange,
           client,
           endpointDetails: jsmApiDefinitions.types[getChangeData(change).elemID.typeName].deployRequests })
+        if (isAdditionChange(change)) {
+          addIdToAdditionChange(response, change, jsmApiDefinitions)
+        }
       }
     )
     return { deployResult, leftoverChanges }

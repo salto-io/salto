@@ -16,24 +16,14 @@
 
 import { values } from '@salto-io/lowerdash'
 import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { DATA_CONFIGURATION, FetchParameters, METADATA_CONFIG, OptionalFeatures } from '../types'
-import { buildDataManagement, DataManagement, validateDataManagementConfig } from './data_management'
-import { buildMetadataQuery, MetadataQuery, validateMetadataParams } from './metadata_query'
+import { DATA_CONFIGURATION, FetchParameters, FetchProfile, METADATA_CONFIG, OptionalFeatures } from '../types'
+import { buildDataManagement, validateDataManagementConfig } from './data_management'
+import { buildMetadataQuery, validateMetadataParams } from './metadata_query'
 import { DEFAULT_MAX_INSTANCES_PER_TYPE } from '../constants'
 import { getFetchTargets, SupportedMetadataType } from './metadata_types'
 import SalesforceClient from '../client/client'
 
 const { isDefined } = values
-
-export type FetchProfile = {
-  readonly metadataQuery: MetadataQuery
-  readonly dataManagement?: DataManagement
-  readonly isFeatureEnabled: (name: keyof OptionalFeatures) => boolean
-  readonly shouldFetchAllCustomSettings: () => boolean
-  readonly maxInstancesPerType: number
-  readonly preferActiveFlowVersions: boolean
-  readonly addNamespacePrefixToFullName: boolean
-}
 
 type OptionalFeaturesDefaultValues = {
   [FeatureName in keyof OptionalFeatures]?: boolean
@@ -51,7 +41,7 @@ type BuildFetchProfileParams = {
   fetchParams: FetchParameters
   isFetchWithChangesDetection: boolean
   elementsSource: ReadOnlyElementsSource
-  client: SalesforceClient
+  client?: SalesforceClient
 }
 
 export const buildFetchProfile = ({

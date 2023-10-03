@@ -843,3 +843,34 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
+export type MetadataQuery = {
+  prepare: () => Promise<void>
+  isTypeMatch: (type: string) => boolean
+  isInstanceMatch: (instance: MetadataInstance) => boolean
+  isTargetedFetch: () => boolean
+  isFetchWithChangesDetection: () => boolean
+  isPartialFetch: () => boolean
+  getFolderPathsByName: (folderType: string) => Record<string, string>
+}
+
+export type TypeFetchCategory = 'Always' | 'IfReferenced' | 'Never'
+
+export type DataManagement = {
+  shouldFetchObjectType: (objectType: ObjectType) => Promise<TypeFetchCategory>
+  brokenReferenceBehaviorForTargetType: (typeName: string | undefined) => OutgoingReferenceBehavior
+  isReferenceAllowed: (name: string) => boolean
+  getObjectIdsFields: (name: string) => string[]
+  getObjectAliasFields: (name: string) => types.NonEmptyArray<string>
+  showReadOnlyValues?: boolean
+  managedBySaltoFieldForType: (objType: ObjectType) => string | undefined
+}
+
+export type FetchProfile = {
+  readonly metadataQuery: MetadataQuery
+  readonly dataManagement?: DataManagement
+  readonly isFeatureEnabled: (name: keyof OptionalFeatures) => boolean
+  readonly shouldFetchAllCustomSettings: () => boolean
+  readonly maxInstancesPerType: number
+  readonly preferActiveFlowVersions: boolean
+  readonly addNamespacePrefixToFullName: boolean
+}

@@ -33,7 +33,7 @@ import { collections } from '@salto-io/lowerdash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import {
   ConfigChangeSuggestion,
-  FetchParameters,
+  FetchParameters, FetchProfile,
   isDataManagementConfigSuggestions,
   SaltoAliasSettings,
 } from '../../src/types'
@@ -59,7 +59,7 @@ import {
 import { Types } from '../../src/transformers/transformer'
 import {
   buildFetchProfile,
-  FetchProfile,
+
 } from '../../src/fetch_profile/fetch_profile'
 import {
   defaultFilterContext,

@@ -867,7 +867,7 @@ export type DataManagement = {
   getObjectAliasFields: (name: string) => types.NonEmptyArray<string>
   showReadOnlyValues?: boolean
   managedBySaltoFieldForType: (objType: ObjectType) => string | undefined
-  omittedFieldsForType: (name: string | undefined) => string[]
+  omittedFieldsForType: (name: string) => string[]
 }
 
 export type FetchProfile = {

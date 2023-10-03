@@ -486,13 +486,14 @@ export const getCustomObjectsFetchSettings = async (
   }
   const typeToFetchSettings = async (type: ObjectType): Promise<CustomObjectFetchSetting> => {
     const managedBySaltoFieldName = dataManagement.managedBySaltoFieldForType(type)
+    const typeApiName = apiNameSync(type)
     return {
       objectType: type,
       isBase: await dataManagement.shouldFetchObjectType(type) === 'Always',
       ...await getIdFields(type, dataManagement),
       managedBySaltoField: managedBySaltoFieldName,
       invalidManagedBySaltoField: isInvalidManagedBySaltoField(type) ? managedBySaltoFieldName : undefined,
-      omittedFields: dataManagement.omittedFieldsForType(apiNameSync(type)),
+      omittedFields: typeApiName ? dataManagement.omittedFieldsForType(typeApiName) : [],
     }
   }
 

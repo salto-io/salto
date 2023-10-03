@@ -193,8 +193,8 @@ export const validateDataManagementConfig = (
     )
   }
   const invalidOmittedFieldNames = makeArray(dataManagementConfig.omittedFields)
-    .filter(omittedFieldName => !omittedFieldName.match(/\w+(?:\.\w+)/))
+    .filter(omittedFieldName => omittedFieldName.split('.').length < 2)
   if (invalidOmittedFieldNames.length > 0) {
-    throw new ConfigValidationError([...fieldPath, 'omittedFields'], `The following entries are not valid Salesforce API names: ${invalidOmittedFieldNames.join(',')}`)
+    throw new ConfigValidationError([...fieldPath, 'omittedFields'], `The following omitted fields API names are invalid: ${invalidOmittedFieldNames.join(',')}`)
   }
 }

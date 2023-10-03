@@ -640,17 +640,19 @@ describe('Custom Object Instances filter', () => {
       })
 
       describe('when an object has non-queryable fields', () => {
-        it('should issue a warning if there are instances of the object', () => {
-          expect(fetchResult.errors).toEqual([{
-            message: expect.stringContaining(includeObjectName) && expect.stringContaining('NonQueryable'),
-            severity: 'Info',
-          }])
-          expect(fetchResult.errors?.[0].message).not.toInclude('HiddenNonQueryable')
-        })
-        it('should not issue a warning if there are no instances of the object', () => {
-          expect(fetchResult.errors).not.toIncludeAllPartialMembers([{
-            message: expect.stringContaining(refToObjectName),
-          }])
+        describe('when warnings are enabled', () => {
+          it('should issue a warning if there are instances of the object', () => {
+            expect(fetchResult.errors).toEqual([{
+              message: expect.stringContaining(includeObjectName) && expect.stringContaining('NonQueryable'),
+              severity: 'Info',
+            }])
+            expect(fetchResult.errors?.[0].message).not.toInclude('HiddenNonQueryable')
+          })
+          it('should not issue a warning if there are no instances of the object', () => {
+            expect(fetchResult.errors).not.toIncludeAllPartialMembers([{
+              message: expect.stringContaining(refToObjectName),
+            }])
+          })
         })
       })
 

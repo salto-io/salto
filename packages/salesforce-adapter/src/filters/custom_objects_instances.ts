@@ -88,10 +88,6 @@ const defaultRecordKeysToOmit = ['attributes']
 const nameSeparator = '___'
 const aliasSeparator = ' '
 
-const isSystemField = (field: Field): boolean => (
-  isHiddenField(field) || isReadOnlyField(field)
-)
-
 const getQueryableFields = (object: ObjectType): Field[] => (
   Object.values(object.fields).filter(isQueryableField)
 )
@@ -549,7 +545,8 @@ const filterTypesWithManyInstances = async (
 const getInaccessibleCustomFields = (objectType: ObjectType): string[] => (
   Object.values(objectType.fields)
     .filter(field => !isQueryableField(field))
-    .filter(field => !isSystemField(field)) // the value of system fields won't be visible anyway
+    // these fields are either hidden or will end up being hidden
+    .filter(field => !isHiddenField(field) && !isReadOnlyField(field))
     .map(field => apiNameSync(field))
     .filter(isDefined)
 )
@@ -568,11 +565,11 @@ const createInvalidManagedBySaltoFieldFetchWarning = async (
   severity: 'Warning',
 })
 
-const createInaccessibleFieldsFetchWarning = async (
+const createInaccessibleFieldsFetchWarning = (
   objectType: ObjectType,
   inaccessibleFields: string[],
-): Promise<SaltoError> => ({
-  message: `The following fields are not accessible and will not be fetched for records of type ${await apiName(objectType)}: ${inaccessibleFields.join(',')}. Values of these fields will appear as 'deleted' if these data records are ever deployed`,
+): SaltoError => ({
+  message: `The following fields are not accessible and will not be fetched for records of type ${apiNameSync(objectType)}: ${inaccessibleFields.join(',')}. Values of these fields will appear as 'deleted' if these data records are ever deployed`,
   severity: 'Info',
 })
 
@@ -635,10 +632,10 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         .map(instance => instance.getTypeSync())
     )
 
-    let invalidPermissionsWarnings: collections.asynciterable.AwuIterable<SaltoError> = awu([])
+    let invalidPermissionsWarnings: SaltoError[] = []
 
     if (config.fetchProfile.dataManagement?.isWarningEnabled('nonQueryableFields') ?? false) {
-      invalidPermissionsWarnings = awu(customObjectFetchSetting)
+      invalidPermissionsWarnings = customObjectFetchSetting
         .map(fetchSettings => fetchSettings.objectType)
         .filter(isCustomObject)
         .map(objectType => ({ type: objectType, fields: getInaccessibleCustomFields(objectType) }))

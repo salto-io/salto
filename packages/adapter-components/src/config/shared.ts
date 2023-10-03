@@ -25,7 +25,7 @@ export const DEPLOYER_FALLBACK_VALUE = '##DEPLOYER##'
 
 export class InvalidSingletonType extends Error {}
 
-export class FetchError extends Error {
+export class AdapterFetchError extends Error {
   constructor(message: string, readonly severity: SeverityLevel) {
     super(message)
   }

@@ -34,7 +34,7 @@ import { TypeDuckTypeConfig, TypeDuckTypeDefaultsConfig } from '../../../src/con
 import { simpleGetArgs, returnFullEntry, computeGetArgs } from '../../../src/elements'
 import { findDataField } from '../../../src/elements/field_finder'
 import { createElementQuery } from '../../../src/elements/query'
-import { FetchError, InvalidSingletonType } from '../../../src/config/shared'
+import { AdapterFetchError, InvalidSingletonType } from '../../../src/config/shared'
 
 describe('ducktype_transformer', () => {
   describe('getTypeAndInstances', () => {
@@ -925,7 +925,7 @@ describe('ducktype_transformer', () => {
       { severity: 'Warning' },
     ])('should return fetch errors correctly with severity %s', async ({ severity }) => {
       jest.spyOn(transformer, 'getTypeAndInstances').mockImplementation(() => {
-        throw new FetchError('fetch err', severity)
+        throw new AdapterFetchError('fetch err', severity)
       })
       const res = await getAllElements({
         adapterName: 'something',

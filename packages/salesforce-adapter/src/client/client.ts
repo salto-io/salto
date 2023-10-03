@@ -489,8 +489,6 @@ export const getConnectionDetails = async (
   }
 }
 
-const ACCOUNT_ID_VERSION = '1'
-
 export const validateCredentials = async (
   creds: Credentials, minApiRequestsRemaining = 0, connection?: Connection,
 ): Promise<AccountInfo> => {
@@ -510,13 +508,14 @@ export const validateCredentials = async (
       accountId: connection.instanceUrl,
       accountType,
       isProduction,
-      extraInformation: { orgId, accountIdVersion: ACCOUNT_ID_VERSION },
+      extraInformation: { orgId },
     }
   }
   return {
     accountId: orgId,
     accountType,
     isProduction,
+    extraInformation: { orgId },
   }
 }
 export default class SalesforceClient {

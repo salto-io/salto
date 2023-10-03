@@ -519,7 +519,12 @@ describe('salesforce client', () => {
       ).rejects.toThrow(ApiLimitsTooLowError)
     })
     it('should return empty string as accountId and no values for accountType and isProduction', async () => {
-      expect(await validateCredentials(credentials, 3, connection)).toEqual({ accountId: '' })
+      expect(await validateCredentials(credentials, 3, connection)).toEqual({
+        accountId: '',
+        isProduction: undefined,
+        accountType: undefined,
+        extraInformation: { orgId: '' },
+      })
     })
     describe('isProduction and accountType', () => {
       const PRODUCTION_ORGANIZATION_TYPE = 'Professional Edition'
@@ -542,7 +547,7 @@ describe('salesforce client', () => {
               accountId: 'https://url.com/',
               isProduction: false,
               accountType: PRODUCTION_ORGANIZATION_TYPE,
-              extraInformation: { orgId: '', accountIdVersion: '1' },
+              extraInformation: { orgId: '' },
             })
           })
         })
@@ -555,7 +560,7 @@ describe('salesforce client', () => {
               accountId: 'https://url.com/',
               isProduction: false,
               accountType: NON_PRODUCTION_ORGANIZATION_TYPE,
-              extraInformation: { orgId: '', accountIdVersion: '1' },
+              extraInformation: { orgId: '' },
             })
           })
           it('should throw an error when there is no instanceUrl', async () => {
@@ -576,6 +581,7 @@ describe('salesforce client', () => {
               accountId: '',
               isProduction: true,
               accountType: PRODUCTION_ORGANIZATION_TYPE,
+              extraInformation: { orgId: '' },
             })
           })
         })
@@ -588,6 +594,7 @@ describe('salesforce client', () => {
               accountId: '',
               isProduction: false,
               accountType: NON_PRODUCTION_ORGANIZATION_TYPE,
+              extraInformation: { orgId: '' },
             })
           })
         })

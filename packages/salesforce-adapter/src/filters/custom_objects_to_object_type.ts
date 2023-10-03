@@ -56,7 +56,7 @@ import {
   isInstanceOfType,
   isMasterDetailField,
   buildElementsSourceForFetch,
-  addKeyPrefix, addPluralLabel, getInstanceAlias, metadataTypeSync,
+  addKeyPrefix, addPluralLabel, getInstanceAlias, apiNameSync,
 } from './utils'
 import { convertList } from './convert_lists'
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../metadata_deploy'
@@ -851,7 +851,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
       await removeAsync(elements, isInstanceOfType(CUSTOM_OBJECT))
       const customObjectMetadataType = elements
         .filter(isObjectType)
-        .find(objectType => metadataTypeSync(objectType) === CUSTOM_OBJECT)
+        .find(objectType => apiNameSync(objectType) === CUSTOM_OBJECT)
       if (customObjectMetadataType !== undefined) {
         customObjectMetadataType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
       }

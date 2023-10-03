@@ -27,7 +27,7 @@ import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_T
   PRIORITY_SCHEME_TYPE_NAME, SCRIPT_RUNNER_TYPE, POST_FUNCTION_CONFIGURATION, RESOLUTION_TYPE_NAME,
   ISSUE_EVENT_TYPE_NAME, CONDITION_CONFIGURATION, PROJECT_ROLE_TYPE, VALIDATOR_CONFIGURATION,
   BOARD_TYPE_NAME, ISSUE_LINK_TYPE_NAME, DIRECTED_LINK_TYPE, MAIL_LIST_TYPE_NAME,
-  SCRIPT_RUNNER_LISTENER_TYPE, SCRIPTED_FIELD_TYPE, BEHAVIOR_TYPE, ISSUE_LAYOUT_TYPE, SCRIPT_RUNNER_SETTINGS_TYPE, SCRIPT_FRAGMENT_TYPE, CUSTOMER_PERMISSIONS_TYPE, QUEUE_TYPE, REQUEST_TYPE_NAME, CALENDAR_TYPE, PORTAL_GROUP_TYPE, PORTAL_SETTINGS_TYPE_NAME, SLA_TYPE_NAME } from './constants'
+  SCRIPT_RUNNER_LISTENER_TYPE, SCRIPTED_FIELD_TYPE, BEHAVIOR_TYPE, ISSUE_LAYOUT_TYPE, SCRIPT_RUNNER_SETTINGS_TYPE, SCRIPT_FRAGMENT_TYPE, CUSTOMER_PERMISSIONS_TYPE, QUEUE_TYPE, REQUEST_TYPE_NAME, CALENDAR_TYPE, PORTAL_GROUP_TYPE, PORTAL_SETTINGS_TYPE_NAME, SLA_TYPE_NAME, ISSUE_VIEW_TYPE, REQUEST_FORM_TYPE } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 import { getRefType } from './references/workflow_properties'
 import { FIELD_TYPE_NAME } from './filters/fields/constants'
@@ -900,7 +900,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: ISSUE_TYPE_NAME },
   },
   {
-    src: { field: 'projectId', parentTypes: [ISSUE_LAYOUT_TYPE] },
+    src: { field: 'projectId', parentTypes: [ISSUE_LAYOUT_TYPE, REQUEST_FORM_TYPE, ISSUE_VIEW_TYPE] },
     serializationStrategy: 'id',
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: PROJECT_TYPE },
@@ -954,7 +954,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: PROJECT_TYPE },
   },
   {
-    src: { field: 'projectKey', parentTypes: [CUSTOMER_PERMISSIONS_TYPE, QUEUE_TYPE, REQUEST_TYPE_NAME, PORTAL_GROUP_TYPE, CALENDAR_TYPE, PORTAL_SETTINGS_TYPE_NAME, SLA_TYPE_NAME] },
+    src: { field: 'projectKey', parentTypes: [CUSTOMER_PERMISSIONS_TYPE, QUEUE_TYPE, REQUEST_TYPE_NAME, PORTAL_GROUP_TYPE, CALENDAR_TYPE, PORTAL_SETTINGS_TYPE_NAME, SLA_TYPE_NAME, REQUEST_FORM_TYPE, ISSUE_VIEW_TYPE] },
     jiraSerializationStrategy: 'key',
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: PROJECT_TYPE },
@@ -982,6 +982,12 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     serializationStrategy: 'id',
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: CALENDAR_TYPE },
+  },
+  {
+    src: { field: 'extraDefinerId', parentTypes: [REQUEST_FORM_TYPE, ISSUE_VIEW_TYPE] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: 'RequestType' },
   },
 ]
 

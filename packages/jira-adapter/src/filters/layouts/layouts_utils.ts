@@ -26,7 +26,7 @@ import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../../ut
 import { JiraConfig } from '../../config/config'
 import JiraClient, { graphQLResponseType } from '../../client/client'
 import { QUERY } from './layout_queries'
-import { ISSUE_LAYOUT_CONFIG_ITEM_SCHEME, ISSUE_LAYOUT_RESPONSE_SCHEME, IssueLayoutConfig, IssueLayoutConfigItem, IssueLayoutResponse, containerIssueLayoutResponse, createLayoutType } from './layout_types'
+import { ISSUE_LAYOUT_CONFIG_ITEM_SCHEME, ISSUE_LAYOUT_RESPONSE_SCHEME, issueLayoutConfig, layoutConfigItem, IssueLayoutResponse, containerIssueLayoutResponse, createLayoutType } from './layout_types'
 import { ISSUE_LAYOUT_TYPE, ISSUE_VIEW_TYPE, JIRA, REQUEST_FORM_TYPE, REQUEST_TYPE_NAME } from '../../constants'
 
 const log = logger(module)

@@ -330,28 +330,35 @@ describe('issue layout filter', () => {
       await filter.onFetch(elements)
       expect(connection.post).not.toHaveBeenCalled()
     })
-  })
-  it('should not fetch issue layouts if it is a data center instance', async () => {
-    const configWithDataCenterTrue = _.cloneDeep(getDefaultConfig({ isDataCenter: true }))
-    configWithDataCenterTrue.fetch.enableIssueLayouts = true
-    filter = issueLayoutFilter(getFilterParams({
-      client,
-      config: configWithDataCenterTrue,
-    })) as FilterType
+    it('should not fetch issue layouts if it is a data center instance', async () => {
+      const configWithDataCenterTrue = _.cloneDeep(getDefaultConfig({ isDataCenter: true }))
+      configWithDataCenterTrue.fetch.enableIssueLayouts = true
+      filter = issueLayoutFilter(getFilterParams({
+        client,
+        config: configWithDataCenterTrue,
+      })) as FilterType
 
-    filter = issueLayoutFilter(getFilterParams({ config: configWithDataCenterTrue, client })) as FilterType
-    await filter.onFetch(elements)
-    expect(connection.post).not.toHaveBeenCalled()
-  })
-  it('should use elemIdGetter', async () => {
-    filter = issueLayoutFilter(getFilterParams({
-      client,
-      getElemIdFunc: () => new ElemID(JIRA, 'someName'),
-    })) as FilterType
-    await filter.onFetch(elements)
-    const instances = elements.filter(isInstanceElement)
-    const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
-    expect(issueLayoutInstance?.elemID.getFullName()).toEqual('jira.IssueLayout.instance.project1_Default_Issue_Layout@uss')
+      filter = issueLayoutFilter(getFilterParams({ config: configWithDataCenterTrue, client })) as FilterType
+      await filter.onFetch(elements)
+      expect(connection.post).not.toHaveBeenCalled()
+    })
+    it('should use elemIdGetter', async () => {
+      filter = issueLayoutFilter(getFilterParams({
+        client,
+        getElemIdFunc: () => new ElemID(JIRA, 'someName'),
+      })) as FilterType
+      await filter.onFetch(elements)
+      const instances = elements.filter(isInstanceElement)
+      const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
+      expect(issueLayoutInstance?.elemID.getFullName()).toEqual('jira.IssueLayout.instance.someName')
+    })
+    it('should filter out issue layout if screen is not a resolved reference', async () => {
+      screenSchemeInstance.value.screens.default = 'unresolved'
+      await filter.onFetch(elements)
+      const instances = elements.filter(isInstanceElement)
+      const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
+      expect(issueLayoutInstance).toBeUndefined()
+    })
   })
   describe('deploy', () => {
     let issueLayoutInstance: InstanceElement

@@ -41,6 +41,11 @@ export const continuousSplit = (str: string, regexes: RegExp[], i = 0): string[]
     .filter(st => !_.isEmpty(st))
 }
 
+export const humanFileSize = (size: number): string => {
+  const i = size === 0 ? 0 : Math.floor(Math.log(size) / Math.log(1024))
+  return `${Number(size / 1024 ** i).toFixed(2)} ${['B', 'kB', 'MB', 'GB', 'TB'][i]}`
+}
+
 /**
  * Find all matches to the specified regular expression.
  * This is a partial replacement for String.prototype.matchAll which

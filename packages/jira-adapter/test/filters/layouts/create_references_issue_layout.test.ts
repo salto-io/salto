@@ -18,10 +18,10 @@ import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType, ReferenceE
 import { filterUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { createEmptyType, getFilterParams } from '../../utils'
-import { JIRA, PROJECT_TYPE, SCREEN_SCHEME_TYPE } from '../../../src/constants'
-import createReferencesIssueLayoutFilter from '../../../src/filters/issue_layout/create_references_issue_layout'
+import { ISSUE_LAYOUT_TYPE, JIRA, PROJECT_TYPE, SCREEN_SCHEME_TYPE } from '../../../src/constants'
+import createReferencesIssueLayoutFilter from '../../../src/filters/layouts/create_references_layouts'
 import { getDefaultConfig } from '../../../src/config/config'
-import { createIssueLayoutType } from '../../../src/filters/issue_layout/issue_layout_types'
+import { createLayoutType } from '../../../src/filters/layouts/layout_types'
 
 describe('createReferencesIssueLayoutFilter', () => {
     type FilterType = filterUtils.FilterWith<'onFetch'>
@@ -111,21 +111,21 @@ describe('createReferencesIssueLayoutFilter', () => {
         type: 'testField1',
       }
     )
-    const issueLayoutConfigItemType = new ObjectType({
-      elemID: new ElemID(JIRA, 'IssueLayoutConfigItem'),
+    const layoutConfigItemType = new ObjectType({
+      elemID: new ElemID(JIRA, 'layoutConfigItem'),
       fields: {
         key: { refType: fieldType },
         sectionType: { refType: BuiltinTypes.STRING },
         type: { refType: BuiltinTypes.STRING },
       },
     })
-    const issueLayoutConfigType = new ObjectType({
-      elemID: new ElemID(JIRA, 'IssueLayoutConfig'),
+    const layoutConfigType = new ObjectType({
+      elemID: new ElemID(JIRA, 'issueLayoutConfig'),
       fields: {
-        items: { refType: new ListType(issueLayoutConfigItemType) },
+        items: { refType: new ListType(layoutConfigItemType) },
       },
     })
-    const { issueLayoutType } = createIssueLayoutType()
+    const issueLayoutType = createLayoutType(ISSUE_LAYOUT_TYPE).layoutType
 
     const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     config.fetch.enableIssueLayouts = true
@@ -160,8 +160,8 @@ describe('createReferencesIssueLayoutFilter', () => {
         projectInstance,
         fieldType,
         fieldInstance1,
-        issueLayoutConfigItemType,
-        issueLayoutConfigType,
+        layoutConfigItemType,
+        layoutConfigType,
         issueLayoutType,
         issueLayoutInstance,
       ]

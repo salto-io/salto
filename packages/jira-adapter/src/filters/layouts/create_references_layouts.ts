@@ -21,16 +21,18 @@ import { FilterCreator } from '../../filter'
 import { ISSUE_LAYOUT_TYPE } from '../../constants'
 import { JiraFieldReferenceResolver, contextStrategyLookup, referencesRules } from '../../reference_mapping'
 
+const supportedLayouts = [ISSUE_LAYOUT_TYPE]
+
 const filter: FilterCreator = ({ config }) => ({
   name: 'createReferencesIssueLayoutFilter',
   onFetch: async elements => {
-    const issueLayouts = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
+    const layouts = elements.filter(isInstanceElement).filter(e => supportedLayouts.includes(e.elemID.typeName))
     const fixedDefs = referencesRules
       .map(def => (
         config.fetch.enableMissingReferences ? def : _.omit(def, 'jiraMissingRefStrategy')
       ))
     await referenceUtils.addReferences({
-      elements: issueLayouts,
+      elements: layouts,
       contextElements: elements,
       fieldsToGroupBy: ['id'],
       defs: fixedDefs,

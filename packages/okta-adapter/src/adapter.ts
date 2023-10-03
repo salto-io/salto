@@ -50,6 +50,7 @@ import brandThemeFilesFilter from './filters/brand_theme_files'
 import groupMembersFilter from './filters/group_members'
 import unorderedListsFilter from './filters/unordered_lists'
 import addAliasFilter from './filters/add_alias'
+import profileMappingPropertiesFilter from './filters/profile_mapping_properties'
 import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
 
@@ -66,6 +67,7 @@ export const DEFAULT_FILTERS = [
   deleteFieldsFilter,
   userTypeFilter,
   userSchemaFilter,
+  profileMappingPropertiesFilter,
   authorizationRuleFilter,
   // should run before fieldReferencesFilter
   urlReferencesFilter,

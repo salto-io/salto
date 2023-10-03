@@ -44,6 +44,7 @@ export type OktaFetchConfig = configUtils.UserFetchConfig & {
   convertUsersIds?: boolean
   enableMissingReferences?: boolean
   includeGroupMemberships?: boolean
+  includeProfileMappingProperties?: boolean
 }
 
 export type OktaSwaggerApiConfig = configUtils.AdapterSwaggerApiConfig<OktaActionName>
@@ -1224,6 +1225,16 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
     },
+    deployRequests: {
+      // only modificaiton is supported
+      modify: {
+        url: '/api/v1/mappings/{mappingId}',
+        method: 'post',
+        urlParamsToFields: {
+          mappingId: 'id',
+        },
+      },
+    },
   },
   ProfileMappingSource: {
     transformation: {
@@ -1465,7 +1476,6 @@ export const SUPPORTED_TYPES = {
     'api__v1__idps',
   ],
   InlineHook: ['api__v1__inlineHooks'],
-  // TODO SALTO-2734 returns 401
   ProfileMapping: ['api__v1__mappings'],
   LinkedObjectDefinitions: ['api__v1__meta__schemas__user__linkedObjects'],
   GroupSchema: ['GroupSchema'],
@@ -1649,6 +1659,7 @@ export const DEFAULT_CONFIG: OktaConfig = {
     convertUsersIds: true,
     enableMissingReferences: true,
     includeGroupMemberships: false,
+    includeProfileMappingProperties: true,
   },
   [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
   [PRIVATE_API_DEFINITIONS_CONFIG]: DUCKTYPE_API_DEFINITIONS,
@@ -1724,6 +1735,7 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
           convertUsersIds: { refType: BuiltinTypes.BOOLEAN },
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
           includeGroupMemberships: { refType: BuiltinTypes.BOOLEAN },
+          includeProfileMappingProperties: { refType: BuiltinTypes.BOOLEAN },
         }
       ),
     },
@@ -1753,6 +1765,7 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
       `${FETCH_CONFIG}.convertUsersIds`,
       `${FETCH_CONFIG}.enableMissingReferences`,
       `${FETCH_CONFIG}.includeGroupMemberships`,
+      `${FETCH_CONFIG}.includeProfileMappingProperties`
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },

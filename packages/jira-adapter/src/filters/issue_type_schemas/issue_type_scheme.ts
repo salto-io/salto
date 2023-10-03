@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isObjectType, ModificationChange, ObjectType } from '@salto-io/adapter-api'
+import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isObjectType, ModificationChange, ObjectType } from '@salto-io/adapter-api'
 import { resolveChangeElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -92,19 +92,16 @@ const deployIssueTypeSchema = async (
   config: JiraConfig,
 ): Promise<void> => {
   if (isModificationChange(change)) {
-    await defaultDeployChange({ change, client, apiDefinitions: config.apiDefinitions, fieldsToIgnore: ['issueTypeIds'] })
     const resolvedChange = await resolveChangeElement(change, getLookUpName)
     await deployNewAndDeletedIssueTypeIds(resolvedChange, client)
     await deployIssueTypeIdsOrder(resolvedChange, client)
+    await defaultDeployChange({ change, client, apiDefinitions: config.apiDefinitions, fieldsToIgnore: ['issueTypeIds'] })
     return
   }
 
   await defaultDeployChange({ change, client, apiDefinitions: config.apiDefinitions })
-
-  if (isAdditionChange(change)) {
-    change.data.after.value.id = change.data.after.value.issueTypeSchemeId
-    delete change.data.after.value.issueTypeSchemeId
-  }
+  change.data.after.value.id = change.data.after.value.issueTypeSchemeId
+  delete change.data.after.value.issueTypeSchemeId
 }
 
 const filter: FilterCreator = ({ config, client }) => ({

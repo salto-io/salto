@@ -18,27 +18,26 @@ import {
   Element,
   ElemID,
   InstanceElement,
-  isInstanceElement,
   ReadOnlyElementsSource,
   Values,
 } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { LocalFilterCreator } from '../filter'
-import { apiName, isMetadataInstanceElement } from '../transformers/transformer'
-import { ArtificialTypes, INSTANCE_FULL_NAME_FIELD } from '../constants'
-import { getChangedAtSingleton } from './utils'
+import { ArtificialTypes } from '../constants'
+import {
+  apiNameSync,
+  getChangedAtSingleton,
+  isCustomObjectSync,
+  isMetadataInstanceElementSync,
+  metadataTypeSync,
+} from './utils'
 
-const { groupByAsync, awu } = collections.asynciterable
-
-
-const createChangedAtSingletonInstanceValues = (metadataInstancesByType: Record<string, InstanceElement[]>): Values => {
+const createChangedAtSingletonInstanceValues = (metadataInstancesByType: Record<string, Element[]>): Values => {
   const instanceValues: Values = {}
-  Object.entries(metadataInstancesByType).forEach(([metadataType, instances]) => {
+  Object.entries(metadataInstancesByType).forEach(([metadataType, elements]) => {
     instanceValues[metadataType] = {}
-    instances.forEach(instance => {
-      const instanceName = instance.value[INSTANCE_FULL_NAME_FIELD]
-      instanceValues[metadataType][instanceName] = instance.annotations[CORE_ANNOTATIONS.CHANGED_AT]
+    elements.forEach(element => {
+      instanceValues[metadataType][apiNameSync(element) ?? ''] = element.annotations[CORE_ANNOTATIONS.CHANGED_AT]
     })
   })
   return instanceValues
@@ -63,22 +62,20 @@ const getChangedAtSingletonInstance = async (
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'changedAtSingletonFilter',
   onFetch: async (elements: Element[]) => {
-    const metadataInstancesByType = await groupByAsync(
-      await awu(elements)
-        .filter(isInstanceElement)
-        .filter(isMetadataInstanceElement)
-        .filter(instance => _.isString(instance.annotations[CORE_ANNOTATIONS.CHANGED_AT]))
-        .toArray(),
-      async instance => apiName(await instance.getType())
+    const elementsByType = _.groupBy(
+      elements
+        .filter(element => isMetadataInstanceElementSync(element) || isCustomObjectSync(element))
+        .filter(element => element.annotations[CORE_ANNOTATIONS.CHANGED_AT]),
+      metadataTypeSync
     )
     const changedAtInstance = await getChangedAtSingletonInstance(config.elementsSource)
     elements.push(changedAtInstance)
     // None of the Elements were annotated with changedAt
-    if (Object.values(metadataInstancesByType).flat().length === 0) {
+    if (Object.values(elementsByType).flat().length === 0) {
       return
     }
     changedAtInstance.value = _.defaultsDeep(
-      createChangedAtSingletonInstanceValues(metadataInstancesByType),
+      createChangedAtSingletonInstanceValues(elementsByType),
       changedAtInstance.value,
     )
   },

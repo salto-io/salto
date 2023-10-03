@@ -13,9 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { regex, values } from '@salto-io/lowerdash'
+import { collections, regex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { ElemID, InstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { FileProperties } from 'jsforce'
+import * as metadataTypes from './metadata_types'
 import {
   DEFAULT_NAMESPACE,
   SETTINGS_METADATA_TYPE,
@@ -31,12 +33,29 @@ import {
 } from '../constants'
 import { validateRegularExpressions, ConfigValidationError } from '../config_validation'
 import { MetadataInstance, MetadataParams, MetadataQueryParams, METADATA_INCLUDE_LIST, METADATA_EXCLUDE_LIST, METADATA_SEPARATE_FIELD_LIST } from '../types'
+import SalesforceClient from '../client/client'
+import { listMetadataObjects } from '../fetch'
 
 const { isDefined } = values
+const { makeArray } = collections.array
 
 
 // According to Salesforce Metadata API docs, folder names can only contain alphanumeric characters and underscores.
 const VALID_FOLDER_PATH_RE = /^[a-zA-Z\d_/]+$/
+
+const METADATA_TYPES_WITH_RELATED_PROPS = ['CustomObject'] as const
+type MetadataTypeWithRelatedProps = typeof METADATA_TYPES_WITH_RELATED_PROPS[number]
+type RelatedPropsByMetadataType = {
+  [K in MetadataTypeWithRelatedProps]: Record<string, FileProperties[]>
+}
+
+type MetadataInstanceWithRelatedProps = MetadataInstance & {
+  metadataType: MetadataTypeWithRelatedProps
+}
+
+const isMetadataInstanceWithRelatedProps = (instance: MetadataInstance): instance is MetadataInstanceWithRelatedProps => (
+  (METADATA_TYPES_WITH_RELATED_PROPS as ReadonlyArray<string>).includes(instance.metadataType)
+)
 
 export type MetadataQuery = {
   prepare: () => Promise<void>
@@ -102,6 +121,25 @@ type BuildMetadataQueryParams = {
   target?: string[]
   elementsSource: ReadOnlyElementsSource
   isFetchWithChangesDetection: boolean
+  client: SalesforceClient
+}
+
+const retrieveRelatedPropsByMetadataType = async (client: SalesforceClient): Promise<RelatedPropsByMetadataType> => {
+  const retrieveCustomObjectRelatedPropsByParent = async (): Promise<Record<string, FileProperties[]>> => {
+    const allSubInstancesFileProps = _.flatten(await Promise.all(
+      [
+        ...metadataTypes.CUSTOM_OBJECT_FIELDS,
+        CUSTOM_FIELD,
+      ].map(typeName => listMetadataObjects(client, typeName))
+    )).flatMap(result => result.elements)
+    return _.groupBy(
+      allSubInstancesFileProps,
+      fileProp => fileProp.fullName.split('.')[0],
+    )
+  }
+  return {
+    [CUSTOM_OBJECT]: await retrieveCustomObjectRelatedPropsByParent(),
+  }
 }
 
 export const buildMetadataQuery = ({
@@ -109,11 +147,14 @@ export const buildMetadataQuery = ({
   elementsSource,
   target,
   isFetchWithChangesDetection,
+  client,
 }: BuildMetadataQueryParams): MetadataQuery => {
   const { include = [{}], exclude = [] } = metadataParams
   const fullExcludeList = [...exclude, ...PERMANENT_SKIP_LIST]
 
   let changedAtSingleton: InstanceElement | undefined
+  let relatedPropsByMetadataType: RelatedPropsByMetadataType | undefined
+
 
   const isInstanceMatchQueryParams = (
     instance: MetadataInstance,
@@ -152,17 +193,27 @@ export const buildMetadataQuery = ({
     }
     return false
   }
+
+  const lastChangedAtOfInstanceWithRelatedProps = (instance: MetadataInstanceWithRelatedProps): number | undefined => _.max(makeArray(relatedPropsByMetadataType?.[instance.metadataType][instance.name])
+    .map(prop => prop.lastModifiedDate)
+    .concat(instance.changedAt ?? '')
+    .filter(changedAt => changedAt !== undefined && changedAt !== '')
+    .map(changedAt => new Date(changedAt).getTime()))
+
   const isIncludedInFetchWithChangesDetection = (instance: MetadataInstance): boolean => {
     if (UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES.includes(instance.metadataType)) {
       return false
     }
-    if (changedAtSingleton === undefined || instance.changedAt === undefined) {
+    if (changedAtSingleton === undefined) {
       return true
     }
-    const lastChangedAt = _.get(changedAtSingleton.value, [instance.metadataType, instance.name])
-    return _.isString(lastChangedAt)
-      ? new Date(lastChangedAt).getTime() < new Date(instance.changedAt).getTime()
-      : true
+    const changedAtFromSingleton = _.get(changedAtSingleton.value, [instance.metadataType, instance.name])
+    const lastChangedAt = isMetadataInstanceWithRelatedProps(instance)
+      ? lastChangedAtOfInstanceWithRelatedProps(instance)
+      : instance.changedAt
+    return _.isString(changedAtFromSingleton) && lastChangedAt !== undefined
+      ? new Date(changedAtFromSingleton).getTime() < lastChangedAt
+      : false
   }
   const isTypeIncluded = (type: string): boolean => (
     include.some(({ metadataType = '.*' }) => new RegExp(`^${metadataType}$`).test(type))
@@ -178,6 +229,7 @@ export const buildMetadataQuery = ({
     prepare: async () => {
       if (isFetchWithChangesDetection) {
         changedAtSingleton = await elementsSource.get(new ElemID(SALESFORCE, CHANGED_AT_SINGLETON, 'instance', ElemID.CONFIG_NAME))
+        relatedPropsByMetadataType = await retrieveRelatedPropsByMetadataType(client)
       }
     },
     isTypeMatch: type => isTypeIncluded(type) && !isTypeExcluded(type),

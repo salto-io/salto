@@ -21,6 +21,7 @@ import { buildDataManagement, DataManagement, validateDataManagementConfig } fro
 import { buildMetadataQuery, MetadataQuery, validateMetadataParams } from './metadata_query'
 import { DEFAULT_MAX_INSTANCES_PER_TYPE } from '../constants'
 import { getFetchTargets, SupportedMetadataType } from './metadata_types'
+import SalesforceClient from '../client/client'
 
 const { isDefined } = values
 
@@ -50,12 +51,14 @@ type BuildFetchProfileParams = {
   fetchParams: FetchParameters
   isFetchWithChangesDetection: boolean
   elementsSource: ReadOnlyElementsSource
+  client: SalesforceClient
 }
 
 export const buildFetchProfile = ({
   fetchParams,
   isFetchWithChangesDetection,
   elementsSource,
+  client,
 }: BuildFetchProfileParams): FetchProfile => {
   const {
     metadata = {},
@@ -75,6 +78,7 @@ export const buildFetchProfile = ({
       target: isDefined(target)
         ? getFetchTargets(target as SupportedMetadataType[])
         : undefined,
+      client,
     }),
     dataManagement: data && buildDataManagement(data),
     isFeatureEnabled: name => optionalFeatures?.[name] ?? optionalFeaturesDefaultValues[name] ?? true,

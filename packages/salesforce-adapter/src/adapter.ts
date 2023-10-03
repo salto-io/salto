@@ -407,6 +407,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       fetchParams: config.fetch ?? {},
       isFetchWithChangesDetection,
       elementsSource,
+      client,
     })
     this.fetchProfile = fetchProfile
     if (!this.fetchProfile.isFeatureEnabled('fetchCustomObjectUsingRetrieveApi')) {

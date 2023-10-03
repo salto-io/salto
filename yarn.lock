@@ -2998,6 +2998,11 @@
   dependencies:
     esquery "^1.0.1"
 
+"@salto-io/node-diff3@3.1.0-salto.1":
+  version "3.1.0-salto.1"
+  resolved "https://registry.yarnpkg.com/@salto-io/node-diff3/-/node-diff3-3.1.0-salto.1.tgz#1d5fbee632a37ef1108e0d8c092603a448942684"
+  integrity sha512-MBmLc6cn+pbg1iUgh1PFE7rX85jYJKuEBH5Nal9x24KQfI6pB/RmyvAyhrn3QcYMweeupdIu+5VLzwhvvEHE1A==
+
 "@salto-io/rocksdb@5.1.1-salto-18":
   version "5.1.1-salto-18"
   resolved "https://registry.yarnpkg.com/@salto-io/rocksdb/-/rocksdb-5.1.1-salto-18.tgz#f7065ff0655e8155c92aee323ab459cd96ad5f3b"
@@ -4582,6 +4587,11 @@ binary-extensions@^2.0.0:
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/binary-extensions/-/binary-extensions-2.2.0.tgz#75f502eeaf9ffde42fc98829645be4ea76bd9e2d"
   integrity sha512-jDctJ/IVQbZoJykoeHbhXpOlNBqGNcwXJKJog42E5HDPUwQTSdjCHdihjj0DlnheQ7blbT6dHOafNAiS8ooQKA==
+
+binaryextensions@^4.18.0:
+  version "4.18.0"
+  resolved "https://registry.yarnpkg.com/binaryextensions/-/binaryextensions-4.18.0.tgz#22aeada2d14de062c60e8ca59a504a5636a76ceb"
+  integrity sha512-PQu3Kyv9dM4FnwB7XGj1+HucW+ShvJzJqjuw1JkKVs1mWdwOKVcRjOi+pV9X52A0tNvrPCsPkbFFQb+wE1EAXw==
 
 bl@^1.0.0:
   version "1.2.3"
@@ -8091,6 +8101,14 @@ istanbul-reports@^3.0.2:
   dependencies:
     html-escaper "^2.0.0"
     istanbul-lib-report "^3.0.0"
+
+istextorbinary@^6.0.0:
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/istextorbinary/-/istextorbinary-6.0.0.tgz#bc6e7541006bc203feffe16628d0a72893b2ad54"
+  integrity sha512-4j3UqQCa06GAf6QHlN3giz2EeFU7qc6Q5uB/aY7Gmb3xmLDLepDOtsZqkb4sCfJgFvTbLUinNw0kHgHs8XOHoQ==
+  dependencies:
+    binaryextensions "^4.18.0"
+    textextensions "^5.14.0"
 
 isurl@^1.0.0-alpha5:
   version "1.0.0"
@@ -12367,6 +12385,11 @@ text-table@^0.2.0:
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/text-table/-/text-table-0.2.0.tgz#7f5ee823ae805207c00af2df4a84ec3fcfa570b4"
   integrity sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=
+
+textextensions@^5.14.0:
+  version "5.16.0"
+  resolved "https://registry.yarnpkg.com/textextensions/-/textextensions-5.16.0.tgz#57dd60c305019bba321e848b1fdf0f99bfa59ec1"
+  integrity sha512-7D/r3s6uPZyU//MCYrX6I14nzauDwJ5CxazouuRGNuvSCihW87ufN6VLoROLCrHg6FblLuJrT6N2BVaPVzqElw==
 
 throat@^6.0.1:
   version "6.0.1"

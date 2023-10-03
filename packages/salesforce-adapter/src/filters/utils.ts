@@ -49,9 +49,12 @@ import SalesforceClient from '../client/client'
 import { INSTANCE_SUFFIXES, OptionalFeatures } from '../types'
 import {
   API_NAME,
-  API_NAME_SEPARATOR, CUSTOM_FIELD,
+  API_NAME_SEPARATOR,
+  CUSTOM_FIELD,
   CUSTOM_METADATA_SUFFIX,
-  CUSTOM_OBJECT, CUSTOM_OBJECT_ID_FIELD,
+  CUSTOM_OBJECT,
+  CUSTOM_OBJECT_ID_FIELD,
+  FIELD_ANNOTATIONS,
   INSTANCE_FULL_NAME_FIELD,
   INTERNAL_ID_ANNOTATION,
   INTERNAL_ID_FIELD,
@@ -63,6 +66,7 @@ import {
   NAMESPACE_SEPARATOR,
   PLURAL_LABEL,
   SALESFORCE,
+  CHANGED_AT_SINGLETON,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
 import {
@@ -117,7 +121,7 @@ export const metadataTypeSync = (element: Readonly<Element>): string => {
   }
   return element.annotations[METADATA_TYPE] || 'unknown'
 }
-export const isCustomObjectSync = (element: Readonly<Element>): boolean => {
+export const isCustomObjectSync = (element: Readonly<Element>): element is ObjectType => {
   const res = isObjectType(element)
     && metadataTypeSync(element) === CUSTOM_OBJECT
     // The last part is so we can tell the difference between a custom object
@@ -168,6 +172,18 @@ export const isMasterDetailField = (field: Field): boolean => (
 
 export const isLookupField = (field: Field): boolean => (
   field.refType.elemID.isEqual(Types.primitiveDataTypes.Lookup.elemID)
+)
+
+export const isQueryableField = (field: Field): boolean => (
+  field.annotations[FIELD_ANNOTATIONS.QUERYABLE] === true
+)
+
+export const isHiddenField = (field: Field): boolean => (
+  field.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] === true
+)
+
+export const isReadOnlyField = (field: Field): boolean => (
+  !field.annotations[FIELD_ANNOTATIONS.CREATABLE] && !field.annotations[FIELD_ANNOTATIONS.UPDATEABLE]
 )
 
 export const getInstancesOfMetadataType = async (elements: Element[], metadataTypeName: string):
@@ -498,3 +514,14 @@ export const getInstanceAlias = async (
     ? label
     : `${label} (${namespace})`
 }
+
+export const getChangedAtSingleton = async (
+  elementsSource: ReadOnlyElementsSource
+): Promise<InstanceElement | undefined> => {
+  const element = await elementsSource.get(new ElemID(SALESFORCE, CHANGED_AT_SINGLETON, 'instance', ElemID.CONFIG_NAME))
+  return isInstanceElement(element) ? element : undefined
+}
+
+export const isCustomType = (element: Element): element is ObjectType => (
+  isObjectType(element) && ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(apiNameSync(element) ?? '')
+)

@@ -1,0 +1,15 @@
+dummy.FullComplexWithIV FullComplexInstWithIV {
+  strField = "ComplexSTR"
+  numField = 111
+  boolField = true
+  refField = dummy.FullWithIV.instance.FullInst1WithIV
+  listField = [
+    "three",
+    "two",
+    "onw",
+  ]
+  userObj = {
+    id = 123
+    name = "test"
+  },
+}

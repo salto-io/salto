@@ -18,7 +18,7 @@ import { AccountInfo, CredentialError } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { Credentials } from '../auth'
-import { FORCE_ACCEPT_LANGUAGE_HEADERS } from './headers'
+import { EXPERIMENTAL_API_HEADERS, FORCE_ACCEPT_LANGUAGE_HEADERS } from './headers'
 
 const log = logger(module)
 
@@ -82,7 +82,7 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = retr
           username: credentials.user,
           password: credentials.token,
         },
-        headers: credentials.isDataCenter ? {} : FORCE_ACCEPT_LANGUAGE_HEADERS,
+        headers: credentials.isDataCenter ? {} : { ...FORCE_ACCEPT_LANGUAGE_HEADERS, ...EXPERIMENTAL_API_HEADERS },
       }
     ),
     baseURLFunc: async ({ baseUrl }) => baseUrl,

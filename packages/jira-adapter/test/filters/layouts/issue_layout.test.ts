@@ -19,10 +19,10 @@ import _ from 'lodash'
 import { MockInterface } from '@salto-io/test-utils'
 import { getDefaultConfig } from '../../../src/config/config'
 import JiraClient from '../../../src/client/client'
-import issueLayoutFilter from '../../../src/filters/issue_layout/issue_layout'
+import issueLayoutFilter from '../../../src/filters/layouts/issue_layout'
 import { getFilterParams, mockClient } from '../../utils'
 import { ISSUE_LAYOUT_TYPE, JIRA, PROJECT_TYPE, SCREEN_SCHEME_TYPE } from '../../../src/constants'
-import { createIssueLayoutType } from '../../../src/filters/issue_layout/issue_layout_types'
+import { createLayoutType } from '../../../src/filters/layouts/layout_types'
 
 describe('issue layout filter', () => {
   let connection: MockInterface<clientUtils.APIConnection>
@@ -356,7 +356,7 @@ describe('issue layout filter', () => {
   describe('deploy', () => {
     let issueLayoutInstance: InstanceElement
     let afterIssueLayoutInstance: InstanceElement
-    const { issueLayoutType } = createIssueLayoutType()
+    const issueLayoutType = createLayoutType(ISSUE_LAYOUT_TYPE).layoutType
     beforeEach(() => {
       client = mockCli.client
       connection = mockCli.connection

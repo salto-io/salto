@@ -327,6 +327,21 @@ describe('Elements validation', () => {
       expect(errors).toHaveLength(0)
     })
 
+    it('should return an error on template expression with unresolved reference', async () => {
+      clonedType.fields.nested.annotations.annostr = new TemplateExpression({
+        parts: ['1', new ReferenceExpression(new ElemID('a', 'b'), 'hello world')],
+      })
+      const errors = await validateElements(
+        [clonedType],
+        createInMemoryElementSource([
+          clonedType,
+          ...await getFieldsAndAnnoTypes(clonedType),
+        ])
+      )
+      expect(errors).toHaveLength(1)
+      expect(errors[0].elemID).toEqual(clonedType.fields.nested.elemID.createNestedID('annostr'))
+    })
+
     it('should return error on bad num primitive type', async () => {
       clonedType.fields.nested.annotations.annonum = 'str'
       const errors = await validateElements(

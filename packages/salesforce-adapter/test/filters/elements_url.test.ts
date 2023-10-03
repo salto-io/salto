@@ -16,6 +16,7 @@
 
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import mockClient from '../client'
 import Connection from '../../src/client/jsforce'
 import SalesforceClient from '../../src/client/client'
@@ -130,7 +131,11 @@ describe('elements url filter', () => {
         client,
         config: {
           ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({ optionalFeatures: { elementsUrls: false } }),
+          fetchProfile: buildFetchProfile({
+            fetchParams: { optionalFeatures: { elementsUrls: false } },
+            isFetchWithChangesDetection: false,
+            elementsSource: buildElementsSourceFromElements([]),
+          }),
         },
       })
       await filter.onFetch?.([standardObject])

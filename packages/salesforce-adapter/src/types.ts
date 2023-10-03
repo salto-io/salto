@@ -65,6 +65,7 @@ export type MetadataInstance = {
   namespace: string
   name: string
   isFolderType: boolean
+  changedAt: string | undefined
 }
 
 export type MetadataQueryParams = Partial<Omit<MetadataInstance, 'isFolderType'>>
@@ -121,6 +122,7 @@ export type ChangeValidatorName = (
   | 'installedPackages'
   | 'dataCategoryGroup'
   | 'standardFieldOrObjectAdditionsOrDeletions'
+  | 'deletedNonQueryableFields'
 )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -730,6 +732,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     dataCategoryGroup: { refType: BuiltinTypes.BOOLEAN },
     installedPackages: { refType: BuiltinTypes.BOOLEAN },
     standardFieldOrObjectAdditionsOrDeletions: { refType: BuiltinTypes.BOOLEAN },
+    deletedNonQueryableFields: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

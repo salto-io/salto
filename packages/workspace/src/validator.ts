@@ -508,7 +508,7 @@ const validateValue = (
 
   if (isTemplateExpression(value)) {
     const templatedReferenceValidationErrors = value.parts.map(part => (
-      isReferenceExpression(part) ? createReferenceValidationErrors(part.elemID, part.value) : []
+      isReferenceExpression(part) ? createReferenceValidationErrors(elemID, part.value) : []
     )).flat()
     return [
       ...templatedReferenceValidationErrors,

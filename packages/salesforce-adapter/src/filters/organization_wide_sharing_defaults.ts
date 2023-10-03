@@ -130,6 +130,10 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     config,
     filterName: FILTER_NAME,
     fetchFilterFunc: async elements => {
+      // SALTO-4821
+      if (config.fetchProfile.metadataQuery.isFetchWithChangesDetection()) {
+        return
+      }
       const objectType = createOrganizationType()
       const fieldsToIgnore = new Set(FIELDS_TO_IGNORE.concat(config.systemFields ?? []))
       await enrichTypeWithFields(client, objectType, fieldsToIgnore)

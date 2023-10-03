@@ -16,10 +16,8 @@
 
 import { references } from '@salto-io/adapter-components'
 import { Element, ElemID, ObjectType, PrimitiveTypes, PrimitiveType, CORE_ANNOTATIONS, InstanceElement, ReferenceExpression, isInstanceElement, SaltoError } from '@salto-io/adapter-api'
-import {
-  buildFetchProfile,
-  FetchProfile,
-} from '../../src/fetch_profile/fetch_profile'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { buildFetchProfile, FetchProfile } from '../../src/fetch_profile/fetch_profile'
 import SalesforceClient from '../../src/client/client'
 import filterCreator from '../../src/filters/custom_object_instances_references'
 import mockClient from '../client'
@@ -309,15 +307,16 @@ describe('Custom Object Instances References filter', () => {
         config: {
           ...defaultFilterContext,
           fetchProfile: buildFetchProfile({
-            data: {
-              includeObjects: ['*'],
-              saltoIDSettings: {
-                defaultIdFields: ['Name'],
-              },
-              brokenOutgoingReferencesSettings: {
-                defaultBehavior: 'ExcludeInstance',
+            fetchParams: {
+              data: {
+                includeObjects: ['*'],
+                saltoIDSettings: {
+                  defaultIdFields: ['Name'],
+                },
               },
             },
+            isFetchWithChangesDetection: false,
+            elementsSource: buildElementsSourceFromElements([]),
           }),
         },
       }) as FilterType
@@ -456,16 +455,20 @@ describe('Custom Object Instances References filter', () => {
       overrides: Record<string, OutgoingReferenceBehavior>
     ): FetchProfile => (
       buildFetchProfile({
-        data: {
-          includeObjects: ['*'],
-          saltoIDSettings: {
-            defaultIdFields: ['Name'],
-          },
-          brokenOutgoingReferencesSettings: {
-            defaultBehavior,
-            perTargetTypeOverrides: overrides,
+        fetchParams: {
+          data: {
+            includeObjects: ['*'],
+            saltoIDSettings: {
+              defaultIdFields: ['Name'],
+            },
+            brokenOutgoingReferencesSettings: {
+              defaultBehavior,
+              perTargetTypeOverrides: overrides,
+            },
           },
         },
+        isFetchWithChangesDetection: false,
+        elementsSource: buildElementsSourceFromElements([]),
       })
     )
     describe('When default is BrokenReference and override is InternalId', () => {

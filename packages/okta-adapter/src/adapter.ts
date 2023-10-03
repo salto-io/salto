@@ -49,6 +49,7 @@ import appLogoFilter from './filters/app_logo'
 import brandThemeFilesFilter from './filters/brand_theme_files'
 import groupMembersFilter from './filters/group_members'
 import unorderedListsFilter from './filters/unordered_lists'
+import addAliasFilter from './filters/add_alias'
 import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
 
@@ -80,6 +81,8 @@ export const DEFAULT_FILTERS = [
   appLogoFilter,
   brandThemeFilesFilter,
   fieldReferencesFilter,
+  // should run after fieldReferencesFilter
+  addAliasFilter,
   // should run after fieldReferencesFilter
   unorderedListsFilter,
   // should run before appDeploymentFilter and after userSchemaFilter

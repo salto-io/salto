@@ -49,7 +49,12 @@ import {
   KEY_PREFIX_LENGTH,
   SALESFORCE,
 } from '../constants'
-import { isLookupField, isMasterDetailField, safeApiName } from './utils'
+import {
+  isLookupField,
+  isMasterDetailField,
+  isReadOnlyField,
+  safeApiName,
+} from './utils'
 import { DataManagement } from '../fetch_profile/data_management'
 
 const { makeArray } = collections.array
@@ -110,6 +115,7 @@ const createWarnings = async (
     const perTargetTypeMsgs = typesOfMissingRefsTargets.join('\n')
     const perInstancesPreamble = 'and these objects are not part of your Salto configuration. \n\nHere are the records:'
     const perMissingInstanceMsgs = missingRefs
+      .filter(missingRef => missingRef.origin.type === originTypeName)
       .map(missingRef => `${getInstanceDesc(missingRef.origin.id, baseUrl)} relates to ${getInstanceDesc(missingRef.targetId, baseUrl)}`)
       .slice(0, MAX_BREAKDOWN_ELEMENTS)
       .sort() // this effectively sorts by origin instance ID
@@ -198,11 +204,6 @@ const replaceLookupsWithRefsAndCreateRefMap = async (
     instance: InstanceElement
   ): Promise<Values> => {
     const transformFunc: TransformFunc = async ({ value, field }) => {
-      const isReadOnlyField = (fieldToCheck: Field): boolean => (
-        !(fieldToCheck?.annotations?.[FIELD_ANNOTATIONS.CREATABLE] ?? true)
-        && !(fieldToCheck?.annotations?.[FIELD_ANNOTATIONS.UPDATEABLE] ?? true)
-      )
-
       if (!isReferenceField(field)) {
         return value
       }

@@ -13,7 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ElemID, ObjectType, OAuthMethod, FetchOptions, ProgressReporter } from '@salto-io/adapter-api'
+import {
+  InstanceElement,
+  ElemID,
+  ObjectType,
+  OAuthMethod,
+  FetchOptions,
+  ProgressReporter,
+} from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
 import { adapter, getConfigChange } from '../src/adapter_creator'
@@ -76,6 +83,14 @@ describe('SalesforceAdapter creator', () => {
       },
     }
   )
+
+  const mockFetchOpts: MockInterface<FetchOptions> = {
+    progressReporter: { reportProgress: mockFunction<ProgressReporter['reportProgress']>() },
+  }
+
+  afterEach(() => {
+    jest.clearAllMocks()
+  })
   describe('when validateCredentials is called with username/password credentials', () => {
     beforeEach(async () => {
       await adapter.validateCredentials(credentials)
@@ -168,12 +183,12 @@ describe('SalesforceAdapter creator', () => {
       })
     })
 
-    it('creates the adapter correctly', () => {
-      adapter.operations({
+    it('creates the adapter correctly', async () => {
+      await adapter.operations({
         credentials,
         config,
         elementsSource: buildElementsSourceFromElements([]),
-      })
+      }).fetch(mockFetchOpts)
       expect(SalesforceAdapter).toHaveBeenCalledWith({
         config: {
           fetch: {
@@ -197,6 +212,7 @@ describe('SalesforceAdapter creator', () => {
         client: expect.any(Object),
         getElemIdFunc: undefined,
         elementsSource: expect.any(Object),
+        isFetchWithChangesDetection: false,
       })
     })
 
@@ -603,7 +619,8 @@ describe('SalesforceAdapter creator', () => {
       config: deprecatedConfig,
       elementsSource: buildElementsSourceFromElements([]),
     })
-    it('pass to the adapter operation configuration without deprecated fields', () => {
+    it('pass to the adapter operation configuration without deprecated fields', async () => {
+      await operations.fetch(mockFetchOpts)
       expect(SalesforceAdapter).toHaveBeenCalledWith({
         config: {
           fetch: {
@@ -628,14 +645,11 @@ describe('SalesforceAdapter creator', () => {
         client: expect.any(Object),
         getElemIdFunc: undefined,
         elementsSource: expect.any(Object),
+        isFetchWithChangesDetection: false,
       })
     })
 
     it('return update from fetch', async () => {
-      const mockReportProgress = mockFunction<ProgressReporter['reportProgress']>()
-      const mockFetchOpts: MockInterface<FetchOptions> = {
-        progressReporter: { reportProgress: mockReportProgress },
-      }
       expect((await operations.fetch(mockFetchOpts)).updatedConfig).toBeDefined()
     })
   })

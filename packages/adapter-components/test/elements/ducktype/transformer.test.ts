@@ -22,6 +22,7 @@ import {
   CORE_ANNOTATIONS,
   ReferenceExpression,
   ListType,
+  SeverityLevel,
 } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import { getTypeAndInstances, getAllElements, EntriesRequester } from '../../../src/elements/ducktype'
@@ -33,7 +34,7 @@ import { TypeDuckTypeConfig, TypeDuckTypeDefaultsConfig } from '../../../src/con
 import { simpleGetArgs, returnFullEntry, computeGetArgs } from '../../../src/elements'
 import { findDataField } from '../../../src/elements/field_finder'
 import { createElementQuery } from '../../../src/elements/query'
-import { InvalidSingletonType } from '../../../src/config/shared'
+import { AdapterFetchError, InvalidSingletonType } from '../../../src/config/shared'
 
 describe('ducktype_transformer', () => {
   describe('getTypeAndInstances', () => {
@@ -918,6 +919,42 @@ describe('ducktype_transformer', () => {
       })
       const { errors } = res
       expect(errors).toEqual([{ message: 'singleton err', severity: 'Warning' }])
+    })
+    test.each<{ severity: SeverityLevel }>([
+      { severity: 'Error' },
+      { severity: 'Warning' },
+    ])('should return fetch errors correctly with severity %s', async ({ severity }) => {
+      jest.spyOn(transformer, 'getTypeAndInstances').mockImplementation(() => {
+        throw new AdapterFetchError('fetch err', severity)
+      })
+      const res = await getAllElements({
+        adapterName: 'something',
+        paginator: mockPaginator,
+        fetchQuery: createElementQuery({
+          include: [
+            { type: 'folder' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          folder: ['folders'],
+        },
+        computeGetArgs: simpleGetArgs,
+        nestedFieldFinder: returnFullEntry,
+        types: {
+          folders: {
+            request: {
+              url: '/folders',
+            },
+            transformation: {
+              idFields: ['name'],
+            },
+          },
+        },
+        typeDefaults: typeDefaultConfig,
+      })
+      const { errors } = res
+      expect(errors).toEqual([{ message: 'fetch err', severity }])
     })
   })
 

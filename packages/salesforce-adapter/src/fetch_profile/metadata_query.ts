@@ -17,36 +17,35 @@ import { regex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { ElemID, InstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import {
-  DEFAULT_NAMESPACE,
-  SETTINGS_METADATA_TYPE,
-  TOPICS_FOR_OBJECTS_METADATA_TYPE,
+  CHANGED_AT_SINGLETON,
+  CUSTOM_FIELD,
+  CUSTOM_METADATA,
   CUSTOM_OBJECT,
-  MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD,
+  DEFAULT_NAMESPACE,
   FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
-  CUSTOM_FIELD,
+  MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD,
+  PROFILE_METADATA_TYPE,
   SALESFORCE,
-  CHANGED_AT_SINGLETON,
-  PROFILE_METADATA_TYPE, CUSTOM_METADATA,
+  SETTINGS_METADATA_TYPE,
+  TOPICS_FOR_OBJECTS_METADATA_TYPE,
 } from '../constants'
-import { validateRegularExpressions, ConfigValidationError } from '../config_validation'
-import { MetadataInstance, MetadataParams, MetadataQueryParams, METADATA_INCLUDE_LIST, METADATA_EXCLUDE_LIST, METADATA_SEPARATE_FIELD_LIST } from '../types'
+import { ConfigValidationError, validateRegularExpressions } from '../config_validation'
+import {
+  METADATA_EXCLUDE_LIST,
+  METADATA_INCLUDE_LIST,
+  METADATA_SEPARATE_FIELD_LIST,
+  MetadataInstance,
+  MetadataParams,
+  MetadataQuery,
+  MetadataQueryParams,
+} from '../types'
 
 const { isDefined } = values
 
 
 // According to Salesforce Metadata API docs, folder names can only contain alphanumeric characters and underscores.
 const VALID_FOLDER_PATH_RE = /^[a-zA-Z\d_/]+$/
-
-export type MetadataQuery = {
-  prepare: () => Promise<void>
-  isTypeMatch: (type: string) => boolean
-  isInstanceMatch: (instance: MetadataInstance) => boolean
-  isTargetedFetch: () => boolean
-  isFetchWithChangesDetection: () => boolean
-  isPartialFetch: () => boolean
-  getFolderPathsByName: (folderType: string) => Record<string, string>
-}
 
 const PERMANENT_SKIP_LIST: MetadataQueryParams[] = [
   // We have special treatment for this type

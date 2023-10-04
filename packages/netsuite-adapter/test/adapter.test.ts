@@ -432,6 +432,7 @@ describe('Adapter', () => {
           failedCustomRecords: expect.anything(),
         },
         config,
+        { excludeBins: false },
       )
     })
 
@@ -454,6 +455,7 @@ describe('Adapter', () => {
           failedCustomRecords: [],
         },
         config,
+        { excludeBins: false },
       )
     })
 
@@ -515,6 +517,7 @@ describe('Adapter', () => {
           failedCustomRecords: [],
         },
         config,
+        { excludeBins: false },
       )
       expect(fetchResult.updatedConfig).toBeUndefined()
     })
@@ -537,6 +540,7 @@ describe('Adapter', () => {
           failedCustomRecords: [],
         },
         config,
+        { excludeBins: false },
       )
       expect(fetchResult.updatedConfig?.config[0].isEqual(updatedConfig)).toBe(true)
     })
@@ -562,6 +566,7 @@ describe('Adapter', () => {
           failedCustomRecords: [],
         },
         config,
+        { excludeBins: false },
       )
       expect(fetchResult.updatedConfig?.config[0].isEqual(updatedConfig)).toBe(true)
     })
@@ -586,6 +591,7 @@ describe('Adapter', () => {
           failedCustomRecords: [],
         },
         config,
+        { excludeBins: false },
       )
       expect(fetchResult.updatedConfig?.config[0].isEqual(updatedConfig)).toBe(true)
     })
@@ -1410,6 +1416,7 @@ describe('Adapter', () => {
             failedCustomRecords: ['excludedTypeCustomRecord'],
           },
           config,
+          { excludeBins: false },
         )
       })
     })

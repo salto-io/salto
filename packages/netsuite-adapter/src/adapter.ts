@@ -24,7 +24,7 @@ import { logger } from '@salto-io/logging'
 import { filter } from '@salto-io/adapter-utils'
 import { createElements } from './transformer'
 import { DeployResult, TYPES_TO_SKIP, isCustomRecordType } from './types'
-import { BUNDLE } from './constants'
+import { BIN, BUNDLE } from './constants'
 import convertListsToMaps from './filters/convert_lists_to_maps'
 import replaceElementReferences from './filters/element_references'
 import parseReportTypes from './filters/parse_report_types'
@@ -63,7 +63,7 @@ import addInstancesFetchTime from './filters/add_instances_fetch_time'
 import addAliasFilter from './filters/add_alias'
 import addBundleReferences from './filters/bundle_ids'
 import { Filter, LocalFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreator, RemoteFilterCreatorDefinition } from './filter'
-import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_VALIDATE, AdditionalDependencies, DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB } from './config'
+import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_VALIDATE, AdditionalDependencies, DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB, shouldExcludeBins } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams, getFixedTargetFetch } from './query'
 import { getLastServerTime, getOrCreateServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
@@ -389,9 +389,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
     if (hasFetchTarget && isFirstFetch) {
       throw new Error('Can\'t define fetchTarget for the first fetch. Remove fetchTarget from adapter config file')
     }
+    const excludeBins = await shouldExcludeBins(this.userConfig, this.elementsSource)
 
+    const typesToSkip = this.typesToSkip.concat(excludeBins ? BIN : [])
     const deprecatedSkipList = buildNetsuiteQuery(convertToQueryParams({
-      types: Object.fromEntries(this.typesToSkip.map(typeName => [typeName, ['.*']])),
+      types: Object.fromEntries(typesToSkip.map(typeName => [typeName, ['.*']])),
       filePaths: this.filePathRegexSkipList.map(reg => `.*${reg}.*`),
     }))
     const fetchQuery = [
@@ -415,7 +417,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       isPartial,
     )
 
-    const updatedConfig = getConfigFromConfigChanges(failures, this.userConfig)
+    const updatedConfig = getConfigFromConfigChanges(failures, this.userConfig, { excludeBins })
 
     const partialFetchData = setPartialFetchData(isPartial, deletedElements)
 

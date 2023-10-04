@@ -41,7 +41,10 @@ const getProjectToScreenMapping = async (elements: Element[]): Promise<Record<st
           .flatMap((struct: issueTypeMappingStruct) => struct.screenSchemeId.value) as unknown[])
           .filter(isInstanceElement)
 
-        const screens = screenSchemes.map(screenScheme => screenScheme.value.screens.default.value.value.id)
+        const screens = screenSchemes
+          .map(screenScheme => screenScheme.value.screens.default)
+          .filter(isResolvedReferenceExpression)
+          .map(defualtScreen => defualtScreen.value.value.id)
         return [project.value.id, screens]
       })))
   )

@@ -46,8 +46,7 @@ import {
   safeApiName,
   isQueryableField,
 } from './utils'
-import { ConfigChangeSuggestion } from '../types'
-import { DataManagement } from '../fetch_profile/data_management'
+import { ConfigChangeSuggestion, DataManagement } from '../types'
 
 const { mapValuesAsync, pickAsync } = promises.object
 const { isDefined } = values

@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
-import { ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, createRestriction, DeployResult, getChangeData, Values, Change, toChange, ChangeGroup, isAdditionOrModificationChange, isServiceId, INSTANCE_ANNOTATIONS, ReferenceExpression, isInstanceElement } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, createRestriction, DeployResult, getChangeData, Values, Change, toChange, ChangeGroup, isAdditionOrModificationChange, isServiceId, INSTANCE_ANNOTATIONS, ReferenceExpression, isInstanceElement, SeverityLevel, isSaltoElementError } from '@salto-io/adapter-api'
 import { MockInterface, stepManager } from '@salto-io/test-utils'
 import { Package, DeployResultLocator, DeployResult as JSForceDeployResult } from 'jsforce'
 import JSZip from 'jszip'
@@ -32,6 +32,7 @@ import { mockTypes, mockDefaultValues } from './mock_elements'
 import { mockDeployResult, mockRunTestFailure, mockDeployResultComplete } from './connection'
 import { MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE, MappableSalesforceProblem } from '../src/client/user_facing_errors'
 import { GLOBAL_VALUE_SET } from '../src/filters/global_value_sets'
+import { apiNameSync, metadataTypeSync } from '../src/filters/utils'
 
 const { makeArray } = collections.array
 
@@ -150,30 +151,79 @@ describe('SalesforceAdapter CRUD', () => {
 
       describe('when the request fails', () => {
         let result: DeployResult
+        let profileInstance: InstanceElement
+        let businessProcessInstance: InstanceElement
+        let workflowFieldUpdate: InstanceElement
 
         beforeEach(async () => {
-          const newInst = createInstanceElement(mockDefaultValues.Profile, mockTypes.Profile)
+          profileInstance = createInstanceElement(mockDefaultValues.Profile, mockTypes.Profile)
+          businessProcessInstance = createInstanceElement(
+            mockDefaultValues.BusinessProcess, mockTypes.BusinessProcess, undefined,
+            { [CORE_ANNOTATIONS.PARENT]:
+              new ReferenceExpression(mockTypes.TestCustomObject__c.elemID, mockTypes.TestCustomObject__c) }
+          )
+          workflowFieldUpdate = createInstanceElement(mockDefaultValues.WorkflowFieldUpdate, mockTypes.Workflow)
 
           connection.metadata.deploy.mockReturnValueOnce(mockDeployResult({
             success: false,
-            componentFailure: [{
-              fullName: await apiName(newInst),
-              componentType: await metadataType(newInst),
-              problem: 'Some error',
-            }],
+            componentFailure: [
+              // valid response
+              {
+                fullName: apiNameSync(profileInstance),
+                componentType: metadataTypeSync(profileInstance),
+                problem: 'Some profile error',
+              },
+              // SALTO-4861
+              // Subtype failure
+              {
+                componentType: 'BusinessProcess',
+                fullName: 'TestCustomObject__c.TestBusinessProposal',
+                problem: 'Picklist value: Follow Up Meeting not found',
+              },
+              // SALTO-4860
+              // WorkflowFieldUpdate failure
+              {
+                componentType: 'WorkflowFieldUpdate',
+                fullName: 'ChangeRequest.Update_Status_to_Authorised',
+                problem: 'Some workflow task error',
+              },
+            ],
           }))
 
           result = await adapter.deploy({
             changeGroup: {
-              groupID: newInst.elemID.getFullName(),
-              changes: [{ action: 'add', data: { after: newInst } }],
+              groupID: profileInstance.elemID.getFullName(),
+              changes: [{ action: 'add', data: { after: profileInstance } },
+                { action: 'add', data: { after: businessProcessInstance } },
+                { action: 'add', data: { after: workflowFieldUpdate } }],
             },
           })
         })
 
-        it('should return an error', () => {
-          expect(result.errors).toHaveLength(1)
-          expect(result.errors[0].message).toContain('Some error')
+        it('should return errors', () => {
+          expect(result.errors).toHaveLength(3)
+
+          expect(result.errors[0].message).toContain('Some profile error')
+          expect(isSaltoElementError(result.errors[0])).toBeTruthy()
+          if (isSaltoElementError(result.errors[0])) {
+            expect(result.errors[0].elemID).toEqual(profileInstance.elemID)
+          }
+          expect(result.errors[0].severity).toEqual('Error' as SeverityLevel)
+
+          // BusinessProposal will not have a correct ElemID, should point to its parent (Account)
+          expect(result.errors[1].message).toContain('Picklist value: Follow Up Meeting not found')
+          expect(isSaltoElementError(result.errors[1])).toBeTruthy()
+          if (isSaltoElementError(result.errors[1])) {
+            expect(result.errors[1].elemID).not.toEqual(businessProcessInstance.elemID)
+          }
+
+          expect(result.errors[1].severity).toEqual('Error' as SeverityLevel)
+
+          // WorkflowTask will not have an ElemID because on failure
+          //  we only return the sub-instance and not the wrapped instance
+          expect(result.errors[2].message).toContain('Some workflow task error')
+          expect(isSaltoElementError(result.errors[2])).toBeFalse()
+          expect(result.errors[2].severity).toEqual('Error' as SeverityLevel)
         })
       })
 
@@ -232,7 +282,7 @@ describe('SalesforceAdapter CRUD', () => {
               }
             })
           })
-          describe('when quick deploy is enable', () => {
+          describe('when quick deploy is enabled', () => {
             beforeEach(async () => {
               connection.metadata.deploy.mockReturnValue(mockDeployResult({
                 checkOnly: true,

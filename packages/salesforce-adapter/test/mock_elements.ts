@@ -177,6 +177,14 @@ export const mockTypes = {
       suffix: 'workflow',
     },
   }),
+  WorkflowFieldUpdate: createMetadataObjectType({
+    annotations: {
+      metadataType: WORKFLOW_TASK_METADATA_TYPE,
+      dirName: 'workflows',
+      suffix: 'workflow',
+    },
+  }),
+
   TestSettings: createMetadataObjectType({
     annotations: {
       metadataType: 'TestSettings',
@@ -535,6 +543,11 @@ export const mockTypes = {
     },
   }),
   TestCustomObject__c: createCustomObjectType('TestCustomObject__c', {}),
+  BusinessProcess: createMetadataObjectType({
+    annotations: {
+      metadataType: 'BusinessProcess',
+    },
+  }),
 }
 
 export const lwcJsResourceContent = "import { LightningElement } from 'lwc';\nexport default class BikeCard extends LightningElement {\n   name = 'Electra X4';\n   description = 'A sweet bike built for comfort.';\n   category = 'Mountain';\n   material = 'Steel';\n   price = '$2,700';\n   pictureUrl = 'https://s3-us-west-1.amazonaws.com/sfdc-demo/ebikes/electrax4.jpg';\n }"
@@ -691,6 +704,18 @@ export const mockDefaultValues = {
   },
   DataCategoryGroup: {
     [INSTANCE_FULL_NAME_FIELD]: 'TestDataCategoryGroup',
+  },
+  BusinessProcess: {
+    [INSTANCE_FULL_NAME_FIELD]: 'Opportunity.TestBusinessProposal',
+    active: true,
+    description: 'Test Business Proposal Description',
+  },
+  WorkflowFieldUpdate: {
+    [INSTANCE_FULL_NAME_FIELD]: 'TestWorkflowFieldUpdate',
+    actionName: 'TestWorkflowFieldUpdate',
+    description: 'Test Workflow Field Update Description',
+    assignedTo: 'TestUser',
+    status: 'Completed',
   },
 }
 

@@ -1791,6 +1791,13 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   RequestType: {
     request: {
       url: '/rest/servicedeskapi/servicedesk/{serviceDeskId}/requesttype',
+      recurseInto: [
+        {
+          type: 'RequestType__workflowStatuses',
+          toField: 'workflowStatuses',
+          context: [{ name: 'requestTypeId', fromField: 'id' }],
+        },
+      ],
     },
     transformation: {
       idFields: ['name', 'projectKey'],
@@ -1872,6 +1879,20 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       dataField: 'calendars',
       fieldsToHide: [
         { fieldName: 'id' },
+      ],
+    },
+  },
+  RequestType__workflowStatuses: {
+    request: {
+      url: '/rest/servicedesk/1/servicedesk-data/{projectKey}/request-type/{requestTypeId}/workflow',
+    },
+    transformation: {
+      dataField: 'statuses',
+      sourceTypeName: 'RequestType__workflowStatuses__statuses',
+      fieldsToOmit: [
+        { fieldName: 'projectKey' },
+        { fieldName: 'statusNameId' },
+        { fieldName: 'original' },
       ],
     },
   },

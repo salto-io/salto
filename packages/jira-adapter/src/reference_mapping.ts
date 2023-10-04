@@ -965,6 +965,12 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: PORTAL_GROUP_TYPE },
   },
+  {
+    src: { field: 'id', parentTypes: ['RequestType__workflowStatuses'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: STATUS_TYPE_NAME },
+  },
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [

@@ -480,18 +480,25 @@ describe('handle templates filter', () => {
     })
   })
   describe('preDeploy', () => {
-    let elementsBeforeFetch: (InstanceElement | ObjectType)[]
-    let elementsAfterPreDeploy: (InstanceElement | ObjectType)[]
-
-    beforeAll(async () => {
-      elementsBeforeFetch = generateElements()
+    it('Returns elements to origin after predeploy', async () => {
+      const elementsBeforeFetch = generateElements()
       const elementsAfterFetch = elementsBeforeFetch.map(e => e.clone())
       await filter.onFetch(elementsAfterFetch)
-      elementsAfterPreDeploy = elementsAfterFetch.map(e => e.clone())
+      const elementsAfterPreDeploy = elementsAfterFetch.map(e => e.clone())
       await filter.preDeploy(elementsAfterPreDeploy.map(e => toChange({ before: e, after: e })))
+      expect(elementsAfterPreDeploy).toEqual(elementsBeforeFetch)
     })
 
-    it('Returns elements to origin after predeploy', () => {
+    it('handle links correctly with transformLinks config', async () => {
+      const config = _.cloneDeep(DEFAULT_CONFIG)
+      config[FETCH_CONFIG].transformLinks = true
+      const resolveLinksFilter = filterCreator(createFilterCreatorParams({ config })) as FilterType
+
+      const elementsBeforeFetch = generateElements()
+      const elementsAfterFetch = elementsBeforeFetch.map(e => e.clone())
+      await resolveLinksFilter.onFetch(elementsAfterFetch)
+      const elementsAfterPreDeploy = elementsAfterFetch.map(e => e.clone())
+      await resolveLinksFilter.preDeploy(elementsAfterPreDeploy.map(e => toChange({ before: e, after: e })))
       expect(elementsAfterPreDeploy).toEqual(elementsBeforeFetch)
     })
   })

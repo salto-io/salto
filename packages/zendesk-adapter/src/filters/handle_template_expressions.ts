@@ -370,7 +370,7 @@ const replaceFormulasWithTemplates = (
   }
 }
 
-export const prepRef = (part: ReferenceExpression): TemplatePart => {
+export const prepRef = (part: ReferenceExpression, transformLinks?: boolean): TemplatePart => {
   // In some cases this function may run on the .before value of a Change, which may contain unresolved references.
   // .after values are always resolved because unresolved references are dropped by unresolved_references validator
   // This case should be handled more generic but at the moment this is a quick fix to avoid crashing (SALTO-3988)
@@ -388,6 +388,10 @@ export const prepRef = (part: ReferenceExpression): TemplatePart => {
     return placeholder?.pop() ?? part
   }
   if (part.elemID.typeName === GROUP_TYPE_NAME && part.value?.value?.id) {
+    return part.value.value.id.toString()
+  }
+  if (transformLinks
+    && ELEMENTS_REGEXES.map(({ type }) => type).includes(part.elemID.typeName) && part.value?.value?.id) {
     return part.value.value.id.toString()
   }
   return part
@@ -412,7 +416,11 @@ const filterCreator: FilterCreator = ({ config }) => {
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       try {
         getContainers(changes.map(getChangeData)).forEach(
-          async container => replaceTemplatesWithValues(container, deployTemplateMapping, prepRef)
+          async container => replaceTemplatesWithValues(
+            container,
+            deployTemplateMapping,
+            ref => prepRef(ref, config[FETCH_CONFIG].transformLinks)
+          )
         )
       } catch (e) {
         log.error(`Error parsing templates in deployment: ${e.message}`)

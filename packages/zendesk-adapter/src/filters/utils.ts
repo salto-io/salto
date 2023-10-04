@@ -41,7 +41,7 @@ import {
   CATEGORIES_FIELD,
   CATEGORY_TYPE_NAME,
   CUSTOM_FIELD_OPTIONS_FIELD_NAME, SECTION_TYPE_NAME,
-  SECTIONS_FIELD, ZENDESK,
+  SECTIONS_FIELD, TICKET_FORM_TYPE_NAME, ZENDESK,
 } from '../constants'
 
 const { isDefined } = lowerDashValues
@@ -171,6 +171,11 @@ export const ELEMENTS_REGEXES = [
   urlRegex: new RegExp(`(\\/${field}\\/\\d+)`),
   idRegex: new RegExp(`(?<url>/${field}/)(?<id>\\d+)`),
 }))
+ELEMENTS_REGEXES.push({
+  type: TICKET_FORM_TYPE_NAME,
+  urlRegex: /(ticket_form_id=\d+)/,
+  idRegex: /(?<url>ticket_form_id=)(?<id>\d+)/,
+})
 
 // Attempt to match the regex to an element and create a reference to that element
 const createInstanceReference = ({ urlPart, urlBrandInstance, instancesById, idRegex, type, enableMissingReferences }: {

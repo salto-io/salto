@@ -135,16 +135,17 @@ salesforce {
 
 ## Fetch configuration options
 
-| Name                                           | Default when undefined  | Description                                                                                                                                                                                                           |
-|------------------------------------------------|-------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [metadata](#metadata-configuration-options)    | Fetch all metdata       | Specified the metadata fetch                                                                                                                                                                                          |
+| Name                                      | Default when undefined  | Description                                                                                                                                                                                                           |
+|-------------------------------------------|-------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [metadata](#metadata-configuration-options) | Fetch all metdata       | Specified the metadata fetch                                                                                                                                                                                          |
 | [data](#data-management-configuration-options) | {} (do not manage data) | Data management configuration object names will not be fetched in case they are matched in includeObjects                                                                                                             |
-| fetchAllCustomSettings                         | true                    | Whether to fetch all the custom settings instances. When false, it is still possible to choose specific custom settings instances via the `data` option                                                               |
-| [optionalFeatures](#optional-features)         | {} (all enabled)        | Granular control over which features are enabled in the adapter, by default all features are enabled in order to get the most information. can be used to turn off features that cause problems until they are solved |
-| maxInstancesPerType                            | 5000                    | Do not fetch metadataTypes and CustomObjects with more instances than this number, and add those to the exclude lists                                                                                                 |
-| preferActiveFlowVersions                       | false                   | When set to false, flows' latest version will be fetched. Otherwise, flows' active version will be fetched if exists                                                                                                  |
-| addNamespacePrefixToFullName                   | true                   | When set to true, namespace prefix will be added to instances in a namespace whose fullName does not begin with the namespace. Otherwise, there will be no change to fullName                                               |
-## Metadata configuration options
+| fetchAllCustomSettings                    | true                    | Whether to fetch all the custom settings instances. When false, it is still possible to choose specific custom settings instances via the `data` option                                                               |
+| [optionalFeatures](#optional-features)    | {} (all enabled)        | Granular control over which features are enabled in the adapter, by default all features are enabled in order to get the most information. can be used to turn off features that cause problems until they are solved |
+| maxInstancesPerType                       | 5000                    | Do not fetch metadataTypes and CustomObjects with more instances than this number, and add those to the exclude lists                                                                                                 |
+| preferActiveFlowVersions                  | false                   | When set to false, flows' latest version will be fetched. Otherwise, flows' active version will be fetched if exists                                                                                                  |
+| addNamespacePrefixToFullName              | true                    | When set to true, namespace prefix will be added to instances in a namespace whose fullName does not begin with the namespace. Otherwise, there will be no change to fullName                                         |
+| [warningSettings](#warning-settings)      | {}                      | Enable/disable specific warnings                                                                                                                                                                                      |
+### Metadata configuration options
 
 | Name                           | Default when undefined       | Description                                                                                                                                                     |
 |--------------------------------|------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -152,14 +153,14 @@ salesforce {
 | [exclude](#metadata-query)     | [] (Exclude nothing)         | Specified the metadata to not fetch. Metadata that matches any of the exclude criteria will not be fetched even if it also matches some of the include criteria |
 | objectsToSeperateFieldsToFiles | [] (Don't split any objects) | Specified a list of objects which will be stored as one field per nacl file                                                                                     |
 
-## Metadata Query
+#### Metadata Query
 | Name         | Default when undefined | Description                                                    |
 |--------------|------------------------|----------------------------------------------------------------|
 | namespace    | ".*" (All namespaces)  | A regular expression of a namespace to query with              |
 | metadataType | ".*" (All types)       | A regular expression of a metadata type to query with          |
 | name         | ".*" (All names)       | A regular expression of a metadata instance name to query with |
 
-## Optional Features
+### Optional Features
 
 | Name                              | Default when undefined | Description                                                                                                                                                           |
 |-----------------------------------|------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -175,6 +176,14 @@ salesforce {
 | generateRefsInProfiles            | false                  | Generate references from profiles. This will have a significant performance impact, but will provide references from profiles to fields and elements.                 |
 | skipAliases                       | false                  | Do not create aliases for Metadata Elements                                                                                                                           |
 
+
+### Warning settings
+
+| Name                | Default when undefined | Description                                                       |
+|---------------------|------------------------|-------------------------------------------------------------------|
+| nonQueryableFields  | true                   | Warn when fetching records of an object with non-queryable fields |
+
+
 ### Data management configuration options
 
 | Name                                                                          | Default when undefined                           | Description                                                                                               |
@@ -185,9 +194,13 @@ salesforce {
 | [saltoIDSettings](#salto-id-settings-configuration-options)                   | N/A (required when dataManagement is configured) | Configuration for cross environments data record ids management                                           |
 | [saltoAliasSettings](#salto-alias-settings-configuration-options)             | N/A                                              | Configuration for data record aliases                                                                     |
 | [saltoManagementFieldSettings](#salto-management-field-configuration-options) | {}                                               | Configuration for managed-by-Salto field                                                                  |
+<<<<<<< HEAD
 | [brokenOutgoingReferencesSettings](#broken-outgoing-references-settings)      | {}                                               | Configuration for handling broken references                                                              |
 | omittedFields                                                                 | []                                               | List of API names of fields to discard when fetching data records.                                        |
 | [warningSettings](#data-warning-settings)                                     | {}                                               | Enabling/disabling specific warnings                                                                      | 
+=======
+| [brokenOutgoingReferencesSettings](#broken-outgoing-references-settings)      | {}                                               | Configuration for handling broken references                                                              | 
+>>>>>>> 3efcfb758 (Move config to fetchProfile)
 
 #### Salto ID settings configuration options
 
@@ -223,14 +236,6 @@ salesforce {
 | "ExcludeInstance" | Do not fetch instances that contain a reference whose target was not fetched                      |
 | "BrokenReference" | Fetch the instance and create Salto references to non-existant targets.                           |
 | "InternalId"      | Fetch the instance and keep the existing field value (the internal ID of the referenced instance) |
-
-
-#### Data warning settings
-
-| Name                | Default when undefined | Description                                                       |
-|---------------------|------------------------|-------------------------------------------------------------------|
-| nonQueryableFields  | true                   | Warn when fetching records of an object with non-queryable fields |
-
 
 #### Object ID settings configuration options
 

@@ -290,7 +290,6 @@ export type DataManagementConfig = {
   saltoManagementFieldSettings?: SaltoManagementFieldSettings
   brokenOutgoingReferencesSettings?: BrokenOutgoingReferencesSettings
   omittedFields?: string[]
-  warningSettings?: WarningSettings
 }
 
 export type FetchParameters = {
@@ -302,6 +301,7 @@ export type FetchParameters = {
   maxInstancesPerType?: number
   preferActiveFlowVersions?: boolean
   addNamespacePrefixToFullName?: boolean
+  warningSettings?: WarningSettings
 }
 
 export type DeprecatedMetadataParams = {
@@ -547,9 +547,6 @@ const dataManagementType = new ObjectType({
     omittedFields: {
       refType: new ListType(BuiltinTypes.STRING),
     },
-    warningSettings: {
-      refType: warningSettingsType,
-    },
   } as Record<keyof DataManagementConfig, FieldDefinition>,
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -779,6 +776,7 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
     maxInstancesPerType: { refType: BuiltinTypes.NUMBER },
     preferActiveFlowVersions: { refType: BuiltinTypes.BOOLEAN },
     addNamespacePrefixToFullName: { refType: BuiltinTypes.BOOLEAN },
+    warningSettings: { refType: warningSettingsType },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -884,7 +882,6 @@ export type DataManagement = {
   showReadOnlyValues?: boolean
   managedBySaltoFieldForType: (objType: ObjectType) => string | undefined
   omittedFieldsForType: (name: string) => string[]
-  isWarningEnabled: (name: keyof WarningSettings) => boolean
 }
 
 export type FetchProfile = {
@@ -895,4 +892,5 @@ export type FetchProfile = {
   readonly maxInstancesPerType: number
   readonly preferActiveFlowVersions: boolean
   readonly addNamespacePrefixToFullName: boolean
+  isWarningEnabled: (name: keyof WarningSettings) => boolean
 }

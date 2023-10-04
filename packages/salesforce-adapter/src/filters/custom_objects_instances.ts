@@ -634,7 +634,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
 
     let invalidPermissionsWarnings: SaltoError[] = []
 
-    if (config.fetchProfile.dataManagement?.isWarningEnabled('nonQueryableFields') ?? false) {
+    if (config.fetchProfile.isWarningEnabled('nonQueryableFields') ?? false) {
       invalidPermissionsWarnings = customObjectFetchSetting
         .map(fetchSettings => fetchSettings.objectType)
         .filter(isCustomObject)

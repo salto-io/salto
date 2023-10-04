@@ -25,6 +25,7 @@ import {
   createRestriction,
   SeverityLevel,
 } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { uniqueNamesGenerator, adjectives, colors, names } from 'unique-names-generator'
 import { collections, promises } from '@salto-io/lowerdash'
@@ -38,6 +39,7 @@ import { createMatchingObjectType } from '@salto-io/adapter-utils'
 const { mapValuesAsync } = promises.object
 const { arrayOf } = collections.array
 const { awu } = collections.asynciterable
+const log = logger(module)
 
 export const DUMMY_ADAPTER = 'dummy'
 
@@ -667,8 +669,10 @@ export const generateElements = async (
     const allNaclMocks = await readdirp.promise(naclDir, {
       fileFilter: [`*.${MOCK_NACL_SUFFIX}`],
     })
+    log.trace('the list of files read in generateExtraElements is: %s', allNaclMocks.map(mock => mock.path).join(' , '))
     const elements = await awu(allNaclMocks.map(async file => {
       const content = fs.readFileSync(file.fullPath, 'utf8')
+      log.trace('content of file %s is %s', file.path, content)
       const parsedNaclFile = await parser.parse(Buffer.from(content), file.basename, {
         file: {
           parse: async funcParams => new StaticFile({
@@ -679,7 +683,6 @@ export const generateElements = async (
           isSerializedAsFunction: () => true,
         },
       })
-
       await awu(parsedNaclFile.elements).forEach(elem => {
         elem.path = [DUMMY_ADAPTER, 'extra', file.basename.replace(new RegExp(`.${MOCK_NACL_SUFFIX}$`), '')]
       })
@@ -885,6 +888,7 @@ export const generateElements = async (
   const defaultExtraElements = await generateExtraElements(
     path.join(dataPath, 'fixtures')
   )
+  log.trace('default fixture element are: %s', defaultExtraElements.map(elem => elem.elemID.getFullName()).join(' , '))
   const envObjects = generateEnvElements()
   progressReporter.reportProgress({ message: 'Generation done' })
   const elementsToExclude = new Set(params.elementsToExclude ?? [])

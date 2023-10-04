@@ -168,12 +168,19 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   )
 
   const flush = async (): Promise<void> => {
-    await withLimitedConcurrency(
-      Object.values(updated).map(f => () => writeFile(f)), WRITE_CONCURRENCY
-    )
-    await withLimitedConcurrency(Array.from(deleted).map(f => () => deleteFile(f, true)), DELETE_CONCURRENCY)
-    updated = {}
+    const deletesToHandle = deleted
     deleted = new Set()
+    const updatesToHandle = updated
+    updated = {}
+    // first delete the files, so that we can create files nested under deleted-file paths and vice versa
+    // (e.g., removing a and creating a/b)
+    await withLimitedConcurrency(Array.from(deletesToHandle).map(f => () => deleteFile(f, true)), DELETE_CONCURRENCY)
+    await withLimitedConcurrency(
+      Object.values(updatesToHandle).map(f => () => writeFile(f)), WRITE_CONCURRENCY
+    )
+    if (deleted.size > 0 || Object.keys(updated).length > 0) {
+      log.warn('there are %d pending deletions and %d pending updates that were added while flushing the dir_store', deleted.size, Object.keys(updated).length)
+    }
   }
 
   const deleteAllEmptyDirectories = async (): Promise<void> => {

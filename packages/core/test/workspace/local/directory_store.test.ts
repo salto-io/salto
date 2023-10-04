@@ -19,6 +19,7 @@ import {
   stat, exists, readFile, replaceContents, mkdirp, rm, isEmptyDir,
   rename, notFoundAsUndefined,
 } from '@salto-io/file'
+import { dirStore as workspaceDirStore } from '@salto-io/workspace'
 import { localDirectoryStore, createExtensionFileFilter } from '../../../src/local-workspace/dir_store'
 
 jest.mock('@salto-io/file', () => ({
@@ -474,6 +475,49 @@ describe('localDirectoryStore', () => {
     })
     it('should return false for files which are not in the path', () => {
       expect(naclFileStore.isPathIncluded(path.resolve('/nope', 'sup.nacl'))).toBeFalsy()
+    })
+  })
+
+  describe('flush', () => {
+    let dirStore: workspaceDirStore.DirectoryStore<workspaceDirStore.ContentType>
+    const buffer = Buffer.from('bla')
+    const removedFlat = 'a'
+    const createdNested = 'a/a'
+    const removedNested = 'b/b'
+    const createdFlat = 'b'
+
+    beforeEach(async () => {
+      dirStore = localDirectoryStore({ baseDir: '', name: '' })
+      await dirStore.set({ filename: removedFlat, buffer })
+      await dirStore.set({ filename: removedNested, buffer })
+      await dirStore.flush()
+
+      jest.clearAllMocks()
+    })
+
+    it('can remove a file and create another file nested under an identically-named folder, and vice-versa', async () => {
+      const callOrder: string[] = []
+      mockRm.mockResolvedValue(true)
+      mockMkdir.mockResolvedValue(true)
+      mockReplaceContents.mockImplementation(() => {
+        callOrder.push('replace')
+      })
+      mockRm.mockImplementation(() => {
+        callOrder.push('rm')
+      })
+      await dirStore.set({ filename: createdNested, buffer })
+      await dirStore.set({ filename: createdFlat, buffer })
+      await dirStore.delete(removedFlat)
+      await dirStore.delete(removedNested)
+      expect(mockMkdir).not.toHaveBeenCalled()
+      expect(mockReplaceContents).not.toHaveBeenCalled()
+      expect(mockRm).not.toHaveBeenCalled()
+      await dirStore.flush()
+      expect(callOrder).toEqual(['rm', 'rm', 'rm', 'replace', 'replace'])
+      expect(mockRm.mock.calls[0][0]).toMatch(removedFlat)
+      expect(mockRm.mock.calls[1][0]).toMatch(removedNested)
+      expect(mockReplaceContents.mock.calls[0][0]).toMatch(createdNested)
+      expect(mockReplaceContents.mock.calls[1][0]).toMatch(createdFlat)
     })
   })
 })

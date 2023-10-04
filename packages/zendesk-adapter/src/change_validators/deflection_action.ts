@@ -21,7 +21,7 @@ import {
 import { logger } from '@salto-io/logging'
 import {
   AUTOMATION_TYPE_NAME,
-  DEFLECTION_TYPE,
+  DEFLECTION_NOTIFICATION,
   MACRO_TYPE_NAME,
   TRIGGER_TYPE_NAME,
   ZENDESK,
@@ -46,7 +46,7 @@ const isValidSettings = (instance: Value): instance is SettingsInstanceWithAutom
   _.isObject(instance?.value?.active_features)
 
 const isDeflectionAction = (action: Values): boolean =>
-  _.isPlainObject(action) && action.field === DEFLECTION_TYPE
+  _.isPlainObject(action) && action.field === DEFLECTION_NOTIFICATION
 
 /**
  * Validates that if an action of deflection is added or modified, the environment has the feature for it activated
@@ -85,6 +85,6 @@ export const deflectionActionValidator: ChangeValidator = async (
     elemID: instance.elemID,
     severity: 'Error',
     message: 'Action requires turning on automatic answers',
-    detailedMessage: `To enable the configuration of the '${DEFLECTION_TYPE}' field action, which allows for ‘autoreply with articles’, please ensure that the automatic answers feature is turned on. To do so, please update the 'automatic_answers' setting to 'true' in the account_settings.`,
+    detailedMessage: `To enable the configuration of the '${DEFLECTION_NOTIFICATION}' field action, which allows for ‘autoreply with articles’, please ensure that the automatic answers feature is turned on. To do so, please update the 'automatic_answers' setting to 'true' in the account_settings.`,
   }))
 }

@@ -18,18 +18,21 @@ import {
   BuiltinTypes, TemplateExpression, MapType, toChange, isInstanceElement, UnresolvedReference,
 } from '@salto-io/adapter-api'
 import { filterUtils, references as referencesUtils } from '@salto-io/adapter-components'
+import _ from 'lodash'
 import filterCreator, {
   TICKET_ORGANIZATION_FIELD,
   TICKET_TICKET_FIELD_OPTION_TITLE,
   TICKET_TICKET_FIELD, TICKET_USER_FIELD, prepRef,
 } from '../../src/filters/handle_template_expressions'
 import {
+  ARTICLE_TRANSLATION_TYPE_NAME, ARTICLE_TYPE_NAME,
   GROUP_TYPE_NAME,
   ORG_FIELD_TYPE_NAME,
   USER_FIELD_TYPE_NAME,
   ZENDESK,
 } from '../../src/constants'
 import { createFilterCreatorParams } from '../utils'
+import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 
 const { createMissingInstance } = referencesUtils
 
@@ -225,6 +228,21 @@ describe('handle templates filter', () => {
     settings_objects: [{ name: 'uri_templates', value: 'object template: {{ticket.ticket_field_1452}}' }],
   })
 
+  const article = new InstanceElement(
+    'article',
+    new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }),
+    {
+      id: 12341234,
+    }
+  )
+
+  const articleTranslation = new InstanceElement(
+    'articleTranslation',
+    new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TRANSLATION_TYPE_NAME) }),
+    {
+      body: `/test/test/articles/${article.value.id}/test`,
+    }
+  )
 
   const generateElements = (): (InstanceElement | ObjectType)[] => ([testType, placeholder1Type,
     placeholder2Type, placeholder1, placeholder2, macro1, macro2, macro3, macroAlmostTemplate,
@@ -233,7 +251,8 @@ describe('handle templates filter', () => {
     appInstallationType, macroWithDC, macroWithHyphenDC, dynamicContentRecord,
     hyphenDynamicContentRecord, macroComplicated, macroDifferentBracket,
     macroWithSideConversationTicketTemplate, placeholder3, placeholderOrganization1, placeholderOrganization2,
-    placeholderUser1, placeholderUser2, macroOrganization, macroUser, macroMissingUserAndOrganization])
+    placeholderUser1, placeholderUser2, macroOrganization, macroUser, macroMissingUserAndOrganization,
+    article, articleTranslation])
     .map(element => element.clone())
 
   describe('on fetch', () => {
@@ -440,6 +459,24 @@ describe('handle templates filter', () => {
           '.title}}',
         ],
       }))
+    })
+    it('should not resolve urls when the config flag is off', async () => {
+      const fetchedArticleTranslation = elements.filter(isInstanceElement).find(i => i.elemID.name === 'articleTranslation')
+      expect(fetchedArticleTranslation?.value.body).toEqual(`/test/test/articles/${article.value.id}/test`)
+    })
+    it('should resolve urls correctly when the config flag is on', async () => {
+      elements = generateElements()
+      const config = _.cloneDeep(DEFAULT_CONFIG)
+      config[FETCH_CONFIG].transformLinks = true
+      const resolveLinksFilter = filterCreator(createFilterCreatorParams({ config })) as FilterType
+      await resolveLinksFilter.onFetch(elements)
+
+      const fetchedArticleTranslation = elements.filter(isInstanceElement).find(i => i.elemID.name === 'articleTranslation')
+      expect(fetchedArticleTranslation?.value.body).toEqual(new TemplateExpression({ parts: [
+        '/test/test/articles/',
+        new ReferenceExpression(article.elemID, article),
+        '/test',
+      ] }))
     })
   })
   describe('preDeploy', () => {

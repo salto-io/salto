@@ -189,13 +189,19 @@ const seekAndMarkPotentialReferences = (formula: string): string => {
 
 // This function receives a formula that contains zendesk-style references and replaces
 // it with salto style templates.
-const formulaToTemplate = (
-  formula: string,
-  instancesByType: Record<string, InstanceElement[]>,
-  instancesById: Record<string, InstanceElement>,
-  enableMissingReferences?: boolean,
-  transformLinks?: boolean
-): TemplateExpression | string => {
+const formulaToTemplate = ({
+  formula,
+  instancesByType,
+  instancesById,
+  enableMissingReferences,
+  transformLinks,
+}: {
+  formula: string
+    instancesByType: Record<string, InstanceElement[]>
+    instancesById: Record<string, InstanceElement>
+    enableMissingReferences?: boolean
+    transformLinks?: boolean
+}): TemplateExpression | string => {
   const handleZendeskReference = (expression: string, ref: RegExpMatchArray): TemplatePart[] => {
     const reference = ref.pop() ?? ''
     const splitReference = reference.split(new RegExp(SPLIT_REGEX)).filter(v => !_.isEmpty(v))
@@ -265,7 +271,6 @@ const formulaToTemplate = (
   }
 
   const potentialRegexes = [REFERENCE_MARKER_REGEX, potentialReferenceTypeRegex, DYNAMIC_CONTENT_REGEX]
-  // eslint-disable-next-line no-constant-condition
   if (transformLinks) {
     potentialRegexes.push(...ELEMENTS_REGEXES.map(s => s.urlRegex))
   }
@@ -284,7 +289,6 @@ const formulaToTemplate = (
       if (dynamicContentReference) {
         return handleDynamicContentReference(expression, dynamicContentReference)
       }
-      // eslint-disable-next-line no-constant-condition
       return transformLinks
         ? transformReferenceUrls({
           urlPart: expression,
@@ -326,13 +330,13 @@ const replaceFormulasWithTemplates = (
       if (isReferenceExpression(part)) {
         return part
       }
-      const template = formulaToTemplate(
-        part,
+      const template = formulaToTemplate({
+        formula: part,
         instancesByType,
         instancesById,
         enableMissingReferences,
-        transformLinks
-      )
+        transformLinks,
+      })
       return isTemplateExpression(template) ? template.parts : template
     })
     return new TemplateExpression({ parts: newParts })
@@ -345,13 +349,13 @@ const replaceFormulasWithTemplates = (
     if (isTemplateExpression(value)) {
       return handleTemplateExpressionParts(value.parts)
     }
-    return _.isString(value) ? formulaToTemplate(
-      value,
+    return _.isString(value) ? formulaToTemplate({
+      formula: value,
       instancesByType,
       instancesById,
       enableMissingReferences,
-      transformLinks
-    ) : value
+      transformLinks,
+    }) : value
   }
 
   try {

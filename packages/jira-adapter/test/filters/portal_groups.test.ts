@@ -14,108 +14,148 @@
 * limitations under the License.
 */
 
-import { filterUtils, elements as adapterElements } from '@salto-io/adapter-components'
+import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { InstanceElement, ReferenceExpression, CORE_ANNOTATIONS, toChange } from '@salto-io/adapter-api'
+import { MockInterface } from '@salto-io/test-utils'
 import { getDefaultConfig } from '../../src/config/config'
 import portalGroupsFilter from '../../src/filters/portal_groups'
 import { createEmptyType, getFilterParams, mockClient } from '../utils'
-import { JIRA, PORTAL_GROUP_TYPE, PROJECT_TYPE } from '../../src/constants'
+import { PORTAL_GROUP_TYPE, PROJECT_TYPE } from '../../src/constants'
 import JiraClient from '../../src/client/client'
 
 
 describe('queue filter', () => {
-    type FilterType = filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
-    let filter: FilterType
-    let client: JiraClient
-    const projectInstance = new InstanceElement(
-      'project1',
-      createEmptyType(PROJECT_TYPE),
-      {
-        id: 11111,
-        name: 'project1',
-        projectTypeKey: 'service_desk',
-        key: 'project1Key',
-      },
-      [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1']
-    )
-    let portalGroupInstance: InstanceElement
-    describe('pre deploy', () => {
-      beforeEach(() => {
-        const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-        config.fetch.enableJSM = true
-        const { client: cli } = mockClient(true)
-        client = cli
-        filter = portalGroupsFilter(getFilterParams({ config, client })) as typeof filter
-        portalGroupInstance = new InstanceElement(
-          'queue1',
-          createEmptyType(PORTAL_GROUP_TYPE),
-          {
-            id: 11,
-            name: 'portalGroup1',
-          },
-          undefined,
-          {
-            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(projectInstance.elemID, projectInstance)],
-          },
-        )
-      })
-      it('should add ticketTypeIds to portalGroupInstance', async () => {
-        const changes = [toChange({ after: portalGroupInstance })]
-        await filter.preDeploy(changes)
-        expect(portalGroupInstance.value.ticketTypeIds).toEqual([])
-      })
-      it('should add ticketTypeIds to portalGroupInstance when modifying', async () => {
-        const portalGroupInstanceAfter = portalGroupInstance.clone()
-        portalGroupInstanceAfter.value.name = 'portalGroup2'
-        const changes = [toChange({ before: portalGroupInstance, after: portalGroupInstanceAfter })]
-        await filter.preDeploy(changes)
-        expect(portalGroupInstanceAfter.value.ticketTypeIds).toEqual([])
-      })
-      it('should not add ticketTypeIds to portalGroupInstance when enable JSM is false', async () => {
-        const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-        config.fetch.enableJSM = false
-        filter = portalGroupsFilter(getFilterParams({ config, client })) as typeof filter
-        const changes = [toChange({ after: portalGroupInstance })]
-        await filter.preDeploy(changes)
-        expect(portalGroupInstance.value.ticketTypeIds).toBeUndefined()
-      })
+  type FilterType = filterUtils.FilterWith<'deploy' | 'preDeploy' | 'onDeploy'>
+  let filter: FilterType
+  let client: JiraClient
+  let connection: MockInterface<clientUtils.APIConnection>
+  const projectInstance = new InstanceElement(
+    'project1',
+    createEmptyType(PROJECT_TYPE),
+    {
+      id: 11111,
+      name: 'project1',
+      projectTypeKey: 'service_desk',
+      key: 'project1Key',
+      serviceDeskId: 100,
+    },
+  )
+  const RequestTypeInstanceOne = new InstanceElement(
+    'requestType1',
+    createEmptyType('requestType'),
+    {
+      id: 1,
+    },
+  )
+  const RequestTypeInstanceTwo = new InstanceElement(
+    'requestType2',
+    createEmptyType('requestType'),
+    {
+      id: 2,
+    },
+  )
+  const RequestTypeInstanceThree = new InstanceElement(
+    'requestType3',
+    createEmptyType('requestType'),
+    {
+      id: 3,
+    },
+  )
+  let portalGroupInstance: InstanceElement
+  describe('deploy', () => {
+    beforeEach(() => {
+      const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config.fetch.enableJSM = true
+      const { client: cli, connection: conn } = mockClient(false)
+      client = cli
+      connection = conn
+      filter = portalGroupsFilter(getFilterParams({ config, client })) as typeof filter
+      portalGroupInstance = new InstanceElement(
+        'portalGroup1',
+        createEmptyType(PORTAL_GROUP_TYPE),
+        {
+          id: 11,
+          name: 'portalGroup1',
+          ticketTypeIds: [
+            new ReferenceExpression(RequestTypeInstanceOne.elemID, RequestTypeInstanceOne),
+            new ReferenceExpression(RequestTypeInstanceTwo.elemID, RequestTypeInstanceTwo),
+            new ReferenceExpression(RequestTypeInstanceThree.elemID, RequestTypeInstanceThree),
+          ],
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(projectInstance.elemID, projectInstance)],
+        },
+      )
     })
-    describe('on deploy', () => {
-      let portalGroupWithTicketTypeIds: InstanceElement
-      beforeEach(() => {
-        const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-        config.fetch.enableJSM = true
-        const { client: cli } = mockClient(true)
-        client = cli
-        filter = portalGroupsFilter(getFilterParams({ config, client })) as typeof filter
-        portalGroupInstance = new InstanceElement(
-          'queue1',
-          createEmptyType(PORTAL_GROUP_TYPE),
-          {
-            id: 11,
-            name: 'portalGroup1',
-          },
-          undefined,
-          {
-            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(projectInstance.elemID, projectInstance)],
-          },
-        )
-        portalGroupWithTicketTypeIds = portalGroupInstance.clone()
-        portalGroupWithTicketTypeIds.value.ticketTypeIds = []
-      })
-      it('should remove ticketTypeIds from portalGroupInstance', async () => {
-        const changes = [toChange({ after: portalGroupWithTicketTypeIds })]
-        await filter.onDeploy(changes)
-        expect(portalGroupInstance.value.ticketTypeIds).toBeUndefined()
-      })
-      it('should not remove ticketTypeIds from portalGroupInstance when enable JSM is false', async () => {
-        const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-        config.fetch.enableJSM = false
-        filter = portalGroupsFilter(getFilterParams({ config, client })) as typeof filter
-        const changes = [toChange({ after: portalGroupWithTicketTypeIds })]
-        await filter.onDeploy(changes)
-        expect(portalGroupWithTicketTypeIds.value.ticketTypeIds).toEqual([])
-      })
+    it('should add portal group', async () => {
+      const changes = [toChange({ after: portalGroupInstance })]
+      const res = await filter.deploy(changes)
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(connection.post).toHaveBeenCalledTimes(1)
+      expect(connection.post).toHaveBeenCalledWith(
+        '/rest/servicedesk/100/servicedesk/11111/portal-groups',
+        {
+          id: 11,
+          name: 'portalGroup1',
+          ticketTypeIds: [{ id: 1 }, { id: 2 }, { id: 3 }],
+        },
+        undefined
+      )
     })
+    it('should update portal group', async () => {
+      const clonedPortalGroupAfter = portalGroupInstance.clone()
+      clonedPortalGroupAfter.value.ticketTypeIds = [
+        new ReferenceExpression(RequestTypeInstanceOne.elemID, RequestTypeInstanceOne),
+        new ReferenceExpression(RequestTypeInstanceTwo.elemID, RequestTypeInstanceTwo),
+      ]
+      const changes = [toChange({ before: portalGroupInstance, after: clonedPortalGroupAfter })]
+      const res = await filter.deploy(changes)
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(connection.put).toHaveBeenCalledTimes(1)
+      expect(connection.put).toHaveBeenCalledWith(
+        '/rest/servicedesk/100/servicedesk/11111/portal-groups/11',
+        {
+          id: 11,
+          name: 'portalGroup1',
+          ticketTypeIds: [{ id: 1 }, { id: 2 }],
+        },
+        undefined
+      )
+      expect(connection.post).toHaveBeenCalledTimes(1)
+      expect(connection.post).toHaveBeenCalledWith(
+        '/rest/servicedesk/100/servicedesk/11111/portal-groups/request-types',
+        {
+          groups: [{
+            groupId: 11,
+            ticketTypeIds: [1, 2],
+          }],
+        },
+        undefined
+      )
+    })
+    it('should delete portal group', async () => {
+      const changes = [toChange({ before: portalGroupInstance })]
+      const res = await filter.deploy(changes)
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(connection.delete).toHaveBeenCalledTimes(1)
+    })
+    it('should not deploy if enableJSM is false', async () => {
+      const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config.fetch.enableJSM = false
+      filter = portalGroupsFilter(getFilterParams({ config, client })) as typeof filter
+      const changes = [toChange({ after: portalGroupInstance })]
+      const res = await filter.deploy(changes)
+      expect(res.leftoverChanges).toEqual(changes)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(0)
+    })
+  })
 })

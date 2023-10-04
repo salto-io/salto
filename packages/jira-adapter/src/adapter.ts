@@ -104,6 +104,7 @@ import filtersFilter from './filters/filter'
 import removeEmptyValuesFilter from './filters/remove_empty_values'
 import jqlReferencesFilter from './filters/jql/jql_references'
 import userFilter from './filters/user'
+import changePortalGroupFieldsFilter from './filters/change_portal_group_fields'
 import { JIRA, PROJECT_TYPE, SERVICE_DESK } from './constants'
 import { paginate, removeScopedObjects } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
@@ -173,6 +174,7 @@ export const DEFAULT_FILTERS = [
   storeUsersFilter,
   changeServiceDeskIdFieldProjectFilter,
   changeQueueFieldsFilter,
+  changePortalGroupFieldsFilter,
   automationLabelFetchFilter,
   automationLabelDeployFilter,
   automationFetchFilter,
@@ -509,6 +511,7 @@ export default class JiraAdapter implements AdapterOperations {
       const serviceDeskProjRecord: Record<string, string> = {
         projectKey: projectInstance.value.key,
         serviceDeskId: projectInstance.value.serviceDeskId.id,
+        projectId: projectInstance.value.id,
       }
       log.debug(`Fetching elements for brand ${projectInstance.elemID.name}`)
       return getAllElements({

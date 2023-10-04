@@ -14,38 +14,52 @@
 * limitations under the License.
 */
 
-import { getChangeData, isInstanceChange } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { ReferenceExpression, getChangeData, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { getParent, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { PORTAL_GROUP_TYPE } from '../constants'
+import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 
-const { awu } = collections.asynciterable
 
-const filter: FilterCreator = ({ config }) => ({
+const filter: FilterCreator = ({ config, client }) => ({
   name: 'portalGroupsFilter',
-  preDeploy: async changes => {
-    if (!config.fetch.enableJSM) {
-      return
+  deploy: async changes => {
+    const { jsmApiDefinitions } = config
+    if (!config.fetch.enableJSM || jsmApiDefinitions === undefined) {
+      return {
+        deployResult: { appliedChanges: [], errors: [] },
+        leftoverChanges: changes,
+      }
     }
-    await awu(changes)
-      .filter(isInstanceChange)
-      .filter(change => getChangeData(change).elemID.typeName === PORTAL_GROUP_TYPE)
-      .forEach(change => {
-        const instance = getChangeData(change)
-        instance.value.ticketTypeIds = []
-      })
-  },
-  onDeploy: async changes => {
-    if (!config.fetch.enableJSM) {
-      return
-    }
-    await awu(changes)
-      .filter(isInstanceChange)
-      .filter(change => getChangeData(change).elemID.typeName === PORTAL_GROUP_TYPE)
-      .forEach(change => {
-        const instance = getChangeData(change)
-        delete instance.value.ticketTypeIds
-      })
+
+    const [relevantChanges, leftoverChanges] = _.partition(
+      changes,
+      change => getChangeData(change).elemID.typeName === PORTAL_GROUP_TYPE
+    )
+    const deployResult = await deployChanges(
+      relevantChanges.filter(isInstanceChange),
+      async change => {
+        await defaultDeployChange({ change, client, apiDefinitions: jsmApiDefinitions })
+        if (isModificationChange(change)) {
+          const instance = getChangeData(change)
+          const project = getParent(instance)
+          const ticketTypeIds = instance.value.ticketTypeIds
+            .filter(isResolvedReferenceExpression)
+            .map((ticketType: ReferenceExpression) => ticketType.value.value.id)
+          await client.post({
+            url: `/rest/servicedesk/${project.value.serviceDeskId}/servicedesk/${project.value.id}/portal-groups/request-types`,
+            data: {
+              groups: [{
+                groupId: instance.value.id,
+                ticketTypeIds,
+              }],
+            },
+          })
+        }
+      }
+    )
+    return { deployResult, leftoverChanges }
   },
 })
 export default filter

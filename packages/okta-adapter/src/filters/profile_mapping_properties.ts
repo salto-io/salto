@@ -15,11 +15,13 @@
 */
 import { Element, Values, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { PROFILE_MAPPING_TYPE_NAME } from '../constants'
 import OktaClient from '../client/client'
 import { FETCH_CONFIG } from '../config'
 
+const { awu } = collections.asynciterable
 const log = logger(module)
 
 const getProfileMapping = async (
@@ -27,7 +29,7 @@ const getProfileMapping = async (
   client: OktaClient
 ): Promise<Values> => (await client.getSinglePage({
   url: `/api/v1/mappings/${mappingId}`,
-})).data as Values[]
+})).data as Values
 
 /**
 * Add profile mapping properties for ProfileMapping instances
@@ -43,7 +45,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === PROFILE_MAPPING_TYPE_NAME)
 
-    instances.forEach(async instance => {
+    await awu(instances).forEach(async instance => {
       const mappingId = instance.value.id
       const mappingProperties = (await getProfileMapping(mappingId, client))?.properties
       // not all mappings have properties

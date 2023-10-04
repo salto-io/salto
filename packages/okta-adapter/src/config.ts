@@ -1220,13 +1220,19 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   },
   ProfileMapping: {
     transformation: {
-      idFields: ['source.name', 'target.name'],
+      idFields: ['&source.id', '&target.id'],
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
     },
     deployRequests: {
-      // only modificaiton is supported
+      add: {
+        url: '/api/v1/mappings/{mappingId}',
+        method: 'post',
+        urlParamsToFields: {
+          mappingId: 'id',
+        },
+      },
       modify: {
         url: '/api/v1/mappings/{mappingId}',
         method: 'post',

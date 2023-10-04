@@ -877,29 +877,7 @@ describe('fetch', () => {
         )
         describe('when auto merge is disabled', () => {
           beforeEach(async () => {
-            mockAdapters[testID.adapter].fetch.mockResolvedValueOnce(
-              Promise.resolve({ elements: [serviceInstance] })
-            )
-            const result = await fetchChanges(
-              mockAdapters,
-              createElementSource([workspaceInstance]),
-              createElementSource([stateInstance]),
-              { [testID.adapter]: 'dummy' },
-              [],
-            )
-            changes = [...result.changes]
-          })
-          it('should calculate fetch changes', () => {
-            expect(changes).toHaveLength(5)
-          })
-          it('should not merge any change', () => {
-            expect(changes.every(change => isModificationChange(change.change)
-              && _.isEqual(change.change.data.after, allValues.serviceValue))).toBeTrue()
-          })
-        })
-        describe('when auto merge is enabled', () => {
-          beforeEach(async () => {
-            process.env.SALTO_FETCH_AUTO_MERGE = '1'
+            process.env.SALTO_AUTO_MERGE_DISABLE = '1'
             mockAdapters[testID.adapter].fetch.mockResolvedValueOnce(
               Promise.resolve({ elements: [serviceInstance] })
             )
@@ -913,7 +891,29 @@ describe('fetch', () => {
             changes = [...result.changes]
           })
           afterEach(() => {
-            delete process.env.SALTO_FETCH_AUTO_MERGE
+            delete process.env.SALTO_AUTO_MERGE_DISABLE
+          })
+          it('should calculate fetch changes', () => {
+            expect(changes).toHaveLength(5)
+          })
+          it('should not merge any change', () => {
+            expect(changes.every(change => isModificationChange(change.change)
+              && _.isEqual(change.change.data.after, allValues.serviceValue))).toBeTrue()
+          })
+        })
+        describe('when auto merge is enabled', () => {
+          beforeEach(async () => {
+            mockAdapters[testID.adapter].fetch.mockResolvedValueOnce(
+              Promise.resolve({ elements: [serviceInstance] })
+            )
+            const result = await fetchChanges(
+              mockAdapters,
+              createElementSource([workspaceInstance]),
+              createElementSource([stateInstance]),
+              { [testID.adapter]: 'dummy' },
+              [],
+            )
+            changes = [...result.changes]
           })
           it('should calculate fetch changes', () => {
             expect(changes).toHaveLength(5)

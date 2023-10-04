@@ -14,27 +14,24 @@
 * limitations under the License.
 */
 
-import { Change, InstanceElement, getChangeData, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
-import { getParent, resolveValues } from '@salto-io/adapter-utils'
+import { InstanceElement, RemovalChange, getChangeData, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
+import { getParent } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { deployChanges } from '../deployment/standard_deployment'
 import { FilterCreator } from '../filter'
 import { QUEUE_TYPE } from '../constants'
-import { getLookUpName } from '../reference_mapping'
 import JiraClient from '../client/client'
 
 const deployQueueRemovalChange = async (
-  change: Change<InstanceElement>,
+  change: RemovalChange<InstanceElement>,
   client: JiraClient,
 ): Promise<void> => {
   const parent = getParent(getChangeData(change))
-  const instance = await resolveValues(getChangeData(change), getLookUpName)
-  if (isRemovalChange(change)) {
-    await client.put({
-      url: `/rest/servicedesk/1/servicedesk/${parent.value.key}/queues/`,
-      data: { deleted: [instance.value.id] },
-    })
-  }
+  const instanceId = getChangeData(change).value.id
+  await client.put({
+    url: `/rest/servicedesk/1/servicedesk/${parent.value.key}/queues`,
+    data: { deleted: [instanceId] },
+  })
 }
 
 const filter: FilterCreator = ({ config, client }) => ({
@@ -48,10 +45,11 @@ const filter: FilterCreator = ({ config, client }) => ({
     }
     const [queueChanges, leftoverChanges] = _.partition(
       changes,
-      change => isInstanceChange(change) && getChangeData(change).elemID.typeName === QUEUE_TYPE
+      change => isInstanceChange(change)
+      && getChangeData(change).elemID.typeName === QUEUE_TYPE
       && isRemovalChange(change)
     )
-    const deployResult = await deployChanges(queueChanges.filter(isInstanceChange),
+    const deployResult = await deployChanges(queueChanges.filter(isInstanceChange).filter(isRemovalChange),
       async change => deployQueueRemovalChange(change, client))
 
     return {

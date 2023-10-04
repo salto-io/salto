@@ -15,10 +15,9 @@
 */
 
 import { CORE_ANNOTATIONS, InstanceElement, ReadOnlyElementsSource, ReferenceExpression, SeverityLevel, toChange } from '@salto-io/adapter-api'
-import { elements as adapterElements } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { PROJECT_TYPE, JIRA, QUEUE_TYPE } from '../../src/constants'
+import { PROJECT_TYPE, QUEUE_TYPE } from '../../src/constants'
 import { createEmptyType } from '../utils'
 import { deleteLastQueueValidator } from '../../src/change_validators/last_queue'
 import { JiraConfig, getDefaultConfig } from '../../src/config/config'
@@ -38,13 +37,12 @@ describe('lastQueueValidator', () => {
         name: 'project1',
         projectTypeKey: 'service_desk',
       },
-      [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1']
     )
     queueInstance = new InstanceElement(
       'queue1',
       queueType,
       {
-        id: 11111,
+        id: 22,
         name: 'queue1',
       },
       undefined,
@@ -61,7 +59,7 @@ describe('lastQueueValidator', () => {
   it('should return error if trying delete the last queue of a project', async () => {
     const validator = deleteLastQueueValidator(config)
     const changeErrors = await validator(
-      [toChange({ before: queueInstance, after: undefined })],
+      [toChange({ before: queueInstance })],
       elementsSource
     )
     expect(changeErrors).toHaveLength(1)
@@ -77,7 +75,7 @@ describe('lastQueueValidator', () => {
       'queue2',
       queueType,
       {
-        id: 11111,
+        id: 33,
         name: 'queue2',
       },
       undefined,
@@ -89,16 +87,44 @@ describe('lastQueueValidator', () => {
     )
     const validator = deleteLastQueueValidator(config)
     const changeErrors = await validator(
-      [toChange({ before: queueInstance, after: undefined })],
+      [toChange({ before: queueInstance })],
       buildElementsSourceFromElements([otherQueueInstance, projectInstance])
     )
     expect(changeErrors).toHaveLength(0)
+  })
+  it('should return error if tyring to delete all the queues of a project', async () => {
+    const otherQueueInstance = new InstanceElement(
+      'queue2',
+      queueType,
+      {
+        id: 33,
+        name: 'queue2',
+      },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: [
+          new ReferenceExpression(projectInstance.elemID, projectInstance),
+        ],
+      },
+    )
+    const validator = deleteLastQueueValidator(config)
+    const changeErrors = await validator(
+      [toChange({ before: queueInstance }), toChange({ before: otherQueueInstance })],
+      buildElementsSourceFromElements([projectInstance])
+    )
+    expect(changeErrors).toHaveLength(2)
+    expect(changeErrors[0]).toEqual({
+      elemID: queueInstance.elemID,
+      severity: 'Error' as SeverityLevel,
+      message: 'Cannot delete a project’s only queue',
+      detailedMessage: 'Cannot delete this queue, as its the last remaining queue in project project1.',
+    })
   })
   it('should not return error if enableJSM is false', async () => {
     config.fetch.enableJSM = false
     const validator = deleteLastQueueValidator(config)
     const changeErrors = await validator(
-      [toChange({ before: queueInstance, after: undefined })],
+      [toChange({ before: queueInstance })],
       elementsSource
     )
     expect(changeErrors).toHaveLength(0)
@@ -106,7 +132,7 @@ describe('lastQueueValidator', () => {
   it('should not return error if not a removal change', async () => {
     const validator = deleteLastQueueValidator(config)
     const changeErrors = await validator(
-      [toChange({ before: undefined, after: queueInstance })],
+      [toChange({ after: queueInstance })],
       elementsSource
     )
     expect(changeErrors).toHaveLength(0)

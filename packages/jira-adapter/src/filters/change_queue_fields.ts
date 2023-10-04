@@ -25,7 +25,7 @@ const filter: FilterCreator = ({ config }) => ({
       return
     }
     elements
-      .filter(e => e.elemID.typeName === QUEUE_TYPE)
+      .filter(element => element.elemID.typeName === QUEUE_TYPE)
       .filter(isInstanceElement)
       .forEach(instance => {
         instance.value.columns = instance.value.fields

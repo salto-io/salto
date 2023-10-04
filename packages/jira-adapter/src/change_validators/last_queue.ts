@@ -37,10 +37,7 @@ export const deleteLastQueueValidator: (
       .filter(isRemovalChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === QUEUE_TYPE)
-      .filter(async instance => {
-        const parent = getParent(instance)
-        return projectToQueues[parent.elemID.getFullName()] === undefined
-      })
+      .filter(async instance => projectToQueues[getParent(instance).elemID.getFullName()] === undefined)
       .map(instance => ({
         elemID: instance.elemID,
         severity: 'Error' as SeverityLevel,

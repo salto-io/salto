@@ -19,14 +19,14 @@ import _ from 'lodash'
 import { InstanceElement, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { getDefaultConfig } from '../../src/config/config'
-import queueFilter from '../../src/filters/queue_delete'
+import deleteQueueFilter from '../../src/filters/queue_delete'
 import { createEmptyType, getFilterParams, mockClient } from '../utils'
 import { PROJECT_TYPE, QUEUE_TYPE } from '../../src/constants'
 import JiraClient from '../../src/client/client'
 
 
 describe('queue filter', () => {
-    type FilterType = filterUtils.FilterWith<'deploy' | 'onFetch'>
+    type FilterType = filterUtils.FilterWith<'deploy'>
     let filter: FilterType
     let connection: MockInterface<clientUtils.APIConnection>
     let client: JiraClient
@@ -47,10 +47,10 @@ describe('queue filter', () => {
       beforeEach(() => {
         const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
         config.fetch.enableJSM = true
-        const { client: cli, connection: conn } = mockClient(true)
+        const { client: cli, connection: conn } = mockClient(false)
         connection = conn
         client = cli
-        filter = queueFilter(getFilterParams({ config, client })) as typeof filter
+        filter = deleteQueueFilter(getFilterParams({ config, client })) as typeof filter
         projectInstance = new InstanceElement(
           'project1',
           projectType,
@@ -81,14 +81,20 @@ describe('queue filter', () => {
         expect(res.deployResult.errors).toHaveLength(0)
         expect(res.deployResult.appliedChanges).toHaveLength(1)
         expect(connection.put).toHaveBeenCalledOnce()
+        expect(connection.put).toHaveBeenCalledWith(
+          '/rest/servicedesk/1/servicedesk/project1Key/queues',
+          { deleted: [11] },
+          undefined
+        )
       })
       it('should not deploy if enableJSM is false', async () => {
         const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
         config.fetch.enableJSM = false
-        filter = queueFilter(getFilterParams({ config, client })) as typeof filter
+        filter = deleteQueueFilter(getFilterParams({ config, client })) as typeof filter
         const res = await filter.deploy([{ action: 'remove', data: { before: queueInstance } }])
         expect(res.leftoverChanges).toHaveLength(1)
         expect(res.leftoverChanges).toEqual([{ action: 'remove', data: { before: queueInstance } }])
+        expect(res.deployResult.appliedChanges).toHaveLength(0)
       })
     })
 })

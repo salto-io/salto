@@ -239,16 +239,18 @@ describe('issue layout filter', () => {
     })
     it('should add issue layout to the elements', async () => {
       await filter.onFetch(elements)
-      const instances = elements.filter(isInstanceElement)
-      const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
-      expect(issueLayoutInstance).toBeDefined()
+      expect(elements
+        .filter(isInstanceElement)
+        .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE))
+        .toBeDefined()
     })
     it('should not add issue layout if there is no issueTypeScreenScheme', async () => {
       projectInstance.value.issueTypeScreenScheme = undefined
       await filter.onFetch(elements)
-      const instances = elements.filter(isInstanceElement)
-      const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
-      expect(issueLayoutInstance).toBeUndefined()
+      expect(elements
+        .filter(isInstanceElement)
+        .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE))
+        .toBeUndefined()
     })
     it('should not add issue layout if it is a bad response', async () => {
       mockGet.mockImplementation(() => ({
@@ -257,18 +259,20 @@ describe('issue layout filter', () => {
         },
       }))
       await filter.onFetch(elements)
-      const instances = elements.filter(isInstanceElement)
-      const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
-      expect(issueLayoutInstance).toBeUndefined()
+      expect(elements
+        .filter(isInstanceElement)
+        .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE))
+        .toBeUndefined()
     })
     it('should catch an error if gql post throws an error and return undefined', async () => {
       mockGet.mockImplementation(() => {
         throw new Error('err')
       })
       await filter.onFetch(elements)
-      const instances = elements.filter(isInstanceElement)
-      const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
-      expect(issueLayoutInstance).toBeUndefined()
+      expect(elements
+        .filter(isInstanceElement)
+        .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE))
+        .toBeUndefined()
     })
     it('should not add missing reference if enableMissingRef is false', async () => {
       mockGet.mockImplementation(params => {
@@ -313,9 +317,10 @@ describe('issue layout filter', () => {
       configWithMissingRefs.fetch.enableIssueLayouts = true
       filter = issueLayoutFilter(getFilterParams({ config: configWithMissingRefs, client })) as FilterType
       await filter.onFetch(elements)
-      const instances = elements.filter(isInstanceElement)
-      const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
-      expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].key).toEqual('testField4')
+      expect(elements
+        .filter(isInstanceElement)
+        .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)?.value.issueLayoutConfig.items[0].key)
+        .toEqual('testField4')
     })
     it('should not fetch issue layouts if it was excluded', async () => {
       fetchQuery = elementUtils.query.createMockQuery()
@@ -348,16 +353,18 @@ describe('issue layout filter', () => {
         getElemIdFunc: () => new ElemID(JIRA, 'someName'),
       })) as FilterType
       await filter.onFetch(elements)
-      const instances = elements.filter(isInstanceElement)
-      const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
-      expect(issueLayoutInstance?.elemID.getFullName()).toEqual('jira.IssueLayout.instance.someName')
+      expect(elements
+        .filter(isInstanceElement)
+        .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)?.elemID.getFullName())
+        .toEqual('jira.IssueLayout.instance.someName')
     })
     it('should filter out issue layout if screen is not a resolved reference', async () => {
       screenSchemeInstance.value.screens.default = 'unresolved'
       await filter.onFetch(elements)
-      const instances = elements.filter(isInstanceElement)
-      const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
-      expect(issueLayoutInstance).toBeUndefined()
+      expect(elements
+        .filter(isInstanceElement)
+        .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE))
+        .toBeUndefined()
     })
   })
   describe('deploy', () => {

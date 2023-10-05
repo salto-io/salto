@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import {
   CORE_ANNOTATIONS,
   Element,
@@ -561,7 +560,7 @@ const filterCreator: FilterCreator = () => ({
     objectTypes.forEach(obj => {
       const { typeName } = obj.elemID
       const importantValuesArray = importantValuesMap[typeName]
-      if (_.isArray(importantValuesArray)) {
+      if (Array.isArray(importantValuesArray)) {
         obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] = importantValuesArray
       }
     })

@@ -39,7 +39,7 @@ import {
   LOOKUP_REGEX,
   RELATIONSHIP_FILTER_REGEX,
   transformCustomObjectLookupField,
-  transformFilterField,
+  transformRelationshipFilterField,
 } from './utils'
 import { paginate } from '../../client/pagination'
 import { getIdByEmail } from '../../user_utils'
@@ -65,6 +65,7 @@ const relationTypeToType = (relationshipTargetType: Value): string => {
     case 'zen:ticket':
       return TICKET_FIELD_TYPE_NAME
     default:
+      log.warn(`Unknown relationship target type: ${inspectValue(relationshipTargetType)}`)
       return 'unknown'
   }
 }
@@ -83,7 +84,7 @@ const isRelevantRule = (rule: Value): rule is Rule =>
 
 type CustomObjectAction = {
   field: string
-  // This will be string at first, but we need to define other types in order to set the value to them
+  // This will be string onFetch, but we need to define other types in order to set the value to them
   value: Array<string | TemplateExpression> | string | TemplateExpression
 }
 
@@ -107,7 +108,7 @@ const isRelevantCondition = (condition: Value): condition is CustomObjectConditi
   && LOOKUP_REGEX.test(condition.field)
 
 
-// Conditions and filters may also have a reference in their value field
+// Conditions and filters (we will call them rules) may also have a reference in their value field
 const transformRuleValue = ({
   customObjectField,
   rule,
@@ -121,11 +122,13 @@ const transformRuleValue = ({
   instancesById: Record<string, InstanceElement>
   usersById: Record<string, string>
 }): void => {
-  if (customObjectField === undefined
-    // These are special cases where the value is a reference to an element
-    || !['is', 'is_not'].includes(rule.operator)
-    || rule.value === undefined || isReferenceExpression(rule.value)
-    || !['dropdown', 'lookup'].includes(customObjectField.value.type)) {
+  // Make sure the CustomObjectField wasn't missing, and type checks
+  if (customObjectField === undefined || rule.value === undefined || isReferenceExpression(rule.value)) {
+    return
+  }
+  // These are special cases where the value is a reference to an element
+  const isRuleValue = ['is', 'is_not'].includes(rule.operator) && ['dropdown', 'lookup'].includes(customObjectField.value.type)
+  if (!isRuleValue) {
     return
   }
 
@@ -250,7 +253,7 @@ const transformTicketAndCustomObjectFieldValue = ({
       return
     }
 
-    const { result, customObjectField } = transformFilterField(
+    const { result, customObjectField } = transformRelationshipFilterField(
       filter.field, enableMissingReferences, customObjectsByKey
     )
     filter.field = result

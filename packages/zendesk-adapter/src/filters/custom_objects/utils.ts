@@ -25,9 +25,9 @@ import {
 
 const { createMissingInstance } = referencesUtils
 
-// 'custom_object.objectKey.custom_fields.fieldKey'
+// 'custom_object.<objectKey>.custom_fields.<fieldKey>'
 export const RELATIONSHIP_FILTER_REGEX = /custom_object\.(?<customObjectKey>.+)\.custom_fields\.(?<fieldKey>.+)$/
-// lookup:ticket.ticket_field_123.custom_fields.optionKey
+// lookup:ticket.ticket_field_<123>.custom_fields.<optionKey>
 export const LOOKUP_REGEX = /lookup:ticket\.ticket_field_(?<ticketFieldId>\d+)\.custom_fields\.(?<optionKey>[^.]+)$/
 // zen:custom_object:objectKey
 const CUSTOM_OBJECT_REGEX = /zen:custom_object:(?<customObjectKey>.+)/
@@ -164,7 +164,7 @@ const buildFilterTemplate = (customObject: string | ReferenceExpression, field: 
   ],
 })
 
-export const transformFilterField = (
+export const transformRelationshipFilterField = (
   field: string,
   enableMissingReferences: boolean,
   customObjectsByKey: Record<string, InstanceElement>

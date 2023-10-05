@@ -241,7 +241,7 @@ const addChangedByUsingUpdatedById = (instances: InstanceElement[], idToName: Re
   const addChangedBy = (instance: InstanceElement, field: string): void => {
     const id = instance.value[field]
     if (id === undefined) {
-      log.warn(`${field} for the translations ${instance.elemID.name} is undefined`)
+      log.warn(`${field} for the ${instance.elemID.getFullName()} is undefined`)
       return
     }
     const name = idToName[id]

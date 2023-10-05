@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeData, ElemID, getChangeData, InstanceElement, isInstanceChange, isObjectType, isObjectTypeChange, TopLevelElement, Values } from '@salto-io/adapter-api'
+import { Change, ChangeData, ElemID, getChangeData, InstanceElement, isInstanceChange, isObjectType, isObjectTypeChange, ObjectType, TopLevelElement, Values } from '@salto-io/adapter-api'
 import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type'
 import { NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, ObjectID } from '../query'
 
@@ -124,7 +124,7 @@ export class InvalidSuiteAppCredentialsError extends Error {
   }
 }
 
-export type DeployableChange = Change<TopLevelElement>
+export type DeployableChange = Change<ObjectType | InstanceElement>
 
 export type SDFObjectNode = {
   change: DeployableChange

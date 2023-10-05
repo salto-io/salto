@@ -1220,7 +1220,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   },
   ProfileMapping: {
     transformation: {
-      idFields: ['&source.id', '&target.id'],
+      idFields: ['source.name', 'target.name'],
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
@@ -1240,6 +1240,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           mappingId: 'id',
         },
       },
+      // TODO SALTO-4769 add support in remove
     },
   },
   ProfileMappingSource: {

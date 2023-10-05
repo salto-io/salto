@@ -1448,7 +1448,6 @@ public class LargeClass${index} {
         },
       } as unknown as ObjectType
       const metadataQuery = {
-        prepare: jest.fn(),
         isTypeMatch: jest.fn(),
         isInstanceMatch: () => true,
         isPartialFetch: () => false,

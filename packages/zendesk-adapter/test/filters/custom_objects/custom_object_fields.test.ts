@@ -36,8 +36,10 @@ jest.mock('../../../src/user_utils', () => ({
 type FilterType = filterUtils.FilterWith<'onFetch'>
 const customObjectFieldsFilter = filterCreator(createFilterCreatorParams({})) as FilterType
 
-const missingRef = (type: string, id: string): ReferenceExpression =>
-  new ReferenceExpression(referenceUtils.createMissingInstance(ZENDESK, type, id).elemID)
+const missingRef = (type: string, id: string): ReferenceExpression => {
+  const missingInstance = referenceUtils.createMissingInstance(ZENDESK, type, id)
+  return new ReferenceExpression(missingInstance.elemID, missingInstance)
+}
 
 describe('customObjectFieldsFilter', () => {
   describe('onFetch', () => {
@@ -216,8 +218,7 @@ describe('customObjectFieldsFilter', () => {
         expect(trigger.value.actions[0].value).toMatchObject(new TemplateExpression({ parts: [
           'lookup:ticket.ticket_field_',
           missingRef(TICKET_FIELD_TYPE_NAME, MISSING_ID),
-          '.custom_fields.',
-          'key',
+          '.custom_fields.key',
         ] }))
         expect(trigger.value.actions[1].value).toMatchObject(new TemplateExpression({ parts: [
           'lookup:ticket.ticket_field_',
@@ -309,8 +310,7 @@ describe('customObjectFieldsFilter', () => {
           .toMatchObject(new TemplateExpression({ parts: [
             'custom_object.',
             missingRef(CUSTOM_OBJECT_TYPE_NAME, 'missing_object'),
-            '.custom_fields.',
-            customObjectField.value.key,
+            `.custom_fields.${customObjectField.value.key}`,
           ] }))
         expect(customObjectFieldInstance.value.relationship_filter.all[1].field)
           .toMatchObject(new TemplateExpression({ parts: [

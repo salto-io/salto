@@ -42,13 +42,15 @@ describe('dynamic content references filter', () => {
         new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
         'a ', 'test',
         new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
-        '}}', 'final ', 'check']
+        '}}', 'final ', 'check',
+        new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance)]
     )
     expect(result).toEqual(['this is',
       new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
       'a test',
       new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
-      '}}final check'])
+      '}}final check',
+      new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance)])
   })
   it('should return a string if all parts are strings', async () => {
     const template = new TemplateExpression({ parts: ['this is a test', 'final check'] })

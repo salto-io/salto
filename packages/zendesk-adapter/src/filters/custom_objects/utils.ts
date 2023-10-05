@@ -55,7 +55,7 @@ export const createMissingTemplate = ({
     return compactTemplate(buildTemplateFunc(ticketField, customKey))
   }
   const missingInstance = createMissingInstance(ZENDESK, missingInstanceType, missingInstanceName)
-  const missingInstanceRef = new ReferenceExpression(missingInstance.elemID)
+  const missingInstanceRef = new ReferenceExpression(missingInstance.elemID, missingInstance)
   return isReferenceExpression(ticketField)
     ? compactTemplate(buildTemplateFunc(ticketField, missingInstanceRef))
     : compactTemplate(buildTemplateFunc(missingInstanceRef, customKey))

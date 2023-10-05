@@ -106,14 +106,14 @@ const buildQueryStrings = async (
 
 type GetRecordsParams = {
   client: SalesforceClient
-  typeAndFetchSettings: CustomObjectFetchSetting
+  customObjectFetchSettings: CustomObjectFetchSetting
   ids?: string[]
 }
 
 const getRecords = async (
   {
     client,
-    typeAndFetchSettings: { objectType, managedBySaltoField, omittedFields },
+    customObjectFetchSettings: { objectType, managedBySaltoField, omittedFields },
     ids,
   } : GetRecordsParams,
 ): Promise<RecordById> => {
@@ -398,7 +398,7 @@ const getReferencedRecords = async (
       typeToMissingIds,
       (ids, typeName) => {
         const fetchSettings = customObjectFetchSetting[typeName]
-        return getRecords({ client, typeAndFetchSettings: fetchSettings, ids })
+        return getRecords({ client, customObjectFetchSettings: fetchSettings, ids })
       }
     )
     if (_.isEmpty(newReferencedRecords)) {
@@ -422,7 +422,7 @@ export const getAllInstances = async (
   log.debug('Base types: %o', _.keys(baseTypesSettings))
   const baseRecordByTypeAndId = await mapValuesAsync(
     baseTypesSettings,
-    setting => getRecords({ client, typeAndFetchSettings: setting })
+    setting => getRecords({ client, customObjectFetchSettings: setting })
   )
   // Get reference to records
   const referencedRecordsByTypeAndId = await getReferencedRecords(

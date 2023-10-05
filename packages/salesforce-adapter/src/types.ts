@@ -276,6 +276,7 @@ export type DataManagementConfig = {
   saltoAliasSettings?: SaltoAliasSettings
   saltoManagementFieldSettings?: SaltoManagementFieldSettings
   brokenOutgoingReferencesSettings?: BrokenOutgoingReferencesSettings
+  omittedFields?: string[]
 }
 
 export type FetchParameters = {
@@ -528,6 +529,9 @@ const dataManagementType = new ObjectType({
     },
     brokenOutgoingReferencesSettings: {
       refType: brokenOutgoingReferencesSettingsType,
+    },
+    omittedFields: {
+      refType: new ListType(BuiltinTypes.STRING),
     },
   } as Record<keyof DataManagementConfig, FieldDefinition>,
   annotations: {
@@ -863,6 +867,7 @@ export type DataManagement = {
   getObjectAliasFields: (name: string) => types.NonEmptyArray<string>
   showReadOnlyValues?: boolean
   managedBySaltoFieldForType: (objType: ObjectType) => string | undefined
+  omittedFieldsForType: (name: string) => string[]
 }
 
 export type FetchProfile = {

@@ -92,7 +92,7 @@ const createCustomObject = (
         [CORE_ANNOTATIONS.REQUIRED]: false,
         [FIELD_ANNOTATIONS.QUERYABLE]: true,
         [LABEL]: 'Id',
-        [API_NAME]: 'Id',
+        [API_NAME]: `${name}.Id`,
       },
     },
     Name: {
@@ -101,7 +101,7 @@ const createCustomObject = (
         [CORE_ANNOTATIONS.REQUIRED]: false,
         [FIELD_ANNOTATIONS.QUERYABLE]: true,
         [LABEL]: 'description label',
-        [API_NAME]: 'Name',
+        [API_NAME]: `${name}.Name`,
       },
     },
     TestField: {
@@ -109,7 +109,7 @@ const createCustomObject = (
       annotations: {
         [FIELD_ANNOTATIONS.QUERYABLE]: true,
         [LABEL]: 'Test field',
-        [API_NAME]: 'TestField',
+        [API_NAME]: `${name}.TestField`,
       },
     },
   }
@@ -235,6 +235,7 @@ describe('Custom Object Instances filter', () => {
   }
   const buildTestFetchProfile = (
     types: TestFetchProfileParams[],
+    omittedFields: string[] = [],
   ): FetchProfile => {
     const fetchProfileParams: FetchParameters = {
       data: {
@@ -253,6 +254,7 @@ describe('Custom Object Instances filter', () => {
         saltoManagementFieldSettings: {
           defaultFieldName: MANAGED_BY_SALTO_FIELD_NAME,
         },
+        ...(omittedFields ? { omittedFields } : {}),
       },
     }
     return buildFetchProfile({
@@ -1622,6 +1624,60 @@ describe('Custom Object Instances filter', () => {
       }])
       expect(elements).toHaveLength(1)
       expect(basicQueryImplementation).not.toHaveBeenCalled()
+    })
+  })
+  describe('Omit Fields', () => {
+    let elements: Element[]
+    const testTypeName = 'TestType'
+    const testInstanceId = 'some_id'
+    const testType: ObjectType = createCustomObject(testTypeName)
+    const testRecords: Record<string, unknown>[] = [
+      {
+        attributes: {
+          type: testTypeName,
+        },
+        Id: testInstanceId,
+        Name: 'Name',
+        TestField: 'Test Field Value',
+      },
+    ]
+    beforeEach(async () => {
+      filter = filterCreator(
+        {
+          client,
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildTestFetchProfile(
+              [
+                {
+                  typeName: testTypeName,
+                  included: true,
+                  excluded: false,
+                  allowRef: false,
+                },
+              ],
+              [
+                `${testTypeName}.TestField`,
+              ],
+            ),
+          },
+        }
+      ) as FilterType
+
+      elements = [testType]
+
+      testRecords.forEach(record => { record[MANAGED_BY_SALTO_FIELD_NAME] = true })
+      setMockQueryResults(testRecords)
+
+      await filter.onFetch(elements)
+    })
+
+    it('should not fetch omitted fields', () => {
+      const queryString = basicQueryImplementation.mock.calls
+        .find(([soql] : string[]) => !soql.includes('COUNT()'))
+        .pop()
+      expect(queryString).not.toContain('TestField')
+      expect(queryString).toContain('Name')
     })
   })
 })

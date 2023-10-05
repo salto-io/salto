@@ -43,7 +43,6 @@ describe('Test Settings Type', () => {
               ],
             },
           },
-          isFetchWithChangesDetection: false,
           elementsSource: buildElementsSourceFromElements([]),
         }),
       },

@@ -105,7 +105,7 @@ import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from 
 import { getLookUpName, getLookupNameWithFallbackToElement } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import nestedInstancesAuthorInformation from './filters/author_information/nested_instances'
-import { buildFetchProfile } from './fetch_profile/fetch_profile'
+import { buildFetchProfile, buildFetchProfileForFetchWithChangesDetection } from './fetch_profile/fetch_profile'
 import {
   ArtificialTypes,
   CUSTOM_OBJECT,
@@ -337,10 +337,10 @@ export default class SalesforceAdapter implements AdapterOperations {
   private metadataToRetrieve: string[]
   private metadataTypesOfInstancesFetchedInFilters: string[]
   private nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>
-  private createFiltersRunner: () => Required<Filter>
+  private createFiltersRunner: () => Promise<Required<Filter>>
   private client: SalesforceClient
   private userConfig: SalesforceConfig
-  private fetchProfile: FetchProfile
+  private fetchProfilePromise: Promise<FetchProfile>
   private elementsSource: ReadOnlyElementsSource
 
   public constructor({
@@ -403,22 +403,16 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.client = client
     this.elementsSource = elementsSource
 
-    const fetchProfile = buildFetchProfile({
-      fetchParams: config.fetch ?? {},
-      isFetchWithChangesDetection,
-      elementsSource,
-      client,
-    })
-    this.fetchProfile = fetchProfile
-    if (!this.fetchProfile.isFeatureEnabled('fetchCustomObjectUsingRetrieveApi')) {
-      // We have to fetch custom objects using retrieve in order to be able to fetch the field-level permissions
-      // in profiles. If custom objects are fetched via the read API, we have to fetch profiles using that API too.
-      _.pull(this.metadataToRetrieve, CUSTOM_OBJECT, PROFILE_METADATA_TYPE)
-    }
-    if (this.fetchProfile.isFeatureEnabled('fetchProfilesUsingReadApi')) {
-      _.pull(this.metadataToRetrieve, PROFILE_METADATA_TYPE)
-    }
-    this.createFiltersRunner = () => filter.filtersRunner(
+    this.fetchProfilePromise = isFetchWithChangesDetection
+      ? buildFetchProfileForFetchWithChangesDetection({
+        fetchParams: config.fetch ?? {},
+        elementsSource,
+      })
+      : Promise.resolve(buildFetchProfile({
+        fetchParams: config.fetch ?? {},
+        elementsSource,
+      }))
+    this.createFiltersRunner = async () => filter.filtersRunner(
       {
         client,
         config: {
@@ -426,7 +420,7 @@ export default class SalesforceAdapter implements AdapterOperations {
           systemFields,
           enumFieldPermissions: config.enumFieldPermissions
             ?? constants.DEFAULT_ENUM_FIELD_PERMISSIONS,
-          fetchProfile,
+          fetchProfile: await this.fetchProfilePromise,
           elementsSource,
           separateFieldToFiles: config.fetch?.metadata?.objectsToSeperateFieldsToFiles,
         },
@@ -445,8 +439,16 @@ export default class SalesforceAdapter implements AdapterOperations {
    */
   @logDuration('fetching account configuration')
   async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
+    const fetchProfile = await this.fetchProfilePromise
+    if (!fetchProfile.isFeatureEnabled('fetchCustomObjectUsingRetrieveApi')) {
+      // We have to fetch custom objects using retrieve in order to be able to fetch the field-level permissions
+      // in profiles. If custom objects are fetched via the read API, we have to fetch profiles using that API too.
+      _.pull(this.metadataToRetrieve, CUSTOM_OBJECT, PROFILE_METADATA_TYPE)
+    }
+    if (fetchProfile.isFeatureEnabled('fetchProfilesUsingReadApi')) {
+      _.pull(this.metadataToRetrieve, PROFILE_METADATA_TYPE)
+    }
     log.debug('going to fetch salesforce account configuration..')
-    await this.fetchProfile.metadataQuery.prepare()
     const fieldTypes = Types.getAllFieldTypes()
     const hardCodedTypes = [
       // Missing Metadata subtypes will come from the elementsSource. We want to avoid duplicates
@@ -463,7 +465,8 @@ export default class SalesforceAdapter implements AdapterOperations {
       )
     const metadataInstancesPromise = this.fetchMetadataInstances(
       metadataTypeInfosPromise,
-      metadataTypesPromise
+      metadataTypesPromise,
+      fetchProfile,
     )
     progressReporter.reportProgress({ message: 'Fetching types' })
     const metadataTypes = await metadataTypesPromise
@@ -477,7 +480,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     ]
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
     const onFetchFilterResult = (
-      await this.createFiltersRunner().onFetch(elements)
+      await (await this.createFiltersRunner()).onFetch(elements)
     ) as FilterResult
     const configChangeSuggestions = [
       ...metadataInstancesConfigInstances, ...(onFetchFilterResult.configSuggestions ?? []),
@@ -490,7 +493,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       elements,
       errors: onFetchFilterResult.errors ?? [],
       updatedConfig,
-      partialFetchData: setPartialFetchData(this.fetchProfile.metadataQuery.isPartialFetch()),
+      partialFetchData: setPartialFetchData(fetchProfile.metadataQuery.isPartialFetch()),
     }
   }
 
@@ -498,6 +501,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     { changeGroup }: DeployOptions,
     checkOnly: boolean
   ): Promise<DeployResult> {
+    const fetchProfile = await this.fetchProfilePromise
     log.debug(`about to ${checkOnly ? 'validate' : 'deploy'} group ${changeGroup.groupID} with scope (first 100): ${safeJsonStringify(changeGroup.changes.slice(0, 100).map(getChangeData).map(e => e.elemID.getFullName()))}`)
     const isDataDeployGroup = await isCustomObjectInstanceChanges(changeGroup.changes)
     const getLookupNameFunc = isDataDeployGroup
@@ -508,7 +512,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       .toArray()
 
     await awu(resolvedChanges).filter(isAdditionChange).map(getChangeData).forEach(addDefaults)
-    const filtersRunner = this.createFiltersRunner()
+    const filtersRunner = await this.createFiltersRunner()
     await filtersRunner.preDeploy(resolvedChanges)
     log.debug(`preDeploy of group ${changeGroup.groupID} finished`)
 
@@ -524,7 +528,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         resolvedChanges as Change<InstanceElement>[],
         this.client,
         changeGroup.groupID,
-        this.fetchProfile.dataManagement,
+        fetchProfile.dataManagement,
       )
     } else {
       deployResult = await deployMetadata(resolvedChanges, this.client, changeGroup.groupID,
@@ -572,8 +576,9 @@ export default class SalesforceAdapter implements AdapterOperations {
   }
 
   private async listMetadataTypes(): Promise<MetadataObject[]> {
+    const fetchProfile = await this.fetchProfilePromise
     return (await this.client.listMetadataTypes())
-      .filter(info => this.fetchProfile.metadataQuery.isTypeMatch(info.xmlName))
+      .filter(info => fetchProfile.metadataQuery.isTypeMatch(info.xmlName))
   }
 
   @logDuration('fetching metadata types')
@@ -600,6 +605,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private async fetchMetadataInstances(
     typeInfoPromise: Promise<MetadataObject[]>,
     types: Promise<TypeElement[]>,
+    fetchProfile: FetchProfile
   ): Promise<FetchElements<InstanceElement[]>> {
     const readInstances = async (metadataTypes: ObjectType[]):
       Promise<FetchElements<InstanceElement[]>> => {
@@ -609,7 +615,7 @@ export default class SalesforceAdapter implements AdapterOperations {
             .includes(await apiName(type))
         ).toArray()
       const result = await Promise.all(metadataTypesToRead
-        .map(type => this.createMetadataInstances(type)))
+        .map(type => this.createMetadataInstances(type, fetchProfile)))
       return {
         elements: _.flatten(result.map(r => r.elements)),
         configChanges: _.flatten(result.map(r => r.configChanges)),
@@ -635,9 +641,9 @@ export default class SalesforceAdapter implements AdapterOperations {
       retrieveMetadataInstances({
         client: this.client,
         types: metadataTypesToRetrieve,
-        metadataQuery: this.fetchProfile.metadataQuery,
+        metadataQuery: fetchProfile.metadataQuery,
         maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest,
-        fetchProfile: this.fetchProfile,
+        fetchProfile,
         typesToSkip: new Set(this.metadataTypesOfInstancesFetchedInFilters),
       }),
       readInstances(metadataTypesToRead),
@@ -652,7 +658,7 @@ export default class SalesforceAdapter implements AdapterOperations {
    * Create all the instances of specific metadataType
    * @param type the metadata type
    */
-  private async createMetadataInstances(type: ObjectType):
+  private async createMetadataInstances(type: ObjectType, fetchProfile: FetchProfile):
   Promise<FetchElements<InstanceElement[]>> {
     const typeName = await apiName(type)
     const { elements: fileProps, configChanges } = await listMetadataObjects(
@@ -663,9 +669,9 @@ export default class SalesforceAdapter implements AdapterOperations {
       client: this.client,
       fileProps,
       metadataType: type,
-      metadataQuery: this.fetchProfile.metadataQuery,
-      maxInstancesPerType: this.fetchProfile.maxInstancesPerType,
-      addNamespacePrefixToFullName: this.fetchProfile.addNamespacePrefixToFullName,
+      metadataQuery: fetchProfile.metadataQuery,
+      maxInstancesPerType: fetchProfile.maxInstancesPerType,
+      addNamespacePrefixToFullName: fetchProfile.addNamespacePrefixToFullName,
     })
     return {
       elements: instances.elements,

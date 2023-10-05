@@ -71,7 +71,6 @@ describe('metadataInstancesAliases filter', () => {
           ...defaultFilterContext,
           fetchProfile: buildFetchProfile({
             fetchParams: { optionalFeatures: { skipAliases: true } },
-            isFetchWithChangesDetection: false,
             elementsSource: buildElementsSourceFromElements([]),
           }),
         },
@@ -90,7 +89,6 @@ describe('metadataInstancesAliases filter', () => {
           ...defaultFilterContext,
           fetchProfile: buildFetchProfile({
             fetchParams: { optionalFeatures: { skipAliases: false } },
-            isFetchWithChangesDetection: false,
             elementsSource: buildElementsSourceFromElements([]),
           }),
         },
@@ -109,7 +107,6 @@ describe('metadataInstancesAliases filter', () => {
             ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
               fetchParams: { optionalFeatures: { skipAliases: false, useLabelAsAlias: false } },
-              isFetchWithChangesDetection: false,
               elementsSource: buildElementsSourceFromElements([]),
             }),
           },

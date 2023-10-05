@@ -21,7 +21,7 @@ import { buildDataManagement, validateDataManagementConfig } from './data_manage
 import { buildMetadataQuery, validateMetadataParams } from './metadata_query'
 import { DEFAULT_MAX_INSTANCES_PER_TYPE } from '../constants'
 import { getFetchTargets, SupportedMetadataType } from './metadata_types'
-import SalesforceClient from '../client/client'
+import { getChangedAtSingleton } from '../filters/utils'
 
 const { isDefined } = values
 
@@ -39,43 +39,66 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
 
 type BuildFetchProfileParams = {
   fetchParams: FetchParameters
-  isFetchWithChangesDetection: boolean
   elementsSource: ReadOnlyElementsSource
-  client?: SalesforceClient
 }
 
-export const buildFetchProfile = ({
+type BaseFetchProfile = Omit<FetchProfile, 'metadataQuery'>
+
+const buildBaseFetchProfile = ({
   fetchParams,
-  isFetchWithChangesDetection,
-  elementsSource,
-  client,
-}: BuildFetchProfileParams): FetchProfile => {
+}: BuildFetchProfileParams): BaseFetchProfile => {
   const {
-    metadata = {},
     data,
     fetchAllCustomSettings,
     optionalFeatures,
-    target,
     maxInstancesPerType,
     preferActiveFlowVersions,
     addNamespacePrefixToFullName,
   } = fetchParams
   return {
-    metadataQuery: buildMetadataQuery({
-      metadataParams: metadata,
-      elementsSource,
-      isFetchWithChangesDetection,
-      target: isDefined(target)
-        ? getFetchTargets(target as SupportedMetadataType[])
-        : undefined,
-      client,
-    }),
     dataManagement: data && buildDataManagement(data),
     isFeatureEnabled: name => optionalFeatures?.[name] ?? optionalFeaturesDefaultValues[name] ?? true,
     shouldFetchAllCustomSettings: () => fetchAllCustomSettings ?? true,
     maxInstancesPerType: maxInstancesPerType ?? DEFAULT_MAX_INSTANCES_PER_TYPE,
     preferActiveFlowVersions: preferActiveFlowVersions ?? false,
     addNamespacePrefixToFullName: addNamespacePrefixToFullName ?? true,
+  }
+}
+
+export const buildFetchProfile = (params: BuildFetchProfileParams): FetchProfile => {
+  const {
+    metadata = {},
+    target,
+  } = params.fetchParams
+  return {
+    ...buildBaseFetchProfile(params),
+    metadataQuery: buildMetadataQuery({
+      metadataParams: metadata,
+      isFetchWithChangesDetection: false,
+      target: isDefined(target)
+        ? getFetchTargets(target as SupportedMetadataType[])
+        : undefined,
+    }),
+  }
+}
+
+export const buildFetchProfileForFetchWithChangesDetection = async (
+  params: BuildFetchProfileParams
+): Promise<FetchProfile> => {
+  const {
+    metadata = {},
+    target,
+  } = params.fetchParams
+  return {
+    ...buildBaseFetchProfile(params),
+    metadataQuery: buildMetadataQuery({
+      metadataParams: metadata,
+      isFetchWithChangesDetection: true,
+      target: isDefined(target)
+        ? getFetchTargets(target as SupportedMetadataType[])
+        : undefined,
+      changedAtSingleton: await getChangedAtSingleton(params.elementsSource),
+    }),
   }
 }
 

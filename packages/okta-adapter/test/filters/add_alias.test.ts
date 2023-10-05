@@ -15,7 +15,6 @@
 */
 import { ObjectType, ElemID, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, OKTA, PROFILE_MAPPING_TYPE_NAME } from '../../src/constants'
 import addAliasFilter from '../../src/filters/add_alias'
 import { getFilterParams } from '../utils'
@@ -25,8 +24,6 @@ describe('addAliasFilter', () => {
   const groupType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_TYPE_NAME) })
   const appType = new ObjectType({ elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME) })
   const profileMappingType = new ObjectType({ elemID: new ElemID(OKTA, PROFILE_MAPPING_TYPE_NAME) })
-  const config = { ...DEFAULT_CONFIG }
-  config[FETCH_CONFIG].includeGroupMemberships = true
   const groupInstance = new InstanceElement(
     'groupTest',
     groupType,

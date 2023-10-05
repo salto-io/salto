@@ -16,7 +16,14 @@
 
 import { values } from '@salto-io/lowerdash'
 import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { DATA_CONFIGURATION, FetchParameters, FetchProfile, METADATA_CONFIG, OptionalFeatures } from '../types'
+import {
+  DATA_CONFIGURATION,
+  FetchParameters,
+  FetchProfile,
+  METADATA_CONFIG,
+  OptionalFeatures,
+  RelatedPropsByMetadataType,
+} from '../types'
 import { buildDataManagement, validateDataManagementConfig } from './data_management'
 import { buildMetadataQuery, validateMetadataParams } from './metadata_query'
 import { DEFAULT_MAX_INSTANCES_PER_TYPE } from '../constants'
@@ -83,7 +90,9 @@ export const buildFetchProfile = (params: BuildFetchProfileParams): FetchProfile
 }
 
 export const buildFetchProfileForFetchWithChangesDetection = async (
-  params: BuildFetchProfileParams
+  params: BuildFetchProfileParams & {
+    relatedPropsByMetadataTypePromise: Promise<RelatedPropsByMetadataType>
+  }
 ): Promise<FetchProfile> => {
   const {
     metadata = {},
@@ -98,6 +107,7 @@ export const buildFetchProfileForFetchWithChangesDetection = async (
         ? getFetchTargets(target as SupportedMetadataType[])
         : undefined,
       changedAtSingleton: await getChangedAtSingleton(params.elementsSource),
+      relatedPropsByMetadataType: await params.relatedPropsByMetadataTypePromise,
     }),
   }
 }

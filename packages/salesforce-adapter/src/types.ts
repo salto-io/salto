@@ -27,6 +27,7 @@ import {
 } from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { types } from '@salto-io/lowerdash'
+import { FileProperties } from 'jsforce'
 import { SUPPORTED_METADATA_TYPES } from './fetch_profile/metadata_types'
 import * as constants from './constants'
 import { DEFAULT_MAX_INSTANCES_PER_TYPE, SALESFORCE } from './constants'
@@ -872,4 +873,12 @@ export type FetchProfile = {
   readonly maxInstancesPerType: number
   readonly preferActiveFlowVersions: boolean
   readonly addNamespacePrefixToFullName: boolean
+}
+
+export const METADATA_TYPES_WITH_RELATED_PROPS = ['CustomObject'] as const
+
+export type MetadataTypeWithRelatedProps = typeof METADATA_TYPES_WITH_RELATED_PROPS[number]
+
+export type RelatedPropsByMetadataType = {
+  [K in MetadataTypeWithRelatedProps]: Record<string, FileProperties[]>
 }

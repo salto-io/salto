@@ -15,11 +15,8 @@
 */
 import { collections, regex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { ElemID, InstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { FileProperties } from 'jsforce'
-import * as metadataTypes from './metadata_types'
+import { InstanceElement } from '@salto-io/adapter-api'
 import {
-  CHANGED_AT_SINGLETON,
   CUSTOM_FIELD,
   CUSTOM_METADATA,
   CUSTOM_OBJECT,
@@ -28,7 +25,6 @@ import {
   FLOW_METADATA_TYPE,
   MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD,
   PROFILE_METADATA_TYPE,
-  SALESFORCE,
   SETTINGS_METADATA_TYPE,
   TOPICS_FOR_OBJECTS_METADATA_TYPE,
 } from '../constants'
@@ -36,14 +32,13 @@ import { ConfigValidationError, validateRegularExpressions } from '../config_val
 import {
   METADATA_EXCLUDE_LIST,
   METADATA_INCLUDE_LIST,
-  METADATA_SEPARATE_FIELD_LIST,
+  METADATA_SEPARATE_FIELD_LIST, METADATA_TYPES_WITH_RELATED_PROPS,
   MetadataInstance,
   MetadataParams,
   MetadataQuery,
   MetadataQueryParams,
+  MetadataTypeWithRelatedProps, RelatedPropsByMetadataType,
 } from '../types'
-import { listMetadataObjects } from '../filters/utils'
-import SalesforceClient from '../client/client'
 
 const { isDefined } = values
 const { makeArray } = collections.array
@@ -51,12 +46,6 @@ const { makeArray } = collections.array
 
 // According to Salesforce Metadata API docs, folder names can only contain alphanumeric characters and underscores.
 const VALID_FOLDER_PATH_RE = /^[a-zA-Z\d_/]+$/
-
-const METADATA_TYPES_WITH_RELATED_PROPS = ['CustomObject'] as const
-type MetadataTypeWithRelatedProps = typeof METADATA_TYPES_WITH_RELATED_PROPS[number]
-type RelatedPropsByMetadataType = {
-  [K in MetadataTypeWithRelatedProps]: Record<string, FileProperties[]>
-}
 
 type MetadataInstanceWithRelatedProps = MetadataInstance & {
   metadataType: MetadataTypeWithRelatedProps
@@ -120,43 +109,20 @@ const isFolderMetadataTypeNameMatch = ({ name: instanceName }: MetadataInstance,
 type BuildMetadataQueryParams = {
   metadataParams: MetadataParams
   target?: string[]
-  elementsSource: ReadOnlyElementsSource
   isFetchWithChangesDetection: boolean
-  // No SalesforceClient in SFDX Parser flow
-  client?: SalesforceClient
-}
-
-const retrieveRelatedPropsByMetadataType = async (client: SalesforceClient): Promise<RelatedPropsByMetadataType> => {
-  const retrieveCustomObjectRelatedPropsByParent = async (): Promise<Record<string, FileProperties[]>> => {
-    const allSubInstancesFileProps = _.flatten(await Promise.all(
-      [
-        ...metadataTypes.CUSTOM_OBJECT_FIELDS,
-        CUSTOM_FIELD,
-      ].map(typeName => listMetadataObjects(client, typeName))
-    )).flatMap(result => result.elements)
-    return _.groupBy(
-      allSubInstancesFileProps,
-      fileProp => fileProp.fullName.split('.')[0],
-    )
-  }
-  return {
-    [CUSTOM_OBJECT]: await retrieveCustomObjectRelatedPropsByParent(),
-  }
+  changedAtSingleton?: InstanceElement
+  relatedPropsByMetadataType?: RelatedPropsByMetadataType
 }
 
 export const buildMetadataQuery = ({
   metadataParams,
-  elementsSource,
   target,
   isFetchWithChangesDetection,
-  client,
+  changedAtSingleton,
+  relatedPropsByMetadataType,
 }: BuildMetadataQueryParams): MetadataQuery => {
   const { include = [{}], exclude = [] } = metadataParams
   const fullExcludeList = [...exclude, ...PERMANENT_SKIP_LIST]
-
-  let changedAtSingleton: InstanceElement | undefined
-  let relatedPropsByMetadataType: RelatedPropsByMetadataType | undefined
-
 
   const isInstanceMatchQueryParams = (
     instance: MetadataInstance,
@@ -230,14 +196,6 @@ export const buildMetadataQuery = ({
   )
 
   return {
-    prepare: async () => {
-      if (isFetchWithChangesDetection) {
-        changedAtSingleton = await elementsSource.get(new ElemID(SALESFORCE, CHANGED_AT_SINGLETON, 'instance', ElemID.CONFIG_NAME))
-        if (client) {
-          relatedPropsByMetadataType = await retrieveRelatedPropsByMetadataType(client)
-        }
-      }
-    },
     isTypeMatch: type => isTypeIncluded(type) && !isTypeExcluded(type),
 
     isInstanceMatch: instance => (

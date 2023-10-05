@@ -18,7 +18,7 @@ import {
 } from '@salto-io/dag'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import {
-  ObjectType, InstanceElement, Field, isInstanceElement, isObjectType, isField, TypeElement,
+  ObjectType, InstanceElement, Field, isInstanceElement, isObjectType, isField, TopLevelElement,
 } from './elements'
 import { ElemID } from './element_id'
 import { Values, Value } from './values'
@@ -27,7 +27,7 @@ const { isDefined } = lowerDashValues
 
 export { ActionName }
 
-export type ChangeDataType = TypeElement | InstanceElement | Field
+export type ChangeDataType = TopLevelElement | Field
 export type AdditionChange<T> = AdditionDiff<T>
 export type ModificationChange<T> = ModificationDiff<T>
 export type RemovalChange<T> = RemovalDiff<T>

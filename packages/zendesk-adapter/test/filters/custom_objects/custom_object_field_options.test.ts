@@ -28,7 +28,7 @@ import {
 } from '../../../src/constants'
 
 const { RECORDS_PATH } = elementsUtils
-type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'deploy'>
+type FilterType = filterUtils.FilterWith<'onFetch'>
 
 const createOptionsValue = (id: number): Value => ({
   id,

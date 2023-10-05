@@ -20,7 +20,7 @@ import {
   ObjectType,
   ReferenceExpression, TemplateExpression,
 } from '@salto-io/adapter-api'
-import { compactTemplateParts, createTemplateExpression } from '../src/template'
+import { compactTemplate, compactTemplateParts, createTemplateExpression } from '../src/template'
 
 describe('dynamic content references filter', () => {
   const dynamicContentType = new ObjectType({
@@ -49,6 +49,11 @@ describe('dynamic content references filter', () => {
       'a test',
       new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
       '}}final check'])
+  })
+  it('should return a string if all parts are strings', async () => {
+    const template = new TemplateExpression({ parts: ['this is a test', 'final check'] })
+    const result = compactTemplate(template)
+    expect(result).toBe('this is a testfinal check')
   })
   it('should create a template expression with compacted string', async () => {
     const result = createTemplateExpression(

@@ -43,13 +43,13 @@ export const customObjectFieldOptionType = new ObjectType({
       refType: BuiltinTypes.SERVICE_ID_NUMBER,
       annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
     },
-    // name: { refType: BuiltinTypes.STRING }, Omitted because it's not needed
+    // name is not added because it's not needed
     raw_name: { refType: BuiltinTypes.STRING },
     value: { refType: BuiltinTypes.STRING },
   },
 })
 
-type CustomObjectFieldOptions = {
+type CustomObjectFieldOption = {
   id: number
   name: string
   // eslint-disable-next-line camelcase
@@ -57,7 +57,7 @@ type CustomObjectFieldOptions = {
   value: string
 }
 
-const isCustomObjectFieldOptions = (options: unknown): options is CustomObjectFieldOptions[] =>
+const isCustomObjectFieldOptions = (options: unknown): options is CustomObjectFieldOption[] =>
   _.isArray(options) && options.every(option =>
     _.isPlainObject(option)
     && _.isNumber(option.id)

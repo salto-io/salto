@@ -41,6 +41,11 @@ export const compactTemplateParts = (parts: TemplatePart[]): TemplatePart[] => {
   return compactedParts
 }
 
+export const compactTemplate = (template: TemplateExpression): TemplateExpression | string => {
+  const parts = compactTemplateParts(template.parts)
+  return parts.every(_.isString) ? parts.join() : new TemplateExpression({ parts })
+}
+
 export const createTemplateExpression = (
   parts: { parts: TemplatePart[] }
 ): TemplateExpression => {

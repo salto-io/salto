@@ -33,7 +33,7 @@ jest.mock('../../../src/user_utils', () => ({
   getIdByEmail: () => ({ [USER_ID]: 'User' }),
 }))
 
-type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'deploy'>
+type FilterType = filterUtils.FilterWith<'onFetch'>
 const customObjectFieldsFilter = filterCreator(createFilterCreatorParams({})) as FilterType
 
 const missingRef = (type: string, id: string): ReferenceExpression =>

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { InstanceElement, isReferenceExpression, ReferenceExpression, TemplateExpression } from '@salto-io/adapter-api'
-import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { compactTemplate, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { references as referencesUtils } from '@salto-io/adapter-components'
 import {
   CUSTOM_OBJECT_FIELD_TYPE_NAME,
@@ -25,8 +25,11 @@ import {
 
 const { createMissingInstance } = referencesUtils
 
+// 'custom_object.objectKey.custom_fields.fieldKey'
 export const RELATIONSHIP_FILTER_REGEX = /custom_object\.(?<customObjectKey>.+)\.custom_fields\.(?<fieldKey>.+)$/
+// lookup:ticket.ticket_field_123.custom_fields.optionKey
 export const LOOKUP_REGEX = /lookup:ticket\.ticket_field_(?<ticketFieldId>\d+)\.custom_fields\.(?<optionKey>[^.]+)$/
+// zen:custom_object:objectKey
 const CUSTOM_OBJECT_REGEX = /zen:custom_object:(?<customObjectKey>.+)/
 
 type MissingTemplateArgs = {
@@ -49,13 +52,13 @@ export const createMissingTemplate = ({
     (firstInstance: string | ReferenceExpression, secondInstance: string | ReferenceExpression) => TemplateExpression
 }): TemplateExpression | string => {
   if (!enableMissingReferences) {
-    return buildTemplateFunc(ticketField, customKey).parts.join()
+    return compactTemplate(buildTemplateFunc(ticketField, customKey))
   }
   const missingInstance = createMissingInstance(ZENDESK, missingInstanceType, missingInstanceName)
   const missingInstanceRef = new ReferenceExpression(missingInstance.elemID)
   return isReferenceExpression(ticketField)
-    ? buildTemplateFunc(ticketField, missingInstanceRef)
-    : buildTemplateFunc(missingInstanceRef, customKey)
+    ? compactTemplate(buildTemplateFunc(ticketField, missingInstanceRef))
+    : compactTemplate(buildTemplateFunc(missingInstanceRef, customKey))
 }
 
 type TransformResult = {
@@ -74,6 +77,12 @@ const buildFieldTemplate = (ticketField: string | ReferenceExpression, option: s
   ],
 })
 
+/**
+ * Transforms a 'lookup' value to template expressions
+ * lookup values are strings that starts with 'lookup' and contains a ticket_field id and a custom_object_field key
+ * The custom_object_field is not a direct reference, so we need to find it smartly
+ * ticket_field is related to a custom_object, custom_object has fields, one of them has the matching key
+ */
 export const transformCustomObjectLookupField = ({
   field,
   instancesById,

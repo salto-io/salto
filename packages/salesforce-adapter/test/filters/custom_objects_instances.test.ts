@@ -257,7 +257,6 @@ describe('Custom Object Instances filter', () => {
     }
     return buildFetchProfile({
       fetchParams: fetchProfileParams,
-      isFetchWithChangesDetection: false,
       elementsSource: buildElementsSourceFromElements([]),
     })
   }
@@ -506,7 +505,6 @@ describe('Custom Object Instances filter', () => {
                   },
                 },
               },
-              isFetchWithChangesDetection: false,
               elementsSource: buildElementsSourceFromElements([]),
             }),
           },
@@ -571,7 +569,6 @@ describe('Custom Object Instances filter', () => {
                   },
                 },
               },
-              isFetchWithChangesDetection: false,
               elementsSource: buildElementsSourceFromElements([]),
             }),
           },
@@ -1160,7 +1157,6 @@ describe('Custom Object Instances filter', () => {
                   },
                 },
               },
-              isFetchWithChangesDetection: false,
               elementsSource: buildElementsSourceFromElements([]),
             }),
           },
@@ -1387,7 +1383,6 @@ describe('Custom Object Instances filter', () => {
                 },
                 maxInstancesPerType: 2,
               },
-              isFetchWithChangesDetection: false,
               elementsSource: buildElementsSourceFromElements([]),
             },),
           },
@@ -1450,7 +1445,6 @@ describe('Custom Object Instances filter', () => {
               saltoAliasSettings,
             },
           },
-          isFetchWithChangesDetection: false,
           elementsSource: buildElementsSourceFromElements([]),
         }),
       },

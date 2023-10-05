@@ -1993,11 +1993,9 @@ describe('Fetch via retrieve API', () => {
           metadataQuery: buildMetadataQuery({
             metadataParams: {},
             isFetchWithChangesDetection: false,
-            elementsSource: buildElementsSourceFromElements([]),
           }),
           fetchProfile: buildFetchProfile({
             fetchParams: { addNamespacePrefixToFullName: false },
-            isFetchWithChangesDetection: false,
             elementsSource: buildElementsSourceFromElements([]),
           }),
           typesToSkip: new Set(),
@@ -2032,11 +2030,9 @@ describe('Fetch via retrieve API', () => {
           metadataQuery: buildMetadataQuery({
             metadataParams: {},
             isFetchWithChangesDetection: false,
-            elementsSource: buildElementsSourceFromElements([]),
           }),
           fetchProfile: buildFetchProfile({
             fetchParams: { addNamespacePrefixToFullName: false },
-            isFetchWithChangesDetection: false,
             elementsSource: buildElementsSourceFromElements([]),
           }),
           typesToSkip: new Set(),
@@ -2075,11 +2071,9 @@ describe('Fetch via retrieve API', () => {
           metadataQuery: buildMetadataQuery({
             metadataParams: {},
             isFetchWithChangesDetection: false,
-            elementsSource: buildElementsSourceFromElements([]),
           }),
           fetchProfile: buildFetchProfile({
             fetchParams: { addNamespacePrefixToFullName: false },
-            isFetchWithChangesDetection: false,
             elementsSource: buildElementsSourceFromElements([]),
           }),
           typesToSkip: new Set(),
@@ -2126,11 +2120,9 @@ describe('Fetch via retrieve API', () => {
           metadataQuery: buildMetadataQuery({
             metadataParams: {},
             isFetchWithChangesDetection: false,
-            elementsSource: buildElementsSourceFromElements([]),
           }),
           fetchProfile: buildFetchProfile({
             fetchParams: { addNamespacePrefixToFullName: false },
-            isFetchWithChangesDetection: false,
             elementsSource: buildElementsSourceFromElements([]),
           }),
           typesToSkip: new Set(),

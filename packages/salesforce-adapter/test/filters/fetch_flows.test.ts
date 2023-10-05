@@ -61,7 +61,6 @@ describe('fetch flows filter', () => {
           { config: { ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
               fetchParams: { preferActiveFlowVersions: true },
-              isFetchWithChangesDetection: false,
               elementsSource: buildElementsSourceFromElements([]),
             }) },
           client },

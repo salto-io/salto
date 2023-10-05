@@ -107,7 +107,6 @@ describe('createMissingInstalledPackagesInstancesFilter', () => {
                   ],
                 },
               },
-              isFetchWithChangesDetection: false,
               elementsSource: buildElementsSourceFromElements([]),
             }),
           }

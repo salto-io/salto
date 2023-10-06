@@ -21,6 +21,7 @@ import { PathIndex, Path, updatePathIndex } from './workspace/path_index'
 
 const { awu } = collections.asynciterable
 
+// this function can be removed when we do the fragment refactor (SALTO-2217)
 export const createPathIndexForElement = async (
   workspace: Workspace,
   id: ElemID

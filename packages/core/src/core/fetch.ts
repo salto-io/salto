@@ -1002,21 +1002,6 @@ export const fetchChangesFromWorkspace = async (
   fromState: boolean,
   progressEmitter?: EventEmitter<FetchProgressEvents>,
 ): Promise<FetchChangesResult> => {
-  const splitElementByFile = async (element: Element): Promise<Element[]> => {
-    const elementNaclFiles = await otherWorkspace.getElementNaclFiles(element.elemID)
-    const naclFragments = (await Promise.all(
-      elementNaclFiles.map(
-        async filename => (await otherWorkspace.getParsedNaclFile(filename))?.elements()
-      )
-    )).filter(values.isDefined).flat()
-    const naclPathIndex = new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>()
-    await pathIndex.updatePathIndex({
-      pathIndex: naclPathIndex,
-      unmergedElements: naclFragments,
-    })
-    return pathIndex.splitElementByPath(element, naclPathIndex)
-  }
-
   const getDifferentConfigs = async (): Promise<InstanceElement[]> => (
     awu(currentConfigs).filter(async config => {
       const otherConfig = await otherWorkspace.accountConfig(config.elemID.adapter)
@@ -1081,7 +1066,10 @@ export const fetchChangesFromWorkspace = async (
   )
   const splitByFile = await log.time(async () =>
     (await withLimitedConcurrency(
-      wu(unmergedWithoutPath).map(elem => () => splitElementByFile(elem)),
+      wu(unmergedWithoutPath).map(elem => async () =>
+        pathIndex.splitElementByPath(
+          elem, await pathIndex.createPathIndexForElement(otherWorkspace, elem.elemID)
+        )),
       MAX_SPLIT_CONCURRENCY
     )).flat(), 'Splitting elements by files')
   const unmergedElements = [

@@ -30,7 +30,7 @@ import {
 } from '@salto-io/adapter-api'
 import { applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements, safeJsonStringify, walkOnElement, WalkOnFunc, WALK_NEXT_STEP, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { merger, elementSource, expressions, Workspace, pathIndex, updateElementsWithAlternativeAccount, createAdapterReplacedID, remoteMap, adaptersConfigSource as acs } from '@salto-io/workspace'
+import { merger, elementSource, expressions, Workspace, pathIndex, updateElementsWithAlternativeAccount, createAdapterReplacedID, remoteMap, adaptersConfigSource as acs, createPathIndexForElement } from '@salto-io/workspace'
 import { collections, promises, types, values } from '@salto-io/lowerdash'
 import { isAutoMergeDisabled } from '../app_config'
 import { StepEvents } from './deploy'
@@ -1068,7 +1068,7 @@ export const fetchChangesFromWorkspace = async (
     (await withLimitedConcurrency(
       wu(unmergedWithoutPath).map(elem => async () =>
         pathIndex.splitElementByPath(
-          elem, await pathIndex.createPathIndexForElement(otherWorkspace, elem.elemID)
+          elem, await createPathIndexForElement(otherWorkspace, elem.elemID)
         )),
       MAX_SPLIT_CONCURRENCY
     )).flat(), 'Splitting elements by files')

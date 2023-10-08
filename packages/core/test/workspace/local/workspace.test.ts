@@ -56,14 +56,16 @@ jest.mock('@salto-io/file', () => ({
 }))
 jest.mock('@salto-io/workspace', () => ({
   ...jest.requireActual<{}>('@salto-io/workspace'),
-  buildStaticFilesCache: () => ({
-    rename: jest.fn(),
-    list: jest.fn().mockResolvedValue([]),
-  }),
   initWorkspace: jest.fn(),
   loadWorkspace: jest.fn(),
 }))
 jest.mock('../../../src/local-workspace/dir_store')
+jest.mock('../../../src/local-workspace/static_files_cache', () => ({
+  buildLocalStaticFilesCache: () => ({
+    rename: jest.fn(),
+    list: jest.fn().mockResolvedValue([]),
+  }),
+}))
 jest.mock('../../../src/local-workspace/remote_map', () => ({
   ...jest.requireActual<{}>('../../../src/local-workspace/remote_map'),
   createRemoteMapCreator: () => mockRemoteMapCreator,

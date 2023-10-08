@@ -44,6 +44,7 @@ import { RemoteElementSource, ElementsSource } from './src/workspace/elements_so
 import { FromSource } from './src/workspace/nacl_files/multi_env/multi_env_source'
 import { State } from './src/workspace/state'
 import { PathIndex, splitElementByPath, getElementsPathHints, filterByPathHint } from './src/workspace/path_index'
+import { createPathIndexForElement } from './src/path_index_fallbacks'
 
 export {
   errors,
@@ -101,4 +102,5 @@ export {
   updateElementsWithAlternativeAccount,
   createAdapterReplacedID,
   Author,
+  createPathIndexForElement,
 }

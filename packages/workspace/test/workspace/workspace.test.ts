@@ -17,7 +17,7 @@ import _ from 'lodash'
 import wu from 'wu'
 import {
   Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
-  Values, CORE_ANNOTATIONS, isInstanceElement, isType, isField, PrimitiveTypes,
+  CORE_ANNOTATIONS, isInstanceElement, isType, isField, PrimitiveTypes,
   isObjectType, ContainerType, Change, AdditionChange, getChangeData, PrimitiveType,
   Value, TypeReference, INSTANCE_ANNOTATIONS, ReferenceExpression, createRefToElmWithValue,
   SaltoError,
@@ -26,19 +26,17 @@ import {
 } from '@salto-io/adapter-api'
 import { findElement, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { mockFunction, MockInterface } from '@salto-io/test-utils'
+import { MockInterface } from '@salto-io/test-utils'
 import { InvalidValueValidationError, ValidationError } from '../../src/validator'
 import { WorkspaceConfigSource } from '../../src/workspace/workspace_config_source'
 import { ConfigSource } from '../../src/workspace/config_source'
 import { naclFilesSource, NaclFilesSource, ChangeSet } from '../../src/workspace/nacl_files'
-import { State, buildInMemState } from '../../src/workspace/state'
+import { State } from '../../src/workspace/state'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
-import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import {
   Workspace,
   initWorkspace,
-  loadWorkspace,
   EnvironmentSource,
   COMMON_ENV_PREFIX,
   UnresolvedElemIDs,
@@ -48,20 +46,21 @@ import {
   deserializeReferenceTree,
 } from '../../src/workspace/workspace'
 import { DeleteCurrentEnvError, UnknownEnvError, EnvDuplicationError,
-  AccountDuplicationError, InvalidEnvNameError, Errors, MAX_ENV_NAME_LEN, UnknownAccountError, InvalidAccountNameError } from '../../src/workspace/errors'
-import { StaticFilesSource, MissingStaticFile } from '../../src/workspace/static_files'
+  AccountDuplicationError, InvalidEnvNameError, MAX_ENV_NAME_LEN, UnknownAccountError, InvalidAccountNameError } from '../../src/workspace/errors'
+import { MissingStaticFile } from '../../src/workspace/static_files'
 import * as dump from '../../src/parser/dump'
 import { mockDirStore } from '../common/nacl_file_store'
 import { EnvConfig } from '../../src/workspace/config/workspace_config_types'
 import { resolve } from '../../src/expressions'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
 import { InMemoryRemoteMap, RemoteMapCreator, RemoteMap, CreateRemoteMapParams } from '../../src/workspace/remote_map'
-import { Path } from '../../src/workspace/path_index'
 import { mockState } from '../common/state'
 import * as multiEnvSrcLib from '../../src/workspace/nacl_files/multi_env/multi_env_source'
 import { AdaptersConfigSource } from '../../src/workspace/adapters_config_source'
 import { createElementSelector } from '../../src/workspace/element_selector'
 import * as expressionsModule from '../../src/expressions'
+import { createWorkspace, createState, mockWorkspaceConfigSource, mockAdaptersConfigSource, mockCredentialsSource } from '../common/workspace'
+import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
 
 const { awu } = collections.asynciterable
 
@@ -90,104 +89,6 @@ const newNaclFile = {
 }
 const services = ['salesforce']
 
-const mockWorkspaceConfigSource = (conf?: Values,
-  secondaryEnv?: boolean): WorkspaceConfigSource => ({
-  getWorkspaceConfig: jest.fn().mockImplementation(() => ({
-    envs: [
-      { name: 'default',
-        accounts: services,
-        accountToServiceName: Object.fromEntries(services.map(service => [service, service])) },
-      ...(secondaryEnv ? [{ name: 'inactive',
-        accounts: [...services, 'netsuite'],
-        accountToServiceName: { netsuite: 'netsuite',
-          ...Object.fromEntries(services.map(service => [service, service])) } }] : []),
-    ],
-    uid: '',
-    name: 'test',
-    currentEnv: 'default',
-    ...conf,
-  })),
-  setWorkspaceConfig: jest.fn(),
-})
-
-const mockAdaptersConfigSource = (): MockInterface<AdaptersConfigSource> => ({
-  getAdapter: mockFunction<AdaptersConfigSource['getAdapter']>(),
-  setAdapter: mockFunction<AdaptersConfigSource['setAdapter']>(),
-  getElementNaclFiles: mockFunction<AdaptersConfigSource['getElementNaclFiles']>(),
-  getErrors: mockFunction<AdaptersConfigSource['getErrors']>().mockResolvedValue(new Errors({
-    parse: [],
-    validation: [],
-    merge: [],
-  })),
-  getSourceRanges: mockFunction<AdaptersConfigSource['getSourceRanges']>().mockResolvedValue([]),
-  getNaclFile: mockFunction<AdaptersConfigSource['getNaclFile']>(),
-  setNaclFiles: mockFunction<AdaptersConfigSource['setNaclFiles']>(),
-  flush: mockFunction<AdaptersConfigSource['flush']>(),
-  getElements: mockFunction<AdaptersConfigSource['getElements']>(),
-  getParsedNaclFile: mockFunction<AdaptersConfigSource['getParsedNaclFile']>(),
-  getSourceMap: mockFunction<AdaptersConfigSource['getSourceMap']>(),
-  listNaclFiles: mockFunction<AdaptersConfigSource['listNaclFiles']>(),
-  isConfigFile: mockFunction<AdaptersConfigSource['isConfigFile']>(),
-})
-
-const mockCredentialsSource = (): ConfigSource => ({
-  get: jest.fn(),
-  set: jest.fn(),
-  delete: jest.fn(),
-  rename: jest.fn(),
-})
-
-const createState = (
-  elements: Element[],
-  persistent = true
-): State => buildInMemState(async () => ({
-  elements: createInMemoryElementSource(elements),
-  pathIndex: new InMemoryRemoteMap<Path[]>(),
-  topLevelPathIndex: new InMemoryRemoteMap<Path[]>(),
-  referenceSources: new InMemoryRemoteMap(),
-  accountsUpdateDate: new InMemoryRemoteMap(),
-  changedBy: new InMemoryRemoteMap([{ key: 'name@@account', value: ['elemId'] }]),
-  saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
-  staticFilesSource: mockStaticFilesSource(),
-}), persistent)
-const createWorkspace = async (
-  dirStore?: DirectoryStore<string>,
-  state?: State,
-  configSource?: WorkspaceConfigSource,
-  adaptersConfigSource?: AdaptersConfigSource,
-  credentials?: ConfigSource,
-  staticFilesSource?: StaticFilesSource,
-  elementSources?: Record<string, EnvironmentSource>,
-  remoteMapCreator?: RemoteMapCreator,
-  persistent = true
-): Promise<Workspace> => {
-  const mapCreator = remoteMapCreator ?? persistentMockCreateRemoteMap()
-  const actualStaticFilesSource = staticFilesSource || mockStaticFilesSource()
-  return loadWorkspace(
-    configSource || mockWorkspaceConfigSource(),
-    adaptersConfigSource || mockAdaptersConfigSource(),
-    credentials || mockCredentialsSource(),
-    {
-      commonSourceName: '',
-      sources: elementSources || {
-        '': {
-          naclFiles: await naclFilesSource(
-            '',
-            dirStore || mockDirStore(),
-            actualStaticFilesSource,
-            mapCreator,
-            persistent
-          ),
-        },
-        default: {
-          naclFiles: createMockNaclFileSource([]),
-          state: state ?? createState([], persistent),
-        },
-      },
-    },
-    mapCreator,
-  )
-}
 
 const getElemMap = async (
   elements: ElementsSource

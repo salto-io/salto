@@ -13,47 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import path from 'path'
-import { readTextFile, exists, rm } from '@salto-io/file'
-import { staticFiles, remoteMap } from '@salto-io/workspace'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
+import * as remoteMap from '../remote_map'
+import * as staticFiles from './cache'
 
 const { awu } = collections.asynciterable
 
-const log = logger(module)
-
 type StaticFilesCacheState = remoteMap.RemoteMap<staticFiles.StaticFilesData>
 
-const migrateLegacyStaticFilesCache = async (
-  cacheDir: string,
-  name: string,
-  remoteCache: StaticFilesCacheState
-): Promise<void> => {
-  const CACHE_FILENAME = 'static-file-cache'
-  const currentCacheFile = path.join(cacheDir, name, CACHE_FILENAME)
-
-  if (await exists(currentCacheFile)) {
-    if (await remoteCache.isEmpty()) {
-      log.debug('importing legacy static files cache from file: %s', currentCacheFile)
-      const oldCache: Record<string, staticFiles.StaticFilesData> = JSON.parse(
-        await readTextFile(currentCacheFile)
-      )
-      await remoteCache.setAll(
-        Object.values(oldCache).map(item => ({ value: item, key: item.filepath }))
-      )
-      await remoteCache.flush()
-    } else {
-      log.debug('static files cache already populated, ignoring legacy static files cache file: %s', currentCacheFile)
-    }
-    log.debug('deleting legacy static files cache file: %s', currentCacheFile)
-    await rm(currentCacheFile)
-  }
-}
-
-export const buildLocalStaticFilesCache = (
-  cacheDir: string,
+export const buildStaticFilesCache = (
   name: string,
   remoteMapCreator: remoteMap.RemoteMapCreator,
   persistent: boolean,
@@ -68,13 +37,8 @@ export const buildLocalStaticFilesCache = (
       persistent,
     })
 
-  const initCache = async (): Promise<StaticFilesCacheState> => {
-    const remoteCache = createRemoteMap(name)
-    await migrateLegacyStaticFilesCache(cacheDir, name, await remoteCache)
-    return remoteCache
-  }
 
-  let cache = initCache()
+  let cache = createRemoteMap(name)
 
   return {
     get: async (filepath: string): Promise<staticFiles.StaticFilesData | undefined> => (
@@ -97,7 +61,7 @@ export const buildLocalStaticFilesCache = (
       await currentCache.clear()
     },
     clone: () => (
-      buildLocalStaticFilesCache(cacheDir, name, remoteMapCreator, persistent)
+      buildStaticFilesCache(name, remoteMapCreator, persistent)
     ),
     list: async () => (
       awu((await cache).keys()).toArray()

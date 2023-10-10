@@ -68,6 +68,7 @@ export const mockErrors = (errors: SaltoError[]): wsErrors.Errors => new wsError
 
 export const mockWorkspace = ({
   elements = [],
+  elementsWithoutHidden = [],
   name = undefined,
   index = [],
   stateElements = undefined,
@@ -79,6 +80,7 @@ export const mockWorkspace = ({
   staticFilesSource = undefined,
 }: {
   elements?: Element[]
+  elementsWithoutHidden?: Element[]
   name?: string
   index?: workspace.remoteMap.RemoteMapEntry<workspace.pathIndex.Path[]>[]
   stateElements?: Element[]
@@ -105,7 +107,9 @@ export const mockWorkspace = ({
   const state = mockState(ACCOUNTS, stateElements || elements, index)
   return {
     elements: jest.fn().mockImplementation(
-      async () => elementSource.createInMemoryElementSource(elements)
+      async (includeHidden = true) => elementSource.createInMemoryElementSource(
+        includeHidden ? elements : elementsWithoutHidden,
+      )
     ),
     name,
     envs: () => ['default'],

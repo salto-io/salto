@@ -902,13 +902,18 @@ describe('api.ts', () => {
     let patchChanges: fetch.FetchChange[]
     beforeEach(async () => {
       const elements = [
+        new InstanceElement('modified', type, { name: 'other', label: 'before', _service_id: 123 }),
+        new InstanceElement('existingAdded', type, { name: 'other', _service_id: 456 }),
+        new InstanceElement('deleted', type, { name: 'other', _service_id: 789 }),
+      ]
+      const elementsWithoutHidden = [
         new InstanceElement('modified', type, { name: 'other', label: 'before' }),
         new InstanceElement('existingAdded', type, { name: 'other' }),
         new InstanceElement('deleted', type, { name: 'other' }),
       ]
       const ws = mockWorkspace({
         elements,
-        stateElements: elements,
+        elementsWithoutHidden,
         name: 'workspace',
         accounts: ['salto'],
         accountToServiceName: { salto: 'salto' },
@@ -1037,13 +1042,15 @@ describe('api.ts', () => {
     })
 
     const instance = new InstanceElement('instance', type, { f: 'v' })
+    const instanceWithHidden = new InstanceElement('instance', type, { f: 'v', _service_id: 123 })
     const instanceState = new InstanceElement('instanceState', type, { f: 'v' })
     const instanceNacl = instanceState.clone()
     instanceNacl.value.f = 'v2'
 
     const ws = mockWorkspace({
-      elements: [type, instance, instanceNacl],
-      stateElements: [type, instance, instanceState],
+      elements: [type, instanceWithHidden, instanceNacl],
+      elementsWithoutHidden: [type, instance, instanceNacl],
+      stateElements: [type, instanceWithHidden, instanceState],
       name: 'workspace',
       accounts: ['salesforce'],
       accountToServiceName: { salesforce: 'salesforce' },
@@ -1070,6 +1077,24 @@ describe('api.ts', () => {
         expect(res.fetchErrors).toHaveLength(0)
         expect(res.mergeErrors).toHaveLength(0)
         expect(res.changes).toHaveLength(2)
+      })
+    })
+
+    describe('when an element is added and also exists in ws', () => {
+      it('should not return changes for hidden values', async () => {
+        const afterModifyInstance = instance.clone()
+        afterModifyInstance.value.f = 'v3'
+        const beforeElements: Element[] = []
+        const afterElements = [afterModifyInstance]
+        mockLoadElementsFromFolder
+          .mockResolvedValueOnce({ elements: beforeElements })
+          .mockResolvedValueOnce({ elements: afterElements })
+        const res = await api.calculatePatch({ workspace: ws, fromDir: 'before', toDir: 'after', accountName: 'salesforce' })
+        expect(res.success).toBeTruthy()
+        expect(res.fetchErrors).toHaveLength(0)
+        expect(res.mergeErrors).toHaveLength(0)
+        expect(res.changes).toHaveLength(1)
+        expect(res.changes[0].change.id.name).toEqual('f')
       })
     })
 

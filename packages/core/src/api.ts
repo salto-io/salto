@@ -390,7 +390,7 @@ export const calculatePatchFromChanges = async (
     unmergedAfterElements,
     afterElements,
     elementSource.createInMemoryElementSource(beforeElements),
-    await workspace.elements(),
+    await workspace.elements(false),
     partialFetchData,
     new Set(accounts),
   )
@@ -487,7 +487,7 @@ export const calculatePatch = async (
     afterElements,
     mergedAfterElements,
     elementSource.createInMemoryElementSource(mergedBeforeElements),
-    adapterContext.elementsSource,
+    await workspace.elements(false),
     new Map([[accountName, {}]]),
     new Set([accountName]),
   )

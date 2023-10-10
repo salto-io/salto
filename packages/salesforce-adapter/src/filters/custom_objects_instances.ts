@@ -57,6 +57,7 @@ import {
   isQueryableField,
   isHiddenField,
   isReadOnlyField,
+  isCustomObjectSync,
 } from './utils'
 import { ConfigChangeSuggestion, DataManagement } from '../types'
 
@@ -630,6 +631,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       elements
         .filter(isInstanceElement)
         .map(instance => instance.getTypeSync())
+        .filter(isCustomObjectSync) // we don't deploy metadata objects, so no reason to warn about them.
     )
 
     let invalidPermissionsWarnings: SaltoError[] = []

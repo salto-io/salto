@@ -45,12 +45,15 @@ import {
   isInstanceOfCustomObject,
 } from '../transformers/transformer'
 import {
+  CUSTOM_OBJECT_ID_FIELD,
   FIELD_ANNOTATIONS,
   KEY_PREFIX,
   KEY_PREFIX_LENGTH,
   SALESFORCE,
 } from '../constants'
 import {
+  getInternalId,
+  isCustomObjectSync,
   isReadOnlyField,
   isReferenceField,
   referenceFieldTargetTypes,
@@ -79,8 +82,12 @@ const MAX_BREAKDOWN_ELEMENTS = 10
 const serializeInternalID = (typeName: string, id: string): string =>
   (`${typeName}${INTERNAL_ID_SEPARATOR}${id}`)
 
+const instanceInternalId = (instance: InstanceElement): string => (
+  isCustomObjectSync(instance.getTypeSync()) ? instance.value[CUSTOM_OBJECT_ID_FIELD] : getInternalId(instance)
+)
+
 const serializeInstanceInternalID = async (instance: InstanceElement): Promise<string> => (
-  serializeInternalID(await apiName(await instance.getType(), true), await apiName(instance))
+  serializeInternalID(await apiName(await instance.getType(), true), instanceInternalId(instance))
 )
 
 const deserializeInternalID = (internalID: string): RefOrigin => {

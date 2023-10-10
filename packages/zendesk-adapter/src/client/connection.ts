@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import axios from 'axios'
 import axiosRetry from 'axios-retry'
 import { AccountInfo } from '@salto-io/adapter-api'
@@ -40,7 +41,7 @@ const EXPECTED_VALID_ACCOUNT_RES = Joi.object({
 }).unknown(true).required()
 
 export const instanceUrl = (subdomain: string, domain?: string): string => (
-  domain === undefined ? `https://${subdomain}.zendesk.com` : `https://${subdomain}.${domain}`
+  _.isEmpty(domain) ? `https://${subdomain}.zendesk.com` : `https://${subdomain}.${domain}`
 )
 const baseUrl = instanceUrl
 // A URL for resource files

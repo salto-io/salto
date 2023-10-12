@@ -204,6 +204,7 @@ const createInstanceReference = ({ urlPart, brandOfInstance, instancesById, idRe
   return undefined
 }
 
+// Receives a url part (e.g. /categories/123) and attempts to replace the number with a reference to the element
 export const transformReferenceUrls = ({ urlPart, brandOfInstance, instancesById, enableMissingReferences }: {
   urlPart: string
   brandOfInstance?: InstanceElement

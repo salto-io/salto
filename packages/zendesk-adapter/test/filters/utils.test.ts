@@ -21,11 +21,11 @@ import {
   CORE_ANNOTATIONS,
   ReferenceExpression, getChangeData, AdditionChange,
 } from '@salto-io/adapter-api'
-import { ZENDESK, BRAND_TYPE_NAME, CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../src/constants'
+import { ZENDESK, BRAND_TYPE_NAME, CUSTOM_FIELD_OPTIONS_FIELD_NAME, ARTICLE_TYPE_NAME } from '../../src/constants'
 import {
   createAdditionalParentChanges,
   getBrandsForGuide,
-  getCustomFieldOptionsFromChanges,
+  getCustomFieldOptionsFromChanges, transformReferenceUrls,
 } from '../../src/filters/utils'
 
 describe('Zendesk utils', () => {
@@ -176,6 +176,77 @@ describe('Zendesk utils', () => {
       ]
       const res = getCustomFieldOptionsFromChanges('parent', 'customFieldOptions', changes)
       expect(res).toMatchObject([])
+    })
+  })
+  describe('transformReferenceUrls', () => {
+    let brand: InstanceElement
+    let article: InstanceElement
+    let instancesById: Record<string, InstanceElement>
+    beforeEach(() => {
+      brand = new InstanceElement(
+        'brand',
+        new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) }),
+        { id: 1 }
+      )
+      article = new InstanceElement(
+        'article',
+        new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }),
+        { id: 2 }
+      )
+      instancesById = {
+        [brand.value.id]: brand,
+        [article.value.id]: article,
+      }
+    })
+    it('should replace ids with references of the same id', () => {
+      const result = transformReferenceUrls({
+        urlPart: '/articles/2',
+        instancesById,
+      })
+      expect(result).toMatchObject([
+        '/articles/',
+        new ReferenceExpression(article.elemID, article),
+      ])
+    })
+    it('should create missing references for ids that are not in the elements', () => {
+      const result = transformReferenceUrls({
+        urlPart: '/articles/3',
+        instancesById,
+        enableMissingReferences: true,
+      })
+      const missingArticle = new InstanceElement(
+        'missing_3',
+        new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }),
+        { id: '3' }
+      )
+      expect(result).toMatchObject([
+        '/articles/',
+        new ReferenceExpression(missingArticle.elemID, missingArticle),
+      ])
+    })
+    it('should add the given brand url to the missing references', () => {
+      const result = transformReferenceUrls({
+        urlPart: '/articles/3',
+        instancesById,
+        enableMissingReferences: true,
+        brandOfInstance: brand,
+      })
+      const missingArticle = new InstanceElement(
+        'missing_brand_3',
+        new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }),
+        { id: '3' }
+      )
+      expect(result).toMatchObject([
+        '/articles/',
+        new ReferenceExpression(missingArticle.elemID, missingArticle),
+      ])
+    })
+    it('should do nothing if nothing matches', () => {
+      const result = transformReferenceUrls({
+        urlPart: 'nothing',
+        instancesById,
+      })
+      expect(result).toMatchObject(['nothing'])
     })
   })
 })

@@ -40,7 +40,7 @@ import {
   MetadataQuery,
   MetadataQueryParams,
 } from '../types'
-import { getChangedAtSingleton } from '../filters/utils'
+import { getChangedAtSingleton, getTypeChangedAt } from '../filters/utils'
 
 const { isDefined } = values
 
@@ -198,7 +198,7 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
     if (instance.changedAt === undefined) {
       return true
     }
-    const lastChangedAt = _.get(changedAtSingleton.value, [instance.metadataType, instance.name])
+    const lastChangedAt = getTypeChangedAt(changedAtSingleton, instance.metadataType, instance.name)
     return _.isString(lastChangedAt)
       ? new Date(lastChangedAt).getTime() < new Date(instance.changedAt).getTime()
       : true

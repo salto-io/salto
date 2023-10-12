@@ -168,7 +168,7 @@ const getRecordsBySaltoIds = async (
         (await awu(saltoIdFields).flatMap(getFieldNamesForQuery).toArray())
       )
   )
-  const queries = await buildSelectQueries(
+  const queries = buildSelectQueries(
     await apiName(type),
     fieldsToQuery,
     instanceIdValues,

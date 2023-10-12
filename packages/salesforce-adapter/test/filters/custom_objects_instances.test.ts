@@ -1860,19 +1860,19 @@ describe('buildSelectQueries', () => {
     let queries: string[]
     beforeEach(async () => {
       const fieldNames = await awu(Object.values(customObject.fields)).flatMap(getFieldNamesForQuery).toArray()
-      queries = await buildSelectQueries('Test', fieldNames)
+      queries = buildSelectQueries('Test', fieldNames)
     })
     it('should create a select query on the specified fields', () => {
       expect(queries).toHaveLength(1)
       expect(queries[0]).toEqual('SELECT Id,Name,TestField FROM Test')
     })
   })
-  describe('with conditions', () => {
+  describe('with exact conditions', () => {
     describe('with short query', () => {
       let queries: string[]
       beforeEach(async () => {
         const fieldNames = await awu([customObject.fields.Id]).flatMap(getFieldNamesForQuery).toArray()
-        queries = await buildSelectQueries(
+        queries = buildSelectQueries(
           'Test',
           fieldNames,
           _.range(0, 2).map(idx => ({ Id: `'id${idx}'`, Name: `'name${idx}'` })),
@@ -1887,10 +1887,11 @@ describe('buildSelectQueries', () => {
       let queries: string[]
       beforeEach(async () => {
         const fieldNames = await awu([customObject.fields.Id]).flatMap(getFieldNamesForQuery).toArray()
-        queries = await buildSelectQueries(
+        queries = buildSelectQueries(
           'Test',
           fieldNames,
           _.range(0, 4).map(idx => ({ Id: `'id${idx}'`, Name: `'name${idx}'` })),
+          [],
           80,
         )
       })
@@ -1900,6 +1901,66 @@ describe('buildSelectQueries', () => {
         expect(_.max(queryLengths)).toBeLessThanOrEqual(80)
         expect(queries[0]).toEqual("SELECT Id FROM Test WHERE Id IN ('id0','id1') AND Name IN ('name0','name1')")
         expect(queries[1]).toEqual("SELECT Id FROM Test WHERE Id IN ('id2','id3') AND Name IN ('name2','name3')")
+      })
+    })
+  })
+  describe('with complex conditions', () => {
+    let queries: string[]
+    describe('with no exact conditions', () => {
+      beforeEach(async () => {
+        const fieldNames = ['Id']
+        queries = buildSelectQueries('Test', fieldNames, [], [['Id', '>', '7']])
+      })
+      it('should create a single valid query', () => {
+        expect(queries).toEqual([
+          'SELECT Id FROM Test WHERE Id > 7',
+        ])
+      })
+    })
+    describe('with exact conditions', () => {
+      beforeEach(async () => {
+        const fieldNames = ['Id']
+        queries = buildSelectQueries('Test', fieldNames, [{ Id: "'8'" }], [['Id', '>', '7']])
+      })
+      it('should create a single valid query that ends with the complex query', () => {
+        expect(queries).toEqual([
+          "SELECT Id FROM Test WHERE Id IN ('8') AND Id > 7",
+        ])
+      })
+    })
+    describe('with exact conditions that are too long for a single query', () => {
+      beforeEach(async () => {
+        const fieldNames = ['Id']
+        queries = buildSelectQueries('Test', fieldNames, [{ Id: "'8'" }, { Id: "'9'" }], [['Id', '>', '7']], 45)
+      })
+      it('should create multiple valid queries that end with the complex query', () => {
+        expect(queries).toEqual([
+          "SELECT Id FROM Test WHERE Id IN ('8') AND Id > 7",
+          "SELECT Id FROM Test WHERE Id IN ('9') AND Id > 7",
+        ])
+      })
+    })
+    describe('with multiple complex conditions', () => {
+      beforeEach(async () => {
+        const fieldNames = ['Id']
+        queries = buildSelectQueries('Test', fieldNames, [{ Id: "'8'" }], [['Id', '>', '7'], ['Id', '<', '10']])
+      })
+      it('should create a single valid query that ends with the complex query', () => {
+        expect(queries).toEqual([
+          "SELECT Id FROM Test WHERE Id IN ('8') AND Id > 7 AND Id < 10",
+        ])
+      })
+    })
+    describe('with a exact conditions that is too long for a single query and multiple complex conditions', () => {
+      beforeEach(async () => {
+        const fieldNames = ['Id']
+        queries = buildSelectQueries('Test', fieldNames, [{ Id: "'8'" }, { Id: "'9'" }], [['Id', '>', '7'], ['Id', '<', '10']], 60)
+      })
+      it('should create multiple valid queries that end with the entire complex query', () => {
+        expect(queries).toEqual([
+          "SELECT Id FROM Test WHERE Id IN ('8') AND Id > 7 AND Id < 10",
+          "SELECT Id FROM Test WHERE Id IN ('9') AND Id > 7 AND Id < 10",
+        ])
       })
     })
   })

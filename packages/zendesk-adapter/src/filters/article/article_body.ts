@@ -98,14 +98,14 @@ const updateArticleTranslationBody = ({
         urlPart => {
           const urlSubdomain = urlPart.match(DOMAIN_REGEX)?.pop()
           // We already made sure that the brand exists, so we can just return it
-          if (urlBrandInstance && urlSubdomain !== undefined) {
-            return [new ReferenceExpression(urlBrandInstance.elemID.createNestedID('brand_url'), urlBrandInstance?.value.brand_url)]
+          if (urlSubdomain !== undefined) {
+            return [new ReferenceExpression(urlBrandInstance.elemID, urlBrandInstance)]
           }
           return transformReferenceUrls({
             urlPart,
             instancesById,
             enableMissingReferences,
-            urlBrandInstance,
+            brandOfInstance: urlBrandInstance,
           })
         }
       )
@@ -121,6 +121,9 @@ const updateArticleTranslationBody = ({
  * Process template Expression references by the id type
  */
 export const prepRef = (part: ReferenceExpression): TemplatePart => {
+  if (part.elemID.typeName === BRAND_TYPE_NAME) {
+    return part.value.value.brand_url
+  }
   if (part.elemID.isTopLevel()) {
     return part.value.value.id.toString()
   }
@@ -154,7 +157,7 @@ export const articleBodyOnFetch = (elements: Element[], config: ZendeskConfig): 
   const instances = elements.filter(isInstanceElement)
   const instancesById = _.keyBy(
     instances.filter(instance => _.isNumber(instance.value.id)),
-    i => parseInt(i.value.id, 10)
+    i => _.toString(i.value.id)
   )
   const brandsByUrl = _.keyBy(
     instances.filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME),

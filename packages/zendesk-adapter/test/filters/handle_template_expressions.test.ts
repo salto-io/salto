@@ -240,7 +240,7 @@ describe('handle templates filter', () => {
     'articleTranslation',
     new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TRANSLATION_TYPE_NAME) }),
     {
-      body: `/test/test/articles/${article.value.id}/test`,
+      body: `"/hc/test/test/articles/${article.value.id}/test`,
     }
   )
 
@@ -462,18 +462,18 @@ describe('handle templates filter', () => {
     })
     it('should not resolve urls when the config flag is off', async () => {
       const fetchedArticleTranslation = elements.filter(isInstanceElement).find(i => i.elemID.name === 'articleTranslation')
-      expect(fetchedArticleTranslation?.value.body).toEqual(`/test/test/articles/${article.value.id}/test`)
+      expect(fetchedArticleTranslation?.value.body).toEqual(`"/hc/test/test/articles/${article.value.id}/test`)
     })
     it('should resolve urls correctly when the config flag is on', async () => {
       elements = generateElements()
       const config = _.cloneDeep(DEFAULT_CONFIG)
-      config[FETCH_CONFIG].transformLinks = true
+      config[FETCH_CONFIG].extractReferencesFromFreeText = true
       const resolveLinksFilter = filterCreator(createFilterCreatorParams({ config })) as FilterType
       await resolveLinksFilter.onFetch(elements)
 
       const fetchedArticleTranslation = elements.filter(isInstanceElement).find(i => i.elemID.name === 'articleTranslation')
       expect(fetchedArticleTranslation?.value.body).toEqual(new TemplateExpression({ parts: [
-        '/test/test/articles/',
+        '"/hc/test/test/articles/',
         new ReferenceExpression(article.elemID, article),
         '/test',
       ] }))
@@ -489,9 +489,9 @@ describe('handle templates filter', () => {
       expect(elementsAfterPreDeploy).toEqual(elementsBeforeFetch)
     })
 
-    it('handle links correctly with transformLinks config', async () => {
+    it('handle links correctly with extractReferencesFromFreeText config', async () => {
       const config = _.cloneDeep(DEFAULT_CONFIG)
-      config[FETCH_CONFIG].transformLinks = true
+      config[FETCH_CONFIG].extractReferencesFromFreeText = true
       const resolveLinksFilter = filterCreator(createFilterCreatorParams({ config })) as FilterType
 
       const elementsBeforeFetch = generateElements()

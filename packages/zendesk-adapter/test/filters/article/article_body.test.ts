@@ -31,13 +31,9 @@ import { FilterResult } from '../../../src/filter'
 
 const { createMissingInstance } = referencesUtils
 
-const usedIds = new Set<number>()
+let id = 0
 const newId = (): number => {
-  let id = Math.floor(Math.random() * 100000000)
-  while (usedIds.has(id)) {
-    id = Math.floor(Math.random() * 100000000)
-  }
-  usedIds.add(id)
+  id += 1
   return id
 }
 
@@ -217,13 +213,13 @@ describe('article body filter', () => {
         const fetchedTranslationWithReferences = elements.filter(isInstanceElement).find(i => i.elemID.name === 'translationWithReferences')
         expect(fetchedTranslationWithReferences?.value.body).toEqual(new TemplateExpression({ parts: [
           '<p><a href="',
-          new ReferenceExpression(brandInstance.elemID.createNestedID('brand_url'), brandInstance.value.brand_url),
+          new ReferenceExpression(brandInstance.elemID, brandInstance),
           '/hc/en-us/articles/', new ReferenceExpression(articleInstance.elemID, articleInstance),
           '/sep/sections/', new ReferenceExpression(sectionInstance.elemID, sectionInstance),
           '/sep/categories/', new ReferenceExpression(categoryInstance.elemID, categoryInstance),
           '/sep/article_attachments/', new ReferenceExpression(attachmentInstance.elemID, attachmentInstance),
           '-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="',
-          new ReferenceExpression(brandInstance.elemID.createNestedID('brand_url'), brandInstance.value.brand_url),
+          new ReferenceExpression(brandInstance.elemID, brandInstance),
           '/hc/he/articles/', new ReferenceExpression(articleInstance.elemID, articleInstance),
           '-extra_string"',
         ] }))
@@ -244,13 +240,13 @@ describe('article body filter', () => {
         expect(fetchedTranslationWithoutReferences?.value.body)
           .toEqual(new TemplateExpression({ parts: [
             '<p><a href="',
-            new ReferenceExpression(emptyBrandInstance.elemID.createNestedID('brand_url'), emptyBrandInstance.value.brand_url),
+            new ReferenceExpression(emptyBrandInstance.elemID, emptyBrandInstance),
             '/hc/en-us/articles/', new ReferenceExpression(missingArticleInstance.elemID, missingArticleInstance),
             '/sep/sections/', new ReferenceExpression(missingSectionInstance.elemID, missingSectionInstance),
             '/sep/categories/', new ReferenceExpression(missingCategoryInstance.elemID, missingCategoryInstance),
             '/sep/article_attachments/', new ReferenceExpression(missingArticleAttachmentInstance.elemID, missingArticleAttachmentInstance),
             '-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="',
-            new ReferenceExpression(brandInstance.elemID.createNestedID('brand_url'), brandInstance.value.brand_url),
+            new ReferenceExpression(brandInstance.elemID, brandInstance),
             '/hc/he/articles/',
             new ReferenceExpression(articleInstance.elemID, articleInstance),
             '-extra_string"',
@@ -280,7 +276,7 @@ describe('article body filter', () => {
         expect(fetchedTranslationWithReferences2?.value.body)
           .toEqual(new TemplateExpression({ parts: [
             '<p><a href="',
-            new ReferenceExpression(brandInstance.elemID.createNestedID('brand_url'), brandInstance.value.brand_url),
+            new ReferenceExpression(brandInstance.elemID, brandInstance),
             '/hc/en-us/articles/',
             new ReferenceExpression(articleInstance.elemID, articleInstance),
             '" target="_self">linkedArticle</a><img src="https://excluded2.zendesk.com/hc/article_attachments/bla" alt="alttext"></p>kjdsahjkdshjkdsjkh',

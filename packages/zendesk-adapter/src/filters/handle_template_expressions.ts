@@ -30,7 +30,7 @@ import {
   GROUP_TYPE_NAME,
   DYNAMIC_CONTENT_ITEM_TYPE_NAME,
   CUSTOM_FIELD_OPTIONS_FIELD_NAME,
-  DEFLECTION_NOTIFICATION,
+  DEFLECTION_ACTION,
   ARTICLE_TRANSLATION_TYPE_NAME,
 } from '../constants'
 import { FETCH_CONFIG, ZendeskConfig } from '../config'
@@ -88,7 +88,7 @@ const potentialMacroFields = [
 ]
 // triggers and automations notify users, webhooks
 // groups or targets with text that can include templates.
-const notificationTypes = ['notification_webhook', 'notification_user', 'notification_group', 'notification_target', DEFLECTION_NOTIFICATION]
+const notificationTypes = ['notification_webhook', 'notification_user', 'notification_group', 'notification_target', DEFLECTION_ACTION]
 
 const potentialTriggerFields = [...notificationTypes, 'side_conversation_ticket']
 
@@ -194,13 +194,13 @@ const formulaToTemplate = ({
   instancesByType,
   instancesById,
   enableMissingReferences,
-  transformLinks,
+  extractReferencesFromFreeText,
 }: {
   formula: string
     instancesByType: Record<string, InstanceElement[]>
     instancesById: Record<string, InstanceElement>
     enableMissingReferences?: boolean
-    transformLinks?: boolean
+    extractReferencesFromFreeText?: boolean
 }): TemplateExpression | string => {
   const handleZendeskReference = (expression: string, ref: RegExpMatchArray): TemplatePart[] => {
     const reference = ref.pop() ?? ''
@@ -271,7 +271,7 @@ const formulaToTemplate = ({
   }
 
   const potentialRegexes = [REFERENCE_MARKER_REGEX, potentialReferenceTypeRegex, DYNAMIC_CONTENT_REGEX]
-  if (transformLinks) {
+  if (extractReferencesFromFreeText) {
     potentialRegexes.push(...ELEMENTS_REGEXES.map(s => s.urlRegex))
   }
 
@@ -289,13 +289,19 @@ const formulaToTemplate = ({
       if (dynamicContentReference) {
         return handleDynamicContentReference(expression, dynamicContentReference)
       }
-      return transformLinks
-        ? transformReferenceUrls({
-          urlPart: expression,
-          instancesById,
-          enableMissingReferences,
-        })
-        : expression
+      if (extractReferencesFromFreeText) {
+        // Check if the expression is a link to a zendesk page without a subdomain
+        // href="/hc/en-us/../articles/123123
+        const isZendeskLink = new RegExp(`"/hc/\\S*${expression}`).test(formula)
+        if (isZendeskLink) {
+          return transformReferenceUrls({
+            urlPart: expression,
+            instancesById,
+            enableMissingReferences,
+          })
+        }
+      }
+      return expression
     })
 }
 
@@ -315,12 +321,12 @@ const getContainers = (instances: InstanceElement[]): TemplateContainer[] =>
 const replaceFormulasWithTemplates = (
   instances: InstanceElement[],
   enableMissingReferences?: boolean,
-  transformLinks?: boolean
+  extractReferencesFromFreeText?: boolean
 ): void => {
   const instancesByType = _.groupBy(instances, i => i.elemID.typeName)
   const instancesById = _.keyBy(
     instances.filter(i => _.isNumber(i.value.id)),
-    i => _.parseInt(i.value.id)
+    i => _.toString(i.value.id)
   )
 
   // On deployment, we might want to run the logic to create missing references that weren't created on fetch
@@ -335,7 +341,7 @@ const replaceFormulasWithTemplates = (
         instancesByType,
         instancesById,
         enableMissingReferences,
-        transformLinks,
+        extractReferencesFromFreeText,
       })
       return isTemplateExpression(template) ? template.parts : template
     })
@@ -354,7 +360,7 @@ const replaceFormulasWithTemplates = (
       instancesByType,
       instancesById,
       enableMissingReferences,
-      transformLinks,
+      extractReferencesFromFreeText,
     }) : value
   }
 
@@ -370,7 +376,7 @@ const replaceFormulasWithTemplates = (
   }
 }
 
-export const prepRef = (part: ReferenceExpression, transformLinks?: boolean): TemplatePart => {
+export const prepRef = (part: ReferenceExpression, extractReferencesFromFreeText?: boolean): TemplatePart => {
   // In some cases this function may run on the .before value of a Change, which may contain unresolved references.
   // .after values are always resolved because unresolved references are dropped by unresolved_references validator
   // This case should be handled more generic but at the moment this is a quick fix to avoid crashing (SALTO-3988)
@@ -390,7 +396,7 @@ export const prepRef = (part: ReferenceExpression, transformLinks?: boolean): Te
   if (part.elemID.typeName === GROUP_TYPE_NAME && part.value?.value?.id) {
     return part.value.value.id.toString()
   }
-  if (transformLinks
+  if (extractReferencesFromFreeText
     && ELEMENTS_REGEXES.map(({ type }) => type).includes(part.elemID.typeName) && part.value?.value?.id) {
     return part.value.value.id.toString()
   }
@@ -401,7 +407,7 @@ export const handleTemplateExpressionsOnFetch = (elements: Element[], config: Ze
   replaceFormulasWithTemplates(
     elements.filter(isInstanceElement),
     config[FETCH_CONFIG].enableMissingReferences,
-    config[FETCH_CONFIG].transformLinks
+    config[FETCH_CONFIG].extractReferencesFromFreeText
   )
 }
 
@@ -419,7 +425,7 @@ const filterCreator: FilterCreator = ({ config }) => {
           async container => replaceTemplatesWithValues(
             container,
             deployTemplateMapping,
-            ref => prepRef(ref, config[FETCH_CONFIG].transformLinks)
+            ref => prepRef(ref, config[FETCH_CONFIG].extractReferencesFromFreeText)
           )
         )
       } catch (e) {

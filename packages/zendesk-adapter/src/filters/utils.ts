@@ -170,17 +170,16 @@ export const ELEMENTS_REGEXES = [
   type,
   urlRegex: new RegExp(`(\\/${field}\\/\\d+)`),
   idRegex: new RegExp(`(?<url>/${field}/)(?<id>\\d+)`),
-}))
-ELEMENTS_REGEXES.push({
+})).concat({
   type: TICKET_FORM_TYPE_NAME,
   urlRegex: /(ticket_form_id=\d+)/,
   idRegex: /(?<url>ticket_form_id=)(?<id>\d+)/,
 })
 
 // Attempt to match the regex to an element and create a reference to that element
-const createInstanceReference = ({ urlPart, urlBrandInstance, instancesById, idRegex, type, enableMissingReferences }: {
+const createInstanceReference = ({ urlPart, brandOfInstance, instancesById, idRegex, type, enableMissingReferences }: {
   urlPart: string
-  urlBrandInstance?: InstanceElement
+  brandOfInstance?: InstanceElement
   instancesById: Record<string, InstanceElement>
   idRegex: RegExp
   type: string
@@ -195,7 +194,8 @@ const createInstanceReference = ({ urlPart, urlBrandInstance, instancesById, idR
     }
     // if could not find a valid instance, create a MissingReferences.
     if (enableMissingReferences) {
-      const missingInstanceId = urlBrandInstance ? `${urlBrandInstance.value.name}_${id}` : id
+      // If we know the brand that the instance belongs to, we can create a MissingReference with the brand name
+      const missingInstanceId = brandOfInstance ? `${brandOfInstance.elemID.name}_${id}` : id
       const missingInstance = createMissingInstance(ZENDESK, type, missingInstanceId)
       missingInstance.value.id = id
       return [url, new ReferenceExpression(missingInstance.elemID, missingInstance)]
@@ -204,9 +204,9 @@ const createInstanceReference = ({ urlPart, urlBrandInstance, instancesById, idR
   return undefined
 }
 
-export const transformReferenceUrls = ({ urlPart, urlBrandInstance, instancesById, enableMissingReferences }: {
+export const transformReferenceUrls = ({ urlPart, brandOfInstance, instancesById, enableMissingReferences }: {
   urlPart: string
-  urlBrandInstance?: InstanceElement
+  brandOfInstance?: InstanceElement
   instancesById: Record<string, InstanceElement>
   enableMissingReferences?: boolean
 }): TemplatePart[] => {
@@ -214,7 +214,7 @@ export const transformReferenceUrls = ({ urlPart, urlBrandInstance, instancesByI
   const result = wu(ELEMENTS_REGEXES).map(({ idRegex, type }) =>
     createInstanceReference({
       urlPart,
-      urlBrandInstance,
+      brandOfInstance,
       instancesById,
       idRegex,
       type,

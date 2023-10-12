@@ -15,7 +15,7 @@
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { elementSource } from '@salto-io/workspace'
-import { AUTOMATION_TYPE_NAME, DEFLECTION_NOTIFICATION, MACRO_TYPE_NAME, TRIGGER_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { AUTOMATION_TYPE_NAME, DEFLECTION_ACTION, MACRO_TYPE_NAME, TRIGGER_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { ACCOUNT_SETTING_TYPE_NAME } from '../../src/filters/account_settings'
 import { deflectionActionValidator } from '../../src/change_validators'
 
@@ -64,19 +64,19 @@ describe('deflectionActionValidator', () => {
         elemID: deflectionTrigger.elemID,
         severity: 'Error',
         message: 'Action requires turning on automatic answers',
-        detailedMessage: `To enable the configuration of the '${DEFLECTION_NOTIFICATION}' field action, which allows for ‘autoreply with articles’, please ensure that the automatic answers feature is turned on. To do so, please update the 'automatic_answers' setting to 'true' in the account_settings.`,
+        detailedMessage: `To enable the configuration of the '${DEFLECTION_ACTION}' field action, which allows for ‘autoreply with articles’, please ensure that the automatic answers feature is turned on. To do so, please update the 'automatic_answers' setting to 'true' in the account_settings.`,
       },
       {
         elemID: deflectionAutomation.elemID,
         severity: 'Error',
         message: 'Action requires turning on automatic answers',
-        detailedMessage: `To enable the configuration of the '${DEFLECTION_NOTIFICATION}' field action, which allows for ‘autoreply with articles’, please ensure that the automatic answers feature is turned on. To do so, please update the 'automatic_answers' setting to 'true' in the account_settings.`,
+        detailedMessage: `To enable the configuration of the '${DEFLECTION_ACTION}' field action, which allows for ‘autoreply with articles’, please ensure that the automatic answers feature is turned on. To do so, please update the 'automatic_answers' setting to 'true' in the account_settings.`,
       },
       {
         elemID: deflectionMacro.elemID,
         severity: 'Error',
         message: 'Action requires turning on automatic answers',
-        detailedMessage: `To enable the configuration of the '${DEFLECTION_NOTIFICATION}' field action, which allows for ‘autoreply with articles’, please ensure that the automatic answers feature is turned on. To do so, please update the 'automatic_answers' setting to 'true' in the account_settings.`,
+        detailedMessage: `To enable the configuration of the '${DEFLECTION_ACTION}' field action, which allows for ‘autoreply with articles’, please ensure that the automatic answers feature is turned on. To do so, please update the 'automatic_answers' setting to 'true' in the account_settings.`,
       },
     ])
   })

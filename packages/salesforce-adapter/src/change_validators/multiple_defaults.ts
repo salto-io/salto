@@ -131,10 +131,12 @@ const getInstancesMultipleDefaultsErrors = async (
 
   const errors: ChangeError[] = await awu(Object.entries(after.value))
     .filter(([fieldName]) => Object.keys(FIELD_NAME_TO_INNER_CONTEXT_FIELD).includes(fieldName))
-    // See SALTO-4882
-    .filter(async ([fieldName]) => (await after.getType()).fields[fieldName] !== undefined)
     .flatMap(async ([fieldName, value]) => {
       const field = (await after.getType()).fields[fieldName]
+      if (field === undefined) {
+        // Can happen if the field exists in the instance but not in the type.
+        return []
+      }
       const fieldType = await field.getType()
       const valueName = FIELD_NAME_TO_INNER_CONTEXT_FIELD[fieldName].name
       if (_.isPlainObject(value) && FIELD_NAME_TO_INNER_CONTEXT_FIELD[fieldName].nested) {

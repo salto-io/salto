@@ -131,6 +131,8 @@ const getInstancesMultipleDefaultsErrors = async (
 
   const errors: ChangeError[] = await awu(Object.entries(after.value))
     .filter(([fieldName]) => Object.keys(FIELD_NAME_TO_INNER_CONTEXT_FIELD).includes(fieldName))
+    // See SALTO-4882
+    .filter(async ([fieldName]) => (await after.getType()).fields[fieldName] !== undefined)
     .flatMap(async ([fieldName, value]) => {
       const field = (await after.getType()).fields[fieldName]
       const fieldType = await field.getType()
@@ -146,7 +148,8 @@ const getInstancesMultipleDefaultsErrors = async (
       }
       const defaultsContexts = await findMultipleDefaults(value, fieldType, valueName)
       return createChangeErrorFromContext(field, defaultsContexts, after)
-    }).toArray()
+    })
+    .toArray()
 
   return errors
 }

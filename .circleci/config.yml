@@ -1,10 +1,10 @@
 version: 2.1
 
 orbs:
-  win: circleci/windows@2.2.0
-  aws-s3: circleci/aws-s3@1.0.15
-  aws-cli: circleci/aws-cli@2.0.3
-  coveralls: coveralls/coveralls@1.0.6
+  win: circleci/windows@2.4.1
+  aws-s3: circleci/aws-s3@1.0.16
+  aws-cli: circleci/aws-cli@2.0.6
+  coveralls: coveralls/coveralls@1.0.7
 
 commands:
   set_s3_pkg_urls:
@@ -47,7 +47,7 @@ commands:
 jobs:
   build:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.12
 
     resource_class: xlarge
     working_directory: /mnt/ramdisk/project
@@ -114,7 +114,7 @@ jobs:
 
   unit_test:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.12
 
     resource_class: xlarge
     working_directory: /mnt/ramdisk/project
@@ -138,7 +138,7 @@ jobs:
 
   publish_on_version_change:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.12
 
     steps:
       - attach_workspace:
@@ -161,7 +161,7 @@ jobs:
 
   e2e_test:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/openjdk:17.0.5-node
 
     resource_class: large
     working_directory: /mnt/ramdisk/project
@@ -182,9 +182,9 @@ jobs:
             fi
             echo "using sources.list:"
             cat /etc/apt/sources.list
-      - run:
-          name: Install java
-          command: sudo apt update && sudo apt install -y openjdk-17-jdk --no-install-recommends
+      # - run:
+      #     name: Install java
+      #     command: sudo apt update && sudo apt install -y openjdk-17-jdk --no-install-recommends
       - run:
           name: Run E2E tests
           command: yarn test --reporters=default --reporters=jest-junit --coverage=false
@@ -204,7 +204,7 @@ jobs:
 
   package_cli:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.12
 
     steps:
       - attach_workspace:
@@ -244,7 +244,7 @@ jobs:
 
   test_cli_linux:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.12
 
     steps:
       - set_s3_pkg_urls
@@ -292,7 +292,7 @@ jobs:
 
   package_vscode_extension:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.12
 
     steps:
       - attach_workspace:
@@ -329,7 +329,7 @@ jobs:
 
   publish_canary:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.12
 
     steps:
       - attach_workspace:

@@ -148,6 +148,7 @@ export enum PrimitiveTypes {
 
 export type ContainerType = ListType | MapType
 export type TypeElement = PrimitiveType | ObjectType | ContainerType
+export type TopLevelElement = TypeElement | InstanceElement
 export type TypeMap = Record<string, TypeElement>
 type TypeOrRef<T extends TypeElement = TypeElement> = T | TypeReference
 export type TypeRefMap = Record<string, TypeOrRef>

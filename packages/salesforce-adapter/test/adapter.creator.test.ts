@@ -541,6 +541,15 @@ describe('SalesforceAdapter creator', () => {
             defaultIdFields: ['##allMasterDetailFields##', 'Name'],
             overrides: [],
           },
+          brokenOutgoingReferencesSettings: {
+            defaultBehavior: 'BrokenReference',
+            perTargetTypeOverrides: {
+              User: 'InternalId',
+            },
+          },
+          omittedFields: [
+            'OmniUiCard.SampleDataSourceResponse',
+          ],
         }
 
         expect(() => adapter.operations({

@@ -51,6 +51,7 @@ export const TICKET_ORGANIZATION_FIELD = 'ticket.organization.custom_fields'
 export const TICKET_USER_FIELD = 'ticket.requester.custom_fields'
 const ID = 'id'
 const KEY = 'key'
+const ELEMENT_REGEXES_TYPES = new Set(ELEMENTS_REGEXES.map(e => e.type))
 
 export const ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE: Record<string, string> = {
   [TICKET_TICKET_FIELD]: TICKET_FIELD_TYPE_NAME,
@@ -397,7 +398,7 @@ export const prepRef = (part: ReferenceExpression, extractReferencesFromFreeText
     return part.value.value.id.toString()
   }
   if (extractReferencesFromFreeText
-    && ELEMENTS_REGEXES.map(({ type }) => type).includes(part.elemID.typeName) && part.value?.value?.id) {
+    && ELEMENT_REGEXES_TYPES.has(part.elemID.typeName) && part.value?.value?.id) {
     return part.value.value.id.toString()
   }
   return part

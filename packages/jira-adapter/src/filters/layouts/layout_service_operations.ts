@@ -36,6 +36,7 @@ type layoutTypeDetails = {
     pathParam: string
     query: string
     layoutType?: string
+    fieldName?: string
 }
 
 type QueryVariables = {
@@ -44,12 +45,13 @@ type QueryVariables = {
     layoutType?: string
   }
 
-type LayoutTypeName = 'RequestForm' | 'IssueView' | 'IssueLayout'
-const layoutTypeNameToDetails: Record<LayoutTypeName, layoutTypeDetails> = {
+export type LayoutTypeName = 'RequestForm' | 'IssueView' | 'IssueLayout'
+export const layoutTypeNameToDetails: Record<LayoutTypeName, layoutTypeDetails> = {
   [REQUEST_FORM_TYPE]: {
     layoutType: 'REQUEST_FORM',
     pathParam: 'RequestForm',
     query: QUERY_JSM,
+    fieldName: 'requestForm',
   },
   [ISSUE_LAYOUT_TYPE]: {
     pathParam: 'layouts',
@@ -59,10 +61,11 @@ const layoutTypeNameToDetails: Record<LayoutTypeName, layoutTypeDetails> = {
     layoutType: 'ISSUE_VIEW',
     pathParam: 'IssueView',
     query: QUERY_JSM,
+    fieldName: 'issueView',
   },
 }
 
-const isIssueLayoutResponse = createSchemeGuard<IssueLayoutResponse>(ISSUE_LAYOUT_RESPONSE_SCHEME)
+export const isIssueLayoutResponse = createSchemeGuard<IssueLayoutResponse>(ISSUE_LAYOUT_RESPONSE_SCHEME)
 const isLayoutConfigItem = createSchemeGuard<layoutConfigItem>(ISSUE_LAYOUT_CONFIG_ITEM_SCHEME)
 
 function isLayoutTypeName(typeName: string): typeName is LayoutTypeName {

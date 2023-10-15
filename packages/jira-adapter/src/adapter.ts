@@ -123,6 +123,7 @@ import prioritySchemeProjectAssociationFilter from './filters/data_center/priori
 import { GetUserMapFunc, getUserMapFuncCreator } from './users'
 import commonFilters from './filters/common'
 import accountInfoFilter from './filters/account_info'
+import requestTypeFilter from './filters/request_type'
 import deployPermissionSchemeFilter from './filters/permission_scheme/deploy_permission_scheme_filter'
 import scriptRunnerWorkflowFilter from './filters/script_runner/workflow/workflow_filter'
 import pluginVersionFliter from './filters/data_center/plugin_version'
@@ -324,6 +325,7 @@ export const DEFAULT_FILTERS = [
   portalSettingsFilter,
   queueDeleteFilter,
   portalGroupsFilter,
+  requestTypeFilter,
   deployJsmTypesFilter,
   // Must be done after JsmTypesFilter
   jsmPathFilter,

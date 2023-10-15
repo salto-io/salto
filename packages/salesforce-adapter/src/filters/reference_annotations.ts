@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ElemID, Element, Field, ReferenceExpression, ObjectType, isObjectType,
+  Element, Field, ReferenceExpression, ObjectType, isObjectType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, multiIndex } from '@salto-io/lowerdash'
@@ -34,21 +34,22 @@ const isMetadataTypeOrCustomObject = async (elem: Element): Promise<boolean> => 
 /**
  * Convert annotations to reference expressions using the known metadata types.
  *
- * @param elements      The fetched elements
- * @param typeToElemID  Known element ids by metadata type
+ * @param elements        The fetched elements
+ * @param nameToElement   Known elements by metadata type
+ * @param annotationNames List of field annotations where references may be found
  */
 const convertAnnotationsToReferences = async (
   elements: Element[],
-  typeToElemID: multiIndex.Index<[string, string], ElemID>,
+  nameToElement: multiIndex.Index<[string, string], Element>,
   annotationNames: string[],
 ): Promise<void> => {
   const resolveTypeReference = (ref: string | ReferenceExpression):
     string | ReferenceExpression => {
     if (_.isString(ref)) {
       // Try finding a metadata type and fallback to finding a custom object
-      const referenceElemId = typeToElemID.get(ref, ref) ?? typeToElemID.get(CUSTOM_OBJECT, ref)
-      if (referenceElemId !== undefined) {
-        return new ReferenceExpression(referenceElemId)
+      const referenceElement = nameToElement.get(ref, ref) ?? nameToElement.get(CUSTOM_OBJECT, ref)
+      if (referenceElement !== undefined) {
+        return new ReferenceExpression(referenceElement.elemID, referenceElement)
       }
     }
     return ref
@@ -73,13 +74,12 @@ const filter: LocalFilterCreator = ({ config }) => ({
   name: 'referenceAnnotationsFilter',
   onFetch: async (elements: Element[]) => {
     const referenceElements = buildElementsSourceForFetch(elements, config)
-    const typeToElemID = await multiIndex.keyByAsync({
+    const nameToElement = await multiIndex.keyByAsync({
       iter: await referenceElements.getAll(),
       filter: isMetadataTypeOrCustomObject,
       key: async obj => [await metadataType(obj), await apiName(obj)],
-      map: obj => obj.elemID,
     })
-    await convertAnnotationsToReferences(elements, typeToElemID, [REFERENCE_TO, FOREIGN_KEY_DOMAIN])
+    await convertAnnotationsToReferences(elements, nameToElement, [REFERENCE_TO, FOREIGN_KEY_DOMAIN])
   },
 })
 

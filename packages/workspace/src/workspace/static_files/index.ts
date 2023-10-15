@@ -16,3 +16,4 @@
 export { StaticFilesCache, StaticFilesData } from './cache'
 export { buildStaticFilesSource, buildInMemStaticFilesSource, LazyStaticFile, AbsoluteStaticFile } from './source'
 export { StaticFilesSource, MissingStaticFile, AccessDeniedStaticFile, StateStaticFilesStore, StateStaticFilesSource } from './common'
+export { buildStaticFilesCache } from './static_files_cache'

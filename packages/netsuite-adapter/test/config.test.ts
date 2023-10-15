@@ -67,7 +67,8 @@ describe('config', () => {
         failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         failedCustomRecords: [],
       },
-      currentConfigWithFetch
+      currentConfigWithFetch,
+      { excludeBins: false }
     )).toBeUndefined()
   })
 
@@ -81,7 +82,8 @@ describe('config', () => {
         failedTypes: { lockedError: lockedTypes, unexpectedError: suggestedSkipListTypes, excludedTypes: [] },
         failedCustomRecords: [],
       },
-      { fetch: fullFetchConfig() }
+      { fetch: fullFetchConfig() },
+      { excludeBins: false }
     )?.config as InstanceElement[]
     expect(configFromConfigChanges[0].isEqual(new InstanceElement(
       ElemID.CONFIG_NAME,
@@ -139,6 +141,7 @@ describe('config', () => {
         failedCustomRecords: ['excludedCustomRecord'],
       },
       currentConfigWithFetch,
+      { excludeBins: false }
     )
     expect(configChange?.config[0]
       .isEqual(new InstanceElement(
@@ -184,7 +187,8 @@ describe('config', () => {
         failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         failedCustomRecords: [],
       },
-      config
+      config,
+      { excludeBins: false }
     )
 
     expect(configChange?.message)

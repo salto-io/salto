@@ -68,6 +68,10 @@ describe('reference_annotations filter', () => {
       expect(
         nestedType.fields[parentObjFieldName].annotations[FIELD_ANNOTATIONS.REFERENCE_TO][0].elemID
       ).toEqual(new ElemID(SALESFORCE, objTypeName))
+      expect(
+        nestedType.fields[parentObjFieldName].annotations[FIELD_ANNOTATIONS.REFERENCE_TO][0].value
+      ).toEqual(objType)
+
       expect(nestedType.fields[parentObjFieldName].annotations[FIELD_ANNOTATIONS.REFERENCE_TO][1]).toEqual('unknown')
     })
     it('should convert FOREIGN_KEY_DOMAIN to reference when found', () => {
@@ -80,6 +84,9 @@ describe('reference_annotations filter', () => {
       expect(
         nestedType.fields[parentObjFieldName].annotations[FOREIGN_KEY_DOMAIN][0].elemID
       ).toEqual(new ElemID(SALESFORCE, objTypeName))
+      expect(
+        nestedType.fields[parentObjFieldName].annotations[FOREIGN_KEY_DOMAIN][0].value
+      ).toEqual(objType)
       expect(nestedType.fields[parentObjFieldName].annotations[FOREIGN_KEY_DOMAIN][1]).toEqual('something')
     })
   })

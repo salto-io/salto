@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeData, ElemID, getChangeData, InstanceElement, isInstanceChange, isObjectType, isObjectTypeChange, ObjectType, Values } from '@salto-io/adapter-api'
+import { Change, ChangeData, ElemID, getChangeData, InstanceElement, isInstanceChange, isObjectType, isObjectTypeChange, ObjectType, TopLevelElement, Values } from '@salto-io/adapter-api'
 import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type'
 import { NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, ObjectID } from '../query'
 
@@ -87,7 +87,7 @@ export type ImportObjectsResult = {
 }
 
 export type DataElementsResult = {
-  elements: (ObjectType | InstanceElement)[]
+  elements: TopLevelElement[]
   requestedTypes: string[]
   largeTypesError: string[]
 }

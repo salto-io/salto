@@ -20,7 +20,8 @@ import { FilterResult, RemoteFilterCreator } from '../filter'
 import { createMetadataTypeElements, apiName } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import { SETTINGS_METADATA_TYPE } from '../constants'
-import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
+import { fetchMetadataInstances } from '../fetch'
+import { listMetadataObjects } from './utils'
 
 const { awu } = collections.asynciterable
 const log = logger(module)

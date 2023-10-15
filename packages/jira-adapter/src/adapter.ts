@@ -131,11 +131,11 @@ import storeUsersFilter from './filters/store_users'
 import projectCategoryFilter from './filters/project_category'
 import addAliasFilter from './filters/add_alias'
 import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_specific_duplicate_roles'
-import issueLayoutFilter from './filters/issue_layout/issue_layout'
+import issueLayoutFilter from './filters/layouts/issue_layout'
 import removeSimpleFieldProjectFilter from './filters/remove_simplified_field_project'
 import changeServiceDeskIdFieldProjectFilter from './filters/change_projects_service_desk_id'
-import createReferencesIssueLayoutFilter from './filters/issue_layout/create_references_issue_layout'
 import addJsmTypesAsFieldsFilter from './filters/add_jsm_types_as_fields'
+import createReferencesIssueLayoutFilter from './filters/layouts/create_references_layouts'
 import issueTypeHierarchyFilter from './filters/issue_type_hierarchy_filter'
 import projectFieldContextOrder from './filters/project_field_contexts_order'
 import scriptedFieldsIssueTypesFilter from './filters/script_runner/scripted_fields_issue_types'
@@ -144,6 +144,7 @@ import scriptRunnerListenersDeployFilter from './filters/script_runner/script_ru
 import scriptedFragmentsDeployFilter from './filters/script_runner/scripted_fragments_deploy'
 import fetchJsmTypesFilter from './filters/jsm_types_fetch_filter'
 import deployJsmTypesFilter from './filters/jsm_types_deploy_filter'
+import jsmPathFilter from './filters/jsm_paths'
 import scriptRunnerInstancesDeploy from './filters/script_runner/script_runner_instances_deploy'
 import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
 import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uuid'
@@ -309,6 +310,8 @@ export const DEFAULT_FILTERS = [
   scriptedFragmentsDeployFilter,
   scriptRunnerInstancesDeploy,
   deployJsmTypesFilter,
+  // Must be done after JsmTypesFilter
+  jsmPathFilter,
   // Must be last
   defaultInstancesDeployFilter,
   ...Object.values(otherCommonFilters),

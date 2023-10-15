@@ -19,11 +19,11 @@ import {
   OBJECT_SERVICE_ID, OBJECT_NAME, toServiceIdsString, ServiceIds,
   isInstanceElement,
   ElemIDType,
-  TypeElement,
   BuiltinTypes,
   ReadOnlyElementsSource,
   CORE_ANNOTATIONS,
   TypeReference,
+  TopLevelElement,
 } from '@salto-io/adapter-api'
 import { MapKeyFunc, mapKeysRecursive, TransformFunc, transformValues, GetLookupNameFunc, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -201,7 +201,7 @@ export const createElements = async (
   customizationInfos: CustomizationInfo[],
   elementsSource: ReadOnlyElementsSource,
   getElemIdFunc?: ElemIdGetter,
-): Promise<Array<InstanceElement | TypeElement>> => {
+): Promise<Array<TopLevelElement>> => {
   const { standardTypes, additionalTypes, innerAdditionalTypes } = getMetadataTypes()
 
   getTopLevelStandardTypes(standardTypes).concat(Object.values(additionalTypes))

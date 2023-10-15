@@ -16,11 +16,12 @@
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ListType, ObjectType } from '@salto-io/adapter-api'
 import { elements } from '@salto-io/adapter-components'
 import { CONDITION_CONFIGURATION, JIRA } from '../../constants'
+import { addAnnotationRecursively } from '../../utils'
 
-export const createConditionConfigurationTypes = (): {
+export const createConditionConfigurationTypes = async (): Promise<{
   type: ObjectType
   subTypes: ObjectType[]
-} => {
+}> => {
   const conditionProjectRoleType = new ObjectType({
     elemID: new ElemID(JIRA, 'ConditionProjectRole'),
     fields: {
@@ -155,6 +156,9 @@ export const createConditionConfigurationTypes = (): {
     },
     path: [JIRA, elements.TYPES_PATH, 'ConditionConfiguration'],
   })
+
+  await addAnnotationRecursively(conditionConfigurationType, CORE_ANNOTATIONS.CREATABLE)
+  await addAnnotationRecursively(conditionConfigurationType, CORE_ANNOTATIONS.UPDATABLE)
 
   return {
     type: conditionConfigurationType,

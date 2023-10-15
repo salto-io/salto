@@ -52,6 +52,7 @@ import unorderedListsFilter from './filters/unordered_lists'
 import addAliasFilter from './filters/add_alias'
 import profileMappingPropertiesFilter from './filters/profile_mapping_properties'
 import profileMappingAdditionFilter from './filters/profile_mapping_addition'
+import omitAuthenticatorMappingFilter from './filters/omit_authenticator_mapping'
 import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
 
@@ -68,6 +69,7 @@ export const DEFAULT_FILTERS = [
   deleteFieldsFilter,
   userTypeFilter,
   userSchemaFilter,
+  omitAuthenticatorMappingFilter,
   profileMappingPropertiesFilter,
   authorizationRuleFilter,
   // should run before fieldReferencesFilter

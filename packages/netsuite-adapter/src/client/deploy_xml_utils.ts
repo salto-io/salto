@@ -22,6 +22,7 @@ import { SDFObjectNode } from './types'
 import { isCustomTypeInfo } from './utils'
 import { OBJECTS_DIR, getCustomTypeInfoPath } from './sdf_parser'
 
+
 const log = logger(module)
 
 // The '/' prefix is needed to make osPath.resolve treat '~' as the root

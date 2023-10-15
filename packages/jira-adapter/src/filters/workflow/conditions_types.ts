@@ -50,7 +50,11 @@ export const createConditionConfigurationTypes = (): {
       },
       fieldValue: {
         refType: BuiltinTypes.STRING,
-        annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
+        annotations: {
+          [CORE_ANNOTATIONS.CREATABLE]: true,
+          [CORE_ANNOTATIONS.UPDATABLE]: true,
+          [CORE_ANNOTATIONS.DELETABLE]: true,
+        },
       },
       permissionKey: {
         refType: BuiltinTypes.STRING,

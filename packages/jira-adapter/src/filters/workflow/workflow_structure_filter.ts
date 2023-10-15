@@ -212,7 +212,20 @@ const filter: FilterCreator = ({ config }) => ({
     const worfkflowConditionType = findObject(elements, 'WorkflowCondition')
 
     if (worfkflowConditionType !== undefined) {
-      worfkflowConditionType.fields.configuration = new Field(worfkflowConditionType, 'configuration', conditionConfigurationTypes.type)
+      worfkflowConditionType.fields.configuration = new Field(
+        worfkflowConditionType,
+        'configuration',
+        conditionConfigurationTypes.type,
+        {
+          [CORE_ANNOTATIONS.CREATABLE]: true,
+          [CORE_ANNOTATIONS.UPDATABLE]: true,
+          [CORE_ANNOTATIONS.DELETABLE]: true,
+        },
+      )
+
+      worfkflowConditionType.annotations[CORE_ANNOTATIONS.CREATABLE] = true
+      worfkflowConditionType.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
+      worfkflowConditionType.annotations[CORE_ANNOTATIONS.DELETABLE] = true
     }
 
     elements.push(...postFunctionTypes)

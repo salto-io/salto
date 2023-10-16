@@ -89,7 +89,7 @@ const RATE_LIMIT_BUCKETS = [
   new RegExp('^/api/v1/iam.*'),
   new RegExp('^/api/v1/domains'),
   new RegExp('^/api/v1/device-assurances'),
-  new RegExp('^/api/internal/orgSettings/thirdPartyAdminSettin'),
+  new RegExp('^/api/internal/orgSettings/thirdPartyAdminSetting'),
   /**/
   new RegExp('^/api/v1.*'), // Has to be last
 ]

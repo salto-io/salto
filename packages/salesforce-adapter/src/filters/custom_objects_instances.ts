@@ -114,7 +114,7 @@ const buildQueryStrings = async (
   const queryConditions: SoqlQuery[][] = [
     ...makeArray(ids).map(id => [{ fieldName: 'Id', operator: 'IN' as const, value: `'${id}'` }]),
     ...(managedBySaltoField !== undefined ? [[{ fieldName: managedBySaltoField, operator: '=' as const, value: 'TRUE' }]] : []),
-    ...(changedSince ? [[{ fieldName: LAST_MODIFIED_DATE, operator: '>' as const, value: changedSince }]] : [[]]),
+    ...(changedSince ? [[{ fieldName: LAST_MODIFIED_DATE, operator: '>' as const, value: changedSince }]] : []),
   ]
   return buildSelectQueries(typeName, fieldNames, queryConditions)
 }
@@ -628,9 +628,18 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     if (dataManagement === undefined) {
       return {}
     }
-    const changedAtSingleton = config.fetchProfile.metadataQuery.isFetchWithChangesDetection()
-      ? await getChangedAtSingleton(buildElementsSourceForFetch(elements, config)) : undefined
-    const customObjects = await awu(elements).filter(isCustomObject).toArray() as ObjectType[]
+    let changedAtSingleton: InstanceElement | undefined
+    let inputElements = awu(elements)
+    if (config.fetchProfile.metadataQuery.isFetchWithChangesDetection()) {
+      // Only data types that changed will be present in the `elements` parameter in this case, but there may be
+      // instances that changed even though their types remained the same. So we must iterate over all the object types
+      // in the elements source.
+      const elementsSource = buildElementsSourceForFetch(elements, config)
+      changedAtSingleton = await getChangedAtSingleton(elementsSource)
+      inputElements = awu(await elementsSource.getAll())
+    }
+
+    const customObjects = await inputElements.filter(isCustomObject).toArray() as ObjectType[]
     const customObjectFetchSetting = await getCustomObjectsFetchSettings(
       customObjects,
       dataManagement,

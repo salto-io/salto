@@ -138,7 +138,7 @@ export const handleErrorsAsync = <T>(
           try {
             return await it.next(args)
           } catch (error) {
-            onError(error)
+            onError(error as Error)
             return { done: true, value: undefined }
           }
         },

@@ -15,6 +15,7 @@
 */
 import Bottleneck from 'bottleneck'
 import { Resolvable, makeResolvablePromise } from '@salto-io/test-utils'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { createRateLimitersFromConfig, throttle, BottleneckBuckets } from '../../src/client'
 
 type MyRateLimitConfig = {

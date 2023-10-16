@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { promises } from '@salto-io/lowerdash'
 import { createConnection } from './connection'
@@ -29,6 +29,7 @@ import { OktaClientRateLimitConfig } from '../config'
 const { sleep } = promises.timeout
 const {
   RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS, DEFAULT_RETRY_OPTS,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   throttle, logDecorator,
 } = clientUtils
 const log = logger(module)
@@ -200,7 +201,8 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
         updateRateLimits(rateLimits, res.headers)
       }
       return res
-    } catch (e) {
+    } catch (E) {
+      const e = E as AxiosError
       if (e.response?.headers && this.shouldUseDynamicRateLimit()) {
         updateRateLimits(rateLimits, e.response?.headers)
       }

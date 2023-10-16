@@ -143,7 +143,7 @@ export const repo = defaultOpts.withRequired<
     try {
       return await f()
     } catch (e) {
-      if (e.toString().includes('ConditionalCheckFailedException')) {
+      if ((e as Error).toString().includes('ConditionalCheckFailedException')) {
         if (retryNumber === opts.optimisticLockMaxRetries) {
           throw e
         }
@@ -307,7 +307,7 @@ export const repo = defaultOpts.withRequired<
           }))
           return id
         } catch (e) {
-          if (e.toString().includes('ConditionalCheckFailedException')) {
+          if ((e as Error).toString().includes('ConditionalCheckFailedException')) {
             throw new InstanceIdAlreadyRegistered({ id, typeName })
           }
           throw e
@@ -325,7 +325,7 @@ export const repo = defaultOpts.withRequired<
             ConditionExpression: 'attribute_exists(id)',
           }))
         } catch (e) {
-          if (e.toString().includes('ConditionalCheckFailedException')) {
+          if ((e as Error).toString().includes('ConditionalCheckFailedException')) {
             throw new InstanceNotFoundError({ id, typeName })
           }
           throw e

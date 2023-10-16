@@ -1698,7 +1698,7 @@ Object: customrecord_flo_customization.custrecord_flo_custz_link (customrecordcu
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeFalsy()
-          expect(e.message).toEqual(errorMessage)
+          expect((e as Error).message).toEqual(errorMessage)
         }
         expect(isRejected).toBe(true)
       })
@@ -1743,7 +1743,7 @@ Details: To install this SuiteCloud project, the CHARGEBASEDBILLING(Charge-Based
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeFalsy()
-          expect(e.message).toEqual(`An error occurred during account settings validation.
+          expect((e as Error).message).toEqual(`An error occurred during account settings validation.
 Details: To install this SuiteCloud project, the INVENTORYSTATUS(Inventory Status) feature must be enabled in the account.
 Details: To install this SuiteCloud project, the CHARGEBASEDBILLING(Charge-Based Billing) feature must be enabled in the account.`)
         }
@@ -2130,8 +2130,10 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
           expect(false).toBeTruthy()
         } catch (e) {
           expect(e instanceof ManifestValidationError).toBeTruthy()
-          expect(e.message).toContain(manifestErrorMessage)
-          expect(e.missingDependencies).toEqual([{ scriptId: errorReferenceName, message: manifestErrorMessage }])
+          expect((e as ManifestValidationError).message).toContain(manifestErrorMessage)
+          expect((e as ManifestValidationError).missingDependencies).toEqual(
+            [{ scriptId: errorReferenceName, message: manifestErrorMessage }]
+          )
         }
       })
 
@@ -2159,8 +2161,12 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
           expect(false).toBeTruthy()
         } catch (e) {
           expect(e instanceof MissingManifestFeaturesError).toBeTruthy()
-          expect(e.message).toContain('Details: You must specify the SUBSCRIPTIONBILLING(Subscription Billing)')
-          expect(e.missingFeatures).toEqual(['SUBSCRIPTIONBILLING', 'WORKFLOW', 'RECEIVABLES'])
+          expect((e as MissingManifestFeaturesError).message).toContain(
+            'Details: You must specify the SUBSCRIPTIONBILLING(Subscription Billing)'
+          )
+          expect((e as MissingManifestFeaturesError).missingFeatures).toEqual(
+            ['SUBSCRIPTIONBILLING', 'WORKFLOW', 'RECEIVABLES']
+          )
         }
       })
       it('should throw error', async () => {

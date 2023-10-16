@@ -39,7 +39,7 @@ export const dbUtils = (db: DynamoDBClient) => {
       const description = await db.send(new DescribeTableCommand({ TableName: tableName }))
       return description && description.Table && description.Table.TableStatus
     } catch (e) {
-      if (e.toString().includes('ResourceNotFoundException')) {
+      if ((e as Error).toString().includes('ResourceNotFoundException')) {
         return undefined
       }
       throw e
@@ -57,7 +57,7 @@ export const dbUtils = (db: DynamoDBClient) => {
     try {
       await db.send(new CreateTableCommand(tableParams))
     } catch (e) {
-      if (!e.toString().includes('ResourceInUseException')) {
+      if (!(e as Error).toString().includes('ResourceInUseException')) {
         throw e
       }
     }

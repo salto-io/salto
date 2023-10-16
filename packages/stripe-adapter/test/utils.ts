@@ -13,15 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export type MockFunction<T extends (...args: never[]) => unknown> =
-  jest.Mock<ReturnType<T>, Parameters<T>>
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type IsObject<T> = T extends { [key: string]: any } ? T : never;
 
 export type MockInterface<T extends {}> = {
   [k in keyof T]: T[k] extends (...args: never[]) => unknown
-    ? MockFunction<T[k]>
-    : MockInterface<T[k]>
+    ? jest.MockedFunction<T[k]>
+    : T[k] extends object
+      ? MockInterface<IsObject<T[k]>>
+      : T[k]
 }
 
-export const mockFunction = <T extends (...args: never[]) => unknown>(): MockFunction<T> => (
-  jest.fn()
+export const mockFunction = <T extends (...args: never[]) => unknown>(): jest.MockedFunction<T> => (
+  jest.fn() as unknown as jest.MockedFunction<T>
 )

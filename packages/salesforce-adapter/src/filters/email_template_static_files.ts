@@ -98,7 +98,7 @@ const organizeStaticFiles = async (instance: InstanceElement): Promise<void> => 
             (_key, value) => (_.isString(value) ? _.truncate(value) : value)))
       }
     } catch (err) {
-      log.warn('Error when handling email template attachments of %s: %s', instance.elemID.getFullName(), err.message)
+      log.warn('Error when handling email template attachments of %s: %s', instance.elemID.getFullName(), (err as Error).message)
     }
   }
 }

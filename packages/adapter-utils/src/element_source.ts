@@ -67,7 +67,7 @@ export const buildElementsSourceFromElements = (
           try {
             await resolveTypeShallow(clonedElement, self)
           } catch (err) {
-            log.warn(`failed to resolve type for ${element.elemID.getFullName()}: ${err.message}`)
+            log.warn(`failed to resolve type for ${element.elemID.getFullName()}: ${(err as Error).message}`)
           }
           yield clonedElement
         }

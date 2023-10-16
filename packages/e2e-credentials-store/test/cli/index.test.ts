@@ -94,9 +94,12 @@ describe('argparser', () => {
     repo = await createRealRepo()
     realPool = await repo.pool(myAdapter.name)
     await realPool.clear()
+
+    const stringKeysOfPool = Object.keys(realPool) as Array<keyof typeof realPool>
+
     mockPool = Object.assign(
       { [Symbol.asyncIterator]: realPool[Symbol.asyncIterator].bind(realPool) },
-      ...Object.keys(realPool).map(k => ({ [k]: jest.spyOn(realPool, k as keyof Pool) }))
+      ...stringKeysOfPool.map(k => ((typeof k !== 'symbol') ? { [k]: jest.spyOn(realPool, k) } : null))
     )
     jest.spyOn(repo, 'pool').mockImplementation(() => Promise.resolve(mockPool as Pool<{}>))
     createRepo = jest.fn<Promise<Repo>, [string]>(() => Promise.resolve(repo))

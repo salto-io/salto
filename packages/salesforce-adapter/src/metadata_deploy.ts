@@ -331,7 +331,7 @@ const quickDeployOrDeploy = async (
     try {
       return await client.quickDeploy(quickDeployParams.requestId)
     } catch (e) {
-      log.warn(`preforming regular deploy instead of quick deploy due to error: ${e.message}`)
+      log.warn(`preforming regular deploy instead of quick deploy due to error: ${(e as Error).message}`)
     }
   }
   return client.deploy(pkgData, { checkOnly })

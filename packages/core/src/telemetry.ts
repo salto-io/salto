@@ -20,6 +20,7 @@ import axios from 'axios'
 import { platform, arch, release, EOL } from 'os'
 import { setTimeout, clearTimeout } from 'timers'
 import { logger } from '@salto-io/logging'
+import { HTTPError } from '@salto-io/adapter-components/src/client'
 
 const log = logger(module)
 const MAX_EVENTS_PER_REQUEST = 20
@@ -148,8 +149,8 @@ export const telemetrySender = (
         consecutiveRetryCount = 0
       } catch (e) {
         log.debug(`failed sending telemetry events: ${e}`)
-        if (e.response) {
-          const { status } = e.response
+        if ((e as HTTPError).response) {
+          const { status } = (e as HTTPError).response
           if (status >= 400 && status < 500) {
             log.debug('telemetry http response status: %d, giving up on sending events', status)
             stopped = true

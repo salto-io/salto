@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, DeployResult, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, ModificationChange } from '@salto-io/adapter-api'
+import { AdditionChange, DeployResult, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, ModificationChange, SaltoError } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { getParent, resolveValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -89,7 +89,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       }
     } catch (err) {
       deployResult = {
-        errors: [err],
+        errors: [(err as SaltoError)],
         appliedChanges: [],
       }
     }

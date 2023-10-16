@@ -17,6 +17,7 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { handleDeploymentErrors } from '../deployment/deployment_error_handling'
 import { createConnection } from './connection'
 import { JIRA } from '../constants'

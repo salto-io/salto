@@ -404,7 +404,7 @@ export class DAG<T> extends DataNodeMap<T> {
             handler(node)
             next(this.deleteNode(node))
           } catch (e) {
-            errors.set(node, e)
+            errors.set(node, e as Error)
           }
         })
     }

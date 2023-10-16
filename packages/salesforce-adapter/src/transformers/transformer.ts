@@ -885,7 +885,8 @@ export class Types {
     const updatedName = customObject
       ? name
       : METADATA_TYPES_TO_RENAME.get(name) ?? name
-    return (customObject && this.getElemIdFunc && serviceIds)
+
+    return (customObject && serviceIds && this.getElemIdFunc)
       ? this.getElemIdFunc(SALESFORCE, serviceIds, naclCase(updatedName))
       : new ElemID(SALESFORCE, naclCase(updatedName))
   }

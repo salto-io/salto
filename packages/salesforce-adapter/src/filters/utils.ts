@@ -535,7 +535,7 @@ export const ensureSafeFilterFetch = ({
     try {
       return await fetchFilterFunc(elements)
     } catch (e) {
-      log.warn('failed to run filter %s (warning \'%s\') with error %o, stack %o', filterName, warningMessage, e, e.stack)
+      log.warn('failed to run filter %s (warning \'%s\') with error %o, stack %o', filterName, warningMessage, e, (e as Error).stack)
       return {
         errors: [
           ({

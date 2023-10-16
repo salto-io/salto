@@ -159,7 +159,7 @@ export const adapter: Adapter = {
     try {
       return await SdkDownloadService.download()
     } catch (err) {
-      return { success: false, errors: [err.message ?? err] }
+      return { success: false, errors: [(err as Error).message ?? err] }
     }
   },
   loadElementsFromFolder,

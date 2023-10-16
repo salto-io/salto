@@ -123,7 +123,7 @@ ReturnType<typeof client.post> => {
       headers: { ...form.getHeaders() },
     })
   } catch (err) {
-    throw getZendeskError(instance.elemID, err) // caught in deployChanges
+    throw getZendeskError(instance.elemID, err as Error) // caught in deployChanges
   }
 }
 

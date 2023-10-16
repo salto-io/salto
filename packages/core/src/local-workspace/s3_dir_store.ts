@@ -68,7 +68,7 @@ export const buildS3DirectoryStore = (
 
       return { buffer, filename: filePath }
     } catch (err) {
-      if (err.name === 'NoSuchKey') {
+      if ((err as Error).name === 'NoSuchKey') {
         return undefined
       }
       log.warn('Failed to read file %s from S3 bucket %s', fullFilePath, bucketName)

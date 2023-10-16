@@ -214,7 +214,7 @@ const deleteLocation = async (location: string): Promise<void> => {
     await promisify(getRemoteDbImpl().destroy.bind(getRemoteDbImpl(), location))()
   } catch (e) {
     // If the DB does not exist, we don't want to throw error upon destroy
-    if (!isDBNotExistErr(e)) {
+    if (!isDBNotExistErr(e as Error)) {
       throw e
     }
   }
@@ -295,14 +295,14 @@ const cleanTmpDatabases = async (loc: string, ignoreErrors = false): Promise<voi
       log.debug('cleaning tmp db %s', tmpLoc)
       await deleteLocation(path.join(tmpDir, tmpLoc))
     } catch (e) {
-      if (isDBLockErr(e)) {
-        log.debug('caught a rocksdb lock error while cleaning tmp db: %s', e.message)
+      if (isDBLockErr(e as Error)) {
+        log.debug('caught a rocksdb lock error while cleaning tmp db: %s', (e as Error).message)
       } else {
-        log.warn('caught an unexpected error while cleaning tmp db: %s', e.message)
+        log.warn('caught an unexpected error while cleaning tmp db: %s', (e as Error).message)
       }
 
       if (!ignoreErrors) {
-        throw isDBLockErr(e) ? new DBLockError() : e
+        throw isDBLockErr(e as Error) ? new DBLockError() : e
       }
     }
   })
@@ -689,7 +689,7 @@ remoteMap.RemoteMapCreator => {
           statCounters.PersistentDbConnectionCreated.inc()
           return await getOpenDBConnection(location, readOnly)
         } catch (e) {
-          if (isDBLockErr(e)) {
+          if (isDBLockErr(e as Error)) {
             throw new DBLockError()
           }
           throw e

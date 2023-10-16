@@ -64,7 +64,7 @@ export const logDecorator = (
         // eslint-disable-next-line @typescript-eslint/return-await
         return await log.time(originalMethod.call, desc)
       } catch (e) {
-        log.warn('failed to run %s client call %s: %s', this.clientName, desc, e.message)
+        log.warn('failed to run %s client call %s: %s', this.clientName, desc, (e as Error).message)
         throw e
       }
     }

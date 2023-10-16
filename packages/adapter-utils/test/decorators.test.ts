@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { logDuration } from '../src/decorators'
 
 const logging = logger('adapter-utils/src/decorators')

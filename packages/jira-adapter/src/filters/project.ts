@@ -18,6 +18,7 @@ import { createSchemeGuard, resolveValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'
+import { AxiosError } from 'axios'
 import JiraClient from '../client/client'
 import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 import { getLookUpName } from '../reference_mapping'
@@ -25,6 +26,7 @@ import { FilterCreator } from '../filter'
 import { findObject, isAllFreeLicense, setFieldDeploymentAnnotations } from '../utils'
 import { PROJECT_CONTEXTS_FIELD } from './fields/contexts_projects_filter'
 import { JiraConfig } from '../config/config'
+
 
 const PROJECT_TYPE_NAME = 'Project'
 
@@ -302,7 +304,7 @@ const filter: FilterCreator = ({ config, client, elementsSource }) => ({
           // with the same name is created (although in the UI you can’t create two
           // fieldConfigurationScheme with the same name). To overcome this, we delete the
           // fieldConfigurationScheme that was automatically created and set the right one
-          if (isAdditionChange(change) && error.response?.status === 500) {
+          if (isAdditionChange(change) && (error as AxiosError).response?.status === 500) {
             log.debug('Received 500 when creating a project, checking if the project was created and fixing its field configuration scheme')
             change.data.after.value.id = await getProjectId(change.data.after.value.key, client)
             await deleteFieldConfigurationScheme(change, client)

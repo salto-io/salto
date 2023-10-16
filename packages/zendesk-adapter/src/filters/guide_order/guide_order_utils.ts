@@ -156,7 +156,7 @@ const updateElementPositions = async (
             data: { position },
           })
         } catch (err) {
-          return getZendeskError(getChangeData(change).elemID, err)
+          return getZendeskError(getChangeData(change).elemID, err as Error)
         }
       }
       return undefined

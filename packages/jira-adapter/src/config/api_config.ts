@@ -27,10 +27,12 @@ export type JspUrls = {
   dataField?: string
 }
 
+type ExtendedTypeConfig = configUtils.TypeConfig & {
+  jspRequests?: JspUrls
+}
+
 export type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
-  types: Record<string, configUtils.TypeConfig & {
-    jspRequests?: JspUrls
-  }>
+  types: Record<string, ExtendedTypeConfig>
   platformSwagger: configUtils.AdapterSwaggerApiConfig['swagger']
   jiraSwagger: configUtils.AdapterSwaggerApiConfig['swagger']
   typesToFallbackToInternalId: string[]

@@ -15,6 +15,7 @@
 */
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { handleDeploymentErrors } from '../deployment/deployment_error_handling'
 import { JIRA } from '../constants'
 import { ScriptRunnerLoginError, createScriptRunnerConnection } from './script_runner_connection'

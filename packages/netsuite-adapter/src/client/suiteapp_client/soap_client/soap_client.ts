@@ -47,6 +47,7 @@ const log = logger(module)
 export const ITEMS_TYPES = INTERNAL_ID_TO_TYPES[ITEM_TYPE_ID]
 export const WSDL_PATH = `${__dirname}/client/suiteapp_client/soap_client/wsdl/netsuite_1.wsdl`
 const REQUEST_MAX_RETRIES = 5
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const REQUEST_RETRY_DELAY = 5000
 const LOCKED_FIELDS_MAX_DEPLOYS = 6
 
@@ -66,7 +67,9 @@ const RETRYABLE_MESSAGES = [
   VALIDATION_ERROR,
   REQUEST_ABORTED_ERROR,
 ]
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const SOAP_RETRYABLE_MESSAGES = ['CONCURRENT']
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const SOAP_RETRYABLE_STATUS_INITIALS = ['5']
 
 type DeleteDeployBody = {
@@ -120,6 +123,7 @@ const retryOnBadResponseWithDelay = (
   )
 )
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const retryOnBadResponse = retryOnBadResponseWithDelay(RETRYABLE_MESSAGES)
 
 const recordFromSearchResponse = (searchResponse: SearchResponse): RecordValue[] =>

@@ -50,7 +50,8 @@ export const action: CommandDefAction<InitArgs> = async (
     cliTelemetry.setTags(getWorkspaceTelemetryTags(workspace))
     cliTelemetry.success()
     outputLine(Prompts.initCompleted(), output)
-  } catch (e) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (e : any) {
     errorOutputLine(Prompts.initFailed(e.message), output)
     log.error('workspace init failed with error %s %s', e, e.stack)
     cliTelemetry.failure()

@@ -1165,9 +1165,9 @@ export const netsuiteConfigFromConfig = (
       fetch,
     }
   } catch (e) {
-    e.message = `Failed to load Netsuite config: ${e.message}.
+    (e as Error).message = `Failed to load Netsuite config: ${(e as Error).message}.
       More information about Netsuite configuration options in Salto can be found here: https://github.com/salto-io/salto/blob/main/packages/netsuite-adapter/config_doc.md`
-    log.error(e.message)
+    log.error((e as Error).message)
     throw e
   }
 }

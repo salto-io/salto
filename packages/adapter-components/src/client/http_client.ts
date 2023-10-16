@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ResponseType } from 'axios'
+import { AxiosError, ResponseType } from 'axios'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { Values } from '@salto-io/adapter-api'
@@ -22,7 +22,9 @@ import { logger } from '@salto-io/logging'
 import { Connection, ConnectionCreator, createRetryOptions, createClientConnection, ResponseValue, Response } from './http_connection'
 import { AdapterClientBase } from './base'
 import { ClientRetryConfig, ClientRateLimitConfig, ClientPageSizeConfig, ClientBaseConfig } from './config'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { requiresLogin, logDecorator } from './decorators'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { throttle } from './rate_limit'
 
 const log = logger(module)
@@ -251,9 +253,10 @@ export abstract class AdapterHTTPClient<
         status: res.status,
         headers: this.extractHeaders(res.headers),
       }
-    } catch (e) {
+    } catch (E) {
+      const e = E as AxiosError
       log.warn(`failed to ${method} ${url} ${safeJsonStringify(queryParams)}: ${e}, data: ${safeJsonStringify(e?.response?.data)}, stack: ${e.stack}`)
-      if (e.code === 'ETIMEDOUT') {
+      if ((e as AxiosError).code === 'ETIMEDOUT') {
         throw new TimeoutError(`Failed to ${method} ${url} with error: ${e}`)
       }
       if (e.response !== undefined) {

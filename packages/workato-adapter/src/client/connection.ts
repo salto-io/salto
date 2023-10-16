@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { AxiosRequestHeaders } from 'axios'
+import { AxiosError, AxiosRequestHeaders } from 'axios'
 import { AccountInfo, CredentialError } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { Credentials } from '../auth'
@@ -30,7 +30,7 @@ export const validateCredentials = async ({ connection }: {
     // preventing users from refreshing their credentials in the SaaS.
     return { accountId: '' }
   } catch (error) {
-    if (error.response?.status === 401) {
+    if ((error as AxiosError).response?.status === 401) {
       throw new CredentialError('Invalid Credentials')
     }
     throw error

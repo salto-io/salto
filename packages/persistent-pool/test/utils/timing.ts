@@ -38,9 +38,9 @@ const timings = (): Timings => {
   const invocations: Record<string, InvocationsMeasurements> = {}
   const teardowns: (() => void)[] = []
 
-  const wrap = <TArgs extends unknown[], TReturn extends unknown | Promise<unknown>>(
+  const wrap = <TArgs extends unknown[], TReturn>(
     label: string, f: Func<TArgs, TReturn>
-  ): Func<TArgs, TReturn> => (...args: TArgs): TReturn => {
+  ): Func<TArgs, TReturn | Promise<TReturn>> => (...args: TArgs): TReturn => {
       const before = Date.now()
       const result = f(...args)
       const after = (): TReturn => {
@@ -57,10 +57,15 @@ const timings = (): Timings => {
   const setup = <T extends {}, M extends types.KeysOfType<T, Function>>(
     objectName: string, object: T, method: M
   ): void => {
-    const original = object[method]
-    const label = `${objectName}.${method}`
+    if (typeof object[method] !== 'function') {
+      throw new Error('Method is not a function.')
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const original = object[method] as unknown as Func<any[], any>
+    const label = `${objectName}.${method.toString()}`
     object[method] = wrap(label, original) as T[M]
-    teardowns.push(() => { object[method] = original })
+    teardowns.push(() => { object[method] = original as T[M] })
   }
 
   const teardown = (): void => {

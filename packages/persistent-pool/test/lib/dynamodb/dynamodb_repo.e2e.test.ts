@@ -110,7 +110,7 @@ describe('when there are existing leases', () => {
           await Promise.all(repeat(NUM_LEASES, () => pool2.lease(timeout))),
         ])
       } catch (e) {
-        expect(e.toString()).toContain('ConditionalCheckFailedException')
+        expect(e?.toString()).toContain('ConditionalCheckFailedException')
       }
       return expect(pool2.waitForLease(timeout, retryStrategies.none())).resolves.not.toBeNull()
     })

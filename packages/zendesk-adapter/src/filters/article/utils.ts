@@ -213,7 +213,7 @@ export const createUnassociatedAttachment = async (
     }
     attachmentInstance.value.id = createdAttachment[0].id
   } catch (err) {
-    throw getZendeskError(attachmentInstance.elemID, err) // caught in adapter.ts
+    throw getZendeskError(attachmentInstance.elemID, err as Error) // caught in adapter.ts
   }
 }
 
@@ -261,9 +261,9 @@ export const updateArticleTranslationBody = async ({
           }
         )
       } catch (e) {
-        log.error(`Error serializing article translation body in Deployment for ${translationInstance.elemID.getFullName()}: ${e}, stack: ${e.stack}`)
+        log.error(`Error serializing article translation body in Deployment for ${translationInstance.elemID.getFullName()}: ${e}, stack: ${(e as Error).stack}`)
         throw createSaltoElementError({ // caught in adapter.ts
-          message: `Error serializing article translation body in Deployment: ${e}, stack: ${e.stack}`,
+          message: `Error serializing article translation body in Deployment: ${e}, stack: ${(e as Error).stack}`,
           severity: 'Error',
           elemID: translationInstance.elemID,
         })

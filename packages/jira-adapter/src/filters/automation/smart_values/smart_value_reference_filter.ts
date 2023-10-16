@@ -118,7 +118,7 @@ const replaceFormulasWithTemplates = async (instances: InstanceElement[])
             obj[key] = template
             ambiguousTokens.forEach(token => allAmbiguousTokens.add(token))
           } catch (e) {
-            log.error(`Error parsing templates in fetch ${e}, stack: ${e.stack}`)
+            log.error(`Error parsing templates in fetch ${e}, stack: ${(e as Error).stack}`)
           }
         })
 

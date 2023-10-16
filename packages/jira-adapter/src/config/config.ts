@@ -174,7 +174,7 @@ export const getDefaultConfig = ({ isDataCenter }: { isDataCenter: boolean }): J
   ...PARTIAL_DEFAULT_CONFIG,
   apiDefinitions: getProductSettings({ isDataCenter }).defaultApiDefinitions,
   [SCRIPT_RUNNER_API_DEFINITIONS]: getProductSettings({ isDataCenter }).defaultScriptRunnerApiDefinitions,
-  [JSM_DUCKTYPE_API_DEFINITIONS]: getProductSettings({ isDataCenter }).defualtDuckTypeApiDefinitions,
+  [JSM_DUCKTYPE_API_DEFINITIONS]: getProductSettings({ isDataCenter }).defaultDuckTypeApiDefinitions,
 })
 
 const createClientConfigType = (): ObjectType => {

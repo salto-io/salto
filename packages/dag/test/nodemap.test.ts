@@ -554,7 +554,7 @@ describe('NodeMap', () => {
           try {
             subject.walkSync(handler)
           } catch (e) {
-            error = e
+            error = e as WalkError
           }
         })
 
@@ -596,7 +596,7 @@ describe('NodeMap', () => {
               }
             })
           } catch (e) {
-            error = e
+            error = e as WalkError
           }
           expect(error).toBeDefined()
         })
@@ -656,7 +656,7 @@ describe('NodeMap', () => {
               }
             })
           } catch (e) {
-            error = e
+            error = e as WalkError
           }
           expect(error).toBeDefined()
         })
@@ -732,7 +732,7 @@ describe('NodeMap', () => {
               }
             })
           } catch (e) {
-            error = e
+            error = e as WalkError
           }
           expect(error).toBeDefined()
         })

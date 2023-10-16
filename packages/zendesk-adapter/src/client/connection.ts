@@ -74,7 +74,7 @@ export const validateCredentials = async ({ credentials, connection }: {
     return { accountId }
   } catch (e) {
     log.error('Failed to validate credentials: %s', e)
-    throw new clientUtils.UnauthorizedError(e)
+    throw new clientUtils.UnauthorizedError((e as Error).message)
   }
 }
 

@@ -19,6 +19,7 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import { Values } from '@salto-io/adapter-api'
+import { HTTPError } from '@salto-io/adapter-components/src/client'
 import { createConnection, createResourceConnection, instanceUrl } from './connection'
 import { ZENDESK } from '../constants'
 import { Credentials } from '../auth'
@@ -26,6 +27,7 @@ import { PAGE_SIZE } from '../config'
 
 const {
   DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   throttle, logDecorator, requiresLogin,
 } = clientUtils
 const log = logger(module)
@@ -99,7 +101,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
     try {
       return await super.getSinglePage(args)
     } catch (e) {
-      const status = e.response?.status
+      const status = (e as HTTPError).response?.status
       // Zendesk returns 404 when it doesn't have permissions for objects (not enabled features)
       // Specifically for workspaces and custom statuses, it returns 403
       if (status === 404) {
@@ -152,7 +154,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
         status,
       }
     } catch (e) {
-      const status = e.response?.status
+      const status = (e as HTTPError).response?.status
       if (status === 404) {
         log.warn('Suppressing %d error %o', status, e)
         return { data: [], status }

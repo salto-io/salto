@@ -20,7 +20,8 @@ type DefaultOpts<TOpts> = { DEFAULT_OPTS: TOpts }
 
 const addDefaults = <T, TOpts>(
   o: T, defaults: TOpts
-): T & DefaultOpts<TOpts> => Object.assign(o, { DEFAULT_OPTS: Object.freeze(defaults) })
+): T & DefaultOpts<TOpts> => Object.assign(o as {}, { DEFAULT_OPTS: Object.freeze(defaults) }) as T & DefaultOpts<TOpts>
+
 
 type FuncAcceptingOpts<
   TOpts extends {},

@@ -135,7 +135,7 @@ const queryServiceValues = async (
       return false
     }
     return true
-  })
+  }) as unknown as Promise<NameIdObject[]>
 }
 
 const addIdsToResults = async (

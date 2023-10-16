@@ -56,7 +56,7 @@ export const createReferenceExpresion = (ref: string): ReferenceExpression | Ill
       ? new VariableExpression(elemId)
       : new ReferenceExpression(elemId)
   } catch (e) {
-    return new IllegalReference(ref, e.message)
+    return new IllegalReference(ref, (e as Error).message)
   }
 }
 

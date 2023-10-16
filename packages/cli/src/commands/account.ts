@@ -231,7 +231,8 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
     try {
       await getLoginInputFlow(workspace, adapterCredentialsTypes, output,
         authType, theAccountName, loginParameters)
-    } catch (e) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (e : any) {
       errorOutputLine(formatAddServiceFailed(theAccountName, e.message), output)
       return CliExitCode.AppError
     }
@@ -334,7 +335,8 @@ export const loginAction: WorkspaceCommandAction<AccountLoginArgs> = async ({
   try {
     await getLoginInputFlow(workspace, accountLoginStatus.configTypeOptions,
       output, authType, accountName, loginParameters)
-  } catch (e) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (e : any) {
     errorOutputLine(formatLoginToAccountFailed(accountName, e.message), output)
     return CliExitCode.AppError
   }

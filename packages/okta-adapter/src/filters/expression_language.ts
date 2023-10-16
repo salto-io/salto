@@ -228,7 +228,7 @@ const filter: FilterCreator = ({ config }) => {
                   createPrepRefFunc(isIdentityEngine),
                 )
               } catch (error) {
-                log.error(`Error parsing templates in instance ${instance.elemID.getFullName()} before deployment: ${error.message}`)
+                log.error(`Error parsing templates in instance ${instance.elemID.getFullName()} before deployment: ${(error as Error).message}`)
                 ErrorByChangeId[instance.elemID.getFullName()] = createSaltoElementError({
                   severity: 'Error',
                   message: 'Error parsing Okta expression language expression',

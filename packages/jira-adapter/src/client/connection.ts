@@ -17,6 +17,7 @@ import { logger } from '@salto-io/logging'
 import { AccountInfo, CredentialError } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { AxiosError } from 'axios'
 import { Credentials } from '../auth'
 import { EXPERIMENTAL_API_HEADERS, FORCE_ACCEPT_LANGUAGE_HEADERS } from './headers'
 
@@ -34,7 +35,7 @@ const isAuthorized = async (
     await connection.get('/rest/api/3/configuration')
     return true
   } catch (e) {
-    if (e.response?.status === 401) {
+    if ((e as AxiosError).response?.status === 401) {
       return false
     }
     throw e

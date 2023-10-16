@@ -102,10 +102,10 @@ export const verifyCredentials = async (
     try {
       const account = await adapterCreator.validateCredentials(loginConfig)
       return { success: true, ...account }
-    } catch (error) {
+    } catch (err) {
       return {
         success: false,
-        error,
+        error: err as Error,
       }
     }
   }

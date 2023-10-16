@@ -75,7 +75,8 @@ const createFetchFromWorkspaceCommand = (
       path: otherWorkspacePath,
       persistent: false,
     })
-  } catch (err) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (err : any) {
     throw new Error(`Failed to load source workspace: ${err.message ?? err}`)
   }
   return fetchFromWorkspaceFunc({

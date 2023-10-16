@@ -66,7 +66,7 @@ Promise<void> => {
           data: { workweek: { intervals } },
         })
       } catch (e) {
-        throw getZendeskError(changedElement.elemID.createNestedID('intervals'), e) // caught in deployChanges
+        throw getZendeskError(changedElement.elemID.createNestedID('intervals'), e as Error) // caught in deployChanges
       }
     } else {
       log.error(`Failed to deploy intervals on ${changedElement.elemID.getFullName()} since the intervals were in invalid format`)

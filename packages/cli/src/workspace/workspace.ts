@@ -213,7 +213,7 @@ export const updateStateOnly = async (ws: Workspace,
     await ws.flush()
     return true
   } catch (e) {
-    log.error(e)
+    log.error(e as Error)
     return false
   }
 }

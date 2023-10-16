@@ -271,7 +271,7 @@ describe('NetsuiteQuery', () => {
           ],
         })
       } catch (e) {
-        error = e
+        error = e as Error
       }
 
       expect(error).toBeDefined()
@@ -293,7 +293,7 @@ describe('NetsuiteQuery', () => {
           fileCabinet: [],
         })
       } catch (e) {
-        error = e
+        error = e as Error
       }
 
       expect(error).toBeDefined()
@@ -311,7 +311,7 @@ describe('NetsuiteQuery', () => {
           fileCabinet: [],
         })
       } catch (e) {
-        error = e
+        error = e as Error
       }
 
       expect(error).toBeDefined()
@@ -329,7 +329,7 @@ describe('NetsuiteQuery', () => {
           ],
         })
       } catch (e) {
-        error = e
+        error = e as Error
       }
 
       expect(error).toBeDefined()
@@ -344,7 +344,7 @@ describe('NetsuiteQuery', () => {
           }],
         })
       } catch (e) {
-        error = e
+        error = e as Error
       }
 
       expect(error).toBeDefined()
@@ -357,7 +357,7 @@ describe('NetsuiteQuery', () => {
           fileCabinet: [],
         })
       } catch (e) {
-        error = e
+        error = e as Error
       }
 
       expect(error).toBeDefined()
@@ -372,7 +372,7 @@ describe('NetsuiteQuery', () => {
           customRecords: {},
         })
       } catch (e) {
-        error = e
+        error = e as Error
       }
 
       expect(error).toBeDefined()
@@ -389,7 +389,7 @@ describe('NetsuiteQuery', () => {
           fileCabinet: [],
         })
       } catch (e) {
-        error = e
+        error = e as Error
       }
 
       expect(error).toBeDefined()
@@ -407,7 +407,7 @@ describe('NetsuiteQuery', () => {
           }],
         })
       } catch (e) {
-        error = e
+        error = e as Error
       }
 
       expect(error).toBeDefined()
@@ -424,7 +424,7 @@ describe('NetsuiteQuery', () => {
           fileCabinet: [],
         })
       } catch (e) {
-        error = e
+        error = e as Error
       }
 
       expect(error).toBeDefined()

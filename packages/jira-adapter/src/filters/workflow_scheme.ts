@@ -53,7 +53,7 @@ class TooManyRetriesError extends PublishDraftError {
   }
 }
 
-const shouldThrowError = (error: Error): boolean =>
+const shouldThrowError = (error: unknown): boolean =>
   error instanceof PublishDraftError
 
 function validateTaskResponse(
@@ -246,12 +246,13 @@ export const deployWorkflowScheme = async (
         throw err
       }
       try {
-        err.message = 'Failed to publish draft with error: '
-        err.response.data.errorMessages = await reformatMigrationErrorMessages(
-          err.response.data.errorMessages, elementsSource
+        const cuhErr = err as clientUtils.HTTPError
+        cuhErr.message = 'Failed to publish draft with error: '
+        cuhErr.response.data.errorMessages = await reformatMigrationErrorMessages(
+          cuhErr.response?.data?.errorMessages as string[], elementsSource
         )
-        handleDeploymentError(err)
-        log.warn(`failed to publish draft for workflow scheme ${getChangeData(change).elemID.name}, error: ${err.message}`)
+        handleDeploymentError(cuhErr)
+        log.warn(`failed to publish draft for workflow scheme ${getChangeData(change).elemID.name}, error: ${cuhErr.message}`)
       } catch (error) {
         log.warn(`failed to reformat the workflow scheme ${getChangeData(change).elemID.getFullName()} migration error `)
       }

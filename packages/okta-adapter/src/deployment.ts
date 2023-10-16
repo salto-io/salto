@@ -60,9 +60,9 @@ const isOktaError = createSchemeGuard<OktaError>(OKTA_ERROR_SCHEMA, 'Received an
 
 const isResponseWithStatus = createSchemeGuard<ResponseWithStatus>(RESPONSE_WITH_STATUS, 'Response does not have a valid status field')
 
-export const getOktaError = (elemID: ElemID, error: Error): Error => {
+export const getOktaError = (elemID: ElemID, error: unknown): Error => {
   if (!(error instanceof clientUtils.HTTPError)) {
-    return error
+    return error as Error
   }
   const { status, data } = error.response
   const baseErrorMessage = `(status code: ${status})`
@@ -311,7 +311,7 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
       return res !== undefined ? res : change
     } catch (err) {
       return createSaltoElementError({
-        message: err.message,
+        message: (err as Error).message,
         severity: 'Error',
         elemID: getChangeData(change).elemID,
       })

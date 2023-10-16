@@ -570,7 +570,7 @@ const createInaccessibleFieldsFetchWarning = (
   objectType: ObjectType,
   inaccessibleFields: string[],
 ): SaltoError => ({
-  message: `The following fields are not accessible and will not be fetched for records of type ${apiNameSync(objectType)}: ${inaccessibleFields.join(',')}. Values of these fields will appear as 'deleted' if these data records are ever deployed`,
+  message: `There are ${inaccessibleFields.length} fields in the ${apiNameSync(objectType)} object that the fetch user does not have access to. These are the fields: ${inaccessibleFields.join(',')} If ${apiNameSync(objectType)} records are deployed from this environment, values of these fields will appear as deletions.`,
   severity: 'Info',
 })
 

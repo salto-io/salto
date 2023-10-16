@@ -445,7 +445,8 @@ const getWhereConditions = (
     + ((Object.keys(exactConditionSets).length > 0 && complexConditionQuery.length > 0) ? ' AND '.length : 0)
 
   if (complexConditionsLength > maxLen) {
-    throw new Error('Complex conditions need to be included in every query, thus can`t be longer than the maximum query length')
+    log.error('Complex conditions need to be included in every query - they can`t be broken down so they can`t be longer than the maximum query length. getWhereConditions params: %o', { exactConditionSets, limitingConditionSets, maxLen })
+    throw new Error('SOQL query too long')
   }
 
   const conditionChunks = weightedChunks(

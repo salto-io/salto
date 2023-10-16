@@ -1902,6 +1902,13 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       },
     },
   },
+  Calendar__holidays: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'date' },
+      ],
+    },
+  },
 }
 
 const JSM_DUCKTYPE_SUPPORTED_TYPES = {
@@ -1910,6 +1917,7 @@ const JSM_DUCKTYPE_SUPPORTED_TYPES = {
   Queue: ['Queue'],
   PortalGroup: ['PortalGroup'],
   Calendar: ['Calendar'],
+  Calendar__holidays: ['Calendar__holidays'],
 }
 
 export const SCRIPT_RUNNER_DUCKTYPE_SUPPORTED_TYPES = {

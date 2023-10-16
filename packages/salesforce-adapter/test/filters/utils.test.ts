@@ -18,13 +18,13 @@ import {
   createRefToElmWithValue,
   ElemID,
   Field,
-  InstanceElement,
+  InstanceElement, ListType,
   ObjectType,
   ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import {
-  addDefaults, getChangedAtSingleton,
+  addDefaults, toListType, getChangedAtSingleton,
   getNamespace,
   isCustomMetadataRecordInstance,
   isCustomMetadataRecordType, isCustomType,
@@ -353,6 +353,14 @@ describe('addDefaults', () => {
       expect(isCustomType(mockTypes.ApexPage)).toBeFalse()
       expect(isCustomType(mockTypes.CustomObject)).toBeFalse()
       expect(isCustomType(mockTypes.Product2)).toBeFalse()
+    })
+  })
+  describe('toListType', () => {
+    it('should wrap a non List type', () => {
+      expect(toListType(mockTypes.Profile)).toEqual(new ListType(mockTypes.Profile))
+    })
+    it('should not wrap a List type', () => {
+      expect(toListType(new ListType(mockTypes.Profile))).toEqual(new ListType(mockTypes.Profile))
     })
   })
 })

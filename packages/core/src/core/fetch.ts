@@ -23,10 +23,7 @@ import {
   isSaltoElementError, ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId,
   AdapterOperationsContext, FetchResult, isAdditionChange, isStaticFile,
   isAdditionOrModificationChange, Value, StaticFile, isElement, AuthorInformation, getAuthorInformation,
-  isModificationChange,
-  toChange,
-  ModificationChange,
-  AdditionChange,
+  isModificationChange, toChange, ModificationChange, AdditionChange, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements, safeJsonStringify, walkOnElement, WalkOnFunc, WALK_NEXT_STEP, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -219,6 +216,18 @@ const autoMergeTextChange: ChangeTransformFunction = async change => {
   if (_.isString(current) && _.isString(incoming) && isTypeOfOrUndefined(base, _.isString)) {
     const merged = mergeStrings(changeId, { current, base, incoming })
     return [merged !== undefined ? toMergedTextChange(change, merged) : change]
+  }
+  return [change]
+}
+
+const omitConflictsOnCoreAnnotations: ChangeTransformFunction = async change => {
+  if (_.isEmpty(change.pendingChanges) || change.change.id.isBaseID()) {
+    return [change]
+  }
+  const { path: [name] } = change.change.id.createBaseID()
+  if ([CORE_ANNOTATIONS.ALIAS, CORE_ANNOTATIONS.PARENT].includes(name)) {
+    log.debug('omitting conflict on core annotation %s', change.change.id.getFullName())
+    return [{ ...change, pendingChanges: [] }]
   }
   return [change]
 }
@@ -747,6 +756,7 @@ export const calcFetchChanges = async (
   )
 
   const changes = await awu(fetchChanges)
+    .flatMap(omitConflictsOnCoreAnnotations)
     .flatMap(autoMergeTextChange)
     .flatMap(toChangesWithPath(async name => serviceElementsMap[name.getFullName()] ?? []))
     .flatMap(addFetchChangeMetadata(partialFetchElementSource))

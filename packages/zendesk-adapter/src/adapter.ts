@@ -146,6 +146,7 @@ import localeFilter from './filters/locale'
 import ticketStatusCustomStatusDeployFilter from './filters/ticket_status_custom_status'
 import { filterOutInactiveInstancesForType } from './inactive'
 import handleIdenticalAttachmentConflicts from './filters/handle_identical_attachment_conflicts'
+import addImportantValuesFilter from './filters/add_important_values'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -245,6 +246,7 @@ export const DEFAULT_FILTERS = [
   guideArrangePaths,
   hideAccountFeatures,
   fetchCategorySection, // need to be after arrange paths as it uses the 'name'/'title' field
+  addImportantValuesFilter,
   // defaultDeployFilter should be last!
   defaultDeployFilter,
 ]

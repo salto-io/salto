@@ -230,6 +230,18 @@ describe('adapter creator', () => {
       port: 8080,
       clientId: 'client',
     })).toEqual('https://abc.zendesk1.org/oauth/authorizations/new?response_type=token&redirect_uri=http://localhost:8080&client_id=client&scope=read%20write')
+    expect(createUrlFromUserInput({
+      subdomain: 'abc',
+      domain: '',
+      port: 8080,
+      clientId: 'client',
+    })).toEqual('https://abc.zendesk.com/oauth/authorizations/new?response_type=token&redirect_uri=http://localhost:8080&client_id=client&scope=read%20write')
+    expect(createUrlFromUserInput({
+      subdomain: 'abc',
+      domain: undefined,
+      port: 8080,
+      clientId: 'client',
+    })).toEqual('https://abc.zendesk.com/oauth/authorizations/new?response_type=token&redirect_uri=http://localhost:8080&client_id=client&scope=read%20write')
   })
 
   it('should validate credentials using createConnection', async () => {

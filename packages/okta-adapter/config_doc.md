@@ -68,6 +68,7 @@ okta {
 | [exclude](#fetch-entry-options)             | []                                | List of entries to determine what instances to exclude in the fetch
 | convertUsersIds                             | true                              | When enabled, user IDs will be replaced with user login names
 | includeGroupMemberships                     | false                             | Include group assignments
+| includeProfileMappingProperties             | true                              | Include profile mapping properties for profile mapping instances
 
 ## Fetch entry options
 

@@ -38,7 +38,7 @@ import {
   isDataManagementConfigSuggestions,
   SaltoAliasSettings,
 } from '../../src/types'
-import { buildSelectQueries, getFieldNamesForQuery } from '../../src/filters/utils'
+import { buildSelectQueries, getFieldNamesForQuery, QueryOperator, LimitingQuery } from '../../src/filters/utils'
 import { FilterResult } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
@@ -60,7 +60,6 @@ import {
 import { Types } from '../../src/transformers/transformer'
 import {
   buildFetchProfile,
-
 } from '../../src/fetch_profile/fetch_profile'
 import {
   defaultFilterContext,
@@ -1904,12 +1903,17 @@ describe('buildSelectQueries', () => {
       })
     })
   })
-  describe('with complex conditions', () => {
+  describe('with limiting conditions', () => {
     let queries: string[]
+    const limitIdTo = (operator: QueryOperator, operand: string): LimitingQuery => ({
+      fieldName: 'Id',
+      operator,
+      operand,
+    })
     describe('with no exact conditions', () => {
       beforeEach(async () => {
         const fieldNames = ['Id']
-        queries = buildSelectQueries('Test', fieldNames, [], [['Id', '>', '7']])
+        queries = buildSelectQueries('Test', fieldNames, [], [limitIdTo('>', '7')])
       })
       it('should create a single valid query', () => {
         expect(queries).toEqual([
@@ -1920,7 +1924,7 @@ describe('buildSelectQueries', () => {
     describe('with exact conditions', () => {
       beforeEach(async () => {
         const fieldNames = ['Id']
-        queries = buildSelectQueries('Test', fieldNames, [{ Id: "'8'" }], [['Id', '>', '7']])
+        queries = buildSelectQueries('Test', fieldNames, [{ Id: "'8'" }], [limitIdTo('>', '7')])
       })
       it('should create a single valid query that ends with the complex query', () => {
         expect(queries).toEqual([
@@ -1931,7 +1935,7 @@ describe('buildSelectQueries', () => {
     describe('with exact conditions that are too long for a single query', () => {
       beforeEach(async () => {
         const fieldNames = ['Id']
-        queries = buildSelectQueries('Test', fieldNames, [{ Id: "'8'" }, { Id: "'9'" }], [['Id', '>', '7']], 45)
+        queries = buildSelectQueries('Test', fieldNames, [{ Id: "'8'" }, { Id: "'9'" }], [limitIdTo('>', '7')], 45)
       })
       it('should create multiple valid queries that end with the complex query', () => {
         expect(queries).toEqual([
@@ -1943,7 +1947,7 @@ describe('buildSelectQueries', () => {
     describe('with multiple complex conditions', () => {
       beforeEach(async () => {
         const fieldNames = ['Id']
-        queries = buildSelectQueries('Test', fieldNames, [{ Id: "'8'" }], [['Id', '>', '7'], ['Id', '<', '10']])
+        queries = buildSelectQueries('Test', fieldNames, [{ Id: "'8'" }], [limitIdTo('>', '7'), limitIdTo('<', '10')])
       })
       it('should create a single valid query that ends with the complex query', () => {
         expect(queries).toEqual([
@@ -1954,7 +1958,7 @@ describe('buildSelectQueries', () => {
     describe('with a exact conditions that is too long for a single query and multiple complex conditions', () => {
       beforeEach(async () => {
         const fieldNames = ['Id']
-        queries = buildSelectQueries('Test', fieldNames, [{ Id: "'8'" }, { Id: "'9'" }], [['Id', '>', '7'], ['Id', '<', '10']], 60)
+        queries = buildSelectQueries('Test', fieldNames, [{ Id: "'8'" }, { Id: "'9'" }], [limitIdTo('>', '7'), limitIdTo('<', '10')], 60)
       })
       it('should create multiple valid queries that end with the entire complex query', () => {
         expect(queries).toEqual([

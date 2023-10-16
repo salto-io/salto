@@ -420,12 +420,16 @@ export const extractFlatCustomObjectFields = async (elem: Element): Promise<Elem
     : [elem]
 )
 
-type QueryOperator = '>' | '<'
-type ComplexQuery = [string, QueryOperator, string]
+export type QueryOperator = '>' | '<'
+export type LimitingQuery = {
+  fieldName: string
+  operator: QueryOperator
+  operand: string
+}
 
 const getWhereConditions = (
   exactConditionSets: Record<string, string>[],
-  complexConditionSets: ReadonlyArray<ComplexQuery>,
+  limitingConditionSets: ReadonlyArray<LimitingQuery>,
   maxLen: number,
 ): string[] => {
   const keys = _.uniq(exactConditionSets.flatMap(Object.keys))
@@ -434,8 +438,8 @@ const getWhereConditions = (
     + (' AND '.length * (keys.length - 1))
   )
 
-  const complexConditionQuery = complexConditionSets
-    .map(([field, op, value]) => `${field} ${op} ${value}`)
+  const complexConditionQuery = limitingConditionSets
+    .map(({ fieldName, operator, operand }) => `${fieldName} ${operator} ${operand}`)
     .join(' AND ')
   const complexConditionsLength = complexConditionQuery.length
     + ((Object.keys(exactConditionSets).length > 0 && complexConditionQuery.length > 0) ? ' AND '.length : 0)
@@ -466,22 +470,22 @@ const getWhereConditions = (
   if (r.length === 0) {
     return [complexConditionQuery]
   }
-  return r.map(queryChunk => `${queryChunk}${(queryChunk.length > 0 && complexConditionSets.length > 0) ? ' AND ' : ''}${complexConditionQuery}`)
+  return r.map(queryChunk => `${queryChunk}${(queryChunk.length > 0 && limitingConditionSets.length > 0) ? ' AND ' : ''}${complexConditionQuery}`)
 }
 
 export const conditionQueries = (
   query: string,
   exactConditionSets: Record<string, string>[],
-  complexConditionSets: ReadonlyArray<ComplexQuery> = [],
+  limitingConditionSets: ReadonlyArray<LimitingQuery> = [],
   maxQueryLen = MAX_QUERY_LENGTH,
 ): string[] => {
-  if (exactConditionSets.length === 0 && complexConditionSets.length === 0) {
+  if (exactConditionSets.length === 0 && limitingConditionSets.length === 0) {
     return [query]
   }
   const selectWhereStr = `${query} WHERE `
   const whereConditions = getWhereConditions(
     exactConditionSets,
-    complexConditionSets,
+    limitingConditionSets,
     maxQueryLen - selectWhereStr.length
   )
   return whereConditions.map(whereCondition => `${selectWhereStr}${whereCondition}`)
@@ -500,7 +504,7 @@ export const getFieldNamesForQuery = async (field: Field): Promise<string[]> => 
  * @param typeName The name of the table to query from
  * @param fields The names of the fields to query
  * @param exactConditionSets Each entry specifies field values used to match a specific record
- * @param complexConditionSets Each entry specifies a field name, an operator and an operand to further limit the
+ * @param limitingConditionSets Each entry specifies a field name, an operator and an operand to further limit the
  *                             returned records.
  * @param maxQueryLen returned queries will be split such that no single query exceeds this length
  */
@@ -508,7 +512,7 @@ export const buildSelectQueries = (
   typeName: string,
   fields: string[],
   exactConditionSets: Record<string, string>[] = [],
-  complexConditionSets: ReadonlyArray<ComplexQuery> = [],
+  limitingConditionSets: ReadonlyArray<LimitingQuery> = [],
   maxQueryLen = MAX_QUERY_LENGTH,
 ): string[] => {
   const fieldsNameQuery = fields.join(',')
@@ -516,7 +520,7 @@ export const buildSelectQueries = (
   if (selectStr.length > maxQueryLen) {
     throw new Error('Max query length is too short for the SELECT clause')
   }
-  return conditionQueries(selectStr, exactConditionSets, complexConditionSets, maxQueryLen)
+  return conditionQueries(selectStr, exactConditionSets, limitingConditionSets, maxQueryLen)
 }
 
 export const queryClient = async (client: SalesforceClient,

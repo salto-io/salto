@@ -4,7 +4,7 @@ orbs:
   win: circleci/windows@2.4.1
   aws-s3: circleci/aws-s3@1.0.16
   aws-cli: circleci/aws-cli@2.0.6
-  coveralls: coveralls/coveralls@1.0.7
+  coveralls: coveralls/coveralls@2.2.1
 
 commands:
   set_s3_pkg_urls:
@@ -77,9 +77,7 @@ jobs:
 
       - run: yarn config set cache-folder /mnt/ramdisk/yarn-cache
 
-        # Yarn has some random race-condition failures, trying multiple times seems to help
-        # when the source of the problem is yarn itself and not the packages
-      - run: yarn || yarn || yarn
+      - run: yarn install --force || yarn
 
       - run:
           # As a workaround to the --frozen-lockfile flag not working with workspaces

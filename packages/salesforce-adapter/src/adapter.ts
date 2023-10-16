@@ -99,7 +99,13 @@ import changedAtSingletonFilter from './filters/changed_at_singleton'
 import { FetchElements, FetchProfile, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
-import { addDefaults, isCustomObjectSync, isCustomType, listMetadataObjects } from './filters/utils'
+import {
+  addDefaults,
+  isCustomObjectSync,
+  isCustomType,
+  listMetadataObjects,
+  retrieveRelatedPropsByMetadataType,
+} from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 import { getLookUpName, getLookupNameWithFallbackToElement } from './transformers/reference_mapping'
@@ -403,10 +409,13 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.client = client
     this.elementsSource = elementsSource
 
+    const relatedPropsByMetadataTypePromise = retrieveRelatedPropsByMetadataType(this.client)
+
     this.fetchProfilePromise = isFetchWithChangesDetection
       ? buildFetchProfileForFetchWithChangesDetection({
         fetchParams: config.fetch ?? {},
         elementsSource,
+        relatedPropsByMetadataTypePromise,
       })
       : Promise.resolve(buildFetchProfile({
         fetchParams: config.fetch ?? {},

@@ -17,7 +17,6 @@ import { collections, regex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { InstanceElement } from '@salto-io/adapter-api'
 import {
-  CUSTOM_FIELD,
   CUSTOM_METADATA,
   CUSTOM_OBJECT,
   DEFAULT_NAMESPACE,
@@ -81,10 +80,8 @@ const DEFAULT_NAMESPACE_MATCH_ALL_TYPE_LIST = [
 // Instances of this type won't be fetched in fetchWithChangesDetection mode
 const UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES = [
   PROFILE_METADATA_TYPE,
-  CUSTOM_OBJECT,
   // Since we don't retrieve the CustomMetadata types (CustomObjects), we shouldn't retrieve the Records
   CUSTOM_METADATA,
-  CUSTOM_FIELD,
 ]
 
 const getDefaultNamespace = (metadataType: string): string =>

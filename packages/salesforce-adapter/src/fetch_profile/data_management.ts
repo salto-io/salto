@@ -13,31 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { collections, types } from '@salto-io/lowerdash'
-import { ObjectType } from '@salto-io/adapter-api'
 import { ConfigValidationError, validateRegularExpressions } from '../config_validation'
-import {
-  DataManagementConfig,
-  OutgoingReferenceBehavior,
-  outgoingReferenceBehaviors,
-} from '../types'
+import { DataManagement, DataManagementConfig, OutgoingReferenceBehavior, outgoingReferenceBehaviors } from '../types'
 import { DETECTS_PARENTS_INDICATOR } from '../constants'
 import { apiName } from '../transformers/transformer'
 
 const { makeArray } = collections.array
-
-export type TypeFetchCategory = 'Always' | 'IfReferenced' | 'Never'
-
-export type DataManagement = {
-  shouldFetchObjectType: (objectType: ObjectType) => Promise<TypeFetchCategory>
-  brokenReferenceBehaviorForTargetType: (typeName: string | undefined) => OutgoingReferenceBehavior
-  isReferenceAllowed: (name: string) => boolean
-  getObjectIdsFields: (name: string) => string[]
-  getObjectAliasFields: (name: string) => types.NonEmptyArray<string>
-  showReadOnlyValues?: boolean
-  managedBySaltoFieldForType: (objType: ObjectType) => string | undefined
-}
-
 
 const DEFAULT_ALIAS_FIELDS: types.NonEmptyArray<string> = [DETECTS_PARENTS_INDICATOR, 'Name']
 const ALIAS_FIELDS_BY_TYPE: Record<string, types.NonEmptyArray<string>> = {
@@ -85,6 +68,8 @@ export const buildDataManagement = (params: DataManagementConfig): DataManagemen
   const isReferenceAllowed = (name: string): boolean => (
     params.allowReferenceTo?.some(re => new RegExp(`^${re}$`).test(name)) ?? false
   )
+
+  const omittedFieldsByType = _.groupBy(params.omittedFields, fieldApiName => fieldApiName.split('.')[0])
 
   return {
     shouldFetchObjectType: async objectType => {
@@ -163,6 +148,9 @@ export const buildDataManagement = (params: DataManagementConfig): DataManagemen
         : ALIAS_FIELDS_BY_TYPE[name] ?? defaultFields
     },
     showReadOnlyValues: params.showReadOnlyValues,
+    omittedFieldsForType: name => (
+      name === undefined ? [] : makeArray(omittedFieldsByType[name])
+    ),
   }
 }
 
@@ -203,5 +191,10 @@ export const validateDataManagementConfig = (
         }
       }
     )
+  }
+  const invalidOmittedFieldNames = makeArray(dataManagementConfig.omittedFields)
+    .filter(omittedFieldName => omittedFieldName.split('.').length < 2)
+  if (invalidOmittedFieldNames.length > 0) {
+    throw new ConfigValidationError([...fieldPath, 'omittedFields'], `The following omitted fields API names are invalid: ${invalidOmittedFieldNames.join(',')}`)
   }
 }

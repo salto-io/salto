@@ -29,7 +29,7 @@ const log = logger(module)
 const { isDefined } = values
 
 type ImportantValue = { value: string; indexed: boolean; highlighted: boolean }
-type ImportantValues = ImportantValue[]
+export type ImportantValues = ImportantValue[]
 
 const isValidIndexedValueData = (importantValue: ImportantValue, valueData: unknown): boolean => {
   if (importantValue.indexed !== true) {

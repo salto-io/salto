@@ -45,11 +45,12 @@ import { buildElementsSourceFromElements, createSchemeGuard, getParents } from '
 import { FileProperties } from 'jsforce-types'
 import { chunks, collections, types } from '@salto-io/lowerdash'
 import Joi from 'joi'
-import SalesforceClient from '../client/client'
-import { INSTANCE_SUFFIXES, OptionalFeatures } from '../types'
+import SalesforceClient, { ErrorFilter } from '../client/client'
+import { FetchElements, INSTANCE_SUFFIXES, OptionalFeatures } from '../types'
 import {
   API_NAME,
   API_NAME_SEPARATOR,
+  CHANGED_AT_SINGLETON,
   CUSTOM_FIELD,
   CUSTOM_METADATA_SUFFIX,
   CUSTOM_OBJECT,
@@ -66,22 +67,25 @@ import {
   NAMESPACE_SEPARATOR,
   PLURAL_LABEL,
   SALESFORCE,
-  CHANGED_AT_SINGLETON,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
+import * as transformer from '../transformers/transformer'
 import {
   apiName,
   defaultApiName,
-  isCustomObject, isMetadataObjectType,
-  isNameField, MetadataInstanceElement,
+  isCustomObject,
+  isMetadataObjectType,
+  isNameField,
+  MetadataInstanceElement,
   metadataType,
   MetadataValues,
   Types,
 } from '../transformers/transformer'
-import * as transformer from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
+import { createListMetadataObjectsConfigChange } from '../config_change'
 
 const { toArrayAsync, awu } = collections.asynciterable
+const { splitDuplicates } = collections.array
 const { weightedChunks } = chunks
 const log = logger(module)
 
@@ -526,6 +530,36 @@ export const getChangedAtSingleton = async (
 export const isCustomType = (element: Element): element is ObjectType => (
   isObjectType(element) && ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(apiNameSync(element) ?? '')
 )
+const removeDuplicateFileProps = (files: FileProperties[]): FileProperties[] => {
+  const {
+    duplicates,
+    uniques,
+  } = splitDuplicates(files, fileProps => `${fileProps.namespacePrefix}__${fileProps.fullName}`)
+  duplicates.forEach(props => {
+    log.warn('Found duplicate file props with the same name in response to listMetadataObjects: %o', props)
+  })
+  return uniques.concat(duplicates.map(props => props[0]))
+}
+export const listMetadataObjects = async (
+  client: SalesforceClient,
+  metadataTypeName: string,
+  isUnhandledError?: ErrorFilter,
+): Promise<FetchElements<FileProperties[]>> => {
+  const { result, errors } = await client.listMetadataObjects(
+    { type: metadataTypeName },
+    isUnhandledError,
+  )
+
+  // Salesforce quirk, we sometimes get the same metadata fullName more than once
+  const elements = removeDuplicateFileProps(result)
+
+  return {
+    elements,
+    configChanges: errors
+      .map(e => e.input)
+      .map(createListMetadataObjectsConfigChange),
+  }
+}
 
 export type ElementWithResolvedParent<T extends Element> = T & {
   annotations: {

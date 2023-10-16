@@ -48,7 +48,8 @@ type ItemType = 'assemblyItem' |
 
 type TypeWithMultiFieldsIdentifier = 'accountingPeriod' |
 'nexus' |
-'account'
+'account' |
+'bin'
 
 type TypeWithSingleFieldIdentifier = 'subsidiary' |
 'department' |
@@ -306,6 +307,7 @@ export const TYPE_TO_ID_FIELD_PATHS: Record<TypeWithMultiFieldsIdentifier, strin
   accountingPeriod: [['periodName'], ['fiscalCalendar', 'name']],
   nexus: [['country'], ['state', 'name']],
   account: [['acctName'], ['acctNumber']],
+  bin: [['location', 'name'], ['binNumber']],
 }
 
 export const isTypeWithMultiFieldsIdentifier = (type: string): type is TypeWithMultiFieldsIdentifier =>
@@ -358,6 +360,7 @@ const TYPE_WITH_MULTI_FIELDS_TO_IDENTIFIER: Record<TypeWithMultiFieldsIdentifier
   accountingPeriod: IDENTIFIER_FIELD,
   account: IDENTIFIER_FIELD,
   nexus: IDENTIFIER_FIELD,
+  bin: IDENTIFIER_FIELD,
 }
 
 const supportedTypesToIdentifier: Record<SupportedDataType, string> = {

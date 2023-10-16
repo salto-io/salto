@@ -17,12 +17,13 @@ import _ from 'lodash'
 import { types as lowerdashTypes, regex, values } from '@salto-io/lowerdash'
 import {
   InstanceElement, ElemID, ListType, BuiltinTypes, CORE_ANNOTATIONS,
-  createRestriction, MapType,
+  createRestriction, MapType, ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType, safeJsonStringify, formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { config as configUtils } from '@salto-io/adapter-components'
 import {
+  BIN,
   CURRENCY, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_NAME_PREFIX, DATASET, EXCHANGE_RATE,
   NETSUITE, PERMISSIONS, SAVED_SEARCH, WORKBOOK,
 } from './constants'
@@ -31,6 +32,7 @@ import { ITEM_TYPE_TO_SEARCH_STRING } from './data_elements/types'
 import { isCustomRecordTypeName, netsuiteSupportedTypes } from './types'
 import { FetchByQueryFailures } from './change_validators/safe_deploy'
 import { FailedFiles } from './client/types'
+import { getLastServerTime } from './server_time'
 
 type UserDeployConfig = configUtils.UserDeployConfig
 
@@ -440,6 +442,7 @@ export const fetchDefault: FetchParams = {
       { name: 'giftCertificateItem' }, // requires special features enabled in the account. O.W fetch will fail
       { name: 'downloadItem' }, // requires special features enabled in the account. O.W fetch will fail
       { name: 'account' },
+      { name: BIN },
       {
         name: Object.keys(ITEM_TYPE_TO_SEARCH_STRING)
           .filter(itemTypeName => !['giftCertificateItem', 'downloadItem'].includes(itemTypeName))
@@ -819,6 +822,11 @@ export const LARGE_FOLDERS_EXCLUDED_MESSAGE = 'Some File Cabinet folders exceed 
 export const LARGE_TYPES_EXCLUDED_MESSAGE = 'Some types were excluded from the fetch as the elements of that type were too numerous.'
  + ' To include them, increase the types elements\' size limitations and remove their exclusion rules.'
 
+const SUPPORT_BINS_DATE = '2023-10-10'
+export const EXCLUDE_BINS_MESSAGE = `Starting October 10th, 2023, "Bin" type instances can be fetched by Salto.
+
+To start fetching these instances in your environment, go to your environment configuration, remove "{ name = "bin" }" from the fetch.exclude.types section, then add it to the fetch.include.types section.`
+
 const createFolderExclude = (folderPaths: NetsuiteFilePathsQueryParams): string[] =>
   folderPaths.map(folder => `^${_.escapeRegExp(folder)}.*`)
 
@@ -1010,14 +1018,36 @@ const splitConfig = (config: NetsuiteConfig): InstanceElement[] => {
   ]
 }
 
+// TODO: remove at December '23 (SALTO-4798)
+export const shouldExcludeBins = async (
+  config: NetsuiteConfig,
+  elementsSource: ReadOnlyElementsSource
+): Promise<boolean> => {
+  if (config.fetch.include.types.some(type => type.name === BIN)
+  || config.fetch.exclude.types.some(type => type.name === BIN)) {
+    return false
+  }
+  const lastFetchTime = await getLastServerTime(elementsSource)
+  return lastFetchTime !== undefined && lastFetchTime < new Date(SUPPORT_BINS_DATE)
+}
+
 export const getConfigFromConfigChanges = (
   failures: FetchByQueryFailures,
-  currentConfig: NetsuiteConfig
+  currentConfig: NetsuiteConfig,
+  { excludeBins }: { excludeBins: boolean }
 ): { config: InstanceElement[]; message: string } | undefined => {
   const config = _.cloneDeep(currentConfig)
   const didUpdateFromFailures = updateConfigFromFailedFetch(config, failures)
   const didUpdateLargeFolders = updateConfigFromLargeFolders(config, failures.failedFilePaths)
   const didUpdateLargeTypes = updateConfigFromLargeTypes(config, failures)
+
+  // TODO: remove at December '23 (SALTO-4798)
+  if (excludeBins) {
+    config.fetch = {
+      ...config.fetch,
+      exclude: combineQueryParams(config.fetch.exclude, { types: [{ name: BIN }], fileCabinet: [] }),
+    }
+  }
 
   const messages = [
     didUpdateFromFailures
@@ -1028,6 +1058,9 @@ export const getConfigFromConfigChanges = (
       : undefined,
     didUpdateLargeTypes
       ? LARGE_TYPES_EXCLUDED_MESSAGE
+      : undefined,
+    excludeBins
+      ? EXCLUDE_BINS_MESSAGE
       : undefined,
   ].filter(values.isDefined)
 

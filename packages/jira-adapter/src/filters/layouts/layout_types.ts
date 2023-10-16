@@ -17,13 +17,13 @@
 import Joi from 'joi'
 import { ObjectType, ElemID, BuiltinTypes, ListType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { elements as adapterElements } from '@salto-io/adapter-components'
-import { ISSUE_LAYOUT_TYPE, JIRA } from '../../constants'
+import { JIRA } from '../../constants'
 
-export const createIssueLayoutType = (): {
-  issueLayoutType: ObjectType
+export const createLayoutType = (typeName: string): {
+  layoutType: ObjectType
   subTypes: ObjectType[]
 } => {
-  const issueLayoutItemType = new ObjectType({
+  const layoutItemType = new ObjectType({
     elemID: new ElemID(JIRA, 'issueLayoutItem'),
     fields: {
       type: { refType: BuiltinTypes.STRING },
@@ -32,15 +32,15 @@ export const createIssueLayoutType = (): {
     },
   })
 
-  const issueLayoutConfigType = new ObjectType({
+  const layoutConfigType = new ObjectType({
     elemID: new ElemID(JIRA, 'issueLayoutConfig'),
     fields: {
-      items: { refType: new ListType(issueLayoutItemType) },
+      items: { refType: new ListType(layoutItemType) },
     },
   })
 
-  const issueLayoutType = new ObjectType({
-    elemID: new ElemID(JIRA, ISSUE_LAYOUT_TYPE),
+  const layoutType = new ObjectType({
+    elemID: new ElemID(JIRA, typeName),
     fields: {
       id: {
         refType: BuiltinTypes.SERVICE_ID,
@@ -53,17 +53,17 @@ export const createIssueLayoutType = (): {
         refType: BuiltinTypes.NUMBER,
       },
       issueLayoutConfig: {
-        refType: issueLayoutConfigType,
+        refType: layoutConfigType,
       },
     },
-    path: [JIRA, adapterElements.TYPES_PATH, ISSUE_LAYOUT_TYPE],
+    path: [JIRA, adapterElements.TYPES_PATH, typeName],
   })
 
   return {
-    issueLayoutType,
+    layoutType,
     subTypes: [
-      issueLayoutItemType,
-      issueLayoutConfigType,
+      layoutItemType,
+      layoutConfigType,
     ],
   }
 }
@@ -106,7 +106,7 @@ export type IssueLayoutResponse = {
     }
   }
 
-export type IssueLayoutConfigItem = {
+export type layoutConfigItem = {
   type: string
   sectionType: 'PRIMARY' | 'SECONDARY' | 'CONTENT'
   key: string
@@ -114,12 +114,12 @@ export type IssueLayoutConfigItem = {
 
 export const ISSUE_LAYOUT_CONFIG_ITEM_SCHEME = Joi.object({
   type: Joi.string().required(),
-  sectionType: Joi.string().valid('PRIMARY', 'SECONDARY', 'CONTENT').required(),
+  sectionType: Joi.string().invalid('HIDDEN_ITEMS').required(),
   key: Joi.string().required(),
 }).unknown(true).required()
 
-export type IssueLayoutConfig = {
-    items: IssueLayoutConfigItem[]
+export type issueLayoutConfig = {
+    items: layoutConfigItem[]
 }
 
 export const ISSUE_LAYOUT_RESPONSE_SCHEME = Joi.object({

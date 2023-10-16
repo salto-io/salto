@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { InstanceElement, CORE_ANNOTATIONS, ElemID, INSTANCE_ANNOTATIONS, isReferenceExpression, ObjectType, isInstanceElement, Value } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ElemID, INSTANCE_ANNOTATIONS, isReferenceExpression, isInstanceElement, Value, TopLevelElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 
 const log = logger(module)
@@ -33,12 +33,11 @@ export type AliasData<T extends Component[] = Component[]> = {
   separator?: string
 }
 
-type SupportedElement = ObjectType | InstanceElement
 
 const isInstanceAnnotation = (field: string): boolean =>
   Object.values(INSTANCE_ANNOTATIONS).includes(field.split(ElemID.NAMESPACE_SEPARATOR)[0])
 
-const isValidAlias = (aliasParts: (string | undefined)[], element: SupportedElement): boolean =>
+const isValidAlias = (aliasParts: (string | undefined)[], element: TopLevelElement): boolean =>
   aliasParts.every((val, index) => {
     if (val === undefined) {
       log.debug(`for element ${element.elemID.getFullName()}, component number ${index} in the alias map resulted in undefined`)
@@ -47,16 +46,16 @@ const isValidAlias = (aliasParts: (string | undefined)[], element: SupportedElem
     return true
   })
 
-const getFieldValue = (element: SupportedElement, fieldName: string): Value => (
+const getFieldValue = (element: TopLevelElement, fieldName: string): Value => (
   !isInstanceElement(element) || isInstanceAnnotation(fieldName)
     ? _.get(element.annotations, fieldName)
     : _.get(element.value, fieldName)
 )
 
 const getAliasFromField = ({ element, component, elementsById }:{
-  element: SupportedElement
+  element: TopLevelElement
   component: AliasComponent
-  elementsById: Record<string, SupportedElement>
+  elementsById: Record<string, TopLevelElement>
 }): string | undefined => {
   const { fieldName, referenceFieldName } = component
 
@@ -83,8 +82,8 @@ const isConstantComponent = (
 ): component is ConstantComponent => 'constant' in component
 
 const calculateAlias = ({ element, elementsById, aliasData }: {
-  element: SupportedElement
-  elementsById: Record<string, SupportedElement>
+  element: TopLevelElement
+  elementsById: Record<string, TopLevelElement>
   aliasData: AliasData
 }): string | undefined => {
   const { aliasComponents, separator = ' ' } = aliasData
@@ -105,7 +104,7 @@ export const addAliasToElements = ({
   aliasMap,
   secondIterationGroupNames = [],
 }: {
-  elementsMap: Record<string, SupportedElement[]>
+  elementsMap: Record<string, TopLevelElement[]>
   aliasMap: Record<string, AliasData>
   secondIterationGroupNames?: string[]
 }): void => {

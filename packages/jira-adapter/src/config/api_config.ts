@@ -32,7 +32,7 @@ type ExtendedTypeConfig = configUtils.TypeConfig & {
 }
 
 export type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger' | 'types'> & {
-  types: Record<string, ExtendedTypeConfig | configUtils.TypeConfig>
+  types: Record<string, ExtendedTypeConfig>
   platformSwagger: configUtils.AdapterSwaggerApiConfig['swagger']
   jiraSwagger: configUtils.AdapterSwaggerApiConfig['swagger']
   typesToFallbackToInternalId: string[]

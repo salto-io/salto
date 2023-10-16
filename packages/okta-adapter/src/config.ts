@@ -981,6 +981,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceUrl: '/admin/workflow/eventhooks',
     },
   },
+  api__v1__groups__rules: {
+    request: {
+      url: '/api/v1/groups/rules',
+      queryParams: { limit: '200' },
+    },
+  },
   GroupRule: {
     transformation: {
       fieldTypeOverrides: [{ fieldName: 'allGroupsValid', fieldType: 'boolean' }],
@@ -991,7 +997,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
     deployRequests: {
       add: {
         url: '/api/v1/groups/rules',
-        queryParams: { limit: '200' },
         method: 'post',
         // status update deployed through different endpoint
         fieldsToIgnore: ['status', 'allGroupsValid'],

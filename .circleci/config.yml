@@ -182,9 +182,7 @@ jobs:
             fi
             echo "using sources.list:"
             cat /etc/apt/sources.list
-      # - run:
-      #     name: Install java
-      #     command: sudo apt update && sudo apt install -y openjdk-17-jdk --no-install-recommends
+
       - run:
           name: Run E2E tests
           command: yarn test --reporters=default --reporters=jest-junit --coverage=false
@@ -355,8 +353,7 @@ jobs:
           command: .circleci/scripts/publish-canary.sh
 
 workflows:
-  version: 2
-
+  
   commit:
     jobs:
       - build

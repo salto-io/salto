@@ -39,5 +39,9 @@ module.exports = {
     '!test/**',
     '!e2e_test/**',
   ],
+  snapshotFormat: {
+    escapeString: true,
+    printBasicPrototype: true
+  },
 }
 

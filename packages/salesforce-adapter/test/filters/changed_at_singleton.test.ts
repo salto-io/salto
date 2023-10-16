@@ -27,7 +27,7 @@ import {
   CHANGED_AT_SINGLETON,
   CUSTOM_OBJECT,
   FLOW_METADATA_TYPE,
-  LAST_MODIFIED_INSTANCES,
+  DATA_INSTANCES_CHANGED_AT_MAGIC,
 } from '../../src/constants'
 import { apiName } from '../../src/transformers/transformer'
 import { defaultFilterContext } from '../utils'
@@ -124,7 +124,7 @@ describe('createChangedAtSingletonInstanceFilter', () => {
           [CUSTOM_OBJECT]: {
             SBQQ__Template__c: CHANGED_AT,
           },
-          [LAST_MODIFIED_INSTANCES]: {
+          [DATA_INSTANCES_CHANGED_AT_MAGIC]: {
             [CUSTOM_OBJECT]: {
               SBQQ__Template__c: CHANGED_AT,
             },

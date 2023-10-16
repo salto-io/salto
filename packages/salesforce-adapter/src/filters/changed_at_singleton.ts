@@ -26,7 +26,7 @@ import { LocalFilterCreator } from '../filter'
 import {
   ArtificialTypes,
   CUSTOM_OBJECT,
-  LAST_MODIFIED_INSTANCES,
+  DATA_INSTANCES_CHANGED_AT_MAGIC,
 } from '../constants'
 import {
   apiNameSync,
@@ -67,6 +67,7 @@ const getChangedAtSingletonInstance = async (
 const dateStringOfMostRecentlyChangedInstance = (instances: InstanceElement[]): string => (
   _(instances)
     .map(instance => instance.annotations[CORE_ANNOTATIONS.CHANGED_AT])
+    .filter(changedAt => changedAt !== undefined)
     .maxBy((changedAt: string) => new Date(changedAt).getTime())
 )
 
@@ -90,15 +91,15 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
       changedAtInstance.value,
     )
 
-    const instanceLastUpdateByType = _(elements)
+    const instanceLastChangedByCustomObjectType = _(elements)
       .filter(isInstanceOfCustomObjectSync)
       .groupBy(instance => apiNameSync(instance.getTypeSync()))
       .mapValues(dateStringOfMostRecentlyChangedInstance)
 
-    instanceLastUpdateByType
+    instanceLastChangedByCustomObjectType
       .entries()
       .forEach(([typeName, dateString]) => {
-        _.set(changedAtInstance.value, [LAST_MODIFIED_INSTANCES, CUSTOM_OBJECT, typeName], dateString)
+        _.set(changedAtInstance.value, [DATA_INSTANCES_CHANGED_AT_MAGIC, CUSTOM_OBJECT, typeName], dateString)
       })
   },
 })

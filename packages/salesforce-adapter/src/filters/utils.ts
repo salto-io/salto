@@ -68,7 +68,7 @@ import {
   INTERNAL_ID_FIELD,
   KEY_PREFIX,
   LABEL,
-  LAST_MODIFIED_INSTANCES,
+  DATA_INSTANCES_CHANGED_AT_MAGIC,
   LAYOUT_TYPE_ID_METADATA_TYPE,
   METADATA_TYPE,
   NAMESPACE_SEPARATOR,
@@ -692,7 +692,7 @@ export const getTypeInstancesChangedAt = (
   metadataTypeName: string,
   typeName: string,
 ): string | undefined => (
-  _.get(changedAtSingleton.value, [LAST_MODIFIED_INSTANCES, metadataTypeName, typeName])
+  _.get(changedAtSingleton.value, [DATA_INSTANCES_CHANGED_AT_MAGIC, metadataTypeName, typeName])
 )
 
 

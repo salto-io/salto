@@ -13,15 +13,24 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, InstanceElement, isObjectType, BuiltinTypes, toChange, Change, getChangeData, isInstanceChange } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
-import { metadataType, apiName, MetadataTypeAnnotations } from '../../src/transformers/transformer'
+import {
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  isObjectType,
+  BuiltinTypes,
+  toChange,
+  Change,
+  getChangeData,
+  isInstanceChange,
+  isInstanceElement, CORE_ANNOTATIONS,
+} from '@salto-io/adapter-api'
+import { apiName, MetadataTypeAnnotations } from '../../src/transformers/transformer'
 import * as constants from '../../src/constants'
 import filterCreator from '../../src/filters/topics_for_objects'
 import { defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
-
-const { awu } = collections.asynciterable
+import { metadataTypeSync } from '../../src/filters/utils'
 
 const { TOPICS_FOR_OBJECTS_ANNOTATION, TOPICS_FOR_OBJECTS_FIELDS,
   TOPICS_FOR_OBJECTS_METADATA_TYPE } = constants
@@ -69,7 +78,7 @@ describe('Topics for objects filter', () => {
     beforeAll(() => {
       filter = filterCreator({ config: defaultFilterContext }) as typeof filter
     })
-    it('should add topicsForObjects to object types and remove topics type & instances', async () => {
+    it('should add topicsForObjects to object types, remove topics instances, and hide topics MetadataType', async () => {
       const elements = [mockObject('Test__c'), mockTopicForObject, mockTopic]
       await filter.onFetch(elements)
       const objectTypes = elements.filter(isObjectType)
@@ -78,10 +87,16 @@ describe('Topics for objects filter', () => {
       const topicForObject = objectTypes[0].annotations[TOPICS_FOR_OBJECTS_ANNOTATION]
       expect(topicForObject[ENABLE_TOPICS]).toBeTruthy()
 
-      // Check topic instances' and type were deleted
-      expect(await awu(elements)
-        .filter(async elem => await metadataType(elem) === TOPICS_FOR_OBJECTS_METADATA_TYPE)
-        .toArray()).toHaveLength(0)
+      // Check topic instances' were deleted
+      expect(elements
+        .filter(isInstanceElement)
+        .filter(elem => metadataTypeSync(elem) === TOPICS_FOR_OBJECTS_METADATA_TYPE)).toBeEmpty()
+
+      // Check topic metadata type was hidden
+      const topicMetadataType = elements.filter(isObjectType)
+        .find(elem => metadataTypeSync(elem) === TOPICS_FOR_OBJECTS_METADATA_TYPE) as ObjectType
+      expect(topicMetadataType).toBeDefined()
+      expect(topicMetadataType.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeTrue()
     })
   })
 

@@ -16,15 +16,15 @@
 import {
   ObjectType, Element, Values, isObjectTypeChange, InstanceElement,
   isAdditionOrModificationChange, getChangeData, isAdditionChange, isModificationChange,
-  ElemID, toChange,
+  ElemID, toChange, isInstanceElement, isObjectType, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
 import { TOPICS_FOR_OBJECTS_FIELDS, TOPICS_FOR_OBJECTS_ANNOTATION, TOPICS_FOR_OBJECTS_METADATA_TYPE, SALESFORCE } from '../constants'
-import { isCustomObject, apiName, metadataType, createInstanceElement, metadataAnnotationTypes, MetadataTypeAnnotations } from '../transformers/transformer'
+import { isCustomObject, apiName, createInstanceElement, metadataAnnotationTypes, MetadataTypeAnnotations } from '../transformers/transformer'
 import { LocalFilterCreator } from '../filter'
 import { TopicsForObjectsInfo } from '../client/types'
-import { boolValue, getInstancesOfMetadataType, isInstanceOfTypeChange } from './utils'
+import { apiNameSync, boolValue, getInstancesOfMetadataType, isInstanceOfTypeChange, metadataTypeSync } from './utils'
 
 const { awu } = collections.asynciterable
 const { removeAsync } = promises.array
@@ -84,10 +84,17 @@ const filterCreator: LocalFilterCreator = () => ({
       }
     })
 
-    // Remove TopicsForObjects Instances & Type to avoid information duplication
-    await removeAsync(
+    // Remove TopicsForObjects Instances & and set the MetadataType as hidden to avoid information duplication
+    const topicsForObjectType = elements
+      .filter(isObjectType)
+      .find(objectType => apiNameSync(objectType) === TOPICS_FOR_OBJECTS_METADATA_TYPE)
+    if (topicsForObjectType !== undefined) {
+      topicsForObjectType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
+    }
+    _.remove(
       elements,
-      async elem => (await metadataType(elem) === TOPICS_FOR_OBJECTS_METADATA_TYPE)
+      element => isInstanceElement(element)
+        && metadataTypeSync(element) === TOPICS_FOR_OBJECTS_METADATA_TYPE
     )
   },
 

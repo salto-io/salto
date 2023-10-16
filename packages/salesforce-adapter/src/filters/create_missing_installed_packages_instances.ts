@@ -18,9 +18,9 @@ import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { FileProperties } from 'jsforce-types'
 import { FilterResult, RemoteFilterCreator } from '../filter'
-import { isInstanceOfType } from './utils'
+import { isInstanceOfType, listMetadataObjects } from './utils'
 import { INSTALLED_PACKAGE_METADATA, INSTANCE_FULL_NAME_FIELD } from '../constants'
-import { listMetadataObjects, notInSkipList } from '../fetch'
+import { notInSkipList } from '../fetch'
 import { apiName, createInstanceElement, getAuthorAnnotations } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable

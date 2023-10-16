@@ -63,7 +63,7 @@ describe('adapters local config', () => {
       isEmpty: mockFunction<remoteMap.RemoteMap<validator.ValidationError[]>['isEmpty']>(),
     }
 
-    await buildLocalAdaptersConfigSource('baseDir', 'somePath', mockFunction<remoteMap.RemoteMapCreator>().mockResolvedValue(validationErrorsMap), true, [], [])
+    await buildLocalAdaptersConfigSource('baseDir', mockFunction<remoteMap.RemoteMapCreator>().mockResolvedValue(validationErrorsMap), true, [], [])
   })
 
   describe('initialization', () => {

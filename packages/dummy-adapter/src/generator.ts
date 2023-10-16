@@ -25,6 +25,7 @@ import {
   createRestriction,
   SeverityLevel,
 } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { uniqueNamesGenerator, adjectives, colors, names } from 'unique-names-generator'
 import { collections, promises } from '@salto-io/lowerdash'
@@ -38,6 +39,7 @@ import { createMatchingObjectType } from '@salto-io/adapter-utils'
 const { mapValuesAsync } = promises.object
 const { arrayOf } = collections.array
 const { awu } = collections.asynciterable
+const log = logger(module)
 
 export const DUMMY_ADAPTER = 'dummy'
 
@@ -667,8 +669,10 @@ export const generateElements = async (
     const allNaclMocks = await readdirp.promise(naclDir, {
       fileFilter: [`*.${MOCK_NACL_SUFFIX}`],
     })
+    log.trace('the list of files read in generateExtraElements is: %s', allNaclMocks.map(mock => mock.path).join(' , '))
     const elements = await awu(allNaclMocks.map(async file => {
       const content = fs.readFileSync(file.fullPath, 'utf8')
+      log.trace('content of file %s is %s', file.path, content)
       const parsedNaclFile = await parser.parse(Buffer.from(content), file.basename, {
         file: {
           parse: async funcParams => new StaticFile({
@@ -679,13 +683,11 @@ export const generateElements = async (
           isSerializedAsFunction: () => true,
         },
       })
-
       await awu(parsedNaclFile.elements).forEach(elem => {
         elem.path = [DUMMY_ADAPTER, 'extra', file.basename.replace(new RegExp(`.${MOCK_NACL_SUFFIX}$`), '')]
       })
       return parsedNaclFile.elements
     })).flat().toArray()
-
     const mergedElements = await merger.mergeElements(awu(elements))
     const inMemElemSource = elementSource.createInMemoryElementSource(
       await awu(mergedElements.merged.values()).toArray()
@@ -703,31 +705,10 @@ export const generateElements = async (
       elemID: new ElemID('dummy', 'PrimWithAnnos'),
       primitive: PrimitiveTypes.STRING,
       annotationRefsOrTypes: {
-        active: BuiltinTypes.BOOLEAN,
-        name: BuiltinTypes.STRING,
         SharedHidden: BuiltinTypes.HIDDEN_STRING,
         DiffHidden: BuiltinTypes.HIDDEN_STRING,
       },
       path: [DUMMY_ADAPTER, 'EnvStuff', 'PrimWithAnnos'],
-      annotations: {
-        [CORE_ANNOTATIONS.IMPORTANT_VALUES]: [
-          {
-            value: 'active',
-            indexed: true,
-            highlighted: true,
-          },
-          {
-            value: 'name',
-            indexed: false,
-            highlighted: false,
-          },
-          {
-            value: 'doesNotExist',
-            indexed: false,
-            highlighted: true,
-          },
-        ],
-      },
     })
 
     const sharedObj = new ObjectType({
@@ -745,8 +726,6 @@ export const generateElements = async (
         [`${envID}FieldWithHidden`]: {
           refType: PrimWithHiddenAnnos,
           annotations: {
-            active: true,
-            name: 'test',
             SharedHidden: 'HIDDEN!',
             DiffHidden: `${envID}-HIDDENNNN!!!!`,
           },
@@ -766,40 +745,6 @@ export const generateElements = async (
         SharedHidden: 'HIDDEN!',
         DiffHidden: `${envID}-HIDDENNNN!!!!`,
         [CORE_ANNOTATIONS.ALIAS]: 'EnvObj_alias',
-        [CORE_ANNOTATIONS.IMPORTANT_VALUES]: [
-          {
-            value: 'SharedButDiffField',
-            indexed: true,
-            highlighted: true,
-          },
-          {
-            value: 'SharedField',
-            indexed: false,
-            highlighted: false,
-          },
-          {
-            value: 'doesNotExist',
-            indexed: false,
-            highlighted: true,
-          },
-        ],
-        [CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES]: [
-          {
-            value: 'SharedButDiffAnno',
-            indexed: true,
-            highlighted: false,
-          },
-          {
-            value: 'SharedAnno',
-            indexed: false,
-            highlighted: true,
-          },
-          {
-            value: 'doesNotExist',
-            indexed: false,
-            highlighted: false,
-          },
-        ],
       },
       path: [DUMMY_ADAPTER, 'EnvStuff', 'EnvObj'],
     })
@@ -823,39 +768,16 @@ export const generateElements = async (
         Field: {
           refType: BuiltinTypes.STRING,
         },
-        active: {
-          refType: BuiltinTypes.BOOLEAN,
-        },
       },
       path: [DUMMY_ADAPTER, 'EnvStuff', `${envID}EnvObj`],
       annotations: {
         [CORE_ANNOTATIONS.ALIAS]: `${envID}EnvObj_alias`,
-        [CORE_ANNOTATIONS.IMPORTANT_VALUES]: [
-          {
-            value: 'Field',
-            indexed: false,
-            highlighted: true,
-          },
-          {
-            value: 'active',
-            indexed: true,
-            highlighted: false,
-          },
-          {
-            value: 'doesNotExist',
-            indexed: false,
-            highlighted: true,
-          },
-        ],
       },
     })
     const envSpecificInst = new InstanceElement(
       `${envID}EnvInst`,
       envSpecificObj,
-      {
-        Field: 'FieldValue',
-        active: true,
-      },
+      { Field: 'FieldValue' },
       [DUMMY_ADAPTER, 'EnvStuff', `${envID}EnvInst`],
       {
         [CORE_ANNOTATIONS.ALIAS]: `${envID}EnvInst_alias`,
@@ -885,6 +807,7 @@ export const generateElements = async (
   const defaultExtraElements = await generateExtraElements(
     path.join(dataPath, 'fixtures')
   )
+  log.trace('default fixture element are: %s', defaultExtraElements.map(elem => elem.elemID.getFullName()).join(' , '))
   const envObjects = generateEnvElements()
   progressReporter.reportProgress({ message: 'Generation done' })
   const elementsToExclude = new Set(params.elementsToExclude ?? [])

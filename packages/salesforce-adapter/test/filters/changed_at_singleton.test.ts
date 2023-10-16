@@ -21,9 +21,9 @@ import {
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { mockInstances } from '../mock_elements'
+import { mockInstances, mockTypes } from '../mock_elements'
 import filterCreator from '../../src/filters/changed_at_singleton'
-import { CHANGED_AT_SINGLETON, FLOW_METADATA_TYPE } from '../../src/constants'
+import { CHANGED_AT_SINGLETON, CUSTOM_OBJECT, FLOW_METADATA_TYPE } from '../../src/constants'
 import { apiName } from '../../src/transformers/transformer'
 import { defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
@@ -86,15 +86,26 @@ describe('createChangedAtSingletonInstanceFilter', () => {
       let fetchedElements: Element[]
 
       beforeEach(async () => {
-        const updatedInstance = mockInstances().Profile
-        updatedInstanceTypeName = await apiName(await updatedInstance.getType())
-        updatedInstanceName = await apiName(updatedInstance)
-        updatedInstance.annotations = {
-          ...updatedInstance.annotations,
+        const metadataInstance = mockInstances().Profile
+        updatedInstanceTypeName = await apiName(await metadataInstance.getType())
+        updatedInstanceName = await apiName(metadataInstance)
+        metadataInstance.annotations = {
+          ...metadataInstance.annotations,
           [CORE_ANNOTATIONS.CHANGED_AT]: CHANGED_AT,
         }
+        const customObject = mockTypes.SBQQ__Template__c
+        customObject.annotations[CORE_ANNOTATIONS.CHANGED_AT] = CHANGED_AT
+
+        // Should not exist in the singleton
+        const dataInstance = new InstanceElement('dataInstance', customObject, {
+          Name: 'TestDataInstance',
+          Id: '13560',
+        }, undefined, {
+          [CORE_ANNOTATIONS.CHANGED_AT]: CHANGED_AT,
+        })
+
         const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch'>
-        fetchedElements = [updatedInstance]
+        fetchedElements = [metadataInstance, customObject, dataInstance]
         await filter.onFetch(fetchedElements)
       })
       it('should create the singleton with correct values', async () => {
@@ -105,6 +116,9 @@ describe('createChangedAtSingletonInstanceFilter', () => {
         expect(changedAtSingleton?.value).toEqual({
           [updatedInstanceTypeName]: {
             [updatedInstanceName]: CHANGED_AT,
+          },
+          [CUSTOM_OBJECT]: {
+            SBQQ__Template__c: CHANGED_AT,
           },
         })
       })

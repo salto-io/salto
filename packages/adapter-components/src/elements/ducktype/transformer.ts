@@ -30,7 +30,7 @@ import { extractStandaloneFields } from './standalone_field_extractor'
 import { shouldRecurseIntoEntry } from '../instance_elements'
 import { addRemainingTypes } from './add_remaining_types'
 import { ElementQuery } from '../query'
-import { InvalidSingletonType } from '../../config/shared'
+import { AdapterFetchError, InvalidSingletonType } from '../../config/shared'
 import { ConfigChangeSuggestion } from '../../config/config_change'
 
 const { makeArray } = collections.array
@@ -426,6 +426,9 @@ export const getAllElements = async ({
         }
         if (e instanceof InvalidSingletonType) {
           return { elements: [], errors: [{ message: e.message, severity: 'Warning' }] }
+        }
+        if (e instanceof AdapterFetchError) {
+          return { elements: [], errors: [{ message: e.message, severity: e.severity }] }
         }
         throw e
       }

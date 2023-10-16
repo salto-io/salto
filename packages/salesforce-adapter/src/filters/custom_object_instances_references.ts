@@ -55,7 +55,7 @@ import {
   isReadOnlyField,
   safeApiName,
 } from './utils'
-import { DataManagement } from '../fetch_profile/data_management'
+import { DataManagement } from '../types'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable

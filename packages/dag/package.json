@@ -35,7 +35,7 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@types/jest": "^27.4.0",
+    "@types/jest": "*",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",
     "eslint": "^6.2.2",
@@ -47,8 +47,8 @@
     "eslint-plugin-react": "^7.14.3",
     "eslint-plugin-react-hooks": "^1.7.0",
     "jest": "*",
-    "jest-circus": "^27.4.5",
-    "jest-junit": "^12.0.0",
+    "jest-circus": "*",
+    "jest-junit": "*",
     "ts-jest": "*",
     "typescript": "^4.3"
   }

@@ -52,7 +52,7 @@
     "eslint-plugin-react": "^7.14.3",
     "eslint-plugin-react-hooks": "^1.7.0",
     "jest": "*",
-    "jest-circus": "^27.4.5",
+    "jest-circus": "*",
     "jest-each": "^26.6.2",
     "ts-jest": "*",
     "typescript": "^4.3"

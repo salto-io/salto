@@ -327,6 +327,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   api__v1__apps: {
     request: {
       url: '/api/v1/apps',
+      queryParams: { limit: '200' },
       recurseInto: [
         {
           type: 'api__v1__apps___appId___groups@uuuuuu_00123_00125uu',
@@ -990,6 +991,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
     deployRequests: {
       add: {
         url: '/api/v1/groups/rules',
+        queryParams: { limit: '200' },
         method: 'post',
         // status update deployed through different endpoint
         fieldsToIgnore: ['status', 'allGroupsValid'],

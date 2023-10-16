@@ -88,7 +88,7 @@ describe('Test layout filter', () => {
       expect(instance.path).toEqual([...testSobjPath.slice(0, -1), 'Layout', pathNaclCase(instance.elemID.name)])
 
       expect(instance.annotations[CORE_ANNOTATIONS.PARENT]).toContainEqual(
-        new ReferenceExpression(testSObj.elemID)
+        new ReferenceExpression(testSObj.elemID, testSObj)
       )
     }
 

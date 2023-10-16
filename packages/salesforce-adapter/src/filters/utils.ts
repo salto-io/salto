@@ -28,7 +28,7 @@ import {
   Field,
   getChangeData,
   InstanceElement,
-  isAdditionOrModificationChange,
+  isAdditionOrModificationChange, isElement,
   isField,
   isInstanceElement,
   isObjectType,
@@ -43,7 +43,7 @@ import {
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements, createSchemeGuard, getParents } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
-import { chunks, collections } from '@salto-io/lowerdash'
+import { chunks, collections, types } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import SalesforceClient, { ErrorFilter } from '../client/client'
 import { FetchElements, INSTANCE_SUFFIXES, OptionalFeatures, RelatedPropsByMetadataType } from '../types'
@@ -99,15 +99,15 @@ export const isMetadataValues = createSchemeGuard<MetadataValues>(METADATA_VALUE
 // This function checks whether an element is an instance of a certain metadata type
 // note that for instances of custom objects this will check the specific type (i.e Lead)
 // if you want instances of all custom objects use isInstanceOfCustomObject
-export const isInstanceOfType = (...types: string[]) => (
+export const isInstanceOfType = (...typeNames: string[]) => (
   async (elem: Element): Promise<boolean> => (
-    isInstanceElement(elem) && types.includes(await apiName(await elem.getType()))
+    isInstanceElement(elem) && typeNames.includes(await apiName(await elem.getType()))
   )
 )
 
-export const isInstanceOfTypeChange = (...types: string[]) => (
+export const isInstanceOfTypeChange = (...typeNames: string[]) => (
   (change: Change): Promise<boolean> => (
-    isInstanceOfType(...types)(getChangeData(change))
+    isInstanceOfType(...typeNames)(getChangeData(change))
   )
 )
 
@@ -329,12 +329,13 @@ export const parentApiName = async (elem: Element): Promise<string> =>
   (await apiNameParts(elem))[0]
 
 export const addElementParentReference = (instance: InstanceElement,
-  { elemID }: Element): void => {
+  element: Element): void => {
+  const { elemID } = element
   const instanceDeps = getParents(instance)
   if (instanceDeps.filter(isReferenceExpression).some(ref => ref.elemID.isEqual(elemID))) {
     return
   }
-  instanceDeps.push(new ReferenceExpression(elemID))
+  instanceDeps.push(new ReferenceExpression(elemID, element))
   instance.annotations[CORE_ANNOTATIONS.PARENT] = instanceDeps
 }
 
@@ -560,6 +561,38 @@ export const listMetadataObjects = async (
       .map(createListMetadataObjectsConfigChange),
   }
 }
+
+export type ElementWithResolvedParent<T extends Element> = T & {
+  annotations: {
+    _parent: types.NonEmptyArray<ReferenceExpression & {value: Element}>
+  }
+}
+
+
+export const isElementWithResolvedParent = <T extends Element>(element: T): element is ElementWithResolvedParent<T> => (
+  getParents(element).some(parent => isReferenceExpression(parent) && isElement(parent.value))
+)
+
+type AuthorInformation = Partial<{
+  createdBy: string
+  createdAt: string
+  changedBy: string
+  changedAt: string
+}>
+
+export const getAuthorInformationFromFileProps = (fileProps: FileProperties): AuthorInformation => ({
+  createdBy: fileProps.createdByName,
+  createdAt: fileProps.createdDate,
+  changedBy: fileProps.lastModifiedByName,
+  changedAt: fileProps.lastModifiedDate,
+})
+
+export const getElementAuthorInformation = ({ annotations }: Element): AuthorInformation => ({
+  createdBy: annotations[CORE_ANNOTATIONS.CREATED_BY],
+  createdAt: annotations[CORE_ANNOTATIONS.CREATED_AT],
+  changedBy: annotations[CORE_ANNOTATIONS.CHANGED_BY],
+  changedAt: annotations[CORE_ANNOTATIONS.CHANGED_AT],
+})
 
 export const retrieveRelatedPropsByMetadataType = async (
   client: SalesforceClient

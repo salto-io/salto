@@ -14,7 +14,15 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, ElemID, Element, ObjectType, PrimitiveType, PrimitiveTypes } from '@salto-io/adapter-api'
+import {
+  CORE_ANNOTATIONS,
+  ElemID,
+  Element,
+  ObjectType,
+  PrimitiveType,
+  PrimitiveTypes,
+  InstanceElement, ReferenceExpression,
+} from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { FileProperties } from 'jsforce-types'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -27,32 +35,41 @@ import customObjects, { WARNING_MESSAGE } from '../../../src/filters/author_info
 import { defaultFilterContext } from '../../utils'
 import { buildFetchProfile } from '../../../src/fetch_profile/fetch_profile'
 import { API_NAME, CUSTOM_OBJECT, INTERNAL_ID_ANNOTATION } from '../../../src/constants'
+import { mockTypes } from '../../mock_elements'
 
 describe('custom objects author information test', () => {
   let filter: Filter
   let client: SalesforceClient
   let connection: MockInterface<Connection>
   let customObject: ObjectType
+  let instancesWithParent: InstanceElement[]
+
+  const withParent = (instance: InstanceElement, parent: ObjectType): InstanceElement => {
+    instance.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(parent.elemID, parent)]
+    return instance
+  }
+
   const objectProperties = mockFileProperties({ fullName: 'Custom__c',
     type: 'test',
+    // The _created_at and _created_By values should be these
     createdByName: 'created_name',
-    createdDate: 'created_date',
+    createdDate: '2023-01-01T16:28:30.000Z',
     lastModifiedByName: 'changed_name',
-    lastModifiedDate: 'changed_date',
+    lastModifiedDate: '2023-01-19T16:28:30.000Z',
     id: 'id' })
   const fieldProperties = mockFileProperties({ fullName: 'Custom__c.StringField__c',
     type: 'test',
     createdByName: 'created_name_field',
-    createdDate: 'created_date_field',
+    createdDate: '2023-01-01T16:28:30.000Z',
     lastModifiedByName: 'changed_name_field',
-    lastModifiedDate: 'changed_date_field',
+    lastModifiedDate: '2023-01-19T16:28:30.000Z',
     id: 'id_field' })
   const nonExistentFieldProperties = mockFileProperties({ fullName: 'Custom__c.noSuchField',
     type: 'test',
     createdByName: 'test',
-    createdDate: 'test',
+    createdDate: '2023-01-19T16:28:30.000Z',
     lastModifiedByName: 'test',
-    lastModifiedDate: 'test',
+    lastModifiedDate: '2023-01-19T16:28:30.000Z',
     id: 'test' })
   // In order to test a field that was described in the server and not found in our elements.
   const primID = new ElemID('test', 'prim')
@@ -89,15 +106,43 @@ describe('custom objects author information test', () => {
         },
       },
     })
+    instancesWithParent = [
+      new InstanceElement('testWebLink1', mockTypes.WebLink, { fullName: 'testWebLink1' }, undefined, {
+        [CORE_ANNOTATIONS.CREATED_BY]: 'Test User',
+        [CORE_ANNOTATIONS.CHANGED_BY]: 'Test User',
+        [CORE_ANNOTATIONS.CREATED_AT]: '2023-01-19T16:28:30.000Z',
+        [CORE_ANNOTATIONS.CHANGED_AT]: '2023-02-19T16:28:30.000Z',
+      }),
+      // This is the most recent file properties
+      new InstanceElement('testWebLink2', mockTypes.WebLink, { fullName: 'testWebLink2' }, undefined, {
+        [CORE_ANNOTATIONS.CREATED_BY]: 'Test User',
+        [CORE_ANNOTATIONS.CHANGED_BY]: 'Another Test User',
+        [CORE_ANNOTATIONS.CREATED_AT]: '2023-01-19T16:28:30.000Z',
+        [CORE_ANNOTATIONS.CHANGED_AT]: '2023-03-19T16:28:30.000Z',
+      }),
+      // While this sub-instance has the most recent file properties, we use it to make sure we only
+      // take into consideration sub-instances of CustomObjects and not Workflow for example
+      new InstanceElement('workflowAlert', mockTypes.WorkflowAlert, { fullName: 'workflowAlert' }, undefined, {
+        [CORE_ANNOTATIONS.CREATED_BY]: 'Test User',
+        [CORE_ANNOTATIONS.CHANGED_BY]: 'Another Test User',
+        [CORE_ANNOTATIONS.CREATED_AT]: '2023-01-19T16:28:30.000Z',
+        [CORE_ANNOTATIONS.CHANGED_AT]: '2023-04-19T16:28:30.000Z',
+      }),
+    ].map(instance => withParent(instance, customObject))
   })
   describe('success', () => {
     beforeEach(() => {
       connection.metadata.list.mockResolvedValueOnce([objectProperties])
       connection.metadata.list.mockResolvedValueOnce([fieldProperties, nonExistentFieldProperties])
     })
-    it('should add author annotations to custom object', async () => {
-      await filter.onFetch?.([customObject, objectWithoutInformation])
-      checkElementAnnotations(customObject, objectProperties)
+    it('should add correct author annotations to custom object', async () => {
+      await filter.onFetch?.([customObject, objectWithoutInformation, ...instancesWithParent])
+      expect(customObject.annotations).toMatchObject({
+        [CORE_ANNOTATIONS.CREATED_BY]: 'created_name',
+        [CORE_ANNOTATIONS.CHANGED_BY]: 'Another Test User',
+        [CORE_ANNOTATIONS.CREATED_AT]: '2023-01-01T16:28:30.000Z',
+        [CORE_ANNOTATIONS.CHANGED_AT]: '2023-03-19T16:28:30.000Z',
+      })
       checkElementAnnotations(customObject.fields.StringField__c, fieldProperties)
     })
   })

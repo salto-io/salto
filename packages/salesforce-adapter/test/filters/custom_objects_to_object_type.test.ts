@@ -687,7 +687,7 @@ describe('Custom Objects to Object Type filter', () => {
 
         it('should add PARENT annotation to assignmentRules instance', async () => {
           expect(assignmentRulesInstance.annotations[CORE_ANNOTATIONS.PARENT])
-            .toContainEqual(new ReferenceExpression(leadType.elemID))
+            .toContainEqual(new ReferenceExpression(leadType.elemID, leadType))
         })
       })
 
@@ -711,7 +711,7 @@ describe('Custom Objects to Object Type filter', () => {
 
         it('should add PARENT annotation to leadConvertSettings instance', async () => {
           expect(leadConvertSettingsInstance.annotations[CORE_ANNOTATIONS.PARENT])
-            .toContainEqual(new ReferenceExpression(leadType.elemID))
+            .toContainEqual(new ReferenceExpression(leadType.elemID, leadType))
         })
       })
 
@@ -746,7 +746,7 @@ describe('Custom Objects to Object Type filter', () => {
 
           it('should add PARENT annotation to quickAction instance', async () => {
             expect(quickActionInstance.annotations[CORE_ANNOTATIONS.PARENT])
-              .toContainEqual(new ReferenceExpression(leadType.elemID))
+              .toContainEqual(new ReferenceExpression(leadType.elemID, leadType))
           })
         })
 
@@ -764,7 +764,7 @@ describe('Custom Objects to Object Type filter', () => {
           })
           it('should add PARENT annotation to Lightning page instance with sobjectType', async () => {
             expect(recordPageInstance.annotations[CORE_ANNOTATIONS.PARENT])
-              .toContainEqual(new ReferenceExpression(leadType.elemID))
+              .toContainEqual(new ReferenceExpression(leadType.elemID, leadType))
           })
 
           it('should change the path of Lightning page instance with sobjectType', async () => {
@@ -813,7 +813,7 @@ describe('Custom Objects to Object Type filter', () => {
 
         it('should add PARENT annotation to customTab instance', async () => {
           expect(customTabInstance.annotations[CORE_ANNOTATIONS.PARENT])
-            .toContainEqual(new ReferenceExpression(leadType.elemID))
+            .toContainEqual(new ReferenceExpression(leadType.elemID, leadType))
         })
       })
 
@@ -839,7 +839,7 @@ describe('Custom Objects to Object Type filter', () => {
 
         it('should add PARENT annotation to customObjectTranslation instance', async () => {
           expect(customObjectTranslationInstance.annotations[CORE_ANNOTATIONS.PARENT])
-            .toContainEqual(new ReferenceExpression(leadType.elemID))
+            .toContainEqual(new ReferenceExpression(leadType.elemID, leadType))
         })
       })
 
@@ -864,7 +864,7 @@ describe('Custom Objects to Object Type filter', () => {
 
         it('should add PARENT annotation to instance', () => {
           expect(sharingRulesInstance.annotations[CORE_ANNOTATIONS.PARENT])
-            .toContainEqual(new ReferenceExpression(leadType.elemID))
+            .toContainEqual(new ReferenceExpression(leadType.elemID, leadType))
         })
       })
 
@@ -891,7 +891,7 @@ describe('Custom Objects to Object Type filter', () => {
 
         it('should add parent annotation to instance', () => {
           expect(sharingRulesInstance.annotations[CORE_ANNOTATIONS.PARENT]).toContainEqual(
-            new ReferenceExpression(leadType.elemID)
+            new ReferenceExpression(leadType.elemID, leadType)
           )
         })
       })

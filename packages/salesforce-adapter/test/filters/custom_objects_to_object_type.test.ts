@@ -19,7 +19,7 @@ import {
   CORE_ANNOTATIONS, isInstanceElement,
   ReferenceExpression, isListType, FieldDefinition, toChange, Change, ModificationChange,
   getChangeData,
-  isServiceId,
+  isServiceId, ListType,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import {
@@ -57,7 +57,10 @@ export const generateCustomObjectType = (): ObjectType => {
       const listViewFilterElemId = new ElemID(SALESFORCE, 'ListViewFilter')
       return {
         [INSTANCE_FULL_NAME_FIELD]: { refType: BuiltinTypes.STRING },
-        columns: { refType: BuiltinTypes.STRING },
+        // We use ListType here to validate we don't wrap a field that is already correct
+        // and is of type List. This is happening in fetchWithChangesDetection mode, where we get
+        // the CustomObject MetadataType from the elementsSource, which is already correct.
+        columns: { refType: new ListType(BuiltinTypes.STRING) },
         filters: {
           refType: new ObjectType({
             elemID: listViewFilterElemId,
@@ -498,7 +501,12 @@ describe('Custom Objects to Object Type filter', () => {
 
         const listViewType = await customObjectType
           .fields[NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS].getType() as ObjectType
-        expect(isListType(await listViewType.fields.columns.getType())).toBeTruthy()
+        // Here we validate we don't fix a corrected type (fetchWithChangesDetection)
+        const columnsFieldType = listViewType.fields.columns.getTypeSync() as ListType
+        expect(isListType(columnsFieldType)).toBeTruthy()
+        const columnsFieldInnerType = columnsFieldType.refInnerType.getResolvedValueSync()
+        expect(isListType(columnsFieldInnerType)).toBeFalse()
+
         expect(isListType(await listViewType.fields.filters.getType())).toBeTruthy()
 
         const fieldSetType = await customObjectType

@@ -30,10 +30,10 @@ import {
   InstanceElement,
   isAdditionOrModificationChange, isElement,
   isField,
-  isInstanceElement,
+  isInstanceElement, isListType,
   isObjectType,
   isReferenceExpression,
-  isRemovalOrModificationChange,
+  isRemovalOrModificationChange, ListType,
   ObjectType,
   ReadOnlyElementsSource,
   ReferenceExpression,
@@ -613,3 +613,7 @@ export const retrieveRelatedPropsByMetadataType = async (
     [CUSTOM_OBJECT]: await retrieveCustomObjectRelatedPropsByParent(),
   }
 }
+
+export const toListType = (type: TypeElement): ListType => (
+  isListType(type) ? type : new ListType(type)
+)

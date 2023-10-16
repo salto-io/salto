@@ -18,13 +18,13 @@ import {
   createRefToElmWithValue,
   ElemID,
   Field,
-  InstanceElement,
+  InstanceElement, ListType,
   ObjectType,
   ReadOnlyElementsSource, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import {
-  addDefaults, getAuthorInformationFromFileProps, getChangedAtSingleton, getElementAuthorInformation,
+  addDefaults, getAuthorInformationFromFileProps, getChangedAtSingleton, getElementAuthorInformation, toListType,
   getNamespace,
   isCustomMetadataRecordInstance,
   isCustomMetadataRecordType, isCustomType, isElementWithResolvedParent,
@@ -456,6 +456,14 @@ describe('addDefaults', () => {
         changedBy: 'test2',
         changedAt: '2023-01-01T16:28:30.000Z',
       })
+    })
+  })
+  describe('toListType', () => {
+    it('should wrap a non List type', () => {
+      expect(toListType(mockTypes.Profile)).toEqual(new ListType(mockTypes.Profile))
+    })
+    it('should not wrap a List type', () => {
+      expect(toListType(new ListType(mockTypes.Profile))).toEqual(new ListType(mockTypes.Profile))
     })
   })
 })

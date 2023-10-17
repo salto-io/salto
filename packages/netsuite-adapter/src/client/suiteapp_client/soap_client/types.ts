@@ -133,6 +133,11 @@ export type SearchErrorResponse = {
   }
 }
 
+export const isSearchErrorResponse = (
+  response: SearchResponse | SearchErrorResponse
+): response is SearchErrorResponse => 'status' in response.searchResult
+  && response.searchResult.status.attributes.isSuccess === 'false'
+
 export type GetAllResponse = {
   getAllResult: {
     recordList: {

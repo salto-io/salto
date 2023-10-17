@@ -28,9 +28,14 @@ import {
   LABEL,
   FIELD_ANNOTATIONS,
   CUSTOM_OBJECT_ID_FIELD,
+  INTERNAL_ID_FIELD,
 } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
-import { defaultFilterContext } from '../utils'
+import {
+  createCustomObjectType,
+  createMetadataTypeElement,
+  defaultFilterContext,
+} from '../utils'
 import { mockTypes } from '../mock_elements'
 import { FilterWith } from './mocks'
 import { FetchProfile, OutgoingReferenceBehavior } from '../../src/types'
@@ -85,122 +90,117 @@ describe('Custom Object Instances References filter', () => {
     },
   })
   const refToName = 'refToName'
-  const refToElemID = new ElemID(SALESFORCE, refToName)
-  const refToObj = new ObjectType({
-    elemID: refToElemID,
-    annotations: {
-      [API_NAME]: refToName,
-      [METADATA_TYPE]: CUSTOM_OBJECT,
-    },
+  const refToObj = createCustomObjectType(refToName, {})
+  const refToElemID = refToObj.elemID
+
+  const refToMetadataName = 'refToMetadataName'
+  const refToMetadataObj = createMetadataTypeElement(refToMetadataName, {})
+
+  const refFromName = 'refFrom'
+  const refFromObj = createCustomObjectType(refFromName, {
     fields: {
-      Id: {
-        refType: stringType,
+      LookupExample: {
+        refType: Types.primitiveDataTypes.Lookup,
         annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: false,
-          [LABEL]: 'Id',
-          [API_NAME]: 'Id',
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+          [LABEL]: 'lookup',
+          [API_NAME]: 'LookupExample',
+          [FIELD_ANNOTATIONS.CREATABLE]: true,
+          [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          referenceTo: [
+            refToName,
+          ],
+        },
+      },
+      NonDeployableLookup: {
+        refType: Types.primitiveDataTypes.Lookup,
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+          [LABEL]: 'lookup',
+          [API_NAME]: 'LookupExample',
+          [FIELD_ANNOTATIONS.CREATABLE]: false,
+          [FIELD_ANNOTATIONS.UPDATEABLE]: false,
+          referenceTo: [
+            refToName,
+          ],
+        },
+      },
+      RefToUser: {
+        refType: Types.primitiveDataTypes.Lookup,
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+          [LABEL]: 'ref to user',
+          [API_NAME]: 'RefToUser',
+          [FIELD_ANNOTATIONS.CREATABLE]: true,
+          [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          referenceTo: [
+            userObjName,
+          ],
+        },
+      },
+      MasterDetailExample: {
+        refType: Types.primitiveDataTypes.MasterDetail,
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+          [LABEL]: 'detailfOfMaster',
+          [API_NAME]: 'MasterDetailExample',
+          [FIELD_ANNOTATIONS.CREATABLE]: true,
+          [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          referenceTo: [
+            masterName,
+          ],
+        },
+      },
+      HierarchyExample: {
+        refType: Types.primitiveDataTypes.Hierarchy,
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+          [LABEL]: 'hierarchy',
+          [API_NAME]: 'HierarchyExample',
+          [FIELD_ANNOTATIONS.CREATABLE]: true,
+          [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+        },
+      },
+      HiddenValueField: {
+        refType: Types.primitiveDataTypes.MasterDetail,
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+          [LABEL]: 'hiddenValueField',
+          [API_NAME]: 'HiddenValueField',
+          [FIELD_ANNOTATIONS.CREATABLE]: true,
+          [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+          referenceTo: [
+            masterName,
+          ],
+        },
+      },
+      RefToMetadataField: {
+        refType: Types.primitiveDataTypes.Lookup,
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+          [LABEL]: 'lookupMetadataField',
+          [API_NAME]: 'LookupMetadataField',
+          [FIELD_ANNOTATIONS.CREATABLE]: true,
+          [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          referenceTo: [
+            refToMetadataName,
+          ],
         },
       },
     },
   })
-  const refFromName = 'refFrom'
-  const refFromElemID = new ElemID(SALESFORCE, refFromName)
-  const refFromObj = new ObjectType(
-    {
-      elemID: refFromElemID,
-      annotations: {
-        [API_NAME]: refFromName,
-        [METADATA_TYPE]: CUSTOM_OBJECT,
-      },
-      fields: {
-        Id: {
-          refType: stringType,
-          annotations: {
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-            [LABEL]: 'Id',
-            [API_NAME]: 'Id',
-          },
-        },
-        LookupExample: {
-          refType: Types.primitiveDataTypes.Lookup,
-          annotations: {
-            [CORE_ANNOTATIONS.REQUIRED]: true,
-            [LABEL]: 'lookup',
-            [API_NAME]: 'LookupExample',
-            [FIELD_ANNOTATIONS.CREATABLE]: true,
-            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
-            referenceTo: [
-              refToName,
-            ],
-          },
-        },
-        NonDeployableLookup: {
-          refType: Types.primitiveDataTypes.Lookup,
-          annotations: {
-            [CORE_ANNOTATIONS.REQUIRED]: true,
-            [LABEL]: 'lookup',
-            [API_NAME]: 'LookupExample',
-            [FIELD_ANNOTATIONS.CREATABLE]: false,
-            [FIELD_ANNOTATIONS.UPDATEABLE]: false,
-            referenceTo: [
-              refToName,
-            ],
-          },
-        },
-        RefToUser: {
-          refType: Types.primitiveDataTypes.Lookup,
-          annotations: {
-            [CORE_ANNOTATIONS.REQUIRED]: true,
-            [LABEL]: 'ref to user',
-            [API_NAME]: 'RefToUser',
-            [FIELD_ANNOTATIONS.CREATABLE]: true,
-            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
-            referenceTo: [
-              userObjName,
-            ],
-          },
-        },
-        MasterDetailExample: {
-          refType: Types.primitiveDataTypes.MasterDetail,
-          annotations: {
-            [CORE_ANNOTATIONS.REQUIRED]: true,
-            [LABEL]: 'detailfOfMaster',
-            [API_NAME]: 'MasterDetailExample',
-            [FIELD_ANNOTATIONS.CREATABLE]: true,
-            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
-            referenceTo: [
-              masterName,
-            ],
-          },
-        },
-        HierarchyExample: {
-          refType: Types.primitiveDataTypes.Hierarchy,
-          annotations: {
-            [CORE_ANNOTATIONS.REQUIRED]: true,
-            [LABEL]: 'hierarchy',
-            [API_NAME]: 'HierarchyExample',
-            [FIELD_ANNOTATIONS.CREATABLE]: true,
-            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
-          },
-        },
-        HiddenValueField: {
-          refType: Types.primitiveDataTypes.MasterDetail,
-          annotations: {
-            [CORE_ANNOTATIONS.REQUIRED]: true,
-            [LABEL]: 'hiddenValueField',
-            [API_NAME]: 'HiddenValueField',
-            [FIELD_ANNOTATIONS.CREATABLE]: true,
-            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
-            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
-            referenceTo: [
-              masterName,
-            ],
-          },
-        },
-      },
-    }
-  )
+  const refFromElemID = refFromObj.elemID
   let elements: Element[]
+  const refToMetadataInstanceName = 'refToMetadataInstance'
+  const refToMetadataInstanceId = 'refToMetadataId'
+  const refToMetadataInstance = new InstanceElement(
+    refToMetadataInstanceName,
+    refToMetadataObj,
+    {
+      [INTERNAL_ID_FIELD]: refToMetadataInstanceId,
+    },
+  )
   const refFromValues = {
     Id: '1234',
     LookupExample: 'refToId',
@@ -209,6 +209,7 @@ describe('Custom Object Instances References filter', () => {
     NonDeployableLookup: 'ToNothing',
     HiddenValueField: 'ToNothing',
     RefToUser: 'aaa',
+    RefToMetadataField: refToMetadataInstanceId,
   }
   const refToInstanceName = 'refToInstance'
   const refToInstance = new InstanceElement(
@@ -286,6 +287,7 @@ describe('Custom Object Instances References filter', () => {
   ]
   const legalInstances = [
     refToInstance,
+    refToMetadataInstance,
     refFromInstance,
     masterToInstance,
   ]
@@ -365,6 +367,7 @@ describe('Custom Object Instances References filter', () => {
         NonDeployableLookup: 'ToNothing',
         RefToUser: 'aaa',
         HiddenValueField: 'ToNothing',
+        RefToMetadataField: new ReferenceExpression(refToMetadataInstance.elemID),
       })
     })
 

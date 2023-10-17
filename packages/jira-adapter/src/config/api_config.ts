@@ -1917,7 +1917,6 @@ const JSM_DUCKTYPE_SUPPORTED_TYPES = {
   Queue: ['Queue'],
   PortalGroup: ['PortalGroup'],
   Calendar: ['Calendar'],
-  Calendar__holidays: ['Calendar__holidays'],
 }
 
 export const SCRIPT_RUNNER_DUCKTYPE_SUPPORTED_TYPES = {

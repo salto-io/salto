@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { filterUtils, client as clientUtils, elements as elementUtils, elements as adapterElements } from '@salto-io/adapter-components'
-import { ObjectType, ElemID, InstanceElement, BuiltinTypes, ListType, ReferenceExpression, Element, isInstanceElement, isObjectType, getChangeData } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, BuiltinTypes, ListType, ReferenceExpression, Element, isInstanceElement, isObjectType, getChangeData, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { MockInterface } from '@salto-io/test-utils'
 import { getDefaultConfig } from '../../../src/config/config'
@@ -119,6 +119,7 @@ describe('issue layout filter', () => {
           id: { refType: BuiltinTypes.NUMBER },
           simplified: { refType: BuiltinTypes.BOOLEAN },
           issueTypeScreenScheme: { refType: issueTypeScreenSchemeType },
+          key: { refType: BuiltinTypes.STRING },
         },
       })
       projectInstance = new InstanceElement(
@@ -126,6 +127,7 @@ describe('issue layout filter', () => {
         projectType,
         {
           id: 11111,
+          key: 'projKey',
           name: 'project1',
           simplified: false,
           projectTypeKey: 'software',
@@ -239,10 +241,12 @@ describe('issue layout filter', () => {
     })
     it('should add issue layout to the elements', async () => {
       await filter.onFetch(elements)
-      expect(elements
+      const issueLayout = elements
         .filter(isInstanceElement)
-        .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE))
+        .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
+      expect(issueLayout)
         .toBeDefined()
+      expect(issueLayout?.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toEqual('https://ori-salto-test.atlassian.net/plugins/servlet/project-config/projKey/issuelayout?screenId=11')
     })
     it('should not add issue layout if there is no issueTypeScreenScheme', async () => {
       projectInstance.value.issueTypeScreenScheme = undefined

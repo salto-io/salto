@@ -1854,6 +1854,32 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldsToOmit: [
         { fieldName: '_links' },
       ],
+      fieldTypeOverrides: [
+        { fieldName: 'columns', fieldType: 'List<Field>' },
+      ],
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/servicedesk/1/servicedesk/{projectKey}/queues',
+        method: 'post',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+      },
+      modify: {
+        url: '/rest/servicedesk/1/servicedesk/{projectKey}/queues/{id}',
+        method: 'put',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+      },
+      remove: {
+        url: '/rest/servicedesk/1/servicedesk/{projectKey}/queues/',
+        method: 'delete',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+      },
     },
   },
   PortalGroup: {

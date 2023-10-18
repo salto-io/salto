@@ -356,6 +356,14 @@ describe('addDefaults', () => {
       expect(isCustomType(mockTypes.Product2)).toBeFalse()
     })
   })
+  describe('toListType', () => {
+    it('should wrap a non List type', () => {
+      expect(toListType(mockTypes.Profile)).toEqual(new ListType(mockTypes.Profile))
+    })
+    it('should not wrap a List type', () => {
+      expect(toListType(new ListType(mockTypes.Profile))).toEqual(new ListType(mockTypes.Profile))
+    })
+  })
   describe('isElementWithResolvedParent', () => {
     let instance: InstanceElement
     let parent: ObjectType

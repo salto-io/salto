@@ -562,6 +562,10 @@ export const listMetadataObjects = async (
   }
 }
 
+export const toListType = (type: TypeElement): ListType => (
+  isListType(type) ? type : new ListType(type)
+)
+
 export type ElementWithResolvedParent<T extends Element> = T & {
   annotations: {
     _parent: types.NonEmptyArray<ReferenceExpression & {value: Element}>
@@ -613,7 +617,3 @@ export const retrieveRelatedPropsByMetadataType = async (
     [CUSTOM_OBJECT]: await retrieveCustomObjectRelatedPropsByParent(),
   }
 }
-
-export const toListType = (type: TypeElement): ListType => (
-  isListType(type) ? type : new ListType(type)
-)

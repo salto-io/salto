@@ -1873,6 +1873,40 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldsToHide: [
         { fieldName: 'id' },
       ],
+      fieldsToOmit: [
+        { fieldName: 'canUpdate' },
+        { fieldName: 'canDelete' },
+        { fieldName: 'deletable' },
+        { fieldName: 'updateMessage' },
+        { fieldName: 'context' },
+      ],
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/workinghours/1/api/calendar/{projectKey}',
+        method: 'post',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+      },
+      modify: {
+        url: '/rest/workinghours/1/api/calendar/{projectKey}/{id}',
+        method: 'put',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+      },
+      remove: {
+        url: '/rest/workinghours/1/api/calendar/{id}',
+        method: 'delete',
+      },
+    },
+  },
+  Calendar__holidays: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'date' },
+      ],
     },
   },
 }

@@ -38,15 +38,15 @@ describe('translation collection change validator', () => {
       elemID: addressFormInstance.elemID,
       severity: 'Error',
       message: 'Cannot deploy element with invalid translation reference',
-      detailedMessage: 'Cannot deploy this element because it contains references to the following translation collections that do not exist in your environment: \'custcollection1\'.'
-  + ' To proceed with the deployment, please replace the reference with a valid string. After the deployment, you can reconnect the elements in the NetSuite UI.',
+      detailedMessage: 'Cannot deploy this element because it contains a reference to the following translation collection that do not exist in your environment: \'custcollection1\'.'
+  + ' To proceed with the deployment, please edit the NACL and replace the reference with a valid string. After the deployment, you can reconnect the elements in the NetSuite UI.',
     })
     expect(changeErrors[1]).toEqual({
       elemID: nestedRefInstance.elemID,
       severity: 'Error',
       message: 'Cannot deploy element with invalid translation reference',
       detailedMessage: 'Cannot deploy this element because it contains references to the following translation collections that do not exist in your environment: \'custcollection2\', \'custcollection3\'.'
-  + ' To proceed with the deployment, please replace the reference with a valid string. After the deployment, you can reconnect the elements in the NetSuite UI.',
+  + ' To proceed with the deployment, please edit the NACL and replace the references with valid strings. After the deployment, you can reconnect the elements in the NetSuite UI.',
     })
   })
   describe('when have field changes', () => {
@@ -83,7 +83,7 @@ describe('translation collection change validator', () => {
         severity: 'Error',
         message: 'Cannot deploy element with invalid translation reference',
         detailedMessage: 'Cannot deploy this element because it contains references to the following translation collections that do not exist in your environment: \'custcollection2\', \'custcollection1\'.'
-    + ' To proceed with the deployment, please replace the reference with a valid string. After the deployment, you can reconnect the elements in the NetSuite UI.',
+    + ' To proceed with the deployment, please edit the NACL and replace the references with valid strings. After the deployment, you can reconnect the elements in the NetSuite UI.',
       })
     })
     it('should have change error on field only when it has invalid reference', async () => {
@@ -97,8 +97,8 @@ describe('translation collection change validator', () => {
         elemID: customRecordType.fields.fieldWithRef.elemID,
         severity: 'Error',
         message: 'Cannot deploy element with invalid translation reference',
-        detailedMessage: 'Cannot deploy this element because it contains references to the following translation collections that do not exist in your environment: \'custcollection1\'.'
-    + ' To proceed with the deployment, please replace the reference with a valid string. After the deployment, you can reconnect the elements in the NetSuite UI.',
+        detailedMessage: 'Cannot deploy this element because it contains a reference to the following translation collection that do not exist in your environment: \'custcollection1\'.'
+    + ' To proceed with the deployment, please edit the NACL and replace the reference with a valid string. After the deployment, you can reconnect the elements in the NetSuite UI.',
       })
     })
     it('should have change error on field when parent has invalid reference', async () => {
@@ -112,7 +112,7 @@ describe('translation collection change validator', () => {
         severity: 'Error',
         message: 'Cannot deploy element with invalid translation reference',
         detailedMessage: 'Cannot deploy this field because its parent type contains references to the following translation collections that do not exist in your environment: \'custcollection2\', \'custcollection1\'.'
-    + ' To proceed with the deployment, please replace the reference with a valid string. After the deployment, you can reconnect the elements in the NetSuite UI.',
+    + ' To proceed with the deployment, please edit the NACL and replace the references with valid strings. After the deployment, you can reconnect the elements in the NetSuite UI.',
       })
     })
     it('should have change error on field when field and parent have invalid reference', async () => {
@@ -125,9 +125,9 @@ describe('translation collection change validator', () => {
         elemID: customRecordType.fields.fieldWithRef.elemID,
         severity: 'Error',
         message: 'Cannot deploy element with invalid translation reference',
-        detailedMessage: 'Cannot deploy this field because it contains references to the following translation collections that do not exist in your environment: \'custcollection1\'.'
-    + ' In addition, its parent type also contains references to translation collections that do not exist in your environment: \'custcollection2\'.'
-    + ' To proceed with the deployment, please replace the references with valid strings. After the deployment, you can reconnect the elements in the NetSuite UI.',
+        detailedMessage: 'Cannot deploy this field because it contains a reference to the following translation collection that do not exist in your environment: \'custcollection1\'.'
+    + ' In addition, its parent type contains a reference to the following translation collection that do not exist in your environment: \'custcollection2\'.'
+    + ' To proceed with the deployment, please edit the NACL and replace the references with valid strings. After the deployment, you can reconnect the elements in the NetSuite UI.',
       })
     })
   })

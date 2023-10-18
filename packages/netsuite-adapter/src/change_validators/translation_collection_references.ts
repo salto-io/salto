@@ -25,6 +25,14 @@ const { isDefined } = values
 const CUSTOM_COLLECTION = 'custcollection'
 const MESSAGE = 'Cannot deploy element with invalid translation reference'
 
+const missingReferencesString = (references: string[]): string =>
+  `${references.length > 1 ? 'references' : 'a reference'} to the following translation collection${references.length > 1 ? 's' : ''} that do not exist in your environment:`
+  + ` ${references.map(reference => `'${reference}'`).join(', ')}`
+
+const actionString = (references: string[]): string =>
+  `To proceed with the deployment, please edit the NACL and replace the ${references.length > 1 ? 'references with valid strings' : 'reference with a valid string'}.`
+  + ' After the deployment, you can reconnect the elements in the NetSuite UI.'
+
 const toChangeErrorForElement = (
   element: Element,
   references: string[]
@@ -32,8 +40,9 @@ const toChangeErrorForElement = (
   elemID: element.elemID,
   severity: 'Error',
   message: MESSAGE,
-  detailedMessage: `Cannot deploy this element because it contains references to the following translation collections that do not exist in your environment: ${references.map(reference => `'${reference}'`).join(', ')}.`
-   + ' To proceed with the deployment, please replace the reference with a valid string. After the deployment, you can reconnect the elements in the NetSuite UI.',
+  detailedMessage:
+    `Cannot deploy this element because it contains ${missingReferencesString(references)}.`
+    + ` ${actionString(references)}`,
 })
 
 const toChangeErrorForParent = (
@@ -43,8 +52,9 @@ const toChangeErrorForParent = (
   elemID: element.elemID,
   severity: 'Error',
   message: MESSAGE,
-  detailedMessage: `Cannot deploy this field because its parent type contains references to the following translation collections that do not exist in your environment: ${referencesInParent.map(reference => `'${reference}'`).join(', ')}.`
-   + ' To proceed with the deployment, please replace the reference with a valid string. After the deployment, you can reconnect the elements in the NetSuite UI.',
+  detailedMessage:
+    `Cannot deploy this field because its parent type contains ${missingReferencesString(referencesInParent)}.`
+    + ` ${actionString(referencesInParent)}`,
 })
 
 const toChangeErrorForElementAndParent = (
@@ -55,9 +65,10 @@ const toChangeErrorForElementAndParent = (
   elemID: element.elemID,
   severity: 'Error',
   message: MESSAGE,
-  detailedMessage: `Cannot deploy this field because it contains references to the following translation collections that do not exist in your environment: ${references.map(reference => `'${reference}'`).join(', ')}.`
-   + ` In addition, its parent type also contains references to translation collections that do not exist in your environment: ${referencesInParent.map(reference => `'${reference}'`).join(', ')}.`
-   + ' To proceed with the deployment, please replace the references with valid strings. After the deployment, you can reconnect the elements in the NetSuite UI.',
+  detailedMessage:
+    `Cannot deploy this field because it contains ${missingReferencesString(references)}.`
+    + ` In addition, its parent type contains ${missingReferencesString(referencesInParent)}.`
+    + ` ${actionString(references.concat(referencesInParent))}`,
 })
 
 const changeValidator: NetsuiteChangeValidator = async changes => {

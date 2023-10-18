@@ -26,8 +26,8 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import { isEmpty, isUndefined } from 'lodash'
 import { detailedCompare } from '@salto-io/adapter-utils'
-import { FLOW_METADATA_TYPE, SALESFORCE } from '../constants'
-import { isInstanceOfType } from '../filters/utils'
+import { FLOW_METADATA_TYPE, SALESFORCE, STATUS } from '../constants'
+import { isDeactivatedFlowChange, isInstanceOfType } from '../filters/utils'
 import { SalesforceConfig } from '../types'
 import SalesforceClient from '../client/client'
 import { FLOW_URL_SUFFIX } from '../elements_url_retreiver/lightining_url_resolvers'
@@ -50,16 +50,11 @@ export const getDeployAsActiveFlag = async (elementsSource: ReadOnlyElementsSour
     ? defaultValue : flowSettings.value.enableFlowDeployAsActiveEnabled
 }
 
-export const getFlowStatus = (instance: InstanceElement): string => instance.value.status
+export const getFlowStatus = (instance: InstanceElement): string => instance.value[STATUS]
 
 export const isActiveFlowChange = (change: ModificationChange<InstanceElement>):
     boolean => (
   getFlowStatus(change.data.before) === ACTIVE && getFlowStatus(change.data.after) === ACTIVE
-)
-
-const isDeactivateChange = (change: ModificationChange<InstanceElement>):
-    boolean => (
-  getFlowStatus(change.data.before) === ACTIVE && getFlowStatus(change.data.after) !== ACTIVE
 )
 
 export const isActivatingChange = (change: ModificationChange<InstanceElement>):
@@ -70,7 +65,7 @@ export const isActivatingChange = (change: ModificationChange<InstanceElement>):
 const isDeactivationChangeOnly = (change: ModificationChange<InstanceElement>):
     boolean => {
   const afterClone = change.data.after.clone()
-  afterClone.value.status = ACTIVE
+  afterClone.value[STATUS] = ACTIVE
   const diffWithoutStatus = detailedCompare(
     change.data.before,
     afterClone,
@@ -81,7 +76,7 @@ const isDeactivationChangeOnly = (change: ModificationChange<InstanceElement>):
 export const isActivatingChangeOnly = (change: ModificationChange<InstanceElement>):
     boolean => {
   const beforeClone = change.data.before.clone()
-  beforeClone.value.status = ACTIVE
+  beforeClone.value[STATUS] = ACTIVE
   const diffWithoutStatus = detailedCompare(
     beforeClone,
     change.data.after,
@@ -243,8 +238,7 @@ const activeFlowValidator = (config: SalesforceConfig, isSandbox: boolean, clien
       .map(change => removeFlowError(getChangeData(change)))
 
     const inactiveNewVersionChangeInfo = flowChanges
-      .filter(isModificationChange)
-      .filter(isDeactivateChange)
+      .filter(isDeactivatedFlowChange)
       .filter(change => !isDeactivationChangeOnly(change))
       .map(change => inActiveNewVersionInfo(getChangeData(change), isPreferActiveVersion))
 

@@ -21,20 +21,24 @@ import {
   Element,
   ElemID, getChangeData,
   InstanceElement,
-  isAdditionOrModificationChange,
-  isModificationChange,
   isObjectType,
   ObjectType, toChange,
 } from '@salto-io/adapter-api'
 import { findObjectType } from '@salto-io/adapter-utils'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { FilterResult, RemoteFilterCreator } from '../filter'
-import { FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE, INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../constants'
+import {
+  ACTIVE_VERSION_NUMBER,
+  FLOW_DEFINITION_METADATA_TYPE,
+  FLOW_METADATA_TYPE,
+  INSTANCE_FULL_NAME_FIELD,
+  SALESFORCE,
+} from '../constants'
 import { fetchMetadataInstances } from '../fetch'
 import { createInstanceElement } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import { FetchElements, FetchProfile } from '../types'
-import { apiNameSync, isInstanceOfTypeChangeSync, listMetadataObjects } from './utils'
+import { apiNameSync, isDeactivatedFlowChange, isInstanceOfTypeChangeSync, listMetadataObjects } from './utils'
 
 const { isDefined } = lowerdashValues
 
@@ -57,7 +61,7 @@ export const createActiveVersionFileProperties = (fileProp: FileProperties[],
   flowDefinitions: InstanceElement[]): FileProperties[] => {
   const activeVersions = new Map<string, string>()
   flowDefinitions.forEach(flow => activeVersions.set(`${flow.value.fullName}`,
-    `${flow.value.fullName}${isDefined(flow.value.activeVersionNumber) ? `-${flow.value.activeVersionNumber}` : ''}`))
+    `${flow.value.fullName}${isDefined(flow.value[ACTIVE_VERSION_NUMBER]) ? `-${flow.value[ACTIVE_VERSION_NUMBER]}` : ''}`))
   return fileProp.map(prop => fixFilePropertiesName(prop, activeVersions))
 }
 
@@ -91,18 +95,6 @@ const createActiveVersionProps = async (
   return createActiveVersionFileProperties(fileProps, flowDefinitionInstances.elements)
 }
 
-
-const isDeactivatedFlowChange = (change: Change<InstanceElement>): boolean => {
-  const flowStatus = getChangeData(change).value.status
-  if (!_.isString(flowStatus) || flowStatus === 'Active') {
-    return false
-  }
-  // We only want to handle flows that were currently deactivated
-  return isModificationChange(change)
-    ? change.data.before.value.status === 'Active'
-    : true
-}
-
 const createDeactivatedFlowDefinitionChange = (
   flowChange: Change<InstanceElement>,
   flowDefinitionMetadataType: ObjectType,
@@ -113,7 +105,7 @@ const createDeactivatedFlowDefinitionChange = (
   }
   const flowDefinitionInstance = createInstanceElement({
     [INSTANCE_FULL_NAME_FIELD]: flowApiName,
-    activeVersionNumber: 0,
+    [ACTIVE_VERSION_NUMBER]: 0,
   }, flowDefinitionMetadataType)
   return toChange({ after: flowDefinitionInstance })
 }
@@ -167,10 +159,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   },
   // In order to deactivate a Flow, we need to create a FlowDefinition instance with activeVersionNumber of 0
   preDeploy: async changes => {
-    const deactivatedFlowChanges = changes
-      .filter(isInstanceOfTypeChangeSync(FLOW_METADATA_TYPE))
-      .filter(isAdditionOrModificationChange)
-      .filter(isDeactivatedFlowChange)
+    const deactivatedFlowChanges = changes.filter(isDeactivatedFlowChange)
     if (deactivatedFlowChanges.length === 0) {
       return
     }

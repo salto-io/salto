@@ -30,10 +30,10 @@ import {
   InstanceElement,
   isAdditionOrModificationChange,
   isField,
-  isInstanceElement, isListType,
+  isInstanceElement, isListType, isModificationChange,
   isObjectType,
   isReferenceExpression,
-  isRemovalOrModificationChange, ListType,
+  isRemovalOrModificationChange, ListType, ModificationChange,
   ObjectType,
   ReadOnlyElementsSource,
   ReferenceExpression,
@@ -55,7 +55,7 @@ import {
   CUSTOM_METADATA_SUFFIX,
   CUSTOM_OBJECT,
   CUSTOM_OBJECT_ID_FIELD,
-  FIELD_ANNOTATIONS,
+  FIELD_ANNOTATIONS, FLOW_METADATA_TYPE,
   INSTANCE_FULL_NAME_FIELD,
   INTERNAL_ID_ANNOTATION,
   INTERNAL_ID_FIELD,
@@ -66,7 +66,7 @@ import {
   METADATA_TYPE,
   NAMESPACE_SEPARATOR,
   PLURAL_LABEL,
-  SALESFORCE,
+  SALESFORCE, STATUS,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
 import * as transformer from '../transformers/transformer'
@@ -580,4 +580,11 @@ export const isInstanceOfTypeChangeSync = (...types: string[]) => (
   (change: Change): change is Change<InstanceElement> => (
     isInstanceOfTypeSync(...types)(getChangeData(change))
   )
+)
+
+export const isDeactivatedFlowChange = (change: Change): change is ModificationChange<InstanceElement> => (
+  isModificationChange(change)
+  && isInstanceOfTypeChangeSync(FLOW_METADATA_TYPE)(change)
+  && change.data.before.value[STATUS] === 'Active'
+  && change.data.after.value[STATUS] !== 'Active'
 )

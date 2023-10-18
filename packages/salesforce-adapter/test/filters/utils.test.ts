@@ -30,7 +30,7 @@ import {
   isCustomMetadataRecordType, isCustomType,
   isMetadataValues,
   isStandardObject,
-  layoutObjAndName, isInstanceOfTypeChangeSync, isInstanceOfTypeSync,
+  layoutObjAndName, isInstanceOfTypeChangeSync, isInstanceOfTypeSync, isDeactivatedFlowChange,
 } from '../../src/filters/utils'
 import {
   API_NAME,
@@ -39,11 +39,11 @@ import {
   INSTANCE_FULL_NAME_FIELD,
   LABEL,
   METADATA_TYPE,
-  SALESFORCE,
+  SALESFORCE, STATUS,
 } from '../../src/constants'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import { CustomObject } from '../../src/client/types'
-import { mockInstances, mockTypes } from '../mock_elements'
+import { createFlowChange, mockInstances, mockTypes } from '../mock_elements'
 import { createCustomObjectType } from '../utils'
 import { INSTANCE_SUFFIXES } from '../../src/types'
 
@@ -394,6 +394,38 @@ describe('addDefaults', () => {
         expect(change).not.toSatisfy(isInstanceOfTypeChangeSync('Flow'))
         expect(change).not.toSatisfy(isInstanceOfTypeChangeSync('Flow', 'ApexClass'))
       })
+    })
+  })
+
+  describe('isDeactivatedFlowChange', () => {
+    it('should return true when Flow is deactivated', () => {
+      const deactivatedFlowChange = createFlowChange({ flowApiName: 'flow', beforeStatus: 'Active', afterStatus: 'Draft' })
+      expect(deactivatedFlowChange).toSatisfy(isDeactivatedFlowChange)
+    })
+    it('should return false when flow is activated', () => {
+      const activatedFlowChange = createFlowChange({ flowApiName: 'flow', beforeStatus: 'Draft', afterStatus: 'Active' })
+      expect(activatedFlowChange).not.toSatisfy(isDeactivatedFlowChange)
+    })
+    it('should return false when flow was already inactive', () => {
+      const activatedFlowChange = createFlowChange({ flowApiName: 'flow', beforeStatus: 'Draft', afterStatus: 'Obsolete' })
+      expect(activatedFlowChange).not.toSatisfy(isDeactivatedFlowChange)
+    })
+    it('should return false for added inactive flow', () => {
+      const activatedFlowChange = createFlowChange({ flowApiName: 'flow', afterStatus: 'Active' })
+      expect(activatedFlowChange).not.toSatisfy(isDeactivatedFlowChange)
+    })
+    it('should return false when non Flow instance was deactivated', () => {
+      const workflowChange = toChange({
+        before: createInstanceElement({
+          [INSTANCE_FULL_NAME_FIELD]: 'workflow',
+          [STATUS]: 'Active',
+        }, mockTypes.Workflow),
+        after: createInstanceElement({
+          [INSTANCE_FULL_NAME_FIELD]: 'workflow',
+          [STATUS]: 'Draft',
+        }, mockTypes.Workflow),
+      })
+      expect(workflowChange).not.toSatisfy(isDeactivatedFlowChange)
     })
   })
 })

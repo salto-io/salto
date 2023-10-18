@@ -324,6 +324,8 @@ export const MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD = 20
 
 // Fields
 export const CURRENCY_ISO_CODE = 'CurrencyIsoCode'
+export const ACTIVE_VERSION_NUMBER = 'activeVersionNumber'
+export const STATUS = 'status'
 
 // Metadata types
 export const PATH_ASSISTANT_METADATA_TYPE = 'PathAssistant'

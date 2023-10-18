@@ -14,9 +14,12 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { Element, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { PROFILE_MAPPING_TYPE_NAME } from '../constants'
+
+const log = logger(module)
 
 const OKTA_AUTHENTICATOR_APP_NAME = 'Okta_Authenticator'
 
@@ -38,6 +41,7 @@ const filterCreator: FilterCreator = () => ({
       .filter(instance => instance.elemID.typeName === PROFILE_MAPPING_TYPE_NAME)
       .filter(isMappingToAuthenticatorApp)
     _.pullAll(elements, instancesToOmit)
+    log.trace(`The following ProfileMapping instances were omitted: ${instancesToOmit.map(inst => inst.elemID.name).join(', ')}`)
   },
 })
 

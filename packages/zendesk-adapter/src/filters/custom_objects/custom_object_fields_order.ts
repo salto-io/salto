@@ -108,7 +108,7 @@ const customObjectFieldsOrderFilter: FilterCreator = ({ client }) => ({
         const customObjectFieldOrder = getChangeData(change)
         let parentKey: string
         try {
-          parentKey = getParent(customObjectFieldOrder).value.key
+          parentKey = getParents(customObjectFieldOrder)[0]?.key
           if (parentKey === undefined) {
             return {
               change,

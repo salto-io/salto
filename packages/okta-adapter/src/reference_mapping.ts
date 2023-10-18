@@ -49,7 +49,7 @@ const OktaReferenceSerializationStrategyLookup: Record<
   },
 }
 
-const getProfileMappingRefType: referenceUtils.ContextValueMapperFunc = val => {
+const getProfileMappingRefByType: referenceUtils.ContextValueMapperFunc = val => {
   if (val === 'user') {
     return USERTYPE_TYPE_NAME
   }
@@ -59,10 +59,15 @@ const getProfileMappingRefType: referenceUtils.ContextValueMapperFunc = val => {
   return undefined
 }
 
-export type ReferenceContextStrategyName = 'neighborField'
+const getProfileMappingRefByName: referenceUtils.ContextValueMapperFunc = val => (
+  val.endsWith('_idp') ? IDENTITY_PROVIDER_TYPE_NAME : undefined
+)
+
+export type ReferenceContextStrategyName = 'profileMappingType' | 'profileMappingName'
 
 export const contextStrategyLookup: Record<ReferenceContextStrategyName, referenceUtils.ContextFunc> = {
-  neighborField: referenceUtils.neighborContextGetter({ contextFieldName: 'type', getLookUpName: async ({ ref }) => ref.elemID.name, contextValueMapper: getProfileMappingRefType }),
+  profileMappingType: referenceUtils.neighborContextGetter({ contextFieldName: 'type', getLookUpName: async ({ ref }) => ref.elemID.name, contextValueMapper: getProfileMappingRefByType }),
+  profileMappingName: referenceUtils.neighborContextGetter({ contextFieldName: 'name', getLookUpName: async ({ ref }) => ref.elemID.name, contextValueMapper: getProfileMappingRefByName }),
 }
 
 type OktaFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<ReferenceContextStrategyName> & {
@@ -197,7 +202,12 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
   {
     src: { field: 'id', parentTypes: ['ProfileMappingSource'] },
     serializationStrategy: 'id',
-    target: { typeContext: 'neighborField' },
+    target: { typeContext: 'profileMappingType' },
+  },
+  {
+    src: { field: 'id', parentTypes: ['ProfileMappingSource'] },
+    serializationStrategy: 'id',
+    target: { typeContext: 'profileMappingName' },
   },
   {
     src: { field: 'appInstanceId', parentTypes: ['AuthenticatorSettings'] },

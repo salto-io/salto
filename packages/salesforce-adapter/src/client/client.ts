@@ -248,7 +248,8 @@ const oauthConnection = (params: OauthConnectionParams): Connection => {
     log.debug('accessToken has been refreshed', { accessToken: toMD5(accessToken) })
   })
 
-  return conn
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return conn as any
 }
 
 const realConnection = (
@@ -260,7 +261,8 @@ const realConnection = (
     loginUrl: `https://${isSandbox ? 'test' : 'login'}.salesforce.com/`,
     requestModule: createRequestModuleFunction(retryOptions),
   })
-)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+) as any
 
 type SendChunkedArgs<TIn, TOut> = {
   input: TIn | TIn[]

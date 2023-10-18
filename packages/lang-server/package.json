@@ -40,7 +40,7 @@
   "devDependencies": {
     "@salto-io/test-utils": "0.3.48",
     "@types/jest": "^27.4.0",
-    "@types/node": "^12.7.1",
+    "@types/node": "^18",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",
     "eslint": "^6.2.2",

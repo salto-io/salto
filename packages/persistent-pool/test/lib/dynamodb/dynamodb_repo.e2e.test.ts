@@ -27,6 +27,9 @@ import asyncToArray from '../../utils/async_to_array'
 
 const { retryStrategies } = retryUtil
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const global = (globalThis as any)
+
 describe('when there are existing leases', () => {
   const NUM_LEASES = 40
 

@@ -32,6 +32,8 @@ import repeat from '../../utils/repeat'
 import asyncToArray from '../../utils/async_to_array'
 
 const { retryStrategies } = retry
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const global = (globalThis as any)
 
 describe('dynamoDB repo', () => {
   jest.setTimeout(60 * 1000)

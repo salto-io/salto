@@ -50,7 +50,7 @@
     "@salto-io/test-utils": "0.3.48",
     "@types/jest": "^27.4.0",
     "@types/lodash": "^4.14.168",
-    "@types/node": "^12.7.1",
+    "@types/node": "^18",
     "@types/sax": "^1.2.1",
     "@types/shelljs": "^0.7.8",
     "@types/supertest": "^2.0.4",

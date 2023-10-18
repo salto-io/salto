@@ -908,7 +908,8 @@ describe('salesforce client', () => {
             }
             return Reflect.set(target, p, value, receiver)
           },
-        })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
         const connectionBulkProxy = new Proxy(testConnection.bulk, {
           set(target: Bulk, p: PropertyKey, value: unknown, receiver: unknown): boolean {
             if (p === 'pollTimeout' && _.isNumber(value)) {

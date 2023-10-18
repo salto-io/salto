@@ -181,7 +181,8 @@ export const telemetrySender = (
       return Promise.resolve()
     }
     stopped = true
-    clearTimeout(timer)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    clearTimeout(timer as any)
     httpRequestTimeout = timeoutMs
     return flush()
   }

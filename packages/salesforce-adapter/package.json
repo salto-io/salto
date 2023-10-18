@@ -58,7 +58,7 @@
     "@types/jszip": "^3.1.6",
     "@types/lodash": "^4.14.168",
     "@types/mime-types": "^2.1.0",
-    "@types/node": "^12.7.1",
+    "@types/node": "^18",
     "@types/requestretry": "^1.12.8",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",

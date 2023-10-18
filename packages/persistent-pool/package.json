@@ -38,7 +38,7 @@
     "@aws-sdk/types": "3.198.0",
     "@types/jest": "*",
     "@types/lodash": "^4.14.168",
-    "@types/node": "^12.7.1",
+    "@types/node": "^18",
     "@types/uuid": "^8.3.0",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",

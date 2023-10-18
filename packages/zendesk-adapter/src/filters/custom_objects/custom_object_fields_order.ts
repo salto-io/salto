@@ -106,19 +106,20 @@ const customObjectFieldsOrderFilter: FilterCreator = ({ client }) => ({
       .filter(isInstanceChange) // used to type check
       .map(async change => {
         const customObjectFieldOrder = getChangeData(change)
-        let parentKey: string
-        try {
-          parentKey = getParents(customObjectFieldOrder)[0]?.key
-          if (parentKey === undefined) {
-            return {
-              change,
-              error: 'parent custom_object key is undefined',
-            }
-          }
-        } catch (e) {
+        const parent = getParents(customObjectFieldOrder)[0]
+        if (parent === undefined) {
           return {
             change,
             error: 'parent custom_object is undefined',
+          }
+        }
+        const parentKey = isResolvedReferenceExpression(parent)
+          ? parent.value.value.key
+          : parent.key
+        if (parentKey === undefined) {
+          return {
+            change,
+            error: 'parent custom_object key is undefined',
           }
         }
         const fieldsIds = customObjectFieldOrder.value[ORDER_FIELD]

@@ -30,9 +30,10 @@ import {
   ServiceIds,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import {
   ConfigChangeSuggestion,
-  FetchParameters,
+  FetchParameters, FetchProfile,
   isDataManagementConfigSuggestions,
   SaltoAliasSettings,
 } from '../../src/types'
@@ -58,7 +59,7 @@ import {
 import { Types } from '../../src/transformers/transformer'
 import {
   buildFetchProfile,
-  FetchProfile,
+
 } from '../../src/fetch_profile/fetch_profile'
 import {
   defaultFilterContext,
@@ -91,7 +92,7 @@ const createCustomObject = (
         [CORE_ANNOTATIONS.REQUIRED]: false,
         [FIELD_ANNOTATIONS.QUERYABLE]: true,
         [LABEL]: 'Id',
-        [API_NAME]: 'Id',
+        [API_NAME]: `${name}.Id`,
       },
     },
     Name: {
@@ -100,7 +101,7 @@ const createCustomObject = (
         [CORE_ANNOTATIONS.REQUIRED]: false,
         [FIELD_ANNOTATIONS.QUERYABLE]: true,
         [LABEL]: 'description label',
-        [API_NAME]: 'Name',
+        [API_NAME]: `${name}.Name`,
       },
     },
     TestField: {
@@ -108,7 +109,7 @@ const createCustomObject = (
       annotations: {
         [FIELD_ANNOTATIONS.QUERYABLE]: true,
         [LABEL]: 'Test field',
-        [API_NAME]: 'TestField',
+        [API_NAME]: `${name}.TestField`,
       },
     },
   }
@@ -234,6 +235,7 @@ describe('Custom Object Instances filter', () => {
   }
   const buildTestFetchProfile = (
     types: TestFetchProfileParams[],
+    omittedFields: string[] = [],
   ): FetchProfile => {
     const fetchProfileParams: FetchParameters = {
       data: {
@@ -252,9 +254,14 @@ describe('Custom Object Instances filter', () => {
         saltoManagementFieldSettings: {
           defaultFieldName: MANAGED_BY_SALTO_FIELD_NAME,
         },
+        ...(omittedFields ? { omittedFields } : {}),
       },
     }
-    return buildFetchProfile(fetchProfileParams)
+    return buildFetchProfile({
+      fetchParams: fetchProfileParams,
+      isFetchWithChangesDetection: false,
+      elementsSource: buildElementsSourceFromElements([]),
+    })
   }
 
   describe('config interactions', () => {
@@ -483,22 +490,26 @@ describe('Custom Object Instances filter', () => {
           config: {
             ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
-              data: {
-                includeObjects: [],
-                excludeObjects: [
-                  '^TestNamespace__Exclude.*',
-                  excludeOverrideObjectName,
-                ],
-                allowReferenceTo: [
-                  '^RefFromNamespace__RefTo.*',
-                  refToObjectName,
-                  refFromAndToObjectName,
-                  emptyRefToObjectName,
-                ],
-                saltoIDSettings: {
-                  defaultIdFields: [],
+              fetchParams: {
+                data: {
+                  includeObjects: [],
+                  excludeObjects: [
+                    '^TestNamespace__Exclude.*',
+                    excludeOverrideObjectName,
+                  ],
+                  allowReferenceTo: [
+                    '^RefFromNamespace__RefTo.*',
+                    refToObjectName,
+                    refFromAndToObjectName,
+                    emptyRefToObjectName,
+                  ],
+                  saltoIDSettings: {
+                    defaultIdFields: [],
+                  },
                 },
               },
+              isFetchWithChangesDetection: false,
+              elementsSource: buildElementsSourceFromElements([]),
             }),
           },
         }
@@ -537,29 +548,33 @@ describe('Custom Object Instances filter', () => {
           config: {
             ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
-              data: {
-                includeObjects: [
-                  createNamespaceRegexFromString(testNamespace),
-                  createNamespaceRegexFromString(refFromNamespace),
-                  includeObjectName,
-                  excludeOverrideObjectName,
-                  refFromAndToObjectName,
-                  notInNamespaceName,
-                ],
-                excludeObjects: [
-                  '^TestNamespace__Exclude.*',
-                  excludeOverrideObjectName,
-                ],
-                allowReferenceTo: [
-                  '^RefFromNamespace__RefTo.*',
-                  refToObjectName,
-                  refFromAndToObjectName,
-                  emptyRefToObjectName,
-                ],
-                saltoIDSettings: {
-                  defaultIdFields: ['Id'],
+              fetchParams: {
+                data: {
+                  includeObjects: [
+                    createNamespaceRegexFromString(testNamespace),
+                    createNamespaceRegexFromString(refFromNamespace),
+                    includeObjectName,
+                    excludeOverrideObjectName,
+                    refFromAndToObjectName,
+                    notInNamespaceName,
+                  ],
+                  excludeObjects: [
+                    '^TestNamespace__Exclude.*',
+                    excludeOverrideObjectName,
+                  ],
+                  allowReferenceTo: [
+                    '^RefFromNamespace__RefTo.*',
+                    refToObjectName,
+                    refFromAndToObjectName,
+                    emptyRefToObjectName,
+                  ],
+                  saltoIDSettings: {
+                    defaultIdFields: ['Id'],
+                  },
                 },
               },
+              isFetchWithChangesDetection: false,
+              elementsSource: buildElementsSourceFromElements([]),
             }),
           },
         }
@@ -1119,32 +1134,36 @@ describe('Custom Object Instances filter', () => {
           config: {
             ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
-              data: {
-                includeObjects: [
-                  createNamespaceRegexFromString(nameBasedNamespace),
-                  pricebookEntryName,
-                  SBQQCustomActionName,
-                  productName,
-                  badIdFieldsName,
-                  notQueryableIdFieldsName,
-                ],
-                allowReferenceTo: [
-                  refToObjectName,
-                ],
-                saltoIDSettings: {
-                  defaultIdFields: ['##allMasterDetailFields##', 'Name'],
-                  overrides: [
-                    { objectsRegex: pricebookEntryName, idFields: ['Pricebook2Id', 'Name'] },
-                    {
-                      objectsRegex: SBQQCustomActionName,
-                      idFields: ['SBQQ__Location__c', 'SBQQ__DisplayOrder__c', 'Name'],
-                    },
-                    { objectsRegex: badIdFieldsName, idFields: ['Bad'] },
-                    { objectsRegex: productName, idFields: ['ProductCode', 'Name'] },
-                    { objectsRegex: notQueryableIdFieldsName, idFields: ['NotQueryable'] },
+              fetchParams: {
+                data: {
+                  includeObjects: [
+                    createNamespaceRegexFromString(nameBasedNamespace),
+                    pricebookEntryName,
+                    SBQQCustomActionName,
+                    productName,
+                    badIdFieldsName,
+                    notQueryableIdFieldsName,
                   ],
+                  allowReferenceTo: [
+                    refToObjectName,
+                  ],
+                  saltoIDSettings: {
+                    defaultIdFields: ['##allMasterDetailFields##', 'Name'],
+                    overrides: [
+                      { objectsRegex: pricebookEntryName, idFields: ['Pricebook2Id', 'Name'] },
+                      {
+                        objectsRegex: SBQQCustomActionName,
+                        idFields: ['SBQQ__Location__c', 'SBQQ__DisplayOrder__c', 'Name'],
+                      },
+                      { objectsRegex: badIdFieldsName, idFields: ['Bad'] },
+                      { objectsRegex: productName, idFields: ['ProductCode', 'Name'] },
+                      { objectsRegex: notQueryableIdFieldsName, idFields: ['NotQueryable'] },
+                    ],
+                  },
                 },
               },
+              isFetchWithChangesDetection: false,
+              elementsSource: buildElementsSourceFromElements([]),
             }),
           },
         }
@@ -1357,18 +1376,22 @@ describe('Custom Object Instances filter', () => {
           config: {
             ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
-              data: {
-                includeObjects: [
-                  '.*',
-                ],
-                allowReferenceTo: [],
-                saltoIDSettings: {
-                  defaultIdFields: [],
-                  overrides: [],
+              fetchParams: {
+                data: {
+                  includeObjects: [
+                    '.*',
+                  ],
+                  allowReferenceTo: [],
+                  saltoIDSettings: {
+                    defaultIdFields: [],
+                    overrides: [],
+                  },
                 },
+                maxInstancesPerType: 2,
               },
-              maxInstancesPerType: 2,
-            }),
+              isFetchWithChangesDetection: false,
+              elementsSource: buildElementsSourceFromElements([]),
+            },),
           },
         }
       ) as FilterType
@@ -1420,13 +1443,17 @@ describe('Custom Object Instances filter', () => {
       config: {
         ...defaultFilterContext,
         fetchProfile: buildFetchProfile({
-          data: {
-            includeObjects: ['.*'],
-            saltoIDSettings: {
-              defaultIdFields: ['Id'],
+          fetchParams: {
+            data: {
+              includeObjects: ['.*'],
+              saltoIDSettings: {
+                defaultIdFields: ['Id'],
+              },
+              saltoAliasSettings,
             },
-            saltoAliasSettings,
           },
+          isFetchWithChangesDetection: false,
+          elementsSource: buildElementsSourceFromElements([]),
         }),
       },
     }) as FilterType
@@ -1597,6 +1624,60 @@ describe('Custom Object Instances filter', () => {
       }])
       expect(elements).toHaveLength(1)
       expect(basicQueryImplementation).not.toHaveBeenCalled()
+    })
+  })
+  describe('Omit Fields', () => {
+    let elements: Element[]
+    const testTypeName = 'TestType'
+    const testInstanceId = 'some_id'
+    const testType: ObjectType = createCustomObject(testTypeName)
+    const testRecords: Record<string, unknown>[] = [
+      {
+        attributes: {
+          type: testTypeName,
+        },
+        Id: testInstanceId,
+        Name: 'Name',
+        TestField: 'Test Field Value',
+      },
+    ]
+    beforeEach(async () => {
+      filter = filterCreator(
+        {
+          client,
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildTestFetchProfile(
+              [
+                {
+                  typeName: testTypeName,
+                  included: true,
+                  excluded: false,
+                  allowRef: false,
+                },
+              ],
+              [
+                `${testTypeName}.TestField`,
+              ],
+            ),
+          },
+        }
+      ) as FilterType
+
+      elements = [testType]
+
+      testRecords.forEach(record => { record[MANAGED_BY_SALTO_FIELD_NAME] = true })
+      setMockQueryResults(testRecords)
+
+      await filter.onFetch(elements)
+    })
+
+    it('should not fetch omitted fields', () => {
+      const queryString = basicQueryImplementation.mock.calls
+        .find(([soql] : string[]) => !soql.includes('COUNT()'))
+        .pop()
+      expect(queryString).not.toContain('TestField')
+      expect(queryString).toContain('Name')
     })
   })
 })

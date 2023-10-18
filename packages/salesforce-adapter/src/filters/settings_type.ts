@@ -20,7 +20,8 @@ import { FilterResult, RemoteFilterCreator } from '../filter'
 import { createMetadataTypeElements, apiName } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import { SETTINGS_METADATA_TYPE } from '../constants'
-import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
+import { fetchMetadataInstances } from '../fetch'
+import { listMetadataObjects } from './utils'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -68,6 +69,10 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
    * @param elements
    */
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
+    // SALTO-4820. This filter shouldn't run in quick fetch as it takes a relatively long time
+    if (config.fetchProfile.metadataQuery.isFetchWithChangesDetection()) {
+      return {}
+    }
     // Fetch list of all settings types
     const {
       elements: settingsList, configChanges: listObjectsConfigChanges,

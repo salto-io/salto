@@ -48,6 +48,7 @@ import { BrandIdToClient, Filter, FilterCreator, FilterResult, filtersRunner } f
 import {
   API_DEFINITIONS_CONFIG,
   CLIENT_CONFIG,
+  configType,
   DEPLOY_CONFIG,
   FETCH_CONFIG,
   GUIDE_BRAND_SPECIFIC_TYPES,
@@ -114,7 +115,6 @@ import handleAppInstallationsFilter from './filters/handle_app_installations'
 import brandLogoFilter from './filters/brand_logo'
 import articleFilter from './filters/article/article'
 import articleBodyFilter from './filters/article/article_body'
-import { getConfigFromConfigChanges } from './config_change'
 import { dependencyChanger } from './dependency_changers'
 import deployBrandedGuideTypesFilter from './filters/deploy_branded_guide_types'
 import { Credentials } from './auth'
@@ -148,6 +148,7 @@ import localeFilter from './filters/locale'
 import ticketStatusCustomStatusDeployFilter from './filters/ticket_status_custom_status'
 import { filterOutInactiveInstancesForType } from './inactive'
 import handleIdenticalAttachmentConflicts from './filters/handle_identical_attachment_conflicts'
+import addImportantValuesFilter from './filters/add_important_values'
 import customObjectFilter from './filters/custom_objects/custom_object'
 import customObjectFieldFilter from './filters/custom_objects/custom_object_fields'
 import customObjectFieldsOrderFilter from './filters/custom_objects/custom_object_fields_order'
@@ -256,6 +257,7 @@ export const DEFAULT_FILTERS = [
   guideArrangePaths,
   hideAccountFeatures,
   fetchCategorySection, // need to be after arrange paths as it uses the 'name'/'title' field
+  addImportantValuesFilter,
   // defaultDeployFilter should be last!
   defaultDeployFilter,
 ]
@@ -673,8 +675,12 @@ export default class ZendeskAdapter implements AdapterOperations {
     const result = await (await this.createFiltersRunner({ brandIdToClient }))
       .onFetch(elements) as FilterResult
     const updatedConfig = this.configInstance && configChanges
-      ? getConfigFromConfigChanges(configChanges, this.configInstance)
-      : undefined
+      ? configUtils.getConfigWithExcludeFromConfigChanges({
+        configChanges,
+        currentConfig: this.configInstance,
+        configType,
+        adapterName: ZENDESK,
+      }) : undefined
 
     const fetchErrors = (errors ?? []).concat(result.errors ?? []).concat(localeError ?? [])
     if (this.logIdsFunc !== undefined) {

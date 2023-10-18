@@ -17,22 +17,29 @@ import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { FileProperties, MetadataInfo, MetadataObject } from 'jsforce-types'
 import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
-import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
+import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { FetchElements, ConfigChangeSuggestion, MAX_ITEMS_IN_RETRIEVE_REQUEST, MAX_INSTANCES_PER_TYPE } from './types'
 import {
-  METADATA_CONTENT_FIELD,
-  NAMESPACE_SEPARATOR,
-  INTERNAL_ID_FIELD,
-  DEFAULT_NAMESPACE,
-  RETRIEVE_SIZE_LIMIT_ERROR,
-  LAYOUT_TYPE_ID_METADATA_TYPE,
+  ConfigChangeSuggestion,
+  FetchElements,
+  FetchProfile,
+  MAX_INSTANCES_PER_TYPE,
+  MAX_ITEMS_IN_RETRIEVE_REQUEST,
+  MetadataQuery,
+} from './types'
+import {
+  API_NAME_SEPARATOR,
   CUSTOM_OBJECT,
-  UNLIMITED_INSTANCES_VALUE,
+  DEFAULT_NAMESPACE,
   FOLDER_CONTENT_TYPE,
   INSTALLED_PACKAGE_METADATA,
-  API_NAME_SEPARATOR,
+  INTERNAL_ID_FIELD,
+  LAYOUT_TYPE_ID_METADATA_TYPE,
+  METADATA_CONTENT_FIELD,
+  NAMESPACE_SEPARATOR,
   PROFILE_METADATA_TYPE,
+  RETRIEVE_SIZE_LIMIT_ERROR,
+  UNLIMITED_INSTANCES_VALUE,
 } from './constants'
 import SalesforceClient, { ErrorFilter } from './client/client'
 import {
@@ -41,13 +48,18 @@ import {
   createSkippedListConfigChange,
   createSkippedListConfigChangeFromError,
 } from './config_change'
-import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements, getAuthorAnnotations } from './transformers/transformer'
-import { fromRetrieveResult, toRetrieveRequest, getManifestTypeName } from './transformers/xml_transformer'
-import { MetadataQuery } from './fetch_profile/metadata_query'
-import { FetchProfile } from './fetch_profile/fetch_profile'
+import {
+  apiName,
+  createInstanceElement,
+  createMetadataTypeElements,
+  getAuthorAnnotations,
+  MetadataObjectType,
+} from './transformers/transformer'
+import { fromRetrieveResult, getManifestTypeName, toRetrieveRequest } from './transformers/xml_transformer'
+import { listMetadataObjects } from './filters/utils'
 
 const { isDefined } = lowerDashValues
-const { makeArray, splitDuplicates } = collections.array
+const { makeArray } = collections.array
 const { awu, keyByAsync } = collections.asynciterable
 const log = logger(module)
 
@@ -105,35 +117,6 @@ const withFullPath = (props: FileProperties, folderPathByName: Record<string, st
     : props
 }
 
-const removeDuplicateFileProps = (files: FileProperties[]): FileProperties[] => {
-  const { duplicates, uniques } = splitDuplicates(files, fileProps => `${fileProps.namespacePrefix}__${fileProps.fullName}`)
-  duplicates.forEach(props => {
-    log.warn('Found duplicate file props with the same name in response to listMetadataObjects: %o', props)
-  })
-  return uniques.concat(duplicates.map(props => props[0]))
-}
-
-export const listMetadataObjects = async (
-  client: SalesforceClient,
-  metadataTypeName: string,
-  isUnhandledError?: ErrorFilter,
-): Promise<FetchElements<FileProperties[]>> => {
-  const { result, errors } = await client.listMetadataObjects(
-    { type: metadataTypeName },
-    isUnhandledError,
-  )
-
-  // Salesforce quirk, we sometimes get the same metadata fullName more than once
-  const elements = removeDuplicateFileProps(result)
-
-  return {
-    elements,
-    configChanges: errors
-      .map(e => e.input)
-      .map(createListMetadataObjectsConfigChange),
-  }
-}
-
 const getNamespace = (obj: FileProperties): string => (
   obj.namespacePrefix === undefined || obj.namespacePrefix === '' ? DEFAULT_NAMESPACE : obj.namespacePrefix
 )
@@ -143,6 +126,7 @@ export const notInSkipList = (metadataQuery: MetadataQuery, file: FileProperties
     metadataType: file.type,
     name: file.fullName,
     isFolderType,
+    changedAt: file.lastModifiedDate,
   })
 )
 
@@ -288,8 +272,14 @@ export const fetchMetadataInstances = async ({
       metadataType: metadataTypeName,
       name: prop.fullName,
       isFolderType: isDefined(metadataType.annotations[FOLDER_CONTENT_TYPE]),
+      changedAt: prop.lastModifiedDate,
     }))
 
+  // Avoid sending empty requests for types that had no instances that were changed from the previous fetch
+  // This is a common case for fetchWithChangesDetection mode for types that had no changes on their instances
+  if (filePropsToRead.length === 0) {
+    return { elements: [], configChanges: [] }
+  }
 
   const { result: metadataInfos, errors } = await client.readMetadata(
     metadataTypeName,
@@ -480,6 +470,13 @@ export const retrieveMetadataInstances = async ({
       .filter(type => type.annotations.folderContentType === undefined)
       .map(listFilesOfType)
   )).filter(props => notInSkipList(metadataQuery, props, false))
+
+  // Avoid sending empty requests for types that had no instances that were changed from the previous fetch
+  // This is a common case for fetchWithChangesDetection mode for types that had no changes on their instances
+  if (filesToRetrieve.length === 0) {
+    log.debug('No files to retrieve, skipping')
+    return { elements: [], configChanges }
+  }
 
   log.info('going to retrieve %d files', filesToRetrieve.length)
 

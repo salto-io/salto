@@ -63,6 +63,7 @@ export const EMPLOYEE = 'employee'
 export const REPORT_DEFINITION = 'reportdefinition'
 export const FINANCIAL_LAYOUT = 'financiallayout'
 export const BUNDLE = 'bundle'
+export const BIN = 'bin'
 
 // Type Annotations
 export const SOURCE = 'source'

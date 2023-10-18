@@ -135,4 +135,22 @@ describe('strings', () => {
         .toEqual(['first', 'second', 'third', 'fourth'])
     })
   })
+
+  describe('humanFileSize', () => {
+    it('should return result in bytes', () => {
+      expect(strings.humanFileSize(500)).toEqual('500.00 B')
+    })
+    it('should return result in KB', () => {
+      expect(strings.humanFileSize(50000)).toEqual('48.83 kB')
+    })
+    it('should return result in MB', () => {
+      expect(strings.humanFileSize(50000000)).toEqual('47.68 MB')
+    })
+    it('should return result in GB', () => {
+      expect(strings.humanFileSize(50000000000)).toEqual('46.57 GB')
+    })
+    it('should return result in TB', () => {
+      expect(strings.humanFileSize(50000000000000)).toEqual('45.47 TB')
+    })
+  })
 })

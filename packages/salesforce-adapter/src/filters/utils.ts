@@ -30,10 +30,10 @@ import {
   InstanceElement,
   isAdditionOrModificationChange,
   isField,
-  isInstanceElement,
+  isInstanceElement, isListType,
   isObjectType,
   isReferenceExpression,
-  isRemovalOrModificationChange,
+  isRemovalOrModificationChange, ListType,
   ObjectType,
   ReadOnlyElementsSource,
   ReferenceExpression,
@@ -45,13 +45,17 @@ import { buildElementsSourceFromElements, createSchemeGuard, getParents } from '
 import { FileProperties } from 'jsforce-types'
 import { chunks, collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
-import SalesforceClient from '../client/client'
-import { INSTANCE_SUFFIXES, OptionalFeatures } from '../types'
+import SalesforceClient, { ErrorFilter } from '../client/client'
+import { FetchElements, INSTANCE_SUFFIXES, OptionalFeatures } from '../types'
 import {
   API_NAME,
-  API_NAME_SEPARATOR, CUSTOM_FIELD,
+  API_NAME_SEPARATOR,
+  CHANGED_AT_SINGLETON,
+  CUSTOM_FIELD,
   CUSTOM_METADATA_SUFFIX,
-  CUSTOM_OBJECT, CUSTOM_OBJECT_ID_FIELD,
+  CUSTOM_OBJECT,
+  CUSTOM_OBJECT_ID_FIELD,
+  FIELD_ANNOTATIONS,
   INSTANCE_FULL_NAME_FIELD,
   INTERNAL_ID_ANNOTATION,
   INTERNAL_ID_FIELD,
@@ -65,19 +69,23 @@ import {
   SALESFORCE,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
+import * as transformer from '../transformers/transformer'
 import {
   apiName,
   defaultApiName,
-  isCustomObject, isMetadataObjectType,
-  isNameField, MetadataInstanceElement,
+  isCustomObject,
+  isMetadataObjectType,
+  isNameField,
+  MetadataInstanceElement,
   metadataType,
   MetadataValues,
   Types,
 } from '../transformers/transformer'
-import * as transformer from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
+import { createListMetadataObjectsConfigChange } from '../config_change'
 
 const { toArrayAsync, awu } = collections.asynciterable
+const { splitDuplicates } = collections.array
 const { weightedChunks } = chunks
 const log = logger(module)
 
@@ -117,7 +125,7 @@ export const metadataTypeSync = (element: Readonly<Element>): string => {
   }
   return element.annotations[METADATA_TYPE] || 'unknown'
 }
-export const isCustomObjectSync = (element: Readonly<Element>): boolean => {
+export const isCustomObjectSync = (element: Readonly<Element>): element is ObjectType => {
   const res = isObjectType(element)
     && metadataTypeSync(element) === CUSTOM_OBJECT
     // The last part is so we can tell the difference between a custom object
@@ -168,6 +176,18 @@ export const isMasterDetailField = (field: Field): boolean => (
 
 export const isLookupField = (field: Field): boolean => (
   field.refType.elemID.isEqual(Types.primitiveDataTypes.Lookup.elemID)
+)
+
+export const isQueryableField = (field: Field): boolean => (
+  field.annotations[FIELD_ANNOTATIONS.QUERYABLE] === true
+)
+
+export const isHiddenField = (field: Field): boolean => (
+  field.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] === true
+)
+
+export const isReadOnlyField = (field: Field): boolean => (
+  !field.annotations[FIELD_ANNOTATIONS.CREATABLE] && !field.annotations[FIELD_ANNOTATIONS.UPDATEABLE]
 )
 
 export const getInstancesOfMetadataType = async (elements: Element[], metadataTypeName: string):
@@ -498,3 +518,48 @@ export const getInstanceAlias = async (
     ? label
     : `${label} (${namespace})`
 }
+
+export const getChangedAtSingleton = async (
+  elementsSource: ReadOnlyElementsSource
+): Promise<InstanceElement | undefined> => {
+  const element = await elementsSource.get(new ElemID(SALESFORCE, CHANGED_AT_SINGLETON, 'instance', ElemID.CONFIG_NAME))
+  return isInstanceElement(element) ? element : undefined
+}
+
+export const isCustomType = (element: Element): element is ObjectType => (
+  isObjectType(element) && ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(apiNameSync(element) ?? '')
+)
+const removeDuplicateFileProps = (files: FileProperties[]): FileProperties[] => {
+  const {
+    duplicates,
+    uniques,
+  } = splitDuplicates(files, fileProps => `${fileProps.namespacePrefix}__${fileProps.fullName}`)
+  duplicates.forEach(props => {
+    log.warn('Found duplicate file props with the same name in response to listMetadataObjects: %o', props)
+  })
+  return uniques.concat(duplicates.map(props => props[0]))
+}
+export const listMetadataObjects = async (
+  client: SalesforceClient,
+  metadataTypeName: string,
+  isUnhandledError?: ErrorFilter,
+): Promise<FetchElements<FileProperties[]>> => {
+  const { result, errors } = await client.listMetadataObjects(
+    { type: metadataTypeName },
+    isUnhandledError,
+  )
+
+  // Salesforce quirk, we sometimes get the same metadata fullName more than once
+  const elements = removeDuplicateFileProps(result)
+
+  return {
+    elements,
+    configChanges: errors
+      .map(e => e.input)
+      .map(createListMetadataObjectsConfigChange),
+  }
+}
+
+export const toListType = (type: TypeElement): ListType => (
+  isListType(type) ? type : new ListType(type)
+)

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, ElemID, TypeElement, BuiltinTypes, ListType } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, TypeElement, BuiltinTypes, ListType, InstanceElement } from '@salto-io/adapter-api'
 import {
   SALESFORCE,
   INSTANCE_FULL_NAME_FIELD,
@@ -30,7 +30,13 @@ import {
   DUPLICATE_RULE_METADATA_TYPE,
   INSTALLED_PACKAGE_METADATA,
   PATH_ASSISTANT_METADATA_TYPE,
-  WORKFLOW_TASK_METADATA_TYPE, SBAA_APPROVAL_RULE, SBAA_CONDITIONS_MET, SBAA_APPROVAL_CONDITION, FIELD_ANNOTATIONS,
+  WORKFLOW_TASK_METADATA_TYPE,
+  SBAA_APPROVAL_RULE,
+  SBAA_CONDITIONS_MET,
+  SBAA_APPROVAL_CONDITION,
+  FIELD_ANNOTATIONS,
+  CHANGED_AT_SINGLETON,
+  ArtificialTypes,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType, Types } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
@@ -171,6 +177,14 @@ export const mockTypes = {
       suffix: 'workflow',
     },
   }),
+  WorkflowFieldUpdate: createMetadataObjectType({
+    annotations: {
+      metadataType: WORKFLOW_TASK_METADATA_TYPE,
+      dirName: 'workflows',
+      suffix: 'workflow',
+    },
+  }),
+
   TestSettings: createMetadataObjectType({
     annotations: {
       metadataType: 'TestSettings',
@@ -529,6 +543,11 @@ export const mockTypes = {
     },
   }),
   TestCustomObject__c: createCustomObjectType('TestCustomObject__c', {}),
+  BusinessProcess: createMetadataObjectType({
+    annotations: {
+      metadataType: 'BusinessProcess',
+    },
+  }),
 }
 
 export const lwcJsResourceContent = "import { LightningElement } from 'lwc';\nexport default class BikeCard extends LightningElement {\n   name = 'Electra X4';\n   description = 'A sweet bike built for comfort.';\n   category = 'Mountain';\n   material = 'Steel';\n   price = '$2,700';\n   pictureUrl = 'https://s3-us-west-1.amazonaws.com/sfdc-demo/ebikes/electrax4.jpg';\n }"
@@ -686,15 +705,33 @@ export const mockDefaultValues = {
   DataCategoryGroup: {
     [INSTANCE_FULL_NAME_FIELD]: 'TestDataCategoryGroup',
   },
+  BusinessProcess: {
+    [INSTANCE_FULL_NAME_FIELD]: 'Opportunity.TestBusinessProposal',
+    active: true,
+    description: 'Test Business Proposal Description',
+  },
+  WorkflowFieldUpdate: {
+    [INSTANCE_FULL_NAME_FIELD]: 'TestWorkflowFieldUpdate',
+    actionName: 'TestWorkflowFieldUpdate',
+    description: 'Test Workflow Field Update Description',
+    assignedTo: 'TestUser',
+    status: 'Completed',
+  },
 }
 
 // Intentionally let typescript infer the return type here to avoid repeating
 // the definitions from the constants above
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const mockInstances = () => _.mapValues(
-  mockDefaultValues,
-  (values, typeName) => createInstanceElement(
-    values,
-    mockTypes[typeName as keyof typeof mockDefaultValues],
-  )
-)
+export const mockInstances = () => ({
+  ..._.mapValues(
+    mockDefaultValues,
+    (values, typeName) => createInstanceElement(
+      values,
+      mockTypes[typeName as keyof typeof mockDefaultValues],
+    )
+  ),
+  [CHANGED_AT_SINGLETON]: new InstanceElement(
+    ElemID.CONFIG_NAME,
+    ArtificialTypes.ChangedAtSingleton,
+  ),
+})

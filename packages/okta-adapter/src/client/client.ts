@@ -89,6 +89,7 @@ const RATE_LIMIT_BUCKETS = [
   new RegExp('^/api/v1/iam.*'),
   new RegExp('^/api/v1/domains'),
   new RegExp('^/api/v1/device-assurances'),
+  new RegExp('^/api/internal/orgSettings/thirdPartyAdminSetting'),
   /**/
   new RegExp('^/api/v1.*'), // Has to be last
 ]
@@ -105,7 +106,7 @@ const shouldRunRequest = (rateLimits: OktaRateLimits, rateLimitBuffer: number): 
   const isRateLimitDisabled = rateLimitBuffer === UNLIMITED_MAX_REQUESTS_PER_MINUTE
   const isInitialRequest = _.isEqual(rateLimits, INIT_RATE_LIMITS)
   const isWithinRateLimitBuffer = rateLimits.rateLimitRemaining - rateLimits.currentlyRunning > rateLimitBuffer
-  const didRateLimitReset = rateLimits.rateLimitReset < Date.now()
+  const didRateLimitReset = rateLimits.rateLimitReset + 1000 < Date.now() // buffer in case the limit is round down
   const isRateLimitResetSet = rateLimits.rateLimitReset !== INIT_RATE_LIMITS.rateLimitReset
   const isMaxPerMinuteReached = rateLimits.currentlyRunning >= rateLimits.maxPerMinute - rateLimitBuffer
 

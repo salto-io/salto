@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, Element, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
+import { Change, Element, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isEqualValues, isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
 import { createSchemeGuard, resolveValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import Joi from 'joi'
@@ -24,6 +24,7 @@ import { getLookUpName } from '../reference_mapping'
 import { FilterCreator } from '../filter'
 import { findObject, isAllFreeLicense, setFieldDeploymentAnnotations } from '../utils'
 import { PROJECT_CONTEXTS_FIELD } from './fields/contexts_projects_filter'
+import { JiraConfig } from '../config/config'
 
 const PROJECT_TYPE_NAME = 'Project'
 
@@ -35,6 +36,7 @@ const ISSUE_TYPE_SCHEME = 'issueTypeScheme'
 const PRIORITY_SCHEME = 'priorityScheme'
 const PERMISSION_SCHEME_FIELD = 'permissionScheme'
 const PROJECT_CATEGORY_FIELD = 'projectCategory'
+const CUSTOMER_PERMISSIONS = 'customerPermissions'
 
 const log = logger(module)
 
@@ -78,6 +80,25 @@ const deployProjectSchemes = async (
   await deployScheme(instance, client, ISSUE_TYPE_SCREEN_SCHEME_FIELD, 'issueTypeScreenSchemeId')
   await deployScheme(instance, client, ISSUE_TYPE_SCHEME, 'issueTypeSchemeId')
   await deployPriorityScheme(instance, client)
+}
+
+const deployCustomerPermissions = async (
+  instance: InstanceElement,
+  change: Change<InstanceElement>,
+  client: JiraClient,
+  config: JiraConfig
+): Promise<void> => {
+  if (!config.fetch.enableJSM) {
+    return
+  }
+  if ((isAdditionChange(change))
+  || (isModificationChange(change)
+  && !isEqualValues(change.data.before.value.customerPermissions, change.data.after.value.customerPermissions))) {
+    await client.post({
+      url: `/rest/servicedesk/1/servicedesk/${instance.value.key}/settings/requestsecurity`,
+      data: instance.value.customerPermissions,
+    })
+  }
 }
 
 type ComponentsResponse = {
@@ -251,6 +272,7 @@ const filter: FilterCreator = ({ config, client, elementsSource }) => ({
         FIELD_CONFIG_SCHEME_FIELD,
         PROJECT_CONTEXTS_FIELD,
         PRIORITY_SCHEME,
+        CUSTOMER_PERMISSIONS,
       ]
       if (shouldSeparateSchemeDeployment(change, client.isDataCenter)) {
         fieldsToIgnore.push(WORKFLOW_SCHEME_FIELD, ISSUE_TYPE_SCREEN_SCHEME_FIELD, ISSUE_TYPE_SCHEME)
@@ -302,6 +324,7 @@ const filter: FilterCreator = ({ config, client, elementsSource }) => ({
           // the components that are in the NaCls
           await removeComponents(getChangeData(change).value.id, client)
         }
+        await deployCustomerPermissions(instance, change, client, config)
       }
     )
 

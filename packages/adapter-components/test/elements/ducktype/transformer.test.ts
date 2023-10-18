@@ -22,6 +22,7 @@ import {
   CORE_ANNOTATIONS,
   ReferenceExpression,
   ListType,
+  SeverityLevel,
 } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import { getTypeAndInstances, getAllElements, EntriesRequester } from '../../../src/elements/ducktype'
@@ -33,11 +34,12 @@ import { TypeDuckTypeConfig, TypeDuckTypeDefaultsConfig } from '../../../src/con
 import { simpleGetArgs, returnFullEntry, computeGetArgs } from '../../../src/elements'
 import { findDataField } from '../../../src/elements/field_finder'
 import { createElementQuery } from '../../../src/elements/query'
-import { InvalidSingletonType } from '../../../src/config/shared'
+import { AdapterFetchError, InvalidSingletonType } from '../../../src/config/shared'
 
 describe('ducktype_transformer', () => {
   describe('getTypeAndInstances', () => {
-    let mockPaginator: Paginator
+    let mockPaginator: jest.MockedFunction<Paginator>
+
 
     beforeEach(() => {
       mockPaginator = mockFunction<Paginator>().mockImplementationOnce(async function *get() {
@@ -350,6 +352,66 @@ describe('ducktype_transformer', () => {
         },
         defaultName: 'unnamed_1_0',
       })
+    })
+
+    it('should call paginator with correct context and additional context', async () => {
+      mockPaginator = mockFunction<Paginator>().mockImplementation(async function *get(params) {
+        if (params.url === '/folders') {
+          yield [{ id: 1, name: 'folder1' }, { id: 2, name: 'folder2' }]
+        }
+        if (params.url === '/folders/1/subfolders/extra') {
+          yield [{ id: 3, name: 'subfolder1' }]
+        }
+        if (params.url === '/folders/2/subfolders/extra') {
+          yield [{ id: 4, name: 'subfolder2' }]
+        }
+      })
+      jest.spyOn(typeElements, 'generateType').mockRestore()
+      jest.spyOn(instanceElements, 'toInstance').mockRestore()
+      await getTypeAndInstances({
+        adapterName: 'something',
+        paginator: mockPaginator,
+        computeGetArgs,
+        typeName: 'folder',
+        typesConfig: {
+          folder: {
+            request: {
+              url: '/folders',
+              recurseInto: [
+                {
+                  type: 'subfolder',
+                  toField: 'subfolders',
+                  context: [{ name: 'folderId', fromField: 'id' }],
+                },
+              ],
+            },
+            transformation: {
+              standaloneFields: [{ fieldName: 'subfolders' }],
+            },
+          },
+          subfolder: {
+            request: {
+              url: '/folders/{folderId}/subfolders/{extraContext}',
+            },
+            transformation: {
+              sourceTypeName: 'folder__subfolders',
+            },
+          },
+        },
+        typeDefaultConfig: {
+          transformation: {
+            idFields: ['name'],
+            fileNameFields: ['also_name'],
+          },
+        },
+        nestedFieldFinder: returnFullEntry,
+        reversedSupportedTypes: { folders: ['folder'], subfolder: ['subfolder'] },
+        additionalRequestContext: { extraContext: 'extra' },
+      })
+      expect(mockPaginator).toHaveBeenCalledTimes(3)
+      expect(mockPaginator.mock.calls[0][0]).toEqual({ url: '/folders', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined })
+      expect(mockPaginator.mock.calls[1][0]).toEqual({ url: '/folders/1/subfolders/extra', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined })
+      expect(mockPaginator.mock.calls[2][0]).toEqual({ url: '/folders/2/subfolders/extra', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined })
     })
 
     it('should fail if type is missing from config', async () => {
@@ -857,6 +919,42 @@ describe('ducktype_transformer', () => {
       })
       const { errors } = res
       expect(errors).toEqual([{ message: 'singleton err', severity: 'Warning' }])
+    })
+    test.each<{ severity: SeverityLevel }>([
+      { severity: 'Error' },
+      { severity: 'Warning' },
+    ])('should return fetch errors correctly with severity %s', async ({ severity }) => {
+      jest.spyOn(transformer, 'getTypeAndInstances').mockImplementation(() => {
+        throw new AdapterFetchError('fetch err', severity)
+      })
+      const res = await getAllElements({
+        adapterName: 'something',
+        paginator: mockPaginator,
+        fetchQuery: createElementQuery({
+          include: [
+            { type: 'folder' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          folder: ['folders'],
+        },
+        computeGetArgs: simpleGetArgs,
+        nestedFieldFinder: returnFullEntry,
+        types: {
+          folders: {
+            request: {
+              url: '/folders',
+            },
+            transformation: {
+              idFields: ['name'],
+            },
+          },
+        },
+        typeDefaults: typeDefaultConfig,
+      })
+      const { errors } = res
+      expect(errors).toEqual([{ message: 'fetch err', severity }])
     })
   })
 

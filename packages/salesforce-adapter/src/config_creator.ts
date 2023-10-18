@@ -158,6 +158,12 @@ export const configWithCPQ = new InstanceElement(
             CUSTOM_OBJECT_ID_FIELD,
           ],
         },
+        brokenOutgoingReferencesSettings: {
+          defaultBehavior: 'BrokenReference',
+          perTargetTypeOverrides: {
+            User: 'InternalId',
+          },
+        },
       },
     },
     maxItemsInRetrieveRequest: 2500,

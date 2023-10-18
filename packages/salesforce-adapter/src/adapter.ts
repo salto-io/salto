@@ -32,7 +32,12 @@ import { logger } from '@salto-io/logging'
 import { collections, values, promises, objects } from '@salto-io/lowerdash'
 import SalesforceClient from './client/client'
 import * as constants from './constants'
-import { apiName, Types, isMetadataObjectType } from './transformers/transformer'
+import {
+  apiName,
+  Types,
+  isMetadataObjectType,
+  MetadataObjectType,
+} from './transformers/transformer'
 import layoutFilter from './filters/layouts'
 import customObjectsFromDescribeFilter from './filters/custom_objects_from_soap_describe'
 import customObjectsToObjectTypeFilter, { NESTED_INSTANCE_VALUE_TO_TYPE_NAME } from './filters/custom_objects_to_object_type'
@@ -89,18 +94,20 @@ import metadataInstancesAliasesFilter from './filters/metadata_instances_aliases
 import formulaDepsFilter from './filters/formula_deps'
 import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
 import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
-import { FetchElements, SalesforceConfig } from './types'
 import centralizeTrackingInfoFilter from './filters/centralize_tracking_info'
+import changedAtSingletonFilter from './filters/changed_at_singleton'
+import { FetchElements, FetchProfile, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
-import { addDefaults } from './filters/utils'
-import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, listMetadataObjects } from './fetch'
+import { addDefaults, isCustomObjectSync, isCustomType, listMetadataObjects } from './filters/utils'
+import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 import { getLookUpName, getLookupNameWithFallbackToElement } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import nestedInstancesAuthorInformation from './filters/author_information/nested_instances'
-import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
+import { buildFetchProfile } from './fetch_profile/fetch_profile'
 import {
+  ArtificialTypes,
   CUSTOM_OBJECT,
   FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
@@ -192,6 +199,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   // Any filter that relies on _created_at or _changed_at should run after removeUnixTimeZero
   { creator: removeUnixTimeZeroFilter },
   { creator: metadataInstancesAliasesFilter },
+  // createChangedAtSingletonInstanceFilter should run last
+  { creator: changedAtSingletonFilter },
 ]
 
 // By default we run all filters and provide a client
@@ -232,6 +241,8 @@ export interface SalesforceAdapterParams {
   config: SalesforceConfig
 
   elementsSource: ReadOnlyElementsSource
+
+  isFetchWithChangesDetection: boolean
 }
 
 const METADATA_TO_RETRIEVE = [
@@ -307,6 +318,20 @@ export const UNSUPPORTED_SYSTEM_FIELDS = [
   'LastViewedDate',
 ]
 
+const getMetadataTypesFromElementsSource = async (
+  elementsSource: ReadOnlyElementsSource
+): Promise<MetadataObjectType[]> => (
+  awu(await elementsSource.getAll())
+    .filter(isMetadataObjectType)
+    // standard and custom objects
+    .filter(metadataType => !isCustomObjectSync(metadataType))
+    // custom types (CustomMetadata / CustomObject (non standard) / CustomSettings)
+    .filter(metadataType => !isCustomType(metadataType))
+    // settings types
+    .filter(metadataType => !metadataType.isSettings)
+    .toArray()
+)
+
 export default class SalesforceAdapter implements AdapterOperations {
   private maxItemsInRetrieveRequest: number
   private metadataToRetrieve: string[]
@@ -316,6 +341,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private client: SalesforceClient
   private userConfig: SalesforceConfig
   private fetchProfile: FetchProfile
+  private elementsSource: ReadOnlyElementsSource
 
   public constructor({
     metadataTypesOfInstancesFetchedInFilters = [FLOW_METADATA_TYPE, FLOW_DEFINITION_METADATA_TYPE],
@@ -367,6 +393,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     systemFields = SYSTEM_FIELDS,
     unsupportedSystemFields = UNSUPPORTED_SYSTEM_FIELDS,
     config,
+    isFetchWithChangesDetection,
   }: SalesforceAdapterParams) {
     this.maxItemsInRetrieveRequest = config.maxItemsInRetrieveRequest ?? maxItemsInRetrieveRequest
     this.metadataToRetrieve = metadataToRetrieve
@@ -374,8 +401,13 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.metadataTypesOfInstancesFetchedInFilters = metadataTypesOfInstancesFetchedInFilters
     this.nestedMetadataTypes = nestedMetadataTypes
     this.client = client
+    this.elementsSource = elementsSource
 
-    const fetchProfile = buildFetchProfile(config.fetch ?? {})
+    const fetchProfile = buildFetchProfile({
+      fetchParams: config.fetch ?? {},
+      isFetchWithChangesDetection,
+      elementsSource,
+    })
     this.fetchProfile = fetchProfile
     if (!this.fetchProfile.isFeatureEnabled('fetchCustomObjectUsingRetrieveApi')) {
       // We have to fetch custom objects using retrieve in order to be able to fetch the field-level permissions
@@ -411,18 +443,23 @@ export default class SalesforceAdapter implements AdapterOperations {
    * Account credentials were given in the constructor.
    */
   @logDuration('fetching account configuration')
-  async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
+  async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch salesforce account configuration..')
+    await this.fetchProfile.metadataQuery.prepare()
     const fieldTypes = Types.getAllFieldTypes()
     const hardCodedTypes = [
-      ...Types.getAllMissingTypes(),
+      // Missing Metadata subtypes will come from the elementsSource. We want to avoid duplicates
+      ...withChangesDetection ? [] : Types.getAllMissingTypes(),
       ...Types.getAnnotationTypes(),
+      ...Object.values(ArtificialTypes),
     ]
     const metadataTypeInfosPromise = this.listMetadataTypes()
-    const metadataTypesPromise = this.fetchMetadataTypes(
-      metadataTypeInfosPromise,
-      hardCodedTypes,
-    )
+    const metadataTypesPromise = withChangesDetection
+      ? getMetadataTypesFromElementsSource(this.elementsSource)
+      : this.fetchMetadataTypes(
+        metadataTypeInfosPromise,
+        hardCodedTypes,
+      )
     const metadataInstancesPromise = this.fetchMetadataInstances(
       metadataTypeInfosPromise,
       metadataTypesPromise
@@ -452,7 +489,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       elements,
       errors: onFetchFilterResult.errors ?? [],
       updatedConfig,
-      partialFetchData: setPartialFetchData(this.userConfig.fetch?.target !== undefined),
+      partialFetchData: setPartialFetchData(this.fetchProfile.metadataQuery.isPartialFetch()),
     }
   }
 

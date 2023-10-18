@@ -14,15 +14,15 @@
 * limitations under the License.
 */
 import { filterUtils, client as clientUtils, elements as elementUtils, elements as adapterElements } from '@salto-io/adapter-components'
-import { ObjectType, ElemID, InstanceElement, BuiltinTypes, ListType, ReferenceExpression, Element, isInstanceElement, isObjectType, getChangeData } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, BuiltinTypes, ListType, ReferenceExpression, Element, isInstanceElement, isObjectType, getChangeData, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { MockInterface } from '@salto-io/test-utils'
 import { getDefaultConfig } from '../../../src/config/config'
 import JiraClient from '../../../src/client/client'
-import issueLayoutFilter from '../../../src/filters/issue_layout/issue_layout'
+import issueLayoutFilter from '../../../src/filters/layouts/issue_layout'
 import { getFilterParams, mockClient } from '../../utils'
 import { ISSUE_LAYOUT_TYPE, JIRA, PROJECT_TYPE, SCREEN_SCHEME_TYPE } from '../../../src/constants'
-import { createIssueLayoutType } from '../../../src/filters/issue_layout/issue_layout_types'
+import { createLayoutType } from '../../../src/filters/layouts/layout_types'
 
 describe('issue layout filter', () => {
   let connection: MockInterface<clientUtils.APIConnection>
@@ -119,6 +119,7 @@ describe('issue layout filter', () => {
           id: { refType: BuiltinTypes.NUMBER },
           simplified: { refType: BuiltinTypes.BOOLEAN },
           issueTypeScreenScheme: { refType: issueTypeScreenSchemeType },
+          key: { refType: BuiltinTypes.STRING },
         },
       })
       projectInstance = new InstanceElement(
@@ -126,6 +127,7 @@ describe('issue layout filter', () => {
         projectType,
         {
           id: 11111,
+          key: 'projKey',
           name: 'project1',
           simplified: false,
           projectTypeKey: 'software',
@@ -239,16 +241,20 @@ describe('issue layout filter', () => {
     })
     it('should add issue layout to the elements', async () => {
       await filter.onFetch(elements)
-      const instances = elements.filter(isInstanceElement)
-      const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
-      expect(issueLayoutInstance).toBeDefined()
+      const issueLayout = elements
+        .filter(isInstanceElement)
+        .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
+      expect(issueLayout)
+        .toBeDefined()
+      expect(issueLayout?.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toEqual('https://ori-salto-test.atlassian.net/plugins/servlet/project-config/projKey/issuelayout?screenId=11')
     })
     it('should not add issue layout if there is no issueTypeScreenScheme', async () => {
       projectInstance.value.issueTypeScreenScheme = undefined
       await filter.onFetch(elements)
-      const instances = elements.filter(isInstanceElement)
-      const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
-      expect(issueLayoutInstance).toBeUndefined()
+      expect(elements
+        .filter(isInstanceElement)
+        .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE))
+        .toBeUndefined()
     })
     it('should not add issue layout if it is a bad response', async () => {
       mockGet.mockImplementation(() => ({
@@ -257,18 +263,20 @@ describe('issue layout filter', () => {
         },
       }))
       await filter.onFetch(elements)
-      const instances = elements.filter(isInstanceElement)
-      const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
-      expect(issueLayoutInstance).toBeUndefined()
+      expect(elements
+        .filter(isInstanceElement)
+        .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE))
+        .toBeUndefined()
     })
     it('should catch an error if gql post throws an error and return undefined', async () => {
       mockGet.mockImplementation(() => {
         throw new Error('err')
       })
       await filter.onFetch(elements)
-      const instances = elements.filter(isInstanceElement)
-      const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
-      expect(issueLayoutInstance).toBeUndefined()
+      expect(elements
+        .filter(isInstanceElement)
+        .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE))
+        .toBeUndefined()
     })
     it('should not add missing reference if enableMissingRef is false', async () => {
       mockGet.mockImplementation(params => {
@@ -313,9 +321,10 @@ describe('issue layout filter', () => {
       configWithMissingRefs.fetch.enableIssueLayouts = true
       filter = issueLayoutFilter(getFilterParams({ config: configWithMissingRefs, client })) as FilterType
       await filter.onFetch(elements)
-      const instances = elements.filter(isInstanceElement)
-      const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
-      expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].key).toEqual('testField4')
+      expect(elements
+        .filter(isInstanceElement)
+        .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)?.value.issueLayoutConfig.items[0].key)
+        .toEqual('testField4')
     })
     it('should not fetch issue layouts if it was excluded', async () => {
       fetchQuery = elementUtils.query.createMockQuery()
@@ -330,33 +339,42 @@ describe('issue layout filter', () => {
       await filter.onFetch(elements)
       expect(connection.post).not.toHaveBeenCalled()
     })
-  })
-  it('should not fetch issue layouts if it is a data center instance', async () => {
-    const configWithDataCenterTrue = _.cloneDeep(getDefaultConfig({ isDataCenter: true }))
-    configWithDataCenterTrue.fetch.enableIssueLayouts = true
-    filter = issueLayoutFilter(getFilterParams({
-      client,
-      config: configWithDataCenterTrue,
-    })) as FilterType
+    it('should not fetch issue layouts if it is a data center instance', async () => {
+      const configWithDataCenterTrue = _.cloneDeep(getDefaultConfig({ isDataCenter: true }))
+      configWithDataCenterTrue.fetch.enableIssueLayouts = true
+      filter = issueLayoutFilter(getFilterParams({
+        client,
+        config: configWithDataCenterTrue,
+      })) as FilterType
 
-    filter = issueLayoutFilter(getFilterParams({ config: configWithDataCenterTrue, client })) as FilterType
-    await filter.onFetch(elements)
-    expect(connection.post).not.toHaveBeenCalled()
-  })
-  it('should use elemIdGetter', async () => {
-    filter = issueLayoutFilter(getFilterParams({
-      client,
-      getElemIdFunc: () => new ElemID(JIRA, 'someName'),
-    })) as FilterType
-    await filter.onFetch(elements)
-    const instances = elements.filter(isInstanceElement)
-    const issueLayoutInstance = instances.find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)
-    expect(issueLayoutInstance?.elemID.getFullName()).toEqual('jira.IssueLayout.instance.project1_Default_Issue_Layout@uss')
+      filter = issueLayoutFilter(getFilterParams({ config: configWithDataCenterTrue, client })) as FilterType
+      await filter.onFetch(elements)
+      expect(connection.post).not.toHaveBeenCalled()
+    })
+    it('should use elemIdGetter', async () => {
+      filter = issueLayoutFilter(getFilterParams({
+        client,
+        getElemIdFunc: () => new ElemID(JIRA, 'someName'),
+      })) as FilterType
+      await filter.onFetch(elements)
+      expect(elements
+        .filter(isInstanceElement)
+        .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE)?.elemID.getFullName())
+        .toEqual('jira.IssueLayout.instance.someName')
+    })
+    it('should filter out issue layout if screen is not a resolved reference', async () => {
+      screenSchemeInstance.value.screens.default = 'unresolved'
+      await filter.onFetch(elements)
+      expect(elements
+        .filter(isInstanceElement)
+        .find(e => e.elemID.typeName === ISSUE_LAYOUT_TYPE))
+        .toBeUndefined()
+    })
   })
   describe('deploy', () => {
     let issueLayoutInstance: InstanceElement
     let afterIssueLayoutInstance: InstanceElement
-    const { issueLayoutType } = createIssueLayoutType()
+    const issueLayoutType = createLayoutType(ISSUE_LAYOUT_TYPE).layoutType
     beforeEach(() => {
       client = mockCli.client
       connection = mockCli.connection

@@ -14,13 +14,14 @@
 * limitations under the License.
 */
 
-import { buildDataManagement, DataManagement } from '../../src/fetch_profile/data_management'
+import { buildDataManagement } from '../../src/fetch_profile/data_management'
 import {
   API_NAME,
   DETECTS_PARENTS_INDICATOR,
 } from '../../src/constants'
 import { createCustomObjectType } from '../utils'
 import { Types } from '../../src/transformers/transformer'
+import { DataManagement } from '../../src/types'
 
 describe('buildDataManagement', () => {
   let dataManagement: DataManagement
@@ -31,6 +32,12 @@ describe('buildDataManagement', () => {
       allowReferenceTo: ['ccc'],
       saltoManagementFieldSettings: {
         defaultFieldName: 'ManagedBySalto__c',
+      },
+      brokenOutgoingReferencesSettings: {
+        defaultBehavior: 'BrokenReference',
+        perTargetTypeOverrides: {
+          User: 'InternalId',
+        },
       },
       saltoIDSettings: {
         defaultIdFields: ['default'],
@@ -82,6 +89,14 @@ describe('buildDataManagement', () => {
     })
     it('should not fetch objects that are both included and excluded', async () => {
       expect(await dataManagement.shouldFetchObjectType(createCustomObjectType('aaabbb', {}))).toEqual('Never')
+    })
+  })
+  describe('brokenReferenceBehaviorForTargetType', () => {
+    it('should return the default for target types that are not overridden', () => {
+      expect(dataManagement.brokenReferenceBehaviorForTargetType('SomeType')).toEqual('BrokenReference')
+    })
+    it('should return the overridden value for target types that are overridden', () => {
+      expect(dataManagement.brokenReferenceBehaviorForTargetType('User')).toEqual('InternalId')
     })
   })
 

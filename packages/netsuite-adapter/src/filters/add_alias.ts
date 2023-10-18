@@ -243,6 +243,7 @@ const dataInstancesAliasMap: Record<SupportedDataType, AliasDataWithMultipleComp
   accountingPeriod: periodNameAlias,
   account: accountNameAlias,
   nexus: identifierAlias,
+  bin: identifierAlias,
 }
 
 const dataTypesAliasMap: Record<SupportedDataType, ConstantAliasData> = {
@@ -284,6 +285,7 @@ const dataTypesAliasMap: Record<SupportedDataType, ConstantAliasData> = {
   accountingPeriod: toConstantAliasData('Accounting Period'),
   account: toConstantAliasData('Account'),
   nexus: toConstantAliasData('Nexus'),
+  bin: toConstantAliasData('Bin'),
 }
 
 const [itemInstances, otherDataInstances] = _.partition(Object.keys(dataInstancesAliasMap), isItemType)

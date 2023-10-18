@@ -13,9 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, Element, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
+import { InstanceElement, Element, CORE_ANNOTATIONS, ReferenceExpression, ModificationChange } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
-import { AUTOMATION_TYPE, ISSUE_TYPE_SCHEMA_NAME, NOTIFICATION_SCHEME_TYPE_NAME, SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, WORKFLOW_TYPE_NAME } from '../../../src/constants'
+import { AUTOMATION_TYPE, ESCALATION_SERVICE_TYPE, ISSUE_TYPE_SCHEMA_NAME, NOTIFICATION_SCHEME_TYPE_NAME,
+  SCHEDULED_JOB_TYPE, SCRIPTED_FIELD_TYPE, SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE,
+  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { createSecurityLevelValues, createSecuritySchemeValues } from './securityScheme'
 import { createIssueTypeSchemeValues } from './issueTypeScheme'
 import { createDashboardValues, createGadget1Values, createGadget2Values } from './dashboard'
@@ -27,8 +29,19 @@ import { createAutomationValues } from './automation'
 import { createKanbanBoardValues, createScrumBoardValues } from './board'
 import { createFilterValues } from './filter'
 import { createIssueLayoutValues } from './issueLayout'
+// import { createBehaviorValues } from './scriptrunner/beahvior'
+import { createScriptedFieldValues } from './scriptrunner/scripted_fields'
+import { createScriptRunnerListenerValues } from './scriptrunner/listener'
+import { createScheduledJobsValues } from './scriptrunner/scheduled_jobs'
+import { createEscalationServiceValues } from './scriptrunner/escalation_service'
+import { createScriptedFragmentsValues } from './scriptrunner/scripted_fragments'
+import { createScriptRunnerSettingsInstances } from './scriptrunner/settings'
 
-export const createInstances = (randomString: string, fetchedElements: Element[]): InstanceElement[][] => {
+export const createInstances = (
+  randomString: string,
+  uuid: string,
+  fetchedElements: Element[]
+): InstanceElement[][] => {
   const dashboard = new InstanceElement(
     randomString,
     findType('Dashboard', fetchedElements),
@@ -122,6 +135,39 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
     findType('IssueLayout', fetchedElements),
     createIssueLayoutValues(fetchedElements),
   )
+  // const behavior = new InstanceElement(
+  //   randomString,
+  //   findType('Behavior', fetchedElements),
+  //   createBehaviorValues(randomString, fetchedElements),
+  // )
+  const scriptedField = new InstanceElement(
+    randomString,
+    findType(SCRIPTED_FIELD_TYPE, fetchedElements),
+    createScriptedFieldValues(randomString, fetchedElements),
+  )
+  const scriptRunnerListeners = new InstanceElement(
+    randomString,
+    findType(SCRIPT_RUNNER_LISTENER_TYPE, fetchedElements),
+    createScriptRunnerListenerValues(randomString, fetchedElements),
+  )
+
+  const scheduledJobs = new InstanceElement(
+    randomString,
+    findType(SCHEDULED_JOB_TYPE, fetchedElements),
+    createScheduledJobsValues(randomString),
+  )
+
+  const escalationService = new InstanceElement(
+    randomString,
+    findType(ESCALATION_SERVICE_TYPE, fetchedElements),
+    createEscalationServiceValues(randomString, fetchedElements),
+  )
+
+  const scriptedFragments = new InstanceElement(
+    naclCase(uuid),
+    findType(SCRIPT_FRAGMENT_TYPE, fetchedElements),
+    createScriptedFragmentsValues(uuid, fetchedElements),
+  )
 
   return [
     [dashboard],
@@ -137,5 +183,15 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
     [scrumBoard],
     [filter],
     [issueLayout],
+    // [behavior],
+    [scriptedField],
+    [scriptRunnerListeners],
+    [scheduledJobs],
+    [escalationService],
+    [scriptedFragments],
   ]
 }
+
+export const modifyCloudInstances = (fetchedElements: Element[]): ModificationChange<InstanceElement>[][] => [
+  [createScriptRunnerSettingsInstances(fetchedElements)],
+]

@@ -65,6 +65,7 @@ export type MetadataInstance = {
   namespace: string
   name: string
   isFolderType: boolean
+  changedAt: string | undefined
 }
 
 export type MetadataQueryParams = Partial<Omit<MetadataInstance, 'isFolderType'>>
@@ -90,6 +91,7 @@ export type OptionalFeatures = {
   toolingDepsOfCurrentNamespace?: boolean
   useLabelAsAlias?: boolean
   fixRetrieveFilePaths?: boolean
+  organizationWideSharingDefaults?: boolean
 }
 
 export type ChangeValidatorName = (
@@ -120,6 +122,7 @@ export type ChangeValidatorName = (
   | 'installedPackages'
   | 'dataCategoryGroup'
   | 'standardFieldOrObjectAdditionsOrDeletions'
+  | 'deletedNonQueryableFields'
 )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -146,6 +149,14 @@ export type SaltoAliasSettings = {
 
 export type SaltoManagementFieldSettings = {
   defaultFieldName: string
+}
+
+export const outgoingReferenceBehaviors = ['ExcludeInstance', 'BrokenReference', 'InternalId'] as const
+export type OutgoingReferenceBehavior = typeof outgoingReferenceBehaviors[number]
+
+export type BrokenOutgoingReferencesSettings = {
+  defaultBehavior: OutgoingReferenceBehavior
+  perTargetTypeOverrides?: Record<string, OutgoingReferenceBehavior>
 }
 
 const objectIdSettings = new ObjectType({
@@ -236,15 +247,36 @@ const saltoManagementFieldSettingsType = new ObjectType({
   },
 })
 
+const brokenOutgoingReferencesSettingsType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'brokenOutgoingReferencesSettings'),
+  fields: {
+    defaultBehavior: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          values: outgoingReferenceBehaviors,
+        }),
+      },
+    },
+    perTargetTypeOverrides: {
+      refType: new MapType(BuiltinTypes.STRING),
+    },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 export type DataManagementConfig = {
   includeObjects: string[]
   excludeObjects?: string[]
   allowReferenceTo?: string[]
-  ignoreReferenceTo?: string[]
   saltoIDSettings: SaltoIDSettings
   showReadOnlyValues?: boolean
   saltoAliasSettings?: SaltoAliasSettings
   saltoManagementFieldSettings?: SaltoManagementFieldSettings
+  brokenOutgoingReferencesSettings?: BrokenOutgoingReferencesSettings
+  omittedFields?: string[]
 }
 
 export type FetchParameters = {
@@ -495,6 +527,12 @@ const dataManagementType = new ObjectType({
     saltoManagementFieldSettings: {
       refType: saltoManagementFieldSettingsType,
     },
+    brokenOutgoingReferencesSettings: {
+      refType: brokenOutgoingReferencesSettingsType,
+    },
+    omittedFields: {
+      refType: new ListType(BuiltinTypes.STRING),
+    },
   } as Record<keyof DataManagementConfig, FieldDefinition>,
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -661,6 +699,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     toolingDepsOfCurrentNamespace: { refType: BuiltinTypes.BOOLEAN },
     useLabelAsAlias: { refType: BuiltinTypes.BOOLEAN },
     fixRetrieveFilePaths: { refType: BuiltinTypes.BOOLEAN },
+    organizationWideSharingDefaults: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -697,6 +736,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     dataCategoryGroup: { refType: BuiltinTypes.BOOLEAN },
     installedPackages: { refType: BuiltinTypes.BOOLEAN },
     standardFieldOrObjectAdditionsOrDeletions: { refType: BuiltinTypes.BOOLEAN },
+    deletedNonQueryableFields: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -807,3 +847,35 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
+export type MetadataQuery = {
+  prepare: () => Promise<void>
+  isTypeMatch: (type: string) => boolean
+  isInstanceMatch: (instance: MetadataInstance) => boolean
+  isTargetedFetch: () => boolean
+  isFetchWithChangesDetection: () => boolean
+  isPartialFetch: () => boolean
+  getFolderPathsByName: (folderType: string) => Record<string, string>
+}
+
+export type TypeFetchCategory = 'Always' | 'IfReferenced' | 'Never'
+
+export type DataManagement = {
+  shouldFetchObjectType: (objectType: ObjectType) => Promise<TypeFetchCategory>
+  brokenReferenceBehaviorForTargetType: (typeName: string | undefined) => OutgoingReferenceBehavior
+  isReferenceAllowed: (name: string) => boolean
+  getObjectIdsFields: (name: string) => string[]
+  getObjectAliasFields: (name: string) => types.NonEmptyArray<string>
+  showReadOnlyValues?: boolean
+  managedBySaltoFieldForType: (objType: ObjectType) => string | undefined
+  omittedFieldsForType: (name: string) => string[]
+}
+
+export type FetchProfile = {
+  readonly metadataQuery: MetadataQuery
+  readonly dataManagement?: DataManagement
+  readonly isFeatureEnabled: (name: keyof OptionalFeatures) => boolean
+  readonly shouldFetchAllCustomSettings: () => boolean
+  readonly maxInstancesPerType: number
+  readonly preferActiveFlowVersions: boolean
+  readonly addNamespacePrefixToFullName: boolean
+}

@@ -50,5 +50,5 @@ export const BUILTIN_TYPE_NAMES = {
   DEPENDENCY: 'dependency',
   HIDDEN_STRING: 'hidden_string',
   HIDDEN_BOOLEAN: 'hidden_boolean',
-  IMPORTANT_VALUE: 'importantValue',
+  IMPORTANT_VALUE: 'important_value',
 }

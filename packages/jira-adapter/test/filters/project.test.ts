@@ -16,7 +16,8 @@
 import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils, deployment } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { getDefaultConfig } from '../../src/config/config'
+import _ from 'lodash'
+import { getDefaultConfig, JiraConfig } from '../../src/config/config'
 import JiraClient from '../../src/client/client'
 import { JIRA } from '../../src/constants'
 import projectFilter from '../../src/filters/project'
@@ -39,6 +40,7 @@ describe('projectFilter', () => {
   let instance: InstanceElement
   let client: JiraClient
   let type: ObjectType
+  let config: JiraConfig
   let connection: MockInterface<clientUtils.APIConnection>
   const deployChangeMock = deployment.deployChange as jest.MockedFunction<
     typeof deployment.deployChange
@@ -216,6 +218,7 @@ describe('projectFilter', () => {
     let change: Change
 
     beforeEach(async () => {
+      instance.value.key = 'P1'
       const afterInstance = instance.clone()
       afterInstance.value.workflowScheme = 1
       afterInstance.value.id = 2
@@ -231,7 +234,7 @@ describe('projectFilter', () => {
         endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.Project.deployRequests,
         fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme',
-          'workflowScheme', 'issueTypeScreenScheme', 'issueTypeScheme', 'permissionScheme'],
+          'customerPermissions', 'workflowScheme', 'issueTypeScreenScheme', 'issueTypeScheme', 'permissionScheme'],
       })
     })
 
@@ -282,6 +285,58 @@ describe('projectFilter', () => {
         undefined,
       )
     })
+    it('should deploy customerPermissions modification when enableJSM is true', async () => {
+      instance.value.customerPermissions = {
+        serviceDeskOpenAccess: true,
+      }
+      const afterInstance = instance.clone()
+      afterInstance.value.customerPermissions = {
+        serviceDeskOpenAccess: false,
+      }
+      change = toChange({ before: instance, after: afterInstance })
+      const { paginator } = mockClient()
+      const elementsSource = getLicenseElementSource(true)
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config.fetch.enableJSM = true
+      filter = projectFilter(getFilterParams({
+        client,
+        paginator,
+        elementsSource,
+        config,
+      })) as typeof filter
+      await filter.deploy([change])
+      expect(deployChangeMock).toHaveBeenCalledTimes(0)
+      expect(connection.post).toHaveBeenCalledWith(
+        '/rest/servicedesk/1/servicedesk/P1/settings/requestsecurity',
+        {
+          serviceDeskOpenAccess: false,
+        },
+        undefined,
+      )
+    })
+    it('should not deploy customerPermissions modification when enableJSM is false', async () => {
+      instance.value.customerPermissions = {
+        serviceDeskOpenAccess: true,
+      }
+      const afterInstance = instance.clone()
+      afterInstance.value.customerPermissions = {
+        serviceDeskOpenAccess: false,
+      }
+      change = toChange({ before: instance, after: afterInstance })
+      const { paginator } = mockClient()
+      const elementsSource = getLicenseElementSource(true)
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config.fetch.enableJSM = false
+      filter = projectFilter(getFilterParams({
+        client,
+        paginator,
+        elementsSource,
+        config,
+      })) as typeof filter
+      await filter.deploy([change])
+      expect(deployChangeMock).toHaveBeenCalledTimes(0)
+      expect(connection.post).toHaveBeenCalledTimes(0)
+    })
   })
 
   describe('When deploying an addition change', () => {
@@ -314,7 +369,7 @@ describe('projectFilter', () => {
         client,
         endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.Project.deployRequests,
-        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme', 'permissionScheme'],
+        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme', 'customerPermissions', 'permissionScheme'],
       })
     })
 
@@ -435,7 +490,7 @@ describe('projectFilter', () => {
         client,
         endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.Project.deployRequests,
-        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme', 'permissionScheme'],
+        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme', 'customerPermissions', 'permissionScheme'],
       })
     })
 
@@ -533,7 +588,7 @@ describe('projectFilter', () => {
         client,
         endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.Project.deployRequests,
-        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme', 'permissionScheme'],
+        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme', 'customerPermissions', 'permissionScheme'],
       })
     })
 
@@ -638,7 +693,7 @@ describe('projectFilter', () => {
           endpointDetails: getDefaultConfig({ isDataCenter: true })
             .apiDefinitions.types.Project.deployRequests,
           fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme',
-            'workflowScheme', 'issueTypeScreenScheme', 'issueTypeScheme'],
+            'customerPermissions', 'workflowScheme', 'issueTypeScreenScheme', 'issueTypeScheme'],
         })
       })
       it('should call the endpoint to set the scheme', () => {

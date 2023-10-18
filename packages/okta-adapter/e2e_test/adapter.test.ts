@@ -34,7 +34,7 @@ const { getInstanceName } = elementsUtils
 const log = logger(module)
 
 // Set long timeout as we communicate with Okta APIs
-jest.setTimeout(1000 * 60 * 5)
+jest.setTimeout(1000 * 60 * 10)
 
 const createInstance = ({
   typeName,

@@ -13,29 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { collections, types } from '@salto-io/lowerdash'
-import { ObjectType } from '@salto-io/adapter-api'
 import { ConfigValidationError, validateRegularExpressions } from '../config_validation'
-import { DataManagementConfig } from '../types'
+import { DataManagement, DataManagementConfig, OutgoingReferenceBehavior, outgoingReferenceBehaviors } from '../types'
 import { DETECTS_PARENTS_INDICATOR } from '../constants'
 import { apiName } from '../transformers/transformer'
 
 const { makeArray } = collections.array
-
-const defaultIgnoreReferenceTo = ['User']
-
-export type TypeFetchCategory = 'Always' | 'IfReferenced' | 'Never'
-
-export type DataManagement = {
-  shouldFetchObjectType: (objectType: ObjectType) => Promise<TypeFetchCategory>
-  isReferenceAllowed: (name: string) => boolean
-  shouldIgnoreReference: (name: string) => boolean
-  getObjectIdsFields: (name: string) => string[]
-  getObjectAliasFields: (name: string) => types.NonEmptyArray<string>
-  showReadOnlyValues?: boolean
-  managedBySaltoFieldForType: (objType: ObjectType) => string | undefined
-}
-
 
 const DEFAULT_ALIAS_FIELDS: types.NonEmptyArray<string> = [DETECTS_PARENTS_INDICATOR, 'Name']
 const ALIAS_FIELDS_BY_TYPE: Record<string, types.NonEmptyArray<string>> = {
@@ -74,10 +59,17 @@ const ALIAS_FIELDS_BY_TYPE: Record<string, types.NonEmptyArray<string>> = {
   ],
 }
 
+const DEFAULT_BROKEN_REFS_BEHAVIOR: OutgoingReferenceBehavior = 'ExcludeInstance'
+const DEFAULT_PER_TYPE_BROKEN_REFS_BEHAVIOR: Record<string, OutgoingReferenceBehavior> = {
+  User: 'InternalId',
+}
+
 export const buildDataManagement = (params: DataManagementConfig): DataManagement => {
   const isReferenceAllowed = (name: string): boolean => (
     params.allowReferenceTo?.some(re => new RegExp(`^${re}$`).test(name)) ?? false
   )
+
+  const omittedFieldsByType = _.groupBy(params.omittedFields, fieldApiName => fieldApiName.split('.')[0])
 
   return {
     shouldFetchObjectType: async objectType => {
@@ -117,6 +109,19 @@ export const buildDataManagement = (params: DataManagementConfig): DataManagemen
       return 'Never'
     },
 
+    brokenReferenceBehaviorForTargetType: typeName => {
+      if (typeName === undefined) {
+        return DEFAULT_BROKEN_REFS_BEHAVIOR
+      }
+      const typeOverrides = params.brokenOutgoingReferencesSettings?.perTargetTypeOverrides
+        ?? DEFAULT_PER_TYPE_BROKEN_REFS_BEHAVIOR
+      const perTypeBehavior = typeOverrides[typeName]
+      if (perTypeBehavior !== undefined) {
+        return perTypeBehavior
+      }
+      return params.brokenOutgoingReferencesSettings?.defaultBehavior ?? DEFAULT_BROKEN_REFS_BEHAVIOR
+    },
+
     managedBySaltoFieldForType: objType => {
       if (params.saltoManagementFieldSettings?.defaultFieldName === undefined) {
         return undefined
@@ -128,9 +133,6 @@ export const buildDataManagement = (params: DataManagementConfig): DataManagemen
     },
 
     isReferenceAllowed,
-
-    shouldIgnoreReference: name =>
-      (params.ignoreReferenceTo ?? defaultIgnoreReferenceTo).includes(name),
 
     getObjectIdsFields: name => {
       const matchedOverride = params.saltoIDSettings.overrides
@@ -146,6 +148,9 @@ export const buildDataManagement = (params: DataManagementConfig): DataManagemen
         : ALIAS_FIELDS_BY_TYPE[name] ?? defaultFields
     },
     showReadOnlyValues: params.showReadOnlyValues,
+    omittedFieldsForType: name => (
+      name === undefined ? [] : makeArray(omittedFieldsByType[name])
+    ),
   }
 }
 
@@ -177,5 +182,19 @@ export const validateDataManagementConfig = (
       saltoAliasOverrides.map(override => override.objectsRegex),
       [...fieldPath, 'saltoAliasSettings', 'overrides'],
     )
+  }
+  if (dataManagementConfig.brokenOutgoingReferencesSettings?.perTargetTypeOverrides !== undefined) {
+    Object.entries(dataManagementConfig.brokenOutgoingReferencesSettings.perTargetTypeOverrides).forEach(
+      ([type, outgoingRefBehavior]) => {
+        if (!outgoingReferenceBehaviors.includes(outgoingRefBehavior)) {
+          throw new ConfigValidationError([...fieldPath, 'brokenOutgoingReferencesSettings', 'perTargetTypeOverrides', type], `Per-target broken reference behavior must be one of ${outgoingReferenceBehaviors.join(',')}`)
+        }
+      }
+    )
+  }
+  const invalidOmittedFieldNames = makeArray(dataManagementConfig.omittedFields)
+    .filter(omittedFieldName => omittedFieldName.split('.').length < 2)
+  if (invalidOmittedFieldNames.length > 0) {
+    throw new ConfigValidationError([...fieldPath, 'omittedFields'], `The following omitted fields API names are invalid: ${invalidOmittedFieldNames.join(',')}`)
   }
 }

@@ -23,21 +23,28 @@ import {
   isSaltoElementError, ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId,
   AdapterOperationsContext, FetchResult, isAdditionChange, isStaticFile,
   isAdditionOrModificationChange, Value, StaticFile, isElement, AuthorInformation, getAuthorInformation,
+  isModificationChange,
+  toChange,
+  ModificationChange,
+  AdditionChange,
 } from '@salto-io/adapter-api'
 import { applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements, safeJsonStringify, walkOnElement, WalkOnFunc, WALK_NEXT_STEP, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { merger, elementSource, expressions, Workspace, pathIndex, updateElementsWithAlternativeAccount, createAdapterReplacedID, remoteMap, adaptersConfigSource as acs } from '@salto-io/workspace'
+import { merger, elementSource, expressions, Workspace, pathIndex, updateElementsWithAlternativeAccount, createAdapterReplacedID, remoteMap, adaptersConfigSource as acs, createPathIndexForElement } from '@salto-io/workspace'
 import { collections, promises, types, values } from '@salto-io/lowerdash'
+import { isAutoMergeDisabled } from '../app_config'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
 import { AdapterEvents, createAdapterProgressReporter } from './adapters/progress'
 import { IDFilter } from './plan/plan'
 import { getAdaptersCreatorConfigs } from './adapters'
+import { mergeStaticFiles, mergeStrings } from './merge_content'
 
 const { awu, groupByAsync } = collections.asynciterable
 const { mapValuesAsync } = promises.object
 const { withLimitedConcurrency } = promises.array
 const { mergeElements } = merger
+const { isTypeOfOrUndefined } = types
 const log = logger(module)
 
 const MAX_SPLIT_CONCURRENCY = 2000
@@ -169,6 +176,52 @@ const addFetchChangeMetadata = (
     await updatedElementSource.get(change.change.id.createBaseID().parent)
   ),
 }])
+
+type MergeableDiffChange = FetchChange & {
+  serviceChanges: [ModificationChange<Value> | AdditionChange<Value>]
+  pendingChanges: [ModificationChange<Value> | AdditionChange<Value>]
+}
+const isMergeableDiffChange = (change: FetchChange): change is MergeableDiffChange =>
+  change.serviceChanges.length === 1
+  && change.pendingChanges?.length === 1
+  && change.change.id.isEqual(change.serviceChanges[0].id)
+  && change.change.id.isEqual(change.pendingChanges[0].id)
+  && isAdditionOrModificationChange(change.serviceChanges[0])
+  && isAdditionOrModificationChange(change.pendingChanges[0])
+
+const toMergedTextChange = (change: FetchChange, after: string | StaticFile): FetchChange => ({
+  ...change,
+  change: {
+    ...change.change,
+    ...toChange({
+      ...change.change.data,
+      after,
+    }),
+  },
+  pendingChanges: [],
+})
+
+const autoMergeTextChange: ChangeTransformFunction = async change => {
+  if (isAutoMergeDisabled() || !isMergeableDiffChange(change)) {
+    return [change]
+  }
+
+  const changeId = change.change.id.getFullName()
+  const current = change.pendingChanges[0].data.after
+  const incoming = change.serviceChanges[0].data.after
+  const base = isModificationChange(change.serviceChanges[0])
+    ? change.serviceChanges[0].data.before : undefined
+
+  if (isStaticFile(current) && isStaticFile(incoming) && isTypeOfOrUndefined(base, isStaticFile)) {
+    const merged = await mergeStaticFiles(changeId, { current, base, incoming })
+    return [merged !== undefined ? toMergedTextChange(change, merged) : change]
+  }
+  if (_.isString(current) && _.isString(incoming) && isTypeOfOrUndefined(base, _.isString)) {
+    const merged = mergeStrings(changeId, { current, base, incoming })
+    return [merged !== undefined ? toMergedTextChange(change, merged) : change]
+  }
+  return [change]
+}
 
 const getChangesNestedUnderID = (
   id: ElemID, changesTree: collections.treeMap.TreeMap<WorkspaceDetailedChange>
@@ -694,6 +747,7 @@ export const calcFetchChanges = async (
   )
 
   const changes = await awu(fetchChanges)
+    .flatMap(autoMergeTextChange)
     .flatMap(toChangesWithPath(async name => serviceElementsMap[name.getFullName()] ?? []))
     .flatMap(addFetchChangeMetadata(partialFetchElementSource))
     .toArray()
@@ -948,21 +1002,6 @@ export const fetchChangesFromWorkspace = async (
   fromState: boolean,
   progressEmitter?: EventEmitter<FetchProgressEvents>,
 ): Promise<FetchChangesResult> => {
-  const splitElementByFile = async (element: Element): Promise<Element[]> => {
-    const elementNaclFiles = await otherWorkspace.getElementNaclFiles(element.elemID)
-    const naclFragments = (await Promise.all(
-      elementNaclFiles.map(
-        async filename => (await otherWorkspace.getParsedNaclFile(filename))?.elements()
-      )
-    )).filter(values.isDefined).flat()
-    const naclPathIndex = new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>()
-    await pathIndex.updatePathIndex({
-      pathIndex: naclPathIndex,
-      unmergedElements: naclFragments,
-    })
-    return pathIndex.splitElementByPath(element, naclPathIndex)
-  }
-
   const getDifferentConfigs = async (): Promise<InstanceElement[]> => (
     awu(currentConfigs).filter(async config => {
       const otherConfig = await otherWorkspace.accountConfig(config.elemID.adapter)
@@ -1027,7 +1066,10 @@ export const fetchChangesFromWorkspace = async (
   )
   const splitByFile = await log.time(async () =>
     (await withLimitedConcurrency(
-      wu(unmergedWithoutPath).map(elem => () => splitElementByFile(elem)),
+      wu(unmergedWithoutPath).map(elem => async () =>
+        pathIndex.splitElementByPath(
+          elem, await createPathIndexForElement(otherWorkspace, elem.elemID)
+        )),
       MAX_SPLIT_CONCURRENCY
     )).flat(), 'Splitting elements by files')
   const unmergedElements = [

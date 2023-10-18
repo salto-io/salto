@@ -166,6 +166,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     const flowDefinitionType = await config.elementsSource.get(FLOW_DEFINITION_METADATA_TYPE_ID)
     if (!isObjectType(flowDefinitionType)) {
       log.error('Failed to deactivate flows since the FlowDefinition metadata type does not exist in the elements source')
+      return
     }
     deactivatedFlowChanges
       .map(flowChange => createDeactivatedFlowDefinitionChange(flowChange, flowDefinitionType))

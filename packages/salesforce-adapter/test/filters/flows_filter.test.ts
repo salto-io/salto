@@ -173,7 +173,8 @@ describe('flows filter', () => {
       })
     })
     it('should add FlowDefinition for flows that had been deactivated on preDeploy and remove them on onDeploy', async () => {
-      changes = [alreadyInactiveFlowChange, deactivatedFlowChange, activeFlowChange, newInactiveFlowChange]
+      changes = [alreadyInactiveFlowChange, deactivatedFlowChange, activeFlowChange,
+        newInactiveFlowChange, workflowChange]
       await filter.preDeploy(changes)
       expect(changes).toIncludeSameMembers([
         alreadyInactiveFlowChange,
@@ -196,6 +197,31 @@ describe('flows filter', () => {
         newInactiveFlowChange,
         workflowChange,
       ])
+    })
+    describe('when the FlowDefinition MetadataType does not exist in the Elements source', () => {
+      beforeEach(() => {
+        filter = filterCreator(
+          {
+            config: {
+              ...defaultFilterContext,
+              elementsSource: buildElementsSourceFromElements([]),
+            },
+            client,
+          },
+        ) as typeof filter
+      })
+      it('should not add FlowDefinition for flows that had been deactivated on preDeploy', async () => {
+        changes = [alreadyInactiveFlowChange, deactivatedFlowChange, activeFlowChange,
+          newInactiveFlowChange, workflowChange]
+        await filter.preDeploy(changes)
+        expect(changes).toIncludeSameMembers([
+          alreadyInactiveFlowChange,
+          deactivatedFlowChange,
+          activeFlowChange,
+          newInactiveFlowChange,
+          workflowChange,
+        ])
+      })
     })
   })
 })

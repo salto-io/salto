@@ -139,7 +139,7 @@ const getFlowInstances = async (
 }
 
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
-  name: 'fetchFlowsFilter',
+  name: 'flowsFilter',
   remote: true,
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
     const flowType = findObjectType(elements, FLOW_METADATA_TYPE_ID)

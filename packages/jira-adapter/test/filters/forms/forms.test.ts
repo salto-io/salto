@@ -147,9 +147,9 @@ describe('forms filter', () => {
                 ],
               },
             ],
-            conditions: {},
-            sections: {},
-            questions: {},
+            conditions: [],
+            sections: [],
+            questions: [],
           },
         })
       })

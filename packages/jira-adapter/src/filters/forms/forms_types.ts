@@ -28,6 +28,9 @@ export type detailedFormResponse = {
       settings: {
         templateFormUuid?: string
       }
+      questions: {}
+      sections: {}
+      conditions: {}
     }
   }
 }
@@ -102,7 +105,26 @@ export const createFormType = (): {
       },
     },
   })
-
+  const questionType = new ObjectType({
+    elemID: new ElemID(JIRA, 'Question'),
+    fields: {
+      type: {
+        refType: BuiltinTypes.STRING,
+      },
+      label: {
+        refType: BuiltinTypes.STRING,
+      },
+      description: {
+        refType: BuiltinTypes.STRING,
+      },
+      questionKey: {
+        refType: BuiltinTypes.STRING,
+      },
+      jiraField: {
+        refType: BuiltinTypes.STRING,
+      },
+    },
+  })
   const FormDesignType = new ObjectType({
     elemID: new ElemID(JIRA, 'FormDesign'),
     fields: {
@@ -119,7 +141,7 @@ export const createFormType = (): {
         refType: BuiltinTypes.UNKNOWN,
       },
       questions: {
-        refType: BuiltinTypes.UNKNOWN,
+        refType: new ListType(questionType),
       },
     },
   })
@@ -146,6 +168,6 @@ export const createFormType = (): {
   })
   return {
     formType,
-    subTypes: [FormSubmitType, FormSettingsType, FormLayoutItemType, FormDesignType],
+    subTypes: [FormSubmitType, FormSettingsType, FormLayoutItemType, FormDesignType, questionType],
   }
 }

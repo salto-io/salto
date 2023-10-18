@@ -35,8 +35,9 @@ const filter: FilterCreator = ({ config, client, getElemIdFunc }) => ({
       return
     }
     const cloudId = await getCloudId(client)
-    const { formType } = createFormType()
+    const { formType, subTypes } = createFormType()
     elements.push(formType)
+    subTypes.forEach(subType => { elements.push(subType) })
 
     const jsmProject = elements
       .filter(isInstanceElement)
@@ -54,6 +55,9 @@ const filter: FilterCreator = ({ config, client, getElemIdFunc }) => ({
             const name = `${project.value.name}_${formResponse.name}`
             delete detailedRes.data?.publish
             delete detailedRes.data.design.settings.templateFormUuid
+            detailedRes.data.design.questions = Object.values(detailedRes.data.design.questions)
+            detailedRes.data.design.sections = Object.values(detailedRes.data.design.sections)
+            detailedRes.data.design.conditions = Object.values(detailedRes.data.design.conditions)
             const formValue = detailedRes.data
             formValue.id = formResponse.id
             const serviceIds = adapterElements.createServiceIds(formValue, 'uuid', formType.elemID)

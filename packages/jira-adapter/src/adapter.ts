@@ -273,6 +273,7 @@ export const DEFAULT_FILTERS = [
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,
+  formsFilter,
   fieldReferencesFilter,
   // Must run after fieldReferencesFilter
   addJsmTypesAsFieldsFilter,
@@ -330,7 +331,6 @@ export const DEFAULT_FILTERS = [
   deployJsmTypesFilter,
   // Must be done after JsmTypesFilter
   jsmPathFilter,
-  formsFilter,
   // Must be last
   defaultInstancesDeployFilter,
   ...Object.values(otherCommonFilters),

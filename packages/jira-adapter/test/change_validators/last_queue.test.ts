@@ -137,4 +137,12 @@ describe('lastQueueValidator', () => {
     )
     expect(changeErrors).toHaveLength(0)
   })
+  it('should not return error if trying to delete the lase queue with the project', async () => {
+    const validator = deleteLastQueueValidator(config)
+    const changeErrors = await validator(
+      [toChange({ before: projectInstance }), toChange({ before: queueInstance })],
+      buildElementsSourceFromElements([])
+    )
+    expect(changeErrors).toHaveLength(0)
+  })
 })

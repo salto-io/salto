@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isInstanceChange, SeverityLevel, isRemovalChange, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isInstanceChange, SeverityLevel, isRemovalChange, CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { getParent } from '@salto-io/adapter-utils'
-import { QUEUE_TYPE } from '../constants'
+import { PROJECT_TYPE, QUEUE_TYPE } from '../constants'
 import { JiraConfig } from '../config/config'
 
 const { awu } = collections.asynciterable
@@ -27,6 +27,13 @@ export const deleteLastQueueValidator: (
     if (elementsSource === undefined || !config.fetch.enableJSM) {
       return []
     }
+    const projects = await awu(await elementsSource.list())
+      .filter(id => id.typeName === PROJECT_TYPE)
+      .map(id => elementsSource.get(id))
+      .filter(isInstanceElement)
+      .map(instance => instance.elemID.getFullName())
+      .toArray()
+
     const projectToQueues = await awu(await elementsSource.list())
       .filter(id => id.typeName === QUEUE_TYPE && id.idType === 'instance')
       .map(id => elementsSource.get(id))
@@ -37,7 +44,10 @@ export const deleteLastQueueValidator: (
       .filter(isRemovalChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === QUEUE_TYPE)
-      .filter(async instance => projectToQueues[getParent(instance).elemID.getFullName()] === undefined)
+      .filter(async instance => {
+        const relatedQueues = projectToQueues[getParent(instance).elemID.getFullName()]
+        return relatedQueues === undefined && projects.includes(getParent(instance).elemID.getFullName())
+      })
       .map(instance => ({
         elemID: instance.elemID,
         severity: 'Error' as SeverityLevel,

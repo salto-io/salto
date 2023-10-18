@@ -37,6 +37,7 @@ export const deleteLastQueueValidator: (
     const projectToQueues = await awu(await elementsSource.list())
       .filter(id => id.typeName === QUEUE_TYPE && id.idType === 'instance')
       .map(id => elementsSource.get(id))
+      .filter(queue => queue.annotations[CORE_ANNOTATIONS.PARENT][0] !== undefined)
       .groupBy(queue => queue.annotations[CORE_ANNOTATIONS.PARENT][0].elemID.getFullName())
 
     return awu(changes)
@@ -44,6 +45,7 @@ export const deleteLastQueueValidator: (
       .filter(isRemovalChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === QUEUE_TYPE)
+      .filter(queue => queue.annotations[CORE_ANNOTATIONS.PARENT][0] !== undefined)
       .filter(async instance => {
         const relatedQueues = projectToQueues[getParent(instance).elemID.getFullName()]
         return relatedQueues === undefined && projects.includes(getParent(instance).elemID.getFullName())

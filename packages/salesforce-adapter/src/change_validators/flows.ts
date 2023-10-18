@@ -169,13 +169,6 @@ const inActiveNewVersionInfo = (instance: InstanceElement, preferActive: boolean
   return newVersionInfo(instance, false)
 }
 
-const deactivatingError = (instance: InstanceElement): ChangeError => ({
-  elemID: instance.elemID,
-  severity: 'Error',
-  message: 'Deactivating a flow is not supported',
-  detailedMessage: `Deactivating a flow is not supported via metadata API. Flow name: ${instance.elemID.getFullName()}. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/6982324-managing-salesforce-flows`,
-})
-
 const activeFlowModificationError = (instance: InstanceElement, enableActiveDeploy: boolean, baseUrl?: URL):
     ChangeError => {
   if (enableActiveDeploy) {
@@ -249,15 +242,11 @@ const activeFlowValidator = (config: SalesforceConfig, isSandbox: boolean, clien
       .filter(isRemovalChange)
       .map(change => removeFlowError(getChangeData(change)))
 
-    const deactivatingFlowChangeErrors = flowChanges
+    const inactiveNewVersionChangeInfo = flowChanges
       .filter(isModificationChange)
       .filter(isDeactivateChange)
-      .map(change => {
-        if (isDeactivationChangeOnly(change)) {
-          return deactivatingError(getChangeData(change))
-        }
-        return inActiveNewVersionInfo(getChangeData(change), isPreferActiveVersion)
-      })
+      .filter(change => !isDeactivationChangeOnly(change))
+      .map(change => inActiveNewVersionInfo(getChangeData(change), isPreferActiveVersion))
 
     if (isSandbox) {
       const sandboxFlowModification = flowChanges
@@ -266,7 +255,7 @@ const activeFlowValidator = (config: SalesforceConfig, isSandbox: boolean, clien
         .map(getChangeData)
         .map(instance => newVersionInfo(instance, true))
       return [
-        ...deactivatingFlowChangeErrors,
+        ...inactiveNewVersionChangeInfo,
         ...sandboxFlowModification,
         ...removingFlowChangeErrors,
       ]
@@ -293,7 +282,7 @@ const activeFlowValidator = (config: SalesforceConfig, isSandbox: boolean, clien
       .filter(flow => getFlowStatus(flow) === ACTIVE)
       .map(flow => activeFlowAdditionError(flow, isEnableFlowDeployAsActiveEnabled, baseUrl))
 
-    return [...deactivatingFlowChangeErrors, ...activeFlowModification,
+    return [...inactiveNewVersionChangeInfo, ...activeFlowModification,
       ...activatingFlow, ...activeFlowAddition, ...removingFlowChangeErrors]
   }
 

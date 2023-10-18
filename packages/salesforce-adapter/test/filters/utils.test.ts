@@ -14,13 +14,13 @@
 * limitations under the License.
 */
 import {
-  BuiltinTypes,
+  BuiltinTypes, Change,
   createRefToElmWithValue,
   ElemID,
   Field,
   InstanceElement, ListType,
   ObjectType,
-  ReadOnlyElementsSource,
+  ReadOnlyElementsSource, toChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import {
@@ -30,7 +30,7 @@ import {
   isCustomMetadataRecordType, isCustomType,
   isMetadataValues,
   isStandardObject,
-  layoutObjAndName,
+  layoutObjAndName, isInstanceOfTypeChangeSync, isInstanceOfTypeSync,
 } from '../../src/filters/utils'
 import {
   API_NAME,
@@ -361,6 +361,39 @@ describe('addDefaults', () => {
     })
     it('should not wrap a List type', () => {
       expect(toListType(new ListType(mockTypes.Profile))).toEqual(new ListType(mockTypes.Profile))
+    })
+  })
+  describe('isInstanceOfTypeSync and isInstanceOfTypeChangeSync', () => {
+    let instance: InstanceElement
+    beforeEach(() => {
+      instance = createInstanceElement({
+        [INSTANCE_FULL_NAME_FIELD]: 'TestInstance',
+        description: 'Test Instance',
+      }, mockTypes.Profile)
+    })
+    describe('isInstanceOfTypeSync', () => {
+      it('should return true when the instance type is one of the provided types', () => {
+        expect(instance).toSatisfy(isInstanceOfTypeSync('Profile'))
+        expect(instance).toSatisfy(isInstanceOfTypeSync('Profile', 'Flow'))
+      })
+      it('should return false when the instance type is not one of the provided types', () => {
+        expect(instance).not.toSatisfy(isInstanceOfTypeSync('Flow'))
+        expect(instance).not.toSatisfy(isInstanceOfTypeSync('Flow', 'ApexClass'))
+      })
+    })
+    describe('isInstanceOfTypeChangeSync', () => {
+      let change: Change
+      beforeEach(() => {
+        change = toChange({ after: instance })
+      })
+      it('should return true when the changed instance type is one of the provided types', () => {
+        expect(change).toSatisfy(isInstanceOfTypeChangeSync('Profile'))
+        expect(change).toSatisfy(isInstanceOfTypeChangeSync('Profile', 'Flow'))
+      })
+      it('should return false when the changed instance type is not one of the provided types', () => {
+        expect(change).not.toSatisfy(isInstanceOfTypeChangeSync('Flow'))
+        expect(change).not.toSatisfy(isInstanceOfTypeChangeSync('Flow', 'ApexClass'))
+      })
     })
   })
 })

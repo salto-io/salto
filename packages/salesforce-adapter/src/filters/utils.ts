@@ -95,15 +95,18 @@ const METADATA_VALUES_SCHEME = Joi.object({
 
 export const isMetadataValues = createSchemeGuard<MetadataValues>(METADATA_VALUES_SCHEME)
 
-// This function checks whether an element is an instance of a certain metadata type
-// note that for instances of custom objects this will check the specific type (i.e Lead)
-// if you want instances of all custom objects use isInstanceOfCustomObject
+/**
+ * @deprecated use {@link isInstanceOfTypeSync} instead.
+ */
 export const isInstanceOfType = (...types: string[]) => (
   async (elem: Element): Promise<boolean> => (
     isInstanceElement(elem) && types.includes(await apiName(await elem.getType()))
   )
 )
 
+/**
+ * @deprecated use {@link isInstanceOfTypeChangeSync} instead.
+ */
 export const isInstanceOfTypeChange = (...types: string[]) => (
   (change: Change): Promise<boolean> => (
     isInstanceOfType(...types)(getChangeData(change))
@@ -562,4 +565,19 @@ export const listMetadataObjects = async (
 
 export const toListType = (type: TypeElement): ListType => (
   isListType(type) ? type : new ListType(type)
+)
+
+// This function checks whether an element is an instance of a certain metadata type
+// note that for instances of custom objects this will check the specific type (i.e Lead)
+// if you want instances of all custom objects use isInstanceOfCustomObject
+export const isInstanceOfTypeSync = (...types: string[]) => (
+  (elem: Element): elem is InstanceElement => (
+    isInstanceElement(elem) && types.includes(apiNameSync(elem.getTypeSync()) ?? '')
+  )
+)
+
+export const isInstanceOfTypeChangeSync = (...types: string[]) => (
+  (change: Change): change is Change<InstanceElement> => (
+    isInstanceOfTypeSync(...types)(getChangeData(change))
+  )
 )

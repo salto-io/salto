@@ -16,16 +16,25 @@
 import _, { isUndefined } from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FileProperties } from 'jsforce-types'
-import { Element, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import {
+  Change, CORE_ANNOTATIONS,
+  Element,
+  ElemID, getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isModificationChange,
+  isObjectType,
+  ObjectType, toChange,
+} from '@salto-io/adapter-api'
 import { findObjectType } from '@salto-io/adapter-utils'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { FilterResult, RemoteFilterCreator } from '../filter'
-import { FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE, SALESFORCE } from '../constants'
+import { FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE, INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../constants'
 import { fetchMetadataInstances } from '../fetch'
 import { createInstanceElement } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import { FetchElements, FetchProfile } from '../types'
-import { listMetadataObjects } from './utils'
+import { apiNameSync, isInstanceOfTypeChangeSync, listMetadataObjects } from './utils'
 
 const { isDefined } = lowerdashValues
 
@@ -82,6 +91,33 @@ const createActiveVersionProps = async (
   return createActiveVersionFileProperties(fileProps, flowDefinitionInstances.elements)
 }
 
+
+const isDeactivatedFlowChange = (change: Change<InstanceElement>): boolean => {
+  const flowStatus = getChangeData(change).value.status
+  if (!_.isString(flowStatus) || flowStatus === 'Active') {
+    return false
+  }
+  // We only want to handle flows that were currently deactivated
+  return isModificationChange(change)
+    ? change.data.before.value.status === 'Active'
+    : true
+}
+
+const createDeactivatedFlowDefinitionChange = (
+  flowChange: Change<InstanceElement>,
+  flowDefinitionMetadataType: ObjectType,
+): Change<InstanceElement> => {
+  const flowApiName = apiNameSync(getChangeData(flowChange))
+  if (flowApiName === undefined) {
+    throw new Error('Attempting to deploy a flow with no apiName')
+  }
+  const flowDefinitionInstance = createInstanceElement({
+    [INSTANCE_FULL_NAME_FIELD]: flowApiName,
+    activeVersionNumber: 0,
+  }, flowDefinitionMetadataType)
+  return toChange({ after: flowDefinitionInstance })
+}
+
 const getFlowInstances = async (
   client: SalesforceClient,
   fetchProfile: FetchProfile,
@@ -122,10 +158,43 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     const instances = await getFlowInstances(client, config.fetchProfile, flowType,
       flowDefinitionType)
     instances.elements.forEach(e => elements.push(e))
-    _.pull(elements, flowDefinitionType)
+    if (flowDefinitionType !== undefined) {
+      flowDefinitionType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
+    }
     return {
       configSuggestions: [...instances.configChanges],
     }
+  },
+  // In order to deactivate a Flow, we need to create a FlowDefinition instance with activeVersionNumber of 0
+  preDeploy: async changes => {
+    const deactivatedFlowChanges = changes
+      .filter(isInstanceOfTypeChangeSync(FLOW_METADATA_TYPE))
+      .filter(isAdditionOrModificationChange)
+      .filter(isDeactivatedFlowChange)
+    if (deactivatedFlowChanges.length === 0) {
+      return
+    }
+    const flowDefinitionType = await config.elementsSource.get(FLOW_DEFINITION_METADATA_TYPE_ID)
+    if (!isObjectType(flowDefinitionType)) {
+      log.error('Failed to deactivate flows since the FlowDefinition metadata type does not exist in the elements source')
+    }
+    deactivatedFlowChanges
+      .map(flowChange => createDeactivatedFlowDefinitionChange(flowChange, flowDefinitionType))
+      .forEach(flowDefinitionChange => changes.push(flowDefinitionChange))
+  },
+
+  // Remove the created FlowDefinition instances
+  onDeploy: async changes => {
+    const flowDefinitionChanges = changes.filter(isInstanceOfTypeChangeSync(FLOW_DEFINITION_METADATA_TYPE))
+    if (flowDefinitionChanges.length === 0) {
+      return
+    }
+    const deactivatedFlowNames = flowDefinitionChanges
+      .map(getChangeData)
+      .map(change => apiNameSync(change))
+      .filter(isDefined)
+    log.info(`Successfully deactivated the following flows: ${deactivatedFlowNames.join(' ')}`)
+    _.pullAll(changes, flowDefinitionChanges)
   },
 })
 

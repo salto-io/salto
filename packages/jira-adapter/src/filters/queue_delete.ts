@@ -45,11 +45,11 @@ const filter: FilterCreator = ({ config, client }) => ({
     }
     const [queueChanges, leftoverChanges] = _.partition(
       changes,
-      change => isInstanceChange(change)
+      (change): change is RemovalChange<InstanceElement> => isInstanceChange(change)
       && getChangeData(change).elemID.typeName === QUEUE_TYPE
       && isRemovalChange(change)
     )
-    const deployResult = await deployChanges(queueChanges.filter(isInstanceChange).filter(isRemovalChange),
+    const deployResult = await deployChanges(queueChanges,
       async change => deployQueueRemovalChange(change, client))
 
     return {

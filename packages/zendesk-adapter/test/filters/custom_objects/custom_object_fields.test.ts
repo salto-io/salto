@@ -1,4 +1,3 @@
-
 /*
 *                      Copyright 2023 Salto Labs Ltd.
 *
@@ -14,8 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, ReferenceExpression, TemplateExpression } from '@salto-io/adapter-api'
+import {
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  TemplateExpression,
+  toChange,
+} from '@salto-io/adapter-api'
 import { filterUtils, references as referenceUtils } from '@salto-io/adapter-components'
+import _ from 'lodash'
 import {
   CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
   CUSTOM_OBJECT_FIELD_TYPE_NAME,
@@ -26,14 +33,17 @@ import {
 } from '../../../src/constants'
 import filterCreator from '../../../src/filters/custom_objects/custom_object_fields'
 import { createFilterCreatorParams } from '../../utils'
+import { DEFAULT_CONFIG, DEPLOY_CONFIG } from '../../../src/config'
 
-const USER_ID = 'userId'
+const USER = { id: 111, email: 'User' }
+const DEFAULT_USER = { id: 222, email: 'DefaultUser' }
 jest.mock('../../../src/user_utils', () => ({
   ...jest.requireActual<{}>('../../../src/user_utils'),
-  getIdByEmail: () => ({ [USER_ID]: 'User' }),
+  getIdByEmail: () => ({ [USER.id]: USER.email }),
+  getUsers: () => [USER, DEFAULT_USER],
 }))
 
-type FilterType = filterUtils.FilterWith<'onFetch'>
+type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'deploy' | 'onDeploy'>
 const customObjectFieldsFilter = filterCreator(createFilterCreatorParams({})) as FilterType
 
 const missingRef = (type: string, id: string): ReferenceExpression => {
@@ -41,61 +51,62 @@ const missingRef = (type: string, id: string): ReferenceExpression => {
   return new ReferenceExpression(missingInstance.elemID, missingInstance)
 }
 
+const createTrigger = ({ actions = {}, conditions = {} }): InstanceElement => new InstanceElement(
+  'trigger',
+  new ObjectType({ elemID: new ElemID(ZENDESK, TRIGGER_TYPE_NAME) }),
+  {
+    actions,
+    conditions,
+  }
+)
+
 describe('customObjectFieldsFilter', () => {
-  describe('onFetch', () => {
-    let customObjectField: InstanceElement
-    let customObject: InstanceElement
-    let ticketField: InstanceElement
-    let valueInstance: InstanceElement
-    let lookUpTemplate: TemplateExpression
-    beforeEach(() => {
-      customObjectField = new InstanceElement(
-        'customObjectField',
-        new ObjectType({ elemID: new ElemID(ZENDESK, CUSTOM_OBJECT_FIELD_TYPE_NAME) }),
-        {
-          key: 'customObjectFieldKey',
-          type: 'lookup',
-        }
-      )
-      customObject = new InstanceElement(
-        'customObject',
-        new ObjectType({ elemID: new ElemID(ZENDESK, CUSTOM_OBJECT_TYPE_NAME) }),
-        {
-          key: 'customObjectKey',
-          custom_object_fields: [new ReferenceExpression(customObjectField.elemID, customObjectField)],
-        }
-      )
-      ticketField = new InstanceElement(
-        'ticketField',
-        new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FIELD_TYPE_NAME) }),
-        {
-          id: 123,
-          relationship_target_type: `zen:custom_object:${customObject.value.key}`,
-        }
-      )
-      valueInstance = new InstanceElement(
-        'instance',
-        new ObjectType({ elemID: new ElemID(ZENDESK, 'instance') }),
-        { id: 123123 }
-      )
-      lookUpTemplate = new TemplateExpression({
-        parts: [
-          'lookup:ticket.ticket_field_',
-          new ReferenceExpression(ticketField.elemID, ticketField),
-          '.custom_fields.',
-          new ReferenceExpression(customObjectField.elemID, customObjectField),
-        ],
-      })
+  let customObjectField: InstanceElement
+  let customObject: InstanceElement
+  let ticketField: InstanceElement
+  let valueInstance: InstanceElement
+  let lookUpTemplate: TemplateExpression
+  beforeEach(() => {
+    customObjectField = new InstanceElement(
+      'customObjectField',
+      new ObjectType({ elemID: new ElemID(ZENDESK, CUSTOM_OBJECT_FIELD_TYPE_NAME) }),
+      {
+        key: 'customObjectFieldKey',
+        type: 'lookup',
+      }
+    )
+    customObject = new InstanceElement(
+      'customObject',
+      new ObjectType({ elemID: new ElemID(ZENDESK, CUSTOM_OBJECT_TYPE_NAME) }),
+      {
+        key: 'customObjectKey',
+        custom_object_fields: [new ReferenceExpression(customObjectField.elemID, customObjectField)],
+      }
+    )
+    ticketField = new InstanceElement(
+      'ticketField',
+      new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FIELD_TYPE_NAME) }),
+      {
+        id: 123,
+        relationship_target_type: `zen:custom_object:${customObject.value.key}`,
+      }
+    )
+    valueInstance = new InstanceElement(
+      'instance',
+      new ObjectType({ elemID: new ElemID(ZENDESK, 'instance') }),
+      { id: 123123 }
+    )
+    lookUpTemplate = new TemplateExpression({
+      parts: [
+        'lookup:ticket.ticket_field_',
+        new ReferenceExpression(ticketField.elemID, ticketField),
+        '.custom_fields.',
+        new ReferenceExpression(customObjectField.elemID, customObjectField),
+      ],
     })
+  })
+  describe('onFetch', () => {
     describe('trigger', () => {
-      const createTrigger = ({ actions = {}, conditions = {} }): InstanceElement => new InstanceElement(
-        'trigger',
-        new ObjectType({ elemID: new ElemID(ZENDESK, TRIGGER_TYPE_NAME) }),
-        {
-          actions,
-          conditions,
-        }
-      )
       it('should create reference expressions in actions and conditions', async () => {
         const trigger = createTrigger({
           actions: [
@@ -128,12 +139,12 @@ describe('customObjectFieldsFilter', () => {
               {
                 field: `lookup:ticket.ticket_field_${ticketField.value.id}.custom_fields.${customObjectField.value.key}`,
                 operator: 'is',
-                value: valueInstance.value.id,
+                value: valueInstance.value.id.toString(),
               },
               {
                 field: `lookup:ticket.ticket_field_${ticketField.value.id}.custom_fields.${customObjectField.value.key}`,
                 operator: 'is_not',
-                value: USER_ID,
+                value: USER.id.toString(),
               },
             ],
           },
@@ -232,7 +243,7 @@ describe('customObjectFieldsFilter', () => {
           '.custom_fields.',
           missingRef(CUSTOM_OBJECT_FIELD_TYPE_NAME, `${customObject.value.key}__nonExistingKey`),
         ] }))
-        expect(trigger.value.conditions.all[0].value).toMatchObject(missingRef('user', 'non'))
+        expect(trigger.value.conditions.all[0].value).toBe('non')
         expect(trigger.value.conditions.all[1].value).toMatchObject(missingRef('organization', 'non'))
         expect(trigger.value.conditions.all[2].value).toMatchObject(missingRef(TICKET_FIELD_TYPE_NAME, 'non'))
         expect(trigger.value.conditions.all[3].value).toMatchObject(missingRef('unknown', 'non'))
@@ -322,6 +333,81 @@ describe('customObjectFieldsFilter', () => {
         const missingOptionsRef = missingRef(CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME, MISSING_ID)
         expect(customObjectFieldInstance.value.relationship_filter.all[2].value).toMatchObject(missingOptionsRef)
       })
+    })
+  })
+  describe('preDeploy', () => {
+    it('should change user fields to ids', async () => {
+      const trigger = createTrigger({
+        conditions: {
+          all: [
+            {
+              field: `lookup:ticket.ticket_field_${ticketField.value.id}.custom_fields.${customObjectField.value.key}`,
+              operator: 'is',
+              value: USER.email,
+              is_user_value: true,
+            },
+            {
+              field: `lookup:ticket.ticket_field_${ticketField.value.id}.custom_fields.${customObjectField.value.key}`,
+              operator: 'is',
+              value: USER.email,
+            },
+          ],
+          any: [{
+            field: `lookup:ticket.ticket_field_${ticketField.value.id}.custom_fields.${customObjectField.value.key}`,
+            operator: 'is',
+            value: USER.email,
+            is_user_value: true,
+          }],
+        },
+      })
+      await customObjectFieldsFilter.preDeploy([toChange({ after: trigger })])
+      expect(trigger.value.conditions.all[0].value).toBe(USER.id.toString())
+      expect(trigger.value.conditions.all[1].value).toBe(USER.email)
+      expect(trigger.value.conditions.any[0].value).toBe(USER.id.toString())
+    })
+    it('should use fallback user if configurated', async () => {
+      const config = _.cloneDeep(DEFAULT_CONFIG)
+      config[DEPLOY_CONFIG] = { defaultMissingUserFallback: DEFAULT_USER.email }
+      const useFallbackFilter = filterCreator(createFilterCreatorParams({ config })) as FilterType
+      const trigger = createTrigger({
+        conditions: {
+          all: [{
+            field: `lookup:ticket.ticket_field_${ticketField.value.id}.custom_fields.${customObjectField.value.key}`,
+            operator: 'is',
+            value: 'non',
+            is_user_value: true,
+          }],
+        },
+      })
+      await useFallbackFilter.preDeploy([toChange({ after: trigger })])
+      expect(trigger.value.conditions.all[0].value).toBe(DEFAULT_USER.id.toString())
+    })
+  })
+  describe('onDeploy', () => {
+    it('should revert the userIds to user names', async () => {
+      const config = _.cloneDeep(DEFAULT_CONFIG)
+      config[DEPLOY_CONFIG] = { defaultMissingUserFallback: DEFAULT_USER.email }
+      const useFallbackFilter = filterCreator(createFilterCreatorParams({ config })) as FilterType
+      const trigger = createTrigger({
+        conditions: {
+          all: [{
+            field: `lookup:ticket.ticket_field_${ticketField.value.id}.custom_fields.${customObjectField.value.key}`,
+            operator: 'is',
+            value: USER.email,
+            is_user_value: true,
+          }],
+          any: [{
+            field: `lookup:ticket.ticket_field_${ticketField.value.id}.custom_fields.${customObjectField.value.key}`,
+            operator: 'is',
+            value: 'non',
+            is_user_value: true,
+          }],
+        },
+      })
+      await useFallbackFilter.preDeploy([toChange({ after: trigger })])
+      await useFallbackFilter.onDeploy([toChange({ after: trigger })])
+      expect(trigger.value.conditions.all[0].value).toBe(USER.email)
+      expect(trigger.value.conditions.any[0].value).toBe(DEFAULT_USER.email)
     })
   })
 })

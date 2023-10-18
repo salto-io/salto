@@ -30,6 +30,8 @@ import {
   GROUP_TYPE_NAME,
   DYNAMIC_CONTENT_ITEM_TYPE_NAME,
   CUSTOM_FIELD_OPTIONS_FIELD_NAME,
+  CUSTOM_OBJECT_TYPE_NAME,
+  CUSTOM_OBJECT_FIELD_TYPE_NAME,
 } from '../constants'
 import { FETCH_CONFIG, ZendeskConfig } from '../config'
 
@@ -87,7 +89,7 @@ const potentialMacroFields = [
 // groups or targets with text that can include templates.
 const notificationTypes = ['notification_webhook', 'notification_user', 'notification_group', 'notification_target']
 
-const potentialTriggerFields = [...notificationTypes, 'side_conversation_ticket']
+const potentialTriggerFields = [...notificationTypes, 'side_conversation_ticket', 'follower']
 
 type PotentialTemplateField = {
   instanceType: string
@@ -128,6 +130,18 @@ const potentialTemplates: PotentialTemplateField[] = [
       potentialTriggerFields.includes(container.field),
   },
   {
+    instanceType: 'trigger',
+    pathToContainer: ['conditions', 'all'],
+    fieldName: 'field',
+    containerValidator: NoValidator,
+  },
+  {
+    instanceType: 'trigger',
+    pathToContainer: ['conditions', 'any'],
+    fieldName: 'field',
+    containerValidator: NoValidator,
+  },
+  {
     instanceType: 'automation',
     pathToContainer: ['actions'],
     fieldName: 'value',
@@ -152,7 +166,12 @@ const potentialTemplates: PotentialTemplateField[] = [
     containerValidator: (container: Values): boolean =>
       container.name === 'uri_templates',
   },
-  ...[ORG_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, TICKET_FIELD_TYPE_NAME].flatMap(instanceType => [
+  ...[
+    ORG_FIELD_TYPE_NAME,
+    USER_FIELD_TYPE_NAME,
+    TICKET_FIELD_TYPE_NAME,
+    CUSTOM_OBJECT_FIELD_TYPE_NAME,
+  ].flatMap(instanceType => [
     {
       instanceType: `${instanceType}__${CUSTOM_FIELD_OPTIONS_FIELD_NAME}`,
       fieldName: 'raw_name',
@@ -341,6 +360,10 @@ export const prepRef = (part: ReferenceExpression): TemplatePart => {
   }
   if (part.elemID.typeName === GROUP_TYPE_NAME && part.value?.value?.id) {
     return part.value.value.id.toString()
+  }
+  if ([CUSTOM_OBJECT_TYPE_NAME, CUSTOM_OBJECT_FIELD_TYPE_NAME].includes(part.elemID.typeName)
+    && part.value?.value?.key) {
+    return part.value.value.key
   }
   return part
 }

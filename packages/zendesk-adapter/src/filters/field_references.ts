@@ -842,7 +842,15 @@ const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
   // note: this overlaps with additional strategies, but because the first strategy
   // is chosen for serialization, it is safe
   {
-    src: { field: 'value', parentTypes: ['workspace__conditions__all'] },
+    src: {
+      field: 'value',
+      parentTypes: [
+        'workspace__conditions__all',
+        'workspace__conditions__any',
+        'custom_object_field__relationship_filter__all',
+        'custom_object_field__relationship_filter__any',
+      ],
+    },
     zendeskSerializationStrategy: 'idString',
     target: { typeContext: 'neighborField' },
   },

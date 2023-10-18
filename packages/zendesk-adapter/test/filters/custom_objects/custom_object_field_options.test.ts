@@ -15,10 +15,18 @@
 * limitations under the License.
 */
 import { elements as elementsUtils, filterUtils } from '@salto-io/adapter-components'
-import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, Value } from '@salto-io/adapter-api'
+import {
+  CORE_ANNOTATIONS,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  toChange,
+  Value,
+} from '@salto-io/adapter-api'
 import filterCreator, {
   customObjectFieldOptionType,
-} from '../../../src/filters/custom_objects/custom_object_field_options'
+} from '../../../src/filters/custom_field_options/custom_object_field_options'
 import { createFilterCreatorParams } from '../../utils'
 import {
   CUSTOM_FIELD_OPTIONS_FIELD_NAME,
@@ -28,7 +36,7 @@ import {
 } from '../../../src/constants'
 
 const { RECORDS_PATH } = elementsUtils
-type FilterType = filterUtils.FilterWith<'onFetch'>
+type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'deploy' | 'onDeploy'>
 
 const createOptionsValue = (id: number): Value => ({
   id,
@@ -45,8 +53,8 @@ const createOptionInstance = ({ id, value }: {id: number; value: string}): Insta
 )
 
 describe('customObjectFieldOptionsFilter', () => {
+  const customObjectFieldOptionsFilter = filterCreator(createFilterCreatorParams({})) as FilterType
   it('should create option instances from custom object field', async () => {
-    const customObjectFieldOptionsFilter = filterCreator(createFilterCreatorParams({})) as FilterType
     const customObjectField = new InstanceElement(
       'customObjectField',
       new ObjectType({ elemID: new ElemID(ZENDESK, CUSTOM_OBJECT_FIELD_TYPE_NAME) }),
@@ -72,5 +80,17 @@ describe('customObjectFieldOptionsFilter', () => {
     expect(elements[2].annotations[CORE_ANNOTATIONS.PARENT][0]).toMatchObject(
       new ReferenceExpression(customObjectField.elemID, customObjectField)
     )
+  })
+  it('should put raw_name in name on preDeploy', async () => {
+    const customObjectFieldOption = createOptionInstance({ id: 1, value: 'value' })
+    customObjectFieldOption.value.raw_name = 'test'
+    await customObjectFieldOptionsFilter.preDeploy([toChange({ after: customObjectFieldOption })])
+    expect(customObjectFieldOption.value.name).toEqual(customObjectFieldOption.value.raw_name)
+  })
+  it('should delete name on onDeploy', async () => {
+    const customObjectFieldOption = createOptionInstance({ id: 1, value: 'value' })
+    customObjectFieldOption.value.name = 'test'
+    await customObjectFieldOptionsFilter.onDeploy([toChange({ after: customObjectFieldOption })])
+    expect(customObjectFieldOption.value.name).toBeUndefined()
   })
 })

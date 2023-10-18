@@ -20,6 +20,7 @@ import { customFieldOptionDependencyChanger } from './custom_field_option_change
 import { guideOrderDependencyChanger } from './guide_order_change'
 import { ticketFormDependencyChanger } from './ticket_form_change'
 import { articleAttachmentDependencyChanger } from './article_attachment_change'
+import { customObjectAndFieldDependencyChanger } from './custom_object_and_field_change'
 
 const { awu } = collections.asynciterable
 
@@ -29,6 +30,7 @@ const DEPENDENCY_CHANGERS: DependencyChanger[] = [
   guideOrderDependencyChanger,
   ticketFormDependencyChanger,
   articleAttachmentDependencyChanger,
+  customObjectAndFieldDependencyChanger,
 ]
 
 export const dependencyChanger: DependencyChanger = async (

@@ -25,16 +25,18 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { inspectValue } from '@salto-io/adapter-utils'
-import { FilterCreator } from '../../filter'
 import {
   CUSTOM_FIELD_OPTIONS_FIELD_NAME,
   CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
   CUSTOM_OBJECT_FIELD_TYPE_NAME,
   ZENDESK,
 } from '../../constants'
+import { createDeployOptionsWithParentCreator } from './deploy_with_parent_creator'
 
 const { RECORDS_PATH } = elementsUtils
 const log = logger(module)
+
+const FILTER_NAME = 'customObjectFieldOptionsFilter'
 
 export const customObjectFieldOptionType = new ObjectType({
   elemID: new ElemID(ZENDESK, CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME),
@@ -65,43 +67,47 @@ const isCustomObjectFieldOptions = (options: unknown): options is CustomObjectFi
     && _.isString(option.raw_name)
     && _.isString(option.value))
 
-/**
- * Convert custom_field_options of custom_object_field to be instance elements
- * This is needed because 'extractStandaloneFields' doesn't support types from 'recurse into'
- * On deploy, parse 'custom_field_options' to values before deploy
- */
-const customObjectFieldOptionsFilter: FilterCreator = () => ({
-  name: 'customObjectFieldOptionsFilter',
-  onFetch: async (elements: Element[]) => {
-    const customObjectFields = elements
-      .filter(isInstanceElement)
-      .filter(obj => obj.elemID.typeName === CUSTOM_OBJECT_FIELD_TYPE_NAME)
+const onFetch = async (elements: Element[]): Promise<void> => {
+  const customObjectFields = elements
+    .filter(isInstanceElement)
+    .filter(obj => obj.elemID.typeName === CUSTOM_OBJECT_FIELD_TYPE_NAME)
 
-    customObjectFields.forEach(customObjectField => {
-      const options = customObjectField.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME]
-      if (options === undefined) {
-        return
-      }
-      if (!isCustomObjectFieldOptions(options)) {
-        log.error(`custom_field_options of ${customObjectField.elemID.getFullName()} is not in the expected format - ${inspectValue(options)}`)
-        return
-      }
-      const optionInstances = options.map(option => {
-        const instanceName = `${customObjectField.elemID.name}__${option.value}`
-        return new InstanceElement(
-          instanceName,
-          customObjectFieldOptionType,
-          option,
-          [ZENDESK, RECORDS_PATH, CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME, instanceName],
-          { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(customObjectField.elemID, customObjectField)] }
-        )
-      })
-
-      customObjectField.value.custom_field_options = optionInstances
-        .map(option => new ReferenceExpression(option.elemID, option))
-      elements.push(...optionInstances)
+  customObjectFields.forEach(customObjectField => {
+    const options = customObjectField.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME]
+    if (options === undefined) {
+      return
+    }
+    if (!isCustomObjectFieldOptions(options)) {
+      log.error(`custom_field_options of ${customObjectField.elemID.getFullName()} is not in the expected format - ${inspectValue(options)}`)
+      return
+    }
+    const optionInstances = options.map(option => {
+      const instanceName = `${customObjectField.elemID.name}__${option.value}`
+      return new InstanceElement(
+        instanceName,
+        customObjectFieldOptionType,
+        option,
+        [ZENDESK, RECORDS_PATH, CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME, instanceName],
+        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(customObjectField.elemID, customObjectField)] }
+      )
     })
-  },
+
+    customObjectField.value.custom_field_options = optionInstances
+      .map(option => new ReferenceExpression(option.elemID, option))
+    elements.push(...optionInstances)
+  })
+}
+
+/**
+   * Convert custom_field_options of custom_object_field to be instance elements
+   * This is needed because 'extractStandaloneFields' doesn't support types from 'recurse into'
+   * On deploy, parse 'custom_field_options' to values before deploy
+   */
+const customObjectFieldOptionsFilter = createDeployOptionsWithParentCreator({
+  filterName: FILTER_NAME,
+  parentTypeName: CUSTOM_OBJECT_FIELD_TYPE_NAME,
+  childTypeName: CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
+  onFetch,
 })
 
 export default customObjectFieldOptionsFilter

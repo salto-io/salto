@@ -48,7 +48,7 @@ const filter: FilterCreator = ({ config, client }) => ({
             .filter(isResolvedReferenceExpression)
             .map((ticketType: ReferenceExpression) => ticketType.value.value.id)
           await client.post({
-            url: `/rest/servicedesk/${project.value.serviceDeskId}/servicedesk/${project.value.id}/portal-groups/request-types`,
+            url: `/rest/servicedesk/1/servicedesk/${project.value.id}/portal-groups/request-types`,
             data: {
               groups: [{
                 groupId: instance.value.id,

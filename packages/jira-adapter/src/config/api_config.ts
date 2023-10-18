@@ -1885,7 +1885,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   },
   PortalGroup: {
     request: {
-      url: '/rest/servicedesk/{serviceDeskId}/servicedesk/{projectId}/request-types?isValidOnly=true',
+      url: '/rest/servicedesk/1/servicedesk/{projectId}/request-types?isValidOnly=true',
     },
     transformation: {
       idFields: ['name', 'projectKey'],
@@ -1900,7 +1900,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/rest/servicedesk/{serviceDeskId}/servicedesk/{projectId}/portal-groups',
+        url: '/rest/servicedesk/1/servicedesk/{projectId}/portal-groups',
         method: 'post',
         urlParamsToFields: {
           serviceDeskId: '_parent.0.serviceDeskId',
@@ -1908,7 +1908,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         },
       },
       modify: {
-        url: '/rest/servicedesk/{serviceDeskId}/servicedesk/{projectId}/portal-groups/{id}',
+        url: '/rest/servicedesk/1/servicedesk/{projectId}/portal-groups/{id}',
         method: 'put',
         urlParamsToFields: {
           serviceDeskId: '_parent.0.serviceDeskId',
@@ -1916,7 +1916,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         },
       },
       remove: {
-        url: '/rest/servicedesk/{serviceDeskId}/servicedesk/{projectId}/portal-groups/{id}',
+        url: '/rest/servicedesk/1/servicedesk/{projectId}/portal-groups/{id}',
         method: 'delete',
         urlParamsToFields: {
           serviceDeskId: '_parent.0.serviceDeskId',

@@ -97,7 +97,7 @@ describe('queue filter', () => {
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       expect(connection.post).toHaveBeenCalledTimes(1)
       expect(connection.post).toHaveBeenCalledWith(
-        '/rest/servicedesk/100/servicedesk/11111/portal-groups',
+        '/rest/servicedesk/1/servicedesk/11111/portal-groups',
         {
           id: 11,
           name: 'portalGroup1',
@@ -119,7 +119,7 @@ describe('queue filter', () => {
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       expect(connection.put).toHaveBeenCalledTimes(1)
       expect(connection.put).toHaveBeenCalledWith(
-        '/rest/servicedesk/100/servicedesk/11111/portal-groups/11',
+        '/rest/servicedesk/1/servicedesk/11111/portal-groups/11',
         {
           id: 11,
           name: 'portalGroup1',
@@ -129,7 +129,7 @@ describe('queue filter', () => {
       )
       expect(connection.post).toHaveBeenCalledTimes(1)
       expect(connection.post).toHaveBeenCalledWith(
-        '/rest/servicedesk/100/servicedesk/11111/portal-groups/request-types',
+        '/rest/servicedesk/1/servicedesk/11111/portal-groups/request-types',
         {
           groups: [{
             groupId: 11,

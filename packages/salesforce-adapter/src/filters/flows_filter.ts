@@ -155,6 +155,8 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     const instances = await getFlowInstances(client, config.fetchProfile, flowType,
       flowDefinitionType)
     instances.elements.forEach(e => elements.push(e))
+    // While we don't manage FlowDefinition Instances in Salto, we use the type upon deploy
+    // to create FlowDefinition Instance to deactivate a Flow.
     if (flowDefinitionType !== undefined) {
       flowDefinitionType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
     }

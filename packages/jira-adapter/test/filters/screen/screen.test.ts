@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, ElemID, InstanceElement, MapType, ObjectType, toChange } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ElemID, InstanceElement, MapType, ObjectType, ReferenceExpression, UnresolvedReference, toChange } from '@salto-io/adapter-api'
 import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { JIRA } from '../../../src/constants'
@@ -75,6 +75,10 @@ describe('screenFilter', () => {
           [CORE_ANNOTATIONS.CREATABLE]: true,
           [CORE_ANNOTATIONS.UPDATABLE]: true,
         })
+      expect(screenTabType.fields.originalFieldsIds.annotations)
+        .toEqual({
+          [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+        })
     })
 
     it('should convert the tabs to a map', async () => {
@@ -83,16 +87,61 @@ describe('screenFilter', () => {
         screenType,
         {
           tabs: [
-            { name: 'tab1' },
-            { name: 'tab2' },
+            { name: 'tab1', fields: [{ id: '1' }] },
+            { name: 'tab2', fields: [{ id: '2' }] },
           ],
         },
       )
       await filter.onFetch?.([instance])
       expect(instance.value).toEqual({
         tabs: {
-          tab1: { name: 'tab1', position: 0 },
-          tab2: { name: 'tab2', position: 1 },
+          tab1: { name: 'tab1', position: 0, fields: ['1'], originalFieldsIds: { ids: ['1'] } },
+          tab2: { name: 'tab2', position: 1, fields: ['2'], originalFieldsIds: { ids: ['2'] } },
+        },
+      })
+    })
+  })
+  describe('preDeploy', () => {
+    let fieldType: ObjectType
+    let fieldInstance1: InstanceElement
+    let fieldInstance2: InstanceElement
+    let fieldReference: ReferenceExpression
+    let fieldUnresolvedReference: UnresolvedReference
+    let screenWithFieldReferences: InstanceElement
+    beforeEach(() => {
+      fieldType = new ObjectType({ elemID: new ElemID(JIRA, 'field') })
+      fieldInstance1 = new InstanceElement('instance', fieldType, { id: '1' })
+      fieldInstance2 = new InstanceElement('instance', fieldType, { id: '2' })
+      fieldReference = new ReferenceExpression(fieldInstance1.elemID)
+      fieldUnresolvedReference = new UnresolvedReference(fieldInstance2.elemID)
+      screenWithFieldReferences = new InstanceElement(
+        'instance',
+        screenType,
+        {
+          tabs: {
+            tab1: { name: 'tab1', position: 0, fields: [fieldReference, fieldUnresolvedReference], originalFieldsIds: { ids: ['1', '2'] } },
+          },
+        },
+      )
+    })
+    it('should convert the field references to their original ids', async () => {
+      const afterInstance = screenWithFieldReferences.clone()
+      afterInstance.value.description = 'desc'
+      await filter.preDeploy?.([toChange({ before: screenWithFieldReferences, after: afterInstance })])
+      expect(screenWithFieldReferences.value).toEqual({
+        tabs: {
+          tab1: { name: 'tab1', position: 0, fields: ['1', '2'], originalFieldsIds: { ids: ['1', '2'] } },
+        },
+      })
+    })
+    it('should not convert the field references to their original ids when the ids are not exist ', async () => {
+      screenWithFieldReferences.value.tabs.tab1.originalFieldsIds = { ids: undefined }
+      const afterInstance = screenWithFieldReferences.clone()
+      afterInstance.value.description = 'desc'
+      await filter.preDeploy?.([toChange({ before: screenWithFieldReferences, after: afterInstance })])
+      expect(screenWithFieldReferences.value).toEqual({
+        tabs: {
+          tab1: { name: 'tab1', position: 0, fields: [fieldReference, fieldUnresolvedReference], originalFieldsIds: { ids: undefined } },
         },
       })
     })

@@ -15,10 +15,20 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { Change, Element, getChangeData, InstanceElement, isAdditionOrModificationChange,
-  isInstanceChange, isInstanceElement, ReferenceExpression,
-  SaltoError, TemplateExpression, TemplatePart } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData, extractTemplate, getParent, replaceTemplatesWithValues, resolveTemplates, safeJsonStringify } from '@salto-io/adapter-utils'
+import {
+  Change, Element, getChangeData, InstanceElement, isAdditionOrModificationChange,
+  isInstanceChange, isInstanceElement, isReferenceExpression, isTemplateExpression, ReferenceExpression,
+  SaltoError, TemplateExpression, TemplatePart,
+} from '@salto-io/adapter-api'
+import {
+  applyFunctionToChangeData,
+  compactTemplate,
+  extractTemplate,
+  getParent,
+  replaceTemplatesWithValues,
+  resolveTemplates,
+  safeJsonStringify,
+} from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
 import {
@@ -65,55 +75,65 @@ const updateArticleTranslationBody = ({
 }): missingBrandInfo[] => {
   const missingBrands: missingBrandInfo[] = []
   const originalTranslationBody = translationInstance.value[BODY_FIELD]
-  if (!_.isString(originalTranslationBody)) {
+  if (!_.isString(originalTranslationBody) && !isTemplateExpression(originalTranslationBody)) {
     return []
   }
 
   const articleName = getParent(translationInstance).elemID.name
+  // the body may have already been processed by a previous filter and converted to a template expression
+  // if so, we need to extract the parts of the template expression and process each of them
+  const originalTranslationBodyParts = _.isString(originalTranslationBody)
+    ? [originalTranslationBody]
+    : originalTranslationBody.parts
   // Find the urls that are in the body
-  const processedTranslationBody = extractTemplate(
-    originalTranslationBody,
-    [URL_REGEX],
-    url => {
-      // Make sure that a brand exists for that domain
-      const urlBrandInstance = matchBrand(url, brandsByUrl)
-      if (urlBrandInstance === undefined) {
-        return url
-      }
-
-      if (!brandsIncludingGuide.includes(urlBrandInstance)) {
-        // If the brand is excluded, don't try to create references
-        missingBrands.push({
-          brandName: urlBrandInstance.value.name,
-          brandSubdomain: urlBrandInstance.value.subdomain,
-          articleName,
-        })
-        return url
-      }
-
-      // Extract the referenced instances inside
-      const urlParts = extractTemplate(
-        url,
-        [DOMAIN_REGEX, ...ELEMENTS_REGEXES.map(s => s.urlRegex)],
-        urlPart => {
-          const urlSubdomain = urlPart.match(DOMAIN_REGEX)?.pop()
-          // We already made sure that the brand exists, so we can just return it
-          if (urlSubdomain !== undefined) {
-            return [new ReferenceExpression(urlBrandInstance.elemID, urlBrandInstance)]
+  const processedTranslationBodyParts = originalTranslationBodyParts.map(part =>
+    (isReferenceExpression(part)
+      ? new TemplateExpression({ parts: [part] })
+      : extractTemplate(
+        part,
+        [URL_REGEX],
+        url => {
+          // Make sure that a brand exists for that domain
+          const urlBrandInstance = matchBrand(url, brandsByUrl)
+          if (urlBrandInstance === undefined) {
+            return url
           }
-          return transformReferenceUrls({
-            urlPart,
-            instancesById,
-            enableMissingReferences,
-            brandOfInstance: urlBrandInstance,
-          })
-        }
-      )
-      return _.isString(urlParts) ? urlParts : urlParts.parts
-    }
-  )
 
-  translationInstance.value.body = processedTranslationBody
+          if (!brandsIncludingGuide.includes(urlBrandInstance)) {
+            // If the brand is excluded, don't try to create references
+            missingBrands.push({
+              brandName: urlBrandInstance.value.name,
+              brandSubdomain: urlBrandInstance.value.subdomain,
+              articleName,
+            })
+            return url
+          }
+
+          // Extract the referenced instances inside
+          const urlParts = extractTemplate(
+            url,
+            [DOMAIN_REGEX, ...ELEMENTS_REGEXES.map(s => s.urlRegex)],
+            urlPart => {
+              const urlSubdomain = urlPart.match(DOMAIN_REGEX)?.pop()
+              // We already made sure that the brand exists, so we can just return it
+              if (urlSubdomain !== undefined) {
+                return [new ReferenceExpression(urlBrandInstance.elemID, urlBrandInstance)]
+              }
+              return transformReferenceUrls({
+                urlPart,
+                instancesById,
+                enableMissingReferences,
+                brandOfInstance: urlBrandInstance,
+              })
+            }
+          )
+          return _.isString(urlParts) ? urlParts : urlParts.parts
+        }
+      )))
+
+  const processedTranslationBody = new TemplateExpression({ parts:
+    processedTranslationBodyParts.flatMap(part => (_.isString(part) ? [part] : part.parts)) })
+  translationInstance.value.body = compactTemplate(processedTranslationBody)
   return _.isEmpty(missingBrands) ? [] : _.unionBy(missingBrands, obj => obj.brandName)
 }
 
@@ -122,7 +142,9 @@ const updateArticleTranslationBody = ({
  */
 export const prepRef = (part: ReferenceExpression): TemplatePart => {
   if (part.elemID.typeName === BRAND_TYPE_NAME) {
-    return part.value.value.brand_url
+    // The value used to be a string, but now it's an instance element
+    // we need to support versions both until all customers fetch the new version
+    return _.isString(part.value) ? part.value : part.value.value.brand_url
   }
   if (part.elemID.isTopLevel()) {
     return part.value.value.id.toString()

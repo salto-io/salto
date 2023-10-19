@@ -848,7 +848,7 @@ describe('Zendesk adapter E2E', () => {
           body: new TemplateExpression({
             parts: [
               '<p>this is a test <img src="',
-              new ReferenceExpression(brandInstanceE2eHelpCenter.elemID.createNestedID('brand_url'), brandInstanceE2eHelpCenter?.value.brand_url),
+              new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
               '/hc/article_attachments/',
               new ReferenceExpression(articleInlineAttachment.elemID, articleInlineAttachment),
               `" alt="${inlineFileName}.png"></p><p></p>`,

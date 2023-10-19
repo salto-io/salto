@@ -80,6 +80,7 @@ describe('article body filter', () => {
   let articeOfExcludedBrand: InstanceElement
   let translationWithExcludedBrand: InstanceElement
   let translationWithMixedBrands: InstanceElement
+  let translationWithTemplateExpression: InstanceElement
   let articleInstance: InstanceElement
   let sectionInstance: InstanceElement
   let categoryInstance: InstanceElement
@@ -182,6 +183,17 @@ describe('article body filter', () => {
       { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentArticle.elemID, parentArticle)] },
     )
 
+    translationWithTemplateExpression = new InstanceElement(
+      'articleWithTemplateExpression',
+      articleTranslationType,
+      {
+        id: newId(),
+        body: `${attachmentInstance.value.id}<p><a href="https://brand.zendesk.com/hc/en-us/articles/${articleInstance.value.id}" target="_self">linkedArticle</a>${attachmentInstance.value.id}`,
+      },
+      undefined,
+      { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentArticle.elemID, parentArticle)] },
+    )
+
     elements = [
       brandInstance,
       brandToExclude,
@@ -196,6 +208,7 @@ describe('article body filter', () => {
       translationWithoutReferences,
       translationWithAttachments,
       translationWithExcludedBrand,
+      translationWithTemplateExpression,
       parentArticle,
       translationWithMixedBrands,
       articeOfExcludedBrand,
@@ -251,6 +264,24 @@ describe('article body filter', () => {
             new ReferenceExpression(articleInstance.elemID, articleInstance),
             '-extra_string"',
           ] }))
+        expect(filterResult.errors).toHaveLength(0)
+      })
+      it('should handle translation with template expression in body', async () => {
+        translationWithTemplateExpression.value.body = new TemplateExpression({ parts: [
+          new ReferenceExpression(attachmentInstance.elemID, attachmentInstance),
+          `<p><a href="https://brand.zendesk.com/hc/en-us/articles/${articleInstance.value.id}" target="_self">linkedArticle</a>`,
+          new ReferenceExpression(attachmentInstance.elemID, attachmentInstance),
+        ] })
+        const filterResult = await filter.onFetch(elements) as FilterResult
+        const fetchedTranslationWithTemplateExpression = elements.filter(isInstanceElement).find(i => i.elemID.name === 'articleWithTemplateExpression')
+        expect(fetchedTranslationWithTemplateExpression?.value.body).toEqual(new TemplateExpression({ parts: [
+          new ReferenceExpression(attachmentInstance.elemID, attachmentInstance),
+          '<p><a href="',
+          new ReferenceExpression(brandInstance.elemID, brandInstance),
+          '/hc/en-us/articles/', new ReferenceExpression(articleInstance.elemID, articleInstance),
+          '" target="_self">linkedArticle</a>',
+          new ReferenceExpression(attachmentInstance.elemID, attachmentInstance),
+        ] }))
         expect(filterResult.errors).toHaveLength(0)
       })
       it('should do nothing if elements do not exists', async () => {

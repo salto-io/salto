@@ -32,7 +32,9 @@ export const compactTemplateParts = (parts: TemplatePart[]): TemplatePart[] => {
     if (_.isString(part)) {
       tempString.push(part)
     } else {
-      compactedParts.push(tempString.join(''))
+      if (tempString.length > 0) {
+        compactedParts.push(tempString.join(''))
+      }
       tempString = []
       compactedParts.push(part)
     }

@@ -38,7 +38,7 @@ import {
 import { createOrderType } from '../../src/filters/guide_order/guide_order_utils'
 import {
   childInOrderValidator, childrenReferencesValidator,
-  guideOrderDeletionValidator, orderChildrenParentValidator,
+  orderDeletionValidator, orderChildrenParentValidator,
 } from '../../src/change_validators'
 
 const brandType = new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) })
@@ -140,7 +140,7 @@ describe('GuideOrdersValidator', () => {
       const instanceName = orderInstance.elemID.name
       const parentName = fakeParent.elemID.getFullName()
 
-      const errors = await guideOrderDeletionValidator(changes)
+      const errors = await orderDeletionValidator(changes)
       expect(errors.length).toBe(1)
       expect(errors[0]).toMatchObject({
         elemID: orderInstance.elemID,

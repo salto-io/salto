@@ -94,15 +94,20 @@ const customObjectFieldsOrderFilter: FilterCreator = ({ client }) => ({
     })
   },
   deploy: async changes => {
-    const [relevantChanges, leftoverChanges] = _.partition(
+    const [customObjectFieldOrderChanges, leftoverChanges] = _.partition(
       changes,
       change =>
         isInstanceChange(change)
-        && isAdditionOrModificationChange(change)
         && getChangeData(change).elemID.typeName === CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME
     )
 
-    const deployResultsPromises = relevantChanges
+    // Removal of order means nothing, so we mark it as applied
+    const [additionOrModificationChanges, removalChanges] = _.partition(
+      customObjectFieldOrderChanges,
+      isAdditionOrModificationChange
+    )
+
+    const deployResultsPromises = additionOrModificationChanges
       .filter(isInstanceChange) // used to type check
       .map(async change => {
         const customObjectFieldOrder = getChangeData(change)
@@ -156,7 +161,7 @@ const customObjectFieldsOrderFilter: FilterCreator = ({ client }) => ({
 
     return {
       deployResult: {
-        appliedChanges: successes.map(success => success.change),
+        appliedChanges: [...successes.map(success => success.change), ...removalChanges],
         errors: errors.map(({ change, error }): SaltoElementError => ({
           elemID: getChangeData(change).elemID,
           severity: 'Error',

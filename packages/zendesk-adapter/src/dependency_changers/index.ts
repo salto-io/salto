@@ -17,7 +17,7 @@ import { DependencyChanger } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { customFieldOptionDependencyChanger } from './custom_field_option_change'
-import { guideOrderDependencyChanger } from './guide_order_change'
+import { orderDependencyChanger } from './order_change'
 import { ticketFormDependencyChanger } from './ticket_form_change'
 import { articleAttachmentDependencyChanger } from './article_attachment_change'
 import { customObjectAndFieldDependencyChanger } from './custom_object_and_field_change'
@@ -27,7 +27,7 @@ const { awu } = collections.asynciterable
 const DEPENDENCY_CHANGERS: DependencyChanger[] = [
   deployment.dependency.removeStandaloneFieldDependency,
   customFieldOptionDependencyChanger,
-  guideOrderDependencyChanger,
+  orderDependencyChanger,
   ticketFormDependencyChanger,
   articleAttachmentDependencyChanger,
   customObjectAndFieldDependencyChanger,

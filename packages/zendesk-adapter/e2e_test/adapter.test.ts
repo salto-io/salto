@@ -60,13 +60,21 @@ import {
   SUPPORTED_TYPES,
 } from '../src/config'
 import {
-  ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_ATTACHMENTS_FIELD, ARTICLE_ORDER_TYPE_NAME,
+  ARTICLE_ATTACHMENT_TYPE_NAME,
+  ARTICLE_ATTACHMENTS_FIELD,
+  ARTICLE_ORDER_TYPE_NAME,
   ARTICLE_TRANSLATION_TYPE_NAME,
   ARTICLE_TYPE_NAME,
   BRAND_TYPE_NAME,
   CATEGORY_TRANSLATION_TYPE_NAME,
-  CATEGORY_TYPE_NAME, GUIDE,
-  PERMISSION_GROUP_TYPE_NAME, SECTION_ORDER_TYPE_NAME,
+  CATEGORY_TYPE_NAME,
+  CUSTOM_FIELD_OPTIONS_FIELD_NAME,
+  CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
+  CUSTOM_OBJECT_FIELD_TYPE_NAME,
+  CUSTOM_OBJECT_TYPE_NAME,
+  GUIDE,
+  PERMISSION_GROUP_TYPE_NAME,
+  SECTION_ORDER_TYPE_NAME,
   SECTION_TRANSLATION_TYPE_NAME,
   SECTION_TYPE_NAME,
   USER_SEGMENT_TYPE_NAME,
@@ -208,6 +216,7 @@ describe('Zendesk adapter E2E', () => {
     const testSuffix = uuidv4().slice(0, 8)
     const testOptionValue = uuidv4().slice(0, 8)
     let elements: Element[] = []
+    let customObjectInstances: InstanceElement[]
     let guideInstances : InstanceElement[]
     const createName = (type: string): string => `Test${type}${testSuffix}`
     const createSubdomainName = (): string => `test${testSuffix}`
@@ -466,6 +475,78 @@ describe('Zendesk adapter E2E', () => {
         type: 'user_segment',
         valuesOverride: { name: createName('user_segment'), user_type: 'signed_in_users', built_in: false },
       })
+
+      const customObjectInstance = createInstanceElement({
+        type: CUSTOM_OBJECT_TYPE_NAME,
+        valuesOverride: {
+          key: `key${testSuffix}`,
+          raw_title: `title${testSuffix}`,
+          raw_title_pluralized: `titles${testSuffix}`,
+          raw_description: `description${testSuffix}`,
+        },
+      })
+
+      const customObjectFieldInstance1Key = `key1${testSuffix}`
+      const customObjectFieldInstance1 = createInstanceElement({
+        name: `${customObjectInstance.elemID.name}__${customObjectFieldInstance1Key}`,
+        type: CUSTOM_OBJECT_FIELD_TYPE_NAME,
+        valuesOverride: {
+          type: 'dropdown',
+          key: `${customObjectFieldInstance1Key}`,
+          raw_title: `title1${testSuffix}`,
+          raw_description: `description1${testSuffix}`,
+          system: false,
+          active: true,
+        },
+        parent: customObjectInstance,
+      })
+
+      const customObjectFieldInstance2Key = `key2${testSuffix}`
+      const customObjectFieldInstance2 = createInstanceElement({
+        name: `${customObjectInstance.elemID.name}__${customObjectFieldInstance2Key}`,
+        type: CUSTOM_OBJECT_FIELD_TYPE_NAME,
+        valuesOverride: {
+          type: 'lookup',
+          key: `${customObjectFieldInstance2Key}`,
+          raw_title: `title2${testSuffix}`,
+          raw_description: `description2${testSuffix}`,
+          relationship_target_type: 'zen:ticket',
+          system: false,
+          active: true,
+        },
+        parent: customObjectInstance,
+      })
+
+      const customObjectFieldOptionInstance1Value = `value1${testSuffix}`
+      const customObjectFieldOptionInstance1 = createInstanceElement({
+        name: `${customObjectFieldInstance1.elemID.name}__${customObjectFieldOptionInstance1Value}`,
+        type: CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
+        valuesOverride: {
+          raw_name: `name1${testSuffix}`,
+          value: customObjectFieldOptionInstance1Value,
+        },
+        parent: customObjectFieldInstance1,
+      })
+
+      const customObjectFieldOptionInstance2Value = `value2${testSuffix}`
+      const customObjectFieldOptionInstance2 = createInstanceElement({
+        name: `${customObjectFieldInstance1.elemID.name}__${customObjectFieldOptionInstance2Value}`,
+        type: CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
+        valuesOverride: {
+          raw_name: `name2${testSuffix}`,
+          value: customObjectFieldOptionInstance2Value,
+        },
+        parent: customObjectFieldInstance1,
+      })
+
+      customObjectInstance.value.custom_object_fields = [
+        new ReferenceExpression(customObjectFieldInstance1.elemID, customObjectFieldInstance1),
+        new ReferenceExpression(customObjectFieldInstance2.elemID, customObjectFieldInstance2),
+      ]
+      customObjectFieldInstance1.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] = [
+        new ReferenceExpression(customObjectFieldOptionInstance1.elemID, customObjectFieldOptionInstance1),
+        new ReferenceExpression(customObjectFieldOptionInstance2.elemID, customObjectFieldOptionInstance2),
+      ]
 
       // ***************** guide instances ******************* //
 
@@ -896,6 +977,13 @@ describe('Zendesk adapter E2E', () => {
         name: `${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}`,
       })
 
+      customObjectInstances = [
+        customObjectInstance,
+        customObjectFieldInstance1,
+        customObjectFieldInstance2,
+        customObjectFieldOptionInstance1,
+        customObjectFieldOptionInstance2,
+      ]
 
       guideInstances = [
         categoryInstance,
@@ -969,6 +1057,7 @@ describe('Zendesk adapter E2E', () => {
         viewInstance,
         brandInstanceToAdd,
         userSegmentInstance,
+        ...customObjectInstances,
         // guide elements
         ...guideInstances,
       ]
@@ -990,6 +1079,16 @@ describe('Zendesk adapter E2E', () => {
       // this is since the deletion does not take dependencies into account
       Object.keys(firstGroupChanges)
         .filter(type => (type.includes(SECTION_TYPE_NAME) || type.includes(ARTICLE_TYPE_NAME)))
+        .forEach(key => delete firstGroupChanges[key])
+
+      // remove all custom_object_fields and custom_object_field_options
+      // since they were removed already when custom_object was removed
+      // this is since the deletion does not take dependencies into account
+      Object.keys(firstGroupChanges)
+        .filter(type => (
+          type.includes(CUSTOM_OBJECT_FIELD_TYPE_NAME)
+          || type.includes(CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME)
+        ))
         .forEach(key => delete firstGroupChanges[key])
 
       await deployChanges(adapterAttr, firstGroupChanges)
@@ -1068,7 +1167,24 @@ describe('Zendesk adapter E2E', () => {
         .forEach(instanceToAdd => {
           const instance = elements.find(e => e.elemID.isEqual(instanceToAdd.elemID))
           expect(instance).toBeDefined()
-          expect((instance as InstanceElement).value).toMatchObject(instanceToAdd.value)
+          // custom object types have circular references (value and parent)
+          // toMatchObject does not work well with circular references and crashes
+          if ([CUSTOM_OBJECT_TYPE_NAME, CUSTOM_OBJECT_FIELD_TYPE_NAME].includes(instanceToAdd.elemID.typeName)) {
+            const instanceClone = (instance as InstanceElement).clone()
+            const instanceToAddClone = instanceToAdd.clone()
+            const fieldToHandle = instanceClone.elemID.typeName === CUSTOM_OBJECT_TYPE_NAME
+              ? `${CUSTOM_OBJECT_FIELD_TYPE_NAME}s`
+              : CUSTOM_FIELD_OPTIONS_FIELD_NAME
+
+            instanceClone.value[fieldToHandle] = (instanceClone.value[fieldToHandle] ?? [])
+              .map((ref: ReferenceExpression) => ref.elemID.getFullName())
+            instanceToAddClone.value[fieldToHandle] = (instanceToAddClone.value[fieldToHandle] ?? [])
+              .map((ref: ReferenceExpression) => ref.elemID.getFullName())
+
+            expect(instanceClone.value).toMatchObject(instanceToAddClone.value)
+          } else {
+            expect((instance as InstanceElement).value).toMatchObject(instanceToAdd.value)
+          }
         })
     })
     it('should fetch ticket_field correctly', async () => {

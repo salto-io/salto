@@ -16,8 +16,16 @@
 import { getChangeData, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 import { deployment } from '@salto-io/adapter-components'
-import { SECTION_TYPE_NAME, TICKET_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME,
-  ORG_FIELD_TYPE_NAME, ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TYPE_NAME } from './constants'
+import {
+  SECTION_TYPE_NAME,
+  TICKET_FIELD_TYPE_NAME,
+  USER_FIELD_TYPE_NAME,
+  ORG_FIELD_TYPE_NAME,
+  ARTICLE_ATTACHMENT_TYPE_NAME,
+  ARTICLE_TYPE_NAME,
+  CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
+  CUSTOM_OBJECT_FIELD_TYPE_NAME,
+} from './constants'
 
 
 const PARENT_GROUPED_WITH_INNER_TYPE = [
@@ -25,6 +33,7 @@ const PARENT_GROUPED_WITH_INNER_TYPE = [
   USER_FIELD_TYPE_NAME,
   'dynamic_content_item',
   ORG_FIELD_TYPE_NAME,
+  CUSTOM_OBJECT_FIELD_TYPE_NAME,
   'macro',
   ARTICLE_TYPE_NAME,
 ]
@@ -33,6 +42,7 @@ const INNER_TYPE_GROUPED_WITH_PARENT = [
   'user_field__custom_field_options',
   'dynamic_content_item__variants',
   'organization_field__custom_field_options',
+  CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
   'macro_attachment',
   ARTICLE_ATTACHMENT_TYPE_NAME,
 ]

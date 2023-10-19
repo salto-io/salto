@@ -16,14 +16,15 @@
 import { ChangeValidator, getChangeData, isRemovalChange } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
 import { GUIDE_ORDER_TYPES } from '../../filters/guide_order/guide_order_utils'
+import { CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME } from '../../constants'
 
 /**
  * Validates that if an order element was removed, its parent was also removed
  * */
-export const guideOrderDeletionValidator: ChangeValidator = async changes => {
+export const orderDeletionValidator: ChangeValidator = async changes => {
   const removalChanges = changes.filter(isRemovalChange).map(getChangeData)
   const orderRemovals = removalChanges.filter(
-    instance => GUIDE_ORDER_TYPES.includes(instance.elemID.typeName)
+    instance => [...GUIDE_ORDER_TYPES, CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME].includes(instance.elemID.typeName)
   )
 
   const removedElements = new Set(removalChanges.map(change => change.elemID.getFullName()))
@@ -36,7 +37,7 @@ export const guideOrderDeletionValidator: ChangeValidator = async changes => {
       return {
         elemID: orderInstance.elemID,
         severity: 'Error',
-        message: 'Guide elements order list removed without its parent',
+        message: 'Elements order list removed without its parent',
         detailedMessage: `Deleting ${instanceName} requires deleting its parent (${parentName})`,
       }
     })

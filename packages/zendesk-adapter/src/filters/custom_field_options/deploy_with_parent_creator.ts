@@ -13,43 +13,41 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { Change, getChangeData, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import {
-  Change,
-  getChangeData,
-  InstanceElement,
-} from '@salto-io/adapter-api'
 import { replaceTemplatesWithValues } from '@salto-io/adapter-utils'
-import { FilterCreator } from '../filter'
-import { addIdsToChildrenUponAddition, deployChange, deployChanges } from '../deployment'
-import { API_DEFINITIONS_CONFIG } from '../config'
-import { createAdditionalParentChanges, getCustomFieldOptionsFromChanges } from './utils'
-import { CUSTOM_FIELD_OPTIONS_FIELD_NAME, ORG_FIELD_TYPE_NAME } from '../constants'
-import { prepRef } from './handle_template_expressions'
+import { FilterCreator } from '../../filter'
+import { createAdditionalParentChanges, getCustomFieldOptionsFromChanges } from '../utils'
+import { CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../constants'
+import { prepRef } from '../handle_template_expressions'
+import { addIdsToChildrenUponAddition, deployChange, deployChanges } from '../../deployment'
+import { API_DEFINITIONS_CONFIG } from '../../config'
+import { CustomFieldOptionsFilterCreatorParams } from './creator'
 
-export const ORG_FIELD_OPTION_TYPE_NAME = 'organization_field__custom_field_options'
-
-const filterCreator: FilterCreator = ({ config, client }) => ({
-  name: 'organizationFieldFilter',
+export const createDeployOptionsWithParentCreator = (
+  { filterName, parentTypeName, childTypeName, onFetch }: CustomFieldOptionsFilterCreatorParams
+): FilterCreator => ({ config, client }) => ({
+  name: filterName,
+  onFetch,
   preDeploy: async changes => {
-    getCustomFieldOptionsFromChanges(ORG_FIELD_TYPE_NAME, ORG_FIELD_OPTION_TYPE_NAME, changes).forEach(option => {
+    getCustomFieldOptionsFromChanges(parentTypeName, childTypeName, changes).forEach(option => {
       option.name = option.raw_name
     })
   },
   onDeploy: async changes => {
-    getCustomFieldOptionsFromChanges(ORG_FIELD_TYPE_NAME, ORG_FIELD_OPTION_TYPE_NAME, changes).forEach(option => {
+    getCustomFieldOptionsFromChanges(parentTypeName, childTypeName, changes).forEach(option => {
       delete option.name
     })
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
-      change => [ORG_FIELD_TYPE_NAME, ORG_FIELD_OPTION_TYPE_NAME]
+      change => [parentTypeName, childTypeName]
         .includes(getChangeData(change).elemID.typeName),
     )
     const [parentChanges, childrenChanges] = _.partition(
       relevantChanges,
-      change => getChangeData(change).elemID.typeName === ORG_FIELD_TYPE_NAME,
+      change => getChangeData(change).elemID.typeName === parentTypeName,
     )
     const additionalParentChanges = parentChanges.length === 0 && childrenChanges.length > 0
       ? await createAdditionalParentChanges(childrenChanges)
@@ -114,5 +112,3 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     }
   },
 })
-
-export default filterCreator

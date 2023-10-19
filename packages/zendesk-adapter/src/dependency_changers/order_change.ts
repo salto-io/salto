@@ -20,6 +20,7 @@ import {
 import { deployment } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { GUIDE_ORDER_TYPES } from '../filters/guide_order/guide_order_utils'
+import { CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME } from '../constants'
 
 
 const createDependencyChange = (
@@ -40,12 +41,12 @@ const createDependencyChange = (
 
 const isRelevantOrderChange = (change: Change<InstanceElement>): boolean =>
   isRemovalChange(change) && isInstanceChange(change)
-  && GUIDE_ORDER_TYPES.includes(change.data.before.elemID.typeName)
+  && [...GUIDE_ORDER_TYPES, CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME].includes(change.data.before.elemID.typeName)
 
 /**
  * Removed the dependency between an order instance and its parent, to avoid circular dependency
  */
-export const guideOrderDependencyChanger: DependencyChanger = async changes => {
+export const orderDependencyChanger: DependencyChanger = async changes => {
   const instanceChanges = Array.from(changes.entries())
     .map(([key, change]) => ({ key, change }))
     .filter(

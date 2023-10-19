@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { AdditionChange, Change, ElemID, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isRemovalChange, RemovalChange } from '@salto-io/adapter-api'
 import Joi from 'joi'
-import { resolveChangeElement, walkOnValue, WALK_NEXT_STEP, inspectValue } from '@salto-io/adapter-utils'
+import { resolveChangeElement, walkOnValue, WALK_NEXT_STEP, inspectValue, createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { isPostFetchWorkflowChange, PostFetchWorkflowInstance, Transition, WORKFLOW_RESPONSE_SCHEMA, WorkflowInstance, WorkflowResponse } from './types'
@@ -145,6 +145,61 @@ const addTransitionIdsToInstance = (
   })
 }
 
+type WorkflowIDResponse = {
+  values: [{
+    id: {
+      entityId: string
+    }
+  }] | []
+}
+
+const WORKFLOW_ID_RESPONSE_SCHEMA = Joi.object({
+  values: Joi.array().max(1).items(
+    Joi.object({
+      id: Joi.object({
+        entityId: Joi.string().required(),
+      }).unknown(true).required(),
+    }).unknown(true),
+  ),
+}).unknown(true).required()
+
+const isWorkflowIDResponse = createSchemeGuard<WorkflowIDResponse>(
+  WORKFLOW_ID_RESPONSE_SCHEMA,
+  'Received unexpected workflow id response from service'
+)
+
+const getWorkflowIdFromService = async (
+  client: JiraClient,
+  workflowName: string,
+): Promise<string | undefined> => {
+  const response = await client.getSinglePage({
+    url: '/rest/api/3/workflow/search',
+    queryParams: {
+      workflowName,
+    },
+  })
+
+  if (!isWorkflowIDResponse(response.data)) {
+    log.warn('Failed to get workflow, assuming it does not exist')
+    return undefined
+  }
+
+  if (response.data.values.length === 0) {
+    return undefined
+  }
+
+  const workflowValues = response.data.values[0]
+  return workflowValues.id.entityId
+}
+
+const doesWorkflowExist = async (
+  client: JiraClient,
+  workflowName: string,
+): Promise<boolean> => {
+  const workflowId = await getWorkflowIdFromService(client, workflowName)
+  return workflowId !== undefined
+}
+
 const deployWithClone = async (
   resolvedChange: Change<PostFetchWorkflowInstance>,
   client: JiraClient,
@@ -152,20 +207,46 @@ const deployWithClone = async (
 ): Promise<void> => {
   const resolvedChangeForDeployment = _.cloneDeep(resolvedChange)
   const deployInstance = getChangeData(resolvedChangeForDeployment)
+
+  if (isAdditionChange(resolvedChange) && await doesWorkflowExist(client, deployInstance.value.name)) {
+    log.warn(`A workflow with the name "${deployInstance.value.name}" is already exist`)
+    throw new Error(`A workflow with the name "${deployInstance.value.name}" is already exist`)
+  }
+
   if (!isRemovalChange(resolvedChange)) {
     removeWorkflowDiagramFields(deployInstance)
     workflowTransitionsToList(deployInstance)
   }
-  await defaultDeployChange({
-    change: resolvedChangeForDeployment,
-    client,
-    apiDefinitions: config.apiDefinitions,
-    fieldsToIgnore: path => path.name === 'triggers'
-      // Matching here the 'name' of status inside the statuses array
-      // In DC we support passing the step name as part of the request
-      || (!client.isDataCenter && path.name === 'name' && path.getFullNameParts().includes('statuses')),
-  })
-  getChangeData(resolvedChange).value.entityId = deployInstance.value.entityId
+
+  try {
+    await defaultDeployChange({
+      change: resolvedChangeForDeployment,
+      client,
+      apiDefinitions: config.apiDefinitions,
+      fieldsToIgnore: path => path.name === 'triggers'
+        // Matching here the 'name' of status inside the statuses array
+        // In DC we support passing the step name as part of the request
+        || (!client.isDataCenter && path.name === 'name' && path.getFullNameParts().includes('statuses')),
+    })
+    getChangeData(resolvedChange).value.entityId = deployInstance.value.entityId
+  } catch (err) {
+    // We have seen some cases where when creating a workflow, we get an error that a workflow with that name
+    // already exists although it didn't exist before the deployment.
+    // Even though we get that error the deployment succeeds and the workflow
+    // is created, so we get the workflow id from the service and continue.
+    if (!err.message.includes(`A workflow with the name '${deployInstance.value.name}' already exists`)) {
+      throw err
+    }
+    log.warn('Received an error about the being exist when trying to create it although it didn\'t exist before the deployment')
+    const workflowId = await getWorkflowIdFromService(client, deployInstance.value.name)
+    if (workflowId === undefined) {
+      log.warn('Failed to get workflow id after receiving an error about the workflow being exist')
+      throw err
+    }
+
+    log.info(`Workflow ${deployInstance.value.name} was create successfully although we got an error about it being exist`)
+    getChangeData(resolvedChange).value.entityId = workflowId
+  }
 }
 
 const verifyAndFixTransitionReferences = async ({

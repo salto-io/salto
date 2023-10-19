@@ -1791,6 +1791,13 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   RequestType: {
     request: {
       url: '/rest/servicedeskapi/servicedesk/{serviceDeskId}/requesttype',
+      recurseInto: [
+        {
+          type: 'RequestType__workflowStatuses',
+          toField: 'workflowStatuses',
+          context: [{ name: 'requestTypeId', fromField: 'id' }],
+        },
+      ],
     },
     transformation: {
       idFields: ['name', 'projectKey'],
@@ -1801,6 +1808,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: '_expands' },
         { fieldName: 'serviceDeskId' },
         { fieldName: 'portalId' },
+        { fieldName: 'groupIds' },
       ],
       fieldsToHide: [
         { fieldName: 'id' },
@@ -1847,19 +1855,74 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldsToOmit: [
         { fieldName: '_links' },
       ],
+      fieldTypeOverrides: [
+        { fieldName: 'columns', fieldType: 'List<Field>' },
+      ],
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/servicedesk/1/servicedesk/{projectKey}/queues',
+        method: 'post',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+      },
+      modify: {
+        url: '/rest/servicedesk/1/servicedesk/{projectKey}/queues/{id}',
+        method: 'put',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+      },
+      remove: {
+        url: '/rest/servicedesk/1/servicedesk/{projectKey}/queues/',
+        method: 'delete',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+      },
     },
   },
   PortalGroup: {
     request: {
-      url: '/rest/servicedeskapi/servicedesk/{serviceDeskId}/requesttypegroup',
+      url: '/rest/servicedesk/1/servicedesk/{projectId}/request-types?isValidOnly=true',
     },
     transformation: {
       idFields: ['name', 'projectKey'],
-      sourceTypeName: 'PortalGroup__values',
-      dataField: 'values',
+      sourceTypeName: 'PortalGroup__groups',
+      dataField: 'groups',
       fieldsToHide: [
         { fieldName: 'id' },
       ],
+      fieldTypeOverrides: [
+        { fieldName: 'ticketTypeIds', fieldType: 'List<RequestType>' },
+      ],
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/servicedesk/1/servicedesk/{projectId}/portal-groups',
+        method: 'post',
+        urlParamsToFields: {
+          serviceDeskId: '_parent.0.serviceDeskId',
+          projectId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/rest/servicedesk/1/servicedesk/{projectId}/portal-groups/{id}',
+        method: 'put',
+        urlParamsToFields: {
+          serviceDeskId: '_parent.0.serviceDeskId',
+          projectId: '_parent.0.id',
+        },
+      },
+      remove: {
+        url: '/rest/servicedesk/1/servicedesk/{projectId}/portal-groups/{id}',
+        method: 'delete',
+        urlParamsToFields: {
+          serviceDeskId: '_parent.0.serviceDeskId',
+          projectId: '_parent.0.id',
+        },
+      },
     },
   },
   Calendar: {
@@ -1872,6 +1935,54 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       dataField: 'calendars',
       fieldsToHide: [
         { fieldName: 'id' },
+      ],
+      fieldsToOmit: [
+        { fieldName: 'canUpdate' },
+        { fieldName: 'canDelete' },
+        { fieldName: 'deletable' },
+        { fieldName: 'updateMessage' },
+        { fieldName: 'context' },
+      ],
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/workinghours/1/api/calendar/{projectKey}',
+        method: 'post',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+      },
+      modify: {
+        url: '/rest/workinghours/1/api/calendar/{projectKey}/{id}',
+        method: 'put',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+      },
+      remove: {
+        url: '/rest/workinghours/1/api/calendar/{id}',
+        method: 'delete',
+      },
+    },
+  },
+  Calendar__holidays: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'date' },
+      ],
+    },
+  },
+  RequestType__workflowStatuses: {
+    request: {
+      url: '/rest/servicedesk/1/servicedesk-data/{projectKey}/request-type/{requestTypeId}/workflow',
+    },
+    transformation: {
+      dataField: 'statuses',
+      sourceTypeName: 'RequestType__workflowStatuses__statuses',
+      fieldsToOmit: [
+        { fieldName: 'projectKey' },
+        { fieldName: 'statusNameId' },
+        { fieldName: 'original' },
       ],
     },
   },

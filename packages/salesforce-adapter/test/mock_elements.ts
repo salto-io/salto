@@ -35,7 +35,7 @@ import {
   DUPLICATE_RULE_METADATA_TYPE,
   FIELD_ANNOTATIONS,
   INSTALLED_PACKAGE_METADATA,
-  INSTANCE_FULL_NAME_FIELD,
+  INSTANCE_FULL_NAME_FIELD, LABEL,
   LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
   METADATA_TYPE,
   PATH_ASSISTANT_METADATA_TYPE,
@@ -745,23 +745,32 @@ export const mockInstances = () => ({
     ArtificialTypes.ChangedAtSingleton,
   ),
 })
+
 export const createFlowChange = ({
   flowApiName,
   beforeStatus,
   afterStatus,
-}: { flowApiName: string; beforeStatus?: string; afterStatus?: string }): Change<InstanceElement> => {
+  additionalModifications = false,
+}: {
+  flowApiName: string
+  beforeStatus?: string
+  afterStatus?: string
+  additionalModifications?: boolean
+}): Change<InstanceElement> => {
   let beforeInstance: InstanceElement | undefined
   let afterInstance: InstanceElement | undefined
   if (beforeStatus) {
     beforeInstance = createInstanceElement({
       [INSTANCE_FULL_NAME_FIELD]: flowApiName,
       [STATUS]: beforeStatus,
+      [LABEL]: flowApiName,
     }, mockTypes.Flow)
   }
   if (afterStatus) {
     afterInstance = createInstanceElement({
       [INSTANCE_FULL_NAME_FIELD]: flowApiName,
       [STATUS]: afterStatus,
+      [LABEL]: `${flowApiName}${additionalModifications ? 'Modified' : ''}`,
     }, mockTypes.Flow)
   }
   return toChange({ before: beforeInstance, after: afterInstance })

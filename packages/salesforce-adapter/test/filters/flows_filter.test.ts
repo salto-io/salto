@@ -143,6 +143,7 @@ describe('flows filter', () => {
     let deactivatedFlowChange: Change<InstanceElement>
     let activeFlowChange: Change<InstanceElement>
     let newInactiveFlowChange: Change<InstanceElement>
+    let deactivatedFlowChangeWithAdditionalChanges: Change<InstanceElement>
     let workflowChange: Change<InstanceElement>
     beforeEach(() => {
       filter = filterCreator(
@@ -160,6 +161,8 @@ describe('flows filter', () => {
       alreadyInactiveFlowChange = createFlowChange({ flowApiName: 'alreadyInactive', beforeStatus: 'Obsolete', afterStatus: 'Draft' })
       activeFlowChange = createFlowChange({ flowApiName: 'active', afterStatus: 'Active' })
       newInactiveFlowChange = createFlowChange({ flowApiName: 'newInactive', afterStatus: 'Draft' })
+      // Deactivating a Flow with additional changes should not be handled
+      deactivatedFlowChangeWithAdditionalChanges = createFlowChange({ flowApiName: 'notOnlyDeactivated', beforeStatus: 'Active', afterStatus: 'Draft', additionalModifications: true })
       // Deactivating a non Flow instance should not be handled
       workflowChange = toChange({
         before: createInstanceElement({
@@ -171,16 +174,17 @@ describe('flows filter', () => {
           [STATUS]: 'Draft',
         }, mockTypes.Workflow),
       })
+      changes = [alreadyInactiveFlowChange, deactivatedFlowChange, activeFlowChange,
+        newInactiveFlowChange, workflowChange, deactivatedFlowChangeWithAdditionalChanges]
     })
     it('should add FlowDefinition for flows that had been deactivated on preDeploy and remove them on onDeploy', async () => {
-      changes = [alreadyInactiveFlowChange, deactivatedFlowChange, activeFlowChange,
-        newInactiveFlowChange, workflowChange]
       await filter.preDeploy(changes)
       expect(changes).toIncludeSameMembers([
         alreadyInactiveFlowChange,
         deactivatedFlowChange,
         activeFlowChange,
         newInactiveFlowChange,
+        deactivatedFlowChangeWithAdditionalChanges,
         workflowChange,
         expect.toSatisfy((change: Change) => {
           const instance = getChangeData(change)
@@ -196,6 +200,7 @@ describe('flows filter', () => {
         activeFlowChange,
         newInactiveFlowChange,
         workflowChange,
+        deactivatedFlowChangeWithAdditionalChanges,
       ])
     })
     describe('when the FlowDefinition MetadataType does not exist in the Elements source', () => {
@@ -210,9 +215,7 @@ describe('flows filter', () => {
           },
         ) as typeof filter
       })
-      it('should not add FlowDefinition for flows that had been deactivated on preDeploy', async () => {
-        changes = [alreadyInactiveFlowChange, deactivatedFlowChange, activeFlowChange,
-          newInactiveFlowChange, workflowChange]
+      it('should not add FlowDefinition for deactivatedFlows on preDeploy', async () => {
         await filter.preDeploy(changes)
         expect(changes).toIncludeSameMembers([
           alreadyInactiveFlowChange,
@@ -220,6 +223,7 @@ describe('flows filter', () => {
           activeFlowChange,
           newInactiveFlowChange,
           workflowChange,
+          deactivatedFlowChangeWithAdditionalChanges,
         ])
       })
     })

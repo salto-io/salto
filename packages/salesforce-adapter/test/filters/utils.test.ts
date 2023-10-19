@@ -24,13 +24,20 @@ import {
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import {
-  addDefaults, toListType, getChangedAtSingleton,
+  addDefaults,
+  toListType,
+  getChangedAtSingleton,
   getNamespace,
   isCustomMetadataRecordInstance,
-  isCustomMetadataRecordType, isCustomType,
+  isCustomMetadataRecordType,
+  isCustomType,
   isMetadataValues,
   isStandardObject,
-  layoutObjAndName, isInstanceOfTypeChangeSync, isInstanceOfTypeSync, isDeactivatedFlowChange,
+  layoutObjAndName,
+  isInstanceOfTypeChangeSync,
+  isInstanceOfTypeSync,
+  isDeactivatedFlowChange,
+  isDeactivatedFlowChangeOnly,
 } from '../../src/filters/utils'
 import {
   API_NAME,
@@ -414,7 +421,7 @@ describe('addDefaults', () => {
       const activatedFlowChange = createFlowChange({ flowApiName: 'flow', afterStatus: 'Active' })
       expect(activatedFlowChange).not.toSatisfy(isDeactivatedFlowChange)
     })
-    it('should return false when non Flow instance was deactivated', () => {
+    it('should return false when a non Flow instance was deactivated', () => {
       const workflowChange = toChange({
         before: createInstanceElement({
           [INSTANCE_FULL_NAME_FIELD]: 'workflow',
@@ -426,6 +433,38 @@ describe('addDefaults', () => {
         }, mockTypes.Workflow),
       })
       expect(workflowChange).not.toSatisfy(isDeactivatedFlowChange)
+    })
+
+    describe('isDeactivatedFlowChangeOnly', () => {
+      it('should return true for deactivated Flow change with no additional modifications', () => {
+        const deactivatedFlowChange = createFlowChange({ flowApiName: 'flow', beforeStatus: 'Active', afterStatus: 'Draft' })
+        expect(deactivatedFlowChange).toSatisfy(isDeactivatedFlowChangeOnly)
+      })
+      it('should return false for deactivated Flow change with additional modifications', () => {
+        const deactivatedFlowChange = createFlowChange({ flowApiName: 'flow', beforeStatus: 'Active', afterStatus: 'Draft', additionalModifications: true })
+        expect(deactivatedFlowChange).not.toSatisfy(isDeactivatedFlowChangeOnly)
+      })
+      it('should return false for activated Flow change with no additional modifications', () => {
+        const deactivatedFlowChange = createFlowChange({ flowApiName: 'flow', beforeStatus: 'Draft', afterStatus: 'Active' })
+        expect(deactivatedFlowChange).not.toSatisfy(isDeactivatedFlowChangeOnly)
+      })
+      it('should return false for addition of inactive Flow', () => {
+        const deactivatedFlowChange = createFlowChange({ flowApiName: 'flow', afterStatus: 'Active' })
+        expect(deactivatedFlowChange).not.toSatisfy(isDeactivatedFlowChangeOnly)
+      })
+      it('should return false when a non Flow instance was deactivated with no additional changes', () => {
+        const workflowChange = toChange({
+          before: createInstanceElement({
+            [INSTANCE_FULL_NAME_FIELD]: 'workflow',
+            [STATUS]: 'Active',
+          }, mockTypes.Workflow),
+          after: createInstanceElement({
+            [INSTANCE_FULL_NAME_FIELD]: 'workflow',
+            [STATUS]: 'Draft',
+          }, mockTypes.Workflow),
+        })
+        expect(workflowChange).not.toSatisfy(isDeactivatedFlowChangeOnly)
+      })
     })
   })
 })

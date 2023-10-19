@@ -14,26 +14,31 @@
 * limitations under the License.
 */
 import {
+  Change,
   ChangeError,
-  getChangeData,
   ChangeValidator,
-  isInstanceChange,
+  CORE_ANNOTATIONS,
+  DeployActions,
+  ElemID,
+  getChangeData,
   InstanceElement,
+  isAdditionChange,
+  isInstanceChange,
   isModificationChange,
+  isRemovalChange,
   ModificationChange,
-  isAdditionChange, ElemID, DeployActions, Change, isRemovalChange, ReadOnlyElementsSource, CORE_ANNOTATIONS,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { isEmpty, isUndefined } from 'lodash'
 import { detailedCompare } from '@salto-io/adapter-utils'
-import { FLOW_METADATA_TYPE, SALESFORCE, STATUS } from '../constants'
-import { isDeactivatedFlowChange, isInstanceOfType } from '../filters/utils'
+import { ACTIVE, FLOW_METADATA_TYPE, SALESFORCE, STATUS } from '../constants'
+import { isDeactivatedFlowChange, isDeactivatedFlowChangeOnly, isInstanceOfType } from '../filters/utils'
 import { SalesforceConfig } from '../types'
 import SalesforceClient from '../client/client'
 import { FLOW_URL_SUFFIX } from '../elements_url_retreiver/lightining_url_resolvers'
 
 const { awu } = collections.asynciterable
-const ACTIVE = 'Active'
 const PREFER_ACTIVE_FLOW_VERSIONS_DEFAULT = false
 const ENABLE_FLOW_DEPLOY_AS_ACTIVE_ENABLED_DEFAULT = false
 
@@ -61,17 +66,6 @@ export const isActivatingChange = (change: ModificationChange<InstanceElement>):
     boolean => (
   getFlowStatus(change.data.before) !== ACTIVE && getFlowStatus(change.data.after) === ACTIVE
 )
-
-const isDeactivationChangeOnly = (change: ModificationChange<InstanceElement>):
-    boolean => {
-  const afterClone = change.data.after.clone()
-  afterClone.value[STATUS] = ACTIVE
-  const diffWithoutStatus = detailedCompare(
-    change.data.before,
-    afterClone,
-  )
-  return isEmpty(diffWithoutStatus)
-}
 
 export const isActivatingChangeOnly = (change: ModificationChange<InstanceElement>):
     boolean => {
@@ -239,7 +233,7 @@ const activeFlowValidator = (config: SalesforceConfig, isSandbox: boolean, clien
 
     const inactiveNewVersionChangeInfo = flowChanges
       .filter(isDeactivatedFlowChange)
-      .filter(change => !isDeactivationChangeOnly(change))
+      .filter(change => !isDeactivatedFlowChangeOnly(change))
       .map(change => inActiveNewVersionInfo(getChangeData(change), isPreferActiveVersion))
 
     if (isSandbox) {

@@ -322,10 +322,11 @@ export const DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS = {
 }
 export const MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD = 20
 
-// Fields
+// Fields and Values
 export const CURRENCY_ISO_CODE = 'CurrencyIsoCode'
 export const ACTIVE_VERSION_NUMBER = 'activeVersionNumber'
 export const STATUS = 'status'
+export const ACTIVE = 'Active'
 
 // Metadata types
 export const PATH_ASSISTANT_METADATA_TYPE = 'PathAssistant'

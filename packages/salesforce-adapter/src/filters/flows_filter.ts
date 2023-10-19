@@ -38,7 +38,12 @@ import { fetchMetadataInstances } from '../fetch'
 import { createInstanceElement } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import { FetchElements, FetchProfile } from '../types'
-import { apiNameSync, isDeactivatedFlowChange, isInstanceOfTypeChangeSync, listMetadataObjects } from './utils'
+import {
+  apiNameSync,
+  isDeactivatedFlowChangeOnly,
+  isInstanceOfTypeChangeSync,
+  listMetadataObjects,
+} from './utils'
 
 const { isDefined } = lowerdashValues
 
@@ -159,8 +164,8 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   },
   // In order to deactivate a Flow, we need to create a FlowDefinition instance with activeVersionNumber of 0
   preDeploy: async changes => {
-    const deactivatedFlowChanges = changes.filter(isDeactivatedFlowChange)
-    if (deactivatedFlowChanges.length === 0) {
+    const deactivatedFlowOnlyChanges = changes.filter(isDeactivatedFlowChangeOnly)
+    if (deactivatedFlowOnlyChanges.length === 0) {
       return
     }
     const flowDefinitionType = await config.elementsSource.get(FLOW_DEFINITION_METADATA_TYPE_ID)
@@ -168,7 +173,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       log.error('Failed to deactivate flows since the FlowDefinition metadata type does not exist in the elements source')
       return
     }
-    deactivatedFlowChanges
+    deactivatedFlowOnlyChanges
       .map(flowChange => createDeactivatedFlowDefinitionChange(flowChange, flowDefinitionType))
       .forEach(flowDefinitionChange => changes.push(flowDefinitionChange))
   },

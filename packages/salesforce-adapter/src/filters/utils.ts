@@ -30,10 +30,14 @@ import {
   InstanceElement,
   isAdditionOrModificationChange,
   isField,
-  isInstanceElement, isListType, isModificationChange,
+  isInstanceElement,
+  isListType,
+  isModificationChange,
   isObjectType,
   isReferenceExpression,
-  isRemovalOrModificationChange, ListType, ModificationChange,
+  isRemovalOrModificationChange,
+  ListType,
+  ModificationChange,
   ObjectType,
   ReadOnlyElementsSource,
   ReferenceExpression,
@@ -41,13 +45,14 @@ import {
   TypeMap,
   Value,
 } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements, createSchemeGuard, getParents } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, createSchemeGuard, detailedCompare, getParents } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
 import { chunks, collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import SalesforceClient, { ErrorFilter } from '../client/client'
 import { FetchElements, INSTANCE_SUFFIXES, OptionalFeatures } from '../types'
 import {
+  ACTIVE,
   API_NAME,
   API_NAME_SEPARATOR,
   CHANGED_AT_SINGLETON,
@@ -55,7 +60,8 @@ import {
   CUSTOM_METADATA_SUFFIX,
   CUSTOM_OBJECT,
   CUSTOM_OBJECT_ID_FIELD,
-  FIELD_ANNOTATIONS, FLOW_METADATA_TYPE,
+  FIELD_ANNOTATIONS,
+  FLOW_METADATA_TYPE,
   INSTANCE_FULL_NAME_FIELD,
   INTERNAL_ID_ANNOTATION,
   INTERNAL_ID_FIELD,
@@ -66,7 +72,8 @@ import {
   METADATA_TYPE,
   NAMESPACE_SEPARATOR,
   PLURAL_LABEL,
-  SALESFORCE, STATUS,
+  SALESFORCE,
+  STATUS,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
 import * as transformer from '../transformers/transformer'
@@ -588,3 +595,16 @@ export const isDeactivatedFlowChange = (change: Change): change is ModificationC
   && change.data.before.value[STATUS] === 'Active'
   && change.data.after.value[STATUS] !== 'Active'
 )
+
+export const isDeactivatedFlowChangeOnly = (change: Change): change is ModificationChange<InstanceElement> => {
+  if (!isDeactivatedFlowChange(change)) {
+    return false
+  }
+  const afterClone = change.data.after.clone()
+  afterClone.value[STATUS] = ACTIVE
+  const diffWithoutStatus = detailedCompare(
+    change.data.before,
+    afterClone,
+  )
+  return _.isEmpty(diffWithoutStatus)
+}

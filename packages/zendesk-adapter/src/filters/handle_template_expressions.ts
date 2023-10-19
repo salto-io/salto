@@ -166,6 +166,20 @@ const potentialTemplates: PotentialTemplateField[] = [
     containerValidator: (container: Values): boolean =>
       container.name === 'uri_templates',
   },
+  ...[TICKET_FIELD_TYPE_NAME, CUSTOM_OBJECT_FIELD_TYPE_NAME].flatMap(instanceType => [
+    {
+      instanceType,
+      pathToContainer: ['relationship_filter', 'all'],
+      fieldName: 'field',
+      containerValidator: NoValidator,
+    },
+    {
+      instanceType,
+      pathToContainer: ['relationship_filter', 'any'],
+      fieldName: 'field',
+      containerValidator: NoValidator,
+    },
+  ]),
   ...[
     ORG_FIELD_TYPE_NAME,
     USER_FIELD_TYPE_NAME,

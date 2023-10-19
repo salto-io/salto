@@ -18,11 +18,13 @@ import _ from 'lodash'
 import { getChangeData, isInstanceChange, Change, InstanceElement } from '@salto-io/adapter-api'
 import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 import { FilterCreator } from '../filter'
-import { CALENDAR_TYPE, CUSTOMER_PERMISSIONS_TYPE } from '../constants'
+import { CALENDAR_TYPE, CUSTOMER_PERMISSIONS_TYPE, QUEUE_TYPE, PORTAL_GROUP_TYPE } from '../constants'
 
 const jsmSupportedTypes = [
   CUSTOMER_PERMISSIONS_TYPE,
   CALENDAR_TYPE,
+  QUEUE_TYPE,
+  PORTAL_GROUP_TYPE,
 ]
 
 const filterCreator: FilterCreator = ({ config, client }) => ({

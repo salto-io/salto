@@ -960,10 +960,22 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: PROJECT_TYPE },
   },
   {
-    src: { field: 'groupIds', parentTypes: [REQUEST_TYPE_NAME] },
+    src: { field: 'ticketTypeIds', parentTypes: [PORTAL_GROUP_TYPE] },
     serializationStrategy: 'id',
     jiraMissingRefStrategy: 'typeAndValue',
-    target: { type: PORTAL_GROUP_TYPE },
+    target: { type: REQUEST_TYPE_NAME },
+  },
+  {
+    src: { field: 'id', parentTypes: ['RequestType__workflowStatuses'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: STATUS_TYPE_NAME },
+  },
+  {
+    src: { field: 'columns', parentTypes: [QUEUE_TYPE] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: FIELD_TYPE_NAME },
   },
 ]
 

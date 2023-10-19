@@ -29,7 +29,7 @@ import {
   DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
   CUSTOM_STATUS_TYPE_NAME,
   OPEN_CATEGORY,
-  HOLD_CATEGORY, SOLVED_CATEGORY,
+  HOLD_CATEGORY, SOLVED_CATEGORY, CUSTOM_OBJECT_FIELD_TYPE_NAME, CUSTOM_OBJECT_TYPE_NAME,
 } from '../constants'
 import { FETCH_CONFIG, ZendeskConfig } from '../config'
 import { ZendeskMissingReferenceStrategyLookup, ZendeskMissingReferenceStrategyName } from './references/missing_references'
@@ -111,6 +111,7 @@ const ALTERNATE_USER_FIELD_PREFIX = 'user.custom_fields.'
 const TICKET_FIELD_OPTION_TYPE_NAME = 'ticket_field__custom_field_options'
 const ORG_FIELD_OPTION_TYPE_NAME = 'organization_field__custom_field_options'
 const USER_FIELD_OPTION_TYPE_NAME = 'user_field__custom_field_options'
+const CUSTOM_OBJECT_PREFIX = 'zen:custom_object:'
 
 const customFieldOptionSerialization: GetLookupNameFunc = ({ ref }) => {
   const fieldName = ref.elemID.typeName === TICKET_FIELD_OPTION_TYPE_NAME ? 'value' : 'id'
@@ -187,6 +188,7 @@ type ZendeskReferenceSerializationStrategyName = 'ticketField'
   | 'userFieldOption'
   | 'locale'
   | 'idString'
+  | 'customObjectKey'
 const ZendeskReferenceSerializationStrategyLookup: Record<
   ZendeskReferenceSerializationStrategyName
   | referenceUtils.ReferenceSerializationStrategyName,
@@ -232,6 +234,12 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
     serialize: async ({ ref }) => _.toString(ref.value.value.id),
     lookup: val => val,
     lookupIndexName: 'id',
+  },
+  customObjectKey: {
+    serialize: ({ ref }) => (isInstanceElement(ref.value) ? `zen:custom_object:${ref.value.value.key}` : ref.value),
+    lookup: val =>
+      ((_.isString(val) && val.startsWith(CUSTOM_OBJECT_PREFIX)) ? val.slice(CUSTOM_OBJECT_PREFIX.length) : val),
+    lookupIndexName: 'key',
   },
 }
 
@@ -834,7 +842,15 @@ const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
   // note: this overlaps with additional strategies, but because the first strategy
   // is chosen for serialization, it is safe
   {
-    src: { field: 'value', parentTypes: ['workspace__conditions__all'] },
+    src: {
+      field: 'value',
+      parentTypes: [
+        'workspace__conditions__all',
+        'workspace__conditions__any',
+        'custom_object_field__relationship_filter__all',
+        'custom_object_field__relationship_filter__any',
+      ],
+    },
     zendeskSerializationStrategy: 'idString',
     target: { typeContext: 'neighborField' },
   },
@@ -1032,6 +1048,15 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
     },
     serializationStrategy: 'id',
     target: { type: 'oauth_global_client' },
+  },
+  {
+    src: {
+      field: 'relationship_target_type',
+      parentTypes: [CUSTOM_OBJECT_FIELD_TYPE_NAME, TICKET_FIELD_TYPE_NAME],
+    },
+    zendeskSerializationStrategy: 'customObjectKey',
+    zendeskMissingRefStrategy: 'startsWith',
+    target: { type: CUSTOM_OBJECT_TYPE_NAME },
   },
 ]
 

@@ -16,7 +16,12 @@
 
 import _ from 'lodash'
 import { references as referenceUtils } from '@salto-io/adapter-components'
-import { ORG_FIELD_TYPE_NAME, TICKET_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME } from '../../constants'
+import {
+  CUSTOM_OBJECT_FIELD_TYPE_NAME,
+  ORG_FIELD_TYPE_NAME,
+  TICKET_FIELD_TYPE_NAME,
+  USER_FIELD_TYPE_NAME,
+} from '../../constants'
 
 export type ZendeskMissingReferenceStrategyName = referenceUtils.MissingReferenceStrategyName | 'startsWith'
 
@@ -25,10 +30,11 @@ export const VALUES_TO_SKIP_BY_TYPE: Record<string, string[]> = {
   webhook: ['(Value no longer exists. Choose another.)'],
 }
 
-const VALUE_BY_TYPE: Record<string, string> = {
-  [TICKET_FIELD_TYPE_NAME]: 'custom_fields_',
-  [USER_FIELD_TYPE_NAME]: 'requester.custom_fields.',
-  [ORG_FIELD_TYPE_NAME]: 'organization.custom_fields.',
+const VALUE_BY_TYPE: Record<string, string[]> = {
+  [TICKET_FIELD_TYPE_NAME]: ['custom_fields_', 'zen:custom_object:'],
+  [USER_FIELD_TYPE_NAME]: ['requester.custom_fields.'],
+  [ORG_FIELD_TYPE_NAME]: ['organization.custom_fields.'],
+  [CUSTOM_OBJECT_FIELD_TYPE_NAME]: ['zen:custom_object:'],
 }
 
 export const ZendeskMissingReferenceStrategyLookup: Record<
@@ -47,7 +53,7 @@ ZendeskMissingReferenceStrategyName, referenceUtils.MissingReferenceStrategy
       if (_.isString(typeName)
         && value
         && !VALUES_TO_SKIP_BY_TYPE[typeName]?.includes(value)
-        && value.startsWith(VALUE_BY_TYPE[typeName])
+        && (VALUE_BY_TYPE[typeName] ?? []).some(prefix => value.startsWith(prefix))
       ) {
         return referenceUtils.createMissingInstance(adapter, typeName, value)
       }

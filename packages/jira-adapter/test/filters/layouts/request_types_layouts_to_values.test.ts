@@ -45,13 +45,17 @@ describe('requestTypeRequestFormFilter', () => {
         },
         [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1']
       )
+      const requestTypeType = createEmptyType(REQUEST_TYPE_NAME)
       requestTypeInstance = new InstanceElement(
         'issueType1',
-        createEmptyType(REQUEST_TYPE_NAME),
+        requestTypeType,
         {
           id: '100',
           name: 'requestTypeTest',
           projectKey: new ReferenceExpression(projectInstance.elemID, projectInstance),
+          icon: {
+            id: '10000000',
+          },
         },
         [JIRA, adapterElements.RECORDS_PATH, REQUEST_TYPE_NAME, 'requestTypeTest']
       )
@@ -75,9 +79,10 @@ describe('requestTypeRequestFormFilter', () => {
           },
         }
       )
+      const issueViewType = createEmptyType(ISSUE_VIEW_TYPE)
       requestFormInstance = new InstanceElement(
         'requestForm1',
-        createEmptyType(ISSUE_VIEW_TYPE),
+        issueViewType,
         {
           id: '1',
           extraDefinerId: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
@@ -98,9 +103,10 @@ describe('requestTypeRequestFormFilter', () => {
           },
         },
       )
+      const requestFormType = createEmptyType(REQUEST_FORM_TYPE)
       issueViewInstance = new InstanceElement(
         'issueView1',
-        createEmptyType(REQUEST_FORM_TYPE),
+        requestFormType,
         {
           id: '2',
           extraDefinerId: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
@@ -129,6 +135,9 @@ describe('requestTypeRequestFormFilter', () => {
         fieldInstance2,
         requestFormInstance,
         issueViewInstance,
+        requestFormType,
+        requestTypeType,
+        issueViewType,
       ]
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true

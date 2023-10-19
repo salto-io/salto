@@ -14,9 +14,10 @@
 * limitations under the License.
 */
 
-import { isInstanceElement } from '@salto-io/adapter-api'
+import { Field, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { FilterCreator } from '../../filter'
-import { ISSUE_VIEW_TYPE, REQUEST_FORM_TYPE } from '../../constants'
+import { ISSUE_VIEW_TYPE, REQUEST_FORM_TYPE, REQUEST_TYPE_NAME } from '../../constants'
 
 const supportedTypes = [REQUEST_FORM_TYPE, ISSUE_VIEW_TYPE]
 
@@ -26,19 +27,26 @@ const filter: FilterCreator = ({ config }) => ({
     if (!config.fetch.enableJSM) {
       return
     }
-    elements.filter(isInstanceElement)
-      .filter(e => supportedTypes.includes(e.elemID.typeName))
-      .forEach(layout => {
-        const requestType = layout.value.extraDefinerId.value
-        delete layout.value.extraDefinerId
-        delete layout.value.projectId
-        if (layout.elemID.typeName === REQUEST_FORM_TYPE) {
-          requestType.value.requestForm = layout.value
-        } else {
-          requestType.value.issueView = layout.value
-        }
-        elements.splice(elements.indexOf(layout), 1)
-      })
+    const requestTypeType = elements.filter(isObjectType).find(e => e.elemID.typeName === REQUEST_TYPE_NAME)
+    const requestFormType = elements.filter(isObjectType).find(e => e.elemID.typeName === REQUEST_FORM_TYPE)
+    const issueViewType = elements.filter(isObjectType).find(e => e.elemID.typeName === ISSUE_VIEW_TYPE)
+    if (requestTypeType === undefined || requestFormType === undefined || issueViewType === undefined) {
+      return
+    }
+    requestTypeType.fields.requestForm = new Field(requestTypeType, 'requestForm', requestFormType)
+    requestTypeType.fields.issueView = new Field(requestTypeType, 'issueView', issueViewType)
+
+    const layouts = _.remove(elements, e => supportedTypes.includes(e.elemID.typeName) && isInstanceElement(e))
+    layouts.filter(isInstanceElement).forEach(layout => {
+      const requestType = layout.value.extraDefinerId.value
+      delete layout.value.extraDefinerId
+      delete layout.value.projectId
+      if (layout.elemID.typeName === REQUEST_FORM_TYPE) {
+        requestType.value.requestForm = layout.value
+      } else {
+        requestType.value.issueView = layout.value
+      }
+    })
   },
 })
 export default filter

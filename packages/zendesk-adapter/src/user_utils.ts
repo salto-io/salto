@@ -159,35 +159,37 @@ export const TYPE_NAME_TO_REPLACER: Record<string, ValueReplacer> = {
   article_translation: fieldReplacer(['created_by_id', 'updated_by_id']),
 }
 
+const getUsersNoCache = async (paginator: clientUtils.Paginator): Promise<User[]> => {
+  const paginationArgs = {
+    url: '/api/v2/users',
+    paginationField: CURSOR_BASED_PAGINATION_FIELD,
+    queryParams: {
+      role: ['admin', 'agent'],
+      ...DEFAULT_QUERY_PARAMS,
+    },
+  }
+  const users = (await toArrayAsync(
+    paginator(paginationArgs, page => makeArray(page) as clientUtils.ResponseValue[])
+  )).flat().flatMap(response => response.users)
+  if (!areUsers(users)) {
+    return []
+  }
+  return users
+}
+
 /*
 * Fetch all users with admin and agent roles.
 * Results are cached after the initial call to improve performance.
 *
 */
 const getUsersFunc = ():(paginator: clientUtils.Paginator) => Promise<User[]> => {
-  let calculatedUsers: User[]
+  let calculatedUsersPromise: Promise<User[]>
 
   const getUsers = async (paginator: clientUtils.Paginator): Promise<User[]> => {
-    if (calculatedUsers !== undefined) {
-      return calculatedUsers
+    if (calculatedUsersPromise === undefined) {
+      calculatedUsersPromise = getUsersNoCache(paginator)
     }
-    const paginationArgs = {
-      url: '/api/v2/users',
-      paginationField: CURSOR_BASED_PAGINATION_FIELD,
-      queryParams: {
-        role: ['admin', 'agent'],
-        ...DEFAULT_QUERY_PARAMS,
-      },
-    }
-    const users = (await toArrayAsync(
-      paginator(paginationArgs, page => makeArray(page) as clientUtils.ResponseValue[])
-    )).flat().flatMap(response => response.users)
-    if (!areUsers(users)) {
-      calculatedUsers = []
-      return []
-    }
-    calculatedUsers = users
-    return users
+    return calculatedUsersPromise
   }
 
   return getUsers

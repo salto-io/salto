@@ -18,7 +18,7 @@ import { setPath, walkOnElement, WALK_NEXT_STEP, isResolvedReferenceExpression }
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { AUTOMATION_TYPE, ESCALATION_SERVICE_TYPE, QUEUE_TYPE, WORKFLOW_TYPE_NAME } from '../../constants'
+import { AUTOMATION_TYPE, ESCALATION_SERVICE_TYPE, QUEUE_TYPE, SLA_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { generateTemplateExpression, generateJqlContext, removeCustomFieldPrefix } from './template_expression_generator'
 
@@ -32,6 +32,7 @@ const JQL_FIELDS = [
   { type: 'Webhook', path: ['filters', 'issue_related_events_section'] },
   { type: ESCALATION_SERVICE_TYPE, path: ['jql'] },
   { type: QUEUE_TYPE, path: ['jql'] },
+  { type: 'Sla__config__goals', path: ['jqlQuery'] },
 ]
 
 type JqlDetails = {
@@ -55,10 +56,14 @@ const AUTOMATION_JQL_RELATIVE_PATHS_BY_TYPE: Record<string, string[][]> = {
 const SCRIPT_RUNNER_JQL_RELATIVE_PATHS_BY_TYPE: Record<string, string[][]> = {
   'com.onresolve.jira.groovy.GroovyCondition': [['configuration', 'FIELD_JQL_QUERY']],
 }
+const JSM_JQL_RELATIVE_PATH_BY_TYPE: Record<string, string[][]> = {
+  Sla: [['jqlQuery']],
+}
 
 const instanceTypeToMap: Map<string, Record<string, string[][]>> = new Map([
   [AUTOMATION_TYPE, AUTOMATION_JQL_RELATIVE_PATHS_BY_TYPE],
   [WORKFLOW_TYPE_NAME, SCRIPT_RUNNER_JQL_RELATIVE_PATHS_BY_TYPE],
+  [SLA_TYPE_NAME, JSM_JQL_RELATIVE_PATH_BY_TYPE],
 ])
 
 const getRelativePathJqls = (instance: InstanceElement, pathMap: Record<string, string[][]>): JqlDetails[] => {
@@ -66,7 +71,11 @@ const getRelativePathJqls = (instance: InstanceElement, pathMap: Record<string, 
   walkOnElement({
     element: instance,
     func: ({ value, path }) => {
-      const jqlRelativePaths = pathMap[value?.type]
+      let jqlRelativePaths: string[][] | undefined
+      jqlRelativePaths = pathMap[value?.type]
+      if (Object.keys(JSM_JQL_RELATIVE_PATH_BY_TYPE).includes(instance.elemID.typeName)) {
+        jqlRelativePaths = pathMap[instance.elemID.typeName]
+      }
       if (jqlRelativePaths !== undefined) {
         jqlRelativePaths.forEach(relativePath => {
           const jqlValue = _.get(value, relativePath)

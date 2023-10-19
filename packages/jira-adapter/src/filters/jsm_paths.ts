@@ -25,7 +25,7 @@ const JSM_ELEMENT_DIRECTORY: Record<string, string> = {
   [REQUEST_TYPE_NAME]: 'requestTypes',
   [PORTAL_GROUP_TYPE]: 'portalGroups',
   [PORTAL_SETTINGS_TYPE_NAME]: 'portalSettings',
-  [SLA_TYPE_NAME]: 'slas',
+  [SLA_TYPE_NAME]: 'SLAs',
 }
 const filter: FilterCreator = ({ config }) => ({
   name: 'jsmPathsFilter',

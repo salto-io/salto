@@ -106,6 +106,7 @@ const filter: FilterCreator = ({ config, client }) => ({
       screenTabType.fields.originalFieldsIds = new Field(
         screenTabType,
         'originalFieldsIds',
+        // I used this Map because a regular List did not work with hidden_value
         new MapType(new ListType(BuiltinTypes.STRING)),
         { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true }
       )
@@ -123,6 +124,8 @@ const filter: FilterCreator = ({ config, client }) => ({
                 return {
                   ...tab,
                   fields: fieldIds,
+                  // in screen filter we may remove the beforeInstance screenTab fields,
+                  // a field might be a missing reference so we need to save its original id
                   originalFieldsIds: { ids: fieldIds },
                   position,
                 }
@@ -137,7 +140,7 @@ const filter: FilterCreator = ({ config, client }) => ({
       .filter(isInstanceChange)
       .filter(isModificationChange)
       .filter(change => getChangeData(change).elemID.typeName === SCREEN_TYPE_NAME)
-      .filter(change => !_.isEmpty(change.data.after.value.tabs))
+      .filter(change => !_.isEmpty(change.data.before.value.tabs))
       .forEach(change => {
         Object.values(change.data.before.value.tabs).forEach((tab: Value): void => {
           if (tab.originalFieldsIds.ids) {

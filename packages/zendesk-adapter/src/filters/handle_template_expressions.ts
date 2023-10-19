@@ -175,7 +175,6 @@ const potentialTemplates: PotentialTemplateField[] = [
     fieldName: 'body',
     containerValidator: NoValidator,
   },
-  ...[ORG_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, TICKET_FIELD_TYPE_NAME].flatMap(instanceType => [
   ...[TICKET_FIELD_TYPE_NAME, CUSTOM_OBJECT_FIELD_TYPE_NAME].flatMap(instanceType => [
     {
       instanceType,
@@ -434,6 +433,7 @@ export const prepRef = (part: ReferenceExpression, extractReferencesFromFreeText
   if ([CUSTOM_OBJECT_TYPE_NAME, CUSTOM_OBJECT_FIELD_TYPE_NAME].includes(part.elemID.typeName)
     && part.value?.value?.key) {
     return part.value.value.key
+  }
   // Should be last
   if (extractReferencesFromFreeText
     && ELEMENT_REGEXES_TYPES.has(part.elemID.typeName) && part.value?.value?.id) {

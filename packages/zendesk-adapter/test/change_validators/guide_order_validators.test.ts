@@ -145,7 +145,7 @@ describe('GuideOrdersValidator', () => {
       expect(errors[0]).toMatchObject({
         elemID: orderInstance.elemID,
         severity: 'Error',
-        message: 'Guide elements order list removed without its parent',
+        message: 'Elements order list removed without its parent',
         detailedMessage: `Deleting ${instanceName} requires deleting its parent (${parentName})`,
       })
     }

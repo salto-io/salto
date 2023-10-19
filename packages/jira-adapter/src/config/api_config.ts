@@ -2012,11 +2012,65 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'customFieldId' },
       ],
     },
+    deployRequests: {
+      add: {
+        url: '/rest/servicedesk/1/servicedesk/agent/{projectKey}/sla/metrics',
+        method: 'post',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+      },
+      modify: {
+        url: '/rest/servicedesk/1/servicedesk/agent/{projectKey}/sla/metrics/{id}',
+        method: 'put',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+      },
+      remove: {
+        url: '/rest/servicedesk/1/servicedesk/agent/{projectKey}/sla/metrics/{id}',
+        method: 'delete',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+      },
+    },
   },
   SLA__config__goals: {
     transformation: {
       fieldsToHide: [
         { fieldName: 'id' },
+      ],
+    },
+  },
+  Sla__config__definition__pause: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'type' },
+        { fieldName: 'missing' },
+      ],
+    },
+  },
+  Sla__config__definition__start: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'type' },
+        { fieldName: 'missing' },
+      ],
+    },
+  },
+  Sla__config__definition__stop: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'type' },
+        { fieldName: 'missing' },
+      ],
+    },
+  },
+  Sla__config__definition: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'inconsistent' },
       ],
     },
   },

@@ -184,12 +184,16 @@ const filter: FilterCreator = ({ config, client }) => ({
       .forEach(instance => {
         Object.values(instance.value.tabs).forEach((tab: Value): void => {
           if (tab.fields) {
-            tab.originalFieldsIds.ids = tab.fields
-              .map((refOrFieldId: ReferenceExpression | string) => (
-                isReferenceExpression(refOrFieldId) ? refOrFieldId.value.value.id : refOrFieldId
-              ))
+            tab.originalFieldsIds = {
+              ids: tab.fields
+                .map((refOrFieldId: ReferenceExpression | string) => (
+                  isReferenceExpression(refOrFieldId) ? refOrFieldId.value.value.id : refOrFieldId
+                )),
+            }
           } else {
-            tab.originalFieldsIds.ids = []
+            tab.originalFieldsIds = {
+              ids: [],
+            }
           }
         })
       })

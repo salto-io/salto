@@ -256,4 +256,50 @@ describe('screenFilter', () => {
       expect(mockConnection.post).not.toHaveBeenCalled()
     })
   })
+  describe('onDeploy', () => {
+    let fieldType: ObjectType
+    let fieldInstance: InstanceElement
+    let fieldReference: ReferenceExpression
+    let screenInstance: InstanceElement
+    beforeEach(() => {
+      fieldType = new ObjectType({ elemID: new ElemID(JIRA, 'field') })
+      fieldInstance = new InstanceElement('instance', fieldType, { id: '1' })
+      fieldReference = new ReferenceExpression(
+        fieldInstance.elemID,
+        {
+          value: {
+            id: '1',
+          },
+        }
+      )
+      screenInstance = new InstanceElement(
+        'instance',
+        screenType,
+        {
+          tabs: {
+            tab1: { name: 'tab1', position: 0, fields: [fieldReference, 'notReferenceFieldId'], originalFieldsIds: { ids: undefined } },
+          },
+        },
+      )
+    })
+    it('should populate original ids with the updated ids', async () => {
+      await filter.onDeploy?.([toChange({ after: screenInstance })])
+      expect(screenInstance.value).toEqual({
+        tabs: {
+          tab1: { name: 'tab1', position: 0, fields: [fieldReference, 'notReferenceFieldId'], originalFieldsIds: { ids: ['1', 'notReferenceFieldId'] } },
+        },
+      })
+    })
+    it('should delete original ids when there are no fields', async () => {
+      screenInstance.value.tabs.tab1.originalFieldsIds = { ids: ['1'] }
+      const afterInstance = screenInstance.clone()
+      afterInstance.value.tabs.tab1.fields = []
+      await filter.onDeploy?.([toChange({ before: screenInstance, after: afterInstance })])
+      expect(afterInstance.value).toEqual({
+        tabs: {
+          tab1: { name: 'tab1', position: 0, fields: [], originalFieldsIds: { ids: [] } },
+        },
+      })
+    })
+  })
 })

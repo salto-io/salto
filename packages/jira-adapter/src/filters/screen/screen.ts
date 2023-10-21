@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, BuiltinTypes, Change, ChangeDataType, CORE_ANNOTATIONS, Field, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isModificationChange, ListType, MapType, ModificationChange, Value, Values } from '@salto-io/adapter-api'
+import { AdditionChange, BuiltinTypes, Change, ChangeDataType, CORE_ANNOTATIONS, Field, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isModificationChange, isReferenceExpression, ListType, MapType, ModificationChange, ReferenceExpression, Value, Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { naclCase } from '@salto-io/adapter-utils'
@@ -173,6 +173,26 @@ const filter: FilterCreator = ({ config, client }) => ({
       leftoverChanges,
       deployResult,
     }
+  },
+  onDeploy: async changes => {
+    changes
+      .filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
+      .map(change => getChangeData(change))
+      .filter(instance => instance.elemID.typeName === SCREEN_TYPE_NAME)
+      .filter(instance => !_.isEmpty(instance.value.tabs))
+      .forEach(instance => {
+        Object.values(instance.value.tabs).forEach((tab: Value): void => {
+          if (tab.fields) {
+            tab.originalFieldsIds.ids = tab.fields
+              .map((refOrFieldId: ReferenceExpression | string) => (
+                isReferenceExpression(refOrFieldId) ? refOrFieldId.value.value.id : refOrFieldId
+              ))
+          } else {
+            tab.originalFieldsIds.ids = []
+          }
+        })
+      })
   },
 })
 

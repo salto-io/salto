@@ -30,10 +30,13 @@ import {
   GROUP_TYPE_NAME,
   DYNAMIC_CONTENT_ITEM_TYPE_NAME,
   CUSTOM_FIELD_OPTIONS_FIELD_NAME,
+  DEFLECTION_ACTION,
+  ARTICLE_TRANSLATION_TYPE_NAME,
   CUSTOM_OBJECT_TYPE_NAME,
   CUSTOM_OBJECT_FIELD_TYPE_NAME,
 } from '../constants'
 import { FETCH_CONFIG, ZendeskConfig } from '../config'
+import { ELEMENTS_REGEXES, transformReferenceUrls } from './utils'
 
 const { createMissingInstance } = referencesUtils
 const log = logger(module)
@@ -50,6 +53,7 @@ export const TICKET_ORGANIZATION_FIELD = 'ticket.organization.custom_fields'
 export const TICKET_USER_FIELD = 'ticket.requester.custom_fields'
 const ID = 'id'
 const KEY = 'key'
+const ELEMENT_REGEXES_TYPES = new Set(ELEMENTS_REGEXES.map(e => e.type))
 
 export const ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE: Record<string, string> = {
   [TICKET_TICKET_FIELD]: TICKET_FIELD_TYPE_NAME,
@@ -87,7 +91,7 @@ const potentialMacroFields = [
 ]
 // triggers and automations notify users, webhooks
 // groups or targets with text that can include templates.
-const notificationTypes = ['notification_webhook', 'notification_user', 'notification_group', 'notification_target']
+const notificationTypes = ['notification_webhook', 'notification_user', 'notification_group', 'notification_target', DEFLECTION_ACTION]
 
 const potentialTriggerFields = [...notificationTypes, 'side_conversation_ticket', 'follower']
 
@@ -166,6 +170,11 @@ const potentialTemplates: PotentialTemplateField[] = [
     containerValidator: (container: Values): boolean =>
       container.name === 'uri_templates',
   },
+  {
+    instanceType: ARTICLE_TRANSLATION_TYPE_NAME,
+    fieldName: 'body',
+    containerValidator: NoValidator,
+  },
   ...[TICKET_FIELD_TYPE_NAME, CUSTOM_OBJECT_FIELD_TYPE_NAME].flatMap(instanceType => [
     {
       instanceType,
@@ -214,11 +223,19 @@ const seekAndMarkPotentialReferences = (formula: string): string => {
 
 // This function receives a formula that contains zendesk-style references and replaces
 // it with salto style templates.
-const formulaToTemplate = (
-  formula: string,
-  instancesByType: Record<string, InstanceElement[]>,
-  enableMissingReferences?: boolean
-): TemplateExpression | string => {
+const formulaToTemplate = ({
+  formula,
+  instancesByType,
+  instancesById,
+  enableMissingReferences,
+  extractReferencesFromFreeText,
+}: {
+  formula: string
+    instancesByType: Record<string, InstanceElement[]>
+    instancesById: Record<string, InstanceElement>
+    enableMissingReferences?: boolean
+    extractReferencesFromFreeText?: boolean
+}): TemplateExpression | string => {
   const handleZendeskReference = (expression: string, ref: RegExpMatchArray): TemplatePart[] => {
     const reference = ref.pop() ?? ''
     const splitReference = reference.split(new RegExp(SPLIT_REGEX)).filter(v => !_.isEmpty(v))
@@ -286,11 +303,17 @@ const formulaToTemplate = (
     }
     return expression
   }
+
+  const potentialRegexes = [REFERENCE_MARKER_REGEX, potentialReferenceTypeRegex, DYNAMIC_CONTENT_REGEX]
+  if (extractReferencesFromFreeText) {
+    potentialRegexes.push(...ELEMENTS_REGEXES.map(s => s.urlRegex))
+  }
+
   // The second part is a split that separates the now-marked ids, so they could be replaced
   // with ReferenceExpression in the loop code.
   // we continuously split the expression to find all kinds of potential references
   return extractTemplate(seekAndMarkPotentialReferences(formula),
-    [REFERENCE_MARKER_REGEX, potentialReferenceTypeRegex, DYNAMIC_CONTENT_REGEX],
+    potentialRegexes,
     expression => {
       const zendeskReference = expression.match(potentialReferenceTypeRegex)
       if (zendeskReference) {
@@ -299,6 +322,18 @@ const formulaToTemplate = (
       const dynamicContentReference = expression.match(DYNAMIC_CONTENT_REGEX)
       if (dynamicContentReference) {
         return handleDynamicContentReference(expression, dynamicContentReference)
+      }
+      if (extractReferencesFromFreeText) {
+        // Check if the expression is a link to a zendesk page without a subdomain
+        // href="/hc/en-us/../articles/123123
+        const isZendeskLink = new RegExp(`"/hc/\\S*${expression}`).test(formula)
+        if (isZendeskLink) {
+          return transformReferenceUrls({
+            urlPart: expression,
+            instancesById,
+            enableMissingReferences,
+          })
+        }
       }
       return expression
     })
@@ -317,8 +352,16 @@ const getContainers = (instances: InstanceElement[]): TemplateContainer[] =>
       ].flat().filter(template.containerValidator).filter(v => !_.isEmpty(v)),
     }))).flat()
 
-const replaceFormulasWithTemplates = (instances: InstanceElement[], enableMissingReferences?: boolean): void => {
+const replaceFormulasWithTemplates = (
+  instances: InstanceElement[],
+  enableMissingReferences?: boolean,
+  extractReferencesFromFreeText?: boolean
+): void => {
   const instancesByType = _.groupBy(instances, i => i.elemID.typeName)
+  const instancesById = _.keyBy(
+    instances.filter(i => _.isNumber(i.value.id)),
+    i => _.toString(i.value.id)
+  )
 
   // On deployment, we might want to run the logic to create missing references that weren't created on fetch
   // Because the values are already converted to TempleExpressions, we need to handle them specifically
@@ -327,7 +370,13 @@ const replaceFormulasWithTemplates = (instances: InstanceElement[], enableMissin
       if (isReferenceExpression(part)) {
         return part
       }
-      const template = formulaToTemplate(part, instancesByType, enableMissingReferences)
+      const template = formulaToTemplate({
+        formula: part,
+        instancesByType,
+        instancesById,
+        enableMissingReferences,
+        extractReferencesFromFreeText,
+      })
       return isTemplateExpression(template) ? template.parts : template
     })
     return new TemplateExpression({ parts: newParts })
@@ -340,7 +389,13 @@ const replaceFormulasWithTemplates = (instances: InstanceElement[], enableMissin
     if (isTemplateExpression(value)) {
       return handleTemplateExpressionParts(value.parts)
     }
-    return _.isString(value) ? formulaToTemplate(value, instancesByType, enableMissingReferences) : value
+    return _.isString(value) ? formulaToTemplate({
+      formula: value,
+      instancesByType,
+      instancesById,
+      enableMissingReferences,
+      extractReferencesFromFreeText,
+    }) : value
   }
 
   try {
@@ -355,7 +410,7 @@ const replaceFormulasWithTemplates = (instances: InstanceElement[], enableMissin
   }
 }
 
-export const prepRef = (part: ReferenceExpression): TemplatePart => {
+export const prepRef = (part: ReferenceExpression, extractReferencesFromFreeText?: boolean): TemplatePart => {
   // In some cases this function may run on the .before value of a Change, which may contain unresolved references.
   // .after values are always resolved because unresolved references are dropped by unresolved_references validator
   // This case should be handled more generic but at the moment this is a quick fix to avoid crashing (SALTO-3988)
@@ -379,11 +434,20 @@ export const prepRef = (part: ReferenceExpression): TemplatePart => {
     && part.value?.value?.key) {
     return part.value.value.key
   }
+  // Should be last
+  if (extractReferencesFromFreeText
+    && ELEMENT_REGEXES_TYPES.has(part.elemID.typeName) && part.value?.value?.id) {
+    return part.value.value.id.toString()
+  }
   return part
 }
 
 export const handleTemplateExpressionsOnFetch = (elements: Element[], config: ZendeskConfig): void => {
-  replaceFormulasWithTemplates(elements.filter(isInstanceElement), config[FETCH_CONFIG].enableMissingReferences)
+  replaceFormulasWithTemplates(
+    elements.filter(isInstanceElement),
+    config[FETCH_CONFIG].enableMissingReferences,
+    config[FETCH_CONFIG].extractReferencesFromFreeText
+  )
 }
 
 /**
@@ -397,7 +461,11 @@ const filterCreator: FilterCreator = ({ config }) => {
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       try {
         getContainers(changes.map(getChangeData)).forEach(
-          async container => replaceTemplatesWithValues(container, deployTemplateMapping, prepRef)
+          async container => replaceTemplatesWithValues(
+            container,
+            deployTemplateMapping,
+            ref => prepRef(ref, config[FETCH_CONFIG].extractReferencesFromFreeText)
+          )
         )
       } catch (e) {
         log.error(`Error parsing templates in deployment: ${e.message}`)

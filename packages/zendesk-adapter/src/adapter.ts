@@ -246,9 +246,9 @@ export const DEFAULT_FILTERS = [
   serviceUrlFilter,
   // referencedIdFieldsFilter and queryFilter should run after element references are resolved
   ...Object.values(commonFilters),
-  articleBodyFilter,
   handleAppInstallationsFilter,
   handleTemplateExpressionFilter,
+  articleBodyFilter, // needs to be after handleTemplateExpressionFilter
   // handleIdenticalAttachmentConflicts needs to be before collisionErrorsFilter and after referencedIdFieldsFilter
   // and articleBodyFilter
   handleIdenticalAttachmentConflicts,

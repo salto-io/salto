@@ -84,6 +84,7 @@ export type ZendeskFetchConfig = configUtils.UserFetchConfig
   appReferenceLocators?: IdLocator[]
   guide?: Guide
   resolveOrganizationIDs?: boolean
+  extractReferencesFromFreeText?: boolean
 }
 export type ZedneskDeployConfig = configUtils.UserDeployConfig & configUtils.DefaultMissingUserFallbackConfig & {
   createMissingOrganizations?: boolean
@@ -2938,6 +2939,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
           appReferenceLocators: { refType: IdLocatorType },
           guide: { refType: GuideType },
           resolveOrganizationIDs: { refType: BuiltinTypes.BOOLEAN },
+          extractReferencesFromFreeText: { refType: BuiltinTypes.BOOLEAN },
         },
       ),
     },

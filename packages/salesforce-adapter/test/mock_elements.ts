@@ -14,29 +14,39 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, ElemID, TypeElement, BuiltinTypes, ListType, InstanceElement } from '@salto-io/adapter-api'
 import {
-  SALESFORCE,
-  INSTANCE_FULL_NAME_FIELD,
-  ASSIGNMENT_RULES_METADATA_TYPE,
-  WORKFLOW_METADATA_TYPE,
-  LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
-  SETTINGS_METADATA_TYPE,
-  CUSTOM_METADATA,
+  BuiltinTypes,
+  Change,
+  ElemID,
+  InstanceElement,
+  ListType,
+  ObjectType,
+  toChange,
+  TypeElement,
+} from '@salto-io/adapter-api'
+import {
   API_NAME,
-  METADATA_TYPE,
-  CUSTOM_OBJECT,
+  ArtificialTypes,
+  ASSIGNMENT_RULES_METADATA_TYPE,
+  CHANGED_AT_SINGLETON,
   CPQ_QUOTE,
+  CUSTOM_METADATA,
+  CUSTOM_OBJECT,
   DUPLICATE_RULE_METADATA_TYPE,
+  FIELD_ANNOTATIONS,
   INSTALLED_PACKAGE_METADATA,
+  INSTANCE_FULL_NAME_FIELD, LABEL,
+  LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
+  METADATA_TYPE,
   PATH_ASSISTANT_METADATA_TYPE,
-  WORKFLOW_TASK_METADATA_TYPE,
+  SALESFORCE,
+  SBAA_APPROVAL_CONDITION,
   SBAA_APPROVAL_RULE,
   SBAA_CONDITIONS_MET,
-  SBAA_APPROVAL_CONDITION,
-  FIELD_ANNOTATIONS,
-  CHANGED_AT_SINGLETON,
-  ArtificialTypes,
+  SETTINGS_METADATA_TYPE,
+  STATUS,
+  WORKFLOW_METADATA_TYPE,
+  WORKFLOW_TASK_METADATA_TYPE,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType, Types } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
@@ -735,3 +745,33 @@ export const mockInstances = () => ({
     ArtificialTypes.ChangedAtSingleton,
   ),
 })
+
+export const createFlowChange = ({
+  flowApiName,
+  beforeStatus,
+  afterStatus,
+  additionalModifications = false,
+}: {
+  flowApiName: string
+  beforeStatus?: string
+  afterStatus?: string
+  additionalModifications?: boolean
+}): Change<InstanceElement> => {
+  let beforeInstance: InstanceElement | undefined
+  let afterInstance: InstanceElement | undefined
+  if (beforeStatus) {
+    beforeInstance = createInstanceElement({
+      [INSTANCE_FULL_NAME_FIELD]: flowApiName,
+      [STATUS]: beforeStatus,
+      [LABEL]: flowApiName,
+    }, mockTypes.Flow)
+  }
+  if (afterStatus) {
+    afterInstance = createInstanceElement({
+      [INSTANCE_FULL_NAME_FIELD]: flowApiName,
+      [STATUS]: afterStatus,
+      [LABEL]: `${flowApiName}${additionalModifications ? 'Modified' : ''}`,
+    }, mockTypes.Flow)
+  }
+  return toChange({ before: beforeInstance, after: afterInstance })
+}

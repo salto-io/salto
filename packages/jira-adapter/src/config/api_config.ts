@@ -1998,13 +1998,13 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
     },
   },
-  Sla: {
+  SLA: {
     request: {
       url: '/rest/servicedesk/1/servicedesk/agent/{projectKey}/sla/metrics',
     },
     transformation: {
       dataField: 'timeMetrics',
-      sourceTypeName: 'Sla__timeMetrics',
+      sourceTypeName: 'SLA__timeMetrics',
       idFields: ['name', 'projectKey'],
       fieldsToHide: [
         { fieldName: 'projectKey' },
@@ -2013,7 +2013,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
     },
   },
-  Sla__config__goals: {
+  SLA__config__goals: {
     transformation: {
       fieldsToHide: [
         { fieldName: 'id' },
@@ -2029,7 +2029,7 @@ const JSM_DUCKTYPE_SUPPORTED_TYPES = {
   PortalGroup: ['PortalGroup'],
   Calendar: ['Calendar'],
   PortalSettings: ['PortalSettings'],
-  Sla: ['Sla'],
+  SLA: ['SLA'],
 }
 
 export const SCRIPT_RUNNER_DUCKTYPE_SUPPORTED_TYPES = {

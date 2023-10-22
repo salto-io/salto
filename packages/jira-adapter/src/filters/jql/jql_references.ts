@@ -57,7 +57,7 @@ const SCRIPT_RUNNER_JQL_RELATIVE_PATHS_BY_TYPE: Record<string, string[][]> = {
 }
 
 const instanceTypeToString: Record<string, string[]> = {
-  Sla: ['jqlQuery'],
+  SLA: ['jqlQuery'],
 }
 
 const instanceTypeToMap: Map<string, Record<string, string[][]>> = new Map([

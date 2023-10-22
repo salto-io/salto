@@ -978,7 +978,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: FIELD_TYPE_NAME },
   },
   {
-    src: { field: 'calendarId', parentTypes: ['Sla__config__goals'] },
+    src: { field: 'calendarId', parentTypes: ['SLA__config__goals'] },
     serializationStrategy: 'id',
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: CALENDAR_TYPE },

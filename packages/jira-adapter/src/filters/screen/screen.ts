@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, BuiltinTypes, CORE_ANNOTATIONS, Field, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isModificationChange, ListType, MapType, ModificationChange, Values } from '@salto-io/adapter-api'
+import { AdditionChange, BuiltinTypes, Change, ChangeDataType, CORE_ANNOTATIONS, Field, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isModificationChange, isReferenceExpression, ListType, MapType, ModificationChange, ReferenceExpression, Value, Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { naclCase } from '@salto-io/adapter-utils'
@@ -103,6 +103,13 @@ const filter: FilterCreator = ({ config, client }) => ({
         new ListType(BuiltinTypes.STRING),
         { [CORE_ANNOTATIONS.CREATABLE]: true, [CORE_ANNOTATIONS.UPDATABLE]: true }
       )
+      screenTabType.fields.originalFieldsIds = new Field(
+        screenTabType,
+        'originalFieldsIds',
+        // I used this Map because a regular List did not work with hidden_value
+        new MapType(new ListType(BuiltinTypes.STRING)),
+        { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true }
+      )
     }
 
     elements
@@ -112,14 +119,34 @@ const filter: FilterCreator = ({ config, client }) => ({
         element.value.tabs = element.value.tabs
           && _.keyBy(
             element.value.tabs.map(
-              (tab: Values, position: number) => ({
-                ...tab,
-                fields: tab.fields && tab.fields.map((field: Values) => field.id),
-                position,
-              })
+              (tab: Values, position: number) => {
+                const fieldIds = tab.fields && tab.fields.map((field: Values) => field.id)
+                return {
+                  ...tab,
+                  fields: fieldIds,
+                  // in screen filter we may remove the beforeInstance screenTab fields,
+                  // a field might be a missing reference so we need to save its original id
+                  originalFieldsIds: { ids: fieldIds },
+                  position,
+                }
+              }
             ),
             tab => naclCase(tab.name),
           )
+      })
+  },
+  preDeploy: async (changes: Change<ChangeDataType>[]) => {
+    changes
+      .filter(isInstanceChange)
+      .filter(isModificationChange)
+      .filter(change => getChangeData(change).elemID.typeName === SCREEN_TYPE_NAME)
+      .filter(change => !_.isEmpty(change.data.before.value.tabs))
+      .forEach(change => {
+        Object.values(change.data.before.value.tabs).forEach((tab: Value): void => {
+          if (tab.originalFieldsIds.ids) {
+            tab.fields = tab.originalFieldsIds.ids
+          }
+        })
       })
   },
   deploy: async changes => {
@@ -146,6 +173,30 @@ const filter: FilterCreator = ({ config, client }) => ({
       leftoverChanges,
       deployResult,
     }
+  },
+  onDeploy: async changes => {
+    changes
+      .filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
+      .map(change => getChangeData(change))
+      .filter(instance => instance.elemID.typeName === SCREEN_TYPE_NAME)
+      .filter(instance => !_.isEmpty(instance.value.tabs))
+      .forEach(instance => {
+        Object.values(instance.value.tabs).forEach((tab: Value): void => {
+          if (tab.fields) {
+            tab.originalFieldsIds = {
+              ids: tab.fields
+                .map((refOrFieldId: ReferenceExpression | string) => (
+                  isReferenceExpression(refOrFieldId) ? refOrFieldId.value.value.id : refOrFieldId
+                )),
+            }
+          } else {
+            tab.originalFieldsIds = {
+              ids: [],
+            }
+          }
+        })
+      })
   },
 })
 

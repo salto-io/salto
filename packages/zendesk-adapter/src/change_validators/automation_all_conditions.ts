@@ -32,7 +32,7 @@ const { awu } = collections.asynciterable
 
 const fieldExists = (field: string | ReferenceExpression): boolean =>
   // these are standard fields so they will never be references + this may change in SALTO-2283
-  _.isString(field) && ['status', 'type', 'group_id', 'assignee_id', 'requester_id'].includes(field)
+  _.isString(field) && ['status', 'type', 'group_id', 'assignee_id', 'requester_id', 'custom_status_id'].includes(field)
 
 
 const isNotValidData = (instance: InstanceElement): boolean => {

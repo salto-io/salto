@@ -40,10 +40,11 @@ export const DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME = 'default_custom_field_opti
 
 const log = logger(module)
 
-type CustomFieldOptionsFilterCreatorParams = {
+export type CustomFieldOptionsFilterCreatorParams = {
   filterName: string
   parentTypeName: string
   childTypeName: string
+  onFetch?: (elements: Element[]) => Promise<void>
 }
 
 const { makeArray } = collections.array

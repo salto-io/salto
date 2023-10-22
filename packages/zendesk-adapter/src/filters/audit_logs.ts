@@ -32,7 +32,7 @@ import {
   APP_INSTALLATION_TYPE_NAME, APP_OWNED_TYPE_NAME,
   AUDIT_TIME_TYPE_NAME, AUTOMATION_TYPE_NAME, BRAND_TYPE_NAME,
   BUSINESS_HOUR_SCHEDULE,
-  BUSINESS_HOUR_SCHEDULE_HOLIDAY, CUSTOM_ROLE_TYPE_NAME,
+  BUSINESS_HOUR_SCHEDULE_HOLIDAY, CUSTOM_OBJECT_TYPE_NAME, CUSTOM_ROLE_TYPE_NAME,
   CUSTOM_STATUS_TYPE_NAME, GROUP_TYPE_NAME, LOCALE_TYPE_NAME,
   MACRO_TYPE_NAME, ORG_FIELD_TYPE_NAME,
   SLA_POLICY_TYPE_NAME,
@@ -238,23 +238,28 @@ const addPrevChangedBy = async (elementsSource: ReadOnlyElementsSource, idByInst
 }
 
 const addChangedByUsingUpdatedById = (instances: InstanceElement[], idToName: Record<string, string>): void => {
+  const addChangedBy = (instance: InstanceElement, field: string): void => {
+    const id = instance.value[field]
+    if (id === undefined) {
+      log.warn(`${field} for the ${instance.elemID.getFullName()} is undefined`)
+      return
+    }
+    const name = idToName[id]
+    if (name === undefined) {
+      instance.annotations[CORE_ANNOTATIONS.CHANGED_BY] = DELETED_USER
+      log.debug(`could not find user with id ${id} for instance ${instance.elemID.getFullName()}`)
+    } else {
+      instance.annotations[CORE_ANNOTATIONS.CHANGED_BY] = name
+    }
+  }
   // updated_by for translations which have updated_by_id field in the instance are not dependent on newLastAuditTime
   instances
     .filter(elem => TRANSLATION_TYPE_NAMES.includes(elem.elemID.typeName))
-    .forEach(elem => {
-      const id = elem.value.updated_by_id
-      if (id === undefined) {
-        log.warn(`updated_by_id for the translations ${elem.elemID.name} is undefined`)
-        return
-      }
-      const name = idToName[elem.value.updated_by_id]
-      if (name === undefined) {
-        elem.annotations[CORE_ANNOTATIONS.CHANGED_BY] = DELETED_USER
-        log.debug(`could not find user with id ${elem.value.updated_by_id} for instance ${elem.elemID.getFullName()}`)
-      } else {
-        elem.annotations[CORE_ANNOTATIONS.CHANGED_BY] = idToName[elem.value.updated_by_id]
-      }
-    })
+    .forEach(elem => addChangedBy(elem, 'updated_by_id'))
+
+  instances
+    .filter(elem => elem.elemID.typeName === CUSTOM_OBJECT_TYPE_NAME)
+    .forEach(elem => addChangedBy(elem, 'updated_by_user_id'))
 }
 
 const calculateLogNumber = async (client: ZendeskClient): Promise<string> => {

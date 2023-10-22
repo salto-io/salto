@@ -442,6 +442,12 @@ describe('workflowDeployFilter', () => {
         mockConnection.get.mockResolvedValueOnce({
           status: 200,
           data: {
+            values: [],
+          },
+        })
+        mockConnection.get.mockResolvedValueOnce({
+          status: 200,
+          data: {
             values: [
               {
                 transitions: [
@@ -551,7 +557,41 @@ describe('workflowDeployFilter', () => {
         expect(mockConnectionSR.get).toHaveBeenCalledTimes(2)
       })
       it('should deploy twice if the transitionId was not expected', async () => {
-        mockConnectionSR.get.mockResolvedValue({
+        mockConnectionSR.get.mockResolvedValueOnce({
+          status: 200,
+          data: {
+            values: [],
+          },
+        })
+        mockConnectionSR.get.mockResolvedValueOnce({
+          status: 200,
+          data: {
+            values: [
+              {
+                transitions: [
+                  {
+                    name: 'name',
+                    id: '11',
+                    type: 'initial',
+                  },
+                  {
+                    name: 'name2',
+                    id: '1',
+                    type: 'global',
+                    to: [1],
+                  },
+                ],
+              },
+            ],
+          },
+        })
+        mockConnectionSR.get.mockResolvedValueOnce({
+          status: 200,
+          data: {
+            values: [],
+          },
+        })
+        mockConnectionSR.get.mockResolvedValueOnce({
           status: 200,
           data: {
             values: [
@@ -647,10 +687,16 @@ describe('workflowDeployFilter', () => {
             .apiDefinitions.types.Workflow.deployRequests,
           fieldsToIgnore: expect.toBeFunction(),
         })
-        // three calls, two for transitions, one for step deployment
-        expect(mockConnectionSR.get).toHaveBeenCalledTimes(3)
+        // five calls, two for checking if the workflow exist, two for transitions, one for step deployment
+        expect(mockConnectionSR.get).toHaveBeenCalledTimes(5)
       })
       it('should throw if two deployments are not enough', async () => {
+        mockConnectionSR.get.mockResolvedValueOnce({
+          status: 200,
+          data: {
+            values: [],
+          },
+        })
         mockConnectionSR.get.mockResolvedValueOnce({
           status: 200,
           data: {
@@ -671,6 +717,12 @@ describe('workflowDeployFilter', () => {
                 ],
               },
             ],
+          },
+        })
+        mockConnectionSR.get.mockResolvedValueOnce({
+          status: 200,
+          data: {
+            values: [],
           },
         })
         mockConnectionSR.get.mockResolvedValueOnce({
@@ -701,8 +753,8 @@ describe('workflowDeployFilter', () => {
           'Error: Failed to deploy workflow, transition ids changed'
         )
         expect(deployChangeMock).toHaveBeenCalledTimes(2)
-        // two calls for transitions
-        expect(mockConnectionSR.get).toHaveBeenCalledTimes(2)
+        // two calls for transitions and two calls to check if the workflow exist
+        expect(mockConnectionSR.get).toHaveBeenCalledTimes(4)
       })
     })
 
@@ -869,6 +921,12 @@ describe('workflowDeployFilter', () => {
         mockConnection.post.mockResolvedValue({
           status: 200,
           data: {
+          },
+        })
+        mockConnection.get.mockResolvedValueOnce({
+          status: 200,
+          data: {
+            values: [],
           },
         })
         mockConnection.get.mockResolvedValueOnce({
@@ -1129,6 +1187,168 @@ describe('workflowDeployFilter', () => {
         )])
         expect(logErrorSpy).not.toHaveBeenCalled()
       })
+    })
+
+    it('should throw an error when workflow exist', async () => {
+      mockConnection.get.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          values: [
+            {
+              id: {
+                entityId: 'id',
+              },
+            },
+          ],
+        },
+      })
+
+      const change = toChange({
+        after: new InstanceElement(
+          'instance',
+          workflowType,
+          {
+            name: 'name',
+            transitions: {},
+          }
+        ),
+      })
+
+      const { deployResult: { errors, appliedChanges } } = await filter.deploy([change])
+
+      expect(errors).toHaveLength(1)
+      expect(errors[0].message).toBe('Error: A workflow with the name "name" is already exist')
+      expect(appliedChanges).toHaveLength(0)
+    })
+
+    it('should throw if deploy returns unknown error', async () => {
+      mockConnection.get.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          values: [],
+        },
+      })
+
+      deployChangeMock.mockRejectedValueOnce(new Error('unknown error'))
+
+      const change = toChange({
+        after: new InstanceElement(
+          'instance',
+          workflowType,
+          {
+            name: 'name',
+            transitions: {},
+          }
+        ),
+      })
+
+      const { deployResult: { errors, appliedChanges } } = await filter.deploy([change])
+
+      expect(errors).toHaveLength(1)
+      expect(errors[0].message).toBe('Error: unknown error')
+      expect(appliedChanges).toHaveLength(0)
+    })
+
+    it('should get the id from the service if received an error that the workflow exist', async () => {
+      mockConnection.get.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          values: [],
+        },
+      })
+
+      mockConnection.get.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          values: [{
+            id: {
+              entityId: 'id',
+            },
+          }],
+        },
+      })
+
+      mockConnection.get.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          values: [{
+            id: {
+              entityId: 'id',
+            },
+          }],
+        },
+      })
+
+      mockConnection.get.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          layout: {
+            statuses: [],
+          },
+        },
+      })
+
+      deployChangeMock.mockRejectedValueOnce(new Error('A workflow with the name \'name\' already exists'))
+
+      const change = toChange({
+        after: new InstanceElement(
+          'instance',
+          workflowType,
+          {
+            name: 'name',
+            transitions: {},
+          }
+        ),
+      })
+
+      const { deployResult: { errors, appliedChanges } } = await filter.deploy([change])
+
+      expect(errors).toHaveLength(0)
+      expect(appliedChanges).toHaveLength(1)
+    })
+
+    it('should throw an error if got an error about the workflow being exist and failed to get the workflow id', async () => {
+      mockConnection.get.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          values: [],
+        },
+      })
+
+      mockConnection.get.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          values: [],
+        },
+      })
+
+      mockConnection.get.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          layout: {
+            statuses: [],
+          },
+        },
+      })
+
+      deployChangeMock.mockRejectedValueOnce(new Error('A workflow with the name \'name\' already exists'))
+
+      const change = toChange({
+        after: new InstanceElement(
+          'instance',
+          workflowType,
+          {
+            name: 'name',
+            transitions: {},
+          }
+        ),
+      })
+
+      const { deployResult: { errors, appliedChanges } } = await filter.deploy([change])
+
+      expect(errors).toHaveLength(1)
+      expect(errors[0].message).toBe('Error: A workflow with the name \'name\' already exists')
+      expect(appliedChanges).toHaveLength(0)
     })
   })
 })

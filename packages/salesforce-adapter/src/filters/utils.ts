@@ -30,10 +30,10 @@ import {
   InstanceElement,
   isAdditionOrModificationChange, isElement,
   isField,
-  isInstanceElement,
+  isInstanceElement, isListType,
   isObjectType,
   isReferenceExpression,
-  isRemovalOrModificationChange,
+  isRemovalOrModificationChange, ListType,
   ObjectType,
   ReadOnlyElementsSource,
   ReferenceExpression,
@@ -560,6 +560,10 @@ export const listMetadataObjects = async (
       .map(createListMetadataObjectsConfigChange),
   }
 }
+
+export const toListType = (type: TypeElement): ListType => (
+  isListType(type) ? type : new ListType(type)
+)
 
 export type ElementWithResolvedParent<T extends Element> = T & {
   annotations: {

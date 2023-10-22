@@ -124,7 +124,8 @@ const getAttachmentContent = async ({
     severity: 'Warning',
     elemID: attachment.elemID,
   })
-
+  // need to initialize hash for the case where there is no content
+  attachment.value.hash = 'INVALID_HASH'
   if (article === undefined) {
     const error = `could not add attachment ${attachment.elemID.getFullName()}, as could not find article for article_id ${attachment.value.article_id}`
     log.error(error)

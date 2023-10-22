@@ -3851,7 +3851,7 @@ abbrev@1:
   resolved "https://registry.yarnpkg.com/abbrev/-/abbrev-1.1.1.tgz#f8f2c887ad10bf67f634f005b6987fed3179aac8"
   integrity sha512-nne9/IiQ/hzIhY6pdDnbBtz7DjPTKrY00P/zvPSm5pOFkl6xuGrGnXn/VtTNNfNtAfZ9/1RtehkszU9qcTii0Q==
 
-abstract-leveldown@^6.1.1, abstract-leveldown@^6.2.1:
+abstract-leveldown@^6.2.1, abstract-leveldown@^6.3.0:
   version "6.3.0"
   resolved "https://registry.yarnpkg.com/abstract-leveldown/-/abstract-leveldown-6.3.0.tgz#d25221d1e6612f820c35963ba4bd739928f6026a"
   integrity sha512-TU5nlYgta8YrBMNpc9FwQzRbiXsj49gsALsXadbGHt9CROPzX5fB0rWDR5mtdpOOKa5XqRFpbj1QroPAoPzVjQ==
@@ -5777,23 +5777,23 @@ duplexer@~0.1.1:
   resolved "https://registry.yarnpkg.com/duplexer/-/duplexer-0.1.1.tgz#ace6ff808c1ce66b57d1ebf97977acb02334cfc1"
   integrity sha1-rOb/gIwc5mtX0ev5eXessCM0z8E=
 
-dynalite@^3.0.0:
-  version "3.1.6"
-  resolved "https://registry.yarnpkg.com/dynalite/-/dynalite-3.1.6.tgz#7ccccc31a83336345d5bd9c08be1218f6c51bc2e"
-  integrity sha512-5a9Qo62wpoppUC9heikcUrXV1zil1UySQXKVKBA7t13w8JIAkeoLhmnDIgtyIkudPBkSh35AuSuBfvAWhoChuQ==
+dynalite@^3.2.1:
+  version "3.2.2"
+  resolved "https://registry.yarnpkg.com/dynalite/-/dynalite-3.2.2.tgz#34b4f4dd69638f17c0f7551a867959972c892441"
+  integrity sha512-sx9ZjTgMs/D4gHnba4rnBkw29648dHwHmywJet132KAbiq1ZyWx9W1fMd/eP9cPwTKDXyCBuTYOChE0qMDjaXQ==
   dependencies:
     async "^2.6.3"
     big.js "^5.2.2"
     buffer-crc32 "^0.2.13"
     lazy "^1.0.11"
-    levelup "^4.3.2"
+    levelup "^4.4.0"
     lock "^1.1.0"
     memdown "^5.1.0"
     minimist "^1.2.5"
     once "^1.4.0"
-    subleveldown "^4.1.4"
+    subleveldown "^5.0.1"
   optionalDependencies:
-    leveldown "^5.2.1"
+    leveldown "^5.6.0"
 
 easy-table@^1.1.1:
   version "1.1.1"
@@ -8060,13 +8060,14 @@ jest-docblock@^29.7.0:
   dependencies:
     detect-newline "^3.0.0"
 
-jest-dynalite@^3.3.1:
-  version "3.3.1"
-  resolved "https://registry.yarnpkg.com/jest-dynalite/-/jest-dynalite-3.3.1.tgz#4f7e550a424abd5aced477636219b75d71ab525a"
-  integrity sha512-Wg+mfBYxRGoPAB3MLSHJvEL7G2dSJAq6hEQZ1gIqc3lm/4mqlSoiUW5ZtO/HQld32nAFEUF1dgSjRXr1OJ44BQ==
+jest-dynalite@^3.6.1:
+  version "3.6.1"
+  resolved "https://registry.yarnpkg.com/jest-dynalite/-/jest-dynalite-3.6.1.tgz#8bae305a3c33d9a8036f563827b173b54a323ca5"
+  integrity sha512-MERtTt8Pj39vFmbItMC3YuIaqLf1kh/pJIE0DRcjeP/2Fa8Nni9IxwN6XWIMgXNbFKtlOM6ppH+Bsy0rWIdPiw==
   dependencies:
     "@aws/dynamodb-auto-marshaller" "^0.7.1"
-    dynalite "^3.0.0"
+    dynalite "^3.2.1"
+    setimmediate "^1.0.5"
 
 jest-each@^26.6.2:
   version "26.6.2"
@@ -8805,7 +8806,7 @@ level-supports@~1.0.0:
   dependencies:
     xtend "^4.0.2"
 
-leveldown@^5.2.1, leveldown@^5.6.0:
+leveldown@^5.6.0:
   version "5.6.0"
   resolved "https://registry.yarnpkg.com/leveldown/-/leveldown-5.6.0.tgz#16ba937bb2991c6094e13ac5a6898ee66d3eee98"
   integrity sha512-iB8O/7Db9lPaITU1aA2txU/cBEXAt4vWwKQRrrWuS6XDgbP4QZGj9BL2aNbwb002atoQ/lIotJkfyzz+ygQnUQ==
@@ -8814,7 +8815,7 @@ leveldown@^5.2.1, leveldown@^5.6.0:
     napi-macros "~2.0.0"
     node-gyp-build "~4.1.0"
 
-levelup@^4.3.1, levelup@^4.3.2, levelup@^4.4.0:
+levelup@^4.4.0:
   version "4.4.0"
   resolved "https://registry.yarnpkg.com/levelup/-/levelup-4.4.0.tgz#f89da3a228c38deb49c48f88a70fb71f01cafed6"
   integrity sha512-94++VFO3qN95cM/d6eBXvd894oJE0w3cInq9USsyQzzoJxmiYzPAocNcuGCPGGjoXqDVJcr3C1jzt1TSjyaiLQ==
@@ -10905,7 +10906,7 @@ rc@^1.2.7:
     minimist "^1.2.0"
     strip-json-comments "~2.0.1"
 
-reachdown@^1.0.0:
+reachdown@^1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/reachdown/-/reachdown-1.1.0.tgz#c3b85b459dbd0fe2c79782233a0a38e66a9b5454"
   integrity sha512-6LsdRe4cZyOjw4NnvbhUd/rGG7WQ9HMopPr+kyL018Uci4kijtxcGR5kVb5Ln13k4PEE+fEFQbjfOvNw7cnXmA==
@@ -11463,6 +11464,11 @@ set-immediate-shim@~1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/set-immediate-shim/-/set-immediate-shim-1.0.1.tgz#4b2b1b27eb808a9f8dcc481a58e5e56f599f3f61"
   integrity sha1-SysbJ+uAip+NzEgaWOXlb1mfP2E=
+
+setimmediate@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/setimmediate/-/setimmediate-1.0.5.tgz#290cbb232e306942d7d7ea9b83732ab7856f8285"
+  integrity sha512-MATJdZp8sLqDl/68LfQmbP8zKPLQNV6BIZoIgrscFDQ+RsvK/BxeDQOgyxKKoh0y/8h3BqVFnCqQ/gd+reiIXA==
 
 setprototypeof@1.2.0:
   version "1.2.0"
@@ -12051,17 +12057,17 @@ strong-log-transformer@^2.1.0:
     minimist "^1.2.0"
     through "^2.3.4"
 
-subleveldown@^4.1.4:
-  version "4.1.4"
-  resolved "https://registry.yarnpkg.com/subleveldown/-/subleveldown-4.1.4.tgz#3579563e4de4b811008046ad33280679bc39dba4"
-  integrity sha512-njpSBP/Bxh7EahraG6IhR6goOH2ffMTMVt7Ud+k/OhNFHrrmuvK+XYfauI8KnjCm0w381cUF43pejlWeJMZChA==
+subleveldown@^5.0.1:
+  version "5.0.1"
+  resolved "https://registry.yarnpkg.com/subleveldown/-/subleveldown-5.0.1.tgz#aa2b4e4698a48d9a86856b2c4df1b6bce2d2ce53"
+  integrity sha512-cVqd/URpp7si1HWu5YqQ3vqQkjuolAwHypY1B4itPlS71/lsf6TQPZ2Y0ijT22EYVkvH5ove9JFJf4u7VGPuZw==
   dependencies:
-    abstract-leveldown "^6.1.1"
+    abstract-leveldown "^6.3.0"
     encoding-down "^6.2.0"
     inherits "^2.0.3"
     level-option-wrap "^1.1.0"
-    levelup "^4.3.1"
-    reachdown "^1.0.0"
+    levelup "^4.4.0"
+    reachdown "^1.1.0"
 
 superagent@6.1.0:
   version "6.1.0"

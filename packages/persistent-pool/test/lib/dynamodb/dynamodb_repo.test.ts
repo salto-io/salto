@@ -34,6 +34,7 @@ import asyncToArray from '../../utils/async_to_array'
 const { retryStrategies } = retry
 
 describe('dynamoDB repo', () => {
+  jest.setTimeout(60 * 1000)
   const CLIENT_ID = 'myClient'
 
   let dynamo: DynamoDbInstances

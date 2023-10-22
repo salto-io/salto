@@ -14,10 +14,8 @@
 * limitations under the License.
 */
 module.exports = {
-  globals: {
-    'ts-jest': {
-      isolatedModules: true
-    }
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', {isolatedModules: true }],
   },
   preset: 'ts-jest',
   verbose: true,
@@ -42,6 +40,12 @@ module.exports = {
   snapshotFormat: {
     escapeString: true,
     printBasicPrototype: true
+  },
+  moduleNameMapper: {
+    "^uuid$": "uuid",
+    "^istextorbinary$": "istextorbinary",
+    "^textextensions$": "textextensions",
+    "^binaryextensions$": "binaryextensions",
   },
 }
 

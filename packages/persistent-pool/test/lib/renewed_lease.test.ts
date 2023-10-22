@@ -17,6 +17,8 @@ import { RenewedLease, Pool, Lease, LeaseUpdateOpts, InstanceNotLeasedError } fr
 import { MockObj, createMockPool } from '../mock_repo'
 
 jest.useFakeTimers()
+jest.spyOn(global, 'setTimeout')
+jest.spyOn(global, 'clearTimeout')
 
 describe('RenewedLease', () => {
   type MyType = { x: number }

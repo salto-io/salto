@@ -89,7 +89,6 @@ const newNaclFile = {
 }
 const services = ['salesforce']
 
-
 const getElemMap = async (
   elements: ElementsSource
 ): Promise<Record<string, Element>> => Object.fromEntries(
@@ -913,7 +912,6 @@ describe('workspace', () => {
       'str',
       BuiltinTypes.STRING,
     )
-
 
     const accountInsightsSettingsType = new ObjectType({
       elemID: new ElemID('salesforce', 'AccountInsightsSettings'),
@@ -3495,7 +3493,6 @@ describe('workspace', () => {
       willRemainErr,
     }
 
-
     let workspace: Workspace
     const naclFileStore = mockDirStore(undefined, undefined, files)
     const primElemID = new ElemID('salto', 'prim')
@@ -3701,7 +3698,6 @@ describe('workspace', () => {
       expect(mockAdaptersConfig.getNaclFile).not.toHaveBeenCalled()
     })
   })
-
 
   describe('static files', () => {
     let workspace: Workspace
@@ -4272,7 +4268,6 @@ describe('stateOnly update', () => {
     expect(resElement.annotations.visible).not.toEqual('changed')
   })
 
-
   it('should update hidden elements modifications in the workspace cache', async () => {
     const resElement = await ws.getValue(hiddenInstToModify.elemID)
     expect(resElement).toBeDefined()
@@ -4295,6 +4290,10 @@ describe('stateOnly update', () => {
 describe('listUnresolvedReferences', () => {
   let workspace: Workspace
   let res: UnresolvedElemIDs
+
+  beforeAll(() => {
+    jest.restoreAllMocks()
+  })
 
   const createEnvElements = (): Element[] => {
     const type1 = new ObjectType({

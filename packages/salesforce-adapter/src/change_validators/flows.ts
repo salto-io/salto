@@ -14,26 +14,31 @@
 * limitations under the License.
 */
 import {
+  Change,
   ChangeError,
-  getChangeData,
   ChangeValidator,
-  isInstanceChange,
+  CORE_ANNOTATIONS,
+  DeployActions,
+  ElemID,
+  getChangeData,
   InstanceElement,
+  isAdditionChange,
+  isInstanceChange,
   isModificationChange,
+  isRemovalChange,
   ModificationChange,
-  isAdditionChange, ElemID, DeployActions, Change, isRemovalChange, ReadOnlyElementsSource, CORE_ANNOTATIONS,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { isEmpty, isUndefined } from 'lodash'
+import _, { isEmpty, isUndefined } from 'lodash'
 import { detailedCompare } from '@salto-io/adapter-utils'
-import { FLOW_METADATA_TYPE, SALESFORCE } from '../constants'
-import { isInstanceOfType } from '../filters/utils'
+import { ACTIVE, FLOW_METADATA_TYPE, SALESFORCE, STATUS } from '../constants'
+import { apiNameSync, isDeactivatedFlowChange, isDeactivatedFlowChangeOnly, isInstanceOfType } from '../filters/utils'
 import { SalesforceConfig } from '../types'
 import SalesforceClient from '../client/client'
 import { FLOW_URL_SUFFIX } from '../elements_url_retreiver/lightining_url_resolvers'
 
 const { awu } = collections.asynciterable
-const ACTIVE = 'Active'
 const PREFER_ACTIVE_FLOW_VERSIONS_DEFAULT = false
 const ENABLE_FLOW_DEPLOY_AS_ACTIVE_ENABLED_DEFAULT = false
 
@@ -50,16 +55,11 @@ export const getDeployAsActiveFlag = async (elementsSource: ReadOnlyElementsSour
     ? defaultValue : flowSettings.value.enableFlowDeployAsActiveEnabled
 }
 
-export const getFlowStatus = (instance: InstanceElement): string => instance.value.status
+export const getFlowStatus = (instance: InstanceElement): string => instance.value[STATUS]
 
 export const isActiveFlowChange = (change: ModificationChange<InstanceElement>):
     boolean => (
   getFlowStatus(change.data.before) === ACTIVE && getFlowStatus(change.data.after) === ACTIVE
-)
-
-const isDeactivateChange = (change: ModificationChange<InstanceElement>):
-    boolean => (
-  getFlowStatus(change.data.before) === ACTIVE && getFlowStatus(change.data.after) !== ACTIVE
 )
 
 export const isActivatingChange = (change: ModificationChange<InstanceElement>):
@@ -67,21 +67,10 @@ export const isActivatingChange = (change: ModificationChange<InstanceElement>):
   getFlowStatus(change.data.before) !== ACTIVE && getFlowStatus(change.data.after) === ACTIVE
 )
 
-const isDeactivationChangeOnly = (change: ModificationChange<InstanceElement>):
-    boolean => {
-  const afterClone = change.data.after.clone()
-  afterClone.value.status = ACTIVE
-  const diffWithoutStatus = detailedCompare(
-    change.data.before,
-    afterClone,
-  )
-  return isEmpty(diffWithoutStatus)
-}
-
 export const isActivatingChangeOnly = (change: ModificationChange<InstanceElement>):
     boolean => {
   const beforeClone = change.data.before.clone()
-  beforeClone.value.status = ACTIVE
+  beforeClone.value[STATUS] = ACTIVE
   const diffWithoutStatus = detailedCompare(
     beforeClone,
     change.data.after,
@@ -169,13 +158,6 @@ const inActiveNewVersionInfo = (instance: InstanceElement, preferActive: boolean
   return newVersionInfo(instance, false)
 }
 
-const deactivatingError = (instance: InstanceElement): ChangeError => ({
-  elemID: instance.elemID,
-  severity: 'Error',
-  message: 'Deactivating a flow is not supported',
-  detailedMessage: `Deactivating a flow is not supported via metadata API. Flow name: ${instance.elemID.getFullName()}. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/6982324-managing-salesforce-flows`,
-})
-
 const activeFlowModificationError = (instance: InstanceElement, enableActiveDeploy: boolean, baseUrl?: URL):
     ChangeError => {
   if (enableActiveDeploy) {
@@ -229,6 +211,14 @@ const activeFlowAdditionError = (instance: InstanceElement, enableActiveDeploy: 
   }
 }
 
+
+const createDeactivatedFlowChangeInfo = (flowInstance: InstanceElement): ChangeError => ({
+  elemID: flowInstance.elemID,
+  severity: 'Info',
+  message: 'Flow will be deactivated',
+  detailedMessage: `The Flow ${apiNameSync(flowInstance)} will be deactivated.`,
+})
+
 /**
  * Handling all changes regarding active flows
  */
@@ -249,15 +239,15 @@ const activeFlowValidator = (config: SalesforceConfig, isSandbox: boolean, clien
       .filter(isRemovalChange)
       .map(change => removeFlowError(getChangeData(change)))
 
-    const deactivatingFlowChangeErrors = flowChanges
-      .filter(isModificationChange)
-      .filter(isDeactivateChange)
-      .map(change => {
-        if (isDeactivationChangeOnly(change)) {
-          return deactivatingError(getChangeData(change))
-        }
-        return inActiveNewVersionInfo(getChangeData(change), isPreferActiveVersion)
-      })
+    const [deactivatedFlowOnlyChanges, deactivatedFlowChanges] = _.partition(
+      flowChanges.filter(isDeactivatedFlowChange),
+      isDeactivatedFlowChangeOnly,
+    )
+
+    const inactiveNewVersionChangeInfo = deactivatedFlowChanges
+      .map(change => inActiveNewVersionInfo(getChangeData(change), isPreferActiveVersion))
+    const deactivatedFlowOnlyChangeInfo = deactivatedFlowOnlyChanges
+      .map(change => createDeactivatedFlowChangeInfo(getChangeData(change)))
 
     if (isSandbox) {
       const sandboxFlowModification = flowChanges
@@ -266,7 +256,8 @@ const activeFlowValidator = (config: SalesforceConfig, isSandbox: boolean, clien
         .map(getChangeData)
         .map(instance => newVersionInfo(instance, true))
       return [
-        ...deactivatingFlowChangeErrors,
+        ...inactiveNewVersionChangeInfo,
+        ...deactivatedFlowOnlyChangeInfo,
         ...sandboxFlowModification,
         ...removingFlowChangeErrors,
       ]
@@ -293,7 +284,7 @@ const activeFlowValidator = (config: SalesforceConfig, isSandbox: boolean, clien
       .filter(flow => getFlowStatus(flow) === ACTIVE)
       .map(flow => activeFlowAdditionError(flow, isEnableFlowDeployAsActiveEnabled, baseUrl))
 
-    return [...deactivatingFlowChangeErrors, ...activeFlowModification,
+    return [...inactiveNewVersionChangeInfo, ...deactivatedFlowOnlyChangeInfo, ...activeFlowModification,
       ...activatingFlow, ...activeFlowAddition, ...removingFlowChangeErrors]
   }
 

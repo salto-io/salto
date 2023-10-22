@@ -37,7 +37,7 @@ describe('flows change validator', () => {
       otherModifications.value.actionType = 'case'
     })
 
-    it('should have error when trying to deactivate a flow', async () => {
+    it('should have info when trying to deactivate a flow', async () => {
       flowChanges = toChange({ before: beforeRecord, after: statusChange })
       changeValidator = flowsChangeValidator(
         { }, true, client
@@ -45,7 +45,7 @@ describe('flows change validator', () => {
       const changeErrors = await changeValidator([flowChanges])
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors
-      expect(changeError.severity).toEqual('Error')
+      expect(changeError.severity).toEqual('Info')
     })
 
     it('should inform that a new inactive flow version will be created', async () => {

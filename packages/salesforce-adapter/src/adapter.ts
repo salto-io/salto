@@ -86,7 +86,7 @@ import customMetadataRecordsFilter from './filters/custom_metadata'
 import currencyIsoCodeFilter from './filters/currency_iso_code'
 import enumFieldPermissionsFilter from './filters/field_permissions_enum'
 import splitCustomLabels from './filters/split_custom_labels'
-import fetchFlowsFilter from './filters/fetch_flows'
+import flowsFilter from './filters/flows_filter'
 import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
 import installedPackageGeneratedDependencies from './filters/installed_package_generated_dependencies'
 import createMissingInstalledPackagesInstancesFilter from './filters/create_missing_installed_packages_instances'
@@ -127,7 +127,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   // should run before customObjectsFilter
   { creator: workflowFilter },
   // fetchFlowsFilter should run before flowFilter
-  { creator: fetchFlowsFilter, addsNewInformation: true },
+  { creator: flowsFilter, addsNewInformation: true },
   // customMetadataToObjectTypeFilter should run before customObjectsFromDescribeFilter
   { creator: customMetadataToObjectTypeFilter },
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter

@@ -1986,6 +1986,18 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
     },
   },
+  PortalSettings: {
+    request: {
+      url: '/rest/servicedesk/1/servicedesk-data/{projectKey}',
+    },
+    transformation: {
+      idFields: ['name'],
+      dataField: '.',
+      fieldsToOmit: [
+        { fieldName: 'projectId' },
+      ],
+    },
+  },
 }
 
 const JSM_DUCKTYPE_SUPPORTED_TYPES = {
@@ -1994,6 +2006,7 @@ const JSM_DUCKTYPE_SUPPORTED_TYPES = {
   Queue: ['Queue'],
   PortalGroup: ['PortalGroup'],
   Calendar: ['Calendar'],
+  PortalSettings: ['PortalSettings'],
 }
 
 export const SCRIPT_RUNNER_DUCKTYPE_SUPPORTED_TYPES = {

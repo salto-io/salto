@@ -78,6 +78,7 @@ zendesk {
 | [resolveOrganizationIDs]           | false                             | When enabled, organization IDs will be replaced with organization names
 | includeAuditDetails                | false                             | When enabled, changed_at and changed_by information will be added to instances
 | handleIdenticalAttachmentConflicts | false                             | When enabled, one attachment will be kept from each set of identical attachments (having the same hash) associated with the same article
+| extractReferencesFromFreeText      | false                             | When enabled, convert ids in zendesk links in string values to salto references
 
 
 ## Fetch entry options

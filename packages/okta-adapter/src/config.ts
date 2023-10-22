@@ -400,6 +400,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       },
     },
   },
+  'api__v1__apps___appId___groups@uuuuuu_00123_00125uu': {
+    request: {
+      url: 'api/v1/apps/{appId}/groups',
+      queryParams: { limit: '200' },
+    },
+  },
   AppUserSchema: {
     request: {
       url: '/api/v1/meta/schemas/apps/{appId}/default',

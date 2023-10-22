@@ -30,10 +30,10 @@ import {
   ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { isEmpty, isUndefined } from 'lodash'
+import _, { isEmpty, isUndefined } from 'lodash'
 import { detailedCompare } from '@salto-io/adapter-utils'
 import { ACTIVE, FLOW_METADATA_TYPE, SALESFORCE, STATUS } from '../constants'
-import { isDeactivatedFlowChange, isDeactivatedFlowChangeOnly, isInstanceOfType } from '../filters/utils'
+import { apiNameSync, isDeactivatedFlowChange, isDeactivatedFlowChangeOnly, isInstanceOfType } from '../filters/utils'
 import { SalesforceConfig } from '../types'
 import SalesforceClient from '../client/client'
 import { FLOW_URL_SUFFIX } from '../elements_url_retreiver/lightining_url_resolvers'
@@ -211,6 +211,14 @@ const activeFlowAdditionError = (instance: InstanceElement, enableActiveDeploy: 
   }
 }
 
+
+const createDeactivatedFlowChangeInfo = (flowInstance: InstanceElement): ChangeError => ({
+  elemID: flowInstance.elemID,
+  severity: 'Info',
+  message: 'Flow will be deactivated',
+  detailedMessage: `The Flow ${apiNameSync(flowInstance)} will be deactivated.`,
+})
+
 /**
  * Handling all changes regarding active flows
  */
@@ -231,10 +239,15 @@ const activeFlowValidator = (config: SalesforceConfig, isSandbox: boolean, clien
       .filter(isRemovalChange)
       .map(change => removeFlowError(getChangeData(change)))
 
-    const inactiveNewVersionChangeInfo = flowChanges
-      .filter(isDeactivatedFlowChange)
-      .filter(change => !isDeactivatedFlowChangeOnly(change))
+    const [deactivatedFlowOnlyChanges, deactivatedFlowChanges] = _.partition(
+      flowChanges.filter(isDeactivatedFlowChange),
+      isDeactivatedFlowChangeOnly,
+    )
+
+    const inactiveNewVersionChangeInfo = deactivatedFlowChanges
       .map(change => inActiveNewVersionInfo(getChangeData(change), isPreferActiveVersion))
+    const deactivatedFlowOnlyChangeInfo = deactivatedFlowOnlyChanges
+      .map(change => createDeactivatedFlowChangeInfo(getChangeData(change)))
 
     if (isSandbox) {
       const sandboxFlowModification = flowChanges
@@ -244,6 +257,7 @@ const activeFlowValidator = (config: SalesforceConfig, isSandbox: boolean, clien
         .map(instance => newVersionInfo(instance, true))
       return [
         ...inactiveNewVersionChangeInfo,
+        ...deactivatedFlowOnlyChangeInfo,
         ...sandboxFlowModification,
         ...removingFlowChangeErrors,
       ]
@@ -270,7 +284,7 @@ const activeFlowValidator = (config: SalesforceConfig, isSandbox: boolean, clien
       .filter(flow => getFlowStatus(flow) === ACTIVE)
       .map(flow => activeFlowAdditionError(flow, isEnableFlowDeployAsActiveEnabled, baseUrl))
 
-    return [...inactiveNewVersionChangeInfo, ...activeFlowModification,
+    return [...inactiveNewVersionChangeInfo, ...deactivatedFlowOnlyChangeInfo, ...activeFlowModification,
       ...activatingFlow, ...activeFlowAddition, ...removingFlowChangeErrors]
   }
 

@@ -15,9 +15,8 @@
 */
 import { regex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { ElemID, InstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { InstanceElement } from '@salto-io/adapter-api'
 import {
-  CHANGED_AT_SINGLETON,
   CUSTOM_FIELD,
   CUSTOM_METADATA,
   CUSTOM_OBJECT,
@@ -26,7 +25,6 @@ import {
   FLOW_METADATA_TYPE,
   MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD,
   PROFILE_METADATA_TYPE,
-  SALESFORCE,
   SETTINGS_METADATA_TYPE,
   TOPICS_FOR_OBJECTS_METADATA_TYPE,
 } from '../constants'
@@ -99,20 +97,18 @@ const isFolderMetadataTypeNameMatch = ({ name: instanceName }: MetadataInstance,
 type BuildMetadataQueryParams = {
   metadataParams: MetadataParams
   target?: string[]
-  elementsSource: ReadOnlyElementsSource
   isFetchWithChangesDetection: boolean
+  changedAtSingleton?: InstanceElement
 }
 
 export const buildMetadataQuery = ({
   metadataParams,
-  elementsSource,
   target,
   isFetchWithChangesDetection,
+  changedAtSingleton,
 }: BuildMetadataQueryParams): MetadataQuery => {
   const { include = [{}], exclude = [] } = metadataParams
   const fullExcludeList = [...exclude, ...PERMANENT_SKIP_LIST]
-
-  let changedAtSingleton: InstanceElement | undefined
 
   const isInstanceMatchQueryParams = (
     instance: MetadataInstance,
@@ -174,11 +170,6 @@ export const buildMetadataQuery = ({
   )
 
   return {
-    prepare: async () => {
-      if (isFetchWithChangesDetection) {
-        changedAtSingleton = await elementsSource.get(new ElemID(SALESFORCE, CHANGED_AT_SINGLETON, 'instance', ElemID.CONFIG_NAME))
-      }
-    },
     isTypeMatch: type => isTypeIncluded(type) && !isTypeExcluded(type),
 
     isInstanceMatch: instance => (

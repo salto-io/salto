@@ -58,7 +58,6 @@ describe('customMetadataToObjectTypeFilter', () => {
       ...defaultFilterContext,
       fetchProfile: buildFetchProfile({
         fetchParams: { optionalFeatures: { skipAliases: false } },
-        isFetchWithChangesDetection: false,
         elementsSource: buildElementsSourceFromElements([]),
       }),
     },

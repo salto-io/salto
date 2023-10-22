@@ -315,7 +315,6 @@ describe('Custom Object Instances References filter', () => {
                 },
               },
             },
-            isFetchWithChangesDetection: false,
             elementsSource: buildElementsSourceFromElements([]),
           }),
         },
@@ -467,7 +466,6 @@ describe('Custom Object Instances References filter', () => {
             },
           },
         },
-        isFetchWithChangesDetection: false,
         elementsSource: buildElementsSourceFromElements([]),
       })
     )

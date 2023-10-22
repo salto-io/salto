@@ -374,7 +374,6 @@ export const defaultFilterContext: FilterContext = {
   systemFields: SYSTEM_FIELDS,
   fetchProfile: buildFetchProfile({
     fetchParams: {},
-    isFetchWithChangesDetection: false,
     elementsSource: buildElementsSourceFromElements([]),
   }),
   elementsSource: buildElementsSourceFromElements([]),

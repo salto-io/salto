@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, Field, InstanceElement, MapType, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, MapType, ObjectType } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import JiraClient from '../../../src/client/client'
 import { JIRA, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TRANSITION_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../../src/constants'
@@ -148,6 +148,10 @@ describe('workflowStructureFilter', () => {
       await filter.onFetch?.(elements)
       expect(elements.length).toBeGreaterThan(1)
       expect((await workflowConditionType.fields.configuration.getType()).elemID.getFullName()).toBe('jira.ConditionConfiguration')
+      expect(workflowConditionType.fields.configuration.annotations).toEqual({
+        [CORE_ANNOTATIONS.CREATABLE]: true,
+        [CORE_ANNOTATIONS.UPDATABLE]: true,
+      })
     })
     it('should convert transitions type to a map', async () => {
       await filter.onFetch?.([transitionType, workflowType])

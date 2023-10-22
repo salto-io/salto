@@ -15,14 +15,12 @@
 * limitations under the License.
 */
 import path from 'path'
-import { nacl, staticFiles, adaptersConfigSource as acs, remoteMap } from '@salto-io/workspace'
+import { nacl, staticFiles, adaptersConfigSource as acs, remoteMap, buildStaticFilesCache } from '@salto-io/workspace'
 import { DetailedChange, ObjectType } from '@salto-io/adapter-api'
 import { localDirectoryStore, createExtensionFileFilter } from './dir_store'
-import { buildLocalStaticFilesCache } from './static_files_cache'
 
 const createNaclSource = async (
   baseDir: string,
-  localStorage: string,
   remoteMapCreator: remoteMap.RemoteMapCreator,
   persistent: boolean,
 ) : Promise<nacl.NaclFilesSource> => {
@@ -40,7 +38,7 @@ const createNaclSource = async (
 
   const staticFileSource = staticFiles.buildStaticFilesSource(
     naclStaticFilesStore,
-    buildLocalStaticFilesCache(localStorage, 'config-cache', remoteMapCreator, persistent),
+    buildStaticFilesCache('config-cache', remoteMapCreator, persistent),
   )
 
   const source = await nacl.naclFilesSource(
@@ -55,13 +53,12 @@ const createNaclSource = async (
 
 export const buildLocalAdaptersConfigSource = async (
   baseDir: string,
-  localStorage: string,
   remoteMapCreator: remoteMap.RemoteMapCreator,
   persistent: boolean,
   configTypes: ObjectType[],
   configOverrides: DetailedChange[] = [],
 ): Promise<acs.AdaptersConfigSource> => acs.buildAdaptersConfigSource({
-  naclSource: await createNaclSource(baseDir, localStorage, remoteMapCreator, persistent),
+  naclSource: await createNaclSource(baseDir, remoteMapCreator, persistent),
   ignoreFileChanges: false,
   remoteMapCreator,
   persistent,

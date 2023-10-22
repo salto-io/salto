@@ -24,6 +24,8 @@ import filterCreator, {
   TICKET_TICKET_FIELD, TICKET_USER_FIELD, prepRef,
 } from '../../src/filters/handle_template_expressions'
 import {
+  CUSTOM_OBJECT_FIELD_TYPE_NAME,
+  CUSTOM_OBJECT_TYPE_NAME,
   GROUP_TYPE_NAME,
   ORG_FIELD_TYPE_NAME,
   USER_FIELD_TYPE_NAME,
@@ -91,6 +93,14 @@ describe('handle templates filter', () => {
 
   const groupType = new ObjectType({
     elemID: new ElemID(ZENDESK, GROUP_TYPE_NAME),
+  })
+
+  const customObjectType = new ObjectType({
+    elemID: new ElemID(ZENDESK, CUSTOM_OBJECT_TYPE_NAME),
+  })
+
+  const customObjectFieldType = new ObjectType({
+    elemID: new ElemID(ZENDESK, CUSTOM_OBJECT_FIELD_TYPE_NAME),
   })
 
   const dynamicContentRecord = new InstanceElement('dynamic_content_test', dynamicContentType, {
@@ -512,6 +522,31 @@ describe('handle templates filter', () => {
 
       expect(validPrepRef).toEqual('123')
       expect(invalidPrepRef).toEqual(invalidGroupRef)
+    })
+    it('should return \'key\' field or the instance reference on custom_object and custom_object_field type', () => {
+      const validCustomObject = new InstanceElement('instance', customObjectType, { key: 'test' })
+      const invalidCustomObject = new InstanceElement('instance', customObjectType, { noKey: 'test' })
+      const invalidCustomObjectRef = new ReferenceExpression(invalidCustomObject.elemID, invalidCustomObject)
+
+      const validCustomObjectField = new InstanceElement('instance', customObjectFieldType, { key: 'test' })
+      const invalidCustomObjectField = new InstanceElement('instance', customObjectFieldType, { noKey: 'test' })
+      const invalidCustomObjectFieldRef = new ReferenceExpression(
+        invalidCustomObjectField.elemID, invalidCustomObjectField
+      )
+
+      const validCustomObjectPrepRef = prepRef(new ReferenceExpression(validCustomObject.elemID, validCustomObject))
+      const invalidCustomObjectPrepRef = prepRef(invalidCustomObjectRef)
+
+      const validCustomObjectFieldPrepRef = prepRef(
+        new ReferenceExpression(validCustomObjectField.elemID, validCustomObjectField)
+      )
+      const invalidCustomObjectFieldPrepRef = prepRef(invalidCustomObjectFieldRef)
+
+      expect(validCustomObjectPrepRef).toEqual('test')
+      expect(invalidCustomObjectPrepRef).toEqual(invalidCustomObjectRef)
+
+      expect(validCustomObjectFieldPrepRef).toEqual('test')
+      expect(invalidCustomObjectFieldPrepRef).toEqual(invalidCustomObjectFieldRef)
     })
     it('should return an empty string on UnresolvedReference', () => {
       const elemId = new ElemID(ZENDESK, 'test')

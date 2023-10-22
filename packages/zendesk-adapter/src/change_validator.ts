@@ -45,7 +45,7 @@ import {
   helpCenterActivationValidator,
   helpCenterCreationOrRemovalValidator,
   everyoneUserSegmentModificationValidator,
-  guideOrderDeletionValidator,
+  orderDeletionValidator,
   childrenReferencesValidator,
   childInOrderValidator,
   orderChildrenParentValidator,
@@ -173,7 +173,7 @@ export default ({
     childInOrder: childInOrderValidator,
     childrenReferences: childrenReferencesValidator,
     orderChildrenParent: orderChildrenParentValidator,
-    guideOrderDeletion: guideOrderDeletionValidator,
+    guideOrderDeletion: orderDeletionValidator,
     ticketFieldDeactivation: ticketFieldDeactivationValidator(apiConfig),
     // ******************************
   }

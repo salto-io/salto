@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
   isInstanceElement, isPrimitiveType, ElemID, getFieldType,
-  isReferenceExpression, Value, isServiceId, isObjectType, ChangeDataType, ObjectType, InstanceElement,
+  isReferenceExpression, Value, isServiceId, isObjectType, ChangeDataType, TopLevelElement,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
@@ -30,7 +30,6 @@ const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues
 const log = logger(module)
 
-type TopLevelElement = ObjectType | InstanceElement
 const isTopLevelElement = (value: unknown): value is TopLevelElement =>
   isObjectType(value) || isInstanceElement(value)
 

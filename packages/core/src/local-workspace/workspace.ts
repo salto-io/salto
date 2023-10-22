@@ -21,14 +21,13 @@ import { exists, isEmptyDir, rm } from '@salto-io/file'
 import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl, remoteMap,
   configSource as cs, staticFiles, dirStore, WorkspaceComponents, errors, elementSource,
   COMMON_ENV_PREFIX, isValidEnvName, EnvironmentSource, EnvConfig, adaptersConfigSource,
-  createAdapterReplacedID, state } from '@salto-io/workspace'
+  createAdapterReplacedID, state, buildStaticFilesCache } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { localDirectoryStore, createExtensionFileFilter } from './dir_store'
 import { CONFIG_DIR_NAME, getLocalStoragePath } from '../app_config'
 import { localState } from './state'
 import { workspaceConfigSource } from './workspace_config'
-import { buildLocalStaticFilesCache } from './static_files_cache'
 import { createRemoteMapCreator } from './remote_map'
 import { adapterCreators, getAdaptersConfigTypesMap } from '../core/adapters'
 import { buildLocalAdaptersConfigSource } from './adapters_config'
@@ -64,7 +63,6 @@ export class NotAWorkspaceError extends Error {
 
 type GetNaclFilesSourceParamsArgs = {
   sourceBaseDir: string
-  cacheDir: string
   name: string
   remoteMapCreator: remoteMap.RemoteMapCreator
   persistent: boolean
@@ -73,7 +71,6 @@ type GetNaclFilesSourceParamsArgs = {
 
 const getNaclFilesSourceParams = ({
   sourceBaseDir,
-  cacheDir,
   name,
   remoteMapCreator,
   persistent,
@@ -103,7 +100,7 @@ const getNaclFilesSourceParams = ({
   const cacheName = name === COMMON_ENV_PREFIX ? 'common' : name
   const staticFileSource = buildStaticFilesSource(
     naclStaticFilesStore,
-    buildLocalStaticFilesCache(cacheDir, cacheName, remoteMapCreator, persistent),
+    buildStaticFilesCache(cacheName, remoteMapCreator, persistent),
   )
   return {
     naclFilesStore,
@@ -113,7 +110,6 @@ const getNaclFilesSourceParams = ({
 
 const loadNaclFileSource = async (
   sourceBaseDir: string,
-  cacheBaseDir: string,
   sourceName: string,
   persistent: boolean,
   remoteMapCreator: remoteMap.RemoteMapCreator,
@@ -121,7 +117,6 @@ const loadNaclFileSource = async (
 ): Promise<nacl.NaclFilesSource> => {
   const { naclFilesStore, staticFileSource } = getNaclFilesSourceParams({
     sourceBaseDir,
-    cacheDir: cacheBaseDir,
     name: sourceName,
     remoteMapCreator,
     persistent,
@@ -155,7 +150,6 @@ export const createEnvironmentSource = async ({
   return {
     naclFiles: await loadNaclFileSource(
       baseDir,
-      path.resolve(localStorage, CACHE_DIR_NAME),
       getLocalEnvName(env),
       persistent,
       remoteMapCreator,
@@ -200,7 +194,6 @@ export const loadLocalElementsSources = async ({
     [COMMON_ENV_PREFIX]: {
       naclFiles: await loadNaclFileSource(
         baseDir,
-        path.resolve(localStorage, CACHE_DIR_NAME),
         getLocalEnvName(COMMON_ENV_PREFIX),
         persistent,
         remoteMapCreator,
@@ -288,7 +281,6 @@ const loadLocalWorkspaceImpl = async ({
   const remoteMapCreator = createRemoteMapCreator(cacheDirName)
   const adaptersConfig = await buildLocalAdaptersConfigSource(
     baseDir,
-    workspaceConfig.localStorage,
     remoteMapCreator,
     persistent,
     await getAdapterConfigsPerAccount(envs),
@@ -391,7 +383,6 @@ Promise<Workspace> => {
 
   const adaptersConfig = await buildLocalAdaptersConfigSource(
     baseDir,
-    localStorage,
     remoteMapCreator,
     persistentMode,
     Object.values(await getAdaptersConfigTypesMap()).flat(),

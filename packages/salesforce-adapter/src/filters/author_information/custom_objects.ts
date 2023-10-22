@@ -107,7 +107,9 @@ const setObjectAuthorInformation = (
       if (field === undefined) {
         return
       }
-      field.annotations[INTERNAL_ID_ANNOTATION] = fileProp.id
+      if (!_.isEmpty(field.annotations[INTERNAL_ID_ANNOTATION])) {
+        field.annotations[INTERNAL_ID_ANNOTATION] = fileProp.id
+      }
       addAuthorAnnotationsToField(fileProp, field)
     })
   // Set the latest AuthorInformation on the CustomObject

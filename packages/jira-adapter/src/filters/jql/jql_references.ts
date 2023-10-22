@@ -56,6 +56,10 @@ const SCRIPT_RUNNER_JQL_RELATIVE_PATHS_BY_TYPE: Record<string, string[][]> = {
   'com.onresolve.jira.groovy.GroovyCondition': [['configuration', 'FIELD_JQL_QUERY']],
 }
 
+const instanceTypeToString: Record<string, string[]> = {
+  SLA: ['jqlQuery'],
+}
+
 const instanceTypeToMap: Map<string, Record<string, string[][]>> = new Map([
   [AUTOMATION_TYPE, AUTOMATION_JQL_RELATIVE_PATHS_BY_TYPE],
   [WORKFLOW_TYPE_NAME, SCRIPT_RUNNER_JQL_RELATIVE_PATHS_BY_TYPE],
@@ -84,9 +88,33 @@ const getRelativePathJqls = (instance: InstanceElement, pathMap: Record<string, 
   return jqlPaths
 }
 
+const getRelativePathJqlsJsm = (instance: InstanceElement, pathMap: Record<string, string[]>): JqlDetails[] => {
+  const jqlPaths: JqlDetails[] = []
+  walkOnElement({
+    element: instance,
+    func: ({ value, path }) => {
+      const jqlRelativePaths = pathMap[instance.elemID.typeName]
+      if (jqlRelativePaths !== undefined) {
+        const jqlValue = _.get(value, jqlRelativePaths)
+        if (_.isString(jqlValue) || isTemplateExpression(jqlValue)) {
+          jqlPaths.push({
+            path: path.createNestedID(...jqlRelativePaths),
+            jql: jqlValue,
+          })
+        }
+      }
+      return WALK_NEXT_STEP.RECURSE
+    },
+  })
+  return jqlPaths
+}
+
 const getJqls = (instance: InstanceElement): JqlDetails[] => {
   if (instanceTypeToMap.has(instance.elemID.typeName)) {
     return getRelativePathJqls(instance, instanceTypeToMap.get(instance.elemID.typeName) as Record<string, string[][]>)
+  }
+  if (Object.keys(instanceTypeToString).includes(instance.elemID.typeName)) {
+    return getRelativePathJqlsJsm(instance, instanceTypeToString)
   }
   return JQL_FIELDS
     .filter(({ type }) => type === instance.elemID.typeName)

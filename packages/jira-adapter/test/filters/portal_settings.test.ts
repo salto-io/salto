@@ -24,7 +24,7 @@ import { createEmptyType, getFilterParams, mockClient } from '../utils'
 import { PORTAL_SETTINGS_TYPE_NAME, PROJECT_TYPE } from '../../src/constants'
 import JiraClient from '../../src/client/client'
 
-describe('requestType filter', () => {
+describe('portalSettings filter', () => {
     type FilterType = filterUtils.FilterWith<'deploy'>
     let filter: FilterType
     let connection: MockInterface<clientUtils.APIConnection>
@@ -71,7 +71,7 @@ describe('requestType filter', () => {
         expect(res.leftoverChanges).toHaveLength(0)
         expect(res.deployResult.errors).toHaveLength(0)
         expect(res.deployResult.appliedChanges).toHaveLength(1)
-        // One call to deploy name, one call to deployy description and one call to deploy announcementSettings.
+        // One call to deploy name, one call to deploy description and one call to deploy announcementSettings.
         expect(connection.put).toHaveBeenCalledTimes(3)
         expect(connection.put).toHaveBeenCalledWith(
           '/rest/servicedesk/1/servicedesk-data/project1Key/name',
@@ -131,7 +131,7 @@ describe('requestType filter', () => {
           undefined,
         )
       })
-      it('should deploy modification of a portal settings announcementSettings to  false', async () => {
+      it('should deploy modification of a portal settings announcementSettings to false', async () => {
         const projectSettingsInstanceAfter = portalSettingInstance.clone()
         projectSettingsInstanceAfter.value.announcementSettings.canAgentsManagePortalAnnouncement = false
         const res = await filter.deploy([{ action: 'modify', data: { before: portalSettingInstance, after: projectSettingsInstanceAfter } }])
@@ -150,7 +150,7 @@ describe('requestType filter', () => {
           }
         )
       })
-      it('should deploy modification of a portal settings announcementSettings to  true', async () => {
+      it('should deploy modification of a portal settings announcementSettings to true', async () => {
         const projectSettingsInstanceAfter = portalSettingInstance.clone()
         projectSettingsInstanceAfter.value.announcementSettings.canAgentsManagePortalAnnouncement = true
         portalSettingInstance.value.announcementSettings.canAgentsManagePortalAnnouncement = false
@@ -169,6 +169,14 @@ describe('requestType filter', () => {
             },
           }
         )
+      })
+      it('should handle errors', async () => {
+        connection.put.mockRejectedValueOnce(new Error('error'))
+        const res = await filter.deploy([{ action: 'add', data: { after: portalSettingInstance } }])
+        expect(res.leftoverChanges).toHaveLength(0)
+        expect(res.deployResult.errors).toHaveLength(1)
+        expect(res.deployResult.errors[0].message).toEqual('Error: Failed to put /rest/servicedesk/1/servicedesk-data/project1Key/name with error: Error: error')
+        expect(res.deployResult.appliedChanges).toHaveLength(0)
       })
     })
 })

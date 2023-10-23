@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { Change, InstanceElement, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
+import { AdditionChange, Change, InstanceElement, ModificationChange, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { deployChanges } from '../deployment/standard_deployment'
@@ -23,45 +23,47 @@ import { PORTAL_SETTINGS_TYPE_NAME } from '../constants'
 import JiraClient from '../client/client'
 
 const deployPortalSettings = async (
-  change: Change<InstanceElement>,
+  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
   client: JiraClient,
 ): Promise<void> => {
   const portalSettings = getChangeData(change)
   const parent = getParent(portalSettings)
-  if (isAdditionOrModificationChange(change)) {
-    const nameUrl = `/rest/servicedesk/1/servicedesk-data/${parent.value.key}/name`
-    if (isAdditionChange(change) || change.data.before.value.name !== change.data.after.value.name) {
+  const nameUrl = `/rest/servicedesk/1/servicedesk-data/${parent.value.key}/name`
+  if (isAdditionChange(change) || change.data.before.value.name !== change.data.after.value.name) {
+    await client.put({
+      url: nameUrl,
+      data: { name: portalSettings.value.name },
+    })
+  }
+  if (isAdditionChange(change) || change.data.before.value.description !== change.data.after.value.description) {
+    await client.put({
+      url: `/rest/servicedesk/1/servicedesk-data/${parent.value.key}/desc`,
+      data: { description: portalSettings.value.description },
+    })
+  }
+  if (isAdditionChange(change)
+    || change.data.before.value.announcementSettings?.canAgentsManagePortalAnnouncement
+        !== change.data.after.value.announcementSettings?.canAgentsManagePortalAnnouncement) {
+    if (change.data.after.value.announcementSettings?.canAgentsManagePortalAnnouncement === true) {
       await client.put({
-        url: nameUrl,
-        data: { name: portalSettings.value.name },
+        url: `/rest/servicedesk/1/${parent.value.key}/settings/agent-announcements/enable`,
+        data: null,
+        headers: { 'Content-Type': 'application/json' },
       })
-    }
-    if (isAdditionChange(change) || change.data.before.value.description !== change.data.after.value.description) {
+    } else {
       await client.put({
-        url: `/rest/servicedesk/1/servicedesk-data/${parent.value.key}/desc`,
-        data: { description: portalSettings.value.description },
+        url: `/rest/servicedesk/1/${parent.value.key}/settings/agent-announcements/disable`,
+        data: null,
+        headers: { 'Content-Type': 'application/json' },
       })
-    }
-    if (isAdditionChange(change)
-    || change.data.before.value.announcementSettings.canAgentsManagePortalAnnouncement
-        !== change.data.after.value.announcementSettings.canAgentsManagePortalAnnouncement) {
-      if (change.data.after.value.announcementSettings.canAgentsManagePortalAnnouncement === true) {
-        await client.put({
-          url: `/rest/servicedesk/1/${parent.value.key}/settings/agent-announcements/enable`,
-          data: null,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      } else {
-        await client.put({
-          url: `/rest/servicedesk/1/${parent.value.key}/settings/agent-announcements/disable`,
-          data: null,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      }
     }
   }
 }
 
+/*
+* This filter is responsible for deploying portal settings because each attribute
+* of the portal settings is deployed to a different endpoint.
+*/
 const filter: FilterCreator = ({ config, client }) => ({
   name: 'portalSettingsFilter',
   deploy: async changes => {
@@ -76,7 +78,7 @@ const filter: FilterCreator = ({ config, client }) => ({
       (change): change is Change<InstanceElement> => isInstanceChange(change)
       && getChangeData(change).elemID.typeName === PORTAL_SETTINGS_TYPE_NAME
     )
-    const deployResult = await deployChanges(portalChanges,
+    const deployResult = await deployChanges(portalChanges.filter(isAdditionOrModificationChange),
       async change => deployPortalSettings(change, client))
 
     return {

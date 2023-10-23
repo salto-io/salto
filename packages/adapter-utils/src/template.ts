@@ -32,13 +32,22 @@ export const compactTemplateParts = (parts: TemplatePart[]): TemplatePart[] => {
     if (_.isString(part)) {
       tempString.push(part)
     } else {
-      compactedParts.push(tempString.join(''))
+      if (tempString.length > 0) {
+        compactedParts.push(tempString.join(''))
+      }
       tempString = []
       compactedParts.push(part)
     }
   })
-  compactedParts.push(tempString.join(''))
+  if (tempString.length > 0) {
+    compactedParts.push(tempString.join(''))
+  }
   return compactedParts
+}
+
+export const compactTemplate = (template: TemplateExpression): TemplateExpression | string => {
+  const parts = compactTemplateParts(template.parts)
+  return parts.every(_.isString) ? parts.join() : new TemplateExpression({ parts })
 }
 
 export const createTemplateExpression = (

@@ -132,7 +132,6 @@ describe('Custom settings filter', () => {
           ...defaultFilterContext,
           fetchProfile: buildFetchProfile({
             fetchParams: { fetchAllCustomSettings: false },
-            isFetchWithChangesDetection: false,
             elementsSource: buildElementsSourceFromElements([]),
           }),
         },
@@ -149,7 +148,6 @@ describe('Custom settings filter', () => {
           ...defaultFilterContext,
           fetchProfile: buildFetchProfile({
             fetchParams: { fetchAllCustomSettings: true },
-            isFetchWithChangesDetection: false,
             elementsSource: buildElementsSourceFromElements([]),
           }),
         },

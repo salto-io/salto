@@ -15,21 +15,27 @@
 */
 import _ from 'lodash'
 import {
-  Element, ElemID, Values, ObjectType, Field, TypeElement, BuiltinTypes, ListType, MapType,
-  CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes,
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  Element,
+  ElemID,
+  Field,
+  ListType,
+  MapType,
+  ObjectType,
+  PrimitiveType,
+  PrimitiveTypes,
+  TypeElement,
+  Values,
 } from '@salto-io/adapter-api'
-import {
-  findElements as findElementsByID, buildElementsSourceFromElements,
-} from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, findElements as findElementsByID } from '@salto-io/adapter-utils'
 import JSZip from 'jszip'
 import * as constants from '../src/constants'
-import {
-  annotationsFileName, customFieldsFileName, standardFieldsFileName,
-} from '../src/filters/custom_type_split'
+import { FIELD_ANNOTATIONS } from '../src/constants'
+import { annotationsFileName, customFieldsFileName, standardFieldsFileName } from '../src/filters/custom_type_split'
 import { FilterContext } from '../src/filter'
 import { SYSTEM_FIELDS } from '../src/adapter'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
-import { FIELD_ANNOTATIONS } from '../src/constants'
 
 export const findElements = (
   elements: ReadonlyArray<Element>,
@@ -368,7 +374,6 @@ export const defaultFilterContext: FilterContext = {
   systemFields: SYSTEM_FIELDS,
   fetchProfile: buildFetchProfile({
     fetchParams: {},
-    isFetchWithChangesDetection: false,
     elementsSource: buildElementsSourceFromElements([]),
   }),
   elementsSource: buildElementsSourceFromElements([]),

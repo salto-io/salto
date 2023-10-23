@@ -41,10 +41,10 @@ const getProjectToScreenMapping = async (elements: Element[]): Promise<Record<st
           .flatMap((struct: issueTypeMappingStruct) => struct.screenSchemeId.value) as unknown[])
           .filter(isInstanceElement)
 
-        const screens = screenSchemes
+        const screens = Array.from(new Set(screenSchemes
           .map(screenScheme => screenScheme.value.screens.default)
           .filter(isResolvedReferenceExpression)
-          .map(defualtScreen => defualtScreen.value.value.id)
+          .map(defualtScreen => defualtScreen.value.value.id)))
         return [project.value.id, screens]
       })))
   )
@@ -92,6 +92,11 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) =>
           typeName: ISSUE_LAYOUT_TYPE,
         })
       })))).filter(isDefined)
+    issueLayouts.forEach(layout => {
+      const projectKey = projectIdToProject[layout.value.projectId].value.key
+      const url = `/plugins/servlet/project-config/${projectKey}/issuelayout?screenId=${layout.value.extraDefinerId}`
+      layout.annotations[CORE_ANNOTATIONS.SERVICE_URL] = new URL(url, client.baseUrl).href
+    })
     issueLayouts.forEach(layout => { elements.push(layout) })
     setTypeDeploymentAnnotations(issueLayoutType)
     await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.CREATABLE)

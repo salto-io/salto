@@ -93,7 +93,6 @@ describe('custom object instances e2e', () => {
   const filtersContext = {
     fetchProfile: buildFetchProfile({
       fetchParams: config.fetch,
-      isFetchWithChangesDetection: false,
       elementsSource: buildElementsSourceFromElements([]),
     }),
   }

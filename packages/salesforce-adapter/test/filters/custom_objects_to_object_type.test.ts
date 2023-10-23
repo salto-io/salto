@@ -19,7 +19,7 @@ import {
   CORE_ANNOTATIONS, isInstanceElement,
   ReferenceExpression, isListType, FieldDefinition, toChange, Change, ModificationChange,
   getChangeData,
-  isServiceId,
+  isServiceId, ListType,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import {
@@ -57,7 +57,10 @@ export const generateCustomObjectType = (): ObjectType => {
       const listViewFilterElemId = new ElemID(SALESFORCE, 'ListViewFilter')
       return {
         [INSTANCE_FULL_NAME_FIELD]: { refType: BuiltinTypes.STRING },
-        columns: { refType: BuiltinTypes.STRING },
+        // We use ListType here to validate we don't wrap a field that is already correct
+        // and is of type List. This is happening in fetchWithChangesDetection mode, where we get
+        // the CustomObject MetadataType from the elementsSource, which is already correct.
+        columns: { refType: new ListType(BuiltinTypes.STRING) },
         filters: {
           refType: new ObjectType({
             elemID: listViewFilterElemId,
@@ -127,7 +130,6 @@ describe('Custom Objects to Object Type filter', () => {
           ...defaultFilterContext,
           fetchProfile: buildFetchProfile({
             fetchParams: { optionalFeatures: { skipAliases: false } },
-            isFetchWithChangesDetection: false,
             elementsSource: buildElementsSourceFromElements([]),
           }),
           unsupportedSystemFields: ['UnsupportedField'],
@@ -499,7 +501,12 @@ describe('Custom Objects to Object Type filter', () => {
 
         const listViewType = await customObjectType
           .fields[NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS].getType() as ObjectType
-        expect(isListType(await listViewType.fields.columns.getType())).toBeTruthy()
+        // Here we validate we don't fix a corrected type (fetchWithChangesDetection)
+        const columnsFieldType = listViewType.fields.columns.getTypeSync() as ListType
+        expect(isListType(columnsFieldType)).toBeTruthy()
+        const columnsFieldInnerType = columnsFieldType.refInnerType.getResolvedValueSync()
+        expect(isListType(columnsFieldInnerType)).toBeFalse()
+
         expect(isListType(await listViewType.fields.filters.getType())).toBeTruthy()
 
         const fieldSetType = await customObjectType
@@ -693,7 +700,7 @@ describe('Custom Objects to Object Type filter', () => {
 
         it('should add PARENT annotation to assignmentRules instance', async () => {
           expect(assignmentRulesInstance.annotations[CORE_ANNOTATIONS.PARENT])
-            .toContainEqual(new ReferenceExpression(leadType.elemID))
+            .toContainEqual(new ReferenceExpression(leadType.elemID, leadType))
         })
       })
 
@@ -717,7 +724,7 @@ describe('Custom Objects to Object Type filter', () => {
 
         it('should add PARENT annotation to leadConvertSettings instance', async () => {
           expect(leadConvertSettingsInstance.annotations[CORE_ANNOTATIONS.PARENT])
-            .toContainEqual(new ReferenceExpression(leadType.elemID))
+            .toContainEqual(new ReferenceExpression(leadType.elemID, leadType))
         })
       })
 
@@ -752,7 +759,7 @@ describe('Custom Objects to Object Type filter', () => {
 
           it('should add PARENT annotation to quickAction instance', async () => {
             expect(quickActionInstance.annotations[CORE_ANNOTATIONS.PARENT])
-              .toContainEqual(new ReferenceExpression(leadType.elemID))
+              .toContainEqual(new ReferenceExpression(leadType.elemID, leadType))
           })
         })
 
@@ -770,7 +777,7 @@ describe('Custom Objects to Object Type filter', () => {
           })
           it('should add PARENT annotation to Lightning page instance with sobjectType', async () => {
             expect(recordPageInstance.annotations[CORE_ANNOTATIONS.PARENT])
-              .toContainEqual(new ReferenceExpression(leadType.elemID))
+              .toContainEqual(new ReferenceExpression(leadType.elemID, leadType))
           })
 
           it('should change the path of Lightning page instance with sobjectType', async () => {
@@ -819,7 +826,7 @@ describe('Custom Objects to Object Type filter', () => {
 
         it('should add PARENT annotation to customTab instance', async () => {
           expect(customTabInstance.annotations[CORE_ANNOTATIONS.PARENT])
-            .toContainEqual(new ReferenceExpression(leadType.elemID))
+            .toContainEqual(new ReferenceExpression(leadType.elemID, leadType))
         })
       })
 
@@ -845,7 +852,7 @@ describe('Custom Objects to Object Type filter', () => {
 
         it('should add PARENT annotation to customObjectTranslation instance', async () => {
           expect(customObjectTranslationInstance.annotations[CORE_ANNOTATIONS.PARENT])
-            .toContainEqual(new ReferenceExpression(leadType.elemID))
+            .toContainEqual(new ReferenceExpression(leadType.elemID, leadType))
         })
       })
 
@@ -870,7 +877,7 @@ describe('Custom Objects to Object Type filter', () => {
 
         it('should add PARENT annotation to instance', () => {
           expect(sharingRulesInstance.annotations[CORE_ANNOTATIONS.PARENT])
-            .toContainEqual(new ReferenceExpression(leadType.elemID))
+            .toContainEqual(new ReferenceExpression(leadType.elemID, leadType))
         })
       })
 
@@ -882,7 +889,6 @@ describe('Custom Objects to Object Type filter', () => {
               ...defaultFilterContext,
               fetchProfile: buildFetchProfile({
                 fetchParams: { target: ['SharingRules'] },
-                isFetchWithChangesDetection: false,
                 elementsSource: buildElementsSourceFromElements([]),
               }),
               elementsSource,
@@ -898,7 +904,7 @@ describe('Custom Objects to Object Type filter', () => {
 
         it('should add parent annotation to instance', () => {
           expect(sharingRulesInstance.annotations[CORE_ANNOTATIONS.PARENT]).toContainEqual(
-            new ReferenceExpression(leadType.elemID)
+            new ReferenceExpression(leadType.elemID, leadType)
           )
         })
       })

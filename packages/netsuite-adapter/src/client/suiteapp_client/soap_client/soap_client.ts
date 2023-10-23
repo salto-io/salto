@@ -27,8 +27,8 @@ import { SuiteAppSoapCredentials, toUrlAccountId } from '../../credentials'
 import { CONSUMER_KEY, CONSUMER_SECRET, ECONN_ERROR, INSUFFICIENT_PERMISSION_ERROR, REQUEST_ABORTED_ERROR, UNEXPECTED_ERROR, VALIDATION_ERROR } from '../constants'
 import { ReadFileError } from '../errors'
 import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails, FileDetails, FolderDetails, HasElemIDFunc } from '../types'
-import { CustomRecordResponse, DeployListResults, GetAllResponse, GetResult, isDeployListSuccess, isGetSuccess, isWriteResponseSuccess, RecordResponse, RecordValue, SearchErrorResponse, SearchPageResponse, SearchResponse, SoapSearchType, WriteResponse } from './types'
-import { DEPLOY_LIST_SCHEMA, GET_ALL_RESPONSE_SCHEMA, GET_RESULTS_SCHEMA, SEARCH_RESPONSE_SCHEMA, SEARCH_SUCCESS_SCHEMA } from './schemas'
+import { CustomRecordResponse, DeployListResults, GetAllResponse, GetResult, isDeployListSuccess, isGetSuccess, isSearchErrorResponse, isWriteResponseSuccess, RecordResponse, RecordValue, SearchErrorResponse, SearchPageResponse, SearchResponse, SoapSearchType, WriteResponse } from './types'
+import { DEPLOY_LIST_SCHEMA, GET_ALL_RESPONSE_SCHEMA, GET_RESULTS_SCHEMA, SEARCH_RESPONSE_SCHEMA } from './schemas'
 import { InvalidSuiteAppCredentialsError } from '../../types'
 import { isCustomRecordType } from '../../../types'
 import { INTERNAL_ID_TO_TYPES, isItemType, ITEM_TYPE_ID, ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from '../../../data_elements/types'
@@ -763,15 +763,6 @@ export default class SoapClient {
     }
   }
 
-  private assertSuccessSearchResponse(
-    value: unknown
-  ): asserts value is SearchResponse {
-    if (!this.ajv.validate(SEARCH_SUCCESS_SCHEMA, value)) {
-      log.error(`Got invalid response from search request with SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(value, undefined, 2)}`)
-      throw new Error(`VALIDATION_ERROR - Got invalid response from search request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(value, undefined, 2)}`)
-    }
-  }
-
   private static toSearchResponse(
     response: SearchResponse | SearchErrorResponse
   ): SearchResponse {
@@ -853,7 +844,12 @@ export default class SoapClient {
     }
   ): Promise<SearchResponse> {
     const response = await this.sendSoapRequest('searchMoreWithId', args)
-    this.assertSuccessSearchResponse(response)
+    this.assertSearchResponse(response)
+    if (isSearchErrorResponse(response)) {
+      const { code, message } = response.searchResult.status.statusDetail[0]
+      log.error('Failed to run search request: %o', response)
+      throw new Error(`Failed to run search request: error code: ${code}, error message: ${message}`)
+    }
     return response
   }
 

@@ -229,7 +229,6 @@ describe('Internal IDs filter', () => {
           ...defaultFilterContext,
           fetchProfile: buildFetchProfile({
             fetchParams: { optionalFeatures: { addMissingIds: false } },
-            isFetchWithChangesDetection: false,
             elementsSource: buildElementsSourceFromElements([]),
           }),
         },

@@ -150,7 +150,6 @@ describe('extra dependencies filter', () => {
         ...defaultFilterContext,
         fetchProfile: buildFetchProfile({
           fetchParams: { target: ['meta'] },
-          isFetchWithChangesDetection: false,
           elementsSource: buildElementsSourceFromElements([]),
         }),
         elementsSource,
@@ -290,7 +289,6 @@ describe('extra dependencies filter', () => {
                 target: ['meta'],
                 optionalFeatures: { toolingDepsOfCurrentNamespace: false },
               },
-              isFetchWithChangesDetection: false,
               elementsSource: buildElementsSourceFromElements([]),
             }),
             elementsSource,
@@ -367,7 +365,6 @@ describe('extra dependencies filter', () => {
                 target: ['meta'],
                 optionalFeatures: { toolingDepsOfCurrentNamespace: true },
               },
-              isFetchWithChangesDetection: false,
               elementsSource: buildElementsSourceFromElements([]),
             }),
             elementsSource: buildElementsSourceFromElements(elements),
@@ -413,7 +410,6 @@ describe('extra dependencies filter', () => {
           ...defaultFilterContext,
           fetchProfile: buildFetchProfile({
             fetchParams: { optionalFeatures: { extraDependencies: false } },
-            isFetchWithChangesDetection: false,
             elementsSource: buildElementsSourceFromElements([]),
           }),
           elementsSource: buildElementsSourceFromElements(elements),

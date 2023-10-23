@@ -149,7 +149,6 @@ const getElementsFromDXFolder = async (
         systemFields: SYSTEM_FIELDS,
         fetchProfile: buildFetchProfile({
           fetchParams: { target: ['hack to make filters think this is partial fetch'] },
-          isFetchWithChangesDetection: false,
           elementsSource: buildElementsSourceFromElements([]),
         }),
         elementsSource: workspaceElements,

@@ -15,7 +15,7 @@
 */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, TemplateExpression, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { getFilterParams } from '../../utils'
+import { createEmptyType, getFilterParams } from '../../utils'
 import jqlReferencesFilter from '../../../src/filters/jql/jql_references'
 import { Filter } from '../../../src/filter'
 import { JIRA, STATUS_TYPE_NAME, AUTOMATION_TYPE } from '../../../src/constants'
@@ -30,6 +30,7 @@ describe('jqlReferencesFilter', () => {
   let doneInstance: InstanceElement
   let todoInstance: InstanceElement
   let automationInstance: InstanceElement
+  let slaInstance: InstanceElement
   let config: JiraConfig
 
   beforeEach(async () => {
@@ -108,12 +109,25 @@ describe('jqlReferencesFilter', () => {
         ],
       }
     )
+    slaInstance = new InstanceElement(
+      'sla1',
+      createEmptyType('SLA'),
+      {
+        config: {
+          goals: [
+            {
+              jqlQuery: 'status = Done',
+            },
+          ],
+        },
+      }
+    )
   })
 
   describe('onFetch', () => {
     it('should add the jql dependencies', async () => {
       await filter.onFetch?.(
-        [instance, fieldInstance, doneInstance, todoInstance, automationInstance]
+        [instance, fieldInstance, doneInstance, todoInstance, automationInstance, slaInstance]
       )
 
       expect(instance.value.jql).toBeInstanceOf(TemplateExpression)
@@ -139,6 +153,11 @@ describe('jqlReferencesFilter', () => {
         ', "',
         new ReferenceExpression(todoInstance.elemID.createNestedID('name'), 'To Do'),
         '")',
+      ])
+      expect(slaInstance.value.config.goals[0].jqlQuery.parts).toEqual([
+        new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+        ' = ',
+        new ReferenceExpression(doneInstance.elemID.createNestedID('name'), 'Done'),
       ])
     })
 

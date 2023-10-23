@@ -1448,7 +1448,6 @@ public class LargeClass${index} {
         },
       } as unknown as ObjectType
       const metadataQuery = {
-        prepare: jest.fn(),
         isTypeMatch: jest.fn(),
         isInstanceMatch: () => true,
         isPartialFetch: () => false,
@@ -1993,11 +1992,9 @@ describe('Fetch via retrieve API', () => {
           metadataQuery: buildMetadataQuery({
             metadataParams: {},
             isFetchWithChangesDetection: false,
-            elementsSource: buildElementsSourceFromElements([]),
           }),
           fetchProfile: buildFetchProfile({
             fetchParams: { addNamespacePrefixToFullName: false },
-            isFetchWithChangesDetection: false,
             elementsSource: buildElementsSourceFromElements([]),
           }),
           typesToSkip: new Set(),
@@ -2032,11 +2029,9 @@ describe('Fetch via retrieve API', () => {
           metadataQuery: buildMetadataQuery({
             metadataParams: {},
             isFetchWithChangesDetection: false,
-            elementsSource: buildElementsSourceFromElements([]),
           }),
           fetchProfile: buildFetchProfile({
             fetchParams: { addNamespacePrefixToFullName: false },
-            isFetchWithChangesDetection: false,
             elementsSource: buildElementsSourceFromElements([]),
           }),
           typesToSkip: new Set(),
@@ -2075,11 +2070,9 @@ describe('Fetch via retrieve API', () => {
           metadataQuery: buildMetadataQuery({
             metadataParams: {},
             isFetchWithChangesDetection: false,
-            elementsSource: buildElementsSourceFromElements([]),
           }),
           fetchProfile: buildFetchProfile({
             fetchParams: { addNamespacePrefixToFullName: false },
-            isFetchWithChangesDetection: false,
             elementsSource: buildElementsSourceFromElements([]),
           }),
           typesToSkip: new Set(),
@@ -2126,11 +2119,9 @@ describe('Fetch via retrieve API', () => {
           metadataQuery: buildMetadataQuery({
             metadataParams: {},
             isFetchWithChangesDetection: false,
-            elementsSource: buildElementsSourceFromElements([]),
           }),
           fetchProfile: buildFetchProfile({
             fetchParams: { addNamespacePrefixToFullName: false },
-            isFetchWithChangesDetection: false,
             elementsSource: buildElementsSourceFromElements([]),
           }),
           typesToSkip: new Set(),

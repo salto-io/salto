@@ -14,23 +14,33 @@
 * limitations under the License.
 */
 import {
-  BuiltinTypes,
+  BuiltinTypes, Change, CORE_ANNOTATIONS,
   createRefToElmWithValue,
   ElemID,
   Field,
-  InstanceElement,
+  InstanceElement, ListType,
   ObjectType,
-  ReadOnlyElementsSource,
+  ReadOnlyElementsSource, ReferenceExpression, toChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import {
-  addDefaults, getChangedAtSingleton,
+  addDefaults,
+  toListType,
+  getChangedAtSingleton,
   getNamespace,
   isCustomMetadataRecordInstance,
-  isCustomMetadataRecordType, isCustomType,
+  isCustomMetadataRecordType,
+  isCustomType,
   isMetadataValues,
   isStandardObject,
   layoutObjAndName,
+  isInstanceOfTypeChangeSync,
+  isInstanceOfTypeSync,
+  isDeactivatedFlowChange,
+  isDeactivatedFlowChangeOnly,
+  getAuthorInformationFromFileProps,
+  isElementWithResolvedParent,
+  getElementAuthorInformation,
 } from '../../src/filters/utils'
 import {
   API_NAME,
@@ -39,13 +49,14 @@ import {
   INSTANCE_FULL_NAME_FIELD,
   LABEL,
   METADATA_TYPE,
-  SALESFORCE,
+  SALESFORCE, STATUS,
 } from '../../src/constants'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import { CustomObject } from '../../src/client/types'
-import { mockInstances, mockTypes } from '../mock_elements'
+import { createFlowChange, mockInstances, mockTypes } from '../mock_elements'
 import { createCustomObjectType } from '../utils'
 import { INSTANCE_SUFFIXES } from '../../src/types'
+import { mockFileProperties } from '../connection'
 
 describe('addDefaults', () => {
   describe('when called with instance', () => {
@@ -353,6 +364,213 @@ describe('addDefaults', () => {
       expect(isCustomType(mockTypes.ApexPage)).toBeFalse()
       expect(isCustomType(mockTypes.CustomObject)).toBeFalse()
       expect(isCustomType(mockTypes.Product2)).toBeFalse()
+    })
+  })
+  describe('isElementWithResolvedParent', () => {
+    let instance: InstanceElement
+    let parent: ObjectType
+
+    beforeEach(() => {
+      instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: 'TestFullName' }, mockTypes.WebLink)
+      parent = mockTypes.Account
+    })
+    it('should return false for element with unresolved parent', () => {
+      instance.annotations[CORE_ANNOTATIONS.PARENT] = new ReferenceExpression(parent.elemID)
+      expect(isElementWithResolvedParent(instance)).toBeFalse()
+    })
+    it('should return false for element with no parent', () => {
+      expect(isElementWithResolvedParent(instance)).toBeFalse()
+    })
+    it('should return false when parent is not an Element', () => {
+      instance.annotations[CORE_ANNOTATIONS.PARENT] = 'Account'
+      expect(isElementWithResolvedParent(instance)).toBeFalse()
+    })
+    it('should return true when parent is an Element', () => {
+      instance.annotations[CORE_ANNOTATIONS.PARENT] = new ReferenceExpression(parent.elemID, parent)
+      expect(isElementWithResolvedParent(instance)).toBeTrue()
+    })
+  })
+
+  describe('getAuthorInformationFromFileProps', () => {
+    it('should return correct author information when values are non empty strings', () => {
+      const fileProps = mockFileProperties({
+        fullName: 'Custom__c',
+        type: 'test',
+        // The _created_at and _created_By values should be these
+        createdByName: 'test',
+        createdDate: '2023-01-01T16:28:30.000Z',
+        lastModifiedByName: 'test2',
+        lastModifiedDate: '2023-02-01T16:28:30.000Z',
+      })
+      expect(getAuthorInformationFromFileProps(fileProps)).toEqual({
+        createdBy: 'test',
+        createdAt: '2023-01-01T16:28:30.000Z',
+        changedBy: 'test2',
+        changedAt: '2023-02-01T16:28:30.000Z',
+      })
+    })
+    it('should return correct author information when values are empty strings', () => {
+      const fileProps = mockFileProperties({
+        fullName: 'Custom__c',
+        type: 'test',
+        // The _created_at and _created_By values should be these
+        createdByName: '',
+        createdDate: '',
+        lastModifiedByName: '',
+        lastModifiedDate: '',
+      })
+      expect(getAuthorInformationFromFileProps(fileProps)).toEqual({
+        createdBy: '',
+        createdAt: '',
+        changedBy: '',
+        changedAt: '',
+      })
+    })
+  })
+
+  describe('getElementAuthorInformation', () => {
+    let instance: InstanceElement
+
+    beforeEach(() => {
+      instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: 'TestFullName' }, mockTypes.WebLink)
+    })
+
+    it('should return undefined on all properties when element is not annotated with any', () => {
+      expect(getElementAuthorInformation(instance)).toEqual({
+        createdBy: undefined,
+        createdAt: undefined,
+        changedBy: undefined,
+        changedAt: undefined,
+      })
+    })
+
+    it('should return correct properties when element is annotated with some', () => {
+      instance.annotations[CORE_ANNOTATIONS.CREATED_BY] = 'test'
+      instance.annotations[CORE_ANNOTATIONS.CREATED_AT] = '2023-01-01T16:28:30.000Z'
+      expect(getElementAuthorInformation(instance)).toEqual({
+        createdBy: 'test',
+        createdAt: '2023-01-01T16:28:30.000Z',
+        changedBy: undefined,
+        changedAt: undefined,
+      })
+    })
+
+    it('should return correct properties when element is annotated with all', () => {
+      instance.annotations[CORE_ANNOTATIONS.CREATED_BY] = 'test'
+      instance.annotations[CORE_ANNOTATIONS.CREATED_AT] = '2023-01-01T16:28:30.000Z'
+      instance.annotations[CORE_ANNOTATIONS.CHANGED_BY] = 'test2'
+      instance.annotations[CORE_ANNOTATIONS.CHANGED_AT] = '2023-01-01T16:28:30.000Z'
+      expect(getElementAuthorInformation(instance)).toEqual({
+        createdBy: 'test',
+        createdAt: '2023-01-01T16:28:30.000Z',
+        changedBy: 'test2',
+        changedAt: '2023-01-01T16:28:30.000Z',
+      })
+    })
+  })
+  describe('toListType', () => {
+    it('should wrap a non List type', () => {
+      expect(toListType(mockTypes.Profile)).toEqual(new ListType(mockTypes.Profile))
+    })
+    it('should not wrap a List type', () => {
+      expect(toListType(new ListType(mockTypes.Profile))).toEqual(new ListType(mockTypes.Profile))
+    })
+  })
+  describe('isInstanceOfTypeSync and isInstanceOfTypeChangeSync', () => {
+    let instance: InstanceElement
+    beforeEach(() => {
+      instance = createInstanceElement({
+        [INSTANCE_FULL_NAME_FIELD]: 'TestInstance',
+        description: 'Test Instance',
+      }, mockTypes.Profile)
+    })
+    describe('isInstanceOfTypeSync', () => {
+      it('should return true when the instance type is one of the provided types', () => {
+        expect(instance).toSatisfy(isInstanceOfTypeSync('Profile'))
+        expect(instance).toSatisfy(isInstanceOfTypeSync('Profile', 'Flow'))
+      })
+      it('should return false when the instance type is not one of the provided types', () => {
+        expect(instance).not.toSatisfy(isInstanceOfTypeSync('Flow'))
+        expect(instance).not.toSatisfy(isInstanceOfTypeSync('Flow', 'ApexClass'))
+      })
+    })
+    describe('isInstanceOfTypeChangeSync', () => {
+      let change: Change
+      beforeEach(() => {
+        change = toChange({ after: instance })
+      })
+      it('should return true when the changed instance type is one of the provided types', () => {
+        expect(change).toSatisfy(isInstanceOfTypeChangeSync('Profile'))
+        expect(change).toSatisfy(isInstanceOfTypeChangeSync('Profile', 'Flow'))
+      })
+      it('should return false when the changed instance type is not one of the provided types', () => {
+        expect(change).not.toSatisfy(isInstanceOfTypeChangeSync('Flow'))
+        expect(change).not.toSatisfy(isInstanceOfTypeChangeSync('Flow', 'ApexClass'))
+      })
+    })
+  })
+
+  describe('isDeactivatedFlowChange', () => {
+    it('should return true when Flow is deactivated', () => {
+      const deactivatedFlowChange = createFlowChange({ flowApiName: 'flow', beforeStatus: 'Active', afterStatus: 'Draft' })
+      expect(deactivatedFlowChange).toSatisfy(isDeactivatedFlowChange)
+    })
+    it('should return false when flow is activated', () => {
+      const activatedFlowChange = createFlowChange({ flowApiName: 'flow', beforeStatus: 'Draft', afterStatus: 'Active' })
+      expect(activatedFlowChange).not.toSatisfy(isDeactivatedFlowChange)
+    })
+    it('should return false when flow was already inactive', () => {
+      const activatedFlowChange = createFlowChange({ flowApiName: 'flow', beforeStatus: 'Draft', afterStatus: 'Obsolete' })
+      expect(activatedFlowChange).not.toSatisfy(isDeactivatedFlowChange)
+    })
+    it('should return false for added inactive flow', () => {
+      const activatedFlowChange = createFlowChange({ flowApiName: 'flow', afterStatus: 'Active' })
+      expect(activatedFlowChange).not.toSatisfy(isDeactivatedFlowChange)
+    })
+    it('should return false when a non Flow instance was deactivated', () => {
+      const workflowChange = toChange({
+        before: createInstanceElement({
+          [INSTANCE_FULL_NAME_FIELD]: 'workflow',
+          [STATUS]: 'Active',
+        }, mockTypes.Workflow),
+        after: createInstanceElement({
+          [INSTANCE_FULL_NAME_FIELD]: 'workflow',
+          [STATUS]: 'Draft',
+        }, mockTypes.Workflow),
+      })
+      expect(workflowChange).not.toSatisfy(isDeactivatedFlowChange)
+    })
+
+    describe('isDeactivatedFlowChangeOnly', () => {
+      it('should return true for deactivated Flow change with no additional modifications', () => {
+        const deactivatedFlowChange = createFlowChange({ flowApiName: 'flow', beforeStatus: 'Active', afterStatus: 'Draft' })
+        expect(deactivatedFlowChange).toSatisfy(isDeactivatedFlowChangeOnly)
+      })
+      it('should return false for deactivated Flow change with additional modifications', () => {
+        const deactivatedFlowChange = createFlowChange({ flowApiName: 'flow', beforeStatus: 'Active', afterStatus: 'Draft', additionalModifications: true })
+        expect(deactivatedFlowChange).not.toSatisfy(isDeactivatedFlowChangeOnly)
+      })
+      it('should return false for activated Flow change with no additional modifications', () => {
+        const deactivatedFlowChange = createFlowChange({ flowApiName: 'flow', beforeStatus: 'Draft', afterStatus: 'Active' })
+        expect(deactivatedFlowChange).not.toSatisfy(isDeactivatedFlowChangeOnly)
+      })
+      it('should return false for addition of inactive Flow', () => {
+        const deactivatedFlowChange = createFlowChange({ flowApiName: 'flow', afterStatus: 'Active' })
+        expect(deactivatedFlowChange).not.toSatisfy(isDeactivatedFlowChangeOnly)
+      })
+      it('should return false when a non Flow instance was deactivated with no additional changes', () => {
+        const workflowChange = toChange({
+          before: createInstanceElement({
+            [INSTANCE_FULL_NAME_FIELD]: 'workflow',
+            [STATUS]: 'Active',
+          }, mockTypes.Workflow),
+          after: createInstanceElement({
+            [INSTANCE_FULL_NAME_FIELD]: 'workflow',
+            [STATUS]: 'Draft',
+          }, mockTypes.Workflow),
+        })
+        expect(workflowChange).not.toSatisfy(isDeactivatedFlowChangeOnly)
+      })
     })
   })
 })

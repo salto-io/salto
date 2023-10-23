@@ -13,23 +13,37 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, Field, ObjectType } from '@salto-io/adapter-api'
+import {
+  CORE_ANNOTATIONS,
+  Element,
+  Field,
+  ObjectType,
+} from '@salto-io/adapter-api'
 import { FileProperties } from 'jsforce-types'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import { CUSTOM_FIELD, CUSTOM_OBJECT, INTERNAL_ID_ANNOTATION } from '../../constants'
-import { apiName, getAuthorAnnotations, isCustomObject } from '../../transformers/transformer'
+import { getAuthorAnnotations, MetadataInstanceElement } from '../../transformers/transformer'
 import { RemoteFilterCreator } from '../../filter'
 import SalesforceClient from '../../client/client'
-import { ensureSafeFilterFetch } from '../utils'
-
-const { awu } = collections.asynciterable
-type AwuIterable<T> = collections.asynciterable.AwuIterable<T>
+import {
+  apiNameSync,
+  ensureSafeFilterFetch,
+  getAuthorInformationFromFileProps,
+  getElementAuthorInformation,
+  isCustomObjectSync,
+  isElementWithResolvedParent,
+  isMetadataInstanceElementSync, metadataTypeSync,
+} from '../utils'
+import { NESTED_INSTANCE_VALUE_TO_TYPE_NAME } from '../custom_objects_to_object_type'
 
 type FilePropertiesMap = Record<string, FileProperties>
 type FieldFileNameParts = {fieldName: string; objectName: string}
 const log = logger(module)
+
+const { makeArray } = collections.array
+const { isDefined } = values
 
 const getFieldNameParts = (fileProperties: FileProperties): FieldFileNameParts =>
   ({ fieldName: fileProperties.fullName.split('.')[1],
@@ -67,37 +81,69 @@ const getCustomFieldFileProperties = async (client: SalesforceClient):
     log.warn(`Encountered errors while listing file properties for CustomFields: ${errors}`)
   }
   return _(result).groupBy((fileProps: FileProperties) => getFieldNameParts(fileProps).objectName)
-    .mapValues((values: FileProperties[]) => _.keyBy(values,
+    .mapValues((v: FileProperties[]) => _.keyBy(v,
       (fileProps:FileProperties) => getFieldNameParts(fileProps).fieldName)).value()
 }
 
-const objectAnnotationSupplier = async (
-  customTypeFilePropertiesMap: FilePropertiesMap,
-  customFieldsFilePropertiesMap: Record<string, FilePropertiesMap>,
+type ObjectAuthorInformationSupplierArgs = {
   object: ObjectType
-): Promise<void> => {
-  const objectApiName = await apiName(object)
-  if (objectApiName in customTypeFilePropertiesMap) {
-    Object.assign(object.annotations,
-      getAuthorAnnotations(customTypeFilePropertiesMap[objectApiName]))
-  }
-  if (objectApiName in customFieldsFilePropertiesMap) {
-    Object.values(customFieldsFilePropertiesMap[objectApiName])
-      .forEach(fileProp => {
-        const field = getObjectFieldByFileProperties(fileProp, object)
-        if (field === undefined) {
-          return
-        }
-        addAuthorAnnotationsToField(
-          fileProp,
-          field
-        )
-        if (fileProp.id !== undefined && fileProp.id !== '') {
-          field.annotations[INTERNAL_ID_ANNOTATION] = fileProp.id
-        }
-      })
+  typeFileProperties?: FileProperties
+  customFieldsFileProperties: FileProperties[]
+  nestedInstances: MetadataInstanceElement[]
+}
+
+const setObjectAuthorInformation = (
+  {
+    object,
+    typeFileProperties,
+    customFieldsFileProperties,
+    nestedInstances,
+  }: ObjectAuthorInformationSupplierArgs
+): void => {
+  // Set author information on the CustomObject's fields
+  Object.values(customFieldsFileProperties)
+    .forEach(fileProp => {
+      const field = getObjectFieldByFileProperties(fileProp, object)
+      if (field === undefined) {
+        return
+      }
+      if (!_.isEmpty(field.annotations[INTERNAL_ID_ANNOTATION])) {
+        field.annotations[INTERNAL_ID_ANNOTATION] = fileProp.id
+      }
+      addAuthorAnnotationsToField(fileProp, field)
+    })
+  // Set the latest AuthorInformation on the CustomObject
+  const allAuthorInformation = [typeFileProperties ? getAuthorInformationFromFileProps(typeFileProperties) : undefined]
+    .concat(customFieldsFileProperties.map(getAuthorInformationFromFileProps))
+    .concat(nestedInstances.map(getElementAuthorInformation))
+    .filter(isDefined)
+  const mostRecentAuthorInformation = _.maxBy(
+    allAuthorInformation,
+    authorInfo => (
+      authorInfo.changedAt !== undefined
+        ? new Date(authorInfo.changedAt).getTime()
+        : undefined
+    )
+  )
+  if (mostRecentAuthorInformation) {
+    object.annotations[CORE_ANNOTATIONS.CHANGED_BY] = mostRecentAuthorInformation.changedBy
+    object.annotations[CORE_ANNOTATIONS.CHANGED_AT] = mostRecentAuthorInformation.changedAt
+    // This info should always come from the FileProperties of the CustomObject.
+    // Standard Objects won't have values here
+    if (typeFileProperties) {
+      object.annotations[CORE_ANNOTATIONS.CREATED_BY] = typeFileProperties.createdByName
+      object.annotations[CORE_ANNOTATIONS.CREATED_AT] = typeFileProperties.createdDate
+    }
   }
 }
+
+const CUSTOM_OBJECT_SUB_INSTANCES_METADATA_TYPES: Set<string> = new Set(
+  Object.values(NESTED_INSTANCE_VALUE_TO_TYPE_NAME)
+)
+
+const isCustomObjectSubInstance = (instance: MetadataInstanceElement): boolean => (
+  CUSTOM_OBJECT_SUB_INSTANCES_METADATA_TYPES.has(metadataTypeSync(instance))
+)
 
 export const WARNING_MESSAGE = 'Encountered an error while trying to populate author information in some of the Salesforce configuration elements.'
 
@@ -114,12 +160,29 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     fetchFilterFunc: async (elements: Element[]) => {
       const customTypeFilePropertiesMap = await getCustomObjectFileProperties(client)
       const customFieldsFilePropertiesMap = await getCustomFieldFileProperties(client)
-      await (awu(elements)
-        .filter(isCustomObject) as AwuIterable<ObjectType>)
-        .forEach(async object => {
-          await objectAnnotationSupplier(customTypeFilePropertiesMap,
-            customFieldsFilePropertiesMap,
-            object)
+      const instancesByParent = _.groupBy(
+        elements
+          .filter(isMetadataInstanceElementSync)
+          .filter(isElementWithResolvedParent),
+        instance => {
+          // SALTO-4824
+          // eslint-disable-next-line no-underscore-dangle
+          const [parent] = instance.annotations._parent
+          return apiNameSync(parent.value)
+        }
+      )
+
+      elements
+        .filter(isCustomObjectSync)
+        .forEach(object => {
+          const typeFileProperties = customTypeFilePropertiesMap[apiNameSync(object) ?? '']
+          const fieldsPropertiesMap = customFieldsFilePropertiesMap[apiNameSync(object) ?? ''] ?? {}
+          setObjectAuthorInformation({
+            object,
+            typeFileProperties,
+            customFieldsFileProperties: Object.values(fieldsPropertiesMap),
+            nestedInstances: makeArray(instancesByParent[apiNameSync(object) ?? '']).filter(isCustomObjectSubInstance),
+          })
         })
     },
   }),

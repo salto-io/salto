@@ -156,19 +156,24 @@ describe('multiple defaults change validator', () => {
       }
 
       it('should have warning for a GlobalValueSet instance', async () => {
-        const beforeInstance = createInstanceElement({ fullName: 'globalValueSetIntance',
-          customValue: [
-            {
-              fullName: 'lolo',
-              default: true,
-              label: 'lolo',
-            },
-            {
-              fullName: 'lala',
-              default: false,
-              label: 'lala',
-            },
-          ] }, type)
+        const beforeInstance = createInstanceElement(
+          {
+            fullName: 'globalValueSetInstance',
+            customValue: [
+              {
+                fullName: 'lolo',
+                default: true,
+                label: 'lolo',
+              },
+              {
+                fullName: 'lala',
+                default: false,
+                label: 'lala',
+              },
+            ],
+          },
+          type,
+        )
         const afterInstance = createAfterInstance(beforeInstance)
         const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
         expect(changeErrors).toHaveLength(1)
@@ -177,7 +182,7 @@ describe('multiple defaults change validator', () => {
         expect(changeError.severity).toEqual('Warning')
       })
       it('should not have error for <= 1 default values GlobalValueSet', async () => {
-        const beforeInstance = createInstanceElement({ fullName: 'globalValueSetIntance',
+        const beforeInstance = createInstanceElement({ fullName: 'globalValueSetInstance',
           customValue: [
             {
               fullName: 'lolo',
@@ -193,6 +198,44 @@ describe('multiple defaults change validator', () => {
         const afterInstance = createAfterInstance(beforeInstance)
         const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
         expect(changeErrors).toHaveLength(0)
+      })
+      it('should handle fields that don`t appear in the type (SALTO-4882)', async () => {
+        const beforeInstance = createInstanceElement(
+          {
+            fullName: 'globalValueSetInstance',
+            customValue: [
+              {
+                fullName: 'lolo',
+                default: true,
+                label: 'lolo',
+              },
+              {
+                fullName: 'lala',
+                default: false,
+                label: 'lala',
+              },
+            ],
+            standardValue: [
+              {
+                fullName: 'lolo',
+                default: true,
+                label: 'lolo',
+              },
+              {
+                fullName: 'lala',
+                default: false,
+                label: 'lala',
+              },
+            ],
+          },
+          type,
+        )
+        const afterInstance = createAfterInstance(beforeInstance)
+        const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
+        expect(changeErrors).toHaveLength(1)
+        const [changeError] = changeErrors
+        expect(changeError.elemID).toEqual(afterInstance.elemID)
+        expect(changeError.severity).toEqual('Warning')
       })
     })
 

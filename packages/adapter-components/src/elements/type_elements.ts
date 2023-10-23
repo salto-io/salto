@@ -43,7 +43,7 @@ export const hideFields = (
       const endLogString = typeFields[fieldName]?.refType !== undefined
         ? `type is ${typeFields[fieldName].refType.elemID.name}`
         : 'field is not defined'
-      log.warn(`Failed to hide field ${type.elemID.name}.${fieldName}- override type is ${fieldType} while ${endLogString}`)
+      log.debug(`Failed to hide field ${type.elemID.name}.${fieldName}- override type is ${fieldType} while ${endLogString}`)
       return
     }
     if (!Object.prototype.hasOwnProperty.call(typeFields, fieldName)) {

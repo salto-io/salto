@@ -47,5 +47,6 @@ module.exports = {
     "^textextensions$": "textextensions",
     "^binaryextensions$": "binaryextensions",
   },
+  workerIdleMemoryLimit: '512MB',
 }
 

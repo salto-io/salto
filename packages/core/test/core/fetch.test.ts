@@ -824,6 +824,100 @@ describe('fetch', () => {
           expect(normalChange.pendingChanges).toHaveLength(0)
         })
       })
+
+      describe('when the working copy has conflicting changes on no-conflict core annotations', () => {
+        const createElements = (name: string): Element[] => {
+          const fieldType = new ObjectType({
+            elemID: new ElemID(testID.adapter, `${name}fieldType`),
+          })
+          const type = new ObjectType({
+            elemID: testID,
+            fields: {
+              field: {
+                refType: BuiltinTypes.BOOLEAN,
+                annotations: {
+                  [CORE_ANNOTATIONS.ALIAS]: `${name}field`,
+                },
+              },
+              [CORE_ANNOTATIONS.ALIAS]: { refType: fieldType },
+            },
+            annotations: {
+              [CORE_ANNOTATIONS.ALIAS]: `${name}type`,
+            },
+          })
+          const instance = new InstanceElement(
+            'instance',
+            type,
+            {
+              nested: {
+                [CORE_ANNOTATIONS.ALIAS]: `${name}instance`,
+              },
+            },
+            undefined,
+            {
+              [CORE_ANNOTATIONS.ALIAS]: `${name}instance`,
+              [CORE_ANNOTATIONS.PARENT]: [
+                new ReferenceExpression(type.elemID.createNestedID('instance', `${name}parent`)),
+              ],
+            }
+          )
+          return [type, instance]
+        }
+        beforeEach(async () => {
+          mockAdapters[testID.adapter].fetch.mockResolvedValueOnce(
+            Promise.resolve({ elements: createElements('account') })
+          )
+          const result = await fetchChanges(
+            mockAdapters,
+            createElementSource(createElements('workspace')),
+            createElementSource(createElements('state')),
+            { [testID.adapter]: 'dummy' },
+            []
+          )
+          changes = [...result.changes]
+        })
+        it('should omit the pending changes on no-conflict core annotations', () => {
+          expect(changes).toHaveLength(6)
+          const typeAnnotationChange = changes.find(change => change.change.id.isEqual(
+            testID.createNestedID('attr', CORE_ANNOTATIONS.ALIAS)
+          ))
+          expect(typeAnnotationChange).toBeDefined()
+          expect(typeAnnotationChange?.pendingChanges).toBeEmpty()
+
+          const fieldAnnotationChange = changes.find(change => change.change.id.isEqual(
+            testID.createNestedID('field', 'field', CORE_ANNOTATIONS.ALIAS)
+          ))
+          expect(fieldAnnotationChange).toBeDefined()
+          expect(fieldAnnotationChange?.pendingChanges).toBeEmpty()
+
+          const instanceAnnotationChange = changes.find(change => change.change.id.isEqual(
+            testID.createNestedID('instance', 'instance', CORE_ANNOTATIONS.ALIAS)
+          ))
+          expect(instanceAnnotationChange).toBeDefined()
+          expect(instanceAnnotationChange?.pendingChanges).toBeEmpty()
+
+          const parentAnnotationChange = changes.find(change => change.change.id.isEqual(
+            testID.createNestedID('instance', 'instance', CORE_ANNOTATIONS.PARENT, '0')
+          ))
+          expect(parentAnnotationChange).toBeDefined()
+          expect(parentAnnotationChange?.pendingChanges).toBeEmpty()
+
+          // should not omit pendingChanges on field named "_alias"
+          const fieldChange = changes.find(change => change.change.id.isEqual(
+            testID.createNestedID('field', CORE_ANNOTATIONS.ALIAS)
+          ))
+          expect(fieldChange).toBeDefined()
+          expect(fieldChange?.pendingChanges).not.toBeEmpty()
+
+          // should not omit pendingChanges on nested "_alias"
+          const nestedAnnotationChange = changes.find(change => change.change.id.isEqual(
+            testID.createNestedID('instance', 'instance', 'nested', CORE_ANNOTATIONS.ALIAS)
+          ))
+          expect(nestedAnnotationChange).toBeDefined()
+          expect(nestedAnnotationChange?.pendingChanges).not.toBeEmpty()
+        })
+      })
+
       describe.each(['static files', 'multiline strings'] as const)('when the working copy has some mergeable changes in %s', type => {
         const instanceName = 'name'
         const strings = {

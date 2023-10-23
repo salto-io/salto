@@ -23,10 +23,7 @@ import {
   isSaltoElementError, ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId,
   AdapterOperationsContext, FetchResult, isAdditionChange, isStaticFile,
   isAdditionOrModificationChange, Value, StaticFile, isElement, AuthorInformation, getAuthorInformation,
-  isModificationChange,
-  toChange,
-  ModificationChange,
-  AdditionChange,
+  isModificationChange, toChange, ModificationChange, AdditionChange, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements, safeJsonStringify, walkOnElement, WalkOnFunc, WALK_NEXT_STEP, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -48,6 +45,14 @@ const { isTypeOfOrUndefined } = types
 const log = logger(module)
 
 const MAX_SPLIT_CONCURRENCY = 2000
+
+// these core annotations are generated from other values of the element and are non-deployable.
+// having conflicts on them have no real meaning so it's better to omit them.
+// more context can be found in https://salto-io.atlassian.net/browse/SALTO-4888
+const NO_CONFLICT_CORE_ANNOTATIONS = [
+  CORE_ANNOTATIONS.ALIAS,
+  CORE_ANNOTATIONS.PARENT,
+]
 
 export type FetchChangeMetadata = AuthorInformation
 
@@ -219,6 +224,18 @@ const autoMergeTextChange: ChangeTransformFunction = async change => {
   if (_.isString(current) && _.isString(incoming) && isTypeOfOrUndefined(base, _.isString)) {
     const merged = mergeStrings(changeId, { current, base, incoming })
     return [merged !== undefined ? toMergedTextChange(change, merged) : change]
+  }
+  return [change]
+}
+
+const omitNoConflictCoreAnnotationsPendingChanges: ChangeTransformFunction = async change => {
+  if (_.isEmpty(change.pendingChanges) || change.change.id.isBaseID()) {
+    return [change]
+  }
+  const { path: [name] } = change.change.id.createBaseID()
+  if (NO_CONFLICT_CORE_ANNOTATIONS.includes(name)) {
+    log.debug('omitting conflict on core annotation %s', change.change.id.getFullName())
+    return [{ ...change, pendingChanges: [] }]
   }
   return [change]
 }
@@ -747,6 +764,7 @@ export const calcFetchChanges = async (
   )
 
   const changes = await awu(fetchChanges)
+    .flatMap(omitNoConflictCoreAnnotationsPendingChanges)
     .flatMap(autoMergeTextChange)
     .flatMap(toChangesWithPath(async name => serviceElementsMap[name.getFullName()] ?? []))
     .flatMap(addFetchChangeMetadata(partialFetchElementSource))

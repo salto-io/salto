@@ -17,6 +17,7 @@
 import { ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, ListType } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { elements as adapterElements } from '@salto-io/adapter-components'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { JIRA, FORM_TYPE } from '../../constants'
 
 export type detailedFormResponse = {
@@ -91,6 +92,30 @@ export const createFormType = (): {
       },
     },
   })
+  const attributeContnetLayoutType = new ObjectType({
+    elemID: new ElemID(JIRA, 'attributeContnetLayout'),
+    fields: {
+      localId: {
+        refType: BuiltinTypes.STRING,
+        annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+      },
+    },
+  })
+  const contentLayoutType = new ObjectType({
+    elemID: new ElemID(JIRA, 'contentLayout'),
+    fields: {
+      type: {
+        refType: BuiltinTypes.STRING,
+      },
+      localId: {
+        refType: new ListType(BuiltinTypes.STRING),
+        annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+      },
+      attrs: {
+        refType: attributeContnetLayoutType,
+      },
+    },
+  })
   const FormLayoutItemType = new ObjectType({
     elemID: new ElemID(JIRA, 'layoutForm'),
     fields: {
@@ -101,7 +126,7 @@ export const createFormType = (): {
         refType: BuiltinTypes.STRING,
       },
       content: {
-        refType: new ListType(BuiltinTypes.UNKNOWN),
+        refType: new ListType(contentLayoutType),
       },
     },
   })
@@ -168,6 +193,9 @@ export const createFormType = (): {
   })
   return {
     formType,
-    subTypes: [FormSubmitType, FormSettingsType, FormLayoutItemType, FormDesignType, questionType],
+    subTypes: [FormSubmitType, FormSettingsType, FormLayoutItemType, FormDesignType, questionType, contentLayoutType],
   }
 }
+
+export const isFormsResponse = createSchemeGuard<formsResponse>(FORMS_RESPONSE_SCHEME)
+export const isDetailedFormsResponse = createSchemeGuard<detailedFormResponse>(DETAILED_FORM_RESPONSE_SCHEME)

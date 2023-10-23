@@ -17,17 +17,18 @@
 import { InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { elements as adapterElements } from '@salto-io/adapter-components'
-import { createSchemeGuard, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
-import { JIRA, PROJECT_TYPE } from '../../constants'
+import { JIRA, PROJECT_TYPE, SERVICE_DESK } from '../../constants'
 import { getCloudId } from '../automation/cloud_id'
-import { DETAILED_FORM_RESPONSE_SCHEME, FORMS_RESPONSE_SCHEME, createFormType, detailedFormResponse, formsResponse } from './forms_types'
+import { createFormType, isDetailedFormsResponse, isFormsResponse } from './forms_types'
 
 const { isDefined } = lowerDashValues
 
-const isFormsResponse = createSchemeGuard<formsResponse>(FORMS_RESPONSE_SCHEME)
-const isDetailedFormsResponse = createSchemeGuard<detailedFormResponse>(DETAILED_FORM_RESPONSE_SCHEME)
-
+/*
+This filter fetches all forms from Jira Service Management and creates an instance element for each form.
+We use filter because we need to use cloudId which is not available in the infrastructure.
+*/
 const filter: FilterCreator = ({ config, client, getElemIdFunc }) => ({
   name: 'formsFilter',
   onFetch: async elements => {
@@ -39,19 +40,25 @@ const filter: FilterCreator = ({ config, client, getElemIdFunc }) => ({
     elements.push(formType)
     subTypes.forEach(subType => { elements.push(subType) })
 
-    const jsmProject = elements
+    const jsmProjects = elements
       .filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === PROJECT_TYPE)
-      .filter(e => e.value.projectTypeKey === 'service_desk')
+      .filter(instnace => instnace.elemID.typeName === PROJECT_TYPE)
+      .filter(project => project.value.projectTypeKey === SERVICE_DESK)
 
-    const forms = (await Promise.all(jsmProject.flatMap(async project => {
-      const url = `/gateway/api/proforma/cloudid/${cloudId}/api/1/projects/${project.value.id}/forms`
-      const res = await client.getSinglePage({ url })
-      if (isFormsResponse(res)) {
-        return Promise.all(res.data.map(async formResponse => {
-          const detailedUrl = `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms/${formResponse.id}`
-          const detailedRes = await client.getSinglePage({ url: detailedUrl })
-          if (isDetailedFormsResponse(detailedRes)) {
+    const forms = (await Promise.all(jsmProjects
+      .flatMap(async project => {
+        const url = `/gateway/api/proforma/cloudid/${cloudId}/api/1/projects/${project.value.id}/forms`
+        const res = await client.getSinglePage({ url })
+        if (!isFormsResponse(res)) {
+          return undefined
+        }
+        return Promise.all(res.data
+          .map(async formResponse => {
+            const detailedUrl = `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms/${formResponse.id}`
+            const detailedRes = await client.getSinglePage({ url: detailedUrl })
+            if (!isDetailedFormsResponse(detailedRes)) {
+              return undefined
+            }
             const name = `${project.value.name}_${formResponse.name}`
             delete detailedRes.data?.publish
             delete detailedRes.data.design.settings.templateFormUuid
@@ -70,12 +77,10 @@ const filter: FilterCreator = ({ config, client, getElemIdFunc }) => ({
               formValue,
               [...prefixPath.slice(0, -1), 'forms', pathNaclCase(instanceName)],
             )
-          }
-          return undefined
-        }))
-      }
-      return undefined
-    }))).flat().filter(isDefined)
+          }))
+      })))
+      .flat()
+      .filter(isDefined)
     forms.forEach(form => elements.push(form))
   },
 })

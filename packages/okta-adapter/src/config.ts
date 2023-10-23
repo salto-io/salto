@@ -327,6 +327,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   api__v1__apps: {
     request: {
       url: '/api/v1/apps',
+      queryParams: { limit: '200' },
       recurseInto: [
         {
           type: 'api__v1__apps___appId___groups@uuuuuu_00123_00125uu',
@@ -397,6 +398,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           applicationId: 'id',
         },
       },
+    },
+  },
+  'api__v1__apps___appId___groups@uuuuuu_00123_00125uu': {
+    request: {
+      url: 'api/v1/apps/{appId}/groups',
+      queryParams: { limit: '200' },
     },
   },
   AppUserSchema: {
@@ -980,6 +987,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceUrl: '/admin/workflow/eventhooks',
     },
   },
+  api__v1__groups__rules: {
+    request: {
+      url: '/api/v1/groups/rules',
+      queryParams: { limit: '200' },
+    },
+  },
   GroupRule: {
     transformation: {
       fieldTypeOverrides: [{ fieldName: 'allGroupsValid', fieldType: 'boolean' }],
@@ -1220,7 +1233,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   },
   ProfileMapping: {
     transformation: {
-      idFields: ['source.name', 'target.name'],
+      idFields: ['&source.id', '&target.id'],
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],

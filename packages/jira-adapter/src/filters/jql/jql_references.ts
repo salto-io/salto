@@ -18,7 +18,7 @@ import { setPath, walkOnElement, WALK_NEXT_STEP, isResolvedReferenceExpression }
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { AUTOMATION_TYPE, ESCALATION_SERVICE_TYPE, WORKFLOW_TYPE_NAME } from '../../constants'
+import { AUTOMATION_TYPE, ESCALATION_SERVICE_TYPE, QUEUE_TYPE, WORKFLOW_TYPE_NAME } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { generateTemplateExpression, generateJqlContext, removeCustomFieldPrefix } from './template_expression_generator'
 
@@ -31,6 +31,7 @@ const JQL_FIELDS = [
   { type: 'Board', path: ['subQuery'] },
   { type: 'Webhook', path: ['filters', 'issue_related_events_section'] },
   { type: ESCALATION_SERVICE_TYPE, path: ['jql'] },
+  { type: QUEUE_TYPE, path: ['jql'] },
 ]
 
 type JqlDetails = {
@@ -53,6 +54,10 @@ const AUTOMATION_JQL_RELATIVE_PATHS_BY_TYPE: Record<string, string[][]> = {
 
 const SCRIPT_RUNNER_JQL_RELATIVE_PATHS_BY_TYPE: Record<string, string[][]> = {
   'com.onresolve.jira.groovy.GroovyCondition': [['configuration', 'FIELD_JQL_QUERY']],
+}
+
+const instanceTypeToString: Record<string, string[]> = {
+  SLA: ['jqlQuery'],
 }
 
 const instanceTypeToMap: Map<string, Record<string, string[][]>> = new Map([
@@ -83,9 +88,33 @@ const getRelativePathJqls = (instance: InstanceElement, pathMap: Record<string, 
   return jqlPaths
 }
 
+const getRelativePathJqlsJsm = (instance: InstanceElement, pathMap: Record<string, string[]>): JqlDetails[] => {
+  const jqlPaths: JqlDetails[] = []
+  walkOnElement({
+    element: instance,
+    func: ({ value, path }) => {
+      const jqlRelativePaths = pathMap[instance.elemID.typeName]
+      if (jqlRelativePaths !== undefined) {
+        const jqlValue = _.get(value, jqlRelativePaths)
+        if (_.isString(jqlValue) || isTemplateExpression(jqlValue)) {
+          jqlPaths.push({
+            path: path.createNestedID(...jqlRelativePaths),
+            jql: jqlValue,
+          })
+        }
+      }
+      return WALK_NEXT_STEP.RECURSE
+    },
+  })
+  return jqlPaths
+}
+
 const getJqls = (instance: InstanceElement): JqlDetails[] => {
   if (instanceTypeToMap.has(instance.elemID.typeName)) {
     return getRelativePathJqls(instance, instanceTypeToMap.get(instance.elemID.typeName) as Record<string, string[][]>)
+  }
+  if (Object.keys(instanceTypeToString).includes(instance.elemID.typeName)) {
+    return getRelativePathJqlsJsm(instance, instanceTypeToString)
   }
   return JQL_FIELDS
     .filter(({ type }) => type === instance.elemID.typeName)

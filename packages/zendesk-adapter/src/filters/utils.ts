@@ -17,7 +17,7 @@ import _ from 'lodash'
 import Joi from 'joi'
 import {
   Change, ChangeDataType, getChangeData, InstanceElement,
-  isAdditionOrModificationChange, isInstanceChange, ReferenceExpression, toChange, Value,
+  isAdditionOrModificationChange, isInstanceChange, ReferenceExpression, TemplatePart, toChange, Value,
 } from '@salto-io/adapter-api'
 import {
   applyFunctionToChangeData,
@@ -27,11 +27,25 @@ import {
   references,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
+import wu from 'wu'
+import { references as referencesUtils } from '@salto-io/adapter-components'
 import { lookupFunc } from './field_references'
 import { ZendeskFetchConfig } from '../config'
-import { BRAND_TYPE_NAME, CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../constants'
+import {
+  ARTICLE_ATTACHMENT_TYPE_NAME,
+  ARTICLE_ATTACHMENTS_FIELD,
+  ARTICLE_TYPE_NAME,
+  ARTICLES_FIELD,
+  BRAND_TYPE_NAME,
+  CATEGORIES_FIELD,
+  CATEGORY_TYPE_NAME,
+  CUSTOM_FIELD_OPTIONS_FIELD_NAME, SECTION_TYPE_NAME,
+  SECTIONS_FIELD, TICKET_FORM_TYPE_NAME, ZENDESK,
+} from '../constants'
 
+const { isDefined } = lowerDashValues
+const { createMissingInstance } = referencesUtils
 const { awu } = collections.asynciterable
 const log = logger(module)
 const { isArrayOfRefExprToInstances } = references
@@ -145,4 +159,69 @@ export const getCustomFieldOptionsFromChanges = (parentTypeName: string, childTy
     .concat(parentInstances.map(instance => instance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] ?? []))
     .flat()
     .filter(isCustomFieldOption)
+}
+
+export const ELEMENTS_REGEXES = [
+  [CATEGORIES_FIELD, CATEGORY_TYPE_NAME],
+  [SECTIONS_FIELD, SECTION_TYPE_NAME],
+  [ARTICLES_FIELD, ARTICLE_TYPE_NAME],
+  [ARTICLE_ATTACHMENTS_FIELD, ARTICLE_ATTACHMENT_TYPE_NAME],
+].map(([field, type]) => ({
+  type,
+  urlRegex: new RegExp(`(\\/${field}\\/\\d+)`),
+  idRegex: new RegExp(`(?<url>/${field}/)(?<id>\\d+)`),
+})).concat({
+  type: TICKET_FORM_TYPE_NAME,
+  urlRegex: /(ticket_form_id=\d+)/,
+  idRegex: /(?<url>ticket_form_id=)(?<id>\d+)/,
+})
+
+// Attempt to match the regex to an element and create a reference to that element
+const createInstanceReference = ({ urlPart, brandOfInstance, instancesById, idRegex, type, enableMissingReferences }: {
+  urlPart: string
+  brandOfInstance?: InstanceElement
+  instancesById: Record<string, InstanceElement>
+  idRegex: RegExp
+  type: string
+  enableMissingReferences?: boolean
+}): TemplatePart[] | undefined => {
+  const { url, id } = urlPart.match(idRegex)?.groups ?? {}
+  if (url !== undefined && id !== undefined) {
+    const referencedInstance = instancesById[id]
+    if (referencedInstance) {
+      // We want to keep the original url and replace just the id
+      return [url, new ReferenceExpression(referencedInstance.elemID, referencedInstance)]
+    }
+    // if could not find a valid instance, create a MissingReferences.
+    if (enableMissingReferences) {
+      // If we know the brand that the instance belongs to, we can create a MissingReference with the brand name
+      const missingInstanceId = brandOfInstance ? `${brandOfInstance.elemID.name}_${id}` : id
+      const missingInstance = createMissingInstance(ZENDESK, type, missingInstanceId)
+      missingInstance.value.id = id
+      return [url, new ReferenceExpression(missingInstance.elemID, missingInstance)]
+    }
+  }
+  return undefined
+}
+
+// Receives a url part (e.g. /categories/123) and attempts to replace the number with a reference to the element
+export const transformReferenceUrls = ({ urlPart, brandOfInstance, instancesById, enableMissingReferences }: {
+  urlPart: string
+  brandOfInstance?: InstanceElement
+  instancesById: Record<string, InstanceElement>
+  enableMissingReferences?: boolean
+}): TemplatePart[] => {
+  // Attempt to match other instances, stop on the first result
+  const result = wu(ELEMENTS_REGEXES).map(({ idRegex, type }) =>
+    createInstanceReference({
+      urlPart,
+      brandOfInstance,
+      instancesById,
+      idRegex,
+      type,
+      enableMissingReferences,
+    })).find(isDefined)
+
+  // If nothing matched, return the original url
+  return result ?? [urlPart]
 }

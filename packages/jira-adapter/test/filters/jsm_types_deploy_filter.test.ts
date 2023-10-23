@@ -20,7 +20,7 @@ import { InstanceElement, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-i
 import { getDefaultConfig } from '../../src/config/config'
 import jsmTypesFilter from '../../src/filters/jsm_types_deploy_filter'
 import { createEmptyType, getFilterParams } from '../utils'
-import { CUSTOMER_PERMISSIONS_TYPE, PROJECT_TYPE } from '../../src/constants'
+import { PORTAL_GROUP_TYPE, PROJECT_TYPE } from '../../src/constants'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -39,8 +39,7 @@ describe('jsmTypesDeployFilter', () => {
     let filter: FilterType
     const projectType = createEmptyType(PROJECT_TYPE)
     let projectInstance: InstanceElement
-    const customerPermissionsType = createEmptyType(CUSTOMER_PERMISSIONS_TYPE)
-    let customerPermissionsInstance: InstanceElement
+    let portalGroupInstance: InstanceElement
 
     beforeEach(() => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
@@ -59,14 +58,12 @@ describe('jsmTypesDeployFilter', () => {
     describe('deploy', () => {
       beforeEach(async () => {
         jest.clearAllMocks()
-        customerPermissionsInstance = new InstanceElement(
-          'customerPermissions1',
-          customerPermissionsType,
+        portalGroupInstance = new InstanceElement(
+          'portalGroup1',
+          createEmptyType(PORTAL_GROUP_TYPE),
           {
             id: 11111,
-            manageEnabled: false,
-            autocompleteEnabled: false,
-            serviceDeskOpenAccess: true,
+            name: 'portalGroup1',
           },
           undefined,
           {
@@ -77,12 +74,12 @@ describe('jsmTypesDeployFilter', () => {
         )
       })
       it('should pass the correct params to deployChange on update', async () => {
-        const clonedCustomerPermissionsBefore = customerPermissionsInstance.clone()
-        const clonedCustomerPermissionsAfter = customerPermissionsInstance.clone()
-        clonedCustomerPermissionsAfter.value.serviceDeskOpenAccess = false
+        const clonedPortalGroupBefore = portalGroupInstance.clone()
+        const clonedPortalGroupAfter = portalGroupInstance.clone()
+        clonedPortalGroupAfter.value.serviceDeskOpenAccess = false
         mockDeployChange.mockImplementation(async () => ({}))
         const res = await filter
-          .deploy([{ action: 'modify', data: { before: clonedCustomerPermissionsBefore, after: clonedCustomerPermissionsAfter } }])
+          .deploy([{ action: 'modify', data: { before: clonedPortalGroupBefore, after: clonedPortalGroupAfter } }])
         expect(mockDeployChange).toHaveBeenCalledTimes(1)
         expect(res.leftoverChanges).toHaveLength(0)
         expect(res.deployResult.errors).toHaveLength(0)
@@ -91,27 +88,27 @@ describe('jsmTypesDeployFilter', () => {
           .toEqual([
             {
               action: 'modify',
-              data: { before: clonedCustomerPermissionsBefore, after: clonedCustomerPermissionsAfter },
+              data: { before: clonedPortalGroupBefore, after: clonedPortalGroupAfter },
             },
           ])
       })
       it('should not deploy if enableJSM is false', async () => {
         const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
         config.fetch.enableJSM = false
-        const clonedCustomerPermissionsBefore = customerPermissionsInstance.clone()
-        const clonedCustomerPermissionsAfter = customerPermissionsInstance.clone()
-        clonedCustomerPermissionsAfter.value.serviceDeskOpenAccess = false
+        const clonedPortalGroupBefore = portalGroupInstance.clone()
+        const clonedPortalGroupAfter = portalGroupInstance.clone()
+        clonedPortalGroupAfter.value.name = 'portalGroup2'
         filter = jsmTypesFilter(getFilterParams({ config })) as typeof filter
         mockDeployChange.mockImplementation(async () => ({}))
         const res = await filter
-          .deploy([{ action: 'modify', data: { before: clonedCustomerPermissionsBefore, after: clonedCustomerPermissionsAfter } }])
+          .deploy([{ action: 'modify', data: { before: clonedPortalGroupBefore, after: clonedPortalGroupAfter } }])
         expect(mockDeployChange).toHaveBeenCalledTimes(0)
         expect(res.leftoverChanges).toHaveLength(1)
         expect(res.leftoverChanges)
           .toEqual([
             {
               action: 'modify',
-              data: { before: clonedCustomerPermissionsBefore, after: clonedCustomerPermissionsAfter },
+              data: { before: clonedPortalGroupBefore, after: clonedPortalGroupAfter },
             },
           ])
         expect(res.deployResult.errors).toHaveLength(0)

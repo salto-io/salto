@@ -17,13 +17,15 @@
 import { isInstanceElement } from '@salto-io/adapter-api'
 import { getParent, pathNaclCase } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
-import { CALENDAR_TYPE, QUEUE_TYPE, PORTAL_GROUP_TYPE, REQUEST_TYPE_NAME } from '../constants'
+import { CALENDAR_TYPE, QUEUE_TYPE, PORTAL_GROUP_TYPE, REQUEST_TYPE_NAME, PORTAL_SETTINGS_TYPE_NAME, SLA_TYPE_NAME } from '../constants'
 
 const JSM_ELEMENT_DIRECTORY: Record<string, string> = {
   [QUEUE_TYPE]: 'queues',
   [CALENDAR_TYPE]: 'calendars',
   [REQUEST_TYPE_NAME]: 'requestTypes',
   [PORTAL_GROUP_TYPE]: 'portalGroups',
+  [PORTAL_SETTINGS_TYPE_NAME]: 'portalSettings',
+  [SLA_TYPE_NAME]: 'SLAs',
 }
 const filter: FilterCreator = ({ config }) => ({
   name: 'jsmPathsFilter',

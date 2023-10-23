@@ -30,10 +30,14 @@ import {
   InstanceElement,
   isAdditionOrModificationChange, isElement,
   isField,
-  isInstanceElement, isListType,
+  isInstanceElement,
+  isListType,
+  isModificationChange,
   isObjectType,
   isReferenceExpression,
-  isRemovalOrModificationChange, ListType,
+  isRemovalOrModificationChange,
+  ListType,
+  ModificationChange,
   ObjectType,
   ReadOnlyElementsSource,
   ReferenceExpression,
@@ -41,13 +45,14 @@ import {
   TypeMap,
   Value,
 } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements, createSchemeGuard, getParents } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, createSchemeGuard, detailedCompare, getParents } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
 import { chunks, collections, types } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import SalesforceClient, { ErrorFilter } from '../client/client'
 import { FetchElements, INSTANCE_SUFFIXES, OptionalFeatures, RelatedPropsByMetadataType } from '../types'
 import {
+  ACTIVE,
   API_NAME,
   API_NAME_SEPARATOR,
   CHANGED_AT_SINGLETON,
@@ -56,6 +61,7 @@ import {
   CUSTOM_OBJECT,
   CUSTOM_OBJECT_ID_FIELD,
   FIELD_ANNOTATIONS,
+  FLOW_METADATA_TYPE,
   INSTANCE_FULL_NAME_FIELD,
   INTERNAL_ID_ANNOTATION,
   INTERNAL_ID_FIELD,
@@ -67,6 +73,7 @@ import {
   NAMESPACE_SEPARATOR,
   PLURAL_LABEL,
   SALESFORCE,
+  STATUS,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
 import * as transformer from '../transformers/transformer'
@@ -83,7 +90,6 @@ import {
 } from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
 import { createListMetadataObjectsConfigChange } from '../config_change'
-import * as metadataTypes from '../fetch_profile/metadata_types'
 
 const { toArrayAsync, awu } = collections.asynciterable
 const { splitDuplicates } = collections.array
@@ -96,15 +102,18 @@ const METADATA_VALUES_SCHEME = Joi.object({
 
 export const isMetadataValues = createSchemeGuard<MetadataValues>(METADATA_VALUES_SCHEME)
 
-// This function checks whether an element is an instance of a certain metadata type
-// note that for instances of custom objects this will check the specific type (i.e Lead)
-// if you want instances of all custom objects use isInstanceOfCustomObject
+/**
+ * @deprecated use {@link isInstanceOfTypeSync} instead.
+ */
 export const isInstanceOfType = (...typeNames: string[]) => (
   async (elem: Element): Promise<boolean> => (
     isInstanceElement(elem) && typeNames.includes(await apiName(await elem.getType()))
   )
 )
 
+/**
+ * @deprecated use {@link isInstanceOfTypeChangeSync} instead.
+ */
 export const isInstanceOfTypeChange = (...typeNames: string[]) => (
   (change: Change): Promise<boolean> => (
     isInstanceOfType(...typeNames)(getChangeData(change))
@@ -565,6 +574,41 @@ export const listMetadataObjects = async (
 export const toListType = (type: TypeElement): ListType => (
   isListType(type) ? type : new ListType(type)
 )
+
+// This function checks whether an element is an instance of a certain metadata type
+// note that for instances of custom objects this will check the specific type (i.e Lead)
+// if you want instances of all custom objects use isInstanceOfCustomObject
+export const isInstanceOfTypeSync = (...typeNames: string[]) => (
+  (elem: Element): elem is InstanceElement => (
+    isInstanceElement(elem) && typeNames.includes(apiNameSync(elem.getTypeSync()) ?? '')
+  )
+)
+
+export const isInstanceOfTypeChangeSync = (...typeNames: string[]) => (
+  (change: Change): change is Change<InstanceElement> => (
+    isInstanceOfTypeSync(...typeNames)(getChangeData(change))
+  )
+)
+
+export const isDeactivatedFlowChange = (change: Change): change is ModificationChange<InstanceElement> => (
+  isModificationChange(change)
+  && isInstanceOfTypeChangeSync(FLOW_METADATA_TYPE)(change)
+  && change.data.before.value[STATUS] === 'Active'
+  && change.data.after.value[STATUS] !== 'Active'
+)
+
+export const isDeactivatedFlowChangeOnly = (change: Change): change is ModificationChange<InstanceElement> => {
+  if (!isDeactivatedFlowChange(change)) {
+    return false
+  }
+  const afterClone = change.data.after.clone()
+  afterClone.value[STATUS] = ACTIVE
+  const diffWithoutStatus = detailedCompare(
+    change.data.before,
+    afterClone,
+  )
+  return _.isEmpty(diffWithoutStatus)
+}
 
 export type ElementWithResolvedParent<T extends Element> = T & {
   annotations: {

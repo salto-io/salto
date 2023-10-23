@@ -18,18 +18,23 @@ import {
   BuiltinTypes, TemplateExpression, MapType, toChange, isInstanceElement, UnresolvedReference,
 } from '@salto-io/adapter-api'
 import { filterUtils, references as referencesUtils } from '@salto-io/adapter-components'
+import _ from 'lodash'
 import filterCreator, {
   TICKET_ORGANIZATION_FIELD,
   TICKET_TICKET_FIELD_OPTION_TITLE,
   TICKET_TICKET_FIELD, TICKET_USER_FIELD, prepRef,
 } from '../../src/filters/handle_template_expressions'
 import {
+  ARTICLE_TRANSLATION_TYPE_NAME, ARTICLE_TYPE_NAME,
+  CUSTOM_OBJECT_FIELD_TYPE_NAME,
+  CUSTOM_OBJECT_TYPE_NAME,
   GROUP_TYPE_NAME,
   ORG_FIELD_TYPE_NAME,
   USER_FIELD_TYPE_NAME,
   ZENDESK,
 } from '../../src/constants'
 import { createFilterCreatorParams } from '../utils'
+import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 
 const { createMissingInstance } = referencesUtils
 
@@ -91,6 +96,14 @@ describe('handle templates filter', () => {
 
   const groupType = new ObjectType({
     elemID: new ElemID(ZENDESK, GROUP_TYPE_NAME),
+  })
+
+  const customObjectType = new ObjectType({
+    elemID: new ElemID(ZENDESK, CUSTOM_OBJECT_TYPE_NAME),
+  })
+
+  const customObjectFieldType = new ObjectType({
+    elemID: new ElemID(ZENDESK, CUSTOM_OBJECT_FIELD_TYPE_NAME),
   })
 
   const dynamicContentRecord = new InstanceElement('dynamic_content_test', dynamicContentType, {
@@ -225,6 +238,21 @@ describe('handle templates filter', () => {
     settings_objects: [{ name: 'uri_templates', value: 'object template: {{ticket.ticket_field_1452}}' }],
   })
 
+  const article = new InstanceElement(
+    'article',
+    new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }),
+    {
+      id: 12341234,
+    }
+  )
+
+  const articleTranslation = new InstanceElement(
+    'articleTranslation',
+    new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TRANSLATION_TYPE_NAME) }),
+    {
+      body: `"/hc/test/test/articles/${article.value.id}/test`,
+    }
+  )
 
   const generateElements = (): (InstanceElement | ObjectType)[] => ([testType, placeholder1Type,
     placeholder2Type, placeholder1, placeholder2, macro1, macro2, macro3, macroAlmostTemplate,
@@ -233,7 +261,8 @@ describe('handle templates filter', () => {
     appInstallationType, macroWithDC, macroWithHyphenDC, dynamicContentRecord,
     hyphenDynamicContentRecord, macroComplicated, macroDifferentBracket,
     macroWithSideConversationTicketTemplate, placeholder3, placeholderOrganization1, placeholderOrganization2,
-    placeholderUser1, placeholderUser2, macroOrganization, macroUser, macroMissingUserAndOrganization])
+    placeholderUser1, placeholderUser2, macroOrganization, macroUser, macroMissingUserAndOrganization,
+    article, articleTranslation])
     .map(element => element.clone())
 
   describe('on fetch', () => {
@@ -441,20 +470,45 @@ describe('handle templates filter', () => {
         ],
       }))
     })
+    it('should not resolve urls when the config flag is off', async () => {
+      const fetchedArticleTranslation = elements.filter(isInstanceElement).find(i => i.elemID.name === 'articleTranslation')
+      expect(fetchedArticleTranslation?.value.body).toEqual(`"/hc/test/test/articles/${article.value.id}/test`)
+    })
+    it('should resolve urls correctly when the config flag is on', async () => {
+      elements = generateElements()
+      const config = _.cloneDeep(DEFAULT_CONFIG)
+      config[FETCH_CONFIG].extractReferencesFromFreeText = true
+      const resolveLinksFilter = filterCreator(createFilterCreatorParams({ config })) as FilterType
+      await resolveLinksFilter.onFetch(elements)
+
+      const fetchedArticleTranslation = elements.filter(isInstanceElement).find(i => i.elemID.name === 'articleTranslation')
+      expect(fetchedArticleTranslation?.value.body).toEqual(new TemplateExpression({ parts: [
+        '"/hc/test/test/articles/',
+        new ReferenceExpression(article.elemID, article),
+        '/test',
+      ] }))
+    })
   })
   describe('preDeploy', () => {
-    let elementsBeforeFetch: (InstanceElement | ObjectType)[]
-    let elementsAfterPreDeploy: (InstanceElement | ObjectType)[]
-
-    beforeAll(async () => {
-      elementsBeforeFetch = generateElements()
+    it('Returns elements to origin after predeploy', async () => {
+      const elementsBeforeFetch = generateElements()
       const elementsAfterFetch = elementsBeforeFetch.map(e => e.clone())
       await filter.onFetch(elementsAfterFetch)
-      elementsAfterPreDeploy = elementsAfterFetch.map(e => e.clone())
+      const elementsAfterPreDeploy = elementsAfterFetch.map(e => e.clone())
       await filter.preDeploy(elementsAfterPreDeploy.map(e => toChange({ before: e, after: e })))
+      expect(elementsAfterPreDeploy).toEqual(elementsBeforeFetch)
     })
 
-    it('Returns elements to origin after predeploy', () => {
+    it('handle links correctly with extractReferencesFromFreeText config', async () => {
+      const config = _.cloneDeep(DEFAULT_CONFIG)
+      config[FETCH_CONFIG].extractReferencesFromFreeText = true
+      const resolveLinksFilter = filterCreator(createFilterCreatorParams({ config })) as FilterType
+
+      const elementsBeforeFetch = generateElements()
+      const elementsAfterFetch = elementsBeforeFetch.map(e => e.clone())
+      await resolveLinksFilter.onFetch(elementsAfterFetch)
+      const elementsAfterPreDeploy = elementsAfterFetch.map(e => e.clone())
+      await resolveLinksFilter.preDeploy(elementsAfterPreDeploy.map(e => toChange({ before: e, after: e })))
       expect(elementsAfterPreDeploy).toEqual(elementsBeforeFetch)
     })
   })
@@ -512,6 +566,31 @@ describe('handle templates filter', () => {
 
       expect(validPrepRef).toEqual('123')
       expect(invalidPrepRef).toEqual(invalidGroupRef)
+    })
+    it('should return \'key\' field or the instance reference on custom_object and custom_object_field type', () => {
+      const validCustomObject = new InstanceElement('instance', customObjectType, { key: 'test' })
+      const invalidCustomObject = new InstanceElement('instance', customObjectType, { noKey: 'test' })
+      const invalidCustomObjectRef = new ReferenceExpression(invalidCustomObject.elemID, invalidCustomObject)
+
+      const validCustomObjectField = new InstanceElement('instance', customObjectFieldType, { key: 'test' })
+      const invalidCustomObjectField = new InstanceElement('instance', customObjectFieldType, { noKey: 'test' })
+      const invalidCustomObjectFieldRef = new ReferenceExpression(
+        invalidCustomObjectField.elemID, invalidCustomObjectField
+      )
+
+      const validCustomObjectPrepRef = prepRef(new ReferenceExpression(validCustomObject.elemID, validCustomObject))
+      const invalidCustomObjectPrepRef = prepRef(invalidCustomObjectRef)
+
+      const validCustomObjectFieldPrepRef = prepRef(
+        new ReferenceExpression(validCustomObjectField.elemID, validCustomObjectField)
+      )
+      const invalidCustomObjectFieldPrepRef = prepRef(invalidCustomObjectFieldRef)
+
+      expect(validCustomObjectPrepRef).toEqual('test')
+      expect(invalidCustomObjectPrepRef).toEqual(invalidCustomObjectRef)
+
+      expect(validCustomObjectFieldPrepRef).toEqual('test')
+      expect(invalidCustomObjectFieldPrepRef).toEqual(invalidCustomObjectFieldRef)
     })
     it('should return an empty string on UnresolvedReference', () => {
       const elemId = new ElemID(ZENDESK, 'test')

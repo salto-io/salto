@@ -30,7 +30,7 @@ import { createKanbanBoardValues, createScrumBoardValues } from './board'
 import { createFilterValues } from './filter'
 import { createIssueLayoutValues } from './issueLayout'
 // import { createBehaviorValues } from './scriptrunner/beahvior'
-import { createScriptedFieldValues } from './scriptrunner/scripted_fields'
+// import { createScriptedFieldValues } from './scriptrunner/scripted_fields'
 import { createScriptRunnerListenerValues } from './scriptrunner/listener'
 import { createScheduledJobsValues } from './scriptrunner/scheduled_jobs'
 import { createEscalationServiceValues } from './scriptrunner/escalation_service'
@@ -140,11 +140,13 @@ export const createInstances = (
   //   findType('Behavior', fetchedElements),
   //   createBehaviorValues(randomString, fetchedElements),
   // )
-  const scriptedField = new InstanceElement(
-    randomString,
-    findType(SCRIPTED_FIELD_TYPE, fetchedElements),
-    createScriptedFieldValues(randomString, fetchedElements),
-  )
+
+  // TODO SALTO-4915 Should uncomment once flakiness is fixes
+  // const scriptedField = new InstanceElement(
+  //   randomString,
+  //   findType(SCRIPTED_FIELD_TYPE, fetchedElements),
+  //   createScriptedFieldValues(randomString, fetchedElements),
+  // )
   const scriptRunnerListeners = new InstanceElement(
     randomString,
     findType(SCRIPT_RUNNER_LISTENER_TYPE, fetchedElements),
@@ -184,7 +186,7 @@ export const createInstances = (
     [filter],
     [issueLayout],
     // [behavior],
-    [scriptedField],
+    // [scriptedField],
     [scriptRunnerListeners],
     [scheduledJobs],
     [escalationService],

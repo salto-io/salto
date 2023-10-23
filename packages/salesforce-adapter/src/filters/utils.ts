@@ -90,6 +90,7 @@ import {
 } from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
 import { createListMetadataObjectsConfigChange } from '../config_change'
+import { CUSTOM_OBJECT_FIELDS } from '../fetch_profile/metadata_types'
 
 const { toArrayAsync, awu } = collections.asynciterable
 const { splitDuplicates } = collections.array
@@ -648,7 +649,7 @@ export const retrieveRelatedPropsByMetadataType = async (
   const retrieveCustomObjectRelatedPropsByParent = async (): Promise<Record<string, FileProperties[]>> => {
     const allSubInstancesFileProps = _.flatten(await Promise.all(
       [
-        ...metadataTypes.CUSTOM_OBJECT_FIELDS,
+        ...CUSTOM_OBJECT_FIELDS,
         CUSTOM_FIELD,
       ].map(typeName => listMetadataObjects(client, typeName))
     )).flatMap(result => result.elements)

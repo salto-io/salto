@@ -1657,6 +1657,65 @@ const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
       },
     },
   },
+  GroupPush: {
+    transformation: {
+      idFields: ['&userGroupId'],
+      serviceIdField: 'mappingId',
+      extendsParentId: true,
+    },
+    deployRequests: {
+      add: {
+        url: '/api/internal/instance/{appId}/grouppush',
+        method: 'post',
+        urlParamsToFields: {
+          appId: '_parent.0.id',
+        },
+      },
+      remove: {
+        url: '/api/internal/instance/{appId}/grouppush/{pushId}/delete',
+        method: 'post',
+        urlParamsToFields: {
+          appId: '_parent.0.id',
+          pushId: 'mappingId',
+        },
+        fieldsToIgnore: ['mappingId', 'status', 'userGroupId', 'newAppGroupName', 'groupPushRule'],
+      },
+    },
+  },
+  GroupPushRule: {
+    transformation: {
+      idFields: ['name'],
+      serviceIdField: 'mappingRuleId',
+      extendsParentId: true,
+    },
+    deployRequests: {
+      add: {
+        url: '/api/internal/instance/{appId}/grouppushrules',
+        method: 'post',
+        urlParamsToFields: {
+          appId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/api/internal/instance/{appId}/grouppushrules/{ruleId}',
+        method: 'put',
+        urlParamsToFields: {
+          appId: '_parent.0.id',
+          ruleId: 'mappingRuleId',
+        },
+        fieldsToIgnore: ['mappingRuleId'],
+      },
+      remove: {
+        url: '/api/internal/instance/{appId}/grouppushrules/{ruleId}',
+        method: 'delete',
+        urlParamsToFields: {
+          appId: '_parent.0.id',
+          ruleId: 'mappingRuleId',
+        },
+        fieldsToIgnore: ['mappingRuleId', 'name', 'status', 'searchExpression', 'descriptionSearchExpression', 'searchExpressionType', 'descriptionSearchExpressionType'],
+      },
+    },
+  },
 }
 
 export const DUCKTYPE_SUPPORTED_TYPES = {

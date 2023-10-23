@@ -111,6 +111,21 @@ export const deployStatusChange = async (
   }
 }
 
+export const assignServiceIdToAdditionChange = (
+  response: deployment.ResponseResult,
+  change: AdditionChange<InstanceElement>,
+  apiDefinitions: configUtils.AdapterApiConfig,
+): void => {
+  if (!Array.isArray(response)) {
+    const serviceIdField = apiDefinitions.types[getChangeData(change).elemID.typeName]?.transformation?.serviceIdField ?? 'id'
+    if (response?.[serviceIdField] !== undefined) {
+      getChangeData(change).value[serviceIdField] = response[serviceIdField]
+    }
+  } else {
+    log.warn('Received unexpected response, could not assign service id to change: %o', response)
+  }
+}
+
 /**
  * Deploy change with the standard "add", "modify", "remove" endpoints
  */
@@ -153,14 +168,7 @@ export const defaultDeployChange = async (
     })
 
     if (isAdditionChange(change)) {
-      if (!Array.isArray(response)) {
-        const serviceIdField = apiDefinitions.types[getChangeData(change).elemID.typeName]?.transformation?.serviceIdField ?? 'id'
-        if (response?.[serviceIdField] !== undefined) {
-          getChangeData(change).value[serviceIdField] = response[serviceIdField]
-        }
-      } else {
-        log.warn('Received unexpected response from deployChange: %o', response)
-      }
+      assignServiceIdToAdditionChange(response, change, apiDefinitions)
     }
     return response
   } catch (err) {

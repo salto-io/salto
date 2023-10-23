@@ -16,7 +16,7 @@
 import { InstanceElement, Element, CORE_ANNOTATIONS, ReferenceExpression, ModificationChange } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { AUTOMATION_TYPE, ESCALATION_SERVICE_TYPE, ISSUE_TYPE_SCHEMA_NAME, NOTIFICATION_SCHEME_TYPE_NAME,
-  SCHEDULED_JOB_TYPE, SCRIPTED_FIELD_TYPE, SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE,
+  SCHEDULED_JOB_TYPE, SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE,
   SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { createSecurityLevelValues, createSecuritySchemeValues } from './securityScheme'
 import { createIssueTypeSchemeValues } from './issueTypeScheme'

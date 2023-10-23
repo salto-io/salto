@@ -14,22 +14,21 @@
 * limitations under the License.
 */
 
-import { ChangeValidator, isInstanceChange, getChangeData, isAdditionChange, isInstanceElement, isReferenceExpression, InstanceElement } from '@salto-io/adapter-api'
+import { ChangeValidator, isInstanceChange, getChangeData, isAdditionChange, isReferenceExpression, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { getBrandsForGuide } from '../filters/utils'
 import { BRAND_TYPE_NAME } from '../constants'
 import { GUIDE_TYPES_TO_HANDLE_BY_BRAND, ZendeskFetchConfig } from '../config'
 
 const log = logger(module)
-const { awu } = collections.asynciterable
 
-const isBrandWithHelpCenterFalse = (instance: InstanceElement, brandByBrandId: Record<string, InstanceElement>):
+const isBrandWithHelpCenter = (instance: InstanceElement, brandByBrandId: Record<string, InstanceElement>):
 boolean => {
   const brandRef = instance.value.brand
   const brand = brandByBrandId[brandRef.elemID.getFullName()]
-  return brand.value.has_help_center === false
+  return brand !== undefined && brand.value.has_help_center === true
 }
 
 export const guideDisabledValidator: (fetchConfig: ZendeskFetchConfig)
@@ -44,23 +43,18 @@ export const guideDisabledValidator: (fetchConfig: ZendeskFetchConfig)
      .filter(isAdditionChange)
      .map(getChangeData)
      .filter(instance => GUIDE_TYPES_TO_HANDLE_BY_BRAND.includes(instance.elemID.typeName))
+
    if (_.isEmpty(relevantInstances)) {
      return []
    }
 
-   const brandByBrandId = Object.fromEntries((await awu(await elementSource.list())
-     .filter(id => id.typeName === BRAND_TYPE_NAME)
-     .map(id => elementSource.get(id))
-     .filter(isInstanceElement)
-     .toArray())
-     .map(instance => [instance.elemID.getFullName(), instance]))
+   const brandByBrandId = Object.fromEntries(
+     (await getInstancesFromElementSource(elementSource, [BRAND_TYPE_NAME]))
+       .map(instance => [instance.elemID.getFullName(), instance])
+   )
 
    const brandsWithGuide = new Set(getBrandsForGuide(Object.values(brandByBrandId), fetchConfig)
      .map(brand => brand.elemID.getFullName()))
-
-   if (brandsWithGuide === undefined) {
-     return []
-   }
 
    const allErrorInstances = relevantInstances
      .filter(instance => {
@@ -74,7 +68,7 @@ export const guideDisabledValidator: (fetchConfig: ZendeskFetchConfig)
 
    return allErrorInstances
      .map(instance => {
-       if (isBrandWithHelpCenterFalse(instance, brandByBrandId)) {
+       if (!isBrandWithHelpCenter(instance, brandByBrandId)) {
          return ({
            elemID: instance.elemID,
            severity: 'Error',

@@ -46,6 +46,14 @@ const log = logger(module)
 
 const MAX_SPLIT_CONCURRENCY = 2000
 
+// these core annotations are generated from other values of the element and are non-deployable.
+// having conflicts on them have no real meaning so it's better to omit them.
+// more context can be found in https://salto-io.atlassian.net/browse/SALTO-4888
+const NO_CONFLICT_CORE_ANNOTATIONS = [
+  CORE_ANNOTATIONS.ALIAS,
+  CORE_ANNOTATIONS.PARENT,
+]
+
 export type FetchChangeMetadata = AuthorInformation
 
 export type FetchChange = {
@@ -220,12 +228,12 @@ const autoMergeTextChange: ChangeTransformFunction = async change => {
   return [change]
 }
 
-const omitConflictsOnCoreAnnotations: ChangeTransformFunction = async change => {
+const omitNoConflictCoreAnnotationsPendingChanges: ChangeTransformFunction = async change => {
   if (_.isEmpty(change.pendingChanges) || change.change.id.isBaseID()) {
     return [change]
   }
   const { path: [name] } = change.change.id.createBaseID()
-  if ([CORE_ANNOTATIONS.ALIAS, CORE_ANNOTATIONS.PARENT].includes(name)) {
+  if (NO_CONFLICT_CORE_ANNOTATIONS.includes(name)) {
     log.debug('omitting conflict on core annotation %s', change.change.id.getFullName())
     return [{ ...change, pendingChanges: [] }]
   }
@@ -756,7 +764,7 @@ export const calcFetchChanges = async (
   )
 
   const changes = await awu(fetchChanges)
-    .flatMap(omitConflictsOnCoreAnnotations)
+    .flatMap(omitNoConflictCoreAnnotationsPendingChanges)
     .flatMap(autoMergeTextChange)
     .flatMap(toChangesWithPath(async name => serviceElementsMap[name.getFullName()] ?? []))
     .flatMap(addFetchChangeMetadata(partialFetchElementSource))

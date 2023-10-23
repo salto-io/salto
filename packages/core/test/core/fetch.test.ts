@@ -825,7 +825,7 @@ describe('fetch', () => {
         })
       })
 
-      describe('when the working copy has conflicting changes on core annotations', () => {
+      describe('when the working copy has conflicting changes on no-conflict core annotations', () => {
         const createElements = (name: string): Element[] => {
           const fieldType = new ObjectType({
             elemID: new ElemID(testID.adapter, `${name}fieldType`),
@@ -876,7 +876,7 @@ describe('fetch', () => {
           )
           changes = [...result.changes]
         })
-        it('should omit the pending changes on core annotations', () => {
+        it('should omit the pending changes on no-conflict core annotations', () => {
           expect(changes).toHaveLength(6)
           const typeAnnotationChange = changes.find(change => change.change.id.isEqual(
             testID.createNestedID('attr', CORE_ANNOTATIONS.ALIAS)

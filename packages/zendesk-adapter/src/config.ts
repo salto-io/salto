@@ -45,10 +45,10 @@ export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
   { fieldName: 'count', fieldType: 'number' },
 ]
 export const FIELDS_TO_HIDE: configUtils.FieldToHideType[] = [
-  { fieldName: 'created_at', fieldType: 'string' },
-  { fieldName: 'updated_at', fieldType: 'string' },
-  { fieldName: 'created_by_id', fieldType: 'number' },
-  { fieldName: 'updated_by_id', fieldType: 'number' },
+  { fieldName: 'created_at' },
+  { fieldName: 'updated_at' },
+  { fieldName: 'created_by_id' },
+  { fieldName: 'updated_by_id' },
 ]
 export const PAGE_SIZE = 100
 export const DEFAULT_QUERY_PARAMS = {

@@ -246,8 +246,12 @@ describe('Custom Object Instances filter', () => {
   const buildTestFetchProfile = (
     types: TestFetchProfileParams[],
     omittedFields: string[] = [],
+    warnOnNonQueryableInstances = false,
   ): FetchProfile => {
     const fetchProfileParams: FetchParameters = {
+      warningSettings: {
+        nonQueryableFields: warnOnNonQueryableInstances,
+      },
       data: {
         includeObjects: types
           .filter(typeParams => typeParams.included)
@@ -1671,7 +1675,7 @@ describe('Custom Object Instances filter', () => {
 
     it('Should warn if the field is not queryable', () => {
       expect(filterResult.errors ?? []).not.toBeEmpty()
-      expect(filterResult.errors).toIncludeAllPartialMembers([{
+      expect(filterResult.errors).toEqual([{
         message: expect.stringContaining('TestType') && expect.stringContaining(MANAGED_BY_SALTO_FIELD_NAME),
         severity: 'Warning',
       }])

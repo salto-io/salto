@@ -80,7 +80,6 @@ import { getCustomRecords } from './custom_records/custom_records'
 import { getDataElements } from './data_elements/data_elements'
 import { getStandardTypesNames } from './autogen/types'
 import { getConfigTypes, toConfigElements } from './suiteapp_config_elements'
-import { ConfigRecord } from './client/suiteapp_client/types'
 import { ImportFileCabinetResult } from './client/types'
 
 const { makeArray } = collections.array
@@ -246,14 +245,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
     isPartial: boolean
   ): Promise<FetchByQueryReturnType> => {
     const configRecords = await this.client.getConfigRecords()
+    const timeZoneAndFormat = getTimeDateFormat(configRecords)
     const {
       changedObjectsQuery,
       serverTime,
-      timeZoneAndFormat,
     } = await this.runSuiteAppOperations(
       fetchQuery,
       useChangesDetection,
-      configRecords,
+      timeZoneAndFormat,
     )
     const updatedFetchQuery = changedObjectsQuery !== undefined
       ? andQuery(changedObjectsQuery, fetchQuery)
@@ -452,12 +451,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private async runSuiteAppOperations(
     fetchQuery: NetsuiteQuery,
     useChangesDetection: boolean,
-    configRecords: ConfigRecord[],
+    timeZoneAndFormat: TimeZoneAndFormat,
   ):
     Promise<{
       changedObjectsQuery?: NetsuiteQuery
       serverTime?: Date
-      timeZoneAndFormat?: TimeZoneAndFormat
     }> {
     const sysInfo = await this.client.getSystemInformation()
     if (sysInfo === undefined) {
@@ -475,10 +473,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
       log.debug('Failed to get last fetch time')
       return { serverTime: sysInfo.time }
     }
-    const timeZoneAndFormat = getTimeDateFormat(configRecords)
     if (timeZoneAndFormat?.format === undefined) {
-      log.warn('Failed to get date format, skipping SuiteApp operations')
-      return { serverTime: sysInfo.time, timeZoneAndFormat }
+      log.warn('Failed to get date format, skipping changes detection')
+      return { serverTime: sysInfo.time }
     }
     const serviceIdToLastFetchDate = await getLastServiceIdToFetchTime(this.elementsSource)
     const changedObjectsQuery = await getChangedObjects(
@@ -488,7 +485,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       serviceIdToLastFetchDate,
     )
 
-    return { changedObjectsQuery, serverTime: sysInfo.time, timeZoneAndFormat }
+    return { changedObjectsQuery, serverTime: sysInfo.time }
   }
 
   private static getDeployErrors(

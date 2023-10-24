@@ -1995,6 +1995,19 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       dataField: '.',
       fieldsToOmit: [
         { fieldName: 'projectId' },
+        { fieldName: 'portalId' },
+        { fieldName: 'portalUrl' },
+        { fieldName: 'helpCenterUrl' },
+        { fieldName: 'descriptionWiki' },
+        { fieldName: 'portalLogoUrl' },
+        { fieldName: 'canAdministerJIRA' },
+      ],
+    },
+  },
+  PortalSettings__announcementSettings: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'canAgentsManageHelpCenterAnnouncement' },
       ],
     },
   },

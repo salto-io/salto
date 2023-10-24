@@ -86,6 +86,7 @@ describe('forms filter', () => {
                   lock: false,
                   pdf: false,
                 },
+                templateFormUuid: 'templateFormUuid',
               },
               layout: [
                 {
@@ -118,7 +119,6 @@ describe('forms filter', () => {
         const formInstance = instances.find(e => e.elemID.typeName === FORM_TYPE)
         expect(formInstance).toBeDefined()
         expect(formInstance?.value).toEqual({
-          id: 1,
           uuid: 'uuid',
           updated: '2023-09-28T08:20:31.552322Z',
           design: {
@@ -129,6 +129,7 @@ describe('forms filter', () => {
                 lock: false,
                 pdf: false,
               },
+              templateFormUuid: 'templateFormUuid',
             },
             layout: [
               {
@@ -147,9 +148,9 @@ describe('forms filter', () => {
                 ],
               },
             ],
-            conditions: [],
-            sections: [],
-            questions: [],
+            conditions: {},
+            sections: {},
+            questions: {},
           },
         })
       })

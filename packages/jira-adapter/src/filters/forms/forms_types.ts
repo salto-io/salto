@@ -20,14 +20,21 @@ import { elements as adapterElements } from '@salto-io/adapter-components'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { JIRA, FORM_TYPE } from '../../constants'
 
-export type detailedFormResponse = {
+export type DetailedFormResponse = {
   data: {
-    uuid?: string
-    publish?: string
     id: number
+    updated: string
+    uuid: string
+    publish: {}
     design: {
       settings: {
-        templateFormUuid?: string
+        templateId: string
+        name: string
+        submit: {
+          lock: boolean
+          pdf: boolean
+        }
+        templateFormUuid: string
       }
       questions: {}
       sections: {}
@@ -36,17 +43,19 @@ export type detailedFormResponse = {
   }
 }
 
-type formResponse = {
+type FormResponse = {
   id: number
   name: string
 }
 
-export type formsResponse = {
-  data: formResponse[]
+export type FormsResponse = {
+  data: FormResponse[]
 }
 
 export const FORMS_RESPONSE_SCHEME = Joi.object({
   data: Joi.array().items(Joi.object({
+    id: Joi.number().required(),
+    name: Joi.string().required(),
   }).unknown(true).required()),
 }).unknown(true).required()
 
@@ -54,6 +63,18 @@ export const DETAILED_FORM_RESPONSE_SCHEME = Joi.object({
   data: Joi.object({
     uuid: Joi.string().required(),
     design: Joi.object({
+      settings: Joi.object({
+        templateId: Joi.number().required(),
+        name: Joi.string().required(),
+        submit: Joi.object({
+          lock: Joi.boolean().required(),
+          pdf: Joi.boolean().required(),
+        }).required(),
+        templateFormUuid: Joi.string().required(),
+      }).unknown(true).required(),
+      questions: Joi.object().unknown(true).required(),
+      sections: Joi.object().unknown(true).required(),
+      conditions: Joi.object().unknown(true).required(),
     }).unknown(true).required(),
   }).unknown(true).required(),
 }).unknown(true).required()
@@ -80,6 +101,7 @@ export const createFormType = (): {
     fields: {
       templateId: {
         refType: BuiltinTypes.NUMBER,
+        annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
       },
       name: {
         refType: BuiltinTypes.STRING,
@@ -89,11 +111,12 @@ export const createFormType = (): {
       },
       templateFormUuid: {
         refType: BuiltinTypes.STRING,
+        annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
       },
     },
   })
-  const attributeContnetLayoutType = new ObjectType({
-    elemID: new ElemID(JIRA, 'attributeContnetLayout'),
+  const AttributeContentLayoutType = new ObjectType({
+    elemID: new ElemID(JIRA, 'AttributeContentLayoutType'),
     fields: {
       localId: {
         refType: BuiltinTypes.STRING,
@@ -101,8 +124,8 @@ export const createFormType = (): {
       },
     },
   })
-  const contentLayoutType = new ObjectType({
-    elemID: new ElemID(JIRA, 'contentLayout'),
+  const ContentLayoutType = new ObjectType({
+    elemID: new ElemID(JIRA, 'ContentLayout'),
     fields: {
       type: {
         refType: BuiltinTypes.STRING,
@@ -112,25 +135,25 @@ export const createFormType = (): {
         annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
       },
       attrs: {
-        refType: attributeContnetLayoutType,
+        refType: AttributeContentLayoutType,
       },
     },
   })
   const FormLayoutItemType = new ObjectType({
-    elemID: new ElemID(JIRA, 'layoutForm'),
+    elemID: new ElemID(JIRA, 'LayoutForm'),
     fields: {
-      versoin: {
+      version: {
         refType: BuiltinTypes.NUMBER,
       },
       type: {
         refType: BuiltinTypes.STRING,
       },
       content: {
-        refType: new ListType(contentLayoutType),
+        refType: new ListType(ContentLayoutType),
       },
     },
   })
-  const questionType = new ObjectType({
+  const QuestionType = new ObjectType({
     elemID: new ElemID(JIRA, 'Question'),
     fields: {
       type: {
@@ -166,12 +189,12 @@ export const createFormType = (): {
         refType: BuiltinTypes.UNKNOWN,
       },
       questions: {
-        refType: new ListType(questionType),
+        refType: new ListType(QuestionType),
       },
     },
   })
 
-  const formType = new ObjectType({
+  const FormType = new ObjectType({
     elemID: new ElemID(JIRA, FORM_TYPE),
     fields: {
       id: {
@@ -192,10 +215,10 @@ export const createFormType = (): {
     path: [JIRA, adapterElements.TYPES_PATH, FORM_TYPE],
   })
   return {
-    formType,
-    subTypes: [FormSubmitType, FormSettingsType, FormLayoutItemType, FormDesignType, questionType, contentLayoutType],
+    formType: FormType,
+    subTypes: [FormSubmitType, FormSettingsType, FormLayoutItemType, FormDesignType, QuestionType, ContentLayoutType],
   }
 }
 
-export const isFormsResponse = createSchemeGuard<formsResponse>(FORMS_RESPONSE_SCHEME)
-export const isDetailedFormsResponse = createSchemeGuard<detailedFormResponse>(DETAILED_FORM_RESPONSE_SCHEME)
+export const isFormsResponse = createSchemeGuard<FormsResponse>(FORMS_RESPONSE_SCHEME)
+export const isDetailedFormsResponse = createSchemeGuard<DetailedFormResponse>(DETAILED_FORM_RESPONSE_SCHEME)

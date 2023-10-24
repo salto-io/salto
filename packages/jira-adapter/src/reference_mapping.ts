@@ -993,7 +993,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     src: { field: 'jiraField', parentTypes: ['Question'] },
     serializationStrategy: 'id',
     jiraMissingRefStrategy: 'typeAndValue',
-    target: { type: 'Field' },
+    target: { type: FIELD_TYPE_NAME },
   },
 ]
 

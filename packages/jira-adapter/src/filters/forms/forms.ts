@@ -26,8 +26,8 @@ import { createFormType, isDetailedFormsResponse, isFormsResponse } from './form
 const { isDefined } = lowerDashValues
 
 /*
-This filter fetches all forms from Jira Service Management and creates an instance element for each form.
-We use filter because we need to use cloudId which is not available in the infrastructure.
+* This filter fetches all forms from Jira Service Management and creates an instance element for each form.
+* We use filter because we need to use cloudId which is not available in the infrastructure.
 */
 const filter: FilterCreator = ({ config, client, getElemIdFunc }) => ({
   name: 'formsFilter',
@@ -42,7 +42,7 @@ const filter: FilterCreator = ({ config, client, getElemIdFunc }) => ({
 
     const jsmProjects = elements
       .filter(isInstanceElement)
-      .filter(instnace => instnace.elemID.typeName === PROJECT_TYPE)
+      .filter(instance => instance.elemID.typeName === PROJECT_TYPE)
       .filter(project => project.value.projectTypeKey === SERVICE_DESK)
 
     const forms = (await Promise.all(jsmProjects
@@ -60,13 +60,7 @@ const filter: FilterCreator = ({ config, client, getElemIdFunc }) => ({
               return undefined
             }
             const name = `${project.value.name}_${formResponse.name}`
-            delete detailedRes.data?.publish
-            delete detailedRes.data.design.settings.templateFormUuid
-            detailedRes.data.design.questions = Object.values(detailedRes.data.design.questions)
-            detailedRes.data.design.sections = Object.values(detailedRes.data.design.sections)
-            detailedRes.data.design.conditions = Object.values(detailedRes.data.design.conditions)
             const formValue = detailedRes.data
-            formValue.id = formResponse.id
             const serviceIds = adapterElements.createServiceIds(formValue, 'uuid', formType.elemID)
             const instanceName = getElemIdFunc ? getElemIdFunc(JIRA, serviceIds, naclCase(name)).name
               : naclCase(name)

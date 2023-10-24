@@ -27,9 +27,9 @@ const sectionsOrderScheme = Joi.object({ [SECTIONS_FIELD]: Joi.required() }).req
 const categoriesOrderScheme = Joi.object({ [CATEGORIES_FIELD]: Joi.required() }).required().unknown(true)
 
 const fieldToSchemeGuard: Record<string, (instance: InstanceElement) => boolean> = {
-  [ARTICLES_FIELD]: createSchemeGuardForInstance<ArticlesOrderType>(articlesOrderScheme, 'Received an invalid value for order'),
-  [SECTIONS_FIELD]: createSchemeGuardForInstance<SectionsOrderType>(sectionsOrderScheme, 'Received an invalid value for order'),
-  [CATEGORIES_FIELD]: createSchemeGuardForInstance<CategoriesOrderType>(categoriesOrderScheme, 'Received an invalid value for order'),
+  [ARTICLES_FIELD]: createSchemeGuardForInstance<ArticlesOrderType>(articlesOrderScheme),
+  [SECTIONS_FIELD]: createSchemeGuardForInstance<SectionsOrderType>(sectionsOrderScheme),
+  [CATEGORIES_FIELD]: createSchemeGuardForInstance<CategoriesOrderType>(categoriesOrderScheme),
 }
 
 // Validates that the order field exists in the element's value

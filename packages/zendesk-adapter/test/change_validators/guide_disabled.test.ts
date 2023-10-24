@@ -16,7 +16,7 @@
 
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { guideDisabledValidator } from '../../src/change_validators/guide_disabled'
+import { guideDisabledValidator } from '../../src/change_validators'
 import { ZENDESK, CATEGORY_TYPE_NAME } from '../../src/constants'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 
@@ -29,6 +29,7 @@ describe('guideDisabledValidator', () => {
     'brandWithHelpCenterFalse',
     brandType,
     {
+      name: 'brandWithHelpCenterFalse',
       has_help_center: false,
     }
   )
@@ -37,6 +38,7 @@ describe('guideDisabledValidator', () => {
     'brandWithHelpCenterTrue',
     brandType,
     {
+      name: 'brandWithHelpCenterTrue',
       has_help_center: true,
     }
   )

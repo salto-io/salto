@@ -1234,7 +1234,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'secret', fieldType: 'string' },
         { fieldName: 'user_id', fieldType: 'number' },
       ]),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'secret', fieldType: 'string' },
+        { fieldName: 'user_id', fieldType: 'number' },
+      ],
       serviceUrl: '/admin/apps-integrations/apis/zendesk-api/oauth_clients',
     },
     deployRequests: {

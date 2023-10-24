@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import Joi from 'joi'
 import { Element, InstanceElement, isInstanceElement, ObjectType, ElemID, BuiltinTypes, SaltoError, ElemIdGetter, CORE_ANNOTATIONS, Change, getChangeData, isRemovalChange, isInstanceChange } from '@salto-io/adapter-api'
 import { elements as elementUtils, client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
@@ -227,6 +228,10 @@ const groupPushFilter: FilterCreator = ({ config, adminClient, getElemIdFunc }) 
 
     const instances = (await Promise.all(appsWithGroupPush
       .map(async appInstance => {
+        if (!_.isString(appInstance.value.id)) {
+          log.error(`Skip fetching group push for app: ${appInstance.elemID.getFullName()}, because id is invalid`)
+          return []
+        }
         const groupPushEntries = await getGroupPushForApp(paginator, appInstance.value.id)
         const groupPush = await Promise.all(groupPushEntries.map(async entry => toGroupPushInstance({
           entry,

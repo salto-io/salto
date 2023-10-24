@@ -60,6 +60,13 @@ describe('automation_projects', () => {
 
       expect(references).toEqual([])
     })
+
+    it('should do nothing if there are no projects', async () => {
+      delete instance.value.projects
+      const references = await automationProjectsHandler.findWeakReferences([instance])
+
+      expect(references).toEqual([])
+    })
   })
 
   describe('removeWeakReferences', () => {
@@ -84,6 +91,14 @@ describe('automation_projects', () => {
 
     it('should do nothing if received invalid automation', async () => {
       instance.value.projects = 'invalid'
+      const fixes = await automationProjectsHandler.removeWeakReferences({ elementsSource })([instance])
+
+      expect(fixes.errors).toEqual([])
+      expect(fixes.fixedElements).toEqual([])
+    })
+
+    it('should do nothing if there are no projects', async () => {
+      delete instance.value.projects
       const fixes = await automationProjectsHandler.removeWeakReferences({ elementsSource })([instance])
 
       expect(fixes.errors).toEqual([])

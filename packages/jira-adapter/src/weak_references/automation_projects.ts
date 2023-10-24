@@ -39,7 +39,7 @@ const getProjectReferences = async (
   instance: InstanceElement,
 ): Promise<ReferenceInfo[]> => {
   const automationProjects = instance.value.projects
-  if (!isAutomationProjects(automationProjects)) {
+  if (automationProjects === undefined || !isAutomationProjects(automationProjects)) {
     return []
   }
 
@@ -72,7 +72,7 @@ const removeMissingAutomationProjects: WeakReferencesHandler['removeWeakReferenc
     .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
     .map(async instance => {
       const automationProjects = instance.value.projects
-      if (!isAutomationProjects(automationProjects)) {
+      if (automationProjects === undefined || !isAutomationProjects(automationProjects)) {
         return undefined
       }
 

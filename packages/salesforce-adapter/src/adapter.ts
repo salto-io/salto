@@ -472,13 +472,14 @@ export default class SalesforceAdapter implements AdapterOperations {
         metadataTypeInfosPromise,
         hardCodedTypes,
       )
+    progressReporter.reportProgress({ message: 'Fetching types' })
+    const metadataTypes = await metadataTypesPromise
+
     const metadataInstancesPromise = this.fetchMetadataInstances(
       metadataTypeInfosPromise,
       metadataTypesPromise,
       fetchProfile,
     )
-    progressReporter.reportProgress({ message: 'Fetching types' })
-    const metadataTypes = await metadataTypesPromise
     progressReporter.reportProgress({ message: 'Fetching instances' })
     const {
       elements: metadataInstancesElements,

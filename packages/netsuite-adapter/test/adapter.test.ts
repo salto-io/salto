@@ -1451,7 +1451,7 @@ describe('Adapter', () => {
         const { partialFetchData } = await adapter.fetch({ ...mockFetchOpts })
         expect(getDeletedElementsMock).not.toHaveBeenCalled()
         expect(partialFetchData?.deletedElements).toEqual(undefined)
-        expect(spy).toHaveBeenCalledWith(expect.anything(), false, undefined)
+        expect(spy).toHaveBeenCalledWith(expect.anything(), false, [])
       })
     })
   })

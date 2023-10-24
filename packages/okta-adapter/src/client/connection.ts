@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { AccountInfo } from '@salto-io/adapter-api'
 import { client as clientUtils, client } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
@@ -23,8 +24,21 @@ const log = logger(module)
 // We can only detect if an account is a preview account, as production accounts don't have indicators in their base URL
 // For more info see: https://developer.okta.com/docs/concepts/okta-organizations/#preview-and-production
 const isOktaPreviewAccount = (baseUrl: string): boolean => /.*\.oktapreview\..*/.test(baseUrl)
+const isOktaDevAccount = (baseUrl: string): boolean => /.*:\/\/dev-[0-9]*\..*/.test(baseUrl)
 const PRODUCTION_ACCOUNT_TYPE = 'Production'
 const PREVIEW_ACCOUNT_TYPE = 'Preview'
+const DEV_ACCOUNT_TYPE = 'Dev'
+
+type OktaAccountType = 'Production' | 'Preview' | 'Dev'
+const getAccountType = (baseUrl: string): OktaAccountType => {
+  if (isOktaPreviewAccount(baseUrl)) {
+    return PREVIEW_ACCOUNT_TYPE
+  }
+  if (isOktaDevAccount(baseUrl)) {
+    return DEV_ACCOUNT_TYPE
+  }
+  return PRODUCTION_ACCOUNT_TYPE
+}
 
 export const validateCredentials = async (_creds: {
   credentials: Credentials
@@ -32,11 +46,11 @@ export const validateCredentials = async (_creds: {
 }): Promise<AccountInfo> => {
   try {
     const response = await _creds.connection.get('/api/v1/org')
-    const isPreview = isOktaPreviewAccount(_creds.credentials.baseUrl)
+    const accountType = getAccountType(_creds.credentials.baseUrl)
     return {
       accountId: response.data.id,
-      accountType: isPreview ? PREVIEW_ACCOUNT_TYPE : PRODUCTION_ACCOUNT_TYPE,
-      isProduction: !isPreview,
+      accountType,
+      isProduction: accountType === PRODUCTION_ACCOUNT_TYPE,
     }
   } catch (error) {
     if (error.response?.status === 401) {

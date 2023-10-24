@@ -30,8 +30,8 @@ export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerI
     containerType
     items {
       nodes {
-        ... JiraIssueLayoutActiveFieldItemFragment,
-        ... JiraIssueLayoutActivePanelItemFragment,
+        ...JiraIssueLayoutActiveFieldItemFragment,
+        ...JiraIssueLayoutActivePanelItemFragment,
       }
     }
   }
@@ -73,9 +73,9 @@ fragment JiraIssueLayoutItemContainerFragment on JiraIssueItemContainer {
   containerType
   items {
     nodes {
-      ... JiraIssueLayoutActiveFieldItemFragment,
-      ... JiraIssueLayoutActivePanelItemFragment,
-      ... JiraIssueLayoutTabContainerFragment,
+      ...JiraIssueLayoutActiveFieldItemFragment,
+      ...JiraIssueLayoutActivePanelItemFragment,
+      ...JiraIssueLayoutTabContainerFragment,
     }
   }
 }

@@ -19,11 +19,11 @@ import _ from 'lodash'
 import { MockInterface } from '@salto-io/test-utils'
 import { JiraConfig, getDefaultConfig } from '../../../src/config/config'
 import JiraClient from '../../../src/client/client'
-import requestTypeRequestFormFilter from '../../../src/filters/layouts/request_type_request_form'
+import requestTypeLayoutsFilter from '../../../src/filters/layouts/request_type_request_form'
 import { getFilterParams, mockClient } from '../../utils'
 import { JIRA, PROJECT_TYPE, REQUEST_FORM_TYPE, REQUEST_TYPE_NAME } from '../../../src/constants'
 
-describe('requestTypeRequestFormFilter', () => {
+describe('requestTypeLayoutsFilter', () => {
   let connection: MockInterface<clientUtils.APIConnection>
   let fetchQuery: MockInterface<elementUtils.query.ElementQuery>
   let mockGet: jest.SpyInstance
@@ -50,7 +50,7 @@ describe('requestTypeRequestFormFilter', () => {
       connection = mockCli.connection
       config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
-      filter = requestTypeRequestFormFilter(getFilterParams({ client, config })) as typeof filter
+      filter = requestTypeLayoutsFilter(getFilterParams({ client, config })) as typeof filter
       projectType = new ObjectType({
         elemID: new ElemID(JIRA, PROJECT_TYPE),
         fields: {
@@ -220,7 +220,7 @@ describe('requestTypeRequestFormFilter', () => {
       const configWithMissingRefs = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       configWithMissingRefs.fetch.enableMissingReferences = false
       configWithMissingRefs.fetch.enableJSM = true
-      filter = requestTypeRequestFormFilter(getFilterParams({ config: configWithMissingRefs, client })) as FilterType
+      filter = requestTypeLayoutsFilter(getFilterParams({ config: configWithMissingRefs, client })) as FilterType
       await filter.onFetch(elements)
       const instances = elements.filter(isInstanceElement)
       const issueLayoutInstance = instances.find(e => e.elemID.typeName === REQUEST_FORM_TYPE)
@@ -228,12 +228,12 @@ describe('requestTypeRequestFormFilter', () => {
     })
     it('should not fetch layouts if it was excluded', async () => {
       fetchQuery = elementUtils.query.createMockQuery()
-      filter = requestTypeRequestFormFilter(getFilterParams({
+      filter = requestTypeLayoutsFilter(getFilterParams({
         client,
         config,
         fetchQuery,
       })) as FilterType
-      filter = requestTypeRequestFormFilter(getFilterParams({ config, client, fetchQuery })) as FilterType
+      filter = requestTypeLayoutsFilter(getFilterParams({ config, client, fetchQuery })) as FilterType
       fetchQuery.isTypeMatch.mockReturnValue(false)
       await filter.onFetch(elements)
       expect(connection.post).not.toHaveBeenCalled()
@@ -241,17 +241,17 @@ describe('requestTypeRequestFormFilter', () => {
     it('should not fetch issue layouts if it is a data center instance', async () => {
       const configWithDataCenterTrue = _.cloneDeep(getDefaultConfig({ isDataCenter: true }))
       configWithDataCenterTrue.fetch.enableJSM = true
-      filter = requestTypeRequestFormFilter(getFilterParams({
+      filter = requestTypeLayoutsFilter(getFilterParams({
         client,
         config: configWithDataCenterTrue,
       })) as FilterType
 
-      filter = requestTypeRequestFormFilter(getFilterParams({ config: configWithDataCenterTrue, client })) as FilterType
+      filter = requestTypeLayoutsFilter(getFilterParams({ config: configWithDataCenterTrue, client })) as FilterType
       await filter.onFetch(elements)
       expect(connection.post).not.toHaveBeenCalled()
     })
     it('should use elemIdGetter', async () => {
-      filter = requestTypeRequestFormFilter(getFilterParams({
+      filter = requestTypeLayoutsFilter(getFilterParams({
         client,
         config,
         getElemIdFunc: () => new ElemID(JIRA, 'someName'),

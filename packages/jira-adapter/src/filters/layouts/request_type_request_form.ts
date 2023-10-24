@@ -14,20 +14,30 @@
 * limitations under the License.
 */
 
-import { REQUEST_FORM_TYPE } from '../../constants'
+import { ISSUE_VIEW_TYPE, REQUEST_FORM_TYPE } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { fetchRequestTypeDetails } from './layout_service_operations'
 
 const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) => ({
-  name: 'requestTypeRequestFormFilter',
-  onFetch: async elements => fetchRequestTypeDetails({
-    elements,
-    client,
-    config,
-    fetchQuery,
-    getElemIdFunc,
-    typeName: REQUEST_FORM_TYPE,
-  }),
+  name: 'requestTypeLayoutsFilter',
+  onFetch: async elements => {
+    await fetchRequestTypeDetails({
+      elements,
+      client,
+      config,
+      fetchQuery,
+      getElemIdFunc,
+      typeName: REQUEST_FORM_TYPE,
+    })
+    await fetchRequestTypeDetails({
+      elements,
+      client,
+      config,
+      fetchQuery,
+      getElemIdFunc,
+      typeName: ISSUE_VIEW_TYPE,
+    })
+  },
 })
 
 export default filter

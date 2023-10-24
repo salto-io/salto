@@ -987,7 +987,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     src: { field: 'extraDefinerId', parentTypes: [REQUEST_FORM_TYPE, ISSUE_VIEW_TYPE] },
     serializationStrategy: 'id',
     jiraMissingRefStrategy: 'typeAndValue',
-    target: { type: 'RequestType' },
+    target: { type: REQUEST_TYPE_NAME },
   },
 ]
 

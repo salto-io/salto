@@ -21,7 +21,7 @@ import requestTypelayoutsToValuesFilter from '../../../src/filters/layouts/reque
 import { createEmptyType, getFilterParams } from '../../utils'
 import { ISSUE_VIEW_TYPE, JIRA, PROJECT_TYPE, REQUEST_FORM_TYPE, REQUEST_TYPE_NAME } from '../../../src/constants'
 
-describe('requestTypeRequestFormFilter', () => {
+describe('requestTypelayoutsToValuesFilter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType
   let elements: Element[]

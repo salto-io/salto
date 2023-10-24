@@ -118,8 +118,7 @@ import deployDcIssueEventsFilter from './filters/data_center/issue_events'
 import requestTypelayoutsToValuesFilter from './filters/layouts/request_types_layouts_to_values'
 import prioritySchemeFetchFilter from './filters/data_center/priority_scheme/priority_scheme_fetch'
 import prioritySchemeDeployFilter from './filters/data_center/priority_scheme/priority_scheme_deploy'
-import requestTypeRequestFormFilter from './filters/layouts/request_type_request_form'
-import requestTypeIssueViewFilter from './filters/layouts/request_type_issue_view'
+import requestTypeLayoutsFilter from './filters/layouts/request_type_request_form'
 import prioritySchemeProjectAssociationFilter from './filters/data_center/priority_scheme/priority_scheme_project_association'
 import { GetUserMapFunc, getUserMapFuncCreator } from './users'
 import commonFilters from './filters/common'
@@ -279,8 +278,7 @@ export const DEFAULT_FILTERS = [
   fetchJsmTypesFilter,
   // Must run after issueLayoutFilter
   removeSimpleFieldProjectFilter,
-  requestTypeRequestFormFilter,
-  requestTypeIssueViewFilter,
+  requestTypeLayoutsFilter,
   createReferencesIssueLayoutFilter,
   // Must run after createReferencesIssueLayoutFilter
   requestTypelayoutsToValuesFilter,

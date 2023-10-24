@@ -20,7 +20,7 @@ import { filterUtils, client as clientUtils } from '@salto-io/adapter-components
 import { getFilterParams, mockClient } from '../utils'
 import OktaClient from '../../src/client/client'
 import privateAPIDeployFilter from '../../src/filters/private_api_deploy'
-import { OKTA } from '../../src/constants'
+import { GROUP_PUSH_TYPE_NAME, OKTA } from '../../src/constants'
 import { DEFAULT_CONFIG, OktaConfig } from '../../src/config'
 
 describe('privateApiDeploymentFilter', () => {
@@ -37,7 +37,10 @@ describe('privateApiDeploymentFilter', () => {
   const thirdPartyAdminAfter = thirdPartyAdminInstance.clone()
   thirdPartyAdminAfter.value.thirdPartyAdmin = true
   const change = toChange({ before: thirdPartyAdminInstance, after: thirdPartyAdminAfter })
-
+  const groupPushType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_PUSH_TYPE_NAME) })
+  const groupPushInst = new InstanceElement(
+    'test', groupPushType, { status: 'ACTIVE', newAppGroupName: 'okta' },
+  )
   beforeEach(() => {
     jest.clearAllMocks()
     const { client: cli, connection } = mockClient()
@@ -56,6 +59,16 @@ describe('privateApiDeploymentFilter', () => {
       const afterDeploy = res.deployResult.appliedChanges
         .map(getChangeData).filter(isInstanceElement).find(i => i.elemID.typeName === 'ThirdPartyAdmin')
       expect(afterDeploy?.value).toEqual({ thirdPartyAdmin: true })
+    })
+    it('should add service id to instance on addition changes', async () => {
+      filter = privateAPIDeployFilter(
+        getFilterParams({ adminClient: client })
+      ) as typeof filter
+      mockConnection.post.mockResolvedValue({ status: 200, data: { mappingId: 'aaa', status: 'ACTIVE' } })
+      const res = await filter.deploy([toChange({ after: groupPushInst })])
+      const { appliedChanges } = res.deployResult
+      expect(appliedChanges).toHaveLength(1)
+      expect((getChangeData(appliedChanges[0]) as InstanceElement).value.mappingId).toEqual('aaa')
     })
     it('should return error if admin client does not exist', async () => {
       filter = privateAPIDeployFilter(getFilterParams()) as typeof filter

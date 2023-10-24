@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { AccountInfo } from '@salto-io/adapter-api'
 import { client as clientUtils, client } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'

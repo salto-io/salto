@@ -449,6 +449,7 @@ const replaceFormulasWithTemplates = ({
     getContainers(instances).forEach(container => {
       const { fieldName } = container
       container.values.forEach(value => {
+        // Has to be first because it needs to receive the whole string, not a template expression
         if (convertJsonIdsToReferences) {
           value[fieldName] = convertIdsInJson(value[fieldName])
         }

@@ -324,7 +324,7 @@ describe('NetsuiteClient', () => {
           before: new InstanceElement('failedInstance', type, { scriptid: 'scriptid', bad_ref: '[scriptid=failed_scriptid]', changeField: 'before' }),
         })
         const failedChangeDependency = toChange({
-          after: new InstanceElement('failedChangedDependency', type, { scriptid: 'dependency_scriptid', ref: '[scriptid=scriptid]' }),
+          after: new InstanceElement('failedChangedDependency', type, { scriptid: 'no_dependency_scriptid', ref: '[scriptid=scriptid]' }),
         })
         const failedChangeInnerDependency = toChange({
           after: new InstanceElement('failedChangedInnerDependency', type, { scriptid: 'dependency_scriptid', ref: '[scriptid=scriptid.inner]' }),
@@ -345,6 +345,77 @@ describe('NetsuiteClient', () => {
             severity: 'Error',
           }],
           appliedChanges: [successChange, failedChangeDependency],
+        })
+        expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
+      })
+
+      it('should try to deploy again after removing dependencies when the failed changeType is modification but the dependency is on added field', async () => {
+        const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
+        const manifestErrorMessage = 'Details: The manifest contains a dependency on failed_scriptid'
+        const manifestValidationError = new ManifestValidationError(
+          manifestErrorMessage,
+          [{ message: manifestErrorMessage, scriptId: 'failed_scriptid' }]
+        )
+        mockSdfDeploy.mockRejectedValueOnce(manifestValidationError)
+        const successChange = toChange({
+          after: new InstanceElement('instance', type, { scriptid: 'someObject', ref: '[scriptid=some_ref]' }),
+        })
+        const failedChange = toChange({
+          after: new ObjectType({
+            elemID: new ElemID(NETSUITE, 'customrecord1'),
+            fields: {
+              custom_field: {
+                refType: BuiltinTypes.STRING,
+                annotations: { scriptid: 'custfield123' },
+              },
+              added_custom_field: {
+                refType: BuiltinTypes.STRING,
+                annotations: { scriptid: 'custfield123added' },
+              },
+            },
+            annotations: {
+              scriptid: 'customrecord1',
+              bad_ref: '[scriptid=failed_scriptid]',
+              [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+            },
+          }),
+          before: new ObjectType({
+            elemID: new ElemID(NETSUITE, 'customrecord1'),
+            fields: {
+              custom_field: {
+                refType: BuiltinTypes.STRING,
+                annotations: { scriptid: 'custfield123' },
+              },
+            },
+            annotations: {
+              scriptid: 'customrecord1',
+              bad_ref: '[scriptid=failed_scriptid]',
+              [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+            },
+          }),
+        })
+        const failedChangeFieldDependency = toChange({
+          after: new InstanceElement('failedChangeFieldDependency', type, { scriptid: 'no_dependency_scriptid', ref: '[scriptid=customrecord1.custfield123]' }),
+        })
+        const failedChangeAddedFieldDependency = toChange({
+          after: new InstanceElement('failedChangeAddedFieldDependency', type, { scriptid: 'dependency_scriptid', ref: '[scriptid=customrecord1.custfield123added]' }),
+        })
+        expect(await client.deploy(
+          [successChange, failedChange, failedChangeFieldDependency, failedChangeAddedFieldDependency],
+          SDF_CREATE_OR_UPDATE_GROUP_ID,
+          ...deployParams,
+          async () => true,
+        )).toEqual({
+          errors: [{
+            elemID: getChangeData(failedChange).elemID,
+            message: manifestValidationError.message,
+            severity: 'Error',
+          }, {
+            elemID: getChangeData(failedChangeAddedFieldDependency).elemID,
+            message: `Element cannot be deployed due to an error in its dependency: ${getChangeData(failedChange).elemID.getFullName()}`,
+            severity: 'Error',
+          }],
+          appliedChanges: [successChange, failedChangeFieldDependency],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
       })

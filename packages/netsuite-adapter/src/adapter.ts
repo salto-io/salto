@@ -16,7 +16,7 @@
 import {
   FetchResult, AdapterOperations, DeployOptions, ElemIdGetter, ReadOnlyElementsSource, ProgressReporter,
   FetchOptions, DeployModifiers, getChangeData, isObjectType, isInstanceElement, ElemID, isSaltoElementError,
-  setPartialFetchData,
+  setPartialFetchData, InstanceElement, ObjectType, TypeElement,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -64,7 +64,7 @@ import addAliasFilter from './filters/add_alias'
 import addBundleReferences from './filters/bundle_ids'
 import { Filter, LocalFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreator, RemoteFilterCreatorDefinition } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_VALIDATE, AdditionalDependencies, DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB, shouldExcludeBins } from './config'
-import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams, getFixedTargetFetch } from './query'
+import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams, getFixedTargetFetch, ObjectID } from './query'
 import { getLastServerTime, getOrCreateServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
 import { FetchDeletionResult, getDeletedElements } from './deletion_calculator'
@@ -74,13 +74,14 @@ import { createElementsSourceIndex } from './elements_source_index/elements_sour
 import getChangeValidator from './change_validator'
 import dependencyChanger from './dependency_changer'
 import { cloneChange } from './change_validators/utils'
-import { FetchByQueryFunc, FetchByQueryReturnType } from './change_validators/safe_deploy'
+import { FetchByQueryFailures, FetchByQueryFunc, FetchByQueryReturnType } from './change_validators/safe_deploy'
 import { getChangeGroupIdsFunc } from './group_changes'
 import { getCustomRecords } from './custom_records/custom_records'
 import { getDataElements } from './data_elements/data_elements'
 import { getStandardTypesNames } from './autogen/types'
 import { getConfigTypes, toConfigElements } from './suiteapp_config_elements'
 import { ConfigRecord } from './client/suiteapp_client/types'
+import { ImportFileCabinetResult } from './client/types'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -258,75 +259,95 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ? andQuery(changedObjectsQuery, fetchQuery)
       : fetchQuery
 
-    const serverTimeElements = serverTime !== undefined
-      ? await getOrCreateServerTimeElements(
-        serverTime,
-        this.elementsSource,
-        isPartial,
+    const importFileCabinetContent = async (): Promise<ImportFileCabinetResult> => {
+      progressReporter.reportProgress({ message: 'Fetching file cabinet items' })
+      const result = await this.client.importFileCabinetContent(
+        updatedFetchQuery,
+        this.userConfig.client?.maxFileCabinetSizeInGB ?? DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB
       )
-      : []
+      progressReporter.reportProgress({ message: 'Fetching instances' })
+      return result
+    }
 
-    const dataElementsPromise = getDataElements(this.client, fetchQuery, this.getElemIdFunc)
+    const getStandardAndCustomElements = async (): Promise<{
+      standardInstances: InstanceElement[]
+      standardTypes: TypeElement[]
+      customRecordTypes: ObjectType[]
+      customRecords: InstanceElement[]
+      instancesIds: ObjectID[]
+      failures: FetchByQueryFailures
+    }> => {
+      const [
+        { elements: fileCabinetContent, failedPaths: failedFilePaths },
+        { elements: customObjects, instancesIds, failedToFetchAllAtOnce, failedTypes },
+        bundlesList,
+      ] = await Promise.all([
+        importFileCabinetContent(),
+        this.client.getCustomObjects(getStandardTypesNames(), {
+          updatedFetchQuery,
+          originFetchQuery: fetchQuery,
+        }),
+        this.client.getInstalledBundles(),
+      ])
+      const bundlesCustomInfo = bundlesList.map(bundle => ({
+        typeName: BUNDLE,
+        values: { ...bundle, id: bundle.id.toString() },
+      }))
+      // TODO: remove this log when SALTO-2602 is open for all customers
+      log.debug(
+        'The following bundle ids are missing in the bundle record: %o',
+        bundlesCustomInfo.map(bundle => [
+          bundle.values.id,
+          bundle.values.installedFrom?.toUpperCase(),
+          bundle.values.publisher,
+        ])
+      )
+      const elementsToCreate = [
+        ...customObjects,
+        ...fileCabinetContent,
+        ...(this.userConfig.fetch.addBundles ? bundlesCustomInfo : []),
+      ]
+      const elements = await createElements(elementsToCreate, this.elementsSource, this.getElemIdFunc)
+      const [standardInstances, types] = _.partition(elements, isInstanceElement)
+      const [objectTypes, otherTypes] = _.partition(types, isObjectType)
+      const [customRecordTypes, standardTypes] = _.partition(objectTypes, isCustomRecordType)
+      const { elements: customRecords, largeTypesError: failedCustomRecords } = await getCustomRecords(
+        this.client,
+        customRecordTypes,
+        fetchQuery,
+        this.getElemIdFunc
+      )
+      return {
+        standardInstances,
+        standardTypes: [...standardTypes, ...otherTypes],
+        customRecordTypes,
+        customRecords,
+        instancesIds,
+        failures: { failedCustomRecords, failedFilePaths, failedToFetchAllAtOnce, failedTypes },
+      }
+    }
 
-    const getCustomObjectsResult = this.client.getCustomObjects(
-      getStandardTypesNames(),
-      { updatedFetchQuery, originFetchQuery: fetchQuery }
-    )
-    const importFileCabinetResult = this.client.importFileCabinetContent(
-      updatedFetchQuery,
-      this.userConfig.client?.maxFileCabinetSizeInGB ?? DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB
-    )
-    progressReporter.reportProgress({ message: 'Fetching file cabinet items' })
-
-    const bundlesCustomInfo = (await this.client.getInstalledBundles())
-      .map(bundle => ({ typeName: BUNDLE, values: { ...bundle, id: bundle.id.toString() } }))
-    // TODO: remove this log when SALTO-2602 is open for all customers
-    log.debug('The following bundle ids are missing in the bundle record: %o', bundlesCustomInfo.map(bundle => [bundle.values.id, bundle.values.installedFrom?.toUpperCase(), bundle.values.publisher]))
-    const {
-      elements: fileCabinetContent,
-      failedPaths: failedFilePaths,
-    } = await importFileCabinetResult
-    log.debug('importFileCabinetContent: fetched %d fileCabinet elements', fileCabinetContent.length)
-
-    progressReporter.reportProgress({ message: 'Fetching instances' })
-    const {
-      elements: customObjects,
-      instancesIds,
-      failedToFetchAllAtOnce,
-      failedTypes,
-    } = await getCustomObjectsResult
+    const [
+      {
+        standardInstances,
+        standardTypes,
+        customRecordTypes,
+        customRecords,
+        instancesIds,
+        failures,
+      },
+      { elements: dataElements, requestedTypes: requestedDataTypes, largeTypesError: dataTypeError },
+    ] = await Promise.all([
+      getStandardAndCustomElements(),
+      getDataElements(this.client, fetchQuery, this.getElemIdFunc),
+    ])
 
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
-    const elementsToCreate = [
-      ...customObjects,
-      ...fileCabinetContent,
-      ...(this.userConfig.fetch.addBundles ? bundlesCustomInfo : []),
-    ]
-    const baseElements = await createElements(
-      elementsToCreate,
-      this.elementsSource,
-      this.getElemIdFunc,
-    )
 
-    const customRecordTypes = baseElements.filter(isObjectType).filter(isCustomRecordType)
-
-    const customRecordsPromise = getCustomRecords(
-      this.client,
-      customRecordTypes,
-      fetchQuery,
-      this.getElemIdFunc
-    )
-
-    const {
-      elements: dataElements,
-      requestedTypes: requestedDataTypes,
-      largeTypesError: dataTypeError,
-    } = await dataElementsPromise
-    failedTypes.excludedTypes = failedTypes.excludedTypes.concat(dataTypeError)
+    failures.failedTypes.excludedTypes = failures.failedTypes.excludedTypes.concat(dataTypeError)
     const suiteAppConfigElements = this.client.isSuiteAppConfigured()
       ? toConfigElements(configRecords, fetchQuery).concat(getConfigTypes())
       : []
-    const { elements: customRecords, largeTypesError: failedCustomRecords } = await customRecordsPromise
 
     // we calculate deleted elements only in partial-fetch mode
     const { deletedElements, errors: deletedElementErrors }: FetchDeletionResult = (
@@ -341,12 +362,18 @@ export default class NetsuiteAdapter implements AdapterOperations {
         serviceDataElements: dataElements.filter(isInstanceElement),
       }) : {}
 
+    const serverTimeElements = serverTime !== undefined
+      ? await getOrCreateServerTimeElements(serverTime, this.elementsSource, isPartial)
+      : []
+
     const elements = [
-      ...baseElements,
+      ...standardInstances,
+      ...standardTypes,
+      ...customRecordTypes,
+      ...customRecords,
       ...dataElements,
       ...suiteAppConfigElements,
       ...serverTimeElements,
-      ...customRecords,
     ]
 
     await this.createFiltersRunner(
@@ -354,12 +381,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     ).onFetch(elements)
 
     return {
-      failures: {
-        failedToFetchAllAtOnce,
-        failedFilePaths,
-        failedTypes,
-        failedCustomRecords,
-      },
+      failures,
       elements,
       deletedElements,
       deletedElementErrors,

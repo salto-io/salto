@@ -166,7 +166,6 @@ export type AccountInfo = {
   accountId: string
   accountType?: string
   isProduction?: boolean
-  extraInformation?: Record<string, string>
 }
 
 export type ConfigCreator = {

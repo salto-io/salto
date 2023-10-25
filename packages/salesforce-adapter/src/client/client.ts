@@ -500,22 +500,10 @@ export const validateCredentials = async (
       `Remaining limits: ${remainingDailyRequests}, needed: ${minApiRequestsRemaining}`
     )
   }
-  if (creds.isSandbox) {
-    if (connection?.instanceUrl === undefined) {
-      throw new Error('Expected Salesforce organization URL to exist in the connection')
-    }
-    return {
-      accountId: connection.instanceUrl,
-      accountType,
-      isProduction,
-      extraInformation: { orgId },
-    }
-  }
   return {
     accountId: orgId,
     accountType,
     isProduction,
-    extraInformation: { orgId },
   }
 }
 export default class SalesforceClient {

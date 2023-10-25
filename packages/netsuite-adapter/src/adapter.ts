@@ -266,7 +266,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
       )
       : []
 
-    const dataElementsPromise = getDataElements(this.client, fetchQuery, this.getElemIdFunc)
+    const {
+      elements: dataElements,
+      requestedTypes: requestedDataTypes,
+      largeTypesError: dataTypeError,
+    } = await getDataElements(this.client, fetchQuery, this.getElemIdFunc)
 
     const getCustomObjectsResult = this.client.getCustomObjects(
       getStandardTypesNames(),
@@ -317,11 +321,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
       this.getElemIdFunc
     )
 
-    const {
-      elements: dataElements,
-      requestedTypes: requestedDataTypes,
-      largeTypesError: dataTypeError,
-    } = await dataElementsPromise
     failedTypes.excludedTypes = failedTypes.excludedTypes.concat(dataTypeError)
     const suiteAppConfigElements = this.client.isSuiteAppConfigured()
       ? toConfigElements(configRecords, fetchQuery).concat(getConfigTypes())

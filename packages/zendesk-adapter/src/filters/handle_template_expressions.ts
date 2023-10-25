@@ -422,9 +422,9 @@ const replaceFormulasWithTemplates = ({
           return expression
         }
 
-        const expressionWithId = expression.replace(idRegex, '')
+        const expressionWithoutId = expression.replace(idRegex, '')
         const idInstance = instance ?? createMissingInstance(ZENDESK, 'unknown', id)
-        return [expressionWithId, new ReferenceExpression(idInstance.elemID, idInstance)]
+        return [expressionWithoutId, new ReferenceExpression(idInstance.elemID, idInstance)]
       }
     )
   }

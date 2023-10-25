@@ -2973,6 +2973,8 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       `${FETCH_CONFIG}.includeAuditDetails`,
       `${FETCH_CONFIG}.addAlias`,
       `${FETCH_CONFIG}.handleIdenticalAttachmentConflicts`,
+      `${FETCH_CONFIG}.extractReferencesFromFreeText`,
+      `${FETCH_CONFIG}.convertJsonIdsToReferences`,
       DEPLOY_CONFIG,
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

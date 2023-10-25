@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Change, ElemID, Field, getChangeData, InstanceElement, isInstanceChange, isObjectTypeChange, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, Change, ElemID, Field, getChangeData, InstanceElement, isInstanceChange, isModificationChange, isObjectTypeChange, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { LocalFilterOpts } from '../../src/filter'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE } from '../../src/constants'
 import filterCreator from '../../src/filters/additional_changes'
@@ -37,7 +37,7 @@ describe('additional changes filter', () => {
     customSegmentInstance = new InstanceElement('cseg1', customsegmentType().type)
   })
   describe('field changes', () => {
-    it('should add field parent', async () => {
+    it('should add field parent with correct before & after', async () => {
       const changes: Change[] = [
         toChange({ after: customRecordType.fields.custom_field }),
       ]
@@ -46,12 +46,24 @@ describe('additional changes filter', () => {
       const [parentChange] = changes.filter(isObjectTypeChange)
       expect(parentChange.action).toEqual('modify')
       expect(getChangeData(parentChange)).toBe(customRecordType)
+      expect(isModificationChange(parentChange) && parentChange.data.before)
+        .toEqual(new ObjectType({
+          elemID: customRecordType.elemID,
+          annotations: customRecordType.annotations,
+        }))
     })
     it('should add field parent one time if there are multiple fields', async () => {
+      const beforeCustomRecordType = customRecordType.clone()
+      beforeCustomRecordType.fields.custom_field.annotate({ removedAnno: true })
       customRecordType.fields.custom_new_field = new Field(customRecordType, 'custom_new_field', BuiltinTypes.BOOLEAN)
       const changes: Change[] = [
-        toChange({ after: customRecordType.fields.custom_field }),
-        toChange({ after: customRecordType.fields.custom_new_field }),
+        toChange({
+          before: beforeCustomRecordType.fields.custom_field,
+          after: customRecordType.fields.custom_field,
+        }),
+        toChange({
+          after: customRecordType.fields.custom_new_field,
+        }),
       ]
       await filterCreator(noParams).preDeploy?.(changes)
       expect(changes).toHaveLength(3)
@@ -59,6 +71,12 @@ describe('additional changes filter', () => {
       expect(parentChanges).toHaveLength(1)
       expect(parentChanges[0].action).toEqual('modify')
       expect(getChangeData(parentChanges[0])).toBe(customRecordType)
+      expect(isModificationChange(parentChanges[0]) && parentChanges[0].data.before)
+        .toEqual(new ObjectType({
+          elemID: beforeCustomRecordType.elemID,
+          annotations: beforeCustomRecordType.annotations,
+          fields: { custom_field: beforeCustomRecordType.fields.custom_field },
+        }))
     })
     it('should not add field parent if it\'s in changes', async () => {
       const changes: Change[] = [

@@ -129,9 +129,13 @@ export type DeployableChange = Change<ObjectType | InstanceElement>
 export type SDFObjectNode = {
   change: DeployableChange
   serviceid: string
-  changeType: 'addition' | 'modification'
   customizationInfo: CustomizationInfo
-}
+} & ({
+  changeType: 'addition'
+} | {
+  changeType: 'modification'
+  addedObjects: Set<string>
+})
 
 export const getNodeId = (elemId: ElemID): string => elemId.getFullName()
 

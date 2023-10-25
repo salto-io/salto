@@ -308,6 +308,47 @@ describe('NetsuiteClient', () => {
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
       })
 
+      it('should try to deploy again after removing dependencies when the failed changeType is modification but the dependency is on added object', async () => {
+        const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
+        const manifestErrorMessage = 'Details: The manifest contains a dependency on failed_scriptid'
+        const manifestValidationError = new ManifestValidationError(
+          manifestErrorMessage,
+          [{ message: manifestErrorMessage, scriptId: 'failed_scriptid' }]
+        )
+        mockSdfDeploy.mockRejectedValueOnce(manifestValidationError)
+        const successChange = toChange({
+          after: new InstanceElement('instance', type, { scriptid: 'someObject', ref: '[scriptid=some_ref]' }),
+        })
+        const failedChange = toChange({
+          after: new InstanceElement('failedInstance', type, { scriptid: 'scriptid', bad_ref: '[scriptid=failed_scriptid]', changeField: 'after', inner: { scriptid: 'inner' } }),
+          before: new InstanceElement('failedInstance', type, { scriptid: 'scriptid', bad_ref: '[scriptid=failed_scriptid]', changeField: 'before' }),
+        })
+        const failedChangeDependency = toChange({
+          after: new InstanceElement('failedChangedDependency', type, { scriptid: 'dependency_scriptid', ref: '[scriptid=scriptid]' }),
+        })
+        const failedChangeInnerDependency = toChange({
+          after: new InstanceElement('failedChangedInnerDependency', type, { scriptid: 'dependency_scriptid', ref: '[scriptid=scriptid.inner]' }),
+        })
+        expect(await client.deploy(
+          [successChange, failedChange, failedChangeDependency, failedChangeInnerDependency],
+          SDF_CREATE_OR_UPDATE_GROUP_ID,
+          ...deployParams,
+          async () => true,
+        )).toEqual({
+          errors: [{
+            elemID: getChangeData(failedChange).elemID,
+            message: manifestValidationError.message,
+            severity: 'Error',
+          }, {
+            elemID: getChangeData(failedChangeInnerDependency).elemID,
+            message: `Element cannot be deployed due to an error in its dependency: ${getChangeData(failedChange).elemID.getFullName()}`,
+            severity: 'Error',
+          }],
+          appliedChanges: [successChange, failedChangeDependency],
+        })
+        expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
+      })
+
       it('should pass features to sdf_client deploy', async () => {
         const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
         const change = toChange({

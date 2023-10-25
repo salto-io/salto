@@ -165,7 +165,12 @@ export const getChangeTypeAndAddedObjects = (
   }
   const beforeInnerObjects = getServiceIdsToElemIds(change.data.before)
   const afterInnerObjects = getServiceIdsToElemIds(change.data.after)
-  const addedObjects = new Set(Object.keys(afterInnerObjects)
-    .filter(objName => beforeInnerObjects[objName] === undefined))
-  return { changeType: 'modification', addedObjects }
+  const addedInnerObjects = Object.keys(afterInnerObjects)
+    .filter(objName => beforeInnerObjects[objName] === undefined)
+  log.debug(
+    'the following inner objects of %s were added: %o',
+    getChangeData(change).elemID.getFullName(),
+    addedInnerObjects
+  )
+  return { changeType: 'modification', addedObjects: new Set(addedInnerObjects) }
 }

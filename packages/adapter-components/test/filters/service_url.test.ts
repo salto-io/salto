@@ -16,7 +16,7 @@
 import { ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, toChange, getChangeData } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter_utils'
 import { Paginator } from '../../src/client'
-import { serviceUrlFilterCreator } from '../../src/filters/service_url'
+import { addUrlToInstance, serviceUrlFilterCreator } from '../../src/filters/service_url'
 import { createMockQuery } from '../../src/elements/query'
 
 describe('service url filter', () => {
@@ -26,29 +26,36 @@ describe('service url filter', () => {
   const roleInst = new InstanceElement('role', roleObjType, { id: 11, name: 'role' })
   const testObjType = new ObjectType({ elemID: new ElemID('adapter', 'test') })
   const testInst = new InstanceElement('test', testObjType, { id: 11, name: 'test' })
+  const brandObjType = new ObjectType({ elemID: new ElemID('adapter', 'brand') })
+  const brandInst = new InstanceElement('brand', brandObjType, { id: 11, name: 'brand' })
   const baseUrl = 'https://www.example.com'
-
+  const config = {
+    apiDefinitions: {
+      types: {
+        role: {
+          transformation: {
+            serviceUrl: '/roles/{id}',
+          },
+        },
+        brand: {
+          transformation: {
+            serviceUrl: '/brands/{id}/{additionalGuideKey}',
+          },
+        },
+      },
+      typeDefaults: {
+        transformation: { idFields: ['id'] },
+      },
+      supportedTypes: {},
+    },
+  }
   beforeEach(async () => {
     jest.clearAllMocks()
     filter = serviceUrlFilterCreator(baseUrl)({
       client: {} as unknown,
       paginator: undefined as unknown as Paginator,
       fetchQuery: createMockQuery(),
-      config: {
-        apiDefinitions: {
-          types: {
-            role: {
-              transformation: {
-                serviceUrl: '/roles/{id}',
-              },
-            },
-          },
-          typeDefaults: {
-            transformation: { idFields: ['id'] },
-          },
-          supportedTypes: {},
-        },
-      },
+      config,
     }) as FilterType
   })
 
@@ -99,6 +106,12 @@ describe('service url filter', () => {
         .toEqual(['adapter.role.instance.role'])
       const instance = getChangeData(changes[0])
       expect(instance.annotations).toEqual({})
+    })
+  })
+  describe('additional url vars', () => {
+    it('should use additional url vars if they are provided', async () => {
+      addUrlToInstance(brandInst, baseUrl, config, { additionalGuideKey: 'guide' })
+      expect(brandInst.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toEqual('https://www.example.com/brands/11/guide')
     })
   })
 })

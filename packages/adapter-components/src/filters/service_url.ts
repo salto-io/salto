@@ -21,14 +21,14 @@ import { AdapterApiConfig } from '../config'
 
 
 export const addUrlToInstance = <TContext extends { apiDefinitions: AdapterApiConfig }>(
-  instance: InstanceElement, baseUrl: string, config: TContext
+  instance: InstanceElement, baseUrl: string, config: TContext, additionalUrlVars?: Record<string, string>
 ): void => {
   const serviceUrl = config.apiDefinitions
     .types[instance.elemID.typeName]?.transformation?.serviceUrl
   if (serviceUrl === undefined) {
     return
   }
-  const url = createUrl({ instance, baseUrl: serviceUrl })
+  const url = createUrl({ instance, baseUrl: serviceUrl, additionalUrlVars })
   instance.annotations[CORE_ANNOTATIONS.SERVICE_URL] = (new URL(url, baseUrl)).href
 }
 

@@ -345,6 +345,9 @@ export default class SuiteAppClient {
         return { configType, data, fieldsDef: validatedFields }
       }).filter(isDefined)
     } catch (e) {
+      if (e instanceof InvalidSuiteAppCredentialsError) {
+        throw e
+      }
       log.error('getConfigRecords failed. received error: %s', e.message)
       return []
     }

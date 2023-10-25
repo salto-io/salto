@@ -29,8 +29,7 @@ import SuiteAppClient, { SuiteAppType } from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from './suiteapp_client/suiteapp_file_cabinet'
 import { ConfigRecord, EnvType, HasElemIDFunc, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { CustomRecordResponse, RecordResponse } from './suiteapp_client/soap_client/types'
-import { DeployableChange, FeaturesMap, getChangeNodeId, GetCustomObjectsResult, getDeployableChanges, getNodeId,
-  getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, ManifestDependencies, SDFObjectNode } from './types'
+import { DeployableChange, FeaturesMap, getChangeNodeId, GetCustomObjectsResult, getDeployableChanges, getNodeId, getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, InvalidSuiteAppCredentialsError, ManifestDependencies, SDFObjectNode } from './types'
 import { toCustomizationInfo } from '../transformer'
 import { isSdfCreateOrUpdateGroupId, isSdfDeleteGroupId, isSuiteAppCreateRecordsGroupId, isSuiteAppDeleteRecordsGroupId,
   isSuiteAppUpdateRecordsGroupId, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID,
@@ -545,6 +544,9 @@ export default class NetsuiteClient {
     try {
       return await this.suiteAppClient?.getSystemInformation()
     } catch (error) {
+      if (error instanceof InvalidSuiteAppCredentialsError) {
+        throw error
+      }
       log.error('The following error was thrown in getSystemInformation', { error })
       return undefined
     }

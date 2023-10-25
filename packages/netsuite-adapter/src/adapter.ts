@@ -16,10 +16,7 @@
 import {
   FetchResult, AdapterOperations, DeployOptions, ElemIdGetter, ReadOnlyElementsSource, ProgressReporter,
   FetchOptions, DeployModifiers, getChangeData, isObjectType, isInstanceElement, ElemID, isSaltoElementError,
-  setPartialFetchData,
-  TopLevelElement,
-  InstanceElement,
-  ObjectType,
+  setPartialFetchData, InstanceElement, ObjectType, TypeElement,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -272,11 +269,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
       return result
     }
 
-    const getCustomElements = async (): Promise<{
-      baseElements: TopLevelElement[]
-      instancesIds: ObjectID[]
-      customRecords: InstanceElement[]
+    const getStandardAndCustomElements = async (): Promise<{
+      standardInstances: InstanceElement[]
+      standardTypes: TypeElement[]
       customRecordTypes: ObjectType[]
+      customRecords: InstanceElement[]
+      instancesIds: ObjectID[]
       failures: FetchByQueryFailures
     }> => {
       const [
@@ -309,12 +307,10 @@ export default class NetsuiteAdapter implements AdapterOperations {
         ...fileCabinetContent,
         ...(this.userConfig.fetch.addBundles ? bundlesCustomInfo : []),
       ]
-      const baseElements = await createElements(
-        elementsToCreate,
-        this.elementsSource,
-        this.getElemIdFunc,
-      )
-      const customRecordTypes = baseElements.filter(isObjectType).filter(isCustomRecordType)
+      const elements = await createElements(elementsToCreate, this.elementsSource, this.getElemIdFunc)
+      const [standardInstances, types] = _.partition(elements, isInstanceElement)
+      const [objectTypes, otherTypes] = _.partition(types, isObjectType)
+      const [customRecordTypes, standardTypes] = _.partition(objectTypes, isCustomRecordType)
       const { elements: customRecords, largeTypesError: failedCustomRecords } = await getCustomRecords(
         this.client,
         customRecordTypes,
@@ -322,19 +318,27 @@ export default class NetsuiteAdapter implements AdapterOperations {
         this.getElemIdFunc
       )
       return {
-        baseElements,
-        instancesIds,
-        customRecords,
+        standardInstances,
+        standardTypes: [...standardTypes, ...otherTypes],
         customRecordTypes,
+        customRecords,
+        instancesIds,
         failures: { failedCustomRecords, failedFilePaths, failedToFetchAllAtOnce, failedTypes },
       }
     }
 
     const [
-      { instancesIds, customRecords, baseElements, customRecordTypes, failures },
+      {
+        standardInstances,
+        standardTypes,
+        customRecordTypes,
+        customRecords,
+        instancesIds,
+        failures,
+      },
       { elements: dataElements, requestedTypes: requestedDataTypes, largeTypesError: dataTypeError },
     ] = await Promise.all([
-      getCustomElements(),
+      getStandardAndCustomElements(),
       getDataElements(this.client, fetchQuery, this.getElemIdFunc),
     ])
 
@@ -363,11 +367,13 @@ export default class NetsuiteAdapter implements AdapterOperations {
       : []
 
     const elements = [
-      ...baseElements,
+      ...standardInstances,
+      ...standardTypes,
+      ...customRecordTypes,
+      ...customRecords,
       ...dataElements,
       ...suiteAppConfigElements,
       ...serverTimeElements,
-      ...customRecords,
     ]
 
     await this.createFiltersRunner(

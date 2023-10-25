@@ -82,6 +82,7 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) =>
         const response = await getLayoutResponse({
           variables,
           client,
+          typeName: ISSUE_LAYOUT_TYPE,
         })
         return getLayout({
           variables,

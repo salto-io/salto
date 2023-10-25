@@ -364,6 +364,7 @@ describe('NetsuiteClient', () => {
           after: new ObjectType({
             elemID: new ElemID(NETSUITE, 'customrecord1'),
             fields: {
+              scriptid: { refType: BuiltinTypes.SERVICE_ID },
               custom_field: {
                 refType: BuiltinTypes.STRING,
                 annotations: { scriptid: 'custfield123' },
@@ -382,6 +383,7 @@ describe('NetsuiteClient', () => {
           before: new ObjectType({
             elemID: new ElemID(NETSUITE, 'customrecord1'),
             fields: {
+              scriptid: { refType: BuiltinTypes.SERVICE_ID },
               custom_field: {
                 refType: BuiltinTypes.STRING,
                 annotations: { scriptid: 'custfield123' },

@@ -254,7 +254,8 @@ export const workflowSchemeMigrationValidator = (
     const errors = await awu(activeWorkflowsChanges).map(async change => {
       await updateSchemeId(change, client, paginator, config)
       const instance = getChangeData(change)
-      addUrlToInstance(instance, client.baseUrl, config)
+      const { apiDefinitions } = config
+      addUrlToInstance(instance, client.baseUrl, apiDefinitions)
       const changedItems = await getChangedItemsFromChange(
         change,
         workflowSchemesToProjects[getChangeData(change).elemID.getFullName()],

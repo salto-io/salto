@@ -69,7 +69,8 @@ const serviceUrlFilter: FilterCreator = ({ client, config }) => ({
           createServiceUrl(instance, baseUrl)
           return
         }
-        addUrlToInstance(instance, baseUrl, config)
+        const { apiDefinitions } = config
+        addUrlToInstance(instance, baseUrl, apiDefinitions)
       })
   },
   onDeploy: async (changes: Change<InstanceElement>[]) => {
@@ -86,7 +87,8 @@ const serviceUrlFilter: FilterCreator = ({ client, config }) => ({
           createServiceUrl(instance, baseUrl)
           return
         }
-        addUrlToInstance(instance, baseUrl, config)
+        const { apiDefinitions } = config
+        addUrlToInstance(instance, baseUrl, apiDefinitions)
       })
   },
 })

@@ -17,13 +17,16 @@ import { Change, CORE_ANNOTATIONS, Element, getChangeData, InstanceElement, isAd
 import { filter } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter_utils'
 import { createUrl } from '../elements'
-import { AdapterApiConfig } from '../config'
+import { AdapterApiConfig, AdapterDuckTypeApiConfig } from '../config'
 
 
-export const addUrlToInstance = <TContext extends { apiDefinitions: AdapterApiConfig }>(
-  instance: InstanceElement, baseUrl: string, config: TContext, additionalUrlVars?: Record<string, string>
+export const addUrlToInstance = (
+  instance: InstanceElement,
+  baseUrl: string,
+  apiDefinitions: AdapterApiConfig | AdapterDuckTypeApiConfig,
+  additionalUrlVars?: Record<string, string>,
 ): void => {
-  const serviceUrl = config.apiDefinitions
+  const serviceUrl = apiDefinitions
     .types[instance.elemID.typeName]?.transformation?.serviceUrl
   if (serviceUrl === undefined) {
     return
@@ -39,19 +42,21 @@ export const addUrlToInstance = <TContext extends { apiDefinitions: AdapterApiCo
 
 export const serviceUrlFilterCreator: <
   TClient,
-  TContext extends { apiDefinitions: AdapterApiConfig },
+  TContext extends { apiDefinitions: AdapterApiConfig | AdapterDuckTypeApiConfig },
   TResult extends void | filter.FilterResult = void
 >(baseUrl: string) => FilterCreator<TClient, TContext, TResult> = baseUrl => ({ config }) => ({
   name: 'serviceUrlFilter',
   onFetch: async (elements: Element[]) => {
+    const { apiDefinitions } = config
     elements
       .filter(isInstanceElement)
-      .forEach(instance => addUrlToInstance(instance, baseUrl, config))
+      .forEach(instance => addUrlToInstance(instance, baseUrl, apiDefinitions))
   },
   onDeploy: async (changes: Change<InstanceElement>[]) => {
+    const { apiDefinitions } = config
     const relevantChanges = changes.filter(isInstanceChange).filter(isAdditionChange)
     relevantChanges
       .map(getChangeData)
-      .forEach(instance => addUrlToInstance(instance, baseUrl, config))
+      .forEach(instance => addUrlToInstance(instance, baseUrl, apiDefinitions))
   },
 })

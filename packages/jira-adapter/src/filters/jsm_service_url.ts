@@ -13,32 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
-import { elements as elementUtils } from '@salto-io/adapter-components'
-import { logger } from '@salto-io/logging'
+import { Change, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
+import { filters } from '@salto-io/adapter-components'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import { JiraConfig } from '../config/config'
-import JiraClient from '../client/client'
 import { JSM_DUCKTYPE_SUPPORTED_TYPES } from '../config/api_config'
 
 const log = logger(module)
-
-const addUrlToInstance = (instance: InstanceElement, client: JiraClient, config: JiraConfig): void => {
-  try {
-    const serviceUrl = config.jsmApiDefinitions?.types[instance.elemID.typeName]?.transformation?.serviceUrl
-    if (serviceUrl === undefined) {
-      return
-    }
-    const additionalUrlVars: Record<string, string> = {
-      projectKey: getParent(instance).value.key,
-    }
-    const url = elementUtils.createUrl({ instance, baseUrl: serviceUrl, additionalUrlVars })
-    instance.annotations[CORE_ANNOTATIONS.SERVICE_URL] = (new URL(url, client.baseUrl)).href
-  } catch (e) {
-    log.error(`Failed to add service url to ${instance.elemID.getFullName()}: ${e}`)
-  }
-}
+const { addUrlToInstance } = filters
 
 const filterCreator: FilterCreator = ({ config, client }) => ({
   name: 'jsmServiceUrlFilter',
@@ -46,19 +29,50 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     if (!config.fetch.enableJSM) {
       return
     }
+    const { jsmApiDefinitions } = config
+    if (jsmApiDefinitions === undefined) {
+      return
+    }
     elements
       .filter(isInstanceElement)
       .filter(e => Object.keys(JSM_DUCKTYPE_SUPPORTED_TYPES).includes(e.elemID.typeName))
-      .forEach(instance => addUrlToInstance(instance, client, config))
+      .forEach(instance => {
+        try {
+          const projectKey = getParent(instance).value.key
+          const additionalUrlVars: Record<string, string> = {
+            projectKey,
+          }
+          addUrlToInstance(instance, client.baseUrl, jsmApiDefinitions, additionalUrlVars)
+        } catch (e) {
+          log.warn(`Failed to add service url to ${instance.elemID.getFullName()}: ${e}`)
+        }
+      })
   },
   onDeploy: async (changes: Change<InstanceElement>[]) => {
+    if (!config.fetch.enableJSM) {
+      return
+    }
+    const { jsmApiDefinitions } = config
+    if (jsmApiDefinitions === undefined) {
+      return
+    }
     const relevantChanges = changes
       .filter(change => Object.keys(JSM_DUCKTYPE_SUPPORTED_TYPES).includes(getChangeData(change).elemID.typeName))
       .filter(isInstanceChange)
       .filter(isAdditionChange)
     relevantChanges
       .map(getChangeData)
-      .forEach(instance => addUrlToInstance(instance, client, config))
+      .forEach(instance => {
+        try {
+          const projectKey = getParent(instance).value.key
+          const additionalUrlVars: Record<string, string> = {
+            projectKey,
+          }
+          addUrlToInstance(instance, client.baseUrl, jsmApiDefinitions, additionalUrlVars)
+        } catch (e) {
+          log.warn(`Failed to add service url to ${instance.elemID.getFullName()}: ${e}`)
+        }
+      })
   },
 })
 

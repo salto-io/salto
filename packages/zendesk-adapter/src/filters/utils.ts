@@ -195,7 +195,7 @@ const createInstanceReference = ({ urlPart, brandOfInstance, instancesById, idRe
     // if could not find a valid instance, create a MissingReferences.
     if (enableMissingReferences) {
       // If we know the brand that the instance belongs to, we can create a MissingReference with the brand name
-      const missingInstanceId = brandOfInstance ? `${brandOfInstance.elemID.name}_${id}` : id
+      const missingInstanceId = brandOfInstance ? `${brandOfInstance.value.name}_${id}` : id
       const missingInstance = createMissingInstance(ZENDESK, type, missingInstanceId)
       missingInstance.value.id = id
       return [url, new ReferenceExpression(missingInstance.elemID, missingInstance)]

@@ -186,7 +186,7 @@ describe('Zendesk utils', () => {
       brand = new InstanceElement(
         'brand',
         new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) }),
-        { id: 1 }
+        { id: 1, name: 'brand' }
       )
       article = new InstanceElement(
         'article',

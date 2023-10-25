@@ -79,14 +79,28 @@ describe('adapter creator', () => {
       })
       it('when using a preview account', async () => {
         const { accountType, isProduction } = await adapter.validateCredentials(
-          createCredentialsInstance({ baseUrl: 'http://my-account.oktapreview.com', token: 't' })
+          createCredentialsInstance({ baseUrl: 'https://my-account.oktapreview.com', token: 't' })
         )
         expect(accountType).toEqual('Preview')
         expect(isProduction).toEqual(false)
       })
+      it('when using a preview dev account', async () => {
+        const { accountType, isProduction } = await adapter.validateCredentials(
+          createCredentialsInstance({ baseUrl: 'https://dev-123123.oktapreview.com', token: 't' })
+        )
+        expect(accountType).toEqual('Preview')
+        expect(isProduction).toEqual(false)
+      })
+      it('when using a production account', async () => {
+        const { accountType, isProduction } = await adapter.validateCredentials(
+          createCredentialsInstance({ baseUrl: 'https://dev-123123.okta.com', token: 't' })
+        )
+        expect(accountType).toEqual('Dev')
+        expect(isProduction).toEqual(false)
+      })
       it('when using production account', async () => {
         const { accountType, isProduction } = await adapter.validateCredentials(
-          createCredentialsInstance({ baseUrl: 'http://my-account.okta.net', token: 't' })
+          createCredentialsInstance({ baseUrl: 'https://my-account.okta.net', token: 't' })
         )
         expect(accountType).toEqual('Production')
         expect(isProduction).toEqual(true)

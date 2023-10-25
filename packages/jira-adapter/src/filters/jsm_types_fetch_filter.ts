@@ -17,19 +17,8 @@
 
 import { isObjectType, CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { CALENDAR_TYPE, CUSTOMER_PERMISSIONS_TYPE, PORTAL_GROUP_TYPE, PORTAL_SETTINGS_TYPE_NAME, QUEUE_TYPE, REQUEST_TYPE_NAME, SLA_TYPE_NAME } from '../constants'
 import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../utils'
-
-
-export const JSM_SUPPORTED_TYPES = [
-  CUSTOMER_PERMISSIONS_TYPE,
-  QUEUE_TYPE,
-  CALENDAR_TYPE,
-  REQUEST_TYPE_NAME,
-  PORTAL_GROUP_TYPE,
-  PORTAL_SETTINGS_TYPE_NAME,
-  SLA_TYPE_NAME,
-]
+import { JSM_DUCKTYPE_SUPPORTED_TYPES } from '../config/api_config'
 
 const filterCreator: FilterCreator = ({ config }) => ({
   name: 'jsmTypesFetchFilter',
@@ -38,7 +27,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
       return
     }
     elements
-      .filter(e => JSM_SUPPORTED_TYPES.includes(e.elemID.typeName))
+      .filter(e => Object.keys(JSM_DUCKTYPE_SUPPORTED_TYPES).includes(e.elemID.typeName))
       .filter(isObjectType)
       .map(async obj => {
         setTypeDeploymentAnnotations(obj)
@@ -47,7 +36,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
         await addAnnotationRecursively(obj, CORE_ANNOTATIONS.DELETABLE)
       })
     elements
-      .filter(e => JSM_SUPPORTED_TYPES.includes(e.elemID.typeName))
+      .filter(e => Object.keys(JSM_DUCKTYPE_SUPPORTED_TYPES).includes(e.elemID.typeName))
       .filter(isInstanceElement)
       .forEach(inst => {
         inst.annotations[CORE_ANNOTATIONS.PARENT] = [inst.value.projectKey]

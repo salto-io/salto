@@ -15,22 +15,29 @@
 */
 import { Change, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { elements as elementUtils } from '@salto-io/adapter-components'
+import { logger } from '@salto-io/logging'
 import { getParent } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { JiraConfig } from '../config/config'
 import JiraClient from '../client/client'
-import { JSM_SUPPORTED_TYPES } from './jsm_types_fetch_filter'
+import { JSM_DUCKTYPE_SUPPORTED_TYPES } from '../config/api_config'
 
-const addUrlToInstance = (instance: InstanceElement, clinet: JiraClient, config: JiraConfig): void => {
-  const serviceUrl = config.jsmApiDefinitions?.types[instance.elemID.typeName]?.transformation?.serviceUrl
-  if (serviceUrl === undefined) {
-    return
+const log = logger(module)
+
+const addUrlToInstance = (instance: InstanceElement, client: JiraClient, config: JiraConfig): void => {
+  try {
+    const serviceUrl = config.jsmApiDefinitions?.types[instance.elemID.typeName]?.transformation?.serviceUrl
+    if (serviceUrl === undefined) {
+      return
+    }
+    const additionalUrlVars: Record<string, string> = {
+      projectKey: getParent(instance).value.key,
+    }
+    const url = elementUtils.createUrl({ instance, baseUrl: serviceUrl, additionalUrlVars })
+    instance.annotations[CORE_ANNOTATIONS.SERVICE_URL] = (new URL(url, client.baseUrl)).href
+  } catch (e) {
+    log.error(`Failed to add service url to ${instance.elemID.getFullName()}: ${e}`)
   }
-  const additionalUrlVars: Record<string, string> = {
-    projectKey: getParent(instance).value.key,
-  }
-  const url = elementUtils.createUrl({ instance, baseUrl: serviceUrl, additionalUrlVars })
-  instance.annotations[CORE_ANNOTATIONS.SERVICE_URL] = (new URL(url, clinet.baseUrl)).href
 }
 
 const filterCreator: FilterCreator = ({ config, client }) => ({
@@ -41,12 +48,12 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     }
     elements
       .filter(isInstanceElement)
-      .filter(e => JSM_SUPPORTED_TYPES.includes(e.elemID.typeName))
+      .filter(e => Object.keys(JSM_DUCKTYPE_SUPPORTED_TYPES).includes(e.elemID.typeName))
       .forEach(instance => addUrlToInstance(instance, client, config))
   },
   onDeploy: async (changes: Change<InstanceElement>[]) => {
     const relevantChanges = changes
-      .filter(change => JSM_SUPPORTED_TYPES.includes(getChangeData(change).elemID.typeName))
+      .filter(change => Object.keys(JSM_DUCKTYPE_SUPPORTED_TYPES).includes(getChangeData(change).elemID.typeName))
       .filter(isInstanceChange)
       .filter(isAdditionChange)
     relevantChanges

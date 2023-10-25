@@ -21,7 +21,7 @@ import { CALENDAR_TYPE, CUSTOMER_PERMISSIONS_TYPE, PORTAL_GROUP_TYPE, PORTAL_SET
 import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../utils'
 
 
-const jsmSupportedTypes = [
+export const JSM_SUPPORTED_TYPES = [
   CUSTOMER_PERMISSIONS_TYPE,
   QUEUE_TYPE,
   CALENDAR_TYPE,
@@ -38,7 +38,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
       return
     }
     elements
-      .filter(e => jsmSupportedTypes.includes(e.elemID.typeName))
+      .filter(e => JSM_SUPPORTED_TYPES.includes(e.elemID.typeName))
       .filter(isObjectType)
       .map(async obj => {
         setTypeDeploymentAnnotations(obj)
@@ -47,7 +47,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
         await addAnnotationRecursively(obj, CORE_ANNOTATIONS.DELETABLE)
       })
     elements
-      .filter(e => jsmSupportedTypes.includes(e.elemID.typeName))
+      .filter(e => JSM_SUPPORTED_TYPES.includes(e.elemID.typeName))
       .filter(isInstanceElement)
       .forEach(inst => {
         inst.annotations[CORE_ANNOTATIONS.PARENT] = [inst.value.projectKey]

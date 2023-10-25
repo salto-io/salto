@@ -82,6 +82,7 @@ import accountIdFilter from './filters/account_id/account_id_filter'
 import userFallbackFilter from './filters/account_id/user_fallback_filter'
 import userIdFilter from './filters/account_id/user_id_filter'
 import fieldStructureFilter from './filters/fields/field_structure_filter'
+import jsmServiceUrlFilter from './filters/jsm_service_url'
 import fieldDeploymentFilter from './filters/fields/field_deployment_filter'
 import contextDeploymentFilter from './filters/fields/context_deployment_filter'
 import fieldTypeReferencesFilter from './filters/fields/field_type_references_filter'
@@ -276,6 +277,7 @@ export const DEFAULT_FILTERS = [
   addJsmTypesAsFieldsFilter,
   issueLayoutFilter,
   fetchJsmTypesFilter,
+  jsmServiceUrlFilter,
   // Must run after issueLayoutFilter
   removeSimpleFieldProjectFilter,
   requestTypeLayoutsFilter,

@@ -34,12 +34,16 @@ describe('service url filter', () => {
       types: {
         role: {
           transformation: {
-            serviceUrl: '/roles/{id}',
+            serviceUrl: {
+              url: '/roles/{id}',
+            },
           },
         },
         brand: {
           transformation: {
-            serviceUrl: '/brands/{id}/{additionalGuideKey}',
+            serviceUrl: {
+              url: '/brands/{id}/{additionalGuideKey}',
+            },
           },
         },
       },

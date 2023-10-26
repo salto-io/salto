@@ -61,7 +61,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     transformation: {
       dataField: '.',
       isSingleton: true,
-      serviceUrl: '/secure/admin/ViewApplicationProperties.jspa',
+      serviceUrl: {
+        url: '/secure/admin/ViewApplicationProperties.jspa',
+      },
     },
   },
   Dashboards: {
@@ -149,7 +151,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'gadgets',
         },
       ],
-      serviceUrl: '/jira/dashboards/{id}',
+      serviceUrl: {
+        url: '/jira/dashboards/{id}',
+      },
     },
     deployRequests: {
       add: {
@@ -401,7 +405,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
-      serviceUrl: '/secure/admin/ConfigureFieldLayout!default.jspa?=&id={id}',
+      serviceUrl: {
+        url: '/secure/admin/ConfigureFieldLayout!default.jspa?=&id={id}',
+      },
     },
     deployRequests: {
       add: {
@@ -451,7 +457,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
-      serviceUrl: '/secure/admin/ConfigureFieldLayoutScheme!default.jspa?=&id={id}',
+      serviceUrl: {
+        url: '/secure/admin/ConfigureFieldLayoutScheme!default.jspa?=&id={id}',
+      },
     },
     deployRequests: {
       add: {
@@ -517,7 +525,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldsToOmit: [
         { fieldName: 'expand' },
       ],
-      serviceUrl: '/issues/?filter={id}',
+      serviceUrl: {
+        url: '/issues/?filter={id}',
+      },
     },
     deployRequests: {
       add: {
@@ -581,7 +591,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldsToHide: [
         { fieldName: 'id' },
       ],
-      serviceUrl: '/secure/admin/ConfigureOptionSchemes!default.jspa?fieldId=&schemeId={id}',
+      serviceUrl: {
+        url: '/secure/admin/ConfigureOptionSchemes!default.jspa?fieldId=&schemeId={id}',
+      },
     },
     deployRequests: {
       add: {
@@ -642,7 +654,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
-      serviceUrl: '/secure/admin/ConfigureIssueTypeScreenScheme.jspa?id={id}',
+      serviceUrl: {
+        url: '/secure/admin/ConfigureIssueTypeScreenScheme.jspa?id={id}',
+      },
     },
     request: {
       url: '/rest/api/3/issuetypescreenscheme',
@@ -751,7 +765,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
-      serviceUrl: '/secure/admin/EditPermissions!default.jspa?schemeId={id}',
+      serviceUrl: {
+        url: '/secure/admin/EditPermissions!default.jspa?schemeId={id}',
+      },
     },
     request: {
       url: '/rest/api/3/project/{projectId}/permissionscheme',
@@ -802,7 +818,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
-      serviceUrl: '/secure/admin/projectcategories/EditProjectCategory!default.jspa?id={id}',
+      serviceUrl: {
+        url: '/secure/admin/projectcategories/EditProjectCategory!default.jspa?id={id}',
+      },
     },
     deployRequests: {
       add: {
@@ -853,7 +871,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'components',
         },
       ],
-      serviceUrl: '/secure/project/EditProject!default.jspa?pid={id}',
+      serviceUrl: {
+        url: '/secure/project/EditProject!default.jspa?pid={id}',
+      },
     },
     deployRequests: {
       add: {
@@ -930,7 +950,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
     transformation: {
       fieldsToHide: [{ fieldName: 'id' }],
-      serviceUrl: '/secure/admin/EditNotifications!default.jspa?schemeId={id}',
+      serviceUrl: {
+        url: '/secure/admin/EditNotifications!default.jspa?schemeId={id}',
+      },
     },
   },
   NotificationSchemeEvent: {
@@ -989,7 +1011,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
-      serviceUrl: '/secure/admin/EditResolution!default.jspa?id={id}',
+      serviceUrl: {
+        url: '/secure/admin/EditResolution!default.jspa?id={id}',
+      },
     },
     deployRequests: {
       add: {
@@ -1013,7 +1037,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
-      serviceUrl: '/secure/admin/ConfigureFieldScreen.jspa?id={id}',
+      serviceUrl: {
+        url: '/secure/admin/ConfigureFieldScreen.jspa?id={id}',
+      },
     },
     deployRequests: {
       add: {
@@ -1142,7 +1168,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'created' },
         { fieldName: 'updated' },
       ],
-      serviceUrl: '/secure/admin/workflows/ViewWorkflowSteps.jspa?workflowMode=live&workflowName={name}',
+      serviceUrl: {
+        url: '/secure/admin/workflows/ViewWorkflowSteps.jspa?workflowMode=live&workflowName={name}',
+      },
     },
     deployRequests: {
       add: {
@@ -1182,7 +1210,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'levels',
         },
       ],
-      serviceUrl: '/secure/admin/EditIssueSecurityScheme!default.jspa?=&schemeId={id}',
+      serviceUrl: {
+        url: '/secure/admin/EditIssueSecurityScheme!default.jspa?=&schemeId={id}',
+      },
     },
   },
 
@@ -1292,7 +1322,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'resolved',
         },
       ],
-      serviceUrl: '/secure/admin/EditStatus!default.jspa?id={id}',
+      serviceUrl: {
+        url: '/secure/admin/EditStatus!default.jspa?id={id}',
+      },
       nameMapping: 'lowercase',
     },
     deployRequests: {
@@ -1310,7 +1342,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
-      serviceUrl: '/secure/admin/EditWorkflowScheme.jspa?schemeId={id}',
+      serviceUrl: {
+        url: '/secure/admin/EditWorkflowScheme.jspa?schemeId={id}',
+      },
     },
     deployRequests: {
       add: {
@@ -1345,7 +1379,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
-      serviceUrl: '/secure/admin/EditIssueType!default.jspa?id={id}',
+      serviceUrl: {
+        url: '/secure/admin/EditIssueType!default.jspa?id={id}',
+      },
     },
     deployRequests: {
       add: {
@@ -1365,7 +1401,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   AttachmentSettings: {
     transformation: {
       isSingleton: true,
-      serviceUrl: '/secure/admin/ViewAttachmentSettings.jspa',
+      serviceUrl: {
+        url: '/secure/admin/ViewAttachmentSettings.jspa',
+      },
     },
   },
 
@@ -1494,7 +1532,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
-      serviceUrl: '/secure/admin/EditLinkType!default.jspa?id={id}',
+      serviceUrl: {
+        url: '/secure/admin/EditLinkType!default.jspa?id={id}',
+      },
     },
   },
 
@@ -1505,7 +1545,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
-      serviceUrl: '/secure/project/EditProjectRole!default.jspa?id={id}',
+      serviceUrl: {
+        url: '/secure/project/EditProjectRole!default.jspa?id={id}',
+      },
     },
     deployRequests: {
       add: {
@@ -1525,13 +1567,17 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   TimeTrackingProvider: {
     transformation: {
-      serviceUrl: '/secure/admin/TimeTrackingAdmin.jspa',
+      serviceUrl: {
+        url: '/secure/admin/TimeTrackingAdmin.jspa',
+      },
     },
   },
 
   Automation: {
     transformation: {
-      serviceUrl: '/jira/settings/automation#/rule/{id}',
+      serviceUrl: {
+        url: '/jira/settings/automation#/rule/{id}',
+      },
     },
   },
 
@@ -1546,7 +1592,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
-      serviceUrl: '/secure/admin/ListEventTypes.jspa',
+      serviceUrl: {
+        url: '/secure/admin/ListEventTypes.jspa',
+      },
     },
   },
   Priority: {
@@ -1556,7 +1604,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
-      serviceUrl: '/secure/admin/EditPriority!default.jspa?id={id}',
+      serviceUrl: {
+        url: '/secure/admin/EditPriority!default.jspa?id={id}',
+      },
     },
     deployRequests: {
       add: {
@@ -1605,7 +1655,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
-      serviceUrl: '/secure/admin/ConfigureFieldScreenScheme.jspa?id={id}',
+      serviceUrl: {
+        url: '/secure/admin/ConfigureFieldScreenScheme.jspa?id={id}',
+      },
     },
 
     deployRequests: {

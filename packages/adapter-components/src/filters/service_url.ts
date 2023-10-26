@@ -28,7 +28,12 @@ export const addUrlToInstance = <TContext extends { apiDefinitions: AdapterApiCo
   if (serviceUrl === undefined) {
     return
   }
-  const url = createUrl({ instance, baseUrl: serviceUrl, additionalUrlVars })
+  const url = createUrl({
+    instance,
+    baseUrl: serviceUrl.url,
+    additionalUrlVars,
+    urlParamsToFields: serviceUrl.urlParamsToFields,
+  })
   instance.annotations[CORE_ANNOTATIONS.SERVICE_URL] = (new URL(url, baseUrl)).href
 }
 

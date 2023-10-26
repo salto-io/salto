@@ -51,7 +51,9 @@ export const DC_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
     },
     Dashboard: {
       transformation: {
-        serviceUrl: '/secure/Dashboard.jspa?selectPageId={id}',
+        serviceUrl: {
+          url: '/secure/Dashboard.jspa?selectPageId={id}',
+        },
       },
     },
     DashboardGadget: {
@@ -61,7 +63,9 @@ export const DC_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
     },
     Automation: {
       transformation: {
-        serviceUrl: '/secure/AutomationGlobalAdminAction!default.jspa#/rule/{id}',
+        serviceUrl: {
+          url: '/secure/AutomationGlobalAdminAction!default.jspa#/rule/{id}',
+        },
       },
     },
     Priorities: {

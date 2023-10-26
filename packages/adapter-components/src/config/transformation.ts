@@ -18,7 +18,7 @@ import { ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS,
   FieldDefinition, ListType, RestrictionAnnotationType } from '@salto-io/adapter-api'
 import { types, values, collections } from '@salto-io/lowerdash'
 import { getConfigWithDefault, TypeConfig, TypeDefaultsConfig } from './shared'
-import { getConfigTypeName } from './request'
+import { UrlParams, getConfigTypeName } from './request'
 
 const { findDuplicates } = collections.array
 
@@ -33,6 +33,7 @@ type FieldToAdjustType = {
   fieldName: string
   fieldType?: string
 }
+
 export type FieldToOmitType = FieldToAdjustType
 export type FieldToHideType = FieldToAdjustType
 export type FieldTypeOverrideType = {
@@ -41,6 +42,12 @@ export type FieldTypeOverrideType = {
   restrictions?: RestrictionAnnotationType
 }
 export type NameMappingOptions = 'lowercase' | 'uppercase'
+
+type serviceUrlConfig = {
+  url: string
+  urlParamsToFields?: UrlParams
+  deployAsField?: string
+}
 
 export type TransformationConfig = {
   // explicitly set types for fields that are not generated correctly
@@ -68,7 +75,7 @@ export type TransformationConfig = {
   // The identifier field for the service
   serviceIdField?: string
   // The url of the type in the service
-  serviceUrl?: string
+  serviceUrl?: serviceUrlConfig
   // if provided, instance id and file name change, otherwise there’s no change
   nameMapping?: NameMappingOptions
   // if provided and true, types that are standalone fields will nest their instances under parent instances folders.

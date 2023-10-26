@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import { strings, values } from '@salto-io/lowerdash'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Change, ElemID, SaltoElementError, getChangeData } from '@salto-io/adapter-api'
 import { FILE, FOLDER } from '../constants'
@@ -26,7 +27,15 @@ const log = logger(module)
 const { matchAll } = strings
 const { isDefined } = values
 
-export const toError = (e: unknown): Error => (e instanceof Error ? e : new Error(String(e)))
+export const toError = (e: unknown): Error => {
+  if (e instanceof Error) {
+    return e
+  }
+  if (typeof e === 'string') {
+    return new Error(e)
+  }
+  return new Error(safeJsonStringify(e))
+}
 
 export const isCustomTypeInfo = (customizationInfo: CustomizationInfo):
   customizationInfo is CustomTypeInfo => 'scriptId' in customizationInfo

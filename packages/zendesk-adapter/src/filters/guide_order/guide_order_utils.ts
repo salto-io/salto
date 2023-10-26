@@ -35,6 +35,7 @@ import ZendeskClient from '../../client/client'
 import { API_DEFINITIONS_CONFIG, FilterContext } from '../../config'
 import { BRAND_TYPE_NAME, CATEGORY_ORDER_TYPE_NAME, SECTION_ORDER_TYPE_NAME, ARTICLE_ORDER_TYPE_NAME, CATEGORY_TYPE_NAME, ZENDESK, CATEGORIES_FIELD, SECTION_TYPE_NAME, SECTIONS_FIELD, ARTICLE_TYPE_NAME, ARTICLES_FIELD } from '../../constants'
 import { getZendeskError } from '../../errors'
+import { createOrderPosition } from '../reorder/creator'
 
 
 const { isDefined } = lowerDashValues
@@ -141,9 +142,10 @@ const updateElementPositions = async (
         })
       }
 
+      const position = createOrderPosition(i)
       // Send an api request to update the positions of the elements in the order list
       // There is no reason to update elements that weren't changed
-      if (resolvedChild.value.position !== i) {
+      if (resolvedChild.value.position !== position) {
         try {
           await client.put({
             url: createUrl({
@@ -151,7 +153,7 @@ const updateElementPositions = async (
               baseUrl: childUpdateApi.url,
               urlParamsToFields: childUpdateApi.urlParamsToFields,
             }),
-            data: { position: i },
+            data: { position },
           })
         } catch (err) {
           return getZendeskError(getChangeData(change).elemID, err)

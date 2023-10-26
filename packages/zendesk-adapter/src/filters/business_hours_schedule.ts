@@ -15,13 +15,14 @@
 */
 import _ from 'lodash'
 import {
-  Change, getChangeData, InstanceElement, isAdditionChange, isModificationChange, Values,
+  Change, Element, getChangeData, InstanceElement, isAdditionChange, isInstanceElement, isModificationChange, Values,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import { getZendeskError } from '../errors'
 import ZendeskClient from '../client/client'
+import { BUSINESS_HOUR_SCHEDULE_HOLIDAY } from '../constants'
 
 const BUSINESS_HOURS_SCHEDULE_TYPE_NAME = 'business_hours_schedule'
 
@@ -78,6 +79,15 @@ Promise<void> => {
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
   name: 'businessHoursScheduleFilter',
+  onFetch: async (elements: Element[]) => {
+    elements
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === BUSINESS_HOUR_SCHEDULE_HOLIDAY)
+      .forEach(holiday => {
+        const startYear = holiday.value.start_date?.split('-')[0]
+        holiday.value.start_year = startYear
+      })
+  },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [scheduleChanges, leftoverChanges] = _.partition(
       changes,

@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeError, ChangeValidator, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isModificationChange, isReferenceExpression, ModificationChange, ReadOnlyElementsSource, ReferenceExpression, SeverityLevel } from '@salto-io/adapter-api'
-import { getParent } from '@salto-io/adapter-utils'
+import { Change, ChangeError, ChangeValidator, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isReferenceExpression, isRemovalOrModificationChange, ReadOnlyElementsSource, ReferenceExpression, SeverityLevel } from '@salto-io/adapter-api'
+import { getInstancesFromElementSource, getParent } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FIELD_CONTEXT_TYPE_NAME } from '../../filters/fields/constants'
@@ -52,6 +52,7 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
     return []
   }
   const fieldToGlobalContextCount: Record<string, number> = {}
+  const fieldContextToChange = new Map<string, {change: Change<InstanceElement>; field: InstanceElement}>()
   const fillFieldToGlobalContextCount = async (): Promise<void> => (
     awu(await elementSource.getAll())
       .filter(elem => elem.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
@@ -73,30 +74,42 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
     .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
     .filter(instance => instance.value.isGlobalContext)
     .toArray()
+
   await fillFieldToGlobalContextCount()
-  const isInvalidProjectFieldContextsModification = async (change: ModificationChange<InstanceElement>)
-    : Promise<boolean> => {
-    const afterContexts = new Set((change.data.after.value.fieldContexts ?? [])
-      .map((context: ReferenceExpression) => context.elemID.getFullName()))
-    const removedContexts = change.data.before.value.fieldContexts
-      .filter((context: ReferenceExpression) => !afterContexts.has(context.elemID.getFullName()))
-    const removedContextsFields = await Promise.all(removedContexts.map(async (context: ReferenceExpression) => (
-      getParentWithElementSource(await context.getResolvedValue(), elementSource)
-    )))
-    // removing fieldContext from a project implicitly makes it global
-    const fieldsWithSecondGlobalContext = removedContextsFields.filter(isInstanceElement)
-      .filter((fieldInstance: InstanceElement) => fieldToGlobalContextCount[fieldInstance.elemID.getFullName()] === 1)
-    return fieldsWithSecondGlobalContext.length > 0
-  }
+  await awu(changes).filter(isInstanceChange)
+    .filter(change => getChangeData(change).elemID.typeName === PROJECT_TYPE)
+    .filter(isRemovalOrModificationChange)
+    .forEach(change => {
+      change.data.before.value.fieldContexts
+        .filter(isReferenceExpression)
+        .forEach(async (context: ReferenceExpression) => {
+          const field = await getParentWithElementSource(await context.getResolvedValue(), elementSource)
+          fieldContextToChange.set(context.elemID.getFullName(), { change, field })
+        })
+    })
+  const projectInstances = await getInstancesFromElementSource(elementSource, [PROJECT_TYPE])
 
-  const invalidProjectFieldContextsModification = await awu(changes).filter(isInstanceChange)
-    .filter(isModificationChange)
-    .filter(change => change.data.after.elemID.typeName === PROJECT_TYPE)
-    .filter(isInvalidProjectFieldContextsModification)
-    .toArray()
+  // if there is a project that using a field context that is not global context
+  projectInstances.flatMap(instance => instance.value.fieldContexts)
+    .filter(isReferenceExpression)
+    .forEach((context: ReferenceExpression) => {
+      fieldContextToChange.delete(context.elemID.getFullName())
+    })
+  const errorMessages = Array.from(fieldContextToChange.keys())
+    .filter(context => fieldContextToChange.get(context) !== undefined)
+    .filter(context => {
+      const changeAndField = fieldContextToChange.get(context)
+      if (changeAndField !== undefined) {
+        const { field } = changeAndField
+        // if there is another global context for the field
+        return fieldToGlobalContextCount[field.elemID.getFullName()] === 1
+      }
+      return false
+    })
+    .map(context => fieldContextToChange.get(context)?.change)
+    .filter(values.isDefined)
+    .map(change => createErrorMessage(getChangeData(change).elemID))
 
-  const errorMessages = [...invalidProjectFieldContextsModification
-    .map(change => createErrorMessage(change.data.after.elemID))]
   if (globalContextList.length > 0) {
     const secondGlobalContextErrorMessages = globalContextList
       .map(instance => ({ context: instance, field: getParent(instance) }))

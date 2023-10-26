@@ -207,10 +207,10 @@ describe('Field second global contexts', () => {
           ],
         }
       )
-      elements = [fieldInstance, firstGlobalContextInstance, projectInstance, fieldContextInstance]
-      elementsSource = buildElementsSourceFromElements(elements)
       afterProjectInstance = projectInstance.clone()
       afterProjectInstance.value.fieldContexts = []
+      elements = [fieldInstance, firstGlobalContextInstance, afterProjectInstance, fieldContextInstance]
+      elementsSource = buildElementsSourceFromElements(elements)
       changes = [toChange({ before: projectInstance, after: afterProjectInstance })]
     })
     it('should return an error when removing field context from a project when the field has a global context', async () => {

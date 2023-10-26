@@ -55,7 +55,6 @@ import {
   ACTIVE,
   API_NAME,
   API_NAME_SEPARATOR,
-  CHANGED_AT_SINGLETON,
   CUSTOM_FIELD,
   CUSTOM_METADATA_SUFFIX,
   CUSTOM_OBJECT,
@@ -602,13 +601,6 @@ export const getInstanceAlias = async (
   return namespace === undefined
     ? label
     : `${label} (${namespace})`
-}
-
-export const getChangedAtSingleton = async (
-  elementsSource: ReadOnlyElementsSource
-): Promise<InstanceElement | undefined> => {
-  const element = await elementsSource.get(new ElemID(SALESFORCE, CHANGED_AT_SINGLETON, 'instance', ElemID.CONFIG_NAME))
-  return isInstanceElement(element) ? element : undefined
 }
 
 export const isCustomType = (element: Element): element is ObjectType => (

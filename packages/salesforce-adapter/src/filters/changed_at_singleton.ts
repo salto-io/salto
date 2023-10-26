@@ -16,17 +16,13 @@
 import {
   CORE_ANNOTATIONS,
   Element,
-  ElemID,
-  InstanceElement,
-  ReadOnlyElementsSource,
   Values,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { LocalFilterCreator } from '../filter'
-import { ArtificialTypes } from '../constants'
+import { getChangedAtSingletonInstance } from './author_information/changed_at_info'
 import {
   apiNameSync,
-  getChangedAtSingleton,
   isCustomObjectSync,
   isMetadataInstanceElementSync,
   metadataTypeSync,
@@ -41,22 +37,6 @@ const createChangedAtSingletonInstanceValues = (metadataInstancesByType: Record<
     })
   })
   return instanceValues
-}
-
-const createEmptyChangedAtSingletonInstance = async (): Promise<InstanceElement> => (
-  new InstanceElement(
-    ElemID.CONFIG_NAME,
-    ArtificialTypes.ChangedAtSingleton,
-  )
-)
-
-const getChangedAtSingletonInstance = async (
-  elementsSource: ReadOnlyElementsSource | undefined
-): Promise<InstanceElement> => {
-  const changedAtSingleton = elementsSource !== undefined
-    ? await getChangedAtSingleton(elementsSource)
-    : undefined
-  return changedAtSingleton ?? createEmptyChangedAtSingletonInstance()
 }
 
 const filterCreator: LocalFilterCreator = ({ config }) => ({

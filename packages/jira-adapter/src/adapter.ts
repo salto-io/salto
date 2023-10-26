@@ -272,12 +272,13 @@ export const DEFAULT_FILTERS = [
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,
+  serviceUrlFilter,
+  jsmServiceUrlFilter,
   fieldReferencesFilter,
   // Must run after fieldReferencesFilter
   addJsmTypesAsFieldsFilter,
   issueLayoutFilter,
   fetchJsmTypesFilter,
-  jsmServiceUrlFilter,
   // Must run after issueLayoutFilter
   removeSimpleFieldProjectFilter,
   requestTypeLayoutsFilter,
@@ -300,7 +301,6 @@ export const DEFAULT_FILTERS = [
   // Must run after fieldReferencesFilter
   sortListsFilter,
   serviceUrlInformationFilter,
-  serviceUrlFilter,
   filtersFilter,
   hiddenValuesInListsFilter,
   missingDescriptionsFilter,

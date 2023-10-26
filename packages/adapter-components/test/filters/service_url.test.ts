@@ -114,7 +114,7 @@ describe('service url filter', () => {
   })
   describe('additional url vars', () => {
     it('should use additional url vars if they are provided', async () => {
-      addUrlToInstance(brandInst, baseUrl, config, { additionalGuideKey: 'guide' })
+      addUrlToInstance(brandInst, baseUrl, config.apiDefinitions)
       expect(brandInst.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toEqual('https://www.example.com/brands/11/guide')
     })
   })

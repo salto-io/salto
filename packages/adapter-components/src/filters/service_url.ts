@@ -24,7 +24,6 @@ export const addUrlToInstance = (
   instance: InstanceElement,
   baseUrl: string,
   apiDefinitions: AdapterApiConfig | AdapterDuckTypeApiConfig,
-  additionalUrlVars?: Record<string, string>,
 ): void => {
   const serviceUrl = apiDefinitions
     .types[instance.elemID.typeName]?.transformation?.serviceUrl
@@ -34,7 +33,6 @@ export const addUrlToInstance = (
   const url = createUrl({
     instance,
     baseUrl: serviceUrl.url,
-    additionalUrlVars,
     urlParamsToFields: serviceUrl.urlParamsToFields,
   })
   instance.annotations[CORE_ANNOTATIONS.SERVICE_URL] = (new URL(url, baseUrl)).href

@@ -1865,7 +1865,12 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldsToHide: [
         { fieldName: 'id' },
       ],
-      serviceUrl: '/jira/servicedesk/projects/{projectKey}/settings/request-types/request-type/{id}/request-form',
+      serviceUrl: {
+        url: '/jira/servicedesk/projects/{projectKey}/settings/request-types/request-type/{id}/request-form',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+      },
     },
   },
   CustomerPermissions: {
@@ -1911,7 +1916,12 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'columns', fieldType: 'List<Field>' },
       ],
-      serviceUrl: '/jira/servicedesk/projects/{projectKey}/queues/custom/{id}',
+      serviceUrl: {
+        url: '/jira/servicedesk/projects/{projectKey}/queues/custom/{id}',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+      },
     },
     deployRequests: {
       add: {
@@ -1951,7 +1961,12 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'ticketTypeIds', fieldType: 'List<RequestType>' },
       ],
-      serviceUrl: '/jira/servicedesk/projects/{projectKey}/settings/portal-settings/portal-groups',
+      serviceUrl: {
+        url: '/jira/servicedesk/projects/{projectKey}/settings/portal-settings/portal-groups',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+      },
     },
     deployRequests: {
       add: {
@@ -2057,7 +2072,12 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'portalLogoUrl' },
         { fieldName: 'canAdministerJIRA' },
       ],
-      serviceUrl: '/jira/servicedesk/projects/{projectKey}/settings/portal-settings',
+      serviceUrl: {
+        url: '/jira/servicedesk/projects/{projectKey}/settings/portal-settings',
+        urlParamsToFields: {
+          projectKey: '_parent.0.key',
+        },
+      },
     },
   },
   PortalSettings__announcementSettings: {
@@ -2080,7 +2100,9 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'id' },
         { fieldName: 'customFieldId' },
       ],
-      serviceUrl: '/jira/servicedesk/projects/{projectKey}/settings/sla/custom/{id}',
+      serviceUrl: {
+        url: '/jira/servicedesk/projects/{projectKey}/settings/sla/custom/{id}',
+      },
     },
     deployRequests: {
       add: {

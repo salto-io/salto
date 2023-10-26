@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { Change, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
-import { getParent } from '@salto-io/adapter-utils'
 import { filters } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
@@ -38,11 +37,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       .filter(e => Object.keys(JSM_DUCKTYPE_SUPPORTED_TYPES).includes(e.elemID.typeName))
       .forEach(instance => {
         try {
-          const projectKey = getParent(instance).value.key
-          const additionalUrlVars: Record<string, string> = {
-            projectKey,
-          }
-          addUrlToInstance(instance, client.baseUrl, jsmApiDefinitions, additionalUrlVars)
+          addUrlToInstance(instance, client.baseUrl, jsmApiDefinitions)
         } catch (e) {
           log.warn(`Failed to add service url to ${instance.elemID.getFullName()}: ${e}`)
         }
@@ -64,11 +59,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       .map(getChangeData)
       .forEach(instance => {
         try {
-          const projectKey = getParent(instance).value.key
-          const additionalUrlVars: Record<string, string> = {
-            projectKey,
-          }
-          addUrlToInstance(instance, client.baseUrl, jsmApiDefinitions, additionalUrlVars)
+          addUrlToInstance(instance, client.baseUrl, jsmApiDefinitions)
         } catch (e) {
           log.warn(`Failed to add service url to ${instance.elemID.getFullName()}: ${e}`)
         }

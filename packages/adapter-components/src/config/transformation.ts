@@ -46,7 +46,6 @@ export type NameMappingOptions = 'lowercase' | 'uppercase'
 type serviceUrlConfig = {
   url: string
   urlParamsToFields?: UrlParams
-  deployAsField?: string
 }
 
 export type TransformationConfig = {

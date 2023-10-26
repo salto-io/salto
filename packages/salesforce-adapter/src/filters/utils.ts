@@ -199,7 +199,7 @@ export const isHiddenField = (field: Field): boolean => (
 )
 
 export const isReadOnlyField = (field: Field): boolean => (
-  field.annotations[FIELD_ANNOTATIONS.CREATABLE] === false && field.annotations[FIELD_ANNOTATIONS.UPDATEABLE] === false
+  !field.annotations[FIELD_ANNOTATIONS.CREATABLE] && !field.annotations[FIELD_ANNOTATIONS.UPDATEABLE]
 )
 
 export const isHierarchyField = (field: Field): boolean => (

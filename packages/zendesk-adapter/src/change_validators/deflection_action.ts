@@ -15,12 +15,13 @@
 */
 import _ from 'lodash'
 import {
+  ChangeError,
   ChangeValidator, ElemID, getChangeData, isAdditionOrModificationChange,
-  isInstanceChange, Value, Values,
+  isInstanceChange, Value,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
-  AUTOMATION_TYPE_NAME,
+  AUTOMATION_TYPE_NAME, CUSTOM_TICKET_STATUS_ACTION,
   DEFLECTION_ACTION,
   MACRO_TYPE_NAME,
   TRIGGER_TYPE_NAME,
@@ -32,26 +33,46 @@ const log = logger(module)
 
 const TYPES_WITH_ACTIONS = [TRIGGER_TYPE_NAME, MACRO_TYPE_NAME, AUTOMATION_TYPE_NAME]
 
-type SettingsInstanceWithAutomaticAnswers = {
+export const DEFLECTION_ZENDESK_FIELD = 'Autoreply with articles'
+export const CUSTOM_TICKET_STATUS_ZENDESK_FIELD = 'Ticket status'
+
+// Path in account_settings, action name in the nacl, action name in the service
+const featurePathAndActionTypeAndField = [
+  {
+    featurePath: ['active_features', 'automatic_answers'],
+    actionField: DEFLECTION_ACTION,
+    actionZendeskField: DEFLECTION_ZENDESK_FIELD,
+  },
+  {
+    featurePath: ['tickets', 'custom_statuses_enabled'],
+    actionField: CUSTOM_TICKET_STATUS_ACTION,
+    actionZendeskField: CUSTOM_TICKET_STATUS_ZENDESK_FIELD,
+  },
+]
+
+type SettingsInstance = {
   value: {
     // eslint-disable-next-line camelcase
     active_features: {
       // eslint-disable-next-line camelcase
-      automatic_answers: boolean
+      automatic_answers?: boolean
+    }
+    tickets: {
+      // eslint-disable-next-line camelcase
+      custom_statuses_enabled?: boolean
     }
   }
 }
 
-const isValidSettings = (instance: Value): instance is SettingsInstanceWithAutomaticAnswers =>
-  _.isObject(instance?.value?.active_features)
-
-const isDeflectionAction = (action: Values): boolean =>
-  _.isPlainObject(action) && action.field === DEFLECTION_ACTION
+const isValidSettings = (instance: Value): instance is SettingsInstance =>
+  _.isPlainObject(instance?.value)
+  && _.isPlainObject(instance.value.active_features)
+  && _.isPlainObject(instance.value.tickets)
 
 /**
- * Validates that if an action of deflection is added or modified, the environment has the feature for it activated
+ * Validates that if an action is added or modified, the environment has the feature for it activated
  */
-export const deflectionActionValidator: ChangeValidator = async (
+export const activeActionFeaturesValidator: ChangeValidator = async (
   changes, elementSource
 ) => {
   const relevantInstances = changes
@@ -59,14 +80,13 @@ export const deflectionActionValidator: ChangeValidator = async (
     .filter(isInstanceChange)
     .map(getChangeData)
     .filter(instance => TYPES_WITH_ACTIONS.includes(instance.elemID.typeName))
-    .filter(instance => (instance.value.actions ?? []).some(isDeflectionAction))
 
   if (relevantInstances.length === 0) {
     return []
   }
 
   if (elementSource === undefined) {
-    log.error('Failed to run deflectionActionValidator because element source is undefined')
+    log.error('Failed to run activeActionFeaturesValidator because element source is undefined')
     return []
   }
 
@@ -79,12 +99,21 @@ export const deflectionActionValidator: ChangeValidator = async (
     return []
   }
 
-  const isDeflectionOn = accountSettings.value.active_features.automatic_answers
-
-  return isDeflectionOn ? [] : relevantInstances.map(instance => ({
-    elemID: instance.elemID,
-    severity: 'Error',
-    message: 'Action requires turning on automatic answers',
-    detailedMessage: `To enable the configuration of the '${DEFLECTION_ACTION}' field action, which allows for ‘autoreply with articles’, please ensure that the automatic answers feature is turned on. To do so, please update the 'automatic_answers' setting to 'true' in the account_settings.`,
-  }))
+  const errors = featurePathAndActionTypeAndField.flatMap(({ featurePath, actionField, actionZendeskField }) => {
+    const isFeatureOn = _.get(accountSettings.value, featurePath)
+    if (isFeatureOn === true) {
+      return []
+    }
+    const featureName = featurePath.slice(-1)[0]
+    return relevantInstances
+      .filter(instance => (instance.value.actions ?? [])
+        .some((action: Value) => _.isPlainObject(action) && action.field === actionField))
+      .map((instance): ChangeError => ({
+        elemID: instance.elemID,
+        severity: 'Error',
+        message: `Action requires turning on ${featureName} feature`,
+        detailedMessage: `To enable the configuration of the '${actionField}' field action, which allows for '${actionZendeskField}', please ensure that the ${featureName} feature is turned on. To do so, please update the '${featurePath.join('.')}' setting to 'true' in the account_settings.`,
+      }))
+  })
+  return errors
 }

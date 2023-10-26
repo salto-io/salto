@@ -13,8 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import {
   ElemID,
+  Element,
   InstanceElement,
   isInstanceElement,
   ReadOnlyElementsSource,
@@ -22,9 +24,18 @@ import {
 import {
   ArtificialTypes,
   CHANGED_AT_SINGLETON,
+  CUSTOM_OBJECT,
   SALESFORCE,
 } from '../../constants'
 
+const DATA_INSTANCES_CHANGED_AT_MAGIC = '__DataInstances__'
+
+export type ChangedAtInformation = {
+  typeChangedAt: (metadataTypeName: string, typeName: string) => string | undefined
+  typeInstancesChangedAt: (typeName: string) => string
+  updateTypesChangedAt: (changedAtInfo: Record<string, Record<string, string>>) => void
+  backingElement: () => Element
+}
 
 const createEmptyChangedAtSingletonInstance = async (): Promise<InstanceElement> => (
   new InstanceElement(
@@ -40,11 +51,30 @@ const getChangedAtSingleton = async (
   return isInstanceElement(element) ? element : undefined
 }
 
-export const getChangedAtSingletonInstance = async (
-  elementsSource: ReadOnlyElementsSource | undefined
+const getChangedAtSingletonInstance = async (
+  elementsSource: ReadOnlyElementsSource
 ): Promise<InstanceElement> => {
-  const changedAtSingleton = elementsSource !== undefined
-    ? await getChangedAtSingleton(elementsSource)
-    : undefined
+  const changedAtSingleton = await getChangedAtSingleton(elementsSource)
   return changedAtSingleton ?? createEmptyChangedAtSingletonInstance()
+}
+
+export const createChangedAtInformation = async (
+  elementsSource: ReadOnlyElementsSource
+): Promise<ChangedAtInformation> => {
+  const changedAtSingleton = await getChangedAtSingletonInstance(elementsSource)
+  return {
+    typeChangedAt: (metadataTypeName, typeName) => (
+      _.get(changedAtSingleton.value, [metadataTypeName, typeName])
+    ),
+    typeInstancesChangedAt: typeName => (
+      _.get(changedAtSingleton.value, [DATA_INSTANCES_CHANGED_AT_MAGIC, CUSTOM_OBJECT, typeName])
+    ),
+    updateTypesChangedAt: changedAtInfo => {
+      changedAtSingleton.value = _.defaultsDeep(
+        changedAtInfo,
+        changedAtSingleton.value,
+      )
+    },
+    backingElement: () => changedAtSingleton,
+  }
 }

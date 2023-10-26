@@ -19,28 +19,65 @@ import {
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockInstances } from '../../mock_elements'
-import { getChangedAtSingletonInstance } from '../../../src/filters/author_information/changed_at_info'
+import { createChangedAtInformation, ChangedAtInformation } from '../../../src/filters/author_information/changed_at_info'
+import { CUSTOM_OBJECT } from '../../../src/constants'
 
-describe('getChangedAtSingletonInstance', () => {
-  let elementsSource: ReadOnlyElementsSource
-
-  describe('when the ChangedAtSingleton instance exists in the elementsSource', () => {
-    let changedAtSingleton: InstanceElement
-    beforeEach(() => {
-      changedAtSingleton = mockInstances().ChangedAtSingleton
-      elementsSource = buildElementsSourceFromElements([changedAtSingleton])
+describe('createChangedAtInformation', () => {
+  describe('backingElement', () => {
+    let elementsSource: ReadOnlyElementsSource
+    describe('when the ChangedAtSingleton instance exists in the elementsSource', () => {
+      let changedAtSingleton: InstanceElement
+      beforeEach(() => {
+        changedAtSingleton = mockInstances().ChangedAtSingleton
+        elementsSource = buildElementsSourceFromElements([changedAtSingleton])
+      })
+      it('should return the singleton', async () => {
+        expect((await createChangedAtInformation(elementsSource)).backingElement()).toEqual(changedAtSingleton)
+      })
     })
-    it('should return the singleton', async () => {
-      expect(await getChangedAtSingletonInstance(elementsSource)).toEqual(changedAtSingleton)
+
+    describe('when the ChangedAtSingleton instance does not exist in the elementsSource', () => {
+      beforeEach(() => {
+        elementsSource = buildElementsSourceFromElements([])
+      })
+      it('should return a new singleton', async () => {
+        expect((await createChangedAtInformation(elementsSource)).backingElement()).toBeInstanceOf(InstanceElement)
+      })
     })
   })
+  describe('changedAt', () => {
+    let changedAtInfo: ChangedAtInformation
+    const typeName = 'Account'
+    const changedAt = 'SOME_DATE'
 
-  describe('when the ChangedAtSingleton instance does not exist in the elementsSource', () => {
-    beforeEach(() => {
-      elementsSource = buildElementsSourceFromElements([])
+    beforeEach(async () => {
+      changedAtInfo = await createChangedAtInformation(buildElementsSourceFromElements([]))
     })
-    it('should return a new singleton', async () => {
-      expect(await getChangedAtSingletonInstance(elementsSource)).toBeInstanceOf(InstanceElement)
+
+    describe('when there`s no information for type', () => {
+      it('should not return information', () => {
+        expect(changedAtInfo.typeChangedAt(CUSTOM_OBJECT, typeName)).not.toBeDefined()
+      })
+    })
+
+    describe('when the information is explicitly set', () => {
+      describe('when there`s no pre-existing information', () => {
+        beforeEach(() => {
+          changedAtInfo.updateTypesChangedAt({ [CUSTOM_OBJECT]: { [typeName]: changedAt } })
+        })
+        it('should return the provided information', () => {
+          expect(changedAtInfo.typeChangedAt(CUSTOM_OBJECT, typeName)).toEqual(changedAt)
+        })
+      })
+      describe('when there is pre-existing information', () => {
+        beforeEach(() => {
+          changedAtInfo.updateTypesChangedAt({ [CUSTOM_OBJECT]: { [typeName]: 'SOME_OTHER_DATE' } })
+          changedAtInfo.updateTypesChangedAt({ [CUSTOM_OBJECT]: { [typeName]: changedAt } })
+        })
+        it('should return the new information', () => {
+          expect(changedAtInfo.typeChangedAt(CUSTOM_OBJECT, typeName)).toEqual(changedAt)
+        })
+      })
     })
   })
 })

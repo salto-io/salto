@@ -27,7 +27,7 @@ import { buildDataManagement, validateDataManagementConfig } from './data_manage
 import { buildMetadataQuery, validateMetadataParams } from './metadata_query'
 import { DEFAULT_MAX_INSTANCES_PER_TYPE } from '../constants'
 import { getFetchTargets, SupportedMetadataType } from './metadata_types'
-import { getChangedAtSingletonInstance } from '../filters/author_information/changed_at_info'
+import { createChangedAtInformation } from '../filters/author_information/changed_at_info'
 
 const { isDefined } = values
 
@@ -107,7 +107,7 @@ export const buildFetchProfileForFetchWithChangesDetection = async (
       target: isDefined(target)
         ? getFetchTargets(target as SupportedMetadataType[])
         : undefined,
-      changedAtSingleton: await getChangedAtSingletonInstance(params.elementsSource),
+      changedAtInformation: await createChangedAtInformation(params.elementsSource),
     }),
   }
 }

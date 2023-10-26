@@ -20,7 +20,7 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { LocalFilterCreator } from '../filter'
-import { getChangedAtSingletonInstance } from './author_information/changed_at_info'
+import { createChangedAtInformation } from './author_information/changed_at_info'
 import {
   apiNameSync,
   isCustomObjectSync,
@@ -28,7 +28,9 @@ import {
   metadataTypeSync,
 } from './utils'
 
-const createChangedAtSingletonInstanceValues = (metadataInstancesByType: Record<string, Element[]>): Values => {
+const changedAtByType = (
+  metadataInstancesByType: Record<string, Element[]>
+): Record<string, Record<string, string>> => {
   const instanceValues: Values = {}
   Object.entries(metadataInstancesByType).forEach(([metadataType, elements]) => {
     instanceValues[metadataType] = {}
@@ -48,16 +50,13 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
         .filter(element => element.annotations[CORE_ANNOTATIONS.CHANGED_AT]),
       metadataTypeSync
     )
-    const changedAtInstance = await getChangedAtSingletonInstance(config.elementsSource)
-    elements.push(changedAtInstance)
+    const changedAtInstance = await createChangedAtInformation(config.elementsSource)
+    elements.push(changedAtInstance.backingElement())
     // None of the Elements were annotated with changedAt
     if (Object.values(elementsByType).flat().length === 0) {
       return
     }
-    changedAtInstance.value = _.defaultsDeep(
-      createChangedAtSingletonInstanceValues(elementsByType),
-      changedAtInstance.value,
-    )
+    changedAtInstance.updateTypesChangedAt(changedAtByType(elementsByType))
   },
 })
 

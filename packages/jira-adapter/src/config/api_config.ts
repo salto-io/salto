@@ -1868,7 +1868,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       serviceUrl: {
         url: '/jira/servicedesk/projects/{projectKey}/settings/request-types/request-type/{id}/request-form',
         urlParamsToFields: {
-          projectKey: '_parent.0.key',
+          projectKey: '_parent.0.value.value.key',
         },
       },
     },
@@ -1919,7 +1919,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       serviceUrl: {
         url: '/jira/servicedesk/projects/{projectKey}/queues/custom/{id}',
         urlParamsToFields: {
-          projectKey: '_parent.0.key',
+          projectKey: '_parent.0.value.value.key',
         },
       },
     },
@@ -1964,7 +1964,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       serviceUrl: {
         url: '/jira/servicedesk/projects/{projectKey}/settings/portal-settings/portal-groups',
         urlParamsToFields: {
-          projectKey: '_parent.0.key',
+          projectKey: '_parent.0.value.value.key',
         },
       },
     },
@@ -2075,7 +2075,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       serviceUrl: {
         url: '/jira/servicedesk/projects/{projectKey}/settings/portal-settings',
         urlParamsToFields: {
-          projectKey: '_parent.0.key',
+          projectKey: '_parent.0.value.value.key',
         },
       },
     },
@@ -2102,6 +2102,9 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
       serviceUrl: {
         url: '/jira/servicedesk/projects/{projectKey}/settings/sla/custom/{id}',
+        urlParamsToFields: {
+          projectKey: '_parent.0.value.value.key',
+        },
       },
     },
     deployRequests: {

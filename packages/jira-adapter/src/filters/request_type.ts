@@ -14,10 +14,12 @@
 * limitations under the License.
 */
 
+import Joi from 'joi'
 import { AdditionChange, Change, InstanceElement, ModificationChange, ReferenceExpression, getChangeData, isAdditionChange, isAdditionOrModificationChange, isEqualValues, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { getParent, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { createSchemeGuard, getParent, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { ISSUE_VIEW_TYPE, REQUEST_FORM_TYPE, REQUEST_TYPE_NAME } from '../constants'
 import { deployChanges, defaultDeployChange } from '../deployment/standard_deployment'
@@ -26,14 +28,21 @@ import { layoutConfigItem } from './layouts/layout_types'
 import { LayoutTypeName, getLayoutResponse, isIssueLayoutResponse, layoutTypeNameToDetails } from './layouts/layout_service_operations'
 
 const { isDefined } = lowerDashValues
+const log = logger(module)
 
 type statusType = {
   id: ReferenceExpression
-  original: string
-  custom: boolean
+  custom: string
 }
+const STATUS_TYPE = Joi.object({
+  id: Joi.any().required(),
+  custom: Joi.string().allow('').required(),
+})
+type workflowStatusesType = statusType[]
+const WORKFLOW_STATUS_TYPE = Joi.array().items(STATUS_TYPE)
+const isWorkFlowStatuses = createSchemeGuard<workflowStatusesType>(WORKFLOW_STATUS_TYPE)
 
-const fieldsToIgnore = [
+const FIELDS_TO_IGNORE = [
   'issueView',
   'requestForm',
   'workflowStatuses',
@@ -50,7 +59,10 @@ const deployWorkflowStatuses = async (
     && !isEqualValues(change.data.before.value.workflowStatuses, change.data.after.value.workflowStatuses))) {
     const instance = getChangeData(change)
     const parent = getParent(instance)
-    const workflowStatuses = instance.value.workflowStatuses.map((status: statusType) => ({
+    if (!isWorkFlowStatuses(instance.value.workflowStatuses)) {
+      return
+    }
+    const workflowStatuses = instance.value.workflowStatuses.map(status => ({
       id: status.id?.value.value.id,
       original: status.id?.value.value.name,
       custom: status.custom,
@@ -66,9 +78,8 @@ const isRequesTypeDetailsChange = (
   change: ModificationChange<InstanceElement>,
   fieldName: string,
 ): boolean => fieldName === 'requestForm'
-  && (change.data.before.value.name !== change.data.after.value.name
-    || change.data.before.value.description !== change.data.after.value.description
-    || change.data.before.value.helpText !== change.data.after.value.helpText)
+  && ['name', 'description', 'helpText'].some(additionalFieldName =>
+    change.data.before.value[additionalFieldName] !== change.data.after.value[additionalFieldName])
 
 
 const deployRequestTypeLayout = async (
@@ -81,25 +92,30 @@ const deployRequestTypeLayout = async (
   if (fieldName === undefined) {
     return undefined
   }
-  if ((isAdditionChange(change))
-  || (isModificationChange(change)
-  && (!isEqualValues(change.data.before.value[fieldName], change.data.after.value[fieldName])
-  || isRequesTypeDetailsChange(change, fieldName)))) {
+  if (
+    isAdditionChange(change)
+    || (isModificationChange(change)
+      && (
+        !isEqualValues(change.data.before.value[fieldName], change.data.after.value[fieldName])
+        || isRequesTypeDetailsChange(change, fieldName)
+      ))
+  ) {
     const layout = requestType.value[fieldName]
     const items = layout.issueLayoutConfig.items.map((item: layoutConfigItem) => {
-      if (isResolvedReferenceExpression(item.key)) {
-        const key = item.key.value.value.id
-        return {
-          type: item.type,
-          sectionType: item.sectionType.toLocaleLowerCase(),
-          key,
-          data: {
-            name: item.key.value.value.name,
-            type: item.key.value.value.type ?? item.key.value.value.schema.system,
-          },
-        }
+      if (!isResolvedReferenceExpression(item.key)) {
+        log.error('Failed to deploy request type layout due to bad reference expression')
+        return undefined
       }
-      return undefined
+      const key = item.key.value.value.id
+      return {
+        type: item.type,
+        sectionType: item.sectionType.toLocaleLowerCase(),
+        key,
+        data: {
+          name: item.key.value.value.name,
+          type: item.key.value.value.type ?? item.key.value.value.schema.system,
+        },
+      }
     }).filter(isDefined)
 
     const data = {
@@ -141,7 +157,10 @@ const deployRequestTypeLayout = async (
   return undefined
 }
 
-
+/*
+* Deploy requestType filter. Using it because it needs to be deployed
+* through different API calls.
+*/
 const filter: FilterCreator = ({ config, client }) => ({
   name: 'requestTypeFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
@@ -164,13 +183,23 @@ const filter: FilterCreator = ({ config, client }) => ({
       async change => {
         if (isAdditionOrModificationChange(change)) {
           if (isAdditionChange(change)) {
-            await defaultDeployChange({ change, client, apiDefinitions: jsmApiDefinitions, fieldsToIgnore })
+            await defaultDeployChange({
+              change,
+              client,
+              apiDefinitions: jsmApiDefinitions,
+              fieldsToIgnore: FIELDS_TO_IGNORE,
+            })
           }
           await deployRequestTypeLayout(change, client, REQUEST_FORM_TYPE)
           await deployRequestTypeLayout(change, client, ISSUE_VIEW_TYPE)
           await deployWorkflowStatuses(change, client)
         } else {
-          await defaultDeployChange({ change, client, apiDefinitions: jsmApiDefinitions, fieldsToIgnore })
+          await defaultDeployChange({
+            change,
+            client,
+            apiDefinitions: jsmApiDefinitions,
+            fieldsToIgnore: FIELDS_TO_IGNORE,
+          })
         }
       }
     )

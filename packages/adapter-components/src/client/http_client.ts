@@ -44,7 +44,7 @@ export type ClientBaseParams = {
 }
 
 export type ClientDataParams = ClientBaseParams & {
-  data: unknown
+  data?: unknown
 }
 
 export type ClientParams = ClientBaseParams | ClientDataParams
@@ -57,7 +57,7 @@ export interface HTTPReadClientInterface {
 export interface HTTPWriteClientInterface {
   post(params: ClientDataParams): Promise<Response<ResponseValue | ResponseValue[]>>
   put(params: ClientDataParams): Promise<Response<ResponseValue | ResponseValue[]>>
-  delete(params: ClientBaseParams): Promise<Response<ResponseValue | ResponseValue[]>>
+  delete(params: ClientDataParams): Promise<Response<ResponseValue | ResponseValue[]>>
   patch(params: ClientDataParams): Promise<Response<ResponseValue | ResponseValue[]>>
 }
 
@@ -66,8 +66,10 @@ export type HttpMethodToClientParams = {
   post: ClientDataParams
   put: ClientDataParams
   patch: ClientDataParams
-  delete: ClientBaseParams
+  delete: ClientDataParams
 }
+
+type MethodsWithDataParam = 'put' | 'post' | 'patch'
 
 export class HTTPError extends Error {
   constructor(message: string, readonly response: Response<ResponseValue>) {
@@ -80,6 +82,11 @@ export class TimeoutError extends Error {
 
 const isMethodWithData = (params: ClientParams): params is ClientDataParams =>
   'data' in params
+
+// Determines if the given HTTP method uses 'data' as the second parameter, based on APIConnection
+const isMethodWithDataParam = <T extends keyof HttpMethodToClientParams>(
+  method: T
+): method is T & MethodsWithDataParam => ['put', 'post', 'patch'].includes(method)
 
 export abstract class AdapterHTTPClient<
   TCredentials,
@@ -178,7 +185,7 @@ export abstract class AdapterHTTPClient<
   @throttle<TRateLimitConfig>({ bucketName: 'deploy', keys: ['url', 'queryParams'] })
   @logDecorator(['url', 'queryParams'])
   @requiresLogin()
-  public async delete(params: ClientBaseParams):
+  public async delete(params: ClientDataParams):
     Promise<Response<ResponseValue | ResponseValue[]>> {
     return this.sendRequest('delete', params)
   }
@@ -231,15 +238,15 @@ export abstract class AdapterHTTPClient<
         }
         : undefined
 
-      const res = isMethodWithData(params)
+      const res = isMethodWithDataParam(method)
         ? await this.apiClient[method](
           url,
-          params.data,
+          isMethodWithData(params) ? params.data : undefined,
           requestConfig,
         )
         : await this.apiClient[method](
           url,
-          requestConfig,
+          { ...requestConfig, data: isMethodWithData(params) ? params.data : undefined },
         )
       log.debug('Received response for %s on %s (%s) with status %d', method.toUpperCase(), url, safeJsonStringify({ url, queryParams }), res.status)
       logResponse(res)

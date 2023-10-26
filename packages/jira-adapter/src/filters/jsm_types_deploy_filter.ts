@@ -18,15 +18,9 @@ import _ from 'lodash'
 import { getChangeData, isInstanceChange, Change, InstanceElement } from '@salto-io/adapter-api'
 import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 import { FilterCreator } from '../filter'
-import { CALENDAR_TYPE, CUSTOMER_PERMISSIONS_TYPE, QUEUE_TYPE, PORTAL_GROUP_TYPE, SLA_TYPE_NAME } from '../constants'
+import { JSM_DUCKTYPE_SUPPORTED_TYPES } from '../config/api_config'
 
-const jsmSupportedTypes = [
-  CUSTOMER_PERMISSIONS_TYPE,
-  CALENDAR_TYPE,
-  QUEUE_TYPE,
-  PORTAL_GROUP_TYPE,
-  SLA_TYPE_NAME,
-]
+const SUPPORTED_TYPES = Object.keys(JSM_DUCKTYPE_SUPPORTED_TYPES)
 
 const filterCreator: FilterCreator = ({ config, client }) => ({
   name: 'jsmTypesFilter',
@@ -41,7 +35,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     const [jsmTypesChanges, leftoverChanges] = _.partition(
       changes,
       change =>
-        jsmSupportedTypes.includes(getChangeData(change).elemID.typeName)
+        SUPPORTED_TYPES.includes(getChangeData(change).elemID.typeName)
         && isInstanceChange(change)
     )
 

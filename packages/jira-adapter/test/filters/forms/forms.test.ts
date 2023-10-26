@@ -39,6 +39,7 @@ describe('forms filter', () => {
       beforeEach(async () => {
         const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
         config.fetch.enableJSM = true
+        config.fetch.enableJsmExperimental = true
         const { client: cli, connection: conn } = mockClient(true)
         connection = conn
         client = cli
@@ -157,6 +158,15 @@ describe('forms filter', () => {
       it('should not add forms to elements when enableJSM is false', async () => {
         const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
         config.fetch.enableJSM = false
+        filter = formsFilter(getFilterParams({ config, client })) as typeof filter
+        await filter.onFetch(elements)
+        const instances = elements.filter(isInstanceElement)
+        const formInstance = instances.find(e => e.elemID.typeName === FORM_TYPE)
+        expect(formInstance).toBeUndefined()
+      })
+      it('should not add forms to elements when enableJsmExperimental is false', async () => {
+        const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+        config.fetch.enableJsmExperimental = false
         filter = formsFilter(getFilterParams({ config, client })) as typeof filter
         await filter.onFetch(elements)
         const instances = elements.filter(isInstanceElement)

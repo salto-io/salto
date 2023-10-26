@@ -69,12 +69,6 @@ describe('salesforce client', () => {
     isSandbox: false,
     apiToken: 'myToken',
   })
-  const sandboxCredentials = new UsernamePasswordCredentials({
-    username: 'myUser',
-    password: 'myPass',
-    isSandbox: true,
-    apiToken: 'myToken',
-  })
   const { connection } = mockClient()
   const client = new SalesforceClient({
     credentials: new UsernamePasswordCredentials({
@@ -519,12 +513,7 @@ describe('salesforce client', () => {
       ).rejects.toThrow(ApiLimitsTooLowError)
     })
     it('should return empty string as accountId and no values for accountType and isProduction', async () => {
-      expect(await validateCredentials(credentials, 3, connection)).toEqual({
-        accountId: '',
-        isProduction: undefined,
-        accountType: undefined,
-        extraInformation: { orgId: '' },
-      })
+      expect(await validateCredentials(credentials, 3, connection)).toEqual({ accountId: '' })
     })
     describe('isProduction and accountType', () => {
       const PRODUCTION_ORGANIZATION_TYPE = 'Professional Edition'
@@ -543,11 +532,10 @@ describe('salesforce client', () => {
             mockOrganizationQueryResult({ orgType: PRODUCTION_ORGANIZATION_TYPE, isSandbox: true })
           })
           it('should return isProduction false and correct accountType', async () => {
-            expect(await validateCredentials(sandboxCredentials, 3, connection)).toEqual({
-              accountId: 'https://url.com/',
+            expect(await validateCredentials(credentials, 3, connection)).toEqual({
+              accountId: '',
               isProduction: false,
               accountType: PRODUCTION_ORGANIZATION_TYPE,
-              extraInformation: { orgId: '' },
             })
           })
         })
@@ -556,18 +544,11 @@ describe('salesforce client', () => {
             mockOrganizationQueryResult({ orgType: NON_PRODUCTION_ORGANIZATION_TYPE, isSandbox: true })
           })
           it('should return isProduction false and correct accountType', async () => {
-            expect(await validateCredentials(sandboxCredentials, 3, connection)).toEqual({
-              accountId: 'https://url.com/',
+            expect(await validateCredentials(credentials, 3, connection)).toEqual({
+              accountId: '',
               isProduction: false,
               accountType: NON_PRODUCTION_ORGANIZATION_TYPE,
-              extraInformation: { orgId: '' },
             })
-          })
-          it('should throw an error when there is no instanceUrl', async () => {
-            const mockConnection = mockClient().connection
-            _.set(mockConnection, 'instanceUrl', undefined)
-            await expect(validateCredentials(sandboxCredentials, 3, mockConnection))
-              .rejects.toThrow('Expected Salesforce organization URL to exist in the connection')
           })
         })
       })
@@ -581,7 +562,6 @@ describe('salesforce client', () => {
               accountId: '',
               isProduction: true,
               accountType: PRODUCTION_ORGANIZATION_TYPE,
-              extraInformation: { orgId: '' },
             })
           })
         })
@@ -594,7 +574,6 @@ describe('salesforce client', () => {
               accountId: '',
               isProduction: false,
               accountType: NON_PRODUCTION_ORGANIZATION_TYPE,
-              extraInformation: { orgId: '' },
             })
           })
         })

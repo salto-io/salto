@@ -48,6 +48,12 @@ type SettingsInstance = {
   }
 }
 
+const isValidSettings = (instance: Value): instance is SettingsInstance =>
+  _.isPlainObject(instance?.value)
+  && _.isPlainObject(instance.value.active_features)
+  && _.isPlainObject(instance.value.tickets)
+
+
 export const DEFLECTION_ZENDESK_FIELD = 'Autoreply with articles'
 export const CUSTOM_TICKET_STATUS_ZENDESK_FIELD = 'Ticket status'
 
@@ -64,11 +70,6 @@ const featurePathActionTypeAndField = [
     actionZendeskField: CUSTOM_TICKET_STATUS_ZENDESK_FIELD,
   },
 ]
-
-const isValidSettings = (instance: Value): instance is SettingsInstance =>
-  _.isPlainObject(instance?.value)
-  && _.isPlainObject(instance.value.active_features)
-  && _.isPlainObject(instance.value.tickets)
 
 /**
  * Validates that if an action is added or modified, the environment has the feature for it activated

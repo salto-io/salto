@@ -823,9 +823,9 @@ export const LARGE_TYPES_EXCLUDED_MESSAGE = 'Some types were excluded from the f
  + ' To include them, increase the types elements\' size limitations and remove their exclusion rules.'
 
 const SUPPORT_BINS_DATE = '2023-10-10'
-export const EXCLUDE_BINS_MESSAGE = `Starting October 10th, 2023, "Bin" type instances can be fetched by Salto.
+export const EXCLUDE_BINS_MESSAGE = `"Bin" type instances can now be fetched by Salto.
 
-To start fetching these instances in your environment, go to your environment configuration, remove "{ name = "bin" }" from the fetch.exclude.types section, then add it to the fetch.include.types section.`
+To start fetching these instances in your environment, go to your environment configuration and remove "{ name = "bin" }" from the fetch.exclude.types section.`
 
 const createFolderExclude = (folderPaths: NetsuiteFilePathsQueryParams): string[] =>
   folderPaths.map(folder => `^${_.escapeRegExp(folder)}.*`)

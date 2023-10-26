@@ -39,11 +39,14 @@ export const hideFields = (
   const typeFields = type.fields
   fieldsToHide.forEach(({ fieldName, fieldType }) => {
     if (fieldType !== undefined
-      && fieldType !== typeFields[fieldName]?.refType?.elemID.name) {
-      const endLogString = typeFields[fieldName]?.refType !== undefined
-        ? `type is ${typeFields[fieldName].refType.elemID.name}`
-        : 'field is not defined'
-      log.warn(`Failed to hide field ${type.elemID.name}.${fieldName}- override type is ${fieldType} while ${endLogString}`)
+      && fieldType !== typeFields[fieldName]?.refType.elemID.name) {
+      if (
+        typeFields[fieldName] === undefined
+      ) {
+        log.debug(`Cannot hide field ${type.elemID.name}.${fieldName} - override type is ${fieldType} while field is not defined`)
+      } else {
+        log.warn(`Failed to hide field ${type.elemID.name}.${fieldName} - override type is ${fieldType} while type is ${typeFields[fieldName].refType.elemID.name}`)
+      }
       return
     }
     if (!Object.prototype.hasOwnProperty.call(typeFields, fieldName)) {

@@ -85,7 +85,9 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       .filter(instance => instance.elemID.typeName === BUSINESS_HOUR_SCHEDULE_HOLIDAY)
       .forEach(holiday => {
         const startYear = holiday.value.start_date?.split('-')[0]
+        const endYear = holiday.value.end_date?.split('-')[0]
         holiday.value.start_year = startYear
+        holiday.value.end_year = endYear
       })
   },
   deploy: async (changes: Change<InstanceElement>[]) => {

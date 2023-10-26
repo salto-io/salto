@@ -21,7 +21,8 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
-  AUTOMATION_TYPE_NAME, CUSTOM_TICKET_STATUS_ACTION,
+  AUTOMATION_TYPE_NAME,
+  CUSTOM_TICKET_STATUS_ACTION,
   DEFLECTION_ACTION,
   MACRO_TYPE_NAME,
   TRIGGER_TYPE_NAME,
@@ -32,23 +33,6 @@ import { ACCOUNT_SETTING_TYPE_NAME } from '../filters/account_settings'
 const log = logger(module)
 
 const TYPES_WITH_ACTIONS = [TRIGGER_TYPE_NAME, MACRO_TYPE_NAME, AUTOMATION_TYPE_NAME]
-
-export const DEFLECTION_ZENDESK_FIELD = 'Autoreply with articles'
-export const CUSTOM_TICKET_STATUS_ZENDESK_FIELD = 'Ticket status'
-
-// Path in account_settings, action name in the nacl, action name in the service
-const featurePathAndActionTypeAndField = [
-  {
-    featurePath: ['active_features', 'automatic_answers'],
-    actionField: DEFLECTION_ACTION,
-    actionZendeskField: DEFLECTION_ZENDESK_FIELD,
-  },
-  {
-    featurePath: ['tickets', 'custom_statuses_enabled'],
-    actionField: CUSTOM_TICKET_STATUS_ACTION,
-    actionZendeskField: CUSTOM_TICKET_STATUS_ZENDESK_FIELD,
-  },
-]
 
 type SettingsInstance = {
   value: {
@@ -63,6 +47,23 @@ type SettingsInstance = {
     }
   }
 }
+
+export const DEFLECTION_ZENDESK_FIELD = 'Autoreply with articles'
+export const CUSTOM_TICKET_STATUS_ZENDESK_FIELD = 'Ticket status'
+
+// Path in account_settings, action name in the nacl, action name in the service
+const featurePathActionTypeAndField = [
+  {
+    featurePath: ['active_features', 'automatic_answers'],
+    actionField: DEFLECTION_ACTION,
+    actionZendeskField: DEFLECTION_ZENDESK_FIELD,
+  },
+  {
+    featurePath: ['tickets', 'custom_statuses_enabled'],
+    actionField: CUSTOM_TICKET_STATUS_ACTION,
+    actionZendeskField: CUSTOM_TICKET_STATUS_ZENDESK_FIELD,
+  },
+]
 
 const isValidSettings = (instance: Value): instance is SettingsInstance =>
   _.isPlainObject(instance?.value)
@@ -99,7 +100,7 @@ export const activeActionFeaturesValidator: ChangeValidator = async (
     return []
   }
 
-  const errors = featurePathAndActionTypeAndField.flatMap(({ featurePath, actionField, actionZendeskField }) => {
+  const errors = featurePathActionTypeAndField.flatMap(({ featurePath, actionField, actionZendeskField }) => {
     const isFeatureOn = _.get(accountSettings.value, featurePath)
     if (isFeatureOn === true) {
       return []

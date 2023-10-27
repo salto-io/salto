@@ -16,7 +16,7 @@
 import { InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { GetLookupNameFunc, resolveValues } from '@salto-io/adapter-utils'
 import { mockTypes } from '../mock_elements'
-import { getLookUpName, getLookupNameWithFallbackToElement } from '../../src/transformers/reference_mapping'
+import { getLookUpName, getLookupNameForDataInstances } from '../../src/transformers/reference_mapping'
 import { CUSTOM_OBJECT_ID_FIELD } from '../../src/constants'
 
 describe('referenceMapping tests', () => {
@@ -49,7 +49,7 @@ describe('referenceMapping tests', () => {
 
   describe('getLookupNameWithFallbackToElement', () => {
     beforeEach(() => {
-      getLookupNameFunc = getLookupNameWithFallbackToElement
+      getLookupNameFunc = getLookupNameForDataInstances
     })
     describe('when the default strategy resolves to undefined', () => {
       it('should resolve to the referenced instance', async () => {

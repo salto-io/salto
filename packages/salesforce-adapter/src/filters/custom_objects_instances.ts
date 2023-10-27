@@ -24,6 +24,7 @@ import {
   CORE_ANNOTATIONS,
   SaltoError,
   isInstanceElement,
+  isPrimitiveType,
 } from '@salto-io/adapter-api'
 import { pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import {
@@ -487,7 +488,10 @@ export const getCustomObjectsFetchSettings = async (
     if (managedBySaltoFieldName === undefined) {
       return false
     }
+    const fieldType = type.fields[managedBySaltoFieldName].getTypeSync()
     return (type.fields[managedBySaltoFieldName].annotations[FIELD_ANNOTATIONS.QUERYABLE] ?? true) === false
+    || !isPrimitiveType(fieldType)
+    || !fieldType.isEqual(Types.primitiveDataTypes.Checkbox)
   }
   const typeToFetchSettings = async (type: ObjectType): Promise<CustomObjectFetchSetting> => {
     const managedBySaltoFieldName = dataManagement.managedBySaltoFieldForType(type)
@@ -561,10 +565,21 @@ const createInvalidAliasFieldFetchWarning = async (
 
 const createInvalidManagedBySaltoFieldFetchWarning = async (
   { objectType, invalidManagedBySaltoField }: CustomObjectFetchSetting
-): Promise<SaltoError> => ({
-  message: `The field ${await apiName(objectType)}${API_NAME_SEPARATOR}${invalidManagedBySaltoField} is configured as the filter field in the saltoManagementFieldSettings.defaultFieldName section of the Salto environment configuration. However, the user configured for fetch does not have read access to this field. Records of type ${await apiName(objectType)} will not be fetched.`,
-  severity: 'Warning',
-})
+): Promise<SaltoError> => {
+  const fieldName = invalidManagedBySaltoField as string // if we got here the field name can't be undefined
+  const errorPreamble = `The field ${await apiName(objectType)}${API_NAME_SEPARATOR}${invalidManagedBySaltoField} is configured as the filter field in the saltoManagementFieldSettings.defaultFieldName section of the Salto environment configuration.`
+  if ((objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.QUERYABLE] ?? true) === false) {
+    return {
+      message: `${errorPreamble} However, the user configured for fetch does not have read access to this field. Records of type ${await apiName(objectType)} will not be fetched.`,
+      severity: 'Warning',
+    }
+  }
+  // we assume if the issue is not the queryability of the field then it must be that the field is of the wrong type
+  return {
+    message: `${errorPreamble} However, the type of the field (${objectType.fields[fieldName].getTypeSync().elemID.getFullName()}) is not boolean. Records of type ${await apiName(objectType)} will not be fetched.`,
+    severity: 'Warning',
+  }
+}
 
 const createInaccessibleFieldsFetchWarning = (
   objectType: ObjectType,
@@ -591,6 +606,20 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       customObjectFetchSetting,
       setting => setting.invalidIdFields.length === 0 && setting.invalidManagedBySaltoField === undefined
     )
+
+    if (validFetchSettings.length === 0
+    && invalidFetchSettings.length > 0
+    && invalidFetchSettings.every(setting => setting.invalidManagedBySaltoField !== undefined)) {
+      return {
+        errors: [
+          {
+            message: 'The Salto environment is configured to use a Salto Management field but the field is missing or is of the wrong type for all data records. No data records will be fetched. Please verify the field name in saltoManagementFieldSettings.defaultFieldName in the environment configuration file.',
+            severity: 'Warning',
+          },
+        ],
+      }
+    }
+
     const validChangesFetchSettings = await keyByAsync(
       validFetchSettings,
       setting => apiName(setting.objectType),
@@ -612,6 +641,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     instances.forEach(instance => elements.push(instance))
     log.debug(`Fetched ${instances.length} instances of Custom Objects`)
     const invalidFieldSuggestions = await awu(invalidFetchSettings)
+      .filter(settings => settings.invalidIdFields.length > 0)
       .map(async setting =>
         createInvlidIdFieldConfigChange(
           await apiName(setting.objectType),

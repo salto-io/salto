@@ -280,7 +280,7 @@ describe('Custom Object Instances filter', () => {
     const testInstanceId = 'some_id'
     const testType = createCustomObject(testTypeName, {
       [MANAGED_BY_SALTO_FIELD_NAME]: {
-        refType: BuiltinTypes.BOOLEAN,
+        refType: Types.primitiveDataTypes.Checkbox,
         annotations: {
           [LABEL]: 'Managed By Salto',
           [API_NAME]: MANAGED_BY_SALTO_FIELD_NAME,

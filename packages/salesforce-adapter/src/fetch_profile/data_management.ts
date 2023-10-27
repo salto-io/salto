@@ -19,6 +19,7 @@ import { ConfigValidationError, validateRegularExpressions } from '../config_val
 import { DataManagement, DataManagementConfig, OutgoingReferenceBehavior, outgoingReferenceBehaviors } from '../types'
 import { DETECTS_PARENTS_INDICATOR } from '../constants'
 import { apiName } from '../transformers/transformer'
+import { namePartsFromApiName } from '../filters/utils'
 
 const { makeArray } = collections.array
 
@@ -196,5 +197,15 @@ export const validateDataManagementConfig = (
     .filter(omittedFieldName => omittedFieldName.split('.').length < 2)
   if (invalidOmittedFieldNames.length > 0) {
     throw new ConfigValidationError([...fieldPath, 'omittedFields'], `The following omitted fields API names are invalid: ${invalidOmittedFieldNames.join(',')}`)
+  }
+
+  const managedBySaltoFieldName = dataManagementConfig.saltoManagementFieldSettings?.defaultFieldName
+  if (managedBySaltoFieldName) {
+    makeArray(dataManagementConfig.omittedFields)
+      .forEach(fieldApiName => {
+        if (namePartsFromApiName(fieldApiName)[1] === managedBySaltoFieldName) {
+          throw new ConfigValidationError([...fieldPath, 'omittedFields'], `The field ${fieldApiName} is omitted, but it's defined as the Salto management field`)
+        }
+      })
   }
 }

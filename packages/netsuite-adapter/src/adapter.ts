@@ -62,7 +62,7 @@ import additionalChanges from './filters/additional_changes'
 import addInstancesFetchTime from './filters/add_instances_fetch_time'
 import addAliasFilter from './filters/add_alias'
 import addBundleReferences from './filters/bundle_ids'
-import { Filter, LocalFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreator, RemoteFilterCreatorDefinition } from './filter'
+import { Filter, LocalFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreator, RemoteFilterCreatorDefinition, RemoteFilterOpts } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_VALIDATE, AdditionalDependencies, DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB, shouldExcludeBins } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams, getFixedTargetFetch, ObjectID } from './query'
 import { getLastServerTime, getOrCreateServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
@@ -80,7 +80,6 @@ import { getCustomRecords } from './custom_records/custom_records'
 import { getDataElements } from './data_elements/data_elements'
 import { getStandardTypesNames } from './autogen/types'
 import { getConfigTypes, toConfigElements } from './suiteapp_config_elements'
-import { ConfigRecord } from './client/suiteapp_client/types'
 import { ImportFileCabinetResult } from './client/types'
 
 const { makeArray } = collections.array
@@ -176,11 +175,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly skipList?: NetsuiteQueryParameters // old version
   private readonly useChangesDetection: boolean | undefined // TODO remove this from config SALTO-3676
   private createFiltersRunner: (params: {
-    isPartial?: boolean
-    changesGroupId?: string
-    fetchTime?: Date
-    timeZoneAndFormat?: TimeZoneAndFormat
-    deletedElements?: ElemID[]
+    operation: 'fetch'
+    isPartial: boolean
+    fetchTime: Date | undefined
+    timeZoneAndFormat: TimeZoneAndFormat
+    deletedElements: ElemID[]
+  } | {
+    operation: 'deploy'
+    changesGroupId: string
   }) => Required<Filter>
 
   public constructor({
@@ -222,21 +224,36 @@ export default class NetsuiteAdapter implements AdapterOperations {
         files: config.deploy?.additionalDependencies?.exclude?.files ?? [],
       },
     }
-    this.createFiltersRunner = (
-      { isPartial = false, changesGroupId, fetchTime, timeZoneAndFormat, deletedElements }
-    ) => filter.filtersRunner(
-      {
-        client: this.client,
-        elementsSourceIndex: createElementsSourceIndex(this.elementsSource, isPartial, deletedElements),
-        elementsSource: this.elementsSource,
-        isPartial,
-        config,
-        timeZoneAndFormat,
-        changesGroupId,
-        fetchTime,
-      },
-      filtersCreators,
-    )
+    this.createFiltersRunner = params => {
+      const getFilterOpts = (): RemoteFilterOpts => {
+        switch (params.operation) {
+          case 'fetch':
+            return {
+              client: this.client,
+              elementsSourceIndex: createElementsSourceIndex(
+                this.elementsSource, params.isPartial, params.deletedElements
+              ),
+              elementsSource: this.elementsSource,
+              isPartial: params.isPartial,
+              config,
+              timeZoneAndFormat: params.timeZoneAndFormat,
+              fetchTime: params.fetchTime,
+            }
+          case 'deploy':
+            return {
+              client: this.client,
+              elementsSourceIndex: createElementsSourceIndex(this.elementsSource, false),
+              elementsSource: this.elementsSource,
+              isPartial: false,
+              config,
+              changesGroupId: params.changesGroupId,
+            }
+          default:
+            throw new Error('unknown operation param')
+        }
+      }
+      return filter.filtersRunner(getFilterOpts(), filtersCreators)
+    }
   }
 
   public fetchByQuery: FetchByQueryFunc = async (
@@ -246,14 +263,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
     isPartial: boolean
   ): Promise<FetchByQueryReturnType> => {
     const configRecords = await this.client.getConfigRecords()
+    const timeZoneAndFormat = getTimeDateFormat(configRecords)
     const {
       changedObjectsQuery,
       serverTime,
-      timeZoneAndFormat,
     } = await this.runSuiteAppOperations(
       fetchQuery,
       useChangesDetection,
-      configRecords,
+      timeZoneAndFormat,
     )
     const updatedFetchQuery = changedObjectsQuery !== undefined
       ? andQuery(changedObjectsQuery, fetchQuery)
@@ -350,7 +367,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       : []
 
     // we calculate deleted elements only in partial-fetch mode
-    const { deletedElements, errors: deletedElementErrors }: FetchDeletionResult = (
+    const { deletedElements = [], errors: deletedElementErrors }: FetchDeletionResult = (
       isPartial && this.withPartialDeletion !== false) ? await getDeletedElements({
         client: this.client,
         elementsSource: this.elementsSource,
@@ -376,9 +393,13 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ...serverTimeElements,
     ]
 
-    await this.createFiltersRunner(
-      { isPartial, fetchTime: serverTime, timeZoneAndFormat, deletedElements }
-    ).onFetch(elements)
+    await this.createFiltersRunner({
+      operation: 'fetch',
+      isPartial,
+      fetchTime: serverTime,
+      timeZoneAndFormat,
+      deletedElements,
+    }).onFetch(elements)
 
     return {
       failures,
@@ -452,12 +473,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private async runSuiteAppOperations(
     fetchQuery: NetsuiteQuery,
     useChangesDetection: boolean,
-    configRecords: ConfigRecord[],
+    timeZoneAndFormat: TimeZoneAndFormat,
   ):
     Promise<{
       changedObjectsQuery?: NetsuiteQuery
       serverTime?: Date
-      timeZoneAndFormat?: TimeZoneAndFormat
     }> {
     const sysInfo = await this.client.getSystemInformation()
     if (sysInfo === undefined) {
@@ -475,10 +495,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
       log.debug('Failed to get last fetch time')
       return { serverTime: sysInfo.time }
     }
-    const timeZoneAndFormat = getTimeDateFormat(configRecords)
     if (timeZoneAndFormat?.format === undefined) {
-      log.warn('Failed to get date format, skipping SuiteApp operations')
-      return { serverTime: sysInfo.time, timeZoneAndFormat }
+      log.warn('Failed to get date format, skipping changes detection')
+      return { serverTime: sysInfo.time }
     }
     const serviceIdToLastFetchDate = await getLastServiceIdToFetchTime(this.elementsSource)
     const changedObjectsQuery = await getChangedObjects(
@@ -488,7 +507,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       serviceIdToLastFetchDate,
     )
 
-    return { changedObjectsQuery, serverTime: sysInfo.time, timeZoneAndFormat }
+    return { changedObjectsQuery, serverTime: sysInfo.time }
   }
 
   private static getDeployErrors(
@@ -522,7 +541,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
   public async deploy({ changeGroup: { changes, groupID } }: DeployOptions): Promise<DeployResult> {
     const changesToDeploy = changes.map(cloneChange)
-    const filtersRunner = this.createFiltersRunner({ changesGroupId: groupID })
+    const filtersRunner = this.createFiltersRunner({ operation: 'deploy', changesGroupId: groupID })
     await filtersRunner.preDeploy(changesToDeploy)
 
     const deployResult = await this.client.deploy(
@@ -559,7 +578,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
           ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
         validate: this.validateBeforeDeploy,
         additionalDependencies: this.additionalDependencies,
-        filtersRunner: changesGroupId => this.createFiltersRunner({ changesGroupId }),
+        filtersRunner: changesGroupId => this.createFiltersRunner({ operation: 'deploy', changesGroupId }),
         elementsSource: this.elementsSource,
         validatorsActivationConfig: this.userConfig.deploy?.changeValidators,
       }),

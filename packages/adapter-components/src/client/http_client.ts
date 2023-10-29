@@ -19,10 +19,14 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+// eslint-disable-next-line import/no-cycle
 import { Connection, ConnectionCreator, createRetryOptions, createClientConnection, ResponseValue, Response } from './http_connection'
+// eslint-disable-next-line import/no-cycle
 import { AdapterClientBase } from './base'
 import { ClientRetryConfig, ClientRateLimitConfig, ClientPageSizeConfig, ClientBaseConfig } from './config'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { requiresLogin, logDecorator } from './decorators'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { throttle } from './rate_limit'
 
 const log = logger(module)
@@ -249,7 +253,9 @@ export abstract class AdapterHTTPClient<
         status,
         headers: this.extractHeaders(res.headers),
       }
-    } catch (e) {
+    } catch (E) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const e = E as any
       log.warn(`failed to ${method} ${url} ${safeJsonStringify(queryParams)}: ${e}, data: ${safeJsonStringify(e?.response?.data)}, stack: ${e.stack}`)
       if (e.code === 'ETIMEDOUT') {
         throw new TimeoutError(`Failed to ${method} ${url} with error: ${e}`)

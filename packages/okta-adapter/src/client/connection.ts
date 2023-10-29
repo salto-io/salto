@@ -16,6 +16,8 @@
 import { AccountInfo } from '@salto-io/adapter-api'
 import { client as clientUtils, client } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
+import { HTTPError } from '@salto-io/adapter-components/src/client'
+import { AxiosRequestHeaders } from 'axios'
 import { Credentials, AccessTokenCredentials } from '../auth'
 
 const log = logger(module)
@@ -38,7 +40,8 @@ export const validateCredentials = async (_creds: {
       accountType: isPreview ? PREVIEW_ACCOUNT_TYPE : PRODUCTION_ACCOUNT_TYPE,
       isProduction: !isPreview,
     }
-  } catch (error) {
+  } catch (E) {
+    const error = E as HTTPError
     if (error.response?.status === 401) {
       log.error('Failed to validate credentials: %s', error)
       throw new client.UnauthorizedError('Invalid Credentials')
@@ -52,7 +55,7 @@ const accessTokenAuthParamsFunc = (
 ): clientUtils.AuthParams => ({
   headers: {
     Authorization: `SSWS ${token}`,
-  },
+  } as AxiosRequestHeaders,
 })
 
 export const createConnection: clientUtils.ConnectionCreator<Credentials> = (

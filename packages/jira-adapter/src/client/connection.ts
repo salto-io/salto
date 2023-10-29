@@ -17,6 +17,7 @@ import { logger } from '@salto-io/logging'
 import { AccountInfo, CredentialError } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { AuthParams, HTTPError } from '@salto-io/adapter-components/src/client'
 import { Credentials } from '../auth'
 import { EXPERIMENTAL_API_HEADERS, FORCE_ACCEPT_LANGUAGE_HEADERS } from './headers'
 
@@ -33,7 +34,8 @@ const isAuthorized = async (
   try {
     await connection.get('/rest/api/3/configuration')
     return true
-  } catch (e) {
+  } catch (E) {
+    const e = E as HTTPError
     if (e.response?.status === 401) {
       return false
     }
@@ -83,7 +85,7 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = retr
           password: credentials.token,
         },
         headers: credentials.isDataCenter ? {} : { ...FORCE_ACCEPT_LANGUAGE_HEADERS, ...EXPERIMENTAL_API_HEADERS },
-      }
+      } as AuthParams
     ),
     baseURLFunc: async ({ baseUrl }) => baseUrl,
     credValidateFunc: async () => ({ accountId: '' }), // There is no login endpoint to call

@@ -16,7 +16,9 @@
 import _ from 'lodash'
 import { AxiosRequestHeaders } from 'axios'
 import { AccountInfo, CredentialError } from '@salto-io/adapter-api'
+import { HTTPError } from '@salto-io/adapter-components/src/client/http_client'
 import { client as clientUtils } from '@salto-io/adapter-components'
+import { AuthParams } from '@salto-io/adapter-components/src/client'
 import { Credentials } from '../auth'
 
 const BASE_URL = 'https://www.workato.com/api'
@@ -29,7 +31,8 @@ export const validateCredentials = async ({ connection }: {
     // there is no good stable account id in workato, so we default to empty string to avoid
     // preventing users from refreshing their credentials in the SaaS.
     return { accountId: '' }
-  } catch (error) {
+  } catch (E) {
+    const error = E as HTTPError
     if (error.response?.status === 401) {
       throw new CredentialError('Invalid Credentials')
     }
@@ -49,7 +52,7 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = retr
           'x-user-email': username,
           'x-user-token': token,
         },
-    }),
+    } as AuthParams),
     baseURLFunc: async () => BASE_URL,
     credValidateFunc: validateCredentials,
   })

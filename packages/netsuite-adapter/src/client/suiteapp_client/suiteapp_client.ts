@@ -16,7 +16,7 @@
 import Bottleneck from 'bottleneck'
 import OAuth from 'oauth-1.0a'
 import crypto from 'crypto'
-import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios'
+import axios, { AxiosInstance, AxiosResponse, AxiosError, AxiosResponseHeaders } from 'axios'
 import axiosRetry from 'axios-retry'
 import Ajv, { Schema } from 'ajv'
 import AsyncLock from 'async-lock'
@@ -103,7 +103,7 @@ export type SuiteAppType = {
 type SuiteAppInfoOperation = 'listBundles' | 'listSuiteApps'
 
 const getAxiosErrorDetailedMessage = (error: AxiosError): string | undefined => {
-  const errorDetails = error.response?.data?.['o:errorDetails']
+  const errorDetails = (error.response?.data as Record<string, unknown>)?.['o:errorDetails']
   if (!_.isArray(errorDetails)) {
     return undefined
   }
@@ -154,7 +154,7 @@ export default class SuiteAppClient {
         retryCondition: err => retryOptions.retryCondition?.(err)
           || String(err.response?.status).startsWith(HTTP_SERVER_ERROR_INITIAL)
           || RETRYABLE_ERROR_CODES.some(code =>
-            code === err.response?.data?.error?.code?.toUpperCase()),
+            code === ((err.response?.data as AxiosResponseHeaders)?.error as AxiosError)?.code?.toUpperCase()),
       }
     )
 
@@ -344,7 +344,8 @@ export default class SuiteAppClient {
 
         return { configType, data, fieldsDef: validatedFields }
       }).filter(isDefined)
-    } catch (e) {
+    } catch (E) {
+      const e = E as Error
       log.error('getConfigRecords failed. received error: %s', e.message)
       return []
     }
@@ -369,7 +370,8 @@ export default class SuiteAppClient {
         return { errorMessage: this.ajv.errorsText() }
       }
       return result
-    } catch (e) {
+    } catch (E) {
+      const e = E as Error
       log.error('setConfigRecordsValues failed. received error: %s', e.message)
       return { errorMessage: e.message }
     }
@@ -402,7 +404,8 @@ export default class SuiteAppClient {
         throw Error(this.ajv.errorsText())
       }
       return result
-    } catch (e) {
+    } catch (E) {
+      const e = E as Error
       const errorMessage = `${operation} operation failed. Received the following error: ${e.message}`
       log.error(errorMessage)
       throw Error(errorMessage)
@@ -439,7 +442,8 @@ export default class SuiteAppClient {
           },
         },
       ))
-    } catch (e) {
+    } catch (E) {
+      const e = E as AxiosError
       log.warn(
         'Received error from SuiteApp request to %s (postParams: %s) with status %s: %s',
         href,
@@ -447,7 +451,7 @@ export default class SuiteAppClient {
         e.response?.status ?? e.code,
         safeJsonStringify(e.response?.data ?? e.message, undefined, 2)
       )
-      if (UNAUTHORIZED_STATUSES.includes(e.response?.status)) {
+      if (UNAUTHORIZED_STATUSES.includes((e.response as AxiosResponse)?.status)) {
         throw new InvalidSuiteAppCredentialsError(getAxiosErrorDetailedMessage(e))
       }
       throw e

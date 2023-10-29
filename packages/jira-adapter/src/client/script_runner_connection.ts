@@ -19,6 +19,7 @@ import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { parse } from 'node-html-parser'
+import { AuthParams } from '@salto-io/adapter-components/src/client'
 import JiraClient from './client'
 import { ScriptRunnerCredentials } from '../auth'
 
@@ -130,7 +131,7 @@ export const createScriptRunnerConnection = (
         headers: {
           Authorization: `JWT ${await getJwtFromService(getUrl())}`,
         },
-      }),
+      } as AuthParams),
       baseURLFunc: async _credentials => getBaseUrl(getUrl()),
       credValidateFunc: async () => ({ accountId: '' }), // There is no login endpoint to call
     })

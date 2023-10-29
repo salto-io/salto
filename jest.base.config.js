@@ -27,6 +27,9 @@ module.exports = {
       ? '<rootDir>/e2e_test/**/*.test.ts'
       : '<rootDir>/test/**/*.test.ts'
   ],
+  moduleNameMapper: {
+    "^axios$": "axios",
+  },  
   testRunner: "jest-circus/runner",
   collectCoverage: true,
   coverageReporters: ['json', 'lcov', 'text', 'clover', 'json-summary'],

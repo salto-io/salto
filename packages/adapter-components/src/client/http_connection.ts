@@ -20,6 +20,8 @@ import { AccountInfo, CredentialError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { ClientRetryConfig } from './config'
 import { DEFAULT_RETRY_OPTS } from './constants'
+// eslint-disable-next-line import/no-cycle
+import { HTTPError } from './http_client'
 
 const log = logger(module)
 
@@ -191,7 +193,8 @@ export const axiosConnection = <TCredentials>({
     try {
       const accountInfo = await credValidateFunc({ credentials: creds, connection: httpClient })
       return Object.assign(httpClient, { accountInfo })
-    } catch (e) {
+    } catch (E) {
+      const e: HTTPError = E as HTTPError
       log.error(`Login failed: ${e}, stack: ${e.stack}`)
       if (e.response?.status === 401 || e instanceof UnauthorizedError) {
         throw new UnauthorizedError('Unauthorized - update credentials and try again')

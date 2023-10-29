@@ -85,7 +85,7 @@ describe('client_http_connection', () => {
       isAxiosError: true,
       toJSON: () => args,
       ...args,
-    })
+    } as AxiosError)
 
     const mockAxiosResponse = (args: Partial<AxiosResponse>): AxiosResponse => ({
       config: {},
@@ -94,7 +94,7 @@ describe('client_http_connection', () => {
       status: 200,
       statusText: 'success',
       ...args,
-    })
+    } as AxiosResponse)
 
     beforeEach(() => {
       retryOptions = createRetryOptions({ maxAttempts: 3, retryDelay: 100, additionalStatusCodesToRetry: [] })
@@ -118,7 +118,7 @@ describe('client_http_connection', () => {
         config: {
           url: 'url',
         },
-      }))).toBe(10000)
+      } as AxiosError))).toBe(10000)
 
       expect(retryOptions.retryDelay?.(1, mockAxiosError({
         response: mockAxiosResponse({
@@ -131,7 +131,7 @@ describe('client_http_connection', () => {
         config: {
           url: 'url',
         },
-      }))).toBe(32000)
+      } as AxiosError))).toBe(32000)
 
       expect(retryOptions.retryDelay?.(1, mockAxiosError({
         response: mockAxiosResponse({
@@ -143,7 +143,7 @@ describe('client_http_connection', () => {
         config: {
           url: 'url',
         },
-      }))).toBe(10000)
+      } as AxiosError))).toBe(10000)
     })
 
     it('should use the input delay when retry-after header is not available', () => {
@@ -170,7 +170,7 @@ describe('client_http_connection', () => {
         config: {
           url: 'url',
         },
-      }))).toBe(100)
+      } as AxiosError))).toBe(100)
     })
   })
 })

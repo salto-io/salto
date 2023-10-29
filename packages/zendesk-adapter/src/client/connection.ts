@@ -72,9 +72,10 @@ export const validateCredentials = async ({ credentials, connection }: {
     }
     log.warn('res is not valid for /api/v2/account, could not find if account is production')
     return { accountId }
-  } catch (e) {
+  } catch (E) {
+    const e = E as Error
     log.error('Failed to validate credentials: %s', e)
-    throw new clientUtils.UnauthorizedError(e)
+    throw new clientUtils.UnauthorizedError(e.message)
   }
 }
 
@@ -85,7 +86,8 @@ const usernamePasswordAuthParamsFunc = (
     username,
     password,
   },
-  headers: APP_MARKETPLACE_HEADERS,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  headers: APP_MARKETPLACE_HEADERS as any,
 })
 
 const accessTokenAuthParamsFunc = (
@@ -94,7 +96,8 @@ const accessTokenAuthParamsFunc = (
   headers: {
     Authorization: `Bearer ${accessToken}`,
     ...APP_MARKETPLACE_HEADERS,
-  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any,
 })
 
 export const createConnection: clientUtils.ConnectionCreator<Credentials> = (

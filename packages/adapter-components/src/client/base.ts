@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import { ClientBaseConfig, ClientRateLimitConfig, ClientRetryConfig, ClientPageSizeConfig } from './config'
+// eslint-disable-next-line import/no-cycle
 import { APIConnection } from './http_connection'
 import { BottleneckBuckets, createRateLimitersFromConfig } from './rate_limit'
 

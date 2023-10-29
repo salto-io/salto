@@ -16,6 +16,7 @@
 import { AccountInfo } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
+import { AuthParams, HTTPError } from '@salto-io/adapter-components/src/client'
 import { Credentials } from '../auth'
 
 const log = logger(module)
@@ -30,9 +31,10 @@ export const validateCredentials = async ({ connection }: {
     if (res.status !== 200) {
       throw new clientUtils.UnauthorizedError('Authentication failed')
     }
-  } catch (e) {
+  } catch (E) {
+    const e = E as HTTPError
     log.error('Failed to validate credentials: %s', e)
-    throw new clientUtils.UnauthorizedError(e)
+    throw new clientUtils.UnauthorizedError(e.message)
   }
   return { accountId: '' }
 }
@@ -44,7 +46,7 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = retr
       headers: {
         Authorization: `Bearer ${creds.token}`,
       },
-    }),
+    } as AuthParams),
     baseURLFunc: async () => BASE_URL,
     credValidateFunc: validateCredentials,
   })

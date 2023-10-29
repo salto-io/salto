@@ -16,6 +16,7 @@
 import { AccountInfo } from '@salto-io/adapter-api'
 import { auth as authUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
+import { UnauthorizedError } from '@salto-io/adapter-components/src/client'
 import { Credentials } from '../auth'
 
 const log = logger(module)
@@ -34,9 +35,10 @@ export const validateCredentials = async ({ connection }: {
       log.error('Got %s:%s response from base service url', res.status, res.statusText)
       throw new clientUtils.UnauthorizedError('Authentication failed')
     }
-  } catch (e) {
+  } catch (E) {
+    const e = E as UnauthorizedError
     log.error('Failed to validate credentials: %s', e)
-    throw new clientUtils.UnauthorizedError(e)
+    throw new clientUtils.UnauthorizedError(e.message)
   }
 
   // default to empty to avoid preventing users from refreshing their credentials in the SaaS.

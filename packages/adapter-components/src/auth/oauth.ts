@@ -18,7 +18,6 @@ import axios, { AxiosRequestHeaders } from 'axios'
 import axiosRetry from 'axios-retry'
 import { logger } from '@salto-io/logging'
 import { RetryOptions } from '../client/http_connection'
-import AxiosRequestHeaders from 'axios';
 
 const log = logger(module)
 

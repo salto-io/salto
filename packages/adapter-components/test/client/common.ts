@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { AccountInfo } from '@salto-io/adapter-api'
-import { axiosConnection, ConnectionCreator, APIConnection } from '../../src/client/http_connection'
+import { axiosConnection, ConnectionCreator, APIConnection, AuthParams } from '../../src/client/http_connection'
 
 export type Credentials = { username: string; password: string}
 
@@ -35,7 +35,7 @@ export const validateCreds = async ({ credentials, connection }: {
 export const createConnection: ConnectionCreator<Credentials> = retryOptions => (
   axiosConnection({
     retryOptions,
-    authParamsFunc: async ({ username, password }: Credentials) => ({
+    authParamsFunc: async ({ username, password } : Credentials) => ({
       headers: {
         customheader1: username,
       },
@@ -43,7 +43,7 @@ export const createConnection: ConnectionCreator<Credentials> = retryOptions => 
         username,
         password,
       },
-    }),
+    } as unknown as AuthParams),
     baseURLFunc: async () => BASE_URL,
     credValidateFunc: validateCreds,
   })

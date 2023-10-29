@@ -556,7 +556,7 @@ describe('workflowDeployFilter', () => {
         // two calls, one for transitions, one for step deployment
         expect(mockConnectionSR.get).toHaveBeenCalledTimes(2)
       })
-      it('should deploy twice if the transitionId was not expected', async () => {
+      it('should deploy three times if the transitionId was not expected', async () => {
         mockConnectionSR.get.mockResolvedValueOnce({
           status: 200,
           data: {
@@ -614,7 +614,8 @@ describe('workflowDeployFilter', () => {
           },
         })
         await filterSR.deploy([toChange({ after: instance })])
-        expect(deployChangeMock).toHaveBeenCalledTimes(2)
+        // first call with the failed prediction, second for deleting it and third for the correct one
+        expect(deployChangeMock).toHaveBeenCalledTimes(3)
         expect(deployChangeMock).toHaveBeenCalledWith({
           change: toChange({
             after: new InstanceElement(
@@ -681,6 +682,18 @@ describe('workflowDeployFilter', () => {
                 ],
               },
             ),
+          }),
+          client: clientSR,
+          endpointDetails: getDefaultConfig({ isDataCenter: false })
+            .apiDefinitions.types.Workflow.deployRequests,
+          fieldsToIgnore: expect.toBeFunction(),
+        })
+        instance.value.transitions[INITIAL_KEY].id = undefined
+        instance.value.transitions[TRANSITION_KEY_2].id = undefined
+        instance.value.operations = undefined
+        expect(deployChangeMock).toHaveBeenCalledWith({
+          change: toChange({
+            before: instance,
           }),
           client: clientSR,
           endpointDetails: getDefaultConfig({ isDataCenter: false })
@@ -752,7 +765,7 @@ describe('workflowDeployFilter', () => {
         expect(deployResult.errors[0].message).toEqual(
           'Error: Failed to deploy workflow, transition ids changed'
         )
-        expect(deployChangeMock).toHaveBeenCalledTimes(2)
+        expect(deployChangeMock).toHaveBeenCalledTimes(3)
         // two calls for transitions and two calls to check if the workflow exist
         expect(mockConnectionSR.get).toHaveBeenCalledTimes(4)
       })

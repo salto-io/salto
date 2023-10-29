@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { AdditionChange, Change, ElemID, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isRemovalChange, RemovalChange } from '@salto-io/adapter-api'
+import { AdditionChange, Change, ElemID, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isRemovalChange, RemovalChange, toChange } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { resolveChangeElement, walkOnValue, WALK_NEXT_STEP, inspectValue, createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -273,6 +273,8 @@ const verifyAndFixTransitionReferences = async ({
     return transitions
   }
   const originalInstance = getChangeData(resolvedChange)
+  // we need to delete to previous workflow before we can deploy the new one
+  await deployWithClone(toChange({ before: originalInstance }), client, config)
   walkOnValue({ elemId: originalInstance.elemID.createNestedID('transitions'),
     value: originalInstance.value.transitions,
     func: decodeCloudFields })

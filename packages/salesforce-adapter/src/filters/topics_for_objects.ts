@@ -21,7 +21,6 @@ import {
 import _ from 'lodash'
 import { collections, multiIndex, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { TOPICS_FOR_OBJECTS_FIELDS, TOPICS_FOR_OBJECTS_ANNOTATION, TOPICS_FOR_OBJECTS_METADATA_TYPE, SALESFORCE } from '../constants'
 import { isCustomObject, apiName, createInstanceElement, metadataAnnotationTypes, MetadataTypeAnnotations } from '../transformers/transformer'
 import { LocalFilterCreator } from '../filter'
@@ -93,9 +92,8 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
 
     const topicsForObjectsInstances = await getInstancesOfMetadataType(elements,
       TOPICS_FOR_OBJECTS_METADATA_TYPE)
-
     const isTopicsEnabledForObjectFromSourcePromise = multiIndex.keyByAsync({
-      iter: awu(await buildElementsSourceFromElements(elements).getAll()),
+      iter: await config.elementsSource.getAll(),
       filter: isCustomObjectWithTopics,
       key: obj => [apiNameSync(obj) ?? ''],
       map: obj => obj.annotations.topicsForObjects.enableTopics,
@@ -109,8 +107,11 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
       const fullName = await apiName(obj)
       if (Object.keys(topics).includes(fullName)) {
         setTopicsForObjects(obj, topics[fullName])
-      } else {
-        const isTopicsEnabled = (await isTopicsEnabledForObjectFromSourcePromise).get(fullName)
+        // In fetch with changes detection mode we won't have the TopicsForObjects instances
+        // that were not updated from the previous fetch, hence we need the current value from the Elements Source.
+      } else if (config.fetchProfile.metadataQuery.isFetchWithChangesDetection()) {
+        const isTopicsEnabledForObjectFromSource = await isTopicsEnabledForObjectFromSourcePromise
+        const isTopicsEnabled = isTopicsEnabledForObjectFromSource.get(fullName)
         if (isTopicsEnabled === undefined) {
           log.error('expected isTopicsEnabled to be defined in Elements source for %s', fullName)
           return

@@ -698,7 +698,7 @@ describe('automationDeploymentFilter', () => {
         await filter.deploy([toChange({ before: instance, after: modifyInstance })])
         expect(connection.delete).toHaveBeenCalledWith(
           '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/1',
-          undefined,
+          { data: undefined },
         )
       })
 
@@ -716,7 +716,7 @@ describe('automationDeploymentFilter', () => {
         await filter.deploy([toChange({ before: instance, after: modifyInstance })])
         expect(connection.delete).toHaveBeenCalledWith(
           '/rest/cb-automation/latest/project/GLOBAL/rule/555/label/1',
-          undefined,
+          { data: undefined },
         )
       })
 
@@ -736,7 +736,7 @@ describe('automationDeploymentFilter', () => {
         )
         expect(connection.delete).toHaveBeenCalledWith(
           '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/1',
-          undefined,
+          { data: undefined },
         )
       })
     })

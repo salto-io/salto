@@ -128,10 +128,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/groups/{groupId}',
         method: 'delete',
-        deployAsField: 'group',
         urlParamsToFields: {
           groupId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -164,10 +164,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/custom_roles/{customRoleId}',
         method: 'delete',
-        deployAsField: 'custom_role',
         urlParamsToFields: {
           customRoleId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -198,10 +198,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/organizations/{organizationId}',
         method: 'delete',
-        deployAsField: 'organization',
         urlParamsToFields: {
           organizationId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -231,10 +231,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/views/{viewId}',
         method: 'delete',
-        deployAsField: 'view',
         urlParamsToFields: {
           viewId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -279,10 +279,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/triggers/{triggerId}',
         method: 'delete',
-        deployAsField: 'trigger',
         urlParamsToFields: {
           triggerId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -327,10 +327,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/trigger_categories/{triggerCategoryId}',
         method: 'delete',
-        deployAsField: 'trigger_category',
         urlParamsToFields: {
           triggerCategoryId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -374,10 +374,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/automations/{automationId}',
         method: 'delete',
-        deployAsField: 'automation',
         urlParamsToFields: {
           automationId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -415,10 +415,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/slas/policies/{slaPolicyId}',
         method: 'delete',
-        deployAsField: 'sla_policy',
         urlParamsToFields: {
           slaPolicyId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -474,10 +474,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/targets/{targetId}',
         method: 'delete',
-        deployAsField: 'target',
         urlParamsToFields: {
           targetId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -508,10 +508,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/macros/{macroId}',
         method: 'delete',
-        deployAsField: 'macro',
         urlParamsToFields: {
           macroId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -575,10 +575,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/brands/{brandId}',
         method: 'delete',
-        deployAsField: 'brand',
         urlParamsToFields: {
           brandId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -631,10 +631,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/business_hours/schedules/{scheduleId}',
         method: 'delete',
-        deployAsField: 'schedule',
         urlParamsToFields: {
           scheduleId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -669,10 +669,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/sharing_agreements/{sharingAgreementId}',
         method: 'delete',
-        deployAsField: 'sharing_agreement',
         urlParamsToFields: {
           sharingAgreementId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -730,10 +730,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/recipient_addresses/{supportAddressId}',
         method: 'delete',
-        deployAsField: 'recipient_address',
         urlParamsToFields: {
           supportAddressId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -767,10 +767,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/ticket_forms/{ticketFormId}',
         method: 'delete',
-        deployAsField: 'ticket_form',
         urlParamsToFields: {
           ticketFormId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -853,10 +853,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/ticket_fields/{ticketFieldId}',
         method: 'delete',
-        deployAsField: 'ticket_field',
         urlParamsToFields: {
           ticketFieldId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -885,6 +885,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
           ticketFieldId: '_parent.0.id',
           ticketFieldOptionId: 'id',
         },
+        omitRequestBody: true,
       },
     },
     transformation: {
@@ -950,10 +951,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/user_fields/{userFieldId}',
         method: 'delete',
-        deployAsField: 'user_field',
         urlParamsToFields: {
           userFieldId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -982,6 +983,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
           userFieldId: '_parent.0.id',
           userFieldOptionId: 'id',
         },
+        omitRequestBody: true,
       },
     },
     transformation: {
@@ -1046,10 +1048,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/organization_fields/{organizationFieldId}',
         method: 'delete',
-        deployAsField: 'organization_field',
         urlParamsToFields: {
           organizationFieldId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1103,10 +1105,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/routing/attributes/{attributeId}',
         method: 'delete',
-        deployAsField: 'attribute',
         urlParamsToFields: {
           attributeId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1144,10 +1146,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/workspaces/{workspaceId}',
         method: 'delete',
-        deployAsField: 'workspace',
         urlParamsToFields: {
           workspaceId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1207,6 +1209,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           appInstallationId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1259,10 +1262,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/oauth/clients/{oauthClientId}',
         method: 'delete',
-        deployAsField: 'client',
         urlParamsToFields: {
           oauthClientId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1505,10 +1508,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       remove: {
         url: '/api/v2/dynamic_content/items/{dynamicContentItemId}',
         method: 'delete',
-        deployAsField: 'item',
         urlParamsToFields: {
           dynamicContentItemId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1544,6 +1547,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
           dynammicContentVariantId: 'id',
           dynamicContentItemId: '_parent.0.id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1585,6 +1589,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
           holidayId: 'id',
           scheduleId: '_parent.0.id',
         },
+        omitRequestBody: true,
       },
     },
     transformation: {
@@ -1694,6 +1699,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
           attributeValueId: 'id',
           attributeId: '_parent.0.id',
         },
+        omitRequestBody: true,
       },
     },
     transformation: {
@@ -1834,6 +1840,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           webhookId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1914,6 +1921,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           articleId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1954,6 +1962,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           articleAttachmentId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -2004,6 +2013,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           translation_id: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -2038,6 +2048,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           locale: 'locale',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -2164,6 +2175,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           section_id: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -2232,6 +2244,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           translation_id: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -2288,6 +2301,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           category_id: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -2338,6 +2352,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           translation_id: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -2378,6 +2393,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           permissionGroupId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -2431,6 +2447,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           userSegmentId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -2564,6 +2581,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           custom_object_key: 'key',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -2619,6 +2637,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
           custom_object_key: '_parent.0.key',
           custom_object_field_key: 'key',
         },
+        omitRequestBody: true,
       },
     },
   },

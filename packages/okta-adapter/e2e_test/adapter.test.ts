@@ -18,7 +18,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { Change, CORE_ANNOTATIONS, DeployResult, Element, getChangeData,
   InstanceElement, isAdditionChange, isAdditionOrModificationChange, isEqualValues, isInstanceChange, isInstanceElement,
   isObjectType, ObjectType, ReferenceExpression, TemplateExpression, toChange, Values } from '@salto-io/adapter-api'
-import { applyDetailedChanges, buildElementsSourceFromElements, detailedCompare, getParents, naclCase } from '@salto-io/adapter-utils'
+import { applyDetailedChanges, buildElementsSourceFromElements, detailedCompare, getParents, naclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { config as configUtils, elements as elementsUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
@@ -345,7 +345,7 @@ describe('Okta adapter E2E', () => {
 
       const errors = deployResults.flatMap(res => res.errors)
       if (errors.length) {
-        throw new Error(`Failed to clean e2e changes: ${errors.join(', ')}`)
+        throw new Error(`Failed to clean e2e changes: ${errors.map(e => safeJsonStringify(e)).join(', ')}`)
       }
 
       if (credLease.return) {

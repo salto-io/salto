@@ -138,17 +138,17 @@ describe('gadgetFilter', () => {
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties',
-        undefined,
+        { data: undefined },
       )
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties/key1',
-        undefined,
+        { data: undefined },
       )
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties/key2',
-        undefined,
+        { data: undefined },
       )
 
       expect(instance.value.properties).toEqual({

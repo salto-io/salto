@@ -378,7 +378,7 @@ describe('projectFilter', () => {
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/project/3',
-        undefined,
+        { data: undefined },
       )
     })
 
@@ -387,12 +387,12 @@ describe('projectFilter', () => {
 
       expect(connection.delete).toHaveBeenCalledWith(
         '/rest/api/3/component/1',
-        undefined,
+        { data: undefined },
       )
 
       expect(connection.delete).toHaveBeenCalledWith(
         '/rest/api/3/component/2',
-        undefined,
+        { data: undefined },
       )
     })
 
@@ -497,40 +497,40 @@ describe('projectFilter', () => {
     it('should call the endpoint to get the projectId', () => {
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/project/key',
-        undefined,
+        { data: undefined },
       )
     })
 
     it('should call the endpoint to get the fieldConfigurationScheme', () => {
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/fieldconfigurationscheme/project?projectId=3',
-        undefined,
+        { data: undefined },
       )
     })
 
     it('should call the endpoint to delete the fieldConfigurationScheme', () => {
       expect(connection.delete).toHaveBeenCalledWith(
         '/rest/api/3/fieldconfigurationscheme/4',
-        undefined,
+        { data: undefined },
       )
     })
 
     it('should call the endpoint to get the components', () => {
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/project/3',
-        undefined,
+        { data: undefined },
       )
     })
 
     it('should call the endpoint to remove the components', () => {
       expect(connection.delete).toHaveBeenCalledWith(
         '/rest/api/3/component/1',
-        undefined,
+        { data: undefined },
       )
 
       expect(connection.delete).toHaveBeenCalledWith(
         '/rest/api/3/component/2',
-        undefined,
+        { data: undefined },
       )
     })
   })
@@ -595,40 +595,40 @@ describe('projectFilter', () => {
     it('should call the endpoint to get the projectId', () => {
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/project/key',
-        undefined,
+        { data: undefined },
       )
     })
 
     it('should call the endpoint to get the fieldConfigurationScheme', () => {
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/fieldconfigurationscheme/project?projectId=3',
-        undefined,
+        { data: undefined },
       )
     })
 
     it('should not call the endpoint to delete the fieldConfigurationScheme', () => {
       expect(connection.delete).not.toHaveBeenCalledWith(
         '/rest/api/3/fieldconfigurationscheme/4',
-        undefined,
+        { data: undefined },
       )
     })
 
     it('should call the endpoint to get the components', () => {
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/project/3',
-        undefined,
+        { data: undefined },
       )
     })
 
     it('should call the endpoint to remove the components', () => {
       expect(connection.delete).toHaveBeenCalledWith(
         '/rest/api/3/component/1',
-        undefined,
+        { data: undefined },
       )
 
       expect(connection.delete).toHaveBeenCalledWith(
         '/rest/api/3/component/2',
-        undefined,
+        { data: undefined },
       )
     })
   })

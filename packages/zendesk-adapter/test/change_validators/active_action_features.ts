@@ -38,7 +38,7 @@ const createTestInstance = (type: string, field?: string): InstanceElement => ne
   {
     actions: [
       {
-        field: field ?? 'current_tags',
+        field: field ?? 'test',
         value: [],
       },
     ],

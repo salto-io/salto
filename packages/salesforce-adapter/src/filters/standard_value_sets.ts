@@ -22,7 +22,6 @@ import {
   Field,
   ReferenceExpression,
   isObjectType,
-  isInstanceElement,
   isModificationChange,
   isFieldChange,
   getChangeData,
@@ -30,7 +29,7 @@ import {
   getAllChangeData,
   ModificationChange,
 } from '@salto-io/adapter-api'
-import { resolveTypeShallow } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections, promises, values as lowerdashValues } from '@salto-io/lowerdash'
 
 import { FilterResult, RemoteFilterCreator } from '../filter'
@@ -38,7 +37,7 @@ import { FIELD_ANNOTATIONS, VALUE_SET_FIELDS } from '../constants'
 import {
   metadataType, apiName, isCustomObject, Types, isCustom,
 } from '../transformers/transformer'
-import { extractFullNamesFromValueList, isInstanceOfType } from './utils'
+import { extractFullNamesFromValueList, isInstanceOfTypeSync } from './utils'
 import { ConfigChangeSuggestion } from '../types'
 import { fetchMetadataInstances } from '../fetch'
 
@@ -131,7 +130,7 @@ const svsValuesToRef = (svsInstances: InstanceElement[]): StandartValueSetsLooku
       const standardValue = makeArray(i.value[STANDARD_VALUE])
       return [
         encodeValues(extractFullNamesFromValueList(standardValue)),
-        new ReferenceExpression(i.elemID),
+        new ReferenceExpression(i.elemID, i),
       ]
     })
 )
@@ -258,16 +257,10 @@ export const makeFilter = (
         .toArray()
 
       if (customObjectTypeElements.length > 0) {
-        const svsInstances = fetchedSVSInstances !== undefined
+        const svsInstances = fetchedSVSInstances !== undefined && !config.fetchProfile.metadataQuery.isPartialFetch()
           ? fetchedSVSInstances
-          : await awu(await config.elementsSource.getAll())
-            .filter(isInstanceElement)
-            .map(async inst => {
-              const clone = inst.clone()
-              await resolveTypeShallow(clone, config.elementsSource)
-              return clone
-            })
-            .filter(isInstanceOfType(STANDARD_VALUE_SET))
+          : await awu(await buildElementsSourceFromElements(elements, [config.elementsSource]).getAll())
+            .filter(isInstanceOfTypeSync(STANDARD_VALUE_SET))
             .toArray()
         await updateSVSReferences(customObjectTypeElements, svsInstances)
       }

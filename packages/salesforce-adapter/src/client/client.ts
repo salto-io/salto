@@ -72,7 +72,7 @@ const { logDecorator, throttle, requiresLogin, createRateLimitersFromConfig } = 
 
 type DeployOptions = Pick<JSForceDeployOptions, 'checkOnly'>
 
-export const API_VERSION = '58.0'
+export const API_VERSION = '59.0'
 export const METADATA_NAMESPACE = 'http://soap.sforce.com/2006/04/metadata'
 
 // Salesforce limitation of maximum number of items per create/update/delete call
@@ -465,7 +465,6 @@ export const getConnectionDetails = async (
   orgId: string
   accountType?: string
   isProduction?: boolean
-  instanceUrl?: string
 }> => {
   const options = {
     maxAttempts: 2,
@@ -487,14 +486,13 @@ export const getConnectionDetails = async (
     accountType: organizationRecord.OrganizationType,
     isProduction: !organizationRecord.IsSandbox
       && PRODUCTION_ACCOUNT_TYPES.includes(organizationRecord.OrganizationType),
-    instanceUrl: conn.instanceUrl,
   }
 }
 
 export const validateCredentials = async (
   creds: Credentials, minApiRequestsRemaining = 0, connection?: Connection,
 ): Promise<AccountInfo> => {
-  const { remainingDailyRequests, orgId, accountType, isProduction, instanceUrl } = await getConnectionDetails(
+  const { remainingDailyRequests, orgId, accountType, isProduction } = await getConnectionDetails(
     creds, connection
   )
   if (remainingDailyRequests < minApiRequestsRemaining) {
@@ -502,22 +500,10 @@ export const validateCredentials = async (
       `Remaining limits: ${remainingDailyRequests}, needed: ${minApiRequestsRemaining}`
     )
   }
-  if (creds.isSandbox) {
-    if (instanceUrl === undefined) {
-      throw new Error('Expected Salesforce organization URL to exist in the connection')
-    }
-    return {
-      accountId: instanceUrl,
-      accountType,
-      isProduction,
-      extraInformation: { orgId },
-    }
-  }
   return {
     accountId: orgId,
     accountType,
     isProduction,
-    extraInformation: { orgId },
   }
 }
 export default class SalesforceClient {

@@ -76,6 +76,9 @@ const extractImportantValuesFromElement = ({
   highlightedOnly?: boolean
 }): Values[] => {
   if (_.isEmpty(importantValues)) {
+    if (importantValues === undefined) {
+      log.trace('important value is undefined for element %s', element.elemID.getFullName())
+    }
     return []
   }
   const relevantImportantValues = getRelevantImportantValues(importantValues, indexedOnly, highlightedOnly)
@@ -115,9 +118,16 @@ export const getImportantValues = async ({
     return extractImportantValuesFromElement({ importantValues, element, indexedOnly, highlightedOnly })
   }
   if (isField(element) || isInstanceElement(element)) {
-    const typeObj = await element.getType(elementSource)
-    const importantValues = typeObj?.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES]
-    return extractImportantValuesFromElement({ importantValues, element, indexedOnly, highlightedOnly })
+    try {
+      const typeObj = await element.getType(elementSource)
+      const importantValues = typeObj?.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES]
+      return extractImportantValuesFromElement({ importantValues, element, indexedOnly, highlightedOnly })
+    } catch (e) {
+      // getType throws an error when the type calculated is not a valid type, or when
+      // resolvedValue === undefined && elementsSource === undefined in getResolvedValue
+      log.warn(`could not get important values for element ${element.elemID.getFullName()}, received error ${e}, returning []`)
+      return []
+    }
   }
   return []
 }

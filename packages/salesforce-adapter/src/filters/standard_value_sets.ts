@@ -29,18 +29,15 @@ import {
   getAllChangeData,
   ModificationChange,
 } from '@salto-io/adapter-api'
-import { collections, promises, values as lowerdashValues } from '@salto-io/lowerdash'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { collections, promises, types, values as lowerdashValues } from '@salto-io/lowerdash'
 
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { FIELD_ANNOTATIONS, VALUE_SET_FIELDS } from '../constants'
 import {
   metadataType, apiName, isCustomObject, Types, isCustom,
 } from '../transformers/transformer'
-import {
-  buildElementsSourceForFetch,
-  extractFullNamesFromValueList,
-  isInstanceOfTypeSync,
-} from './utils'
+import { extractFullNamesFromValueList, isInstanceOfTypeSync } from './utils'
 import { ConfigChangeSuggestion } from '../types'
 import { fetchMetadataInstances } from '../fetch'
 
@@ -133,7 +130,7 @@ const svsValuesToRef = (svsInstances: InstanceElement[]): StandartValueSetsLooku
       const standardValue = makeArray(i.value[STANDARD_VALUE])
       return [
         encodeValues(extractFullNamesFromValueList(standardValue)),
-        new ReferenceExpression(i.elemID, i),
+        new ReferenceExpression(i.elemID),
       ]
     })
 )
@@ -177,7 +174,7 @@ const findStandardValueSetType = async (elements: Element[]): Promise<ObjectType
 
 const updateSVSReferences = async (
   objects: ObjectType[],
-  svsInstances: InstanceElement[],
+  svsInstances: types.NonEmptyArray<InstanceElement>,
 ): Promise<void> => {
   const svsValuesToName = svsValuesToRef(svsInstances)
 
@@ -240,7 +237,6 @@ export const makeFilter = (
       const svsMetadataType: ObjectType | undefined = await findStandardValueSetType(elements)
       let configChanges: ConfigChangeSuggestion[] = []
       let fetchedSVSInstances: InstanceElement[] = []
-      const elementsSource = buildElementsSourceForFetch(elements, config)
       if (svsMetadataType !== undefined) {
         const svsInstances = await fetchMetadataInstances({
           client,
@@ -261,14 +257,14 @@ export const makeFilter = (
         .toArray()
 
       if (customObjectTypeElements.length > 0) {
-        const svsInstances = config.fetchProfile.metadataQuery.isFetchWithChangesDetection()
-          // In fetch with changes detection mode, we need all the StandardValueSets
-          // in order not to lose existing references on fetched CustomObjects.
-          ? await awu(await elementsSource.getAll())
+        const svsInstances = !config.fetchProfile.metadataQuery.isPartialFetch()
+          ? fetchedSVSInstances
+          : await awu(await buildElementsSourceFromElements(elements, [config.elementsSource]).getAll())
             .filter(isInstanceOfTypeSync(STANDARD_VALUE_SET))
             .toArray()
-          : fetchedSVSInstances
-        await updateSVSReferences(customObjectTypeElements, svsInstances)
+        if (types.isNonEmptyArray(svsInstances)) {
+          await updateSVSReferences(customObjectTypeElements, svsInstances)
+        }
       }
 
       return {

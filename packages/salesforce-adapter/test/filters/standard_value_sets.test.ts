@@ -119,11 +119,7 @@ describe('Standard Value Sets filter', () => {
   ): Promise<FilterType> => {
     const elementsSource = buildElementsSourceFromElements([svsInstanceFromSource])
     const fetchProfile = isFetchWithChangesDetection
-      ? await buildFetchProfileForFetchWithChangesDetection({
-        fetchParams: {},
-        elementsSource,
-        relatedPropsByMetadataTypePromise: Promise.resolve({ CustomObject: {} }),
-      })
+      ? await buildFetchProfileForFetchWithChangesDetection({ fetchParams: {}, elementsSource })
       : defaultFilterContext.fetchProfile
     return makeFilter(
       new Set<string>(['Simpsons', 'Numbers'])
@@ -174,7 +170,7 @@ describe('Standard Value Sets filter', () => {
       expect(elements.length).toBe(4)
       const simpsonsSvs = elements[2]
       expect(typeElement.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME])
-        .toEqual(new ReferenceExpression(simpsonsSvs.elemID, simpsonsSvs))
+        .toEqual(new ReferenceExpression(simpsonsSvs.elemID))
     })
 
     it('should replace value list with references for standard multipicklist fields', async () => {
@@ -187,7 +183,7 @@ describe('Standard Value Sets filter', () => {
       expect(elements.length).toBe(4)
       const simpsonsSvs = elements[2]
       expect(typeElement.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME])
-        .toEqual(new ReferenceExpression(simpsonsSvs.elemID, simpsonsSvs))
+        .toEqual(new ReferenceExpression(simpsonsSvs.elemID))
     })
 
     it('should not replace value list with references for custom picklist fields', async () => {
@@ -214,7 +210,7 @@ describe('Standard Value Sets filter', () => {
         .annotations[constants.FIELD_ANNOTATIONS.VALUE_SET])).toEqual(pickListValues)
     })
 
-    describe('when is partial fetch', () => {
+    describe('when is fetch with changes detection mode', () => {
       beforeEach(async () => {
         filter = await filterCreator(client, true)
       })
@@ -225,7 +221,7 @@ describe('Standard Value Sets filter', () => {
         const field = objectType.fields.state as Field
         expect(field).toSatisfy(isField)
         expect(field.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME])
-          .toEqual(new ReferenceExpression(svsInstanceFromSource.elemID, svsInstanceFromSource))
+          .toEqual(new ReferenceExpression(svsInstanceFromSource.elemID))
         // No reason to append a non modified SVS instance to the elements
         expect(elements).not.toContain(svsInstanceFromSource)
       })

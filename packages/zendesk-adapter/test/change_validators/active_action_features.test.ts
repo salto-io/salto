@@ -28,7 +28,7 @@ import { activeActionFeaturesValidator } from '../../src/change_validators'
 import {
   CUSTOM_TICKET_STATUS_ZENDESK_FIELD,
   DEFLECTION_ZENDESK_FIELD,
-} from '../../src/change_validators/deflection_action'
+} from '../../src/change_validators/active_action_features'
 
 const { createInMemoryElementSource } = elementSource
 

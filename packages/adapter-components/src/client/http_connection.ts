@@ -106,7 +106,7 @@ const getRetryDelayFromHeaders = (headers: Record<string, string>): number | und
 }
 
 const getRetryDelay = (retryOptions: Required<ClientRetryConfig>, error: AxiosError): number => {
-  const retryDelay = getRetryDelayFromHeaders(error.response?.headers ?? {})
+  const retryDelay = getRetryDelayFromHeaders(error.response?.headers as Record<string, string> ?? {})
   ?? retryOptions.retryDelay
 
   return retryDelay
@@ -121,7 +121,7 @@ export const createRetryOptions = (retryOptions: Required<ClientRetryConfig>): R
     const retryDelay = getRetryDelay(retryOptions, err)
 
     log.warn('Failed to run client call to %s for reason: %s (%s). Retrying in %ds (attempt %d).',
-      err.config.url,
+      err.config?.url,
       err.code,
       err.message,
       retryDelay / 1000,

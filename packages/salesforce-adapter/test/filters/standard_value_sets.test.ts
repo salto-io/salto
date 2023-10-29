@@ -210,7 +210,7 @@ describe('Standard Value Sets filter', () => {
         .annotations[constants.FIELD_ANNOTATIONS.VALUE_SET])).toEqual(pickListValues)
     })
 
-    describe('when is partial fetch', () => {
+    describe('when is fetch with changes detection mode', () => {
       beforeEach(async () => {
         filter = await filterCreator(client, true)
       })

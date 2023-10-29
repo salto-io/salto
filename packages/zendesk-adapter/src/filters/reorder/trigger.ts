@@ -33,7 +33,7 @@ import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../filter'
 import { deployChange } from '../../deployment'
-import { createOrderTypeName, createReorderFilterCreator, DeployFuncType } from './creator'
+import { createOrderTypeName, createOrderPosition, createReorderFilterCreator, DeployFuncType } from './creator'
 import { TRIGGER_CATEGORY_TYPE_NAME, TRIGGER_TYPE_NAME, ZENDESK } from '../../constants'
 
 const TRIGGER_ORDER_ENTRY_TYPE_NAME = 'trigger_order_entry'
@@ -74,13 +74,11 @@ const deployFunc: DeployFuncType = async (change, client, apiDefinitions) => {
   }
   const triggerCategories = order
     .map(entry => entry.category)
-    // We send position + 1, since the position in the service are starting from 1
-    .map((id, position) => ({ id, position: position + 1 }))
+    .map((id, position) => ({ id, position: createOrderPosition(position) }))
   const triggers = order
     .flatMap(entry => (entry.active ?? []).concat(entry.inactive ?? []).map((id, position) => ({
       id: id.toString(),
-      // We send position + 1, since the position in the service are starting from 1
-      position: position + 1,
+      position: createOrderPosition(position),
       category_id: entry.category,
     })))
   instance.value.action = 'patch'

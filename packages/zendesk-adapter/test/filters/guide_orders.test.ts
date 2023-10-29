@@ -23,6 +23,7 @@ import { createFilterCreatorParams } from '../utils'
 import { createOrderType } from '../../src/filters/guide_order/guide_order_utils'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
+import { createOrderPosition } from '../../src/filters/reorder/creator'
 
 const { createUrl } = elementsUtils
 
@@ -193,7 +194,7 @@ const testDeploy = async (
       baseUrl: updateApi.url,
       urlParamsToFields: updateApi.urlParamsToFields,
     }),
-    data: { position: 0 },
+    data: { position: createOrderPosition(0) },
   })
   expect(mockPut).toHaveBeenCalledWith({
     url: createUrl({
@@ -201,7 +202,7 @@ const testDeploy = async (
       baseUrl: updateApi.url,
       urlParamsToFields: updateApi.urlParamsToFields,
     }),
-    data: { position: 1 },
+    data: { position: createOrderPosition(1) },
   })
 }
 

@@ -397,7 +397,7 @@ describe('SalesforceAdapter CRUD', () => {
                     deploy: {
                       quickDeployParams: {
                         requestId: '1',
-                        hash: 'bd17f95fb82eb6eac93a764cf0910054',
+                        hash: '0de55d5a2f69fe69a803f56f76d3cb72',
                       },
                     },
                   },
@@ -459,7 +459,7 @@ describe('SalesforceAdapter CRUD', () => {
                     deploy: {
                       quickDeployParams: {
                         requestId: '1',
-                        hash: 'bd17f95fb82eb6eac93a764cf0910054',
+                        hash: '0de55d5a2f69fe69a803f56f76d3cb72',
                       },
                     },
                   },

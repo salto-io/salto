@@ -13,44 +13,48 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
-import { Change, ChangeValidator, getChangeData,
-  InstanceElement,
-  isAdditionOrModificationChange, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData,
+  isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { TICKET_FORM_TYPE_NAME } from '../constants'
-
-const isRelevantChange = (change: Change<InstanceElement>): boolean =>
-  (getChangeData(change).elemID.typeName === TICKET_FORM_TYPE_NAME)
-  && (getChangeData(change).value.default === true)
-  && !(isModificationChange(change)
-    && (change.data.before.value.default === change.data.after.value.default))
 
 export const onlyOneTicketFormDefaultValidator: ChangeValidator = async (
   changes, elementSource
 ) => {
-  const relevantInstances = changes
+  const defaultTicketFormsFromChanges = changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
-    .filter(isRelevantChange)
     .map(getChangeData)
-  if (_.isEmpty(relevantInstances) || (elementSource === undefined)) {
+    .filter(instance => instance.elemID.typeName === TICKET_FORM_TYPE_NAME)
+    .filter(instance => instance.value.default === true)
+
+  const defaultTicketFormsNames = new Set<string>(defaultTicketFormsFromChanges.map(form => form.elemID.getFullName()))
+
+  if (defaultTicketFormsFromChanges.length === 0) {
     return []
   }
-  const allTicketForms = await getInstancesFromElementSource(elementSource, [TICKET_FORM_TYPE_NAME])
-  return relevantInstances
-    .flatMap(instance => {
-      const otherDefaultTicketForms = allTicketForms
-        .filter(ticketForm => ticketForm.value.default === true)
-        .filter(ticketForm => !ticketForm.elemID.isEqual(instance.elemID))
-      if (_.isEmpty(otherDefaultTicketForms)) {
-        return []
-      }
-      return [{
-        elemID: instance.elemID,
-        severity: 'Error',
-        message: 'Cannot set this as the default ticket form since another one is already defined as the default',
-        detailedMessage: `The following ticket forms are also marked as default: ${otherDefaultTicketForms.map(ticketForm => ticketForm.elemID.getFullName()).join(', ')}`,
-      }]
-    })
+
+  const defaultTicketFormsFromElementSource = elementSource !== undefined
+    ? (await getInstancesFromElementSource(elementSource, [TICKET_FORM_TYPE_NAME]))
+      .filter(form => !defaultTicketFormsNames.has(form.elemID.getFullName()))
+      .filter(form => form.value.default === true)
+    : []
+
+  if (defaultTicketFormsFromChanges.length > 1) {
+    return defaultTicketFormsFromChanges.map(form => ({
+      elemID: form.elemID,
+      severity: 'Error',
+      message: 'More than one ticket form is set as default',
+      detailedMessage: `Only one ticket form can be set as default, default ticket forms: ${defaultTicketFormsFromChanges.map(ticketForm => ticketForm.elemID.name).join(', ')}`,
+    }))
+  }
+  if (defaultTicketFormsFromElementSource.length > 0) {
+    return [{
+      elemID: defaultTicketFormsFromChanges[0].elemID,
+      severity: 'Warning',
+      message: 'Setting a new default ticket form will unset the previous default ticket form',
+      detailedMessage: `Setting this ticket form as default will unset the other default ticket forms: ${defaultTicketFormsFromElementSource.map(ticketForm => ticketForm.elemID.name).join(', ')}`,
+    }]
+  }
+  return []
 }

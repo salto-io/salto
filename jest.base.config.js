@@ -28,8 +28,8 @@ module.exports = {
       : '<rootDir>/test/**/*.test.ts'
   ],
   moduleNameMapper: {
-    "^axios$": "axios",
-  },  
+    axios: "axios/dist/node/axios.cjs"
+  },
   testRunner: "jest-circus/runner",
   collectCoverage: true,
   coverageReporters: ['json', 'lcov', 'text', 'clover', 'json-summary'],

@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeError, ChangeValidator, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isReferenceExpression, isRemovalOrModificationChange, ReadOnlyElementsSource, ReferenceExpression, SeverityLevel } from '@salto-io/adapter-api'
-import { getInstancesFromElementSource, getParent } from '@salto-io/adapter-utils'
+import { Change, ChangeError, ChangeValidator, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isReferenceExpression, isRemovalOrModificationChange, ReferenceExpression, SeverityLevel } from '@salto-io/adapter-api'
+import { getInstancesFromElementSource, getParent, getParents } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FIELD_CONTEXT_TYPE_NAME } from '../../filters/fields/constants'
@@ -33,17 +33,13 @@ const createErrorMessage = (elemID: ElemID, fieldName?: string): ChangeError => 
     : `Can't deploy this global context because the deployment will result in more than a single global context for field ${fieldName}.`,
 })
 
-const getParentWithElementSource = async (instance: InstanceElement, elementSource: ReadOnlyElementsSource)
-: Promise<InstanceElement> => {
-  const parent = instance.annotations[CORE_ANNOTATIONS.PARENT][0]
+const getParentElemID = async (instance: InstanceElement)
+: Promise<ElemID> => {
+  const parent = getParents(instance)[0]
   if (!isReferenceExpression(parent)) {
     throw new Error(`Expected ${instance.elemID.getFullName()} parent to be a reference expression`)
   }
-  const field = await parent.getResolvedValue(elementSource)
-  if (!isInstanceElement(field)) {
-    throw new Error(`Expected ${instance.elemID.getFullName()} parent to be an instance`)
-  }
-  return field
+  return parent.elemID
 }
 
 export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes, elementSource) => {
@@ -52,15 +48,15 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
     return []
   }
   const fieldToGlobalContextCount: Record<string, number> = {}
-  const fieldContextToChange = new Map<string, {change: Change<InstanceElement>; field: InstanceElement}>()
+  const fieldContextToChange = new Map<string, {change: Change<InstanceElement>; fieldElemId: ElemID}>()
   const fillFieldToGlobalContextCount = async (): Promise<void> => (
     awu(await elementSource.getAll())
       .filter(elem => elem.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
       .filter(isInstanceElement)
       .filter(instance => instance.value.isGlobalContext)
       .forEach(async instance => {
-        const field = await getParentWithElementSource(instance, elementSource)
-        const fieldName = field.elemID.getFullName()
+        const fieldElemId = await getParentElemID(instance)
+        const fieldName = fieldElemId.getFullName()
         if (fieldToGlobalContextCount[fieldName] === undefined) {
           fieldToGlobalContextCount[fieldName] = 1
         } else {
@@ -83,8 +79,8 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
       change.data.before.value.fieldContexts
         .filter(isReferenceExpression)
         .forEach(async (context: ReferenceExpression) => {
-          const field = await getParentWithElementSource(await context.getResolvedValue(), elementSource)
-          fieldContextToChange.set(context.elemID.getFullName(), { change, field })
+          const fieldElemId = await getParentElemID(await context.getResolvedValue())
+          fieldContextToChange.set(context.elemID.getFullName(), { change, fieldElemId })
         })
     })
   const projectInstances = await getInstancesFromElementSource(elementSource, [PROJECT_TYPE])
@@ -98,11 +94,11 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
   const errorMessages = Array.from(fieldContextToChange.keys())
     .filter(context => fieldContextToChange.get(context) !== undefined)
     .filter(context => {
-      const changeAndField = fieldContextToChange.get(context)
-      if (changeAndField !== undefined) {
-        const { field } = changeAndField
+      const changeAndFieldElemId = fieldContextToChange.get(context)
+      if (changeAndFieldElemId !== undefined) {
+        const { fieldElemId } = changeAndFieldElemId
         // if there is another global context for the field
-        return fieldToGlobalContextCount[field.elemID.getFullName()] === 1
+        return fieldToGlobalContextCount[fieldElemId.getFullName()] === 1
       }
       return false
     })

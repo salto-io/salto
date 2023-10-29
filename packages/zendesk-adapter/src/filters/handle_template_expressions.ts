@@ -54,7 +54,6 @@ export const TICKET_ORGANIZATION_FIELD = 'ticket.organization.custom_fields'
 export const TICKET_USER_FIELD = 'ticket.requester.custom_fields'
 const ID = 'id'
 const KEY = 'key'
-const ELEMENT_REGEXES_TYPES = new Set(ELEMENTS_REGEXES.map(e => e.type))
 
 export const ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE: Record<string, string> = {
   [TICKET_TICKET_FIELD]: TICKET_FIELD_TYPE_NAME,
@@ -461,7 +460,7 @@ const replaceFormulasWithTemplates = ({
   }
 }
 
-export const prepRef = (part: ReferenceExpression, extractReferencesFromFreeText?: boolean): TemplatePart => {
+export const prepRef = (part: ReferenceExpression): TemplatePart => {
   // In some cases this function may run on the .before value of a Change, which may contain unresolved references.
   // .after values are always resolved because unresolved references are dropped by unresolved_references validator
   // This case should be handled more generic but at the moment this is a quick fix to avoid crashing (SALTO-3988)
@@ -485,9 +484,7 @@ export const prepRef = (part: ReferenceExpression, extractReferencesFromFreeText
     && part.value?.value?.key) {
     return part.value.value.key
   }
-  // Should be last
-  if (extractReferencesFromFreeText
-    && ELEMENT_REGEXES_TYPES.has(part.elemID.typeName) && part.value?.value?.id) {
+  if (part.elemID.isTopLevel() && part.value?.value?.id) {
     return part.value.value.id.toString()
   }
   return part
@@ -514,7 +511,7 @@ const filterCreator: FilterCreator = ({ config }) => {
           async container => replaceTemplatesWithValues(
             container,
             deployTemplateMapping,
-            ref => prepRef(ref, config[FETCH_CONFIG].extractReferencesFromFreeText)
+            prepRef,
           )
         )
       } catch (e) {

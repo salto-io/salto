@@ -39,7 +39,7 @@
     "@salto-io/suitecloud-cli": "1.6.2-salto-4",
     "ajv": "^7.1.1",
     "async-lock": "^1.2.4",
-    "axios": "^0.26.1",
+    "axios": "1.6.0",
     "axios-retry": "^3.1.9",
     "bottleneck": "^2.19.5",
     "compare-versions": "4.1.3",

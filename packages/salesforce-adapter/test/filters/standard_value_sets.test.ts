@@ -119,7 +119,11 @@ describe('Standard Value Sets filter', () => {
   ): Promise<FilterType> => {
     const elementsSource = buildElementsSourceFromElements([svsInstanceFromSource])
     const fetchProfile = isFetchWithChangesDetection
-      ? await buildFetchProfileForFetchWithChangesDetection({ fetchParams: {}, elementsSource })
+      ? await buildFetchProfileForFetchWithChangesDetection({
+        fetchParams: {},
+        elementsSource,
+        relatedPropsByMetadataTypePromise: Promise.resolve({ CustomObject: {} }),
+      })
       : defaultFilterContext.fetchProfile
     return makeFilter(
       new Set<string>(['Simpsons', 'Numbers'])

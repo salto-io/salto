@@ -19,15 +19,25 @@ import {
   ElemID, toChange, isInstanceElement, isObjectType, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { collections, promises } from '@salto-io/lowerdash'
+import { collections, multiIndex, promises } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { TOPICS_FOR_OBJECTS_FIELDS, TOPICS_FOR_OBJECTS_ANNOTATION, TOPICS_FOR_OBJECTS_METADATA_TYPE, SALESFORCE } from '../constants'
 import { isCustomObject, apiName, createInstanceElement, metadataAnnotationTypes, MetadataTypeAnnotations } from '../transformers/transformer'
 import { LocalFilterCreator } from '../filter'
 import { TopicsForObjectsInfo } from '../client/types'
-import { apiNameSync, boolValue, getInstancesOfMetadataType, isInstanceOfTypeChange, metadataTypeSync } from './utils'
+import {
+  apiNameSync,
+  boolValue,
+  getInstancesOfMetadataType,
+  isCustomObjectSync,
+  isInstanceOfTypeChange,
+  metadataTypeSync,
+} from './utils'
 
 const { awu } = collections.asynciterable
 const { removeAsync } = promises.array
+const log = logger(module)
 
 const { ENABLE_TOPICS, ENTITY_API_NAME } = TOPICS_FOR_OBJECTS_FIELDS
 
@@ -58,9 +68,24 @@ const createTopicsForObjectsInstance = (values: TopicsForObjectsInfo): InstanceE
   )
 )
 
-const filterCreator: LocalFilterCreator = () => ({
+type CustomObjectWithTopics = ObjectType & {
+  annotations: {
+    [TOPICS_FOR_OBJECTS_ANNOTATION]: {
+      [ENABLE_TOPICS]: boolean
+    }
+  }
+}
+
+const isCustomObjectWithTopics = (element: Element): element is CustomObjectWithTopics => (
+  isCustomObjectSync(element) && _.isBoolean(getTopicsForObjects(element)[ENABLE_TOPICS])
+)
+
+const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'topicsForObjectsFilter',
   onFetch: async (elements: Element[]): Promise<void> => {
+    if (!config.fetchProfile.metadataQuery.isTypeMatch(TOPICS_FOR_OBJECTS_METADATA_TYPE)) {
+      log.debug('skipping topicsForObjectsFilter since the MetadataType TopicsForObjects is excluded')
+    }
     const customObjectTypes = await awu(elements).filter(isCustomObject).toArray() as ObjectType[]
     if (_.isEmpty(customObjectTypes)) {
       return
@@ -68,10 +93,13 @@ const filterCreator: LocalFilterCreator = () => ({
 
     const topicsForObjectsInstances = await getInstancesOfMetadataType(elements,
       TOPICS_FOR_OBJECTS_METADATA_TYPE)
-    if (_.isEmpty(topicsForObjectsInstances)) {
-      return
-    }
 
+    const isTopicsEnabledForObjectFromSourcePromise = multiIndex.keyByAsync({
+      iter: awu(await buildElementsSourceFromElements(elements).getAll()),
+      filter: isCustomObjectWithTopics,
+      key: obj => [apiNameSync(obj) ?? ''],
+      map: obj => obj.annotations.topicsForObjects.enableTopics,
+    })
     const topicsPerObject = topicsForObjectsInstances.map(instance =>
       ({ [instance.value[ENTITY_API_NAME]]: boolValue(instance.value[ENABLE_TOPICS]) }))
     const topics: Record<string, boolean> = _.merge({}, ...topicsPerObject)
@@ -81,9 +109,15 @@ const filterCreator: LocalFilterCreator = () => ({
       const fullName = await apiName(obj)
       if (Object.keys(topics).includes(fullName)) {
         setTopicsForObjects(obj, topics[fullName])
+      } else {
+        const isTopicsEnabled = (await isTopicsEnabledForObjectFromSourcePromise).get(fullName)
+        if (isTopicsEnabled === undefined) {
+          log.error('expected isTopicsEnabled to be defined in Elements source for %s', fullName)
+          return
+        }
+        setTopicsForObjects(obj, isTopicsEnabled)
       }
     })
-
     // Remove TopicsForObjects Instances & and set the MetadataType as hidden to avoid information duplication
     const topicsForObjectType = elements
       .filter(isObjectType)

@@ -19,7 +19,7 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Change, ElemID, SaltoElementError, getChangeData, isAdditionChange } from '@salto-io/adapter-api'
 import { FILE, FOLDER } from '../constants'
-import { CustomizationInfo, CustomTypeInfo, DeployableChange, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from './types'
+import { CustomizationInfo, CustomTypeInfo, DeployableChange, FileCustomizationInfo, FolderCustomizationInfo, SDFObjectChangeType, TemplateCustomTypeInfo } from './types'
 import { NetsuiteTypesQueryParams } from '../query'
 import { ConfigRecord } from './suiteapp_client/types'
 import { isFileCabinetInstance } from '../types'
@@ -151,12 +151,7 @@ export const getDeployResultFromSuiteAppResult = <T extends Change>(
 
 export const getChangeTypeAndAddedObjects = (
   change: DeployableChange & { action: 'add' | 'modify' }
-): {
-  changeType: 'addition'
-} | {
-  changeType: 'modification'
-  addedObjects: Set<string>
-} => {
+): SDFObjectChangeType => {
   if (isAdditionChange(change)) {
     return { changeType: 'addition' }
   }

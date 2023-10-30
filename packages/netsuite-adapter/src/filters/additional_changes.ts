@@ -23,9 +23,9 @@ import { isStandardInstanceOrCustomRecordType } from '../types'
 
 const getFieldParentChanges = (
   fieldChanges: (AdditionChange<Field> | ModificationChange<Field>)[],
-  allChanges: Change[]
+  sdfChanges: Change[]
 ): ModificationChange<ObjectType>[] => {
-  const elemIdSet = new Set(allChanges.map(getChangeData).map(elem => elem.elemID.getFullName()))
+  const elemIdSet = new Set(sdfChanges.map(getChangeData).map(elem => elem.elemID.getFullName()))
   const afterFieldsByParent = _.groupBy(
     fieldChanges.map(change => change.data.after),
     field => field.parent.elemID.getFullName(),
@@ -64,7 +64,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
       .filter(change => isStandardInstanceOrCustomRecordType(change.data.after))
 
     const [fieldChanges, typesAndInstancesChanges] = _.partition(sdfChanges, isFieldChange)
-    const fieldParentChanges = getFieldParentChanges(fieldChanges, changes)
+    const fieldParentChanges = getFieldParentChanges(fieldChanges, sdfChanges)
 
     const requiredElements = (await getReferencedElements(
       typesAndInstancesChanges.concat(fieldParentChanges).map(change => change.data.after),

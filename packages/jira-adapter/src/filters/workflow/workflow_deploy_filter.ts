@@ -209,8 +209,8 @@ const deployWithClone = async (
   const deployInstance = getChangeData(resolvedChangeForDeployment)
 
   if (isAdditionChange(resolvedChange) && await doesWorkflowExist(client, deployInstance.value.name)) {
-    log.warn(`A workflow with the name "${deployInstance.value.name}" is already exist`)
-    throw new Error(`A workflow with the name "${deployInstance.value.name}" is already exist`)
+    log.warn(`A workflow with the name "${deployInstance.value.name}" already exists`)
+    throw new Error(`A workflow with the name "${deployInstance.value.name}" already exists`)
   }
 
   if (!isRemovalChange(resolvedChange)) {

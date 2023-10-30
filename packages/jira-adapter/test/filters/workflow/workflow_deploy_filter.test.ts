@@ -1230,7 +1230,7 @@ describe('workflowDeployFilter', () => {
       const { deployResult: { errors, appliedChanges } } = await filter.deploy([change])
 
       expect(errors).toHaveLength(1)
-      expect(errors[0].message).toBe('Error: A workflow with the name "name" is already exist')
+      expect(errors[0].message).toBe('Error: A workflow with the name "name" already exists')
       expect(appliedChanges).toHaveLength(0)
     })
 

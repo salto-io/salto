@@ -126,12 +126,18 @@ export class InvalidSuiteAppCredentialsError extends Error {
 
 export type DeployableChange = Change<ObjectType | InstanceElement>
 
+export type SDFObjectChangeType = {
+  changeType: 'addition'
+} | {
+  changeType: 'modification'
+  addedObjects: Set<string>
+}
+
 export type SDFObjectNode = {
   change: DeployableChange
   serviceid: string
-  changeType: 'addition' | 'modification'
   customizationInfo: CustomizationInfo
-}
+} & SDFObjectChangeType
 
 export const getNodeId = (elemId: ElemID): string => elemId.getFullName()
 

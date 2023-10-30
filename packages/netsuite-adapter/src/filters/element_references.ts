@@ -23,7 +23,7 @@ import { SCRIPT_ID, PATH, FILE_CABINET_PATH_SEPARATOR } from '../constants'
 import { LocalFilterCreator } from '../filter'
 import { isCustomRecordType, isStandardType, isFileCabinetType, isFileInstance, isFileCabinetInstance, isCustomFieldName } from '../types'
 import { ElemServiceID, LazyElementsSourceIndexes, ServiceIdRecords } from '../elements_source_index/types'
-import { captureServiceIdInfo, ServiceIdInfo } from '../service_id_info'
+import { captureServiceIdInfo, getServiceIdsToElemIds, ServiceIdInfo } from '../service_id_info'
 import { isSdfCreateOrUpdateGroupId } from '../group_changes'
 import { getLookUpName } from '../transformer'
 import { getGroupItemFromRegex } from '../client/utils'
@@ -43,43 +43,6 @@ const semanticReferenceRegex = new RegExp(`("|')(?<${OPTIONAL_REFS}>.*?)\\1`, 'g
 const nsConfigRegex = new RegExp(`\\*\\s@N\\w+\\s+(?<${OPTIONAL_REFS}>.*)`, 'gm')
 const pathPrefixRegex = new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}|^\\.${FILE_CABINET_PATH_SEPARATOR}|^\\.\\.${FILE_CABINET_PATH_SEPARATOR}`, 'm')
 
-const getServiceIdsToElemIds = async (
-  element: Element,
-  elementsSource?: ReadOnlyElementsSource
-): Promise<ServiceIdRecords> => {
-  const serviceIdsToElemIds: ServiceIdRecords = {}
-  const parentElemIdFullNameToServiceId: Record<string, string> = {}
-
-  const getClosestParentServiceId = (elemID: ElemID): string | undefined => {
-    const parentElemId = elemID.createParentID()
-    if (parentElemId.isTopLevel()) {
-      return parentElemIdFullNameToServiceId[parentElemId.getFullName()]
-    }
-    if (Object.keys(parentElemIdFullNameToServiceId).includes(parentElemId.getFullName())) {
-      return parentElemIdFullNameToServiceId[parentElemId.getFullName()]
-    }
-    return getClosestParentServiceId(parentElemId)
-  }
-
-  const addFullServiceIdsCallback: TransformFunc = ({ value, path }) => {
-    if (path?.name === SCRIPT_ID) {
-      const parentServiceId = getClosestParentServiceId(path)
-      const resolvedServiceId = _.isUndefined(parentServiceId) ? value : `${parentServiceId}.${value}`
-      parentElemIdFullNameToServiceId[path.createParentID().getFullName()] = resolvedServiceId
-      serviceIdsToElemIds[resolvedServiceId] = { elemID: path, serviceID: value }
-    }
-    return value
-  }
-
-  await transformElement({
-    element,
-    transformFunc: addFullServiceIdsCallback,
-    strict: false,
-    elementsSource,
-  })
-  return serviceIdsToElemIds
-}
-
 const shouldExtractToGenereatedDependency = (serviceIdInfoRecord: ServiceIdInfo): boolean =>
   serviceIdInfoRecord.appid !== undefined
   || serviceIdInfoRecord.bundleid !== undefined
@@ -91,7 +54,7 @@ export const getElementServiceIdRecords = async (
 ): Promise<ServiceIdRecords> => {
   if (isInstanceElement(element)) {
     if (isStandardType(element.refType)) {
-      return getServiceIdsToElemIds(element, elementsSource)
+      return getServiceIdsToElemIds(element)
     }
     if (isFileCabinetType(element.refType)) {
       const path = element.value[PATH]
@@ -113,7 +76,7 @@ export const getElementServiceIdRecords = async (
     }
   }
   if (isObjectType(element) && isCustomRecordType(element)) {
-    return getServiceIdsToElemIds(element, elementsSource)
+    return getServiceIdsToElemIds(element)
   }
   return {}
 }

@@ -149,6 +149,7 @@ import fetchJsmTypesFilter from './filters/jsm_types_fetch_filter'
 import deployJsmTypesFilter from './filters/jsm_types_deploy_filter'
 import jsmPathFilter from './filters/jsm_paths'
 import portalSettingsFilter from './filters/portal_settings'
+import AssestsSchemaFetchFilter from './filters/assests/assests_schema'
 import queueDeleteFilter from './filters/queue_delete'
 import scriptRunnerInstancesDeploy from './filters/script_runner/script_runner_instances_deploy'
 import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
@@ -279,6 +280,7 @@ export const DEFAULT_FILTERS = [
   // Must run after issueLayoutFilter
   removeSimpleFieldProjectFilter,
   requestTypeLayoutsFilter,
+  AssestsSchemaFetchFilter,
   createReferencesIssueLayoutFilter,
   // Must run after createReferencesIssueLayoutFilter
   requestTypelayoutsToValuesFilter,

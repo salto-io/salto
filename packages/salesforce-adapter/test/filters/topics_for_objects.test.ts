@@ -108,7 +108,11 @@ describe('Topics for objects filter', () => {
         const elementsSource = buildElementsSourceFromElements([typeInSource])
         filter = filterCreator({ config: {
           ...defaultFilterContext,
-          fetchProfile: await buildFetchProfileForFetchWithChangesDetection({ fetchParams: {}, elementsSource }),
+          fetchProfile: await buildFetchProfileForFetchWithChangesDetection({
+            fetchParams: {},
+            elementsSource,
+            relatedPropsByMetadataTypePromise: Promise.resolve({ CustomObject: {} }),
+          }),
         } }) as typeof filter
         elements.push(typeWithNonModifiedTopicsForObjects)
       })

@@ -56,7 +56,6 @@ import { FetchElements, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
 import * as fetchModule from '../src/fetch'
 import { fetchMetadataInstances, retrieveMetadataInstances } from '../src/fetch'
 import * as xmlTransformerModule from '../src/transformers/xml_transformer'
-import * as metadataQueryModule from '../src/fetch_profile/metadata_query'
 import {
   CUSTOM_OBJECT,
   DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
@@ -1507,18 +1506,30 @@ public class LargeClass${index} {
       let toRetrieveRequestSpy: jest.SpyInstance
 
       beforeEach(async () => {
-        toRetrieveRequestSpy = jest.spyOn(xmlTransformerModule, 'toRetrieveRequest')
-        const actualMetadataQuery = jest.requireActual('../src/fetch_profile/metadata_query')
-        jest.spyOn(metadataQueryModule, 'buildMetadataQuery').mockReturnValue({
-          ...actualMetadataQuery,
-          buildMetadataQuery: jest.fn().mockImplementation(args => ({
-            ...actualMetadataQuery.buildMetadataQuery(args),
-            getFolderPathsByName: jest.fn().mockReturnValue({
-              ReportsFolder: 'ReportsFolder',
-              NestedFolder: 'ReportsFolder/NestedFolder',
-            }),
-          })),
-        })
+        toRetrieveRequestSpy = jest.spyOn(xmlTransformerModule, 'toRetrieveRequest');
+        ({ connection, adapter } = mockAdapter({
+          adapterParams: {
+            getElemIdFunc: mockGetElemIdFunc,
+            config: {
+              fetch: {
+                optionalFeatures: {
+                  fixRetrieveFilePaths: true,
+                },
+                metadata: {
+                  include: [
+                    { metadataType: '.*' },
+                    { metadataType: 'ReportFolder', name: 'ReportFolder' },
+                    { metadataType: 'ReportFolder', name: 'ReportFolder/NestedFolder' },
+                  ],
+                },
+              },
+              maxItemsInRetrieveRequest: testMaxItemsInRetrieveRequest,
+              client: {
+                readMetadataChunkSize: { default: 3, overrides: { Test: 2 } },
+              },
+            },
+          },
+        }))
 
         mockMetadataTypes(
           [

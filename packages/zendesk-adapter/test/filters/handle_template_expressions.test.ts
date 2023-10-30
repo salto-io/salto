@@ -233,7 +233,7 @@ describe('handle templates filter', () => {
       value: [
         ['my test', '{{dc.dynamic_content_test}}'],
         ['dcno', '{{dc.not_exists}}'],
-        ['testJson', `{\n\t"ticket": {\n\t\t"custom_fields": [\n\t\t\t{\n\t\t\t\t"id": ${placeholder1.value.id},\n\t\t\t\t"testdc": "${dynamicContentRecord.value.placeholder}"\n\t\t\t}\n\t\t],\n\t\t"id": ${placeholder2.value.id}\n\t},\n\t"id": ${placeholder3.value.id}\n}\n`],
+        ['testJson', `{\n\t"ticket": {\n\t\t"custom_fields": [\n\t\t\t{\n\t\t\t\t"id": ${placeholder3.value.id},\n\t\t\t\t"testdc": "${dynamicContentRecord.value.placeholder}"\n\t\t\t}\n\t\t],\n\t\t"id": ${placeholder2.value.id}\n\t},\n\t"id": ${placeholder3.value.id}\n}\n`],
       ],
     }] })
   const webhook = new InstanceElement('webhook', webhookType, { id: newId(), endpoint: `endpoint: {{ticket.ticket_field_${placeholder1.value.id}}}` })
@@ -318,7 +318,7 @@ describe('handle templates filter', () => {
         ['my test', new TemplateExpression({ parts: ['{{', new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord), '}}'] })],
         ['dcno', new TemplateExpression({ parts: ['{{', new ReferenceExpression(missingDynamicContentRecord.elemID, missingDynamicContentRecord), '}}'] })],
         ['testJson', new TemplateExpression({ parts: [
-          `{\n\t"ticket": {\n\t\t"custom_fields": [\n\t\t\t{\n\t\t\t\t"id": ${placeholder1.value.id},\n\t\t\t\t"testdc": "{{`,
+          `{\n\t"ticket": {\n\t\t"custom_fields": [\n\t\t\t{\n\t\t\t\t"id": ${placeholder3.value.id},\n\t\t\t\t"testdc": "{{`,
           new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord),
           `}}"\n\t\t\t}\n\t\t],\n\t\t"id": ${placeholder2.value.id}\n\t},\n\t"id": ${placeholder3.value.id}\n}\n`,
         ] })],
@@ -498,7 +498,7 @@ describe('handle templates filter', () => {
       const fetchedTrigger = elements.filter(isInstanceElement).find(i => i.elemID.name === 'trigger')
       expect(fetchedTrigger?.value.actions[0].value[2][1]).toEqual(new TemplateExpression({ parts: [
         '{\n\t"ticket": {\n\t\t"custom_fields": [\n\t\t\t{\n\t\t\t\t"id": ',
-        new ReferenceExpression(placeholder1.elemID, placeholder1),
+        new ReferenceExpression(placeholder3.elemID, placeholder3),
         ',\n\t\t\t\t"testdc": "{{',
         new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord),
         '}}"\n\t\t\t}\n\t\t],\n\t\t"id": ',

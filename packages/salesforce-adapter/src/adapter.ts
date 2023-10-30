@@ -409,13 +409,11 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.client = client
     this.elementsSource = elementsSource
 
-    const relatedPropsByMetadataTypePromise = retrieveRelatedPropsByMetadataType(this.client)
-
     this.fetchProfilePromise = isFetchWithChangesDetection
       ? buildFetchProfileForFetchWithChangesDetection({
         fetchParams: config.fetch ?? {},
         elementsSource,
-        relatedPropsByMetadataTypePromise,
+        relatedPropsByMetadataTypePromise: retrieveRelatedPropsByMetadataType(this.client),
       })
       : Promise.resolve(buildFetchProfile({
         fetchParams: config.fetch ?? {},

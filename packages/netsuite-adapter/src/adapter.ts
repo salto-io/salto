@@ -16,7 +16,7 @@
 import {
   FetchResult, AdapterOperations, DeployOptions, ElemIdGetter, ReadOnlyElementsSource, ProgressReporter,
   FetchOptions, DeployModifiers, getChangeData, isObjectType, isInstanceElement, ElemID, isSaltoElementError,
-  setPartialFetchData,
+  setPartialFetchData, InstanceElement, ObjectType, TypeElement,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -62,9 +62,9 @@ import additionalChanges from './filters/additional_changes'
 import addInstancesFetchTime from './filters/add_instances_fetch_time'
 import addAliasFilter from './filters/add_alias'
 import addBundleReferences from './filters/bundle_ids'
-import { Filter, LocalFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreator, RemoteFilterCreatorDefinition } from './filter'
+import { Filter, LocalFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreator, RemoteFilterCreatorDefinition, RemoteFilterOpts } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_VALIDATE, AdditionalDependencies, DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB, shouldExcludeBins } from './config'
-import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams, getFixedTargetFetch } from './query'
+import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams, getFixedTargetFetch, ObjectID } from './query'
 import { getLastServerTime, getOrCreateServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
 import { FetchDeletionResult, getDeletedElements } from './deletion_calculator'
@@ -74,13 +74,13 @@ import { createElementsSourceIndex } from './elements_source_index/elements_sour
 import getChangeValidator from './change_validator'
 import dependencyChanger from './dependency_changer'
 import { cloneChange } from './change_validators/utils'
-import { FetchByQueryFunc, FetchByQueryReturnType } from './change_validators/safe_deploy'
+import { FetchByQueryFailures, FetchByQueryFunc, FetchByQueryReturnType } from './change_validators/safe_deploy'
 import { getChangeGroupIdsFunc } from './group_changes'
 import { getCustomRecords } from './custom_records/custom_records'
 import { getDataElements } from './data_elements/data_elements'
 import { getStandardTypesNames } from './autogen/types'
 import { getConfigTypes, toConfigElements } from './suiteapp_config_elements'
-import { ConfigRecord } from './client/suiteapp_client/types'
+import { ImportFileCabinetResult } from './client/types'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -175,11 +175,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly skipList?: NetsuiteQueryParameters // old version
   private readonly useChangesDetection: boolean | undefined // TODO remove this from config SALTO-3676
   private createFiltersRunner: (params: {
-    isPartial?: boolean
-    changesGroupId?: string
-    fetchTime?: Date
-    timeZoneAndFormat?: TimeZoneAndFormat
-    deletedElements?: ElemID[]
+    operation: 'fetch'
+    isPartial: boolean
+    fetchTime: Date | undefined
+    timeZoneAndFormat: TimeZoneAndFormat
+    deletedElements: ElemID[]
+  } | {
+    operation: 'deploy'
+    changesGroupId: string
   }) => Required<Filter>
 
   public constructor({
@@ -221,21 +224,36 @@ export default class NetsuiteAdapter implements AdapterOperations {
         files: config.deploy?.additionalDependencies?.exclude?.files ?? [],
       },
     }
-    this.createFiltersRunner = (
-      { isPartial = false, changesGroupId, fetchTime, timeZoneAndFormat, deletedElements }
-    ) => filter.filtersRunner(
-      {
-        client: this.client,
-        elementsSourceIndex: createElementsSourceIndex(this.elementsSource, isPartial, deletedElements),
-        elementsSource: this.elementsSource,
-        isPartial,
-        config,
-        timeZoneAndFormat,
-        changesGroupId,
-        fetchTime,
-      },
-      filtersCreators,
-    )
+    this.createFiltersRunner = params => {
+      const getFilterOpts = (): RemoteFilterOpts => {
+        switch (params.operation) {
+          case 'fetch':
+            return {
+              client: this.client,
+              elementsSourceIndex: createElementsSourceIndex(
+                this.elementsSource, params.isPartial, params.deletedElements
+              ),
+              elementsSource: this.elementsSource,
+              isPartial: params.isPartial,
+              config,
+              timeZoneAndFormat: params.timeZoneAndFormat,
+              fetchTime: params.fetchTime,
+            }
+          case 'deploy':
+            return {
+              client: this.client,
+              elementsSourceIndex: createElementsSourceIndex(this.elementsSource, false),
+              elementsSource: this.elementsSource,
+              isPartial: false,
+              config,
+              changesGroupId: params.changesGroupId,
+            }
+          default:
+            throw new Error('unknown operation param')
+        }
+      }
+      return filter.filtersRunner(getFilterOpts(), filtersCreators)
+    }
   }
 
   public fetchByQuery: FetchByQueryFunc = async (
@@ -245,91 +263,111 @@ export default class NetsuiteAdapter implements AdapterOperations {
     isPartial: boolean
   ): Promise<FetchByQueryReturnType> => {
     const configRecords = await this.client.getConfigRecords()
+    const timeZoneAndFormat = getTimeDateFormat(configRecords)
     const {
       changedObjectsQuery,
       serverTime,
-      timeZoneAndFormat,
     } = await this.runSuiteAppOperations(
       fetchQuery,
       useChangesDetection,
-      configRecords,
+      timeZoneAndFormat,
     )
     const updatedFetchQuery = changedObjectsQuery !== undefined
       ? andQuery(changedObjectsQuery, fetchQuery)
       : fetchQuery
 
-    const serverTimeElements = serverTime !== undefined
-      ? await getOrCreateServerTimeElements(
-        serverTime,
-        this.elementsSource,
-        isPartial,
+    const importFileCabinetContent = async (): Promise<ImportFileCabinetResult> => {
+      progressReporter.reportProgress({ message: 'Fetching file cabinet items' })
+      const result = await this.client.importFileCabinetContent(
+        updatedFetchQuery,
+        this.userConfig.client?.maxFileCabinetSizeInGB ?? DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB
       )
-      : []
+      progressReporter.reportProgress({ message: 'Fetching instances' })
+      return result
+    }
 
-    const dataElementsPromise = getDataElements(this.client, fetchQuery, this.getElemIdFunc)
+    const getStandardAndCustomElements = async (): Promise<{
+      standardInstances: InstanceElement[]
+      standardTypes: TypeElement[]
+      customRecordTypes: ObjectType[]
+      customRecords: InstanceElement[]
+      instancesIds: ObjectID[]
+      failures: FetchByQueryFailures
+    }> => {
+      const [
+        { elements: fileCabinetContent, failedPaths: failedFilePaths },
+        { elements: customObjects, instancesIds, failedToFetchAllAtOnce, failedTypes },
+        bundlesList,
+      ] = await Promise.all([
+        importFileCabinetContent(),
+        this.client.getCustomObjects(getStandardTypesNames(), {
+          updatedFetchQuery,
+          originFetchQuery: fetchQuery,
+        }),
+        this.client.getInstalledBundles(),
+      ])
+      const bundlesCustomInfo = bundlesList.map(bundle => ({
+        typeName: BUNDLE,
+        values: { ...bundle, id: bundle.id.toString() },
+      }))
+      // TODO: remove this log when SALTO-2602 is open for all customers
+      log.debug(
+        'The following bundle ids are missing in the bundle record: %o',
+        bundlesCustomInfo.map(bundle => [
+          bundle.values.id,
+          bundle.values.installedFrom?.toUpperCase(),
+          bundle.values.publisher,
+        ])
+      )
+      const elementsToCreate = [
+        ...customObjects,
+        ...fileCabinetContent,
+        ...(this.userConfig.fetch.addBundles ? bundlesCustomInfo : []),
+      ]
+      const elements = await createElements(elementsToCreate, this.elementsSource, this.getElemIdFunc)
+      const [standardInstances, types] = _.partition(elements, isInstanceElement)
+      const [objectTypes, otherTypes] = _.partition(types, isObjectType)
+      const [customRecordTypes, standardTypes] = _.partition(objectTypes, isCustomRecordType)
+      const { elements: customRecords, largeTypesError: failedCustomRecords } = await getCustomRecords(
+        this.client,
+        customRecordTypes,
+        fetchQuery,
+        this.getElemIdFunc
+      )
+      return {
+        standardInstances,
+        standardTypes: [...standardTypes, ...otherTypes],
+        customRecordTypes,
+        customRecords,
+        instancesIds,
+        failures: { failedCustomRecords, failedFilePaths, failedToFetchAllAtOnce, failedTypes },
+      }
+    }
 
-    const getCustomObjectsResult = this.client.getCustomObjects(
-      getStandardTypesNames(),
-      { updatedFetchQuery, originFetchQuery: fetchQuery }
-    )
-    const importFileCabinetResult = this.client.importFileCabinetContent(
-      updatedFetchQuery,
-      this.userConfig.client?.maxFileCabinetSizeInGB ?? DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB
-    )
-    progressReporter.reportProgress({ message: 'Fetching file cabinet items' })
-
-    const bundlesCustomInfo = (await this.client.getInstalledBundles())
-      .map(bundle => ({ typeName: BUNDLE, values: { ...bundle, id: bundle.id.toString() } }))
-    // TODO: remove this log when SALTO-2602 is open for all customers
-    log.debug('The following bundle ids are missing in the bundle record: %o', bundlesCustomInfo.map(bundle => [bundle.values.id, bundle.values.installedFrom?.toUpperCase(), bundle.values.publisher]))
-    const {
-      elements: fileCabinetContent,
-      failedPaths: failedFilePaths,
-    } = await importFileCabinetResult
-    log.debug('importFileCabinetContent: fetched %d fileCabinet elements', fileCabinetContent.length)
-
-    progressReporter.reportProgress({ message: 'Fetching instances' })
-    const {
-      elements: customObjects,
-      instancesIds,
-      failedToFetchAllAtOnce,
-      failedTypes,
-    } = await getCustomObjectsResult
+    const [
+      {
+        standardInstances,
+        standardTypes,
+        customRecordTypes,
+        customRecords,
+        instancesIds,
+        failures,
+      },
+      { elements: dataElements, requestedTypes: requestedDataTypes, largeTypesError: dataTypeError },
+    ] = await Promise.all([
+      getStandardAndCustomElements(),
+      getDataElements(this.client, fetchQuery, this.getElemIdFunc),
+    ])
 
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
-    const elementsToCreate = [
-      ...customObjects,
-      ...fileCabinetContent,
-      ...(this.userConfig.fetch.addBundles ? bundlesCustomInfo : []),
-    ]
-    const baseElements = await createElements(
-      elementsToCreate,
-      this.elementsSource,
-      this.getElemIdFunc,
-    )
 
-    const customRecordTypes = baseElements.filter(isObjectType).filter(isCustomRecordType)
-
-    const customRecordsPromise = getCustomRecords(
-      this.client,
-      customRecordTypes,
-      fetchQuery,
-      this.getElemIdFunc
-    )
-
-    const {
-      elements: dataElements,
-      requestedTypes: requestedDataTypes,
-      largeTypesError: dataTypeError,
-    } = await dataElementsPromise
-    failedTypes.excludedTypes = failedTypes.excludedTypes.concat(dataTypeError)
+    failures.failedTypes.excludedTypes = failures.failedTypes.excludedTypes.concat(dataTypeError)
     const suiteAppConfigElements = this.client.isSuiteAppConfigured()
       ? toConfigElements(configRecords, fetchQuery).concat(getConfigTypes())
       : []
-    const { elements: customRecords, largeTypesError: failedCustomRecords } = await customRecordsPromise
 
     // we calculate deleted elements only in partial-fetch mode
-    const { deletedElements, errors: deletedElementErrors }: FetchDeletionResult = (
+    const { deletedElements = [], errors: deletedElementErrors }: FetchDeletionResult = (
       isPartial && this.withPartialDeletion !== false) ? await getDeletedElements({
         client: this.client,
         elementsSource: this.elementsSource,
@@ -341,25 +379,30 @@ export default class NetsuiteAdapter implements AdapterOperations {
         serviceDataElements: dataElements.filter(isInstanceElement),
       }) : {}
 
+    const serverTimeElements = serverTime !== undefined
+      ? await getOrCreateServerTimeElements(serverTime, this.elementsSource, isPartial)
+      : []
+
     const elements = [
-      ...baseElements,
+      ...standardInstances,
+      ...standardTypes,
+      ...customRecordTypes,
+      ...customRecords,
       ...dataElements,
       ...suiteAppConfigElements,
       ...serverTimeElements,
-      ...customRecords,
     ]
 
-    await this.createFiltersRunner(
-      { isPartial, fetchTime: serverTime, timeZoneAndFormat, deletedElements }
-    ).onFetch(elements)
+    await this.createFiltersRunner({
+      operation: 'fetch',
+      isPartial,
+      fetchTime: serverTime,
+      timeZoneAndFormat,
+      deletedElements,
+    }).onFetch(elements)
 
     return {
-      failures: {
-        failedToFetchAllAtOnce,
-        failedFilePaths,
-        failedTypes,
-        failedCustomRecords,
-      },
+      failures,
       elements,
       deletedElements,
       deletedElementErrors,
@@ -430,12 +473,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private async runSuiteAppOperations(
     fetchQuery: NetsuiteQuery,
     useChangesDetection: boolean,
-    configRecords: ConfigRecord[],
+    timeZoneAndFormat: TimeZoneAndFormat,
   ):
     Promise<{
       changedObjectsQuery?: NetsuiteQuery
       serverTime?: Date
-      timeZoneAndFormat?: TimeZoneAndFormat
     }> {
     const sysInfo = await this.client.getSystemInformation()
     if (sysInfo === undefined) {
@@ -453,10 +495,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
       log.debug('Failed to get last fetch time')
       return { serverTime: sysInfo.time }
     }
-    const timeZoneAndFormat = getTimeDateFormat(configRecords)
     if (timeZoneAndFormat?.format === undefined) {
-      log.warn('Failed to get date format, skipping SuiteApp operations')
-      return { serverTime: sysInfo.time, timeZoneAndFormat }
+      log.warn('Failed to get date format, skipping changes detection')
+      return { serverTime: sysInfo.time }
     }
     const serviceIdToLastFetchDate = await getLastServiceIdToFetchTime(this.elementsSource)
     const changedObjectsQuery = await getChangedObjects(
@@ -466,7 +507,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       serviceIdToLastFetchDate,
     )
 
-    return { changedObjectsQuery, serverTime: sysInfo.time, timeZoneAndFormat }
+    return { changedObjectsQuery, serverTime: sysInfo.time }
   }
 
   private static getDeployErrors(
@@ -500,7 +541,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
   public async deploy({ changeGroup: { changes, groupID } }: DeployOptions): Promise<DeployResult> {
     const changesToDeploy = changes.map(cloneChange)
-    const filtersRunner = this.createFiltersRunner({ changesGroupId: groupID })
+    const filtersRunner = this.createFiltersRunner({ operation: 'deploy', changesGroupId: groupID })
     await filtersRunner.preDeploy(changesToDeploy)
 
     const deployResult = await this.client.deploy(
@@ -537,7 +578,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
           ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
         validate: this.validateBeforeDeploy,
         additionalDependencies: this.additionalDependencies,
-        filtersRunner: changesGroupId => this.createFiltersRunner({ changesGroupId }),
+        filtersRunner: changesGroupId => this.createFiltersRunner({ operation: 'deploy', changesGroupId }),
         elementsSource: this.elementsSource,
         validatorsActivationConfig: this.userConfig.deploy?.changeValidators,
       }),

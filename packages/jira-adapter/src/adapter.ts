@@ -115,8 +115,10 @@ import allowedPermissionsSchemeFilter from './filters/permission_scheme/allowed_
 import automationLabelFetchFilter from './filters/automation/automation_label/label_fetch'
 import automationLabelDeployFilter from './filters/automation/automation_label/label_deployment'
 import deployDcIssueEventsFilter from './filters/data_center/issue_events'
+import requestTypelayoutsToValuesFilter from './filters/layouts/request_types_layouts_to_values'
 import prioritySchemeFetchFilter from './filters/data_center/priority_scheme/priority_scheme_fetch'
 import prioritySchemeDeployFilter from './filters/data_center/priority_scheme/priority_scheme_deploy'
+import requestTypeLayoutsFilter from './filters/layouts/request_type_request_form'
 import prioritySchemeProjectAssociationFilter from './filters/data_center/priority_scheme/priority_scheme_project_association'
 import { GetUserMapFunc, getUserMapFuncCreator } from './users'
 import commonFilters from './filters/common'
@@ -146,6 +148,7 @@ import scriptedFragmentsDeployFilter from './filters/script_runner/scripted_frag
 import fetchJsmTypesFilter from './filters/jsm_types_fetch_filter'
 import deployJsmTypesFilter from './filters/jsm_types_deploy_filter'
 import jsmPathFilter from './filters/jsm_paths'
+import portalSettingsFilter from './filters/portal_settings'
 import queueDeleteFilter from './filters/queue_delete'
 import scriptRunnerInstancesDeploy from './filters/script_runner/script_runner_instances_deploy'
 import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
@@ -275,7 +278,10 @@ export const DEFAULT_FILTERS = [
   fetchJsmTypesFilter,
   // Must run after issueLayoutFilter
   removeSimpleFieldProjectFilter,
+  requestTypeLayoutsFilter,
   createReferencesIssueLayoutFilter,
+  // Must run after createReferencesIssueLayoutFilter
+  requestTypelayoutsToValuesFilter,
   // Must run after fieldReferencesFilter
   contextsProjectsFilter,
   // must run after contextsProjectsFilter
@@ -315,6 +321,7 @@ export const DEFAULT_FILTERS = [
   // must be done before scriptRunnerInstances
   scriptedFragmentsDeployFilter,
   scriptRunnerInstancesDeploy,
+  portalSettingsFilter,
   queueDeleteFilter,
   portalGroupsFilter,
   deployJsmTypesFilter,

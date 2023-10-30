@@ -40,6 +40,8 @@ import ZendeskClient from '../../client/client'
 
 const { TYPES_PATH, SUBTYPES_PATH, RECORDS_PATH, SETTINGS_NESTED_PATH } = elementsUtils
 
+export const createOrderPosition = (position: number): number => (position + 1) * 100 // (SALTO-4654)
+
 export type DeployFuncType = (
   change: Change<InstanceElement>,
   client: ZendeskClient,
@@ -200,7 +202,7 @@ export const deployFuncCreator = (fieldName: string): DeployFuncType =>
         elemID: getChangeData(change).elemID,
       })
     }
-    const idsWithPositions = ids.map((id, position) => ({ id, position: position + 1 }))
+    const idsWithPositions = ids.map((id, position) => ({ id, position: createOrderPosition(position) }))
     instance.value[fieldName] = idsWithPositions
     delete instance.value.ids
     await deployChange(clonedChange, client, apiDefinitions)

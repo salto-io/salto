@@ -66,7 +66,7 @@ const orderChildrenDifferentParent = (
       .filter(child => orderParent !== getChildParent(child)?.value.elemID.getFullName())
     return wrongParentChildren.length > 0 ? { orderInstance, wrongParentChildren } : undefined
   } catch (e) {
-    log.warn(`${orderInstance.elemID.getFullName()} does not have parent annotation`)
+    log.error(`${orderInstance.elemID.getFullName()} does not have parent annotation`)
     return undefined
   }
 }

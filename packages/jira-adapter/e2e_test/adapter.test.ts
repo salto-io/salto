@@ -92,7 +92,8 @@ each([
   it('should fetch project with schemes', () => {
     const projectInstance = fetchedElements
       .filter(isInstanceElement)
-      .find(e => e.elemID.typeName === 'Project')
+      .filter(e => e.elemID.typeName === 'Project')
+      .filter(e => e.value.name === 'Test Project')[0]
     expect(projectInstance?.value).toContainKeys([
       'workflowScheme',
       'permissionScheme',

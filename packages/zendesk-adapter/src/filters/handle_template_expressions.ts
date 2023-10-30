@@ -327,7 +327,7 @@ const formulaToTemplate = ({
       if (extractReferencesFromFreeText) {
         // Check if the expression is a link to a zendesk page without a subdomain
         // href="/hc/en-us/../articles/123123
-        const isZendeskLink = new RegExp(`"/hc/\\S*${_.escapeRegExp(expression)}`).test(formula)
+        const isZendeskLink = new RegExp(`"/?hc/\\S*${_.escapeRegExp(expression)}`).test(formula)
         if (isZendeskLink) {
           return transformReferenceUrls({
             urlPart: expression,

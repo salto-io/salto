@@ -212,7 +212,6 @@ describe('SalesforceAdapter creator', () => {
         client: expect.any(Object),
         getElemIdFunc: undefined,
         elementsSource: expect.any(Object),
-        isFetchWithChangesDetection: false,
       })
     })
 
@@ -654,7 +653,6 @@ describe('SalesforceAdapter creator', () => {
         client: expect.any(Object),
         getElemIdFunc: undefined,
         elementsSource: expect.any(Object),
-        isFetchWithChangesDetection: false,
       })
     })
 

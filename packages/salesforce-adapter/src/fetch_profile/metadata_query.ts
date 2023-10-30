@@ -179,7 +179,7 @@ export const buildMetadataQuery = ({
       ? lastChangedAtOfInstanceWithRelatedProps(instance)
       : instance.changedAt
     return _.isString(changedAtFromSingleton) && lastChangedAt !== undefined
-      ? new Date(changedAtFromSingleton).getTime() < lastChangedAt
+      ? new Date(changedAtFromSingleton).getTime() < new Date(lastChangedAt).getTime()
       : false
   }
   const isTypeIncluded = (type: string): boolean => (

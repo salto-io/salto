@@ -14,7 +14,10 @@
 * limitations under the License.
 */
 import { values } from '@salto-io/lowerdash'
+import { ElemID, Element } from '@salto-io/adapter-api'
+import { WALK_NEXT_STEP, walkOnElement } from '@salto-io/adapter-utils'
 import { SCRIPT_ID } from './constants'
+import { ServiceIdRecords } from './elements_source_index/types'
 
 const CAPTURED_SERVICE_ID = 'serviceId'
 const CAPTURED_TYPE = 'type'
@@ -82,4 +85,35 @@ export const captureServiceIdInfo = (value: string): ServiceIdInfo[] => {
       bundleid: serviceIdRef[CAPTURED_BUNDLEID],
       isFullMatch,
     }))
+}
+
+export const getServiceIdsToElemIds = (element: Element): ServiceIdRecords => {
+  const serviceIdsToElemIds: ServiceIdRecords = {}
+  const parentElemIdFullNameToServiceId: Record<string, string> = {}
+
+  const getClosestParentServiceId = (elemID: ElemID): string | undefined => {
+    const parentElemId = elemID.createParentID()
+    if (parentElemId.isTopLevel()) {
+      return parentElemIdFullNameToServiceId[parentElemId.getFullName()]
+    }
+    if (parentElemIdFullNameToServiceId[parentElemId.getFullName()] !== undefined) {
+      return parentElemIdFullNameToServiceId[parentElemId.getFullName()]
+    }
+    return getClosestParentServiceId(parentElemId)
+  }
+
+  walkOnElement({
+    element,
+    func: ({ value, path }) => {
+      if (path.name === SCRIPT_ID && typeof value === 'string') {
+        const parentServiceId = getClosestParentServiceId(path)
+        const resolvedServiceId = parentServiceId === undefined ? value : `${parentServiceId}.${value}`
+        parentElemIdFullNameToServiceId[path.createParentID().getFullName()] = resolvedServiceId
+        serviceIdsToElemIds[resolvedServiceId] = { elemID: path, serviceID: value }
+      }
+      return WALK_NEXT_STEP.RECURSE
+    },
+  })
+
+  return serviceIdsToElemIds
 }

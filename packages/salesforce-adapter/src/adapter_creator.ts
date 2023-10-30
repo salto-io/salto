@@ -173,10 +173,6 @@ In Addition, ${configFromFetch.message}`,
   return configFromFetch
 }
 
-type CreateSalesforceAdapterParams = {
-  isFetchWithChangesDetection?: boolean
-}
-
 export const adapter: Adapter = {
   operations: context => {
     const updatedConfig = context.config && updateDeprecatedConfiguration(context.config)
@@ -184,25 +180,19 @@ export const adapter: Adapter = {
     const credentials = credentialsFromConfig(context.credentials)
     const client = new SalesforceClient({ credentials, config: config[CLIENT_CONFIG] })
 
-    const createSalesforceAdapter = async ({
-      isFetchWithChangesDetection = false,
-    }: CreateSalesforceAdapterParams = {}
-    ): Promise<SalesforceAdapter> => {
+    const createSalesforceAdapter = (): SalesforceAdapter => {
       const { elementsSource, getElemIdFunc } = context
       return new SalesforceAdapter({
         client,
         config,
         getElemIdFunc,
         elementsSource,
-        isFetchWithChangesDetection,
       })
     }
 
     return {
       fetch: async opts => {
-        const salesforceAdapter = await createSalesforceAdapter({
-          isFetchWithChangesDetection: opts.withChangesDetection ?? false,
-        })
+        const salesforceAdapter = createSalesforceAdapter()
         const fetchResults = await salesforceAdapter.fetch(opts)
         fetchResults.updatedConfig = getConfigChange(
           fetchResults.updatedConfig,
@@ -215,11 +205,11 @@ export const adapter: Adapter = {
       },
 
       deploy: async opts => {
-        const salesforceAdapter = await createSalesforceAdapter()
+        const salesforceAdapter = createSalesforceAdapter()
         return salesforceAdapter.deploy(opts)
       },
       validate: async opts => {
-        const salesforceAdapter = await createSalesforceAdapter()
+        const salesforceAdapter = createSalesforceAdapter()
         return salesforceAdapter.validate(opts)
       },
       deployModifiers: {

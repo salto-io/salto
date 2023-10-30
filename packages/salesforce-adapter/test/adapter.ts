@@ -37,7 +37,6 @@ const mockAdapter = ({ adapterParams }: Opts = {}): Mocks => {
     metadataTypesOfInstancesFetchedInFilters: ['Queue'],
     config: {},
     elementsSource: buildElementsSourceFromElements([]),
-    isFetchWithChangesDetection: false,
     ...adapterParams || {},
   })
   return {

@@ -222,7 +222,10 @@ const getSalesforceUsers = async (client: SalesforceClient, users: string[]): Pr
     return []
   }
 
-  const queries = buildSelectQueries('User', ['Username'], users.map(userName => ({ Username: `'${userName}'` })), [], SALESFORCE_MAX_QUERY_LEN)
+  const queries = buildSelectQueries('User',
+    ['Username'],
+    users.map(userName => [{ fieldName: 'Username', operator: 'IN', value: `'${userName}'` }]),
+    SALESFORCE_MAX_QUERY_LEN)
 
   return awu(await queryClient(client, queries)).map(sfRecord => sfRecord.Username).toArray()
 }

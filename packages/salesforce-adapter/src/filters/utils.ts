@@ -420,16 +420,16 @@ export const extractFlatCustomObjectFields = async (elem: Element): Promise<Elem
     : [elem]
 )
 
-export type QueryOperator = '>' | '<'
-export type LimitingQuery = {
+export type QueryOperator = '>' | '<' | '=' | 'IN' // 'IN' is for values that can be split across multiple queries
+export type SoqlQuery = {
   fieldName: string
   operator: QueryOperator
-  operand: string
+  value: string
 }
 
 const getWhereConditions = (
   exactConditionSets: Record<string, string>[],
-  limitingConditionSets: ReadonlyArray<LimitingQuery>,
+  limitingConditionSets: ReadonlyArray<SoqlQuery>,
   maxLen: number,
 ): string[] => {
   const keys = _.uniq(exactConditionSets.flatMap(Object.keys))
@@ -439,13 +439,13 @@ const getWhereConditions = (
   )
 
   const complexConditionQuery = limitingConditionSets
-    .map(({ fieldName, operator, operand }) => `${fieldName} ${operator} ${operand}`)
+    .map(({ fieldName, operator, value }) => `${fieldName} ${operator} ${value}`)
     .join(' AND ')
   const complexConditionsLength = complexConditionQuery.length
     + ((Object.keys(exactConditionSets).length > 0 && complexConditionQuery.length > 0) ? ' AND '.length : 0)
 
   if (complexConditionsLength > maxLen) {
-    log.error('Complex conditions need to be included in every query - they can`t be broken down so they can`t be longer than the maximum query length. getWhereConditions params: %o', { exactConditionSets, limitingConditionSets, maxLen })
+    log.error('Conditions other than `IN` need to be included in every query - they can`t be broken down so they can`t be longer than the maximum query length. getWhereConditions params: %o', { exactConditionSets, limitingConditionSets, maxLen })
     throw new Error('SOQL query too long')
   }
 
@@ -476,13 +476,20 @@ const getWhereConditions = (
 
 export const conditionQueries = (
   query: string,
-  exactConditionSets: Record<string, string>[],
-  limitingConditionSets: ReadonlyArray<LimitingQuery> = [],
+  conditionSets: ReadonlyArray<ReadonlyArray<SoqlQuery>>,
   maxQueryLen = MAX_QUERY_LENGTH,
 ): string[] => {
-  if (exactConditionSets.length === 0 && limitingConditionSets.length === 0) {
+  if (conditionSets.length === 0) {
     return [query]
   }
+  const exactConditionSets = conditionSets
+    .map(conditions => conditions
+      .filter(condition => condition.operator === 'IN')
+      .map(condition => [condition.fieldName, condition.value]))
+    .filter(conditions => conditions.length > 0)
+    .map(Object.fromEntries)
+  const limitingConditionSets = conditionSets
+    .flatMap(conditions => conditions.filter(condition => condition.operator !== 'IN'))
   const selectWhereStr = `${query} WHERE `
   const whereConditions = getWhereConditions(
     exactConditionSets,
@@ -504,16 +511,13 @@ export const getFieldNamesForQuery = async (field: Field): Promise<string[]> => 
  *
  * @param typeName The name of the table to query from
  * @param fields The names of the fields to query
- * @param exactConditionSets Each entry specifies field values used to match a specific record
- * @param limitingConditionSets Each entry specifies a field name, an operator and an operand to further limit the
- *                             returned records.
+ * @param conditionSets Each entry specifies a field name, an operator and an operand to limit the returned records.
  * @param maxQueryLen returned queries will be split such that no single query exceeds this length
  */
 export const buildSelectQueries = (
   typeName: string,
   fields: string[],
-  exactConditionSets: Record<string, string>[] = [],
-  limitingConditionSets: ReadonlyArray<LimitingQuery> = [],
+  conditionSets: ReadonlyArray<ReadonlyArray<SoqlQuery>> = [],
   maxQueryLen = MAX_QUERY_LENGTH,
 ): string[] => {
   const fieldsNameQuery = fields.join(',')
@@ -521,7 +525,7 @@ export const buildSelectQueries = (
   if (selectStr.length > maxQueryLen) {
     throw new Error('Max query length is too short for the SELECT clause')
   }
-  return conditionQueries(selectStr, exactConditionSets, limitingConditionSets, maxQueryLen)
+  return conditionQueries(selectStr, conditionSets, maxQueryLen)
 }
 
 export const queryClient = async (client: SalesforceClient,

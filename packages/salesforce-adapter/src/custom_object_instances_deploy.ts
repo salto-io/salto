@@ -154,7 +154,7 @@ const getRecordsBySaltoIds = async (
     const idFieldsNameToValue = (await Promise.all(
       saltoIdFields.map(field => getFieldNamesToValues(inst, field))
     )).flat()
-    const r = Object.fromEntries(idFieldsNameToValue)
+    const r = idFieldsNameToValue.map(([fieldName, value]) => ({ fieldName, operator: 'IN' as const, value }))
     return r
   }))
 

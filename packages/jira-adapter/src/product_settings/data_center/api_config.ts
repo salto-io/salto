@@ -46,6 +46,7 @@ export const DC_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
         remove: {
           url: '/rest/api/3/events?id={id}',
           method: 'delete',
+          omitRequestBody: true,
         },
       },
     },
@@ -153,6 +154,7 @@ export const DC_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
         remove: {
           url: '/rest/api/3/notificationscheme/{id}',
           method: 'delete',
+          omitRequestBody: true,
         },
       },
     },
@@ -171,6 +173,7 @@ export const DC_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
         remove: {
           url: '/rest/api/3/securitylevel/{levelId}',
           method: 'delete',
+          omitRequestBody: true,
         },
       },
     },
@@ -189,6 +192,7 @@ export const DC_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
         remove: {
           url: '/rest/api/3/issuesecurityschemes/{id}',
           method: 'delete',
+          omitRequestBody: true,
         },
       },
     },

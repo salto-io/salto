@@ -132,6 +132,10 @@ export const deployChange = async ({
     return undefined
   }
   log.trace(`deploying instance ${instance.elemID.getFullName()} with params ${inspectValue({ method: endpoint.method, url, queryParams, data }, { compact: true, depth: 6 })}`)
-  const response = await client[endpoint.method]({ url, data, queryParams })
+  const response = await client[endpoint.method]({
+    url,
+    data: endpoint.omitRequestBody ? undefined : data,
+    queryParams,
+  })
   return response.data
 }

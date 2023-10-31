@@ -20,7 +20,7 @@ import {
   DeployResult,
   getChangeData,
   InstanceElement,
-  isAdditionChange, isSaltoError,
+  isAdditionChange, isRemovalChange, isSaltoError,
   SaltoError,
   Values,
 } from '@salto-io/adapter-api'
@@ -171,9 +171,16 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
   changes: T[],
   deployChangeFunc: (change: T) => Promise<void | T[]>
 ): Promise<DeployResult> => {
-  const result = await Promise.all(
-    changes.map(async change => deployChangesHelper(change, deployChangeFunc))
+  const [removalChanges, otherChanges] = _.partition(changes, isRemovalChange)
+  // We want to deploy removal changes first (SALTO-4955)
+  const removalResults = await Promise.all(
+    removalChanges.map(async change => deployChangesHelper(change, deployChangeFunc))
   )
+  const otherResults = await Promise.all(
+    otherChanges.map(async change => deployChangesHelper(change, deployChangeFunc))
+  )
+  const result = [...removalResults, ...otherResults]
+
   const [errors, appliedChanges] = _.partition(result.flat(), isSaltoError)
   return { errors, appliedChanges }
 }

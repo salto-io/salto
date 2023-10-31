@@ -1589,9 +1589,16 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     transformation: {
       sourceTypeName: 'business_hours_schedule__holidays',
-      dataField: 'holidays',
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      fieldsToHide: FIELDS_TO_HIDE.concat([
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'start_year', fieldType: 'string' },
+        { fieldName: 'end_year', fieldType: 'string' },
+      ]),
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'start_year', fieldType: 'string' },
+        { fieldName: 'end_year', fieldType: 'string' },
+      ],
     },
   },
   // eslint-disable-next-line camelcase

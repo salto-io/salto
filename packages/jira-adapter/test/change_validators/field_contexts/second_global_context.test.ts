@@ -222,7 +222,7 @@ describe('Field second global contexts', () => {
           elemID: afterProjectInstance.elemID,
           severity: 'Error',
           message: 'A field can only have a single global context',
-          detailedMessage: 'Can\'t remove this context from this project as it will result in more than a single global context',
+          detailedMessage: "Can't remove the field context fieldContextInstance from this project as it will result in more than a single global context.",
         },
       ])
     })

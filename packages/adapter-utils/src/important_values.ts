@@ -30,7 +30,7 @@ const { isDefined } = values
 
 type ImportantValue = { value: string; indexed: boolean; highlighted: boolean }
 export type ImportantValues = ImportantValue[]
-type formattedImportantValueData = {key: string; value: Value}
+type FormattedImportantValueData = { key: string; value: Value }
 
 const isValidIndexedValueData = (importantValue: ImportantValue, valueData: unknown): boolean => {
   if (importantValue.indexed !== true) {
@@ -75,7 +75,7 @@ const extractImportantValuesFromElement = ({
   element: Element
   indexedOnly?: boolean
   highlightedOnly?: boolean
-}): formattedImportantValueData[] => {
+}): FormattedImportantValueData[] => {
   if (_.isEmpty(importantValues)) {
     if (importantValues === undefined) {
       log.trace('important value is undefined for element %s', element.elemID.getFullName())
@@ -113,7 +113,7 @@ export const getImportantValues = async ({
   elementSource?: ReadOnlyElementsSource
   indexedOnly?: boolean
   highlightedOnly?: boolean
-}): Promise<formattedImportantValueData[]> => {
+}): Promise<FormattedImportantValueData[]> => {
   if (isObjectType(element)) {
     const importantValues = element.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES]
     return extractImportantValuesFromElement({ importantValues, element, indexedOnly, highlightedOnly })

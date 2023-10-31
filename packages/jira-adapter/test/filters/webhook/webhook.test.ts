@@ -259,7 +259,7 @@ describe('webhookFilter', () => {
 
       expect(connection.delete).toHaveBeenCalledWith(
         '/rest/webhooks/1.0/webhook/3',
-        { data: undefined },
+        undefined,
       )
     })
 

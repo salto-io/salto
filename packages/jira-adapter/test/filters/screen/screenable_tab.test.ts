@@ -228,7 +228,7 @@ describe('screenableTab', () => {
       it('should call endpoints to remove fields', async () => {
         expect(mockConnection.delete).toHaveBeenCalledWith(
           '/rest/api/3/screens/screenId/tabs/tabId/fields/id3',
-          { data: undefined },
+          undefined,
         )
       })
 

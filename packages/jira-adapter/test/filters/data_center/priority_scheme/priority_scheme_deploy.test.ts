@@ -146,7 +146,7 @@ describe('prioritySchemeDeployFilter', () => {
 
       expect(connection.delete).toHaveBeenCalledWith(
         '/rest/api/2/priorityschemes/2',
-        { data: undefined },
+        undefined,
       )
     })
 

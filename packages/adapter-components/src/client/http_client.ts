@@ -238,10 +238,12 @@ export abstract class AdapterHTTPClient<
         }
         : undefined
 
-      const data = isMethodWithData(params) ? params.data : undefined
       const res = isMethodWithDataParam(method)
-        ? await this.apiClient[method](url, data, requestConfig)
-        : await this.apiClient[method](url, { ...requestConfig, data })
+        ? await this.apiClient[method](url, isMethodWithData(params) ? params.data : undefined, requestConfig)
+        : await this.apiClient[method](
+          url,
+          isMethodWithData(params) ? { ...requestConfig, data: params.data } : requestConfig
+        )
       log.debug('Received response for %s on %s (%s) with status %d', method.toUpperCase(), url, safeJsonStringify({ url, queryParams }), res.status)
       logResponse(res)
       return {

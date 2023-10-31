@@ -294,7 +294,7 @@ describe('workflowScheme', () => {
 
       expect(connection.get).toHaveBeenCalledWith(
         'taskUrl',
-        { data: undefined }
+        undefined
       )
 
       expect(instance.value.statusMigrations).toBeUndefined()
@@ -362,7 +362,7 @@ describe('workflowScheme', () => {
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/workflowscheme/1',
-        { data: undefined },
+        undefined,
       )
 
       expect(connection.get).toHaveBeenCalledWith(
@@ -424,12 +424,12 @@ describe('workflowScheme', () => {
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/workflowscheme/1',
-        { data: undefined },
+        undefined,
       )
 
       expect(connection.get).not.toHaveBeenCalledWith(
         '/rest/api/3/workflowscheme',
-        { data: undefined }
+        undefined
       )
 
       expect(instance.value.statusMigrations).toBeUndefined()

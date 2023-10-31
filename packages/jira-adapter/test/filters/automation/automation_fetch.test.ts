@@ -233,7 +233,7 @@ describe('automationFetchFilter', () => {
       expect(connection.post).not.toHaveBeenCalled()
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/cb-automation/latest/project/GLOBAL/rule',
-        { data: undefined },
+        undefined,
       )
     })
 

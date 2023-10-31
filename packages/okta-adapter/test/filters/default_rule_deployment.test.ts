@@ -147,8 +147,8 @@ describe('defaultPolicyRuleDeployment', () => {
           },
         },
       })
-      expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/policies/111/rules', { data: undefined })
-      expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/policies/222/rules', { data: undefined })
+      expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/policies/111/rules', undefined)
+      expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/policies/222/rules', undefined)
     })
 
     it('should return error if there is no parent policy', async () => {
@@ -167,7 +167,7 @@ describe('defaultPolicyRuleDeployment', () => {
       mockConnection.get.mockRejectedValue({ status: 404, data: { errorSummary: 'resource not found' } })
       const result = await filter.deploy([toChange({ after: accessRuleInstance })])
       expect(result.deployResult.appliedChanges).toHaveLength(0)
-      expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/policies/111/rules', { data: undefined })
+      expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/policies/111/rules', undefined)
       expect(result.deployResult.errors).toHaveLength(1)
       expect(result.deployResult.errors[0].message).toContain('Failed to get /api/v1/policies/111/rules')
     })

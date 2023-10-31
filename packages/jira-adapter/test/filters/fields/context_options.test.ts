@@ -574,7 +574,7 @@ describe('context options', () => {
       it('should call the delete endpoint with the removed options', () => {
         expect(connection.delete).toHaveBeenCalledWith(
           '/rest/api/3/field/2/context/3/option/10048',
-          { data: undefined },
+          undefined,
         )
       })
 

@@ -252,7 +252,7 @@ describe('userSchemaFilter', () => {
       const res = await filter.deploy(changes)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/meta/schemas/user/555', { data: undefined })
+      expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/meta/schemas/user/555', undefined)
     })
     it('return an error if UserSchema instance still exists', async () => {
       mockConnection.get.mockResolvedValue(userSchemaResponse)
@@ -268,7 +268,7 @@ describe('userSchemaFilter', () => {
       const res = await filter.deploy(changes)
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.errors[0].message).toEqual('Could not remove instance schema of type UserSchema')
-      expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/meta/schemas/user/555', { data: undefined })
+      expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/meta/schemas/user/555', undefined)
     })
   })
   describe('onDeploy', () => {

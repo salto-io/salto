@@ -257,7 +257,7 @@ describe('handle templates filter', () => {
     'articleTranslation',
     new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TRANSLATION_TYPE_NAME) }),
     {
-      body: `"/hc/test/test/articles/${article.value.id}/test`,
+      body: `"/hc/test/test/articles/${article.value.id}/test\n"hc/test/test/articles/${macro1.value.id}/test`,
     }
   )
 
@@ -478,7 +478,7 @@ describe('handle templates filter', () => {
     })
     it('should not resolve urls when the config flag is off', async () => {
       const fetchedArticleTranslation = elements.filter(isInstanceElement).find(i => i.elemID.name === 'articleTranslation')
-      expect(fetchedArticleTranslation?.value.body).toEqual(`"/hc/test/test/articles/${article.value.id}/test`)
+      expect(fetchedArticleTranslation?.value.body).toEqual(`"/hc/test/test/articles/${article.value.id}/test\n"hc/test/test/articles/${macro1.value.id}/test`)
     })
     it('should resolve urls correctly when config flags are on', async () => {
       elements = generateElements()
@@ -492,6 +492,8 @@ describe('handle templates filter', () => {
       expect(fetchedArticleTranslation?.value.body).toEqual(new TemplateExpression({ parts: [
         '"/hc/test/test/articles/',
         new ReferenceExpression(article.elemID, article),
+        '/test\n"hc/test/test/articles/',
+        new ReferenceExpression(macro1.elemID, macro1),
         '/test',
       ] }))
 

@@ -198,6 +198,15 @@ describe('client_http_client', () => {
       expect(clearValuesFromResponseDataFunc).toHaveBeenCalledTimes(1)
       expect(clearValuesFromResponseDataFunc).toHaveBeenCalledWith({ a: 'b' }, '/ep')
     })
+    it('should include data when provided', async () => {
+      const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
+      mockAxiosAdapter.onGet('/users/me').reply(200, { accountId: 'ACCOUNT_ID' })
+      mockAxiosAdapter.onDelete('/ep', { a: 'AAA' }).replyOnce(200, { a: 'b' })
+      await client.delete({ url: '/ep', data: { b: 'c' } })
+      const request = mockAxiosAdapter.history.delete[0]
+      expect(request.url).toEqual('/ep')
+      expect(JSON.parse(request.data)).toEqual({ b: 'c' })
+    })
   })
 
   describe('patch', () => {

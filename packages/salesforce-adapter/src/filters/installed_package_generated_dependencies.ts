@@ -84,7 +84,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
     log.debug(`Added InstalledPackage instance generated dependencies to ${affectedTopLevelElements.length + affectedFields.length} Elements`)
     const affectedInstancesInWrongPath = affectedTopLevelElements
       .filter(isInstanceElement)
-      .filter(instance => makeArray([...instance.path ?? []]).includes(INSTALLED_PACKAGES_PATH))
+      .filter(instance => !makeArray([...instance.path ?? []]).includes(INSTALLED_PACKAGES_PATH))
     log.warn(`The following Installed Packages instances are in the wrong path: ${safeJsonStringify(affectedInstancesInWrongPath.map(inst => inst.elemID.getFullName()))}`)
   },
 })

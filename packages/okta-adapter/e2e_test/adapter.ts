@@ -21,6 +21,7 @@ import OktaAdapter, { OktaAdapterParams } from '../src/adapter'
 import { Credentials } from '../src/auth'
 import { DEFAULT_CONFIG, OktaConfig } from '../src/config'
 import { credsSpec } from './jest_environment'
+import { getAdminUrl } from '../src/client/admin'
 
 const log = logger(module)
 
@@ -38,10 +39,15 @@ export type Opts = {
 export const realAdapter = ({ adapterParams, credentials, elementsSource }: Opts, config?: OktaConfig): Reals => {
   const client = (adapterParams && adapterParams.client)
     || new OktaClient({ credentials })
+  const adminUrl = getAdminUrl(credentials.baseUrl)
+  const adminClient = adminUrl !== undefined
+    ? new OktaClient({ credentials: { ...credentials, baseUrl: adminUrl } })
+    : undefined
   const adapter = new OktaAdapter({
     client,
     config: config ?? DEFAULT_CONFIG,
     elementsSource,
+    adminClient,
   })
   return { client, adapter }
 }

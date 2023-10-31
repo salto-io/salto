@@ -18,7 +18,7 @@ import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, IDENTITY_PROVIDER_TYPE_NAME, USERTYPE_TYPE_NAME, FEATURE_TYPE_NAME, NETWORK_ZONE_TYPE_NAME, ROLE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, INLINE_HOOK_TYPE_NAME, AUTHENTICATOR_TYPE_NAME, BEHAVIOR_RULE_TYPE_NAME, USER_SCHEMA_TYPE_NAME, ROLE_ASSIGNMENT_TYPE_NAME, BRAND_TYPE_NAME } from './constants'
+import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, IDENTITY_PROVIDER_TYPE_NAME, USERTYPE_TYPE_NAME, FEATURE_TYPE_NAME, NETWORK_ZONE_TYPE_NAME, ROLE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, INLINE_HOOK_TYPE_NAME, AUTHENTICATOR_TYPE_NAME, BEHAVIOR_RULE_TYPE_NAME, USER_SCHEMA_TYPE_NAME, ROLE_ASSIGNMENT_TYPE_NAME, BRAND_TYPE_NAME, GROUP_PUSH_TYPE_NAME, GROUP_PUSH_RULE_TYPE_NAME } from './constants'
 import { resolveUserSchemaRef } from './filters/expression_language'
 
 const { awu } = collections.asynciterable
@@ -36,7 +36,7 @@ referenceUtils.MissingReferenceStrategyName, referenceUtils.MissingReferenceStra
   },
 }
 
-type OktaReferenceSerializationStrategyName = 'key'
+type OktaReferenceSerializationStrategyName = 'key' | 'mappingRuleId'
 const OktaReferenceSerializationStrategyLookup: Record<
   OktaReferenceSerializationStrategyName | referenceUtils.ReferenceSerializationStrategyName,
   referenceUtils.ReferenceSerializationStrategy
@@ -46,6 +46,11 @@ const OktaReferenceSerializationStrategyLookup: Record<
     serialize: ({ ref }) => ref.value.value.key,
     lookup: val => val,
     lookupIndexName: 'key',
+  },
+  mappingRuleId: {
+    serialize: ({ ref }) => ref.value.value.mappingRuleId,
+    lookup: val => val,
+    lookupIndexName: 'mappingRuleId',
   },
 }
 
@@ -236,6 +241,16 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
     src: { field: 'brandId', parentTypes: ['Domain'] },
     serializationStrategy: 'id',
     target: { type: BRAND_TYPE_NAME },
+  },
+  {
+    src: { field: 'userGroupId', parentTypes: [GROUP_PUSH_TYPE_NAME] },
+    serializationStrategy: 'id',
+    target: { type: GROUP_TYPE_NAME },
+  },
+  {
+    src: { field: 'groupPushRule', parentTypes: [GROUP_PUSH_TYPE_NAME] },
+    oktaSerializationStrategy: 'mappingRuleId',
+    target: { type: GROUP_PUSH_RULE_TYPE_NAME },
   },
 ]
 

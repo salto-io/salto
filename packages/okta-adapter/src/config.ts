@@ -1782,10 +1782,7 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
       PRIVATE_API_DEFINITIONS_CONFIG,
       CLIENT_CONFIG,
       `${FETCH_CONFIG}.hideTypes`,
-      `${FETCH_CONFIG}.convertUsersIds`,
       `${FETCH_CONFIG}.enableMissingReferences`,
-      `${FETCH_CONFIG}.includeGroupMemberships`,
-      `${FETCH_CONFIG}.includeProfileMappingProperties`
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },

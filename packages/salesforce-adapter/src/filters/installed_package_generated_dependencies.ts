@@ -25,7 +25,7 @@ import {
   getNamespace,
   getNamespaceSync,
   isInstanceOfType,
-  isStandardObject,
+  isStandardObject, metadataTypeSync,
 } from './utils'
 import { apiName } from '../transformers/transformer'
 
@@ -82,10 +82,20 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
       .filter(standardObject => addInstalledPackageReference(standardObject, installedPackageNamespaceToRef))
       .toArray()
     log.debug(`Added InstalledPackage instance generated dependencies to ${affectedTopLevelElements.length + affectedFields.length} Elements`)
-    const affectedInstancesInWrongPath = affectedTopLevelElements
+    const instancesInWrongPath = affectedTopLevelElements
       .filter(isInstanceElement)
       .filter(instance => !makeArray([...instance.path ?? []]).includes(INSTALLED_PACKAGES_PATH))
-    log.warn(`The following Installed Packages instances are in the wrong path: ${safeJsonStringify(affectedInstancesInWrongPath.map(inst => inst.elemID.getFullName()))}`)
+    if (instancesInWrongPath.length > 0) {
+      const instancesInWrongPathByType = _.groupBy(instancesInWrongPath, metadataTypeSync)
+      const summary: Record<string, {count: number; example: string}> = {}
+      Object.entries(instancesInWrongPathByType).forEach(([type, instances]) => {
+        summary[type] = {
+          count: instances.length,
+          example: instances[0].elemID.getFullName(),
+        }
+      })
+      log.debug(`some Metadata Instances are not under the InstalledPackages directory. summary: ${safeJsonStringify(summary)}`)
+    }
   },
 })
 

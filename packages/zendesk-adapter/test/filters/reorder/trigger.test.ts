@@ -20,7 +20,7 @@ import {
 import { filterUtils } from '@salto-io/adapter-components'
 import { TRIGGER_CATEGORY_TYPE_NAME, TRIGGER_TYPE_NAME, ZENDESK } from '../../../src/constants'
 import filterCreator from '../../../src/filters/reorder/trigger'
-import { createOrderTypeName } from '../../../src/filters/reorder/creator'
+import { createOrderPosition, createOrderTypeName } from '../../../src/filters/reorder/creator'
 import { createFilterCreatorParams } from '../../utils'
 
 const mockDeployChange = jest.fn()
@@ -168,17 +168,17 @@ describe('trigger reorder filter', () => {
         action: 'patch',
         items: {
           trigger_categories: [
-            { id: '2', position: 1 },
-            { id: '3', position: 2 },
-            { id: '1', position: 3 },
+            { id: '2', position: createOrderPosition(0) },
+            { id: '3', position: createOrderPosition(1) },
+            { id: '1', position: createOrderPosition(2) },
           ],
           triggers: [
-            { id: '44', position: 1, category_id: '2' },
-            { id: '33', position: 2, category_id: '2' },
-            { id: '11', position: 1, category_id: '1' },
-            { id: '22', position: 2, category_id: '1' },
-            { id: '66', position: 3, category_id: '1' },
-            { id: '55', position: 4, category_id: '1' },
+            { id: '44', position: createOrderPosition(0), category_id: '2' },
+            { id: '33', position: createOrderPosition(1), category_id: '2' },
+            { id: '11', position: createOrderPosition(0), category_id: '1' },
+            { id: '22', position: createOrderPosition(1), category_id: '1' },
+            { id: '66', position: createOrderPosition(2), category_id: '1' },
+            { id: '55', position: createOrderPosition(3), category_id: '1' },
           ],
         },
       }

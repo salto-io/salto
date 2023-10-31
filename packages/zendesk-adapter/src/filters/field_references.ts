@@ -584,6 +584,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     },
     zendeskSerializationStrategy: 'orgField',
     target: { type: ORG_FIELD_TYPE_NAME },
+    zendeskMissingRefStrategy: 'startsWith',
   },
   {
     src: {

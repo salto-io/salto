@@ -20,7 +20,7 @@ import {
   isField,
   isInstanceElement,
   isObjectType, isPrimitiveValue, isReferenceExpression,
-  ReadOnlyElementsSource, Values,
+  ReadOnlyElementsSource, Value,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -30,6 +30,7 @@ const { isDefined } = values
 
 type ImportantValue = { value: string; indexed: boolean; highlighted: boolean }
 export type ImportantValues = ImportantValue[]
+type FormattedImportantValueData = { key: string; value: Value }
 
 const isValidIndexedValueData = (importantValue: ImportantValue, valueData: unknown): boolean => {
   if (importantValue.indexed !== true) {
@@ -74,8 +75,11 @@ const extractImportantValuesFromElement = ({
   element: Element
   indexedOnly?: boolean
   highlightedOnly?: boolean
-}): Values[] => {
+}): FormattedImportantValueData[] => {
   if (_.isEmpty(importantValues)) {
+    if (importantValues === undefined) {
+      log.trace('important value is undefined for element %s', element.elemID.getFullName())
+    }
     return []
   }
   const relevantImportantValues = getRelevantImportantValues(importantValues, indexedOnly, highlightedOnly)
@@ -90,7 +94,7 @@ const extractImportantValuesFromElement = ({
     }
     const valueSplit = value.split('.')
     const finalValue = indexedOnly === true ? valueSplit.pop() ?? value : value
-    return { [finalValue]: valueData }
+    return { key: finalValue, value: valueData }
   }).filter(isDefined)
 
   return finalImportantValues
@@ -109,15 +113,22 @@ export const getImportantValues = async ({
   elementSource?: ReadOnlyElementsSource
   indexedOnly?: boolean
   highlightedOnly?: boolean
-}): Promise<Values[]> => {
+}): Promise<FormattedImportantValueData[]> => {
   if (isObjectType(element)) {
     const importantValues = element.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES]
     return extractImportantValuesFromElement({ importantValues, element, indexedOnly, highlightedOnly })
   }
   if (isField(element) || isInstanceElement(element)) {
-    const typeObj = await element.getType(elementSource)
-    const importantValues = typeObj?.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES]
-    return extractImportantValuesFromElement({ importantValues, element, indexedOnly, highlightedOnly })
+    try {
+      const typeObj = await element.getType(elementSource)
+      const importantValues = typeObj?.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES]
+      return extractImportantValuesFromElement({ importantValues, element, indexedOnly, highlightedOnly })
+    } catch (e) {
+      // getType throws an error when the type calculated is not a valid type, or when
+      // resolvedValue === undefined && elementsSource === undefined in getResolvedValue
+      log.warn(`could not get important values for element ${element.elemID.getFullName()}, received error ${e}, returning []`)
+      return []
+    }
   }
   return []
 }

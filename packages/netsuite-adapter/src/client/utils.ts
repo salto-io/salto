@@ -15,18 +15,29 @@
 */
 import _ from 'lodash'
 import { strings, values } from '@salto-io/lowerdash'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { Change, ElemID, SaltoElementError, getChangeData } from '@salto-io/adapter-api'
+import { Change, ElemID, SaltoElementError, getChangeData, isAdditionChange } from '@salto-io/adapter-api'
 import { FILE, FOLDER } from '../constants'
-import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from './types'
+import { CustomizationInfo, CustomTypeInfo, DeployableChange, FileCustomizationInfo, FolderCustomizationInfo, SDFObjectChangeType, TemplateCustomTypeInfo } from './types'
 import { NetsuiteTypesQueryParams } from '../query'
 import { ConfigRecord } from './suiteapp_client/types'
+import { isFileCabinetInstance } from '../types'
+import { getServiceIdsToElemIds } from '../service_id_info'
 
 const log = logger(module)
 const { matchAll } = strings
 const { isDefined } = values
 
-export const toError = (e: unknown): Error => (e instanceof Error ? e : new Error(String(e)))
+export const toError = (e: unknown): Error => {
+  if (e instanceof Error) {
+    return e
+  }
+  if (typeof e === 'string') {
+    return new Error(e)
+  }
+  return new Error(safeJsonStringify(e))
+}
 
 export const isCustomTypeInfo = (customizationInfo: CustomizationInfo):
   customizationInfo is CustomTypeInfo => 'scriptId' in customizationInfo
@@ -136,4 +147,25 @@ export const getDeployResultFromSuiteAppResult = <T extends Change>(
     })
 
   return { appliedChanges, errors, elemIdToInternalId }
+}
+
+export const getChangeTypeAndAddedObjects = (
+  change: DeployableChange & { action: 'add' | 'modify' }
+): SDFObjectChangeType => {
+  if (isAdditionChange(change)) {
+    return { changeType: 'addition' }
+  }
+  if (isFileCabinetInstance(getChangeData(change))) {
+    return { changeType: 'modification', addedObjects: new Set() }
+  }
+  const beforeInnerObjects = getServiceIdsToElemIds(change.data.before)
+  const afterInnerObjects = getServiceIdsToElemIds(change.data.after)
+  const addedInnerObjects = Object.keys(afterInnerObjects)
+    .filter(objName => beforeInnerObjects[objName] === undefined)
+  log.debug(
+    'the following inner objects of %s were added: %o',
+    getChangeData(change).elemID.getFullName(),
+    addedInnerObjects
+  )
+  return { changeType: 'modification', addedObjects: new Set(addedInnerObjects) }
 }

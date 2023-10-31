@@ -122,9 +122,9 @@ describe('getImportantValues', () => {
       elementSource,
     })
     expect(res).toEqual([
-      { name: 'test' },
-      { apiName: 123 },
-      { doesNotExist: undefined },
+      { key: 'name', value: 'test' },
+      { key: 'apiName', value: 123 },
+      { key: 'doesNotExist', value: undefined },
     ])
   })
   it('should get the right important values for an instance', async () => {
@@ -133,9 +133,9 @@ describe('getImportantValues', () => {
       elementSource,
     })
     expect(res).toEqual([
-      { name: 'test inst' },
-      { active: true },
-      { doesNotExist: undefined },
+      { key: 'name', value: 'test inst' },
+      { key: 'active', value: true },
+      { key: 'doesNotExist', value: undefined },
     ])
   })
   it('should get the right important values for a field', async () => {
@@ -152,7 +152,7 @@ describe('getImportantValues', () => {
       elementSource,
       indexedOnly: false,
     })
-    expect(res).toEqual([{ label: 'Active' }])
+    expect(res).toEqual([{ key: 'label', value: 'Active' }])
   })
   it('should return an empty object if no important values are defined', async () => {
     const objNoImportant = new ObjectType({
@@ -190,7 +190,10 @@ describe('getImportantValues', () => {
       elementSource,
       indexedOnly: true,
     })
-    expect(res).toEqual([{ active: true }, { doesNotExist: undefined }])
+    expect(res).toEqual([
+      { key: 'active', value: true },
+      { key: 'doesNotExist', value: undefined },
+    ])
   })
   it('should return only highlighted values', async () => {
     const res = await getImportantValues({
@@ -198,7 +201,10 @@ describe('getImportantValues', () => {
       elementSource,
       highlightedOnly: true,
     })
-    expect(res).toEqual([{ name: 'test inst' }, { doesNotExist: undefined }])
+    expect(res).toEqual([
+      { key: 'name', value: 'test inst' },
+      { key: 'doesNotExist', value: undefined },
+    ])
   })
   it('should not return inner values if highlighted', async () => {
     const obj2 = new ObjectType({
@@ -242,7 +248,7 @@ describe('getImportantValues', () => {
       elementSource,
       highlightedOnly: true,
     })
-    expect(res).toEqual([{ name: 'test inst' }])
+    expect(res).toEqual([{ key: 'name', value: 'test inst' }])
   })
   it('should return only  primitive values if indexed is true', async () => {
     // check undefined, number, array of primitive, string --> need to return
@@ -338,13 +344,13 @@ describe('getImportantValues', () => {
       indexedOnly: true,
     })
     expect(res).toEqual([
-      { string: 'test inst' },
-      { number: 1 },
-      { boolean: true },
-      { stringArray: ['1', '2'] },
-      { undefinedVal: undefined },
-      { reference: new ReferenceExpression(inst.elemID) },
-      { id: 12345 },
+      { key: 'string', value: 'test inst' },
+      { key: 'number', value: 1 },
+      { key: 'boolean', value: true },
+      { key: 'stringArray', value: ['1', '2'] },
+      { key: 'undefinedVal', value: undefined },
+      { key: 'reference', value: new ReferenceExpression(inst.elemID) },
+      { key: 'id', value: 12345 },
     ])
   })
 })

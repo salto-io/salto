@@ -47,13 +47,13 @@ const TICKET_FIELD_SPLIT = '(?:(ticket.ticket_field|ticket.ticket_field_option_t
 const KEY_SPLIT = '(?:([^ ]+\\.custom_fields)\\.)'
 const TITLE_SPLIT = '(?:([^ ]+)\\.(title))'
 const SPLIT_REGEX = `${TICKET_FIELD_SPLIT}|${KEY_SPLIT}|${TITLE_SPLIT}`
+const ID_KEY_IN_JSON_REGEX = /("id"\s*:\s*\d+)/
 export const TICKET_TICKET_FIELD = 'ticket.ticket_field'
 export const TICKET_TICKET_FIELD_OPTION_TITLE = 'ticket.ticket_field_option_title'
 export const TICKET_ORGANIZATION_FIELD = 'ticket.organization.custom_fields'
 export const TICKET_USER_FIELD = 'ticket.requester.custom_fields'
 const ID = 'id'
 const KEY = 'key'
-const ELEMENT_REGEXES_TYPES = new Set(ELEMENTS_REGEXES.map(e => e.type))
 
 export const ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE: Record<string, string> = {
   [TICKET_TICKET_FIELD]: TICKET_FIELD_TYPE_NAME,
@@ -231,10 +231,10 @@ const formulaToTemplate = ({
   extractReferencesFromFreeText,
 }: {
   formula: string
-    instancesByType: Record<string, InstanceElement[]>
-    instancesById: Record<string, InstanceElement>
-    enableMissingReferences?: boolean
-    extractReferencesFromFreeText?: boolean
+  instancesByType: Record<string, InstanceElement[]>
+  instancesById: Record<string, InstanceElement>
+  enableMissingReferences?: boolean
+  extractReferencesFromFreeText?: boolean
 }): TemplateExpression | string => {
   const handleZendeskReference = (expression: string, ref: RegExpMatchArray): TemplatePart[] => {
     const reference = ref.pop() ?? ''
@@ -326,7 +326,7 @@ const formulaToTemplate = ({
       if (extractReferencesFromFreeText) {
         // Check if the expression is a link to a zendesk page without a subdomain
         // href="/hc/en-us/../articles/123123
-        const isZendeskLink = new RegExp(`"/hc/\\S*${expression}`).test(formula)
+        const isZendeskLink = new RegExp(`"/?hc/\\S*${_.escapeRegExp(expression)}`).test(formula)
         if (isZendeskLink) {
           return transformReferenceUrls({
             urlPart: expression,
@@ -352,11 +352,17 @@ const getContainers = (instances: InstanceElement[]): TemplateContainer[] =>
       ].flat().filter(template.containerValidator).filter(v => !_.isEmpty(v)),
     }))).flat()
 
-const replaceFormulasWithTemplates = (
-  instances: InstanceElement[],
-  enableMissingReferences?: boolean,
+const replaceFormulasWithTemplates = ({
+  instances,
+  enableMissingReferences,
+  extractReferencesFromFreeText,
+  convertJsonIdsToReferences,
+} :{
+  instances: InstanceElement[]
+  enableMissingReferences?: boolean
   extractReferencesFromFreeText?: boolean
-): void => {
+  convertJsonIdsToReferences?: boolean
+}): void => {
   const instancesByType = _.groupBy(instances, i => i.elemID.typeName)
   const instancesById = _.keyBy(
     instances.filter(i => _.isNumber(i.value.id)),
@@ -382,6 +388,46 @@ const replaceFormulasWithTemplates = (
     return new TemplateExpression({ parts: newParts })
   }
 
+  // If a string is a JSON, and it has keys of 'id' with a numeric value - try to convert it to a reference
+  const convertIdsInJson = (value: unknown): unknown => {
+    if (Array.isArray(value)) {
+      return value.map(innerValue => convertIdsInJson(innerValue))
+    }
+    if (!_.isString(value)) {
+      return value
+    }
+    try {
+      // Checks if this is a JSON string
+      JSON.parse(value)
+    } catch {
+      return value
+    }
+    return extractTemplate(
+      value,
+      [ID_KEY_IN_JSON_REGEX],
+      expression => {
+        if (!ID_KEY_IN_JSON_REGEX.test(expression)) {
+          return expression
+        }
+        const idRegex = /\d+/
+        const id = expression.match(idRegex)?.[0]
+        // should always be false, used for type check
+        if (id === undefined) {
+          log.error(`Error parsing id in expression: ${expression}`)
+          return expression
+        }
+        const instance = instancesById[id]
+        if (instance === undefined && !enableMissingReferences) {
+          return expression
+        }
+
+        const expressionWithoutId = expression.replace(idRegex, '')
+        const idInstance = instance ?? createMissingInstance(ZENDESK, 'unknown', id)
+        return [expressionWithoutId, new ReferenceExpression(idInstance.elemID, idInstance)]
+      }
+    )
+  }
+
   const formulaToTemplateValue = (value: unknown): unknown => {
     if (Array.isArray(value)) {
       return value.map(innerValue => formulaToTemplateValue(innerValue))
@@ -402,6 +448,10 @@ const replaceFormulasWithTemplates = (
     getContainers(instances).forEach(container => {
       const { fieldName } = container
       container.values.forEach(value => {
+        // Has to be first because it needs to receive the whole string, not a template expression
+        if (convertJsonIdsToReferences) {
+          value[fieldName] = convertIdsInJson(value[fieldName])
+        }
         value[fieldName] = formulaToTemplateValue(value[fieldName])
       })
     })
@@ -410,7 +460,7 @@ const replaceFormulasWithTemplates = (
   }
 }
 
-export const prepRef = (part: ReferenceExpression, extractReferencesFromFreeText?: boolean): TemplatePart => {
+export const prepRef = (part: ReferenceExpression): TemplatePart => {
   // In some cases this function may run on the .before value of a Change, which may contain unresolved references.
   // .after values are always resolved because unresolved references are dropped by unresolved_references validator
   // This case should be handled more generic but at the moment this is a quick fix to avoid crashing (SALTO-3988)
@@ -434,20 +484,17 @@ export const prepRef = (part: ReferenceExpression, extractReferencesFromFreeText
     && part.value?.value?.key) {
     return part.value.value.key
   }
-  // Should be last
-  if (extractReferencesFromFreeText
-    && ELEMENT_REGEXES_TYPES.has(part.elemID.typeName) && part.value?.value?.id) {
+  if (part.elemID.isTopLevel() && part.value?.value?.id) {
     return part.value.value.id.toString()
   }
   return part
 }
 
 export const handleTemplateExpressionsOnFetch = (elements: Element[], config: ZendeskConfig): void => {
-  replaceFormulasWithTemplates(
-    elements.filter(isInstanceElement),
-    config[FETCH_CONFIG].enableMissingReferences,
-    config[FETCH_CONFIG].extractReferencesFromFreeText
-  )
+  replaceFormulasWithTemplates({
+    instances: elements.filter(isInstanceElement),
+    ...config[FETCH_CONFIG],
+  })
 }
 
 /**
@@ -464,7 +511,7 @@ const filterCreator: FilterCreator = ({ config }) => {
           async container => replaceTemplatesWithValues(
             container,
             deployTemplateMapping,
-            ref => prepRef(ref, config[FETCH_CONFIG].extractReferencesFromFreeText)
+            prepRef,
           )
         )
       } catch (e) {

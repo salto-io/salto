@@ -802,6 +802,7 @@ describe('Adapter', () => {
             {
               serviceid: 'custentity_my_script_id',
               changeType: 'modification',
+              addedObjects: new Set(),
               customizationInfo,
               change: toChange({
                 before: instance,
@@ -832,6 +833,7 @@ describe('Adapter', () => {
             {
               serviceid: serviceId,
               changeType: 'modification',
+              addedObjects: new Set(),
               customizationInfo,
               change: toChange({ before: fileInstance, after: fileInstance }),
             },
@@ -858,6 +860,7 @@ describe('Adapter', () => {
             {
               serviceid: serviceId,
               changeType: 'modification',
+              addedObjects: new Set(),
               customizationInfo,
               change: toChange({ before: folderInstance, after: folderInstance }),
             },
@@ -891,6 +894,7 @@ describe('Adapter', () => {
             {
               serviceid: 'custentity_my_script_id',
               changeType: 'modification',
+              addedObjects: new Set(),
               customizationInfo,
               change: toChange({
                 before: instance,
@@ -1451,7 +1455,7 @@ describe('Adapter', () => {
         const { partialFetchData } = await adapter.fetch({ ...mockFetchOpts })
         expect(getDeletedElementsMock).not.toHaveBeenCalled()
         expect(partialFetchData?.deletedElements).toEqual(undefined)
-        expect(spy).toHaveBeenCalledWith(expect.anything(), false, undefined)
+        expect(spy).toHaveBeenCalledWith(expect.anything(), false, [])
       })
     })
   })

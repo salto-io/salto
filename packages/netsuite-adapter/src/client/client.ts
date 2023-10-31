@@ -14,9 +14,7 @@
 * limitations under the License.
 */
 
-import { Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError,
-  isAdditionChange, isAdditionOrModificationChange, ElemID,
-  SaltoError, AccountInfo } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isAdditionOrModificationChange, ElemID, SaltoError, AccountInfo } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
 import { elements as elementUtils } from '@salto-io/adapter-components'
@@ -29,8 +27,7 @@ import SuiteAppClient, { SuiteAppType } from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from './suiteapp_client/suiteapp_file_cabinet'
 import { ConfigRecord, EnvType, HasElemIDFunc, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { CustomRecordResponse, RecordResponse } from './suiteapp_client/soap_client/types'
-import { DeployableChange, FeaturesMap, getChangeNodeId, GetCustomObjectsResult, getDeployableChanges, getNodeId,
-  getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, ManifestDependencies, SDFObjectNode } from './types'
+import { DeployableChange, FeaturesMap, getChangeNodeId, GetCustomObjectsResult, getDeployableChanges, getNodeId, getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, InvalidSuiteAppCredentialsError, ManifestDependencies, SDFObjectNode } from './types'
 import { toCustomizationInfo } from '../transformer'
 import { isSdfCreateOrUpdateGroupId, isSdfDeleteGroupId, isSuiteAppCreateRecordsGroupId, isSuiteAppDeleteRecordsGroupId,
   isSuiteAppUpdateRecordsGroupId, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID,
@@ -42,7 +39,7 @@ import { FeaturesDeployError, MissingManifestFeaturesError, getChangesElemIdsToR
 import { Graph, GraphNode } from './graph_utils'
 import { AdditionalDependencies, isRequiredFeature, removeRequiredFeatureSuffix } from '../config'
 import { SuiteAppBundleType } from '../types/bundle_type'
-import { getDeployResultFromSuiteAppResult, toDependencyError, toElementError, toError } from './utils'
+import { getChangeTypeAndAddedObjects, getDeployResultFromSuiteAppResult, toDependencyError, toElementError, toError } from './utils'
 
 const { awu } = collections.asynciterable
 const { lookupValue } = values
@@ -55,9 +52,6 @@ const GROUP_TO_DEPLOY_TYPE: Record<string, DeployType> = {
   [SUITEAPP_DELETING_FILES_GROUP_ID]: 'delete',
 }
 
-const getChangeType = (change: Change): 'addition' | 'modification' =>
-  (isAdditionChange(change) ? 'addition' : 'modification')
-
 type DependencyInfo = {
   dependencyMap: Map<string, Set<string>>
   dependencyGraph: Graph<SDFObjectNode>
@@ -66,9 +60,10 @@ type DependencyInfo = {
 const isLegalEdge = (
   startNode: GraphNode<SDFObjectNode>,
   endNode: GraphNode<SDFObjectNode>,
-): boolean =>
-  startNode.value.changeType === 'addition'
-  && (startNode.id !== endNode.id)
+  serviceId: string,
+): boolean => (
+  startNode.value.changeType === 'addition' || startNode.value.addedObjects.has(serviceId)
+) && startNode.id !== endNode.id
 
 export default class NetsuiteClient {
   private sdfClient: SdfClient
@@ -194,10 +189,10 @@ export default class NetsuiteClient {
         {
           change,
           serviceid: getServiceId(getChangeData(change)),
-          changeType: getChangeType(change),
           customizationInfo: await toCustomizationInfo(
             getOrTransformCustomRecordTypeToInstance(getChangeData(change))
           ),
+          ...getChangeTypeAndAddedObjects(change),
         }
       ))
       .toArray()
@@ -220,7 +215,7 @@ export default class NetsuiteClient {
           const startNode = dependencyGraph.findNodeByField(
             'serviceid', (serviceIdInfo.serviceIdType === 'path' ? serviceIdInfo.serviceId : serviceIdInfo.serviceId.split('.')[0])
           )
-          if (startNode && isLegalEdge(startNode, node)) {
+          if (startNode && isLegalEdge(startNode, node, serviceIdInfo.serviceId)) {
             startNode.addEdge(node)
           }
         })
@@ -545,6 +540,9 @@ export default class NetsuiteClient {
     try {
       return await this.suiteAppClient?.getSystemInformation()
     } catch (error) {
+      if (error instanceof InvalidSuiteAppCredentialsError) {
+        throw error
+      }
       log.error('The following error was thrown in getSystemInformation', { error })
       return undefined
     }

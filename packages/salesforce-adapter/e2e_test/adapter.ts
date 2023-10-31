@@ -43,7 +43,6 @@ const realAdapter = ({ adapterParams, credentials }: Opts, config?: SalesforceCo
     client,
     config: config ?? {},
     elementsSource: buildElementsSourceFromElements([]),
-    isFetchWithChangesDetection: false,
     ...adapterParams || { getElemIdFunc: mockGetElemIdFunc },
   })
   return { client, adapter }

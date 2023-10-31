@@ -108,7 +108,7 @@ export type IssueLayoutResponse = {
 
 export type layoutConfigItem = {
   type: string
-  sectionType: 'PRIMARY' | 'SECONDARY' | 'CONTENT'
+  sectionType: 'PRIMARY' | 'SECONDARY' | 'CONTENT' | 'REQUEST' | 'REQUEST_PORTAL'
   key: string
 }
 

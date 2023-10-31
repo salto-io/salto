@@ -29,7 +29,7 @@ export const createScriptedFieldValues = (name: string, allElements: Element[]):
   ],
   scriptedFieldType: 'DATE_FIELD',
   codeToRun: 'issue.projectObject.key == XYZ17',
-  searchTerm: 'ComplexName',
+  searchTerm: `ComplexName${name}`,
   enabled: true,
   itemLocation: 'atl.jira.view.issue.right.context',
 })

@@ -15,52 +15,78 @@
 */
 
 import { logger } from '@salto-io/logging'
-import { ElemIdGetter, InstanceElement, ObjectType, Change, DeployResult, getChangeData, isInstanceChange, isAdditionChange } from '@salto-io/adapter-api'
+import { ElemIdGetter, InstanceElement, ObjectType, Element, isInstanceElement, CORE_ANNOTATIONS, Change, DeployResult, getChangeData, isInstanceChange, isAdditionChange } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { createSchemeGuard, isResolvedReferenceExpression, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { createSchemeGuard, getParent, isResolvedReferenceExpression, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { elements as adapterElements } from '@salto-io/adapter-components'
+import { FilterResult } from '@salto-io/adapter-utils/src/filter'
 import _ from 'lodash'
 import { deployChanges } from '../../deployment/standard_deployment'
+import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../../utils'
+import { JiraConfig } from '../../config/config'
 import JiraClient, { graphQLResponseType } from '../../client/client'
-import { QUERY } from './layout_queries'
-import { ISSUE_LAYOUT_CONFIG_ITEM_SCHEME, ISSUE_LAYOUT_RESPONSE_SCHEME, issueLayoutConfig, layoutConfigItem, IssueLayoutResponse, containerIssueLayoutResponse } from './layout_types'
-import { ISSUE_LAYOUT_TYPE, JIRA } from '../../constants'
+import { QUERY, QUERY_JSM } from './layout_queries'
+import { ISSUE_LAYOUT_CONFIG_ITEM_SCHEME, ISSUE_LAYOUT_RESPONSE_SCHEME, issueLayoutConfig, layoutConfigItem, IssueLayoutResponse, containerIssueLayoutResponse, createLayoutType } from './layout_types'
+import { ISSUE_LAYOUT_TYPE, ISSUE_VIEW_TYPE, JIRA, REQUEST_FORM_TYPE, REQUEST_TYPE_NAME } from '../../constants'
 
 const log = logger(module)
 const { isDefined } = lowerDashValues
 
 type layoutTypeDetails = {
     pathParam: string
-    layoutTypeParam?: string
+    query: string
+    layoutType?: string
 }
 
 type QueryVariables = {
     projectId: string | number
     extraDefinerId: string | number
-    layoutTypeParam?: string
+    layoutType?: string
   }
 
-const layoutTypeNameToDetails: Record<string, layoutTypeDetails> = {
+type LayoutTypeName = 'RequestForm' | 'IssueView' | 'IssueLayout'
+const layoutTypeNameToDetails: Record<LayoutTypeName, layoutTypeDetails> = {
+  [REQUEST_FORM_TYPE]: {
+    layoutType: 'REQUEST_FORM',
+    pathParam: 'RequestForm',
+    query: QUERY_JSM,
+  },
   [ISSUE_LAYOUT_TYPE]: {
     pathParam: 'layouts',
+    query: QUERY,
+  },
+  [ISSUE_VIEW_TYPE]: {
+    layoutType: 'ISSUE_VIEW',
+    pathParam: 'IssueView',
+    query: QUERY_JSM,
   },
 }
 
 const isIssueLayoutResponse = createSchemeGuard<IssueLayoutResponse>(ISSUE_LAYOUT_RESPONSE_SCHEME)
 const isLayoutConfigItem = createSchemeGuard<layoutConfigItem>(ISSUE_LAYOUT_CONFIG_ITEM_SCHEME)
 
+function isLayoutTypeName(typeName: string): typeName is LayoutTypeName {
+  return Object.keys(layoutTypeNameToDetails).includes(typeName)
+}
+
 export const getLayoutResponse = async ({
   variables,
   client,
+  typeName,
 }:{
     variables: QueryVariables
     client: JiraClient
+    typeName: LayoutTypeName
     }): Promise<graphQLResponseType> => {
   const baseUrl = '/rest/gira/1'
   try {
+    const query = layoutTypeNameToDetails[typeName]?.query
+    if (query === undefined) {
+      log.error(`Failed to get issue layout for project ${variables.projectId} and screen ${variables.extraDefinerId}: query is undefined`)
+    }
     const response = await client.gqlPost({
       url: baseUrl,
-      query: QUERY,
+      query,
       variables,
     })
     return response
@@ -97,7 +123,7 @@ export const getLayout = async ({
         instance: InstanceElement
         layoutType: ObjectType
         getElemIdFunc?: ElemIdGetter | undefined
-        typeName: string
+        typeName: LayoutTypeName
     }): Promise<InstanceElement | undefined> => {
   if (!Array.isArray(response.data) && isIssueLayoutResponse(response.data) && instance.path !== undefined) {
     const { issueLayoutResult } = response.data.issueLayoutConfiguration
@@ -127,6 +153,10 @@ const deployLayoutChange = async (
   client: JiraClient,
 ): Promise<void> => {
   const layout = getChangeData(change)
+  const { typeName } = layout.elemID
+  if (!isLayoutTypeName(typeName)) {
+    return undefined
+  }
   const items = layout.value.issueLayoutConfig.items.map((item: layoutConfigItem) => {
     if (isResolvedReferenceExpression(item.key)) {
       const key = item.key.value.value.id
@@ -159,7 +189,7 @@ const deployLayoutChange = async (
         projectId: layout.value.projectId.value.value.id,
         extraDefinerId: layout.value.extraDefinerId.value.value.id,
       }
-      const response = await getLayoutResponse({ variables, client })
+      const response = await getLayoutResponse({ variables, client, typeName })
       if (!isIssueLayoutResponse(response.data)) {
         throw Error('Failed to deploy issue layout changes due to bad response from jira service')
       }
@@ -179,7 +209,7 @@ export const deployLayoutChanges = async ({
 }: {
     changes: Change[]
     client: JiraClient
-    typeName: string
+    typeName: LayoutTypeName
 }): Promise<{
     deployResult: DeployResult
     leftoverChanges: Change[]
@@ -195,4 +225,68 @@ export const deployLayoutChanges = async ({
     leftoverChanges,
     deployResult,
   }
+}
+
+export const fetchRequestTypeDetails = async ({
+  elements,
+  client,
+  config,
+  fetchQuery,
+  getElemIdFunc,
+  typeName,
+}: {
+    elements: Element[]
+    client: JiraClient
+    config: JiraConfig
+    fetchQuery: adapterElements.query.ElementQuery
+    getElemIdFunc?: ElemIdGetter | undefined
+    typeName: LayoutTypeName
+}): Promise<void | FilterResult> => {
+  if (client.isDataCenter
+    || !config.fetch.enableJSM
+    || !fetchQuery.isTypeMatch(typeName)) {
+    return
+  }
+  const requestTypeIdToRequestType: Record<string, InstanceElement> = Object.fromEntries(
+    (await Promise.all(elements.filter(e => e.elemID.typeName === REQUEST_TYPE_NAME)
+      .filter(isInstanceElement)
+      .map(async requestType => {
+        if (requestType.value.id === undefined) {
+          return undefined
+        }
+        return [requestType.value.id, requestType]
+      })))
+      .filter(isDefined)
+  )
+
+  const { layoutType: issueLayoutType } = createLayoutType(typeName)
+  elements.push(issueLayoutType)
+
+  const layouts = (await Promise.all(Object.entries(requestTypeIdToRequestType)
+    .flatMap(async ([requestTypeId, requestTypeInstance]) => {
+      const projectInstance = getParent(requestTypeInstance)
+      const variables = {
+        projectId: projectInstance.value.id,
+        extraDefinerId: requestTypeId,
+        layoutType: layoutTypeNameToDetails[typeName].layoutType,
+      }
+      const response = await getLayoutResponse({
+        variables,
+        client,
+        typeName,
+      })
+      return getLayout({
+        variables,
+        response,
+        instance: requestTypeInstance,
+        layoutType: issueLayoutType,
+        getElemIdFunc,
+        typeName,
+      })
+    }))).filter(isDefined)
+  layouts.forEach(layout => { elements.push(layout) })
+  setTypeDeploymentAnnotations(issueLayoutType)
+  await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.CREATABLE)
+  await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.UPDATABLE)
+  await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.DELETABLE)
 }

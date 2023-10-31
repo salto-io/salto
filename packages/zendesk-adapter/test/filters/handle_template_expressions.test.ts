@@ -38,6 +38,12 @@ import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 
 const { createMissingInstance } = referencesUtils
 
+let id = 0
+const newId = (): number => {
+  id += 1
+  return id
+}
+
 describe('handle templates filter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
   let filter: FilterType
@@ -154,34 +160,34 @@ describe('handle templates filter', () => {
     elemID: new ElemID(ZENDESK, USER_FIELD_TYPE_NAME),
   })
 
-  const placeholder1 = new InstanceElement('placeholder1', placeholder1Type, { id: 1452 })
-  const placeholder2 = new InstanceElement('placeholder2', placeholder1Type, { id: 1453 })
-  const placeholder3 = new InstanceElement('placeholder3', placeholder1Type, { id: 1454 })
+  const placeholder1 = new InstanceElement('placeholder1', placeholder1Type, { id: newId() })
+  const placeholder2 = new InstanceElement('placeholder2', placeholder1Type, { id: newId() })
+  const placeholder3 = new InstanceElement('placeholder3', placeholder1Type, { id: newId() })
   const placeholderOrganization1 = new InstanceElement('placeholder-org1', placeholder3Type, { key: 'org' })
   const placeholderOrganization2 = new InstanceElement('placeholder-org2', placeholder3Type, { key: 'org_123' })
   const placeholderUser1 = new InstanceElement('placeholder-user1', placeholder4Type, { key: 'user' })
   const placeholderUser2 = new InstanceElement('placeholder-user2', placeholder4Type, { key: 'user_123' })
 
-  const macro1 = new InstanceElement('macro1', testType, { id: 1001, actions: [{ value: 'non template', field: 'comment_value_html' }] })
-  const macro2 = new InstanceElement('macro2', testType, { id: 1002, actions: [{ value: '{{ticket.ticket_field_1452}}', field: 'comment_value' }] })
-  const macro3 = new InstanceElement('macro3', testType, { id: 1003, actions: [{ value: 'multiple refs {{ticket.ticket_field_1452}} and {{ticket.ticket_field_option_title_1453}}', field: 'comment_value_html' }] })
-  const macroOrganization = new InstanceElement('macroOrg', testType, { id: 1004, actions: [{ value: 'multiple refs {{ticket.organization.custom_fields.org_123}} and {{ticket.organization.custom_fields.org}} and {{ticket.organization.custom_fields.org_123.title}}', field: 'comment_value_html' }] })
-  const macroUser = new InstanceElement('macroUser', testType, { id: 1005, actions: [{ value: 'multiple refs {{ticket.requester.custom_fields.user_123}} and {{ticket.requester.custom_fields.user}} and {{ticket.requester.custom_fields.user_123.title}}', field: 'comment_value_html' }] })
-  const macroMissingUserAndOrganization = new InstanceElement('macroMissingOrgAndUser', testType, { id: 1005, actions: [{ value: 'multiple refs {{ticket.requester.custom_fields.user1}} and {{ticket.requester.custom_fields.user1.title}} and {{ticket.organization.custom_fields.org1}} and {{ticket.organization.custom_fields.org1.title}}', field: 'comment_value_html' }] })
+  const macro1 = new InstanceElement('macro1', testType, { id: newId(), actions: [{ value: 'non template', field: 'comment_value_html' }] })
+  const macro2 = new InstanceElement('macro2', testType, { id: newId(), actions: [{ value: `{{ticket.ticket_field_${placeholder1.value.id}}}`, field: 'comment_value' }] })
+  const macro3 = new InstanceElement('macro3', testType, { id: newId(), actions: [{ value: `multiple refs {{ticket.ticket_field_${placeholder1.value.id}}} and {{ticket.ticket_field_option_title_${placeholder2.value.id}}}`, field: 'comment_value_html' }] })
+  const macroOrganization = new InstanceElement('macroOrg', testType, { id: newId(), actions: [{ value: 'multiple refs {{ticket.organization.custom_fields.org_123}} and {{ticket.organization.custom_fields.org}} and {{ticket.organization.custom_fields.org_123.title}}', field: 'comment_value_html' }] })
+  const macroUser = new InstanceElement('macroUser', testType, { id: newId(), actions: [{ value: 'multiple refs {{ticket.requester.custom_fields.user_123}} and {{ticket.requester.custom_fields.user}} and {{ticket.requester.custom_fields.user_123.title}}', field: 'comment_value_html' }] })
+  const macroMissingUserAndOrganization = new InstanceElement('macroMissingOrgAndUser', testType, { id: newId(), actions: [{ value: 'multiple refs {{ticket.requester.custom_fields.user1}} and {{ticket.requester.custom_fields.user1.title}} and {{ticket.organization.custom_fields.org1}} and {{ticket.organization.custom_fields.org1.title}}', field: 'comment_value_html' }] })
 
-  const macroComplicated = new InstanceElement('macroComplicated', testType, { id: 1003, actions: [{ value: '{{some other irrelevancies-ticket.ticket_field_1452 | something irrelevant | dynamic content now: dc.dynamic_content_test | and done}}', field: 'comment_value_html' }] })
-  const macroDifferentBracket = new InstanceElement('macroDifferentBracket', testType, { id: 1010, actions: [{ value: '{%some other irrelevancies-ticket.ticket_field_1452 | something irrelevant | dynamic content now: dc.dynamic_content_test | and done%}', field: 'comment_value_html' }] })
+  const macroComplicated = new InstanceElement('macroComplicated', testType, { id: newId(), actions: [{ value: `{{some other irrelevancies-ticket.ticket_field_${placeholder1.value.id} | something irrelevant | dynamic content now: dc.dynamic_content_test | and done}}`, field: 'comment_value_html' }] })
+  const macroDifferentBracket = new InstanceElement('macroDifferentBracket', testType, { id: newId(), actions: [{ value: `{%some other irrelevancies-ticket.ticket_field_${placeholder1.value.id} | something irrelevant | dynamic content now: dc.dynamic_content_test | and done%}`, field: 'comment_value_html' }] })
   const macroWithSideConversationTicketTemplate = new InstanceElement(
     'macroSideConvTicket',
     testType,
     {
-      id: 1020,
+      id: newId(),
       actions: [
         {
           value:
             [
-              'Improved needs for {{ticket.ticket_field_option_title_1454}}',
-              '<p>Improved needs for {{ticket.ticket_field_option_title_1454}} due to something</p>',
+              `Improved needs for {{ticket.ticket_field_option_title_${placeholder3.value.id}}}`,
+              `<p>Improved needs for {{ticket.ticket_field_option_title_${placeholder3.value.id}}} due to something</p>`,
               'hello',
               'text/html',
             ],
@@ -190,8 +196,8 @@ describe('handle templates filter', () => {
         {
           value:
             [
-              'Improved needs for {{ticket.ticket_field_option_title_1454}}',
-              '<p>Improved needs for {{ticket.ticket_field_option_title_1454}} due to something</p>',
+              `Improved needs for {{ticket.ticket_field_option_title_${placeholder3.value.id}}}`,
+              `<p>Improved needs for {{ticket.ticket_field_option_title_${placeholder3.value.id}}} due to something</p>`,
               'hello',
               'text/html',
             ],
@@ -200,49 +206,50 @@ describe('handle templates filter', () => {
         {
           value:
             [
-              'Improved needs for {{ticket.ticket_field_1452}}',
-              '<p>Improved needs for {{ticket.ticket_field_1452}} due to something</p>',
+              `Improved needs for {{ticket.ticket_field_${placeholder1.value.id}}}`,
+              `<p>Improved needs for {{ticket.ticket_field_${placeholder1.value.id}}} due to something</p>`,
               'hello',
               'text/html',
             ],
           field: 'side_conversation',
         },
         {
-          value: 'Improved needs for {{ticket.ticket_field_1452}} - {{ticket.ticket_field_1452}}',
+          value: `Improved needs for {{ticket.ticket_field_${placeholder1.value.id}}} - {{ticket.ticket_field_${placeholder1.value.id}}}`,
           field: 'subject',
         },
       ],
     },
   )
 
-  const macroWithDC = new InstanceElement('macroDynamicContent', testType, { id: 1033, actions: [{ value: 'dynamic content ref {{dc.dynamic_content_test}} and {{ticket.ticket_field_option_title_1453}}', field: 'comment_value_html' }] })
-  const macroWithHyphenDC = new InstanceElement('macroHyphenDynamicContent', testType, { id: 1034, actions: [{ value: 'dynamic content ref {{dc.dynamic-content-test}} and {{ticket.ticket_field_option_title_1453}}', field: 'comment_value_html' }] })
+  const macroWithDC = new InstanceElement('macroDynamicContent', testType, { id: newId(), actions: [{ value: `dynamic content ref {{dc.dynamic_content_test}} and {{ticket.ticket_field_option_title_${placeholder2.value.id}}}`, field: 'comment_value_html' }] })
+  const macroWithHyphenDC = new InstanceElement('macroHyphenDynamicContent', testType, { id: newId(), actions: [{ value: `dynamic content ref {{dc.dynamic-content-test}} and {{ticket.ticket_field_option_title_${placeholder2.value.id}}}`, field: 'comment_value_html' }] })
 
-  const macroAlmostTemplate = new InstanceElement('macroAlmost', testType, { id: 1001, actions: [{ value: 'almost template {{ticket.not_an_actual_field_1452}} and {{ticket.ticket_field_1455}}', field: 'comment_value_html' }] })
-  const macroAlmostTemplate2 = new InstanceElement('macroAlmost2', testType, { id: 1001, actions: [{ value: '{{ticket.ticket_field_1452}}', field: 'not_template_field' }] })
-  const target = new InstanceElement('target', targetType, { id: 1004, target_url: 'url: {{ticket.ticket_field_1452}}' })
-  const trigger = new InstanceElement('trigger', triggerType, { id: 1005,
+  const macroAlmostTemplate = new InstanceElement('macroAlmost', testType, { id: newId(), actions: [{ value: `almost template {{ticket.not_an_actual_field_${placeholder1.value.id}}} and {{ticket.ticket_field_0}}`, field: 'comment_value_html' }] })
+  const macroAlmostTemplate2 = new InstanceElement('macroAlmost2', testType, { id: newId(), actions: [{ value: `{{ticket.ticket_field_${placeholder1.value.id}}}`, field: 'not_template_field' }] })
+  const target = new InstanceElement('target', targetType, { id: newId(), target_url: `url: {{ticket.ticket_field_${placeholder1.value.id}}}` })
+  const trigger = new InstanceElement('trigger', triggerType, { id: newId(),
     actions: [{
       field: 'notification_webhook',
       value: [
         ['my test', '{{dc.dynamic_content_test}}'],
         ['dcno', '{{dc.not_exists}}'],
+        ['testJson', `{\n\t"ticket": {\n\t\t"custom_fields": [\n\t\t\t{\n\t\t\t\t"id": ${placeholder3.value.id},\n\t\t\t\t"testdc": "${dynamicContentRecord.value.placeholder}"\n\t\t\t}\n\t\t],\n\t\t"id": ${placeholder2.value.id}\n\t},\n\t"id": ${placeholder3.value.id}\n}\n`],
       ],
     }] })
-  const webhook = new InstanceElement('webhook', webhookType, { id: 1006, endpoint: 'endpoint: {{ticket.ticket_field_1452}}' })
-  const automation = new InstanceElement('automation', automationType, { id: 1007, actions: [{ value: 'ticket: {{ticket.ticket_field_1452}}', field: 'notification_webhook' }] })
-  const dynamicContent = new InstanceElement('dc', dynamicContentItemType, { id: 1008, content: 'content: {{ticket.ticket_field_1452}}' })
+  const webhook = new InstanceElement('webhook', webhookType, { id: newId(), endpoint: `endpoint: {{ticket.ticket_field_${placeholder1.value.id}}}` })
+  const automation = new InstanceElement('automation', automationType, { id: newId(), actions: [{ value: `ticket: {{ticket.ticket_field_${placeholder1.value.id}}}`, field: 'notification_webhook' }] })
+  const dynamicContent = new InstanceElement('dc', dynamicContentItemType, { id: newId(), content: `content: {{ticket.ticket_field_${placeholder1.value.id}}}` })
   const appInstallation = new InstanceElement('appInstallation', appInstallationType, {
-    id: 1009,
-    settings: { uri_templates: 'template: {{ticket.ticket_field_1452}}' },
-    settings_objects: [{ name: 'uri_templates', value: 'object template: {{ticket.ticket_field_1452}}' }],
+    id: newId(),
+    settings: { uri_templates: `template: {{ticket.ticket_field_${placeholder1.value.id}}}` },
+    settings_objects: [{ name: 'uri_templates', value: `object template: {{ticket.ticket_field_${placeholder1.value.id}}}` }],
   })
 
   const article = new InstanceElement(
     'article',
     new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }),
     {
-      id: 12341234,
+      id: newId(),
     }
   )
 
@@ -250,7 +257,7 @@ describe('handle templates filter', () => {
     'articleTranslation',
     new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TRANSLATION_TYPE_NAME) }),
     {
-      body: `"/hc/test/test/articles/${article.value.id}/test`,
+      body: `"/hc/test/test/articles/${article.value.id}/test\n"hc/test/test/articles/${macro1.value.id}/test`,
     }
   )
 
@@ -280,17 +287,17 @@ describe('handle templates filter', () => {
 
     it('should resolve almost-template normally', () => {
       const fetchedMacroAlmostTemplate = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroAlmost')
-      const missingInstance = createMissingInstance(ZENDESK, 'ticket_field', '1455')
-      missingInstance.value.id = '1455'
+      const missingInstance = createMissingInstance(ZENDESK, 'ticket_field', '0')
+      missingInstance.value.id = '0'
       expect(fetchedMacroAlmostTemplate?.value.actions[0].value).toEqual(new TemplateExpression({
         parts: [
-          `almost template {{ticket.not_an_actual_field_1452}} and {{${TICKET_TICKET_FIELD}_`,
+          `almost template {{ticket.not_an_actual_field_${placeholder1.value.id}}} and {{${TICKET_TICKET_FIELD}_`,
           new ReferenceExpression(missingInstance.elemID, missingInstance),
           '}}',
         ],
       }))
       const fetchedMacroAlmostTemplate2 = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroAlmost2')
-      expect(fetchedMacroAlmostTemplate2?.value.actions[0].value).toEqual('{{ticket.ticket_field_1452}}')
+      expect(fetchedMacroAlmostTemplate2?.value.actions[0].value).toEqual(`{{ticket.ticket_field_${placeholder1.value.id}}}`)
     })
 
     it('should resolve one template correctly, in any type', () => {
@@ -308,14 +315,13 @@ describe('handle templates filter', () => {
         new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] }))
       const fetchedTrigger = elements.filter(isInstanceElement).find(i => i.elemID.name === 'trigger')
       expect(fetchedTrigger?.value.actions[0].value).toEqual([
-        [
-          'my test',
-          new TemplateExpression({ parts: ['{{', new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord), '}}'] }),
-        ],
-        [
-          'dcno',
-          new TemplateExpression({ parts: ['{{', new ReferenceExpression(missingDynamicContentRecord.elemID, missingDynamicContentRecord), '}}'] }),
-        ],
+        ['my test', new TemplateExpression({ parts: ['{{', new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord), '}}'] })],
+        ['dcno', new TemplateExpression({ parts: ['{{', new ReferenceExpression(missingDynamicContentRecord.elemID, missingDynamicContentRecord), '}}'] })],
+        ['testJson', new TemplateExpression({ parts: [
+          `{\n\t"ticket": {\n\t\t"custom_fields": [\n\t\t\t{\n\t\t\t\t"id": ${placeholder3.value.id},\n\t\t\t\t"testdc": "{{`,
+          new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord),
+          `}}"\n\t\t\t}\n\t\t],\n\t\t"id": ${placeholder2.value.id}\n\t},\n\t"id": ${placeholder3.value.id}\n}\n`,
+        ] })],
       ])
       const fetchedAutomation = elements.filter(isInstanceElement).find(i => i.elemID.name === 'automation')
       expect(fetchedAutomation?.value.actions[0].value).toEqual(new TemplateExpression({ parts: [
@@ -472,12 +478,13 @@ describe('handle templates filter', () => {
     })
     it('should not resolve urls when the config flag is off', async () => {
       const fetchedArticleTranslation = elements.filter(isInstanceElement).find(i => i.elemID.name === 'articleTranslation')
-      expect(fetchedArticleTranslation?.value.body).toEqual(`"/hc/test/test/articles/${article.value.id}/test`)
+      expect(fetchedArticleTranslation?.value.body).toEqual(`"/hc/test/test/articles/${article.value.id}/test\n"hc/test/test/articles/${macro1.value.id}/test`)
     })
-    it('should resolve urls correctly when the config flag is on', async () => {
+    it('should resolve urls correctly when config flags are on', async () => {
       elements = generateElements()
       const config = _.cloneDeep(DEFAULT_CONFIG)
       config[FETCH_CONFIG].extractReferencesFromFreeText = true
+      config[FETCH_CONFIG].convertJsonIdsToReferences = true
       const resolveLinksFilter = filterCreator(createFilterCreatorParams({ config })) as FilterType
       await resolveLinksFilter.onFetch(elements)
 
@@ -485,7 +492,22 @@ describe('handle templates filter', () => {
       expect(fetchedArticleTranslation?.value.body).toEqual(new TemplateExpression({ parts: [
         '"/hc/test/test/articles/',
         new ReferenceExpression(article.elemID, article),
+        '/test\n"hc/test/test/articles/',
+        new ReferenceExpression(macro1.elemID, macro1),
         '/test',
+      ] }))
+
+      const fetchedTrigger = elements.filter(isInstanceElement).find(i => i.elemID.name === 'trigger')
+      expect(fetchedTrigger?.value.actions[0].value[2][1]).toEqual(new TemplateExpression({ parts: [
+        '{\n\t"ticket": {\n\t\t"custom_fields": [\n\t\t\t{\n\t\t\t\t"id": ',
+        new ReferenceExpression(placeholder3.elemID, placeholder3),
+        ',\n\t\t\t\t"testdc": "{{',
+        new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord),
+        '}}"\n\t\t\t}\n\t\t],\n\t\t"id": ',
+        new ReferenceExpression(placeholder2.elemID, placeholder2),
+        '\n\t},\n\t"id": ',
+        new ReferenceExpression(placeholder3.elemID, placeholder3),
+        '\n}\n',
       ] }))
     })
   })

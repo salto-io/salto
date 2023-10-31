@@ -45,10 +45,10 @@ export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
   { fieldName: 'count', fieldType: 'number' },
 ]
 export const FIELDS_TO_HIDE: configUtils.FieldToHideType[] = [
-  { fieldName: 'created_at', fieldType: 'string' },
-  { fieldName: 'updated_at', fieldType: 'string' },
-  { fieldName: 'created_by_id', fieldType: 'number' },
-  { fieldName: 'updated_by_id', fieldType: 'number' },
+  { fieldName: 'created_at' },
+  { fieldName: 'updated_at' },
+  { fieldName: 'created_by_id' },
+  { fieldName: 'updated_by_id' },
 ]
 export const PAGE_SIZE = 100
 export const DEFAULT_QUERY_PARAMS = {
@@ -85,6 +85,7 @@ export type ZendeskFetchConfig = configUtils.UserFetchConfig
   guide?: Guide
   resolveOrganizationIDs?: boolean
   extractReferencesFromFreeText?: boolean
+  convertJsonIdsToReferences?: boolean
 }
 export type ZedneskDeployConfig = configUtils.UserDeployConfig & configUtils.DefaultMissingUserFallbackConfig & {
   createMissingOrganizations?: boolean
@@ -1234,7 +1235,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'secret', fieldType: 'string' },
         { fieldName: 'user_id', fieldType: 'number' },
       ]),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'secret', fieldType: 'string' },
+        { fieldName: 'user_id', fieldType: 'number' },
+      ],
       serviceUrl: '/admin/apps-integrations/apis/zendesk-api/oauth_clients',
     },
     deployRequests: {
@@ -1584,9 +1589,16 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     transformation: {
       sourceTypeName: 'business_hours_schedule__holidays',
-      dataField: 'holidays',
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      fieldsToHide: FIELDS_TO_HIDE.concat([
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'start_year', fieldType: 'string' },
+        { fieldName: 'end_year', fieldType: 'string' },
+      ]),
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'start_year', fieldType: 'string' },
+        { fieldName: 'end_year', fieldType: 'string' },
+      ],
     },
   },
   // eslint-disable-next-line camelcase
@@ -2940,6 +2952,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
           guide: { refType: GuideType },
           resolveOrganizationIDs: { refType: BuiltinTypes.BOOLEAN },
           extractReferencesFromFreeText: { refType: BuiltinTypes.BOOLEAN },
+          convertJsonIdsToReferences: { refType: BuiltinTypes.BOOLEAN },
         },
       ),
     },
@@ -2971,6 +2984,8 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       `${FETCH_CONFIG}.includeAuditDetails`,
       `${FETCH_CONFIG}.addAlias`,
       `${FETCH_CONFIG}.handleIdenticalAttachmentConflicts`,
+      `${FETCH_CONFIG}.extractReferencesFromFreeText`,
+      `${FETCH_CONFIG}.convertJsonIdsToReferences`,
       DEPLOY_CONFIG,
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

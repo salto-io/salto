@@ -40,7 +40,7 @@ import {
   isDeactivatedFlowChangeOnly,
   getAuthorInformationFromFileProps,
   isElementWithResolvedParent,
-  getElementAuthorInformation,
+  getElementAuthorInformation, getNamespaceSync,
 } from '../../src/filters/utils'
 import {
   API_NAME,
@@ -304,6 +304,38 @@ describe('addDefaults', () => {
       it('Layout instance', async () => {
         const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: `Account-${NAMESPACE}__Test Layout-Name` }, mockTypes.Layout)
         expect(await getNamespace(instance)).toEqual(NAMESPACE)
+      })
+    })
+  })
+  describe('getNamespaceSync', () => {
+    describe('without namespace', () => {
+      it.each([
+        'Instance',
+        'Parent.Instance',
+        ...INSTANCE_SUFFIXES.map(suffix => `Instance__${suffix}`),
+      ])('%s', (name: string) => {
+        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: name }, mockTypes.Profile)
+        expect(getNamespaceSync(instance)).toBeUndefined()
+      })
+      it('Layout instance', () => {
+        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: 'Account-Test Layout-Name' }, mockTypes.Layout)
+        expect(getNamespaceSync(instance)).toBeUndefined()
+      })
+    })
+    describe('with namespace', () => {
+      const NAMESPACE = 'ns'
+      it.each([
+        `${NAMESPACE}__Instance`,
+        `Parent.${NAMESPACE}__Instance`,
+        `${NAMESPACE}__configurationSummary`, // There was an edge-case where __c was replaced and caused incorrect result
+        ...INSTANCE_SUFFIXES.map(suffix => `${NAMESPACE}__Instance__${suffix}`),
+      ])('%s', (name: string) => {
+        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: name }, mockTypes.Profile)
+        expect(getNamespaceSync(instance)).toEqual(NAMESPACE)
+      })
+      it('Layout instance', () => {
+        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: `Account-${NAMESPACE}__Test Layout-Name` }, mockTypes.Layout)
+        expect(getNamespaceSync(instance)).toEqual(NAMESPACE)
       })
     })
   })

@@ -482,7 +482,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
       }
 
       const everyoneUserSegmentElemID = new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME, 'instance', EVERYONE_USER_TYPE)
-      const everyoneUserSegmentInstance = await elementsSource.get(everyoneUserSegmentElemID) // ?
+      const everyoneUserSegmentInstance = await elementsSource.get(everyoneUserSegmentElemID)
       relevantChanges
         .map(getChangeData)
         .forEach(articleInstance => {

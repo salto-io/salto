@@ -335,6 +335,12 @@ const convertRuleScopeToProjects = (instance: InstanceElement): void => {
   instance.value.projects = convertRuleScopeValueToProjects(instance.value)
 }
 
+const handleDCProjects = (instance: InstanceElement): void => {
+  if (instance.value.projects.length === 0) {
+    instance.value.projects = undefined
+  }
+}
+
 const filter: FilterCreator = ({ client }) => {
   let originalAutomationChanges: Record<string, Change<InstanceElement>>
   return {
@@ -349,7 +355,9 @@ const filter: FilterCreator = ({ client }) => {
             await instance.getType(),
             true,
           )
-          if (!client.isDataCenter) {
+          if (client.isDataCenter) {
+            handleDCProjects(instance)
+          } else {
             convertRuleScopeToProjects(instance)
           }
           await removeRedundantKeys(instance)

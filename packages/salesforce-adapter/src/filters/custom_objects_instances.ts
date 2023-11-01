@@ -39,7 +39,8 @@ import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField }
 import {
   getNamespace,
   isMasterDetailField,
-  isLookupField,
+  isReferenceField,
+  referenceFieldTargetTypes,
   queryClient,
   buildSelectQueries,
   getFieldNamesForQuery,
@@ -76,13 +77,6 @@ export type CustomObjectFetchSetting = {
 const defaultRecordKeysToOmit = ['attributes']
 const nameSeparator = '___'
 const aliasSeparator = ' '
-
-const isReferenceField = (field: Field): boolean => (
-  isMasterDetailField(field) || isLookupField(field)
-)
-
-const getReferenceTo = (field: Field): string[] =>
-  makeArray(field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]) as string[]
 
 const getQueryableFields = (object: ObjectType): Field[] => (
   Object.values(object.fields).filter(isQueryableField)
@@ -251,7 +245,7 @@ const typesRecordsToInstances = async (
       if (!isReferenceField(field)) {
         return fieldValue.toString()
       }
-      const referencedTypeNames = getReferenceTo(field)
+      const referencedTypeNames = referenceFieldTargetTypes(field)
       const referencedName = await awu(referencedTypeNames).map(referencedTypeName => {
         const rec = recordByIdAndType[referencedTypeName]?.[fieldValue]
         if (rec === undefined) {
@@ -291,7 +285,7 @@ const typesRecordsToInstances = async (
       if (!isReferenceField(field)) {
         return fieldValue.toString()
       }
-      const referencedTypeNames = getReferenceTo(field)
+      const referencedTypeNames = referenceFieldTargetTypes(field)
       return awu(referencedTypeNames).map(referencedTypeName => {
         const rec = recordByIdAndType[referencedTypeName]?.[fieldValue]
         if (rec === undefined) {
@@ -346,7 +340,7 @@ const getTargetRecordIds = (
       .filter(isReferenceField)
       .map(field => [
         field.name,
-        getReferenceTo(field).filter(typeName => allowedRefToTypeNames.includes(typeName)),
+        referenceFieldTargetTypes(field).filter(typeName => allowedRefToTypeNames.includes(typeName)),
       ])
   )
   return records.flatMap(record =>

@@ -29,20 +29,27 @@ import { FilterCreator } from '../filter'
 import {
   APP_USER_SCHEMA_TYPE_NAME,
   USER_SCHEMA_TYPE_NAME,
+  GROUP_PUSH_TYPE_NAME,
+  GROUP_PUSH_RULE_TYPE_NAME,
 } from '../constants'
 import { getAdminUrl } from '../client/admin'
 
 const log = logger(module)
 const { addUrlToInstance } = filters
 
-const SUPPORTED_TYPES = new Set([USER_SCHEMA_TYPE_NAME, APP_USER_SCHEMA_TYPE_NAME])
+const SUPPORTED_TYPES = new Set([
+  USER_SCHEMA_TYPE_NAME, APP_USER_SCHEMA_TYPE_NAME, GROUP_PUSH_TYPE_NAME, GROUP_PUSH_RULE_TYPE_NAME,
+])
 
 const createSuffixUrL = (instance: InstanceElement): string => {
-  const parent = getParent(instance).value.id
+  const parent = getParent(instance)
   if (instance.elemID.typeName === USER_SCHEMA_TYPE_NAME) {
-    return `/admin/universaldirectory#okta/${parent}`
+    return `/admin/universaldirectory#okta/${parent.value.id}`
   }
-  return `/api/v1/meta/schemas/apps/${parent}/default`
+  if (instance.elemID.typeName === GROUP_PUSH_TYPE_NAME || instance.elemID.typeName === GROUP_PUSH_RULE_TYPE_NAME) {
+    return `/admin/app/${parent.value.name}/instance/${parent.value.id}/#tab-group-push`
+  }
+  return `/api/v1/meta/schemas/apps/${parent.value.id}/default`
 }
 
 const createServiceUrl = (instance: InstanceElement, baseUrl: string): void => {

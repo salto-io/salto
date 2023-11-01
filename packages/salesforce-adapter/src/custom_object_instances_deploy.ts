@@ -487,6 +487,12 @@ const isModificationChangeList = <T>(
     changes.every(isModificationChange)
   )
 
+
+const customObjectInstancesDeployError = (message: string): DeployResult => ({
+  appliedChanges: [],
+  errors: [{ message, severity: 'Error' }],
+})
+
 const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
   changes: ReadonlyArray<Change<InstanceElement>>,
   client: SalesforceClient,
@@ -498,19 +504,19 @@ const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
     const instanceTypes = [...new Set(await awu(instances)
       .map(async inst => apiName(await inst.getType())).toArray())]
     if (instanceTypes.length > 1) {
-      throw new Error(`Custom Object Instances change group should have a single type but got: ${instanceTypes}`)
+      return customObjectInstancesDeployError(`Custom Object Instances change group should have a single type but got: ${instanceTypes}`)
     }
     const actualDataManagement = isListCustomSettingsObject(await instances[0].getType())
       ? await getDataManagementFromCustomSettings(instances) : dataManagement
     if (actualDataManagement === undefined) {
-      throw new Error('dataManagement must be defined in the salesforce.nacl config to deploy Custom Object instances')
+      return customObjectInstancesDeployError('dataManagement must be defined in the salesforce.nacl config to deploy Custom Object instances')
     }
     if (changes.every(isAdditionChange)) {
       const { idFields, invalidIdFields } = await getIdFields(
         await instances[0].getType(), actualDataManagement
       )
       if (invalidIdFields !== undefined && invalidIdFields.length > 0) {
-        throw new Error(`Failed to add instances of type ${instanceTypes[0]} due to invalid SaltoIdFields - ${invalidIdFields}`)
+        return customObjectInstancesDeployError(`Failed to add instances of type ${instanceTypes[0]} due to invalid SaltoIdFields - ${invalidIdFields}`)
       }
       return await deployAddInstances(instances, idFields, client, groupId)
     }
@@ -520,12 +526,10 @@ const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
     if (isModificationChangeList(changes)) {
       return await deployModifyChanges(changes, client, groupId)
     }
-    throw new Error('Custom Object Instances change group must have one action')
+    return customObjectInstancesDeployError('Custom Object Instances change group must have one action')
   } catch (error: unknown) {
-    return {
-      appliedChanges: [],
-      errors: [{ message: (error as Error).message, severity: 'Error' }],
-    }
+    log.error('Unknown error occurred for Data Deploy group %s: %o', groupId, error)
+    return customObjectInstancesDeployError('Unknown error occurred')
   }
 }
 

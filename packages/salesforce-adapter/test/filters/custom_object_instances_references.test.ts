@@ -174,6 +174,16 @@ describe('Custom Object Instances References filter', () => {
             ],
           },
         },
+        HierarchyExample: {
+          refType: Types.primitiveDataTypes.Hierarchy,
+          annotations: {
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+            [LABEL]: 'hierarchy',
+            [API_NAME]: 'HierarchyExample',
+            [FIELD_ANNOTATIONS.CREATABLE]: true,
+            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          },
+        },
         HiddenValueField: {
           refType: Types.primitiveDataTypes.MasterDetail,
           annotations: {
@@ -196,6 +206,7 @@ describe('Custom Object Instances References filter', () => {
     Id: '1234',
     LookupExample: 'refToId',
     MasterDetailExample: 'masterToId',
+    HierarchyExample: '1234', // hierarchy refs can only refer to the same type
     NonDeployableLookup: 'ToNothing',
     HiddenValueField: 'ToNothing',
     RefToUser: 'aaa',
@@ -352,6 +363,7 @@ describe('Custom Object Instances References filter', () => {
         Id: '1234',
         LookupExample: new ReferenceExpression(refToInstance.elemID),
         MasterDetailExample: new ReferenceExpression(masterToInstance.elemID),
+        HierarchyExample: new ReferenceExpression(refFromInstance.elemID),
         NonDeployableLookup: 'ToNothing',
         RefToUser: 'aaa',
         HiddenValueField: 'ToNothing',

@@ -246,12 +246,8 @@ describe('Custom Object Instances filter', () => {
   const buildTestFetchProfile = (
     types: TestFetchProfileParams[],
     omittedFields: string[] = [],
-    warnOnNonQueryableInstances = false,
   ): FetchProfile => {
     const fetchProfileParams: FetchParameters = {
-      warningSettings: {
-        nonQueryableFields: warnOnNonQueryableInstances,
-      },
       data: {
         includeObjects: types
           .filter(typeParams => typeParams.included)
@@ -555,40 +551,42 @@ describe('Custom Object Instances filter', () => {
   })
 
   describe('Without nameBasedID', () => {
+    let fetchProfile: FetchProfile
     beforeEach(async () => {
+      fetchProfile = buildFetchProfile({
+        fetchParams: {
+          data: {
+            includeObjects: [
+              createNamespaceRegexFromString(testNamespace),
+              createNamespaceRegexFromString(refFromNamespace),
+              includeObjectName,
+              excludeOverrideObjectName,
+              refFromAndToObjectName,
+              notInNamespaceName,
+            ],
+            excludeObjects: [
+              '^TestNamespace__Exclude.*',
+              excludeOverrideObjectName,
+            ],
+            allowReferenceTo: [
+              '^RefFromNamespace__RefTo.*',
+              refToObjectName,
+              refFromAndToObjectName,
+              emptyRefToObjectName,
+            ],
+            saltoIDSettings: {
+              defaultIdFields: ['Id'],
+            },
+          },
+        },
+        elementsSource: buildElementsSourceFromElements([]),
+      })
       filter = filterCreator(
         {
           client,
           config: {
             ...defaultFilterContext,
-            fetchProfile: buildFetchProfile({
-              fetchParams: {
-                data: {
-                  includeObjects: [
-                    createNamespaceRegexFromString(testNamespace),
-                    createNamespaceRegexFromString(refFromNamespace),
-                    includeObjectName,
-                    excludeOverrideObjectName,
-                    refFromAndToObjectName,
-                    notInNamespaceName,
-                  ],
-                  excludeObjects: [
-                    '^TestNamespace__Exclude.*',
-                    excludeOverrideObjectName,
-                  ],
-                  allowReferenceTo: [
-                    '^RefFromNamespace__RefTo.*',
-                    refToObjectName,
-                    refFromAndToObjectName,
-                    emptyRefToObjectName,
-                  ],
-                  saltoIDSettings: {
-                    defaultIdFields: ['Id'],
-                  },
-                },
-              },
-              elementsSource: buildElementsSourceFromElements([]),
-            }),
+            fetchProfile,
           },
         }
       ) as FilterType
@@ -640,11 +638,13 @@ describe('Custom Object Instances filter', () => {
           notConfiguredObj, includedNameSpaceObj,
           includedObject, excludedObject, excludeOverrideObject, refToObject,
         ]
-        fetchResult = await filter.onFetch(elements) as FetchResult
       })
 
       describe('when an object has non-queryable fields', () => {
         describe('when warnings are enabled', () => {
+          beforeEach(async () => {
+            fetchResult = await filter.onFetch(elements) as FetchResult
+          })
           it('should issue a message if there are instances of the object', () => {
             expect(fetchResult.errors).toEqual([{
               message: expect.stringContaining(includeObjectName) && expect.stringContaining('NonQueryable'),
@@ -658,9 +658,26 @@ describe('Custom Object Instances filter', () => {
             }])
           })
         })
-      })
+        describe('when warnings are disabled', () => {
+          let originalWarningsEnabled: FetchProfile['isWarningEnabled']
+          beforeEach(async () => {
+            originalWarningsEnabled = fetchProfile.isWarningEnabled
+            fetchProfile.isWarningEnabled = () => false
 
+            fetchResult = await filter.onFetch(elements) as FetchResult
+          })
+          afterEach(() => {
+            fetchProfile.isWarningEnabled = originalWarningsEnabled
+          })
+          it('should not issue a message if there are instances of the object', () => {
+            expect(fetchResult.errors).toBeEmpty()
+          })
+        })
+      })
       describe('should add instances per configured object', () => {
+        beforeEach(async () => {
+          fetchResult = await filter.onFetch(elements) as FetchResult
+        })
         it('should not fetch for non-configured objects', async () => {
           const notConfiguredObjInstances = await awu(elements).filter(
             async e => isInstanceElement(e) && await e.getType() === notConfiguredObj

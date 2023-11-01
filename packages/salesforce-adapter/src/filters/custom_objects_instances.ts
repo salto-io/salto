@@ -570,7 +570,7 @@ const createInaccessibleFieldsFetchWarning = (
   objectType: ObjectType,
   inaccessibleFields: string[],
 ): SaltoError => ({
-  message: `There are ${inaccessibleFields.length} fields in the ${apiNameSync(objectType)} object that the fetch user does not have access to. These are the fields: ${inaccessibleFields.join(',')} If ${apiNameSync(objectType)} records are deployed from this environment, values of these fields will appear as deletions.`,
+  message: `There are ${inaccessibleFields.length} fields in the ${apiNameSync(objectType)} object that the fetch user does not have access to. These are the fields: ${inaccessibleFields.join(',')}. If ${apiNameSync(objectType)} records are deployed from this environment, values of these fields will appear as deletions.`,
   severity: 'Info',
 })
 
@@ -639,7 +639,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     if (config.fetchProfile.isWarningEnabled('nonQueryableFields') ?? false) {
       invalidPermissionsWarnings = customObjectFetchSetting
         .map(fetchSettings => fetchSettings.objectType)
-        .filter(isCustomObject)
+        .filter(isCustomObjectSync)
         .map(objectType => ({ type: objectType, fields: getInaccessibleCustomFields(objectType) }))
         .filter(({ fields }) => fields.length > 0)
         .filter(({ type }) => typesOfFetchedInstances.has(type))

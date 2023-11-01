@@ -20,6 +20,7 @@ import {
   createRefToElmWithValue,
   Element,
   ElemID,
+  FetchResult,
   FieldDefinition,
   InstanceElement,
   isInstanceElement,
@@ -550,40 +551,42 @@ describe('Custom Object Instances filter', () => {
   })
 
   describe('Without nameBasedID', () => {
+    let fetchProfile: FetchProfile
     beforeEach(async () => {
+      fetchProfile = buildFetchProfile({
+        fetchParams: {
+          data: {
+            includeObjects: [
+              createNamespaceRegexFromString(testNamespace),
+              createNamespaceRegexFromString(refFromNamespace),
+              includeObjectName,
+              excludeOverrideObjectName,
+              refFromAndToObjectName,
+              notInNamespaceName,
+            ],
+            excludeObjects: [
+              '^TestNamespace__Exclude.*',
+              excludeOverrideObjectName,
+            ],
+            allowReferenceTo: [
+              '^RefFromNamespace__RefTo.*',
+              refToObjectName,
+              refFromAndToObjectName,
+              emptyRefToObjectName,
+            ],
+            saltoIDSettings: {
+              defaultIdFields: ['Id'],
+            },
+          },
+        },
+        elementsSource: buildElementsSourceFromElements([]),
+      })
       filter = filterCreator(
         {
           client,
           config: {
             ...defaultFilterContext,
-            fetchProfile: buildFetchProfile({
-              fetchParams: {
-                data: {
-                  includeObjects: [
-                    createNamespaceRegexFromString(testNamespace),
-                    createNamespaceRegexFromString(refFromNamespace),
-                    includeObjectName,
-                    excludeOverrideObjectName,
-                    refFromAndToObjectName,
-                    notInNamespaceName,
-                  ],
-                  excludeObjects: [
-                    '^TestNamespace__Exclude.*',
-                    excludeOverrideObjectName,
-                  ],
-                  allowReferenceTo: [
-                    '^RefFromNamespace__RefTo.*',
-                    refToObjectName,
-                    refFromAndToObjectName,
-                    emptyRefToObjectName,
-                  ],
-                  saltoIDSettings: {
-                    defaultIdFields: ['Id'],
-                  },
-                },
-              },
-              elementsSource: buildElementsSourceFromElements([]),
-            }),
+            fetchProfile,
           },
         }
       ) as FilterType
@@ -597,18 +600,84 @@ describe('Custom Object Instances filter', () => {
       const includedNamespaceObjName = `${testNamespace}__Included__c`
       const includedNameSpaceObj = createCustomObject(includedNamespaceObjName)
 
-      const includedObject = createCustomObject(includeObjectName)
+      const includedObject = createCustomObject(includeObjectName, {
+        NonQueryable: {
+          refType: stringType,
+          annotations: {
+            [FIELD_ANNOTATIONS.QUERYABLE]: false,
+            [LABEL]: 'Non-queryable field',
+            [API_NAME]: 'NonQueryableField',
+          },
+        },
+        HiddenNonQueryable: {
+          refType: stringType,
+          annotations: {
+            [FIELD_ANNOTATIONS.QUERYABLE]: false,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+            [LABEL]: 'Hidden non-queryable field',
+            [API_NAME]: 'HiddenNonQueryableField',
+          },
+        },
+      })
+
+      const refToObject = createCustomObject(refToObjectName, {
+        NonQueryable: {
+          refType: stringType,
+          annotations: {
+            [FIELD_ANNOTATIONS.QUERYABLE]: false,
+            [LABEL]: 'Non-queryable field',
+            [API_NAME]: 'NonQueryableField',
+          },
+        },
+      })
       const excludedObject = createCustomObject(excludeObjectName)
       const excludeOverrideObject = createCustomObject(excludeOverrideObjectName)
+      let fetchResult: FetchResult
       beforeEach(async () => {
         elements = [
           notConfiguredObj, includedNameSpaceObj,
-          includedObject, excludedObject, excludeOverrideObject,
+          includedObject, excludedObject, excludeOverrideObject, refToObject,
         ]
-        await filter.onFetch(elements)
       })
 
+      describe('when an object has non-queryable fields', () => {
+        describe('when warnings are enabled', () => {
+          beforeEach(async () => {
+            fetchResult = await filter.onFetch(elements) as FetchResult
+          })
+          it('should issue a message if there are instances of the object', () => {
+            expect(fetchResult.errors).toEqual([{
+              message: expect.stringContaining(includeObjectName) && expect.stringContaining('NonQueryable'),
+              severity: 'Info',
+            }])
+            expect(fetchResult.errors?.[0].message).not.toInclude('HiddenNonQueryable')
+          })
+          it('should not issue a message if there are no instances of the object', () => {
+            expect(fetchResult.errors).not.toIncludeAllPartialMembers([{
+              message: expect.stringContaining(refToObjectName),
+            }])
+          })
+        })
+        describe('when warnings are disabled', () => {
+          let originalWarningsEnabled: FetchProfile['isWarningEnabled']
+          beforeEach(async () => {
+            originalWarningsEnabled = fetchProfile.isWarningEnabled
+            fetchProfile.isWarningEnabled = () => false
+
+            fetchResult = await filter.onFetch(elements) as FetchResult
+          })
+          afterEach(() => {
+            fetchProfile.isWarningEnabled = originalWarningsEnabled
+          })
+          it('should not issue a message if there are instances of the object', () => {
+            expect(fetchResult.errors).toBeEmpty()
+          })
+        })
+      })
       describe('should add instances per configured object', () => {
+        beforeEach(async () => {
+          fetchResult = await filter.onFetch(elements) as FetchResult
+        })
         it('should not fetch for non-configured objects', async () => {
           const notConfiguredObjInstances = await awu(elements).filter(
             async e => isInstanceElement(e) && await e.getType() === notConfiguredObj

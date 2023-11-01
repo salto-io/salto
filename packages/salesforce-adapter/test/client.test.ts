@@ -1152,4 +1152,24 @@ describe('salesforce client', () => {
       expect(nonSandBoxClient.isSandbox()).toBeFalsy()
     })
   })
+
+  describe('filePropertiesByType', () => {
+    let expectedProperties: FileProperties
+    let testClient: SalesforceClient
+    let testConnection: MockInterface<Connection>
+    beforeEach(() => {
+      const mockClientAndConnection = mockClient()
+      testClient = mockClientAndConnection.client
+      testConnection = mockClientAndConnection.connection
+      expectedProperties = mockFileProperties({ type: 'CustomObject', fullName: 'A__c' })
+      testConnection.metadata.list.mockResolvedValue([expectedProperties])
+    })
+    it('should have correct value and not invoke listMetadataObjects twice on the same type', async () => {
+      expect(await testClient.listMetadataObjects({ type: 'CustomObject' }))
+        .toMatchObject({ result: [expectedProperties] })
+      expect(testClient.filePropsByType).toEqual({ CustomObject: [expectedProperties] })
+      await testClient.listMetadataObjects({ type: 'CustomObject' })
+      expect(testConnection.metadata.list).toHaveBeenCalledOnce()
+    })
+  })
 })

@@ -285,7 +285,7 @@ const sendChunked = async <TIn, TOut>({
   isUnhandledError = () => true,
 }: SendChunkedArgs<TIn, TOut>): Promise<SendChunkedResult<TIn, TOut>> => {
   const sendSingleChunk = async (chunkInput: TIn[]):
-  Promise<SendChunkedResult<TIn, TOut>> => {
+    Promise<SendChunkedResult<TIn, TOut>> => {
     try {
       log.debug('Sending chunked %s on %o', operationInfo, chunkInput)
       const result = makeArray(await sendChunk(chunkInput)).map(flatValues)
@@ -533,6 +533,7 @@ export default class SalesforceClient {
   readonly dataRetry: CustomObjectsDeployRetryConfig
   readonly clientName: string
   readonly readMetadataChunkSize: Required<ReadMetadataChunkSizeConfig>
+  readonly filePropsByType: Record<string, FileProperties[]>
 
   constructor(
     { credentials, connection, config }: SalesforceClientOpts
@@ -569,6 +570,7 @@ export default class SalesforceClient {
       DEFAULT_READ_METADATA_CHUNK_SIZE,
       config?.readMetadataChunkSize,
     )
+    this.filePropsByType = {}
   }
 
   private retryOnBadResponse = <T extends object>(request: () => Promise<T>): Promise<T> => {
@@ -638,7 +640,14 @@ export default class SalesforceClient {
     return sendChunked({
       operationInfo: 'listMetadataObjects',
       input: listMetadataQuery,
-      sendChunk: chunk => this.retryOnBadResponse(() => this.conn.metadata.list(chunk)),
+      sendChunk: async chunk => {
+        if (this.filePropsByType[chunk[0].type]) {
+          return this.filePropsByType[chunk[0].type]
+        }
+        const res = await this.retryOnBadResponse(() => this.conn.metadata.list(chunk))
+        this.filePropsByType[chunk[0].type] = res
+        return res
+      },
       chunkSize: MAX_ITEMS_IN_LIST_METADATA_REQUEST,
       isUnhandledError,
     })
@@ -707,7 +716,7 @@ export default class SalesforceClient {
   @logDecorator()
   @requiresLogin()
   public async describeSObjects(objectNames: string[]):
-  Promise<SendChunkedResult<string, DescribeSObjectResult>> {
+    Promise<SendChunkedResult<string, DescribeSObjectResult>> {
     return sendChunked({
       operationInfo: 'describeSObjects',
       input: objectNames,
@@ -890,7 +899,7 @@ export default class SalesforceClient {
     operation: BulkLoadOperation,
     records: SalesforceRecord[]
   ):
-  Promise<BatchResultInfo[]> {
+    Promise<BatchResultInfo[]> {
     const batch = this.conn.bulk.load(
       type,
       operation,

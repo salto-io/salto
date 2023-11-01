@@ -58,7 +58,7 @@ import {
   isAttachments,
   updateArticleTranslationBody,
 } from './utils'
-import { API_DEFINITIONS_CONFIG } from '../../config'
+import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, isGuideEnabled } from '../../config'
 
 
 const log = logger(module)
@@ -201,6 +201,10 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
   const attachmentChanges = changes
     .filter(isAdditionOrModificationChange)
     .filter(change => getChangeData(change).elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME)
+
+  if (attachmentChanges.length === 0) {
+    return []
+  }
   await awu(attachmentChanges)
     .forEach(async attachmentChange => {
       const attachmentInstance = getChangeData(attachmentChange)
@@ -345,6 +349,10 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
   return {
     name: 'articleFilter',
     onFetch: async (elements: Element[]) => {
+      if (!isGuideEnabled(config[FETCH_CONFIG])) {
+        return { errors: [] }
+      }
+
       const articleInstances = elements
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.typeName === ARTICLE_TYPE_NAME)
@@ -468,10 +476,14 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
     },
 
     onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
+      const relevantChanges = changes.filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
+      if (relevantChanges.length === 0) {
+        return
+      }
+
       const everyoneUserSegmentElemID = new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME, 'instance', EVERYONE_USER_TYPE)
-      const everyoneUserSegmentInstance = await elementsSource.get(everyoneUserSegmentElemID)
-      changes
-        .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
+      const everyoneUserSegmentInstance = await elementsSource.get(everyoneUserSegmentElemID) // ?
+      relevantChanges
         .map(getChangeData)
         .forEach(articleInstance => {
           removeTitleAndBody(articleInstance)

@@ -376,11 +376,15 @@ const customObjectFieldsFilter: FilterCreator = ({ config, client }) => {
     // For that reason we need to specifically handle it here, using 'is_user_value' field that we added in onFetch
     // non-user references are handled by handle_template_expressions.ts
     preDeploy: async changes => {
+      const userConditions = getUserConditions(changes)
+      if (userConditions.length === 0) {
+        return
+      }
       const users = await getUsers(paginator)
       const usersByEmail = _.keyBy(users, user => user.email)
 
       const missingUserConditions: CustomObjectCondition[] = []
-      getUserConditions(changes).forEach(condition => {
+      userConditions.forEach(condition => {
         if (_.isString(condition.value) && usersByEmail[condition.value]) {
           const userId = usersByEmail[condition.value].id.toString()
           userPathToOriginalValue[userId] = condition.value
@@ -391,23 +395,24 @@ const customObjectFieldsFilter: FilterCreator = ({ config, client }) => {
       })
 
       const { defaultMissingUserFallback } = config[DEPLOY_CONFIG] ?? {}
-      if (missingUserConditions.length > 0 && defaultMissingUserFallback !== undefined) {
-        const userEmails = new Set(users.map(user => user.email))
-        const fallbackValue = await getUserFallbackValue(
-          defaultMissingUserFallback,
-          userEmails,
-          client
-        )
-        if (fallbackValue !== undefined && usersByEmail[fallbackValue] !== undefined) {
-          const fallbackUserId = usersByEmail[fallbackValue].id.toString()
-          userPathToOriginalValue[fallbackUserId] = fallbackValue
-          // We do not need to revert the fallback value in onDeploy because we change the value in the service
-          missingUserConditions.forEach(condition => {
-            condition.value = fallbackUserId
-          })
-        } else {
-          log.error('Error while trying to get defaultMissingUserFallback value in customObjectFieldsFilter')
-        }
+      if (missingUserConditions.length === 0 || defaultMissingUserFallback === undefined) {
+        return
+      }
+      const userEmails = new Set(users.map(user => user.email))
+      const fallbackValue = await getUserFallbackValue(
+        defaultMissingUserFallback,
+        userEmails,
+        client
+      )
+      if (fallbackValue !== undefined && usersByEmail[fallbackValue] !== undefined) {
+        const fallbackUserId = usersByEmail[fallbackValue].id.toString()
+        userPathToOriginalValue[fallbackUserId] = fallbackValue
+        // We do not need to revert the fallback value in onDeploy because we change the value in the service
+        missingUserConditions.forEach(condition => {
+          condition.value = fallbackUserId
+        })
+      } else {
+        log.error('Error while trying to get defaultMissingUserFallback value in customObjectFieldsFilter')
       }
     },
     onDeploy: async changes => {

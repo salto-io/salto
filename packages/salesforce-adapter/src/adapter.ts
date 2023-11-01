@@ -435,6 +435,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       ? await buildFetchProfileForFetchWithChangesDetection({
         fetchParams: this.userConfig.fetch ?? {},
         elementsSource: this.elementsSource,
+        relatedPropsByMetadataTypePromise: retrieveRelatedPropsByMetadataType(this.client),
       })
       : buildFetchProfile({
         fetchParams: this.userConfig.fetch ?? {},

@@ -362,7 +362,7 @@ describe('workflowScheme', () => {
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/workflowscheme/1',
-        undefined
+        undefined,
       )
 
       expect(connection.get).toHaveBeenCalledWith(
@@ -424,7 +424,7 @@ describe('workflowScheme', () => {
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/workflowscheme/1',
-        undefined
+        undefined,
       )
 
       expect(connection.get).not.toHaveBeenCalledWith(

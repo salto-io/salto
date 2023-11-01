@@ -82,6 +82,7 @@ export type DeployRequestConfig = BaseRequestConfig & {
   deployAsField?: string
   method: 'post' | 'put' | 'delete' | 'patch'
   fieldsToIgnore?: string[]
+  omitRequestBody?: boolean
 }
 
 export type DeploymentRequestsByAction<A extends string = ActionName> = Partial<Record<A, DeployRequestConfig>>

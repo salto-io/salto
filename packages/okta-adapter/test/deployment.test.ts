@@ -154,8 +154,7 @@ describe('deployment.ts', () => {
         expect(result).toEqual({})
         expect(mockConnection.delete).toHaveBeenCalledWith(
           '/api/v1/groups/rules/1',
-          { id: '1', name: 'val' },
-          undefined,
+          { data: undefined },
         )
       })
     })

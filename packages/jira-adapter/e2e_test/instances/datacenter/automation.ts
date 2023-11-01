@@ -93,8 +93,6 @@ export const createAutomationValues = (name: string): Values => ({
       newComponent: false,
     },
   ],
-  projects: [
-  ],
   labels: [
   ],
   tags: [

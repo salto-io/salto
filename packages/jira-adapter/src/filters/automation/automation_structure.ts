@@ -335,7 +335,7 @@ const convertRuleScopeToProjects = (instance: InstanceElement): void => {
   instance.value.projects = convertRuleScopeValueToProjects(instance.value)
 }
 
-const handleDCProjects = (instance: InstanceElement): void => {
+const removeProjectsForGlobalDCAutomation = (instance: InstanceElement): void => {
   if (instance.value.projects.length === 0) {
     instance.value.projects = undefined
   }
@@ -356,7 +356,7 @@ const filter: FilterCreator = ({ client }) => {
             true,
           )
           if (client.isDataCenter) {
-            handleDCProjects(instance)
+            removeProjectsForGlobalDCAutomation(instance)
           } else {
             convertRuleScopeToProjects(instance)
           }

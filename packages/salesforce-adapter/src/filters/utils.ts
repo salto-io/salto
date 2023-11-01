@@ -332,6 +332,10 @@ export const layoutObjAndName = (layoutApiName: string): [string, string] => {
   const [obj, ...name] = layoutApiName.split('-')
   return [specialLayoutObjects.get(obj) ?? obj, name.join('-')]
 }
+
+/**
+ * @deprecated use {@link getNamespaceSync} instead.
+ */
 export const getNamespace = async (
   element: Element,
 ): Promise<string | undefined> => {
@@ -671,3 +675,13 @@ export const getElementAuthorInformation = ({ annotations }: Element): AuthorInf
   changedBy: annotations[CORE_ANNOTATIONS.CHANGED_BY],
   changedAt: annotations[CORE_ANNOTATIONS.CHANGED_AT],
 })
+
+export const getNamespaceSync = (element: Element): string | undefined => {
+  const elementApiName = apiNameSync(element, true)
+  if (elementApiName === undefined) {
+    return undefined
+  }
+  return isInstanceElement(element) && isInstanceOfTypeSync(LAYOUT_TYPE_ID_METADATA_TYPE)(element)
+    ? getNamespaceFromString(layoutObjAndName(elementApiName)[1])
+    : getNamespaceFromString(elementApiName)
+}

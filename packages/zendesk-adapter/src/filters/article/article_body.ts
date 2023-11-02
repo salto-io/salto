@@ -35,7 +35,7 @@ import {
   ARTICLE_TRANSLATION_TYPE_NAME,
   BRAND_TYPE_NAME,
 } from '../../constants'
-import { FETCH_CONFIG, ZendeskConfig } from '../../config'
+import { FETCH_CONFIG, isGuideEnabled, ZendeskConfig } from '../../config'
 import { ELEMENTS_REGEXES, getBrandsForGuide, transformReferenceUrls } from '../utils'
 
 const log = logger(module)
@@ -213,7 +213,12 @@ const filterCreator: FilterCreator = ({ config }) => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}
   return {
     name: 'articleBodyFilter',
-    onFetch: async (elements: Element[]) => articleBodyOnFetch(elements, config),
+    onFetch: async (elements: Element[]) => {
+      if (!isGuideEnabled(config[FETCH_CONFIG])) {
+        return undefined
+      }
+      return articleBodyOnFetch(elements, config)
+    },
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       await awu(changes)
         .filter(isAdditionOrModificationChange)

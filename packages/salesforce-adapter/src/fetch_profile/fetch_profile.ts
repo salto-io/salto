@@ -61,6 +61,7 @@ const buildBaseFetchProfile = ({
     maxInstancesPerType,
     preferActiveFlowVersions,
     addNamespacePrefixToFullName,
+    warningSettings,
   } = fetchParams
   return {
     dataManagement: data && buildDataManagement(data),
@@ -69,6 +70,9 @@ const buildBaseFetchProfile = ({
     maxInstancesPerType: maxInstancesPerType ?? DEFAULT_MAX_INSTANCES_PER_TYPE,
     preferActiveFlowVersions: preferActiveFlowVersions ?? false,
     addNamespacePrefixToFullName: addNamespacePrefixToFullName ?? true,
+    isWarningEnabled: name => (
+      warningSettings?.[name] ?? true
+    ),
   }
 }
 

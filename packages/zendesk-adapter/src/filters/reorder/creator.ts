@@ -70,9 +70,10 @@ export const createReorderFilterCreator = (
       await deployChange(change, client, apiDefinitions)
     },
     activeFieldName,
+    filterName,
   }: ReorderFilterCreatorParams
 ): FilterCreator => ({ config, client }) => ({
-  name: 'reorderFilter',
+  name: filterName,
   onFetch: async (elements: Element[]): Promise<void> => {
     const orderTypeName = createOrderTypeName(typeName)
     const objType = elements

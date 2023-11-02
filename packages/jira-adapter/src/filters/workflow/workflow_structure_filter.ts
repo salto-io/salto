@@ -195,7 +195,7 @@ const filter: FilterCreator = ({ config }) => ({
 
     const workflowRulesType = findObject(elements, WORKFLOW_RULES_TYPE_NAME)
 
-    const conditionConfigurationTypes = await createConditionConfigurationTypes()
+    const conditionConfigurationTypes = createConditionConfigurationTypes()
 
     if (workflowRulesType !== undefined) {
       workflowRulesType.fields.conditions = new Field(workflowRulesType, 'conditions', await workflowRulesType.fields.conditionsTree.getType())
@@ -212,15 +212,7 @@ const filter: FilterCreator = ({ config }) => ({
     const worfkflowConditionType = findObject(elements, 'WorkflowCondition')
 
     if (worfkflowConditionType !== undefined) {
-      worfkflowConditionType.fields.configuration = new Field(
-        worfkflowConditionType,
-        'configuration',
-        conditionConfigurationTypes.type,
-        {
-          [CORE_ANNOTATIONS.CREATABLE]: true,
-          [CORE_ANNOTATIONS.UPDATABLE]: true,
-        }
-      )
+      worfkflowConditionType.fields.configuration = new Field(worfkflowConditionType, 'configuration', conditionConfigurationTypes.type)
     }
 
     elements.push(...postFunctionTypes)

@@ -37,6 +37,7 @@ import { ConfigChange } from './config_change'
 import { configCreator } from './config_creator'
 import { loadElementsFromFolder } from './sfdx_parser/sfdx_parser'
 import { getAdditionalReferences } from './additional_references'
+import { getCustomReferences } from './custom_references'
 
 type ValidatorsActivationConfig = deployment.changeValidators.ValidatorsActivationConfig
 
@@ -248,4 +249,5 @@ export const adapter: Adapter = {
   configCreator,
   loadElementsFromFolder,
   getAdditionalReferences,
+  getCustomReferences,
 }

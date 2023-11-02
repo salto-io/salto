@@ -37,8 +37,7 @@ const createProjectErrorMessage = (elemID: ElemID, fieldContextName: string): Ch
   detailedMessage: `Can't remove the field context ${fieldContextName} from this project as it will result in more than a single global context.`,
 })
 
-const getParentElemID = (instance: InstanceElement)
-: ElemID => {
+const getParentElemID = (instance: InstanceElement): ElemID => {
   const parent = getParents(instance)[0]
   if (!isReferenceExpression(parent)) {
     throw new Error(`Expected ${instance.elemID.getFullName()} parent to be a reference expression`)
@@ -58,7 +57,6 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
     return []
   }
   const fieldToGlobalContextCount: Record<string, number> = {}
-  const fieldContextToProjectChangeData = new Map<string, ProjectChangeData>()
   const fillFieldToGlobalContextCount = async (): Promise<void> => (
     awu(await elementSource.getAll())
       .filter(elem => elem.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
@@ -74,8 +72,9 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
         }
       })
   )
-  const fillFieldContextToProjectChangeData = async (): Promise<void> => (
-    awu(changes).filter(isInstanceChange)
+  const fillFieldContextToProjectChangeData = async (): Promise<Map<string, ProjectChangeData>> => {
+    const fieldContextToProjectChangeData = new Map<string, ProjectChangeData>()
+    await awu(changes).filter(isInstanceChange)
       .filter(change => getChangeData(change).elemID.typeName === PROJECT_TYPE)
       .filter(isRemovalOrModificationChange)
       .forEach(change => {
@@ -89,32 +88,38 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
             )
           })
       })
-  )
+    if (fieldContextToProjectChangeData.size === 0) {
+      return fieldContextToProjectChangeData
+    }
+    const projectInstances = await getInstancesFromElementSource(elementSource, [PROJECT_TYPE])
+    // if there is a project that using a field context that is not global context
+    projectInstances.flatMap(instance => instance.value.fieldContexts)
+      .filter(isReferenceExpression)
+      .forEach((context: ReferenceExpression) => {
+        fieldContextToProjectChangeData.delete(context.elemID.getFullName())
+      })
+    return fieldContextToProjectChangeData
+  }
+
   const globalContextList = await awu(changes).filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
     .filter(instance => instance.value.isGlobalContext)
     .toArray()
+  const globalContextElemIdsSet = new Set(globalContextList.map(instance => instance.elemID.getFullName()))
 
   await fillFieldToGlobalContextCount()
-  await fillFieldContextToProjectChangeData()
+  const fieldContextToProjectChangeData = await fillFieldContextToProjectChangeData()
 
-  const projectInstances = fieldContextToProjectChangeData.size > 0 // add ut
-    ? await getInstancesFromElementSource(elementSource, [PROJECT_TYPE])
-    : []
-
-  // if there is a project that using a field context that is not global context
-  projectInstances.flatMap(instance => instance.value.fieldContexts)
-    .filter(isReferenceExpression)
-    .forEach((context: ReferenceExpression) => {
-      fieldContextToProjectChangeData.delete(context.elemID.getFullName())
-    })
-  const errorMessages = Array.from(fieldContextToProjectChangeData.values())
-    .filter(({ fieldElemId }) => (
+  const errorMessages = Array.from(fieldContextToProjectChangeData.entries())
+    .filter(([fieldContextName]) => (!globalContextElemIdsSet.has(fieldContextName)))
+    .filter(([, { fieldElemId }]) => (
       fieldToGlobalContextCount[fieldElemId.getFullName()] >= 1
     ))
-    .map(({ change, fieldContextName }) => createProjectErrorMessage(getChangeData(change).elemID, fieldContextName))
+    .map(([, { change, fieldContextName }]) => createProjectErrorMessage(
+      getChangeData(change).elemID, fieldContextName
+    ))
 
   if (globalContextList.length > 0) {
     const secondGlobalContextErrorMessages = globalContextList

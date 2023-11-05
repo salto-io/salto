@@ -200,6 +200,7 @@ export const createResolvedTypesElementsSource = (
   const resolvedTypes: Map<string, TypeElement> = new Map()
   let typesWereResolved = false
   const resolveTypes = async (): Promise<void> => {
+    log.debug('Resolving types within createResolvedTypesElementsSource')
     typesWereResolved = true
     const typeElements = await awu(await elementsSource.getAll()).filter(isType).toArray()
     // Resolve all the types together for better performance
@@ -214,6 +215,7 @@ export const createResolvedTypesElementsSource = (
       .forEach(typeElement => {
         resolvedTypes.set(typeElement.elemID.getFullName(), typeElement)
       })
+    log.debug('Stored %d resolved types', resolvedTypes.size)
   }
 
   const getResolved = async (id: ElemID): Promise<Element> => {
@@ -262,6 +264,10 @@ type AdapterConfigGetter = (
   adapter: string, defaultValue?: InstanceElement
 ) => Promise<InstanceElement | undefined>
 
+const RESOLVED_TYPES_ELEMENTS_SOURCE_ACCOUNTS = [
+  'salesforce',
+]
+
 export const getAdaptersCreatorConfigs = async (
   accounts: ReadonlyArray<string>,
   credentials: Readonly<Record<string, InstanceElement>>,
@@ -274,14 +280,17 @@ export const getAdaptersCreatorConfigs = async (
     async account => {
       const defaultConfig = await getMergedDefaultAdapterConfig(accountToServiceName[account],
         account)
+      const elemIDReplacedElementsSource = createElemIDReplacedElementsSource(filterElementsSource(
+        elementsSource, account
+      ), account, accountToServiceName[account])
       return [
         account,
         {
           credentials: credentials[account],
           config: await getConfig(account, defaultConfig),
-          elementsSource: createResolvedTypesElementsSource(createElemIDReplacedElementsSource(filterElementsSource(
-            elementsSource, account
-          ), account, accountToServiceName[account])),
+          elementsSource: RESOLVED_TYPES_ELEMENTS_SOURCE_ACCOUNTS.includes(account)
+            ? createResolvedTypesElementsSource(elemIDReplacedElementsSource)
+            : elemIDReplacedElementsSource,
           getElemIdFunc: elemIdGetters[account],
         },
       ]

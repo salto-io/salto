@@ -2141,6 +2141,21 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       extendsParentId: true,
     },
   },
+  AssestsSchema: {
+    request: {
+      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/list?maxResults=1000',
+    },
+    transformation: {
+      sourceTypeName: 'AssestsSchema__values',
+      dataField: 'values',
+      idFields: ['name'],
+      fieldsToOmit: [
+        { fieldName: 'created' },
+        { fieldName: 'updated' },
+        { fieldName: 'globalId' },
+      ],
+    },
+  },
 }
 
 export const JSM_DUCKTYPE_SUPPORTED_TYPES = {
@@ -2151,6 +2166,10 @@ export const JSM_DUCKTYPE_SUPPORTED_TYPES = {
   Calendar: ['Calendar'],
   PortalSettings: ['PortalSettings'],
   SLA: ['SLA'],
+}
+
+export const JSM_ASSESTS_DUCKTYPE_SUPPORTED_TYPES = {
+  AssestsSchema: ['AssestsSchema'],
 }
 
 export const SCRIPT_RUNNER_DUCKTYPE_SUPPORTED_TYPES = {

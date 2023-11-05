@@ -151,6 +151,7 @@ import jsmPathFilter from './filters/jsm_paths'
 import portalSettingsFilter from './filters/portal_settings'
 import AssestsSchemaFetchFilter from './filters/assests/assests_schema/assests_schema'
 import AssestsStatusFetchFilter from './filters/assests/assests_status'
+import AssestsObjectTypeFetchFilter from './filters/assests/assests_object_type'
 import queueDeleteFilter from './filters/queue_delete'
 import scriptRunnerInstancesDeploy from './filters/script_runner/script_runner_instances_deploy'
 import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
@@ -283,6 +284,7 @@ export const DEFAULT_FILTERS = [
   requestTypeLayoutsFilter,
   AssestsSchemaFetchFilter,
   AssestsStatusFetchFilter,
+  AssestsObjectTypeFetchFilter,
   createReferencesIssueLayoutFilter,
   // Must run after createReferencesIssueLayoutFilter
   requestTypelayoutsToValuesFilter,

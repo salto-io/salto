@@ -140,6 +140,7 @@ describe('Salesforce Fetch With Changes Detection', () => {
         ValidationRule: [],
         WebLink: [],
       }
+
       connection.metadata.describe.mockResolvedValue(mockDescribeResult(RELATED_TYPES.map(type => ({ xmlName: type }))))
       connection.metadata.list.mockImplementation(async queries => (
         makeArray(queries).flatMap(({ type }) => filePropByRelatedType[type as RelatedType] ?? [])
@@ -148,6 +149,7 @@ describe('Salesforce Fetch With Changes Detection', () => {
         retrieveRequest = request
         return mockRetrieveLocator(mockRetrieveResult({ zipFiles: [] }))
       })
+
       changedAtSingleton.value[CUSTOM_OBJECT] = {
         [UPDATED_OBJECT_NAME]: '2023-11-06T00:00:00.000Z',
         [NON_UPDATED_OBJECT_NAME]: '2023-11-02T00:00:00.000Z',

@@ -175,12 +175,14 @@ export const createInstances = (
     createScriptedFragmentsValues(uuid, fetchedElements),
   )
 
+  const jsmProject = createReference(new ElemID(JIRA, 'Project', 'instance', 'Support'), fetchedElements)
+
   const portalSettings = new InstanceElement(
     'Support',
     findType(PORTAL_SETTINGS_TYPE_NAME, fetchedElements),
     createPortalSettingsValues('Support'),
     undefined,
-    { [CORE_ANNOTATIONS.PARENT]: [createReference(new ElemID(JIRA, 'Project', 'instance', 'Support'), fetchedElements)] }
+    { [CORE_ANNOTATIONS.PARENT]: [jsmProject] }
   )
 
   const portalGroup = new InstanceElement(
@@ -188,7 +190,7 @@ export const createInstances = (
     findType(PORTAL_GROUP_TYPE, fetchedElements),
     createPortalGroupValues(randomString, fetchedElements),
     undefined,
-    { [CORE_ANNOTATIONS.PARENT]: [createReference(new ElemID(JIRA, 'Project', 'instance', 'Support'), fetchedElements)] }
+    { [CORE_ANNOTATIONS.PARENT]: [jsmProject] }
   )
 
   const queue = new InstanceElement(
@@ -196,7 +198,7 @@ export const createInstances = (
     findType(QUEUE_TYPE, fetchedElements),
     createQueueValues(randomString, fetchedElements),
     undefined,
-    { [CORE_ANNOTATIONS.PARENT]: [createReference(new ElemID(JIRA, 'Project', 'instance', 'Support'), fetchedElements)] }
+    { [CORE_ANNOTATIONS.PARENT]: [jsmProject] }
   )
 
   const calendar = new InstanceElement(
@@ -204,14 +206,14 @@ export const createInstances = (
     findType(CALENDAR_TYPE, fetchedElements),
     createCalendarValues(randomString),
     undefined,
-    { [CORE_ANNOTATIONS.PARENT]: [createReference(new ElemID(JIRA, 'Project', 'instance', 'Support'), fetchedElements)] }
+    { [CORE_ANNOTATIONS.PARENT]: [jsmProject] }
   )
   const SLA = new InstanceElement(
     `${randomString}_SUP`,
     findType(SLA_TYPE_NAME, fetchedElements),
     createSLAValues(randomString, fetchedElements),
     undefined,
-    { [CORE_ANNOTATIONS.PARENT]: [createReference(new ElemID(JIRA, 'Project', 'instance', 'Support'), fetchedElements)] }
+    { [CORE_ANNOTATIONS.PARENT]: [jsmProject] }
   )
 
   return [

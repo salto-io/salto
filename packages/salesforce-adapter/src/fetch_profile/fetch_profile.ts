@@ -95,7 +95,7 @@ export const buildFetchProfile = (params: BuildFetchProfileParams): FetchProfile
 
 export const buildFetchProfileForFetchWithChangesDetection = async (
   params: BuildFetchProfileParams & {
-    lastChangeDateOfTypesWithNestedInstancesPromise: Promise<LastChangeDateOfTypesWithNestedInstances>
+    lastChangeDateOfTypesWithNestedInstances: LastChangeDateOfTypesWithNestedInstances
   }
 ): Promise<FetchProfile> => {
   const {
@@ -111,7 +111,7 @@ export const buildFetchProfileForFetchWithChangesDetection = async (
         ? getFetchTargets(target as SupportedMetadataType[])
         : undefined,
       changedAtSingleton: await getChangedAtSingleton(params.elementsSource),
-      lastChangeDateOfTypesWithNestedInstances: await params.lastChangeDateOfTypesWithNestedInstancesPromise,
+      lastChangeDateOfTypesWithNestedInstances: params.lastChangeDateOfTypesWithNestedInstances,
     }),
   }
 }

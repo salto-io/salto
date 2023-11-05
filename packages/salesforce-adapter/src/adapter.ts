@@ -120,6 +120,7 @@ import {
   OWNER_ID,
   PROFILE_METADATA_TYPE,
 } from './constants'
+import { buildBaseMetadataQuery } from './fetch_profile/metadata_query'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -431,14 +432,25 @@ export default class SalesforceAdapter implements AdapterOperations {
    */
   @logDuration('fetching account configuration')
   async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
+    const fetchParams = this.userConfig.fetch ?? {}
+    const lastChangeDateOfTypesWithNestedInstances = withChangesDetection
+      ? await getLastChangeDateOfTypesWithNestedInstances({
+        client: this.client,
+        metadataQuery: buildBaseMetadataQuery({
+          metadataParams: fetchParams.metadata ?? {},
+          target: fetchParams.target,
+          isFetchWithChangesDetection: withChangesDetection,
+        }),
+      })
+      : {}
     const fetchProfile = withChangesDetection
       ? await buildFetchProfileForFetchWithChangesDetection({
-        fetchParams: this.userConfig.fetch ?? {},
+        fetchParams,
         elementsSource: this.elementsSource,
-        lastChangeDateOfTypesWithNestedInstancesPromise: getLastChangeDateOfTypesWithNestedInstances(this.client),
+        lastChangeDateOfTypesWithNestedInstances,
       })
       : buildFetchProfile({
-        fetchParams: this.userConfig.fetch ?? {},
+        fetchParams,
         elementsSource: this.elementsSource,
       })
     if (!fetchProfile.isFeatureEnabled('fetchCustomObjectUsingRetrieveApi')) {

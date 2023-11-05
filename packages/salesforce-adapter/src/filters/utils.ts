@@ -50,7 +50,13 @@ import { FileProperties } from 'jsforce-types'
 import { chunks, collections, types, values } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import SalesforceClient, { ErrorFilter } from '../client/client'
-import { FetchElements, INSTANCE_SUFFIXES, OptionalFeatures, LastChangeDateOfTypesWithNestedInstances } from '../types'
+import {
+  FetchElements,
+  INSTANCE_SUFFIXES,
+  OptionalFeatures,
+  LastChangeDateOfTypesWithNestedInstances,
+  BaseMetadataQuery,
+} from '../types'
 import {
   ACTIVE,
   API_NAME,
@@ -695,16 +701,23 @@ export const getLatestChangeProps = (fileProps: FileProperties[]): FilePropertie
   )
 )
 
-export const getLastChangeDateOfTypesWithNestedInstances = async (
+type GetLastChangeDateOfTypesWithNestedInstancesParams = {
   client: SalesforceClient
-): Promise<LastChangeDateOfTypesWithNestedInstances> => {
+  metadataQuery: BaseMetadataQuery
+}
+
+export const getLastChangeDateOfTypesWithNestedInstances = async ({
+  client,
+  metadataQuery,
+}: GetLastChangeDateOfTypesWithNestedInstancesParams): Promise<LastChangeDateOfTypesWithNestedInstances> => {
   const lastChangeDateOfCustomObjectTypes = async (): Promise<Record<string, string>> => {
     const allSubInstancesFileProps = _.flatten(await Promise.all(
       [
         ...CUSTOM_OBJECT_FIELDS,
         CUSTOM_FIELD,
         CUSTOM_OBJECT,
-      ].map(typeName => listMetadataObjects(client, typeName))
+      ].filter(typeName => metadataQuery.isTypeMatch(typeName))
+        .map(typeName => listMetadataObjects(client, typeName))
     )).flatMap(result => result.elements)
     const relatedPropsByParent = _.groupBy(
       allSubInstancesFileProps,
@@ -721,6 +734,6 @@ export const getLastChangeDateOfTypesWithNestedInstances = async (
     return result
   }
   return {
-    [CUSTOM_OBJECT]: await lastChangeDateOfCustomObjectTypes(),
+    [CUSTOM_OBJECT]: metadataQuery.isTypeMatch(CUSTOM_OBJECT) ? await lastChangeDateOfCustomObjectTypes() : undefined,
   }
 }

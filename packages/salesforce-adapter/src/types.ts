@@ -862,13 +862,17 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
-export type MetadataQuery = {
+
+export type BaseMetadataQuery = {
   isTypeMatch: (type: string) => boolean
-  isInstanceMatch: (instance: MetadataInstance) => boolean
   isTargetedFetch: () => boolean
   isFetchWithChangesDetection: () => boolean
   isPartialFetch: () => boolean
   getFolderPathsByName: (folderType: string) => Record<string, string>
+}
+
+export type MetadataQuery = BaseMetadataQuery & {
+  isInstanceMatch: (instance: MetadataInstance) => boolean
 }
 
 export type TypeFetchCategory = 'Always' | 'IfReferenced' | 'Never'

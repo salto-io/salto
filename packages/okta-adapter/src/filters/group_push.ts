@@ -75,6 +75,9 @@ const isPushRulesResponse = createSchemeGuard<PushRuleEntry[]>(
   PUSH_RULE_RESPONSE_SCHEMA, 'Received an invalid response for push rules'
 )
 
+export const isAppSupportsGroupPush = (instance: InstanceElement): boolean =>
+  Array.isArray(instance.value.features) && instance.value.features.includes('GROUP_PUSH')
+
 const createGroupPushTypes = (): ObjectType[] => (
   [new ObjectType({
     elemID: new ElemID(OKTA, GROUP_PUSH_TYPE_NAME),
@@ -237,7 +240,7 @@ const groupPushFilter: FilterCreator = ({ config, adminClient, getElemIdFunc }) 
     const appsWithGroupPush = elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === APPLICATION_TYPE_NAME)
-      .filter(instance => Array.isArray(instance.value.features) && instance.value.features.includes('GROUP_PUSH'))
+      .filter(isAppSupportsGroupPush)
 
     const [groupPushType, pushRuleType] = createGroupPushTypes()
     elements.push(groupPushType)

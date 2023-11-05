@@ -2088,7 +2088,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
     },
   },
-  Sla__config__definition__pause: {
+  SLA__config__definition__pause: {
     transformation: {
       fieldsToOmit: [
         { fieldName: 'type' },
@@ -2096,7 +2096,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
     },
   },
-  Sla__config__definition__start: {
+  SLA__config__definition__start: {
     transformation: {
       fieldsToOmit: [
         { fieldName: 'type' },
@@ -2104,7 +2104,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
     },
   },
-  Sla__config__definition__stop: {
+  SLA__config__definition__stop: {
     transformation: {
       fieldsToOmit: [
         { fieldName: 'type' },
@@ -2112,7 +2112,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
     },
   },
-  Sla__config__definition: {
+  SLA__config__definition: {
     transformation: {
       fieldsToOmit: [
         { fieldName: 'inconsistent' },

@@ -88,12 +88,20 @@ each([
         expect(fetchedTypes).toContain(expectedType)
       })
     }
+
+    const jsmTypes = getDefaultConfig({ isDataCenter }).jsmApiDefinitions?.types
+    if (jsmTypes !== undefined) {
+      it.each(Object.keys(jsmTypes)
+        .filter(type => !excludedTypes.includes(type)))('%s', expectedType => {
+        expect(fetchedTypes).toContain(expectedType)
+      })
+    }
   })
   it('should fetch project with schemes', () => {
     const projectInstance = fetchedElements
       .filter(isInstanceElement)
       .filter(e => e.elemID.typeName === 'Project')
-      .filter(e => e.value.name === 'Test Project')[0]
+      .filter(project => project.value.name === 'Test Project')[0]
     expect(projectInstance?.value).toContainKeys([
       'workflowScheme',
       'permissionScheme',

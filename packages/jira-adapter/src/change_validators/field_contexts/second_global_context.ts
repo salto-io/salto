@@ -45,8 +45,8 @@ const getParentElemID = (instance: InstanceElement): ElemID => {
   return parent.elemID
 }
 
-type ProjectChangeData = {
-  change: Change<InstanceElement>
+type ProjectChangesData = {
+  changes: Change<InstanceElement>[]
   fieldElemId: ElemID
   fieldContextName: string
 }
@@ -57,6 +57,7 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
     return []
   }
   const fieldToGlobalContextCount: Record<string, number> = {}
+  const fieldToImplicitGlobalContextCount: Record<string, number> = {}
   const fillFieldToGlobalContextCount = async (): Promise<void> => (
     awu(await elementSource.getAll())
       .filter(elem => elem.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
@@ -72,21 +73,25 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
         }
       })
   )
-  const fillFieldContextToProjectChangeData = async (): Promise<Map<string, ProjectChangeData>> => {
-    const fieldContextToProjectChangeData = new Map<string, ProjectChangeData>()
+  const fillFieldContextToProjectChangeData = async (): Promise<Map<string, ProjectChangesData>> => {
+    const fieldContextToProjectChangeData = new Map<string, ProjectChangesData>()
     await awu(changes).filter(isInstanceChange)
       .filter(change => getChangeData(change).elemID.typeName === PROJECT_TYPE)
       .filter(isRemovalOrModificationChange)
-      .forEach(change => {
-        change.data.before.value.fieldContexts
+      .forEach(async change => {
+        const promises = change.data.before.value.fieldContexts
           .filter(isReferenceExpression)
-          .forEach(async (context: ReferenceExpression) => {
-            const fieldElemId = getParentElemID(await context.getResolvedValue(elementSource))
-            fieldContextToProjectChangeData.set(
-              context.elemID.getFullName(),
-              { change, fieldElemId, fieldContextName: context.elemID.name }
-            )
+          .map(async (context: ReferenceExpression) => {
+            if (fieldContextToProjectChangeData.get(context.elemID.getFullName()) === undefined) {
+              const fieldElemId = getParentElemID(await context.getResolvedValue(elementSource))
+              fieldContextToProjectChangeData.set(
+                context.elemID.getFullName(),
+                { fieldElemId, fieldContextName: context.elemID.name, changes: [] }
+              )
+            }
+            fieldContextToProjectChangeData.get(context.elemID.getFullName())?.changes.push(change)
           })
+        await Promise.all(promises)
       })
     if (fieldContextToProjectChangeData.size === 0) {
       return fieldContextToProjectChangeData
@@ -110,16 +115,32 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
   const globalContextElemIdsSet = new Set(globalContextList.map(instance => instance.elemID.getFullName()))
 
   await fillFieldToGlobalContextCount()
-  const fieldContextToProjectChangeData = await fillFieldContextToProjectChangeData()
+  const fieldContextToProjectChangesData = await fillFieldContextToProjectChangeData()
 
-  const errorMessages = Array.from(fieldContextToProjectChangeData.entries())
+  Array.from(fieldContextToProjectChangesData)
     .filter(([fieldContextName]) => (!globalContextElemIdsSet.has(fieldContextName)))
-    .filter(([, { fieldElemId }]) => (
-      fieldToGlobalContextCount[fieldElemId.getFullName()] >= 1
-    ))
-    .map(([, { change, fieldContextName }]) => createProjectErrorMessage(
-      getChangeData(change).elemID, fieldContextName
-    ))
+    .forEach(([, { changes: projectChanges, fieldElemId }]) => {
+      const fieldFullName = fieldElemId.getFullName()
+      if (fieldToImplicitGlobalContextCount[fieldFullName] === undefined) {
+        fieldToImplicitGlobalContextCount[fieldFullName] = projectChanges.length
+      } else {
+        fieldToImplicitGlobalContextCount[fieldFullName] += projectChanges.length
+      }
+    })
+
+  const errorMessages = Array.from(fieldContextToProjectChangesData.entries())
+    .filter(([fieldContextName]) => (!globalContextElemIdsSet.has(fieldContextName)))
+    .filter(([, { fieldElemId }]) => {
+      const fieldFullName = fieldElemId.getFullName()
+      const newGlobalContextsCount = fieldToImplicitGlobalContextCount[fieldFullName]
+      if (newGlobalContextsCount > 1
+          || (newGlobalContextsCount > 0 && fieldToGlobalContextCount[fieldFullName] >= 1)) {
+        return true
+      }
+      return false
+    })
+    .flatMap(([, { changes: projectChanges, fieldContextName }]) => projectChanges
+      .map(change => createProjectErrorMessage(getChangeData(change).elemID, fieldContextName)))
 
   if (globalContextList.length > 0) {
     const secondGlobalContextErrorMessages = globalContextList

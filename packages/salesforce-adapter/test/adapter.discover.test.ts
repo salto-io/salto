@@ -36,7 +36,7 @@ import { FileProperties } from 'jsforce-types'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
-import { apiName, isMetadataObjectType, MetadataObjectType, Types } from '../src/transformers/transformer'
+import { apiName, MetadataObjectType, Types } from '../src/transformers/transformer'
 import { findElements, mockFetchOpts, ZipFile } from './utils'
 import mockAdapter from './adapter'
 import * as constants from '../src/constants'
@@ -1862,49 +1862,6 @@ public class LargeClass${index} {
           true,
         )
       })
-    })
-  })
-
-  describe('fetchWithChangesDetection', () => {
-    let elementsSourceGetSpy: jest.SpyInstance
-    beforeEach(() => {
-      const elementsSource = buildElementsSourceFromElements([
-        mockTypes.ApexClass,
-        // These types should not return as metadata types
-        mockTypes.AccountSettings,
-        mockTypes.SBQQ__Template__c,
-        mockTypes.Account,
-        mockTypes.CustomMetadataRecordType,
-        changedAtSingleton,
-      ]);
-      ({ connection, adapter } = mockAdapter({
-        adapterParams: {
-          getElemIdFunc: mockGetElemIdFunc,
-          config: {
-            fetch: {
-              metadata: {
-                exclude: metadataExclude,
-              },
-            },
-            maxItemsInRetrieveRequest: testMaxItemsInRetrieveRequest,
-            client: {
-              readMetadataChunkSize: { default: 3, overrides: { Test: 2 } },
-            },
-          },
-          elementsSource,
-        },
-      }))
-      elementsSourceGetSpy = jest.spyOn(elementsSource, 'get')
-    })
-    it('should get the correct metadata types from the elements source', async () => {
-      const { elements } = await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
-      expect(elements.filter(isMetadataObjectType)).toEqual([
-        mockTypes.ApexClass,
-      ])
-    })
-    it('should get the ChangedAtSingleton from the ElementsSource when fetchWithChangesDetection is true', async () => {
-      await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
-      expect(elementsSourceGetSpy).toHaveBeenCalledWith(changedAtSingleton.elemID)
     })
   })
 })

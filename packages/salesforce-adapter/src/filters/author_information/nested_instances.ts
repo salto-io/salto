@@ -33,8 +33,8 @@ const NESTED_INSTANCES_METADATA_TYPES = [
   'AutoResponseRule',
   'EscalationRule',
   'MatchingRule',
-  ...Object.keys(WORKFLOW_FIELD_TO_TYPE),
-  ...Object.keys(NESTED_INSTANCE_VALUE_TO_TYPE_NAME),
+  ...Object.values(WORKFLOW_FIELD_TO_TYPE),
+  ...Object.values(NESTED_INSTANCE_VALUE_TO_TYPE_NAME),
 ] as const
 
 type NestedInstanceMetadataType = typeof NESTED_INSTANCES_METADATA_TYPES[number]
@@ -81,12 +81,17 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     config,
     filterName: 'authorInformation',
     fetchFilterFunc: async (elements: Element[]) => {
-      const instancesByType = _.groupBy(
-        elements.filter(isMetadataInstanceElementSync),
-        e => apiNameSync(e.getTypeSync())
+      const nestedInstancesByType = _.pick(
+        _.groupBy(
+          elements.filter(isMetadataInstanceElementSync),
+          e => apiNameSync(e.getTypeSync())
+        ),
+        NESTED_INSTANCES_METADATA_TYPES
       )
-      await Promise.all(Object.entries(instancesByType)
-        .map(([typeName, instances]) => (
+      await Promise.all(NESTED_INSTANCES_METADATA_TYPES
+        .map(typeName => ({ typeName, instances: nestedInstancesByType[typeName] ?? [] }))
+        .filter(({ instances }) => instances.length > 0)
+        .map(({ typeName, instances }) => (
           setAuthorInformationForInstancesOfType({ client, typeName, instances })
         )))
     },

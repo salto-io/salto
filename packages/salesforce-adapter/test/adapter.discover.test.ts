@@ -19,7 +19,6 @@ import {
   CORE_ANNOTATIONS,
   Element,
   ElemID,
-  FetchOptions,
   FetchResult,
   getRestriction,
   InstanceElement,
@@ -38,7 +37,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
 import { apiName, isMetadataObjectType, MetadataObjectType, Types } from '../src/transformers/transformer'
-import { findElements, ZipFile } from './utils'
+import { findElements, mockFetchOpts, ZipFile } from './utils'
 import mockAdapter from './adapter'
 import * as constants from '../src/constants'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
@@ -98,10 +97,6 @@ describe('SalesforceAdapter fetch', () => {
   ]
 
   const testMaxItemsInRetrieveRequest = 20
-
-  const mockFetchOpts: MockInterface<FetchOptions> = {
-    progressReporter: { reportProgress: jest.fn() },
-  }
 
   const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
     ElemID => new ElemID(adapterName, name)

@@ -18,7 +18,7 @@ import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
   Element,
-  ElemID,
+  ElemID, FetchOptions,
   Field,
   ListType,
   MapType,
@@ -30,6 +30,7 @@ import {
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements, findElements as findElementsByID } from '@salto-io/adapter-utils'
 import JSZip from 'jszip'
+import { MockInterface } from '@salto-io/test-utils'
 import * as constants from '../src/constants'
 import { FIELD_ANNOTATIONS } from '../src/constants'
 import { annotationsFileName, customFieldsFileName, standardFieldsFileName } from '../src/filters/custom_type_split'
@@ -378,4 +379,8 @@ export const defaultFilterContext: FilterContext = {
   }),
   elementsSource: buildElementsSourceFromElements([]),
   enumFieldPermissions: false,
+}
+
+export const mockFetchOpts: MockInterface<FetchOptions> = {
+  progressReporter: { reportProgress: jest.fn() },
 }

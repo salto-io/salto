@@ -69,6 +69,32 @@ const SBAA_APPROVAL_RULE_TYPE = createCustomObjectType(SBAA_APPROVAL_RULE, {
   },
 })
 
+
+const listViewType = createMetadataObjectType({
+  annotations: { metadataType: 'ListView' },
+  fields: {
+    columns: { refType: new ListType(BuiltinTypes.STRING) },
+    filters: { refType: new ListType(createMetadataObjectType({ annotations: { metadataType: 'ListViewFilters' } })) },
+  },
+})
+
+
+const fieldSetItemType = createMetadataObjectType({ annotations: { metadataType: 'FieldSetItem' } })
+const fieldSetType = createMetadataObjectType({
+  annotations: { metadataType: 'FieldSet' },
+  fields: {
+    availableFields: { refType: new ListType(fieldSetItemType) },
+    displayedFields: { refType: new ListType(fieldSetItemType) },
+  },
+})
+
+const compactLayoutType = createMetadataObjectType({
+  annotations: { metadataType: 'CompactLayout' },
+  fields: {
+    fields: { refType: new ListType(BuiltinTypes.STRING) },
+  },
+})
+
 export const mockTypes = {
   ApexClass: createMetadataObjectType({
     annotations: {
@@ -111,6 +137,11 @@ export const mockTypes = {
   CustomObject: createMetadataObjectType({
     annotations: {
       metadataType: 'CustomObject',
+    },
+    fields: {
+      listViews: { refType: listViewType },
+      fieldSets: { refType: fieldSetType },
+      compactLayouts: { refType: compactLayoutType },
     },
   }),
   StaticResource: createMetadataObjectType({
@@ -189,7 +220,7 @@ export const mockTypes = {
   }),
   WorkflowFieldUpdate: createMetadataObjectType({
     annotations: {
-      metadataType: WORKFLOW_TASK_METADATA_TYPE,
+      metadataType: 'WorkflowFieldUpdate',
       dirName: 'workflows',
       suffix: 'workflow',
     },

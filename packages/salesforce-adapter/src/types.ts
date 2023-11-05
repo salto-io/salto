@@ -27,10 +27,9 @@ import {
 } from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { types } from '@salto-io/lowerdash'
-import { FileProperties } from 'jsforce'
 import { SUPPORTED_METADATA_TYPES } from './fetch_profile/metadata_types'
 import * as constants from './constants'
-import { DEFAULT_MAX_INSTANCES_PER_TYPE, SALESFORCE } from './constants'
+import { CUSTOM_OBJECT, DEFAULT_MAX_INSTANCES_PER_TYPE, SALESFORCE } from './constants'
 
 type UserDeployConfig = configUtils.UserDeployConfig
 const { createUserDeployConfigType } = configUtils
@@ -896,10 +895,7 @@ export type FetchProfile = {
   isWarningEnabled: (name: keyof WarningSettings) => boolean
 }
 
-export const METADATA_TYPES_WITH_RELATED_PROPS = ['CustomObject'] as const
-
-export type MetadataTypeWithRelatedProps = typeof METADATA_TYPES_WITH_RELATED_PROPS[number]
-
-export type RelatedPropsByMetadataType = {
-  [K in MetadataTypeWithRelatedProps]: Record<string, FileProperties[]>
-}
+export type LastChangeDateOfTypesWithNestedInstances = Partial<{
+  // The CustomObject section will contain mapping per CustomObject type name
+  [CUSTOM_OBJECT]: Record<string, string>
+}>

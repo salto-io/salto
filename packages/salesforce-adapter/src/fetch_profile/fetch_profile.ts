@@ -22,7 +22,7 @@ import {
   FetchProfile,
   METADATA_CONFIG,
   OptionalFeatures,
-  RelatedPropsByMetadataType,
+  LastChangeDateOfTypesWithNestedInstances,
 } from '../types'
 import { buildDataManagement, validateDataManagementConfig } from './data_management'
 import { buildMetadataQuery, validateMetadataParams } from './metadata_query'
@@ -95,7 +95,7 @@ export const buildFetchProfile = (params: BuildFetchProfileParams): FetchProfile
 
 export const buildFetchProfileForFetchWithChangesDetection = async (
   params: BuildFetchProfileParams & {
-    relatedPropsByMetadataTypePromise: Promise<RelatedPropsByMetadataType>
+    lastChangeDateOfTypesWithNestedInstancesPromise: Promise<LastChangeDateOfTypesWithNestedInstances>
   }
 ): Promise<FetchProfile> => {
   const {
@@ -111,7 +111,7 @@ export const buildFetchProfileForFetchWithChangesDetection = async (
         ? getFetchTargets(target as SupportedMetadataType[])
         : undefined,
       changedAtSingleton: await getChangedAtSingleton(params.elementsSource),
-      relatedPropsByMetadataType: await params.relatedPropsByMetadataTypePromise,
+      lastChangeDateOfTypesWithNestedInstances: await params.lastChangeDateOfTypesWithNestedInstancesPromise,
     }),
   }
 }

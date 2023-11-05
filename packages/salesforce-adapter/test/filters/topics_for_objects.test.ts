@@ -111,7 +111,7 @@ describe('Topics for objects filter', () => {
           fetchProfile: await buildFetchProfileForFetchWithChangesDetection({
             fetchParams: {},
             elementsSource,
-            relatedPropsByMetadataTypePromise: Promise.resolve({ CustomObject: {} }),
+            lastChangeDateOfTypesWithNestedInstancesPromise: Promise.resolve({}),
           }),
         } }) as typeof filter
         elements.push(typeWithNonModifiedTopicsForObjects)

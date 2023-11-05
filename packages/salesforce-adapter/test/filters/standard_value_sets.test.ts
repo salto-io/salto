@@ -122,7 +122,7 @@ describe('Standard Value Sets filter', () => {
       ? await buildFetchProfileForFetchWithChangesDetection({
         fetchParams: {},
         elementsSource,
-        relatedPropsByMetadataTypePromise: Promise.resolve({ CustomObject: {} }),
+        lastChangeDateOfTypesWithNestedInstancesPromise: Promise.resolve({}),
       })
       : defaultFilterContext.fetchProfile
     return makeFilter(

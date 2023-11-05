@@ -50,7 +50,7 @@ import { FileProperties } from 'jsforce-types'
 import { chunks, collections, types, values } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import SalesforceClient, { ErrorFilter } from '../client/client'
-import { FetchElements, INSTANCE_SUFFIXES, OptionalFeatures, RelatedPropsByMetadataType } from '../types'
+import { FetchElements, INSTANCE_SUFFIXES, OptionalFeatures, LastChangeDateOfTypesWithNestedInstances } from '../types'
 import {
   ACTIVE,
   API_NAME,
@@ -687,22 +687,40 @@ export const getNamespaceSync = (element: Element): string | undefined => {
     : getNamespaceFromString(elementApiName)
 }
 
-export const retrieveRelatedPropsByMetadataType = async (
+
+export const getLatestChangeProps = (fileProps: FileProperties[]): FileProperties | undefined => (
+  _.maxBy(
+    fileProps.filter(({ lastModifiedDate }) => _.isString(lastModifiedDate) && lastModifiedDate !== ''),
+    prop => new Date(prop.lastModifiedDate).getTime()
+  )
+)
+
+export const getLastChangeDateOfTypesWithNestedInstances = async (
   client: SalesforceClient
-): Promise<RelatedPropsByMetadataType> => {
-  const retrieveCustomObjectRelatedPropsByParent = async (): Promise<Record<string, FileProperties[]>> => {
+): Promise<LastChangeDateOfTypesWithNestedInstances> => {
+  const lastChangeDateOfCustomObjectTypes = async (): Promise<Record<string, string>> => {
     const allSubInstancesFileProps = _.flatten(await Promise.all(
       [
         ...CUSTOM_OBJECT_FIELDS,
         CUSTOM_FIELD,
+        CUSTOM_OBJECT,
       ].map(typeName => listMetadataObjects(client, typeName))
     )).flatMap(result => result.elements)
-    return _.groupBy(
+    const relatedPropsByParent = _.groupBy(
       allSubInstancesFileProps,
       fileProp => fileProp.fullName.split('.')[0],
     )
+    const result: Record<string, string> = {}
+    Object.entries(relatedPropsByParent)
+      .forEach(([parentName, fileProps]) => {
+        const latestChangeProps = getLatestChangeProps(fileProps)
+        if (latestChangeProps !== undefined) {
+          result[parentName] = latestChangeProps.lastModifiedDate
+        }
+      })
+    return result
   }
   return {
-    [CUSTOM_OBJECT]: await retrieveCustomObjectRelatedPropsByParent(),
+    [CUSTOM_OBJECT]: await lastChangeDateOfCustomObjectTypes(),
   }
 }

@@ -104,7 +104,7 @@ import {
   isCustomObjectSync,
   isCustomType,
   listMetadataObjects,
-  retrieveRelatedPropsByMetadataType,
+  getLastChangeDateOfTypesWithNestedInstances,
 } from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
@@ -435,7 +435,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       ? await buildFetchProfileForFetchWithChangesDetection({
         fetchParams: this.userConfig.fetch ?? {},
         elementsSource: this.elementsSource,
-        relatedPropsByMetadataTypePromise: retrieveRelatedPropsByMetadataType(this.client),
+        lastChangeDateOfTypesWithNestedInstancesPromise: getLastChangeDateOfTypesWithNestedInstances(this.client),
       })
       : buildFetchProfile({
         fetchParams: this.userConfig.fetch ?? {},

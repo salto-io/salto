@@ -28,7 +28,8 @@ import {
   Field,
   getChangeData,
   InstanceElement,
-  isAdditionOrModificationChange, isElement,
+  isAdditionOrModificationChange,
+  isElement,
   isField,
   isInstanceElement,
   isListType,
@@ -74,6 +75,7 @@ import {
   PLURAL_LABEL,
   SALESFORCE,
   STATUS,
+  VALUE_SET_FIELDS,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
 import * as transformer from '../transformers/transformer'
@@ -685,3 +687,15 @@ export const getNamespaceSync = (element: Element): string | undefined => {
     ? getNamespaceFromString(layoutObjAndName(elementApiName)[1])
     : getNamespaceFromString(elementApiName)
 }
+export const isPicklistField = (changedElement: ChangeDataType): changedElement is Field =>
+  isField(changedElement)
+  && ([
+    Types.primitiveDataTypes.Picklist.elemID.getFullName(),
+    Types.primitiveDataTypes.MultiselectPicklist.elemID.getFullName(),
+  ]).includes(changedElement.refType.elemID.getFullName())
+
+export const isValueSetReference = (field: Field): boolean =>
+  isReferenceExpression(field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME])
+
+export const hasValueSetNameAnnotation = (field: Field): boolean =>
+  !_.isUndefined(field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME])

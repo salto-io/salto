@@ -49,7 +49,6 @@ import { Types, createInstanceElement, MetadataTypeAnnotations, metadataType, cr
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../../src/metadata_deploy'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { FilterWith } from './mocks'
-import { metadataTypeSync } from '../../src/filters/utils'
 
 export const generateCustomObjectType = (): ObjectType => {
   const generateInnerMetadataTypeFields = (name: string): Record<string, FieldDefinition> => {
@@ -520,14 +519,10 @@ describe('Custom Objects to Object Type filter', () => {
         expect(isListType(await compactLayoutType.fields.fields.getType())).toBeTruthy()
       })
 
-      it('should remove the CustomObject instances from the fetch result and generate a hidden CustomObject type', async () => {
+      it('should remove the custom object type and its instances from the fetch result', async () => {
         await filter.onFetch(result)
+        expect(result).not.toContain(customObjectType)
         expect(result).not.toContain(caseInstance)
-        const customObjectMetadata = result
-          .filter(isObjectType)
-          .find(e => metadataTypeSync(e) === CUSTOM_OBJECT) as ObjectType
-        expect(customObjectMetadata).toBeDefined()
-        expect(customObjectMetadata.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeTrue()
       })
 
       describe('Merge elements', () => {

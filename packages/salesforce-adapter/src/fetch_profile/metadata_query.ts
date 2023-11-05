@@ -13,10 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { collections, regex, values } from '@salto-io/lowerdash'
+import { regex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { InstanceElement } from '@salto-io/adapter-api'
 import {
+  CUSTOM_FIELD,
   CUSTOM_METADATA,
   CUSTOM_OBJECT,
   DEFAULT_NAMESPACE,
@@ -31,30 +32,18 @@ import { ConfigValidationError, validateRegularExpressions } from '../config_val
 import {
   METADATA_EXCLUDE_LIST,
   METADATA_INCLUDE_LIST,
-  METADATA_SEPARATE_FIELD_LIST, METADATA_TYPES_WITH_RELATED_PROPS,
+  METADATA_SEPARATE_FIELD_LIST,
   MetadataInstance,
   MetadataParams,
   MetadataQuery,
   MetadataQueryParams,
-  MetadataTypeWithRelatedProps, RelatedPropsByMetadataType,
 } from '../types'
 
 const { isDefined } = values
-const { makeArray } = collections.array
 
 
 // According to Salesforce Metadata API docs, folder names can only contain alphanumeric characters and underscores.
 const VALID_FOLDER_PATH_RE = /^[a-zA-Z\d_/]+$/
-
-type MetadataInstanceWithRelatedProps = MetadataInstance & {
-  metadataType: MetadataTypeWithRelatedProps
-}
-
-const isMetadataInstanceWithRelatedProps = (
-  instance: MetadataInstance
-): instance is MetadataInstanceWithRelatedProps => (
-  (METADATA_TYPES_WITH_RELATED_PROPS as ReadonlyArray<string>).includes(instance.metadataType)
-)
 
 const PERMANENT_SKIP_LIST: MetadataQueryParams[] = [
   // We have special treatment for this type
@@ -80,8 +69,10 @@ const DEFAULT_NAMESPACE_MATCH_ALL_TYPE_LIST = [
 // Instances of this type won't be fetched in fetchWithChangesDetection mode
 const UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES = [
   PROFILE_METADATA_TYPE,
+  CUSTOM_OBJECT,
   // Since we don't retrieve the CustomMetadata types (CustomObjects), we shouldn't retrieve the Records
   CUSTOM_METADATA,
+  CUSTOM_FIELD,
 ]
 
 const getDefaultNamespace = (metadataType: string): string =>
@@ -108,7 +99,6 @@ type BuildMetadataQueryParams = {
   target?: string[]
   isFetchWithChangesDetection: boolean
   changedAtSingleton?: InstanceElement
-  relatedPropsByMetadataType?: RelatedPropsByMetadataType
 }
 
 export const buildMetadataQuery = ({
@@ -116,7 +106,6 @@ export const buildMetadataQuery = ({
   target,
   isFetchWithChangesDetection,
   changedAtSingleton,
-  relatedPropsByMetadataType,
 }: BuildMetadataQueryParams): MetadataQuery => {
   const { include = [{}], exclude = [] } = metadataParams
   const fullExcludeList = [...exclude, ...PERMANENT_SKIP_LIST]
@@ -158,29 +147,17 @@ export const buildMetadataQuery = ({
     }
     return false
   }
-
-  const lastChangedAtOfInstanceWithRelatedProps = (instance: MetadataInstanceWithRelatedProps): number | undefined => (
-    _.max(makeArray(relatedPropsByMetadataType?.[instance.metadataType][instance.name])
-      .map(prop => prop.lastModifiedDate)
-      .concat(instance.changedAt ?? '')
-      .filter(changedAt => changedAt !== undefined && changedAt !== '')
-      .map(changedAt => new Date(changedAt).getTime()))
-  )
-
   const isIncludedInFetchWithChangesDetection = (instance: MetadataInstance): boolean => {
     if (UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES.includes(instance.metadataType)) {
       return false
     }
-    if (changedAtSingleton === undefined) {
+    if (changedAtSingleton === undefined || instance.changedAt === undefined) {
       return true
     }
-    const changedAtFromSingleton = _.get(changedAtSingleton.value, [instance.metadataType, instance.name])
-    const lastChangedAt = isMetadataInstanceWithRelatedProps(instance)
-      ? lastChangedAtOfInstanceWithRelatedProps(instance)
-      : instance.changedAt
-    return _.isString(changedAtFromSingleton) && lastChangedAt !== undefined
-      ? new Date(changedAtFromSingleton).getTime() < new Date(lastChangedAt).getTime()
-      : false
+    const lastChangedAt = _.get(changedAtSingleton.value, [instance.metadataType, instance.name])
+    return _.isString(lastChangedAt)
+      ? new Date(lastChangedAt).getTime() < new Date(instance.changedAt).getTime()
+      : true
   }
   const isTypeIncluded = (type: string): boolean => (
     include.some(({ metadataType = '.*' }) => new RegExp(`^${metadataType}$`).test(type))

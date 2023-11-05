@@ -56,8 +56,7 @@ import {
   isInstanceOfType,
   isMasterDetailField,
   buildElementsSourceForFetch,
-  addKeyPrefix, addPluralLabel, getInstanceAlias,
-  apiNameSync, toListType,
+  addKeyPrefix, addPluralLabel, getInstanceAlias, toListType,
 } from './utils'
 import { convertList } from './convert_lists'
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../metadata_deploy'
@@ -451,6 +450,11 @@ const createFromInstance = async (
   const nestedMetadataInstances = await createNestedMetadataInstances(instance, object,
     typesFromInstance.nestedMetadataTypes)
   return [object, ...nestedMetadataInstances]
+}
+
+const removeIrrelevantElements = async (elements: Element[]): Promise<void> => {
+  await removeAsync(elements, isInstanceOfType(CUSTOM_OBJECT))
+  await removeAsync(elements, async elem => await apiName(elem) === CUSTOM_OBJECT)
 }
 
 // Instances metadataTypes that should be under the customObject folder and have a PARENT reference
@@ -848,14 +852,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
         .filter(elem => !existingElementIDs.has(elem.elemID.getFullName()))
         .forEach(newElem => elements.push(newElem))
 
-      // Remove instances and set MetadataType as hidden
-      await removeAsync(elements, isInstanceOfType(CUSTOM_OBJECT))
-      const customObjectMetadataType = elements
-        .filter(isObjectType)
-        .find(objectType => apiNameSync(objectType) === CUSTOM_OBJECT)
-      if (customObjectMetadataType !== undefined) {
-        customObjectMetadataType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
-      }
+      await removeIrrelevantElements(elements)
       log.debug('Changing paths for instances that are nested under custom objects')
       await fixDependentInstancesPathAndSetParent(
         elements,

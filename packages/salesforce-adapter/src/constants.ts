@@ -283,7 +283,7 @@ export const GEOLOCATION_FIELDS = {
 export const TOPICS_FOR_OBJECTS_FIELDS = {
   ENABLE_TOPICS: 'enableTopics',
   ENTITY_API_NAME: 'entityApiName',
-} as const
+}
 
 // NACL files path
 export const RECORDS_PATH = 'Records'

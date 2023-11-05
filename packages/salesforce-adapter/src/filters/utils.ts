@@ -50,7 +50,7 @@ import { FileProperties } from 'jsforce-types'
 import { chunks, collections, types, values } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import SalesforceClient, { ErrorFilter } from '../client/client'
-import { FetchElements, INSTANCE_SUFFIXES, OptionalFeatures, RelatedPropsByMetadataType } from '../types'
+import { FetchElements, INSTANCE_SUFFIXES, OptionalFeatures } from '../types'
 import {
   ACTIVE,
   API_NAME,
@@ -90,7 +90,6 @@ import {
 } from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
 import { createListMetadataObjectsConfigChange } from '../config_change'
-import { CUSTOM_OBJECT_FIELDS } from '../fetch_profile/metadata_types'
 
 const { toArrayAsync, awu } = collections.asynciterable
 const { splitDuplicates } = collections.array
@@ -685,24 +684,4 @@ export const getNamespaceSync = (element: Element): string | undefined => {
   return isInstanceElement(element) && isInstanceOfTypeSync(LAYOUT_TYPE_ID_METADATA_TYPE)(element)
     ? getNamespaceFromString(layoutObjAndName(elementApiName)[1])
     : getNamespaceFromString(elementApiName)
-}
-
-export const retrieveRelatedPropsByMetadataType = async (
-  client: SalesforceClient
-): Promise<RelatedPropsByMetadataType> => {
-  const retrieveCustomObjectRelatedPropsByParent = async (): Promise<Record<string, FileProperties[]>> => {
-    const allSubInstancesFileProps = _.flatten(await Promise.all(
-      [
-        ...CUSTOM_OBJECT_FIELDS,
-        CUSTOM_FIELD,
-      ].map(typeName => listMetadataObjects(client, typeName))
-    )).flatMap(result => result.elements)
-    return _.groupBy(
-      allSubInstancesFileProps,
-      fileProp => fileProp.fullName.split('.')[0],
-    )
-  }
-  return {
-    [CUSTOM_OBJECT]: await retrieveCustomObjectRelatedPropsByParent(),
-  }
 }

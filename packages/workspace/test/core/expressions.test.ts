@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, ObjectType, BuiltinTypes, InstanceElement, Element, ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable, isVariableExpression, isReferenceExpression, StaticFile, PrimitiveType, PrimitiveTypes, TypeReference, MapType, Field, PlaceholderObjectType, UnresolvedReference } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, BuiltinTypes, InstanceElement, Element, ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable, isVariableExpression, isReferenceExpression, StaticFile, PrimitiveType, PrimitiveTypes, TypeReference, MapType, Field, PlaceholderObjectType, UnresolvedReference, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { TestFuncImpl, getFieldsAndAnnoTypes } from '../utils'
 import { resolve, CircularReference } from '../../src/expressions'
-import { createInMemoryElementSource } from '../../src/workspace/elements_source'
+import { createInMemoryElementSource, mapReadOnlyElementsSource } from '../../src/workspace/elements_source'
 
 const { awu } = collections.asynciterable
 
@@ -705,6 +705,32 @@ describe('Test Salto Expressions', () => {
         expect(innerInnerType).toBeInstanceOf(ListType)
         const innerInnerInnerType = (innerInnerType as ListType).refInnerType.type
         expect(innerInnerInnerType).toBe(resolvedInnerType)
+      })
+    })
+    describe('when element source returns the wrong element', () => {
+      let objType: ObjectType
+      let buggyElementSource: ReadOnlyElementsSource
+      // This case should never happen, but adding another layer of protection, if we do encounter
+      // a case where an element source returns an incorrect ID from `get`, the resolve code should
+      // identify the issue and not go into an infinite loop
+      beforeEach(() => {
+        objType = new ObjectType({
+          elemID: new ElemID('salto_2', 'obj'),
+          fields: {
+            listObj: { refType: new TypeReference(ListType.createElemID(new TypeReference(new ElemID('salto_2', 'obj')))) },
+          },
+        })
+        buggyElementSource = mapReadOnlyElementsSource(
+          createInMemoryElementSource([objType]),
+          // Intentionally return a different element ID than the one requested
+          async elem => _.set(elem.clone(), 'elemID', new ElemID('salto', 'obj'))
+        )
+      })
+      it('should return with an unresolved type', async () => {
+        const inst = new InstanceElement('asd', new TypeReference(objType.elemID))
+        const resolved = (await resolve([inst], buggyElementSource))[0] as InstanceElement
+        expect(resolved).toBeInstanceOf(InstanceElement)
+        expect(resolved.refType.type).toBeInstanceOf(PlaceholderObjectType)
       })
     })
   })

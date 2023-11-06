@@ -716,8 +716,7 @@ export const getLastChangeDateOfTypesWithNestedInstances = async ({
         ...CUSTOM_OBJECT_FIELDS,
         CUSTOM_FIELD,
         CUSTOM_OBJECT,
-      ].filter(typeName => metadataQuery.isTypeMatch(typeName))
-        .map(typeName => listMetadataObjects(client, typeName))
+      ].map(typeName => listMetadataObjects(client, typeName))
     )).flatMap(result => result.elements)
     const relatedPropsByParent = _.groupBy(
       allSubInstancesFileProps,

@@ -39,6 +39,7 @@ import {
   UnresolvedReference,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
+import { buildContainerTypeId } from './workspace/elements_source'
 
 const { awu } = collections.asynciterable
 
@@ -47,6 +48,13 @@ const { awu } = collections.asynciterable
 // with a modified adapter. This is used when an account has a different name than the
 // service it represents. Created for the multiple accounts per service features (SALTO-1264).
 export const createAdapterReplacedID = (elemID: ElemID, adapter: string): ElemID => {
+  const containerInfo = elemID.getContainerPrefixAndInnerType()
+  if (containerInfo !== undefined) {
+    return buildContainerTypeId(
+      containerInfo.prefix,
+      createAdapterReplacedID(ElemID.fromFullName(containerInfo.innerTypeName), adapter),
+    )
+  }
   if (elemID.adapter === GLOBAL_ADAPTER || elemID.adapter === ElemID.VARIABLES_NAMESPACE) {
     return elemID
   }

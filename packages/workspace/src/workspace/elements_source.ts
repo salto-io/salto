@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ElemID, Value, BuiltinTypesByFullName, ListType, MapType, isContainerType, ReadOnlyElementsSource, ContainerTypeName, TypeElement } from '@salto-io/adapter-api'
+import { Element, ElemID, Value, BuiltinTypesByFullName, ListType, MapType, isContainerType, ReadOnlyElementsSource, ContainerTypeName, TypeElement, TypeReference } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { resolvePath } from '@salto-io/adapter-utils'
 import { RemoteMap, InMemoryRemoteMap } from './remote_map'
@@ -58,6 +58,17 @@ export function buildContainerType(
     Map: MapType,
   }
   return new typeCtors[prefix](innerType)
+}
+
+export const buildContainerTypeId = (
+  prefix: ContainerTypeName,
+  innerTypeId: ElemID,
+): ElemID => {
+  const typeElemIdCreator: Record<ContainerTypeName, (innerType: TypeReference) => ElemID> = {
+    List: ListType.createElemID,
+    Map: MapType.createElemID,
+  }
+  return typeElemIdCreator[prefix](new TypeReference(innerTypeId))
 }
 
 export class RemoteElementSource implements ElementsSource {

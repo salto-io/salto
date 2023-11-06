@@ -50,7 +50,7 @@ import {
   referenceFieldTargetTypes, getMostRecentFileProperties, getLastChangeDateOfTypesWithNestedInstances,
 } from '../../src/filters/utils'
 import {
-  API_NAME, CUSTOM_FIELD,
+  API_NAME, CUSTOM_FIELD, CUSTOM_LABEL_METADATA_TYPE, CUSTOM_LABELS_METADATA_TYPE,
   CUSTOM_OBJECT,
   CUSTOM_SETTINGS_TYPE,
   FIELD_ANNOTATIONS,
@@ -711,6 +711,7 @@ describe('filter utils', () => {
       ...CUSTOM_OBJECT_FIELDS,
       CUSTOM_OBJECT,
       CUSTOM_FIELD,
+      CUSTOM_LABEL_METADATA_TYPE,
     ] as const
     type RelatedType = typeof RELATED_TYPES[number]
     const isRelatedType = (type: string): type is RelatedType => (
@@ -792,6 +793,23 @@ describe('filter utils', () => {
         SharingReason: [],
         ValidationRule: [],
         WebLink: [],
+        CustomLabel: [
+          mockFileProperties({
+            fullName: 'TestLabel1',
+            type: CUSTOM_LABEL_METADATA_TYPE,
+            lastModifiedDate: '2023-11-01T00:00:00.000Z',
+          }),
+          mockFileProperties({
+            fullName: 'TestLabel2',
+            type: CUSTOM_LABEL_METADATA_TYPE,
+            lastModifiedDate: '2023-11-02T00:00:00.000Z',
+          }),
+          mockFileProperties({
+            fullName: 'TestLabel3',
+            type: CUSTOM_LABEL_METADATA_TYPE,
+            lastModifiedDate: '2023-11-03T00:00:00.000Z',
+          }),
+        ],
       }
       connection.metadata.list.mockImplementation(async queries => (
         makeArray(queries).flatMap(({ type }) => {
@@ -803,43 +821,44 @@ describe('filter utils', () => {
         })
       ))
     })
-    describe('when the CustomObject type is excluded', () => {
-      it('should not retrieve any files related to CustomObjects', async () => {
+    it('should return correct values', async () => {
+      const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
+        client,
+        metadataQuery: buildBaseMetadataQuery({
+          metadataParams: {
+            include: [{
+              metadataType: '.*',
+            }],
+          },
+          isFetchWithChangesDetection: false,
+        }),
+      })
+      expect(lastChangeDateOfTypesWithNestedInstances).toEqual({
+        [CUSTOM_OBJECT]: {
+          [FIRST_OBJECT_NAME]: '2023-11-07T00:00:00.000Z',
+          [SECOND_OBJECT_NAME]: '2023-11-02T00:00:00.000Z',
+        },
+        [CUSTOM_LABELS_METADATA_TYPE]: '2023-11-03T00:00:00.000Z',
+      })
+      expect(listedTypes).toIncludeSameMembers([...RELATED_TYPES])
+    })
+
+    describe('when the types are excluded', () => {
+      it('should not retrieve any files and return empty object', async () => {
         const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
           client,
           metadataQuery: buildBaseMetadataQuery({
             metadataParams: {
-              exclude: [{
-                metadataType: CUSTOM_OBJECT,
-              }],
+              exclude: [
+                { metadataType: CUSTOM_OBJECT },
+                { metadataType: CUSTOM_LABELS_METADATA_TYPE },
+              ],
             },
             isFetchWithChangesDetection: false,
           }),
         })
         expect(lastChangeDateOfTypesWithNestedInstances).toBeEmpty()
-        expect(listedTypes).toBeEmpty()
-      })
-    })
-    describe('when the CustomObject type is included', () => {
-      it('should return correct values', async () => {
-        const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
-          client,
-          metadataQuery: buildBaseMetadataQuery({
-            metadataParams: {
-              include: [{
-                metadataType: '.*',
-              }],
-            },
-            isFetchWithChangesDetection: false,
-          }),
-        })
-        expect(lastChangeDateOfTypesWithNestedInstances).toEqual({
-          [CUSTOM_OBJECT]: {
-            [FIRST_OBJECT_NAME]: '2023-11-07T00:00:00.000Z',
-            [SECOND_OBJECT_NAME]: '2023-11-02T00:00:00.000Z',
-          },
-        })
-        expect(listedTypes).toIncludeSameMembers([...RELATED_TYPES])
+        expect(connection.metadata.list).not.toHaveBeenCalled()
       })
     })
   })

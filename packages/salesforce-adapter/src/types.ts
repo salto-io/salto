@@ -29,7 +29,7 @@ import { config as configUtils } from '@salto-io/adapter-components'
 import { types } from '@salto-io/lowerdash'
 import { SUPPORTED_METADATA_TYPES } from './fetch_profile/metadata_types'
 import * as constants from './constants'
-import { CUSTOM_OBJECT, DEFAULT_MAX_INSTANCES_PER_TYPE, SALESFORCE } from './constants'
+import { CUSTOM_LABELS_METADATA_TYPE, CUSTOM_OBJECT, DEFAULT_MAX_INSTANCES_PER_TYPE, SALESFORCE } from './constants'
 
 type UserDeployConfig = configUtils.UserDeployConfig
 const { createUserDeployConfigType } = configUtils
@@ -902,4 +902,5 @@ export type FetchProfile = {
 export type LastChangeDateOfTypesWithNestedInstances = Partial<{
   // The CustomObject section will contain mapping per CustomObject type name
   [CUSTOM_OBJECT]: Record<string, string>
+  [CUSTOM_LABELS_METADATA_TYPE]: string
 }>

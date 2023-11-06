@@ -62,7 +62,7 @@ import {
   API_NAME,
   API_NAME_SEPARATOR,
   CHANGED_AT_SINGLETON,
-  CUSTOM_FIELD,
+  CUSTOM_FIELD, CUSTOM_LABEL_METADATA_TYPE, CUSTOM_LABELS_METADATA_TYPE,
   CUSTOM_METADATA_SUFFIX,
   CUSTOM_OBJECT,
   CUSTOM_OBJECT_ID_FIELD,
@@ -706,11 +706,26 @@ type GetLastChangeDateOfTypesWithNestedInstancesParams = {
   metadataQuery: BaseMetadataQuery
 }
 
+export const keyedPromiseAll = async <TKey extends PropertyKey, TValue extends unknown[]> (
+  promisesByKey: Record<TKey, Promise<TValue>>
+): Promise<Record<TKey, TValue>> => {
+  const keys = Object.keys(promisesByKey) as TKey[]
+  const result = {} as Record<TKey, TValue>
+  await Promise.all(keys.map(async key => {
+    result[key] = await promisesByKey[key]
+  }))
+  return result
+}
+
+
 export const getLastChangeDateOfTypesWithNestedInstances = async ({
   client,
   metadataQuery,
 }: GetLastChangeDateOfTypesWithNestedInstancesParams): Promise<LastChangeDateOfTypesWithNestedInstances> => {
-  const lastChangeDateOfCustomObjectTypes = async (): Promise<Record<string, string>> => {
+  const lastChangeDateOfCustomObjectTypes = async (): Promise<undefined | Record<string, string>> => {
+    if (!metadataQuery.isTypeMatch(CUSTOM_OBJECT)) {
+      return undefined
+    }
     const allSubInstancesFileProps = _.flatten(await Promise.all(
       [
         ...CUSTOM_OBJECT_FIELDS,
@@ -732,7 +747,20 @@ export const getLastChangeDateOfTypesWithNestedInstances = async ({
       })
     return result
   }
+  const lastChangeDataOfCustomLabels = async (): Promise<string | undefined> => {
+    if (!metadataQuery.isTypeMatch(CUSTOM_LABELS_METADATA_TYPE)) {
+      return undefined
+    }
+    const { elements: props } = await listMetadataObjects(client, CUSTOM_LABEL_METADATA_TYPE)
+    return getMostRecentFileProperties(props)?.lastModifiedDate
+  }
+  const promisesByType = {
+    [CUSTOM_OBJECT]: lastChangeDateOfCustomObjectTypes(),
+    [CUSTOM_LABELS_METADATA_TYPE]: lastChangeDataOfCustomLabels(),
+  }
+  await Promise.all(Object.values(promisesByType) as Promise<unknown>[])
   return {
-    [CUSTOM_OBJECT]: metadataQuery.isTypeMatch(CUSTOM_OBJECT) ? await lastChangeDateOfCustomObjectTypes() : undefined,
+    [CUSTOM_OBJECT]: await promisesByType[CUSTOM_OBJECT],
+    [CUSTOM_LABELS_METADATA_TYPE]: await promisesByType[CUSTOM_LABELS_METADATA_TYPE],
   }
 }

@@ -21,7 +21,7 @@ import {
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { filter } from '@salto-io/adapter-utils'
+import { filter, logDuration } from '@salto-io/adapter-utils'
 import { createElements } from './transformer'
 import { DeployResult, TYPES_TO_SKIP, isCustomRecordType } from './types'
 import { BIN, BUNDLE } from './constants'
@@ -426,6 +426,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
    * Account credentials were given in the constructor.
    */
 
+  @logDuration('fetching account configuration')
   public async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
     const isFirstFetch = !(await awu(await this.elementsSource.list()).find(e => !e.isConfigType()))
     const hasFetchTarget = this.fetchTarget !== undefined
@@ -539,6 +540,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     return [...originalChangesErrors, ...saltoErrors]
   }
 
+  @logDuration('deploying account configuration')
   public async deploy({ changeGroup: { changes, groupID } }: DeployOptions): Promise<DeployResult> {
     const changesToDeploy = changes.map(cloneChange)
     const filtersRunner = this.createFiltersRunner({ operation: 'deploy', changesGroupId: groupID })

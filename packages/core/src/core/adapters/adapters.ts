@@ -197,10 +197,8 @@ const filterElementsSource = (
 export const createResolvedTypesElementsSource = (
   elementsSource: ReadOnlyElementsSource
 ): ReadOnlyElementsSource => {
-  const resolvedTypes: Map<string, TypeElement> = new Map()
-  let typesWereResolved = false
-  const resolveTypes = async (): Promise<void> => {
-    typesWereResolved = true
+  let resolvedTypesPromise: Promise<Map<string, TypeElement>> | undefined
+  const resolveTypes = async (): Promise<Map<string, TypeElement>> => {
     const typeElements = await awu(await elementsSource.getAll()).filter(isType).toArray()
     // Resolve all the types together for better performance
     const resolved = await expressions.resolve(
@@ -210,16 +208,14 @@ export const createResolvedTypesElementsSource = (
         shouldResolveReferences: false,
       }
     )
-    resolved.filter(isType)
-      .forEach(typeElement => {
-        resolvedTypes.set(typeElement.elemID.getFullName(), typeElement)
-      })
+    return new Map(resolved.filter(isType).map(resolvedType => [resolvedType.elemID.getFullName(), resolvedType]))
   }
 
   const getResolved = async (id: ElemID): Promise<Element> => {
-    if (!typesWereResolved) {
-      await resolveTypes()
+    if (resolvedTypesPromise === undefined) {
+      resolvedTypesPromise = resolveTypes()
     }
+    const resolvedTypes = await resolvedTypesPromise
     // Container types
     const containerInfo = id.getContainerPrefixAndInnerType()
     if (containerInfo !== undefined) {

@@ -13,12 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isInstanceElement, Element } from '@salto-io/adapter-api'
-import { config as configUtils } from '@salto-io/adapter-components'
-import { getAndLogCollisionWarnings, getInstancesWithCollidingElemID } from '@salto-io/adapter-utils'
+import { isInstanceElement, Element, isReferenceExpression } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
+import { config as configUtils, filters } from '@salto-io/adapter-components'
+import { getAndLogCollisionWarnings, getInstancesWithCollidingElemID, getParents } from '@salto-io/adapter-utils'
+import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { ZENDESK } from '../constants'
 import { API_DEFINITIONS_CONFIG } from '../config'
+
+
+const log = logger(module)
 
 
 /**
@@ -27,10 +32,36 @@ import { API_DEFINITIONS_CONFIG } from '../config'
 const filterCreator: FilterCreator = ({ config }) => ({
   name: 'collisionErrorsFilter',
   onFetch: async (elements: Element[]) => {
-    const collistionWarnings = await getAndLogCollisionWarnings({
+    const collidingElements = getInstancesWithCollidingElemID(elements.filter(isInstanceElement))
+    const collidingElementsNames = new Set(collidingElements.map(e => e.elemID.getFullName()))
+    const graph = filters.createParentChildGraph(elements.filter(isInstanceElement))
+    const additionalIDsToRemove = graph.getComponent({
+      roots: collidingElements.map(e => e.elemID.getFullName()),
+      reverse: true,
+    })
+    const dependentRemovedInstances = _.remove(
+      elements,
+      element => additionalIDsToRemove.has(element.elemID.getFullName())
+        && !collidingElementsNames.has(element.elemID.getFullName())
+    )
+    const removedChildsByParent = _.groupBy(
+      dependentRemovedInstances.filter(removedInst => {
+        if (!isReferenceExpression(getParents(removedInst)[0])) {
+          log.error(`${removedInst.elemID.getFullName()} does not have a parent`)
+          return false
+        }
+        return true
+      }),
+      removedInst => getParents(removedInst)[0].elemID.getFullName()
+    )
+    const childWarning = Object.keys(removedChildsByParent)
+      .map(parent =>
+        `removed ${removedChildsByParent[parent].map(element => element.elemID.getFullName()).join(' , ')} as its parent ${parent} was removed due to collision of elemId`)
+    log.debug(`${childWarning.join('\n')}`)
+    const collisionWarnings = await getAndLogCollisionWarnings({
       adapterName: ZENDESK,
       configurationName: 'service',
-      instances: getInstancesWithCollidingElemID(elements.filter(isInstanceElement)),
+      instances: collidingElements,
       getTypeName: async instance => instance.elemID.typeName,
       // TODO fix it to use apiName once we have apiName
       getInstanceName: async instance => instance.elemID.name,
@@ -41,7 +72,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
       idFieldsName: 'idFields',
       docsUrl: 'https://help.salto.io/en/articles/6927157-salto-id-collisions',
     })
-    return { errors: collistionWarnings }
+    return { errors: collisionWarnings }
   },
 })
 

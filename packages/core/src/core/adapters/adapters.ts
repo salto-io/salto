@@ -35,6 +35,7 @@ import { logger } from '@salto-io/logging'
 import { createAdapterReplacedID, expressions, merger, updateElementsWithAlternativeAccount, elementSource as workspaceElementSource } from '@salto-io/workspace'
 import { collections, promises } from '@salto-io/lowerdash'
 import adapterCreators from './creators'
+import { CORE_FLAGS, getCoreFlagBool } from '../flags'
 
 const { awu } = collections.asynciterable
 const { mapValuesAsync } = promises.object
@@ -197,6 +198,10 @@ const filterElementsSource = (
 export const createResolvedTypesElementsSource = (
   elementsSource: ReadOnlyElementsSource
 ): ReadOnlyElementsSource => {
+  if (getCoreFlagBool(CORE_FLAGS.skipResolveTypesInElementSource)) {
+    return elementsSource
+  }
+
   let resolvedTypesPromise: Promise<Map<string, TypeElement>> | undefined
   const resolveTypes = async (): Promise<Map<string, TypeElement>> => {
     const typeElements = await awu(await elementsSource.list())

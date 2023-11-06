@@ -25,6 +25,9 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { MockInterface } from '@salto-io/test-utils'
+import { FileProperties } from 'jsforce'
+import { collections } from '@salto-io/lowerdash'
 import {
   addDefaults,
   toListType,
@@ -44,10 +47,10 @@ import {
   isElementWithResolvedParent,
   getElementAuthorInformation,
   getNamespaceSync,
-  referenceFieldTargetTypes,
+  referenceFieldTargetTypes, getMostRecentFileProperties, getLastChangeDateOfTypesWithNestedInstances,
 } from '../../src/filters/utils'
 import {
-  API_NAME,
+  API_NAME, CUSTOM_FIELD,
   CUSTOM_OBJECT,
   CUSTOM_SETTINGS_TYPE,
   FIELD_ANNOTATIONS,
@@ -62,6 +65,14 @@ import { createFlowChange, mockInstances, mockTypes } from '../mock_elements'
 import { createCustomObjectType, createField } from '../utils'
 import { INSTANCE_SUFFIXES } from '../../src/types'
 import { mockFileProperties } from '../connection'
+import { SalesforceClient } from '../../index'
+import Connection from '../../src/client/jsforce'
+import mockClient from '../client'
+import { CUSTOM_OBJECT_FIELDS } from '../../src/fetch_profile/metadata_types'
+import { buildBaseMetadataQuery } from '../../src/fetch_profile/metadata_query'
+
+
+const { makeArray } = collections.array
 
 describe('filter utils', () => {
   describe('addDefaults', () => {
@@ -670,6 +681,165 @@ describe('filter utils', () => {
       it('should return the referred type name', () => {
         expect(referenceTargets).toBeArrayOfSize(1)
         expect(referenceTargets).toContainValue('SomeCustomObject')
+      })
+    })
+  })
+  describe('getMostRecentFileProperties', () => {
+    it('should return the most recent file properties', () => {
+      const mostRecentProps = mockFileProperties({ type: CUSTOM_OBJECT, fullName: 'Test3__c', lastModifiedDate: '2023-11-03T16:28:30.000Z' })
+      const fileProperties = [
+        mockFileProperties({ type: CUSTOM_OBJECT, fullName: 'Test__c', lastModifiedDate: '2023-11-01T16:28:30.000Z' }),
+        mockFileProperties({ type: CUSTOM_OBJECT, fullName: 'Test2__c', lastModifiedDate: '2023-11-02T16:28:30.000Z' }),
+      ].concat(mostRecentProps)
+      expect(getMostRecentFileProperties(fileProperties)).toEqual(mostRecentProps)
+    })
+    it('should return undefined for empty array', () => {
+      expect(getMostRecentFileProperties([])).toBeUndefined()
+    })
+    it('should return undefined if all fileProps are with undefined or empty lastModifiedDate', () => {
+      const fileProperties = [
+        mockFileProperties({ type: CUSTOM_OBJECT, fullName: 'Test__c', lastModifiedDate: undefined }),
+        mockFileProperties({ type: CUSTOM_OBJECT, fullName: 'Test2__c', lastModifiedDate: '' }),
+      ]
+      expect(getMostRecentFileProperties(fileProperties)).toBeUndefined()
+    })
+  })
+  describe('getLastChangeDateOfTypesWithNestedInstances', () => {
+    const FIRST_OBJECT_NAME = 'Test1__c'
+    const SECOND_OBJECT_NAME = 'Test2__c'
+    const RELATED_TYPES = [
+      ...CUSTOM_OBJECT_FIELDS,
+      CUSTOM_OBJECT,
+      CUSTOM_FIELD,
+    ] as const
+    type RelatedType = typeof RELATED_TYPES[number]
+    const isRelatedType = (type: string): type is RelatedType => (
+      RELATED_TYPES.includes(type as RelatedType)
+    )
+
+    let client: SalesforceClient
+    let connection: MockInterface<Connection>
+    let listedTypes: RelatedType[]
+    beforeEach(() => {
+      ({ client, connection } = mockClient())
+      listedTypes = []
+      const filePropByRelatedType: Record<RelatedType, FileProperties[]> = {
+        BusinessProcess: [
+          // Latest related property for Updated__c
+          mockFileProperties({
+            fullName: `${FIRST_OBJECT_NAME}.TestBusinessProcess`,
+            type: 'BusinessProcess',
+            lastModifiedDate: '2023-11-07T00:00:00.000Z',
+          }),
+          mockFileProperties({
+            fullName: `${SECOND_OBJECT_NAME}.TestBusinessProcess`,
+            type: 'BusinessProcess',
+            lastModifiedDate: '2023-10-01T00:00:00.000Z',
+          }),
+        ],
+        CompactLayout: [
+          mockFileProperties({
+            fullName: `${FIRST_OBJECT_NAME}.TestCompactLayout`,
+            type: 'CompactLayout',
+            lastModifiedDate: '2023-11-05T00:00:00.000Z',
+          }),
+          mockFileProperties({
+            fullName: `${SECOND_OBJECT_NAME}.TestCompactLayout`,
+            type: 'CompactLayout',
+            lastModifiedDate: '2023-10-03T00:00:00.000Z',
+          }),
+        ],
+        CustomField: [
+          mockFileProperties({
+            fullName: `${FIRST_OBJECT_NAME}.TestField__c`,
+            type: CUSTOM_FIELD,
+            lastModifiedDate: '2023-11-02T00:00:00.000Z',
+          }),
+          mockFileProperties({
+            fullName: `${SECOND_OBJECT_NAME}.TestField__c`,
+            type: CUSTOM_FIELD,
+            lastModifiedDate: '2023-11-01T00:00:00.000Z',
+          }),
+        ],
+        CustomObject: [
+          mockFileProperties({
+            fullName: FIRST_OBJECT_NAME,
+            type: CUSTOM_OBJECT,
+            lastModifiedDate: '2023-11-01T00:00:00.000Z',
+          }),
+          mockFileProperties({
+            fullName: SECOND_OBJECT_NAME,
+            type: CUSTOM_OBJECT,
+            lastModifiedDate: '2023-11-01T00:00:00.000Z',
+          }),
+        ],
+        FieldSet: [],
+        Index: [],
+        ListView: [
+          mockFileProperties({
+            fullName: `${FIRST_OBJECT_NAME}.TestListView`,
+            type: 'ListView',
+            lastModifiedDate: '2023-11-06T00:00:00.000Z',
+          }),
+          // Latest related property for NonUpdated__c
+          mockFileProperties({
+            fullName: `${SECOND_OBJECT_NAME}.TestListView`,
+            type: 'ListView',
+            lastModifiedDate: '2023-11-02T00:00:00.000Z',
+          }),
+        ],
+        RecordType: [],
+        SharingReason: [],
+        ValidationRule: [],
+        WebLink: [],
+      }
+      connection.metadata.list.mockImplementation(async queries => (
+        makeArray(queries).flatMap(({ type }) => {
+          if (!isRelatedType(type)) {
+            throw new Error(`Unexpected non mocked type in mock: ${type}`)
+          }
+          listedTypes.push(type)
+          return filePropByRelatedType[type as RelatedType] ?? []
+        })
+      ))
+    })
+    describe('when the CustomObject type is excluded', () => {
+      it('should not retrieve any files related to CustomObjects', async () => {
+        const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
+          client,
+          metadataQuery: buildBaseMetadataQuery({
+            metadataParams: {
+              exclude: [{
+                metadataType: CUSTOM_OBJECT,
+              }],
+            },
+            isFetchWithChangesDetection: false,
+          }),
+        })
+        expect(lastChangeDateOfTypesWithNestedInstances).toBeEmpty()
+        expect(listedTypes).toBeEmpty()
+      })
+    })
+    describe('when the CustomObject type is included', () => {
+      it('should return correct values', async () => {
+        const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
+          client,
+          metadataQuery: buildBaseMetadataQuery({
+            metadataParams: {
+              include: [{
+                metadataType: '.*',
+              }],
+            },
+            isFetchWithChangesDetection: false,
+          }),
+        })
+        expect(lastChangeDateOfTypesWithNestedInstances).toEqual({
+          [CUSTOM_OBJECT]: {
+            [FIRST_OBJECT_NAME]: '2023-11-07T00:00:00.000Z',
+            [SECOND_OBJECT_NAME]: '2023-11-02T00:00:00.000Z',
+          },
+        })
+        expect(listedTypes).toIncludeSameMembers([...RELATED_TYPES])
       })
     })
   })

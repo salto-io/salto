@@ -694,7 +694,7 @@ export const getNamespaceSync = (element: Element): string | undefined => {
 }
 
 
-export const getLatestChangeProps = (fileProps: FileProperties[]): FileProperties | undefined => (
+export const getMostRecentFileProperties = (fileProps: FileProperties[]): FileProperties | undefined => (
   _.maxBy(
     fileProps.filter(({ lastModifiedDate }) => _.isString(lastModifiedDate) && lastModifiedDate !== ''),
     prop => new Date(prop.lastModifiedDate).getTime()
@@ -726,7 +726,7 @@ export const getLastChangeDateOfTypesWithNestedInstances = async ({
     const result: Record<string, string> = {}
     Object.entries(relatedPropsByParent)
       .forEach(([parentName, fileProps]) => {
-        const latestChangeProps = getLatestChangeProps(fileProps)
+        const latestChangeProps = getMostRecentFileProperties(fileProps)
         if (latestChangeProps !== undefined) {
           result[parentName] = latestChangeProps.lastModifiedDate
         }

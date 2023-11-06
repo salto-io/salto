@@ -21,7 +21,7 @@ import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import { OKTA, APPLICATION_TYPE_NAME, GROUP_PUSH_TYPE_NAME, GROUP_PUSH_RULE_TYPE_NAME } from '../constants'
+import { OKTA, APPLICATION_TYPE_NAME, GROUP_PUSH_TYPE_NAME, GROUP_PUSH_RULE_TYPE_NAME, ACTIVE_STATUS } from '../constants'
 import { PRIVATE_API_DEFINITIONS_CONFIG, OktaConfig, CLIENT_CONFIG } from '../config'
 
 const log = logger(module)
@@ -191,6 +191,29 @@ const toPushRuleInstance = async ({
   getElemIdFunc,
 })
 
+const getGroupPushRules = async ({
+  appInstance,
+  pushRuleType,
+  paginator,
+  config,
+  getElemIdFunc,
+}: {
+  appInstance: InstanceElement
+  pushRuleType: ObjectType
+  paginator: clientUtils.Paginator
+  config: OktaConfig
+  getElemIdFunc?: ElemIdGetter
+}): Promise<InstanceElement[]> => {
+  const pushRulesEntries = await getPushRulesForApp(paginator, appInstance.value.id)
+  return Promise.all(pushRulesEntries.map(async entry => toPushRuleInstance({
+    entry,
+    pushRuleType,
+    appInstance,
+    config,
+    getElemIdFunc,
+  })))
+}
+
 /**
  * Fetch group push instances and group push rule instances using private API
  */
@@ -240,15 +263,12 @@ const groupPushFilter: FilterCreator = ({ config, adminClient, getElemIdFunc }) 
           config,
           getElemIdFunc,
         })))
-        const pushRulesEntries = await getPushRulesForApp(paginator, appInstance.value.id)
-        const pushRules = await Promise.all(pushRulesEntries.map(async entry => toPushRuleInstance({
-          entry,
-          pushRuleType,
-          appInstance,
-          config,
-          getElemIdFunc,
-        })))
-        return groupPush.concat(pushRules)
+        const appStatus = appInstance.value.status
+        // fetching Group Push rules is only supported for apps in status ACTIVE
+        const groupPushRules = appStatus === ACTIVE_STATUS
+          ? await getGroupPushRules({ appInstance, pushRuleType, paginator, config, getElemIdFunc })
+          : []
+        return groupPush.concat(groupPushRules)
       })))
       .flat()
 

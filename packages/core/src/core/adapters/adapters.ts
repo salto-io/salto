@@ -264,7 +264,7 @@ type AdapterConfigGetter = (
   adapter: string, defaultValue?: InstanceElement
 ) => Promise<InstanceElement | undefined>
 
-const RESOLVED_TYPES_ELEMENTS_SOURCE_ACCOUNTS = [
+const RESOLVED_TYPES_ELEMENTS_SOURCE_SERVICES = [
   'salesforce',
 ]
 
@@ -288,7 +288,7 @@ export const getAdaptersCreatorConfigs = async (
         {
           credentials: credentials[account],
           config: await getConfig(account, defaultConfig),
-          elementsSource: RESOLVED_TYPES_ELEMENTS_SOURCE_ACCOUNTS.includes(account)
+          elementsSource: RESOLVED_TYPES_ELEMENTS_SOURCE_SERVICES.includes(accountToServiceName[account])
             ? createResolvedTypesElementsSource(elemIDReplacedElementsSource)
             : elemIDReplacedElementsSource,
           getElemIdFunc: elemIdGetters[account],

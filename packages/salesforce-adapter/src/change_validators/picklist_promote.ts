@@ -17,9 +17,8 @@ import { Change, ChangeError, Field, getAllChangeData, isModificationChange, Cha
   getChangeData, isFieldChange, ModificationChange, ElemID, isReferenceExpression } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { apiName, isCustom } from '../transformers/transformer'
-import { isPicklistField, hasValueSetNameAnnotation } from '../filters/value_set'
 import { VALUE_SET_FIELDS } from '../constants'
-import { isInstanceOfType } from '../filters/utils'
+import { hasValueSetNameAnnotation, isInstanceOfType, isPicklistField } from '../filters/utils'
 import { GLOBAL_VALUE_SET } from '../filters/global_value_sets'
 
 const { awu } = collections.asynciterable

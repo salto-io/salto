@@ -14,13 +14,17 @@
 * limitations under the License.
 */
 import {
-  ChangeDataType, ChangeError, Field, getChangeData, isModificationChange, ChangeValidator,
+  ChangeDataType,
+  ChangeError,
+  ChangeValidator,
+  Field,
+  getChangeData,
+  isModificationChange,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { apiName, isCustom } from '../transformers/transformer'
-import { isPicklistField, isValueSetReference } from '../filters/value_set'
 import { STANDARD_VALUE_SET } from '../filters/standard_value_sets'
-import { isInstanceOfType } from '../filters/utils'
+import { isInstanceOfType, isPicklistField, isValueSetReference } from '../filters/utils'
 import { VALUE_SET_FIELDS } from '../constants'
 
 const { awu } = collections.asynciterable

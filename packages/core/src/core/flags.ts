@@ -15,10 +15,11 @@
 */
 import { types } from '@salto-io/lowerdash'
 
-export const CORE_FLAG_PREFIX = 'SALTO_CORE_'
+export const CORE_FLAG_PREFIX = 'SALTO_'
 
 export const CORE_FLAGS = {
   skipResolveTypesInElementSource: 'SKIP_RESOLVE_TYPES_IN_ELEMENT_SOURCE',
+  autoMergeDisabled: 'AUTO_MERGE_DISABLE',
 } as const
 
 type CoreFlagName = types.ValueOf<typeof CORE_FLAGS>

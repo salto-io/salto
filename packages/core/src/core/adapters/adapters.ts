@@ -199,7 +199,10 @@ export const createResolvedTypesElementsSource = (
 ): ReadOnlyElementsSource => {
   let resolvedTypesPromise: Promise<Map<string, TypeElement>> | undefined
   const resolveTypes = async (): Promise<Map<string, TypeElement>> => {
-    const typeElements = await awu(await elementsSource.getAll()).filter(isType).toArray()
+    const typeElements = await awu(await elementsSource.list())
+      .filter(id => id.idType === 'type')
+      .map(id => elementsSource.get(id))
+      .toArray()
     // Resolve all the types together for better performance
     const resolved = await expressions.resolve(
       typeElements,

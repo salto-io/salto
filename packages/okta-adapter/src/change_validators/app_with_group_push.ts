@@ -26,7 +26,7 @@ const { isDefined } = values
 const GROUP_PUSH_HELP_ARTICLE = 'https://help.okta.com/oie/en-us/content/topics/users-groups-profiles/usgp-group-push-prerequisites.htm'
 
 /**
- * Verify application suppports group push feature before addition of GroupPush and GroupPushRule instances
+ * Verify application supports group push feature before addition of GroupPush and GroupPushRule instances
  */
 export const appWithGroupPushValidator: ChangeValidator = async changes => {
   const groupPushInstances = changes

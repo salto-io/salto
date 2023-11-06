@@ -37,11 +37,22 @@ import {
   isStaticFile,
   StaticFile,
   UnresolvedReference,
+  ContainerTypeName,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
-import { buildContainerTypeId } from './workspace/elements_source'
 
 const { awu } = collections.asynciterable
+
+export const buildContainerTypeId = (
+  prefix: ContainerTypeName,
+  innerTypeId: ElemID,
+): ElemID => {
+  const typeElemIdCreator: Record<ContainerTypeName, (innerType: TypeReference) => ElemID> = {
+    List: ListType.createElemID,
+    Map: MapType.createElemID,
+  }
+  return typeElemIdCreator[prefix](new TypeReference(innerTypeId))
+}
 
 // Changing element ids is a practice we'd like to discourage, which is why this
 // function is not generic, but aimed at a specific need - to create a copy of an elemID

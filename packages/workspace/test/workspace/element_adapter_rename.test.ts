@@ -15,7 +15,17 @@
 */
 import { BuiltinTypes, ElemID, InstanceElement, ListType, MapType, ObjectType, ReferenceExpression, StaticFile, TemplateExpression, TypeElement, TypeReference, UnresolvedReference } from '@salto-io/adapter-api'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
-import { createAdapterReplacedID, updateElementsWithAlternativeAccount } from '../../src/element_adapter_rename'
+import { buildContainerTypeId, createAdapterReplacedID, updateElementsWithAlternativeAccount } from '../../src/element_adapter_rename'
+
+describe('buildContainerTypeId', () => {
+  it.each([['list', ListType], ['map', MapType]])('with %s prefix', (_name, containerType) => {
+    const id = containerType.createElemID(BuiltinTypes.STRING)
+    const containerInfo = id.getContainerPrefixAndInnerType()
+    if (containerInfo !== undefined) {
+      expect(buildContainerTypeId(containerInfo.prefix, BuiltinTypes.STRING.elemID)).toEqual(id)
+    }
+  })
+})
 
 describe('when replacing id adapter', () => {
   it('creates a new elemID with different id', () => {

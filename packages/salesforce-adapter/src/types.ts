@@ -27,6 +27,7 @@ import {
 } from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { types } from '@salto-io/lowerdash'
+import { FileProperties } from 'jsforce'
 import { SUPPORTED_METADATA_TYPES } from './fetch_profile/metadata_types'
 import * as constants from './constants'
 import { CUSTOM_OBJECT, DEFAULT_MAX_INSTANCES_PER_TYPE, SALESFORCE } from './constants'
@@ -862,10 +863,10 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
-export type MetadataQuery = {
+export type MetadataQuery<T extends MetadataInstance | FileProperties = MetadataInstance> = {
   isTypeMatch: (type: string) => boolean
-  isInstanceIncluded: (instance: MetadataInstance) => boolean
-  isInstanceMatch: (instance: MetadataInstance) => boolean
+  isInstanceIncluded: (instance: T) => boolean
+  isInstanceMatch: (instance: T) => boolean
   isTargetedFetch: () => boolean
   isFetchWithChangesDetection: () => boolean
   isPartialFetch: () => boolean

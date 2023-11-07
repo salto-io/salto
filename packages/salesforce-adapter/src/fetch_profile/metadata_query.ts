@@ -16,6 +16,7 @@
 import { regex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { FileProperties } from 'jsforce'
 import {
   CUSTOM_FIELD,
   CUSTOM_METADATA,
@@ -240,3 +241,24 @@ export const validateMetadataParams = (
     )
   }
 }
+
+const filePropsToMetadataInstance = ({
+  namespacePrefix,
+  type: metadataType,
+  fullName: name,
+  lastModifiedDate: changedAt,
+}: FileProperties): MetadataInstance => ({
+  namespace: namespacePrefix === undefined || namespacePrefix === '' ? DEFAULT_NAMESPACE : namespacePrefix,
+  metadataType,
+  name,
+  changedAt,
+  isFolderType: false,
+})
+
+export const buildFilePropsMetadataQuery = (
+  metadataQuery: MetadataQuery
+): MetadataQuery<FileProperties> => ({
+  ...metadataQuery,
+  isInstanceIncluded: instance => metadataQuery.isInstanceIncluded(filePropsToMetadataInstance(instance)),
+  isInstanceMatch: instance => metadataQuery.isInstanceMatch(filePropsToMetadataInstance(instance)),
+})

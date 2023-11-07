@@ -47,16 +47,16 @@ import {
   Value,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements, createSchemeGuard, detailedCompare, getParents } from '@salto-io/adapter-utils'
-import { FileProperties } from 'jsforce-types'
 import { chunks, collections, types, values } from '@salto-io/lowerdash'
 import Joi from 'joi'
+import { FileProperties } from 'jsforce'
 import SalesforceClient, { ErrorFilter } from '../client/client'
 import {
   FetchElements,
   INSTANCE_SUFFIXES,
-  OptionalFeatures,
   LastChangeDateOfTypesWithNestedInstances,
-  BaseMetadataQuery,
+  MetadataQuery,
+  OptionalFeatures,
 } from '../types'
 import {
   ACTIVE,
@@ -757,21 +757,27 @@ export const getMostRecentFileProperties = (fileProps: FileProperties[]): FilePr
 
 type GetLastChangeDateOfTypesWithNestedInstancesParams = {
   client: SalesforceClient
-  metadataQuery: BaseMetadataQuery
+  metadataQuery: MetadataQuery<FileProperties>
 }
 
 export const getLastChangeDateOfTypesWithNestedInstances = async ({
   client,
   metadataQuery,
 }: GetLastChangeDateOfTypesWithNestedInstancesParams): Promise<LastChangeDateOfTypesWithNestedInstances> => {
-  const lastChangeDateOfCustomObjectTypes = async (): Promise<Record<string, string>> => {
+  const lastChangeDateOfCustomObjectTypes = async (): Promise<Record<string, string> | undefined> => {
+    if (!metadataQuery.isTypeMatch(CUSTOM_OBJECT)) {
+      return undefined
+    }
     const allSubInstancesFileProps = _.flatten(await Promise.all(
       [
         ...CUSTOM_OBJECT_FIELDS,
-        CUSTOM_FIELD,
         CUSTOM_OBJECT,
-      ].map(typeName => listMetadataObjects(client, typeName))
+      ].filter(type => metadataQuery.isTypeMatch(type))
+        // This CustomField type is excluded by default. Listing CustomFields is mandatory when listing CustomObjects
+        .concat(CUSTOM_FIELD)
+        .map(typeName => listMetadataObjects(client, typeName))
     )).flatMap(result => result.elements)
+      .filter(fileProp => metadataQuery.isInstanceIncluded(fileProp))
     const relatedPropsByParent = _.groupBy(
       allSubInstancesFileProps,
       fileProp => fileProp.fullName.split('.')[0],
@@ -787,6 +793,6 @@ export const getLastChangeDateOfTypesWithNestedInstances = async ({
     return result
   }
   return {
-    [CUSTOM_OBJECT]: metadataQuery.isTypeMatch(CUSTOM_OBJECT) ? await lastChangeDateOfCustomObjectTypes() : undefined,
+    [CUSTOM_OBJECT]: await lastChangeDateOfCustomObjectTypes(),
   }
 }

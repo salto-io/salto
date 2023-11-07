@@ -51,13 +51,7 @@ import { chunks, collections, types, values } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import { FileProperties } from 'jsforce'
 import SalesforceClient, { ErrorFilter } from '../client/client'
-import {
-  FetchElements,
-  INSTANCE_SUFFIXES,
-  LastChangeDateOfTypesWithNestedInstances,
-  MetadataQuery,
-  OptionalFeatures,
-} from '../types'
+import { FetchElements, INSTANCE_SUFFIXES, OptionalFeatures } from '../types'
 import {
   ACTIVE,
   API_NAME,
@@ -80,7 +74,7 @@ import {
   NAMESPACE_SEPARATOR,
   PLURAL_LABEL,
   SALESFORCE,
-  STATUS,
+  STATUS, UNIX_TIME_ZERO_STRING,
   VALUE_SET_FIELDS,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
@@ -98,7 +92,6 @@ import {
 } from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
 import { createListMetadataObjectsConfigChange } from '../config_change'
-import { CUSTOM_OBJECT_FIELDS } from '../fetch_profile/metadata_types'
 
 const { toArrayAsync, awu } = collections.asynciterable
 const { splitDuplicates } = collections.array
@@ -750,49 +743,7 @@ export const hasValueSetNameAnnotation = (field: Field): boolean =>
 
 export const getMostRecentFileProperties = (fileProps: FileProperties[]): FileProperties | undefined => (
   _.maxBy(
-    fileProps.filter(({ lastModifiedDate }) => _.isString(lastModifiedDate) && lastModifiedDate !== ''),
+    fileProps.filter(({ lastModifiedDate }) => _.isString(lastModifiedDate) && lastModifiedDate !== '' && lastModifiedDate !== UNIX_TIME_ZERO_STRING),
     prop => new Date(prop.lastModifiedDate).getTime()
   )
 )
-
-type GetLastChangeDateOfTypesWithNestedInstancesParams = {
-  client: SalesforceClient
-  metadataQuery: MetadataQuery<FileProperties>
-}
-
-export const getLastChangeDateOfTypesWithNestedInstances = async ({
-  client,
-  metadataQuery,
-}: GetLastChangeDateOfTypesWithNestedInstancesParams): Promise<LastChangeDateOfTypesWithNestedInstances> => {
-  const lastChangeDateOfCustomObjectTypes = async (): Promise<Record<string, string> | undefined> => {
-    if (!metadataQuery.isTypeMatch(CUSTOM_OBJECT)) {
-      return undefined
-    }
-    const allSubInstancesFileProps = _.flatten(await Promise.all(
-      [
-        ...CUSTOM_OBJECT_FIELDS,
-        CUSTOM_OBJECT,
-      ].filter(type => metadataQuery.isTypeMatch(type))
-        // This CustomField type is excluded by default. Listing CustomFields is mandatory when listing CustomObjects
-        .concat(CUSTOM_FIELD)
-        .map(typeName => listMetadataObjects(client, typeName))
-    )).flatMap(result => result.elements)
-      .filter(fileProp => metadataQuery.isInstanceIncluded(fileProp))
-    const relatedPropsByParent = _.groupBy(
-      allSubInstancesFileProps,
-      fileProp => fileProp.fullName.split('.')[0],
-    )
-    const result: Record<string, string> = {}
-    Object.entries(relatedPropsByParent)
-      .forEach(([parentName, fileProps]) => {
-        const latestChangeProps = getMostRecentFileProperties(fileProps)
-        if (latestChangeProps !== undefined) {
-          result[parentName] = latestChangeProps.lastModifiedDate
-        }
-      })
-    return result
-  }
-  return {
-    [CUSTOM_OBJECT]: await lastChangeDateOfCustomObjectTypes(),
-  }
-}

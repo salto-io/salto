@@ -20,6 +20,8 @@ import { CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
 
 export const { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
 
+export const UNIX_TIME_ZERO_STRING = '1970-01-01T00:00:00.000Z'
+
 export const SALESFORCE = 'salesforce'
 export const CUSTOM_FIELD = 'CustomField'
 export const CUSTOM_OBJECT = 'CustomObject'

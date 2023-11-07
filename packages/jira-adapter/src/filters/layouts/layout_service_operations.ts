@@ -32,11 +32,11 @@ import { ISSUE_LAYOUT_TYPE, ISSUE_VIEW_TYPE, JIRA, REQUEST_FORM_TYPE, REQUEST_TY
 const log = logger(module)
 const { isDefined } = lowerDashValues
 
-type layoutTypeDetails = {
+type LayoutTypeDetails = {
     pathParam: string
     query: string
     layoutType?: string
-    fieldName?: string
+    fieldName: string
 }
 
 type QueryVariables = {
@@ -46,7 +46,7 @@ type QueryVariables = {
   }
 
 export type LayoutTypeName = 'RequestForm' | 'IssueView' | 'IssueLayout'
-export const layoutTypeNameToDetails: Record<LayoutTypeName, layoutTypeDetails> = {
+export const LAYOUT_TYPE_NAME_TO_DETAILS: Record<LayoutTypeName, LayoutTypeDetails> = {
   [REQUEST_FORM_TYPE]: {
     layoutType: 'REQUEST_FORM',
     pathParam: 'RequestForm',
@@ -56,6 +56,7 @@ export const layoutTypeNameToDetails: Record<LayoutTypeName, layoutTypeDetails> 
   [ISSUE_LAYOUT_TYPE]: {
     pathParam: 'layouts',
     query: QUERY,
+    fieldName: 'issueLayout',
   },
   [ISSUE_VIEW_TYPE]: {
     layoutType: 'ISSUE_VIEW',
@@ -69,7 +70,7 @@ export const isIssueLayoutResponse = createSchemeGuard<IssueLayoutResponse>(ISSU
 const isLayoutConfigItem = createSchemeGuard<layoutConfigItem>(ISSUE_LAYOUT_CONFIG_ITEM_SCHEME)
 
 function isLayoutTypeName(typeName: string): typeName is LayoutTypeName {
-  return Object.keys(layoutTypeNameToDetails).includes(typeName)
+  return Object.keys(LAYOUT_TYPE_NAME_TO_DETAILS).includes(typeName)
 }
 
 export const getLayoutResponse = async ({
@@ -83,7 +84,7 @@ export const getLayoutResponse = async ({
     }): Promise<graphQLResponseType> => {
   const baseUrl = '/rest/gira/1'
   try {
-    const query = layoutTypeNameToDetails[typeName]?.query
+    const query = LAYOUT_TYPE_NAME_TO_DETAILS[typeName]?.query
     if (query === undefined) {
       log.error(`Failed to get issue layout for project ${variables.projectId} and screen ${variables.extraDefinerId}: query is undefined`)
     }
@@ -145,7 +146,7 @@ export const getLayout = async ({
       instanceName,
       layoutType,
       value,
-      [...instance.path.slice(0, -1), layoutTypeNameToDetails[typeName].pathParam, pathNaclCase(instanceName)],
+      [...instance.path.slice(0, -1), LAYOUT_TYPE_NAME_TO_DETAILS[typeName].pathParam, pathNaclCase(instanceName)],
     )
   }
   return undefined
@@ -271,7 +272,7 @@ export const fetchRequestTypeDetails = async ({
       const variables = {
         projectId: projectInstance.value.id,
         extraDefinerId: requestTypeId,
-        layoutType: layoutTypeNameToDetails[typeName].layoutType,
+        layoutType: LAYOUT_TYPE_NAME_TO_DETAILS[typeName].layoutType,
       }
       const response = await getLayoutResponse({
         variables,

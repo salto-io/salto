@@ -25,7 +25,7 @@ import { ISSUE_VIEW_TYPE, REQUEST_FORM_TYPE, REQUEST_TYPE_NAME } from '../consta
 import { deployChanges, defaultDeployChange } from '../deployment/standard_deployment'
 import JiraClient from '../client/client'
 import { layoutConfigItem } from './layouts/layout_types'
-import { LayoutTypeName, getLayoutResponse, isIssueLayoutResponse, layoutTypeNameToDetails } from './layouts/layout_service_operations'
+import { LayoutTypeName, getLayoutResponse, isIssueLayoutResponse, LAYOUT_TYPE_NAME_TO_DETAILS } from './layouts/layout_service_operations'
 
 const { isDefined } = lowerDashValues
 const log = logger(module)
@@ -60,7 +60,7 @@ const deployWorkflowStatuses = async (
     const instance = getChangeData(change)
     const parent = getParent(instance)
     if (!isWorkFlowStatuses(instance.value.workflowStatuses)) {
-      return
+      throw new Error('Failed to deploy request type workflow statuses due to bad workflow statuses')
     }
     const workflowStatuses = instance.value.workflowStatuses.map(status => ({
       id: status.id?.value.value.id,
@@ -74,7 +74,7 @@ const deployWorkflowStatuses = async (
   }
 }
 
-const isRequesTypeDetailsChange = (
+const isRequestTypeDetailsChange = (
   change: ModificationChange<InstanceElement>,
   fieldName: string,
 ): boolean => fieldName === 'requestForm'
@@ -88,28 +88,25 @@ const deployRequestTypeLayout = async (
   typeName: LayoutTypeName,
 ): Promise<void> => {
   const requestType = getChangeData(change)
-  const { fieldName } = layoutTypeNameToDetails[typeName]
-  if (fieldName === undefined) {
-    return undefined
-  }
+  const { fieldName } = LAYOUT_TYPE_NAME_TO_DETAILS[typeName]
   if (
     isAdditionChange(change)
     || (isModificationChange(change)
       && (
         !isEqualValues(change.data.before.value[fieldName], change.data.after.value[fieldName])
-        || isRequesTypeDetailsChange(change, fieldName)
+        || isRequestTypeDetailsChange(change, fieldName)
       ))
   ) {
     const layout = requestType.value[fieldName]
     const items = layout.issueLayoutConfig.items.map((item: layoutConfigItem) => {
       if (!isResolvedReferenceExpression(item.key)) {
-        log.error('Failed to deploy request type layout due to bad reference expression')
-        return undefined
+        log.error(`Failed to deploy request type: ${requestType.elemID.getFullName()}'s ${fieldName} due to bad reference expression`)
+        throw new Error(`Failed to deploy requestType ${fieldName} due to a bad item key: ${item.key}`)
       }
       const key = item.key.value.value.id
       return {
         type: item.type,
-        sectionType: item.sectionType.toLocaleLowerCase(),
+        sectionType: item.sectionType.toLowerCase(),
         key,
         data: {
           name: item.key.value.value.name,
@@ -121,7 +118,7 @@ const deployRequestTypeLayout = async (
     const data = {
       projectId: getParent(requestType).value.id,
       extraDefinerId: requestType.value.id,
-      issueLayoutType: layoutTypeNameToDetails[typeName].layoutType,
+      issueLayoutType: LAYOUT_TYPE_NAME_TO_DETAILS[typeName].layoutType,
       owners: [
         {
           type: 'REQUEST_TYPE',
@@ -142,11 +139,12 @@ const deployRequestTypeLayout = async (
       const variables = {
         projectId: getParent(requestType).value.id,
         extraDefinerId: requestType.value.id,
-        layoutType: layoutTypeNameToDetails[typeName].layoutType,
+        layoutType: LAYOUT_TYPE_NAME_TO_DETAILS[typeName].layoutType,
       }
       const response = await getLayoutResponse({ variables, client, typeName })
       if (!isIssueLayoutResponse(response.data)) {
-        throw Error('Failed to deploy issue layout changes due to bad response from jira service')
+        log.error(`Failed to deploy requestType's ${LAYOUT_TYPE_NAME_TO_DETAILS[typeName].fieldName} due to bad response from jira service`)
+        throw new Error(`Failed to deploy requestType's ${LAYOUT_TYPE_NAME_TO_DETAILS[typeName].fieldName} due to bad response from jira service`)
       }
       layout.id = response.data.issueLayoutConfiguration.issueLayoutResult.id
     }

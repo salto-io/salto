@@ -69,9 +69,9 @@ describe('automation_projects', () => {
     })
   })
 
-  describe('removeWeakReferences', () => {
+  describe('fixElementFunc', () => {
     it('should remove the invalid projects', async () => {
-      const fixes = await automationProjectsHandler.removeWeakReferences({ elementsSource })([instance])
+      const fixes = await automationProjectsHandler.fixElementFunc({ elementsSource })([instance])
 
       expect(fixes.errors).toEqual([
         {
@@ -91,7 +91,7 @@ describe('automation_projects', () => {
 
     it('should do nothing if received invalid automation', async () => {
       instance.value.projects = 'invalid'
-      const fixes = await automationProjectsHandler.removeWeakReferences({ elementsSource })([instance])
+      const fixes = await automationProjectsHandler.fixElementFunc({ elementsSource })([instance])
 
       expect(fixes.errors).toEqual([])
       expect(fixes.fixedElements).toEqual([])
@@ -99,7 +99,7 @@ describe('automation_projects', () => {
 
     it('should do nothing if there are no projects', async () => {
       delete instance.value.projects
-      const fixes = await automationProjectsHandler.removeWeakReferences({ elementsSource })([instance])
+      const fixes = await automationProjectsHandler.fixElementFunc({ elementsSource })([instance])
 
       expect(fixes.errors).toEqual([])
       expect(fixes.fixedElements).toEqual([])
@@ -110,7 +110,7 @@ describe('automation_projects', () => {
         { projectId: new ReferenceExpression(new ElemID(JIRA, PROJECT_TYPE, 'instance', 'proj1')) },
         { projectType: 'software' },
       ]
-      const fixes = await automationProjectsHandler.removeWeakReferences({ elementsSource })([instance])
+      const fixes = await automationProjectsHandler.fixElementFunc({ elementsSource })([instance])
 
       expect(fixes.errors).toEqual([])
       expect(fixes.fixedElements).toEqual([])

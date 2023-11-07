@@ -410,7 +410,7 @@ export default class JiraAdapter implements AdapterOperations {
     )
 
     this.fixElementsFunc = combineElementFixers(
-      elementFixerHandlers.map(handler => handler.removeWeakReferences({ elementsSource }))
+      elementFixerHandlers.map(handler => handler.fixElementFunc({ elementsSource }))
     )
   }
 

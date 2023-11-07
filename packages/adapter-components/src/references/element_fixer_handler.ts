@@ -18,5 +18,5 @@ import { FixElementsFunc, GetCustomReferencesFunc } from '@salto-io/adapter-api'
 
 export type ElementFixersHandler<T> = {
   findWeakReferences: GetCustomReferencesFunc
-  removeWeakReferences: (args: T) => FixElementsFunc
+  fixElementFunc: (args: T) => FixElementsFunc
 }

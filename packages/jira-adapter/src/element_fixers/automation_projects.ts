@@ -65,7 +65,7 @@ const getAutomationProjectsReferences: GetCustomReferencesFunc = async elements 
 /**
  * Remove invalid projects (not references or missing references) from automations.
  */
-const removeMissingAutomationProjects: ElementFixersHandler['removeWeakReferences'] = ({ elementsSource })
+const removeMissingAutomationProjects: ElementFixersHandler['fixElementFunc'] = ({ elementsSource })
 : FixElementsFunc => async elements => {
   const fixedElements = await awu(elements)
     .filter(isInstanceElement)
@@ -106,5 +106,5 @@ const removeMissingAutomationProjects: ElementFixersHandler['removeWeakReference
 
 export const automationProjectsHandler: ElementFixersHandler = {
   findWeakReferences: getAutomationProjectsReferences,
-  removeWeakReferences: removeMissingAutomationProjects,
+  fixElementFunc: removeMissingAutomationProjects,
 }

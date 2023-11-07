@@ -29,7 +29,7 @@ import { applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSo
 import { logger } from '@salto-io/logging'
 import { merger, elementSource, expressions, Workspace, pathIndex, updateElementsWithAlternativeAccount, createAdapterReplacedID, remoteMap, adaptersConfigSource as acs, createPathIndexForElement } from '@salto-io/workspace'
 import { collections, promises, types, values } from '@salto-io/lowerdash'
-import { isAutoMergeDisabled } from '../app_config'
+import { CORE_FLAGS, getCoreFlagBool } from './flags'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
 import { AdapterEvents, createAdapterProgressReporter } from './adapters/progress'
@@ -207,7 +207,7 @@ const toMergedTextChange = (change: FetchChange, after: string | StaticFile): Fe
 })
 
 const autoMergeTextChange: ChangeTransformFunction = async change => {
-  if (isAutoMergeDisabled() || !isMergeableDiffChange(change)) {
+  if (getCoreFlagBool(CORE_FLAGS.autoMergeDisabled) || !isMergeableDiffChange(change)) {
     return [change]
   }
 

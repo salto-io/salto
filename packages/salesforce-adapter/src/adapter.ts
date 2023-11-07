@@ -68,7 +68,6 @@ import referenceAnnotationsFilter from './filters/reference_annotations'
 import fieldReferencesFilter from './filters/field_references'
 import customObjectInstanceReferencesFilter from './filters/custom_object_instances_references'
 import foreignKeyReferencesFilter from './filters/foreign_key_references'
-import valueSetFilter from './filters/value_set'
 import cpqLookupFieldsFilter from './filters/cpq/lookup_fields'
 import cpqCustomScriptFilter from './filters/cpq/custom_script'
 import cpqReferencableFieldReferencesFilter from './filters/cpq/referencable_field_references'
@@ -167,7 +166,6 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: animationRulesFilter },
   { creator: samlInitMethodFilter },
   { creator: topicsForObjectsFilter },
-  { creator: valueSetFilter },
   { creator: globalValueSetFilter },
   { creator: staticResourceFileExtFilter },
   { creator: profilePathsFilter, addsNewInformation: true },

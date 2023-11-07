@@ -373,10 +373,7 @@ export const createCustomSettingsObject = (
 
 export const defaultFilterContext: FilterContext = {
   systemFields: SYSTEM_FIELDS,
-  fetchProfile: buildFetchProfile({
-    fetchParams: {},
-    elementsSource: buildElementsSourceFromElements([]),
-  }),
+  fetchProfile: buildFetchProfile({ fetchParams: {} }),
   elementsSource: buildElementsSourceFromElements([]),
   enumFieldPermissions: false,
 }

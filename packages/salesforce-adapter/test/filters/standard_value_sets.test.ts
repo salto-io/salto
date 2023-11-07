@@ -35,7 +35,8 @@ import { defaultFilterContext } from '../utils'
 import { mockTypes } from '../mock_elements'
 import { API_NAME, INSTANCE_FULL_NAME_FIELD, VALUE_SET_FIELDS } from '../../src/constants'
 import { FilterWith } from './mocks'
-import { buildFetchProfileForFetchWithChangesDetection } from '../../src/fetch_profile/fetch_profile'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import { buildMetadataQueryForFetchWithChangesDetection } from '../../src/fetch_profile/metadata_query'
 
 const createStandardValueSetMetadataInfo = (name: string, values: string[]): MetadataInfo =>
   ({
@@ -118,13 +119,10 @@ describe('Standard Value Sets filter', () => {
     isFetchWithChangesDetection = false
   ): Promise<FilterType> => {
     const elementsSource = buildElementsSourceFromElements([svsInstanceFromSource])
-    const fetchProfile = isFetchWithChangesDetection
-      ? await buildFetchProfileForFetchWithChangesDetection({
-        fetchParams: {},
-        elementsSource,
-        lastChangeDateOfTypesWithNestedInstances: {},
-      })
-      : defaultFilterContext.fetchProfile
+    const metadataQuery = isFetchWithChangesDetection
+      ? await buildMetadataQueryForFetchWithChangesDetection({ fetchParams: {}, elementsSource })
+      : defaultFilterContext.fetchProfile.metadataQuery
+    const fetchProfile = buildFetchProfile({ fetchParams: {}, metadataQuery })
     return makeFilter(
       new Set<string>(['Simpsons', 'Numbers'])
     )({ client: sfClient,

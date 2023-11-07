@@ -25,7 +25,6 @@ import {
 } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { FileProperties } from 'jsforce-types'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockFileProperties } from '../../connection'
 import mockClient from '../../client'
 import Connection from '../../../src/client/jsforce'
@@ -168,7 +167,6 @@ describe('custom objects author information test', () => {
           ...defaultFilterContext,
           fetchProfile: buildFetchProfile({
             fetchParams: { optionalFeatures: { authorInformation: false } },
-            elementsSource: buildElementsSourceFromElements([]),
           }),
         },
       })

@@ -15,8 +15,9 @@
 */
 import { regex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { InstanceElement } from '@salto-io/adapter-api'
+import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import {
+  CUSTOM_FIELD,
   CUSTOM_METADATA,
   CUSTOM_OBJECT,
   DEFAULT_NAMESPACE,
@@ -29,7 +30,7 @@ import {
 } from '../constants'
 import { ConfigValidationError, validateRegularExpressions } from '../config_validation'
 import {
-  BaseMetadataQuery, LastChangeDateOfTypesWithNestedInstances,
+  FetchParameters,
   METADATA_EXCLUDE_LIST,
   METADATA_INCLUDE_LIST,
   METADATA_SEPARATE_FIELD_LIST,
@@ -38,6 +39,7 @@ import {
   MetadataQuery,
   MetadataQueryParams,
 } from '../types'
+import { getChangedAtSingleton } from '../filters/utils'
 
 const { isDefined } = values
 
@@ -69,8 +71,10 @@ const DEFAULT_NAMESPACE_MATCH_ALL_TYPE_LIST = [
 // Instances of this type won't be fetched in fetchWithChangesDetection mode
 const UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES = [
   PROFILE_METADATA_TYPE,
+  CUSTOM_OBJECT,
   // Since we don't retrieve the CustomMetadata types (CustomObjects), we shouldn't retrieve the Records
   CUSTOM_METADATA,
+  CUSTOM_FIELD,
 ]
 
 const getDefaultNamespace = (metadataType: string): string =>
@@ -92,26 +96,20 @@ const isFolderMetadataTypeNameMatch = ({ name: instanceName }: MetadataInstance,
   || regex.isFullRegexMatch(instanceName, name)
 )
 
-type BaseMetadataQueryParams = {
-  metadataParams: MetadataParams
-  target?: string[]
-  isFetchWithChangesDetection: boolean
+type BuildMetadataQueryParams = {
+  fetchParams: FetchParameters
 }
 
-type BuildMetadataQueryParams = BaseMetadataQueryParams & {
-  changedAtSingleton?: InstanceElement
-  lastChangeDateOfTypesWithNestedInstances?: LastChangeDateOfTypesWithNestedInstances
+type BuildFetchWithChangesDetectionMetadataQueryParams = BuildMetadataQueryParams & {
+  elementsSource: ReadOnlyElementsSource
 }
 
-export const buildBaseMetadataQuery = (
-  {
-    metadataParams,
+export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): MetadataQuery => {
+  const {
+    metadata = {},
     target,
-    isFetchWithChangesDetection,
-  }: BaseMetadataQueryParams
-)
-  : BaseMetadataQuery => {
-  const { include = [{}], exclude = [] } = metadataParams
+  } = fetchParams
+  const { include = [{}], exclude = [] } = metadata
   const fullExcludeList = [...exclude, ...PERMANENT_SKIP_LIST]
 
   const isIncludedInPartialFetch = (type: string): boolean => {
@@ -141,42 +139,6 @@ export const buildBaseMetadataQuery = (
       namespace === '.*' && name === '.*' && new RegExp(`^${metadataType}$`).test(type)
     ))
   )
-  return {
-    isTypeMatch: type => isTypeIncluded(type) && !isTypeExcluded(type),
-    isTargetedFetch: () => target !== undefined,
-    isFetchWithChangesDetection: () => isFetchWithChangesDetection,
-    isPartialFetch: () => target !== undefined || isFetchWithChangesDetection,
-    getFolderPathsByName: (folderType: string) => {
-      const folderPaths = include
-        .filter(params => params.metadataType === folderType)
-        .flatMap(params => {
-          const { name: nameRegex } = params
-          return isDefined(nameRegex)
-            ? getPaths(nameRegex)
-            : []
-        })
-      return _.keyBy(folderPaths, path => _.last(path.split('/')) ?? path)
-    },
-  }
-}
-
-export const buildMetadataQuery = (buildMetadataQueryParams: BuildMetadataQueryParams): MetadataQuery => {
-  const {
-    metadataParams,
-    isFetchWithChangesDetection,
-    changedAtSingleton,
-    lastChangeDateOfTypesWithNestedInstances,
-  } = buildMetadataQueryParams
-  const { include = [{}], exclude = [] } = metadataParams
-  const fullExcludeList = [...exclude, ...PERMANENT_SKIP_LIST]
-
-  const lastModifiedDateOfInstance = (instance: MetadataInstance): string | undefined => {
-    if (instance.metadataType === 'CustomObject') {
-      return lastChangeDateOfTypesWithNestedInstances?.CustomObject?.[instance.name]
-    }
-    return instance.changedAt
-  }
-
   const isInstanceMatchQueryParams = (
     instance: MetadataInstance,
     {
@@ -196,26 +158,57 @@ export const buildMetadataQuery = (buildMetadataQueryParams: BuildMetadataQueryP
       ? isFolderMetadataTypeNameMatch(instance, name)
       : regex.isFullRegexMatch(instance.name, name)
   }
+
+  const isInstanceIncluded = (instance: MetadataInstance): boolean => (
+    include.some(params => isInstanceMatchQueryParams(instance, params))
+    && !fullExcludeList.some(params => isInstanceMatchQueryParams(instance, params))
+  )
+  const isTargetedFetch = (): boolean => target !== undefined
+  return {
+    isTypeMatch: type => isTypeIncluded(type) && !isTypeExcluded(type),
+    isTargetedFetch,
+    isInstanceIncluded,
+    isInstanceMatch: isInstanceIncluded,
+    isFetchWithChangesDetection: () => false,
+    isPartialFetch: isTargetedFetch,
+    getFolderPathsByName: (folderType: string) => {
+      const folderPaths = include
+        .filter(params => params.metadataType === folderType)
+        .flatMap(params => {
+          const { name: nameRegex } = params
+          return isDefined(nameRegex)
+            ? getPaths(nameRegex)
+            : []
+        })
+      return _.keyBy(folderPaths, path => _.last(path.split('/')) ?? path)
+    },
+  }
+}
+
+export const buildMetadataQueryForFetchWithChangesDetection = async (
+  params: BuildFetchWithChangesDetectionMetadataQueryParams
+): Promise<MetadataQuery> => {
+  const changedAtSingleton = await getChangedAtSingleton(params.elementsSource)
+  const metadataQuery = buildMetadataQuery(params)
   const isIncludedInFetchWithChangesDetection = (instance: MetadataInstance): boolean => {
-    if (UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES.includes(instance.metadataType)) {
-      return false
-    }
-    if (changedAtSingleton === undefined) {
+    if (changedAtSingleton === undefined || instance.changedAt === undefined) {
       return true
     }
-    const lastChangedAtFromSingleton = _.get(changedAtSingleton.value, [instance.metadataType, instance.name])
-    const instanceLastChangedAt = lastModifiedDateOfInstance(instance)
-    return _.isString(lastChangedAtFromSingleton) && _.isString(instanceLastChangedAt)
-      ? new Date(lastChangedAtFromSingleton).getTime() < new Date(instanceLastChangedAt).getTime()
+    const lastChangedAt = _.get(changedAtSingleton.value, [instance.metadataType, instance.name])
+    return _.isString(lastChangedAt)
+      ? new Date(lastChangedAt).getTime() < new Date(instance.changedAt).getTime()
       : true
   }
-
   return {
-    ...buildBaseMetadataQuery(buildMetadataQueryParams),
+    ...metadataQuery,
+    isTypeMatch: (type: string) => (
+      metadataQuery.isTypeMatch(type)
+      && !UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES.includes(type)
+    ),
+    isPartialFetch: () => true,
+    isFetchWithChangesDetection: () => true,
     isInstanceMatch: instance => (
-      include.some(params => isInstanceMatchQueryParams(instance, params))
-      && !fullExcludeList.some(params => isInstanceMatchQueryParams(instance, params))
-      && (!isFetchWithChangesDetection || isIncludedInFetchWithChangesDetection(instance))
+      metadataQuery.isInstanceIncluded(instance) && isIncludedInFetchWithChangesDetection(instance)
     ),
   }
 }

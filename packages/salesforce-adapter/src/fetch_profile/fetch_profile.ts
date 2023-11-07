@@ -13,24 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-import { values } from '@salto-io/lowerdash'
-import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import {
   DATA_CONFIGURATION,
-  FetchParameters,
   FetchProfile,
+  FetchParameters,
   METADATA_CONFIG,
-  OptionalFeatures,
-  LastChangeDateOfTypesWithNestedInstances,
+  OptionalFeatures, MetadataQuery,
 } from '../types'
 import { buildDataManagement, validateDataManagementConfig } from './data_management'
 import { buildMetadataQuery, validateMetadataParams } from './metadata_query'
 import { DEFAULT_MAX_INSTANCES_PER_TYPE } from '../constants'
-import { getFetchTargets, SupportedMetadataType } from './metadata_types'
-import { getChangedAtSingleton } from '../filters/utils'
-
-const { isDefined } = values
 
 type OptionalFeaturesDefaultValues = {
   [FeatureName in keyof OptionalFeatures]?: boolean
@@ -46,14 +38,13 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
 
 type BuildFetchProfileParams = {
   fetchParams: FetchParameters
-  elementsSource: ReadOnlyElementsSource
+  metadataQuery?: MetadataQuery
 }
 
-type BaseFetchProfile = Omit<FetchProfile, 'metadataQuery'>
-
-const buildBaseFetchProfile = ({
+export const buildFetchProfile = ({
   fetchParams,
-}: BuildFetchProfileParams): BaseFetchProfile => {
+  metadataQuery = buildMetadataQuery({ fetchParams }),
+}: BuildFetchProfileParams): FetchProfile => {
   const {
     data,
     fetchAllCustomSettings,
@@ -73,46 +64,7 @@ const buildBaseFetchProfile = ({
     isWarningEnabled: name => (
       warningSettings?.[name] ?? true
     ),
-  }
-}
-
-export const buildFetchProfile = (params: BuildFetchProfileParams): FetchProfile => {
-  const {
-    metadata = {},
-    target,
-  } = params.fetchParams
-  return {
-    ...buildBaseFetchProfile(params),
-    metadataQuery: buildMetadataQuery({
-      metadataParams: metadata,
-      isFetchWithChangesDetection: false,
-      target: isDefined(target)
-        ? getFetchTargets(target as SupportedMetadataType[])
-        : undefined,
-    }),
-  }
-}
-
-export const buildFetchProfileForFetchWithChangesDetection = async (
-  params: BuildFetchProfileParams & {
-    lastChangeDateOfTypesWithNestedInstances: LastChangeDateOfTypesWithNestedInstances
-  }
-): Promise<FetchProfile> => {
-  const {
-    metadata = {},
-    target,
-  } = params.fetchParams
-  return {
-    ...buildBaseFetchProfile(params),
-    metadataQuery: buildMetadataQuery({
-      metadataParams: metadata,
-      isFetchWithChangesDetection: true,
-      target: isDefined(target)
-        ? getFetchTargets(target as SupportedMetadataType[])
-        : undefined,
-      changedAtSingleton: await getChangedAtSingleton(params.elementsSource),
-      lastChangeDateOfTypesWithNestedInstances: params.lastChangeDateOfTypesWithNestedInstances,
-    }),
+    metadataQuery,
   }
 }
 

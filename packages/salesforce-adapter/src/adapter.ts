@@ -98,19 +98,13 @@ import changedAtSingletonFilter from './filters/changed_at_singleton'
 import { FetchElements, FetchProfile, MetadataQuery, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
-import {
-  addDefaults,
-  isCustomObjectSync,
-  isCustomType,
-  listMetadataObjects,
-  getLastChangeDateOfTypesWithNestedInstances,
-} from './filters/utils'
+import { addDefaults, isCustomObjectSync, isCustomType, listMetadataObjects } from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 import { getLookUpName, getLookupNameWithFallbackToElement } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import nestedInstancesAuthorInformation from './filters/author_information/nested_instances'
-import { buildFetchProfile, buildFetchProfileForFetchWithChangesDetection } from './fetch_profile/fetch_profile'
+import { buildFetchProfile } from './fetch_profile/fetch_profile'
 import {
   ArtificialTypes,
   CUSTOM_OBJECT,
@@ -119,7 +113,7 @@ import {
   OWNER_ID,
   PROFILE_METADATA_TYPE,
 } from './constants'
-import { buildBaseMetadataQuery } from './fetch_profile/metadata_query'
+import { buildMetadataQuery, buildMetadataQueryForFetchWithChangesDetection } from './fetch_profile/metadata_query'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -431,26 +425,10 @@ export default class SalesforceAdapter implements AdapterOperations {
   @logDuration('fetching account configuration')
   async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
     const fetchParams = this.userConfig.fetch ?? {}
-    const lastChangeDateOfTypesWithNestedInstances = withChangesDetection
-      ? await getLastChangeDateOfTypesWithNestedInstances({
-        client: this.client,
-        metadataQuery: buildBaseMetadataQuery({
-          metadataParams: fetchParams.metadata ?? {},
-          target: fetchParams.target,
-          isFetchWithChangesDetection: withChangesDetection,
-        }),
-      })
-      : {}
-    const fetchProfile = withChangesDetection
-      ? await buildFetchProfileForFetchWithChangesDetection({
-        fetchParams,
-        elementsSource: this.elementsSource,
-        lastChangeDateOfTypesWithNestedInstances,
-      })
-      : buildFetchProfile({
-        fetchParams,
-        elementsSource: this.elementsSource,
-      })
+    const metadataQuery = withChangesDetection
+      ? await buildMetadataQueryForFetchWithChangesDetection({ fetchParams, elementsSource: this.elementsSource })
+      : buildMetadataQuery({ fetchParams })
+    const fetchProfile = buildFetchProfile({ fetchParams, metadataQuery })
     if (!fetchProfile.isFeatureEnabled('fetchCustomObjectUsingRetrieveApi')) {
       // We have to fetch custom objects using retrieve in order to be able to fetch the field-level permissions
       // in profiles. If custom objects are fetched via the read API, we have to fetch profiles using that API too.
@@ -513,9 +491,10 @@ export default class SalesforceAdapter implements AdapterOperations {
     { changeGroup }: DeployOptions,
     checkOnly: boolean
   ): Promise<DeployResult> {
+    const fetchParams = this.userConfig.fetch ?? {}
     const fetchProfile = buildFetchProfile({
-      fetchParams: this.userConfig.fetch ?? {},
-      elementsSource: this.elementsSource,
+      fetchParams,
+      metadataQuery: buildMetadataQuery({ fetchParams }),
     })
     log.debug(`about to ${checkOnly ? 'validate' : 'deploy'} group ${changeGroup.groupID} with scope (first 100): ${safeJsonStringify(changeGroup.changes.slice(0, 100).map(getChangeData).map(e => e.elemID.getFullName()))}`)
     const isDataDeployGroup = await isCustomObjectInstanceChanges(changeGroup.changes)

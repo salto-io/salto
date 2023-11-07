@@ -61,7 +61,7 @@ describe('data account specific value validator', () => {
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')
-    expect(changeErrors[0].elemID).toEqual(instance.elemID.createNestedID('field'))
+    expect(changeErrors[0].elemID).toEqual(instance.elemID)
     expect(changeErrors[0].message).toEqual('field has a missing ID and therefore it can\'t be deployed')
   })
 
@@ -80,8 +80,29 @@ describe('data account specific value validator', () => {
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')
-    expect(changeErrors[0].elemID).toEqual(instance.elemID.createNestedID('field'))
+    expect(changeErrors[0].elemID).toEqual(instance.elemID)
     expect(changeErrors[0].message).toEqual('field has a missing ID and therefore it can\'t be deployed')
+  })
+
+  it('should have ChangeError on nested field with internalId that is ACCOUNT_SPECIFIC_VALUE', async () => {
+    const instance = new InstanceElement(
+      'instance',
+      new ObjectType({ elemID: new ElemID(NETSUITE, 'someType'), annotations: { source: 'soap' } }),
+      {
+        field: {
+          nested: {
+            internalId: '[ACCOUNT_SPECIFIC_VALUE]',
+          },
+        },
+      }
+    )
+    const changeErrors = await dataAccountSpecificValueValidator(
+      [toChange({ after: instance })]
+    )
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0].severity).toEqual('Error')
+    expect(changeErrors[0].elemID).toEqual(instance.elemID)
+    expect(changeErrors[0].message).toEqual('field.nested has a missing ID and therefore it can\'t be deployed')
   })
 
   it('should not have ChangeError if a field with ACCOUNT_SPECIFIC_VALUE was not changed', async () => {

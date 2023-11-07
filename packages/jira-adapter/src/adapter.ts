@@ -156,7 +156,7 @@ import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uu
 import changeQueueFieldsFilter from './filters/change_queue_fields'
 import portalGroupsFilter from './filters/portal_groups'
 import ScriptRunnerClient from './client/script_runner_client'
-import { weakReferenceHandlers } from './weak_references'
+import { elementFixerHandlers } from './element_fixers'
 import { jiraJSMEntriesFunc } from './jsm_utils'
 
 const { getAllElements } = elementUtils.ducktype
@@ -410,7 +410,7 @@ export default class JiraAdapter implements AdapterOperations {
     )
 
     this.fixElementsFunc = combineElementFixers(
-      weakReferenceHandlers.map(handler => handler.removeWeakReferences({ elementsSource }))
+      elementFixerHandlers.map(handler => handler.removeWeakReferences({ elementsSource }))
     )
   }
 

@@ -19,7 +19,7 @@ import { createSchemeGuard } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { collections, values } from '@salto-io/lowerdash'
 import { AUTOMATION_TYPE } from '../constants'
-import { WeakReferencesHandler } from './weak_references_handler'
+import { ElementFixersHandler } from './element_fixers_handler'
 
 const { awu } = collections.asynciterable
 
@@ -65,7 +65,7 @@ const getAutomationProjectsReferences: GetCustomReferencesFunc = async elements 
 /**
  * Remove invalid projects (not references or missing references) from automations.
  */
-const removeMissingAutomationProjects: WeakReferencesHandler['removeWeakReferences'] = ({ elementsSource })
+const removeMissingAutomationProjects: ElementFixersHandler['removeWeakReferences'] = ({ elementsSource })
 : FixElementsFunc => async elements => {
   const fixedElements = await awu(elements)
     .filter(isInstanceElement)
@@ -104,7 +104,7 @@ const removeMissingAutomationProjects: WeakReferencesHandler['removeWeakReferenc
   return { fixedElements, errors }
 }
 
-export const automationProjectsHandler: WeakReferencesHandler = {
+export const automationProjectsHandler: ElementFixersHandler = {
   findWeakReferences: getAutomationProjectsReferences,
   removeWeakReferences: removeMissingAutomationProjects,
 }

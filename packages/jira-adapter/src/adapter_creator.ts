@@ -28,7 +28,7 @@ import { AUTOMATION_TYPE, SCRIPT_RUNNER_API_DEFINITIONS, WEBHOOK_TYPE } from './
 import { getProductSettings } from './product_settings'
 import { configCreator } from './config_creator'
 import ScriptRunnerClient from './client/script_runner_client'
-import { weakReferenceHandlers } from './weak_references'
+import { elementFixerHandlers } from './element_fixers'
 
 const log = logger(module)
 const { validateClientConfig, createRetryOptions, DEFAULT_RETRY_OPTS } = clientUtils
@@ -174,5 +174,5 @@ export const adapter: Adapter = {
   },
   configType,
   configCreator,
-  getCustomReferences: combineCustomReferenceGetters(weakReferenceHandlers.map(handler => handler.findWeakReferences)),
+  getCustomReferences: combineCustomReferenceGetters(elementFixerHandlers.map(handler => handler.findWeakReferences)),
 }

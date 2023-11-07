@@ -15,6 +15,6 @@
 */
 import { automationProjectsHandler } from './automation_projects'
 
-export const weakReferenceHandlers = [
+export const elementFixerHandlers = [
   automationProjectsHandler,
 ]

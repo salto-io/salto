@@ -16,7 +16,7 @@
 import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { AUTOMATION_TYPE, JIRA, PROJECT_TYPE } from '../../src/constants'
-import { automationProjectsHandler } from '../../src/weak_references/automation_projects'
+import { automationProjectsHandler } from '../../src/element_fixers/automation_projects'
 
 describe('automation_projects', () => {
   let projectInstance: InstanceElement

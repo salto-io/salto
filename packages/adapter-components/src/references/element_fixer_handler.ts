@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { WeakReferencesHandler as ComponentsWeakReferencesHandler } from '@salto-io/adapter-components'
+import { FixElementsFunc, GetCustomReferencesFunc } from '@salto-io/adapter-api'
 
-export type WeakReferencesHandler = ComponentsWeakReferencesHandler<{
-  elementsSource: ReadOnlyElementsSource
-}>
+
+export type ElementFixersHandler<T> = {
+  findWeakReferences: GetCustomReferencesFunc
+  removeWeakReferences: (args: T) => FixElementsFunc
+}

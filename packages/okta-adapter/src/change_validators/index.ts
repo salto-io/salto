@@ -30,6 +30,7 @@ import { groupSchemaModifyBaseValidator } from './group_schema_modify_base_field
 import { enabledAuthenticatorsValidator } from './enabled_authenticators'
 import { roleAssignmentValidator } from './role_assignment'
 import { usersValidator } from './user'
+import { appWithGroupPushValidator } from './app_with_group_push'
 import OktaClient from '../client/client'
 import {
   API_DEFINITIONS_CONFIG,
@@ -73,6 +74,7 @@ export default ({
     roleAssignment: roleAssignmentValidator,
     users: usersValidator(client, config),
     appUserSchemaWithInactiveApp: appUserSchemaWithInactiveAppValidator,
+    appWithGroupPush: appWithGroupPushValidator,
   }
 
   return createChangeValidator({

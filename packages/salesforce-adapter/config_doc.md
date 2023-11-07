@@ -194,13 +194,9 @@ salesforce {
 | [saltoIDSettings](#salto-id-settings-configuration-options)                   | N/A (required when dataManagement is configured) | Configuration for cross environments data record ids management                                           |
 | [saltoAliasSettings](#salto-alias-settings-configuration-options)             | N/A                                              | Configuration for data record aliases                                                                     |
 | [saltoManagementFieldSettings](#salto-management-field-configuration-options) | {}                                               | Configuration for managed-by-Salto field                                                                  |
-<<<<<<< HEAD
 | [brokenOutgoingReferencesSettings](#broken-outgoing-references-settings)      | {}                                               | Configuration for handling broken references                                                              |
 | omittedFields                                                                 | []                                               | List of API names of fields to discard when fetching data records.                                        |
-| [warningSettings](#data-warning-settings)                                     | {}                                               | Enabling/disabling specific warnings                                                                      | 
-=======
-| [brokenOutgoingReferencesSettings](#broken-outgoing-references-settings)      | {}                                               | Configuration for handling broken references                                                              | 
->>>>>>> 3efcfb758 (Move config to fetchProfile)
+
 
 #### Salto ID settings configuration options
 

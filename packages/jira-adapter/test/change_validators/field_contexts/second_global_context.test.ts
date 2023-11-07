@@ -189,10 +189,20 @@ describe('Field second global contexts', () => {
     let afterProjectInstance: InstanceElement
     let afterProjectInstance2: InstanceElement
     let fieldContextInstance: InstanceElement
+    let fieldContextInstance2: InstanceElement
     beforeEach(() => {
       projectType = new ObjectType({ elemID: new ElemID(JIRA, PROJECT_TYPE) })
       fieldContextInstance = new InstanceElement(
         'fieldContextInstance',
+        contextType,
+        {
+          isGlobalContext: false,
+        },
+        undefined,
+        { _parent: [new ReferenceExpression(fieldInstance.elemID, fieldInstance)] }
+      )
+      fieldContextInstance2 = new InstanceElement(
+        'fieldContextInstance2',
         contextType,
         {
           isGlobalContext: false,
@@ -214,7 +224,7 @@ describe('Field second global contexts', () => {
         projectType,
         {
           fieldContexts: [
-            new ReferenceExpression(fieldContextInstance.elemID, fieldContextInstance),
+            new ReferenceExpression(fieldContextInstance2.elemID, fieldContextInstance2),
           ],
         }
       )
@@ -222,7 +232,13 @@ describe('Field second global contexts', () => {
       afterProjectInstance.value.fieldContexts = []
       afterProjectInstance2 = projectInstance2.clone()
       afterProjectInstance2.value.fieldContexts = []
-      elements = [fieldInstance, firstGlobalContextInstance, afterProjectInstance, fieldContextInstance]
+      elements = [
+        fieldInstance,
+        firstGlobalContextInstance,
+        afterProjectInstance,
+        fieldContextInstance,
+        fieldContextInstance2,
+      ]
       elementsSource = buildElementsSourceFromElements(elements)
       changes = [toChange({ before: projectInstance, after: afterProjectInstance })]
     })
@@ -239,7 +255,7 @@ describe('Field second global contexts', () => {
         },
       ])
     })
-    it('should return errors when removing some field contexts of the same field from some projects when the field has a global context', async () => {
+    it('should return errors when removing some field contexts of the same field from different projects when the field has a global context', async () => {
       changes = [
         toChange({ before: projectInstance, after: afterProjectInstance }),
         toChange({ before: projectInstance2, after: afterProjectInstance2 }),
@@ -258,13 +274,76 @@ describe('Field second global contexts', () => {
           elemID: afterProjectInstance2.elemID,
           severity: 'Error',
           message: 'A field can only have a single global context',
+          detailedMessage: "Can't remove the field context fieldContextInstance2 from this project as it will result in more than a single global context.",
+        },
+      ])
+    })
+    it('should not return errors when removing a field context from different projects when the field does not have a global context', async () => {
+      projectInstance2.value.fieldContexts = [
+        new ReferenceExpression(fieldContextInstance.elemID, fieldContextInstance),
+      ]
+      afterProjectInstance2 = projectInstance2.clone()
+      afterProjectInstance2.value.fieldContexts = []
+      elements = [
+        fieldInstance,
+        afterProjectInstance,
+        afterProjectInstance2,
+        fieldContextInstance,
+      ]
+      elementsSource = buildElementsSourceFromElements(elements)
+      changes = [
+        toChange({ before: projectInstance, after: afterProjectInstance }),
+        toChange({ before: projectInstance2, after: afterProjectInstance2 }),
+      ]
+      expect(await fieldSecondGlobalContextValidator(
+        changes,
+        elementsSource
+      )).toEqual([])
+    })
+    it('should return errors when removing a field context from different projects when the field has a global context', async () => {
+      projectInstance2.value.fieldContexts = [
+        new ReferenceExpression(fieldContextInstance.elemID, fieldContextInstance),
+      ]
+      afterProjectInstance2 = projectInstance2.clone()
+      afterProjectInstance2.value.fieldContexts = []
+      elements = [
+        firstGlobalContextInstance,
+        fieldInstance,
+        afterProjectInstance,
+        afterProjectInstance2,
+        fieldContextInstance,
+      ]
+      elementsSource = buildElementsSourceFromElements(elements)
+      changes = [
+        toChange({ before: projectInstance, after: afterProjectInstance }),
+        toChange({ before: projectInstance2, after: afterProjectInstance2 }),
+      ]
+      expect(await fieldSecondGlobalContextValidator(
+        changes,
+        elementsSource,
+      )).toEqual([
+        {
+          elemID: afterProjectInstance.elemID,
+          severity: 'Error',
+          message: 'A field can only have a single global context',
+          detailedMessage: "Can't remove the field context fieldContextInstance from this project as it will result in more than a single global context.",
+        },
+        {
+          elemID: afterProjectInstance2.elemID,
+          severity: 'Error',
+          message: 'A field can only have a single global context',
           detailedMessage: "Can't remove the field context fieldContextInstance from this project as it will result in more than a single global context.",
         },
       ])
     })
     it('should return errors when removing some field contexts of the same field from different projects when the field does not have a global context', async () => {
-      firstGlobalContextInstance.value.isGlobalContext = false
-      elements = [fieldInstance, firstGlobalContextInstance, afterProjectInstance, fieldContextInstance]
+      elements = [
+        fieldInstance,
+        afterProjectInstance,
+        afterProjectInstance2,
+        fieldContextInstance,
+        fieldContextInstance2,
+      ]
       elementsSource = buildElementsSourceFromElements(elements)
       changes = [
         toChange({ before: projectInstance, after: afterProjectInstance }),
@@ -284,7 +363,7 @@ describe('Field second global contexts', () => {
           elemID: afterProjectInstance2.elemID,
           severity: 'Error',
           message: 'A field can only have a single global context',
-          detailedMessage: "Can't remove the field context fieldContextInstance from this project as it will result in more than a single global context.",
+          detailedMessage: "Can't remove the field context fieldContextInstance2 from this project as it will result in more than a single global context.",
         },
       ])
     })

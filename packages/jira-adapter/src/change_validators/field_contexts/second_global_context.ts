@@ -79,9 +79,8 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
       .filter(change => getChangeData(change).elemID.typeName === PROJECT_TYPE)
       .filter(isRemovalOrModificationChange)
       .forEach(async change => {
-        const promises = change.data.before.value.fieldContexts
-          .filter(isReferenceExpression)
-          .map(async (context: ReferenceExpression) => {
+        await awu(change.data.before.value.fieldContexts).filter(isReferenceExpression)
+          .forEach(async (context: ReferenceExpression) => {
             if (fieldContextToProjectChangeData.get(context.elemID.getFullName()) === undefined) {
               const fieldElemId = getParentElemID(await context.getResolvedValue(elementSource))
               fieldContextToProjectChangeData.set(
@@ -91,7 +90,6 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
             }
             fieldContextToProjectChangeData.get(context.elemID.getFullName())?.changes.push(change)
           })
-        await Promise.all(promises)
       })
     if (fieldContextToProjectChangeData.size === 0) {
       return fieldContextToProjectChangeData
@@ -119,12 +117,12 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
 
   Array.from(fieldContextToProjectChangesData)
     .filter(([fieldContextName]) => (!globalContextElemIdsSet.has(fieldContextName)))
-    .forEach(([, { changes: projectChanges, fieldElemId }]) => {
+    .forEach(([, { fieldElemId }]) => {
       const fieldFullName = fieldElemId.getFullName()
       if (fieldToImplicitGlobalContextCount[fieldFullName] === undefined) {
-        fieldToImplicitGlobalContextCount[fieldFullName] = projectChanges.length
+        fieldToImplicitGlobalContextCount[fieldFullName] = 1
       } else {
-        fieldToImplicitGlobalContextCount[fieldFullName] += projectChanges.length
+        fieldToImplicitGlobalContextCount[fieldFullName] += 1
       }
     })
 

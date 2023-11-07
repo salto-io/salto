@@ -143,34 +143,6 @@ export const buildBaseMetadataQuery = (
       namespace === '.*' && name === '.*' && new RegExp(`^${metadataType}$`).test(type)
     ))
   )
-  return {
-    isTypeMatch: type => isTypeIncluded(type) && !isTypeExcluded(type),
-    isTargetedFetch: () => target !== undefined,
-    isFetchWithChangesDetection: () => isFetchWithChangesDetection,
-    isPartialFetch: () => target !== undefined || isFetchWithChangesDetection,
-    getFolderPathsByName: (folderType: string) => {
-      const folderPaths = include
-        .filter(params => params.metadataType === folderType)
-        .flatMap(params => {
-          const { name: nameRegex } = params
-          return isDefined(nameRegex)
-            ? getPaths(nameRegex)
-            : []
-        })
-      return _.keyBy(folderPaths, path => _.last(path.split('/')) ?? path)
-    },
-  }
-}
-
-export const buildMetadataQuery = (buildMetadataQueryParams: BuildMetadataQueryParams): MetadataQuery => {
-  const {
-    metadataParams,
-    isFetchWithChangesDetection,
-    changedAtSingleton,
-  } = buildMetadataQueryParams
-  const { include = [{}], exclude = [] } = metadataParams
-  const fullExcludeList = [...exclude, ...PERMANENT_SKIP_LIST]
-
   const isInstanceMatchQueryParams = (
     instance: MetadataInstance,
     {
@@ -190,7 +162,38 @@ export const buildMetadataQuery = (buildMetadataQueryParams: BuildMetadataQueryP
       ? isFolderMetadataTypeNameMatch(instance, name)
       : regex.isFullRegexMatch(instance.name, name)
   }
+
+  const isInstanceIncluded = (instance: MetadataInstance): boolean => (
+    include.some(params => isInstanceMatchQueryParams(instance, params))
+    && !fullExcludeList.some(params => isInstanceMatchQueryParams(instance, params))
+  )
+  return {
+    isTypeMatch: type => isTypeIncluded(type) && !isTypeExcluded(type),
+    isTargetedFetch: () => target !== undefined,
+    isFetchWithChangesDetection: () => isFetchWithChangesDetection,
+    isPartialFetch: () => target !== undefined || isFetchWithChangesDetection,
+    getFolderPathsByName: (folderType: string) => {
+      const folderPaths = include
+        .filter(params => params.metadataType === folderType)
+        .flatMap(params => {
+          const { name: nameRegex } = params
+          return isDefined(nameRegex)
+            ? getPaths(nameRegex)
+            : []
+        })
+      return _.keyBy(folderPaths, path => _.last(path.split('/')) ?? path)
+    },
+    isInstanceIncluded,
+  }
+}
+
+export const buildMetadataQuery = (buildMetadataQueryParams: BuildMetadataQueryParams): MetadataQuery => {
+  const { changedAtSingleton } = buildMetadataQueryParams
+  const baseMetadataQuery = buildBaseMetadataQuery(buildMetadataQueryParams)
   const isIncludedInFetchWithChangesDetection = (instance: MetadataInstance): boolean => {
+    if (!baseMetadataQuery.isInstanceIncluded(instance)) {
+      return false
+    }
     if (UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES.includes(instance.metadataType)) {
       return false
     }
@@ -202,13 +205,12 @@ export const buildMetadataQuery = (buildMetadataQueryParams: BuildMetadataQueryP
       ? new Date(lastChangedAt).getTime() < new Date(instance.changedAt).getTime()
       : true
   }
-
   return {
-    ...buildBaseMetadataQuery(buildMetadataQueryParams),
+    ...baseMetadataQuery,
     isInstanceMatch: instance => (
-      include.some(params => isInstanceMatchQueryParams(instance, params))
-      && !fullExcludeList.some(params => isInstanceMatchQueryParams(instance, params))
-      && (!isFetchWithChangesDetection || isIncludedInFetchWithChangesDetection(instance))
+      baseMetadataQuery.isFetchWithChangesDetection()
+        ? isIncludedInFetchWithChangesDetection(instance)
+        : baseMetadataQuery.isInstanceIncluded(instance)
     ),
   }
 }

@@ -244,27 +244,34 @@ describe('buildMetadataQuery', () => {
           expect(query.isFetchWithChangesDetection()).toBeTrue()
         })
       })
-      describe('when the instance was not updated from the previous fetch', () => {
-        it('should return false', () => {
-          expect(query.isInstanceMatch({
-            metadataType: 'Report',
-            namespace: '',
-            name: 'testReport',
-            isFolderType: false,
-            changedAt: LAST_MODIFIED_DATE,
-          })).toBeFalse()
-        })
-      })
 
-      describe('when the instance was updated from the previous fetch', () => {
-        it('should return true', () => {
-          expect(query.isInstanceMatch({
-            metadataType: 'Report',
-            namespace: '',
-            name: 'testReport',
-            isFolderType: false,
-            changedAt: '2023-01-12T15:51:58.000Z',
-          })).toBeTrue()
+      describe('isInstanceIncluded & isInstanceMatch', () => {
+        describe('when the instance was not updated from the previous fetch', () => {
+          it('instance should not match', () => {
+            const instance = {
+              metadataType: 'Report',
+              namespace: '',
+              name: 'testReport',
+              isFolderType: false,
+              changedAt: LAST_MODIFIED_DATE,
+            }
+            expect(query.isInstanceIncluded(instance)).toBeTrue()
+            expect(query.isInstanceMatch(instance)).toBeFalse()
+          })
+        })
+
+        describe('when the instance was updated from the previous fetch', () => {
+          it('instance should match', () => {
+            const instance = {
+              metadataType: 'Report',
+              namespace: '',
+              name: 'testReport',
+              isFolderType: false,
+              changedAt: '2023-01-12T15:51:58.000Z',
+            }
+            expect(query.isInstanceIncluded(instance)).toBeTrue()
+            expect(query.isInstanceMatch(instance)).toBeTrue()
+          })
         })
       })
     })

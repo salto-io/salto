@@ -492,10 +492,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     checkOnly: boolean
   ): Promise<DeployResult> {
     const fetchParams = this.userConfig.fetch ?? {}
-    const fetchProfile = buildFetchProfile({
-      fetchParams,
-      metadataQuery: buildMetadataQuery({ fetchParams }),
-    })
+    const fetchProfile = buildFetchProfile({ fetchParams })
     log.debug(`about to ${checkOnly ? 'validate' : 'deploy'} group ${changeGroup.groupID} with scope (first 100): ${safeJsonStringify(changeGroup.changes.slice(0, 100).map(getChangeData).map(e => e.elemID.getFullName()))}`)
     const isDataDeployGroup = await isCustomObjectInstanceChanges(changeGroup.changes)
     const getLookupNameFunc = isDataDeployGroup

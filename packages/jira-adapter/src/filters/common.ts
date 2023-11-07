@@ -15,13 +15,13 @@
 */
 import { filters } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
-
+import { JSM_DUCKTYPE_API_DEFINITIONS } from '../config/api_config'
 /**
  * Filter creators of all the common filters
  */
 const filterCreators: Record<string, FilterCreator> = {
   hideTypes: filters.hideTypesFilterCreator(),
-  referencedInstanceNames: filters.referencedInstanceNamesFilterCreator(),
+  referencedInstanceNames: filters.referencedInstanceNamesFilterCreator(JSM_DUCKTYPE_API_DEFINITIONS),
   query: filters.queryFilterCreator({}),
 }
 

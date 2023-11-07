@@ -204,6 +204,10 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
   }
   return {
     ...metadataQuery,
+    isTypeMatch: (type: string) => (
+      metadataQuery.isTypeMatch(type)
+      && !UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES.includes(type)
+    ),
     isPartialFetch: () => true,
     isFetchWithChangesDetection: () => true,
     isInstanceMatch: instance => (

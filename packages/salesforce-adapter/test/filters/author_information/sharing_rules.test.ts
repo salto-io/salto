@@ -15,7 +15,6 @@
 */
 import { CORE_ANNOTATIONS, ElemID, ObjectType, InstanceElement } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { buildFetchProfile } from '../../../src/fetch_profile/fetch_profile'
 import { mockFileProperties } from '../../connection'
 import mockClient from '../../client'

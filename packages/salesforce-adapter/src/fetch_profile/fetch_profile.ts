@@ -41,7 +41,10 @@ type BuildFetchProfileParams = {
   metadataQuery?: MetadataQuery
 }
 
-export const buildFetchProfile = ({ fetchParams, metadataQuery }: BuildFetchProfileParams): FetchProfile => {
+export const buildFetchProfile = ({
+  fetchParams,
+  metadataQuery = buildMetadataQuery({ fetchParams }),
+}: BuildFetchProfileParams): FetchProfile => {
   const {
     data,
     fetchAllCustomSettings,
@@ -61,7 +64,7 @@ export const buildFetchProfile = ({ fetchParams, metadataQuery }: BuildFetchProf
     isWarningEnabled: name => (
       warningSettings?.[name] ?? true
     ),
-    metadataQuery: metadataQuery ?? buildMetadataQuery({ fetchParams }),
+    metadataQuery,
   }
 }
 

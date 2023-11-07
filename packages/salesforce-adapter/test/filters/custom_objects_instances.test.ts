@@ -31,7 +31,6 @@ import {
   ServiceIds,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import {
   ConfigChangeSuggestion,
   FetchParameters, FetchProfile,

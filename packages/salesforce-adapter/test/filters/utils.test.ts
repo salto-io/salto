@@ -54,7 +54,7 @@ import {
   INSTANCE_FULL_NAME_FIELD,
   LABEL,
   METADATA_TYPE,
-  SALESFORCE, STATUS,
+  SALESFORCE, STATUS, UNIX_TIME_ZERO_STRING,
 } from '../../src/constants'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import { CustomObject } from '../../src/client/types'
@@ -685,10 +685,11 @@ describe('filter utils', () => {
     it('should return undefined for empty array', () => {
       expect(getMostRecentFileProperties([])).toBeUndefined()
     })
-    it('should return undefined if all fileProps are with undefined or empty lastModifiedDate', () => {
+    it('should return undefined if all fileProps are with undefined empty, or unix time zero lastModifiedDate', () => {
       const fileProperties = [
         mockFileProperties({ type: CUSTOM_OBJECT, fullName: 'Test__c', lastModifiedDate: undefined }),
         mockFileProperties({ type: CUSTOM_OBJECT, fullName: 'Test2__c', lastModifiedDate: '' }),
+        mockFileProperties({ type: CUSTOM_OBJECT, fullName: 'Test2__c', lastModifiedDate: UNIX_TIME_ZERO_STRING }),
       ]
       expect(getMostRecentFileProperties(fileProperties)).toBeUndefined()
     })

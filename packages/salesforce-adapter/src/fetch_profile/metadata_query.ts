@@ -242,23 +242,24 @@ export const validateMetadataParams = (
   }
 }
 
-const filePropsToMetadataInstance = ({
-  namespacePrefix,
-  type: metadataType,
-  fullName: name,
-  lastModifiedDate: changedAt,
-}: FileProperties): MetadataInstance => ({
-  namespace: namespacePrefix === undefined || namespacePrefix === '' ? DEFAULT_NAMESPACE : namespacePrefix,
-  metadataType,
-  name,
-  changedAt,
-  isFolderType: false,
-})
-
 export const buildFilePropsMetadataQuery = (
   metadataQuery: MetadataQuery
-): MetadataQuery<FileProperties> => ({
-  ...metadataQuery,
-  isInstanceIncluded: instance => metadataQuery.isInstanceIncluded(filePropsToMetadataInstance(instance)),
-  isInstanceMatch: instance => metadataQuery.isInstanceMatch(filePropsToMetadataInstance(instance)),
-})
+): MetadataQuery<FileProperties> => {
+  const filePropsToMetadataInstance = ({
+    namespacePrefix,
+    type: metadataType,
+    fullName: name,
+    lastModifiedDate: changedAt,
+  }: FileProperties): MetadataInstance => ({
+    namespace: namespacePrefix === undefined || namespacePrefix === '' ? DEFAULT_NAMESPACE : namespacePrefix,
+    metadataType,
+    name,
+    changedAt,
+    isFolderType: false,
+  })
+  return {
+    ...metadataQuery,
+    isInstanceIncluded: instance => metadataQuery.isInstanceIncluded(filePropsToMetadataInstance(instance)),
+    isInstanceMatch: instance => metadataQuery.isInstanceMatch(filePropsToMetadataInstance(instance)),
+  }
+}

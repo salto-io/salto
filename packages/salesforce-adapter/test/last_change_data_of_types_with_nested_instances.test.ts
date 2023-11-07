@@ -16,6 +16,7 @@
 import { FileProperties } from 'jsforce'
 import { MockInterface } from '@salto-io/test-utils'
 import { collections } from '@salto-io/lowerdash'
+import _ from 'lodash'
 import { CUSTOM_OBJECT_FIELDS } from '../src/fetch_profile/metadata_types'
 import { CUSTOM_FIELD, CUSTOM_OBJECT } from '../src/constants'
 import { SalesforceClient } from '../index'
@@ -24,10 +25,13 @@ import mockClient from './client'
 import { mockFileProperties } from './connection'
 import { getLastChangeDateOfTypesWithNestedInstances } from '../src/last_change_date_of_types_with_nested_instances'
 import { buildFilePropsMetadataQuery, buildMetadataQuery } from '../src/fetch_profile/metadata_query'
+import { MetadataQuery } from '../src/types'
 
 const { makeArray } = collections.array
 
 describe('getLastChangeDateOfTypesWithNestedInstances', () => {
+  // This magic is used for fileProperties that expect to filter out.
+  const FUTURE_TIME = '2024-11-07T00:00:00.000Z'
   const FIRST_OBJECT_NAME = 'Test1__c'
   const SECOND_OBJECT_NAME = 'Test2__c'
   const RELATED_TYPES = [
@@ -43,6 +47,7 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
   let client: SalesforceClient
   let connection: MockInterface<Connection>
   let listedTypes: RelatedType[]
+  let metadataQuery: MetadataQuery<FileProperties>
   beforeEach(() => {
     ({ client, connection } = mockClient())
     listedTypes = []
@@ -58,6 +63,18 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
           fullName: `${SECOND_OBJECT_NAME}.TestBusinessProcess`,
           type: 'BusinessProcess',
           lastModifiedDate: '2023-10-01T00:00:00.000Z',
+        }),
+        mockFileProperties({
+          fullName: `${FIRST_OBJECT_NAME}.NamespacedBusinessProcess`,
+          namespacePrefix: 'test',
+          type: 'BusinessProcess',
+          lastModifiedDate: FUTURE_TIME,
+        }),
+        mockFileProperties({
+          fullName: `${SECOND_OBJECT_NAME}.NamespacedBusinessProcess`,
+          namespacePrefix: 'test',
+          type: 'BusinessProcess',
+          lastModifiedDate: FUTURE_TIME,
         }),
       ],
       CompactLayout: [
@@ -97,7 +114,19 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
         }),
       ],
       FieldSet: [],
-      Index: [],
+      // We exclude this type as part of the tests
+      Index: [
+        mockFileProperties({
+          fullName: `${FIRST_OBJECT_NAME}.TestIndex`,
+          type: 'Index',
+          lastModifiedDate: FUTURE_TIME,
+        }),
+        mockFileProperties({
+          fullName: `${SECOND_OBJECT_NAME}.TestIndex`,
+          type: 'Index',
+          lastModifiedDate: FUTURE_TIME,
+        }),
+      ],
       ListView: [
         mockFileProperties({
           fullName: `${FIRST_OBJECT_NAME}.TestListView`,
@@ -126,38 +155,47 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
       })
     ))
   })
-  describe('when the CustomObject type is excluded', () => {
-    it('should not retrieve any files related to CustomObjects', async () => {
+  describe('when all types with nested instances are excluded', () => {
+    beforeEach(() => {
+      metadataQuery = buildFilePropsMetadataQuery(buildMetadataQuery({
+        fetchParams: {
+          metadata: {
+            exclude: [{
+              metadataType: CUSTOM_OBJECT,
+            }],
+          },
+        },
+      }))
+    })
+    it('should return empty object', async () => {
       const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
         client,
-        metadataQuery: buildFilePropsMetadataQuery(buildMetadataQuery({
-          fetchParams: {
-            metadata: {
-              exclude: [{
-                metadataType: CUSTOM_OBJECT,
-              }],
-            },
-          },
-        })),
+        metadataQuery,
       })
       expect(lastChangeDateOfTypesWithNestedInstances).toBeEmpty()
       expect(listedTypes).toBeEmpty()
     })
   })
-  describe('when the CustomObject type is included', () => {
+  describe('when all types with nested instances are included', () => {
+    let excludedRelatedTypes: RelatedType[]
+    beforeEach(() => {
+      excludedRelatedTypes = ['Index']
+      metadataQuery = buildFilePropsMetadataQuery(buildMetadataQuery({
+        fetchParams: {
+          metadata: {
+            include: [{
+              metadataType: '.*',
+              namespace: '',
+            }],
+            exclude: excludedRelatedTypes.map(type => ({ metadataType: type })),
+          },
+        },
+      }))
+    })
     it('should return correct values', async () => {
       const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
         client,
-        metadataQuery: buildFilePropsMetadataQuery(buildMetadataQuery({
-          fetchParams: {
-            metadata: {
-              include: [{
-                metadataType: '.*',
-              }],
-            },
-          },
-        })),
-
+        metadataQuery,
       })
       expect(lastChangeDateOfTypesWithNestedInstances).toEqual({
         [CUSTOM_OBJECT]: {
@@ -165,7 +203,7 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
           [SECOND_OBJECT_NAME]: '2023-11-02T00:00:00.000Z',
         },
       })
-      expect(listedTypes).toIncludeSameMembers([...RELATED_TYPES])
+      expect(listedTypes).toIncludeSameMembers(_.difference(RELATED_TYPES, excludedRelatedTypes))
     })
   })
 })

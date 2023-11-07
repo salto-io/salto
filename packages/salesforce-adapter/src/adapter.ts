@@ -113,7 +113,12 @@ import {
   OWNER_ID,
   PROFILE_METADATA_TYPE,
 } from './constants'
-import { buildMetadataQuery, buildMetadataQueryForFetchWithChangesDetection } from './fetch_profile/metadata_query'
+import {
+  buildFilePropsMetadataQuery,
+  buildMetadataQuery,
+  buildMetadataQueryForFetchWithChangesDetection,
+} from './fetch_profile/metadata_query'
+import { getLastChangeDateOfTypesWithNestedInstances } from './last_change_date_of_types_with_nested_instances'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -425,9 +430,17 @@ export default class SalesforceAdapter implements AdapterOperations {
   @logDuration('fetching account configuration')
   async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
     const fetchParams = this.userConfig.fetch ?? {}
+    const baseQuery = buildMetadataQuery({ fetchParams })
     const metadataQuery = withChangesDetection
-      ? await buildMetadataQueryForFetchWithChangesDetection({ fetchParams, elementsSource: this.elementsSource })
-      : buildMetadataQuery({ fetchParams })
+      ? await buildMetadataQueryForFetchWithChangesDetection({
+        fetchParams,
+        elementsSource: this.elementsSource,
+        lastChangeDateOfTypesWithNestedInstances: await getLastChangeDateOfTypesWithNestedInstances({
+          client: this.client,
+          metadataQuery: buildFilePropsMetadataQuery(baseQuery),
+        }),
+      })
+      : baseQuery
     const fetchProfile = buildFetchProfile({ fetchParams, metadataQuery })
     if (!fetchProfile.isFeatureEnabled('fetchCustomObjectUsingRetrieveApi')) {
       // We have to fetch custom objects using retrieve in order to be able to fetch the field-level permissions

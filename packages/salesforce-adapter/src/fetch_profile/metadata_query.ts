@@ -18,7 +18,6 @@ import _ from 'lodash'
 import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { FileProperties } from 'jsforce'
 import {
-  CUSTOM_FIELD,
   CUSTOM_METADATA,
   CUSTOM_OBJECT,
   DEFAULT_NAMESPACE,
@@ -41,6 +40,7 @@ import {
   MetadataQueryParams,
 } from '../types'
 import { getChangedAtSingleton } from '../filters/utils'
+import { LastChangeDateOfTypesWithNestedInstances } from '../last_change_date_of_types_with_nested_instances'
 
 const { isDefined } = values
 
@@ -72,10 +72,8 @@ const DEFAULT_NAMESPACE_MATCH_ALL_TYPE_LIST = [
 // Instances of this type won't be fetched in fetchWithChangesDetection mode
 const UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES = [
   PROFILE_METADATA_TYPE,
-  CUSTOM_OBJECT,
   // Since we don't retrieve the CustomMetadata types (CustomObjects), we shouldn't retrieve the Records
   CUSTOM_METADATA,
-  CUSTOM_FIELD,
 ]
 
 const getDefaultNamespace = (metadataType: string): string =>
@@ -103,6 +101,7 @@ type BuildMetadataQueryParams = {
 
 type BuildFetchWithChangesDetectionMetadataQueryParams = BuildMetadataQueryParams & {
   elementsSource: ReadOnlyElementsSource
+  lastChangeDateOfTypesWithNestedInstances: LastChangeDateOfTypesWithNestedInstances
 }
 
 export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): MetadataQuery => {
@@ -186,18 +185,30 @@ export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): M
   }
 }
 
+const isValidDateString = (dateString: string | undefined): dateString is string => (
+  dateString !== undefined && dateString !== ''
+)
+
 export const buildMetadataQueryForFetchWithChangesDetection = async (
   params: BuildFetchWithChangesDetectionMetadataQueryParams
 ): Promise<MetadataQuery> => {
-  const changedAtSingleton = await getChangedAtSingleton(params.elementsSource)
+  const { elementsSource, lastChangeDateOfTypesWithNestedInstances } = params
+  const changedAtSingleton = await getChangedAtSingleton(elementsSource)
   const metadataQuery = buildMetadataQuery(params)
+  const getInstanceChangedAt = ({ metadataType, name, changedAt }: MetadataInstance): string | undefined => {
+    if (metadataType === CUSTOM_OBJECT) {
+      return lastChangeDateOfTypesWithNestedInstances[CUSTOM_OBJECT]?.[name]
+    }
+    return changedAt
+  }
   const isIncludedInFetchWithChangesDetection = (instance: MetadataInstance): boolean => {
-    if (changedAtSingleton === undefined || instance.changedAt === undefined) {
+    if (changedAtSingleton === undefined) {
       return true
     }
-    const lastChangedAt = _.get(changedAtSingleton.value, [instance.metadataType, instance.name])
-    return _.isString(lastChangedAt)
-      ? new Date(lastChangedAt).getTime() < new Date(instance.changedAt).getTime()
+    const changedAtFromSingleton = _.get(changedAtSingleton.value, [instance.metadataType, instance.name])
+    const instanceChangedAt = getInstanceChangedAt(instance)
+    return isValidDateString(changedAtFromSingleton) && isValidDateString(instanceChangedAt)
+      ? new Date(changedAtFromSingleton).getTime() < new Date(instanceChangedAt).getTime()
       : true
   }
   return {

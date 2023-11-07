@@ -157,7 +157,7 @@ describe('Salesforce Fetch With Changes Detection', () => {
     })
     it('should fetch only the updated CustomObject instances', async () => {
       await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
-      expect(retrieveRequest.unpackaged?.types).toIncludeAnyMembers([{
+      expect(retrieveRequest.unpackaged?.types).toIncludeSameMembers([{
         name: CUSTOM_OBJECT,
         members: [UPDATED_OBJECT_NAME],
       }])

@@ -157,6 +157,7 @@ import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
 import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uuid'
 import changeQueueFieldsFilter from './filters/change_queue_fields'
 import portalGroupsFilter from './filters/portal_groups'
+import assetsObjectTypePath from './filters/assets/assets_object_type_path'
 import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
 import { jiraJSMEntriesFunc } from './jsm_utils'
@@ -289,6 +290,7 @@ export const DEFAULT_FILTERS = [
   requestTypelayoutsToValuesFilter,
   // Must run after fieldReferencesFilter
   contextsProjectsFilter,
+  assetsObjectTypePath,
   // must run after contextsProjectsFilter
   projectFieldContextOrder,
   fieldConfigurationIrrelevantFields,

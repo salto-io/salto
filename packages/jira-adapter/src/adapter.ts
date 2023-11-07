@@ -152,11 +152,13 @@ import deployJsmTypesFilter from './filters/jsm_types_deploy_filter'
 import jsmPathFilter from './filters/jsm_paths'
 import portalSettingsFilter from './filters/portal_settings'
 import queueDeleteFilter from './filters/queue_delete'
+import assetsObjectTypeParentFilter from './filters/assets/change_object_type_parents'
 import scriptRunnerInstancesDeploy from './filters/script_runner/script_runner_instances_deploy'
 import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
 import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uuid'
 import changeQueueFieldsFilter from './filters/change_queue_fields'
 import portalGroupsFilter from './filters/portal_groups'
+import assetsObjectTypePath from './filters/assets/assets_object_type_path'
 import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
 import { jiraJSMEntriesFunc } from './jsm_utils'
@@ -289,6 +291,8 @@ export const DEFAULT_FILTERS = [
   requestTypelayoutsToValuesFilter,
   // Must run after fieldReferencesFilter
   contextsProjectsFilter,
+  assetsObjectTypePath,
+  assetsObjectTypeParentFilter,
   // must run after contextsProjectsFilter
   projectFieldContextOrder,
   fieldConfigurationIrrelevantFields,

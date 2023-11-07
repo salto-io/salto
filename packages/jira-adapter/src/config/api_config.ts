@@ -2144,6 +2144,11 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
           toField: 'assetsStatuses',
           context: [{ name: 'AssetsSchemaId', fromField: 'id' }],
         },
+        {
+          type: 'AssetsObjectTypes',
+          toField: 'assetsObjectTypes',
+          context: [{ name: 'AssetsSchemaId', fromField: 'id' }],
+        },
       ],
     },
     transformation: {
@@ -2164,6 +2169,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
       standaloneFields: [
         { fieldName: 'assetsStatuses' },
+        { fieldName: 'assetsObjectTypes' },
       ],
       fieldTypeOverrides: [
         { fieldName: 'assetsStatuses', fieldType: 'List<AssetsStatus>' },
@@ -2184,6 +2190,32 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldsToHide: [
         { fieldName: 'id' },
         { fieldName: 'objectSchemaId' },
+      ],
+    },
+  },
+  AssetsObjectTypes: {
+    request: {
+      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/{AssetsSchemaId}/objecttypes/flat',
+    },
+    transformation: {
+      dataField: '.',
+    },
+  },
+  AssetsObjectType: {
+    transformation: {
+      sourceTypeName: 'AssetsSchema__assetsObjectTypes',
+      idFields: ['&parentObjectTypeId', 'name'],
+      fieldsToHide: [
+        { fieldName: 'id' },
+      ],
+      fieldsToOmit: [
+        { fieldName: 'created' },
+        { fieldName: 'updated' },
+        { fieldName: 'globalId' },
+        { fieldName: 'icon' },
+        { fieldName: 'objectCount' },
+        { fieldName: 'objectSchemaId' },
+        { fieldName: 'workspaceId' },
       ],
     },
   },

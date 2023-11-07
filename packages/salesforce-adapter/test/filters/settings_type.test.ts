@@ -16,7 +16,6 @@
 import {
   ElemID, InstanceElement, isInstanceElement, isObjectType, ObjectType, Element,
 } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator, { } from '../../src/filters/settings_type'
 import mockClient from '../client'
 import * as constants from '../../src/constants'
@@ -43,7 +42,6 @@ describe('Test Settings Type', () => {
               ],
             },
           },
-          elementsSource: buildElementsSourceFromElements([]),
         }),
       },
     }

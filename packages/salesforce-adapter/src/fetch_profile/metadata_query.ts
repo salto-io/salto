@@ -15,7 +15,7 @@
 */
 import { regex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { InstanceElement } from '@salto-io/adapter-api'
+import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import {
   CUSTOM_FIELD,
   CUSTOM_METADATA,
@@ -30,7 +30,7 @@ import {
 } from '../constants'
 import { ConfigValidationError, validateRegularExpressions } from '../config_validation'
 import {
-  BaseMetadataQuery,
+  FetchParameters,
   METADATA_EXCLUDE_LIST,
   METADATA_INCLUDE_LIST,
   METADATA_SEPARATE_FIELD_LIST,
@@ -39,6 +39,7 @@ import {
   MetadataQuery,
   MetadataQueryParams,
 } from '../types'
+import { getChangedAtSingleton } from '../filters/utils'
 
 const { isDefined } = values
 
@@ -95,25 +96,20 @@ const isFolderMetadataTypeNameMatch = ({ name: instanceName }: MetadataInstance,
   || regex.isFullRegexMatch(instanceName, name)
 )
 
-type BaseMetadataQueryParams = {
-  metadataParams: MetadataParams
-  target?: string[]
-  isFetchWithChangesDetection: boolean
+type BuildMetadataQueryParams = {
+  fetchParams: FetchParameters
 }
 
-type BuildMetadataQueryParams = BaseMetadataQueryParams & {
-  changedAtSingleton?: InstanceElement
+type BuildFetchWithChangesDetectionMetadataQueryParams = BuildMetadataQueryParams & {
+  elementsSource: ReadOnlyElementsSource
 }
 
-export const buildBaseMetadataQuery = (
-  {
-    metadataParams,
+export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): MetadataQuery => {
+  const {
+    metadata = {},
     target,
-    isFetchWithChangesDetection,
-  }: BaseMetadataQueryParams
-)
-  : BaseMetadataQuery => {
-  const { include = [{}], exclude = [] } = metadataParams
+  } = fetchParams
+  const { include = [{}], exclude = [] } = metadata
   const fullExcludeList = [...exclude, ...PERMANENT_SKIP_LIST]
 
   const isIncludedInPartialFetch = (type: string): boolean => {
@@ -167,11 +163,14 @@ export const buildBaseMetadataQuery = (
     include.some(params => isInstanceMatchQueryParams(instance, params))
     && !fullExcludeList.some(params => isInstanceMatchQueryParams(instance, params))
   )
+  const isTargetedFetch = (): boolean => target !== undefined
   return {
     isTypeMatch: type => isTypeIncluded(type) && !isTypeExcluded(type),
-    isTargetedFetch: () => target !== undefined,
-    isFetchWithChangesDetection: () => isFetchWithChangesDetection,
-    isPartialFetch: () => target !== undefined || isFetchWithChangesDetection,
+    isTargetedFetch,
+    isInstanceIncluded,
+    isInstanceMatch: isInstanceIncluded,
+    isFetchWithChangesDetection: () => false,
+    isPartialFetch: isTargetedFetch,
     getFolderPathsByName: (folderType: string) => {
       const folderPaths = include
         .filter(params => params.metadataType === folderType)
@@ -183,17 +182,15 @@ export const buildBaseMetadataQuery = (
         })
       return _.keyBy(folderPaths, path => _.last(path.split('/')) ?? path)
     },
-    isInstanceIncluded,
   }
 }
 
-export const buildMetadataQuery = (buildMetadataQueryParams: BuildMetadataQueryParams): MetadataQuery => {
-  const { changedAtSingleton } = buildMetadataQueryParams
-  const baseMetadataQuery = buildBaseMetadataQuery(buildMetadataQueryParams)
+export const buildMetadataQueryForFetchWithChangesDetection = async (
+  params: BuildFetchWithChangesDetectionMetadataQueryParams
+): Promise<MetadataQuery> => {
+  const changedAtSingleton = await getChangedAtSingleton(params.elementsSource)
+  const metadataQuery = buildMetadataQuery(params)
   const isIncludedInFetchWithChangesDetection = (instance: MetadataInstance): boolean => {
-    if (!baseMetadataQuery.isInstanceIncluded(instance)) {
-      return false
-    }
     if (UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES.includes(instance.metadataType)) {
       return false
     }
@@ -206,11 +203,11 @@ export const buildMetadataQuery = (buildMetadataQueryParams: BuildMetadataQueryP
       : true
   }
   return {
-    ...baseMetadataQuery,
+    ...metadataQuery,
+    isPartialFetch: () => true,
+    isFetchWithChangesDetection: () => true,
     isInstanceMatch: instance => (
-      baseMetadataQuery.isFetchWithChangesDetection()
-        ? isIncludedInFetchWithChangesDetection(instance)
-        : baseMetadataQuery.isInstanceIncluded(instance)
+      metadataQuery.isInstanceIncluded(instance) && isIncludedInFetchWithChangesDetection(instance)
     ),
   }
 }

@@ -326,7 +326,6 @@ describe('Custom Object Instances References filter', () => {
                 },
               },
             },
-            elementsSource: buildElementsSourceFromElements([]),
           }),
         },
       }) as FilterType
@@ -478,7 +477,6 @@ describe('Custom Object Instances References filter', () => {
             },
           },
         },
-        elementsSource: buildElementsSourceFromElements([]),
       })
     )
     describe('When default is BrokenReference and override is InternalId', () => {

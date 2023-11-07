@@ -168,7 +168,6 @@ describe('custom objects author information test', () => {
           ...defaultFilterContext,
           fetchProfile: buildFetchProfile({
             fetchParams: { optionalFeatures: { authorInformation: false } },
-            elementsSource: buildElementsSourceFromElements([]),
           }),
         },
       })

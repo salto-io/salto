@@ -18,7 +18,7 @@ import path from 'path'
 import readdirp from 'readdirp'
 import { logger } from '@salto-io/logging'
 import { collections, promises } from '@salto-io/lowerdash'
-import { buildElementsSourceFromElements, filter } from '@salto-io/adapter-utils'
+import { filter } from '@salto-io/adapter-utils'
 import { ObjectType, StaticFile, isObjectType, ReadOnlyElementsSource, ElemID, Element, FetchResult, LoadElementsFromFolderArgs } from '@salto-io/adapter-api'
 import { readTextFile, readFile } from '@salto-io/file'
 import { SYSTEM_FIELDS, allFilters, UNSUPPORTED_SYSTEM_FIELDS } from '../adapter'
@@ -149,7 +149,6 @@ const getElementsFromDXFolder = async (
         systemFields: SYSTEM_FIELDS,
         fetchProfile: buildFetchProfile({
           fetchParams: { target: ['hack to make filters think this is partial fetch'] },
-          elementsSource: buildElementsSourceFromElements([]),
         }),
         elementsSource: workspaceElements,
       },

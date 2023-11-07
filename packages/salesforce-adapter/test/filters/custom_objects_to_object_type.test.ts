@@ -129,7 +129,6 @@ describe('Custom Objects to Object Type filter', () => {
           ...defaultFilterContext,
           fetchProfile: buildFetchProfile({
             fetchParams: { optionalFeatures: { skipAliases: false } },
-            elementsSource: buildElementsSourceFromElements([]),
           }),
           unsupportedSystemFields: ['UnsupportedField'],
           systemFields: ['SystemField', 'NameSystemField'],
@@ -884,7 +883,6 @@ describe('Custom Objects to Object Type filter', () => {
               ...defaultFilterContext,
               fetchProfile: buildFetchProfile({
                 fetchParams: { target: ['SharingRules'] },
-                elementsSource: buildElementsSourceFromElements([]),
               }),
               elementsSource,
             },

@@ -1448,12 +1448,12 @@ public class LargeClass${index} {
       } as unknown as ObjectType
       const metadataQuery = {
         isTypeMatch: jest.fn(),
+        isInstanceIncluded: () => true,
         isInstanceMatch: () => true,
         isPartialFetch: () => false,
         isTargetedFetch: jest.fn(),
         isFetchWithChangesDetection: jest.fn(),
         getFolderPathsByName: jest.fn(),
-        isInstanceIncluded: jest.fn(),
       }
       const excludeFilePropMock = mockFileProperties({ fullName: 'fullName', type: 'excludeMe' })
       const includeFilePropMock = mockFileProperties({ fullName: 'fullName', type: 'includeMe' })
@@ -2002,12 +2002,10 @@ describe('Fetch via retrieve API', () => {
           types: [mockTypes.ApexClass],
           maxItemsInRetrieveRequest: DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
           metadataQuery: buildMetadataQuery({
-            metadataParams: {},
-            isFetchWithChangesDetection: false,
+            fetchParams: {},
           }),
           fetchProfile: buildFetchProfile({
             fetchParams: { addNamespacePrefixToFullName: false },
-            elementsSource: buildElementsSourceFromElements([]),
           }),
           typesToSkip: new Set(),
         }
@@ -2039,12 +2037,10 @@ describe('Fetch via retrieve API', () => {
           types: [mockTypes.ApexClass, mockTypes.CustomObject],
           maxItemsInRetrieveRequest: chunkSize,
           metadataQuery: buildMetadataQuery({
-            metadataParams: {},
-            isFetchWithChangesDetection: false,
+            fetchParams: {},
           }),
           fetchProfile: buildFetchProfile({
             fetchParams: { addNamespacePrefixToFullName: false },
-            elementsSource: buildElementsSourceFromElements([]),
           }),
           typesToSkip: new Set(),
         }
@@ -2080,12 +2076,10 @@ describe('Fetch via retrieve API', () => {
           types: [mockTypes.CustomObject, mockTypes.Profile],
           maxItemsInRetrieveRequest: chunkSize,
           metadataQuery: buildMetadataQuery({
-            metadataParams: {},
-            isFetchWithChangesDetection: false,
+            fetchParams: {},
           }),
           fetchProfile: buildFetchProfile({
             fetchParams: { addNamespacePrefixToFullName: false },
-            elementsSource: buildElementsSourceFromElements([]),
           }),
           typesToSkip: new Set(),
         }
@@ -2129,12 +2123,10 @@ describe('Fetch via retrieve API', () => {
           types: [mockTypes.CustomObject, mockTypes.Profile],
           maxItemsInRetrieveRequest: 3,
           metadataQuery: buildMetadataQuery({
-            metadataParams: {},
-            isFetchWithChangesDetection: false,
+            fetchParams: {},
           }),
           fetchProfile: buildFetchProfile({
             fetchParams: { addNamespacePrefixToFullName: false },
-            elementsSource: buildElementsSourceFromElements([]),
           }),
           typesToSkip: new Set(),
         }

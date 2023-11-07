@@ -14,12 +14,20 @@
 * limitations under the License.
 */
 
+import { InstanceElement } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import {
   buildMetadataQuery,
+  buildMetadataQueryForFetchWithChangesDetection,
   validateMetadataParams,
 } from '../../src/fetch_profile/metadata_query'
-import { CUSTOM_OBJECT, TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../../src/constants'
-import { MetadataQuery } from '../../src/types'
+import {
+  CUSTOM_METADATA,
+  CUSTOM_OBJECT,
+  TOPICS_FOR_OBJECTS_METADATA_TYPE,
+} from '../../src/constants'
+import { MetadataInstance, MetadataQuery } from '../../src/types'
+import { mockInstances } from '../mock_elements'
 
 describe('validateMetadataParams', () => {
   describe('invalid regex in include list', () => {
@@ -443,6 +451,136 @@ describe('buildMetadataQuery', () => {
           isFolderType: true,
           changedAt: undefined,
         })).toBeFalse()
+      })
+    })
+    describe('isFetchWithChangesDetection', () => {
+      it('should return false', () => {
+        expect(buildMetadataQuery({ fetchParams: {} }).isFetchWithChangesDetection()).toBeFalse()
+      })
+    })
+    describe('isInstanceIncluded', () => {
+      it('should have the same implementation as isInstanceMatch', () => {
+        const metadataQuery = buildMetadataQuery({ fetchParams: {} })
+        expect(metadataQuery.isInstanceIncluded).toEqual(metadataQuery.isInstanceMatch)
+      })
+    })
+  })
+  describe('buildMetadataQueryForFetchWithChangesDetection', () => {
+    const INCLUDED_TYPE = 'Role'
+    const EXCLUDED_TYPE = 'CustomLabels'
+    let changedAtSingleton: InstanceElement
+    let metadataQuery: MetadataQuery
+    beforeEach(async () => {
+      changedAtSingleton = mockInstances().ChangedAtSingleton
+      const elementsSource = buildElementsSourceFromElements([changedAtSingleton])
+      metadataQuery = await buildMetadataQueryForFetchWithChangesDetection({
+        fetchParams: {
+          metadata: {
+            include: [
+              {
+                metadataType: '.*',
+              },
+            ],
+            exclude: [
+              { metadataType: 'CustomLabels' },
+            ],
+          },
+        },
+        elementsSource,
+      })
+    })
+    describe('isFetchWithChangesDetection', () => {
+      it('should return true', () => {
+        expect(metadataQuery.isFetchWithChangesDetection()).toBeTrue()
+      })
+    })
+    describe('isPartialFetch', () => {
+      it('should return true', () => {
+        expect(metadataQuery.isPartialFetch()).toBeTrue()
+      })
+    })
+    describe('isTargetedFetch', () => {
+      describe('without fetch targets', () => {
+        it('should return false', () => {
+          expect(metadataQuery.isTargetedFetch()).toBeFalse()
+        })
+      })
+      describe('with fetch targets', () => {
+        beforeEach(async () => {
+          metadataQuery = await buildMetadataQueryForFetchWithChangesDetection({
+            fetchParams: { target: ['CustomObject'] },
+            elementsSource: buildElementsSourceFromElements([changedAtSingleton]),
+          })
+        })
+        it('should return true', () => {
+          expect(metadataQuery.isTargetedFetch()).toBeTrue()
+        })
+      })
+    })
+    describe('isTypeMatch', () => {
+      it('should return true for included type', () => {
+        expect(metadataQuery.isTypeMatch(INCLUDED_TYPE)).toBeTrue()
+      })
+      it('should return false for excluded type', () => {
+        expect(metadataQuery.isTypeMatch(EXCLUDED_TYPE)).toBeFalse()
+      })
+      it('should return false for unsupported fetch with changes detection type', () => {
+        expect(metadataQuery.isTypeMatch(CUSTOM_METADATA)).toBeFalse()
+      })
+    })
+    describe('isInstanceIncluded & isInstanceMatch', () => {
+      const UPDATED_INSTANCE_NAME = 'Updated'
+      const NON_UPDATED_INSTANCE_NAME = 'NonUpdated'
+
+      let instance: MetadataInstance
+
+      beforeEach(() => {
+        changedAtSingleton.value[INCLUDED_TYPE] = {
+          [UPDATED_INSTANCE_NAME]: '2023-11-06T00:00:00.000Z',
+          [NON_UPDATED_INSTANCE_NAME]: '2023-11-06T00:00:00.000Z',
+        }
+      })
+      describe('when instance was updated', () => {
+        beforeEach(() => {
+          instance = {
+            metadataType: INCLUDED_TYPE,
+            namespace: '',
+            name: UPDATED_INSTANCE_NAME,
+            isFolderType: false,
+            changedAt: '2023-11-07T00:00:00.000Z',
+          }
+        })
+        describe('isInstanceIncluded', () => {
+          it('should return true', () => {
+            expect(metadataQuery.isInstanceIncluded(instance)).toBeTrue()
+          })
+        })
+        describe('isInstanceMatch', () => {
+          it('should return true', () => {
+            expect(metadataQuery.isInstanceMatch(instance)).toBeTrue()
+          })
+        })
+      })
+      describe('when instance was not updated', () => {
+        beforeEach(() => {
+          instance = {
+            metadataType: INCLUDED_TYPE,
+            namespace: '',
+            name: UPDATED_INSTANCE_NAME,
+            isFolderType: false,
+            changedAt: '2023-11-06T00:00:00.000Z',
+          }
+        })
+        describe('isInstanceIncluded', () => {
+          it('should return true', () => {
+            expect(metadataQuery.isInstanceIncluded(instance)).toBeTrue()
+          })
+        })
+        describe('isInstanceMatch', () => {
+          it('should return false', () => {
+            expect(metadataQuery.isInstanceMatch(instance)).toBeFalse()
+          })
+        })
       })
     })
   })

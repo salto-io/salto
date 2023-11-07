@@ -191,9 +191,6 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
   const changedAtSingleton = await getChangedAtSingleton(params.elementsSource)
   const metadataQuery = buildMetadataQuery(params)
   const isIncludedInFetchWithChangesDetection = (instance: MetadataInstance): boolean => {
-    if (UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES.includes(instance.metadataType)) {
-      return false
-    }
     if (changedAtSingleton === undefined || instance.changedAt === undefined) {
       return true
     }

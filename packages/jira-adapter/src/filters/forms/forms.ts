@@ -14,13 +14,13 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, Change, InstanceElement, ReferenceExpression, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Change, InstanceElement, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { elements as adapterElements } from '@salto-io/adapter-components'
-import { getParent, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { getParent } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+import { elements as elementUtils, config as configUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../filter'
-import { FORM_TYPE, JIRA, PROJECT_TYPE, SERVICE_DESK } from '../../constants'
+import { FORM_TYPE, JSM_DUCKTYPE_API_DEFINITIONS, PROJECT_TYPE, SERVICE_DESK } from '../../constants'
 import { getCloudId } from '../automation/cloud_id'
 import { createFormType, isCreateFormResponse, isDetailedFormsResponse, isFormsResponse } from './forms_types'
 import { deployChanges } from '../../deployment/standard_deployment'
@@ -28,7 +28,8 @@ import JiraClient from '../../client/client'
 import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../../utils'
 
 const { isDefined } = lowerDashValues
-
+const { toBasicInstance } = elementUtils
+const { getTransformationConfigByType } = configUtils
 const deployForms = async (
   change: Change<InstanceElement>,
   client: JiraClient,
@@ -36,7 +37,7 @@ const deployForms = async (
   const form = getChangeData(change)
   const project = getParent(form)
   if (form.value.design?.settings?.name === undefined) {
-    return
+    throw new Error('Form name is missing')
   }
   const cloudId = await getCloudId(client)
   if (isAdditionOrModificationChange(change)) {
@@ -104,19 +105,20 @@ const filter: FilterCreator = ({ config, client, getElemIdFunc }) => ({
             }
             const name = `${project.value.name}_${formResponse.name}`
             const formValue = detailedRes.data
-            const serviceIds = adapterElements.createServiceIds(formValue, 'uuid', formType.elemID)
-            const instanceName = getElemIdFunc ? getElemIdFunc(JIRA, serviceIds, naclCase(name)).name
-              : naclCase(name)
-            const prefixPath = project.path ?? []
-            return new InstanceElement(
-              instanceName,
-              formType,
-              formValue,
-              [...prefixPath.slice(0, -1), 'forms', pathNaclCase(instanceName)],
-              {
-                [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(project.elemID, project)],
-              }
-            )
+            const jsmDuckTypeApiDefinitions = config[JSM_DUCKTYPE_API_DEFINITIONS]
+            if (jsmDuckTypeApiDefinitions === undefined) {
+              return undefined
+            }
+            return toBasicInstance({
+              entry: formValue,
+              type: formType,
+              transformationConfigByType: getTransformationConfigByType(jsmDuckTypeApiDefinitions.types),
+              transformationDefaultConfig: jsmDuckTypeApiDefinitions.typeDefaults.transformation,
+              parent: project,
+              // what ever default name you'd like
+              defaultName: name,
+              getElemIdFunc,
+            })
           }))
       })))
       .flat()

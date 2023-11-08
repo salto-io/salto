@@ -20,7 +20,7 @@ import { defaultDeployChange, deployChanges } from '../deployment/standard_deplo
 import { FilterCreator } from '../filter'
 import { JSM_DUCKTYPE_SUPPORTED_TYPES } from '../config/api_config'
 
-const SUPPORTED_TYPES = Object.keys(JSM_DUCKTYPE_SUPPORTED_TYPES)
+const SUPPORTED_TYPES = new Set(Object.keys(JSM_DUCKTYPE_SUPPORTED_TYPES))
 
 const filterCreator: FilterCreator = ({ config, client }) => ({
   name: 'jsmTypesFilter',
@@ -35,7 +35,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     const [jsmTypesChanges, leftoverChanges] = _.partition(
       changes,
       change =>
-        SUPPORTED_TYPES.includes(getChangeData(change).elemID.typeName)
+        SUPPORTED_TYPES.has(getChangeData(change).elemID.typeName)
         && isInstanceChange(change)
     )
 

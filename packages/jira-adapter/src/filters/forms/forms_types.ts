@@ -20,11 +20,9 @@ import { elements as adapterElements } from '@salto-io/adapter-components'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { JIRA, FORM_TYPE } from '../../constants'
 
-export type DetailedFormDataResponse = {
+type DetailedFormDataResponse = {
     id: number
-    updated: string
     uuid: string
-    publish: {}
     design: {
       settings: {
         templateId: string
@@ -46,7 +44,7 @@ type FormResponse = {
   name: string
 }
 
-export type FormsResponse = {
+type FormsResponse = {
   data: FormResponse[]
 }
 
@@ -58,6 +56,7 @@ export const FORMS_RESPONSE_SCHEME = Joi.object({
 }).unknown(true).required()
 
 export const DETAILED_FORM_RESPONSE_SCHEME = Joi.object({
+  id: Joi.number().required(),
   uuid: Joi.string().required(),
   design: Joi.object({
     settings: Joi.object({
@@ -66,7 +65,7 @@ export const DETAILED_FORM_RESPONSE_SCHEME = Joi.object({
       submit: Joi.object({
         lock: Joi.boolean().required(),
         pdf: Joi.boolean().required(),
-      }).required(),
+      }).unknown(true).required(),
       templateFormUuid: Joi.string().required(),
     }).unknown(true).required(),
     questions: Joi.object().unknown(true).required(),
@@ -212,9 +211,8 @@ export const createFormType = (): {
   }
 }
 
-export const isFormsResponse = createSchemeGuard<FormsResponse>(FORMS_RESPONSE_SCHEME)
-export const isDetailedFormsResponse = createSchemeGuard<DetailedFormDataResponse>(DETAILED_FORM_RESPONSE_SCHEME)
-
+export const isFormsResponse = createSchemeGuard<FormsResponse>(FORMS_RESPONSE_SCHEME, 'bad forms response from jira server')
+export const isDetailedFormsResponse = createSchemeGuard<DetailedFormDataResponse>(DETAILED_FORM_RESPONSE_SCHEME, 'bad detailed form response from jira server')
 
 type createFormResponse = {
   id: number
@@ -224,4 +222,4 @@ const CREATE_FORM_RESPONSE_SCHEME = Joi.object({
   id: Joi.number().required(),
 }).unknown(true).required()
 
-export const isCreateFormResponse = createSchemeGuard<createFormResponse>(CREATE_FORM_RESPONSE_SCHEME)
+export const isCreateFormResponse = createSchemeGuard<createFormResponse>(CREATE_FORM_RESPONSE_SCHEME, 'bad form creation response from jira server')

@@ -17,6 +17,7 @@ import {
   ChangeError,
   ChangeValidator,
   getChangeData,
+  isAdditionChange,
   isInstanceChange, isModificationChange,
   isRemovalOrModificationChange,
   ReferenceExpression,
@@ -25,6 +26,7 @@ import { values } from '@salto-io/lowerdash'
 import { getParent, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from '../filters/dynamic_content'
+import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../constants'
 
 const { isDefined } = values
 const log = logger(module)
@@ -35,6 +37,9 @@ const log = logger(module)
 export const defaultDynamicContentItemVariantValidator: ChangeValidator = async changes => {
   const dynamicContentItemVariantsChanges = changes.filter(isInstanceChange).filter(isRemovalOrModificationChange)
     .filter(change => getChangeData(change).elemID.typeName === DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME)
+
+  const dynamicContentItemAdditions = changes.filter(isInstanceChange).filter(isAdditionChange)
+    .filter(change => getChangeData(change).elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME)
 
   return dynamicContentItemVariantsChanges.map((change): ChangeError | undefined => {
     // If the variant wasn't default, it is irrelevant
@@ -64,5 +69,18 @@ export const defaultDynamicContentItemVariantValidator: ChangeValidator = async 
       log.warn(`defaultDynamicContentItemVariantValidator - Failed to get parent of ${variant.elemID.getFullName()}`, e)
       return undefined
     }
-  }).filter(isDefined)
+  }).concat(
+    dynamicContentItemAdditions.map(change => {
+      const dynamicContentItem = getChangeData(change)
+      return dynamicContentItem.value.variants.filter(isResolvedReferenceExpression)
+        .some((variantRef: ReferenceExpression) => variantRef.value.value.default === true)
+        ? undefined
+        : {
+          elemID: dynamicContentItem.elemID,
+          severity: 'Error',
+          message: 'Dynamic content item must have a default variant',
+          detailedMessage: `The dynamic content item '${dynamicContentItem.elemID.name}' must have a default variant. Please ensure that you select a variant of this dynamic content item as the default`,
+        }
+    })
+  ).filter(isDefined)
 }

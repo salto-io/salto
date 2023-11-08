@@ -102,4 +102,20 @@ describe('defaultDynamicContentItemVariantValidator', () => {
     const errors = await defaultDynamicContentItemVariantValidator(changes)
     expect(errors.length).toBe(0)
   })
+  it('should return an error on an addition of dynamic content item without a default variant', async () => {
+    const changes = [
+      toChange({ after: dynamicContentItem }),
+    ]
+    // notDefaultVariant to make sure it doesn't reach the error case
+    setDynamicContentItemVariants([notDefaultVariant])
+    const errors = await defaultDynamicContentItemVariantValidator(changes)
+    expect(errors).toMatchObject([
+      {
+        elemID: dynamicContentItem.elemID,
+        severity: 'Error',
+        message: 'Dynamic content item must have a default variant',
+        detailedMessage: `The dynamic content item '${dynamicContentItem.elemID.name}' must have a default variant. Please ensure that you select a variant of this dynamic content item as the default`,
+      },
+    ])
+  })
 })

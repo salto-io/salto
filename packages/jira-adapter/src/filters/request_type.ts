@@ -90,68 +90,68 @@ const deployRequestTypeLayout = async (
   const requestType = getChangeData(change)
   const { fieldName } = LAYOUT_TYPE_NAME_TO_DETAILS[typeName]
   if (
-    isAdditionChange(change)
-    || (isModificationChange(change)
-      && (
-        !isEqualValues(change.data.before.value[fieldName], change.data.after.value[fieldName])
-        || isRequestTypeDetailsChange(change, fieldName)
+    !isAdditionChange(change)
+    && (!isModificationChange(change)
+      || (
+        isEqualValues(change.data.before.value[fieldName], change.data.after.value[fieldName])
+        && !isRequestTypeDetailsChange(change, fieldName)
       ))
   ) {
-    const layout = requestType.value[fieldName]
-    const items = layout.issueLayoutConfig.items.map((item: layoutConfigItem) => {
-      if (!isResolvedReferenceExpression(item.key)) {
-        log.error(`Failed to deploy request type: ${requestType.elemID.getFullName()}'s ${fieldName} due to bad reference expression`)
-        throw new Error(`Failed to deploy requestType ${fieldName} due to a bad item key: ${item.key}`)
-      }
-      const key = item.key.value.value.id
-      return {
-        type: item.type,
-        sectionType: item.sectionType.toLowerCase(),
-        key,
-        data: {
-          name: item.key.value.value.name,
-          type: item.key.value.value.type ?? item.key.value.value.schema.system,
-        },
-      }
-    }).filter(isDefined)
-
-    const data = {
-      projectId: getParent(requestType).value.id,
-      extraDefinerId: requestType.value.id,
-      issueLayoutType: LAYOUT_TYPE_NAME_TO_DETAILS[typeName].layoutType,
-      owners: [
-        {
-          type: 'REQUEST_TYPE',
-          data: {
-            id: requestType.value.id,
-            name: requestType.value.name,
-            description: requestType.value.description,
-            avatarId: requestType.value.avatarId,
-            instructions: requestType.value.helpText,
-          },
-        },
-      ],
-      issueLayoutConfig: {
-        items,
+    return undefined
+  }
+  const layout = requestType.value[fieldName]
+  const items = layout.issueLayoutConfig.items.map((item: layoutConfigItem) => {
+    if (!isResolvedReferenceExpression(item.key)) {
+      log.error(`Failed to deploy request type: ${requestType.elemID.getFullName()}'s ${fieldName} due to bad reference expression`)
+      throw new Error(`Failed to deploy requestType ${fieldName} due to a bad item key: ${item.key}`)
+    }
+    const key = item.key.value.value.id
+    return {
+      type: item.type,
+      sectionType: item.sectionType.toLowerCase(),
+      key,
+      data: {
+        name: item.key.value.value.name,
+        type: item.key.value.value.type ?? item.key.value.value.schema.system,
       },
     }
-    if (isAdditionChange(change)) {
-      const variables = {
-        projectId: getParent(requestType).value.id,
-        extraDefinerId: requestType.value.id,
-        layoutType: LAYOUT_TYPE_NAME_TO_DETAILS[typeName].layoutType,
-      }
-      const response = await getLayoutResponse({ variables, client, typeName })
-      if (!isIssueLayoutResponse(response.data)) {
-        log.error(`Failed to deploy requestType's ${LAYOUT_TYPE_NAME_TO_DETAILS[typeName].fieldName} due to bad response from jira service`)
-        throw new Error(`Failed to deploy requestType's ${LAYOUT_TYPE_NAME_TO_DETAILS[typeName].fieldName} due to bad response from jira service`)
-      }
-      layout.id = response.data.issueLayoutConfiguration.issueLayoutResult.id
-    }
-    const url = `/rest/internal/1.0/issueLayouts/${layout.id}`
-    await client.put({ url, data })
-  }
+  }).filter(isDefined)
 
+  const data = {
+    projectId: getParent(requestType).value.id,
+    extraDefinerId: requestType.value.id,
+    issueLayoutType: LAYOUT_TYPE_NAME_TO_DETAILS[typeName].layoutType,
+    owners: [
+      {
+        type: 'REQUEST_TYPE',
+        data: {
+          id: requestType.value.id,
+          name: requestType.value.name,
+          description: requestType.value.description,
+          avatarId: requestType.value.avatarId,
+          instructions: requestType.value.helpText,
+        },
+      },
+    ],
+    issueLayoutConfig: {
+      items,
+    },
+  }
+  if (isAdditionChange(change)) {
+    const variables = {
+      projectId: getParent(requestType).value.id,
+      extraDefinerId: requestType.value.id,
+      layoutType: LAYOUT_TYPE_NAME_TO_DETAILS[typeName].layoutType,
+    }
+    const response = await getLayoutResponse({ variables, client, typeName })
+    if (!isIssueLayoutResponse(response.data)) {
+      log.error(`Failed to deploy requestType's ${LAYOUT_TYPE_NAME_TO_DETAILS[typeName].fieldName} due to bad response from jira service`)
+      throw new Error(`Failed to deploy requestType's ${LAYOUT_TYPE_NAME_TO_DETAILS[typeName].fieldName} due to bad response from jira service`)
+    }
+    layout.id = response.data.issueLayoutConfiguration.issueLayoutResult.id
+  }
+  const url = `/rest/internal/1.0/issueLayouts/${layout.id}`
+  await client.put({ url, data })
   return undefined
 }
 

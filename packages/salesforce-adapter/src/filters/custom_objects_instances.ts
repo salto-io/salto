@@ -58,7 +58,6 @@ import {
   isHiddenField,
   isReadOnlyField,
   isCustomObjectSync,
-  SoqlQuery,
 } from './utils'
 import { ConfigChangeSuggestion, DataManagement } from '../types'
 
@@ -103,9 +102,9 @@ const buildQueryStrings = async (
   const fieldNames = await awu(fields)
     .flatMap(getFieldNamesForQuery)
     .toArray()
-  const queryConditions: SoqlQuery[][] = [
-    ...makeArray(ids).map(id => [{ fieldName: 'Id', operator: 'IN' as const, value: `'${id}'` }]),
-    ...(managedBySaltoField !== undefined ? [[{ fieldName: managedBySaltoField, operator: '=' as const, value: 'TRUE' }]] : []),
+  const queryConditions: Record<string, string>[] = [
+    ...makeArray(ids).map(id => ({ Id: `'${id}'` })),
+    ...(managedBySaltoField !== undefined ? [{ [managedBySaltoField]: 'TRUE' }] : []),
   ]
   return buildSelectQueries(typeName, fieldNames, queryConditions)
 }

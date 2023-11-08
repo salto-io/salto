@@ -29,7 +29,7 @@ const getIDToNameMap = async (client: SalesforceClient,
     instances.flatMap(instance => [instance.value.CreatedById, instance.value.LastModifiedById])
   ))
   const queries = conditionQueries(GET_ID_AND_NAMES_OF_USERS_QUERY,
-    instancesIDs.map(id => [{ fieldName: 'Id', operator: 'IN', value: `'${id}'` }]))
+    instancesIDs.map(id => ({ Id: `'${id}'` })))
   const records = await queryClient(client, queries)
   return Object.fromEntries(records.map(record => [record.Id, record.Name]))
 }

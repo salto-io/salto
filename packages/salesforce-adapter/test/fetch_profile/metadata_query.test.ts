@@ -492,6 +492,7 @@ describe('buildMetadataQueryForFetchWithChangesDetection', () => {
         },
       },
       elementsSource,
+      lastChangeDateOfTypesWithNestedInstances: {},
     })
   })
   describe('isFetchWithChangesDetection', () => {
@@ -515,6 +516,7 @@ describe('buildMetadataQueryForFetchWithChangesDetection', () => {
         metadataQuery = await buildMetadataQueryForFetchWithChangesDetection({
           fetchParams: { target: ['CustomObject'] },
           elementsSource: buildElementsSourceFromElements([changedAtSingleton]),
+          lastChangeDateOfTypesWithNestedInstances: {},
         })
       })
       it('should return true', () => {

@@ -120,7 +120,11 @@ describe('Standard Value Sets filter', () => {
   ): Promise<FilterType> => {
     const elementsSource = buildElementsSourceFromElements([svsInstanceFromSource])
     const metadataQuery = isFetchWithChangesDetection
-      ? await buildMetadataQueryForFetchWithChangesDetection({ fetchParams: {}, elementsSource })
+      ? await buildMetadataQueryForFetchWithChangesDetection({
+        fetchParams: {},
+        elementsSource,
+        lastChangeDateOfTypesWithNestedInstances: {},
+      })
       : defaultFilterContext.fetchProfile.metadataQuery
     const fetchProfile = buildFetchProfile({ fetchParams: {}, metadataQuery })
     return makeFilter(

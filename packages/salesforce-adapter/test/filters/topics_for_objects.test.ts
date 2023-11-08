@@ -110,6 +110,7 @@ describe('Topics for objects filter', () => {
         const metadataQuery = await buildMetadataQueryForFetchWithChangesDetection({
           elementsSource,
           fetchParams: {},
+          lastChangeDateOfTypesWithNestedInstances: {},
         })
         filter = filterCreator({ config: {
           ...defaultFilterContext,

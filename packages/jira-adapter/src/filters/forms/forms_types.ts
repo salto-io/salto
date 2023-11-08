@@ -21,7 +21,6 @@ import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { JIRA, FORM_TYPE } from '../../constants'
 
 type DetailedFormDataResponse = {
-    id: number
     uuid: string
     design: {
       settings: {
@@ -56,7 +55,6 @@ export const FORMS_RESPONSE_SCHEME = Joi.object({
 }).unknown(true).required()
 
 export const DETAILED_FORM_RESPONSE_SCHEME = Joi.object({
-  id: Joi.number().required(),
   uuid: Joi.string().required(),
   design: Joi.object({
     settings: Joi.object({

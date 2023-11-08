@@ -49,7 +49,7 @@ const deployForms = async (
         },
       })
       if (!isCreateFormResponse(resp.data)) {
-        return
+        throw new Error('Failed to create form')
       }
       form.value.id = resp.data.id
       form.value.design.settings.templateId = resp.data.id
@@ -125,6 +125,18 @@ const filter: FilterCreator = ({ config, client, getElemIdFunc }) => ({
       .filter(isDefined)
     forms.forEach(form => elements.push(form))
   },
+  preDeploy: async changes => {
+    const fieldNames = ['questions', 'sections', 'conditions']
+    changes
+      .filter(isInstanceChange)
+      .map(change => getChangeData(change))
+      .filter(instance => instance.elemID.typeName === FORM_TYPE)
+      .forEach(instance => {
+        fieldNames.forEach(fieldName => {
+          instance.value.design[fieldName] = instance.value.design[fieldName] ?? {}
+        })
+      })
+  },
   deploy: async changes => {
     if (!config.fetch.enableJSM || !config.fetch.enableJsmExperimental) {
       return {
@@ -144,6 +156,20 @@ const filter: FilterCreator = ({ config, client, getElemIdFunc }) => ({
       leftoverChanges,
       deployResult,
     }
+  },
+  onDeploy: async changes => {
+    const fieldNames = ['questions', 'sections', 'conditions']
+    changes
+      .filter(isInstanceChange)
+      .map(change => getChangeData(change))
+      .filter(instance => instance.elemID.typeName === FORM_TYPE)
+      .forEach(instance => {
+        fieldNames.forEach(fieldName => {
+          if (_.isEmpty(instance.value.design[fieldName])) {
+            delete instance.value.design[fieldName]
+          }
+        })
+      })
   },
 })
 export default filter

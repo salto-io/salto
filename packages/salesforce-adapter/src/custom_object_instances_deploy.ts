@@ -154,7 +154,7 @@ const getRecordsBySaltoIds = async (
     const idFieldsNameToValue = (await Promise.all(
       saltoIdFields.map(field => getFieldNamesToValues(inst, field))
     )).flat()
-    const r = idFieldsNameToValue.map(([fieldName, value]) => ({ fieldName, operator: 'IN' as const, value }))
+    const r = Object.fromEntries(idFieldsNameToValue)
     return r
   }))
 
@@ -168,7 +168,7 @@ const getRecordsBySaltoIds = async (
         (await awu(saltoIdFields).flatMap(getFieldNamesForQuery).toArray())
       )
   )
-  const queries = buildSelectQueries(
+  const queries = await buildSelectQueries(
     await apiName(type),
     fieldsToQuery,
     instanceIdValues,

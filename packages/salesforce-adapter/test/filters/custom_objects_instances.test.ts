@@ -37,7 +37,7 @@ import {
   isDataManagementConfigSuggestions,
   SaltoAliasSettings,
 } from '../../src/types'
-import { buildSelectQueries, getFieldNamesForQuery, QueryOperator, SoqlQuery } from '../../src/filters/utils'
+import { buildSelectQueries, getFieldNamesForQuery } from '../../src/filters/utils'
 import { FilterResult } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
@@ -59,6 +59,7 @@ import {
 import { Types } from '../../src/transformers/transformer'
 import {
   buildFetchProfile,
+
 } from '../../src/fetch_profile/fetch_profile'
 import {
   defaultFilterContext,
@@ -1852,22 +1853,22 @@ describe('buildSelectQueries', () => {
     let queries: string[]
     beforeEach(async () => {
       const fieldNames = await awu(Object.values(customObject.fields)).flatMap(getFieldNamesForQuery).toArray()
-      queries = buildSelectQueries('Test', fieldNames)
+      queries = await buildSelectQueries('Test', fieldNames)
     })
     it('should create a select query on the specified fields', () => {
       expect(queries).toHaveLength(1)
       expect(queries[0]).toEqual('SELECT Id,Name,TestField FROM Test')
     })
   })
-  describe('with exact conditions', () => {
+  describe('with conditions', () => {
     describe('with short query', () => {
       let queries: string[]
       beforeEach(async () => {
         const fieldNames = await awu([customObject.fields.Id]).flatMap(getFieldNamesForQuery).toArray()
-        queries = buildSelectQueries(
+        queries = await buildSelectQueries(
           'Test',
           fieldNames,
-          _.range(0, 2).map(idx => ([[{ fieldName: 'Id', operator: 'IN' as const, value: `'id${idx}'` }], [{ fieldName: 'Name', operator: 'IN' as const, value: `'name${idx}'` }]])).flat(),
+          _.range(0, 2).map(idx => ({ Id: `'id${idx}'`, Name: `'name${idx}'` })),
         )
       })
       it('should create query with WHERE clause', () => {
@@ -1879,10 +1880,10 @@ describe('buildSelectQueries', () => {
       let queries: string[]
       beforeEach(async () => {
         const fieldNames = await awu([customObject.fields.Id]).flatMap(getFieldNamesForQuery).toArray()
-        queries = buildSelectQueries(
+        queries = await buildSelectQueries(
           'Test',
           fieldNames,
-          _.range(0, 4).map(idx => ([[{ fieldName: 'Id', operator: 'IN' as const, value: `'id${idx}'` }], [{ fieldName: 'Name', operator: 'IN' as const, value: `'name${idx}'` }]])).flat(),
+          _.range(0, 4).map(idx => ({ Id: `'id${idx}'`, Name: `'name${idx}'` })),
           80,
         )
       })
@@ -1892,71 +1893,6 @@ describe('buildSelectQueries', () => {
         expect(_.max(queryLengths)).toBeLessThanOrEqual(80)
         expect(queries[0]).toEqual("SELECT Id FROM Test WHERE Id IN ('id0','id1') AND Name IN ('name0','name1')")
         expect(queries[1]).toEqual("SELECT Id FROM Test WHERE Id IN ('id2','id3') AND Name IN ('name2','name3')")
-      })
-    })
-  })
-  describe('with limiting conditions', () => {
-    let queries: string[]
-    const limitIdTo = (operator: QueryOperator, operand: string): SoqlQuery => ({
-      fieldName: 'Id',
-      operator,
-      value: operand,
-    })
-    describe('with no exact conditions', () => {
-      beforeEach(async () => {
-        const fieldNames = ['Id']
-        queries = buildSelectQueries('Test', fieldNames, [[limitIdTo('>', '7')]])
-      })
-      it('should create a single valid query', () => {
-        expect(queries).toEqual([
-          'SELECT Id FROM Test WHERE Id > 7',
-        ])
-      })
-    })
-    describe('with exact conditions', () => {
-      beforeEach(async () => {
-        const fieldNames = ['Id']
-        queries = buildSelectQueries('Test', fieldNames, [[{ fieldName: 'Id', operator: 'IN', value: "'8'" }], [limitIdTo('>', '7')]])
-      })
-      it('should create a single valid query that ends with the complex query', () => {
-        expect(queries).toEqual([
-          "SELECT Id FROM Test WHERE Id IN ('8') AND Id > 7",
-        ])
-      })
-    })
-    describe('with exact conditions that are too long for a single query', () => {
-      beforeEach(async () => {
-        const fieldNames = ['Id']
-        queries = buildSelectQueries('Test', fieldNames, [[{ fieldName: 'Id', operator: 'IN', value: "'8'" }], [{ fieldName: 'Id', operator: 'IN', value: "'9'" }], [limitIdTo('>', '7')]], 45)
-      })
-      it('should create multiple valid queries that end with the complex query', () => {
-        expect(queries).toEqual([
-          "SELECT Id FROM Test WHERE Id IN ('8') AND Id > 7",
-          "SELECT Id FROM Test WHERE Id IN ('9') AND Id > 7",
-        ])
-      })
-    })
-    describe('with multiple complex conditions', () => {
-      beforeEach(async () => {
-        const fieldNames = ['Id']
-        queries = buildSelectQueries('Test', fieldNames, [[{ fieldName: 'Id', operator: 'IN', value: "'8'" }], [limitIdTo('>', '7'), limitIdTo('<', '10')]])
-      })
-      it('should create a single valid query that ends with the complex query', () => {
-        expect(queries).toEqual([
-          "SELECT Id FROM Test WHERE Id IN ('8') AND Id > 7 AND Id < 10",
-        ])
-      })
-    })
-    describe('with a exact conditions that is too long for a single query and multiple complex conditions', () => {
-      beforeEach(async () => {
-        const fieldNames = ['Id']
-        queries = buildSelectQueries('Test', fieldNames, [[{ fieldName: 'Id', operator: 'IN', value: "'8'" }], [{ fieldName: 'Id', operator: 'IN', value: "'9'" }], [limitIdTo('>', '7'), limitIdTo('<', '10')]], 60)
-      })
-      it('should create multiple valid queries that end with the entire complex query', () => {
-        expect(queries).toEqual([
-          "SELECT Id FROM Test WHERE Id IN ('8') AND Id > 7 AND Id < 10",
-          "SELECT Id FROM Test WHERE Id IN ('9') AND Id > 7 AND Id < 10",
-        ])
       })
     })
   })

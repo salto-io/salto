@@ -622,7 +622,7 @@ const removeDuplicateFileProps = (files: FileProperties[]): FileProperties[] => 
     uniques,
   } = splitDuplicates(files, fileProps => `${fileProps.namespacePrefix}__${fileProps.fullName}`)
   duplicates.forEach(props => {
-    log.warn('Found duplicate file props with the same name in response to listMetadataObjects: %o', props)
+    log.debug('Found duplicate file props with the same name in response to listMetadataObjects: %o', props)
   })
   return uniques.concat(duplicates.map(props => props[0]))
 }

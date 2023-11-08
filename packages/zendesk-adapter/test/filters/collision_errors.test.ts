@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { createFilterCreatorParams } from '../utils'
 import { ZENDESK } from '../../src/constants'
@@ -27,6 +27,20 @@ describe('collision errors', () => {
   const inst = new InstanceElement('inst1', objType, { name: 'test', position: 1 })
   const collidedInst = new InstanceElement('inst1', objType, { name: 'test', position: 2 })
   const differentInst = new InstanceElement('inst2', objType, { name: 'test2', position: 3 })
+  const childInst1 = new InstanceElement(
+    'childInst1',
+    objType,
+    { name: 'childInst1', position: 2 },
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(inst.elemID, inst) }
+  )
+  const collidingChildInst1 = new InstanceElement(
+    'childInst1',
+    objType,
+    { name: 'childInst1', position: 2 },
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(inst.elemID, inst) }
+  )
 
   beforeEach(async () => {
     jest.clearAllMocks()
@@ -61,6 +75,24 @@ Learn more at: https://help.salto.io/en/articles/6927157-salto-id-collisions`,
       const elements = [inst, differentInst]
       const filterResult = await filter.onFetch(elements) as FilterResult
       expect(filterResult.errors).toHaveLength(0)
+    })
+    it('should remove child element on collision', async () => {
+      const elements = [inst, collidedInst, differentInst, childInst1]
+      const filterResult = await filter.onFetch(elements) as FilterResult
+      expect(filterResult.errors).toHaveLength(1)
+      expect(elements).toEqual([inst, collidedInst, differentInst])
+    })
+    it('should not remove child element if it has a collision itself', async () => {
+      const elements = [inst, collidedInst, differentInst, childInst1, collidingChildInst1]
+      const filterResult = await filter.onFetch(elements) as FilterResult
+      expect(filterResult.errors).toHaveLength(1)
+      expect(elements).toEqual([inst, collidedInst, differentInst, childInst1, collidingChildInst1])
+    })
+    it('should not remove child element if the parent has no collision', async () => {
+      const elements = [inst, differentInst, childInst1]
+      const filterResult = await filter.onFetch(elements) as FilterResult
+      expect(filterResult.errors).toHaveLength(0)
+      expect(elements).toEqual([inst, differentInst, childInst1])
     })
   })
 })

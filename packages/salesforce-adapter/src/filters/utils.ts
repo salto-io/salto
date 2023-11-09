@@ -426,23 +426,42 @@ export const extractFlatCustomObjectFields = async (elem: Element): Promise<Elem
     : [elem]
 )
 
-export const getWhereConditions = (
-  conditionSets: Record<string, string>[],
-  maxLen: number
+export type QueryOperator = '>' | '<' | '=' | 'IN' // 'IN' is for values that can be split across multiple queries
+export type SoqlQuery = {
+  fieldName: string
+  operator: QueryOperator
+  value: string
+}
+
+const getWhereConditions = (
+  exactConditionSets: Record<string, string>[],
+  limitingConditionSets: ReadonlyArray<SoqlQuery>,
+  maxLen: number,
 ): string[] => {
-  const keys = _.uniq(conditionSets.flatMap(Object.keys))
+  const keys = _.uniq(exactConditionSets.flatMap(Object.keys))
   const constConditionPartLen = (
     _.sumBy(keys, key => `${key} IN ()`.length)
     + (' AND '.length * (keys.length - 1))
   )
 
+  const complexConditionQuery = limitingConditionSets
+    .map(({ fieldName, operator, value }) => `${fieldName} ${operator} ${value}`)
+    .join(' AND ')
+  const complexConditionsLength = complexConditionQuery.length
+    + ((Object.keys(exactConditionSets).length > 0 && complexConditionQuery.length > 0) ? ' AND '.length : 0)
+
+  if (complexConditionsLength > maxLen) {
+    log.error('Conditions other than `IN` need to be included in every query - they can`t be broken down so they can`t be longer than the maximum query length. getWhereConditions params: %o', { exactConditionSets, limitingConditionSets, maxLen })
+    throw new Error('SOQL query too long')
+  }
+
   const conditionChunks = weightedChunks(
-    conditionSets,
+    exactConditionSets,
     maxLen - constConditionPartLen,
     // Note - this calculates the condition length as if all values are added to the query.
     // the actual query might end up being shorter if some of the values are not unique.
     // this can be optimized in the future if needed
-    condition => _.sumBy(Object.values(condition), val => `${val},`.length),
+    condition => _.sumBy(Object.values(condition), val => `${val},`.length) + complexConditionsLength,
   )
   const r = conditionChunks.map(conditionChunk => {
     const conditionsByKey = _.groupBy(
@@ -455,13 +474,34 @@ export const getWhereConditions = (
       ))
       .join(' AND ')
   })
-  return r
+  if (r.length === 0) {
+    return [complexConditionQuery]
+  }
+  return r.map(queryChunk => `${queryChunk}${(queryChunk.length > 0 && limitingConditionSets.length > 0) ? ' AND ' : ''}${complexConditionQuery}`)
 }
 
-export const conditionQueries = (query: string, conditionSets: Record<string,
-  string>[], maxQueryLen = MAX_QUERY_LENGTH): string[] => {
+export const conditionQueries = (
+  query: string,
+  conditionSets: ReadonlyArray<ReadonlyArray<SoqlQuery>>,
+  maxQueryLen = MAX_QUERY_LENGTH,
+): string[] => {
+  if (conditionSets.length === 0) {
+    return [query]
+  }
+  const exactConditionSets = conditionSets
+    .map(conditions => conditions
+      .filter(condition => condition.operator === 'IN')
+      .map(condition => [condition.fieldName, condition.value]))
+    .filter(conditions => conditions.length > 0)
+    .map(Object.fromEntries)
+  const limitingConditionSets = conditionSets
+    .flatMap(conditions => conditions.filter(condition => condition.operator !== 'IN'))
   const selectWhereStr = `${query} WHERE `
-  const whereConditions = getWhereConditions(conditionSets, maxQueryLen - selectWhereStr.length)
+  const whereConditions = getWhereConditions(
+    exactConditionSets,
+    limitingConditionSets,
+    maxQueryLen - selectWhereStr.length
+  )
   return whereConditions.map(whereCondition => `${selectWhereStr}${whereCondition}`)
 }
 
@@ -477,19 +517,19 @@ export const getFieldNamesForQuery = async (field: Field): Promise<string[]> => 
  *
  * @param typeName The name of the table to query from
  * @param fields The names of the fields to query
- * @param conditionSets Each entry specifies field values used to match a specific record
+ * @param conditionSets Each entry specifies a field name, an operator and an operand to limit the returned records.
  * @param maxQueryLen returned queries will be split such that no single query exceeds this length
  */
-export const buildSelectQueries = async (
+export const buildSelectQueries = (
   typeName: string,
   fields: string[],
-  conditionSets?: Record<string, string>[],
+  conditionSets: ReadonlyArray<ReadonlyArray<SoqlQuery>> = [],
   maxQueryLen = MAX_QUERY_LENGTH,
-): Promise<string[]> => {
+): string[] => {
   const fieldsNameQuery = fields.join(',')
   const selectStr = `SELECT ${fieldsNameQuery} FROM ${typeName}`
-  if (conditionSets === undefined || conditionSets.length === 0) {
-    return [selectStr]
+  if (selectStr.length > maxQueryLen) {
+    throw new Error('Max query length is too short for the SELECT clause')
   }
   return conditionQueries(selectStr, conditionSets, maxQueryLen)
 }

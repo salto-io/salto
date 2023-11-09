@@ -119,10 +119,10 @@ export const getAndLogCollisionWarnings = async ({
   await logInstancesWithCollidingElemID(typeToElemIDtoInstances)
   return Promise.all(Object.entries(typeToElemIDtoInstances)
     .map(async ([type, elemIDtoInstances]) => {
-      const childMessage = addChildrenMessage === true ? 'and all their child instances' : ''
+      const childMessage = addChildrenMessage === true ? 'and all their child instances ' : ''
       const numInstances = Object.values(elemIDtoInstances)
         .flat().length
-      const header = `Omitted ${numInstances} instances ${childMessage} of ${type} due to Salto ID collisions.
+      const header = `Omitted ${numInstances} instances ${childMessage}of ${type} due to Salto ID collisions.
 Current Salto ID configuration for ${type} is defined as [${getIdFieldsByType(type).join(', ')}].`
 
       const collisionsHeader = 'Breakdown per colliding Salto ID:'

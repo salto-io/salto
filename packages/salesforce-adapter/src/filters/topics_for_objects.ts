@@ -85,6 +85,8 @@ type SetTopicsForObjectsForFetchWithChangesDetectionParams = {
   elementsSource: ReadOnlyElementsSource
 }
 
+// In fetch with changes detection mode we won't have the TopicsForObjects instances that
+// were not updated from the previous fetch, hence we need the current value from the Elements Source.
 const setTopicsForObjectsForFetchWithChangesDetection = async ({
   customObjects, isTopicsEnabledByType, elementsSource,
 }: SetTopicsForObjectsForFetchWithChangesDetectionParams): Promise<void> => {
@@ -99,7 +101,7 @@ const setTopicsForObjectsForFetchWithChangesDetection = async ({
   })
   customObjects.forEach(customObject => {
     const typeApiName = apiNameSync(customObject) ?? 'unknown'
-    const isTopicsEnabled = isTopicsEnabledByType[typeApiName]
+    const isTopicsEnabled = isTopicsEnabledByType[typeApiName] !== undefined
       ? isTopicsEnabledByType[typeApiName]
       : isTopicsEnabledForObjectFromSource.get(typeApiName)
     if (isTopicsEnabled === undefined) {

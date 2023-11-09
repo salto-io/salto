@@ -263,6 +263,15 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       change => [MACRO_ATTACHMENT_TYPE_NAME, MACRO_TYPE_NAME]
         .includes(getChangeData(change).elemID.typeName),
     )
+    if (relevantChanges.length === 0) {
+      return {
+        leftoverChanges: changes,
+        deployResult: {
+          errors: [],
+          appliedChanges: [],
+        },
+      }
+    }
     const [childrenChanges, parentChanges] = _.partition(
       relevantChanges,
       change => getChangeData(change).elemID.typeName === MACRO_ATTACHMENT_TYPE_NAME

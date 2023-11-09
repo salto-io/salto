@@ -16,7 +16,15 @@
 import _ from 'lodash'
 import { collections, values, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { InstanceElement, ObjectType, Element, Field, CORE_ANNOTATIONS, SaltoError } from '@salto-io/adapter-api'
+import {
+  InstanceElement,
+  ObjectType,
+  Element,
+  Field,
+  CORE_ANNOTATIONS,
+  SaltoError,
+  isInstanceElement,
+} from '@salto-io/adapter-api'
 import { pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import {
   createInvlidIdFieldConfigChange, createManyInstancesExcludeConfigChange,
@@ -39,13 +47,17 @@ import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField }
 import {
   getNamespace,
   isMasterDetailField,
-  isLookupField,
+  isReferenceField,
+  referenceFieldTargetTypes,
   queryClient,
   buildSelectQueries,
   getFieldNamesForQuery,
   safeApiName,
-  isQueryableField,
   apiNameSync,
+  isQueryableField,
+  isHiddenField,
+  isReadOnlyField,
+  isCustomObjectSync,
 } from './utils'
 import { ConfigChangeSuggestion, DataManagement } from '../types'
 
@@ -76,13 +88,6 @@ export type CustomObjectFetchSetting = {
 const defaultRecordKeysToOmit = ['attributes']
 const nameSeparator = '___'
 const aliasSeparator = ' '
-
-const isReferenceField = (field: Field): boolean => (
-  isMasterDetailField(field) || isLookupField(field)
-)
-
-const getReferenceTo = (field: Field): string[] =>
-  makeArray(field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]) as string[]
 
 const getQueryableFields = (object: ObjectType): Field[] => (
   Object.values(object.fields).filter(isQueryableField)
@@ -251,7 +256,7 @@ const typesRecordsToInstances = async (
       if (!isReferenceField(field)) {
         return fieldValue.toString()
       }
-      const referencedTypeNames = getReferenceTo(field)
+      const referencedTypeNames = referenceFieldTargetTypes(field)
       const referencedName = await awu(referencedTypeNames).map(referencedTypeName => {
         const rec = recordByIdAndType[referencedTypeName]?.[fieldValue]
         if (rec === undefined) {
@@ -291,7 +296,7 @@ const typesRecordsToInstances = async (
       if (!isReferenceField(field)) {
         return fieldValue.toString()
       }
-      const referencedTypeNames = getReferenceTo(field)
+      const referencedTypeNames = referenceFieldTargetTypes(field)
       return awu(referencedTypeNames).map(referencedTypeName => {
         const rec = recordByIdAndType[referencedTypeName]?.[fieldValue]
         if (rec === undefined) {
@@ -346,7 +351,7 @@ const getTargetRecordIds = (
       .filter(isReferenceField)
       .map(field => [
         field.name,
-        getReferenceTo(field).filter(typeName => allowedRefToTypeNames.includes(typeName)),
+        referenceFieldTargetTypes(field).filter(typeName => allowedRefToTypeNames.includes(typeName)),
       ])
   )
   return records.flatMap(record =>
@@ -538,6 +543,15 @@ const filterTypesWithManyInstances = async (
   }
 }
 
+const getInaccessibleCustomFields = (objectType: ObjectType): string[] => (
+  Object.values(objectType.fields)
+    .filter(field => !isQueryableField(field))
+    // these fields are either hidden or will end up being hidden
+    .filter(field => !isHiddenField(field) && !isReadOnlyField(field))
+    .map(field => apiNameSync(field))
+    .filter(isDefined)
+)
+
 const createInvalidAliasFieldFetchWarning = async (
   { objectType, invalidAliasFields }: CustomObjectFetchSetting
 ): Promise<SaltoError> => ({
@@ -550,6 +564,14 @@ const createInvalidManagedBySaltoFieldFetchWarning = async (
 ): Promise<SaltoError> => ({
   message: `The field ${await apiName(objectType)}${API_NAME_SEPARATOR}${invalidManagedBySaltoField} is configured as the filter field in the saltoManagementFieldSettings.defaultFieldName section of the Salto environment configuration. However, the user configured for fetch does not have read access to this field. Records of type ${await apiName(objectType)} will not be fetched.`,
   severity: 'Warning',
+})
+
+const createInaccessibleFieldsFetchWarning = (
+  objectType: ObjectType,
+  inaccessibleFields: string[],
+): SaltoError => ({
+  message: `There are ${inaccessibleFields.length} fields in the ${apiNameSync(objectType)} object that the fetch user does not have access to. These are the fields: ${inaccessibleFields.join(',')}. If ${apiNameSync(objectType)} records are deployed from this environment, values of these fields will appear as deletions.`,
+  severity: 'Info',
 })
 
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
@@ -605,6 +627,25 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       .filter(setting => setting.invalidManagedBySaltoField !== undefined)
       .map(createInvalidManagedBySaltoFieldFetchWarning)
 
+    const typesOfFetchedInstances = new Set(
+      elements
+        .filter(isInstanceElement)
+        .map(instance => instance.getTypeSync())
+        .filter(isCustomObjectSync) // we don't deploy metadata objects, so no reason to warn about them.
+    )
+
+    let invalidPermissionsWarnings: SaltoError[] = []
+
+    if (config.fetchProfile.isWarningEnabled('nonQueryableFields') ?? false) {
+      invalidPermissionsWarnings = customObjectFetchSetting
+        .map(fetchSettings => fetchSettings.objectType)
+        .filter(isCustomObjectSync)
+        .map(objectType => ({ type: objectType, fields: getInaccessibleCustomFields(objectType) }))
+        .filter(({ fields }) => fields.length > 0)
+        .filter(({ type }) => typesOfFetchedInstances.has(type))
+        .map(({ type, fields }) => createInaccessibleFieldsFetchWarning(type, fields))
+    }
+
     return {
       configSuggestions: [
         ...invalidFieldSuggestions,
@@ -613,6 +654,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       ],
       errors: await invalidAliasFieldWarnings
         .concat(invalidManagedBySaltoFieldWarnings)
+        .concat(invalidPermissionsWarnings)
         .toArray(),
     }
   },

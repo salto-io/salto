@@ -15,11 +15,11 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { Change, createSaltoElementError, getChangeData, InstanceElement, isInstanceChange, SaltoError } from '@salto-io/adapter-api'
+import { Change, createSaltoElementError, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, SaltoError } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 import { CLIENT_CONFIG } from '../config'
-import { deployChanges } from '../deployment'
+import { assignServiceIdToAdditionChange, deployChanges } from '../deployment'
 
 const log = logger(module)
 
@@ -67,11 +67,14 @@ const filterCreator: FilterCreator = ({ adminClient, config }) => ({
     const deployResult = await deployChanges(
       relevantChanges.filter(isInstanceChange),
       async change => {
-        await deployment.deployChange({
+        const response = await deployment.deployChange({
           change,
           client: adminClient,
           endpointDetails: privateApiDefinitions.types[getChangeData(change).elemID.typeName]?.deployRequests,
         })
+        if (isAdditionChange(change)) {
+          assignServiceIdToAdditionChange(response, change, privateApiDefinitions)
+        }
       }
     )
     return { deployResult, leftoverChanges }

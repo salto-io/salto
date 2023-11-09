@@ -189,7 +189,7 @@ describe('appDeploymentFilter', () => {
       )
       expect(mockConnection.delete).toHaveBeenCalledTimes(1)
       expect(mockConnection.delete).toHaveBeenCalledWith(
-        '/api/v1/apps/appId/groups/group1', {}, undefined
+        '/api/v1/apps/appId/groups/group1', { data: {} }
       )
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       const createdApp = res.deployResult.appliedChanges

@@ -58,6 +58,7 @@ const filter: FilterCreator = ({ config }) => ({
       } else {
         requestType.value.issueView = layout.value
       }
+      requestType.value.avatarId = requestType.value.icon.id
     })
   },
 })

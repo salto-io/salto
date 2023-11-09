@@ -115,6 +115,54 @@ describe('deployChange', () => {
       },
     })
   })
+  it('should omit request body when deploy request config contains omitRequestBody=true', async () => {
+    httpClient.delete.mockResolvedValue({
+      status: 200,
+      data: {},
+    })
+    instance.value.id = '1'
+    await deployChange({
+      change: toChange({ before: instance }),
+      client: httpClient,
+      endpointDetails: {
+        remove: {
+          url: '/test/endpoint/{instanceId}',
+          method: 'delete',
+          urlParamsToFields: {
+            instanceId: 'id',
+          },
+          omitRequestBody: true,
+        },
+      },
+    })
+    expect(httpClient.delete).toHaveBeenCalledWith({ url: '/test/endpoint/1', data: undefined, queryParams: undefined })
+  })
+  it('should include request body when deploy request config contains omitRequestBody=false', async () => {
+    httpClient.delete.mockResolvedValue({
+      status: 200,
+      data: {},
+    })
+    instance.value.id = '1'
+    await deployChange({
+      change: toChange({ before: instance }),
+      client: httpClient,
+      endpointDetails: {
+        remove: {
+          url: '/test/endpoint/{instanceId}',
+          method: 'delete',
+          urlParamsToFields: {
+            instanceId: 'id',
+          },
+          omitRequestBody: false,
+        },
+      },
+    })
+    expect(httpClient.delete).toHaveBeenCalledWith({
+      url: '/test/endpoint/1',
+      data: { id: '1', creatableField: 'creatableValue', ignored: 'ignored' },
+      queryParams: undefined,
+    })
+  })
 })
 
 describe('filterUndeployableValues', () => {

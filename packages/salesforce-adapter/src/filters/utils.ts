@@ -69,7 +69,6 @@ import {
   KEY_PREFIX,
   LABEL,
   LAYOUT_TYPE_ID_METADATA_TYPE,
-  MAX_QUERY_LENGTH,
   METADATA_TYPE,
   NAMESPACE_SEPARATOR,
   PLURAL_LABEL,
@@ -99,6 +98,20 @@ const { makeArray } = collections.array
 const { weightedChunks } = chunks
 const { isDefined } = values
 const log = logger(module)
+
+// ref. https://developer.salesforce.com/docs/atlas.en-us.salesforce_app_limits_cheatsheet.meta/salesforce_app_limits_cheatsheet/salesforce_app_limits_platform_soslsoql.htm
+export const MAX_SOQL_QUERY_LENGTH = 100000
+export const MAX_SOQL_WHERE_CLAUSE_LENGTH = 2000
+
+export type SoqlQueryLimits = {
+  maxQueryLength: number
+  maxWhereClauseLength: number
+}
+
+const DefaultSoqlQueryLimits: SoqlQueryLimits = {
+  maxQueryLength: MAX_SOQL_QUERY_LENGTH,
+  maxWhereClauseLength: MAX_SOQL_WHERE_CLAUSE_LENGTH,
+}
 
 const METADATA_VALUES_SCHEME = Joi.object({
   [INSTANCE_FULL_NAME_FIELD]: Joi.string().required(),
@@ -483,7 +496,7 @@ const getWhereConditions = (
 export const conditionQueries = (
   query: string,
   conditionSets: ReadonlyArray<ReadonlyArray<SoqlQuery>>,
-  maxQueryLen = MAX_QUERY_LENGTH,
+  queryLimits = DefaultSoqlQueryLimits,
 ): string[] => {
   if (conditionSets.length === 0) {
     return [query]
@@ -500,7 +513,7 @@ export const conditionQueries = (
   const whereConditions = getWhereConditions(
     exactConditionSets,
     limitingConditionSets,
-    maxQueryLen - selectWhereStr.length
+    Math.min(queryLimits.maxWhereClauseLength, queryLimits.maxQueryLength - selectWhereStr.length),
   )
   return whereConditions.map(whereCondition => `${selectWhereStr}${whereCondition}`)
 }
@@ -518,20 +531,20 @@ export const getFieldNamesForQuery = async (field: Field): Promise<string[]> => 
  * @param typeName The name of the table to query from
  * @param fields The names of the fields to query
  * @param conditionSets Each entry specifies a field name, an operator and an operand to limit the returned records.
- * @param maxQueryLen returned queries will be split such that no single query exceeds this length
+ * @param queryLimits Length limits on the generated queries
  */
 export const buildSelectQueries = (
   typeName: string,
   fields: string[],
   conditionSets: ReadonlyArray<ReadonlyArray<SoqlQuery>> = [],
-  maxQueryLen = MAX_QUERY_LENGTH,
+  queryLimits = DefaultSoqlQueryLimits,
 ): string[] => {
   const fieldsNameQuery = fields.join(',')
   const selectStr = `SELECT ${fieldsNameQuery} FROM ${typeName}`
-  if (selectStr.length > maxQueryLen) {
+  if (selectStr.length > MAX_SOQL_QUERY_LENGTH) {
     throw new Error('Max query length is too short for the SELECT clause')
   }
-  return conditionQueries(selectStr, conditionSets, maxQueryLen)
+  return conditionQueries(selectStr, conditionSets, queryLimits)
 }
 
 export const queryClient = async (client: SalesforceClient,

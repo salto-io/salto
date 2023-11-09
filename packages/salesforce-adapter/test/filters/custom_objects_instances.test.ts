@@ -37,7 +37,10 @@ import {
   isDataManagementConfigSuggestions,
   SaltoAliasSettings,
 } from '../../src/types'
-import { buildSelectQueries, getFieldNamesForQuery, QueryOperator, SoqlQuery } from '../../src/filters/utils'
+import {
+  buildSelectQueries, getFieldNamesForQuery, QueryOperator,
+  SoqlQuery, SoqlQueryLimits,
+} from '../../src/filters/utils'
 import { FilterResult } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
@@ -1879,11 +1882,15 @@ describe('buildSelectQueries', () => {
       let queries: string[]
       beforeEach(async () => {
         const fieldNames = await awu([customObject.fields.Id]).flatMap(getFieldNamesForQuery).toArray()
+        const queryLimits: SoqlQueryLimits = {
+          maxQueryLength: 80,
+          maxWhereClauseLength: 55,
+        }
         queries = buildSelectQueries(
           'Test',
           fieldNames,
           _.range(0, 4).map(idx => ([[{ fieldName: 'Id', operator: 'IN' as const, value: `'id${idx}'` }], [{ fieldName: 'Name', operator: 'IN' as const, value: `'name${idx}'` }]])).flat(),
-          80,
+          queryLimits,
         )
       })
       it('should create queries that do not exceed query length', () => {
@@ -1927,7 +1934,16 @@ describe('buildSelectQueries', () => {
     describe('with exact conditions that are too long for a single query', () => {
       beforeEach(async () => {
         const fieldNames = ['Id']
-        queries = buildSelectQueries('Test', fieldNames, [[{ fieldName: 'Id', operator: 'IN', value: "'8'" }], [{ fieldName: 'Id', operator: 'IN', value: "'9'" }], [limitIdTo('>', '7')]], 45)
+        const queryLimits: SoqlQueryLimits = {
+          maxQueryLength: 45,
+          maxWhereClauseLength: 15,
+        }
+        queries = buildSelectQueries(
+          'Test',
+          fieldNames,
+          [[{ fieldName: 'Id', operator: 'IN', value: "'8'" }], [{ fieldName: 'Id', operator: 'IN', value: "'9'" }], [limitIdTo('>', '7')]],
+          queryLimits,
+        )
       })
       it('should create multiple valid queries that end with the complex query', () => {
         expect(queries).toEqual([
@@ -1950,7 +1966,16 @@ describe('buildSelectQueries', () => {
     describe('with a exact conditions that is too long for a single query and multiple complex conditions', () => {
       beforeEach(async () => {
         const fieldNames = ['Id']
-        queries = buildSelectQueries('Test', fieldNames, [[{ fieldName: 'Id', operator: 'IN', value: "'8'" }], [{ fieldName: 'Id', operator: 'IN', value: "'9'" }], [limitIdTo('>', '7'), limitIdTo('<', '10')]], 60)
+        const queryLimits: SoqlQueryLimits = {
+          maxQueryLength: 55,
+          maxWhereClauseLength: 35,
+        }
+        queries = buildSelectQueries(
+          'Test',
+          fieldNames,
+          [[{ fieldName: 'Id', operator: 'IN', value: "'8'" }], [{ fieldName: 'Id', operator: 'IN', value: "'9'" }], [limitIdTo('>', '7'), limitIdTo('<', '10')]],
+          queryLimits,
+        )
       })
       it('should create multiple valid queries that end with the entire complex query', () => {
         expect(queries).toEqual([

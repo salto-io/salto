@@ -101,7 +101,7 @@ const setTopicsForObjectsForFetchWithChangesDetection = async ({
   })
   customObjects.forEach(customObject => {
     const typeApiName = apiNameSync(customObject) ?? 'unknown'
-    const isTopicsEnabled = isTopicsEnabledByType[typeApiName]
+    const isTopicsEnabled = isTopicsEnabledByType[typeApiName] !== undefined
       ? isTopicsEnabledByType[typeApiName]
       : isTopicsEnabledForObjectFromSource.get(typeApiName)
     if (isTopicsEnabled === undefined) {

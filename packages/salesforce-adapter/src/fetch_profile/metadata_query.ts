@@ -194,6 +194,9 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
 ): Promise<MetadataQuery> => {
   const { elementsSource, lastChangeDateOfTypesWithNestedInstances } = params
   const changedAtSingleton = await getChangedAtSingleton(elementsSource)
+  if (changedAtSingleton === undefined) {
+    throw new Error('First fetch does not support changes detection')
+  }
   const metadataQuery = buildMetadataQuery(params)
   const getInstanceChangedAt = ({ metadataType, name, changedAt }: MetadataInstance): string | undefined => {
     if (metadataType === CUSTOM_OBJECT) {

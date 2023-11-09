@@ -495,6 +495,29 @@ describe('buildMetadataQueryForFetchWithChangesDetection', () => {
       lastChangeDateOfTypesWithNestedInstances: {},
     })
   })
+
+  describe('when is first fetch', () => {
+    it('should throw Error', async () => {
+      await expect(buildMetadataQueryForFetchWithChangesDetection({
+        fetchParams: {
+          metadata: {
+            include: [
+              {
+                metadataType: '.*',
+              },
+            ],
+            exclude: [
+              { metadataType: 'CustomLabels' },
+            ],
+          },
+        },
+        // In first fetch, the ChangedAtSingleton won't be defined
+        elementsSource: buildElementsSourceFromElements([]),
+        lastChangeDateOfTypesWithNestedInstances: {},
+      })).rejects.toThrow()
+    })
+  })
+
   describe('isFetchWithChangesDetection', () => {
     it('should return true', () => {
       expect(metadataQuery.isFetchWithChangesDetection()).toBeTrue()

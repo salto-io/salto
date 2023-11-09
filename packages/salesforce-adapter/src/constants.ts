@@ -382,6 +382,12 @@ export const DATA_CATEGORY_GROUP_METADATA_TYPE = 'DataCategoryGroup'
 export const CUSTOM_APPLICATION_METADATA_TYPE = 'CustomApplication'
 export const APEX_CLASS_METADATA_TYPE = 'ApexClass'
 export const APEX_PAGE_METADATA_TYPE = 'ApexPage'
+export const ASSIGNMENT_RULE_METADATA_TYPE = 'AssignmentRule'
+export const AUTO_RESPONSE_RULES_METADATA_TYPE = 'AutoResponseRules'
+export const AUTO_RESPONSE_RULE_METADATA_TYPE = 'AutoResponseRule'
+export const SHARING_RULE_METADATA_TYPE = 'SharingRuleMetadataType'
+export const ESCALATION_RULES_TYPE = 'EscalationRules'
+export const ESCALATION_RULE_TYPE = 'EscalationRule'
 
 // Artificial Types
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'

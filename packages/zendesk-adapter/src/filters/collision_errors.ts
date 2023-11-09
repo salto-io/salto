@@ -61,6 +61,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
       ).idFields,
       idFieldsName: 'idFields',
       docsUrl: 'https://help.salto.io/en/articles/6927157-salto-id-collisions',
+      addChildrenMessage: true,
     })
     return { errors: collisionWarnings }
   },

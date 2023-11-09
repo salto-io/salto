@@ -100,6 +100,7 @@ export const getAndLogCollisionWarnings = async ({
   maxBreakdownDetailsElements = MAX_BREAKDOWN_DETAILS_ELEMENTS,
   baseUrl,
   docsUrl,
+  addChildrenMessage,
 }: {
   instances: InstanceElement[]
   getTypeName: (instance: InstanceElement) => Promise<string>
@@ -112,14 +113,16 @@ export const getAndLogCollisionWarnings = async ({
   maxBreakdownDetailsElements?: number
   baseUrl?: string
   docsUrl?: string
+  addChildrenMessage?: boolean
 }): Promise<SaltoError[]> => {
   const typeToElemIDtoInstances = await groupInstancesByTypeAndElemID(instances, getTypeName)
   await logInstancesWithCollidingElemID(typeToElemIDtoInstances)
   return Promise.all(Object.entries(typeToElemIDtoInstances)
     .map(async ([type, elemIDtoInstances]) => {
+      const childMessage = addChildrenMessage === true ? 'and all their child instances' : ''
       const numInstances = Object.values(elemIDtoInstances)
         .flat().length
-      const header = `Omitted ${numInstances} instances of ${type} due to Salto ID collisions.
+      const header = `Omitted ${numInstances} instances ${childMessage} of ${type} due to Salto ID collisions.
 Current Salto ID configuration for ${type} is defined as [${getIdFieldsByType(type).join(', ')}].`
 
       const collisionsHeader = 'Breakdown per colliding Salto ID:'

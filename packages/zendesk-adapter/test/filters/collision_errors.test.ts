@@ -54,7 +54,7 @@ describe('collision errors', () => {
       expect(filterResult.errors).toHaveLength(1)
       expect(filterResult.errors?.[0]).toEqual({
         severity: 'Warning',
-        message: `Omitted 2 instances of obj due to Salto ID collisions.
+        message: `Omitted 2 instances and all their child instances of obj due to Salto ID collisions.
 Current Salto ID configuration for obj is defined as [name].
 
 Breakdown per colliding Salto ID:

@@ -108,13 +108,13 @@ export type IssueLayoutResponse = {
 
 export type layoutConfigItem = {
   type: string
-  sectionType: 'PRIMARY' | 'SECONDARY' | 'CONTENT' | 'REQUEST' | 'REQUEST_PORTAL'
+  sectionType: 'PRIMARY' | 'SECONDARY' | 'CONTENT' | 'REQUEST'
   key: string
 }
 
 export const ISSUE_LAYOUT_CONFIG_ITEM_SCHEME = Joi.object({
   type: Joi.string().required(),
-  sectionType: Joi.string().invalid('HIDDEN_ITEMS').required(),
+  sectionType: Joi.string().valid('PRIMARY', 'SECONDARY', 'CONTENT', 'REQUEST').required(),
   key: Joi.string().required(),
 }).unknown(true).required()
 

@@ -1832,7 +1832,6 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       sourceTypeName: 'RequestType__values',
       dataField: 'values',
       fieldsToOmit: [
-        { fieldName: 'icon' },
         { fieldName: '_expands' },
         { fieldName: 'serviceDeskId' },
         { fieldName: 'portalId' },
@@ -1840,7 +1839,24 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
       fieldsToHide: [
         { fieldName: 'id' },
+        { fieldName: 'icon' },
       ],
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/servicedeskapi/servicedesk/{serviceDeskId}/requesttype',
+        method: 'post',
+        urlParamsToFields: {
+          serviceDeskId: '_parent.0.serviceDeskId',
+        },
+      },
+      remove: {
+        url: '/rest/servicedeskapi/servicedesk/{serviceDeskId}/requesttype/{id}',
+        method: 'delete',
+        urlParamsToFields: {
+          serviceDeskId: '_parent.0.serviceDeskId',
+        },
+      },
     },
   },
   CustomerPermissions: {

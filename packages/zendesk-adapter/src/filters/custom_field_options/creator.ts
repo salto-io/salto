@@ -140,6 +140,15 @@ export const createCustomFieldOptionsFilterCreator = (
       change => [parentTypeName, childTypeName]
         .includes(getChangeData(change).elemID.typeName),
     )
+    if (relevantChanges.length === 0) {
+      return {
+        leftoverChanges: changes,
+        deployResult: {
+          errors: [],
+          appliedChanges: [],
+        },
+      }
+    }
     const [parentChanges, childrenChanges] = _.partition(
       relevantChanges,
       change => getChangeData(change).elemID.typeName === parentTypeName,

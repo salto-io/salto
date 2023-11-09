@@ -106,7 +106,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       changes,
       change => CUSTOM_STATUS_TYPE_NAME === getChangeData(change).elemID.typeName,
     )
-    const CustomStatusesDeployResult = await deployChanges(
+    const customStatusesDeployResult = await deployChanges(
       customStatusChanges,
       async change => {
         await deployChange(change, client, config.apiDefinitions)
@@ -118,7 +118,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     )
     if (_.isEmpty(defaultCustomStatusChanges)) {
       // since the custom statuses and the default are in different change groups
-      return { deployResult: CustomStatusesDeployResult, leftoverChanges: firstLeftoverChanges }
+      return { deployResult: customStatusesDeployResult, leftoverChanges: firstLeftoverChanges }
     }
     const defaultCustomStatusChange = defaultCustomStatusChanges
       .map(getChangeData)
@@ -141,8 +141,8 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     }
     const appliedChanges = _.isEmpty(error) ? defaultCustomStatusChanges : []
     const deployResult: DeployResult = {
-      appliedChanges: CustomStatusesDeployResult.appliedChanges.concat(appliedChanges),
-      errors: CustomStatusesDeployResult.errors.concat(error),
+      appliedChanges: customStatusesDeployResult.appliedChanges.concat(appliedChanges),
+      errors: customStatusesDeployResult.errors.concat(error),
     }
     return { deployResult, leftoverChanges }
   },

@@ -101,6 +101,15 @@ const getElementCloneFromSource = async (
     }
     return undefined
   }
+  if (!elem.elemID.isEqual(id)) {
+    // This should really never happen, but if it does, we might find ourselves in an infinite loop
+    // so we try to protect against this case anyway
+    log.warn(
+      'resolve expected element with ID %s but found element with ID %s, returning undefine to avoid loop',
+      elem.elemID.getFullName(), id.getFullName(),
+    )
+    return undefined
+  }
   // We create a clone because we must not modify the element from the read only source
   const elemToResolve = elem.clone()
   return elemToResolve

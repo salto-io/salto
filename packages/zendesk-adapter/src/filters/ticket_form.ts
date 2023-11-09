@@ -151,14 +151,23 @@ const getChangeWithoutRemovedFields = (change: ModificationChange<InstanceElemen
 const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
   name: 'ticketFormDeploy',
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const [TicketFormChanges, leftoverChanges] = _.partition(
+    const [ticketFormChanges, leftoverChanges] = _.partition(
       changes,
       change => TICKET_FORM_TYPE_NAME === getChangeData(change).elemID.typeName,
     )
+    if (ticketFormChanges.length === 0) {
+      return {
+        leftoverChanges: changes,
+        deployResult: {
+          errors: [],
+          appliedChanges: [],
+        },
+      }
+    }
     const hasCustomStatusesEnabled = await isCustomStatusesEnabled(elementsSource)
 
     const [invalidModificationAndAdditionChanges, otherTicketFormChanges] = _.partition(
-      TicketFormChanges,
+      ticketFormChanges,
       change => invalidTicketFormChange(change, hasCustomStatusesEnabled),
     )
 
@@ -188,7 +197,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
       .map(change => getChangeData(change).elemID.getFullName()))
 
     const deployResult: DeployResult = {
-      appliedChanges: TicketFormChanges
+      appliedChanges: ticketFormChanges
         .filter(change => deployedChangesElemId.has(getChangeData(change).elemID.getFullName())),
       errors: tempDeployResult.errors,
     }

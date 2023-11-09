@@ -307,36 +307,48 @@ describe('automationStructureFilter', () => {
           }
         )
       })
-      it('should covert rule scope to projects', async () => {
-        await filter.onFetch([ruleScopeInstance])
-        expect(ruleScopeInstance.value.projects).toEqual([
-          {
-            projectId: '10024',
-          },
-          {
-            projectTypeKey: 'software',
-          },
-          {
-            projectId: '10034',
-          },
-          {
-            projectTypeKey: 'business',
-          },
-        ])
+      describe('when using Jira Cloud', () => {
+        it('should covert rule scope to projects', async () => {
+          await filter.onFetch([ruleScopeInstance])
+          expect(ruleScopeInstance.value.projects).toEqual([
+            {
+              projectId: '10024',
+            },
+            {
+              projectTypeKey: 'software',
+            },
+            {
+              projectId: '10034',
+            },
+            {
+              projectTypeKey: 'business',
+            },
+          ])
+        })
+        it('should covert global rule scope', async () => {
+          await filter.onFetch([globalScopeInstance])
+          expect(globalScopeInstance.value.projects).toBeUndefined()
+        })
+        it('should not covert if unknown project type', async () => {
+          ruleScopeInstance.value.ruleScope.resources[1] = 'ari:cloud:jira-none::site/128baddc-c238-4857-b249-cfc84bd10c4b'
+          await filter.onFetch([ruleScopeInstance])
+          expect(ruleScopeInstance.value.projects.length).toEqual(3)
+        })
+        it('should not covert if unknown resource', async () => {
+          ruleScopeInstance.value.ruleScope.resources = ['ari:cloud:not-a--known-pattern']
+          await filter.onFetch([ruleScopeInstance])
+          expect(ruleScopeInstance.value.projects).toEqual([])
+        })
       })
-      it('should covert global rule scope', async () => {
-        await filter.onFetch([globalScopeInstance])
-        expect(globalScopeInstance.value.projects).toBeUndefined()
-      })
-      it('should not covert if unknown project type', async () => {
-        ruleScopeInstance.value.ruleScope.resources[1] = 'ari:cloud:jira-none::site/128baddc-c238-4857-b249-cfc84bd10c4b'
-        await filter.onFetch([ruleScopeInstance])
-        expect(ruleScopeInstance.value.projects.length).toEqual(3)
-      })
-      it('should not covert if unknown resource', async () => {
-        ruleScopeInstance.value.ruleScope.resources = ['ari:cloud:not-a--known-pattern']
-        await filter.onFetch([ruleScopeInstance])
-        expect(ruleScopeInstance.value.projects).toEqual([])
+      describe('when using Jira DC', () => {
+        beforeEach(async () => {
+          filter = automationStructureFilter(getFilterParams(undefined, true)) as typeof filter
+          globalScopeInstance.value.resources = undefined
+          await filter.onFetch([globalScopeInstance])
+        })
+        it('should remove project list for global rules ', () => {
+          expect(globalScopeInstance.value.projects).toBeUndefined()
+        })
       })
     })
   })

@@ -50,14 +50,13 @@ import {
   SALESFORCE,
 } from '../constants'
 import {
-  isLookupField,
-  isMasterDetailField,
   isReadOnlyField,
+  isReferenceField,
+  referenceFieldTargetTypes,
   safeApiName,
 } from './utils'
 import { DataManagement } from '../types'
 
-const { makeArray } = collections.array
 const { awu } = collections.asynciterable
 const { isDefined } = lowerdashValues
 const { DefaultMap } = collections.map
@@ -184,10 +183,6 @@ const createWarnings = async (
   ]
 }
 
-const isReferenceField = (field?: Field): field is Field => (
-  isDefined(field) && (isLookupField(field) || isMasterDetailField(field))
-)
-
 const replaceLookupsWithRefsAndCreateRefMap = async (
   instances: InstanceElement[],
   internalToInstance: Record<string, InstanceElement>,
@@ -207,7 +202,7 @@ const replaceLookupsWithRefsAndCreateRefMap = async (
       if (!isReferenceField(field)) {
         return value
       }
-      const refTo = makeArray(field?.annotations?.[FIELD_ANNOTATIONS.REFERENCE_TO])
+      const refTo = referenceFieldTargetTypes(field)
 
       const refTarget = refTo
         .map(targetTypeName => internalToInstance[serializeInternalID(targetTypeName, value)])

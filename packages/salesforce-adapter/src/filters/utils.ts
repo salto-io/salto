@@ -28,7 +28,8 @@ import {
   Field,
   getChangeData,
   InstanceElement,
-  isAdditionOrModificationChange, isElement,
+  isAdditionOrModificationChange,
+  isElement,
   isField,
   isInstanceElement,
   isListType,
@@ -47,7 +48,7 @@ import {
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements, createSchemeGuard, detailedCompare, getParents } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
-import { chunks, collections, types } from '@salto-io/lowerdash'
+import { chunks, collections, types, values } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import SalesforceClient, { ErrorFilter } from '../client/client'
 import { FetchElements, INSTANCE_SUFFIXES, OptionalFeatures } from '../types'
@@ -74,6 +75,7 @@ import {
   PLURAL_LABEL,
   SALESFORCE,
   STATUS,
+  VALUE_SET_FIELDS,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
 import * as transformer from '../transformers/transformer'
@@ -93,7 +95,9 @@ import { createListMetadataObjectsConfigChange } from '../config_change'
 
 const { toArrayAsync, awu } = collections.asynciterable
 const { splitDuplicates } = collections.array
+const { makeArray } = collections.array
 const { weightedChunks } = chunks
+const { isDefined } = values
 const log = logger(module)
 
 const METADATA_VALUES_SCHEME = Joi.object({
@@ -197,8 +201,36 @@ export const isHiddenField = (field: Field): boolean => (
 )
 
 export const isReadOnlyField = (field: Field): boolean => (
-  !field.annotations[FIELD_ANNOTATIONS.CREATABLE] && !field.annotations[FIELD_ANNOTATIONS.UPDATEABLE]
+  field.annotations[FIELD_ANNOTATIONS.CREATABLE] === false && field.annotations[FIELD_ANNOTATIONS.UPDATEABLE] === false
 )
+
+export const isHierarchyField = (field: Field): boolean => (
+  field.refType.elemID.isEqual(Types.primitiveDataTypes.Hierarchy.elemID)
+)
+
+export const isReferenceField = (field?: Field): field is Field => (
+  (field !== undefined) && (isLookupField(field) || isMasterDetailField(field) || isHierarchyField(field))
+)
+
+export const referenceFieldTargetTypes = (field: Field): string[] => {
+  if (isLookupField(field) || isMasterDetailField(field)) {
+    const referredTypes = field.annotations?.[FIELD_ANNOTATIONS.REFERENCE_TO]
+    if (referredTypes === undefined) {
+      return []
+    }
+    return makeArray(referredTypes)
+      .map(ref => (_.isString(ref) ? ref : apiNameSync(ref.value)))
+      .filter(isDefined)
+  }
+  if (isHierarchyField(field)) {
+    // hierarchy fields always reference the type that contains them
+    return makeArray(apiNameSync(field.parent))
+  }
+  log.warn('Unknown reference field type %s for field %s',
+    field.refType.elemID.getFullName(),
+    field.elemID.getFullName())
+  return []
+}
 
 export const getInstancesOfMetadataType = async (elements: Element[], metadataTypeName: string):
  Promise<InstanceElement[]> => awu(elements).filter(isInstanceElement)
@@ -302,6 +334,10 @@ export const layoutObjAndName = (layoutApiName: string): [string, string] => {
   const [obj, ...name] = layoutApiName.split('-')
   return [specialLayoutObjects.get(obj) ?? obj, name.join('-')]
 }
+
+/**
+ * @deprecated use {@link getNamespaceSync} instead.
+ */
 export const getNamespace = async (
   element: Element,
 ): Promise<string | undefined> => {
@@ -314,9 +350,9 @@ export const getNamespace = async (
     : getNamespaceFromString(elementApiName)
 }
 
-export const extractFullNamesFromValueList = (values: { [INSTANCE_FULL_NAME_FIELD]: string }[]):
+export const extractFullNamesFromValueList = (instanceValues: { [INSTANCE_FULL_NAME_FIELD]: string }[]):
   string[] =>
-  values.map(v => v[INSTANCE_FULL_NAME_FIELD])
+  instanceValues.map(v => v[INSTANCE_FULL_NAME_FIELD])
 
 
 export const buildAnnotationsObjectType = (annotationTypes: TypeMap): ObjectType => {
@@ -546,7 +582,7 @@ const removeDuplicateFileProps = (files: FileProperties[]): FileProperties[] => 
     uniques,
   } = splitDuplicates(files, fileProps => `${fileProps.namespacePrefix}__${fileProps.fullName}`)
   duplicates.forEach(props => {
-    log.warn('Found duplicate file props with the same name in response to listMetadataObjects: %o', props)
+    log.debug('Found duplicate file props with the same name in response to listMetadataObjects: %o', props)
   })
   return uniques.concat(duplicates.map(props => props[0]))
 }
@@ -641,3 +677,25 @@ export const getElementAuthorInformation = ({ annotations }: Element): AuthorInf
   changedBy: annotations[CORE_ANNOTATIONS.CHANGED_BY],
   changedAt: annotations[CORE_ANNOTATIONS.CHANGED_AT],
 })
+
+export const getNamespaceSync = (element: Element): string | undefined => {
+  const elementApiName = apiNameSync(element, true)
+  if (elementApiName === undefined) {
+    return undefined
+  }
+  return isInstanceElement(element) && isInstanceOfTypeSync(LAYOUT_TYPE_ID_METADATA_TYPE)(element)
+    ? getNamespaceFromString(layoutObjAndName(elementApiName)[1])
+    : getNamespaceFromString(elementApiName)
+}
+export const isPicklistField = (changedElement: ChangeDataType): changedElement is Field =>
+  isField(changedElement)
+  && ([
+    Types.primitiveDataTypes.Picklist.elemID.getFullName(),
+    Types.primitiveDataTypes.MultiselectPicklist.elemID.getFullName(),
+  ]).includes(changedElement.refType.elemID.getFullName())
+
+export const isValueSetReference = (field: Field): boolean =>
+  isReferenceExpression(field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME])
+
+export const hasValueSetNameAnnotation = (field: Field): boolean =>
+  !_.isUndefined(field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME])

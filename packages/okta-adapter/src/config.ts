@@ -152,6 +152,7 @@ const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
             policyId: '_parent.0.id',
             ruleId: 'id',
           },
+          omitRequestBody: true,
         },
         activate: {
           url: '/api/v1/policies/{policyId}/rules/{ruleId}/lifecycle/activate',
@@ -189,6 +190,7 @@ const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
         urlParamsToFields: {
           policyId: 'id',
         },
+        omitRequestBody: true,
       },
       activate: {
         url: '/api/v1/policies/{policyId}/lifecycle/activate',
@@ -304,6 +306,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         urlParamsToFields: {
           groupId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -383,6 +386,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         urlParamsToFields: {
           applicationId: 'id',
         },
+        omitRequestBody: true,
       },
       activate: {
         url: '/api/v1/apps/{applicationId}/lifecycle/activate',
@@ -667,6 +671,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           authorizationServerId: '_parent.0.id',
           policyId: 'id',
         },
+        omitRequestBody: true,
       },
       activate: {
         url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/lifecycle/activate',
@@ -719,6 +724,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           policyId: '_parent.0.id',
           ruleId: 'id',
         },
+        omitRequestBody: true,
       },
       activate: {
         url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/rules/{ruleId}/lifecycle/activate',
@@ -912,6 +918,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           themeId: '_parent.0.id',
           brandId: '_parent.1.id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -940,6 +947,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           themeId: '_parent.0.id',
           brandId: '_parent.1.id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1022,6 +1030,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         urlParamsToFields: {
           ruleId: 'id',
         },
+        omitRequestBody: true,
       },
       activate: {
         url: '/api/v1/groups/rules/{ruleId}/lifecycle/activate',
@@ -1072,6 +1081,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         urlParamsToFields: {
           zoneId: 'id',
         },
+        omitRequestBody: true,
       },
       activate: {
         url: '/api/v1/zones/{zoneId}/lifecycle/activate',
@@ -1114,6 +1124,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         urlParamsToFields: {
           trustedOriginId: 'id',
         },
+        omitRequestBody: true,
       },
       activate: {
         url: '/api/v1/trustedOrigins/{trustedOriginId}/lifecycle/activate',
@@ -1158,6 +1169,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         urlParamsToFields: {
           typeId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1301,6 +1313,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         urlParamsToFields: {
           behaviorId: 'id',
         },
+        omitRequestBody: true,
       },
       activate: {
         url: '/api/v1/behaviors/{behaviorId}/lifecycle/activate',
@@ -1381,6 +1394,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           groupId: '_parent.0.id',
           roleId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1448,6 +1462,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         urlParamsToFields: {
           deviceAssuranceId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1642,6 +1657,65 @@ const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
       },
     },
   },
+  GroupPush: {
+    transformation: {
+      idFields: ['&userGroupId'],
+      serviceIdField: 'mappingId',
+      extendsParentId: true,
+    },
+    deployRequests: {
+      add: {
+        url: '/api/internal/instance/{appId}/grouppush',
+        method: 'post',
+        urlParamsToFields: {
+          appId: '_parent.0.id',
+        },
+      },
+      remove: {
+        url: '/api/internal/instance/{appId}/grouppush/{pushId}/delete',
+        method: 'post',
+        urlParamsToFields: {
+          appId: '_parent.0.id',
+          pushId: 'mappingId',
+        },
+        fieldsToIgnore: ['mappingId', 'status', 'userGroupId', 'newAppGroupName', 'groupPushRule'],
+      },
+    },
+  },
+  GroupPushRule: {
+    transformation: {
+      idFields: ['name'],
+      serviceIdField: 'mappingRuleId',
+      extendsParentId: true,
+    },
+    deployRequests: {
+      add: {
+        url: '/api/internal/instance/{appId}/grouppushrules',
+        method: 'post',
+        urlParamsToFields: {
+          appId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/api/internal/instance/{appId}/grouppushrules/{ruleId}',
+        method: 'put',
+        urlParamsToFields: {
+          appId: '_parent.0.id',
+          ruleId: 'mappingRuleId',
+        },
+        fieldsToIgnore: ['mappingRuleId'],
+      },
+      remove: {
+        url: '/api/internal/instance/{appId}/grouppushrules/{ruleId}',
+        method: 'delete',
+        urlParamsToFields: {
+          appId: '_parent.0.id',
+          ruleId: 'mappingRuleId',
+        },
+        fieldsToIgnore: ['mappingRuleId', 'name', 'status', 'searchExpression', 'descriptionSearchExpression', 'searchExpressionType', 'descriptionSearchExpressionType'],
+      },
+    },
+  },
 }
 
 export const DUCKTYPE_SUPPORTED_TYPES = {
@@ -1705,6 +1779,7 @@ export type ChangeValidatorName = (
   | 'roleAssignment'
   | 'users'
   | 'appUserSchemaWithInactiveApp'
+  | 'appWithGroupPush'
   )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -1728,6 +1803,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     roleAssignment: { refType: BuiltinTypes.BOOLEAN },
     users: { refType: BuiltinTypes.BOOLEAN },
     appUserSchemaWithInactiveApp: { refType: BuiltinTypes.BOOLEAN },
+    appWithGroupPush: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

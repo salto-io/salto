@@ -117,6 +117,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           dashboardId: '_parent.0.id',
           gadgetId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -165,6 +166,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/dashboard/{id}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -275,6 +277,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/field/{id}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -361,6 +364,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           contextId: 'id',
           fieldId: '_parent.0.id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -415,6 +419,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/fieldconfiguration/{id}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -465,6 +470,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/fieldconfigurationscheme/{id}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -531,6 +537,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/filter/{id}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -601,6 +608,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         urlParamsToFields: {
           issueTypeSchemeId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -669,6 +677,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         urlParamsToFields: {
           issueTypeScreenSchemeId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -774,6 +783,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         urlParamsToFields: {
           schemeId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -816,6 +826,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/projectCategory/{id}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -873,6 +884,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         urlParamsToFields: {
           projectIdOrKey: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -921,6 +933,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/component/{id}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -1033,6 +1046,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         urlParamsToFields: {
           screenId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1080,6 +1094,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         urlParamsToFields: {
           tabId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1153,6 +1168,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/workflow/{entityId}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -1299,6 +1315,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/statuses?id={id}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -1324,6 +1341,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/workflowscheme/{id}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -1359,6 +1377,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/issuetype/{id}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -1420,6 +1439,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/group?groupname={name}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -1463,6 +1483,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         urlParamsToFields: {
           boardId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1486,6 +1507,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         urlParamsToFields: {
           issueLinkTypeId: 'id',
         },
+        omitRequestBody: true,
       },
     },
     transformation: {
@@ -1519,6 +1541,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       remove: {
         url: '/rest/api/3/role/{id}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -1626,6 +1649,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         urlParamsToFields: {
           screenSchemeId: 'id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1689,6 +1713,7 @@ const SCRIPT_RUNNER_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       remove: {
         url: '/sr-dispatcher/jira/rest/api/1/scheduled-scripts/{uuid}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -1708,6 +1733,7 @@ const SCRIPT_RUNNER_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       remove: {
         url: '/sr-dispatcher/jira/rest/api/1/behaviours/{uuid}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -1736,6 +1762,7 @@ const SCRIPT_RUNNER_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       remove: {
         url: '/sr-dispatcher/jira/rest/api/1/escalation-scripts/{uuid}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -1763,6 +1790,7 @@ const SCRIPT_RUNNER_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       remove: {
         url: '/sr-dispatcher/jira/rest/api/1/scripted-fields/{uuid}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -1804,7 +1832,6 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       sourceTypeName: 'RequestType__values',
       dataField: 'values',
       fieldsToOmit: [
-        { fieldName: 'icon' },
         { fieldName: '_expands' },
         { fieldName: 'serviceDeskId' },
         { fieldName: 'portalId' },
@@ -1812,7 +1839,24 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
       fieldsToHide: [
         { fieldName: 'id' },
+        { fieldName: 'icon' },
       ],
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/servicedeskapi/servicedesk/{serviceDeskId}/requesttype',
+        method: 'post',
+        urlParamsToFields: {
+          serviceDeskId: '_parent.0.serviceDeskId',
+        },
+      },
+      remove: {
+        url: '/rest/servicedeskapi/servicedesk/{serviceDeskId}/requesttype/{id}',
+        method: 'delete',
+        urlParamsToFields: {
+          serviceDeskId: '_parent.0.serviceDeskId',
+        },
+      },
     },
   },
   CustomerPermissions: {
@@ -1880,6 +1924,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         urlParamsToFields: {
           projectKey: '_parent.0.key',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1922,6 +1967,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
           serviceDeskId: '_parent.0.serviceDeskId',
           projectId: '_parent.0.id',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -1962,6 +2008,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       remove: {
         url: '/rest/workinghours/1/api/calendar/{id}',
         method: 'delete',
+        omitRequestBody: true,
       },
     },
   },
@@ -2046,6 +2093,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         urlParamsToFields: {
           projectKey: '_parent.0.key',
         },
+        omitRequestBody: true,
       },
     },
   },
@@ -2056,7 +2104,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
     },
   },
-  Sla__config__definition__pause: {
+  SLA__config__definition__pause: {
     transformation: {
       fieldsToOmit: [
         { fieldName: 'type' },
@@ -2064,7 +2112,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
     },
   },
-  Sla__config__definition__start: {
+  SLA__config__definition__start: {
     transformation: {
       fieldsToOmit: [
         { fieldName: 'type' },
@@ -2072,7 +2120,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
     },
   },
-  Sla__config__definition__stop: {
+  SLA__config__definition__stop: {
     transformation: {
       fieldsToOmit: [
         { fieldName: 'type' },
@@ -2080,7 +2128,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
     },
   },
-  Sla__config__definition: {
+  SLA__config__definition: {
     transformation: {
       fieldsToOmit: [
         { fieldName: 'inconsistent' },

@@ -33,7 +33,7 @@ const filter: FilterCreator = ({ config }) => ({
       ))
     await referenceUtils.addReferences({
       elements,
-      fieldsToGroupBy: ['id', 'name', 'key'],
+      fieldsToGroupBy: ['id', 'name', 'key', 'mappingRuleId'],
       defs: fixedDefs,
       contextStrategyLookup,
       fieldReferenceResolverCreator: defs => new OktaFieldReferenceResolver(defs),

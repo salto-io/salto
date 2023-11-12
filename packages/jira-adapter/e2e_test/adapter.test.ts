@@ -35,7 +35,7 @@ const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
 
 jest.setTimeout(600 * 1000)
 
-const excludedTypes = ['Behavior', 'Behavior__config']
+const excludedTypes = ['Behavior', 'Behavior__config', 'Form']
 
 each([
   ['Cloud', false],

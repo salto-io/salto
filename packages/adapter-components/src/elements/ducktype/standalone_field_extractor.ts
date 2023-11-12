@@ -68,6 +68,7 @@ const addFieldTypeAndInstances = async ({
   transformationConfigByType,
   transformationDefaultConfig,
   getElemIdFunc,
+  nestedPath,
 }: {
   adapterName: string
   typeName: string
@@ -77,6 +78,7 @@ const addFieldTypeAndInstances = async ({
   transformationConfigByType: Record<string, TransformationConfig>
   transformationDefaultConfig: TransformationDefaultConfig
   getElemIdFunc?: ElemIdGetter
+  nestedPath?: string[]
 }): Promise<Element[]> => {
   if (type.fields[fieldName] === undefined) {
     log.info('type %s field %s does not exist (maybe it is not populated by any of the instances), not extracting field', type.elemID.name, fieldName)
@@ -131,6 +133,7 @@ const addFieldTypeAndInstances = async ({
         transformationConfigByType,
         transformationDefaultConfig,
         getElemIdFunc,
+        nestedPath: [...(nestedPath ?? [type.elemID.name]), inst.elemID.name, fieldName],
       })
       if (fieldInstance === undefined) {
         // cannot happen
@@ -163,12 +166,14 @@ export const extractStandaloneFields = async ({
   transformationDefaultConfig,
   adapterName,
   getElemIdFunc,
+  nestedPath,
 }: {
   elements: Element[]
   transformationConfigByType: Record<string, TransformationConfig>
   transformationDefaultConfig: TransformationDefaultConfig
   adapterName: string
   getElemIdFunc?: ElemIdGetter
+  nestedPath?: string[]
 }): Promise<void> => {
   const allTypes = _.keyBy(elements.filter(isObjectType), e => e.elemID.name)
   const allInstancesbyType = _.groupBy(
@@ -207,6 +212,7 @@ export const extractStandaloneFields = async ({
           transformationConfigByType,
           transformationDefaultConfig,
           getElemIdFunc,
+          nestedPath,
         }))
       })
     })

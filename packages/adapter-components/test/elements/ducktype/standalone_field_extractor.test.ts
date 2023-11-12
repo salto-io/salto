@@ -188,7 +188,9 @@ describe('Extract standalone fields', () => {
       expect(Object.keys(recipeCode.fields)).toEqual(['flat', 'nested'])
       expect(Object.keys(recipeCodeNested.fields)).toEqual(['inner', 'other'])
       expect(recipe123Code.refType.elemID.isEqual(recipeCode.elemID)).toBeTruthy()
+      expect(recipe123Code.path).toEqual(['myAdapter', 'Records', 'recipe', 'recipe123', 'code', 'recipe123__unnamed_0'])
       expect(recipe456Code.refType.elemID.isEqual(recipeCode.elemID)).toBeTruthy()
+      expect(recipe456Code.path).toEqual(['myAdapter', 'Records', 'recipe', 'recipe456', 'code', 'recipe456__unnamed_0'])
 
       const origRecipe123 = origInstances[0]
       const origRecipe456 = origInstances[1]
@@ -303,6 +305,9 @@ describe('Extract standalone fields', () => {
 
       expect(recipe123Code1.refType.elemID.isEqual(recipeCode.elemID)).toBeTruthy()
       expect(recipe123Code2.refType.elemID.isEqual(recipeCode.elemID)).toBeTruthy()
+
+      expect(recipe123Code1.path).toEqual(['myAdapter', 'Records', 'recipe', 'recipe123', 'code', 'recipe123__unnamed_0'])
+      expect(recipe123Code2.path).toEqual(['myAdapter', 'Records', 'recipe', 'recipe123', 'code', 'recipe123__unnamed_1'])
 
       const origRecipe123 = origInstances[0]
 

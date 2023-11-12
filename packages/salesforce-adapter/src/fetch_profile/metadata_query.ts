@@ -40,6 +40,10 @@ import {
   MetadataQueryParams,
 } from '../types'
 import { getChangedAtSingleton } from '../filters/utils'
+import {
+  isTypeWithNestedInstances,
+  isTypeWithNestedInstancesPerParent,
+} from '../last_change_date_of_types_with_nested_instances'
 
 const { isDefined } = values
 
@@ -198,8 +202,11 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
   }
   const metadataQuery = buildMetadataQuery(params)
   const getInstanceChangedAt = ({ metadataType, name, changedAt }: MetadataInstance): string | undefined => {
-    if (metadataType === CUSTOM_OBJECT) {
-      return lastChangeDateOfTypesWithNestedInstances[CUSTOM_OBJECT]?.[name]
+    if (isTypeWithNestedInstancesPerParent(metadataType)) {
+      return lastChangeDateOfTypesWithNestedInstances[metadataType][name]
+    }
+    if (isTypeWithNestedInstances(metadataType)) {
+      return lastChangeDateOfTypesWithNestedInstances[metadataType]
     }
     return changedAt
   }

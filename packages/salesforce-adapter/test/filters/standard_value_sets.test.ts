@@ -41,6 +41,7 @@ import { mockInstances, mockTypes } from '../mock_elements'
 import { FilterWith } from './mocks'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { buildMetadataQueryForFetchWithChangesDetection } from '../../src/fetch_profile/metadata_query'
+import { LastChangeDateOfTypesWithNestedInstances } from '../../src/types'
 
 const createStandardValueSetMetadataInfo = (name: string, values: string[]): MetadataInfo =>
   ({
@@ -127,7 +128,7 @@ describe('Standard Value Sets filter', () => {
       ? await buildMetadataQueryForFetchWithChangesDetection({
         fetchParams: {},
         elementsSource,
-        lastChangeDateOfTypesWithNestedInstances: {},
+        lastChangeDateOfTypesWithNestedInstances: {} as unknown as LastChangeDateOfTypesWithNestedInstances,
       })
       : defaultFilterContext.fetchProfile.metadataQuery
     const fetchProfile = buildFetchProfile({ fetchParams: {}, metadataQuery })

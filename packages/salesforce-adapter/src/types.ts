@@ -905,13 +905,25 @@ export type FetchProfile = {
   readonly addNamespacePrefixToFullName: boolean
   isWarningEnabled: (name: keyof WarningSettings) => boolean
 }
-export type LastChangeDateOfTypesWithNestedInstances = Partial<{
-  [CUSTOM_LABELS_METADATA_TYPE]: string
-  // These types will contain mapping per Parent Object name
-  [CUSTOM_OBJECT]: Record<string, string>
-  [ASSIGNMENT_RULES_METADATA_TYPE]: Record<string, string>
-  [AUTO_RESPONSE_RULES_METADATA_TYPE]: Record<string, string>
-  [SHARING_RULES_TYPE]: Record<string, string>
-  [ESCALATION_RULES_TYPE]: Record<string, string>
-  [WORKFLOW_METADATA_TYPE]: Record<string, string>
-}>
+
+
+export const TYPES_WITH_NESTED_INSTANCES = [
+  CUSTOM_LABELS_METADATA_TYPE,
+] as const
+
+export const TYPES_WITH_NESTED_INSTANCES_PER_PARENT = [
+  CUSTOM_OBJECT,
+  ASSIGNMENT_RULES_METADATA_TYPE,
+  AUTO_RESPONSE_RULES_METADATA_TYPE,
+  SHARING_RULES_TYPE,
+  ESCALATION_RULES_TYPE,
+  WORKFLOW_METADATA_TYPE,
+] as const
+
+export type TypeWithNestedInstances = typeof TYPES_WITH_NESTED_INSTANCES[number]
+export type TypeWithNestedInstancesPerParent = typeof TYPES_WITH_NESTED_INSTANCES_PER_PARENT[number]
+export type LastChangeDateOfTypesWithNestedInstances = {
+  [key in TypeWithNestedInstancesPerParent]: Record<string, string>
+} & {
+  [key in TypeWithNestedInstances]: string | undefined
+}

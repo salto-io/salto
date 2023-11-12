@@ -66,7 +66,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]) => {
     const instancesByType = _.groupBy(
       elements
-        .filter(element => isMetadataInstanceElementSync(element))
+        .filter(isMetadataInstanceElementSync)
         .filter(element => element.annotations[CORE_ANNOTATIONS.CHANGED_AT]),
       metadataTypeSync
     )

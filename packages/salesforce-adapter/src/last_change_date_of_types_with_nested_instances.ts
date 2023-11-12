@@ -26,14 +26,19 @@ import {
   CUSTOM_OBJECT,
   ESCALATION_RULE_TYPE,
   ESCALATION_RULES_TYPE,
-  SHARING_RULE_METADATA_TYPE,
   SHARING_RULES_TYPE,
   WORKFLOW_METADATA_TYPE,
 } from './constants'
 import SalesforceClient from './client/client'
-import { LastChangeDateOfTypesWithNestedInstances, MetadataQuery } from './types'
+import {
+  LastChangeDateOfTypesWithNestedInstances,
+  MetadataQuery,
+  TYPES_WITH_NESTED_INSTANCES,
+  TYPES_WITH_NESTED_INSTANCES_PER_PARENT, TypeWithNestedInstances, TypeWithNestedInstancesPerParent,
+} from './types'
 import { CUSTOM_OBJECT_FIELDS, WORKFLOW_FIELDS } from './fetch_profile/metadata_types'
 import { getMostRecentFileProperties, listMetadataObjects } from './filters/utils'
+import { SHARING_RULES_API_NAMES } from './filters/author_information/sharing_rules'
 
 
 type GetLastChangeDateOfTypesWithNestedInstancesParams = {
@@ -62,9 +67,9 @@ export const getLastChangeDateOfTypesWithNestedInstances = async ({
   client,
   metadataQuery,
 }: GetLastChangeDateOfTypesWithNestedInstancesParams): Promise<LastChangeDateOfTypesWithNestedInstances> => {
-  const lastChangeDateOfCustomObjectTypes = async (): Promise<Record<string, string> | undefined> => {
+  const lastChangeDateOfCustomObjectTypes = async (): Promise<Record<string, string>> => {
     if (!metadataQuery.isTypeMatch(CUSTOM_OBJECT)) {
-      return undefined
+      return {}
     }
     const allProps = (await Promise.all(
       [
@@ -87,19 +92,17 @@ export const getLastChangeDateOfTypesWithNestedInstances = async ({
       .filter(fileProp => metadataQuery.isInstanceIncluded(fileProp))
     return getMostRecentFileProperties(fileProps)?.lastModifiedDate
   }
-  const lastChangeDateOfAssignmentRules = async (): Promise<Record<string, string> | undefined> => {
+  const lastChangeDateOfAssignmentRules = async (): Promise<Record<string, string>> => {
     if (!metadataQuery.isTypeMatch(ASSIGNMENT_RULES_METADATA_TYPE)) {
-      return undefined
+      return {}
     }
-    const allProps = (await listMetadataObjects(client, ASSIGNMENT_RULE_METADATA_TYPE))
-      .elements
-      .filter(fileProp => metadataQuery.isInstanceIncluded(fileProp))
+    const allProps = (await listMetadataObjects(client, ASSIGNMENT_RULE_METADATA_TYPE)).elements
     return getLastChangeDateByParent(allProps)
   }
 
-  const lastChangeDateOfAutoResponseRules = async (): Promise<Record<string, string> | undefined> => {
+  const lastChangeDateOfAutoResponseRules = async (): Promise<Record<string, string>> => {
     if (!metadataQuery.isTypeMatch(AUTO_RESPONSE_RULES_METADATA_TYPE)) {
-      return undefined
+      return {}
     }
     const allProps = (await listMetadataObjects(client, AUTO_RESPONSE_RULE_METADATA_TYPE))
       .elements
@@ -107,34 +110,34 @@ export const getLastChangeDateOfTypesWithNestedInstances = async ({
     return getLastChangeDateByParent(allProps)
   }
 
-  const lastChangeDateOfSharingRules = async (): Promise<Record<string, string> | undefined> => {
+  const lastChangeDateOfSharingRules = async (): Promise<Record<string, string>> => {
     if (!metadataQuery.isTypeMatch(SHARING_RULES_TYPE)) {
-      return undefined
-    }
-    const allProps = (await listMetadataObjects(client, SHARING_RULE_METADATA_TYPE))
-      .elements
-      .filter(fileProp => metadataQuery.isInstanceIncluded(fileProp))
-    return getLastChangeDateByParent(allProps)
-  }
-
-  const lastChangeDateOfEscalationRules = async (): Promise<Record<string, string> | undefined> => {
-    if (!metadataQuery.isTypeMatch(ESCALATION_RULES_TYPE)) {
-      return undefined
-    }
-    const allProps = (await listMetadataObjects(client, ESCALATION_RULE_TYPE))
-      .elements
-      .filter(fileProp => metadataQuery.isInstanceIncluded(fileProp))
-    return getLastChangeDateByParent(allProps)
-  }
-
-  const lastChangeDateOfWorkflows = async (): Promise<Record<string, string> | undefined> => {
-    if (!metadataQuery.isTypeMatch(WORKFLOW_METADATA_TYPE)) {
-      return undefined
+      return {}
     }
     const allProps = (await Promise.all(
-      [
-        ...WORKFLOW_FIELDS,
-      ].filter(type => metadataQuery.isTypeMatch(type))
+      SHARING_RULES_API_NAMES
+        .filter(type => metadataQuery.isTypeMatch(type))
+        .map(typeName => listMetadataObjects(client, typeName))
+    )).flatMap(result => result.elements)
+      .filter(fileProp => metadataQuery.isInstanceIncluded(fileProp))
+    return getLastChangeDateByParent(allProps)
+  }
+
+  const lastChangeDateOfEscalationRules = async (): Promise<Record<string, string>> => {
+    if (!metadataQuery.isTypeMatch(ESCALATION_RULES_TYPE)) {
+      return {}
+    }
+    const allProps = (await listMetadataObjects(client, ESCALATION_RULE_TYPE)).elements
+    return getLastChangeDateByParent(allProps)
+  }
+
+  const lastChangeDateOfWorkflows = async (): Promise<Record<string, string>> => {
+    if (!metadataQuery.isTypeMatch(WORKFLOW_METADATA_TYPE)) {
+      return {}
+    }
+    const allProps = (await Promise.all(
+      WORKFLOW_FIELDS
+        .filter(type => metadataQuery.isTypeMatch(type))
         .map(typeName => listMetadataObjects(client, typeName))
     )).flatMap(result => result.elements)
       .filter(fileProp => metadataQuery.isInstanceIncluded(fileProp))
@@ -161,3 +164,11 @@ export const getLastChangeDateOfTypesWithNestedInstances = async ({
     [WORKFLOW_METADATA_TYPE]: await promisedByType[WORKFLOW_METADATA_TYPE],
   }
 }
+
+export const isTypeWithNestedInstances = (typeName: string): typeName is TypeWithNestedInstances => (
+  (TYPES_WITH_NESTED_INSTANCES as ReadonlyArray<string>).includes(typeName)
+)
+
+export const isTypeWithNestedInstancesPerParent = (typeName: string): typeName is TypeWithNestedInstancesPerParent => (
+  (TYPES_WITH_NESTED_INSTANCES_PER_PARENT as ReadonlyArray<string>).includes(typeName)
+)

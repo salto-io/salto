@@ -28,7 +28,7 @@ import {
   CUSTOM_OBJECT,
   TOPICS_FOR_OBJECTS_METADATA_TYPE,
 } from '../../src/constants'
-import { MetadataInstance, MetadataQuery } from '../../src/types'
+import { LastChangeDateOfTypesWithNestedInstances, MetadataInstance, MetadataQuery } from '../../src/types'
 import { mockInstances } from '../mock_elements'
 import { mockFileProperties } from '../connection'
 
@@ -492,7 +492,7 @@ describe('buildMetadataQueryForFetchWithChangesDetection', () => {
         },
       },
       elementsSource,
-      lastChangeDateOfTypesWithNestedInstances: {},
+      lastChangeDateOfTypesWithNestedInstances: {} as unknown as LastChangeDateOfTypesWithNestedInstances,
     })
   })
 
@@ -513,7 +513,7 @@ describe('buildMetadataQueryForFetchWithChangesDetection', () => {
         },
         // In first fetch, the ChangedAtSingleton won't be defined
         elementsSource: buildElementsSourceFromElements([]),
-        lastChangeDateOfTypesWithNestedInstances: {},
+        lastChangeDateOfTypesWithNestedInstances: {} as unknown as LastChangeDateOfTypesWithNestedInstances,
       })).rejects.toThrow()
     })
   })
@@ -539,7 +539,7 @@ describe('buildMetadataQueryForFetchWithChangesDetection', () => {
         metadataQuery = await buildMetadataQueryForFetchWithChangesDetection({
           fetchParams: { target: ['CustomObject'] },
           elementsSource: buildElementsSourceFromElements([changedAtSingleton]),
-          lastChangeDateOfTypesWithNestedInstances: {},
+          lastChangeDateOfTypesWithNestedInstances: {} as unknown as LastChangeDateOfTypesWithNestedInstances,
         })
       })
       it('should return true', () => {

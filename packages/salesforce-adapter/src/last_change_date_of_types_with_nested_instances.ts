@@ -31,20 +31,9 @@ import {
   WORKFLOW_METADATA_TYPE,
 } from './constants'
 import SalesforceClient from './client/client'
-import { MetadataQuery } from './types'
+import { LastChangeDateOfTypesWithNestedInstances, MetadataQuery } from './types'
 import { CUSTOM_OBJECT_FIELDS, WORKFLOW_FIELDS } from './fetch_profile/metadata_types'
 import { getMostRecentFileProperties, listMetadataObjects } from './filters/utils'
-
-export type LastChangeDateOfTypesWithNestedInstances = Partial<{
-  [CUSTOM_LABELS_METADATA_TYPE]: string
-  // These types will contain mapping per Parent Object name
-  [CUSTOM_OBJECT]: Record<string, string>
-  [ASSIGNMENT_RULES_METADATA_TYPE]: Record<string, string>
-  [AUTO_RESPONSE_RULES_METADATA_TYPE]: Record<string, string>
-  [SHARING_RULES_TYPE]: Record<string, string>
-  [ESCALATION_RULES_TYPE]: Record<string, string>
-  [WORKFLOW_METADATA_TYPE]: Record<string, string>
-}>
 
 
 type GetLastChangeDateOfTypesWithNestedInstancesParams = {

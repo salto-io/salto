@@ -29,7 +29,17 @@ import { config as configUtils } from '@salto-io/adapter-components'
 import { types } from '@salto-io/lowerdash'
 import { SUPPORTED_METADATA_TYPES } from './fetch_profile/metadata_types'
 import * as constants from './constants'
-import { DEFAULT_MAX_INSTANCES_PER_TYPE, SALESFORCE } from './constants'
+import {
+  ASSIGNMENT_RULES_METADATA_TYPE,
+  AUTO_RESPONSE_RULES_METADATA_TYPE,
+  CUSTOM_LABELS_METADATA_TYPE,
+  CUSTOM_OBJECT,
+  DEFAULT_MAX_INSTANCES_PER_TYPE,
+  ESCALATION_RULES_TYPE,
+  SALESFORCE,
+  SHARING_RULES_TYPE,
+  WORKFLOW_METADATA_TYPE,
+} from './constants'
 
 type UserDeployConfig = configUtils.UserDeployConfig
 const { createUserDeployConfigType } = configUtils
@@ -895,3 +905,13 @@ export type FetchProfile = {
   readonly addNamespacePrefixToFullName: boolean
   isWarningEnabled: (name: keyof WarningSettings) => boolean
 }
+export type LastChangeDateOfTypesWithNestedInstances = Partial<{
+  [CUSTOM_LABELS_METADATA_TYPE]: string
+  // These types will contain mapping per Parent Object name
+  [CUSTOM_OBJECT]: Record<string, string>
+  [ASSIGNMENT_RULES_METADATA_TYPE]: Record<string, string>
+  [AUTO_RESPONSE_RULES_METADATA_TYPE]: Record<string, string>
+  [SHARING_RULES_TYPE]: Record<string, string>
+  [ESCALATION_RULES_TYPE]: Record<string, string>
+  [WORKFLOW_METADATA_TYPE]: Record<string, string>
+}>

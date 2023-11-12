@@ -27,12 +27,14 @@ import { ArtificialTypes } from '../constants'
 import {
   apiNameSync,
   getChangedAtSingleton,
-  isCustomObjectSync,
   isMetadataInstanceElementSync,
   metadataTypeSync,
 } from './utils'
+import { MetadataInstanceElement } from '../transformers/transformer'
 
-const createChangedAtSingletonInstanceValues = (metadataInstancesByType: Record<string, Element[]>): Values => {
+const createChangedAtSingletonInstanceValues = (
+  metadataInstancesByType: Record<string, MetadataInstanceElement[]>
+): Values => {
   const instanceValues: Values = {}
   Object.entries(metadataInstancesByType).forEach(([metadataType, elements]) => {
     instanceValues[metadataType] = {}
@@ -62,20 +64,21 @@ const getChangedAtSingletonInstance = async (
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'changedAtSingletonFilter',
   onFetch: async (elements: Element[]) => {
-    const elementsByType = _.groupBy(
+    const instancesByType = _.groupBy(
       elements
-        .filter(element => isMetadataInstanceElementSync(element) || isCustomObjectSync(element))
+        .filter(element => isMetadataInstanceElementSync(element))
         .filter(element => element.annotations[CORE_ANNOTATIONS.CHANGED_AT]),
       metadataTypeSync
     )
     const changedAtInstance = await getChangedAtSingletonInstance(config.elementsSource)
     elements.push(changedAtInstance)
     // None of the Elements were annotated with changedAt
-    if (Object.values(elementsByType).flat().length === 0) {
+    if (Object.values(instancesByType).flat().length === 0) {
       return
     }
     changedAtInstance.value = _.defaultsDeep(
-      createChangedAtSingletonInstanceValues(elementsByType),
+      config.lastChangeDateOfTypesWithNestedInstances ?? {},
+      createChangedAtSingletonInstanceValues(instancesByType),
       changedAtInstance.value,
     )
   },

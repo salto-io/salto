@@ -95,7 +95,13 @@ import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
 import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
 import centralizeTrackingInfoFilter from './filters/centralize_tracking_info'
 import changedAtSingletonFilter from './filters/changed_at_singleton'
-import { FetchElements, FetchProfile, MetadataQuery, SalesforceConfig } from './types'
+import {
+  FetchElements,
+  FetchProfile,
+  LastChangeDateOfTypesWithNestedInstances,
+  MetadataQuery,
+  SalesforceConfig,
+} from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
 import { addDefaults, isCustomObjectSync, isCustomType, listMetadataObjects } from './filters/utils'
@@ -334,12 +340,17 @@ const getMetadataTypesFromElementsSource = async (
     .toArray()
 )
 
+type CreateFiltersRunnerParams = {
+  fetchProfile: FetchProfile
+  lastChangeDateOfTypesWithNestedInstances?: LastChangeDateOfTypesWithNestedInstances
+}
+
 export default class SalesforceAdapter implements AdapterOperations {
   private maxItemsInRetrieveRequest: number
   private metadataToRetrieve: string[]
   private metadataTypesOfInstancesFetchedInFilters: string[]
   private nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>
-  private createFiltersRunner: (fetchProfile: FetchProfile) => Promise<Required<Filter>>
+  private createFiltersRunner: (params: CreateFiltersRunnerParams) => Required<Filter>
   private client: SalesforceClient
   private userConfig: SalesforceConfig
   private elementsSource: ReadOnlyElementsSource
@@ -402,7 +413,10 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.nestedMetadataTypes = nestedMetadataTypes
     this.client = client
     this.elementsSource = elementsSource
-    this.createFiltersRunner = async (fetchProfile: FetchProfile) => filter.filtersRunner(
+    this.createFiltersRunner = ({
+      fetchProfile,
+      lastChangeDateOfTypesWithNestedInstances,
+    }: CreateFiltersRunnerParams) => filter.filtersRunner(
       {
         client,
         config: {
@@ -413,6 +427,7 @@ export default class SalesforceAdapter implements AdapterOperations {
           fetchProfile,
           elementsSource,
           separateFieldToFiles: config.fetch?.metadata?.objectsToSeperateFieldsToFiles,
+          lastChangeDateOfTypesWithNestedInstances,
         },
       },
       filterCreators,
@@ -431,14 +446,15 @@ export default class SalesforceAdapter implements AdapterOperations {
   async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
     const fetchParams = this.userConfig.fetch ?? {}
     const baseQuery = buildMetadataQuery({ fetchParams })
+    const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
+      client: this.client,
+      metadataQuery: buildFilePropsMetadataQuery(baseQuery),
+    })
     const metadataQuery = withChangesDetection
       ? await buildMetadataQueryForFetchWithChangesDetection({
         fetchParams,
         elementsSource: this.elementsSource,
-        lastChangeDateOfTypesWithNestedInstances: await getLastChangeDateOfTypesWithNestedInstances({
-          client: this.client,
-          metadataQuery: buildFilePropsMetadataQuery(baseQuery),
-        }),
+        lastChangeDateOfTypesWithNestedInstances,
       })
       : baseQuery
     const fetchProfile = buildFetchProfile({ fetchParams, metadataQuery })
@@ -482,9 +498,8 @@ export default class SalesforceAdapter implements AdapterOperations {
       ...fieldTypes, ...hardCodedTypes, ...metadataTypes, ...metadataInstancesElements,
     ]
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
-    const onFetchFilterResult = (
-      await (await this.createFiltersRunner(fetchProfile)).onFetch(elements)
-    ) as FilterResult
+    const fetchFiltersRunner = this.createFiltersRunner({ fetchProfile, lastChangeDateOfTypesWithNestedInstances })
+    const onFetchFilterResult = await fetchFiltersRunner.onFetch(elements) as FilterResult
     const configChangeSuggestions = [
       ...metadataInstancesConfigInstances, ...(onFetchFilterResult.configSuggestions ?? []),
     ]
@@ -516,7 +531,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       .toArray()
 
     await awu(resolvedChanges).filter(isAdditionChange).map(getChangeData).forEach(addDefaults)
-    const filtersRunner = await this.createFiltersRunner(fetchProfile)
+    const filtersRunner = this.createFiltersRunner({ fetchProfile })
     await filtersRunner.preDeploy(resolvedChanges)
     log.debug(`preDeploy of group ${changeGroup.groupID} finished`)
 

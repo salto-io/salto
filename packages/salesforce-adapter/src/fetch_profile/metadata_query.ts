@@ -30,7 +30,7 @@ import {
 } from '../constants'
 import { ConfigValidationError, validateRegularExpressions } from '../config_validation'
 import {
-  FetchParameters,
+  FetchParameters, LastChangeDateOfTypesWithNestedInstances,
   METADATA_EXCLUDE_LIST,
   METADATA_INCLUDE_LIST,
   METADATA_SEPARATE_FIELD_LIST,
@@ -40,7 +40,6 @@ import {
   MetadataQueryParams,
 } from '../types'
 import { getChangedAtSingleton } from '../filters/utils'
-import { LastChangeDateOfTypesWithNestedInstances } from '../last_change_date_of_types_with_nested_instances'
 
 const { isDefined } = values
 

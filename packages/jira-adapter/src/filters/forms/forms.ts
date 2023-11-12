@@ -115,7 +115,6 @@ const filter: FilterCreator = ({ config, client, getElemIdFunc }) => ({
               transformationConfigByType: getTransformationConfigByType(jsmDuckTypeApiDefinitions.types),
               transformationDefaultConfig: jsmDuckTypeApiDefinitions.typeDefaults.transformation,
               parent: project,
-              // what ever default name you'd like
               defaultName: name,
               getElemIdFunc,
             })

@@ -2135,6 +2135,12 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
     },
   },
+  Form: {
+    transformation: {
+      idFields: ['name'],
+      extendsParentId: true,
+    },
+  },
 }
 
 export const JSM_DUCKTYPE_SUPPORTED_TYPES = {

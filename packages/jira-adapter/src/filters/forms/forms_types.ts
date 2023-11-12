@@ -77,7 +77,7 @@ export const createFormType = (): {
     formType: ObjectType
     subTypes: ObjectType[]
   } => {
-  const FormSubmitType = new ObjectType({
+  const formSubmitType = new ObjectType({
     elemID: new ElemID(JIRA, 'FormSubmitettings'),
     fields: {
       lock: {
@@ -89,7 +89,7 @@ export const createFormType = (): {
     },
   })
 
-  const FormSettingsType = new ObjectType({
+  const formSettingsType = new ObjectType({
     elemID: new ElemID(JIRA, 'FormSettings'),
     fields: {
       templateId: {
@@ -99,14 +99,14 @@ export const createFormType = (): {
         refType: BuiltinTypes.STRING,
       },
       submit: {
-        refType: FormSubmitType,
+        refType: formSubmitType,
       },
       templateFormUuid: {
         refType: BuiltinTypes.STRING,
       },
     },
   })
-  const AttributeContentLayoutType = new ObjectType({
+  const attributeContentLayoutType = new ObjectType({
     elemID: new ElemID(JIRA, 'AttributeContentLayoutType'),
     fields: {
       localId: {
@@ -114,7 +114,7 @@ export const createFormType = (): {
       },
     },
   })
-  const ContentLayoutType = new ObjectType({
+  const contentLayoutType = new ObjectType({
     elemID: new ElemID(JIRA, 'ContentLayout'),
     fields: {
       type: {
@@ -124,11 +124,11 @@ export const createFormType = (): {
         refType: new ListType(BuiltinTypes.STRING),
       },
       attrs: {
-        refType: AttributeContentLayoutType,
+        refType: attributeContentLayoutType,
       },
     },
   })
-  const FormLayoutItemType = new ObjectType({
+  const formLayoutItemType = new ObjectType({
     elemID: new ElemID(JIRA, 'LayoutForm'),
     fields: {
       version: {
@@ -138,11 +138,11 @@ export const createFormType = (): {
         refType: BuiltinTypes.STRING,
       },
       content: {
-        refType: new ListType(ContentLayoutType),
+        refType: new ListType(contentLayoutType),
       },
     },
   })
-  const QuestionType = new ObjectType({
+  const questionType = new ObjectType({
     elemID: new ElemID(JIRA, 'Question'),
     fields: {
       type: {
@@ -162,14 +162,14 @@ export const createFormType = (): {
       },
     },
   })
-  const FormDesignType = new ObjectType({
+  const formDesignType = new ObjectType({
     elemID: new ElemID(JIRA, 'FormDesign'),
     fields: {
       settings: {
-        refType: FormSettingsType,
+        refType: formSettingsType,
       },
       layout: {
-        refType: new ListType(FormLayoutItemType),
+        refType: new ListType(formLayoutItemType),
       },
       conditions: {
         refType: BuiltinTypes.UNKNOWN,
@@ -178,12 +178,12 @@ export const createFormType = (): {
         refType: BuiltinTypes.UNKNOWN,
       },
       questions: {
-        refType: new ListType(QuestionType),
+        refType: new ListType(questionType),
       },
     },
   })
 
-  const FormType = new ObjectType({
+  const formType = new ObjectType({
     elemID: new ElemID(JIRA, FORM_TYPE),
     fields: {
       id: {
@@ -198,14 +198,14 @@ export const createFormType = (): {
         refType: BuiltinTypes.STRING,
       },
       design: {
-        refType: FormDesignType,
+        refType: formDesignType,
       },
     },
     path: [JIRA, adapterElements.TYPES_PATH, FORM_TYPE],
   })
   return {
-    formType: FormType,
-    subTypes: [FormSubmitType, FormSettingsType, FormLayoutItemType, FormDesignType, QuestionType, ContentLayoutType],
+    formType,
+    subTypes: [formSubmitType, formSettingsType, formLayoutItemType, formDesignType, questionType, contentLayoutType],
   }
 }
 

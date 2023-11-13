@@ -161,7 +161,7 @@ import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
 import { jiraJSMEntriesFunc } from './jsm_utils'
 import { getWorkspaceId } from './workspace_id'
-import { JSM_ASSESTS_DUCKTYPE_SUPPORTED_TYPES } from './config/api_config'
+import { JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES } from './config/api_config'
 
 const { getAllElements } = elementUtils.ducktype
 const { findDataField, computeGetArgs } = elementUtils
@@ -505,8 +505,8 @@ export default class JiraAdapter implements AdapterOperations {
     })
   }
 
-  @logDuration('generating JSM assests instances and types from service')
-  private async getJSMAssestsElements():
+  @logDuration('generating JSM assets instances and types from service')
+  private async getJSMAssetsElements():
   Promise<elementUtils.FetchElements<Element[]>> {
     const { jsmApiDefinitions } = this.userConfig
     // jsmApiDefinitions is currently undefined for DC
@@ -526,7 +526,7 @@ export default class JiraAdapter implements AdapterOperations {
       adapterName: JIRA,
       types: jsmApiDefinitions.types,
       shouldAddRemainingTypes: false,
-      supportedTypes: JSM_ASSESTS_DUCKTYPE_SUPPORTED_TYPES,
+      supportedTypes: JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES,
       fetchQuery: this.fetchQuery,
       paginator: this.paginator,
       nestedFieldFinder: findDataField,
@@ -619,19 +619,19 @@ export default class JiraAdapter implements AdapterOperations {
     ])
 
     const jsmElements = await this.getJSMElements(swaggerResponse.elements)
-    const jsmAssestsElements = await this.getJSMAssestsElements()
+    const jsmAssetsElements = await this.getJSMAssetsElements()
     const elements: Element[] = [
       ...Object.values(swaggerTypes),
       ...swaggerResponse.elements,
       ...scriptRunnerElements.elements,
       ...jsmElements.elements,
-      ...jsmAssestsElements.elements,
+      ...jsmAssetsElements.elements,
     ]
     return { elements,
       errors: (swaggerResponse.errors ?? [])
         .concat(scriptRunnerElements.errors ?? [])
         .concat(jsmElements.errors ?? [])
-        .concat(jsmAssestsElements.errors ?? []),
+        .concat(jsmAssetsElements.errors ?? []),
       configChanges: (jsmElements.configChanges ?? []) }
   }
 

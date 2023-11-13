@@ -2141,12 +2141,12 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       extendsParentId: true,
     },
   },
-  AssestsSchema: {
+  AssetsSchema: {
     request: {
       url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/list?maxResults=1000',
     },
     transformation: {
-      sourceTypeName: 'AssestsSchema__values',
+      sourceTypeName: 'AssetsSchema__values',
       dataField: 'values',
       idFields: ['name'],
       fieldsToOmit: [
@@ -2168,8 +2168,8 @@ export const JSM_DUCKTYPE_SUPPORTED_TYPES = {
   SLA: ['SLA'],
 }
 
-export const JSM_ASSESTS_DUCKTYPE_SUPPORTED_TYPES = {
-  AssestsSchema: ['AssestsSchema'],
+export const JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES = {
+  AssetsSchema: ['AssetsSchema'],
 }
 
 export const SCRIPT_RUNNER_DUCKTYPE_SUPPORTED_TYPES = {

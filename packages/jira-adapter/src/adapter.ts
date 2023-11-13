@@ -512,7 +512,8 @@ export default class JiraAdapter implements AdapterOperations {
     // jsmApiDefinitions is currently undefined for DC
     if (this.client === undefined
       || jsmApiDefinitions === undefined
-      || !this.userConfig.fetch.enableJSM) {
+      || !this.userConfig.fetch.enableJSM
+      || !this.userConfig.fetch.enableJsmExperimental) {
       return { elements: [] }
     }
 

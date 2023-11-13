@@ -711,6 +711,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToHide: FIELDS_TO_HIDE.concat([
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'domain_verification_code' },
+        { fieldName: 'username' },
       ]),
     },
     deployRequests: {

@@ -78,7 +78,7 @@ describe('support address filter', () => {
     filter = filterCreator(createFilterCreatorParams({ elementsSource })) as FilterType
   })
   describe('onFetch', () => {
-    it('should turn zendesk emails to template expression', async () => {
+    it('should turn zendesk emails to template expression and add username', async () => {
       const elements = [
         supportAddressZendesk,
         supportAddressOther,
@@ -96,8 +96,12 @@ describe('support address filter', () => {
       if (zendeskAddress === undefined || otherAddress === undefined || undefinedAddress === undefined) {
         return
       }
-      expect(zendeskAddress).toEqual(supportAddressZendeskAfterFetch)
-      expect(otherAddress).toEqual(supportAddressOther)
+      const supportAddressZendeskAfterFetchCloned = supportAddressZendeskAfterFetch.clone()
+      supportAddressZendeskAfterFetchCloned.value.username = 'support.1'
+      const supportAddressOtherCloned = supportAddressOther.clone()
+      supportAddressOtherCloned.value.username = 'support1'
+      expect(zendeskAddress).toEqual(supportAddressZendeskAfterFetchCloned)
+      expect(otherAddress).toEqual(supportAddressOtherCloned)
       expect(undefinedAddress).toEqual(supportAddressUndefined)
     })
   })

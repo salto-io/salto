@@ -287,7 +287,6 @@ export const getTypeAndInstances = async ({
   reversedSupportedTypes,
   customInstanceFilter,
   additionalRequestContext,
-  nestedPath,
 }: {
   adapterName: string
   typeName: string
@@ -302,7 +301,6 @@ export const getTypeAndInstances = async ({
   reversedSupportedTypes: Record<string, string[]>
   customInstanceFilter?: (instances: InstanceElement[]) => InstanceElement[]
   additionalRequestContext?: Record<string, unknown>
-  nestedPath?: string[]
 }): Promise<Element[]> => {
   const entries = await getEntriesForType({
     adapterName,
@@ -330,7 +328,6 @@ export const getTypeAndInstances = async ({
     transformationConfigByType,
     transformationDefaultConfig: typeDefaultConfig.transformation,
     getElemIdFunc,
-    nestedPath,
   })
   return elements
 }

@@ -330,7 +330,7 @@ describe('forms filter', () => {
         expect(connection.put).toHaveBeenCalledTimes(0)
         expect(connection.post).toHaveBeenCalledTimes(0)
       })
-      it('should not deploy if enableJSM is false or enableJsmExperimental is false', async () => {
+      it('should not deploy if enableJSM is false', async () => {
         const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
         config.fetch.enableJSM = false
         filter = formsFilter(getFilterParams({ config, client })) as typeof filter

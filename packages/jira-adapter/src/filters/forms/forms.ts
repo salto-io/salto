@@ -137,7 +137,7 @@ const filter: FilterCreator = ({ config, client, getElemIdFunc }) => ({
       })
   },
   deploy: async changes => {
-    if (!config.fetch.enableJSM || !config.fetch.enableJsmExperimental) {
+    if (!config.fetch.enableJSM || client.isDataCenter) {
       return {
         deployResult: { appliedChanges: [], errors: [] },
         leftoverChanges: changes,

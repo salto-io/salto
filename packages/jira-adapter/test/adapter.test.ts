@@ -15,7 +15,7 @@
 */
 import { AdapterOperations, ObjectType, ElemID, ProgressReporter, FetchResult, InstanceElement, toChange, isRemovalChange, getChangeData, BuiltinTypes, ReferenceExpression, ElemIdGetter, ServiceIds } from '@salto-io/adapter-api'
 import { deployment, elements, client as clientUtils } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, safeJsonStringify } from '@salto-io/adapter-utils'
 import MockAdapter from 'axios-mock-adapter'
 import axios from 'axios'
 import { mockFunction } from '@salto-io/test-utils'
@@ -25,6 +25,7 @@ import { getDefaultConfig } from '../src/config/config'
 import { ISSUE_TYPE_NAME, JIRA, PROJECT_TYPE, SERVICE_DESK } from '../src/constants'
 import { createCredentialsInstance, createConfigInstance, mockClient, createEmptyType } from './utils'
 import { jiraJSMEntriesFunc } from '../src/jsm_utils'
+import { CLOUD_RESOURCE_FIELD } from '../src/filters/automation/cloud_id'
 
 const { getAllElements, getEntriesResponseValues } = elements.ducktype
 const { generateTypes, getAllInstances, loadSwagger } = elements.swagger
@@ -435,6 +436,14 @@ describe('adapter', () => {
         mockAxiosAdapter = new MockAdapter(axios)
         // mock as there are gets of license during fetch
         mockAxiosAdapter.onGet().reply(200, { })
+        // mock as we call getCloudId in the forms filter.
+        mockAxiosAdapter.onPost().reply(200, {
+          unparsedData: {
+            [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
+              tenantId: 'cloudId',
+            }),
+          },
+        })
         result = await srAdapter.fetch({ progressReporter })
       })
       afterEach(() => {

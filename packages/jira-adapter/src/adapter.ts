@@ -138,6 +138,7 @@ import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_speci
 import issueLayoutFilter from './filters/layouts/issue_layout'
 import removeSimpleFieldProjectFilter from './filters/remove_simplified_field_project'
 import changeServiceDeskIdFieldProjectFilter from './filters/change_projects_service_desk_id'
+import formsFilter from './filters/forms/forms'
 import addJsmTypesAsFieldsFilter from './filters/add_jsm_types_as_fields'
 import createReferencesIssueLayoutFilter from './filters/layouts/create_references_layouts'
 import issueTypeHierarchyFilter from './filters/issue_type_hierarchy_filter'
@@ -272,6 +273,7 @@ export const DEFAULT_FILTERS = [
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,
+  formsFilter,
   fieldReferencesFilter,
   // Must run after fieldReferencesFilter
   addJsmTypesAsFieldsFilter,

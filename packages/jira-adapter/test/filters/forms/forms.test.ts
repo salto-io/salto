@@ -39,8 +39,7 @@ describe('forms filter', () => {
       beforeEach(async () => {
         const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
         config.fetch.enableJSM = true
-        config.fetch.enableJsmExperimental = true
-        const { client: cli, connection: conn } = mockClient(true)
+        const { client: cli, connection: conn } = mockClient(false)
         connection = conn
         client = cli
         filter = formsFilter(getFilterParams({ config, client })) as typeof filter
@@ -161,23 +160,13 @@ describe('forms filter', () => {
         const formInstance = instances.find(e => e.elemID.typeName === FORM_TYPE)
         expect(formInstance).toBeUndefined()
       })
-      it('should not add forms to elements when enableJsmExperimental is false', async () => {
-        const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-        config.fetch.enableJsmExperimental = false
-        filter = formsFilter(getFilterParams({ config, client })) as typeof filter
-        await filter.onFetch(elements)
-        const instances = elements.filter(isInstanceElement)
-        const formInstance = instances.find(e => e.elemID.typeName === FORM_TYPE)
-        expect(formInstance).toBeUndefined()
-      })
     })
     describe('deploy', () => {
       let formInstance: InstanceElement
       beforeEach(async () => {
         const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
         config.fetch.enableJSM = true
-        config.fetch.enableJsmExperimental = true
-        const { client: cli, connection: conn } = mockClient(true)
+        const { client: cli, connection: conn } = mockClient(false)
         connection = conn
         client = cli
         filter = formsFilter(getFilterParams({ config, client })) as typeof filter
@@ -341,10 +330,9 @@ describe('forms filter', () => {
         expect(connection.put).toHaveBeenCalledTimes(0)
         expect(connection.post).toHaveBeenCalledTimes(0)
       })
-      it('should not deploy if enableJSM is false or enableJsmExperimental is false', async () => {
+      it('should not deploy if enableJSM is false', async () => {
         const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
         config.fetch.enableJSM = false
-        config.fetch.enableJsmExperimental = false
         filter = formsFilter(getFilterParams({ config, client })) as typeof filter
         const res = await filter.deploy([{ action: 'add', data: { after: formInstance } }])
         expect(res.leftoverChanges).toHaveLength(1)
@@ -388,8 +376,7 @@ describe('forms filter', () => {
       beforeEach(async () => {
         const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
         config.fetch.enableJSM = true
-        config.fetch.enableJsmExperimental = true
-        const { client: cli, connection: conn } = mockClient(true)
+        const { client: cli, connection: conn } = mockClient(false)
         connection = conn
         client = cli
         filter = formsFilter(getFilterParams({ config, client })) as typeof filter
@@ -509,8 +496,7 @@ describe('forms filter', () => {
       beforeEach(async () => {
         const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
         config.fetch.enableJSM = true
-        config.fetch.enableJsmExperimental = true
-        const { client: cli, connection: conn } = mockClient(true)
+        const { client: cli, connection: conn } = mockClient(false)
         connection = conn
         client = cli
         filter = formsFilter(getFilterParams({ config, client })) as typeof filter

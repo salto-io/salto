@@ -918,10 +918,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         {
           fieldName: 'type',
           fieldType: 'string',
-          restrictions: {
-            enforce_value: true,
-            values: ['checkbox', 'date', 'decimal', 'dropdown', 'integer', 'regexp', 'text', 'textarea'],
-          },
         },
         { fieldName: 'id', fieldType: 'number' },
       ],
@@ -1015,10 +1011,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         {
           fieldName: 'type',
           fieldType: 'string',
-          restrictions: {
-            enforce_value: true,
-            values: ['checkbox', 'date', 'decimal', 'dropdown', 'integer', 'regexp', 'text', 'textarea'],
-          },
         },
         { fieldName: 'id', fieldType: 'number' },
       ],

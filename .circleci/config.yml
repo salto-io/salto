@@ -127,7 +127,7 @@ jobs:
           name: Run unit tests
           command: yarn test -w 4 --reporters=default --reporters=jest-junit
           environment:
-            JEST_JUNIT_OUTPUT: "reports/unittests/test-results.xml"
+            JEST_JUNIT_OUTPUT_DIR: "reports/unittests"
             # https://github.com/pinojs/koa-pino-logger/issues/16
             FORCE_COLOR: 1
 
@@ -197,7 +197,7 @@ jobs:
             # we explicitly configure it in here
             SALTO_TELEMETRY_DISABLE: '0'
             SALTO_TELEMETRY_URL: 'https://telemetry.salto.io'
-            JEST_JUNIT_OUTPUT: 'reports/e2e/test-results.xml'
+            JEST_JUNIT_OUTPUT_DIR: 'reports/e2e/'
 
       - store_test_results:
           path: reports

@@ -99,6 +99,7 @@ const extractUsernameFromEmail = (instance: InstanceElement): void => {
   const originalEmail = instance.value.email
   if (!_.isString(originalEmail)) {
     log.error(`email of ${instance.elemID.getFullName()} is not a string`)
+    instance.value.username = 'INVALID_USERNAME'
     return
   }
   const regex = /^([^@]+)/

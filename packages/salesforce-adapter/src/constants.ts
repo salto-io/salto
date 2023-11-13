@@ -495,6 +495,7 @@ export const SOCKET_TIMEOUT = 'ESOCKETTIMEDOUT'
 export const INVALID_GRANT = 'invalid_grant'
 export const ENOTFOUND = 'ENOTFOUND'
 export const ERROR_HTTP_502 = 'ERROR_HTTP_502'
+export const POLLING_TIMEOUT_ERROR_CODE = 'POLLING_TIMEOUT'
 
 export const ERROR_PROPERTIES = {
   MESSAGE: 'message',

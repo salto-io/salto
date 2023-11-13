@@ -25,7 +25,7 @@ import mockClient from './client'
 import { mockFileProperties } from './connection'
 import { getLastChangeDateOfTypesWithNestedInstances } from '../src/last_change_date_of_types_with_nested_instances'
 import { buildFilePropsMetadataQuery, buildMetadataQuery } from '../src/fetch_profile/metadata_query'
-import { MetadataQuery } from '../src/types'
+import { LastChangeDateOfTypesWithNestedInstances, MetadataQuery } from '../src/types'
 
 const { makeArray } = collections.array
 
@@ -197,12 +197,16 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
         client,
         metadataQuery,
       })
-      expect(lastChangeDateOfTypesWithNestedInstances).toEqual({
-        [CUSTOM_OBJECT]: {
-          [FIRST_OBJECT_NAME]: '2023-11-07T00:00:00.000Z',
-          [SECOND_OBJECT_NAME]: '2023-11-02T00:00:00.000Z',
-        },
-      })
+      const expected: LastChangeDateOfTypesWithNestedInstances = {
+        AssignmentRules: {},
+        AutoResponseRules: {},
+        CustomLabels: undefined,
+        CustomObject: {},
+        EscalationRules: {},
+        SharingRules: {},
+        Workflow: {},
+      }
+      expect(lastChangeDateOfTypesWithNestedInstances).toEqual(expected)
       expect(listedTypes).toIncludeSameMembers(_.difference(RELATED_TYPES, excludedRelatedTypes))
     })
   })

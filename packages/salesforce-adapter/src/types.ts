@@ -927,3 +927,5 @@ export type LastChangeDateOfTypesWithNestedInstances = {
 } & {
   [key in TypeWithNestedInstances]: string | undefined
 }
+
+export type ChangedAtSingletonValue = Record<string, Record<string, string>> & LastChangeDateOfTypesWithNestedInstances

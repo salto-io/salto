@@ -18,23 +18,23 @@ import {
   Element,
   ElemID,
   InstanceElement,
-  ReadOnlyElementsSource,
   Values,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { LocalFilterCreator } from '../filter'
 import { ArtificialTypes } from '../constants'
 import {
-  apiNameSync,
-  getChangedAtSingleton,
+  apiNameSync, getChangedAtSingletonInstance,
   isMetadataInstanceElementSync,
   metadataTypeSync,
 } from './utils'
 import { MetadataInstanceElement } from '../transformers/transformer'
+import { ChangedAtSingletonValue, LastChangeDateOfTypesWithNestedInstances } from '../types'
 
-const createChangedAtSingletonInstanceValues = (
+const createCurrentChangedAtSingletonValues = (
+  lastChangeDateOfTypesWithNestedInstances: LastChangeDateOfTypesWithNestedInstances,
   metadataInstancesByType: Record<string, MetadataInstanceElement[]>
-): Values => {
+): ChangedAtSingletonValue => {
   const instanceValues: Values = {}
   Object.entries(metadataInstancesByType).forEach(([metadataType, elements]) => {
     instanceValues[metadataType] = {}
@@ -42,7 +42,7 @@ const createChangedAtSingletonInstanceValues = (
       instanceValues[metadataType][apiNameSync(element) ?? ''] = element.annotations[CORE_ANNOTATIONS.CHANGED_AT]
     })
   })
-  return instanceValues
+  return _.defaultsDeep(lastChangeDateOfTypesWithNestedInstances, instanceValues)
 }
 
 const createEmptyChangedAtSingletonInstance = async (): Promise<InstanceElement> => (
@@ -52,18 +52,13 @@ const createEmptyChangedAtSingletonInstance = async (): Promise<InstanceElement>
   )
 )
 
-const getChangedAtSingletonInstance = async (
-  elementsSource: ReadOnlyElementsSource | undefined
-): Promise<InstanceElement> => {
-  const changedAtSingleton = elementsSource !== undefined
-    ? await getChangedAtSingleton(elementsSource)
-    : undefined
-  return changedAtSingleton ?? createEmptyChangedAtSingletonInstance()
-}
-
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'changedAtSingletonFilter',
   onFetch: async (elements: Element[]) => {
+    const { lastChangeDateOfTypesWithNestedInstances } = config
+    if (lastChangeDateOfTypesWithNestedInstances === undefined) {
+      throw new Error('Unknown error occurred upon fetch')
+    }
     const instancesByType = _.groupBy(
       elements
         .filter(isMetadataInstanceElementSync)
@@ -71,14 +66,14 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
       metadataTypeSync
     )
     const changedAtInstance = await getChangedAtSingletonInstance(config.elementsSource)
+      ?? await createEmptyChangedAtSingletonInstance()
     elements.push(changedAtInstance)
     // None of the Elements were annotated with changedAt
     if (Object.values(instancesByType).flat().length === 0) {
       return
     }
     changedAtInstance.value = _.defaultsDeep(
-      config.lastChangeDateOfTypesWithNestedInstances ?? {},
-      createChangedAtSingletonInstanceValues(instancesByType),
+      createCurrentChangedAtSingletonValues(lastChangeDateOfTypesWithNestedInstances, instancesByType),
       changedAtInstance.value,
     )
   },

@@ -28,7 +28,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import {
   addDefaults,
   toListType,
-  getChangedAtSingleton,
+  getChangedAtSingletonInstance,
   getNamespace,
   isCustomMetadataRecordInstance,
   isCustomMetadataRecordType,
@@ -380,7 +380,7 @@ describe('filter utils', () => {
         elementsSource = buildElementsSourceFromElements([changedAtSingleton])
       })
       it('should return the singleton', async () => {
-        expect(await getChangedAtSingleton(elementsSource)).toEqual(changedAtSingleton)
+        expect(await getChangedAtSingletonInstance(elementsSource)).toEqual(changedAtSingleton)
       })
     })
 
@@ -389,7 +389,7 @@ describe('filter utils', () => {
         elementsSource = buildElementsSourceFromElements([])
       })
       it('should return undefined', async () => {
-        expect(await getChangedAtSingleton(elementsSource)).toBeUndefined()
+        expect(await getChangedAtSingletonInstance(elementsSource)).toBeUndefined()
       })
     })
   })

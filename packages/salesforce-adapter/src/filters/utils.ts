@@ -566,7 +566,7 @@ export const getInstanceAlias = async (
     : `${label} (${namespace})`
 }
 
-export const getChangedAtSingleton = async (
+export const getChangedAtSingletonInstance = async (
   elementsSource: ReadOnlyElementsSource
 ): Promise<InstanceElement | undefined> => {
   const element = await elementsSource.get(new ElemID(SALESFORCE, CHANGED_AT_SINGLETON, 'instance', ElemID.CONFIG_NAME))

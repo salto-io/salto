@@ -72,7 +72,7 @@ const deployForms = async (
 const filter: FilterCreator = ({ config, client, getElemIdFunc }) => ({
   name: 'formsFilter',
   onFetch: async elements => {
-    if (!config.fetch.enableJSM || !config.fetch.enableJsmExperimental) {
+    if (!config.fetch.enableJSM || client.isDataCenter) {
       return
     }
     const cloudId = await getCloudId(client)

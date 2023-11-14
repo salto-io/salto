@@ -15,7 +15,6 @@
 */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { mockFunction } from '@salto-io/test-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { AccountInfo } from '@salto-io/adapter-api'
 import { createConnection, validateCredentials } from '../../src/client/connection'

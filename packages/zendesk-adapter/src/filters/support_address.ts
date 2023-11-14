@@ -33,6 +33,7 @@ import { FilterCreator } from '../filter'
 import { BRAND_TYPE_NAME, SUPPORT_ADDRESS_TYPE_NAME } from '../constants'
 
 const log = logger(module)
+export const INVALID_USERNAME = 'INVALID_USERNAME'
 
 
 const referenceEmail = ({ emailPart, brandInstances }: {
@@ -99,24 +100,23 @@ const extractUsernameFromEmail = (instance: InstanceElement): void => {
   const originalEmail = instance.value.email
   if (!_.isString(originalEmail)) {
     log.error(`email of ${instance.elemID.getFullName()} is not a string`)
-    instance.value.username = 'INVALID_USERNAME'
+    instance.value.username = INVALID_USERNAME
     return
   }
-  const regex = /^([^@]+)/
-  const match = originalEmail.match(regex)
+  const splitEmail = originalEmail.split('@')
 
-  if (Array.isArray(match) && match[1] !== undefined) {
+  if (splitEmail[0] !== undefined) {
     // eslint-disable-next-line prefer-destructuring
-    instance.value.username = match[1]
+    instance.value.username = splitEmail[0]
     return
   }
-  instance.value.username = 'INVALID_USERNAME'
+  instance.value.username = INVALID_USERNAME
 }
 
 /**
  * 1. OnFetch and in onDeploy this filter turns the email in support_address to a template expression with a reference
  * to the brand's subdomain. only for zendesk emails. In preDeploy the template expressions are turned back to string.
- * 2. OnFetch, from the email username@subdomain.zendesk.com we will extranct the username to a hidden field
+ * 2. OnFetch, from the email username@subdomain.zendesk.com we will extract the username to a hidden field
  */
 const filterCreator: FilterCreator = () => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}

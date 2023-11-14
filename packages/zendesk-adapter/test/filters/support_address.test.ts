@@ -25,7 +25,7 @@ import {
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { FilterResult } from '../../src/filter'
 import { BRAND_TYPE_NAME, SUPPORT_ADDRESS_TYPE_NAME, ZENDESK } from '../../src/constants'
-import filterCreator from '../../src/filters/support_address'
+import filterCreator, { INVALID_USERNAME } from '../../src/filters/support_address'
 import { createFilterCreatorParams } from '../utils'
 
 
@@ -71,6 +71,13 @@ describe('support address filter', () => {
     supportAddressType,
     {}
   )
+  const supportAddressInvalid = new InstanceElement(
+    'address4',
+    supportAddressType,
+    {
+      email: 'invalidEmail',
+    }
+  )
 
   beforeAll(() => {
     const elementsSource = buildElementsSourceFromElements([supportAddressZendesk, supportAddressOther, brand1, brand2])
@@ -79,10 +86,19 @@ describe('support address filter', () => {
   })
   describe('onFetch', () => {
     it('should turn zendesk emails to template expression and add username', async () => {
+      const supportAddressZendeskAfterFetchCloned = supportAddressZendeskAfterFetch.clone()
+      supportAddressZendeskAfterFetchCloned.value.username = 'support.1'
+      const supportAddressOtherCloned = supportAddressOther.clone()
+      supportAddressOtherCloned.value.username = 'support1'
+      const supportAddressUndefinedCloned = supportAddressUndefined.clone()
+      supportAddressUndefinedCloned.value.username = INVALID_USERNAME
+      const supportAddressInvalidCloned = supportAddressInvalid.clone()
+      supportAddressInvalidCloned.value.username = 'invalidEmail'
       const elements = [
         supportAddressZendesk,
         supportAddressOther,
         supportAddressUndefined,
+        supportAddressInvalid,
         brand1,
         brand2,
       ].map(e => e.clone())
@@ -90,19 +106,20 @@ describe('support address filter', () => {
       const zendeskAddress = elements.find(e => e.elemID.name === 'address1')
       const otherAddress = elements.find(e => e.elemID.name === 'address2')
       const undefinedAddress = elements.find(e => e.elemID.name === 'address3')
+      const invalidAddress = elements.find(e => e.elemID.name === 'address4')
       expect(zendeskAddress).toBeDefined()
       expect(otherAddress).toBeDefined()
       expect(undefinedAddress).toBeDefined()
-      if (zendeskAddress === undefined || otherAddress === undefined || undefinedAddress === undefined) {
-        return
-      }
-      const supportAddressZendeskAfterFetchCloned = supportAddressZendeskAfterFetch.clone()
-      supportAddressZendeskAfterFetchCloned.value.username = 'support.1'
-      const supportAddressOtherCloned = supportAddressOther.clone()
-      supportAddressOtherCloned.value.username = 'support1'
+      expect(invalidAddress).toBeDefined()
+      if (zendeskAddress === undefined
+        || otherAddress === undefined
+        || undefinedAddress === undefined
+        || invalidAddress === undefined
+      ) { return }
       expect(zendeskAddress).toEqual(supportAddressZendeskAfterFetchCloned)
       expect(otherAddress).toEqual(supportAddressOtherCloned)
-      expect(undefinedAddress).toEqual(supportAddressUndefined)
+      expect(undefinedAddress).toEqual(supportAddressUndefinedCloned)
+      expect(invalidAddress).toEqual(supportAddressInvalidCloned)
     })
   })
   describe('preDeploy', () => {

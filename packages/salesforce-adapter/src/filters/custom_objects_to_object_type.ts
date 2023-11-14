@@ -454,7 +454,7 @@ const createFromInstance = async (
 
 const removeIrrelevantElements = async (elements: Element[]): Promise<void> => {
   await removeAsync(elements, isInstanceOfType(CUSTOM_OBJECT))
-  await removeAsync(elements, async elem => await apiName(elem) === CUSTOM_OBJECT)
+  // await removeAsync(elements, async elem => await apiName(elem) === CUSTOM_OBJECT)
 }
 
 // Instances metadataTypes that should be under the customObject folder and have a PARENT reference

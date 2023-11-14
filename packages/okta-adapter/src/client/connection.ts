@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import { AccountInfo } from '@salto-io/adapter-api'
-import { client as clientUtils, client } from '@salto-io/adapter-components'
+import { client as clientUtils, client, auth as authUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { Credentials, AccessTokenCredentials } from '../auth'
+import { Credentials, AccessTokenCredentials, isOAuthAccessTokenCredentials, OAuthAccessTokenCredentials } from '../auth'
 
 const log = logger(module)
 
@@ -60,7 +60,7 @@ export const validateCredentials = async (_creds: {
   }
 }
 
-const accessTokenAuthParamsFunc = (
+const APITokenAuthParamsFunc = (
   { token }: AccessTokenCredentials
 ): clientUtils.AuthParams => ({
   headers: {
@@ -68,13 +68,36 @@ const accessTokenAuthParamsFunc = (
   },
 })
 
+const OAuthAuthParamsFunc = async (
+  creds: OAuthAccessTokenCredentials,
+  retryOptions: clientUtils.RetryOptions,
+): Promise<clientUtils.AuthParams> => {
+  const { baseUrl, clientId, clientSecret, refreshToken, accessToken } = creds
+  if (refreshToken !== undefined) {
+    return authUtils.oauthAccessTokenRefresh({
+      endpoint: '/oauth2/v1/token',
+      baseURL: baseUrl,
+      clientId,
+      clientSecret,
+      refreshToken,
+      retryOptions,
+    })
+  }
+  // if refreshToken in undefined, we might be able to use current accessToken
+  return {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  }
+}
+
 export const createConnection: clientUtils.ConnectionCreator<Credentials> = (
   retryOptions: clientUtils.RetryOptions,
 ) => (
   clientUtils.axiosConnection({
     retryOptions,
     authParamsFunc: async (creds: Credentials) => (
-      accessTokenAuthParamsFunc(creds)
+      isOAuthAccessTokenCredentials(creds)
+        ? OAuthAuthParamsFunc(creds, retryOptions)
+        : APITokenAuthParamsFunc(creds)
     ),
     baseURLFunc: async ({ baseUrl }) => baseUrl,
     credValidateFunc: validateCredentials,

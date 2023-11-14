@@ -16,7 +16,7 @@
 import {
   ObjectType, Element, Values, isObjectTypeChange, InstanceElement,
   isAdditionOrModificationChange, getChangeData, isAdditionChange, isModificationChange,
-  ElemID, toChange, isInstanceElement, isObjectType, CORE_ANNOTATIONS,
+  ElemID, toChange, isInstanceElement,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
@@ -24,7 +24,7 @@ import { TOPICS_FOR_OBJECTS_FIELDS, TOPICS_FOR_OBJECTS_ANNOTATION, TOPICS_FOR_OB
 import { isCustomObject, apiName, createInstanceElement, metadataAnnotationTypes, MetadataTypeAnnotations } from '../transformers/transformer'
 import { LocalFilterCreator } from '../filter'
 import { TopicsForObjectsInfo } from '../client/types'
-import { apiNameSync, boolValue, getInstancesOfMetadataType, isInstanceOfTypeChange, metadataTypeSync } from './utils'
+import { boolValue, getInstancesOfMetadataType, isInstanceOfTypeChange, metadataTypeSync } from './utils'
 
 const { awu } = collections.asynciterable
 const { removeAsync } = promises.array
@@ -84,13 +84,7 @@ const filterCreator: LocalFilterCreator = () => ({
       }
     })
 
-    // Remove TopicsForObjects Instances & and set the MetadataType as hidden to avoid information duplication
-    const topicsForObjectType = elements
-      .filter(isObjectType)
-      .find(objectType => apiNameSync(objectType) === TOPICS_FOR_OBJECTS_METADATA_TYPE)
-    if (topicsForObjectType !== undefined) {
-      topicsForObjectType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
-    }
+    // Remove TopicsForObjects Instances
     _.remove(
       elements,
       element => isInstanceElement(element)

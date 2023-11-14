@@ -95,6 +95,7 @@ import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
 import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
 import centralizeTrackingInfoFilter from './filters/centralize_tracking_info'
 import changedAtSingletonFilter from './filters/changed_at_singleton'
+import hideTypesFilter from './filters/hide_types'
 import { FetchElements, FetchProfile, MetadataQuery, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
@@ -197,6 +198,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   // Any filter that relies on _created_at or _changed_at should run after removeUnixTimeZero
   { creator: removeUnixTimeZeroFilter },
   { creator: metadataInstancesAliasesFilter },
+  { creator: hideTypesFilter },
   // createChangedAtSingletonInstanceFilter should run last
   { creator: changedAtSingletonFilter },
 ]

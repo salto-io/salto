@@ -218,7 +218,7 @@ describe.each([
     env1Client = getSalesforceClient(env1Creds)
     env2Client = getSalesforceClient(env2Creds)
 
-    baseDir = (await tmp.dir()).path
+    baseDir = '/Users/tamir/tamir-test'
     saltoHomeDir = (await tmp.dir()).path
 
     // Create the base elements in the accounts

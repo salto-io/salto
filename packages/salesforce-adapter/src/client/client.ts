@@ -641,12 +641,27 @@ export default class SalesforceClient {
       operationInfo: 'listMetadataObjects',
       input: listMetadataQuery,
       sendChunk: async chunk => {
+        const [cachedQueries, nonCachedQueries] = _.partition(
+          chunk,
+          query => this.filePropsByType[query.type] !== undefined
+        )
         if (this.filePropsByType[chunk[0].type]) {
           return this.filePropsByType[chunk[0].type]
         }
-        const res = await this.retryOnBadResponse(() => this.conn.metadata.list(chunk))
-        this.filePropsByType[chunk[0].type] = res
-        return res
+        const cachedFileProperties = cachedQueries
+          .flatMap(query => this.filePropsByType[query.type])
+        if (nonCachedQueries.length === 0) {
+          log.debug('returning cached file properties for listMetadataObjects of types %o', [chunk.map(q => q.type)])
+          return cachedFileProperties
+        }
+        const nonCachedFileProperties = await this.retryOnBadResponse(() => this.conn.metadata.list(nonCachedQueries))
+        // Cache the retrieved file properties
+        _(nonCachedFileProperties)
+          .groupBy(props => props.type)
+          .forEach((props, type) => {
+            this.filePropsByType[type] = props
+          })
+        return cachedFileProperties.concat(nonCachedFileProperties)
       },
       chunkSize: MAX_ITEMS_IN_LIST_METADATA_REQUEST,
       isUnhandledError,

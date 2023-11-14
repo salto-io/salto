@@ -431,12 +431,41 @@ describe('salesforce client', () => {
     })
   })
 
+  describe('retrieve', () => {
+    describe('when retrieve fails on Polling time out', () => {
+      let testClient: SalesforceClient
+      let testConnection: MockInterface<Connection>
+      beforeEach(() => {
+        const mocks = mockClient()
+        testClient = mocks.client
+        testConnection = mocks.connection
+        testConnection.metadata.retrieve.mockImplementation(() => {
+          throw new Error('Polling time out')
+        })
+      })
+      it('should return correct result', async () => {
+        const result = await testClient.retrieve({
+          apiVersion: API_VERSION,
+          singlePackage: false,
+          unpackaged: { version: API_VERSION, types: [{ name: 'CustomObject', members: ['Account'] }] },
+        })
+        expect(result).toEqual({
+          errorMessage: 'Polling time out',
+          errorStatusCode: 'POLLING_TIMEOUT',
+          fileProperties: [],
+          id: 'UNKNOWN',
+          messages: [],
+          zipFile: '',
+        })
+      })
+    })
+  })
+
   describe('with jsforce returns invalid response', () => {
     let testClient: SalesforceClient
     let testConnection: MockInterface<Connection>
     let nullFailingImplementation: Metadata['list']
     let unknownErrorToRetryImplementation: Metadata['list']
-    let pollingTimeOutImplementation: Metadata['list']
 
     beforeEach(() => {
       const mockClientAndConnection = mockClient()
@@ -449,9 +478,6 @@ describe('salesforce client', () => {
       unknownErrorToRetryImplementation = async () => {
         throw new Error('unknown_error: retry your request')
       }
-      pollingTimeOutImplementation = async () => {
-        throw new Error('Polling time out. Process Id: 666')
-      }
     })
     describe('when the error is recoverable', () => {
       let result: ReturnType<typeof testClient.listMetadataObjects>
@@ -460,7 +486,6 @@ describe('salesforce client', () => {
         expectedProperties = mockFileProperties({ type: 'CustomObject', fullName: 'A__c' })
         testConnection.metadata.list
           .mockImplementationOnce(unknownErrorToRetryImplementation)
-          .mockImplementationOnce(pollingTimeOutImplementation)
           .mockResolvedValueOnce([expectedProperties])
 
         result = testClient.listMetadataObjects({ type: 'CustomObject' })

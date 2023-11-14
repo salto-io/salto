@@ -45,7 +45,7 @@ import { AccountInfo, CredentialError, Value } from '@salto-io/adapter-api'
 import {
   CUSTOM_OBJECT_ID_FIELD,
   DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS,
-  DEFAULT_MAX_CONCURRENT_API_REQUESTS,
+  DEFAULT_MAX_CONCURRENT_API_REQUESTS, POLLING_TIMEOUT_ERROR_CODE,
   SALESFORCE,
 } from '../constants'
 import { CompleteSaveResult, SalesforceRecord, SfError } from './types'
@@ -119,7 +119,6 @@ const errorMessagesToRetry = [
    * but in case there is another error that says "retry your request", probably we should retry it
    */
   'retry your request',
-  'Polling time out',
   'SERVER_UNAVAILABLE',
   'system may be currently unavailable',
   'Unexpected internal servlet state',
@@ -130,6 +129,10 @@ const errorMessagesToRetry = [
   'Internal_Error',
   'UNABLE_TO_LOCK_ROW', // we saw this in both fetch and deploy
 ]
+
+const isPollingTimeoutError = (error: unknown): error is Error => (
+  _.isError(error) && error.message.includes('Polling time out')
+)
 
 type RateLimitBucketName = keyof ClientRateLimitConfig
 
@@ -787,9 +790,25 @@ export default class SalesforceClient {
   @logDecorator()
   @requiresLogin()
   public async retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult> {
-    return flatValues(
-      await this.retryOnBadResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete())
-    )
+    try {
+      return flatValues(
+        await this.retryOnBadResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete())
+      )
+    } catch (error: unknown) {
+      if (isPollingTimeoutError(error)) {
+        log.debug('retrieve failed on Polling time out')
+        return {
+          errorStatusCode: POLLING_TIMEOUT_ERROR_CODE,
+          errorMessage: error.message,
+          fileProperties: [],
+          id: 'UNKNOWN',
+          messages: [],
+          zipFile: '',
+        }
+      }
+      log.debug('retrieve failed with unrecoverable error %o', error)
+      throw error
+    }
   }
 
   /**

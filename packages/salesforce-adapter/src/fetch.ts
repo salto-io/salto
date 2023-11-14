@@ -37,6 +37,7 @@ import {
   LAYOUT_TYPE_ID_METADATA_TYPE,
   METADATA_CONTENT_FIELD,
   NAMESPACE_SEPARATOR,
+  POLLING_TIMEOUT_ERROR_CODE,
   PROFILE_METADATA_TYPE,
   RETRIEVE_SIZE_LIMIT_ERROR,
   UNLIMITED_INSTANCES_VALUE,
@@ -338,6 +339,11 @@ type RetrieveMetadataInstancesArgs = {
   fetchProfile: FetchProfile
 }
 
+export const HANDLED_RETRIEVE_ERROR_CODES = [
+  RETRIEVE_SIZE_LIMIT_ERROR,
+  POLLING_TIMEOUT_ERROR_CODE,
+]
+
 export const retrieveMetadataInstances = async ({
   client,
   types,
@@ -390,7 +396,7 @@ export const retrieveMetadataInstances = async ({
       typesToRetrieve, _.omit(result, ['zipFile', 'fileProperties']),
     )
 
-    if (result.errorStatusCode === RETRIEVE_SIZE_LIMIT_ERROR) {
+    if (result.errorStatusCode !== undefined && HANDLED_RETRIEVE_ERROR_CODES.includes(result.errorStatusCode)) {
       if (fileProps.length <= 1) {
         if (filePropsToSendWithEveryChunk.length > 0) {
           log.warn('retrieve request for %s failed with %d elements that can`t be removed from the request', typesToRetrieve, filePropsToSendWithEveryChunk.length)
@@ -417,9 +423,8 @@ export const retrieveMetadataInstances = async ({
 
     configChanges.push(...createRetrieveConfigChange(result))
     // if we get an error then result.zipFile will be a single 'nil' XML element, which will be parsed as an object by
-    // our XML->json parser. Since we only deal with RETRIEVE_SIZE_LIMIT_ERROR above, here is where we handle all other
-    // errors.
-    if (!_.isString(result.zipFile)) {
+    // our XML->json parser.
+    if (!_.isString(result.zipFile) || result.errorStatusCode !== undefined) {
       log.warn(
         'retrieve request for types %s failed, zipFile is %o, Result is %o',
         typesToRetrieve, result.zipFile, result,

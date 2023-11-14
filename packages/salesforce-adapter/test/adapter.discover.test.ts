@@ -54,7 +54,7 @@ import {
 } from './connection'
 import { FetchElements, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
 import * as fetchModule from '../src/fetch'
-import { fetchMetadataInstances, retrieveMetadataInstances } from '../src/fetch'
+import { fetchMetadataInstances, HANDLED_RETRIEVE_ERROR_CODES, retrieveMetadataInstances } from '../src/fetch'
 import * as xmlTransformerModule from '../src/transformers/xml_transformer'
 import {
   CUSTOM_OBJECT,
@@ -1107,7 +1107,7 @@ public class MyClass${index} {
       })
     })
 
-    it('should not fail the fetch on instances too large', async () => {
+    it.each(HANDLED_RETRIEVE_ERROR_CODES)('should not fail the fetch on handled retrieve error %s', async errorStatusCode => {
       mockMetadataType(
         { xmlName: 'ApexClass', metaFile: true, suffix: 'cls', directoryName: 'classes' },
         {
@@ -1148,7 +1148,7 @@ public class LargeClass} {
 
       connection.metadata.retrieve.mockReset()
       connection.metadata.retrieve.mockReturnValue(mockRetrieveLocator({
-        errorStatusCode: constants.RETRIEVE_SIZE_LIMIT_ERROR,
+        errorStatusCode,
       }))
 
       const { elements: result, updatedConfig: config } = await adapter.fetch(mockFetchOpts)
@@ -1164,9 +1164,9 @@ public class LargeClass} {
       )
     })
 
-    it('should retry fetch with smaller batches if zip file is too large', async () => {
+    it.each(HANDLED_RETRIEVE_ERROR_CODES)('should retry fetch with smaller batches on error %s', async errorStatusCode => {
       connection.metadata.retrieve.mockReturnValueOnce(mockRetrieveLocator({
-        errorStatusCode: constants.RETRIEVE_SIZE_LIMIT_ERROR,
+        errorStatusCode,
       }))
 
       mockMetadataType(

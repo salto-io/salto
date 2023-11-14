@@ -28,7 +28,8 @@ import {
   Field,
   getChangeData,
   InstanceElement,
-  isAdditionOrModificationChange, isElement,
+  isAdditionOrModificationChange,
+  isElement,
   isField,
   isInstanceElement,
   isListType,
@@ -74,6 +75,7 @@ import {
   PLURAL_LABEL,
   SALESFORCE,
   STATUS,
+  VALUE_SET_FIELDS,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
 import * as transformer from '../transformers/transformer'
@@ -199,7 +201,7 @@ export const isHiddenField = (field: Field): boolean => (
 )
 
 export const isReadOnlyField = (field: Field): boolean => (
-  !field.annotations[FIELD_ANNOTATIONS.CREATABLE] && !field.annotations[FIELD_ANNOTATIONS.UPDATEABLE]
+  field.annotations[FIELD_ANNOTATIONS.CREATABLE] === false && field.annotations[FIELD_ANNOTATIONS.UPDATEABLE] === false
 )
 
 export const isHierarchyField = (field: Field): boolean => (
@@ -580,7 +582,7 @@ const removeDuplicateFileProps = (files: FileProperties[]): FileProperties[] => 
     uniques,
   } = splitDuplicates(files, fileProps => `${fileProps.namespacePrefix}__${fileProps.fullName}`)
   duplicates.forEach(props => {
-    log.warn('Found duplicate file props with the same name in response to listMetadataObjects: %o', props)
+    log.debug('Found duplicate file props with the same name in response to listMetadataObjects: %o', props)
   })
   return uniques.concat(duplicates.map(props => props[0]))
 }
@@ -685,3 +687,15 @@ export const getNamespaceSync = (element: Element): string | undefined => {
     ? getNamespaceFromString(layoutObjAndName(elementApiName)[1])
     : getNamespaceFromString(elementApiName)
 }
+export const isPicklistField = (changedElement: ChangeDataType): changedElement is Field =>
+  isField(changedElement)
+  && ([
+    Types.primitiveDataTypes.Picklist.elemID.getFullName(),
+    Types.primitiveDataTypes.MultiselectPicklist.elemID.getFullName(),
+  ]).includes(changedElement.refType.elemID.getFullName())
+
+export const isValueSetReference = (field: Field): boolean =>
+  isReferenceExpression(field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME])
+
+export const hasValueSetNameAnnotation = (field: Field): boolean =>
+  !_.isUndefined(field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME])

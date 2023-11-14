@@ -37,12 +37,17 @@ describe('groupPushFilter', () => {
   const appWithGroupPush = new InstanceElement(
     'regular app',
     appType,
-    { id: 'abc', name: 'salesforce', signOnMode: 'SAML_2_0', features: ['IMPORT_USER_SCHEMA', 'GROUP_PUSH'] },
+    { id: 'abc', status: 'ACTIVE', name: 'salesforce', signOnMode: 'SAML_2_0', features: ['IMPORT_USER_SCHEMA', 'GROUP_PUSH'] },
   )
   const appWithNoGroupPush = new InstanceElement(
     'regular app',
     appType,
-    { id: 'bcd', name: 'salesforce', signOnMode: 'SAML_2_0', features: ['IMPORT_USER_SCHEMA'] },
+    { id: 'bcd', status: 'ACTIVE', name: 'salesforce', signOnMode: 'SAML_2_0', features: ['IMPORT_USER_SCHEMA'] },
+  )
+  const inactiveApp = new InstanceElement(
+    'regular app',
+    appType,
+    { id: 'cde', status: 'INACTIVE', name: 'zendesk', signOnMode: 'SAML_2_0', features: ['GROUP_PUSH'] },
   )
   const groupPushType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_PUSH_TYPE_NAME) })
   const pushRuleType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_PUSH_RULE_TYPE_NAME) })
@@ -148,6 +153,24 @@ describe('groupPushFilter', () => {
       const pushRuleInstances = instances.filter(instance => instance.elemID.typeName === GROUP_PUSH_RULE_TYPE_NAME)
       expect(pushRuleInstances).toHaveLength(1)
       expect(pushRuleInstances[0].value).toEqual(pushRuleInstance.value)
+    })
+    it('should not fetch group push rules for inactive apps', async () => {
+      mockGet.mockImplementation(params => {
+        if (params.url === '/api/internal/instance/cde/grouppush') {
+          return {
+            status: 200,
+            data: { mappings: [], nextMappingsPageUrl: null },
+          }
+        }
+        throw new Error('unexpected')
+      })
+      const elements: Element[] = [appType, inactiveApp]
+      filter = groupPushFilter(getFilterParams({ adminClient: client })) as typeof filter
+      await filter.onFetch(elements)
+      // Only 1 call for grouppush
+      expect(mockGet).toHaveBeenCalledTimes(1)
+      expect(mockGet).toHaveBeenCalledWith(expect.objectContaining({ url: '/api/internal/instance/cde/grouppush' }))
+      expect(mockGet).not.toHaveBeenCalledWith(expect.objectContaining({ url: '/api/internal/instance/cde/grouppushrules' }))
     })
   })
 

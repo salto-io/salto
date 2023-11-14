@@ -35,6 +35,7 @@ import { logger } from '@salto-io/logging'
 import { createAdapterReplacedID, expressions, merger, updateElementsWithAlternativeAccount, elementSource as workspaceElementSource } from '@salto-io/workspace'
 import { collections, promises } from '@salto-io/lowerdash'
 import adapterCreators from './creators'
+import { CORE_FLAGS, getCoreFlagBool } from '../flags'
 
 const { awu } = collections.asynciterable
 const { mapValuesAsync } = promises.object
@@ -197,11 +198,16 @@ const filterElementsSource = (
 export const createResolvedTypesElementsSource = (
   elementsSource: ReadOnlyElementsSource
 ): ReadOnlyElementsSource => {
-  const resolvedTypes: Map<string, TypeElement> = new Map()
-  let typesWereResolved = false
-  const resolveTypes = async (): Promise<void> => {
-    typesWereResolved = true
-    const typeElements = await awu(await elementsSource.getAll()).filter(isType).toArray()
+  if (getCoreFlagBool(CORE_FLAGS.skipResolveTypesInElementSource)) {
+    return elementsSource
+  }
+
+  let resolvedTypesPromise: Promise<Map<string, TypeElement>> | undefined
+  const resolveTypes = async (): Promise<Map<string, TypeElement>> => {
+    const typeElements = await awu(await elementsSource.list())
+      .filter(id => id.idType === 'type')
+      .map(id => elementsSource.get(id))
+      .toArray()
     // Resolve all the types together for better performance
     const resolved = await expressions.resolve(
       typeElements,
@@ -210,16 +216,14 @@ export const createResolvedTypesElementsSource = (
         shouldResolveReferences: false,
       }
     )
-    resolved.filter(isType)
-      .forEach(typeElement => {
-        resolvedTypes.set(typeElement.elemID.getFullName(), typeElement)
-      })
+    return new Map(resolved.filter(isType).map(resolvedType => [resolvedType.elemID.getFullName(), resolvedType]))
   }
 
   const getResolved = async (id: ElemID): Promise<Element> => {
-    if (!typesWereResolved) {
-      await resolveTypes()
+    if (resolvedTypesPromise === undefined) {
+      resolvedTypesPromise = resolveTypes()
     }
+    const resolvedTypes = await resolvedTypesPromise
     // Container types
     const containerInfo = id.getContainerPrefixAndInnerType()
     if (containerInfo !== undefined) {

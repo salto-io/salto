@@ -13,15 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, Element, CORE_ANNOTATIONS, ReferenceExpression, ModificationChange } from '@salto-io/adapter-api'
+import { InstanceElement, Element, CORE_ANNOTATIONS, ReferenceExpression, ModificationChange, ElemID } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
-import { AUTOMATION_TYPE, ESCALATION_SERVICE_TYPE, ISSUE_TYPE_SCHEMA_NAME, NOTIFICATION_SCHEME_TYPE_NAME,
+import { AUTOMATION_TYPE, CALENDAR_TYPE, ESCALATION_SERVICE_TYPE, ISSUE_TYPE_SCHEMA_NAME, JIRA,
+  NOTIFICATION_SCHEME_TYPE_NAME, PORTAL_GROUP_TYPE, PORTAL_SETTINGS_TYPE_NAME, QUEUE_TYPE,
   SCHEDULED_JOB_TYPE, SCRIPTED_FIELD_TYPE, SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE,
-  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, WORKFLOW_TYPE_NAME } from '../../../src/constants'
+  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, SLA_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { createSecurityLevelValues, createSecuritySchemeValues } from './securityScheme'
 import { createIssueTypeSchemeValues } from './issueTypeScheme'
 import { createDashboardValues, createGadget1Values, createGadget2Values } from './dashboard'
-import { findType } from '../../utils'
+import { createReference, findType } from '../../utils'
 import { createWorkflowValues } from './workflow'
 import { createFieldConfigurationValues } from './fieldConfiguration'
 import { createNotificationSchemeValues } from './notificationScheme'
@@ -36,6 +37,12 @@ import { createScheduledJobsValues } from './scriptrunner/scheduled_jobs'
 import { createEscalationServiceValues } from './scriptrunner/escalation_service'
 import { createScriptedFragmentsValues } from './scriptrunner/scripted_fragments'
 import { createScriptRunnerSettingsInstances } from './scriptrunner/settings'
+import { createPortalSettingsValues } from './jsm/portal_settings'
+import { createPortalGroupValues } from './jsm/portal_groups'
+import { createQueueValues } from './jsm/queue'
+import { createCalendarValues } from './jsm/calendar'
+import { createSLAValues } from './jsm/SLA'
+import { createrequestTypeValues } from './jsm/request_type'
 
 export const createInstances = (
   randomString: string,
@@ -169,6 +176,55 @@ export const createInstances = (
     createScriptedFragmentsValues(uuid, fetchedElements),
   )
 
+  const jsmProject = createReference(new ElemID(JIRA, 'Project', 'instance', 'Support'), fetchedElements)
+
+  const portalSettings = new InstanceElement(
+    'Support',
+    findType(PORTAL_SETTINGS_TYPE_NAME, fetchedElements),
+    createPortalSettingsValues('Support'),
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [jsmProject] }
+  )
+
+  const portalGroup = new InstanceElement(
+    `${randomString}_SUP`,
+    findType(PORTAL_GROUP_TYPE, fetchedElements),
+    createPortalGroupValues(randomString, fetchedElements),
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [jsmProject] }
+  )
+
+  const queue = new InstanceElement(
+    `${randomString}_SUP`,
+    findType(QUEUE_TYPE, fetchedElements),
+    createQueueValues(randomString, fetchedElements),
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [jsmProject] }
+  )
+
+  const calendar = new InstanceElement(
+    `${randomString}_SUP`,
+    findType(CALENDAR_TYPE, fetchedElements),
+    createCalendarValues(randomString),
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [jsmProject] }
+  )
+  const SLA = new InstanceElement(
+    `${randomString}_SUP`,
+    findType(SLA_TYPE_NAME, fetchedElements),
+    createSLAValues(randomString, fetchedElements),
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [jsmProject] }
+  )
+
+  const RequestType = new InstanceElement(
+    `${randomString}_SUP`,
+    findType('RequestType', fetchedElements),
+    createrequestTypeValues(randomString, fetchedElements),
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [jsmProject] }
+  )
+
   return [
     [dashboard],
     [dashboardGadget1],
@@ -189,6 +245,12 @@ export const createInstances = (
     [scheduledJobs],
     [escalationService],
     [scriptedFragments],
+    [portalSettings],
+    [portalGroup],
+    [queue],
+    [calendar],
+    [SLA],
+    [RequestType],
   ]
 }
 

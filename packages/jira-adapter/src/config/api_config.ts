@@ -1832,7 +1832,6 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       sourceTypeName: 'RequestType__values',
       dataField: 'values',
       fieldsToOmit: [
-        { fieldName: 'icon' },
         { fieldName: '_expands' },
         { fieldName: 'serviceDeskId' },
         { fieldName: 'portalId' },
@@ -1840,7 +1839,24 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
       fieldsToHide: [
         { fieldName: 'id' },
+        { fieldName: 'icon' },
       ],
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/servicedeskapi/servicedesk/{serviceDeskId}/requesttype',
+        method: 'post',
+        urlParamsToFields: {
+          serviceDeskId: '_parent.0.serviceDeskId',
+        },
+      },
+      remove: {
+        url: '/rest/servicedeskapi/servicedesk/{serviceDeskId}/requesttype/{id}',
+        method: 'delete',
+        urlParamsToFields: {
+          serviceDeskId: '_parent.0.serviceDeskId',
+        },
+      },
     },
   },
   CustomerPermissions: {
@@ -2088,7 +2104,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
     },
   },
-  Sla__config__definition__pause: {
+  SLA__config__definition__pause: {
     transformation: {
       fieldsToOmit: [
         { fieldName: 'type' },
@@ -2096,7 +2112,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
     },
   },
-  Sla__config__definition__start: {
+  SLA__config__definition__start: {
     transformation: {
       fieldsToOmit: [
         { fieldName: 'type' },
@@ -2104,7 +2120,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
     },
   },
-  Sla__config__definition__stop: {
+  SLA__config__definition__stop: {
     transformation: {
       fieldsToOmit: [
         { fieldName: 'type' },
@@ -2112,16 +2128,22 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
     },
   },
-  Sla__config__definition: {
+  SLA__config__definition: {
     transformation: {
       fieldsToOmit: [
         { fieldName: 'inconsistent' },
       ],
     },
   },
+  Form: {
+    transformation: {
+      idFields: ['name'],
+      extendsParentId: true,
+    },
+  },
 }
 
-const JSM_DUCKTYPE_SUPPORTED_TYPES = {
+export const JSM_DUCKTYPE_SUPPORTED_TYPES = {
   RequestType: ['RequestType'],
   CustomerPermissions: ['CustomerPermissions'],
   Queue: ['Queue'],

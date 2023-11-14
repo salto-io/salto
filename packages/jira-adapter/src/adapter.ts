@@ -123,6 +123,7 @@ import prioritySchemeProjectAssociationFilter from './filters/data_center/priori
 import { GetUserMapFunc, getUserMapFuncCreator } from './users'
 import commonFilters from './filters/common'
 import accountInfoFilter from './filters/account_info'
+import requestTypeFilter from './filters/request_type'
 import deployPermissionSchemeFilter from './filters/permission_scheme/deploy_permission_scheme_filter'
 import scriptRunnerWorkflowFilter from './filters/script_runner/workflow/workflow_filter'
 import pluginVersionFliter from './filters/data_center/plugin_version'
@@ -137,6 +138,7 @@ import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_speci
 import issueLayoutFilter from './filters/layouts/issue_layout'
 import removeSimpleFieldProjectFilter from './filters/remove_simplified_field_project'
 import changeServiceDeskIdFieldProjectFilter from './filters/change_projects_service_desk_id'
+import formsFilter from './filters/forms/forms'
 import addJsmTypesAsFieldsFilter from './filters/add_jsm_types_as_fields'
 import createReferencesIssueLayoutFilter from './filters/layouts/create_references_layouts'
 import issueTypeHierarchyFilter from './filters/issue_type_hierarchy_filter'
@@ -271,6 +273,7 @@ export const DEFAULT_FILTERS = [
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,
+  formsFilter,
   fieldReferencesFilter,
   // Must run after fieldReferencesFilter
   addJsmTypesAsFieldsFilter,
@@ -324,6 +327,7 @@ export const DEFAULT_FILTERS = [
   portalSettingsFilter,
   queueDeleteFilter,
   portalGroupsFilter,
+  requestTypeFilter,
   deployJsmTypesFilter,
   // Must be done after JsmTypesFilter
   jsmPathFilter,

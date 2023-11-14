@@ -1812,8 +1812,8 @@ describe('adapter', () => {
           severity: 'Warning',
           message: "Salto could not access the custom_statuses resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
         })
-        expect(errors?.[1].message.split('.')[0]).toEqual('Omitted 2 instances of ticket_field due to Salto ID collisions')
-        expect(errors?.[2].message.split('.')[0]).toEqual('Omitted 4 instances of ticket_field__custom_field_options due to Salto ID collisions')
+        expect(errors?.[1].message.split('.')[0]).toEqual('Omitted 2 instances and all their child instances of ticket_field due to Salto ID collisions')
+        expect(errors?.[2].message.split('.')[0]).toEqual('Omitted 4 instances and all their child instances of ticket_field__custom_field_options due to Salto ID collisions')
         const elementsNames = elements.map(e => e.elemID.getFullName())
         expect(elementsNames).not.toContain('zendesk.custom_status.instance.new___zd_status_new__@u_00123_00123vu_00125_00125')
         expect(elementsNames).not.toContain('zendesk.custom_status.instance.open___zd_status_open__@u_00123_00123vu_00125_00125')
@@ -1902,8 +1902,8 @@ describe('adapter', () => {
           severity: 'Warning',
           message: 'Could not find any brands matching the included patterns: [BestBrand]. Please update the configuration under fetch.guide.brands in the configuration file',
         })
-        expect(fetchRes.errors?.[1].message.split('.')[0]).toEqual('Omitted 2 instances of ticket_field due to Salto ID collisions')
-        expect(fetchRes.errors?.[2].message.split('.')[0]).toEqual('Omitted 4 instances of ticket_field__custom_field_options due to Salto ID collisions')
+        expect(fetchRes.errors?.[1].message.split('.')[0]).toEqual('Omitted 2 instances and all their child instances of ticket_field due to Salto ID collisions')
+        expect(fetchRes.errors?.[2].message.split('.')[0]).toEqual('Omitted 4 instances and all their child instances of ticket_field__custom_field_options due to Salto ID collisions')
         expect(fetchRes.elements.filter(isInstanceElement).find(e => e.elemID.typeName === 'article')).not.toBeDefined()
         expect(fetchRes.elements.filter(isObjectType).find(e => e.elemID.typeName === 'article')).toBeDefined()
       })

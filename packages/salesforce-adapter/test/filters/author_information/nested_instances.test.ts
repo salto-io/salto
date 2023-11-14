@@ -14,6 +14,8 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
+import { MockInterface } from '@salto-io/test-utils'
+import Connection from '../../../src/client/jsforce'
 import { mockTypes } from '../../mock_elements'
 import { CUSTOM_LABEL_METADATA_TYPE, INSTANCE_FULL_NAME_FIELD } from '../../../src/constants'
 import { mockFileProperties } from '../../connection'
@@ -29,7 +31,9 @@ describe('nestedInstancesAuthorInformationFilter', () => {
   const LAST_MODIFIED_DATE = '2021-01-02T00:00:00.000Z'
 
   let customLabelInstance: InstanceElement
+  let nonNestedInstance: InstanceElement
   let filter: FilterWith<'onFetch'>
+  let connection: MockInterface<Connection>
   describe('onFetch', () => {
     beforeEach(() => {
       customLabelInstance = new InstanceElement(
@@ -37,6 +41,14 @@ describe('nestedInstancesAuthorInformationFilter', () => {
         mockTypes.CustomLabel,
         {
           [INSTANCE_FULL_NAME_FIELD]: 'TestCustomLabel',
+        },
+      )
+      // Make sure we don't attempt to add missing internal ids to non nested instances
+      nonNestedInstance = new InstanceElement(
+        'TestNonNestedInstance',
+        mockTypes.ApexClass,
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'TestNonNestedInstance',
         },
       )
       const fileProperties = mockFileProperties({
@@ -47,18 +59,22 @@ describe('nestedInstancesAuthorInformationFilter', () => {
         lastModifiedByName: LAST_MODIFIED_BY_NAME,
         lastModifiedDate: LAST_MODIFIED_DATE,
       })
-      const { client, connection } = mockClient()
+      const mockClientAndConnection = mockClient()
+      const { client } = mockClientAndConnection
+      connection = mockClientAndConnection.connection
       connection.metadata.list.mockResolvedValue([fileProperties])
       filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
     })
     it('should add author information to nested instances', async () => {
-      await filter.onFetch([customLabelInstance])
+      await filter.onFetch([customLabelInstance, nonNestedInstance])
       expect(customLabelInstance.annotations).toEqual({
         [CORE_ANNOTATIONS.CREATED_BY]: CREATED_BY_NAME,
         [CORE_ANNOTATIONS.CREATED_AT]: CREATED_DATE,
         [CORE_ANNOTATIONS.CHANGED_BY]: LAST_MODIFIED_BY_NAME,
         [CORE_ANNOTATIONS.CHANGED_AT]: LAST_MODIFIED_DATE,
       })
+      expect(connection.metadata.list).toHaveBeenCalledOnce()
+      expect(connection.metadata.list).toHaveBeenCalledWith([{ type: CUSTOM_LABEL_METADATA_TYPE }])
     })
   })
 })

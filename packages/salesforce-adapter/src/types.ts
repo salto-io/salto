@@ -267,6 +267,19 @@ const brokenOutgoingReferencesSettingsType = new ObjectType({
   },
 })
 
+const warningSettingsType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'saltoWarningSettings'),
+  fields: {
+    nonQueryableFields: {
+      refType: BuiltinTypes.BOOLEAN,
+    },
+  },
+})
+
+export type WarningSettings = {
+  nonQueryableFields: boolean
+}
+
 export type DataManagementConfig = {
   includeObjects: string[]
   excludeObjects?: string[]
@@ -288,6 +301,7 @@ export type FetchParameters = {
   maxInstancesPerType?: number
   preferActiveFlowVersions?: boolean
   addNamespacePrefixToFullName?: boolean
+  warningSettings?: WarningSettings
 }
 
 export type DeprecatedMetadataParams = {
@@ -762,6 +776,7 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
     maxInstancesPerType: { refType: BuiltinTypes.NUMBER },
     preferActiveFlowVersions: { refType: BuiltinTypes.BOOLEAN },
     addNamespacePrefixToFullName: { refType: BuiltinTypes.BOOLEAN },
+    warningSettings: { refType: warningSettingsType },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -877,4 +892,5 @@ export type FetchProfile = {
   readonly maxInstancesPerType: number
   readonly preferActiveFlowVersions: boolean
   readonly addNamespacePrefixToFullName: boolean
+  isWarningEnabled: (name: keyof WarningSettings) => boolean
 }

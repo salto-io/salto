@@ -27,7 +27,7 @@ const log = logger(module)
 /*
  * Create a graph with instance ids as nodes and parent annotations+fields as edges
  */
-const createParentChildGraph = (
+export const createParentChildGraph = (
   instances: InstanceElement[],
   additionalParentFields?: Record<string, string[]>,
 ): AbstractNodeMap => {

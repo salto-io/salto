@@ -16,7 +16,13 @@
 
 import { values } from '@salto-io/lowerdash'
 import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { DATA_CONFIGURATION, FetchParameters, FetchProfile, METADATA_CONFIG, OptionalFeatures } from '../types'
+import {
+  DATA_CONFIGURATION,
+  FetchProfile,
+  FetchParameters,
+  METADATA_CONFIG,
+  OptionalFeatures,
+} from '../types'
 import { buildDataManagement, validateDataManagementConfig } from './data_management'
 import { buildMetadataQuery, validateMetadataParams } from './metadata_query'
 import { DEFAULT_MAX_INSTANCES_PER_TYPE } from '../constants'
@@ -54,6 +60,7 @@ const buildBaseFetchProfile = ({
     maxInstancesPerType,
     preferActiveFlowVersions,
     addNamespacePrefixToFullName,
+    warningSettings,
   } = fetchParams
   return {
     dataManagement: data && buildDataManagement(data),
@@ -62,6 +69,9 @@ const buildBaseFetchProfile = ({
     maxInstancesPerType: maxInstancesPerType ?? DEFAULT_MAX_INSTANCES_PER_TYPE,
     preferActiveFlowVersions: preferActiveFlowVersions ?? false,
     addNamespacePrefixToFullName: addNamespacePrefixToFullName ?? true,
+    isWarningEnabled: name => (
+      warningSettings?.[name] ?? true
+    ),
   }
 }
 

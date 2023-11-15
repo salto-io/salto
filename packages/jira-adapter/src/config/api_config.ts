@@ -2143,7 +2143,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   },
   AssetsSchema: {
     request: {
-      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/list?maxResults=1000',
+      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/list',
     },
     transformation: {
       sourceTypeName: 'AssetsSchema__values',
@@ -2153,6 +2153,10 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'created' },
         { fieldName: 'updated' },
         { fieldName: 'globalId' },
+      ],
+      fieldsToHide: [
+        { fieldName: 'id' },
+        { fieldName: 'idAsInt' },
       ],
     },
   },

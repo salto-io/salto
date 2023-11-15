@@ -137,6 +137,7 @@ export const preview = async (
   workspace: Workspace,
   accounts = workspace.accounts(),
   checkOnly = false,
+  skipValidations = false,
 ): Promise<Plan> => {
   const stateElements = workspace.state()
   const adapters = await getAdapters(
@@ -149,7 +150,8 @@ export const preview = async (
   return getPlan({
     before: stateElements,
     after: await workspace.elements(),
-    changeValidators: getChangeValidators(adapters, checkOnly, await workspace.errors()),
+    changeValidators: skipValidations
+      ? {} : getChangeValidators(adapters, checkOnly, await workspace.errors()),
     dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers(adapters)),
     customGroupIdFunctions: getAdapterChangeGroupIdFunctions(adapters),
     topLevelFilters: [shouldElementBeIncluded(accounts)],

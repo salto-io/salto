@@ -334,13 +334,13 @@ const zendeskGuideEntriesFunc = (
 
 const getBrandsFromElementsSource = async (
   elementsSource: ReadOnlyElementsSource
-): Promise<InstanceElement[]> => (
+): Promise<InstanceElement[]> => log.time(async () => (
   awu(await elementsSource.list())
     .filter(id => id.typeName === BRAND_TYPE_NAME && id.idType === 'instance')
     .map(id => elementsSource.get(id))
     .filter(isInstanceElement)
     .toArray()
-)
+), 'get brands from element source')
 
 /**
  * Fetch Guide (help_center) elements for the given brands.
@@ -795,8 +795,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       saltoErrors.push(e)
     }
 
-
-    const brandsList = _.uniq(await getBrandsFromElementsSource(this.elementsSource))
+    const brandsList = await getBrandsFromElementsSource(this.elementsSource)
     const resolvedBrandIdToSubdomain = Object.fromEntries(brandsList.map(
       brandInstance => [brandInstance.value.id, brandInstance.value.subdomain]
     ))

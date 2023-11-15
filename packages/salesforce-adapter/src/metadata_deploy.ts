@@ -17,7 +17,8 @@ import _ from 'lodash'
 import util from 'util'
 import { collections, values, hash as hashUtils } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { SaltoError,
+import {
+  SaltoError,
   DeployResult,
   Change,
   getChangeData,
@@ -28,7 +29,9 @@ import { SaltoError,
   isAdditionChange,
   SaltoElementError,
   SeverityLevel,
-  ElemID } from '@salto-io/adapter-api'
+  ElemID,
+  ProgressReporter,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 
 
@@ -339,11 +342,24 @@ const quickDeployOrDeploy = async (
 const isQuickDeployable = (deployRes: SFDeployResult): boolean =>
   deployRes.id !== undefined && deployRes.checkOnly && deployRes.success && deployRes.numberTestsCompleted >= 1
 
+const deployProgressMessage = async (
+  client: SalesforceClient,
+  deployResult: SFDeployResult,
+): Promise<string> => {
+  const url = await getDeployStatusUrl(deployResult, client)
+  const testStatus = `${deployResult.numberTestsCompleted}/${deployResult.numberComponentsTotal} (${deployResult.numberTestErrors} errors)`
+  const componentStatus = `${deployResult.numberComponentsDeployed}/${deployResult.numberComponentsTotal} (${deployResult.numberComponentErrors} errors)`
+  const logLine = `Tests: ${testStatus} Components: ${componentStatus} URL: ${url}`
+  log.debug(logLine)
+  return logLine
+}
+
 export const deployMetadata = async (
   changes: ReadonlyArray<Change>,
   client: SalesforceClient,
   groupId: string,
   nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>,
+  progressReporter: ProgressReporter,
   deleteBeforeUpdate?: boolean,
   checkOnly?: boolean,
   quickDeployParams?: QuickDeployParams,
@@ -385,7 +401,29 @@ export const deployMetadata = async (
 
   const sfDeployRes = await quickDeployOrDeploy(client, pkgData, checkOnly, quickDeployParams)
 
-  log.debug('deploy result: %s', safeJsonStringify({
+  await sfDeployStatus.poll(SALESFORCE_PROGRESS_UPDATE_INTERVAL, 5000, async result => {
+    if (progressReporter) {
+      progressReporter.reportProgress({
+        message: await deployProgressMessage(client, result),
+      })
+    }
+    log.debug('in-progress deploy result: %s', safeJsonStringify({
+      ...result,
+      details: result.details?.map(detail => ({
+        ...detail,
+        // The test result can be VERY long
+        runTestResult: detail.runTestResult
+          ? safeJsonStringify(detail.runTestResult, undefined, 2).slice(100)
+          : undefined,
+      })),
+    }, undefined, 2))
+  })
+
+  const sfDeployRes: SFDeployResult = flatValues(await sfDeployStatus.complete())
+
+  const deploymentUrl = await getDeployStatusUrl(sfDeployRes, client)
+
+  log.debug('final deploy result: %s', safeJsonStringify({
     ...sfDeployRes,
     details: sfDeployRes.details?.map(detail => ({
       ...detail,
@@ -409,7 +447,6 @@ export const deployMetadata = async (
     )
   }
 
-  const deploymentUrl = await getDeployStatusUrl(sfDeployRes, client)
   return {
     appliedChanges: validChanges.filter(isSuccessfulChange),
     errors: [...validationErrors, ...errors],

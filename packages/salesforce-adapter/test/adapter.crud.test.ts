@@ -1712,6 +1712,7 @@ describe('SalesforceAdapter CRUD', () => {
       let resultProfile: DeployResult
       beforeEach(async () => {
         const steps = stepManager(['firstDeploy', 'secondDeploy'])
+        const deployId = _.uniqueId()
 
         connection.metadata.deploy
           .mockReturnValueOnce({
@@ -1719,6 +1720,15 @@ describe('SalesforceAdapter CRUD', () => {
               steps.resolveStep('firstDeploy')
               await steps.waitStep('secondDeploy')
               return mockDeployResultComplete({
+                id: deployId,
+                componentSuccess: [{ fullName: 'Test__c.Valid', componentType: 'ValidationRule' }],
+              })
+            },
+            check: async () => {
+              steps.resolveStep('firstDeploy')
+              await steps.waitStep('secondDeploy')
+              return mockDeployResultComplete({
+                id: deployId,
                 componentSuccess: [{ fullName: 'Test__c.Valid', componentType: 'ValidationRule' }],
               })
             },
@@ -1727,6 +1737,14 @@ describe('SalesforceAdapter CRUD', () => {
             complete: async () => {
               steps.resolveStep('secondDeploy')
               return mockDeployResultComplete({
+                id: deployId,
+                componentSuccess: [{ fullName: 'TestAddProfileInstance__c', componentType: 'Profile' }],
+              })
+            },
+            check: async () => {
+              steps.resolveStep('secondDeploy')
+              return mockDeployResultComplete({
+                id: deployId,
                 componentSuccess: [{ fullName: 'TestAddProfileInstance__c', componentType: 'Profile' }],
               })
             },

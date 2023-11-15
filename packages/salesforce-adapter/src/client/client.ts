@@ -520,6 +520,7 @@ export const validateCredentials = async (
     extraInformation: { orgId },
   }
 }
+
 export default class SalesforceClient {
   private readonly retryOptions: RequestRetryOptions
   private readonly conn: Connection

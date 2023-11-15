@@ -556,7 +556,7 @@ export default class JiraAdapter implements AdapterOperations {
       .filter(project => project.value.projectTypeKey === SERVICE_DESK)
 
     const fetchResultWithDuplicateTypes = await Promise.all(serviceDeskProjects.map(async projectInstance => {
-      const serviceDeskProjRecord: Record<string, unknown> = {
+      const serviceDeskProjRecord: Record<string, string> = {
         projectKey: projectInstance.value.key,
         serviceDeskId: projectInstance.value.serviceDeskId.id,
         projectId: projectInstance.value.id,

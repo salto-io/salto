@@ -648,13 +648,10 @@ export default class SalesforceClient {
           chunk,
           query => this.filePropsByType[query.type] !== undefined
         )
-        if (this.filePropsByType[chunk[0].type]) {
-          return this.filePropsByType[chunk[0].type]
-        }
         const cachedFileProperties = cachedQueries
           .flatMap(query => this.filePropsByType[query.type])
         if (nonCachedQueries.length === 0) {
-          log.debug('returning cached file properties for listMetadataObjects of types %o', [chunk.map(q => q.type)])
+          log.debug('returning cached file properties in listMetadataObjects for types %o', [chunk.map(q => q.type)])
           return cachedFileProperties
         }
         const nonCachedFileProperties = await this.retryOnBadResponse(() => this.conn.metadata.list(nonCachedQueries))

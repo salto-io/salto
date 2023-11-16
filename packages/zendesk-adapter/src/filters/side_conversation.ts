@@ -81,7 +81,7 @@ export const sideConversationsOnFetch = (elements: Element[], config: ZendeskCon
               prefix,
               new ReferenceExpression(missingInstance.elemID, missingInstance),
               suffix,
-            ].filter(part => !_.isEmpty(part)),
+            ],
           })
         }
         return
@@ -94,7 +94,7 @@ export const sideConversationsOnFetch = (elements: Element[], config: ZendeskCon
         prefix,
         new ReferenceExpression(group.elemID, group),
         suffix,
-      ].filter(part => !_.isEmpty(part)) })
+      ] })
     })
   })
 }

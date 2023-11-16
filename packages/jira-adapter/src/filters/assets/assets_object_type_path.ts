@@ -38,10 +38,11 @@ const createPaths = async (assetsObjectTypes: InstanceElement[]): Promise<void> 
       const instance = graph.getData(graphNode.toString())
       const parentPath = instance.value.parentObjectTypeId?.value.path
       if (parentPath === undefined) {
-        instance.path = [...instance.path ?? [], pathNaclCase(instance.elemID.name)]
+        instance.path = [...instance.path?.slice(0, -1) ?? [],
+          pathNaclCase(instance.value.name), pathNaclCase(instance.value.name)]
         return
       }
-      instance.path = [...parentPath.slice(0, -1), 'childObjectTypes', instance.elemID.name, instance.elemID.name]
+      instance.path = [...parentPath.slice(0, -1), 'childObjectTypes', pathNaclCase(instance.value.name), pathNaclCase(instance.value.name)]
     }
   )
 }

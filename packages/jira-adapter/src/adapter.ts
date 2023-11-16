@@ -137,7 +137,7 @@ import addAliasFilter from './filters/add_alias'
 import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_specific_duplicate_roles'
 import issueLayoutFilter from './filters/layouts/issue_layout'
 import removeSimpleFieldProjectFilter from './filters/remove_simplified_field_project'
-import changeServiceDeskIdFieldProjectFilter from './filters/change_projects_service_desk_id'
+import changeJsmObjectValuetoIdFilter from './filters/change_projects_service_desk_id'
 import formsFilter from './filters/forms/forms'
 import addJsmTypesAsFieldsFilter from './filters/add_jsm_types_as_fields'
 import createReferencesIssueLayoutFilter from './filters/layouts/create_references_layouts'
@@ -152,15 +152,17 @@ import deployJsmTypesFilter from './filters/jsm_types_deploy_filter'
 import jsmPathFilter from './filters/jsm_paths'
 import portalSettingsFilter from './filters/portal_settings'
 import queueDeleteFilter from './filters/queue_delete'
+import assetsObjectTypeParentFilter from './filters/assets/change_object_type_parents'
 import scriptRunnerInstancesDeploy from './filters/script_runner/script_runner_instances_deploy'
 import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
 import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uuid'
 import changeQueueFieldsFilter from './filters/change_queue_fields'
 import portalGroupsFilter from './filters/portal_groups'
 import assetsObjectTypePath from './filters/assets/assets_object_type_path'
+import addAttributesAsFieldsFilter from './filters/assets/add_attributes_as_fields'
 import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
-import { jiraJSMEntriesFunc } from './jsm_utils'
+import { jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from './jsm_utils'
 import { getWorkspaceId } from './workspace_id'
 import { JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES } from './config/api_config'
 
@@ -180,7 +182,7 @@ const { query: queryFilter, ...otherCommonFilters } = commonFilters
 export const DEFAULT_FILTERS = [
   accountInfoFilter,
   storeUsersFilter,
-  changeServiceDeskIdFieldProjectFilter,
+  changeJsmObjectValuetoIdFilter,
   changeQueueFieldsFilter,
   changePortalGroupFieldsFilter,
   automationLabelFetchFilter,
@@ -291,6 +293,8 @@ export const DEFAULT_FILTERS = [
   // Must run after fieldReferencesFilter
   contextsProjectsFilter,
   assetsObjectTypePath,
+  assetsObjectTypeParentFilter,
+  addAttributesAsFieldsFilter,
   // must run after contextsProjectsFilter
   projectFieldContextOrder,
   fieldConfigurationIrrelevantFields,
@@ -536,6 +540,7 @@ export default class JiraAdapter implements AdapterOperations {
       typeDefaults: jsmApiDefinitions.typeDefaults,
       additionalRequestContext: workspaceContext,
       getElemIdFunc: this.getElemIdFunc,
+      getEntriesResponseValuesFunc: jiraJSMAssetsEntriesFunc(),
     })
   }
 

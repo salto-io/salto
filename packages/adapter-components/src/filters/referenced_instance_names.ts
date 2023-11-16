@@ -134,6 +134,9 @@ const createInstanceNameAndFilePath = (
     isSettingType: configByType[typeName].isSingleton ?? false,
     nameMapping: configByType[typeName].nameMapping,
     adapterName: adapter,
+    nestedPaths: [
+      ...instance.path?.slice(2, instance.path?.length - 1) ?? [],
+    ],
   })
   return { newNaclName, filePath }
 }
@@ -391,11 +394,13 @@ export const referencedInstanceNamesFilterCreator: <
   TClient,
   TContext extends { apiDefinitions: AdapterApiConfig },
   TResult extends void | filter.FilterResult = void
->() => FilterCreator<TClient, TContext, TResult> = () => ({ config, getElemIdFunc }) => ({
+>(additionalApiDefinitions?: AdapterApiConfig) =>
+FilterCreator<TClient, TContext, TResult> = additionalApiDefinitions => ({ config, getElemIdFunc }) => ({
   name: 'referencedInstanceNames',
   onFetch: async (elements: Element[]) => {
-    const transformationDefault = config.apiDefinitions.typeDefaults.transformation
-    const configByType = config.apiDefinitions.types
+    const apiDefinitions = additionalApiDefinitions ?? config.apiDefinitions
+    const transformationDefault = apiDefinitions.typeDefaults.transformation
+    const configByType = apiDefinitions.types
     const transformationByType = getTransformationConfigByType(configByType)
     await addReferencesToInstanceNames(
       elements,

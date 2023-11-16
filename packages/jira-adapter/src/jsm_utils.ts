@@ -18,11 +18,26 @@
  * Fetch JSM elements of service desk project.
 */
 
-
 import { InstanceElement } from '@salto-io/adapter-api'
 import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
+import Joi from 'joi'
+
+const ATTRIBUTE_ENTRY_SCHEMA = Joi.object({
+  objectType: Joi.object({
+    id: Joi.string().required(),
+  }).unknown(true).required(),
+}).unknown(true).required()
+
+type AttributeEntry = {
+  objectType: {
+    id: string
+  } | string
+}
+
+const isAttributeEntry = createSchemeGuard<AttributeEntry>(ATTRIBUTE_ENTRY_SCHEMA)
 
 const { getEntriesResponseValues } = elementUtils.ducktype
 const { makeArray } = collections.array
@@ -74,4 +89,53 @@ export const jiraJSMEntriesFunc = (
   }
 
   return getJiraJSMEntriesResponseValues
+}
+
+export const jiraJSMAssetsEntriesFunc = (): elementUtils.ducktype.EntriesRequester => {
+  const getJiraJSMAssetsEntriesResponseValues = async ({
+    paginator,
+    args,
+    typeName,
+    typesConfig,
+  } : {
+      paginator: clientUtils.Paginator
+      args: clientUtils.ClientGetWithPaginationParams
+      typeName: string
+      typesConfig: Record<string, configUtils.TypeDuckTypeConfig>
+    }): Promise<clientUtils.ResponseValue[]> => {
+    const jsmResponseValues = (await getEntriesResponseValues({
+      paginator,
+      args,
+      typeName,
+      typesConfig,
+    })).flat()
+    const responseEntryName = typesConfig[typeName].transformation?.dataField
+    return jsmResponseValues.flatMap(response => {
+      if (responseEntryName === undefined) {
+        return makeArray(response)
+      }
+      const responseEntries = makeArray(
+        (responseEntryName !== configUtils.DATA_FIELD_ENTIRE_OBJECT)
+          ? response[responseEntryName]
+          : response
+      ) as clientUtils.ResponseValue[]
+
+      responseEntries.forEach(entry => {
+        if (typeName === 'AssetsObjectTypeAttribute' && isAttributeEntry(entry)) {
+          if (typeof entry.objectType !== 'string') {
+            entry.objectType = entry.objectType.id
+          }
+        }
+      })
+      if (responseEntryName === configUtils.DATA_FIELD_ENTIRE_OBJECT) {
+        return responseEntries
+      }
+      return {
+        ...response,
+        [responseEntryName]: responseEntries,
+      }
+    }) as clientUtils.ResponseValue[]
+  }
+
+  return getJiraJSMAssetsEntriesResponseValues
 }

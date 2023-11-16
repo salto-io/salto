@@ -321,6 +321,17 @@ export const DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS = {
 }
 export const MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD = 20
 
+// ref. https://developer.salesforce.com/docs/atlas.en-us.salesforce_app_limits_cheatsheet.meta/salesforce_app_limits_cheatsheet/salesforce_app_limits_platform_soslsoql.htm
+
+export type SoqlQueryLimits = {
+  maxQueryLength: number
+  maxWhereClauseLength: number
+}
+export const DefaultSoqlQueryLimits: SoqlQueryLimits = {
+  maxQueryLength: 100000,
+  maxWhereClauseLength: 2000,
+}
+
 // Fields and Values
 export const CURRENCY_ISO_CODE = 'CurrencyIsoCode'
 export const ACTIVE_VERSION_NUMBER = 'activeVersionNumber'

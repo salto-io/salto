@@ -60,7 +60,7 @@ import {
   CUSTOM_FIELD,
   CUSTOM_METADATA_SUFFIX,
   CUSTOM_OBJECT,
-  CUSTOM_OBJECT_ID_FIELD,
+  CUSTOM_OBJECT_ID_FIELD, DefaultSoqlQueryLimits,
   FIELD_ANNOTATIONS,
   FLOW_METADATA_TYPE,
   INSTANCE_FULL_NAME_FIELD,
@@ -98,20 +98,6 @@ const { makeArray } = collections.array
 const { weightedChunks } = chunks
 const { isDefined } = values
 const log = logger(module)
-
-// ref. https://developer.salesforce.com/docs/atlas.en-us.salesforce_app_limits_cheatsheet.meta/salesforce_app_limits_cheatsheet/salesforce_app_limits_platform_soslsoql.htm
-export const MAX_SOQL_QUERY_LENGTH = 100000
-export const MAX_SOQL_WHERE_CLAUSE_LENGTH = 2000
-
-export type SoqlQueryLimits = {
-  maxQueryLength: number
-  maxWhereClauseLength: number
-}
-
-const DefaultSoqlQueryLimits: SoqlQueryLimits = {
-  maxQueryLength: MAX_SOQL_QUERY_LENGTH,
-  maxWhereClauseLength: MAX_SOQL_WHERE_CLAUSE_LENGTH,
-}
 
 const METADATA_VALUES_SCHEME = Joi.object({
   [INSTANCE_FULL_NAME_FIELD]: Joi.string().required(),
@@ -541,7 +527,7 @@ export const buildSelectQueries = (
 ): string[] => {
   const fieldsNameQuery = fields.join(',')
   const selectStr = `SELECT ${fieldsNameQuery} FROM ${typeName}`
-  if (selectStr.length > MAX_SOQL_QUERY_LENGTH) {
+  if (selectStr.length > DefaultSoqlQueryLimits.maxQueryLength) {
     throw new Error('Max query length is too short for the SELECT clause')
   }
   return conditionQueries(selectStr, conditionSets, queryLimits)

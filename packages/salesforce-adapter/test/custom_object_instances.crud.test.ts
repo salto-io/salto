@@ -31,11 +31,9 @@ import { createCustomObjectType } from './utils'
 import {
   ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP, CUSTOM_OBJECT_ID_FIELD,
   FIELD_ANNOTATIONS, OWNER_ID, SBAA_APPROVAL_CONDITION,
-  SBAA_APPROVAL_RULE,
-  SBAA_CONDITIONS_MET,
+  SBAA_APPROVAL_RULE, SBAA_CONDITIONS_MET, DefaultSoqlQueryLimits,
 } from '../src/constants'
 import { mockTypes } from './mock_elements'
-import { MAX_SOQL_QUERY_LENGTH } from '../src/filters/utils'
 
 describe('Custom Object Instances CRUD', () => {
   let adapter: SalesforceAdapter
@@ -773,7 +771,7 @@ describe('Custom Object Instances CRUD', () => {
           })
           it('should not not exceed max query size', () => {
             const queryLengths = connection.query.mock.calls.map(args => args[0].length)
-            expect(_.max(queryLengths)).toBeLessThanOrEqual(MAX_SOQL_QUERY_LENGTH)
+            expect(_.max(queryLengths)).toBeLessThanOrEqual(DefaultSoqlQueryLimits.maxQueryLength)
           })
           it('should query all instances', () => {
             const queries = connection.query.mock.calls.map(args => args[0])

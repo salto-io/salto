@@ -37,10 +37,7 @@ import {
   isDataManagementConfigSuggestions,
   SaltoAliasSettings,
 } from '../../src/types'
-import {
-  buildSelectQueries, getFieldNamesForQuery, QueryOperator,
-  SoqlQuery, SoqlQueryLimits,
-} from '../../src/filters/utils'
+import { buildSelectQueries, getFieldNamesForQuery, QueryOperator, SoqlQuery } from '../../src/filters/utils'
 import { FilterResult } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
@@ -57,7 +54,7 @@ import {
   METADATA_TYPE,
   OBJECTS_PATH,
   RECORDS_PATH,
-  SALESFORCE,
+  SALESFORCE, SoqlQueryLimits,
 } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 import {

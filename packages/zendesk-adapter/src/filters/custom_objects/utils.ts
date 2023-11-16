@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { InstanceElement, isReferenceExpression, ReferenceExpression, TemplateExpression } from '@salto-io/adapter-api'
-import { compactTemplate, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { compactTemplate, createTemplateExpression, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { references as referencesUtils } from '@salto-io/adapter-components'
 import {
   CUSTOM_OBJECT_FIELD_TYPE_NAME,
@@ -68,7 +68,7 @@ type TransformResult = {
 }
 
 const buildFieldTemplate = (ticketField: string | ReferenceExpression, option: string | ReferenceExpression)
-  : TemplateExpression => new TemplateExpression({
+  : TemplateExpression => createTemplateExpression({
   parts: [
     'lookup:ticket.ticket_field_',
     ticketField,
@@ -155,7 +155,7 @@ export const transformCustomObjectLookupField = ({
 }
 
 const buildFilterTemplate = (customObject: string | ReferenceExpression, field: string | ReferenceExpression)
-  : TemplateExpression => new TemplateExpression({
+  : TemplateExpression => createTemplateExpression({
   parts: [
     'custom_object.',
     customObject,

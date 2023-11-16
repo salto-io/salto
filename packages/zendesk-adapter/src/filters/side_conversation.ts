@@ -18,13 +18,13 @@ import {
   InstanceElement,
   isInstanceElement,
   ReferenceExpression,
-  TemplateExpression,
   Value,
 } from '@salto-io/adapter-api'
 import { references as referencesUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import joi from 'joi'
 import { logger } from '@salto-io/logging'
+import { createTemplateExpression } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { GROUP_TYPE_NAME, ZENDESK } from '../constants'
 import { FETCH_CONFIG, ZendeskConfig } from '../config'
@@ -76,7 +76,7 @@ export const sideConversationsOnFetch = (elements: Element[], config: ZendeskCon
           const missingInstance = createMissingInstance(ZENDESK, GROUP_TYPE_NAME, groupId)
           missingInstance.value.id = groupId
           // Replace the group part with a missing reference
-          action.value[2] = new TemplateExpression({
+          action.value[2] = createTemplateExpression({
             parts: [
               prefix,
               new ReferenceExpression(missingInstance.elemID, missingInstance),
@@ -90,7 +90,7 @@ export const sideConversationsOnFetch = (elements: Element[], config: ZendeskCon
       // Type check is done in the if statement above
       const group = groupsById[groupId] as InstanceElement
       // Replace the group part with a reference expression
-      action.value[2] = new TemplateExpression({ parts: [
+      action.value[2] = createTemplateExpression({ parts: [
         prefix,
         new ReferenceExpression(group.elemID, group),
         suffix,

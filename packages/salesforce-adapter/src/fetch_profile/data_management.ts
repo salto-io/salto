@@ -200,12 +200,9 @@ export const validateDataManagementConfig = (
   }
 
   const managedBySaltoFieldName = dataManagementConfig.saltoManagementFieldSettings?.defaultFieldName
-  if (managedBySaltoFieldName) {
-    makeArray(dataManagementConfig.omittedFields)
-      .forEach(fieldApiName => {
-        if (namePartsFromApiName(fieldApiName)[1] === managedBySaltoFieldName) {
-          throw new ConfigValidationError([...fieldPath, 'omittedFields'], `The field ${fieldApiName} is omitted, but it's defined as the Salto management field`)
-        }
-      })
+  const omittedFieldNames = makeArray(dataManagementConfig.omittedFields)
+    .map(fieldName => namePartsFromApiName(fieldName)[1])
+  if (managedBySaltoFieldName && omittedFieldNames.includes(managedBySaltoFieldName)) {
+    throw new ConfigValidationError([...fieldPath, 'omittedFields'], `The field ${managedBySaltoFieldName} is omitted, but it's defined as the Salto management field`)
   }
 }

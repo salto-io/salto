@@ -1683,6 +1683,12 @@ describe('Custom Object Instances filter', () => {
                   allowRef: false,
                 },
                 {
+                  typeName: 'unmanagedType',
+                  included: true,
+                  excluded: false,
+                  allowRef: false,
+                },
+                {
                   typeName: 'IrrelevantType',
                   included: true,
                   excluded: false,
@@ -1702,7 +1708,6 @@ describe('Custom Object Instances filter', () => {
       })
 
       it('Should warn', () => {
-        expect(filterResult.errors ?? []).not.toBeEmpty()
         expect(filterResult.errors).toEqual([{
           message: expect.stringContaining('TestType') && expect.stringContaining(MANAGED_BY_SALTO_FIELD_NAME),
           severity: 'Warning',
@@ -1711,7 +1716,7 @@ describe('Custom Object Instances filter', () => {
         expect(basicQueryImplementation).not.toHaveBeenCalledWith(expect.stringContaining('TestType'))
       })
     })
-    describe('when all the types have inqccessible fields', () => {
+    describe('When all the types have inaccessible fields', () => {
       let elements: Element[]
       let filterResult: FilterResult
       const testTypeName = 'TestType'
@@ -1727,6 +1732,7 @@ describe('Custom Object Instances filter', () => {
           },
         },
       })
+      const unmanagedType = createCustomObject('unmanagedType', {})
       const otherTestType = createCustomObject(otherTestTypeName, {
         [MANAGED_BY_SALTO_FIELD_NAME]: {
           refType: Types.primitiveDataTypes.Text,
@@ -1771,7 +1777,7 @@ describe('Custom Object Instances filter', () => {
           }
         ) as FilterType
 
-        elements = [testType, otherTestType]
+        elements = [testType, otherTestType, unmanagedType]
 
         testRecords.forEach(record => { record[MANAGED_BY_SALTO_FIELD_NAME] = true })
         setMockQueryResults(testRecords)
@@ -1785,7 +1791,7 @@ describe('Custom Object Instances filter', () => {
           message: expect.stringContaining('missing or is of the wrong type for all data records'),
           severity: 'Warning',
         }])
-        expect(elements).toHaveLength(2)
+        expect(elements).toHaveLength(3)
       })
     })
   })

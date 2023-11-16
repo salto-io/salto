@@ -16,23 +16,21 @@
 import {
   CORE_ANNOTATIONS,
   Element,
-  ElemID,
-  InstanceElement,
-  ReadOnlyElementsSource,
   Values,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { LocalFilterCreator } from '../filter'
-import { ArtificialTypes } from '../constants'
+import { createChangedAtInformation } from './author_information/changed_at_info'
 import {
   apiNameSync,
-  getChangedAtSingleton,
   isCustomObjectSync,
   isMetadataInstanceElementSync,
   metadataTypeSync,
 } from './utils'
 
-const createChangedAtSingletonInstanceValues = (metadataInstancesByType: Record<string, Element[]>): Values => {
+const changedAtByType = (
+  metadataInstancesByType: Record<string, Element[]>
+): Record<string, Record<string, string>> => {
   const instanceValues: Values = {}
   Object.entries(metadataInstancesByType).forEach(([metadataType, elements]) => {
     instanceValues[metadataType] = {}
@@ -41,22 +39,6 @@ const createChangedAtSingletonInstanceValues = (metadataInstancesByType: Record<
     })
   })
   return instanceValues
-}
-
-const createEmptyChangedAtSingletonInstance = async (): Promise<InstanceElement> => (
-  new InstanceElement(
-    ElemID.CONFIG_NAME,
-    ArtificialTypes.ChangedAtSingleton,
-  )
-)
-
-const getChangedAtSingletonInstance = async (
-  elementsSource: ReadOnlyElementsSource | undefined
-): Promise<InstanceElement> => {
-  const changedAtSingleton = elementsSource !== undefined
-    ? await getChangedAtSingleton(elementsSource)
-    : undefined
-  return changedAtSingleton ?? createEmptyChangedAtSingletonInstance()
 }
 
 const filterCreator: LocalFilterCreator = ({ config }) => ({
@@ -68,16 +50,13 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
         .filter(element => element.annotations[CORE_ANNOTATIONS.CHANGED_AT]),
       metadataTypeSync
     )
-    const changedAtInstance = await getChangedAtSingletonInstance(config.elementsSource)
-    elements.push(changedAtInstance)
+    const changedAtInstance = await createChangedAtInformation(config.elementsSource)
+    elements.push(changedAtInstance.backingElement())
     // None of the Elements were annotated with changedAt
     if (Object.values(elementsByType).flat().length === 0) {
       return
     }
-    changedAtInstance.value = _.defaultsDeep(
-      createChangedAtSingletonInstanceValues(elementsByType),
-      changedAtInstance.value,
-    )
+    changedAtInstance.updateTypesChangedAt(changedAtByType(elementsByType))
   },
 })
 

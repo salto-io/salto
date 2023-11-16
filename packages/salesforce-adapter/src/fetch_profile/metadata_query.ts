@@ -15,7 +15,7 @@
 */
 import { regex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { InstanceElement } from '@salto-io/adapter-api'
+import { ChangedAtInformation } from '../filters/author_information/changed_at_info'
 import {
   CUSTOM_FIELD,
   CUSTOM_METADATA,
@@ -98,14 +98,14 @@ type BuildMetadataQueryParams = {
   metadataParams: MetadataParams
   target?: string[]
   isFetchWithChangesDetection: boolean
-  changedAtSingleton?: InstanceElement
+  changedAtInformation?: ChangedAtInformation
 }
 
 export const buildMetadataQuery = ({
   metadataParams,
   target,
   isFetchWithChangesDetection,
-  changedAtSingleton,
+  changedAtInformation,
 }: BuildMetadataQueryParams): MetadataQuery => {
   const { include = [{}], exclude = [] } = metadataParams
   const fullExcludeList = [...exclude, ...PERMANENT_SKIP_LIST]
@@ -151,10 +151,10 @@ export const buildMetadataQuery = ({
     if (UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES.includes(instance.metadataType)) {
       return false
     }
-    if (changedAtSingleton === undefined || instance.changedAt === undefined) {
+    if (changedAtInformation === undefined || instance.changedAt === undefined) {
       return true
     }
-    const lastChangedAt = _.get(changedAtSingleton.value, [instance.metadataType, instance.name])
+    const lastChangedAt = changedAtInformation.typeChangedAt(instance.metadataType, instance.name)
     return _.isString(lastChangedAt)
       ? new Date(lastChangedAt).getTime() < new Date(instance.changedAt).getTime()
       : true

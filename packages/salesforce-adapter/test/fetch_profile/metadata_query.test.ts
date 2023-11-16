@@ -14,10 +14,11 @@
 * limitations under the License.
 */
 
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { buildMetadataQuery, validateMetadataParams } from '../../src/fetch_profile/metadata_query'
 import { CUSTOM_OBJECT, TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../../src/constants'
-import { mockInstances } from '../mock_elements'
 import { MetadataQuery } from '../../src/types'
+import { createChangedAtInformation } from '../../src/filters/author_information/changed_at_info'
 
 describe('validateMetadataParams', () => {
   describe('invalid regex in include list', () => {
@@ -218,8 +219,8 @@ describe('buildMetadataQuery', () => {
       const LAST_MODIFIED_DATE = '2023-01-12T15:51:47.000Z'
       let query: MetadataQuery
       beforeEach(async () => {
-        const { ChangedAtSingleton: changedAtSingleton } = mockInstances()
-        changedAtSingleton.value.Report = { testReport: LAST_MODIFIED_DATE }
+        const authorInfo = await createChangedAtInformation(buildElementsSourceFromElements([]))
+        authorInfo.updateTypesChangedAt({ Report: { testReport: LAST_MODIFIED_DATE } })
         query = buildMetadataQuery(
           {
             metadataParams: {
@@ -230,7 +231,7 @@ describe('buildMetadataQuery', () => {
               ],
             },
             isFetchWithChangesDetection: true,
-            changedAtSingleton,
+            changedAtInformation: authorInfo,
           },
         )
       })

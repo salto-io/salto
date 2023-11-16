@@ -20,15 +20,12 @@ import {
   Field,
   InstanceElement, ListType,
   ObjectType,
-  ReadOnlyElementsSource,
   ReferenceExpression,
   toChange,
 } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import {
   addDefaults,
   toListType,
-  getChangedAtSingleton,
   getNamespace,
   isCustomMetadataRecordInstance,
   isCustomMetadataRecordType,
@@ -58,7 +55,7 @@ import {
 } from '../../src/constants'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import { CustomObject } from '../../src/client/types'
-import { createFlowChange, mockInstances, mockTypes } from '../mock_elements'
+import { createFlowChange, mockTypes } from '../mock_elements'
 import { createCustomObjectType, createField } from '../utils'
 import { INSTANCE_SUFFIXES } from '../../src/types'
 import { mockFileProperties } from '../connection'
@@ -368,29 +365,6 @@ describe('filter utils', () => {
       ['Account-Layout-Complex-Name', 'Account', 'Layout-Complex-Name'],
     ])('%s', (layoutApiName, expectedObjectName, expectedLayoutName) => {
       expect(layoutObjAndName(layoutApiName)).toEqual([expectedObjectName, expectedLayoutName])
-    })
-  })
-  describe('getChangedAtSingleton', () => {
-    let elementsSource: ReadOnlyElementsSource
-
-    describe('when the ChangedAtSingleton instance exists in the elementsSource', () => {
-      let changedAtSingleton: InstanceElement
-      beforeEach(() => {
-        changedAtSingleton = mockInstances().ChangedAtSingleton
-        elementsSource = buildElementsSourceFromElements([changedAtSingleton])
-      })
-      it('should return the singleton', async () => {
-        expect(await getChangedAtSingleton(elementsSource)).toEqual(changedAtSingleton)
-      })
-    })
-
-    describe('when the ChangedAtSingleton instance does not exist in the elementsSource', () => {
-      beforeEach(() => {
-        elementsSource = buildElementsSourceFromElements([])
-      })
-      it('should return undefined', async () => {
-        expect(await getChangedAtSingleton(elementsSource)).toBeUndefined()
-      })
     })
   })
   describe('isCustomType', () => {

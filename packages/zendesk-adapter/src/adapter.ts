@@ -796,7 +796,8 @@ export default class ZendeskAdapter implements AdapterOperations {
     }
 
 
-    const brandsList = _.uniq(await getBrandsFromElementsSource(this.elementsSource))
+    const brandsList = await getBrandsFromElementsSource(this.elementsSource)
+    log.debug('Found %d brands to handle %d guide changes', brandsList.length, guideResolvedChanges.length)
     const resolvedBrandIdToSubdomain = Object.fromEntries(brandsList.map(
       brandInstance => [brandInstance.value.id, brandInstance.value.subdomain]
     ))

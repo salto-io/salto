@@ -35,7 +35,6 @@ import { logger } from '@salto-io/logging'
 import { createAdapterReplacedID, expressions, merger, updateElementsWithAlternativeAccount, elementSource as workspaceElementSource } from '@salto-io/workspace'
 import { collections, promises } from '@salto-io/lowerdash'
 import adapterCreators from './creators'
-import { CORE_FLAGS, getCoreFlagBool } from '../flags'
 
 const { awu } = collections.asynciterable
 const { mapValuesAsync } = promises.object
@@ -198,10 +197,6 @@ const filterElementsSource = (
 export const createResolvedTypesElementsSource = (
   elementsSource: ReadOnlyElementsSource
 ): ReadOnlyElementsSource => {
-  if (getCoreFlagBool(CORE_FLAGS.skipResolveTypesInElementSource)) {
-    return elementsSource
-  }
-
   let resolvedTypesPromise: Promise<Map<string, TypeElement>> | undefined
   const resolveTypes = async (): Promise<Map<string, TypeElement>> => {
     const typeElements = await awu(await elementsSource.list())
@@ -257,8 +252,8 @@ export const createResolvedTypesElementsSource = (
   return {
     get: getResolved,
     getAll: async () => awu(await elementsSource.list()).map(getResolved),
-    list: elementsSource.list,
-    has: elementsSource.has,
+    list: () => elementsSource.list(),
+    has: id => elementsSource.has(id),
   }
 }
 
@@ -273,19 +268,28 @@ export const getAdaptersCreatorConfigs = async (
   elementsSource: ReadOnlyElementsSource,
   accountToServiceName: Record<string, string>,
   elemIdGetters: Record<string, ElemIdGetter> = {},
+  resolveTypes = false,
 ): Promise<Record<string, AdapterOperationsContext>> => (
   Object.fromEntries(await Promise.all(accounts.map(
     async account => {
       const defaultConfig = await getMergedDefaultAdapterConfig(accountToServiceName[account],
         account)
+      const adapterElementSource = createElemIDReplacedElementsSource(
+        filterElementsSource(elementsSource, account),
+        account,
+        accountToServiceName[account],
+      )
+      // Currently the type resolving element source has an internal cache and therefore we must not
+      // use it in deploy where the underlying element source (the one we get as input here) changes
+      const elementsSourceForAdapter = resolveTypes
+        ? createResolvedTypesElementsSource(adapterElementSource)
+        : adapterElementSource
       return [
         account,
         {
           credentials: credentials[account],
           config: await getConfig(account, defaultConfig),
-          elementsSource: createResolvedTypesElementsSource(createElemIDReplacedElementsSource(filterElementsSource(
-            elementsSource, account
-          ), account, accountToServiceName[account])),
+          elementsSource: elementsSourceForAdapter,
           getElemIdFunc: elemIdGetters[account],
         },
       ]

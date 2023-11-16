@@ -29,7 +29,7 @@ const generateReference = (
   type: TypeElement | undefined,
   elementsMap: Record<string, ElemID>,
 ): ReferenceExpression | undefined => {
-  if (!value.internalId) {
+  if (!_.isPlainObject(value) || !value.internalId) {
     return undefined
   }
   if (type && elementsMap[getDataInstanceId(value.internalId, type.elemID.name)]) {
@@ -51,7 +51,8 @@ const generateParentReference = (
   type: ObjectType,
   elementsMap: Record<string, ElemID>,
 ): ReferenceExpression | undefined => (
-  value.internalId
+  _.isPlainObject(value)
+  && value.internalId
   && path && path.nestingLevel === 1 && path.name === PARENT
   && elementsMap[getDataInstanceId(value.internalId, type.elemID.name)]
     ? new ReferenceExpression(

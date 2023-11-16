@@ -160,6 +160,8 @@ import portalGroupsFilter from './filters/portal_groups'
 import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
 import { jiraJSMEntriesFunc } from './jsm_utils'
+import { getWorkspaceId } from './workspace_id'
+import { JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES } from './config/api_config'
 
 const { getAllElements } = elementUtils.ducktype
 const { findDataField, computeGetArgs } = elementUtils
@@ -503,6 +505,38 @@ export default class JiraAdapter implements AdapterOperations {
     })
   }
 
+  @logDuration('generating JSM assets instances and types from service')
+  private async getJSMAssetsElements():
+  Promise<elementUtils.FetchElements<Element[]>> {
+    const { jsmApiDefinitions } = this.userConfig
+    // jsmApiDefinitions is currently undefined for DC
+    if (this.client === undefined
+      || jsmApiDefinitions === undefined
+      || !this.userConfig.fetch.enableJSM
+      || !this.userConfig.fetch.enableJsmExperimental) {
+      return { elements: [] }
+    }
+
+    const workspaceId = await getWorkspaceId(this.client)
+    if (workspaceId === undefined) {
+      return { elements: [] }
+    }
+    const workspaceContext = { workspaceId }
+    return getAllElements({
+      adapterName: JIRA,
+      types: jsmApiDefinitions.types,
+      shouldAddRemainingTypes: false,
+      supportedTypes: JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES,
+      fetchQuery: this.fetchQuery,
+      paginator: this.paginator,
+      nestedFieldFinder: findDataField,
+      computeGetArgs,
+      typeDefaults: jsmApiDefinitions.typeDefaults,
+      additionalRequestContext: workspaceContext,
+      getElemIdFunc: this.getElemIdFunc,
+    })
+  }
+
   @logDuration('generating JSM instances and types from service')
   private async getJSMElements(swaggerResponseElements: InstanceElement[]):
   Promise<elementUtils.FetchElements<Element[]>> {
@@ -513,6 +547,7 @@ export default class JiraAdapter implements AdapterOperations {
       || !this.userConfig.fetch.enableJSM) {
       return { elements: [] }
     }
+
     const serviceDeskProjects = swaggerResponseElements
       .filter(project => project.elemID.typeName === PROJECT_TYPE)
       .filter(isInstanceElement)
@@ -584,17 +619,19 @@ export default class JiraAdapter implements AdapterOperations {
     ])
 
     const jsmElements = await this.getJSMElements(swaggerResponse.elements)
-
+    const jsmAssetsElements = await this.getJSMAssetsElements()
     const elements: Element[] = [
       ...Object.values(swaggerTypes),
       ...swaggerResponse.elements,
       ...scriptRunnerElements.elements,
       ...jsmElements.elements,
+      ...jsmAssetsElements.elements,
     ]
     return { elements,
       errors: (swaggerResponse.errors ?? [])
         .concat(scriptRunnerElements.errors ?? [])
-        .concat(jsmElements.errors ?? []),
+        .concat(jsmElements.errors ?? [])
+        .concat(jsmAssetsElements.errors ?? []),
       configChanges: (jsmElements.configChanges ?? []) }
   }
 

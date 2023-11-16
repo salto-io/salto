@@ -514,24 +514,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceUrl: '/admin/access/identity-providers/edit/{id}',
     },
   },
-  api__v1__features: {
-    request: {
-      url: '/api/v1/features',
-      recurseInto: [
-        {
-          // Additional features that need to be enabled in order to enable the feature
-          type: 'api__v1__features___featureId___dependencies@uuuuuu_00123_00125uu',
-          toField: 'featureDependencies',
-          context: [{ name: 'featureId', fromField: 'id' }],
-        },
-      ],
-    },
-  },
   Feature: {
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'featureDependencies', fieldType: 'list<Feature>' },
-      ],
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],

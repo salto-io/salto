@@ -28,7 +28,7 @@ import { GetLookupNameFunc, GetLookupNameFuncArgs } from '@salto-io/adapter-util
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { apiName } from './transformer'
+import { apiName, isMetadataInstanceElement } from './transformer'
 import {
   LAYOUT_ITEM_METADATA_TYPE,
   WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
@@ -98,7 +98,7 @@ const safeApiName = ({ ref, path, relative }: {
 }
 
 type ReferenceSerializationStrategyName = 'absoluteApiName' | 'relativeApiName' | 'configurationAttributeMapping' | 'lookupQueryMapping' | 'scheduleConstraintFieldMapping'
- | 'mapKey' | 'customLabel' | 'internalId'
+ | 'mapKey' | 'customLabel' | 'referenceToInstance'
 const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName, ReferenceSerializationStrategy
 > = {
@@ -156,8 +156,12 @@ const ReferenceSerializationStrategyLookup: Record<
       return val
     },
   },
-  internalId: {
-    serialize: async ({ ref }) => instanceInternalId(ref.value),
+  referenceToInstance: {
+    serialize: async args => (
+      await isMetadataInstanceElement(args.ref.value)
+        ? instanceInternalId(args.ref.value)
+        : ReferenceSerializationStrategyLookup.absoluteApiName.serialize(args)
+    ),
     lookup: val => val,
   },
 }
@@ -927,5 +931,5 @@ export const getLookUpName = getLookUpNameImpl({
 export const getLookupNameForDataInstances = getLookUpNameImpl({
   defs: fieldNameToTypeMappingDefs,
   resolveToElementFallback: true,
-  defaultStrategyName: 'internalId',
+  defaultStrategyName: 'referenceToInstance',
 })

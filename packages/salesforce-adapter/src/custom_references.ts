@@ -15,8 +15,9 @@
 */
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { Element, ElemID, GetCustomReferencesFunc, InstanceElement, ReferenceInfo, Values } from '@salto-io/adapter-api'
-import { isInstanceOfTypeSync } from './filters/utils'
+import {
+  Element, ElemID, GetCustomReferencesFunc, InstanceElement, isInstanceElement, ReferenceInfo, Values,
+} from '@salto-io/adapter-api'
 import {
   APEX_CLASS_METADATA_TYPE, APEX_PAGE_METADATA_TYPE, API_NAME_SEPARATOR, CUSTOM_APPLICATION_METADATA_TYPE, SALESFORCE,
   FIELD_PERMISSIONS, FLOW_METADATA_TYPE, LAYOUT_TYPE_ID_METADATA_TYPE, PROFILE_METADATA_TYPE, RECORD_TYPE_METADATA_TYPE,
@@ -206,9 +207,17 @@ const referencesFromProfile = (profile: InstanceElement): ReferenceInfo[] => {
     .concat(recordTypeRefs)
 }
 
-export const getCustomReferences: GetCustomReferencesFunc = async (elements: Element[]): Promise<ReferenceInfo[]> => (
-  log.time(() => (elements
-    .filter(isInstanceOfTypeSync(PROFILE_METADATA_TYPE, PERMISSION_SET_METADATA_TYPE))
-    .flatMap(referencesFromProfile)),
-  'Generating references from profiles')
-)
+export const getCustomReferences: GetCustomReferencesFunc = async (elements: Element[]): Promise<ReferenceInfo[]> => {
+  // At this point the TypeRefs of instance elements are not resolved yet, so isInstanceOfTypeSync() won't work - we
+  // have to figure out the type name the hard way.
+  const profilesAndPermissionSets = elements
+    .filter(isInstanceElement)
+    .filter(instance => [PROFILE_METADATA_TYPE, PERMISSION_SET_METADATA_TYPE].includes(instance.elemID.typeName))
+  const refs = log.time(
+    () => (profilesAndPermissionSets.flatMap(referencesFromProfile)),
+    `Generating references from ${profilesAndPermissionSets.length} profiles/permission sets`
+  )
+  log.debug('generated %d references', refs.length)
+
+  return refs
+}

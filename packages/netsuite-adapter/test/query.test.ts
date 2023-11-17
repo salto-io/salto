@@ -250,10 +250,12 @@ describe('NetsuiteQuery', () => {
         types: [
           { name: 'addressForm', ids: ['aaa.*', 'bbb.*'] },
           { name: 'advancedpdftemplate', ids: ['ccc.*', 'ddd.*'] },
+          { name: '.*', criteria: { isinactive: true } },
         ],
         fileCabinet: ['eee.*', 'fff.*'],
         customRecords: [
           { name: 'customrecord.*', ids: ['.*'] },
+          { name: '.*', criteria: { isInactive: true } },
         ],
       })).not.toThrow()
     })
@@ -315,7 +317,27 @@ describe('NetsuiteQuery', () => {
       }
 
       expect(error).toBeDefined()
-      expect(error?.message).toContain('Received invalid adapter config input. Expected type name to be a string, but found:')
+      expect(error?.message).toContain('Received invalid adapter config input. Expected type name to be a string and not to have both ids & criteria, but found:')
+    })
+    it('should throw an error when type has both ids & criteria', () => {
+      let error: Error | undefined
+      try {
+        validateFetchParameters({
+          types: [
+            {
+              name: 'aa',
+              ids: ['abc'],
+              criteria: { isinactive: true },
+            },
+          ],
+          fileCabinet: [],
+        })
+      } catch (e) {
+        error = e
+      }
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Received invalid adapter config input. Expected type name to be a string and not to have both ids & criteria, but found:')
     })
     it('should throw an error when customRecords has undefined "name"', () => {
       let error: Error | undefined
@@ -333,7 +355,25 @@ describe('NetsuiteQuery', () => {
       }
 
       expect(error).toBeDefined()
-      expect(error?.message).toContain('Received invalid adapter config input. Expected custom record name to be a string, but found:')
+      expect(error?.message).toContain('Received invalid adapter config input. Expected custom record name to be a string and not to have both ids & criteria, but found:')
+    })
+    it('should throw an error when customRecords has both ids & criteria', () => {
+      let error: Error | undefined
+      try {
+        validateFetchParameters({
+          types: [],
+          fileCabinet: [],
+          customRecords: [
+            { name: 'aa' },
+            { name: '.*', ids: ['abc'], criteria: { isinactive: true } },
+          ],
+        })
+      } catch (e) {
+        error = e
+      }
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Received invalid adapter config input. Expected custom record name to be a string and not to have both ids & criteria, but found:')
     })
     it('should throw an error when fileCabinet is undefined', () => {
       let error: Error | undefined
@@ -395,6 +435,33 @@ describe('NetsuiteQuery', () => {
       expect(error).toBeDefined()
       expect(error?.message).toContain('Received invalid adapter config input. Expected type ids to be an array of strings, but found:')
     })
+    it('should throw an error when types has invalid criteria field', () => {
+      let error: Error | undefined
+      try {
+        validateFetchParameters({
+          types: [
+            {
+              name: 'aaa',
+              criteria: { inactive: true },
+            },
+            {
+              name: 'aaa',
+              criteria: true,
+            },
+            {
+              name: 'aaa',
+              criteria: {},
+            },
+          ],
+          fileCabinet: [],
+        })
+      } catch (e) {
+        error = e
+      }
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Received invalid adapter config input. Expected type criteria to be a non empty object, but found:')
+    })
     it('should throw an error when customRecords has invalid ids field', () => {
       let error: Error | undefined
       try {
@@ -412,6 +479,24 @@ describe('NetsuiteQuery', () => {
 
       expect(error).toBeDefined()
       expect(error?.message).toContain('Received invalid adapter config input. Expected custom record ids to be an array of strings, but found:')
+    })
+    it('should throw an error when customRecords has invalid criteria field', () => {
+      let error: Error | undefined
+      try {
+        validateFetchParameters({
+          types: [],
+          fileCabinet: [],
+          customRecords: [{
+            name: 'aaa',
+            criteria: {},
+          }],
+        })
+      } catch (e) {
+        error = e
+      }
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Received invalid adapter config input. Expected custom record criteria to be a non empty object, but found:')
     })
     it('should throw an error with all invalid types', () => {
       let error: Error | undefined

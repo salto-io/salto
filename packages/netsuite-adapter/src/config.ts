@@ -27,7 +27,7 @@ import {
   CURRENCY, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_NAME_PREFIX, DATASET, EXCHANGE_RATE,
   NETSUITE, PERMISSIONS, SAVED_SEARCH, WORKBOOK,
 } from './constants'
-import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, checkTypeNameRegMatch, noSupportedTypeMatch, validateNetsuiteQueryParameters, validateDefined, LockedElementsConfig, emptyQueryParams, fullFetchConfig } from './query'
+import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, checkTypeNameRegMatch, noSupportedTypeMatch, validateNetsuiteQueryParameters, validateDefined, LockedElementsConfig, emptyQueryParams, fullFetchConfig, isCriteriaQuery } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING } from './data_elements/types'
 import { isCustomRecordTypeName, netsuiteSupportedTypes } from './types'
 import { FetchByQueryFailures } from './change_validators/safe_deploy'
@@ -362,7 +362,9 @@ const queryConfigType = createMatchingObjectType<NetsuiteQueryParameters>({
   },
 })
 
-const fetchTypeQueryParamsConfigType = createMatchingObjectType<FetchTypeQueryParams>({
+const fetchTypeQueryParamsConfigType = createMatchingObjectType<
+  Pick<FetchTypeQueryParams, 'name'> & Partial<FetchTypeQueryParams>
+>({
   elemID: new ElemID(NETSUITE, 'fetchTypeQueryParams'),
   fields: {
     name: {
@@ -370,6 +372,7 @@ const fetchTypeQueryParamsConfigType = createMatchingObjectType<FetchTypeQueryPa
       annotations: { _required: true },
     },
     ids: { refType: new ListType(BuiltinTypes.STRING) },
+    criteria: { refType: new MapType(BuiltinTypes.UNKNOWN) },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -702,6 +705,9 @@ export const validateFetchConfig = ({
   validateDefined(include, [CONFIG.fetch, FETCH_PARAMS.include])
   validatePlainObject(include, [CONFIG.fetch, FETCH_PARAMS.include])
   validateFetchParameters(include)
+  if (include.types.concat(include.customRecords ?? []).filter(isCriteriaQuery).length > 0) {
+    throw new Error('criteria is only allowed in fetch.exclude')
+  }
 
   validateDefined(exclude, [CONFIG.fetch, FETCH_PARAMS.exclude])
   validatePlainObject(exclude, [CONFIG.fetch, FETCH_PARAMS.exclude])
@@ -879,16 +885,19 @@ const toConfigSuggestions = ({
 const combineFetchTypeQueryParams = (
   first: FetchTypeQueryParams[],
   second: FetchTypeQueryParams[]
-): FetchTypeQueryParams[] => _(first)
-  .concat(second)
-  .groupBy(type => type.name)
-  .map((types, name) => ({
+): FetchTypeQueryParams[] => Object.entries(
+  _.groupBy(first.concat(second), type => type.name)
+).flatMap(([name, types]) => {
+  const [byCriteriaQueries, byIdsQueries] = _.partition(types, isCriteriaQuery)
+  const combinedByIdsQuery = byIdsQueries.length > 0 ? [{
     name,
-    ...types.some(type => type.ids === undefined)
+    ...byIdsQueries.some(type => type.ids === undefined)
       ? {}
-      : { ids: _.uniq(types.flatMap(type => type.ids ?? [])) },
-  }))
-  .value()
+      : { ids: _.uniq(byIdsQueries.flatMap(type => type.ids ?? [])) },
+  }] : []
+  const uniqByCriteriaQueries = _.uniqWith(byCriteriaQueries, _.isEqual)
+  return [...combinedByIdsQuery, ...uniqByCriteriaQueries]
+})
 
 export const combineQueryParams = (
   first: QueryParams | undefined,

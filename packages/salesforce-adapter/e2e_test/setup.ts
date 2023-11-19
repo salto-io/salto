@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { MetadataInfo } from 'jsforce'
+import { MetadataInfo } from '@salto-io/jsforce'
 import { ObjectType } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import * as constants from '../src/constants'

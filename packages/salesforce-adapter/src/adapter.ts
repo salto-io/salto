@@ -26,7 +26,7 @@ import {
   restoreChangeElement,
   safeJsonStringify,
 } from '@salto-io/adapter-utils'
-import { MetadataObject } from 'jsforce'
+import { MetadataObject } from '@salto-io/jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections, values, promises, objects } from '@salto-io/lowerdash'

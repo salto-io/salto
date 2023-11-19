@@ -19,7 +19,7 @@ import {
   DescribeGlobalSObjectResult, DeployOptions, DeployResultLocator, DeployResult,
   RetrieveRequest, RetrieveResult, Callback, RetrieveResultLocator, UserInfo, QueryResult, Batch,
   IdentityInfo, Record as SfRecord,
-} from 'jsforce'
+} from '@salto-io/jsforce'
 import { Value } from '@salto-io/adapter-api'
 
 // This class is the interfaces we use from jsforce library

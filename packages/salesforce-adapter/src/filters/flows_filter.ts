@@ -15,7 +15,7 @@
 */
 import _, { isUndefined } from 'lodash'
 import { logger } from '@salto-io/logging'
-import { FileProperties } from 'jsforce-types'
+import { FileProperties } from '@salto-io/jsforce-types'
 import {
   Change, CORE_ANNOTATIONS,
   Element,

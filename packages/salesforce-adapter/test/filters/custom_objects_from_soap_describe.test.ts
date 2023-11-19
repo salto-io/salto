@@ -16,7 +16,7 @@
 import { ObjectType, Element, InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
-import { DescribeSObjectResult } from 'jsforce'
+import { DescribeSObjectResult } from '@salto-io/jsforce'
 import Connection from '../../src/client/jsforce'
 import {
   FIELD_ANNOTATIONS,

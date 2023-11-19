@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
+import { DescribeSObjectResult, Field as SObjField } from '@salto-io/jsforce'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { ObjectType, isInstanceElement, ElemID, InstanceElement, Element } from '@salto-io/adapter-api'

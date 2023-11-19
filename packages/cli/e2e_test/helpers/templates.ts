@@ -50,7 +50,7 @@ export const customObject = (
       deploymentStatus: BuiltinTypes.STRING,
       pluralLabel: BuiltinTypes.STRING,
       sharingModel: BuiltinTypes.STRING,
-      nameField: new ObjectType({ elemID: new ElemID('salesforce', 'CustomObject') }),
+      //  nameField: new ObjectType({ elemID: new ElemID('salesforce', 'CustomObject') }),
     },
   })
 }

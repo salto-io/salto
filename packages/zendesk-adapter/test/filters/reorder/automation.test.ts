@@ -21,7 +21,7 @@ import {
 import { filterUtils } from '@salto-io/adapter-components'
 import { ZENDESK } from '../../../src/constants'
 import filterCreator, { ORDER_FIELD_NAME } from '../../../src/filters/reorder/automation'
-import { createOrderPosition, createOrderTypeName } from '../../../src/filters/reorder/creator'
+import { createOrderTypeName } from '../../../src/filters/reorder/creator'
 import { createFilterCreatorParams } from '../../utils'
 
 const mockDeployChange = jest.fn()
@@ -112,9 +112,9 @@ describe('automation reorder filter', () => {
       const instanceToDeploy = after.clone()
       instanceToDeploy.value = {
         automations: [
-          { id: 22, position: createOrderPosition(0) },
-          { id: 33, position: createOrderPosition(1) },
-          { id: 11, position: createOrderPosition(2) },
+          { id: 22, position: 1 },
+          { id: 33, position: 2 },
+          { id: 11, position: 3 },
         ],
       }
       expect(mockDeployChange).toHaveBeenCalledWith({

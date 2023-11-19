@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { ObjectType, ElemID, Field, BuiltinTypes, TypeElement, Field as TypeField, Values, CORE_ANNOTATIONS, ReferenceExpression, InstanceElement, getRestriction, ListType, createRestriction, isServiceId, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { Field as SalesforceField } from 'jsforce'
+import { Field as SalesforceField } from '@salto-io/jsforce'
 import { restoreValues, resolveValues } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 

@@ -6,7 +6,7 @@
         "declaration": true,
         "paths": {
             "jsforce": [
-                "../../node_modules/jsforce-types"
+                "../../node_modules/@salto-io/jsforce-types"
             ]
         }
     },

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import he from 'he'
 import parser from 'fast-xml-parser'
-import { RetrieveResult, FileProperties, RetrieveRequest } from 'jsforce'
+import { RetrieveResult, FileProperties, RetrieveRequest } from '@salto-io/jsforce'
 import JSZip from 'jszip'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { Values, StaticFile, InstanceElement } from '@salto-io/adapter-api'

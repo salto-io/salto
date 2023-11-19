@@ -6,8 +6,8 @@
         "declaration": true,
         "resolveJsonModule": true,
         "paths": {
-            "jsforce": [
-                "../../node_modules/jsforce-types"
+            "@salto-io/jsforce": [
+                "../../node_modules/@salto-io/jsforce-types"
             ]
         }
     },

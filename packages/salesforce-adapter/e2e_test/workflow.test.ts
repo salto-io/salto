@@ -20,7 +20,7 @@ import {
   findElements as findElementsByID, findElement,
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { MetadataInfo } from 'jsforce-types'
+import { MetadataInfo } from '@salto-io/jsforce-types'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import realAdapter from './adapter'
 import SalesforceClient from '../src/client/client'

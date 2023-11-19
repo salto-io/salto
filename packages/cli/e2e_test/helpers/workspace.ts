@@ -185,6 +185,7 @@ export const runFetch = async (
     args: [
       'fetch',
       '-f',
+      '-v',
       ...inputEnvironment ? ['-e', inputEnvironment] : [],
       '-m', isolated ? 'isolated' : 'override',
       ...(configOverrides ?? []).flatMap(override => ['-C', override]),

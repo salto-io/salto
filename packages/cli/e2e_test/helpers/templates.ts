@@ -13,7 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, PrimitiveType, PrimitiveTypes, BuiltinTypes, InstanceElement } from '@salto-io/adapter-api'
+import {
+  ObjectType,
+  ElemID,
+  PrimitiveType,
+  PrimitiveTypes,
+  BuiltinTypes,
+  InstanceElement,
+  TypeReference,
+} from '@salto-io/adapter-api'
 
 export const customObject = (
   data: {objName: string; alphaLabel: string; betaLabel: string; accountName?: string}
@@ -50,7 +58,7 @@ export const customObject = (
       deploymentStatus: BuiltinTypes.STRING,
       pluralLabel: BuiltinTypes.STRING,
       sharingModel: BuiltinTypes.STRING,
-      nameField: new ObjectType({ elemID: new ElemID('salesforce', 'CustomField') }),
+      nameField: new TypeReference(new ElemID(adapter, 'CustomField')),
     },
   })
 }

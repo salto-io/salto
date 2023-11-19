@@ -237,6 +237,9 @@ const removeAutomation = async (
 ): Promise<void> => {
   await client.deletePrivate({
     url: `${getUrlPrefix(cloudId)}/GLOBAL/rule/${instance.value.id}`,
+    data: {
+      headers: { 'Content-Type': 'application/json' },
+    },
   })
 }
 

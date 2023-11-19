@@ -14,7 +14,9 @@
 * limitations under the License.
 */
 import { automationProjectsHandler } from './automation_projects'
+import { fieldConfigurationsHandler } from './unresolved_field_configuration_items'
 
 export const elementFixerHandlers = [
   automationProjectsHandler,
+  fieldConfigurationsHandler,
 ]

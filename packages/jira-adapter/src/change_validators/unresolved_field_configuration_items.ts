@@ -17,7 +17,7 @@ import { ChangeValidator, ElemID, getChangeData, InstanceElement, isAdditionOrMo
 import { collections, values } from '@salto-io/lowerdash'
 import { FIELD_CONFIGURATION_TYPE_NAME, JIRA } from '../constants'
 import { FIELD_TYPE_NAME } from '../filters/fields/constants'
-
+// TODO: remove this
 const { awu } = collections.asynciterable
 
 const getUnresolvedFieldConfigurationItems = async (

@@ -69,10 +69,10 @@ export const buildHistoryStateStaticFilesSource = (
     },
 
     rename: async name => {
-      log.debug('rename to %s ignored in history state static files source', name)
+      log.trace('rename to %s ignored in history state static files source', name)
     },
     delete: async file => {
-      log.debug('delete %s ignored in history state static files source', file.filepath)
+      log.trace('delete %s ignored in history state static files source', file.filepath)
     },
     clear: async () => {
       log.debug('clear ignored in history state static files source')

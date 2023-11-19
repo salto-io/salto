@@ -20,7 +20,6 @@ import {
   PrimitiveTypes,
   BuiltinTypes,
   InstanceElement,
-  TypeReference,
 } from '@salto-io/adapter-api'
 
 export const customObject = (
@@ -52,13 +51,11 @@ export const customObject = (
       deploymentStatus: 'Deployed',
       pluralLabel: 'Tests',
       sharingModel: 'ReadWrite',
-      nameField: { type: 'Text', label: 'Name' },
     },
     annotationRefsOrTypes: {
       deploymentStatus: BuiltinTypes.STRING,
       pluralLabel: BuiltinTypes.STRING,
       sharingModel: BuiltinTypes.STRING,
-      nameField: new TypeReference(new ElemID(adapter, 'CustomField')),
     },
   })
 }

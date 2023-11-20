@@ -164,7 +164,7 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
   }
 
   public async deletePrivate(
-    args: clientUtils.ClientBaseParams,
+    args: clientUtils.ClientDataParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
     return this.delete({
       ...args,

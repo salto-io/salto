@@ -34,6 +34,7 @@ export const shouldExcludeElement = (
       if (_.isString(elemValue) && _.isString(criteriaValue)) {
         return regex.isFullRegexMatch(elemValue, criteriaValue)
       }
+      // returning undefined makes lodash to handle the comparison (using isEqual)
       return undefined
     }
   ))

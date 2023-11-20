@@ -91,7 +91,7 @@ const log = logger(module)
 
 export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition)[] = [
   // excludeCustomRecordTypes should run before customRecordTypesType,
-  // because otherwise there will be broken references to excluded type.
+  // because otherwise there will be broken references to excluded types.
   { creator: excludeCustomRecordTypes },
   { creator: customRecordTypesType },
   { creator: omitSdfUntypedValues },

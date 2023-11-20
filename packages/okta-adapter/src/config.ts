@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ElemID, CORE_ANNOTATIONS, ActionName, BuiltinTypes, ObjectType, Field } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
-import { ACCESS_POLICY_TYPE_NAME, CUSTOM_NAME_FIELD, IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, OKTA, PASSWORD_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, SIGN_ON_POLICY_TYPE_NAME } from './constants'
+import { ACCESS_POLICY_TYPE_NAME, CUSTOM_NAME_FIELD, IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, OKTA, PASSWORD_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, SIGN_ON_POLICY_TYPE_NAME, AUTOMATION_TYPE_NAME } from './constants'
 
 type UserDeployConfig = configUtils.UserDeployConfig
 const {
@@ -74,7 +74,7 @@ const TRANSFORMATION_DEFAULTS: configUtils.TransformationDefaultConfig = {
 // Policy type is split to different kinds of policies
 // The full list of policy types is taken from here:
 // https://developer.okta.com/docs/reference/api/policy/#policy-types
-type PolicyTypeNames = 'AccessPolicy' | 'IdentityProviderPolicy' | 'MultifactorEnrollmentPolicy' | 'OktaSignOnPolicy' | 'PasswordPolicy' | 'ProfileEnrollmentPolicy'
+type PolicyTypeNames = 'AccessPolicy' | 'IdentityProviderPolicy' | 'MultifactorEnrollmentPolicy' | 'OktaSignOnPolicy' | 'PasswordPolicy' | 'ProfileEnrollmentPolicy' | 'Automation'
 
 type PolicyParams = {
   queryParam: string
@@ -115,9 +115,14 @@ const POLICY_TYPE_NAME_TO_PARAMS: Record<PolicyTypeNames, PolicyParams> = {
     ruleName: 'ProfileEnrollmentPolicyRule',
     policyServiceUrl: '/admin/authn/policies',
   },
+  [AUTOMATION_TYPE_NAME]: {
+    queryParam: 'USER_LIFECYCLE',
+    ruleName: 'AutomationRule',
+    policyServiceUrl: '/admin/lifecycle-automation#tab-policy/{id}',
+  },
 }
 
-const getPolicyItemsName = (policyName: string): string => (`${(policyName).slice(0, -1)}ies`)
+const getPolicyItemsName = (policyName: string): string => (policyName === AUTOMATION_TYPE_NAME ? 'Automations' : `${(policyName).slice(0, -1)}ies`)
 const getPolicyRuleItemsName = (policyRuleName: string): string => (`${policyRuleName}s`)
 const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
   const policiesConfig = Object.entries(POLICY_TYPE_NAME_TO_PARAMS).map(([typeName, details]) => {
@@ -174,7 +179,7 @@ const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
     }
     const policyDeployRequests = {
       add: {
-        url: '/api/v1/policies',
+        url: `/api/v1/policies${typeName === AUTOMATION_TYPE_NAME ? '?activate=false' : ''}`,
         method: 'post',
       },
       modify: {
@@ -1462,6 +1467,9 @@ const DEFAULT_SWAGGER_CONFIG: OktaSwaggerApiConfig['swagger'] = {
     // IdentityProviderPolicy and MultifactorEnrollmentPolicy don't have their own 'rule' type.
     { typeName: 'IdentityProviderPolicyRule', cloneFrom: 'PolicyRule' },
     { typeName: 'MultifactorEnrollmentPolicyRule', cloneFrom: 'PolicyRule' },
+    // Automation type is not documented in swagger
+    { typeName: 'Automation', cloneFrom: 'AccessPolicy' },
+    { typeName: 'AutomationRule', cloneFrom: 'PolicyRule' },
     // AppUserSchema returns UserSchema items, but we separate types because the endpoints for deploy are different
     { typeName: 'AppUserSchema', cloneFrom: 'UserSchema' },
     // This is not the right type to cloneFrom, but a workaround to define type for Group__source with 'id' field

@@ -80,10 +80,9 @@ const getWeakElementReferences = (instance: InstanceElement): ReferenceInfo[] =>
  * Marks each element reference in an order type as a weak reference.
  */
 const getOrderElementsReferences: GetCustomReferencesFunc = async elements =>
-  awu(elements)
+  elements
     .filter(isInstanceElement)
-    .flatMap(instance => getWeakElementReferences(instance))
-    .toArray()
+    .flatMap(getWeakElementReferences)
 
 const typeNameWithoutOrder = (typeName: string): string => typeName.substring(0, typeName.length - '_order'.length)
 
@@ -95,10 +94,9 @@ const getFixedElementsAndUpdatedPaths = (elementsSource: ReadOnlyElementsSource)
     awu<ReferenceExpression | number>(allReferences)
       .filter(
         async reference => (
-          typeof reference === 'number' || (
-            isReferenceExpression(reference)
-            // eslint-disable-next-line no-return-await
-            && await elementsSource.has(reference.elemID))
+          !isReferenceExpression(reference)
+          // eslint-disable-next-line no-return-await
+          || await elementsSource.has(reference.elemID)
         )
       )
       .toArray()

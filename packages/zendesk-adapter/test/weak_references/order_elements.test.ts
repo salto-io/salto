@@ -148,12 +148,6 @@ describe('order_elements', () => {
           message: 'Deploying automation_order.active without all attached automations',
           detailedMessage: 'This automation_order.active is attached to some automations that do not exist in the target environment. It will be deployed without referencing these automations.',
         },
-        {
-          elemID: orderInstance.elemID.createNestedID('inactive'),
-          severity: 'Info',
-          message: 'Deploying automation_order.inactive without all attached automations',
-          detailedMessage: 'This automation_order.inactive is attached to some automations that do not exist in the target environment. It will be deployed without referencing these automations.',
-        },
       ])
 
       expect(fixes.fixedElements).toHaveLength(1)
@@ -163,6 +157,7 @@ describe('order_elements', () => {
       ])
       expect(fixedElement.value.inactive).toEqual([
         new ReferenceExpression(inst3.elemID, inst3),
+        { wowThisIsSuperValid: 'first!!1!' },
         13,
       ])
     })

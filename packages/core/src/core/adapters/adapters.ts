@@ -166,30 +166,13 @@ const filterElementsSource = (
   elementsSource: ReadOnlyElementsSource,
   adapterName: string,
 ): ReadOnlyElementsSource => {
-  const isRelevantID = (elemID: ElemID): boolean =>
-    (elemID.adapter === adapterName || elemID.adapter === GLOBAL_ADAPTER)
+  const isRelevantID = (elemID: ElemID): boolean => (
+    elemID.adapter === adapterName || elemID.adapter === GLOBAL_ADAPTER
+  )
   return {
-    getAll: async () => {
-      async function *getElements(): AsyncIterable<Element> {
-        for await (const element of await elementsSource.getAll()) {
-          if (isRelevantID(element.elemID)) {
-            yield element
-          }
-        }
-      }
-      return getElements()
-    },
+    getAll: async () => awu(await elementsSource.getAll()).filter(elem => isRelevantID(elem.elemID)),
     get: async id => (isRelevantID(id) ? elementsSource.get(id) : undefined),
-    list: async () => {
-      async function *getIds(): AsyncIterable<ElemID> {
-        for await (const element of await elementsSource.getAll()) {
-          if (isRelevantID(element.elemID)) {
-            yield element.elemID
-          }
-        }
-      }
-      return getIds()
-    },
+    list: async () => awu(await elementsSource.list()).filter(isRelevantID),
     has: async id => (isRelevantID(id) ? elementsSource.has(id) : false),
   }
 }

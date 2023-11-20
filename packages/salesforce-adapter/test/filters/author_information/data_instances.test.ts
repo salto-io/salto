@@ -16,7 +16,6 @@
 import { CORE_ANNOTATIONS, ElemID, Element, ObjectType, InstanceElement } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { FileProperties } from '@salto-io/jsforce-types'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockFileProperties, mockQueryResult } from '../../connection'
 import mockClient from '../../client'
 import Connection from '../../../src/client/jsforce'

@@ -787,7 +787,7 @@ const typesToMergeFromInstance = async (elements: Element[]): Promise<TypesFromI
     const typesFromInstance: TypeMap = Object.fromEntries(
       await awu(Object.entries(customObjectType.fields))
         .filter(([name, _field]) => !ANNOTATIONS_TO_IGNORE_FROM_INSTANCE.includes(name))
-        .map(async ([name, field]) => [name, await field.getType()])
+        .map(async ([name, field]) => [name, await field.clone().getType()])
         .toArray()
     )
     fixTypesDefinitions(typesFromInstance)

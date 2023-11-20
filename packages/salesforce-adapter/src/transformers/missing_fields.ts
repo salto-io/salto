@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ValueTypeField } from 'jsforce-types'
+import { ValueTypeField } from '@salto-io/jsforce-types'
 import missingFieldsData from './missing_fields.json'
 
 // The following types describe the data in missing_fields.json

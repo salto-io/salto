@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { BulkLoadOperation } from 'jsforce-types'
+import { BulkLoadOperation } from '@salto-io/jsforce-types'
 import { SalesforceRecord } from '../src/client/types'
 import { CrudFn, retryFlow, deleteInstances } from '../src/custom_object_instances_deploy'
 import { instancesToCreateRecords } from '../src/transformers/transformer'

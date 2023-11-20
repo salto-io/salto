@@ -2135,9 +2135,67 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
     },
   },
+  Form: {
+    transformation: {
+      idFields: ['name'],
+      extendsParentId: true,
+    },
+  },
+  AssetsSchemas: {
+    request: {
+      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/list',
+      recurseInto: [
+        {
+          type: 'AssetsStatuses',
+          toField: 'assetsStatuses',
+          context: [{ name: 'AssetsSchemaId', fromField: 'id' }],
+        },
+      ],
+    },
+    transformation: {
+      dataField: 'values',
+    },
+  },
+  AssetsSchema: {
+    transformation: {
+      sourceTypeName: 'AssetsSchemas__values',
+      fieldsToOmit: [
+        { fieldName: 'created' },
+        { fieldName: 'updated' },
+        { fieldName: 'globalId' },
+      ],
+      fieldsToHide: [
+        { fieldName: 'id' },
+        { fieldName: 'idAsInt' },
+      ],
+      standaloneFields: [
+        { fieldName: 'assetsStatuses' },
+      ],
+      fieldTypeOverrides: [
+        { fieldName: 'assetsStatuses', fieldType: 'List<AssetsStatus>' },
+      ],
+    },
+  },
+  AssetsStatuses: {
+    request: {
+      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/statustype?objectSchemaId={AssetsSchemaId}',
+    },
+    transformation: {
+      dataField: '.',
+    },
+  },
+  AssetsStatus: {
+    transformation: {
+      sourceTypeName: 'AssetsSchema__assetsStatuses',
+      fieldsToHide: [
+        { fieldName: 'id' },
+        { fieldName: 'objectSchemaId' },
+      ],
+    },
+  },
 }
 
-const JSM_DUCKTYPE_SUPPORTED_TYPES = {
+export const JSM_DUCKTYPE_SUPPORTED_TYPES = {
   RequestType: ['RequestType'],
   CustomerPermissions: ['CustomerPermissions'],
   Queue: ['Queue'],
@@ -2145,6 +2203,10 @@ const JSM_DUCKTYPE_SUPPORTED_TYPES = {
   Calendar: ['Calendar'],
   PortalSettings: ['PortalSettings'],
   SLA: ['SLA'],
+}
+
+export const JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES = {
+  AssetsSchema: ['AssetsSchemas'],
 }
 
 export const SCRIPT_RUNNER_DUCKTYPE_SUPPORTED_TYPES = {

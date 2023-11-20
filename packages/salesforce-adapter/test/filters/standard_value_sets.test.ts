@@ -26,7 +26,7 @@ import {
   ReferenceExpression,
   toChange,
 } from '@salto-io/adapter-api'
-import { MetadataInfo } from 'jsforce'
+import { MetadataInfo } from '@salto-io/jsforce'
 import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import * as constants from '../../src/constants'

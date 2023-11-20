@@ -169,7 +169,7 @@ export const SUITEBUNDLES_DISABLED_ERROR = 'Failed to list folders. Please verif
 
 
 export const THROW_ON_MISSING_FEATURE_ERROR: Record<string, string> = {
-  'Search error occurred: Unknown identifier \'bundleable\'': SUITEBUNDLES_DISABLED_ERROR,
+  'Unknown identifier \'bundleable\'': SUITEBUNDLES_DISABLED_ERROR,
 }
 
 export type SuiteAppFileCabinetOperations = {

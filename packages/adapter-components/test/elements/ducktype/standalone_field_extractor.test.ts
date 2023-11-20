@@ -55,6 +55,7 @@ describe('Extract standalone fields', () => {
           name: 'recipe123',
           code: jsonCode ? '{"flat":"a","nested":{"inner":"abc"}}' : { flat: 'a', nested: { inner: 'abc' } },
         },
+        [ADAPTER_NAME, 'Records', 'recipe', 'recipe123', 'recipe123']
       ),
       new InstanceElement(
         'recipe456',
@@ -63,6 +64,7 @@ describe('Extract standalone fields', () => {
           name: 'recipe456',
           code: jsonCode ? '{"nested":{"inner":"def","other":"ghi"}}' : { nested: { inner: 'def', other: 'ghi' } },
         },
+        [ADAPTER_NAME, 'Records', 'recipe', 'recipe456', 'recipe456']
       ),
       new InstanceElement(
         'book1',
@@ -188,7 +190,9 @@ describe('Extract standalone fields', () => {
       expect(Object.keys(recipeCode.fields)).toEqual(['flat', 'nested'])
       expect(Object.keys(recipeCodeNested.fields)).toEqual(['inner', 'other'])
       expect(recipe123Code.refType.elemID.isEqual(recipeCode.elemID)).toBeTruthy()
+      expect(recipe123Code.path).toEqual([ADAPTER_NAME, 'Records', 'recipe', 'recipe123', 'code', 'recipe123__unnamed_0'])
       expect(recipe456Code.refType.elemID.isEqual(recipeCode.elemID)).toBeTruthy()
+      expect(recipe456Code.path).toEqual([ADAPTER_NAME, 'Records', 'recipe', 'recipe456', 'code', 'recipe456__unnamed_0'])
 
       const origRecipe123 = origInstances[0]
       const origRecipe456 = origInstances[1]
@@ -269,6 +273,7 @@ describe('Extract standalone fields', () => {
           name: 'recipe123',
           code: [{ flat: 'a', nested: { inner: 'abc' } }, { flat: 'b', nested: { inner: 'abc' } }],
         },
+        [ADAPTER_NAME, 'Records', 'recipe', 'recipe123', 'recipe123']
       )
 
       return [recipeType, connectionType, instance]
@@ -303,6 +308,9 @@ describe('Extract standalone fields', () => {
 
       expect(recipe123Code1.refType.elemID.isEqual(recipeCode.elemID)).toBeTruthy()
       expect(recipe123Code2.refType.elemID.isEqual(recipeCode.elemID)).toBeTruthy()
+
+      expect(recipe123Code1.path).toEqual([ADAPTER_NAME, 'Records', 'recipe', 'recipe123', 'code', 'recipe123__unnamed_0'])
+      expect(recipe123Code2.path).toEqual([ADAPTER_NAME, 'Records', 'recipe', 'recipe123', 'code', 'recipe123__unnamed_1'])
 
       const origRecipe123 = origInstances[0]
 

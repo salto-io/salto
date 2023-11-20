@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ListMetadataQuery, RetrieveResult } from 'jsforce-types'
+import { ListMetadataQuery, RetrieveResult } from '@salto-io/jsforce-types'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import { Values, InstanceElement, ElemID } from '@salto-io/adapter-api'

@@ -24,6 +24,7 @@ import {
   ElemIdGetter,
   FetchOptions,
   FetchResult,
+  FixElementsFunc,
   getChangeData,
   InstanceElement,
   isInstanceChange,
@@ -32,7 +33,7 @@ import {
   ReadOnlyElementsSource,
   SaltoError,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, combineElementFixers, config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import {
   getElemIdFuncWrapper,
   inspectValue,
@@ -153,6 +154,7 @@ import customObjectFilter from './filters/custom_objects/custom_object'
 import customObjectFieldFilter from './filters/custom_objects/custom_object_fields'
 import customObjectFieldsOrderFilter from './filters/custom_objects/custom_object_fields_order'
 import customObjectFieldOptionsFilter from './filters/custom_field_options/custom_object_field_options'
+import { weakReferenceHandlers } from './weak_references'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -438,6 +440,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   private elementsSource: ReadOnlyElementsSource
   private fetchQuery: elementUtils.query.ElementQuery
   private logIdsFunc?: () => void
+  private fixElementsFunc: FixElementsFunc
   private createClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private getClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private createFiltersRunner: ({
@@ -520,6 +523,10 @@ export default class ZendeskAdapter implements AdapterOperations {
         filterCreators,
         concatObjects,
       )
+    )
+
+    this.fixElementsFunc = combineElementFixers(
+      weakReferenceHandlers.map(handler => handler.removeWeakReferences({ elementsSource }))
     )
   }
 
@@ -853,4 +860,6 @@ export default class ZendeskAdapter implements AdapterOperations {
       getChangeGroupIds,
     }
   }
+
+  fixElements: FixElementsFunc = elements => this.fixElementsFunc(elements)
 }

@@ -689,10 +689,29 @@ export default class ZendeskAdapter implements AdapterOperations {
     return { elements, errors: fetchErrors, updatedConfig }
   }
 
-  private async getGuideDeployResults(
-    subdomainToClient: Record<string, ZendeskClient>,
-    subdomainToGuideChanges: Record<string, Change<InstanceElement>[]>,
-  ): Promise<DeployResult[]> {
+  private async deployGuideChanges(guideResolvedChanges: Change<InstanceElement>[]): Promise<DeployResult[]> {
+    if (_.isEmpty(guideResolvedChanges)) {
+      return []
+    }
+    const brandsList = await getBrandsFromElementsSource(this.elementsSource)
+    log.debug('Found %d brands to handle %d guide changes', brandsList.length, guideResolvedChanges.length)
+    const resolvedBrandIdToSubdomain = Object.fromEntries(brandsList.map(
+      brandInstance => [brandInstance.value.id, brandInstance.value.subdomain]
+    ))
+    const subdomainToGuideChanges = _.groupBy(
+      guideResolvedChanges,
+      change => {
+        const { brand } = getChangeData(change).value
+        // If the change was in SKIP_RESOLVE_TYPE_NAMES, brand is a reference expression
+        return resolvedBrandIdToSubdomain[isReferenceExpression(brand) ? brand.value.value.id : brand]
+      }
+    )
+    const subdomainsList = brandsList
+      .map(brandInstance => brandInstance.value.subdomain)
+      .filter(isString)
+    const subdomainToClient = Object.fromEntries(subdomainsList
+      .filter(subdomain => subdomainToGuideChanges[subdomain] !== undefined)
+      .map(subdomain => ([subdomain, this.getClientBySubdomain(subdomain, true)])))
     try {
       return await awu(Object.entries(subdomainToClient))
         .map(async ([subdomain, client]) => {
@@ -796,26 +815,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     }
 
 
-    const brandsList = await getBrandsFromElementsSource(this.elementsSource)
-    log.debug('Found %d brands to handle %d guide changes', brandsList.length, guideResolvedChanges.length)
-    const resolvedBrandIdToSubdomain = Object.fromEntries(brandsList.map(
-      brandInstance => [brandInstance.value.id, brandInstance.value.subdomain]
-    ))
-    const subdomainToGuideChanges = _.groupBy(
-      guideResolvedChanges,
-      change => {
-        const { brand } = getChangeData(change).value
-        // If the change was in SKIP_RESOLVE_TYPE_NAMES, brand is a reference expression
-        return resolvedBrandIdToSubdomain[isReferenceExpression(brand) ? brand.value.value.id : brand]
-      }
-    )
-    const subdomainsList = brandsList
-      .map(brandInstance => brandInstance.value.subdomain)
-      .filter(isString)
-    const subdomainToClient = Object.fromEntries(subdomainsList
-      .filter(subdomain => subdomainToGuideChanges[subdomain] !== undefined)
-      .map(subdomain => ([subdomain, this.getClientBySubdomain(subdomain, true)])))
-    const guideDeployResults = await this.getGuideDeployResults(subdomainToClient, subdomainToGuideChanges)
+    const guideDeployResults = await this.deployGuideChanges(guideResolvedChanges)
     const allChangesBeforeRestore = appliedChangesBeforeRestore.concat(
       guideDeployResults.flatMap(result => result.appliedChanges)
     )

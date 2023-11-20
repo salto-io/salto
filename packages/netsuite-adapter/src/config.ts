@@ -706,7 +706,7 @@ export const validateFetchConfig = ({
   validatePlainObject(include, [CONFIG.fetch, FETCH_PARAMS.include])
   validateFetchParameters(include)
   if (include.types.concat(include.customRecords ?? []).filter(isCriteriaQuery).length > 0) {
-    throw new Error('criteria is only allowed in fetch.exclude')
+    throw new Error('The "criteria" configuration option is exclusively permitted within the "fetch.exclude" configuration and should not be used within the "fetch.include" configuration.')
   }
 
   validateDefined(exclude, [CONFIG.fetch, FETCH_PARAMS.exclude])

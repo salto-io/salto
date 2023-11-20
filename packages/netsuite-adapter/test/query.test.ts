@@ -317,7 +317,7 @@ describe('NetsuiteQuery', () => {
       }
 
       expect(error).toBeDefined()
-      expect(error?.message).toContain('Received invalid adapter config input. Expected type name to be a string and not to have both ids & criteria, but found:')
+      expect(error?.message).toContain('Received invalid adapter config input. Expected the type name to be a string without both "ids" and "criteria", but found:')
     })
     it('should throw an error when type has both ids & criteria', () => {
       let error: Error | undefined
@@ -337,7 +337,7 @@ describe('NetsuiteQuery', () => {
       }
 
       expect(error).toBeDefined()
-      expect(error?.message).toContain('Received invalid adapter config input. Expected type name to be a string and not to have both ids & criteria, but found:')
+      expect(error?.message).toContain('Received invalid adapter config input. Expected the type name to be a string without both "ids" and "criteria", but found:')
     })
     it('should throw an error when customRecords has undefined "name"', () => {
       let error: Error | undefined
@@ -355,7 +355,7 @@ describe('NetsuiteQuery', () => {
       }
 
       expect(error).toBeDefined()
-      expect(error?.message).toContain('Received invalid adapter config input. Expected custom record name to be a string and not to have both ids & criteria, but found:')
+      expect(error?.message).toContain('Received invalid adapter config input. Expected the custom record name to be a string without both "ids" and "criteria", but found:')
     })
     it('should throw an error when customRecords has both ids & criteria', () => {
       let error: Error | undefined
@@ -373,7 +373,7 @@ describe('NetsuiteQuery', () => {
       }
 
       expect(error).toBeDefined()
-      expect(error?.message).toContain('Received invalid adapter config input. Expected custom record name to be a string and not to have both ids & criteria, but found:')
+      expect(error?.message).toContain('Received invalid adapter config input. Expected the custom record name to be a string without both "ids" and "criteria", but found:')
     })
     it('should throw an error when fileCabinet is undefined', () => {
       let error: Error | undefined
@@ -433,7 +433,7 @@ describe('NetsuiteQuery', () => {
       }
 
       expect(error).toBeDefined()
-      expect(error?.message).toContain('Received invalid adapter config input. Expected type ids to be an array of strings, but found:')
+      expect(error?.message).toContain('Received invalid adapter config input. Expected type "ids" to be an array of strings, but found:')
     })
     it('should throw an error when types has invalid criteria field', () => {
       let error: Error | undefined
@@ -460,7 +460,7 @@ describe('NetsuiteQuery', () => {
       }
 
       expect(error).toBeDefined()
-      expect(error?.message).toContain('Received invalid adapter config input. Expected type criteria to be a non empty object, but found:')
+      expect(error?.message).toContain('Received invalid adapter config input. Expected type "criteria" to be a non-empty object, but found:')
     })
     it('should throw an error when customRecords has invalid ids field', () => {
       let error: Error | undefined
@@ -478,7 +478,7 @@ describe('NetsuiteQuery', () => {
       }
 
       expect(error).toBeDefined()
-      expect(error?.message).toContain('Received invalid adapter config input. Expected custom record ids to be an array of strings, but found:')
+      expect(error?.message).toContain('Received invalid adapter config input. Expected custom record "ids" to be an array of strings, but found:')
     })
     it('should throw an error when customRecords has invalid criteria field', () => {
       let error: Error | undefined
@@ -496,7 +496,7 @@ describe('NetsuiteQuery', () => {
       }
 
       expect(error).toBeDefined()
-      expect(error?.message).toContain('Received invalid adapter config input. Expected custom record criteria to be a non empty object, but found:')
+      expect(error?.message).toContain('Received invalid adapter config input. Expected custom record "criteria" to be a non-empty object, but found:')
     })
     it('should throw an error with all invalid types', () => {
       let error: Error | undefined

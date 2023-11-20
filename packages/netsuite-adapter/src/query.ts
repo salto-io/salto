@@ -208,27 +208,27 @@ export function validateFetchParameters(
   }
   const corruptedTypeQueries = types.filter(isInvalidTypeQuery)
   if (corruptedTypeQueries.length !== 0) {
-    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected type name to be a string and not to have both ids & criteria, but found:\n${JSON.stringify(corruptedTypeQueries, null, 4)}.`)
+    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected the type name to be a string without both "ids" and "criteria", but found:\n${JSON.stringify(corruptedTypeQueries, null, 4)}.`)
   }
   const corruptedTypesIds = types.filter(isInvalidIdsParam)
   if (corruptedTypesIds.length !== 0) {
-    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected type ids to be an array of strings, but found:\n${JSON.stringify(corruptedTypesIds, null, 4)}}.`)
+    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected type "ids" to be an array of strings, but found:\n${JSON.stringify(corruptedTypesIds, null, 4)}}.`)
   }
   const corruptedTypesCriteria = types.filter(isInvalidCriteriaParam)
   if (corruptedTypesCriteria.length !== 0) {
-    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected type criteria to be a non empty object, but found:\n${JSON.stringify(corruptedTypesCriteria, null, 4)}}.`)
+    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected type "criteria" to be a non-empty object, but found:\n${JSON.stringify(corruptedTypesCriteria, null, 4)}}.`)
   }
   const corruptedCustomRecords = customRecords.filter(isInvalidTypeQuery)
   if (corruptedCustomRecords.length !== 0) {
-    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected custom record name to be a string and not to have both ids & criteria, but found:\n${JSON.stringify(corruptedCustomRecords, null, 4)}.`)
+    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected the custom record name to be a string without both "ids" and "criteria", but found:\n${JSON.stringify(corruptedCustomRecords, null, 4)}.`)
   }
   const corruptedCustomRecordsIds = customRecords.filter(isInvalidIdsParam)
   if (corruptedCustomRecordsIds.length !== 0) {
-    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected custom record ids to be an array of strings, but found:\n${JSON.stringify(corruptedCustomRecordsIds, null, 4)}}.`)
+    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected custom record "ids" to be an array of strings, but found:\n${JSON.stringify(corruptedCustomRecordsIds, null, 4)}}.`)
   }
   const corruptedCustomRecordsCriteria = customRecords.filter(isInvalidCriteriaParam)
   if (corruptedCustomRecordsCriteria.length !== 0) {
-    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected custom record criteria to be a non empty object, but found:\n${JSON.stringify(corruptedCustomRecordsCriteria, null, 4)}}.`)
+    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected custom record "criteria" to be a non-empty object, but found:\n${JSON.stringify(corruptedCustomRecordsCriteria, null, 4)}}.`)
   }
 
   const receivedTypes = types.map(obj => obj.name)

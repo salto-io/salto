@@ -267,7 +267,7 @@ describe('config', () => {
       expect(() => netsuiteConfigFromConfig(configWithInvalidExclude)).toThrow('Failed to load Netsuite config: Received invalid adapter config input. "types" field is expected to be an array\n "fileCabinet" field is expected to be an array\n'))
 
     it('Should throw an error if include contains criteria query', () =>
-      expect(() => netsuiteConfigFromConfig(configWithIncludeCriteria)).toThrow('Failed to load Netsuite config: criteria is only allowed in fetch.exclude.'))
+      expect(() => netsuiteConfigFromConfig(configWithIncludeCriteria)).toThrow('Failed to load Netsuite config: The "criteria" configuration option is exclusively permitted within the "fetch.exclude" configuration and should not be used within the "fetch.include" configuration.'))
 
     it('Should not throw an error if exclude contains criteria query', () =>
       expect(() => netsuiteConfigFromConfig(configWithExcludeCriteria)).not.toThrow())

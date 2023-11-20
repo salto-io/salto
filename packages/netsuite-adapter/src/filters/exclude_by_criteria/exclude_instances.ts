@@ -17,14 +17,13 @@ import _ from 'lodash'
 import { regex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { ObjectType, Values, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
-import { CriteriaQuery, isCriteriaQuery } from '../query'
-import { LocalFilterCreator } from '../filter'
-import { isCustomRecordType } from '../types'
-import { CUSTOM_RECORD_TYPE } from '../constants'
+import { CriteriaQuery, isCriteriaQuery } from '../../query'
+import { LocalFilterCreator } from '../../filter'
+import { isCustomRecordType } from '../../types'
 
 const log = logger(module)
 
-const shouldExcludeElement = (
+export const shouldExcludeElement = (
   elementValues: Values,
   criteriaQueries: CriteriaQuery[]
 ): boolean => criteriaQueries.some(query =>
@@ -50,7 +49,7 @@ const createCriteriaByTypeMap = (
 )
 
 const filterCreator: LocalFilterCreator = ({ config }) => ({
-  name: 'excludeByCriteria',
+  name: 'excludeInstances',
   onFetch: async elements => {
     const typeCriteriaQueries = config.fetch.exclude.types.filter(isCriteriaQuery)
     const customRecordCriteriaQueries = config.fetch.exclude.customRecords?.filter(isCriteriaQuery) ?? []
@@ -58,32 +57,16 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
       return
     }
     const [customRecordTypes, types] = _.partition(elements.filter(isObjectType), isCustomRecordType)
-    const criteriaByType = createCriteriaByTypeMap(types, typeCriteriaQueries)
-    const criteriaByCustomRecordType = createCriteriaByTypeMap(customRecordTypes, customRecordCriteriaQueries)
-
-    const removedCustomRecordTypes = _.remove(elements, element => {
-      if (isObjectType(element) && isCustomRecordType(element)) {
-        return shouldExcludeElement(element.annotations, criteriaByType[CUSTOM_RECORD_TYPE])
-      }
-      return false
-    })
-    const removedCustomRecordTypeNames = new Set(removedCustomRecordTypes.map(type => type.elemID.name))
-    const removedInstances = _.remove(elements, element => {
-      if (isInstanceElement(element)) {
-        const type = element.elemID.typeName
-        if (removedCustomRecordTypeNames.has(type)) {
-          return true
-        }
-        const criteria = criteriaByCustomRecordType[type] ?? criteriaByType[type]
-        return shouldExcludeElement(element.value, criteria)
-      }
-      return false
-    })
-    const removedElements = removedCustomRecordTypes.concat(removedInstances)
+    const criteriaByType = {
+      ...createCriteriaByTypeMap(types, typeCriteriaQueries),
+      ...createCriteriaByTypeMap(customRecordTypes, customRecordCriteriaQueries),
+    }
+    const removedInstances = _.remove(elements, element => isInstanceElement(element)
+      && shouldExcludeElement(element.value, criteriaByType[element.elemID.typeName]))
     log.debug(
-      'excluding %d elements by criteria: %o',
-      removedElements.length,
-      removedElements.map(elem => elem.elemID.getFullName())
+      'excluding %d instances by criteria: %o',
+      removedInstances.length,
+      removedInstances.map(elem => elem.elemID.getFullName())
     )
   },
 })

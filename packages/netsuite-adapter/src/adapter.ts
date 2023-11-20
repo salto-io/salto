@@ -62,7 +62,8 @@ import additionalChanges from './filters/additional_changes'
 import addInstancesFetchTime from './filters/add_instances_fetch_time'
 import addAliasFilter from './filters/add_alias'
 import addBundleReferences from './filters/bundle_ids'
-import excludeByCriteria from './filters/exclude_by_criteria'
+import excludeCustomRecordTypes from './filters/exclude_by_criteria/exclude_custom_record_types'
+import excludeInstances from './filters/exclude_by_criteria/exclude_instances'
 import { Filter, LocalFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreator, RemoteFilterCreatorDefinition, RemoteFilterOpts } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_VALIDATE, AdditionalDependencies, DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB, shouldExcludeBins } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams, getFixedTargetFetch, ObjectID } from './query'
@@ -89,7 +90,9 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition)[] = [
-  { creator: excludeByCriteria },
+  // excludeCustomRecordTypes should run before customRecordTypesType,
+  // because otherwise there will be broken references to excluded type.
+  { creator: excludeCustomRecordTypes },
   { creator: customRecordTypesType },
   { creator: omitSdfUntypedValues },
   { creator: dataInstancesIdentifiers },
@@ -99,6 +102,9 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   { creator: parseReportTypes },
   { creator: convertLists },
   { creator: consistentValues },
+  // excludeInstances should run after parseReportTypes & consistentValues,
+  // so users will be able to exclude elements based on parsed values.
+  { creator: excludeInstances },
   // convertListsToMaps must run after convertLists and consistentValues
   // and must run before replaceInstanceReferencesFilter
   { creator: convertListsToMaps },

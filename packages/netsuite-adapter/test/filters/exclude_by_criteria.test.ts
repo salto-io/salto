@@ -14,12 +14,18 @@
 * limitations under the License.
 */
 import { Element, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, filter } from '@salto-io/adapter-utils'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../utils'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, WORKFLOW } from '../../src/constants'
-import filterCreator from '../../src/filters/exclude_by_criteria'
+import excludeCustomRecordTypes from '../../src/filters/exclude_by_criteria/exclude_custom_record_types'
+import excludeInstances from '../../src/filters/exclude_by_criteria/exclude_instances'
 import { LocalFilterOpts } from '../../src/filter'
 import { customrecordtypeType } from '../../src/autogen/types/standard_types/customrecordtype'
+
+const filters = [
+  excludeCustomRecordTypes,
+  excludeInstances,
+]
 
 describe('omit fields filter', () => {
   let filterOpts: LocalFilterOpts
@@ -116,7 +122,7 @@ describe('omit fields filter', () => {
   })
   it('should quick return when there are no criteria', async () => {
     const elementsLength = elements.length
-    await filterCreator(filterOpts).onFetch?.(elements)
+    await filter.filtersRunner(filterOpts, filters).onFetch?.(elements)
     expect(elements.length).toEqual(elementsLength)
   })
   it('should exclude instance by criteria', async () => {
@@ -125,7 +131,7 @@ describe('omit fields filter', () => {
       criteria: { isinactive: true },
     })
     const elementsLength = elements.length
-    await filterCreator(filterOpts).onFetch?.(elements)
+    await filter.filtersRunner(filterOpts, filters).onFetch?.(elements)
     expect(elements.length).toEqual(elementsLength - 1)
     expect(elements.find(elem => elem.elemID.isEqual(instanceToExclude.elemID))).toBeUndefined()
   })
@@ -138,7 +144,7 @@ describe('omit fields filter', () => {
       },
     })
     const elementsLength = elements.length
-    await filterCreator(filterOpts).onFetch?.(elements)
+    await filter.filtersRunner(filterOpts, filters).onFetch?.(elements)
     expect(elements.length).toEqual(elementsLength - 1)
     expect(elements.find(elem => elem.elemID.isEqual(instanceToExclude.elemID))).toBeUndefined()
   })
@@ -148,7 +154,7 @@ describe('omit fields filter', () => {
       criteria: { isinactive: true },
     })
     const elementsLength = elements.length
-    await filterCreator(filterOpts).onFetch?.(elements)
+    await filter.filtersRunner(filterOpts, filters).onFetch?.(elements)
     expect(elements.length).toEqual(elementsLength - 2)
     expect(elements.find(elem => elem.elemID.isEqual(customRecordTypeToExclude.elemID))).toBeUndefined()
     expect(elements.find(elem => elem.elemID.isEqual(customRecordInstance.elemID))).toBeUndefined()
@@ -159,7 +165,7 @@ describe('omit fields filter', () => {
       criteria: { isinactive: true },
     }]
     const elementsLength = elements.length
-    await filterCreator(filterOpts).onFetch?.(elements)
+    await filter.filtersRunner(filterOpts, filters).onFetch?.(elements)
     expect(elements.length).toEqual(elementsLength - 1)
     expect(elements.find(elem => elem.elemID.isEqual(customRecordInstanceToExclude.elemID))).toBeUndefined()
   })

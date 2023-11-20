@@ -38,7 +38,7 @@
   "devDependencies": {
     "@types/easy-table": "^0.0.32",
     "@types/humanize-duration": "^3.18.0",
-    "@types/jest": "*",
+    "@types/jest": "^27.4.0",
     "@types/yargs": "^13.0.4",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",
@@ -54,7 +54,7 @@
     "jest-circus": "*",
     "jest-dynalite": "^3.6.1",
     "jest-environment-node": "^27.4.4",
-    "jest-junit": "*",
+    "jest-junit": "^12.0.0",
     "memory-streams": "^0.1.3",
     "ts-jest": "*",
     "tsc-watch": "^2.2.1",

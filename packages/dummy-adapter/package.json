@@ -42,7 +42,7 @@
     "unique-names-generator": "^4.3.1"
   },
   "devDependencies": {
-    "@types/jest": "*",
+    "@types/jest": "^27.4.0",
     "@types/seedrandom": "^2.4.28",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",
@@ -56,7 +56,7 @@
     "eslint-plugin-react-hooks": "^1.7.0",
     "jest": "*",
     "jest-circus": "*",
-    "jest-junit": "*",
+    "jest-junit": "^12.0.0",
     "ts-jest": "*"
   }
 }

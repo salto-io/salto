@@ -63,7 +63,7 @@
     "jest": "*",
     "jest-circus": "*",
     "jest-each": "^26.6.2",
-    "jest-junit": "*",
+    "jest-junit": "^12.0.0",
     "ts-jest": "*",
     "tsc-watch": "^2.2.1",
     "typescript": "^4.3"

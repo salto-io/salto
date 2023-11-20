@@ -839,7 +839,11 @@ export default class SalesforceClient {
       }
       const pollingInterval = setInterval(progressCallbackWrapper, DEPLOY_STATUS_POLLING_INTERVAL_MS)
 
-      deployResult = await deployStatus.complete(true).finally(() => clearInterval(pollingInterval))
+      const clearPollingInterval = (result: DeployResult): DeployResult => {
+        clearInterval(pollingInterval)
+        return result
+      }
+      deployResult = await deployStatus.complete(true).then(clearPollingInterval, clearPollingInterval)
     } else {
       deployResult = await deployStatus.complete(true)
     }

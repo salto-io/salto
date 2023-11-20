@@ -20,7 +20,6 @@ import {
   PrimitiveTypes,
   BuiltinTypes,
   InstanceElement,
-  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 
 export const customObject = (
@@ -58,10 +57,7 @@ export const customObject = (
       deploymentStatus: BuiltinTypes.STRING,
       pluralLabel: BuiltinTypes.STRING,
       sharingModel: BuiltinTypes.STRING,
-      nameField: new ObjectType({ elemID: new ElemID('salesforce', 'CustomObject'),
-        annotations: {
-          [CORE_ANNOTATIONS.HIDDEN]: true,
-        } }),
+      nameField: new ObjectType({ elemID: new ElemID(adapter, 'CustomField') }),
     },
   })
 }

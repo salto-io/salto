@@ -324,24 +324,6 @@ const getDeployStatusUrl = async (
   return `${baseUrl}lightning/setup/DeployStatus/page?address=%2Fchangemgmt%2FmonitorDeploymentsDetails.apexp%3FasyncId%3D${id}`
 }
 
-const quickDeployOrDeploy = async (
-  client: SalesforceClient,
-  pkgData: Buffer,
-  checkOnly?: boolean,
-  quickDeployParams?: QuickDeployParams,
-): Promise<SFDeployResult> => {
-  if (quickDeployParams !== undefined) {
-    try {
-      return await client.quickDeploy(quickDeployParams.requestId)
-    } catch (e) {
-      log.warn(`preforming regular deploy instead of quick deploy due to error: ${e.message}`)
-    }
-  }
-  return client.deploy(pkgData, { checkOnly })
-}
-const isQuickDeployable = (deployRes: SFDeployResult): boolean =>
-  deployRes.id !== undefined && deployRes.checkOnly && deployRes.success && deployRes.numberTestsCompleted >= 1
-
 const deployProgressMessage = async (
   client: SalesforceClient,
   deployResult: SFDeployResult,
@@ -353,6 +335,35 @@ const deployProgressMessage = async (
   log.debug(logLine)
   return logLine
 }
+
+const quickDeployOrDeploy = async (
+  client: SalesforceClient,
+  pkgData: Buffer,
+  checkOnly?: boolean,
+  quickDeployParams?: QuickDeployParams,
+  progressReporter?: ProgressReporter,
+): Promise<SFDeployResult> => {
+  const progressReportCallback = async (deployResult: SFDeployResult): Promise<void> => {
+    if (!progressReporter) {
+      return
+    }
+    progressReporter.reportProgress({
+      message: await deployProgressMessage(client, deployResult),
+    })
+  }
+
+  if (quickDeployParams !== undefined) {
+    try {
+      return await client.quickDeploy(quickDeployParams.requestId)
+    } catch (e) {
+      log.warn(`preforming regular deploy instead of quick deploy due to error: ${e.message}`)
+    }
+  }
+  return client.deploy(pkgData, { checkOnly }, progressReportCallback)
+}
+
+const isQuickDeployable = (deployRes: SFDeployResult): boolean =>
+  deployRes.id !== undefined && deployRes.checkOnly && deployRes.success && deployRes.numberTestsCompleted >= 1
 
 export const deployMetadata = async (
   changes: ReadonlyArray<Change>,
@@ -399,28 +410,7 @@ export const deployMetadata = async (
     }
   }
 
-  const sfDeployRes = await quickDeployOrDeploy(client, pkgData, checkOnly, quickDeployParams)
-
-  await sfDeployStatus.poll(SALESFORCE_PROGRESS_UPDATE_INTERVAL, 5000, async result => {
-    if (progressReporter) {
-      progressReporter.reportProgress({
-        message: await deployProgressMessage(client, result),
-      })
-    }
-    log.debug('in-progress deploy result: %s', safeJsonStringify({
-      ...result,
-      details: result.details?.map(detail => ({
-        ...detail,
-        // The test result can be VERY long
-        runTestResult: detail.runTestResult
-          ? safeJsonStringify(detail.runTestResult, undefined, 2).slice(100)
-          : undefined,
-      })),
-    }, undefined, 2))
-  })
-
-  const sfDeployRes: SFDeployResult = flatValues(await sfDeployStatus.complete())
-
+  const sfDeployRes = await quickDeployOrDeploy(client, pkgData, checkOnly, quickDeployParams, progressReporter)
   const deploymentUrl = await getDeployStatusUrl(sfDeployRes, client)
 
   log.debug('final deploy result: %s', safeJsonStringify({

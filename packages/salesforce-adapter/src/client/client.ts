@@ -93,6 +93,8 @@ const MAX_ITEMS_IN_READ_METADATA_REQUEST = 10
 //  https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_listmetadata.htm?search_text=listmetadata
 const MAX_ITEMS_IN_LIST_METADATA_REQUEST = 3
 
+const DEPLOY_STATUS_POLLING_INTERVAL_MS = 500
+
 const DEFAULT_RETRY_OPTS: Required<ClientRetryConfig> = {
   maxAttempts: 3, // try 3 times
   retryDelay: 5000, // wait for 5s before trying again
@@ -521,6 +523,8 @@ export const validateCredentials = async (
   }
 }
 
+type DeployProgressCallback = (inProgressResult: DeployResult) => void
+
 export default class SalesforceClient {
   private readonly retryOptions: RequestRetryOptions
   private readonly conn: Connection
@@ -801,29 +805,47 @@ export default class SalesforceClient {
    * Updates salesforce metadata with the Deploy API
    * @param zip The package zip
    * @param deployOptions Salesforce deployment options
+   * @param progressCallback A function that will be called every DEPLOY_STATUS_POLLING_INTERVAL_MS ms until the deploy
+   *    completes
    * @returns The save result of the requested update
    */
   @mapToUserFriendlyErrorMessages
   @throttle<ClientRateLimitConfig>({ bucketName: 'deploy' })
   @logDecorator()
   @requiresLogin()
-  public async deploy(zip: Buffer, deployOptions?: DeployOptions): Promise<DeployResult> {
+  public async deploy(
+    zip: Buffer,
+    deployOptions?: DeployOptions,
+    progressCallback?: DeployProgressCallback,
+  ): Promise<DeployResult> {
     this.setDeployPollingTimeout()
     const defaultDeployOptions = { rollbackOnError: true, ignoreWarnings: true }
     const { checkOnly = false } = deployOptions ?? {}
     const optionsToSend = ['rollbackOnError', 'ignoreWarnings', 'purgeOnDelete', 'testLevel', 'runTests']
-    const deployResult = flatValues(
-      await this.conn.metadata.deploy(
-        zip,
-        {
-          ...defaultDeployOptions,
-          ..._.pick(this.config?.deploy, optionsToSend),
-          checkOnly,
-        },
-      ).complete(true)
+    const deployStatus = this.conn.metadata.deploy(
+      zip,
+      {
+        ...defaultDeployOptions,
+        ..._.pick(this.config?.deploy, optionsToSend),
+        checkOnly,
+      },
     )
+    let deployResult: DeployResult
+    if (progressCallback) {
+      const progressCallbackWrapper = async (): Promise<void> => {
+        const partialResult = await deployStatus.check()
+        const detailedResult = await this.conn.metadata.checkDeployStatus(partialResult.id, true)
+        progressCallback(detailedResult)
+      }
+      const pollingInterval = setInterval(progressCallbackWrapper, DEPLOY_STATUS_POLLING_INTERVAL_MS)
+
+      deployResult = await deployStatus.complete(true).finally(() => clearInterval(pollingInterval))
+    } else {
+      deployResult = await deployStatus.complete(true)
+    }
+
     this.setFetchPollingTimeout()
-    return deployResult
+    return flatValues(deployResult)
   }
 
   /**

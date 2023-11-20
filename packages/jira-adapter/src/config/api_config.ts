@@ -2135,12 +2135,6 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
     },
   },
-  Form: {
-    transformation: {
-      idFields: ['name'],
-      extendsParentId: true,
-    },
-  },
   AssetsSchemas: {
     request: {
       url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/list',

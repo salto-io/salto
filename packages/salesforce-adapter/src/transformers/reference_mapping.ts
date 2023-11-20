@@ -98,7 +98,7 @@ const safeApiName = ({ ref, path, relative }: {
 }
 
 type ReferenceSerializationStrategyName = 'absoluteApiName' | 'relativeApiName' | 'configurationAttributeMapping' | 'lookupQueryMapping' | 'scheduleConstraintFieldMapping'
- | 'mapKey' | 'customLabel' | 'referenceToInstance'
+ | 'mapKey' | 'customLabel' | 'fromDataInstance'
 const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName, ReferenceSerializationStrategy
 > = {
@@ -156,7 +156,7 @@ const ReferenceSerializationStrategyLookup: Record<
       return val
     },
   },
-  referenceToInstance: {
+  fromDataInstance: {
     serialize: async args => (
       await isMetadataInstanceElement(args.ref.value)
         ? instanceInternalId(args.ref.value)
@@ -931,5 +931,5 @@ export const getLookUpName = getLookUpNameImpl({
 export const getLookupNameForDataInstances = getLookUpNameImpl({
   defs: fieldNameToTypeMappingDefs,
   resolveToElementFallback: true,
-  defaultStrategyName: 'referenceToInstance',
+  defaultStrategyName: 'fromDataInstance',
 })

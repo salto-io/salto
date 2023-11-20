@@ -22,7 +22,7 @@ describe('order_elements', () => {
   let inst1: InstanceElement
   let inst2: InstanceElement
   let inst3: InstanceElement
-  let instance: InstanceElement
+  let orderInstance: InstanceElement
   let customObjectFieldOrderInstance: InstanceElement
   let triggerOrderInstance: InstanceElement
 
@@ -32,7 +32,7 @@ describe('order_elements', () => {
     inst2 = new InstanceElement('inst2', objType, { id: 22, position: 2, title: 'inst1', active: true })
     inst3 = new InstanceElement('inst3', objType, { id: 22, position: 2, title: 'aaa', active: false })
 
-    instance = new InstanceElement(
+    orderInstance = new InstanceElement(
       'inst',
       objType,
       {
@@ -43,6 +43,7 @@ describe('order_elements', () => {
         inactive: [
           new ReferenceExpression(inst3.elemID, inst3),
           { wowThisIsSuperValid: 'first!!1!' },
+          13, // This simulates a case where there is a missing reference, but enableMissingReferences is disabled
         ],
       }
     )
@@ -83,12 +84,12 @@ describe('order_elements', () => {
   })
   describe('findWeakReferences', () => {
     it('should return weak references', async () => {
-      const references = await orderElementsHandler.findWeakReferences([instance])
+      const references = await orderElementsHandler.findWeakReferences([orderInstance])
 
       expect(references).toEqual([
-        { source: instance.elemID.createNestedID('0', 'listItemId'), target: inst1.elemID, type: 'weak' },
-        { source: instance.elemID.createNestedID('1', 'listItemId'), target: inst2.elemID, type: 'weak' },
-        { source: instance.elemID.createNestedID('2', 'listItemId'), target: inst3.elemID, type: 'weak' },
+        { source: orderInstance.elemID.createNestedID('active', '0'), target: inst1.elemID, type: 'weak' },
+        { source: orderInstance.elemID.createNestedID('active', '1'), target: inst2.elemID, type: 'weak' },
+        { source: orderInstance.elemID.createNestedID('inactive', '0'), target: inst3.elemID, type: 'weak' },
       ])
     })
     describe('special order cases: custom_object_field_order', () => {
@@ -96,8 +97,8 @@ describe('order_elements', () => {
         const references = await orderElementsHandler.findWeakReferences([customObjectFieldOrderInstance])
 
         expect(references).toEqual([
-          { source: customObjectFieldOrderInstance.elemID.createNestedID('0', 'listItemId'), target: inst1.elemID, type: 'weak' },
-          { source: customObjectFieldOrderInstance.elemID.createNestedID('1', 'listItemId'), target: inst2.elemID, type: 'weak' },
+          { source: customObjectFieldOrderInstance.elemID.createNestedID('custom_object_fields', '0'), target: inst1.elemID, type: 'weak' },
+          { source: customObjectFieldOrderInstance.elemID.createNestedID('custom_object_fields', '1'), target: inst2.elemID, type: 'weak' },
         ])
       })
     })
@@ -106,26 +107,26 @@ describe('order_elements', () => {
         const references = await orderElementsHandler.findWeakReferences([triggerOrderInstance])
 
         expect(references).toEqual([
-          { source: triggerOrderInstance.elemID.createNestedID('0', 'listItemId'), target: inst1.elemID, type: 'weak' },
-          { source: triggerOrderInstance.elemID.createNestedID('1', 'listItemId'), target: inst2.elemID, type: 'weak' },
-          { source: triggerOrderInstance.elemID.createNestedID('2', 'listItemId'), target: inst3.elemID, type: 'weak' },
-          { source: triggerOrderInstance.elemID.createNestedID('3', 'listItemId'), target: inst3.elemID, type: 'weak' },
+          { source: triggerOrderInstance.elemID.createNestedID('order.0.active', '0'), target: inst1.elemID, type: 'weak' },
+          { source: triggerOrderInstance.elemID.createNestedID('order.0.inactive', '0'), target: inst2.elemID, type: 'weak' },
+          { source: triggerOrderInstance.elemID.createNestedID('order.1.active', '0'), target: inst3.elemID, type: 'weak' },
+          { source: triggerOrderInstance.elemID.createNestedID('order.1.active', '1'), target: inst3.elemID, type: 'weak' },
         ])
       })
     })
 
     it('should do nothing if received invalid order list', async () => {
-      instance.value.active = 'invalid'
-      instance.value.inactive = 'invalid'
-      const references = await orderElementsHandler.findWeakReferences([instance])
+      orderInstance.value.active = 'invalid'
+      orderInstance.value.inactive = 'invalid'
+      const references = await orderElementsHandler.findWeakReferences([orderInstance])
 
       expect(references).toEqual([])
     })
 
     it('should do nothing if there are no list references', async () => {
-      delete instance.value.active
-      delete instance.value.inactive
-      const references = await orderElementsHandler.findWeakReferences([instance])
+      delete orderInstance.value.active
+      delete orderInstance.value.inactive
+      const references = await orderElementsHandler.findWeakReferences([orderInstance])
 
       expect(references).toEqual([])
     })
@@ -134,21 +135,21 @@ describe('order_elements', () => {
   describe('removeWeakReferences', () => {
     let elementsSource: ReadOnlyElementsSource
     beforeEach(() => {
-      elementsSource = buildElementsSourceFromElements([instance, inst1, inst3])
+      elementsSource = buildElementsSourceFromElements([orderInstance, inst1, inst3])
     })
 
-    it('should remove the invalid projects', async () => {
-      const fixes = await orderElementsHandler.removeWeakReferences({ elementsSource })([instance])
+    it('should remove the invalid references', async () => {
+      const fixes = await orderElementsHandler.removeWeakReferences({ elementsSource })([orderInstance])
 
       expect(fixes.errors).toEqual([
         {
-          elemID: instance.elemID.createNestedID('active'),
+          elemID: orderInstance.elemID.createNestedID('active'),
           severity: 'Info',
           message: 'Deploying automation_order.active without all attached automations',
           detailedMessage: 'This automation_order.active is attached to some automations that do not exist in the target environment. It will be deployed without referencing these automations.',
         },
         {
-          elemID: instance.elemID.createNestedID('inactive'),
+          elemID: orderInstance.elemID.createNestedID('inactive'),
           severity: 'Info',
           message: 'Deploying automation_order.inactive without all attached automations',
           detailedMessage: 'This automation_order.inactive is attached to some automations that do not exist in the target environment. It will be deployed without referencing these automations.',
@@ -162,11 +163,12 @@ describe('order_elements', () => {
       ])
       expect(fixedElement.value.inactive).toEqual([
         new ReferenceExpression(inst3.elemID, inst3),
+        13,
       ])
     })
 
     describe('special order cases: custom_object_field_order', () => {
-      it('should remove the invalid projects', async () => {
+      it('should remove the invalid references', async () => {
         const fixes = await orderElementsHandler
           .removeWeakReferences({ elementsSource })([customObjectFieldOrderInstance])
 
@@ -179,7 +181,7 @@ describe('order_elements', () => {
     })
 
     describe('special order cases: trigger_order', () => {
-      it('should remove the invalid projects', async () => {
+      it('should remove the invalid references', async () => {
         const fixes = await orderElementsHandler.removeWeakReferences({ elementsSource })([triggerOrderInstance])
 
         expect(fixes.errors).toEqual([
@@ -208,32 +210,32 @@ describe('order_elements', () => {
       })
     })
 
-    it('should do nothing if received invalid automation', async () => {
-      instance.value.active = 'invalid'
-      instance.value.inactive = 'invalid'
-      const fixes = await orderElementsHandler.removeWeakReferences({ elementsSource })([instance])
+    it('should do nothing if received invalid order list', async () => {
+      orderInstance.value.active = 'invalid'
+      orderInstance.value.inactive = 'invalid'
+      const fixes = await orderElementsHandler.removeWeakReferences({ elementsSource })([orderInstance])
 
       expect(fixes.errors).toEqual([])
       expect(fixes.fixedElements).toEqual([])
     })
 
-    it('should do nothing if there are no projects', async () => {
-      delete instance.value.active
-      delete instance.value.inactive
-      const fixes = await orderElementsHandler.removeWeakReferences({ elementsSource })([instance])
+    it('should do nothing if there are no order lists', async () => {
+      delete orderInstance.value.active
+      delete orderInstance.value.inactive
+      const fixes = await orderElementsHandler.removeWeakReferences({ elementsSource })([orderInstance])
 
       expect(fixes.errors).toEqual([])
       expect(fixes.fixedElements).toEqual([])
     })
 
-    it('should do nothing if all projects are valid', async () => {
-      instance.value.active = [
+    it('should do nothing if all references are valid', async () => {
+      orderInstance.value.active = [
         new ReferenceExpression(inst1.elemID, inst1),
       ]
-      instance.value.inactive = [
+      orderInstance.value.inactive = [
         new ReferenceExpression(inst3.elemID, inst3),
       ]
-      const fixes = await orderElementsHandler.removeWeakReferences({ elementsSource })([instance])
+      const fixes = await orderElementsHandler.removeWeakReferences({ elementsSource })([orderInstance])
 
       expect(fixes.errors).toEqual([])
       expect(fixes.fixedElements).toEqual([])

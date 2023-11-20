@@ -49,25 +49,31 @@ const getInstanceOrderPaths = (instance: InstanceElement): string[] => {
   }
 }
 
-const getInstanceOrderReferences = (instance: InstanceElement): ReferenceExpression[] =>
-  getInstanceOrderPaths(instance).flatMap(path => _.get(instance.value, path))
+const getInstanceOrderReferences = (
+  instance: InstanceElement
+): { path: string; referenceElements: ReferenceExpression[] }[] =>
+  getInstanceOrderPaths(instance).map(path => ({ path, referenceElements: _.get(instance.value, path) }))
 
-const getWeakElementReferences = async (
-  instance: InstanceElement,
-): Promise<ReferenceInfo[]> => {
+const getWeakElementReferences = (instance: InstanceElement): ReferenceInfo[] => {
   if (!isOrderType(instance)) {
     return []
   }
-  const elementPaths = getInstanceOrderReferences(instance)
-  if (!Array.isArray(elementPaths)) {
+  const instanceOrderReferences = getInstanceOrderReferences(instance)
+  if (!Array.isArray(instanceOrderReferences)) {
     return []
   }
-  return elementPaths.map((referenceElement, index) => (
-    isReferenceExpression(referenceElement)
-      ? { source: instance.elemID.createNestedID(index.toString(), 'listItemId'),
-        target: referenceElement.elemID,
-        type: 'weak' as const } : undefined
-  )).filter(values.isDefined)
+  return instanceOrderReferences.flatMap(({ path, referenceElements }) => (
+    Array.isArray(referenceElements)
+      ? referenceElements.map((referenceElement, index) =>
+        (isReferenceExpression(referenceElement)
+          ? {
+            source: instance.elemID.createNestedID(path, index.toString()),
+            target: referenceElement.elemID,
+            type: 'weak' as const,
+          }
+          : undefined))
+      : undefined))
+    .filter(values.isDefined)
 }
 
 /**
@@ -85,13 +91,14 @@ const getFixedElementsAndUpdatedPaths = (elementsSource: ReadOnlyElementsSource)
   Promise<{ instance: InstanceElement; paths: string[] } | undefined> => {
   const filterReferencesNotInSource = async (
     allReferences: ReferenceExpression[]
-  ): Promise<ReferenceExpression[]> =>
-    awu<ReferenceExpression>(allReferences)
+  ): Promise<(ReferenceExpression | number)[]> =>
+    awu<ReferenceExpression | number>(allReferences)
       .filter(
         async reference => (
-          isReferenceExpression(reference)
+          typeof reference === 'number' || (
+            isReferenceExpression(reference)
             // eslint-disable-next-line no-return-await
-            && await elementsSource.has(reference.elemID)
+            && await elementsSource.has(reference.elemID))
         )
       )
       .toArray()

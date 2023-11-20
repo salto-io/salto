@@ -23,7 +23,7 @@ import SalesforceAdapter, {
 import { testHelpers as salesforceTestHelpers, testTypes as salesforceTestTypes } from '@salto-io/salesforce-adapter/dist/e2e_test/jest_environment'
 import _ from 'lodash'
 import { InstanceElement, ElemID, ObjectType, ChangeGroup, getChangeData } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements, safeJsonStringify } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 
 export const naclNameToSFName = (objName: string): string => `${objName}__c`
 export const objectExists = async (client: SalesforceClient, name: string, fields: string[] = [],
@@ -114,7 +114,7 @@ export const addElements = async <T extends InstanceElement | ObjectType>(
   }
   const deployResult = await adapter.deploy({ changeGroup })
   if (deployResult.errors.length > 0) {
-    throw new Error(`Failed to remove elements with: ${safeJsonStringify(deployResult.errors)}`)
+    throw new Error(`Failed to remove elements with: ${deployResult.errors.join('\n')}`)
   }
   const updatedElements = deployResult.appliedChanges.map(getChangeData)
   return updatedElements as T[]
@@ -133,6 +133,6 @@ export const removeElements = async <T extends InstanceElement | ObjectType>(
   }
   const deployResult = await adapter.deploy({ changeGroup })
   if (deployResult.errors.length > 0) {
-    throw new Error(`Failed to remove elements with: ${safeJsonStringify(deployResult.errors)}`)
+    throw new Error(`Failed to remove elements with: ${deployResult.errors.join('\n')}`)
   }
 }

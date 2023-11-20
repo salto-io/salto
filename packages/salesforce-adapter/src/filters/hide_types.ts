@@ -16,12 +16,12 @@
 import _ from 'lodash'
 import { CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { LocalFilterCreator } from '../filter'
-import { TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../constants'
+import { CUSTOM_OBJECT, TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../constants'
 import { isMetadataObjectType } from '../transformers/transformer'
 
 
 const METADATA_TYPES_TO_HIDE = [
-  // CUSTOM_OBJECT,
+  CUSTOM_OBJECT,
   TOPICS_FOR_OBJECTS_METADATA_TYPE,
 ]
 

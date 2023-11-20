@@ -122,7 +122,7 @@ const POLICY_TYPE_NAME_TO_PARAMS: Record<PolicyTypeNames, PolicyParams> = {
   },
 }
 
-const getPolicyItemsName = (policyName: string): string => (policyName === 'Automation' ? 'Automations' : `${(policyName).slice(0, -1)}ies`)
+const getPolicyItemsName = (policyName: string): string => (policyName === AUTOMATION_TYPE_NAME ? 'Automations' : `${(policyName).slice(0, -1)}ies`)
 const getPolicyRuleItemsName = (policyRuleName: string): string => (`${policyRuleName}s`)
 const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
   const policiesConfig = Object.entries(POLICY_TYPE_NAME_TO_PARAMS).map(([typeName, details]) => {

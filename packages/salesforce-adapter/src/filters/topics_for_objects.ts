@@ -16,20 +16,30 @@
 import {
   ObjectType, Element, Values, isObjectTypeChange, InstanceElement,
   isAdditionOrModificationChange, getChangeData, isAdditionChange, isModificationChange,
-  ElemID, toChange,
+  ElemID, toChange, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { TOPICS_FOR_OBJECTS_FIELDS, TOPICS_FOR_OBJECTS_ANNOTATION, TOPICS_FOR_OBJECTS_METADATA_TYPE, SALESFORCE } from '../constants'
-import { isCustomObject, apiName, metadataType, createInstanceElement, metadataAnnotationTypes, MetadataTypeAnnotations } from '../transformers/transformer'
+import {
+  isCustomObject,
+  apiName,
+  createInstanceElement,
+  metadataAnnotationTypes,
+  MetadataTypeAnnotations,
+  isMetadataObjectType,
+} from '../transformers/transformer'
 import { LocalFilterCreator } from '../filter'
 import { TopicsForObjectsInfo } from '../client/types'
-import { boolValue, getInstancesOfMetadataType, isInstanceOfTypeChange } from './utils'
+import { apiNameSync, boolValue, getInstancesOfMetadataType, isInstanceOfTypeChange } from './utils'
 
 const { awu } = collections.asynciterable
 const { removeAsync } = promises.array
 
 const { ENABLE_TOPICS, ENTITY_API_NAME } = TOPICS_FOR_OBJECTS_FIELDS
+
+const log = logger(module)
 
 export const DEFAULT_ENABLE_TOPICS_VALUE = false
 
@@ -84,11 +94,16 @@ const filterCreator: LocalFilterCreator = () => ({
       }
     })
 
-    // Remove TopicsForObjects Instances & Type to avoid information duplication
-    await removeAsync(
-      elements,
-      async elem => (await metadataType(elem) === TOPICS_FOR_OBJECTS_METADATA_TYPE)
-    )
+    // Remove TopicsForObjects Instances & hide the TopicsForObjects metadata type
+    _.pullAll(elements, topicsForObjectsInstances)
+    const topicsForObjectsType = elements
+      .filter(isMetadataObjectType)
+      .find(type => apiNameSync(type) === TOPICS_FOR_OBJECTS_METADATA_TYPE)
+    if (topicsForObjectsType === undefined) {
+      log.warn('expected TopicsForObjects type to be defined')
+      return
+    }
+    topicsForObjectsType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
   },
 
   preDeploy: async changes => {

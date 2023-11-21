@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { DeployMessage } from 'jsforce'
+import { DeployMessage } from '@salto-io/jsforce'
 import { decorators } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'

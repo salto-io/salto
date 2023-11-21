@@ -27,7 +27,7 @@ import {
   isInstanceElement, isInstanceChange, toChange,
 } from '@salto-io/adapter-api'
 import { inspectValue, safeJsonStringify } from '@salto-io/adapter-utils'
-import { BatchResultInfo } from 'jsforce-types'
+import { BatchResultInfo } from '@salto-io/jsforce-types'
 import { EOL } from 'os'
 import {
   isInstanceOfCustomObject, instancesToCreateRecords, apiName,

@@ -248,6 +248,7 @@ const closeTmpConnection = async (
 }
 
 export const closeRemoteMapsOfLocation = async (location: string): Promise<void> => {
+  log.debug('closing all remote maps of location %s', location)
   const persistentConnection = persistentDBConnections[location]
   if (await persistentConnection) {
     await closeConnection(location, persistentConnection, persistentDBConnections)
@@ -277,6 +278,7 @@ export const closeRemoteMapsOfLocation = async (location: string): Promise<void>
 }
 
 export const closeAllRemoteMaps = async (): Promise<void> => {
+  log.debug('closing all remote maps')
   const allLocations = uniq([
     ...Object.keys(persistentDBConnections),
     ...Object.keys(readonlyDBConnections),

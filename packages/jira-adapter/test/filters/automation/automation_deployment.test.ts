@@ -586,7 +586,11 @@ describe('automationDeploymentFilter', () => {
       expect(connection.delete).toHaveBeenCalledWith(
         '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/3',
         {
-          headers: PRIVATE_API_HEADERS,
+          headers:
+          {
+            ...PRIVATE_API_HEADERS,
+            'Content-Type': 'application/json',
+          },
         }
       )
     })
@@ -606,7 +610,11 @@ describe('automationDeploymentFilter', () => {
       expect(connection.delete).toHaveBeenCalledWith(
         '/rest/cb-automation/latest/project/GLOBAL/rule/3',
         {
-          headers: PRIVATE_API_HEADERS,
+          headers:
+          {
+            ...PRIVATE_API_HEADERS,
+            'Content-Type': 'application/json',
+          },
         }
       )
     })

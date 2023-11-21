@@ -47,9 +47,9 @@ import {
   Value,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements, createSchemeGuard, detailedCompare, getParents } from '@salto-io/adapter-utils'
+import { FileProperties } from '@salto-io/jsforce-types'
 import { chunks, collections, types, values } from '@salto-io/lowerdash'
 import Joi from 'joi'
-import { FileProperties } from 'jsforce'
 import SalesforceClient, { ErrorFilter } from '../client/client'
 import { FetchElements, INSTANCE_SUFFIXES, OptionalFeatures } from '../types'
 import {

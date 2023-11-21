@@ -24,7 +24,7 @@ export const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, 
 
 export const getDefaultAdapterConfig = async (): Promise<NetsuiteConfig> => {
   const defaultConfigInstance = await createDefaultInstanceFromType(NETSUITE, configType)
-  return defaultConfigInstance.value as NetsuiteConfig
+  return defaultConfigInstance.clone().value as NetsuiteConfig
 }
 
 export const createEmptyElementsSourceIndexes = (): ElementsSourceIndexes => ({

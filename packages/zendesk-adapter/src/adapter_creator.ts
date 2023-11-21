@@ -15,7 +15,7 @@
 */
 import { logger } from '@salto-io/logging'
 import { InstanceElement, Adapter, Values, OAuthRequestParameters, OauthAccessTokenResponse, ElemID } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, combineCustomReferenceGetters, config as configUtils } from '@salto-io/adapter-components'
 import ZendeskAdapter from './adapter'
 import { Credentials, oauthAccessTokenCredentialsType, oauthRequestParametersType, usernamePasswordCredentialsType } from './auth'
 import {
@@ -34,6 +34,7 @@ import {
 import ZendeskClient from './client/client'
 import { createConnection, instanceUrl } from './client/connection'
 import { configCreator } from './config_creator'
+import { weakReferenceHandlers } from './weak_references'
 
 const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
@@ -166,6 +167,7 @@ export const adapter: Adapter = {
         }
       },
       deployModifiers: adapterOperations.deployModifiers,
+      fixElements: adapterOperations.fixElements.bind(adapterOperations),
     }
   },
   validateCredentials: async config => validateCredentials(
@@ -195,4 +197,5 @@ export const adapter: Adapter = {
   },
   configType,
   configCreator,
+  getCustomReferences: combineCustomReferenceGetters(weakReferenceHandlers.map(handler => handler.findWeakReferences)),
 }

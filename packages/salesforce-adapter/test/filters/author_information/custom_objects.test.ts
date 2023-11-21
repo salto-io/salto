@@ -24,7 +24,7 @@ import {
   InstanceElement, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
-import { FileProperties } from 'jsforce-types'
+import { FileProperties } from '@salto-io/jsforce-types'
 import { mockFileProperties } from '../../connection'
 import mockClient from '../../client'
 import Connection from '../../../src/client/jsforce'

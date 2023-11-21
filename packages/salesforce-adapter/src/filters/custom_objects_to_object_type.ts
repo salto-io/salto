@@ -45,7 +45,7 @@ import {
   MetadataTypeAnnotations, createInstanceElement, toCustomField, toCustomProperties, isLocalOnly,
   toMetadataInfo,
   isFieldOfCustomObject,
-  createInstanceServiceIds, MetadataInstanceElement,
+  createInstanceServiceIds, MetadataInstanceElement, isMetadataObjectType,
 } from '../transformers/transformer'
 import {
   addApiName, addMetadataType, addLabel, getNamespace, boolValue,
@@ -56,8 +56,7 @@ import {
   isInstanceOfType,
   isMasterDetailField,
   buildElementsSourceForFetch,
-  addKeyPrefix, addPluralLabel, getInstanceAlias,
-  apiNameSync, toListType,
+  addKeyPrefix, addPluralLabel, getInstanceAlias, toListType, isInstanceOfTypeSync,
 } from './utils'
 import { convertList } from './convert_lists'
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../metadata_deploy'
@@ -848,13 +847,13 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
         .filter(elem => !existingElementIDs.has(elem.elemID.getFullName()))
         .forEach(newElem => elements.push(newElem))
 
-      // Remove instances and set MetadataType as hidden
-      await removeAsync(elements, isInstanceOfType(CUSTOM_OBJECT))
-      const customObjectMetadataType = elements
-        .filter(isObjectType)
-        .find(objectType => apiNameSync(objectType) === CUSTOM_OBJECT)
-      if (customObjectMetadataType !== undefined) {
-        customObjectMetadataType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
+      // Remove CustomObject instances & hide the CustomObject metadata type
+      _.remove(elements, isInstanceOfTypeSync(CUSTOM_OBJECT))
+      const customObjectType = elements
+        .filter(isMetadataObjectType)
+        .find(type => type.elemID.name === CUSTOM_OBJECT)
+      if (customObjectType !== undefined) {
+        customObjectType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
       }
       log.debug('Changing paths for instances that are nested under custom objects')
       await fixDependentInstancesPathAndSetParent(

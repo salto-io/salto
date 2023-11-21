@@ -51,8 +51,8 @@ describe('sideConversationFilter', () => {
 
     await filter.onFetch([group, trigger, macro])
 
-    expect(trigger.value.actions[0].value[2]).toEqual({ parts: ['SupportAssignable:support_assignable/group/', new ReferenceExpression(group.elemID, group), ''] })
-    expect(macro.value.actions[0].value[2]).toEqual({ parts: ['SupportAssignable:support_assignable/group/', new ReferenceExpression(group.elemID, group), ''] })
+    expect(trigger.value.actions[0].value[2]).toEqual({ parts: ['SupportAssignable:support_assignable/group/', new ReferenceExpression(group.elemID, group)] })
+    expect(macro.value.actions[0].value[2]).toEqual({ parts: ['SupportAssignable:support_assignable/group/', new ReferenceExpression(group.elemID, group)] })
   })
   it('should replace group_id with missing reference when group does not exists', async () => {
     const instanceValue = createInstanceValue([

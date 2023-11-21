@@ -16,13 +16,20 @@
 import {
   ObjectType, Element, Values, isObjectTypeChange, InstanceElement,
   isAdditionOrModificationChange, getChangeData, isAdditionChange, isModificationChange,
-  ElemID, toChange, isInstanceElement, isObjectType, CORE_ANNOTATIONS, ReadOnlyElementsSource,
+  ElemID, toChange, CORE_ANNOTATIONS, ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, multiIndex, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { TOPICS_FOR_OBJECTS_FIELDS, TOPICS_FOR_OBJECTS_ANNOTATION, TOPICS_FOR_OBJECTS_METADATA_TYPE, SALESFORCE } from '../constants'
-import { isCustomObject, apiName, createInstanceElement, metadataAnnotationTypes, MetadataTypeAnnotations } from '../transformers/transformer'
+import {
+  isCustomObject,
+  apiName,
+  createInstanceElement,
+  metadataAnnotationTypes,
+  MetadataTypeAnnotations,
+  isMetadataObjectType,
+} from '../transformers/transformer'
 import { LocalFilterCreator } from '../filter'
 import { TopicsForObjectsInfo } from '../client/types'
 import {
@@ -31,7 +38,6 @@ import {
   getInstancesOfMetadataType,
   isCustomObjectSync,
   isInstanceOfTypeChange,
-  metadataTypeSync,
 } from './utils'
 
 const { awu } = collections.asynciterable
@@ -144,18 +150,16 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
         }
       })
     }
-    // Remove TopicsForObjects Instances & and set the MetadataType as hidden to avoid information duplication
-    const topicsForObjectType = elements
-      .filter(isObjectType)
-      .find(objectType => apiNameSync(objectType) === TOPICS_FOR_OBJECTS_METADATA_TYPE)
-    if (topicsForObjectType !== undefined) {
-      topicsForObjectType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
+    // Remove TopicsForObjects Instances & hide the TopicsForObjects metadata type
+    _.pullAll(elements, topicsForObjectsInstances)
+    const topicsForObjectsType = elements
+      .filter(isMetadataObjectType)
+      .find(type => apiNameSync(type) === TOPICS_FOR_OBJECTS_METADATA_TYPE)
+    if (topicsForObjectsType === undefined) {
+      log.warn('expected TopicsForObjects type to be defined')
+      return
     }
-    _.remove(
-      elements,
-      element => isInstanceElement(element)
-        && metadataTypeSync(element) === TOPICS_FOR_OBJECTS_METADATA_TYPE
-    )
+    topicsForObjectsType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
   },
 
   preDeploy: async changes => {

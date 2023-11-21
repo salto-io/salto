@@ -14,16 +14,16 @@
 * limitations under the License.
 */
 import {
-  ObjectType,
-  ElemID,
-  InstanceElement,
   BuiltinTypes,
-  toChange,
   Change,
-  getChangeData,
-  isInstanceChange,
   CORE_ANNOTATIONS,
   Element,
+  ElemID,
+  getChangeData,
+  InstanceElement,
+  isInstanceChange,
+  ObjectType,
+  toChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { apiName, MetadataTypeAnnotations } from '../../src/transformers/transformer'
@@ -32,9 +32,9 @@ import filterCreator from '../../src/filters/topics_for_objects'
 import { defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
 import { isInstanceOfTypeSync } from '../../src/filters/utils'
-import { buildMetadataQueryForFetchWithChangesDetection } from '../../src/fetch_profile/metadata_query'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
-import { LastChangeDateOfTypesWithNestedInstances } from '../../src/types'
+import { buildMetadataQueryForFetchWithChangesDetection } from '../../src/fetch_profile/metadata_query'
+import { mockInstances } from '../mock_elements'
 
 const { TOPICS_FOR_OBJECTS_ANNOTATION, TOPICS_FOR_OBJECTS_FIELDS,
   TOPICS_FOR_OBJECTS_METADATA_TYPE } = constants
@@ -107,19 +107,16 @@ describe('Topics for objects filter', () => {
         typeWithNonModifiedTopicsForObjects = mockObject(TYPE_WITH_NON_MODIFIED_TOPICS_FOR_OBJECTS, true)
         const typeInSource = typeWithNonModifiedTopicsForObjects
           .clone({ annotations: { [TOPICS_FOR_OBJECTS_ANNOTATION]: { [ENABLE_TOPICS]: true } } })
-        const elementsSource = buildElementsSourceFromElements([typeInSource])
-        const metadataQuery = await buildMetadataQueryForFetchWithChangesDetection({
-          elementsSource,
-          fetchParams: {},
-          lastChangeDateOfTypesWithNestedInstances: {} as unknown as LastChangeDateOfTypesWithNestedInstances,
-        })
-        filter = filterCreator({ config: {
-          ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({
-            fetchParams: {},
-            metadataQuery,
-          }),
-        } }) as typeof filter
+        const elementsSource = buildElementsSourceFromElements([typeInSource, mockInstances().ChangedAtSingleton])
+        filter = filterCreator({
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildFetchProfile({
+              fetchParams: {},
+              metadataQuery: await buildMetadataQueryForFetchWithChangesDetection({ fetchParams: {}, elementsSource }),
+            }),
+          },
+        }) as typeof filter
         elements.push(typeWithNonModifiedTopicsForObjects)
       })
       it('should set correct topicsForObjects on types', async () => {

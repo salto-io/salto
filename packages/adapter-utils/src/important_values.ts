@@ -30,7 +30,7 @@ const { isDefined } = values
 
 type ImportantValue = { value: string; indexed: boolean; highlighted: boolean }
 export type ImportantValues = ImportantValue[]
-type FormattedImportantValueData = { key: string; value: Value }
+export type FormattedImportantValueData = { key: string; value: Value }
 
 const isValidIndexedValueData = (importantValue: ImportantValue, valueData: unknown): boolean => {
   if (importantValue.indexed !== true) {

@@ -428,31 +428,8 @@ okta {
           ]
         }
       }
-      api__v1__features = {
-        request = {
-          url = "/api/v1/features"
-          recurseInto = [
-            {
-              type = "api__v1__features___featureId___dependencies@uuuuuu_00123_00125uu"
-              toField = "featureDependencies"
-              context = [
-                {
-                  name = "featureId"
-                  fromField = "id"
-                },
-              ]
-            },
-          ]
-        }
-      }
       Feature = {
         transformation = {
-          fieldTypeOverrides = [
-            {
-              fieldName = "featureDependencies"
-              fieldType = "list<Feature>"
-            },
-          ]
           serviceIdField = "id"
           fieldsToOmit = [
             {

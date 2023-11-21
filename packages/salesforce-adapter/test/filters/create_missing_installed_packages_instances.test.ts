@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, Element, InstanceElement } from '@salto-io/adapter-api'
-import { FileProperties } from 'jsforce-types'
+import { FileProperties } from '@salto-io/jsforce-types'
 import { collections } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
 import filterCreator from '../../src/filters/create_missing_installed_packages_instances'

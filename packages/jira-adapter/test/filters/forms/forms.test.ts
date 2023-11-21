@@ -148,6 +148,9 @@ describe('forms filter', () => {
                 ],
               },
             ],
+            conditions: {},
+            sections: {},
+            questions: {},
           },
         })
       })
@@ -396,7 +399,6 @@ describe('forms filter', () => {
           createEmptyType(FORM_TYPE),
           {
             uuid: 'uuid',
-            updated: '2023-09-28T08:20:31.552322Z',
             design: {
               settings: {
                 templateId: 6,
@@ -481,14 +483,9 @@ describe('forms filter', () => {
         )
         elements = [projectInstance, projectType]
       })
-      it('should add questions, sections and conditions to form if there is none', async () => {
-        delete formInstance.value.design.questions
-        delete formInstance.value.design.sections
-        delete formInstance.value.design.conditions
+      it('should add the current updated time', async () => {
         await filter.preDeploy([{ action: 'add', data: { after: formInstance } }])
-        expect(formInstance.value.design.questions).toEqual({})
-        expect(formInstance.value.design.sections).toEqual({})
-        expect(formInstance.value.design.conditions).toEqual({})
+        expect(formInstance.value.updated).toEqual(new Date().toISOString())
       })
     })
     describe('onDeploy', () => {
@@ -601,14 +598,9 @@ describe('forms filter', () => {
         )
         elements = [projectInstance, projectType]
       })
-      it('should delete questions, sections and conditions if they are empty', async () => {
-        formInstance.value.design.questions = {}
-        formInstance.value.design.sections = {}
-        formInstance.value.design.conditions = {}
+      it('should delete updated field', async () => {
         await filter.onDeploy([{ action: 'add', data: { after: formInstance } }])
-        expect(formInstance.value.design.questions).toBeUndefined()
-        expect(formInstance.value.design.sections).toBeUndefined()
-        expect(formInstance.value.design.conditions).toBeUndefined()
+        expect(formInstance.value.updated).toBeUndefined()
       })
     })
 })

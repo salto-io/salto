@@ -30,10 +30,10 @@ import {
   ServiceIds,
   isInstanceElement,
 } from '@salto-io/adapter-api'
-import { MetadataInfo } from 'jsforce'
+import { MetadataInfo } from '@salto-io/jsforce'
 import { collections, values } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
-import { FileProperties } from 'jsforce-types'
+import { FileProperties } from '@salto-io/jsforce-types'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
@@ -1448,6 +1448,7 @@ public class LargeClass${index} {
       } as unknown as ObjectType
       const metadataQuery = {
         isTypeMatch: jest.fn(),
+        isInstanceIncluded: () => true,
         isInstanceMatch: () => true,
         isPartialFetch: () => false,
         isTargetedFetch: jest.fn(),
@@ -2001,12 +2002,10 @@ describe('Fetch via retrieve API', () => {
           types: [mockTypes.ApexClass],
           maxItemsInRetrieveRequest: DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
           metadataQuery: buildMetadataQuery({
-            metadataParams: {},
-            isFetchWithChangesDetection: false,
+            fetchParams: {},
           }),
           fetchProfile: buildFetchProfile({
             fetchParams: { addNamespacePrefixToFullName: false },
-            elementsSource: buildElementsSourceFromElements([]),
           }),
           typesToSkip: new Set(),
         }
@@ -2038,12 +2037,10 @@ describe('Fetch via retrieve API', () => {
           types: [mockTypes.ApexClass, mockTypes.CustomObject],
           maxItemsInRetrieveRequest: chunkSize,
           metadataQuery: buildMetadataQuery({
-            metadataParams: {},
-            isFetchWithChangesDetection: false,
+            fetchParams: {},
           }),
           fetchProfile: buildFetchProfile({
             fetchParams: { addNamespacePrefixToFullName: false },
-            elementsSource: buildElementsSourceFromElements([]),
           }),
           typesToSkip: new Set(),
         }
@@ -2079,12 +2076,10 @@ describe('Fetch via retrieve API', () => {
           types: [mockTypes.CustomObject, mockTypes.Profile],
           maxItemsInRetrieveRequest: chunkSize,
           metadataQuery: buildMetadataQuery({
-            metadataParams: {},
-            isFetchWithChangesDetection: false,
+            fetchParams: {},
           }),
           fetchProfile: buildFetchProfile({
             fetchParams: { addNamespacePrefixToFullName: false },
-            elementsSource: buildElementsSourceFromElements([]),
           }),
           typesToSkip: new Set(),
         }
@@ -2128,12 +2123,10 @@ describe('Fetch via retrieve API', () => {
           types: [mockTypes.CustomObject, mockTypes.Profile],
           maxItemsInRetrieveRequest: 3,
           metadataQuery: buildMetadataQuery({
-            metadataParams: {},
-            isFetchWithChangesDetection: false,
+            fetchParams: {},
           }),
           fetchProfile: buildFetchProfile({
             fetchParams: { addNamespacePrefixToFullName: false },
-            elementsSource: buildElementsSourceFromElements([]),
           }),
           typesToSkip: new Set(),
         }

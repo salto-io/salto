@@ -39,8 +39,7 @@ describe('Test fetching installed package metadata', () => {
 
     const metadataQuery = buildMetadataQuery(
       {
-        metadataParams: { include: [{ metadataType: '.*' }] },
-        isFetchWithChangesDetection: false,
+        fetchParams: { metadata: { include: [{ metadataType: '.*' }] } },
       }
     )
 

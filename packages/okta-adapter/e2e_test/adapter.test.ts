@@ -396,6 +396,8 @@ describe('Okta adapter E2E', () => {
         'UserType',
         'GroupPush',
         'GroupPushRule',
+        'Automation',
+        'AutomationRule',
       ]
       const typesWithInstances = new Set([GROUP_TYPE_NAME, ROLE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME,
         ACCESS_POLICY_RULE_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME,

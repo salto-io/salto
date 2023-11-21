@@ -43,6 +43,7 @@ describe('config', () => {
         types: [
           { name: 'testAll', ids: ['.*'] },
           { name: 'testExistingPartial', ids: ['scriptid1', 'scriptid2'] },
+          { name: '.*', criteria: { isinactive: true } },
         ],
         fileCabinet: ['SomeRegex'],
       },
@@ -125,6 +126,7 @@ describe('config', () => {
       types: [
         { name: 'testAll', ids: ['.*'] },
         { name: 'testExistingPartial', ids: ['scriptid1', 'scriptid2', 'scriptid3', 'scriptid4'] },
+        { name: '.*', criteria: { isinactive: true } },
         { name: 'testNew', ids: ['scriptid5', 'scriptid6'] },
         { name: 'excludedTypeTest' },
       ],
@@ -195,29 +197,59 @@ describe('config', () => {
       .toBe(formatConfigSuggestionsReasons([STOP_MANAGING_ITEMS_MSG, LARGE_FOLDERS_EXCLUDED_MESSAGE]))
   })
   describe('Fetch validation', () => {
-    const configWithoutFetch = new InstanceElement('empty', configType, {})
-    const configWithoutInclude = new InstanceElement('noInclude', configType, {
+    const defaultFetchConfig = new InstanceElement(ElemID.CONFIG_NAME, configType, {
+      fetch: fetchDefault,
+    })
+    const configWithoutFetch = new InstanceElement(ElemID.CONFIG_NAME, configType, {})
+    const configWithoutInclude = new InstanceElement(ElemID.CONFIG_NAME, configType, {
       fetch: {
         exclude: emptyQueryParams(),
       },
     })
-    const configWithInvalidInclude = new InstanceElement('invalidInclude', configType, {
+    const configWithInvalidInclude = new InstanceElement(ElemID.CONFIG_NAME, configType, {
       fetch: {
         include: {},
         exclude: emptyQueryParams(),
       },
     })
-    const configWithoutExclude = new InstanceElement('noExclude', configType, {
+    const configWithoutExclude = new InstanceElement(ElemID.CONFIG_NAME, configType, {
       fetch: {
         include: emptyQueryParams(),
       },
     })
-    const configWithInvalidExclude = new InstanceElement('invalidExclude', configType, {
+    const configWithInvalidExclude = new InstanceElement(ElemID.CONFIG_NAME, configType, {
       fetch: {
         include: emptyQueryParams(),
         exclude: {},
       },
     })
+    const configWithIncludeCriteria = new InstanceElement(ElemID.CONFIG_NAME, configType, {
+      fetch: {
+        ...fetchDefault,
+        include: {
+          ...fetchDefault.include,
+          types: [
+            ...fetchDefault.include.types,
+            { name: '.*', criteria: { isinactive: false } },
+          ],
+        },
+      },
+    })
+    const configWithExcludeCriteria = new InstanceElement(ElemID.CONFIG_NAME, configType, {
+      fetch: {
+        ...fetchDefault,
+        exclude: {
+          ...fetchDefault.exclude,
+          types: [
+            ...fetchDefault.exclude.types,
+            { name: '.*', criteria: { isinactive: false } },
+          ],
+        },
+      },
+    })
+
+    it('Should not throw on a valid fetch config', () =>
+      expect(() => netsuiteConfigFromConfig(defaultFetchConfig)).not.toThrow())
 
     it('Should throw an error if the fetch is undefined', () =>
       expect(() => netsuiteConfigFromConfig(configWithoutFetch)).toThrow('Failed to load Netsuite config: fetch should be defined'))
@@ -233,6 +265,12 @@ describe('config', () => {
 
     it('Should throw an error if the exclude is non-valid', () =>
       expect(() => netsuiteConfigFromConfig(configWithInvalidExclude)).toThrow('Failed to load Netsuite config: Received invalid adapter config input. "types" field is expected to be an array\n "fileCabinet" field is expected to be an array\n'))
+
+    it('Should throw an error if include contains criteria query', () =>
+      expect(() => netsuiteConfigFromConfig(configWithIncludeCriteria)).toThrow('Failed to load Netsuite config: The "criteria" configuration option is exclusively permitted within the "fetch.exclude" configuration and should not be used within the "fetch.include" configuration.'))
+
+    it('Should not throw an error if exclude contains criteria query', () =>
+      expect(() => netsuiteConfigFromConfig(configWithExcludeCriteria)).not.toThrow())
   })
 
   describe('should have a correct default fetch config', () => {

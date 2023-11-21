@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression, Field, getChangeData, toChange, SeverityLevel, GetAdditionalReferencesFunc, Change, FixElementsFunc, isAdditionOrModificationChange } from '@salto-io/adapter-api'
+import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression, Field, getChangeData, toChange, SeverityLevel, GetAdditionalReferencesFunc, Change, FixElementsFunc, isAdditionOrModificationChange, ChangeValidator } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
@@ -112,14 +112,20 @@ describe('api.ts', () => {
   }
 
   const mockAdapter = {
-    operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
+    operations: mockFunction<Adapter['operations']>().mockReturnValue({
+      ...mockAdapterOps,
+      deployModifiers: { changeValidator: mockFunction<ChangeValidator>().mockResolvedValue([]) },
+    }),
     authenticationMethods: { basic: { credentialsType: mockConfigType } },
     validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Sandbox', isProduction: false }),
     getAdditionalReferences: mockFunction<GetAdditionalReferencesFunc>().mockResolvedValue([]),
   }
 
   const mockEmptyAdapter = {
-    operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
+    operations: mockFunction<Adapter['operations']>().mockReturnValue({
+      ...mockAdapterOps,
+      validationModifiers: { changeValidator: mockFunction<ChangeValidator>().mockResolvedValue([]) },
+    }),
     authenticationMethods: { basic: { credentialsType: mockEmptyConfigType } },
     validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Sandbox', isProduction: false }),
   }
@@ -280,21 +286,42 @@ describe('api.ts', () => {
   describe('plan', () => {
     let mockedGetPlan: jest.SpyInstance<Promise<plan.Plan>, Parameters<typeof plan.getPlan>>
     let mockGetPlanResult: plan.Plan
-    let result: plan.Plan
 
-    beforeAll(async () => {
+    beforeEach(async () => {
       mockedGetPlan = jest.spyOn(plan, 'getPlan')
       mockGetPlanResult = mockPlan.getPlan()
       mockedGetPlan.mockResolvedValue(mockGetPlanResult)
-      result = await api.preview(mockWorkspace({}), ACCOUNTS)
     })
 
-    afterAll(() => {
+    afterEach(() => {
       mockedGetPlan.mockRestore()
     })
 
     it('should return getPlan response', async () => {
+      const result = await api.preview(mockWorkspace({}), ACCOUNTS)
       expect(result).toEqual(mockGetPlanResult)
+    })
+    it('should call getPlan with deploy change validators', async () => {
+      await api.preview(mockWorkspace({}), ACCOUNTS)
+      expect(mockedGetPlan).toHaveBeenCalledWith(expect.objectContaining({
+        changeValidators: {
+          [mockService]: expect.any(Function),
+        },
+      }))
+    })
+    it('should call getPlan with validation change validators', async () => {
+      await api.preview(mockWorkspace({}), ACCOUNTS, true)
+      expect(mockedGetPlan).toHaveBeenCalledWith(expect.objectContaining({
+        changeValidators: {
+          [emptyMockService]: expect.any(Function),
+        },
+      }))
+    })
+    it('should call getPlan without change validators', async () => {
+      await api.preview(mockWorkspace({}), ACCOUNTS, false, true)
+      expect(mockedGetPlan).toHaveBeenCalledWith(expect.objectContaining({
+        changeValidators: {},
+      }))
     })
   })
 

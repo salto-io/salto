@@ -14,28 +14,33 @@
 * limitations under the License.
 */
 import {
-  ObjectType,
-  ElemID,
-  Element,
-  InstanceElement,
-  ReferenceExpression,
+  Change,
   CORE_ANNOTATIONS,
-  Field, Change, toChange, getAllChangeData, isField,
+  Element,
+  ElemID,
+  Field,
+  getAllChangeData,
+  InstanceElement,
+  isField,
+  ObjectType,
+  ReferenceExpression,
+  toChange,
 } from '@salto-io/adapter-api'
-import { MetadataInfo } from 'jsforce'
+import { MetadataInfo } from '@salto-io/jsforce'
 import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import * as constants from '../../src/constants'
+import { API_NAME, INSTANCE_FULL_NAME_FIELD, VALUE_SET_FIELDS } from '../../src/constants'
 import mockClient from '../client'
-import { makeFilter, STANDARD_VALUE_SET, STANDARD_VALUE } from '../../src/filters/standard_value_sets'
+import { makeFilter, STANDARD_VALUE, STANDARD_VALUE_SET } from '../../src/filters/standard_value_sets'
 import SalesforceClient from '../../src/client/client'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import { extractFullNamesFromValueList } from '../../src/filters/utils'
 import { defaultFilterContext } from '../utils'
-import { mockTypes } from '../mock_elements'
-import { API_NAME, INSTANCE_FULL_NAME_FIELD, VALUE_SET_FIELDS } from '../../src/constants'
+import { mockInstances, mockTypes } from '../mock_elements'
 import { FilterWith } from './mocks'
-import { buildFetchProfileForFetchWithChangesDetection } from '../../src/fetch_profile/fetch_profile'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import { buildMetadataQueryForFetchWithChangesDetection } from '../../src/fetch_profile/metadata_query'
 
 const createStandardValueSetMetadataInfo = (name: string, values: string[]): MetadataInfo =>
   ({
@@ -117,10 +122,11 @@ describe('Standard Value Sets filter', () => {
     sfClient: SalesforceClient,
     isFetchWithChangesDetection = false
   ): Promise<FilterType> => {
-    const elementsSource = buildElementsSourceFromElements([svsInstanceFromSource])
-    const fetchProfile = isFetchWithChangesDetection
-      ? await buildFetchProfileForFetchWithChangesDetection({ fetchParams: {}, elementsSource })
-      : defaultFilterContext.fetchProfile
+    const elementsSource = buildElementsSourceFromElements([svsInstanceFromSource, mockInstances().ChangedAtSingleton])
+    const metadataQuery = isFetchWithChangesDetection
+      ? await buildMetadataQueryForFetchWithChangesDetection({ fetchParams: {}, elementsSource })
+      : defaultFilterContext.fetchProfile.metadataQuery
+    const fetchProfile = buildFetchProfile({ fetchParams: {}, metadataQuery })
     return makeFilter(
       new Set<string>(['Simpsons', 'Numbers'])
     )({ client: sfClient,

@@ -19,7 +19,6 @@ import { FilterCreator } from '../filter'
 
 const TYPE_TO_REFERENCES_TYPES: Record<string, string[]> = {
   Application: ['assignedGroups'],
-  Feature: ['featureDependencies'],
 }
 
 const replaceObjectWithId = (instance: InstanceElement): void => {

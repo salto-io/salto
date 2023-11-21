@@ -101,6 +101,7 @@ export const mockDefaultValues: Record<string, Values> = {
         slo: {
           enabled: false,
         },
+        signOnMode: 'SAML_2_0',
       },
       manualProvisioning: false,
       implicitAssignment: false,

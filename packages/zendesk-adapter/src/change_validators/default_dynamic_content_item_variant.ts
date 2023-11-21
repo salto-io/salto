@@ -17,6 +17,7 @@ import {
   ChangeError,
   ChangeValidator,
   getChangeData,
+  isAdditionChange,
   isInstanceChange, isModificationChange,
   isRemovalOrModificationChange,
   ReferenceExpression,
@@ -25,16 +26,35 @@ import { values } from '@salto-io/lowerdash'
 import { getParent, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from '../filters/dynamic_content'
+import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../constants'
 
 const { isDefined } = values
 const log = logger(module)
 
+const hasResolvedVariantsWithADefault = (variants: ReferenceExpression[]): boolean => {
+  const resolvedVariants = variants.filter(isResolvedReferenceExpression)
+  if (resolvedVariants.length === 0) {
+    return true
+  }
+  return variants.some((variantRef: ReferenceExpression) => variantRef.value.value.default === true)
+}
+
 /**
- * On unsetting or removing a default variant, make sure there is another default variant for the dynamic content item
+ * 1. On unsetting or removing a default variant,
+ *    make sure there is another default variant for the dynamic content item
+ * 2. When adding a new dynamic content item, validate there exists a default variant
  */
 export const defaultDynamicContentItemVariantValidator: ChangeValidator = async changes => {
   const dynamicContentItemVariantsChanges = changes.filter(isInstanceChange).filter(isRemovalOrModificationChange)
     .filter(change => getChangeData(change).elemID.typeName === DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME)
+
+  const dynamicContentItemAdditions = changes.filter(isInstanceChange).filter(isAdditionChange)
+    .filter(change => {
+      const changeData = getChangeData(change)
+      return changeData.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME
+        // Filter out items without variants as an array
+        && changeData.value.variants?.length > 0
+    })
 
   return dynamicContentItemVariantsChanges.map((change): ChangeError | undefined => {
     // If the variant wasn't default, it is irrelevant
@@ -51,8 +71,7 @@ export const defaultDynamicContentItemVariantValidator: ChangeValidator = async 
     const variant = getChangeData(change)
     try {
       const dynamicContentItem = getParent(variant)
-      return dynamicContentItem.value.variants.filter(isResolvedReferenceExpression)
-        .some((variantRef: ReferenceExpression) => variantRef.value.value.default === true)
+      return hasResolvedVariantsWithADefault(dynamicContentItem.value.variants)
         ? undefined
         : {
           elemID: variant.elemID,
@@ -64,5 +83,17 @@ export const defaultDynamicContentItemVariantValidator: ChangeValidator = async 
       log.warn(`defaultDynamicContentItemVariantValidator - Failed to get parent of ${variant.elemID.getFullName()}`, e)
       return undefined
     }
-  }).filter(isDefined)
+  }).concat(
+    dynamicContentItemAdditions.map(change => {
+      const dynamicContentItem = getChangeData(change)
+      return hasResolvedVariantsWithADefault(dynamicContentItem.value.variants)
+        ? undefined
+        : {
+          elemID: dynamicContentItem.elemID,
+          severity: 'Error',
+          message: 'Dynamic content item must have a default variant',
+          detailedMessage: `The dynamic content item '${dynamicContentItem.elemID.name}' must have a default variant. Please ensure that you select a variant of this dynamic content item as the default`,
+        }
+    })
+  ).filter(isDefined)
 }

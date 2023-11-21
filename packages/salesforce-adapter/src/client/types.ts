@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { MetadataInfo, SaveResult } from 'jsforce'
+import { MetadataInfo, SaveResult } from '@salto-io/jsforce'
 import _ from 'lodash'
 import { Value } from '@salto-io/adapter-api'
 import { FIELD_TYPE_NAMES, CUSTOM_OBJECT_ID_FIELD } from '../constants'

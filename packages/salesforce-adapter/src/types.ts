@@ -864,6 +864,7 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
 })
 export type MetadataQuery = {
   isTypeMatch: (type: string) => boolean
+  isInstanceIncluded: (instance: MetadataInstance) => boolean
   isInstanceMatch: (instance: MetadataInstance) => boolean
   isTargetedFetch: () => boolean
   isFetchWithChangesDetection: () => boolean

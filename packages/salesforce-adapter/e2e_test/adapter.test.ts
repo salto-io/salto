@@ -21,7 +21,7 @@ import {
   Change, FetchOptions, ProgressReporter,
 } from '@salto-io/adapter-api'
 import { findElement, naclCase } from '@salto-io/adapter-utils'
-import { MetadataInfo, RetrieveResult } from 'jsforce'
+import { MetadataInfo, RetrieveResult } from '@salto-io/jsforce'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'

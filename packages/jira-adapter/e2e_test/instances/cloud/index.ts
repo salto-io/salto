@@ -42,6 +42,7 @@ import { createPortalGroupValues } from './jsm/portal_groups'
 import { createQueueValues } from './jsm/queue'
 import { createCalendarValues } from './jsm/calendar'
 import { createSLAValues } from './jsm/SLA'
+import { createrequestTypeValues } from './jsm/request_type'
 
 export const createInstances = (
   randomString: string,
@@ -216,6 +217,14 @@ export const createInstances = (
     { [CORE_ANNOTATIONS.PARENT]: [jsmProject] }
   )
 
+  const RequestType = new InstanceElement(
+    `${randomString}_SUP`,
+    findType('RequestType', fetchedElements),
+    createrequestTypeValues(randomString, fetchedElements),
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [jsmProject] }
+  )
+
   return [
     [dashboard],
     [dashboardGadget1],
@@ -241,6 +250,7 @@ export const createInstances = (
     [queue],
     [calendar],
     [SLA],
+    [RequestType],
   ]
 }
 

@@ -20,7 +20,7 @@ import {
   isAdditionChange, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, Change, toChange,
 } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
-import { BulkLoadOperation, BulkOptions, Record as SfRecord, Batch } from 'jsforce'
+import { BulkLoadOperation, BulkOptions, Record as SfRecord, Batch } from '@salto-io/jsforce'
 import { EventEmitter } from 'events'
 import { Types } from '../src/transformers/transformer'
 import SalesforceAdapter from '../src/adapter'

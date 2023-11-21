@@ -19,7 +19,6 @@ import {
 } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { collections } from '@salto-io/lowerdash'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { SalesforceRecord } from '../src/client/types'
 import SalesforceAdapter from '../index'
 import realAdapter from './adapter'
@@ -93,7 +92,6 @@ describe('custom object instances e2e', () => {
   const filtersContext = {
     fetchProfile: buildFetchProfile({
       fetchParams: config.fetch,
-      elementsSource: buildElementsSourceFromElements([]),
     }),
   }
   beforeAll(async () => {

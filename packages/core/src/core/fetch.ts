@@ -1236,6 +1236,7 @@ export const getFetchAdapterAndServicesSetup = async (
         awu(await elementsSource.getAll()).filter(e => e.elemID.adapter === account),
         workspace.state()
       ))
+  const resolveTypes = !getCoreFlagBool(CORE_FLAGS.skipResolveTypesInElementSource)
   const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
     fetchServices,
     await workspace.accountCredentials(fetchServices),
@@ -1243,6 +1244,7 @@ export const getFetchAdapterAndServicesSetup = async (
     elementsSource,
     accountToServiceNameMap,
     elemIDGetters,
+    resolveTypes,
   )
   const currentConfigs = Object.values(adaptersCreatorConfigs)
     .map(creatorConfig => creatorConfig.config)

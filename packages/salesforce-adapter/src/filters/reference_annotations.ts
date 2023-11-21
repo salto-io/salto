@@ -21,7 +21,7 @@ import { collections, multiIndex } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
 import { FIELD_ANNOTATIONS, FOREIGN_KEY_DOMAIN, CUSTOM_OBJECT } from '../constants'
 import { apiName, metadataType, isMetadataObjectType, isCustomObject } from '../transformers/transformer'
-import { buildElementsSourceForFetch } from './utils'
+import { apiNameSync, buildElementsSourceForFetch } from './utils'
 
 const { makeArray } = collections.array
 const { REFERENCE_TO } = FIELD_ANNOTATIONS
@@ -48,7 +48,7 @@ const convertAnnotationsToReferences = async (
     if (_.isString(ref)) {
       // Try finding a metadata type and fallback to finding a custom object
       const referenceElement = nameToElement.get(ref, ref) ?? nameToElement.get(CUSTOM_OBJECT, ref)
-      if (referenceElement !== undefined) {
+      if (referenceElement !== undefined && apiNameSync(referenceElement) !== CUSTOM_OBJECT) {
         return new ReferenceExpression(referenceElement.elemID, referenceElement)
       }
     }

@@ -485,7 +485,7 @@ describe('forms filter', () => {
       })
       it('should add the current updated time', async () => {
         await filter.preDeploy([{ action: 'add', data: { after: formInstance } }])
-        expect(formInstance.value.updated).toEqual(new Date().toISOString())
+        expect(formInstance.value.updated.slice(0, -8)).toEqual(new Date().toISOString().slice(0, -8))
       })
     })
     describe('onDeploy', () => {

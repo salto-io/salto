@@ -74,7 +74,6 @@ describe('flows filter', () => {
           { config: { ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
               fetchParams: { preferActiveFlowVersions: true },
-              elementsSource: buildElementsSourceFromElements([]),
             }) },
           client },
         ) as typeof filter

@@ -14,10 +14,20 @@
 * limitations under the License.
 */
 
-import { buildMetadataQuery, validateMetadataParams } from '../../src/fetch_profile/metadata_query'
-import { CUSTOM_OBJECT, TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../../src/constants'
+import { InstanceElement } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import {
+  buildMetadataQuery,
+  buildMetadataQueryForFetchWithChangesDetection,
+  validateMetadataParams,
+} from '../../src/fetch_profile/metadata_query'
+import {
+  CUSTOM_METADATA,
+  CUSTOM_OBJECT,
+  TOPICS_FOR_OBJECTS_METADATA_TYPE,
+} from '../../src/constants'
+import { MetadataInstance, MetadataQuery } from '../../src/types'
 import { mockInstances } from '../mock_elements'
-import { MetadataQuery } from '../../src/types'
 
 describe('validateMetadataParams', () => {
   describe('invalid regex in include list', () => {
@@ -85,15 +95,16 @@ describe('buildMetadataQuery', () => {
   describe('isInstanceMatch', () => {
     it('filter with namespace', () => {
       const query = buildMetadataQuery({
-        metadataParams: {
-          include: [
-            { namespace: 'aaa.*' },
-          ],
-          exclude: [
-            { namespace: '.*bbb' },
-          ],
+        fetchParams: {
+          metadata: {
+            include: [
+              { namespace: 'aaa.*' },
+            ],
+            exclude: [
+              { namespace: '.*bbb' },
+            ],
+          },
         },
-        isFetchWithChangesDetection: false,
       })
 
       expect(query.isInstanceMatch({ namespace: 'aaaa', metadataType: '', name: '', isFolderType: false, changedAt: undefined })).toBeTruthy()
@@ -103,15 +114,16 @@ describe('buildMetadataQuery', () => {
 
     it('filter with metadataType', () => {
       const query = buildMetadataQuery({
-        metadataParams: {
-          include: [
-            { metadataType: 'aaa.*' },
-          ],
-          exclude: [
-            { metadataType: '.*bbb' },
-          ],
+        fetchParams: {
+          metadata: {
+            include: [
+              { metadataType: 'aaa.*' },
+            ],
+            exclude: [
+              { metadataType: '.*bbb' },
+            ],
+          },
         },
-        isFetchWithChangesDetection: false,
       })
 
       expect(query.isInstanceMatch({ metadataType: 'aaaa', namespace: '', name: '', isFolderType: false, changedAt: undefined })).toBeTruthy()
@@ -121,15 +133,16 @@ describe('buildMetadataQuery', () => {
 
     it('filter with name', () => {
       const query = buildMetadataQuery({
-        metadataParams: {
-          include: [
-            { name: 'aaa.*' },
-          ],
-          exclude: [
-            { name: '.*bbb' },
-          ],
+        fetchParams: {
+          metadata: {
+            include: [
+              { name: 'aaa.*' },
+            ],
+            exclude: [
+              { name: '.*bbb' },
+            ],
+          },
         },
-        isFetchWithChangesDetection: false,
       })
 
       expect(query.isInstanceMatch({ name: 'aaaa', namespace: '', metadataType: '', isFolderType: false, changedAt: undefined })).toBeTruthy()
@@ -139,15 +152,16 @@ describe('buildMetadataQuery', () => {
 
     it('filter with multiple fields', () => {
       const query = buildMetadataQuery({
-        metadataParams: {
-          include: [
-            { namespace: 'aaa.*', metadataType: 'bbb.*', name: 'ccc.*' },
-          ],
-          exclude: [
-            { namespace: '.*aaa', metadataType: '.*bbb', name: '.*ccc' },
-          ],
+        fetchParams: {
+          metadata: {
+            include: [
+              { namespace: 'aaa.*', metadataType: 'bbb.*', name: 'ccc.*' },
+            ],
+            exclude: [
+              { namespace: '.*aaa', metadataType: '.*bbb', name: '.*ccc' },
+            ],
+          },
         },
-        isFetchWithChangesDetection: false,
       })
 
       expect(query.isInstanceMatch({ namespace: 'aaabbb', metadataType: 'bbbccc', name: 'cccddd', isFolderType: false, changedAt: undefined })).toBeTruthy()
@@ -157,17 +171,18 @@ describe('buildMetadataQuery', () => {
 
     it('filter with multiple queries', () => {
       const query = buildMetadataQuery({
-        metadataParams: {
-          include: [
-            { namespace: 'aaa.*' },
-            { namespace: 'bbb.*' },
-          ],
-          exclude: [
-            { namespace: '.*aaa' },
-            { namespace: '.*bbb' },
-          ],
+        fetchParams: {
+          metadata: {
+            include: [
+              { namespace: 'aaa.*' },
+              { namespace: 'bbb.*' },
+            ],
+            exclude: [
+              { namespace: '.*aaa' },
+              { namespace: '.*bbb' },
+            ],
+          },
         },
-        isFetchWithChangesDetection: false,
       })
 
       expect(query.isInstanceMatch({ namespace: 'aaaccc', metadataType: '', name: '', isFolderType: false, changedAt: undefined })).toBeTruthy()
@@ -179,12 +194,13 @@ describe('buildMetadataQuery', () => {
 
     it('empty namespace should be tread as "standard"', () => {
       const query = buildMetadataQuery({
-        metadataParams: {
-          include: [
-            { namespace: '' },
-          ],
+        fetchParams: {
+          metadata: {
+            include: [
+              { namespace: '' },
+            ],
+          },
         },
-        isFetchWithChangesDetection: false,
       })
       expect(query.isInstanceMatch({ namespace: 'standard', metadataType: '', name: '', isFolderType: false, changedAt: undefined })).toBeTruthy()
       expect(query.isInstanceMatch({ namespace: 'notstandard', metadataType: '', name: '', isFolderType: false, changedAt: undefined })).toBeFalsy()
@@ -192,96 +208,44 @@ describe('buildMetadataQuery', () => {
 
     it('should return InstalledPackage with namespace if \'\' namespace is provided', () => {
       const query = buildMetadataQuery({
-        metadataParams: {
-          include: [
-            { namespace: '' },
-          ],
+        fetchParams: {
+          metadata: {
+            include: [
+              { namespace: '' },
+            ],
+          },
         },
-        isFetchWithChangesDetection: false,
       })
       expect(query.isInstanceMatch({ namespace: 'SBQQ', metadataType: 'InstalledPackage', name: 'lala', isFolderType: false, changedAt: undefined })).toBeTruthy()
     })
 
     it('should not return InstalledPackage with a different namespace then one specifically provided', () => {
       const query = buildMetadataQuery({
-        metadataParams: {
-          include: [
-            { namespace: 'SBAA' },
-          ],
+        fetchParams: {
+          metadata: {
+            include: [
+              { namespace: 'SBAA' },
+            ],
+          },
         },
-        isFetchWithChangesDetection: false,
       })
       expect(query.isInstanceMatch({ namespace: 'SBQQ', metadataType: 'InstalledPackage', name: 'lala', isFolderType: false, changedAt: undefined })).toBeFalsy()
-    })
-
-    describe('fetchWithChangesDetection', () => {
-      const LAST_MODIFIED_DATE = '2023-01-12T15:51:47.000Z'
-      let query: MetadataQuery
-      beforeEach(async () => {
-        const { ChangedAtSingleton: changedAtSingleton } = mockInstances()
-        changedAtSingleton.value.Report = { testReport: LAST_MODIFIED_DATE }
-        query = buildMetadataQuery(
-          {
-            metadataParams: {
-              include: [
-                {
-                  metadataType: 'Report',
-                },
-              ],
-            },
-            isFetchWithChangesDetection: true,
-            changedAtSingleton,
-          },
-        )
-      })
-      describe('isPartialFetch', () => {
-        it('should return true', () => {
-          expect(query.isPartialFetch()).toBeTrue()
-        })
-      })
-      describe('isFetchWithChangesDetection', () => {
-        it('should return true', () => {
-          expect(query.isFetchWithChangesDetection()).toBeTrue()
-        })
-      })
-      describe('when the instance was not updated from the previous fetch', () => {
-        it('should return false', () => {
-          expect(query.isInstanceMatch({
-            metadataType: 'Report',
-            namespace: '',
-            name: 'testReport',
-            isFolderType: false,
-            changedAt: LAST_MODIFIED_DATE,
-          })).toBeFalse()
-        })
-      })
-
-      describe('when the instance was updated from the previous fetch', () => {
-        it('should return true', () => {
-          expect(query.isInstanceMatch({
-            metadataType: 'Report',
-            namespace: '',
-            name: 'testReport',
-            isFolderType: false,
-            changedAt: '2023-01-12T15:51:58.000Z',
-          })).toBeTrue()
-        })
-      })
     })
   })
 
   it('isTypeMatch should return correct results', () => {
     const query = buildMetadataQuery({
-      metadataParams: {
-        include: [
-          { metadataType: 'aaa.*' },
-        ],
-        exclude: [
-          { metadataType: '.*bbb' },
-          { metadataType: '.*ccc', name: 'someName' },
-        ],
+      fetchParams: {
+        metadata: {
+          include: [
+            { metadataType: 'aaa.*' },
+          ],
+          exclude: [
+            { metadataType: '.*bbb' },
+            { metadataType: '.*ccc', name: 'someName' },
+          ],
+        },
       },
-      isFetchWithChangesDetection: false,
     })
     expect(query.isTypeMatch('aaa')).toBeTruthy()
     expect(query.isTypeMatch('ccc')).toBeFalsy()
@@ -294,12 +258,13 @@ describe('buildMetadataQuery', () => {
     beforeEach(() => {
       query = buildMetadataQuery(
         {
-          metadataParams: {
-            include: [{ metadataType: '.*' }],
-            exclude: [{ metadataType: 'exclude' }],
+          fetchParams: {
+            metadata: {
+              include: [{ metadataType: '.*' }],
+              exclude: [{ metadataType: 'exclude' }],
+            },
+            target: ['target', 'exclude', CUSTOM_OBJECT],
           },
-          target: ['target', 'exclude', CUSTOM_OBJECT],
-          isFetchWithChangesDetection: false,
         },
       )
     })
@@ -334,28 +299,29 @@ describe('buildMetadataQuery', () => {
     let query: MetadataQuery
     beforeEach(() => {
       query = buildMetadataQuery({
-        metadataParams: {
-          include: [
-            {
-              metadataType: inFolderType,
-            },
-            {
-              metadataType: folderType,
-              name: '^(TopFolder|TopFolder/NestedFolder|TopFolder/NestedFolder/NestedNestedFolder)$',
-            },
-            // Folder names with underscores and numbers
-            {
-              metadataType: folderType,
-              name: '^(UnderscoreFolder_cx|TopFolder/NestedUnderscoreFolder_12)$',
-            },
-            // The names .* and NestedFolder1? Should not be in the result
-            {
-              metadataType: folderType,
-              name: '.*|NestedFolder1?',
-            },
-          ],
+        fetchParams: {
+          metadata: {
+            include: [
+              {
+                metadataType: inFolderType,
+              },
+              {
+                metadataType: folderType,
+                name: '^(TopFolder|TopFolder/NestedFolder|TopFolder/NestedFolder/NestedNestedFolder)$',
+              },
+              // Folder names with underscores and numbers
+              {
+                metadataType: folderType,
+                name: '^(UnderscoreFolder_cx|TopFolder/NestedUnderscoreFolder_12)$',
+              },
+              // The names .* and NestedFolder1? Should not be in the result
+              {
+                metadataType: folderType,
+                name: '.*|NestedFolder1?',
+              },
+            ],
+          },
         },
-        isFetchWithChangesDetection: false,
       })
     })
     describe('getFolderPathsByName', () => {
@@ -377,15 +343,16 @@ describe('buildMetadataQuery', () => {
     describe('with included full paths', () => {
       beforeEach(() => {
         query = buildMetadataQuery({
-          metadataParams: {
-            include: [
-              {
-                metadataType: folderType,
-                name: '^(TopFolder|TopFolder/NestedFolder|TopFolder/NestedFolder/NestedNestedFolder)$',
-              },
-            ],
+          fetchParams: {
+            metadata: {
+              include: [
+                {
+                  metadataType: folderType,
+                  name: '^(TopFolder|TopFolder/NestedFolder|TopFolder/NestedFolder/NestedNestedFolder)$',
+                },
+              ],
+            },
           },
-          isFetchWithChangesDetection: false,
         })
       })
       it.each([
@@ -418,14 +385,15 @@ describe('buildMetadataQuery', () => {
     describe('with included wildcard', () => {
       beforeEach(() => {
         query = buildMetadataQuery({
-          metadataParams: {
-            include: [
-              {
-                metadataType: folderType,
-              },
-            ],
+          fetchParams: {
+            metadata: {
+              include: [
+                {
+                  metadataType: folderType,
+                },
+              ],
+            },
           },
-          isFetchWithChangesDetection: false,
         })
       })
       it.each([
@@ -445,15 +413,16 @@ describe('buildMetadataQuery', () => {
     describe('with included regex paths', () => {
       beforeEach(() => {
         query = buildMetadataQuery({
-          metadataParams: {
-            include: [
-              {
-                metadataType: folderType,
-                name: '^(TopFolder1?|TopFolder[23])$',
-              },
-            ],
+          fetchParams: {
+            metadata: {
+              include: [
+                {
+                  metadataType: folderType,
+                  name: '^(TopFolder1?|TopFolder[23])$',
+                },
+              ],
+            },
           },
-          isFetchWithChangesDetection: false,
         })
       })
       it.each([
@@ -482,6 +451,156 @@ describe('buildMetadataQuery', () => {
           isFolderType: true,
           changedAt: undefined,
         })).toBeFalse()
+      })
+    })
+    describe('isFetchWithChangesDetection', () => {
+      it('should return false', () => {
+        expect(buildMetadataQuery({ fetchParams: {} }).isFetchWithChangesDetection()).toBeFalse()
+      })
+    })
+    describe('isInstanceIncluded', () => {
+      it('should have the same implementation as isInstanceMatch', () => {
+        const metadataQuery = buildMetadataQuery({ fetchParams: {} })
+        expect(metadataQuery.isInstanceIncluded).toEqual(metadataQuery.isInstanceMatch)
+      })
+    })
+  })
+  describe('buildMetadataQueryForFetchWithChangesDetection', () => {
+    const INCLUDED_TYPE = 'Role'
+    const EXCLUDED_TYPE = 'CustomLabels'
+    let changedAtSingleton: InstanceElement
+    let metadataQuery: MetadataQuery
+    beforeEach(async () => {
+      changedAtSingleton = mockInstances().ChangedAtSingleton
+      const elementsSource = buildElementsSourceFromElements([changedAtSingleton])
+      metadataQuery = await buildMetadataQueryForFetchWithChangesDetection({
+        fetchParams: {
+          metadata: {
+            include: [
+              {
+                metadataType: '.*',
+              },
+            ],
+            exclude: [
+              { metadataType: 'CustomLabels' },
+            ],
+          },
+        },
+        elementsSource,
+      })
+    })
+    describe('when is first fetch', () => {
+      it('should throw Error', async () => {
+        await expect(buildMetadataQueryForFetchWithChangesDetection({
+          fetchParams: {
+            metadata: {
+              include: [
+                {
+                  metadataType: '.*',
+                },
+              ],
+              exclude: [
+                { metadataType: 'CustomLabels' },
+              ],
+            },
+          },
+          // In first fetch, the ChangedAtSingleton won't be defined
+          elementsSource: buildElementsSourceFromElements([]),
+        })).rejects.toThrow()
+      })
+    })
+    describe('isFetchWithChangesDetection', () => {
+      it('should return true', () => {
+        expect(metadataQuery.isFetchWithChangesDetection()).toBeTrue()
+      })
+    })
+    describe('isPartialFetch', () => {
+      it('should return true', () => {
+        expect(metadataQuery.isPartialFetch()).toBeTrue()
+      })
+    })
+    describe('isTargetedFetch', () => {
+      describe('without fetch targets', () => {
+        it('should return false', () => {
+          expect(metadataQuery.isTargetedFetch()).toBeFalse()
+        })
+      })
+      describe('with fetch targets', () => {
+        beforeEach(async () => {
+          metadataQuery = await buildMetadataQueryForFetchWithChangesDetection({
+            fetchParams: { target: ['CustomObject'] },
+            elementsSource: buildElementsSourceFromElements([changedAtSingleton]),
+          })
+        })
+        it('should return true', () => {
+          expect(metadataQuery.isTargetedFetch()).toBeTrue()
+        })
+      })
+    })
+    describe('isTypeMatch', () => {
+      it('should return true for included type', () => {
+        expect(metadataQuery.isTypeMatch(INCLUDED_TYPE)).toBeTrue()
+      })
+      it('should return false for excluded type', () => {
+        expect(metadataQuery.isTypeMatch(EXCLUDED_TYPE)).toBeFalse()
+      })
+      it('should return false for unsupported fetch with changes detection type', () => {
+        expect(metadataQuery.isTypeMatch(CUSTOM_METADATA)).toBeFalse()
+      })
+    })
+    describe('isInstanceIncluded & isInstanceMatch', () => {
+      const UPDATED_INSTANCE_NAME = 'Updated'
+      const NON_UPDATED_INSTANCE_NAME = 'NonUpdated'
+
+      let instance: MetadataInstance
+
+      beforeEach(() => {
+        changedAtSingleton.value[INCLUDED_TYPE] = {
+          [UPDATED_INSTANCE_NAME]: '2023-11-06T00:00:00.000Z',
+          [NON_UPDATED_INSTANCE_NAME]: '2023-11-06T00:00:00.000Z',
+        }
+      })
+      describe('when instance was updated', () => {
+        beforeEach(() => {
+          instance = {
+            metadataType: INCLUDED_TYPE,
+            namespace: '',
+            name: UPDATED_INSTANCE_NAME,
+            isFolderType: false,
+            changedAt: '2023-11-07T00:00:00.000Z',
+          }
+        })
+        describe('isInstanceIncluded', () => {
+          it('should return true', () => {
+            expect(metadataQuery.isInstanceIncluded(instance)).toBeTrue()
+          })
+        })
+        describe('isInstanceMatch', () => {
+          it('should return true', () => {
+            expect(metadataQuery.isInstanceMatch(instance)).toBeTrue()
+          })
+        })
+      })
+      describe('when instance was not updated', () => {
+        beforeEach(() => {
+          instance = {
+            metadataType: INCLUDED_TYPE,
+            namespace: '',
+            name: UPDATED_INSTANCE_NAME,
+            isFolderType: false,
+            changedAt: '2023-11-06T00:00:00.000Z',
+          }
+        })
+        describe('isInstanceIncluded', () => {
+          it('should return true', () => {
+            expect(metadataQuery.isInstanceIncluded(instance)).toBeTrue()
+          })
+        })
+        describe('isInstanceMatch', () => {
+          it('should return false', () => {
+            expect(metadataQuery.isInstanceMatch(instance)).toBeFalse()
+          })
+        })
       })
     })
   })

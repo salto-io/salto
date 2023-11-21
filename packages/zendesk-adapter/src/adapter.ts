@@ -334,7 +334,7 @@ const zendeskGuideEntriesFunc = (
   return getZendeskGuideEntriesResponseValues
 }
 
-const getBrandsFromElementsSource = async (
+const getBrandsFromElementsSourceNoCash = async (
   elementsSource: ReadOnlyElementsSource
 ): Promise<InstanceElement[]> => (
   awu(await elementsSource.list())
@@ -343,6 +343,21 @@ const getBrandsFromElementsSource = async (
     .filter(isInstanceElement)
     .toArray()
 )
+
+const getBrandsFromElementsSourceFunc = ():(elementsSource: ReadOnlyElementsSource) => Promise<InstanceElement[]> => {
+  let calculatedBrandsPromise: Promise<InstanceElement[]>
+
+  const getBrands = async (elementsSource: ReadOnlyElementsSource): Promise<InstanceElement[]> => {
+    if (calculatedBrandsPromise === undefined) {
+      calculatedBrandsPromise = getBrandsFromElementsSourceNoCash(elementsSource)
+    }
+    return calculatedBrandsPromise
+  }
+
+  return getBrands
+}
+
+const getBrandsFromElementsSource = getBrandsFromElementsSourceFunc()
 
 /**
  * Fetch Guide (help_center) elements for the given brands.

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { FileProperties } from 'jsforce'
+import { FileProperties } from '@salto-io/jsforce'
 import { MockInterface } from '@salto-io/test-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'

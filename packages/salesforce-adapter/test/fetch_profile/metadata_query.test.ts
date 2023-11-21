@@ -16,7 +16,7 @@
 
 import { InstanceElement } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { FileProperties } from 'jsforce'
+import { FileProperties } from '@salto-io/jsforce'
 import {
   buildFilePropsMetadataQuery,
   buildMetadataQuery,

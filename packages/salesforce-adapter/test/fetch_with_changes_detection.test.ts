@@ -15,7 +15,7 @@
 */
 
 import { MockInterface } from '@salto-io/test-utils'
-import { FileProperties, RetrieveRequest } from 'jsforce'
+import { FileProperties, RetrieveRequest } from '@salto-io/jsforce'
 import { collections } from '@salto-io/lowerdash'
 import { InstanceElement } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'

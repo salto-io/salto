@@ -16,7 +16,7 @@
 import { regex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { FileProperties } from 'jsforce'
+import { FileProperties } from '@salto-io/jsforce'
 import {
   CUSTOM_METADATA,
   CUSTOM_OBJECT,

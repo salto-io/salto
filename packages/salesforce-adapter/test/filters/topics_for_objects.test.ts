@@ -35,6 +35,7 @@ import { isInstanceOfTypeSync } from '../../src/filters/utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { buildMetadataQueryForFetchWithChangesDetection } from '../../src/fetch_profile/metadata_query'
 import { mockInstances } from '../mock_elements'
+import { LastChangeDateOfTypesWithNestedInstances } from '../../src/types'
 
 const { TOPICS_FOR_OBJECTS_ANNOTATION, TOPICS_FOR_OBJECTS_FIELDS,
   TOPICS_FOR_OBJECTS_METADATA_TYPE } = constants
@@ -113,7 +114,7 @@ describe('Topics for objects filter', () => {
             ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
               fetchParams: {},
-              metadataQuery: await buildMetadataQueryForFetchWithChangesDetection({ fetchParams: {}, elementsSource }),
+              metadataQuery: await buildMetadataQueryForFetchWithChangesDetection({ fetchParams: {}, elementsSource, lastChangeDateOfTypesWithNestedInstances: {} as unknown as LastChangeDateOfTypesWithNestedInstances }),
             }),
           },
         }) as typeof filter

@@ -58,7 +58,7 @@ export const DEFAULT_AXIOS_TIMEOUT_IN_MINUTES = 20
 
 const ALL_TYPES_REGEX = '.*'
 const INACTIVE_FIELDS_NAMES = ['isinactive', 'inactive', 'isInactive']
-const FILES_TO_EXCLUDE_REGEX = '.*\\.(csv|pdf|eml|png|gif|jpeg|xls|xlsx|doc|docx|ppt|pptx)'
+const FILE_TYPES_TO_EXCLUDE_REGEX = '.*\\.(csv|pdf|eml|png|gif|jpeg|xls|xlsx|doc|docx|ppt|pptx)'
 
 const inactiveElementsCriteria = INACTIVE_FIELDS_NAMES.map((fieldName): CriteriaQuery => ({
   name: ALL_TYPES_REGEX,
@@ -466,8 +466,8 @@ export const fetchDefault: FetchParams = {
     ],
     fileCabinet: [
       '^/Templates/Letter Templates/Mail Merge Folder.*',
-      FILES_TO_EXCLUDE_REGEX,
-      FILES_TO_EXCLUDE_REGEX.toUpperCase(),
+      FILE_TYPES_TO_EXCLUDE_REGEX,
+      FILE_TYPES_TO_EXCLUDE_REGEX.toUpperCase(),
     ],
   },
 }

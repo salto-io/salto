@@ -16,7 +16,7 @@
 
 import { CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
-import { ASSETS_OBJECT_TYPE } from '../../constants'
+import { ASSETS_ATTRIBUTE_TYPE, ASSETS_OBJECT_TYPE } from '../../constants'
 
 
 /* This filter responsible to modify the parentObjectTypeId of every root that is
@@ -36,6 +36,12 @@ const filter: FilterCreator = ({ config }) => ({
           // add reference to assetsSchema to the root, in order to be able to later update its elemID.
           [instance.value.parentObjectTypeId] = instance.annotations[CORE_ANNOTATIONS.PARENT]
         }
+        delete instance.annotations[CORE_ANNOTATIONS.PARENT]
+      })
+    elements
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === ASSETS_ATTRIBUTE_TYPE)
+      .forEach(instance => {
         delete instance.annotations[CORE_ANNOTATIONS.PARENT]
       })
   },

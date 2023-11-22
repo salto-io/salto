@@ -17,17 +17,20 @@ import { filterUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { InstanceElement, ReferenceExpression, Element, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { getDefaultConfig } from '../../../src/config/config'
-import assetsObjectTypeParentFilter from '../../../src/filters/assets/change_object_type_parents'
+import addAttributesAsFieldsFilter from '../../../src/filters/assets/add_attributes_as_fields'
 import { createEmptyType, getFilterParams } from '../../utils'
-import { ASSESTS_SCHEMA_TYPE, ASSETS_OBJECT_TYPE } from '../../../src/constants'
+import { ASSESTS_SCHEMA_TYPE, ASSETS_ATTRIBUTE_TYPE, ASSETS_OBJECT_TYPE } from '../../../src/constants'
 
-describe('changeParentsFilter', () => {
+describe('AddAttributesAsFields', () => {
     type FilterType = filterUtils.FilterWith<'onFetch'>
     let filter: FilterType
     let elements: Element[]
     let parentInstance: InstanceElement
     let sonOneInstance: InstanceElement
     let attributeInstance: InstanceElement
+    let attributeInstance2: InstanceElement
+    let attributeInstance3: InstanceElement
+    let attributeInstance4: InstanceElement
     const assetSchemaInstance = new InstanceElement(
       'assetsSchema1',
       createEmptyType(ASSESTS_SCHEMA_TYPE),
@@ -41,7 +44,7 @@ describe('changeParentsFilter', () => {
         const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
         config.fetch.enableJSM = true
         config.fetch.enableJsmExperimental = true
-        filter = assetsObjectTypeParentFilter(getFilterParams({ config })) as typeof filter
+        filter = addAttributesAsFieldsFilter(getFilterParams({ config })) as typeof filter
         parentInstance = new InstanceElement(
           'parentInstance',
           createEmptyType(ASSETS_OBJECT_TYPE),
@@ -67,15 +70,39 @@ describe('changeParentsFilter', () => {
         )
         attributeInstance = new InstanceElement(
           'attributeInstance',
-          createEmptyType(ASSETS_OBJECT_TYPE),
+          createEmptyType(ASSETS_ATTRIBUTE_TYPE),
           {
             name: 'attributeInstance',
-            parentObjectTypeId: new ReferenceExpression(sonOneInstance.elemID, sonOneInstance),
+            objectType: new ReferenceExpression(parentInstance.elemID, parentInstance),
           },
           undefined,
+        )
+        attributeInstance2 = new InstanceElement(
+          'attributeInstance2',
+          createEmptyType(ASSETS_ATTRIBUTE_TYPE),
           {
-            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(assetSchemaInstance.elemID, assetSchemaInstance)],
-          }
+            name: 'attributeInstance2',
+            objectType: new ReferenceExpression(parentInstance.elemID, parentInstance),
+          },
+          undefined,
+        )
+        attributeInstance3 = new InstanceElement(
+          'attributeInstance3',
+          createEmptyType(ASSETS_ATTRIBUTE_TYPE),
+          {
+            name: 'attributeInstance3',
+            objectType: new ReferenceExpression(sonOneInstance.elemID, sonOneInstance),
+          },
+          undefined,
+        )
+        attributeInstance4 = new InstanceElement(
+          'attributeInstance4',
+          createEmptyType(ASSETS_ATTRIBUTE_TYPE),
+          {
+            name: 'attributeInstance4',
+            objectType: new ReferenceExpression(sonOneInstance.elemID, sonOneInstance),
+          },
+          undefined,
         )
 
         elements = [
@@ -83,17 +110,21 @@ describe('changeParentsFilter', () => {
           sonOneInstance,
           assetSchemaInstance,
           attributeInstance,
+          attributeInstance2,
+          attributeInstance3,
+          attributeInstance4,
         ]
       })
-      it('should change parentObjectTypeId of root only and delete parent from all objectTypes and objectTypeAttributes', async () => {
+      it('should add each attribute to the objectType that created it', async () => {
         await filter.onFetch(elements)
-        expect(parentInstance.value.parentObjectTypeId)
-          .toEqual(new ReferenceExpression(assetSchemaInstance.elemID, assetSchemaInstance))
-        expect(sonOneInstance.value.parentObjectTypeId)
-          .toEqual(new ReferenceExpression(parentInstance.elemID, parentInstance))
-        expect(parentInstance.annotations[CORE_ANNOTATIONS.PARENT]).toBeUndefined()
-        expect(sonOneInstance.annotations[CORE_ANNOTATIONS.PARENT]).toBeUndefined()
-        expect(attributeInstance.annotations[CORE_ANNOTATIONS.PARENT]).toBeUndefined()
+        expect(parentInstance.value.attributes).toEqual([
+          new ReferenceExpression(attributeInstance.elemID, attributeInstance),
+          new ReferenceExpression(attributeInstance2.elemID, attributeInstance2),
+        ])
+        expect(sonOneInstance.value.attributes).toEqual([
+          new ReferenceExpression(attributeInstance3.elemID, attributeInstance3),
+          new ReferenceExpression(attributeInstance4.elemID, attributeInstance4),
+        ])
       })
     })
 })

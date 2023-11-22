@@ -159,9 +159,10 @@ import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uu
 import changeQueueFieldsFilter from './filters/change_queue_fields'
 import portalGroupsFilter from './filters/portal_groups'
 import assetsObjectTypePath from './filters/assets/assets_object_type_path'
+import addAttributesAsFieldsFilter from './filters/assets/add_attributes_as_fields'
 import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
-import { jiraJSMEntriesFunc } from './jsm_utils'
+import { jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from './jsm_utils'
 import { getWorkspaceId } from './workspace_id'
 import { JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES } from './config/api_config'
 
@@ -286,6 +287,7 @@ export const DEFAULT_FILTERS = [
   assetsObjectTypePath,
   // Must run after assetsObjectTypePath
   assetsObjectTypeParentFilter,
+  addAttributesAsFieldsFilter,
   // Must run after issueLayoutFilter
   removeSimpleFieldProjectFilter,
   requestTypeLayoutsFilter,
@@ -539,6 +541,7 @@ export default class JiraAdapter implements AdapterOperations {
       typeDefaults: jsmApiDefinitions.typeDefaults,
       additionalRequestContext: workspaceContext,
       getElemIdFunc: this.getElemIdFunc,
+      getEntriesResponseValuesFunc: jiraJSMAssetsEntriesFunc(),
     })
   }
 

@@ -15,7 +15,9 @@
 */
 import { automationProjectsHandler } from './automation_projects'
 import { WeakReferencesHandler } from './weak_references_handler'
+import { fieldConfigurationsHandler } from './field_configuration_items'
 
 export const weakReferenceHandlers: Record<string, WeakReferencesHandler> = {
   automationProjects: automationProjectsHandler,
+  fieldConfigurationsHandler,
 }

@@ -41,14 +41,12 @@ type BuildFetchProfileParams = {
   fetchParams: FetchParameters
   metadataQuery?: MetadataQuery
   maxItemsInRetrieveRequest?: number
-  typesToSkip?: ReadonlySet<string>
 }
 
 export const buildFetchProfile = ({
   fetchParams,
   metadataQuery = buildMetadataQuery({ fetchParams }),
   maxItemsInRetrieveRequest = DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
-  typesToSkip = new Set(),
 }: BuildFetchProfileParams): FetchProfile => {
   const {
     data,
@@ -71,7 +69,6 @@ export const buildFetchProfile = ({
     ),
     metadataQuery,
     maxItemsInRetrieveRequest,
-    typesToSkip,
   }
 }
 

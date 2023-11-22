@@ -430,7 +430,6 @@ export default class SalesforceAdapter implements AdapterOperations {
       : buildMetadataQuery({ fetchParams })
     const fetchProfile = buildFetchProfile({ fetchParams,
       metadataQuery,
-      typesToSkip: new Set(this.metadataTypesOfInstancesFetchedInFilters),
       maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest })
     if (!fetchProfile.isFeatureEnabled('fetchCustomObjectUsingRetrieveApi')) {
       // We have to fetch custom objects using retrieve in order to be able to fetch the field-level permissions
@@ -635,6 +634,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         client: this.client,
         types: metadataTypesToRetrieve,
         fetchProfile,
+        typesToSkip: new Set(this.metadataTypesOfInstancesFetchedInFilters),
       }),
       readInstances(metadataTypesToRead),
     ])

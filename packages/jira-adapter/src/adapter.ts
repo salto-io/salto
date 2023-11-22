@@ -283,6 +283,9 @@ export const DEFAULT_FILTERS = [
   addJsmTypesAsFieldsFilter,
   issueLayoutFilter,
   fetchJsmTypesFilter,
+  assetsObjectTypePath,
+  // Must run after assetsObjectTypePath
+  assetsObjectTypeParentFilter,
   // Must run after issueLayoutFilter
   removeSimpleFieldProjectFilter,
   requestTypeLayoutsFilter,
@@ -291,8 +294,6 @@ export const DEFAULT_FILTERS = [
   requestTypelayoutsToValuesFilter,
   // Must run after fieldReferencesFilter
   contextsProjectsFilter,
-  assetsObjectTypePath,
-  assetsObjectTypeParentFilter,
   // must run after contextsProjectsFilter
   projectFieldContextOrder,
   fieldConfigurationIrrelevantFields,

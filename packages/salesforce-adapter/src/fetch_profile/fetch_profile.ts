@@ -65,6 +65,7 @@ export const buildFetchProfile = ({
       warningSettings?.[name] ?? true
     ),
     metadataQuery,
+    maxItemsInRetrieveRequest:
   }
 }
 

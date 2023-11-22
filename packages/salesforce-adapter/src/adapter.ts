@@ -95,7 +95,7 @@ import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
 import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
 import centralizeTrackingInfoFilter from './filters/centralize_tracking_info'
 import changedAtSingletonFilter from './filters/changed_at_singleton'
-import mergeProfilesWithSourceValues from './filters/merge_profiles_with_source_values'
+import mergeProfilesWithSourceValuesFilter from './filters/merge_profiles_with_source_values'
 import {
   FetchElements,
   FetchProfile,
@@ -138,6 +138,7 @@ const { concatObjects } = objects
 const log = logger(module)
 
 export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition> = [
+  { creator: retrieveChangedProfilesFilter, addsNewInformation: true },
   { creator: createMissingInstalledPackagesInstancesFilter, addsNewInformation: true },
   { creator: settingsFilter, addsNewInformation: true },
   // should run before customObjectsFilter
@@ -210,11 +211,12 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: extraDependenciesFilter, addsNewInformation: true },
   { creator: installedPackageGeneratedDependencies },
   { creator: customTypeSplit },
+  { creator: mergeProfilesWithSourceValuesFilter },
+  // profileInstanceSplitFilter should run after mergeProfilesWithSourceValuesFilter
   { creator: profileInstanceSplitFilter },
   // Any filter that relies on _created_at or _changed_at should run after removeUnixTimeZero
   { creator: removeUnixTimeZeroFilter },
   { creator: metadataInstancesAliasesFilter },
-  { creator: mergeProfilesWithSourceValues },
   // createChangedAtSingletonInstanceFilter should run last
   { creator: changedAtSingletonFilter },
 ]

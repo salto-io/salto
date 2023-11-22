@@ -894,6 +894,7 @@ export type FetchProfile = {
   readonly maxInstancesPerType: number
   readonly preferActiveFlowVersions: boolean
   readonly addNamespacePrefixToFullName: boolean
+  readonly maxItemsInRetrieveRequest: number
   isWarningEnabled: (name: keyof WarningSettings) => boolean
 }
 

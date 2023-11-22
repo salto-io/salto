@@ -145,14 +145,9 @@ const convertArraysToMaps = (
     fieldName: string,
   ): Values => {
     if (!useList) {
-      try {
-        const res = _.keyBy(values, item => keyFunc(item))
-        if (Object.keys(res).length === values.length) {
-          return res
-        }
-      } catch (e) {
-        console.log('hello')
-        throw e
+      const res = _.keyBy(values, item => keyFunc(item))
+      if (Object.keys(res).length === values.length) {
+        return res
       }
       nonUniqueMapFields.push(fieldName)
     }

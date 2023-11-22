@@ -894,8 +894,13 @@ export type FetchProfile = {
   readonly maxInstancesPerType: number
   readonly preferActiveFlowVersions: boolean
   readonly addNamespacePrefixToFullName: boolean
-  readonly maxItemsInRetrieveRequest: number
   isWarningEnabled: (name: keyof WarningSettings) => boolean
+  readonly maxItemsInRetrieveRequest: number
+  // Some types are retrieved via filters and should not be fetched in the normal fetch flow. However, we need these
+  // types as context for profiles - when fetching profiles using retrieve we only get information about the types that
+  // are included in the same retrieve request as the profile. Thus typesToSkip - a list of types that will be retrieved
+  // along with the profiles, but discarded.
+  readonly typesToSkip: ReadonlySet<string>
 }
 
 export type MergeProfileInstancesFunc = (instances: ReadonlyArray<InstanceElement>) => InstanceElement

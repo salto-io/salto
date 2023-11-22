@@ -95,10 +95,10 @@ import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
 import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
 import centralizeTrackingInfoFilter from './filters/centralize_tracking_info'
 import changedAtSingletonFilter from './filters/changed_at_singleton'
+import mergeProfilesWithSourceValues from './filters/merge_profiles_with_source_values'
 import {
   FetchElements,
   FetchProfile,
-  MergeProfileInstancesFunc,
   MetadataQuery,
   SalesforceConfig,
   ShouldRetrieveFileFunc,
@@ -107,10 +107,8 @@ import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
 import {
   addDefaults,
-  apiNameSync,
   isCustomObjectSync,
   isCustomType,
-  isInstanceOfTypeSync,
   listMetadataObjects,
 } from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances } from './fetch'
@@ -127,7 +125,11 @@ import {
   OWNER_ID,
   PROFILE_METADATA_TYPE,
 } from './constants'
-import { buildMetadataQuery, buildMetadataQueryForFetchWithChangesDetection } from './fetch_profile/metadata_query'
+import {
+  buildFilePropsMetadataQuery,
+  buildMetadataQuery,
+  buildMetadataQueryForFetchWithChangesDetection,
+} from './fetch_profile/metadata_query'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -212,6 +214,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   // Any filter that relies on _created_at or _changed_at should run after removeUnixTimeZero
   { creator: removeUnixTimeZeroFilter },
   { creator: metadataInstancesAliasesFilter },
+  { creator: mergeProfilesWithSourceValues },
   // createChangedAtSingletonInstanceFilter should run last
   { creator: changedAtSingletonFilter },
 ]
@@ -343,40 +346,14 @@ const getMetadataTypesFromElementsSource = async (
     .toArray()
 )
 
-const mergeProfileInstances: MergeProfileInstancesFunc = (
-  instances: ReadonlyArray<InstanceElement>
-): InstanceElement => {
-  const result = instances[0].clone()
-  result.value = _.merge({}, ...instances.map(instance => instance.value))
-  return result
-}
-
-const buildMergeProfileInstancesFuncForFetchWithChangesDetection = async (
-  elementsSource: ReadOnlyElementsSource
-): Promise<MergeProfileInstancesFunc> => {
-  const profileInstancesFromSource = await awu(await elementsSource.getAll())
-    .filter(isInstanceOfTypeSync(PROFILE_METADATA_TYPE))
-    .toArray()
-  return instances => {
-    const profileFullName = apiNameSync(instances[0])
-    const profileInstanceFromSource = profileInstancesFromSource
-      .find(sourceInstance => apiNameSync(sourceInstance) === profileFullName)
-    // New profile instance
-    if (profileInstanceFromSource === undefined) {
-      return mergeProfileInstances(instances)
-    }
-    const result = profileInstanceFromSource.clone()
-    result.value = _.merge(profileInstanceFromSource.value, ...instances.map(instance => instance.value))
-    return result
-  }
-}
-
 const buildShouldRetrieveFileForFetchWithChangesDetection = (
   metadataQuery: MetadataQuery<FileProperties>
 ): ShouldRetrieveFileFunc => (
   props => (
     props.type === PROFILE_METADATA_TYPE
-      ? metadataQuery.isInstanceIncluded(props)
+      // We only match Profiles that were not modified from the last fetch, since the modified
+      // Profile instances will be fully retrieved within TODO ref to filter
+      ? metadataQuery.isInstanceIncluded(props) && !metadataQuery.isInstanceMatch(props)
       : metadataQuery.isInstanceMatch(props)
   )
 )
@@ -687,9 +664,9 @@ export default class SalesforceAdapter implements AdapterOperations {
         maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest,
         fetchProfile,
         typesToSkip: new Set(this.metadataTypesOfInstancesFetchedInFilters),
-        mergeProfileInstancesFunc: fetchProfile.metadataQuery.isFetchWithChangesDetection()
-          ? await buildMergeProfileInstancesFuncForFetchWithChangesDetection(this.elementsSource)
-          : mergeProfileInstances,
+        shouldRetrieveFileFunc: fetchProfile.metadataQuery.isFetchWithChangesDetection()
+          ? buildShouldRetrieveFileForFetchWithChangesDetection(buildFilePropsMetadataQuery(fetchProfile.metadataQuery))
+          : undefined,
       }),
       readInstances(metadataTypesToRead),
     ])

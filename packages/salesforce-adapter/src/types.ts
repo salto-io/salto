@@ -903,6 +903,4 @@ export type FetchProfile = {
   readonly typesToSkip: ReadonlySet<string>
 }
 
-export type MergeProfileInstancesFunc = (instances: ReadonlyArray<InstanceElement>) => InstanceElement
-
 export type ShouldRetrieveFileFunc = (props: FileProperties) => boolean

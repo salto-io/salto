@@ -16,7 +16,9 @@
 
 import { InstanceElement } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { FileProperties } from '@salto-io/jsforce'
 import {
+  buildFilePropsMetadataQuery,
   buildMetadataQuery,
   buildMetadataQueryForFetchWithChangesDetection,
   validateMetadataParams,
@@ -28,6 +30,7 @@ import {
 } from '../../src/constants'
 import { MetadataInstance, MetadataQuery } from '../../src/types'
 import { mockInstances } from '../mock_elements'
+import { mockFileProperties } from '../connection'
 
 describe('validateMetadataParams', () => {
   describe('invalid regex in include list', () => {
@@ -599,6 +602,84 @@ describe('buildMetadataQuery', () => {
         describe('isInstanceMatch', () => {
           it('should return false', () => {
             expect(metadataQuery.isInstanceMatch(instance)).toBeFalse()
+          })
+        })
+      })
+    })
+  })
+  describe('buildFilePropsMetadataQuery', () => {
+    const CHANGED_AT = '2023-11-07T00:00:00.000Z'
+
+    let fileProps: FileProperties
+    let metadataQuery: jest.Mocked<MetadataQuery>
+    let filePropsMetadataQuery: MetadataQuery<FileProperties>
+    beforeEach(() => {
+      metadataQuery = {
+        isInstanceIncluded: jest.fn(),
+        isInstanceMatch: jest.fn(),
+        isTypeMatch: jest.fn(),
+        isFetchWithChangesDetection: jest.fn(),
+        isPartialFetch: jest.fn(),
+        isTargetedFetch: jest.fn(),
+        getFolderPathsByName: jest.fn(),
+      }
+      filePropsMetadataQuery = buildFilePropsMetadataQuery(metadataQuery)
+    })
+    describe('isInstanceMatch & isInstanceIncluded', () => {
+      describe('when fileProps are of instance without namespace', () => {
+        beforeEach(() => {
+          fileProps = mockFileProperties({
+            fullName: 'Account',
+            type: 'CustomObject',
+            namespacePrefix: '',
+            lastModifiedDate: CHANGED_AT,
+          })
+        })
+        it('should invoke the underlying MetadataQuery with correct MetadataInstance', () => {
+          filePropsMetadataQuery.isInstanceMatch(fileProps)
+          expect(metadataQuery.isInstanceMatch).toHaveBeenCalledWith({
+            metadataType: 'CustomObject',
+            namespace: 'standard',
+            name: 'Account',
+            isFolderType: false,
+            changedAt: CHANGED_AT,
+          })
+          filePropsMetadataQuery.isInstanceIncluded(fileProps)
+          expect(metadataQuery.isInstanceIncluded).toHaveBeenCalledWith({
+            metadataType: 'CustomObject',
+            namespace: 'standard',
+            name: 'Account',
+            isFolderType: false,
+            changedAt: CHANGED_AT,
+          })
+        })
+      })
+      describe('when fileProps are of instance with namespace', () => {
+        const NAMESPACE = 'test'
+        beforeEach(() => {
+          fileProps = mockFileProperties({
+            fullName: 'Account',
+            type: 'CustomObject',
+            namespacePrefix: NAMESPACE,
+            lastModifiedDate: CHANGED_AT,
+          })
+        })
+        it('should invoke the underlying MetadataQuery with correct MetadataInstance', () => {
+          filePropsMetadataQuery.isInstanceMatch(fileProps)
+          expect(metadataQuery.isInstanceMatch).toHaveBeenCalledWith({
+            metadataType: 'CustomObject',
+            namespace: NAMESPACE,
+            name: 'Account',
+            isFolderType: false,
+            changedAt: CHANGED_AT,
+          })
+          filePropsMetadataQuery.isInstanceIncluded(fileProps)
+          expect(metadataQuery.isInstanceIncluded).toHaveBeenCalledWith({
+            metadataType: 'CustomObject',
+            namespace: NAMESPACE,
+            name: 'Account',
+            isFolderType: false,
+            changedAt: CHANGED_AT,
           })
         })
       })

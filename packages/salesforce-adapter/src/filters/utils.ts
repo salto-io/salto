@@ -437,6 +437,12 @@ const getWhereConditions = (
   limitingConditionSets: ReadonlyArray<SoqlQuery>,
   maxLen: number,
 ): string[] => {
+  const buildWhereClause = (exactConditionClause: string, limitingConditionClause: string): string => {
+    const multipleConditionSets = exactConditionClause.length > 0 && limitingConditionClause.length > 0
+    const separator = multipleConditionSets ? ' AND ' : ''
+    return `${exactConditionClause}${separator}${limitingConditionClause}`
+  }
+
   const keys = _.uniq(exactConditionSets.flatMap(Object.keys))
   const constConditionPartLen = (
     _.sumBy(keys, key => `${key} IN ()`.length)
@@ -476,7 +482,7 @@ const getWhereConditions = (
   if (r.length === 0) {
     return [complexConditionQuery]
   }
-  return r.map(queryChunk => `${queryChunk}${(queryChunk.length > 0 && limitingConditionSets.length > 0) ? ' AND ' : ''}${complexConditionQuery}`)
+  return r.map(queryChunk => buildWhereClause(queryChunk, complexConditionQuery))
 }
 
 export const conditionQueries = (
@@ -484,15 +490,20 @@ export const conditionQueries = (
   conditionSets: ReadonlyArray<ReadonlyArray<SoqlQuery>>,
   queryLimits = DefaultSoqlQueryLimits,
 ): string[] => {
+  const toExactConditions = (conditionSet: ReadonlyArray<SoqlQuery>): Record<string, string> => (
+    conditionSet
+      .filter(condition => condition.operator === 'IN')
+      .reduce((r, condition) => {
+        r[condition.fieldName] = condition.value
+        return r
+      }, <Record<string, string>>{})
+  )
   if (conditionSets.length === 0) {
     return [query]
   }
   const exactConditionSets = conditionSets
-    .map(conditions => conditions
-      .filter(condition => condition.operator === 'IN')
-      .map(condition => [condition.fieldName, condition.value]))
-    .filter(conditions => conditions.length > 0)
-    .map(Object.fromEntries)
+    .map(toExactConditions)
+    .filter(exactCondition => Object.keys(exactCondition).length > 0)
   const limitingConditionSets = conditionSets
     .flatMap(conditions => conditions.filter(condition => condition.operator !== 'IN'))
   const selectWhereStr = `${query} WHERE `

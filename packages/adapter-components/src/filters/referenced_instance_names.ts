@@ -394,11 +394,11 @@ export const referencedInstanceNamesFilterCreator: <
   TClient,
   TContext extends { apiDefinitions: AdapterApiConfig },
   TResult extends void | filter.FilterResult = void
->(additionalApiDefinitions?: AdapterApiConfig) =>
-FilterCreator<TClient, TContext, TResult> = additionalApiDefinitions => ({ config, getElemIdFunc }) => ({
+>(customApiDefinitions?: AdapterApiConfig) =>
+FilterCreator<TClient, TContext, TResult> = customApiDefinitions => ({ config, getElemIdFunc }) => ({
   name: 'referencedInstanceNames',
   onFetch: async (elements: Element[]) => {
-    const apiDefinitions = additionalApiDefinitions ?? config.apiDefinitions
+    const apiDefinitions = customApiDefinitions ?? config.apiDefinitions
     const transformationDefault = apiDefinitions.typeDefaults.transformation
     const configByType = apiDefinitions.types
     const transformationByType = getTransformationConfigByType(configByType)

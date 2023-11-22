@@ -16,8 +16,12 @@
 
 import { CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
+import { ASSETS_OBJECT_TYPE } from '../../constants'
 
 
+/* This filter responsible to modify the parentObjectTypeId of every root that is
+* AssetsObjectType, replacing it with its assetsSchema. This alteration is
+* necessary for updating their elemID within the common filters. */
 const filter: FilterCreator = ({ config }) => ({
   name: 'assetsObjectTypeParentFilter',
   onFetch: async elements => {
@@ -26,9 +30,10 @@ const filter: FilterCreator = ({ config }) => ({
     }
     elements
       .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === 'AssetsObjectType')
+      .filter(instance => instance.elemID.typeName === ASSETS_OBJECT_TYPE)
       .forEach(instance => {
         if (instance.value.parentObjectTypeId === undefined) {
+          // add reference to assetsSchema to the root, in order to be able to later update its elemID.
           [instance.value.parentObjectTypeId] = instance.annotations[CORE_ANNOTATIONS.PARENT]
         }
         delete instance.annotations[CORE_ANNOTATIONS.PARENT]

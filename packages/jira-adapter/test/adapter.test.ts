@@ -22,9 +22,9 @@ import { mockFunction } from '@salto-io/test-utils'
 import JiraClient from '../src/client/client'
 import { adapter as adapterCreator } from '../src/adapter_creator'
 import { getDefaultConfig } from '../src/config/config'
-import { ISSUE_TYPE_NAME, JIRA, PROJECT_TYPE, SERVICE_DESK } from '../src/constants'
+import { ASSETS_ATTRIBUTE_TYPE, ISSUE_TYPE_NAME, JIRA, PROJECT_TYPE, SERVICE_DESK } from '../src/constants'
 import { createCredentialsInstance, createConfigInstance, mockClient, createEmptyType } from './utils'
-import { jiraJSMEntriesFunc } from '../src/jsm_utils'
+import { jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from '../src/jsm_utils'
 import { CLOUD_RESOURCE_FIELD } from '../src/filters/automation/cloud_id'
 
 const { getAllElements, getEntriesResponseValues } = elements.ducktype
@@ -531,6 +531,34 @@ describe('adapter', () => {
         })
         expect(result[0]).toEqual({
           id: '1',
+        })
+      })
+    })
+    describe('jiraJSMAssetsEntriesFunc', () => {
+      let paginator: clientUtils.Paginator
+      let responseValue: clientUtils.ResponseValue[]
+      let EntriesRequesterFunc: elements.ducktype.EntriesRequester
+      beforeEach(() => {
+        const { paginator: cliPaginator } = mockClient()
+        paginator = cliPaginator
+        responseValue = [{
+          objectType: {
+            id: '1',
+          },
+        }];
+        (getEntriesResponseValues as jest.MockedFunction<typeof getEntriesResponseValues>)
+          .mockResolvedValue(responseValue)
+        EntriesRequesterFunc = jiraJSMAssetsEntriesFunc()
+      })
+      it('should change the objectType object struct to id', async () => {
+        const result = await EntriesRequesterFunc({
+          paginator,
+          args: { url: '/gateway/api/jsm/assets/workspace/defualtWorkSpaceId/v1/objectschema/2/attributes' },
+          typeName: ASSETS_ATTRIBUTE_TYPE,
+          typesConfig: { AssetsObjectTypeAttribute: { transformation: { dataField: '.' } } },
+        })
+        expect(result[0]).toEqual({
+          objectType: '1',
         })
       })
     })

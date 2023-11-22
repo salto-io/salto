@@ -24,8 +24,8 @@ import {
   FetchElements,
   FetchProfile,
   MAX_INSTANCES_PER_TYPE,
-  MAX_ITEMS_IN_RETRIEVE_REQUEST,
-  MetadataQuery,
+  MAX_ITEMS_IN_RETRIEVE_REQUEST, MergeProfileInstancesFunc,
+  MetadataQuery, ShouldRetrieveFileFunc,
 } from './types'
 import {
   API_NAME_SEPARATOR,
@@ -336,6 +336,8 @@ type RetrieveMetadataInstancesArgs = {
   // along with the profiles, but discarded.
   typesToSkip: ReadonlySet<string>
   fetchProfile: FetchProfile
+  mergeProfileInstancesFunc: MergeProfileInstancesFunc
+  shouldRetrieveFileFunc?: ShouldRetrieveFileFunc
 }
 
 export const retrieveMetadataInstances = async ({
@@ -345,7 +347,11 @@ export const retrieveMetadataInstances = async ({
   metadataQuery,
   fetchProfile,
   typesToSkip,
+  mergeProfileInstancesFunc,
+  shouldRetrieveFileFunc,
 }: RetrieveMetadataInstancesArgs): Promise<FetchElements<InstanceElement[]>> => {
+  const shouldRetrieveFile: ShouldRetrieveFileFunc = shouldRetrieveFileFunc
+    || (props => notInSkipList(metadataQuery, props, false))
   const configChanges: ConfigChangeSuggestion[] = []
 
   const listFilesOfType = async (type: MetadataObjectType): Promise<FileProperties[]> => {
@@ -364,12 +370,6 @@ export const retrieveMetadataInstances = async ({
   const typesByName = await keyByAsync(types, t => apiName(t))
   const typesWithMetaFile = await getTypesWithMetaFile(types)
   const typesWithContent = await getTypesWithContent(types)
-
-  const mergeProfileInstances = (instances: ReadonlyArray<InstanceElement>): InstanceElement => {
-    const result = instances[0].clone()
-    result.value = _.merge({}, ...instances.map(instance => instance.value))
-    return result
-  }
 
   const retrieveInstances = async (
     fileProps: ReadonlyArray<FileProperties>,
@@ -458,7 +458,7 @@ export const retrieveMetadataInstances = async ({
     const profileInstances = _(partialProfileInstances)
       .filter(instance => instance.elemID.typeName === PROFILE_METADATA_TYPE)
       .groupBy(instance => instance.value.fullName)
-      .mapValues(mergeProfileInstances)
+      .mapValues(mergeProfileInstancesFunc)
       .value()
 
     return contextInstances.concat(Object.values(profileInstances))
@@ -469,7 +469,7 @@ export const retrieveMetadataInstances = async ({
       // We get folders as part of getting the records inside them
       .filter(type => type.annotations.folderContentType === undefined)
       .map(listFilesOfType)
-  )).filter(props => notInSkipList(metadataQuery, props, false))
+  )).filter(shouldRetrieveFile)
 
   // Avoid sending empty requests for types that had no instances that were changed from the previous fetch
   // This is a common case for fetchWithChangesDetection mode for types that had no changes on their instances

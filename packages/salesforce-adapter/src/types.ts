@@ -27,6 +27,7 @@ import {
 } from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { types } from '@salto-io/lowerdash'
+import { FileProperties } from '@salto-io/jsforce'
 import { SUPPORTED_METADATA_TYPES } from './fetch_profile/metadata_types'
 import * as constants from './constants'
 import { DEFAULT_MAX_INSTANCES_PER_TYPE, SALESFORCE } from './constants'
@@ -895,3 +896,7 @@ export type FetchProfile = {
   readonly addNamespacePrefixToFullName: boolean
   isWarningEnabled: (name: keyof WarningSettings) => boolean
 }
+
+export type MergeProfileInstancesFunc = (instances: ReadonlyArray<InstanceElement>) => InstanceElement
+
+export type ShouldRetrieveFileFunc = (props: FileProperties) => boolean

@@ -26,7 +26,7 @@ import {
   restoreChangeElement,
   safeJsonStringify,
 } from '@salto-io/adapter-utils'
-import { MetadataObject } from '@salto-io/jsforce'
+import { FileProperties, MetadataObject } from '@salto-io/jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections, values, promises, objects } from '@salto-io/lowerdash'
@@ -95,10 +95,24 @@ import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
 import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
 import centralizeTrackingInfoFilter from './filters/centralize_tracking_info'
 import changedAtSingletonFilter from './filters/changed_at_singleton'
-import { FetchElements, FetchProfile, MetadataQuery, SalesforceConfig } from './types'
+import {
+  FetchElements,
+  FetchProfile,
+  MergeProfileInstancesFunc,
+  MetadataQuery,
+  SalesforceConfig,
+  ShouldRetrieveFileFunc,
+} from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
-import { addDefaults, isCustomObjectSync, isCustomType, listMetadataObjects } from './filters/utils'
+import {
+  addDefaults,
+  apiNameSync,
+  isCustomObjectSync,
+  isCustomType,
+  isInstanceOfTypeSync,
+  listMetadataObjects,
+} from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 import { getLookUpName, getLookupNameWithFallbackToElement } from './transformers/reference_mapping'
@@ -327,6 +341,44 @@ const getMetadataTypesFromElementsSource = async (
     // settings types
     .filter(metadataType => !metadataType.isSettings)
     .toArray()
+)
+
+const mergeProfileInstances: MergeProfileInstancesFunc = (
+  instances: ReadonlyArray<InstanceElement>
+): InstanceElement => {
+  const result = instances[0].clone()
+  result.value = _.merge({}, ...instances.map(instance => instance.value))
+  return result
+}
+
+const buildMergeProfileInstancesFuncForFetchWithChangesDetection = async (
+  elementsSource: ReadOnlyElementsSource
+): Promise<MergeProfileInstancesFunc> => {
+  const profileInstancesFromSource = await awu(await elementsSource.getAll())
+    .filter(isInstanceOfTypeSync(PROFILE_METADATA_TYPE))
+    .toArray()
+  return instances => {
+    const profileFullName = apiNameSync(instances[0])
+    const profileInstanceFromSource = profileInstancesFromSource
+      .find(sourceInstance => apiNameSync(sourceInstance) === profileFullName)
+    // New profile instance
+    if (profileInstanceFromSource === undefined) {
+      return mergeProfileInstances(instances)
+    }
+    const result = profileInstanceFromSource.clone()
+    result.value = _.merge(profileInstanceFromSource.value, ...instances.map(instance => instance.value))
+    return result
+  }
+}
+
+const buildShouldRetrieveFileForFetchWithChangesDetection = (
+  metadataQuery: MetadataQuery<FileProperties>
+): ShouldRetrieveFileFunc => (
+  props => (
+    props.type === PROFILE_METADATA_TYPE
+      ? metadataQuery.isInstanceIncluded(props)
+      : metadataQuery.isInstanceMatch(props)
+  )
 )
 
 export default class SalesforceAdapter implements AdapterOperations {
@@ -635,6 +687,9 @@ export default class SalesforceAdapter implements AdapterOperations {
         maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest,
         fetchProfile,
         typesToSkip: new Set(this.metadataTypesOfInstancesFetchedInFilters),
+        mergeProfileInstancesFunc: fetchProfile.metadataQuery.isFetchWithChangesDetection()
+          ? await buildMergeProfileInstancesFuncForFetchWithChangesDetection(this.elementsSource)
+          : mergeProfileInstances,
       }),
       readInstances(metadataTypesToRead),
     ])
@@ -644,10 +699,6 @@ export default class SalesforceAdapter implements AdapterOperations {
     }
   }
 
-  /**
-   * Create all the instances of specific metadataType
-   * @param type the metadata type
-   */
   private async createMetadataInstances(type: ObjectType, fetchProfile: FetchProfile):
   Promise<FetchElements<InstanceElement[]>> {
     const typeName = await apiName(type)

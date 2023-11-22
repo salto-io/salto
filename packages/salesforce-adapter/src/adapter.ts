@@ -113,7 +113,7 @@ import {
 } from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
-import { getLookUpName, getLookupNameWithFallbackToElement } from './transformers/reference_mapping'
+import { getLookUpName, getLookupNameForDataInstances } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import nestedInstancesAuthorInformation from './filters/author_information/nested_instances'
 import { buildFetchProfile } from './fetch_profile/fetch_profile'
@@ -527,7 +527,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     log.debug(`about to ${checkOnly ? 'validate' : 'deploy'} group ${changeGroup.groupID} with scope (first 100): ${safeJsonStringify(changeGroup.changes.slice(0, 100).map(getChangeData).map(e => e.elemID.getFullName()))}`)
     const isDataDeployGroup = await isCustomObjectInstanceChanges(changeGroup.changes)
     const getLookupNameFunc = isDataDeployGroup
-      ? getLookupNameWithFallbackToElement
+      ? getLookupNameForDataInstances
       : getLookUpName
     const resolvedChanges = await awu(changeGroup.changes)
       .map(change => resolveChangeElement(change, getLookupNameFunc))

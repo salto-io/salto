@@ -412,6 +412,10 @@ export const hasInternalId = (elem: Element): boolean => (
   getInternalId(elem) !== undefined && getInternalId(elem) !== ''
 )
 
+export const instanceInternalId = (instance: InstanceElement): string => (
+  isCustomObjectSync(instance.getTypeSync()) ? instance.value[CUSTOM_OBJECT_ID_FIELD] : getInternalId(instance)
+)
+
 export const hasApiName = (elem: Element): boolean => (
   apiName(elem) !== undefined
 )

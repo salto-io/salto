@@ -428,7 +428,10 @@ export default class SalesforceAdapter implements AdapterOperations {
     const metadataQuery = withChangesDetection
       ? await buildMetadataQueryForFetchWithChangesDetection({ fetchParams, elementsSource: this.elementsSource })
       : buildMetadataQuery({ fetchParams })
-    const fetchProfile = buildFetchProfile({ fetchParams, metadataQuery })
+    const fetchProfile = buildFetchProfile({ fetchParams,
+      metadataQuery,
+      typesToSkip: new Set(this.metadataTypesOfInstancesFetchedInFilters),
+      maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest })
     if (!fetchProfile.isFeatureEnabled('fetchCustomObjectUsingRetrieveApi')) {
       // We have to fetch custom objects using retrieve in order to be able to fetch the field-level permissions
       // in profiles. If custom objects are fetched via the read API, we have to fetch profiles using that API too.
@@ -631,10 +634,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       retrieveMetadataInstances({
         client: this.client,
         types: metadataTypesToRetrieve,
-        metadataQuery: fetchProfile.metadataQuery,
-        maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest,
         fetchProfile,
-        typesToSkip: new Set(this.metadataTypesOfInstancesFetchedInFilters),
       }),
       readInstances(metadataTypesToRead),
     ])

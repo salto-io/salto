@@ -68,7 +68,6 @@ import { NON_TRANSIENT_SALESFORCE_ERRORS } from '../src/config_change'
 import SalesforceClient from '../src/client/client'
 import createMockClient from './client'
 import { mockInstances, mockTypes } from './mock_elements'
-import { buildMetadataQuery } from '../src/fetch_profile/metadata_query'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 
 const { makeArray } = collections.array
@@ -2000,14 +1999,9 @@ describe('Fetch via retrieve API', () => {
         {
           client,
           types: [mockTypes.ApexClass],
-          maxItemsInRetrieveRequest: DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
-          metadataQuery: buildMetadataQuery({
-            fetchParams: {},
-          }),
           fetchProfile: buildFetchProfile({
             fetchParams: { addNamespacePrefixToFullName: false },
           }),
-          typesToSkip: new Set(),
         }
       )
       ).elements
@@ -2035,14 +2029,10 @@ describe('Fetch via retrieve API', () => {
         {
           client,
           types: [mockTypes.ApexClass, mockTypes.CustomObject],
-          maxItemsInRetrieveRequest: chunkSize,
-          metadataQuery: buildMetadataQuery({
-            fetchParams: {},
-          }),
           fetchProfile: buildFetchProfile({
             fetchParams: { addNamespacePrefixToFullName: false },
+            maxItemsInRetrieveRequest: chunkSize,
           }),
-          typesToSkip: new Set(),
         }
       )
       ).elements
@@ -2074,14 +2064,10 @@ describe('Fetch via retrieve API', () => {
         {
           client,
           types: [mockTypes.CustomObject, mockTypes.Profile],
-          maxItemsInRetrieveRequest: chunkSize,
-          metadataQuery: buildMetadataQuery({
-            fetchParams: {},
-          }),
           fetchProfile: buildFetchProfile({
             fetchParams: { addNamespacePrefixToFullName: false },
+            maxItemsInRetrieveRequest: chunkSize,
           }),
-          typesToSkip: new Set(),
         }
       )
       ).elements
@@ -2121,14 +2107,10 @@ describe('Fetch via retrieve API', () => {
         {
           client,
           types: [mockTypes.CustomObject, mockTypes.Profile],
-          maxItemsInRetrieveRequest: 3,
-          metadataQuery: buildMetadataQuery({
-            fetchParams: {},
-          }),
           fetchProfile: buildFetchProfile({
             fetchParams: { addNamespacePrefixToFullName: false },
+            maxItemsInRetrieveRequest: 3,
           }),
-          typesToSkip: new Set(),
         }
       )
       ).elements

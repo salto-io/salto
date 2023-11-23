@@ -18,11 +18,12 @@ import {
   FetchProfile,
   FetchParameters,
   METADATA_CONFIG,
-  OptionalFeatures, MetadataQuery,
+  OptionalFeatures,
+  MetadataQuery,
 } from '../types'
 import { buildDataManagement, validateDataManagementConfig } from './data_management'
 import { buildMetadataQuery, validateMetadataParams } from './metadata_query'
-import { DEFAULT_MAX_INSTANCES_PER_TYPE } from '../constants'
+import { DEFAULT_MAX_INSTANCES_PER_TYPE, DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../constants'
 
 type OptionalFeaturesDefaultValues = {
   [FeatureName in keyof OptionalFeatures]?: boolean
@@ -39,11 +40,13 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
 type BuildFetchProfileParams = {
   fetchParams: FetchParameters
   metadataQuery?: MetadataQuery
+  maxItemsInRetrieveRequest?: number
 }
 
 export const buildFetchProfile = ({
   fetchParams,
   metadataQuery = buildMetadataQuery({ fetchParams }),
+  maxItemsInRetrieveRequest = DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
 }: BuildFetchProfileParams): FetchProfile => {
   const {
     data,
@@ -65,6 +68,7 @@ export const buildFetchProfile = ({
       warningSettings?.[name] ?? true
     ),
     metadataQuery,
+    maxItemsInRetrieveRequest,
   }
 }
 

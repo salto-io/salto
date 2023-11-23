@@ -328,25 +328,25 @@ const getTypesWithMetaFile = async (
 type RetrieveMetadataInstancesArgs = {
   client: SalesforceClient
   types: ReadonlyArray<MetadataObjectType>
-  maxItemsInRetrieveRequest: number
-  metadataQuery: MetadataQuery
+  fetchProfile: FetchProfile
   // Some types are retrieved via filters and should not be fetched in the normal fetch flow. However, we need these
   // types as context for profiles - when fetching profiles using retrieve we only get information about the types that
   // are included in the same retrieve request as the profile. Thus typesToSkip - a list of types that will be retrieved
   // along with the profiles, but discarded.
-  typesToSkip: ReadonlySet<string>
-  fetchProfile: FetchProfile
+  typesToSkip?: ReadonlySet<string>
 }
 
 export const retrieveMetadataInstances = async ({
   client,
   types,
-  maxItemsInRetrieveRequest,
-  metadataQuery,
   fetchProfile,
-  typesToSkip,
+  typesToSkip = new Set(),
 }: RetrieveMetadataInstancesArgs): Promise<FetchElements<InstanceElement[]>> => {
   const configChanges: ConfigChangeSuggestion[] = []
+  const {
+    metadataQuery,
+    maxItemsInRetrieveRequest,
+  } = fetchProfile
 
   const listFilesOfType = async (type: MetadataObjectType): Promise<FileProperties[]> => {
     const typeName = await apiName(type)

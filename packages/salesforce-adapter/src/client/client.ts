@@ -637,6 +637,22 @@ export default class SalesforceClient {
     listMetadataQuery: ListMetadataQuery | ListMetadataQuery[],
     isUnhandledError: ErrorFilter = isSFDCUnhandledException,
   ): Promise<SendChunkedResult<ListMetadataQuery, FileProperties>> {
+    const sendChunkedList = async (
+      input: typeof listMetadataQuery
+    ): Promise<SendChunkedResult<ListMetadataQuery, FileProperties>> => (
+      sendChunked({
+        operationInfo: 'listMetadataObjects',
+        input,
+        sendChunk: chunk => this.retryOnBadResponse(() => this.conn.metadata.list(chunk)),
+        chunkSize: MAX_ITEMS_IN_LIST_METADATA_REQUEST,
+        isUnhandledError,
+      })
+    )
+    // We do not cache if one of the queries is on Folder to avoid complexity by storing
+    // folder-level caches as this is only relevant for specific Metadata Types that are stored within Folders.
+    if (makeArray(listMetadataQuery).some(query => query.folder !== undefined)) {
+      return sendChunkedList(listMetadataQuery)
+    }
     const [cachedQueries, nonCachedQueries] = _.partition(
       makeArray(listMetadataQuery),
       query => Object.keys(this.filePropsByType).includes(query.type)
@@ -646,19 +662,14 @@ export default class SalesforceClient {
       log.debug('returning cached listMetadataObjects for %s', safeJsonStringify(listMetadataQuery))
       return { result: cachedProps, errors: [] }
     }
-    const { result: nonCachedProps, errors } = await sendChunked({
-      operationInfo: 'listMetadataObjects',
-      input: nonCachedQueries,
-      sendChunk: chunk => this.retryOnBadResponse(() => this.conn.metadata.list(chunk)),
-      chunkSize: MAX_ITEMS_IN_LIST_METADATA_REQUEST,
-      isUnhandledError,
-    })
-    _(nonCachedProps)
-      .groupBy(props => props.type)
-      .forEach((fileProps, type) => {
-        this.filePropsByType[type] = fileProps
+    return sendChunkedList(nonCachedQueries).then(({ result: nonCachedProps, errors }) => {
+      // Save the retrieved props in the cache
+      const nonCachedPropsByType = _.groupBy(nonCachedProps, prop => prop.type)
+      nonCachedQueries.forEach(query => {
+        this.filePropsByType[query.type] = makeArray(nonCachedPropsByType[query.type])
       })
-    return { result: cachedProps.concat(nonCachedProps), errors }
+      return { result: cachedProps.concat(nonCachedProps), errors }
+    })
   }
 
   @mapToUserFriendlyErrorMessages

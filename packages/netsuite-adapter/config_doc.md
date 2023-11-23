@@ -24,7 +24,13 @@ netsuite {
         {
           name = "savedsearch"
           ids = [".*"]
-        }
+        },
+        {
+          name = ".*"
+          criteria = {
+            isinactive = true
+          }
+        },
       ]
       fileCabinet = [
         "^/Web Site Hosting Files.*",

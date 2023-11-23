@@ -47,7 +47,7 @@ import {
   Value,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements, createSchemeGuard, detailedCompare, getParents } from '@salto-io/adapter-utils'
-import { FileProperties } from 'jsforce-types'
+import { FileProperties } from '@salto-io/jsforce-types'
 import { chunks, collections, types, values } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import SalesforceClient, { ErrorFilter } from '../client/client'
@@ -410,6 +410,10 @@ export const setInternalId = (elem: Element, val: string): void => {
 
 export const hasInternalId = (elem: Element): boolean => (
   getInternalId(elem) !== undefined && getInternalId(elem) !== ''
+)
+
+export const instanceInternalId = (instance: InstanceElement): string => (
+  isCustomObjectSync(instance.getTypeSync()) ? instance.value[CUSTOM_OBJECT_ID_FIELD] : getInternalId(instance)
 )
 
 export const hasApiName = (elem: Element): boolean => (

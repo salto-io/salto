@@ -15,13 +15,13 @@
 */
 import _ from 'lodash'
 import nock from 'nock'
-import { Bulk, FileProperties, Metadata, RetrieveResult } from 'jsforce-types'
+import { Bulk, FileProperties, Metadata, RetrieveResult } from '@salto-io/jsforce-types'
 import { logger } from '@salto-io/logging'
 import { Values } from '@salto-io/adapter-api'
 import { collections, types, values } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { QueryResult } from 'jsforce'
+import { QueryResult } from '@salto-io/jsforce'
 import SalesforceClient, {
   API_VERSION,
   ApiLimitsTooLowError,

@@ -131,6 +131,10 @@ const addFieldTypeAndInstances = async ({
         transformationConfigByType,
         transformationDefaultConfig,
         getElemIdFunc,
+        nestedPath: [
+          ...inst.path?.slice(2, inst.path?.length - 1) ?? [],
+          fieldName,
+        ],
       })
       if (fieldInstance === undefined) {
         // cannot happen

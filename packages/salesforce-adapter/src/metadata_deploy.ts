@@ -32,7 +32,7 @@ import { SaltoError,
 import { logger } from '@salto-io/logging'
 
 
-import { DeployResult as SFDeployResult, DeployMessage } from 'jsforce'
+import { DeployResult as SFDeployResult, DeployMessage } from '@salto-io/jsforce'
 
 import SalesforceClient from './client/client'
 import { createDeployPackage, DeployPackage } from './transformers/xml_transformer'

@@ -15,7 +15,8 @@
 */
 import { regex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { InstanceElement } from '@salto-io/adapter-api'
+import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { FileProperties } from '@salto-io/jsforce'
 import {
   CUSTOM_FIELD,
   CUSTOM_METADATA,
@@ -30,6 +31,7 @@ import {
 } from '../constants'
 import { ConfigValidationError, validateRegularExpressions } from '../config_validation'
 import {
+  FetchParameters,
   METADATA_EXCLUDE_LIST,
   METADATA_INCLUDE_LIST,
   METADATA_SEPARATE_FIELD_LIST,
@@ -38,6 +40,7 @@ import {
   MetadataQuery,
   MetadataQueryParams,
 } from '../types'
+import { getChangedAtSingleton } from '../filters/utils'
 
 const { isDefined } = values
 
@@ -95,21 +98,48 @@ const isFolderMetadataTypeNameMatch = ({ name: instanceName }: MetadataInstance,
 )
 
 type BuildMetadataQueryParams = {
-  metadataParams: MetadataParams
-  target?: string[]
-  isFetchWithChangesDetection: boolean
-  changedAtSingleton?: InstanceElement
+  fetchParams: FetchParameters
 }
 
-export const buildMetadataQuery = ({
-  metadataParams,
-  target,
-  isFetchWithChangesDetection,
-  changedAtSingleton,
-}: BuildMetadataQueryParams): MetadataQuery => {
-  const { include = [{}], exclude = [] } = metadataParams
+type BuildFetchWithChangesDetectionMetadataQueryParams = BuildMetadataQueryParams & {
+  elementsSource: ReadOnlyElementsSource
+}
+
+export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): MetadataQuery => {
+  const {
+    metadata = {},
+    target,
+  } = fetchParams
+  const { include = [{}], exclude = [] } = metadata
   const fullExcludeList = [...exclude, ...PERMANENT_SKIP_LIST]
 
+  const isIncludedInPartialFetch = (type: string): boolean => {
+    if (target === undefined) {
+      return true
+    }
+    if (target.includes(type)) {
+      return true
+    }
+    if (type === TOPICS_FOR_OBJECTS_METADATA_TYPE && target.includes(CUSTOM_OBJECT)) {
+      return true
+    }
+    // We should really do this only when config.preferActiveFlowVersions is true
+    // if you have another use-case to pass the config here also handle this please
+    if (type === FLOW_DEFINITION_METADATA_TYPE && target.includes(FLOW_METADATA_TYPE)) {
+      return true
+    }
+    return false
+  }
+
+  const isTypeIncluded = (type: string): boolean => (
+    include.some(({ metadataType = '.*' }) => new RegExp(`^${metadataType}$`).test(type))
+    && isIncludedInPartialFetch(type)
+  )
+  const isTypeExcluded = (type: string): boolean => (
+    fullExcludeList.some(({ metadataType = '.*', namespace = '.*', name = '.*' }) => (
+      namespace === '.*' && name === '.*' && new RegExp(`^${metadataType}$`).test(type)
+    ))
+  )
   const isInstanceMatchQueryParams = (
     instance: MetadataInstance,
     {
@@ -130,60 +160,18 @@ export const buildMetadataQuery = ({
       : regex.isFullRegexMatch(instance.name, name)
   }
 
-  const isIncludedInPartialFetch = (type: string): boolean => {
-    if (target === undefined) {
-      return true
-    }
-    if (target.includes(type)) {
-      return true
-    }
-    if (type === TOPICS_FOR_OBJECTS_METADATA_TYPE && target.includes(CUSTOM_OBJECT)) {
-      return true
-    }
-    // We should really do this only when config.preferActiveFlowVersions is true
-    // if you have another use-case to pass the config here also handle this please
-    if (type === FLOW_DEFINITION_METADATA_TYPE && target.includes(FLOW_METADATA_TYPE)) {
-      return true
-    }
-    return false
-  }
-  const isIncludedInFetchWithChangesDetection = (instance: MetadataInstance): boolean => {
-    if (UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES.includes(instance.metadataType)) {
-      return false
-    }
-    if (changedAtSingleton === undefined || instance.changedAt === undefined) {
-      return true
-    }
-    const lastChangedAt = _.get(changedAtSingleton.value, [instance.metadataType, instance.name])
-    return _.isString(lastChangedAt)
-      ? new Date(lastChangedAt).getTime() < new Date(instance.changedAt).getTime()
-      : true
-  }
-  const isTypeIncluded = (type: string): boolean => (
-    include.some(({ metadataType = '.*' }) => new RegExp(`^${metadataType}$`).test(type))
-    && isIncludedInPartialFetch(type)
+  const isInstanceIncluded = (instance: MetadataInstance): boolean => (
+    include.some(params => isInstanceMatchQueryParams(instance, params))
+    && !fullExcludeList.some(params => isInstanceMatchQueryParams(instance, params))
   )
-  const isTypeExcluded = (type: string): boolean => (
-    fullExcludeList.some(({ metadataType = '.*', namespace = '.*', name = '.*' }) => (
-      namespace === '.*' && name === '.*' && new RegExp(`^${metadataType}$`).test(type)
-    ))
-  )
-
+  const isTargetedFetch = (): boolean => target !== undefined
   return {
     isTypeMatch: type => isTypeIncluded(type) && !isTypeExcluded(type),
-
-    isInstanceMatch: instance => (
-      include.some(params => isInstanceMatchQueryParams(instance, params))
-      && !fullExcludeList.some(params => isInstanceMatchQueryParams(instance, params))
-      && (!isFetchWithChangesDetection || isIncludedInFetchWithChangesDetection(instance))
-    ),
-
-    isTargetedFetch: () => target !== undefined,
-
-    isFetchWithChangesDetection: () => isFetchWithChangesDetection,
-
-    isPartialFetch: () => target !== undefined || isFetchWithChangesDetection,
-
+    isTargetedFetch,
+    isInstanceIncluded,
+    isInstanceMatch: isInstanceIncluded,
+    isFetchWithChangesDetection: () => false,
+    isPartialFetch: isTargetedFetch,
     getFolderPathsByName: (folderType: string) => {
       const folderPaths = include
         .filter(params => params.metadataType === folderType)
@@ -195,6 +183,37 @@ export const buildMetadataQuery = ({
         })
       return _.keyBy(folderPaths, path => _.last(path.split('/')) ?? path)
     },
+  }
+}
+
+export const buildMetadataQueryForFetchWithChangesDetection = async (
+  params: BuildFetchWithChangesDetectionMetadataQueryParams
+): Promise<MetadataQuery> => {
+  const changedAtSingleton = await getChangedAtSingleton(params.elementsSource)
+  if (changedAtSingleton === undefined) {
+    throw new Error('First fetch does not support changes detection')
+  }
+  const metadataQuery = buildMetadataQuery(params)
+  const isIncludedInFetchWithChangesDetection = (instance: MetadataInstance): boolean => {
+    if (instance.changedAt === undefined) {
+      return true
+    }
+    const lastChangedAt = _.get(changedAtSingleton.value, [instance.metadataType, instance.name])
+    return _.isString(lastChangedAt)
+      ? new Date(lastChangedAt).getTime() < new Date(instance.changedAt).getTime()
+      : true
+  }
+  return {
+    ...metadataQuery,
+    isTypeMatch: (type: string) => (
+      metadataQuery.isTypeMatch(type)
+      && !UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES.includes(type)
+    ),
+    isPartialFetch: () => true,
+    isFetchWithChangesDetection: () => true,
+    isInstanceMatch: instance => (
+      metadataQuery.isInstanceIncluded(instance) && isIncludedInFetchWithChangesDetection(instance)
+    ),
   }
 }
 
@@ -223,5 +242,27 @@ export const validateMetadataParams = (
       [...fieldPath, METADATA_SEPARATE_FIELD_LIST],
       `${METADATA_SEPARATE_FIELD_LIST} should not be larger than ${MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD}. current length is ${params.objectsToSeperateFieldsToFiles.length}`
     )
+  }
+}
+
+export const buildFilePropsMetadataQuery = (
+  metadataQuery: MetadataQuery
+): MetadataQuery<FileProperties> => {
+  const filePropsToMetadataInstance = ({
+    namespacePrefix,
+    type: metadataType,
+    fullName: name,
+    lastModifiedDate: changedAt,
+  }: FileProperties): MetadataInstance => ({
+    namespace: namespacePrefix === undefined || namespacePrefix === '' ? DEFAULT_NAMESPACE : namespacePrefix,
+    metadataType,
+    name,
+    changedAt,
+    isFolderType: false,
+  })
+  return {
+    ...metadataQuery,
+    isInstanceIncluded: instance => metadataQuery.isInstanceIncluded(filePropsToMetadataInstance(instance)),
+    isInstanceMatch: instance => metadataQuery.isInstanceMatch(filePropsToMetadataInstance(instance)),
   }
 }

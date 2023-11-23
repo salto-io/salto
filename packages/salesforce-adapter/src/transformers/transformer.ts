@@ -15,7 +15,7 @@
 */
 /* eslint-disable camelcase */
 import _ from 'lodash'
-import { ValueTypeField, MetadataInfo, DefaultValueWithType, PicklistEntry, Field as SalesforceField, FileProperties } from 'jsforce'
+import { ValueTypeField, MetadataInfo, DefaultValueWithType, PicklistEntry, Field as SalesforceField, FileProperties } from '@salto-io/jsforce'
 import {
   TypeElement,
   ObjectType,

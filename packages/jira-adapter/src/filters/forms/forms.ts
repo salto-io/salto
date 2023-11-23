@@ -14,11 +14,10 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, Change, InstanceElement, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Change, InstanceElement, ReferenceExpression, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { getParent } from '@salto-io/adapter-utils'
+import { getParent, pathNaclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { elements as elementUtils, config as configUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../filter'
 import { FORM_TYPE, JSM_DUCKTYPE_API_DEFINITIONS, PROJECT_TYPE, SERVICE_DESK } from '../../constants'
 import { getCloudId } from '../automation/cloud_id'
@@ -28,8 +27,6 @@ import JiraClient from '../../client/client'
 import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../../utils'
 
 const { isDefined } = lowerDashValues
-const { toBasicInstance } = elementUtils
-const { getTransformationConfigByType } = configUtils
 const deployForms = async (
   change: Change<InstanceElement>,
   client: JiraClient,
@@ -69,7 +66,7 @@ const deployForms = async (
 * This filter fetches all forms from Jira Service Management and creates an instance element for each form.
 * We use filter because we need to use cloudId which is not available in the infrastructure.
 */
-const filter: FilterCreator = ({ config, client, getElemIdFunc }) => ({
+const filter: FilterCreator = ({ config, client }) => ({
   name: 'formsFilter',
   onFetch: async elements => {
     if (!config.fetch.enableJSM || client.isDataCenter) {
@@ -105,19 +102,20 @@ const filter: FilterCreator = ({ config, client, getElemIdFunc }) => ({
             }
             const name = `${project.value.name}_${formResponse.name}`
             const formValue = detailedRes.data
+            const parentPath = project.path ?? []
             const jsmDuckTypeApiDefinitions = config[JSM_DUCKTYPE_API_DEFINITIONS]
             if (jsmDuckTypeApiDefinitions === undefined) {
               return undefined
             }
-            return toBasicInstance({
-              entry: formValue,
-              type: formType,
-              transformationConfigByType: getTransformationConfigByType(jsmDuckTypeApiDefinitions.types),
-              transformationDefaultConfig: jsmDuckTypeApiDefinitions.typeDefaults.transformation,
-              parent: project,
-              defaultName: name,
-              getElemIdFunc,
-            })
+            return new InstanceElement(
+              name,
+              formType,
+              formValue,
+              [...parentPath.slice(0, -1), 'forms', pathNaclCase(name)],
+              {
+                [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(project.elemID, project)],
+              }
+            )
           }))
       })))
       .flat()
@@ -125,15 +123,12 @@ const filter: FilterCreator = ({ config, client, getElemIdFunc }) => ({
     forms.forEach(form => elements.push(form))
   },
   preDeploy: async changes => {
-    const fieldNames = ['questions', 'sections', 'conditions']
     changes
       .filter(isInstanceChange)
       .map(change => getChangeData(change))
       .filter(instance => instance.elemID.typeName === FORM_TYPE)
       .forEach(instance => {
-        fieldNames.forEach(fieldName => {
-          instance.value.design[fieldName] = instance.value.design[fieldName] ?? {}
-        })
+        instance.value.updated = new Date().toISOString()
       })
   },
   deploy: async changes => {
@@ -157,17 +152,12 @@ const filter: FilterCreator = ({ config, client, getElemIdFunc }) => ({
     }
   },
   onDeploy: async changes => {
-    const fieldNames = ['questions', 'sections', 'conditions']
     changes
       .filter(isInstanceChange)
       .map(change => getChangeData(change))
       .filter(instance => instance.elemID.typeName === FORM_TYPE)
       .forEach(instance => {
-        fieldNames.forEach(fieldName => {
-          if (_.isEmpty(instance.value.design[fieldName])) {
-            delete instance.value.design[fieldName]
-          }
-        })
+        delete instance.value.updated
       })
   },
 })

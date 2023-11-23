@@ -37,6 +37,7 @@ import {
   CORE_ANNOTATIONS,
   isObjectType,
   ObjectType,
+  isInstanceElement,
 } from '@salto-io/adapter-api'
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import {
@@ -50,6 +51,7 @@ import {
   SALESFORCE,
 } from '../constants'
 import {
+  instanceInternalId,
   isReadOnlyField,
   isReferenceField,
   referenceFieldTargetTypes,
@@ -79,7 +81,7 @@ const serializeInternalID = (typeName: string, id: string): string =>
   (`${typeName}${INTERNAL_ID_SEPARATOR}${id}`)
 
 const serializeInstanceInternalID = async (instance: InstanceElement): Promise<string> => (
-  serializeInternalID(await apiName(await instance.getType(), true), await apiName(instance))
+  serializeInternalID(await apiName(await instance.getType(), true), instanceInternalId(instance))
 )
 
 const deserializeInternalID = (internalID: string): RefOrigin => {
@@ -329,9 +331,9 @@ const filter: RemoteFilterCreator = ({ client, config }) => ({
     if (dataManagement === undefined) {
       return {}
     }
-    const customObjectInstances = await awu(elements).filter(isInstanceOfCustomObject)
-      .toArray() as InstanceElement[]
-    const internalToInstance = await keyByAsync(customObjectInstances, serializeInstanceInternalID)
+    const allInstances = elements.filter(isInstanceElement)
+    const customObjectInstances = await awu(allInstances).filter(isInstanceOfCustomObject).toArray()
+    const internalToInstance = await keyByAsync(allInstances, serializeInstanceInternalID)
     const internalIdPrefixToType = await buildCustomObjectPrefixKeyMap(elements)
     const { reverseReferencesMap, missingRefs } = await replaceLookupsWithRefsAndCreateRefMap(
       customObjectInstances,

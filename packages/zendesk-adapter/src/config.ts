@@ -711,6 +711,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToHide: FIELDS_TO_HIDE.concat([
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'domain_verification_code' },
+        { fieldName: 'username', fieldType: 'string' },
       ]),
     },
     deployRequests: {
@@ -1884,7 +1885,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'author_id', fieldType: 'string' },
+        { fieldName: 'author_id', fieldType: 'unknown' },
         { fieldName: 'translations', fieldType: 'list<article_translation>' },
         { fieldName: 'attachments', fieldType: 'list<article_attachment>' },
       ],

@@ -36,7 +36,7 @@ import {
   RetrieveResult,
   SaveResult,
   UpsertResult,
-} from 'jsforce'
+} from '@salto-io/jsforce'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { flatValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'

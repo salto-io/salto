@@ -23,6 +23,7 @@ import {
 import {
   applyFunctionToChangeData,
   compactTemplate,
+  createTemplateExpression,
   extractTemplate,
   getParent,
   replaceTemplatesWithValues,
@@ -88,7 +89,7 @@ const updateArticleTranslationBody = ({
   // Find the urls that are in the body
   const processedTranslationBodyParts = originalTranslationBodyParts.map(part =>
     (isReferenceExpression(part)
-      ? new TemplateExpression({ parts: [part] })
+      ? createTemplateExpression({ parts: [part] })
       : extractTemplate(
         part,
         [URL_REGEX],
@@ -131,7 +132,7 @@ const updateArticleTranslationBody = ({
         }
       )))
 
-  const processedTranslationBody = new TemplateExpression({ parts:
+  const processedTranslationBody = createTemplateExpression({ parts:
     processedTranslationBodyParts.flatMap(part => (_.isString(part) ? [part] : part.parts)) })
   translationInstance.value.body = compactTemplate(processedTranslationBody)
   return _.isEmpty(missingBrands) ? [] : _.unionBy(missingBrands, obj => obj.brandName)

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { FileProperties } from 'jsforce-types'
+import { FileProperties } from '@salto-io/jsforce-types'
 import {
   Element,
   ObjectType,

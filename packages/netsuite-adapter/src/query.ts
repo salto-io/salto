@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import { collections, regex, strings, types as lowerdashTypes } from '@salto-io/lowerdash'
+import { Values } from '@salto-io/adapter-api'
 import { CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT } from './constants'
 import { TYPES_TO_INTERNAL_ID } from './data_elements/types'
 import { netsuiteSupportedTypes, removeCustomRecordTypePrefix } from './types'
@@ -36,10 +37,17 @@ export type NetsuiteQueryParameters = {
   customRecords?: NetsuiteTypesQueryParams
 }
 
-export type FetchTypeQueryParams = {
+export type IdsQuery = {
   name: string
   ids?: string[]
 }
+
+export type CriteriaQuery = {
+  name: string
+  criteria: Values
+}
+
+export type FetchTypeQueryParams = IdsQuery | CriteriaQuery
 
 export type QueryParams = {
   types: FetchTypeQueryParams[]
@@ -71,6 +79,15 @@ export type FetchParams = {
   addBundles?: boolean
 } & LockedElementsConfig['fetch']
 
+export const isCriteriaQuery = (
+  type: FetchTypeQueryParams
+): type is CriteriaQuery =>
+  'criteria' in type
+
+export const isIdsQuery = (
+  type: FetchTypeQueryParams
+): type is IdsQuery =>
+  !isCriteriaQuery(type)
 
 export const fullQueryParams = (): QueryParams => ({
   types: [{ name: '.*' }],
@@ -171,9 +188,17 @@ export const noSupportedTypeMatch = (name: string): boolean =>
     || checkTypeNameRegMatch({ name },
       strings.capitalizeFirstLetter(existTypeName)))
 
-export const validateFetchParameters = ({
-  types, fileCabinet, customRecords = [],
-}: Partial<Record<keyof QueryParams, unknown>>): void => {
+const isInvalidTypeQuery = (obj: Record<string, unknown>): boolean =>
+  typeof obj.name !== 'string' || (obj.ids !== undefined && obj.criteria !== undefined)
+const isInvalidIdsParam = (obj: Record<string, unknown>): boolean =>
+  obj.ids !== undefined && (!Array.isArray(obj.ids) || obj.ids.some((id: unknown) => typeof id !== 'string'))
+const isInvalidCriteriaParam = (obj: Record<string, unknown>): boolean =>
+  obj.criteria !== undefined && (!_.isPlainObject(obj.criteria) || _.isEmpty(obj.criteria))
+
+export function validateFetchParameters(
+  params: Partial<Record<keyof QueryParams, unknown>>
+): asserts params is QueryParams {
+  const { types, fileCabinet, customRecords = [] } = params
   if (!Array.isArray(types) || !Array.isArray(fileCabinet) || !Array.isArray(customRecords)) {
     const typesErr = !Array.isArray(types) ? ' "types" field is expected to be an array\n' : ''
     const fileCabinetErr = !Array.isArray(fileCabinet) ? ' "fileCabinet" field is expected to be an array\n' : ''
@@ -181,21 +206,29 @@ export const validateFetchParameters = ({
     const message = `${ERROR_MESSAGE_PREFIX}${typesErr}${fileCabinetErr}${customRecordsErr}`
     throw new Error(message)
   }
-  const corruptedTypesNames = types.filter(obj => (obj.name === undefined || typeof obj.name !== 'string'))
-  if (corruptedTypesNames.length !== 0) {
-    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected type name to be a string, but found:\n${JSON.stringify(corruptedTypesNames, null, 4)}.`)
+  const corruptedTypeQueries = types.filter(isInvalidTypeQuery)
+  if (corruptedTypeQueries.length !== 0) {
+    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected the type name to be a string without both "ids" and "criteria", but found:\n${JSON.stringify(corruptedTypeQueries, null, 4)}.`)
   }
-  const corruptedTypesIds = types.filter(obj => (obj.ids !== undefined && (!Array.isArray(obj.ids) || obj.ids.some((id: unknown) => typeof id !== 'string'))))
+  const corruptedTypesIds = types.filter(isInvalidIdsParam)
   if (corruptedTypesIds.length !== 0) {
-    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected type ids to be an array of strings, but found:\n${JSON.stringify(corruptedTypesIds, null, 4)}}.`)
+    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected type "ids" to be an array of strings, but found:\n${JSON.stringify(corruptedTypesIds, null, 4)}}.`)
   }
-  const corruptedCustomRecords = customRecords.filter(obj => (obj.name === undefined || typeof obj.name !== 'string'))
+  const corruptedTypesCriteria = types.filter(isInvalidCriteriaParam)
+  if (corruptedTypesCriteria.length !== 0) {
+    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected type "criteria" to be a non-empty object, but found:\n${JSON.stringify(corruptedTypesCriteria, null, 4)}}.`)
+  }
+  const corruptedCustomRecords = customRecords.filter(isInvalidTypeQuery)
   if (corruptedCustomRecords.length !== 0) {
-    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected custom record name to be a string, but found:\n${JSON.stringify(corruptedCustomRecords, null, 4)}.`)
+    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected the custom record name to be a string without both "ids" and "criteria", but found:\n${JSON.stringify(corruptedCustomRecords, null, 4)}.`)
   }
-  const corruptedCustomRecordsIds = customRecords.filter(obj => (obj.ids !== undefined && (!Array.isArray(obj.ids) || obj.ids.some((id: unknown) => typeof id !== 'string'))))
+  const corruptedCustomRecordsIds = customRecords.filter(isInvalidIdsParam)
   if (corruptedCustomRecordsIds.length !== 0) {
-    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected custom record ids to be an array of strings, but found:\n${JSON.stringify(corruptedCustomRecordsIds, null, 4)}}.`)
+    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected custom record "ids" to be an array of strings, but found:\n${JSON.stringify(corruptedCustomRecordsIds, null, 4)}}.`)
+  }
+  const corruptedCustomRecordsCriteria = customRecords.filter(isInvalidCriteriaParam)
+  if (corruptedCustomRecordsCriteria.length !== 0) {
+    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected custom record "criteria" to be a non-empty object, but found:\n${JSON.stringify(corruptedCustomRecordsCriteria, null, 4)}}.`)
   }
 
   const receivedTypes = types.map(obj => obj.name)
@@ -255,6 +288,7 @@ const buildTypesQuery = (types: FetchTypeQueryParams[]): TypesQuery => {
 
   const matchingTypesRegexes = (typeName: string): string[] =>
     matchingTypes(typeName)
+      .filter(isIdsQuery)
       .flatMap(type => type.ids ?? ['.*'])
 
   return {

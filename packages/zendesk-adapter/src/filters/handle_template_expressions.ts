@@ -17,7 +17,13 @@ import {
   Change, Element, getChangeData, InstanceElement, isInstanceElement, isReferenceExpression, isTemplateExpression,
   ReferenceExpression, TemplateExpression, TemplatePart, UnresolvedReference, Values,
 } from '@salto-io/adapter-api'
-import { extractTemplate, TemplateContainer, replaceTemplatesWithValues, resolveTemplates } from '@salto-io/adapter-utils'
+import {
+  extractTemplate,
+  TemplateContainer,
+  replaceTemplatesWithValues,
+  resolveTemplates,
+  createTemplateExpression,
+} from '@salto-io/adapter-utils'
 import { references as referencesUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -385,7 +391,7 @@ const replaceFormulasWithTemplates = ({
       })
       return isTemplateExpression(template) ? template.parts : template
     })
-    return new TemplateExpression({ parts: newParts })
+    return createTemplateExpression({ parts: newParts })
   }
 
   // If a string is a JSON, and it has keys of 'id' with a numeric value - try to convert it to a reference

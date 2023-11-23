@@ -38,7 +38,7 @@ import {
   UpsertResult,
 } from '@salto-io/jsforce'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { flatValues } from '@salto-io/adapter-utils'
+import { flatValues, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
 import { AccountInfo, CredentialError, Value } from '@salto-io/adapter-api'
@@ -533,6 +533,7 @@ export default class SalesforceClient {
   readonly dataRetry: CustomObjectsDeployRetryConfig
   readonly clientName: string
   readonly readMetadataChunkSize: Required<ReadMetadataChunkSizeConfig>
+  private readonly filePropsByType: Record<string, FileProperties[]>
 
   constructor(
     { credentials, connection, config }: SalesforceClientOpts
@@ -569,6 +570,7 @@ export default class SalesforceClient {
       DEFAULT_READ_METADATA_CHUNK_SIZE,
       config?.readMetadataChunkSize,
     )
+    this.filePropsByType = {}
   }
 
   private retryOnBadResponse = <T extends object>(request: () => Promise<T>): Promise<T> => {
@@ -635,13 +637,28 @@ export default class SalesforceClient {
     listMetadataQuery: ListMetadataQuery | ListMetadataQuery[],
     isUnhandledError: ErrorFilter = isSFDCUnhandledException,
   ): Promise<SendChunkedResult<ListMetadataQuery, FileProperties>> {
-    return sendChunked({
+    const [cachedQueries, nonCachedQueries] = _.partition(
+      makeArray(listMetadataQuery),
+      query => Object.keys(this.filePropsByType).includes(query.type)
+    )
+    const cachedProps = cachedQueries.flatMap(query => makeArray(this.filePropsByType[query.type]))
+    if (nonCachedQueries.length === 0) {
+      log.debug('returning cached listMetadataObjects for %s', safeJsonStringify(listMetadataQuery))
+      return { result: cachedProps, errors: [] }
+    }
+    const { result: nonCachedProps, errors } = await sendChunked({
       operationInfo: 'listMetadataObjects',
-      input: listMetadataQuery,
+      input: nonCachedQueries,
       sendChunk: chunk => this.retryOnBadResponse(() => this.conn.metadata.list(chunk)),
       chunkSize: MAX_ITEMS_IN_LIST_METADATA_REQUEST,
       isUnhandledError,
     })
+    _(nonCachedProps)
+      .groupBy(props => props.type)
+      .forEach((fileProps, type) => {
+        this.filePropsByType[type] = fileProps
+      })
+    return { result: cachedProps.concat(nonCachedProps), errors }
   }
 
   @mapToUserFriendlyErrorMessages

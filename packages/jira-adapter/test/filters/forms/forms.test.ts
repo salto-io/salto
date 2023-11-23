@@ -19,13 +19,13 @@ import _ from 'lodash'
 import { InstanceElement, Element, isInstanceElement, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
+import moment from 'moment'
 import { getDefaultConfig } from '../../../src/config/config'
 import formsFilter from '../../../src/filters/forms/forms'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 import { FORM_TYPE, JIRA, PROJECT_TYPE } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
 import { CLOUD_RESOURCE_FIELD } from '../../../src/filters/automation/cloud_id'
-
 
 describe('forms filter', () => {
     type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy' | 'onDeploy' | 'preDeploy'>
@@ -485,7 +485,7 @@ describe('forms filter', () => {
       })
       it('should add the current updated time', async () => {
         await filter.preDeploy([{ action: 'add', data: { after: formInstance } }])
-        expect(formInstance.value.updated).toEqual(new Date().toISOString())
+        expect(moment(formInstance.value.updated).format('YYYY-MM-DDTHH:mm')).toEqual(moment(new Date().toISOString()).format('YYYY-MM-DDTHH:mm'))
       })
     })
     describe('onDeploy', () => {

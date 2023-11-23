@@ -33,7 +33,7 @@ import {
 } from '../filters/organizations'
 import ZendeskClient from '../client/client'
 import { paginate } from '../client/pagination'
-import { ZedneskDeployConfig, ZendeskFetchConfig } from '../config'
+import { ZendeskDeployConfig, ZendeskFetchConfig } from '../config'
 
 const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues
@@ -46,7 +46,7 @@ const log = logger(module)
 export const organizationExistenceValidator: (
   client: ZendeskClient,
   fetchConfig: ZendeskFetchConfig,
-  deployConfig?: ZedneskDeployConfig,
+  deployConfig?: ZendeskDeployConfig,
 ) => ChangeValidator = (client, fetchConfig, deployConfig) => async changes => {
   // If the organizations were resolved, they are stored as names instead of ids
   // If the user change this config between a fetch and a deploy, this validator will fail

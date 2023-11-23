@@ -155,6 +155,7 @@ import customObjectFieldFilter from './filters/custom_objects/custom_object_fiel
 import customObjectFieldsOrderFilter from './filters/custom_objects/custom_object_fields_order'
 import customObjectFieldOptionsFilter from './filters/custom_field_options/custom_object_field_options'
 import { weakReferenceHandlers } from './weak_references'
+import { fallbackUserHandlers } from './fallback_user'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -527,9 +528,10 @@ export default class ZendeskAdapter implements AdapterOperations {
       )
     )
 
-    this.fixElementsFunc = combineElementFixers(
-      weakReferenceHandlers.map(handler => handler.removeWeakReferences({ elementsSource }))
-    )
+    this.fixElementsFunc = combineElementFixers([
+      ...weakReferenceHandlers.map(handler => handler.removeWeakReferences({ elementsSource })),
+      ...fallbackUserHandlers.map(handler => handler.missingUsersToFallback(client, config[DEPLOY_CONFIG] || {})),
+    ])
   }
 
   @logDuration('generating instances and types from service')

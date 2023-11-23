@@ -20,7 +20,6 @@ import { ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/user'
 import { createFilterCreatorParams } from '../utils'
 import { getIdByEmail, getUsers } from '../../src/user_utils'
-import { DEFAULT_CONFIG } from '../../src/config'
 
 jest.mock('../../src/user_utils', () => ({
   ...jest.requireActual<{}>('../../src/user_utils'),
@@ -235,40 +234,6 @@ describe('user filter', () => {
       expect(article?.value).toEqual({
         title: 'test',
         author_id: 1,
-      })
-    })
-    it('should replace missing user values with user from deploy config if provided', async () => {
-      filter = filterCreator(createFilterCreatorParams({
-        paginator: mockPaginator,
-        config: {
-          ...DEFAULT_CONFIG,
-          deploy: { defaultMissingUserFallback: 'fallback@.com' },
-        },
-      })) as FilterType
-      getUsersMock
-        .mockResolvedValue([
-          { id: 2, email: 'b@b.com', role: 'admin', custom_role_id: 123, name: 'b', locale: 'en-US' },
-          { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
-          { id: 4, email: 'fallback@.com', role: 'agent', custom_role_id: 12, name: 'fallback', locale: 'en-US' },
-        ])
-      const instances2 = [macroInstance, articleInstance].map(e => e.clone())
-      await filter.onFetch(instances2)
-      const changes2 = instances2.map(instance => toChange({ after: instance }))
-      await filter.preDeploy(changes2)
-      const macro = instances2.find(inst => inst.elemID.typeName === 'macro')
-      expect(macro?.value).toEqual({
-        title: 'test',
-        actions: [
-          { field: 'status', value: 'closed' },
-          { field: 'assignee_id', value: '2' },
-          { field: 'follower', value: '4' },
-        ],
-        restriction: { type: 'User', id: '3' },
-      })
-      const article = instances2.find(e => e.elemID.typeName === 'article')
-      expect(article?.value).toEqual({
-        title: 'test',
-        author_id: 4,
       })
     })
   })

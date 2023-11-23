@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import wu from 'wu'
 import { Element, isInstanceElement, isReferenceExpression, InstanceElement, ElemID,
-  ElemIdGetter, ReferenceExpression, isTemplateExpression } from '@salto-io/adapter-api'
+  ElemIdGetter, ReferenceExpression, isTemplateExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { filter, references, getParents, transformElement, setPath,
   walkOnElement, WalkOnFunc, WALK_NEXT_STEP, resolvePath, createTemplateExpression } from '@salto-io/adapter-utils'
 import { DAG } from '@salto-io/dag'
@@ -25,7 +25,7 @@ import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter_utils'
 import { AdapterApiConfig, getTransformationConfigByType,
   TransformationConfig, TransformationDefaultConfig, getConfigWithDefault,
-  dereferenceFieldName, isReferencedIdField, NameMappingOptions } from '../config'
+  dereferenceFieldName, isReferencedIdField, NameMappingOptions, shouldNestFiles } from '../config'
 import { joinInstanceNameParts, getInstanceFilePath, getInstanceNaclName } from '../elements/instance_elements'
 
 const { findDuplicates } = collections.array
@@ -106,12 +106,13 @@ const createInstanceNameAndFilePath = (
   instance: InstanceElement,
   idConfig: TransformationIdConfig,
   configByType: Record<string, TransformationConfig>,
+  transformationDefaultConfig: TransformationDefaultConfig,
   getElemIdFunc?: ElemIdGetter,
 ): { newNaclName: string; filePath: string[] } => {
   const { idFields, nameMapping } = idConfig
   const newNameParts = createInstanceReferencedNameParts(instance, idFields)
   const newName = joinInstanceNameParts(newNameParts) ?? instance.elemID.name
-  const parentName = getFirstParentElemId(instance)?.name
+  const parentName = idConfig.extendsParentId === false ? undefined : getFirstParentElemId(instance)?.name
   const { typeName, adapter } = instance.elemID
   const { fileNameFields, serviceIdField } = configByType[typeName]
 
@@ -125,7 +126,7 @@ const createInstanceNameAndFilePath = (
     typeElemId: instance.refType.elemID,
     nameMapping,
   })
-
+  const parent = instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0]
   const filePath = getInstanceFilePath({
     fileNameFields,
     entry: instance.value,
@@ -134,6 +135,12 @@ const createInstanceNameAndFilePath = (
     isSettingType: configByType[typeName].isSingleton ?? false,
     nameMapping: configByType[typeName].nameMapping,
     adapterName: adapter,
+    nestedPaths: parent && shouldNestFiles(
+      transformationDefaultConfig,
+      configByType[parent.elemID.typeName]
+    ) ? [
+        ...instance.path?.slice(2, instance.path?.length - 1) ?? [],
+      ] : undefined,
   })
   return { newNaclName, filePath }
 }
@@ -141,9 +148,12 @@ const createInstanceNameAndFilePath = (
 /* Create new instance with the new naclName and file path */
 const createNewInstance = async (
   currentInstance: InstanceElement,
-  newNaclName: string,
-  newFilePath: string[],
+  newNaclName: string | undefined,
+  newFilePath: string[] | undefined,
 ): Promise<InstanceElement> => {
+  if (newNaclName === undefined || newFilePath === undefined) {
+    return currentInstance
+  }
   const { adapter, typeName } = currentInstance.elemID
   const newElemId = new ElemID(adapter, typeName, 'instance', newNaclName)
   const updatedInstance = await transformElement({
@@ -259,14 +269,14 @@ const updateAllReferences = ({
   delete referenceIndex[instanceOriginalName]
 }
 
+const shouldChangeElemId = (idFields: string[], extendsParentId: boolean | undefined): boolean => (
+  !!(idFields.some(field => isReferencedIdField(field)) || extendsParentId))
+
 /* Create a graph with instance names as nodes and instance name dependencies as edges */
 const createGraph = (
   instances: InstanceElement[],
   instanceToIdConfig: {instance: InstanceElement; idConfig: TransformationIdConfig}[]
 ): DAG<InstanceElement> => {
-  const hasReferencedIdFields = (idFields: string[]): boolean => (
-    idFields.some(field => isReferencedIdField(field))
-  )
   const duplicateElemIds = new Set(findDuplicates(instances.map(i => i.elemID.getFullName())))
   const duplicateIdsToLog = new Set<string>()
   const isDuplicateInstance = (instanceFullName: string): boolean => {
@@ -280,7 +290,7 @@ const createGraph = (
   const graph = new DAG<InstanceElement>()
   instanceToIdConfig.forEach(({ instance, idConfig }) => {
     const { idFields, extendsParentId } = idConfig
-    if (hasReferencedIdFields(idFields) || extendsParentId) {
+    if (shouldChangeElemId(idFields, extendsParentId)) {
       // removing duplicate elemIDs to create a graph
       // we can traverse based on references to unique elemIDs
       if (!isDuplicateInstance(instance.elemID.getFullName())) {
@@ -363,13 +373,16 @@ export const addReferencesToInstanceNames = async (
       if (instanceIdConfig !== undefined) {
         const { instance, idConfig } = instanceIdConfig
         const originalFullName = instance.elemID.getFullName()
-        const { newNaclName, filePath } = createInstanceNameAndFilePath(
-          instance,
-          idConfig,
-          configByType,
-          getElemIdFunc,
-        )
+        const { newNaclName, filePath } = shouldChangeElemId(idConfig.idFields, idConfig.extendsParentId)
+          ? createInstanceNameAndFilePath(
+            instance,
+            idConfig,
+            configByType,
+            transformationDefaultConfig,
+            getElemIdFunc,
+          ) : { newNaclName: undefined, filePath: undefined }
         const newInstance = await createNewInstance(instance, newNaclName, filePath)
+
 
         updateAllReferences({
           referenceIndex,
@@ -395,11 +408,13 @@ export const referencedInstanceNamesFilterCreator: <
   TClient,
   TContext extends { apiDefinitions: AdapterApiConfig },
   TResult extends void | filter.FilterResult = void
->() => FilterCreator<TClient, TContext, TResult> = () => ({ config, getElemIdFunc }) => ({
+>(customApiDefinitions?: AdapterApiConfig) =>
+FilterCreator<TClient, TContext, TResult> = customApiDefinitions => ({ config, getElemIdFunc }) => ({
   name: 'referencedInstanceNames',
   onFetch: async (elements: Element[]) => {
-    const transformationDefault = config.apiDefinitions.typeDefaults.transformation
-    const configByType = config.apiDefinitions.types
+    const apiDefinitions = customApiDefinitions ?? config.apiDefinitions
+    const transformationDefault = apiDefinitions.typeDefaults.transformation
+    const configByType = apiDefinitions.types
     const transformationByType = getTransformationConfigByType(configByType)
     await addReferencesToInstanceNames(
       elements,

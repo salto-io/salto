@@ -56,12 +56,32 @@ const logging = logger('salesforce-adapter/src/client/client')
 
 
 describe('salesforce client', () => {
+  let client: SalesforceClient
   beforeEach(() => {
     nock.cleanAll()
     nock('https://test.salesforce.com')
       .persist()
       .post(/.*/)
       .reply(200, '<serverUrl>http://dodo22</serverUrl>/')
+    client = new SalesforceClient({
+      credentials: new UsernamePasswordCredentials({
+        username: '',
+        password: '',
+        isSandbox: true,
+      }),
+      config: {
+        retry: {
+          maxAttempts: 3, // try 3 times
+          retryDelay: 100, // wait for 100ms before trying again
+        },
+        maxConcurrentApiRequests: {
+          total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+          retrieve: 3,
+          read: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+          list: 1,
+        },
+      },
+    })
   })
   const credentials = new UsernamePasswordCredentials({
     username: 'myUser',
@@ -76,25 +96,6 @@ describe('salesforce client', () => {
     apiToken: 'myToken',
   })
   const { connection } = mockClient()
-  const client = new SalesforceClient({
-    credentials: new UsernamePasswordCredentials({
-      username: '',
-      password: '',
-      isSandbox: true,
-    }),
-    config: {
-      retry: {
-        maxAttempts: 3, // try 3 times
-        retryDelay: 100, // wait for 100ms before trying again
-      },
-      maxConcurrentApiRequests: {
-        total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-        retrieve: 3,
-        read: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-        list: 1,
-      },
-    },
-  })
   const headers = { 'content-type': 'application/json' }
   const workingReadReplay = {
     'a:Envelope': { 'a:Body': { a: { result: { records: [{ fullName: 'BLA' }] } } } },

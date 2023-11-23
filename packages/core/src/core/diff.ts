@@ -136,12 +136,12 @@ export function createDiffChanges(
 export async function createDiffChanges(
   toElementsSrc: elementSource.ElementsSource,
   fromElementsSrc: elementSource.ElementsSource,
-  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]> | undefined,
+  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]> = new remoteMap.InMemoryRemoteMap<ElemID[]>(),
   elementSelectors: ElementSelector[] = [],
   topLevelFilters: IDFilter[] = [],
   resultType: 'changes' | 'detailedChanges' = 'detailedChanges'
 ): Promise<DetailedChange[] | ChangeWithDetails[]> {
-  if (elementSelectors.length > 0 && referenceSourcesIndex !== undefined) {
+  if (elementSelectors.length > 0) {
     const matchers = await createMatchers(
       toElementsSrc,
       fromElementsSrc,

@@ -40,9 +40,6 @@ import SalesforceClient from '../client/client'
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 
-// cf. 'Statement Character Limit' in https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql_select.htm
-const SALESFORCE_MAX_QUERY_LEN = 100000
-
 type GetUserField = (container: Values, fieldName: string) => string[]
 
 type UserFieldGetter = {
@@ -222,7 +219,9 @@ const getSalesforceUsers = async (client: SalesforceClient, users: string[]): Pr
     return []
   }
 
-  const queries = await buildSelectQueries('User', ['Username'], users.map(userName => ({ Username: `'${userName}'` })), SALESFORCE_MAX_QUERY_LEN)
+  const queries = buildSelectQueries('User',
+    ['Username'],
+    users.map(userName => [{ fieldName: 'Username', operator: 'IN', value: `'${userName}'` }]))
 
   return awu(await queryClient(client, queries)).map(sfRecord => sfRecord.Username).toArray()
 }

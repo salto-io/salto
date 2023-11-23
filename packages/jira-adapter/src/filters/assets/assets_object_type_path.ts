@@ -47,7 +47,6 @@ const createPaths = async (assetsObjectTypes: InstanceElement[]): Promise<void> 
       }
       instance.path = [
         ...parentPath.slice(0, -1),
-        'childObjectTypes',
         pathNaclCase(instance.value.name),
         pathNaclCase(instance.value.name)]
     }

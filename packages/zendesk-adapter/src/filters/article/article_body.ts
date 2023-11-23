@@ -18,7 +18,7 @@ import { logger } from '@salto-io/logging'
 import {
   Change, Element, getChangeData, InstanceElement, isAdditionOrModificationChange,
   isInstanceChange, isInstanceElement, isReferenceExpression, isTemplateExpression, ReferenceExpression,
-  SaltoError, TemplateExpression, TemplatePart,
+  SaltoError, TemplateExpression, TemplatePart, UnresolvedReference,
 } from '@salto-io/adapter-api'
 import {
   applyFunctionToChangeData,
@@ -142,6 +142,14 @@ const updateArticleTranslationBody = ({
  * Process template Expression references by the id type
  */
 export const prepRef = (part: ReferenceExpression): TemplatePart => {
+  // In some cases this function may run on the .before value of a Change, which may contain unresolved references.
+  // .after values are always resolved because unresolved references are dropped by unresolved_references validator
+  // we should add a generic solution since we have seen this repeating
+  // This fix is enough since the .before value is not used in the deployment process
+  if (part.value instanceof UnresolvedReference) {
+    log.debug('prepRef received a part as unresolved reference, returning an empty string, instance fullName: %s ', part.elemID.getFullName())
+    return ''
+  }
   if (part.elemID.typeName === BRAND_TYPE_NAME) {
     // The value used to be a string, but now it's an instance element
     // we need to support versions both until all customers fetch the new version

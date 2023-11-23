@@ -1152,4 +1152,80 @@ describe('salesforce client', () => {
       expect(nonSandBoxClient.isSandbox()).toBeFalsy()
     })
   })
+  describe('listMetadataObjects', () => {
+    it('should cache queries without folder', async () => {
+      const firstReplyResult = [
+        mockFileProperties({ type: 'CustomObject', fullName: 'Account' }),
+        mockFileProperties({ type: 'CustomObject', fullName: 'Case' }),
+      ]
+      // On the second invocation, a new Test__c object was created in the org.
+      // The caching mechanism should return the previous result, and not the new one.
+      const secondReplyResult = [
+        ...firstReplyResult,
+        mockFileProperties({ type: 'CustomObject', fullName: 'Test__c' }),
+      ]
+      const dodoScope = nock('http://dodo22')
+        .post(/.*/, /.*<listMetadata>.*/)
+        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: firstReplyResult } } } })
+        .post(/.*/, /.*<listMetadata>.*/)
+        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: secondReplyResult } } } })
+      const { result: firstResult } = await client.listMetadataObjects({ type: 'CustomObject' })
+      const { result: secondResult } = await client.listMetadataObjects({ type: 'CustomObject' })
+      expect(firstResult).toEqual(firstReplyResult)
+      expect(secondResult).toEqual(firstReplyResult)
+      expect(dodoScope.isDone()).toBeFalse()
+    })
+
+    it('should not cache queries with folder', async () => {
+      const firstReplyResult = [
+        mockFileProperties({ type: 'Report', fullName: 'Report1' }),
+        mockFileProperties({ type: 'Report', fullName: 'Report2' }),
+      ]
+      // On the second invocation, a new Report3 instance was created in the org.
+      const secondReplyResult = [
+        ...firstReplyResult,
+        mockFileProperties({ type: 'CustomObject', fullName: 'Report3' }),
+      ]
+      const dodoScope = nock('http://dodo22')
+        .post(/.*/, /.*<listMetadata>.*/)
+        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: firstReplyResult } } } })
+        .post(/.*/, /.*<listMetadata>.*/)
+        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: secondReplyResult } } } })
+      const { result: firstResult } = await client.listMetadataObjects({ type: 'Report', folder: 'TestFolder' })
+      const { result: secondResult } = await client.listMetadataObjects({ type: 'Report', folder: 'TestFolder' })
+      expect(firstResult).toEqual(firstReplyResult)
+      expect(secondResult).toEqual(secondReplyResult)
+      expect(dodoScope.isDone()).toBeTrue()
+    })
+
+    it('should only request non cached queries', async () => {
+      const firstReplyResult = [
+        mockFileProperties({ type: 'CustomObject', fullName: 'Account' }),
+        mockFileProperties({ type: 'CustomObject', fullName: 'Case' }),
+        mockFileProperties({ type: 'CustomField', fullName: 'Account.Field__c' }),
+        mockFileProperties({ type: 'CustomField', fullName: 'Case.Field__c' }),
+      ]
+      const secondReplyResult = [
+        mockFileProperties({ type: 'Role', fullName: 'CEO' }),
+      ]
+      const dodoScope = nock('http://dodo22')
+        .post(/.*/, /.*<listMetadata>.*/)
+        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: firstReplyResult } } } })
+        .post(/.*/, /.*<listMetadata>.*/)
+        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: secondReplyResult } } } })
+      const firstInput = [
+        { type: 'CustomObject' },
+        { type: 'CustomField' },
+      ]
+      const secondInput = [
+        ...firstInput,
+        { type: 'Role' },
+      ]
+      const { result: firstResult } = await client.listMetadataObjects(firstInput)
+      const { result: secondResult } = await client.listMetadataObjects(secondInput)
+      expect(firstResult).toEqual(firstReplyResult)
+      expect(secondResult).toEqual(firstReplyResult.concat(secondReplyResult))
+      expect(dodoScope.isDone()).toBeTrue()
+    })
+  })
 })

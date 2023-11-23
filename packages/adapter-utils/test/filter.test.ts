@@ -62,7 +62,7 @@ describe('filtersRunner', () => {
         const operations = [operation1, operation2]
         const filters = operations.map(f => () => ({ [operation]: f, name: 'bla' }))
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        filterRunnerPromise = filtersRunner({}, filters)[operation]({} as any)
+        filterRunnerPromise = filtersRunner({}, filters)[operation]({} as any, undefined)
         const orderedOperations = operation === 'preDeploy' ? [...operations].reverse() : operations
 
         expect(orderedOperations[0]).toHaveBeenCalled()
@@ -90,7 +90,7 @@ describe('filtersRunner', () => {
 
       const filterRunner = filtersRunner({}, [() => filter, () => filter])
       const typeChange = toChange({ after: new ObjectType({ elemID: new ElemID('adapter', 'type') }) })
-      filterRes = await filterRunner.deploy([typeChange, typeChange, typeChange])
+      filterRes = await filterRunner.deploy([typeChange, typeChange, typeChange]) // TODON add change group test
     })
 
     it('should return the changes that were not deployed', () => {

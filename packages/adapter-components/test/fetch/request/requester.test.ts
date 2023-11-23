@@ -18,6 +18,7 @@ import { queryWithDefault } from '../../../src/definitions'
 import { getRequester } from '../../../src/fetch/request/requester'
 import { noPagination } from '../../../src/fetch/request/pagination'
 import { HTTPReadClientInterface, HTTPWriteClientInterface } from '../../../src/client'
+import { FetchRequestDefinition } from '../../../src/definitions/system/fetch'
 
 describe('requester', () => {
   // TODO extend tests
@@ -88,7 +89,7 @@ describe('requester', () => {
             funcCreator: noPagination,
           },
         },
-        requestDefQuery: queryWithDefault({
+        requestDefQuery: queryWithDefault<FetchRequestDefinition<'main'>[], string>({
           customizations: {
             myType: [{ endpoint: { path: '/ep' } }, { endpoint: { path: '/ep2' } }],
           },
@@ -137,7 +138,7 @@ describe('requester', () => {
             funcCreator: noPagination,
           },
         },
-        requestDefQuery: queryWithDefault({
+        requestDefQuery: queryWithDefault<FetchRequestDefinition<'main'>[], string>({
           customizations: {
             myType: [{ endpoint: { path: '/ep' } }],
           },

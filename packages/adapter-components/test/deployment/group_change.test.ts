@@ -24,7 +24,7 @@ import {
   ObjectType,
   toChange,
 } from '@salto-io/adapter-api'
-import { getChangeGroupIdsFunc, ChangeIdFunction } from '../../src/deployment'
+import { getChangeGroupIdsFunc, ChangeIdFunction } from '../../src/deployment/grouping'
 
 describe('getChangeGroupIdsFunc', () => {
   let type: ObjectType

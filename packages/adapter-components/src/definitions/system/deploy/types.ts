@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export * as changeValidators from './change_validators'
-export * as dependency from './dependency'
-export * as grouping from './grouping'
-export { filterUndeployableValues, filterIgnoredValues, transformRemovedValuesToNull } from './filtering'
-export { deployChange, ResponseResult } from './old_deployment'
-export * from './deploy/deploy'
-export { OPERATION_TO_ANNOTATION } from './annotations'
-export * from './placeholder_types'
+import { Change, InstanceElement, ChangeGroup, ReadOnlyElementsSource, ActionName } from '@salto-io/adapter-api'
+
+export type ChangeAndContext = {
+  change: Change<InstanceElement>
+  changeGroup: Readonly<ChangeGroup>
+  elementSource: ReadOnlyElementsSource
+}
+
+export type DeployChangeInput<AdditionalAction extends string> = ChangeAndContext & {
+  action: ActionName | AdditionalAction
+}

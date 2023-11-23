@@ -15,6 +15,7 @@
  */
 
 export { ApiDefinitions } from './api'
+export * as deploy from './deploy'
 export * as fetch from './fetch'
 export * from './requests'
 export {

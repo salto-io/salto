@@ -15,43 +15,37 @@
  */
 import _ from 'lodash'
 import {
+  Change,
+  getChangeData,
   InstanceElement,
+  isInstanceChange,
   isReferenceExpression,
   TypeReference,
 } from '@salto-io/adapter-api'
-import { values } from '@salto-io/lowerdash'
-import { generateType } from './type_elements'
-import { AdapterDuckTypeApiConfig, getConfigWithDefault } from '../../config'
-import { restoreInstanceTypeFromChange } from '../../deployment'
+import { ElementAndResourceDefFinder } from '../definitions/system/fetch/types'
+import { generateType, adjustFieldTypes } from '../fetch/element'
 
 /**
  * Changes instance type to be suitable for the deploy (generated from the latest instance))
  */
-export const replaceInstanceTypeForDeploy = ({
+export const overrideInstanceTypeForDeploy = ({
   instance,
-  config,
+  defQuery,
 }: {
   instance: InstanceElement
-  config: AdapterDuckTypeApiConfig
+  defQuery: ElementAndResourceDefFinder
 }): InstanceElement => {
   const { typeName } = instance.elemID
-  const { hasDynamicFields } = getConfigWithDefault(
-    config.types[typeName]?.transformation ?? {},
-    config.typeDefaults.transformation,
-  )
   const clonedInstance = instance.clone()
   const generatedType = generateType({
     adapterName: clonedInstance.elemID.adapter,
     entries: [clonedInstance.value],
-    hasDynamicFields: hasDynamicFields ?? false,
-    name: typeName,
-    transformationDefaultConfig: config.typeDefaults.transformation,
-    transformationConfigByType: _.pickBy(
-      _.mapValues(config.types, def => def.transformation),
-      values.isDefined,
-    ),
+    typeName,
+    defQuery,
     isUnknownEntry: isReferenceExpression,
   })
+  const definedTypes = _.keyBy([generatedType.type, ...generatedType.nestedTypes], t => t.elemID.typeName)
+  adjustFieldTypes({ definedTypes, defQuery })
   clonedInstance.refType = new TypeReference(generatedType.type.elemID, generatedType.type)
   return clonedInstance
 }
@@ -59,4 +53,23 @@ export const replaceInstanceTypeForDeploy = ({
 /**
  * Restores instance type to have the original type (and not the fixed one for the deploy)
  */
-export const restoreInstanceTypeFromDeploy = restoreInstanceTypeFromChange
+export const restoreInstanceTypeFromChange = ({
+  appliedChanges,
+  originalInstanceChanges,
+}: {
+  appliedChanges: Change[]
+  originalInstanceChanges: Change<InstanceElement>[]
+}): Change[] => {
+  const elemIDToOriginalType = Object.fromEntries(
+    originalInstanceChanges.map(getChangeData).map(inst => [inst.elemID.getFullName(), inst.refType]),
+  )
+  const [instanceChanges, nonInstanceChanges] = _.partition(appliedChanges, isInstanceChange)
+  const appliedInstanceChanges = instanceChanges.map(change => ({
+    action: change.action,
+    data: _.mapValues(change.data, (instance: InstanceElement) => {
+      instance.refType = elemIDToOriginalType[instance.elemID.getFullName()] ?? instance.refType
+      return instance
+    }),
+  })) as Change<InstanceElement>[]
+  return [...nonInstanceChanges, ...appliedInstanceChanges]
+}

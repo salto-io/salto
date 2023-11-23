@@ -16,4 +16,10 @@
 export { ApiClientDefinition, RESTApiClientDefinition } from './client'
 export { EndpointByPathAndMethod } from './endpoint'
 export { PaginationDefinitions, PaginationFunction, ClientRequestArgsNoPath } from './pagination'
-export { HTTPEndpointIdentifier, RequestArgs, HTTPMethod, HTTPEndpointDetails } from './types'
+export {
+  HTTPEndpointIdentifier,
+  RequestArgs,
+  HTTPMethod,
+  HTTPEndpointDetails,
+  DeployHTTPEndpointDetails,
+} from './types'

@@ -228,10 +228,10 @@ export const adjustFieldTypes = ({
 }: {
   definedTypes: Record<string, ObjectType>
   defQuery: ElementAndResourceDefFinder
-  finalTypeNames: Set<string>
+  finalTypeNames?: Set<string>
 }): void => {
   Object.entries(definedTypes).forEach(([typeName, type]) => {
-    if (finalTypeNames.has(typeName)) {
+    if (finalTypeNames?.has(typeName)) {
       log.trace('type %s is marked as final, not adjusting', type.elemID.getFullName())
       return
     }

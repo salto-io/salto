@@ -120,7 +120,7 @@ const createMatchers = async (
 export function createDiffChanges(
   toElementsSrc: elementSource.ElementsSource,
   fromElementsSrc: elementSource.ElementsSource,
-  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
+  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]> | undefined,
   elementSelectors: ElementSelector[] | undefined,
   topLevelFilters: IDFilter[] | undefined,
   resultType: 'changes'
@@ -128,7 +128,7 @@ export function createDiffChanges(
 export function createDiffChanges(
   toElementsSrc: elementSource.ElementsSource,
   fromElementsSrc: elementSource.ElementsSource,
-  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
+  referenceSourcesIndex?: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
   elementSelectors?: ElementSelector[],
   topLevelFilters?: IDFilter[],
   resultType?: 'detailedChanges'
@@ -136,12 +136,12 @@ export function createDiffChanges(
 export async function createDiffChanges(
   toElementsSrc: elementSource.ElementsSource,
   fromElementsSrc: elementSource.ElementsSource,
-  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
+  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]> | undefined,
   elementSelectors: ElementSelector[] = [],
   topLevelFilters: IDFilter[] = [],
   resultType: 'changes' | 'detailedChanges' = 'detailedChanges'
 ): Promise<DetailedChange[] | ChangeWithDetails[]> {
-  if (elementSelectors.length > 0) {
+  if (elementSelectors.length > 0 && referenceSourcesIndex !== undefined) {
     const matchers = await createMatchers(
       toElementsSrc,
       fromElementsSrc,

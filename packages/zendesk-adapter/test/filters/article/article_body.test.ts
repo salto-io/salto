@@ -13,10 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType,
-  BuiltinTypes, toChange, isInstanceElement, TemplateExpression, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import {
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  BuiltinTypes,
+  toChange,
+  isInstanceElement,
+  TemplateExpression,
+  ReferenceExpression,
+  CORE_ANNOTATIONS,
+  UnresolvedReference,
+} from '@salto-io/adapter-api'
 import { filterUtils, references as referencesUtils } from '@salto-io/adapter-components'
-import filterCreator from '../../../src/filters/article/article_body'
+import filterCreator, { prepRef } from '../../../src/filters/article/article_body'
 import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
   ARTICLE_TYPE_NAME,
@@ -28,6 +38,7 @@ import {
 import { createFilterCreatorParams } from '../../utils'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../../src/config'
 import { FilterResult } from '../../../src/filter'
+
 
 const { createMissingInstance } = referencesUtils
 
@@ -344,6 +355,15 @@ describe('article body filter', () => {
       const elementsAfterOnDeploy = elementsAfterPreDeploy.map(e => e.clone())
       await filter.onDeploy(elementsAfterOnDeploy.map(e => toChange({ before: e, after: e })))
       expect(elementsAfterOnDeploy).toEqual(elementsAfterFetch)
+    })
+  })
+  describe('prepRef', () => {
+    it('should return an empty string on UnresolvedReference', () => {
+      const elemId = new ElemID(ZENDESK, 'test')
+      const unresolvedRef = new UnresolvedReference(elemId)
+      const unresolvedPrepRef = prepRef(new ReferenceExpression(elemId, unresolvedRef))
+
+      expect(unresolvedPrepRef).toEqual('')
     })
   })
 })

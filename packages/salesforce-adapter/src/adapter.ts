@@ -26,7 +26,7 @@ import {
   restoreChangeElement,
   safeJsonStringify,
 } from '@salto-io/adapter-utils'
-import { FileProperties, MetadataObject } from '@salto-io/jsforce'
+import { MetadataObject } from '@salto-io/jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections, values, promises, objects } from '@salto-io/lowerdash'
@@ -101,7 +101,6 @@ import {
   FetchProfile,
   MetadataQuery,
   SalesforceConfig,
-  ShouldRetrieveFileFunc,
 } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
@@ -111,7 +110,12 @@ import {
   isCustomType,
   listMetadataObjects,
 } from './filters/utils'
-import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances } from './fetch'
+import {
+  retrieveMetadataInstances,
+  fetchMetadataType,
+  fetchMetadataInstances,
+  retrieveMetadataInstanceForFetchWithChangesDetection,
+} from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 import { getLookUpName, getLookupNameForDataInstances } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
@@ -126,7 +130,6 @@ import {
   PROFILE_METADATA_TYPE,
 } from './constants'
 import {
-  buildFilePropsMetadataQuery,
   buildMetadataQuery,
   buildMetadataQueryForFetchWithChangesDetection,
 } from './fetch_profile/metadata_query'
@@ -138,7 +141,6 @@ const { concatObjects } = objects
 const log = logger(module)
 
 export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition> = [
-  { creator: retrieveChangedProfilesFilter, addsNewInformation: true },
   { creator: createMissingInstalledPackagesInstancesFilter, addsNewInformation: true },
   { creator: settingsFilter, addsNewInformation: true },
   // should run before customObjectsFilter
@@ -346,18 +348,6 @@ const getMetadataTypesFromElementsSource = async (
     // settings types
     .filter(metadataType => !metadataType.isSettings)
     .toArray()
-)
-
-const buildShouldRetrieveFileForFetchWithChangesDetection = (
-  metadataQuery: MetadataQuery<FileProperties>
-): ShouldRetrieveFileFunc => (
-  props => (
-    props.type === PROFILE_METADATA_TYPE
-      // We only match Profiles that were not modified from the last fetch, since the modified
-      // Profile instances will be fully retrieved within TODO ref to filter
-      ? metadataQuery.isInstanceIncluded(props) && !metadataQuery.isInstanceMatch(props)
-      : metadataQuery.isInstanceMatch(props)
-  )
 )
 
 export default class SalesforceAdapter implements AdapterOperations {
@@ -628,7 +618,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private async fetchMetadataInstances(
     typeInfoPromise: Promise<MetadataObject[]>,
     types: Promise<TypeElement[]>,
-    fetchProfile: FetchProfile
+    fetchProfile: FetchProfile,
   ): Promise<FetchElements<InstanceElement[]>> {
     const readInstances = async (metadataTypes: ObjectType[]):
       Promise<FetchElements<InstanceElement[]>> => {
@@ -660,15 +650,16 @@ export default class SalesforceAdapter implements AdapterOperations {
       async t => this.metadataToRetrieve.includes(await apiName(t)),
     )
 
+    const retrieveMetadataInstancesFunc = fetchProfile.metadataQuery.isFetchWithChangesDetection()
+      ? retrieveMetadataInstanceForFetchWithChangesDetection
+      : retrieveMetadataInstances
+
     const allInstances = await Promise.all([
-      retrieveMetadataInstances({
+      retrieveMetadataInstancesFunc({
         client: this.client,
         types: metadataTypesToRetrieve,
         fetchProfile,
         typesToSkip: new Set(this.metadataTypesOfInstancesFetchedInFilters),
-        shouldRetrieveFileFunc: fetchProfile.metadataQuery.isFetchWithChangesDetection()
-          ? buildShouldRetrieveFileForFetchWithChangesDetection(buildFilePropsMetadataQuery(fetchProfile.metadataQuery))
-          : undefined,
       }),
       readInstances(metadataTypesToRead),
     ])

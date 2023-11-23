@@ -25,7 +25,7 @@ import {
   FetchProfile,
   MAX_INSTANCES_PER_TYPE,
   MAX_ITEMS_IN_RETRIEVE_REQUEST,
-  MetadataQuery, ShouldRetrieveFileFunc,
+  MetadataQuery,
 } from './types'
 import {
   API_NAME_SEPARATOR,
@@ -57,6 +57,7 @@ import {
 } from './transformers/transformer'
 import { fromRetrieveResult, getManifestTypeName, toRetrieveRequest } from './transformers/xml_transformer'
 import { listMetadataObjects } from './filters/utils'
+import { buildFilePropsMetadataQuery } from './fetch_profile/metadata_query'
 
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
@@ -334,7 +335,8 @@ type RetrieveMetadataInstancesArgs = {
   // are included in the same retrieve request as the profile. Thus typesToSkip - a list of types that will be retrieved
   // along with the profiles, but discarded.
   typesToSkip?: ReadonlySet<string>
-  shouldRetrieveFileFunc?: ShouldRetrieveFileFunc
+  getFilesToRetrieveFunc?: (allProps: FileProperties[]) => FileProperties[]
+
 }
 
 export const retrieveMetadataInstances = async ({
@@ -342,15 +344,15 @@ export const retrieveMetadataInstances = async ({
   types,
   fetchProfile,
   typesToSkip = new Set(),
-  shouldRetrieveFileFunc,
+  getFilesToRetrieveFunc,
 }: RetrieveMetadataInstancesArgs): Promise<FetchElements<InstanceElement[]>> => {
   const configChanges: ConfigChangeSuggestion[] = []
   const {
     metadataQuery,
     maxItemsInRetrieveRequest,
   } = fetchProfile
-  const shouldRetrieveFile: ShouldRetrieveFileFunc = shouldRetrieveFileFunc
-    ?? (props => notInSkipList(metadataQuery, props, false))
+  const getFilesToRetrieve = getFilesToRetrieveFunc
+    ?? (allProps => allProps.filter(props => notInSkipList(metadataQuery, props, false)))
 
   const listFilesOfType = async (type: MetadataObjectType): Promise<FileProperties[]> => {
     const typeName = await apiName(type)
@@ -468,12 +470,13 @@ export const retrieveMetadataInstances = async ({
     return contextInstances.concat(Object.values(profileInstances))
   }
 
-  const filesToRetrieve = _.flatten(await Promise.all(
+  const allProps = _.flatten(await Promise.all(
     types
       // We get folders as part of getting the records inside them
       .filter(type => type.annotations.folderContentType === undefined)
       .map(listFilesOfType)
-  )).filter(shouldRetrieveFile)
+  ))
+  const filesToRetrieve = getFilesToRetrieve(allProps)
 
   const [profileFiles, nonProfileFiles] = _.partition(filesToRetrieve, file => file.type === PROFILE_METADATA_TYPE)
   // Avoid sending empty requests for types that had no instances that were changed from the previous fetch
@@ -491,5 +494,52 @@ export const retrieveMetadataInstances = async ({
   return {
     elements: instances.filter(instance => !typesToSkip.has(instance.elemID.typeName)),
     configChanges,
+  }
+}
+
+type Partitions = {
+  profileProps: FileProperties[]
+  nonProfileProps: FileProperties[]
+}
+
+export const retrieveMetadataInstanceForFetchWithChangesDetection: typeof retrieveMetadataInstances = async params => {
+  const metadataQuery = buildFilePropsMetadataQuery(params.fetchProfile.metadataQuery)
+  const getPartitions = (allProps: FileProperties[]): Partitions => {
+    const [profileProps, nonProfileProps] = _.partition(
+      allProps.filter(metadataQuery.isInstanceIncluded),
+      file => file.type === PROFILE_METADATA_TYPE
+    )
+    return { profileProps, nonProfileProps }
+  }
+
+  const retrievePartialProfileInstances = retrieveMetadataInstances({
+    ...params,
+    getFilesToRetrieveFunc: allProps => {
+      const { profileProps, nonProfileProps } = getPartitions(allProps)
+      if (nonProfileProps.length === 0) {
+        log.debug('No profile related props were changed')
+        return []
+      }
+      const nonModifiedProfilesProps = profileProps.filter(props => !metadataQuery.isInstanceMatch(props))
+      return nonModifiedProfilesProps.concat(nonProfileProps)
+    },
+  })
+
+  const retrieveChangedProfileInstances = retrieveMetadataInstances({
+    ...params,
+    getFilesToRetrieveFunc: allProps => {
+      const { profileProps, nonProfileProps } = getPartitions(allProps)
+      const modifiedProfilesProps = profileProps.filter(props => metadataQuery.isInstanceMatch(props))
+      if (modifiedProfilesProps.length === 0) {
+        log.debug('No profiles were changed')
+        return []
+      }
+      return modifiedProfilesProps.concat(nonProfileProps)
+    },
+  })
+  const result = await Promise.all([retrievePartialProfileInstances, retrieveChangedProfileInstances])
+  return {
+    elements: result.flatMap(r => r.elements),
+    configChanges: result.flatMap(r => r.configChanges),
   }
 }

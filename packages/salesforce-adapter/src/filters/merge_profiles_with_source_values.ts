@@ -16,6 +16,8 @@
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { Values } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
 import { apiNameSync, isInstanceOfTypeSync } from './utils'
 import { PROFILE_METADATA_TYPE } from '../constants'
@@ -23,14 +25,16 @@ import { PROFILE_METADATA_TYPE } from '../constants'
 
 const { awu } = collections.asynciterable
 
+const log = logger(module)
+
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'mergeProfilesWithSourceValues',
   onFetch: async elements => {
     const profileInstances = elements.filter(isInstanceOfTypeSync(PROFILE_METADATA_TYPE))
-    console.log(`@@@ ${profileInstances.length}`)
     if (!config.fetchProfile.metadataQuery.isFetchWithChangesDetection()) {
       return
     }
+    log.debug('about to merge the following profiles with their source values: %s', safeJsonStringify(profileInstances.map(instance => apiNameSync(instance))))
     if (profileInstances.length === 0) {
       return
     }

@@ -39,7 +39,7 @@ describe('field_configuration_items', () => {
         fields: [
           { id: 'field1ConfigurationItem1', description: '', isHidden: false, isRequired: false },
           { id: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field1ConfigurationItem1')), description: '', isHidden: false, isRequired: false },
-          { id: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field1ConfigurationIte2')), description: '', isHidden: false, isRequired: false },
+          { id: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field1ConfigurationItem2')), description: '', isHidden: false, isRequired: false },
         ],
       }
     )
@@ -50,7 +50,7 @@ describe('field_configuration_items', () => {
 
       expect(references).toEqual([
         { source: instance.elemID.createNestedID('1', 'fieldId'), target: fieldConfigurationItemInstance.elemID, type: 'weak' },
-        { source: instance.elemID.createNestedID('2', 'fieldId'), target: new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field1ConfigurationIte2'), type: 'weak' },
+        { source: instance.elemID.createNestedID('2', 'fieldId'), target: new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field1ConfigurationItem2'), type: 'weak' },
       ])
     })
 

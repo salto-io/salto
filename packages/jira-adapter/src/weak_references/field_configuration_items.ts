@@ -24,7 +24,7 @@ import {
 import { collections, values } from '@salto-io/lowerdash'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import Joi from 'joi'
-import { AUTOMATION_TYPE, FIELD_CONFIGURATION_TYPE_NAME } from '../constants'
+import { FIELD_CONFIGURATION_TYPE_NAME } from '../constants'
 import { WeakReferencesHandler } from './weak_references_handler'
 
 const { awu } = collections.asynciterable
@@ -43,12 +43,12 @@ const FIELD_CONFIGURATION_ITEMS_SCHEME = Joi.array().items(
   }).unknown(true),
 )
 
-const isFieldConfigurationItems = createSchemeGuard<FieldConfigurationItems>(FIELD_CONFIGURATION_ITEMS_SCHEME, 'Received an invalid automation projects value')
+const isFieldConfigurationItems = createSchemeGuard<FieldConfigurationItems>(FIELD_CONFIGURATION_ITEMS_SCHEME, 'Received an invalid field configuration item value')
 
 const getFieldReferences = async (
   instance: InstanceElement,
 ): Promise<ReferenceInfo[]> => {
-  const fieldConfigurationItems = instance.value.projects
+  const fieldConfigurationItems = instance.value.fields
   if (fieldConfigurationItems === undefined || !isFieldConfigurationItems(fieldConfigurationItems)) {
     return []
   }
@@ -65,7 +65,7 @@ const getFieldReferences = async (
 const getFieldConfigurationItemsReferences: GetCustomReferencesFunc = async elements =>
   awu(elements)
     .filter(isInstanceElement)
-    .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
+    .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
     .flatMap(instance => getFieldReferences(instance))
     .toArray()
 
@@ -102,8 +102,8 @@ const removeMissingFields: WeakReferencesHandler['removeWeakReferences'] = ({ el
   const errors = fixedElements.map(instance => ({
     elemID: instance.elemID.createNestedID('fields'),
     severity: 'Info' as const,
-    message: 'Deploying field configuration without all attached fields',
-    detailedMessage: 'This field configuration is attached to some fields that do not exist in the target environment. It will be deployed without referencing these fields.',
+    message: 'Deploying field configuration without all attached field configuration items',
+    detailedMessage: 'This field configuration is attached to some field configuration items that do not exist in the target environment. It will be deployed without referencing these field configuration items.',
   }))
   return { fixedElements, errors }
 }

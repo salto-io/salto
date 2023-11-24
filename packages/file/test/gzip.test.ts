@@ -21,6 +21,7 @@ import { promisify } from 'util'
 import { Readable } from 'stream'
 import getStream from 'get-stream'
 import * as file from '../src/file'
+import { ENOENTError } from '../src/file'
 import * as gzip from '../src/gzip'
 
 describe('gzip', () => {
@@ -31,7 +32,7 @@ describe('gzip', () => {
     try {
       await p()
     } catch (err) {
-      expect(err.code).toBe('ENOENT')
+      expect((err as ENOENTError).code).toBe('ENOENT')
       hadError = true
     }
     expect(hadError).toBeTruthy()
@@ -43,8 +44,8 @@ describe('gzip', () => {
     try {
       await p()
     } catch (err) {
-      expect(err.code).toBe('Z_DATA_ERROR')
-      expect(err.message).toBe('incorrect header check')
+      expect((err as ENOENTError).code).toBe('Z_DATA_ERROR')
+      expect((err as ENOENTError).message).toBe('incorrect header check')
       hadError = true
     }
     expect(hadError).toBeTruthy()

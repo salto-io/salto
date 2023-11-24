@@ -14,7 +14,7 @@
   "resolutions": {
     "**/debug": "^4.1.1",
     "**/color-convert": "^2.0.1",
-    "typescript": "4.1.3"
+    "typescript": "^4.3"
   },
   "devDependencies": {
     "concurrently": "^5.2.0",

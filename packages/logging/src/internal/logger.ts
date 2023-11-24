@@ -157,5 +157,5 @@ export const loggerRepo = (
 
   return Object.defineProperty(result, 'config', {
     get(): Readonly<Config> { return config },
-  })
+  }) as LoggerRepo
 }

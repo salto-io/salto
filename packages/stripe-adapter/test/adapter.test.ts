@@ -58,7 +58,7 @@ jest.mock('@salto-io/adapter-components', () => {
   }
 })
 
-const mockedAdapterComponents = jest.mocked(adapterComponents, true)
+const mockedAdapterComponents = jest.mocked(adapterComponents)
 
 describe('stripe swagger adapter', () => {
   type MockReply = {

@@ -133,7 +133,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
         })
       } catch (e) {
         error.push(createSaltoElementErrorFromError({
-          error: e,
+          error: e as Error,
           severity: 'Error',
           elemID: defaultCustomStatusChange.elemID,
         }))

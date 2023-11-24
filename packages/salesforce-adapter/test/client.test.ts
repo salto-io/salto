@@ -166,8 +166,8 @@ describe('salesforce client', () => {
         await client.listMetadataTypes()
         throw new Error('client should have failed')
       } catch (e) {
-        expect(e.message).toBe('something awful happened')
-        expect(e.attempts).toBe(3)
+        expect((e as Error).message).toBe('something awful happened')
+        expect((e as Error & { attempts : number }).attempts).toBe(3)
       }
       expect(dodoScope.isDone()).toBeTruthy()
     })
@@ -208,8 +208,8 @@ describe('salesforce client', () => {
         await client.listMetadataTypes()
         throw new Error('client should have failed')
       } catch (e) {
-        expect(e.message).toBe('server error')
-        expect(e.attempts).toBeUndefined()
+        expect((e as Error).message).toBe('server error')
+        expect((e as Error & { attempts:number}).attempts).toBeUndefined()
       }
       expect(dodoScope.isDone()).toBeFalsy()
     })
@@ -908,7 +908,8 @@ describe('salesforce client', () => {
             }
             return Reflect.set(target, p, value, receiver)
           },
-        })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
         const connectionBulkProxy = new Proxy(testConnection.bulk, {
           set(target: Bulk, p: PropertyKey, value: unknown, receiver: unknown): boolean {
             if (p === 'pollTimeout' && _.isNumber(value)) {

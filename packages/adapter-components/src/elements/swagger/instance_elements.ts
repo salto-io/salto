@@ -415,10 +415,10 @@ const getEntriesForType = async (
           return [nested.toField, nestedEntries] as [string, Values[]]
         } catch (error) {
           if (nested.skipOnError) {
-            log.info(`Failed getting extra field values for field ${nested.toField} in ${typeName} entry: ${safeJsonStringify(entry)}, and the field will be omitted. Error: ${error.message}`)
+            log.info(`Failed getting extra field values for field ${nested.toField} in ${typeName} entry: ${safeJsonStringify(entry)}, and the field will be omitted. Error: ${(error as Error).message}`)
             return undefined
           }
-          log.warn(`Failed getting extra field values for field ${nested.toField} in ${typeName} entry: ${safeJsonStringify(entry)}, not creating instance. Error: ${error.message}`)
+          log.warn(`Failed getting extra field values for field ${nested.toField} in ${typeName} entry: ${safeJsonStringify(entry)}, not creating instance. Error: ${(error as Error).message}`)
           throw error
         }
       })
@@ -462,7 +462,7 @@ const getInstancesForType = async (params: GetEntriesParams): Promise<InstanceEl
       getElemIdFunc,
     })
   } catch (e) {
-    log.warn(`Could not fetch ${typeName}: ${e}. %s`, e.stack)
+    log.warn(`Could not fetch ${typeName}: ${e}. %s`, (e as Error).stack)
     if (e instanceof UnauthorizedError
       || e instanceof InvalidTypeConfig
       || e instanceof TimeoutError
@@ -528,7 +528,8 @@ export const getAllInstances = async ({
           errors: [],
         }
       } catch (e) {
-        if (e.response?.status === 403 || e.response?.status === 401) {
+        if ((e as { response: { status : number } }).response?.status === 403
+        || (e as { response: { status : number } }).response?.status === 401) {
           const newError: SaltoError = {
             message: `Salto could not access the ${args.typeName} resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource`,
             severity: 'Warning',

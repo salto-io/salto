@@ -19,6 +19,7 @@ import { promisify } from 'util'
 import tmp from 'tmp-promise'
 import rimRafLib from 'rimraf'
 import * as file from '../src/file'
+import { ENOENTError } from '../src/file'
 
 const rimRaf = promisify(rimRafLib)
 
@@ -30,7 +31,7 @@ describe('file', () => {
     try {
       await p()
     } catch (err) {
-      expect(err.code).toBe('ENOENT')
+      expect((err as ENOENTError).code).toBe('ENOENT')
       hadError = true
     }
     expect(hadError).toBeTruthy()

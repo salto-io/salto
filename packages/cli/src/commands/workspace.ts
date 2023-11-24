@@ -56,7 +56,8 @@ export const cleanAction: WorkspaceCommandAction<CleanArgs> = async ({
 
   try {
     await cleanWorkspace(workspace, cleanArgs)
-  } catch (e) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (e : any) {
     errorOutputLine(formatStepFailed(Prompts.CLEAN_FAILED(e.toString())), output)
     return CliExitCode.AppError
   }

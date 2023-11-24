@@ -13,7 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { logger } from '@salto-io/logging'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { logDecorator, requiresLogin } from '../../src/client'
 
 const logging = logger('adapter-components/src/client/decorators')

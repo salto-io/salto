@@ -582,7 +582,7 @@ const fetchAndProcessMergeErrors = async (
         log.debug('ran post-fetch in the following adapters: %s', Object.keys(adaptersWithPostFetch))
       } catch (e) {
         // failures in this step should never fail the fetch
-        log.error(`failed to run postFetch: ${e}, stack: ${e.stack}`)
+        log.error(`failed to run postFetch: ${e}, stack: ${(e as Error).stack}`)
       }
     }
 

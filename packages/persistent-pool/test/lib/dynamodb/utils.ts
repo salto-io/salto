@@ -21,7 +21,9 @@ import { retry } from '@salto-io/lowerdash'
 import { dbUtils } from '../../../src/lib/dynamodb/utils'
 
 const { withRetry } = retry
-
+interface ErrorWithCode extends Error {
+  code: string
+}
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const testDbUtils = (db: DynamoDBClient) => {
   const utils = dbUtils(db)
@@ -33,11 +35,11 @@ export const testDbUtils = (db: DynamoDBClient) => {
       const deleteCommand = new DeleteTableCommand({ TableName: tableName })
       await db.send(deleteCommand)
     } catch (e) {
-      if (e.toString().includes('ResourceNotFoundException')) {
+      if (e?.toString().includes('ResourceNotFoundException')) {
         return undefined
       }
 
-      if (e.code === 'ResourceInUseException') {
+      if ((e as ErrorWithCode).code === 'ResourceInUseException') {
         let status: string | undefined
         await withRetry(async () => {
           status = await utils.tableStatus(tableName)

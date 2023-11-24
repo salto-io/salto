@@ -462,7 +462,7 @@ const replaceFormulasWithTemplates = ({
       })
     })
   } catch (e) {
-    log.error(`Error parsing templates in deployment: ${e.message}`)
+    log.error(`Error parsing templates in deployment: ${(e as Error).message}`)
   }
 }
 
@@ -521,7 +521,7 @@ const filterCreator: FilterCreator = ({ config }) => {
           )
         )
       } catch (e) {
-        log.error(`Error parsing templates in deployment: ${e.message}`)
+        log.error(`Error parsing templates in deployment: ${(e as Error).message}`)
       }
     },
     onDeploy: async (changes: Change<InstanceElement>[]) => {

@@ -383,7 +383,7 @@ const filter: FilterCreator = ({ client }) => ({
           )
           insertWorkflowDiagramFields(workflow, workflowDiagramMaps)
         } catch (e) {
-          log.error(`Failed to get the workflow diagram of ${workflow.elemID.getFullName()}: ${e.message}`)
+          log.error(`Failed to get the workflow diagram of ${workflow.elemID.getFullName()}: ${(e as Error).message}`)
         }
       }))
   },

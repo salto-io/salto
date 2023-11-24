@@ -72,7 +72,7 @@ const areIssueTypesUsed = async (
       },
     })
   } catch (e) {
-    log.error(`Received an error Jira search API, ${e.message}. Assuming issue type "${issueType}" has no issues.`)
+    log.error(`Received an error Jira search API, ${(e as Error).message}. Assuming issue type "${issueType}" has no issues.`)
     return false
   }
 

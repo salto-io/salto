@@ -49,13 +49,13 @@ const BUILD_NODE_EXECUTABLE = false
 const TARGET_FILE_BASENAME = 'salto'
 const TARGET_DIR = 'pkg'
 const TARGET_ARCH = BUILD_NODE_EXECUTABLE ? os.arch() : 'x64'
-const TARGET_NODE_VERSION = '14.15.3'
+const TARGET_NODE_VERSION = '18.12.1'
 const TARGET_PLATFORMS = {
   win: { ext: '.exe' },
   linux: {},
   mac: {},
 } // alpine not included for now
-const PREBUILT_REMOTE_URL = 'https://github.com/nexe/nexe/releases/download/v3.3.3/'
+const PREBUILT_REMOTE_URL = 'https://salto-cli-releases.s3.eu-central-1.amazonaws.com/build_artifacts/'
 
 const resources = [
   ...fontFiles.values(),

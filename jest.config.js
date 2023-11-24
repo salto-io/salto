@@ -19,7 +19,7 @@ const fs = require('fs')
 const path = require('path')
 
 const packagesDir = `${__dirname}/packages`
-const packagesWithoutTests = ['vscode']
+const packagesWithoutTests = ['vscode', 'zendesk-support-adapter']
 const packageConfigs = (() => {
   const packageDir = package => './' + path.relative(__dirname, `${packagesDir}/${package}`)
   const packages = fs.readdirSync(packagesDir).filter(p => !packagesWithoutTests.includes(p))

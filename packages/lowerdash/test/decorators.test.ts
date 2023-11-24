@@ -27,6 +27,7 @@ describe('decorators', () => {
         return `${originalResult}_modified`
       }
     )
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const ensureFooIsCalledDecorator = decorators.wrapMethodWith(ensureFooIsCalled)
 
     class MyClass {

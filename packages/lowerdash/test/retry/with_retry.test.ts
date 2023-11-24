@@ -82,7 +82,7 @@ describe('withRetry', () => {
       try {
         await withRetry(() => Promise.resolve(false))
       } catch (e) {
-        caught = e
+        caught = e as Error
       }
       expect(caught).toBeDefined()
     })

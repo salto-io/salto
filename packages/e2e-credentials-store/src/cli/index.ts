@@ -51,7 +51,8 @@ const main = async ({
     const code = await parser(argv.slice(2))
     return exit(code)
   } catch (e) {
-    writeLine(stderr, e.stack || e)
+    const E : Error = e as Error
+    writeLine(stderr, E.stack || E.message)
     return exit(2)
   }
 }

@@ -51,7 +51,8 @@ export default async (
     )
     await program.parseAsync(input.args, { from: 'user' })
     return CliExitCode.Success
-  } catch (err) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (err : any) {
     // Our commander configuration is to not exit after exiting (throwing an error)
     // This handles the proper exit code if the commander had an error/help/version print
     if (err.name && err.name === COMMANDER_ERROR_NAME) {

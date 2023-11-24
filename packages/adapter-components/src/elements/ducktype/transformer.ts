@@ -409,7 +409,7 @@ export const getAllElements = async ({
           errors: [],
         }
       } catch (e) {
-        if (isErrorTurnToConfigSuggestion?.(e)
+        if (isErrorTurnToConfigSuggestion?.(e as Error)
           && (reversedSupportedTypes[args.typeName] !== undefined)) {
           const typesToExclude = reversedSupportedTypes[args.typeName]
           typesToExclude.forEach(type => {
@@ -417,7 +417,8 @@ export const getAllElements = async ({
           })
           return { elements: [], errors: [] }
         }
-        if (e.response?.status === 403 || e.response?.status === 401) {
+        if ((e as { response: { status : number } }).response?.status === 403
+        || (e as { response: { status : number } }).response?.status === 401) {
           const newError: SaltoError = {
             message: `Salto could not access the ${args.typeName} resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource`,
             severity: 'Warning',

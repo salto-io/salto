@@ -15,7 +15,8 @@
         "incremental": true,
         "composite": true,
         "noEmitOnError": true,
-        "experimentalDecorators": true
+        "experimentalDecorators": true,
+        "skipLibCheck": true
     },
     "files": [],
     "include": []

@@ -139,9 +139,10 @@ export const mapToUserFriendlyErrorMessages = decorators.wrapMethodWith(
       const userFriendlyMessageByMapperName = _.mapValues(
         _.pickBy(
           ERROR_MAPPERS,
-          mapper => mapper.test(e)
+          mapper => mapper.test((e as Error))
         ),
-        mapper => mapper.map(e)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        mapper => mapper.map(e as any)
       )
 
       const matchedMapperNames = Object.keys(userFriendlyMessageByMapperName)

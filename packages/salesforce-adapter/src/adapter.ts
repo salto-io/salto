@@ -21,6 +21,7 @@ import {
 } from '@salto-io/adapter-api'
 import {
   filter,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   logDuration,
   resolveChangeElement,
   restoreChangeElement,

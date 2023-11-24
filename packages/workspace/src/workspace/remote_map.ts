@@ -181,7 +181,7 @@ export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMa
     return this.data.size === 0
   }
 
-  [Symbol.toStringTag]: '[InMemoryRemoteMap]'
+  [Symbol.toStringTag]!: '[InMemoryRemoteMap]'
 }
 
 export const mapRemoteMapResult = <T, R>(

@@ -77,7 +77,7 @@ export const organizationExistenceValidator: (
       : await getOrganizationsByIds(orgIdentifiers, client)
   } catch (e) {
     // If we fail for any reason, we don't want to block the user from deploying
-    log.warn(`organizationExistenceValidator - Failed to get organizations from Zendesk: ${e.message}`)
+    log.warn(`organizationExistenceValidator - Failed to get organizations from Zendesk: ${(e as Error).message}`)
     return []
   }
 

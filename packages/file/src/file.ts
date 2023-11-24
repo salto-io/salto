@@ -26,6 +26,9 @@ export const mkdirp = promisify(mkdirpLib)
 export const { copyFile, writeFile, readFile, readdir: readDir } = fs.promises
 export const { statSync, existsSync, readFileSync } = fs
 
+export interface ENOENTError extends Error {
+  code: string
+}
 export const notFoundAsUndefined = <
   TArgs extends unknown[],
   TReturn,
@@ -37,7 +40,7 @@ export const notFoundAsUndefined = <
     try {
       return await f(...args)
     } catch (err) {
-      if (err.code === 'ENOENT') {
+      if ((err as ENOENTError).code === 'ENOENT') {
         return undefined
       }
       throw err

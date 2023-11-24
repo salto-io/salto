@@ -65,7 +65,7 @@ const defaultStringTokenTranformFunc = (
         end: positionAtEnd(token),
         filename: context.filename,
       },
-      e.message
+      (e as Error).message
     ))
     return ''
   }

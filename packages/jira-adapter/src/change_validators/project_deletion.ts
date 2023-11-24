@@ -39,7 +39,7 @@ export const doesProjectHaveIssues = async (
       },
     })
   } catch (e) {
-    log.error(`Received an error Jira search API, ${e.message}. Assuming project ${instance.elemID.getFullName()} has issues.`)
+    log.error(`Received an error Jira search API, ${(e as Error).message}. Assuming project ${instance.elemID.getFullName()} has issues.`)
     return true
   }
 

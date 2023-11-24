@@ -52,7 +52,7 @@ const convertStringToObject = (
         return fieldValue
       } catch (e) {
         log.error('failed to convert field %s to JSON. Error: %s, value: %o, stack: %o',
-          fieldName, e, fieldValue, e.stack)
+          fieldName, e, fieldValue, (e as Error).stack)
       }
     }
     return fieldValue

@@ -15,6 +15,7 @@
 */
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
+import { HTTPError } from '@salto-io/adapter-components/src/client'
 import { createConnection } from './connection'
 import { ZUORA_BILLING } from '../constants'
 import { Credentials } from '../auth'
@@ -61,7 +62,7 @@ export default class ZuoraClient extends clientUtils.AdapterHTTPClient<
     try {
       return await super.getSinglePage(args)
     } catch (e) {
-      const status = e.response?.status
+      const status = (e as HTTPError).response?.status
       // Zuora sometimes returns 404 on speicic instances (e.g. workflow export)
       if (status === 404) {
         log.warn('Suppressing %d error %o', status, e)

@@ -57,7 +57,7 @@ const createServiceUrl = (instance: InstanceElement, baseUrl: string): void => {
     const suffixUrl = createSuffixUrL(instance)
     instance.annotations[CORE_ANNOTATIONS.SERVICE_URL] = (new URL(suffixUrl, baseUrl)).href
   } catch (error) {
-    log.warn(`Failed to create serviceUrl for ${instance.elemID.getFullName()}. Error: ${error.message}}`)
+    log.warn(`Failed to create serviceUrl for ${instance.elemID.getFullName()}. Error: ${(error as Error).message}}`)
   }
 }
 

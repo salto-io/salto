@@ -192,8 +192,8 @@ export const axiosConnection = <TCredentials>({
       const accountInfo = await credValidateFunc({ credentials: creds, connection: httpClient })
       return Object.assign(httpClient, { accountInfo })
     } catch (e) {
-      log.error(`Login failed: ${e}, stack: ${e.stack}`)
-      if (e.response?.status === 401 || e instanceof UnauthorizedError) {
+      log.error(`Login failed: ${e}, stack: ${(e as Error).stack}`)
+      if ((e as AxiosError).response?.status === 401 || e instanceof UnauthorizedError) {
         throw new UnauthorizedError('Unauthorized - update credentials and try again')
       }
       throw new Error(`Login failed with error: ${e}`)

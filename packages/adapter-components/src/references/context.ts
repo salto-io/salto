@@ -103,7 +103,7 @@ export const neighborContextGetter = ({
     }
     return contextValueMapper ? contextValueMapper(contextStr) : contextStr
   } catch (e) {
-    log.error('could not resolve context for reference. error: %s, params: %s, stack: %s', e, { fieldPath, contextFieldName, levelsUp }, e.stack)
+    log.error('could not resolve context for reference. error: %s, params: %s, stack: %s', e, { fieldPath, contextFieldName, levelsUp }, (e as Error).stack)
     return undefined
   }
 })

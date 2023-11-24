@@ -17,7 +17,7 @@ import { ElemID, InstanceElement, isInstanceElement } from '@salto-io/adapter-ap
 import { createSchemeGuard, transformValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, regex as lowerdashRegex } from '@salto-io/lowerdash'
-import Joi, { string } from 'joi'
+import Joi from 'joi'
 import _ from 'lodash'
 import { MaskingConfig } from '../config/config'
 import { FilterCreator } from '../filter'
@@ -35,8 +35,8 @@ type Header = {
 
 const HEADERS_SCHEME = Joi.array().items(
   Joi.object({
-    name: string().allow('').required(),
-    value: string().allow('').required(),
+    name: Joi.string().allow('').required(),
+    value: Joi.string().allow('').required(),
   }).unknown(true)
 )
 

@@ -52,7 +52,7 @@ export const validateCredentials = async (_creds: {
       isProduction: accountType === PRODUCTION_ACCOUNT_TYPE,
     }
   } catch (error) {
-    if (error.response?.status === 401) {
+    if ((error as { response: { status : number } }).response?.status === 401) {
       log.error('Failed to validate credentials: %s', error)
       throw new client.UnauthorizedError('Invalid Credentials')
     }

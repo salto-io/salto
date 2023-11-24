@@ -19,6 +19,7 @@ import {
   DeployModifiers, FetchOptions,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import SAPClient from './client/client'

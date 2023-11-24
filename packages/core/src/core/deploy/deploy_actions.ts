@@ -154,7 +154,7 @@ export const deployActions = async (
         }
         reportProgress(item, 'finished')
       } catch (error) {
-        reportProgress(item, 'error', error.message ?? String(error))
+        reportProgress(item, 'error', (error as Error).message ?? String(error))
         log.error('Got error deploying item %s: %o', item.groupKey, error)
         throw error
       }
@@ -182,10 +182,11 @@ export const deployActions = async (
         }
       })
       if (error.circularDependencyError) {
+        const errMsg = error.circularDependencyError.message
         error.circularDependencyError.causingNodeIds.forEach((id: PlanItemId) => {
           const item = deployPlan.getItem(id) as PlanItem
-          reportProgress(item, 'error', error.circularDependencyError.message)
-          deployErrors.push({ groupId: item.groupKey, message: error.circularDependencyError.message, severity: 'Error' as SeverityLevel })
+          reportProgress(item, 'error', errMsg)
+          deployErrors.push({ groupId: item.groupKey, message: errMsg, severity: 'Error' as SeverityLevel })
         })
       }
     }

@@ -28,6 +28,11 @@ type Lister = (
 
 type ListFormat = 'json' | 'pretty'
 
+type LeaseWithClientID<T> = LeaseWithStatus<T> & {
+  'clientId' : unknown
+  'leaseExpiresBy': Date
+}
+
 const listPretty: Lister = async iterable => {
   const t = new Table()
   const now = Date.now()
@@ -37,11 +42,11 @@ const listPretty: Lister = async iterable => {
     if (done) return undefined
     t.cell('id', value.id)
     t.cell('status', value.status)
-    if (value.clientId !== undefined) {
-      t.cell('clientId', value.clientId)
+    if ((value as LeaseWithClientID<unknown>).clientId !== undefined) {
+      t.cell('clientId', (value as LeaseWithClientID<unknown>).clientId)
     }
-    if (value.leaseExpiresBy !== undefined) {
-      const duration = now - value.leaseExpiresBy.getTime()
+    if ((value as LeaseWithClientID<unknown>).leaseExpiresBy !== undefined) {
+      const duration = now - (value as LeaseWithClientID<unknown>).leaseExpiresBy.getTime()
       t.cell('expires', humanizeDuration(duration, { round: true, largest: 1 }))
     }
     if (value.status === 'suspended') {

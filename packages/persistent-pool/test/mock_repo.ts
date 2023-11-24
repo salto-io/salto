@@ -16,14 +16,12 @@
 import { types } from '@salto-io/lowerdash'
 import { Repo, Pool, LeaseWithStatus } from '../src/index'
 
-const mockFunc = <
-  T,
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  FN extends types.KeysOfType<T, Function>,
-  F extends T[FN] = T[FN],
-  RT extends ReturnType<F> = ReturnType<F>,
-  PT extends Parameters<F> = Parameters<F>,
-  >(): jest.Mock<RT, PT> => jest.fn<RT, PT>()
+const mockFunc = <T, FN extends keyof T>(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+): T[FN] extends (...args: any[]) => any
+    ? jest.Mock<ReturnType<T[FN]>, Parameters<T[FN]>>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    : never => jest.fn() as any
 
 export type MockObj<T> = T & {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

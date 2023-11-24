@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, getChangeData, ProgressReporter } from '@salto-io/adapter-api'
 import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { applyFunctionToChangeData, logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, objects } from '@salto-io/lowerdash'

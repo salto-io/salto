@@ -27,6 +27,9 @@ import asyncToArray from '../../utils/async_to_array'
 
 const { retryStrategies } = retryUtil
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const global = (globalThis as any)
+
 describe('when there are existing leases', () => {
   const NUM_LEASES = 40
 
@@ -110,7 +113,7 @@ describe('when there are existing leases', () => {
           await Promise.all(repeat(NUM_LEASES, () => pool2.lease(timeout))),
         ])
       } catch (e) {
-        expect(e.toString()).toContain('ConditionalCheckFailedException')
+        expect(e?.toString()).toContain('ConditionalCheckFailedException')
       }
       return expect(pool2.waitForLease(timeout, retryStrategies.none())).resolves.not.toBeNull()
     })

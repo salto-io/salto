@@ -192,5 +192,6 @@ module.exports = {
             version: '16.9' // not using react now, set to disable warning
         }
     },
+    ignorePatterns: ["cred_store.js"],
 }
 

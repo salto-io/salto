@@ -61,6 +61,7 @@ import {
   UsernamePasswordCredentials,
 } from '../types'
 import Connection from './jsforce'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { mapToUserFriendlyErrorMessages } from './user_facing_errors'
 import { HANDLED_ERROR_PREDICATES } from '../config_change'
 
@@ -68,6 +69,7 @@ const { makeArray } = collections.array
 const { toMD5 } = hash
 
 const log = logger(module)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const { logDecorator, throttle, requiresLogin, createRateLimitersFromConfig } = clientUtils
 
 type DeployOptions = Pick<JSForceDeployOptions, 'checkOnly'>
@@ -171,7 +173,9 @@ const validateCRUDResult = (isDelete: boolean): decorators.InstanceMethodDecorat
     }
   )
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const validateDeleteResult = validateCRUDResult(true)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const validateSaveResult = validateCRUDResult(false)
 
 export type SalesforceClientOpts = {
@@ -244,7 +248,8 @@ const oauthConnection = (params: OauthConnectionParams): Connection => {
     log.debug('accessToken has been refreshed', { accessToken: toMD5(accessToken) })
   })
 
-  return conn
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return conn as any
 }
 
 const realConnection = (
@@ -256,7 +261,8 @@ const realConnection = (
     loginUrl: `https://${isSandbox ? 'test' : 'login'}.salesforce.com/`,
     requestModule: createRequestModuleFunction(retryOptions),
   })
-)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+) as any
 
 type SendChunkedArgs<TIn, TOut> = {
   input: TIn | TIn[]
@@ -293,7 +299,8 @@ const sendChunked = async <TIn, TOut>({
         log.debug('Finished %s on %o', operationInfo, chunkInput[0])
       }
       return { result, errors: [] }
-    } catch (error) {
+    } catch (err) {
+      const error = err as Error
       if (chunkInput.length > 1) {
         // Try each input individually to single out the one that caused the error
         log.warn('chunked %s failed on chunk with error: %s. Message: %s. Trying each element separately.',
@@ -368,7 +375,7 @@ const createConnectionFromCredentials = (
         isSandbox: creds.isSandbox,
       })
     } catch (error) {
-      throw new CredentialError(error.message)
+      throw new CredentialError((error as Error).message)
     }
   }
   return realConnection(creds.isSandbox, options)
@@ -382,7 +389,8 @@ const retryOnBadResponse = async <T extends object>(
     let res: T
     try {
       res = await request()
-    } catch (e) {
+    } catch (err) {
+      const e = err as Error
       log.warn(`caught exception: ${e.message}. ${attempts} retry attempts left from ${retryAttempts} in total`)
       if (attempts > 1 && errorMessagesToRetry.some(message => e.message.includes(message))) {
         log.warn('Encountered invalid result from salesforce, error message: %s, will retry %d more times', e.message, attempts - 1)
@@ -416,7 +424,7 @@ export const loginFromCredentialsAndReturnOrgId = async (
     try {
       return (await connection.login(creds.username, creds.password + (creds.apiToken ?? ''))).organizationId
     } catch (error) {
-      throw new CredentialError(error.message)
+      throw new CredentialError((error as Error).message)
     }
   }
   // Oauth connection doesn't require further login
@@ -650,7 +658,7 @@ export default class SalesforceClient {
     try {
       return new URL(this.conn.instanceUrl)
     } catch (e) {
-      log.error(`Caught exception when tried to parse salesforce url: ${e.stack}`)
+      log.error(`Caught exception when tried to parse salesforce url: ${(e as Error).stack}`)
       return undefined
     }
   }
@@ -663,8 +671,8 @@ export default class SalesforceClient {
   @logDecorator(
     [],
     args => {
-      const arg = args[1]
-      return (_.isArray(arg) ? arg : [arg]).length.toString()
+    const arg = args[1]
+    return (_.isArray(arg) ? arg : [arg]).length.toString()
     },
   )
   @requiresLogin()

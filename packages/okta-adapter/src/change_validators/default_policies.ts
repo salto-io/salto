@@ -39,7 +39,7 @@ const isDeletedWithParentPolicy = (
     const parentPolicyElemId = getParent(instance).elemID.getFullName()
     return removedPoliciesElemIds.has(parentPolicyElemId)
   } catch (e) {
-    log.error(`In defaultPoliciesValidator, could not find parent policy for policy rule: ${instance.elemID.getFullName()}: ${e.message}`)
+    log.error(`In defaultPoliciesValidator, could not find parent policy for policy rule: ${instance.elemID.getFullName()}: ${(e as Error).message}`)
     return false
   }
 }

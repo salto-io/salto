@@ -36,7 +36,7 @@ export const validateCredentials = async ({ connection }: {
     }
   } catch (e) {
     log.error('Failed to validate credentials: %s', e)
-    throw new clientUtils.UnauthorizedError(e)
+    throw new clientUtils.UnauthorizedError((e as Error).message)
   }
 
   // default to empty to avoid preventing users from refreshing their credentials in the SaaS.

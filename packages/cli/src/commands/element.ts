@@ -150,7 +150,8 @@ const moveElement = async (
     }
     await workspace.flush()
     return CliExitCode.Success
-  } catch (e) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (e : any) {
     errorOutputLine(formatMoveFailed(e.message), output)
     return CliExitCode.AppError
   }
@@ -362,7 +363,8 @@ export const cloneAction: WorkspaceCommandAction<ElementCloneArgs> = async ({
     await workspace.sync(sourceElemIds, elemIdsToRemove, envsToCloneTo)
     await workspace.flush()
     return CliExitCode.Success
-  } catch (e) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (e : any) {
     errorOutputLine(formatCloneToEnvFailed(e.message), output)
     return CliExitCode.AppError
   }
@@ -454,7 +456,8 @@ export const listUnresolvedAction: WorkspaceCommandAction<ElementListUnresolvedA
     }
 
     return CliExitCode.Success
-  } catch (e) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (e : any) {
     log.error(`Error listing elements: ${e}`)
     errorOutputLine(formatElementListUnresolvedFailed(e.message), output)
     return CliExitCode.AppError
@@ -488,7 +491,8 @@ type OpenActionArgs = {
 const safeGetElementId = (maybeElementIdPath: string, output: CliOutput): ElemID | undefined => {
   try {
     return ElemID.fromFullName(maybeElementIdPath)
-  } catch (e) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (e : any) {
     errorOutputLine(e.message, output)
     return undefined
   }
@@ -586,7 +590,8 @@ export const listAction: WorkspaceCommandAction<ElementListArgs> = async ({
       return CliExitCode.AppError
     }
     return await listElements(workspace, output, mode, validSelectors)
-  } catch (e) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (e : any) {
     errorOutputLine(formatListFailed(e.message), output)
     return CliExitCode.AppError
   }

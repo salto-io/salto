@@ -843,6 +843,9 @@ export default class SalesforceClient {
         clearInterval(pollingInterval)
         return result
       }
+      // We can't use finally() because, despite what the type definition for jsforce says,
+      // DeployResultLocator.complete() actually returns an AsyncResultLocator<T> and not a Promise<T>.
+      // ref. https://github.com/jsforce/jsforce/blob/c04515846e91f84affa4eb87a7b2adb1f58bf04d/lib/api/metadata.js#L830
       deployResult = await deployStatus.complete(true).then(clearPollingInterval, clearPollingInterval)
     } else {
       deployResult = await deployStatus.complete(true)

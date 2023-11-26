@@ -15,43 +15,24 @@
 */
 import _ from 'lodash'
 import {
-  BuiltinTypes,
-  Change,
-  ChangeGroup,
-  CORE_ANNOTATIONS,
-  DeployResult,
-  ElemID,
-  getChangeData,
-  InstanceElement,
-  isAdditionChange,
-  isInstanceElement,
-  isModificationChange,
-  isRemovalChange,
-  ObjectType,
-  PrimitiveType,
-  PrimitiveTypes,
-  ReferenceExpression,
-  toChange,
+  ElemID, InstanceElement, ObjectType, BuiltinTypes, DeployResult, ReferenceExpression,
+  isRemovalChange, getChangeData, isInstanceElement, ChangeGroup, isModificationChange,
+  isAdditionChange, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, Change, toChange,
 } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
-import { Batch, BulkLoadOperation, BulkOptions, Record as SfRecord } from '@salto-io/jsforce'
+import { BulkLoadOperation, BulkOptions, Record as SfRecord, Batch } from '@salto-io/jsforce'
 import { EventEmitter } from 'events'
 import { Types } from '../src/transformers/transformer'
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
-import {
-  ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
-  CUSTOM_OBJECT_ID_FIELD,
-  DefaultSoqlQueryLimits,
-  FIELD_ANNOTATIONS,
-  OWNER_ID,
-  SBAA_APPROVAL_CONDITION,
-  SBAA_APPROVAL_RULE,
-  SBAA_CONDITIONS_MET,
-} from '../src/constants'
 import Connection from '../src/client/jsforce'
 import mockAdapter from './adapter'
 import { createCustomObjectType } from './utils'
+import {
+  ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP, CUSTOM_OBJECT_ID_FIELD,
+  FIELD_ANNOTATIONS, OWNER_ID, SBAA_APPROVAL_CONDITION,
+  SBAA_APPROVAL_RULE, SBAA_CONDITIONS_MET, DefaultSoqlQueryLimits,
+} from '../src/constants'
 import { mockTypes } from './mock_elements'
 
 describe('Custom Object Instances CRUD', () => {
@@ -61,8 +42,6 @@ describe('Custom Object Instances CRUD', () => {
   const mockElemID = new ElemID(constants.SALESFORCE, 'Test')
   const instanceName = 'Instance'
   const anotherInstanceName = 'AnotherInstance'
-  const accountLookupField = 'AccountLookup__c'
-  const accountLookupRecordId = 'accountLookupId'
 
   const customObject = new ObjectType({
     elemID: mockElemID,
@@ -148,15 +127,6 @@ describe('Custom Object Instances CRUD', () => {
           [constants.API_NAME]: 'Name',
         },
       },
-      [accountLookupField]: {
-        refType: Types.primitiveDataTypes.Lookup,
-        annotations: {
-          [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
-          [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
-          [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
-          [constants.API_NAME]: accountLookupField,
-        },
-      },
     },
     annotationRefsOrTypes: {},
     annotations: {
@@ -164,14 +134,6 @@ describe('Custom Object Instances CRUD', () => {
       [constants.API_NAME]: 'Type',
     },
   })
-  const accountLookupInstance = new InstanceElement(
-    'accountLookupInstance',
-    mockTypes.Account,
-    {
-      Name: 'Test Account',
-      [CUSTOM_OBJECT_ID_FIELD]: accountLookupRecordId,
-    }
-  )
   const existingInstance = new InstanceElement(
     instanceName,
     customObject,
@@ -188,7 +150,6 @@ describe('Custom Object Instances CRUD', () => {
         LastName: 'last',
         Salutation: 'mrs.',
       },
-      [accountLookupField]: new ReferenceExpression(accountLookupInstance.elemID, accountLookupInstance),
     }
   )
   const existingInstanceRecordValues = {
@@ -204,7 +165,6 @@ describe('Custom Object Instances CRUD', () => {
       country: 'Israel',
       postalCode: null,
     },
-    [accountLookupField]: accountLookupRecordId,
     FirstName: 'first',
     LastName: 'last',
     Salutation: 'mrs.',
@@ -293,7 +253,7 @@ describe('Custom Object Instances CRUD', () => {
               data: {
                 includeObjects: ['Test'],
                 saltoIDSettings: {
-                  defaultIdFields: ['SaltoName', 'NumField', 'Address', 'Name', accountLookupField],
+                  defaultIdFields: ['SaltoName', 'NumField', 'Address', 'Name'],
                   overrides: [
                     { objectsRegex: 'TestType__c', idFields: ['Name'] },
                     { objectsRegex: 'sbaa__ApprovalRule__c|sbaa__ApprovalCondition__c', idFields: ['Id'] },
@@ -494,7 +454,7 @@ describe('Custom Object Instances CRUD', () => {
 
           it('Should query according to instance values', () => {
             expect(mockQuery.mock.calls).toHaveLength(1)
-            expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,OwnerId,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix,AccountLookup__c FROM Type WHERE SaltoName IN (\'existingInstance\',\'newInstanceWithRef\') AND NumField IN (1,2) AND City IN (\'Tel-Aviv\',null) AND Country IN (\'Israel\',null) AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (\'first\',null) AND LastName IN (\'last\',null) AND Salutation IN (\'mrs.\',null) AND MiddleName IN (null) AND Suffix IN (null) AND AccountLookup__c IN (\'accountLookupId\',null)')
+            expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,OwnerId,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix FROM Type WHERE SaltoName IN (\'existingInstance\',\'newInstanceWithRef\') AND NumField IN (1,2) AND City IN (\'Tel-Aviv\',null) AND Country IN (\'Israel\',null) AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (\'first\',null) AND LastName IN (\'last\',null) AND Salutation IN (\'mrs.\',null) AND MiddleName IN (null) AND Suffix IN (null)')
           })
 
           it('Should call load operation twice - once with insert once with update', () => {
@@ -592,7 +552,7 @@ describe('Custom Object Instances CRUD', () => {
 
             it('Should query according to instance values', () => {
               expect(mockQuery.mock.calls).toHaveLength(1)
-              expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,OwnerId,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix,AccountLookup__c FROM Type WHERE SaltoName IN (\'newInstanceWithRef\',\'anotherNewInstance\') AND NumField IN (2,3) AND City IN (null,\'Ashkelon\') AND Country IN (null,\'Israel\') AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (null) AND LastName IN (null) AND Salutation IN (null) AND MiddleName IN (null) AND Suffix IN (null) AND AccountLookup__c IN (null)')
+              expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,OwnerId,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix FROM Type WHERE SaltoName IN (\'newInstanceWithRef\',\'anotherNewInstance\') AND NumField IN (2,3) AND City IN (null,\'Ashkelon\') AND Country IN (null,\'Israel\') AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (null) AND LastName IN (null) AND Salutation IN (null) AND MiddleName IN (null) AND Suffix IN (null)')
             })
 
             it('Should call load operation once with insert', () => {
@@ -743,7 +703,7 @@ describe('Custom Object Instances CRUD', () => {
 
           it('Should query according to instance values', () => {
             expect(mockQuery.mock.calls).toHaveLength(1)
-            expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,OwnerId,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix,AccountLookup__c FROM Type WHERE SaltoName IN (\'existingInstance\',\'anotherExistingInstanceWithThing\\\'\') AND NumField IN (1,null) AND City IN (\'Tel-Aviv\',null) AND Country IN (\'Israel\',null) AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (\'first\',null) AND LastName IN (\'last\',null) AND Salutation IN (\'mrs.\',null) AND MiddleName IN (null) AND Suffix IN (null) AND AccountLookup__c IN (\'accountLookupId\',null)')
+            expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,OwnerId,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix FROM Type WHERE SaltoName IN (\'existingInstance\',\'anotherExistingInstanceWithThing\\\'\') AND NumField IN (1,null) AND City IN (\'Tel-Aviv\',null) AND Country IN (\'Israel\',null) AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (\'first\',null) AND LastName IN (\'last\',null) AND Salutation IN (\'mrs.\',null) AND MiddleName IN (null) AND Suffix IN (null)')
           })
 
           it('Should call load operation once with update', () => {
@@ -858,7 +818,7 @@ describe('Custom Object Instances CRUD', () => {
         })
         it('Should query according to instance values', () => {
           expect(mockQuery.mock.calls).toHaveLength(1)
-          expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,OwnerId,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix,AccountLookup__c FROM Type WHERE SaltoName IN (\'existingInstance\',\'newInstanceWithRef\',\'anotherExistingInstanceWithThing\\\'\',\'anotherNewInstance\') AND NumField IN (1,2,null,3) AND City IN (\'Tel-Aviv\',null,\'Ashkelon\') AND Country IN (\'Israel\',null) AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (\'first\',null) AND LastName IN (\'last\',null) AND Salutation IN (\'mrs.\',null) AND MiddleName IN (null) AND Suffix IN (null) AND AccountLookup__c IN (\'accountLookupId\',null)')
+          expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,OwnerId,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix FROM Type WHERE SaltoName IN (\'existingInstance\',\'newInstanceWithRef\',\'anotherExistingInstanceWithThing\\\'\',\'anotherNewInstance\') AND NumField IN (1,2,null,3) AND City IN (\'Tel-Aviv\',null,\'Ashkelon\') AND Country IN (\'Israel\',null) AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (\'first\',null) AND LastName IN (\'last\',null) AND Salutation IN (\'mrs.\',null) AND MiddleName IN (null) AND Suffix IN (null)')
         })
 
         it('Should call load operation both with update and with insert', () => {

@@ -13,22 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  FixElementsFunc,
-  GetCustomReferencesFunc,
-  InstanceElement,
-  isInstanceElement,
-  isReferenceExpression,
-  ReferenceInfo,
-} from '@salto-io/adapter-api'
+import { GetCustomReferencesFunc, InstanceElement, isInstanceElement, isReferenceExpression, ReferenceInfo } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import Joi from 'joi'
 import { FIELD_CONFIGURATION_TYPE_NAME } from '../constants'
 import { WeakReferencesHandler } from './weak_references_handler'
 
 const { awu } = collections.asynciterable
 
+const log = logger(module)
 
 type FieldConfigurationItems = {
   id: unknown
@@ -39,7 +34,10 @@ type FieldConfigurationItems = {
 
 const FIELD_CONFIGURATION_ITEMS_SCHEME = Joi.array().items(
   Joi.object({
-    fieldId: Joi.optional(),
+    id: Joi.optional(),
+    description: Joi.optional(),
+    isHidden: Joi.optional(),
+    isRequired: Joi.optional(),
   }).unknown(true),
 )
 
@@ -56,7 +54,7 @@ const getFieldReferences = async (
   return awu(fieldConfigurationItems)
     .map(async (field, index) => (
       isReferenceExpression(field.id)
-        ? { source: instance.elemID.createNestedID(index.toString(), 'fieldId'), target: field.id.elemID, type: 'weak' as const }
+        ? { source: instance.elemID.createNestedID(index.toString(), 'id'), target: field.id.elemID, type: 'weak' as const }
         : undefined))
     .filter(values.isDefined)
     .toArray()
@@ -69,14 +67,14 @@ const getFieldConfigurationItemsReferences: GetCustomReferencesFunc = async elem
     .flatMap(instance => getFieldReferences(instance))
     .toArray()
 
-const removeMissingFields: WeakReferencesHandler['removeWeakReferences'] = ({ elementsSource })
-  : FixElementsFunc => async elements => {
+const removeMissingFields: WeakReferencesHandler['removeWeakReferences'] = ({ elementsSource }) => async elements => {
   const fixedElements = await awu(elements)
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
     .map(async instance => {
       const fieldConfigurationItems = instance.value.fields
       if (fieldConfigurationItems === undefined || !isFieldConfigurationItems(fieldConfigurationItems)) {
+        log.warn(`fields value is corrupted in instance ${instance.elemID.getFullName()}`)
         return undefined
       }
 

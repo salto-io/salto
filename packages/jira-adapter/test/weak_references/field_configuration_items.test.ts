@@ -49,8 +49,8 @@ describe('field_configuration_items', () => {
       const references = await fieldConfigurationsHandler.findWeakReferences([instance])
 
       expect(references).toEqual([
-        { source: instance.elemID.createNestedID('1', 'fieldId'), target: fieldConfigurationItemInstance.elemID, type: 'weak' },
-        { source: instance.elemID.createNestedID('2', 'fieldId'), target: new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field1ConfigurationItem2'), type: 'weak' },
+        { source: instance.elemID.createNestedID('1', 'id'), target: fieldConfigurationItemInstance.elemID, type: 'weak' },
+        { source: instance.elemID.createNestedID('2', 'id'), target: new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field1ConfigurationItem2'), type: 'weak' },
       ])
     })
 

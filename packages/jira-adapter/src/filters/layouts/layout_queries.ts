@@ -17,26 +17,24 @@ export const QUERY = `query SwiftJswCmpInitial($projectId: Long!, $extraDefinerI
   ...CMPJSWLayoutConfigurationFragment
 }
 
-  fragment JiraIssueLayoutActivePanelItemFragment on JiraIssueItemPanelItem {
-    panelItemId
+fragment JiraIssueLayoutActivePanelItemFragment on JiraIssueItemPanelItem {
+  panelItemId
+}
+
+fragment JiraIssueLayoutActiveFieldItemFragment on JiraIssueItemFieldItem {
+  fieldItemId
+  containerPosition
+}
+
+fragment JiraIssueLayoutTabContainerFragment on JiraIssueItemTabContainer {
+  tabContainerId
+  name
+  items {
+    nodes {
+      ...JiraIssueLayoutActiveFieldItemFragment
+    }
   }
-
-
-
-  fragment JiraIssueLayoutActiveFieldItemFragment on JiraIssueItemFieldItem {
-    fieldItemId
-    containerPosition
-  }
-
-  fragment JiraIssueLayoutTabContainerFragment on JiraIssueItemTabContainer {
-      tabContainerId
-      name
-      items {
-        nodes {
-          ...JiraIssueLayoutActiveFieldItemFragment
-        }
-      }
-  }
+}
 
 fragment JiraIssueLayoutItemContainerFragment on JiraIssueItemContainer {
   containerType
@@ -50,13 +48,10 @@ fragment JiraIssueLayoutItemContainerFragment on JiraIssueItemContainer {
   }
 }
 
-
-
 fragment PanelItemFragment on JiraIssueLayoutPanelItemConfiguration {
   panelItemId
   name
 }
-
 
 fragment FieldItemBaseFragment on JiraIssueLayoutFieldItemConfiguration {
   fieldItemId
@@ -69,11 +64,10 @@ fragment FieldItemBaseFragment on JiraIssueLayoutFieldItemConfiguration {
   defaultValue
 }
 
-  fragment FieldItemFragment on JiraIssueLayoutFieldItemConfiguration {
-    ...FieldItemBaseFragment
-    properties(keys: [])
-  }
-
+fragment FieldItemFragment on JiraIssueLayoutFieldItemConfiguration {
+  ...FieldItemBaseFragment
+  properties(keys: [])
+}
 
 fragment JiraIssueLayoutItemConfigurationFragment on JiraIssueLayoutItemConfigurationResult {
   items {
@@ -111,50 +105,48 @@ fragment JiraIssueLayoutActivePanelItemFragment on JiraIssueItemPanelItem {
   panelItemId
 }
 
-
-
 fragment JiraIssueLayoutActiveFieldItemFragment on JiraIssueItemFieldItem {
   fieldItemId
   containerPosition
 }
 
 fragment JiraIssueLayoutTabContainerFragment on JiraIssueItemTabContainer {
-    tabContainerId
-    name
-    items {
-      nodes {
-        ...JiraIssueLayoutActiveFieldItemFragment
-      }
+  tabContainerId
+  name
+  items {
+    nodes {
+      ...JiraIssueLayoutActiveFieldItemFragment
     }
+  }
 }
 
 fragment JiraIssueLayoutItemContainerFragment on JiraIssueItemContainer {
-containerType
-items {
-  nodes {
-    ... JiraIssueLayoutActiveFieldItemFragment,
-    ... JiraIssueLayoutActivePanelItemFragment,
-    ... JiraIssueLayoutTabContainerFragment,
+  containerType
+  items {
+    nodes {
+      ... JiraIssueLayoutActiveFieldItemFragment,
+      ... JiraIssueLayoutActivePanelItemFragment,
+      ... JiraIssueLayoutTabContainerFragment,
+    }
   }
-}
 }
 
 
 
 fragment PanelItemFragment on JiraIssueLayoutPanelItemConfiguration {
-panelItemId
-name
+  panelItemId
+  name
 }
 
 
 fragment FieldItemBaseFragment on JiraIssueLayoutFieldItemConfiguration {
-fieldItemId
-custom
-global
-description
-configuration
-required
-defaultValue
+  fieldItemId
+  custom
+  global
+  description
+  configuration
+  required
+  defaultValue
 }
 
 fragment FieldItemFragment on JiraIssueLayoutFieldItemConfiguration {
@@ -163,29 +155,29 @@ fragment FieldItemFragment on JiraIssueLayoutFieldItemConfiguration {
 }
 
 fragment JiraIssueLayoutItemConfigurationFragment on JiraIssueLayoutItemConfigurationResult {
-items {
-  nodes {
-    ...FieldItemFragment
-    ...PanelItemFragment
+  items {
+    nodes {
+      ...FieldItemFragment
+      ...PanelItemFragment
+    }
   }
-}
 }
 
 fragment CMPJSMLayoutConfigurationFragment on Query {
-issueLayoutConfiguration(issueLayoutKey: {projectId: $projectId, extraDefinerId: $extraDefinerId}, type: $layoutType) {
-  ... on JiraIssueLayoutConfigurationResult {
-    issueLayoutResult {
-      id
-      name
-      containers {
-          ...JiraIssueLayoutItemContainerFragment
+  issueLayoutConfiguration(issueLayoutKey: {projectId: $projectId, extraDefinerId: $extraDefinerId}, type: $layoutType) {
+    ... on JiraIssueLayoutConfigurationResult {
+      issueLayoutResult {
+        id
+        name
+        containers {
+            ...JiraIssueLayoutItemContainerFragment
+        }
       }
-    }
-    metadata {
-      configuration {
-          ...JiraIssueLayoutItemConfigurationFragment
+      metadata {
+        configuration {
+            ...JiraIssueLayoutItemConfigurationFragment
+        }
       }
     }
   }
-}
 }`

@@ -106,7 +106,7 @@ export type IssueLayoutConfiguration = {
     configuration: {
       items: {
         nodes: {
-          fieldItemId?: string
+          fieldItemId: string
         }[]
       }
     }

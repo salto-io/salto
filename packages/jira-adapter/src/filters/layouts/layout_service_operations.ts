@@ -103,17 +103,13 @@ export const getLayoutResponse = async ({
   return { data: undefined }
 }
 
-const fromlayoutConfigRespTolayoutConfig = (
+const fromLayoutConfigRespToLayoutConfig = (
   layoutConfig: IssueLayoutConfiguration
 ): issueLayoutConfig => {
   const { containers } = layoutConfig.issueLayoutResult
   const fieldItemIdToMetaData = Object.fromEntries(layoutConfig.metadata.configuration.items.nodes
     .filter(node => !_.isEmpty(node))
-    .map(node => {
-      const { fieldItemId } = node
-      delete node.fieldItemId
-      return [fieldItemId, node]
-    }))
+    .map(node => [node.fieldItemId, _.omit(node, 'fieldItemId')]))
 
   const items = containers
     .flatMap(container => container.items.nodes
@@ -149,7 +145,7 @@ export const getLayout = async ({
       id: issueLayoutResult.id,
       projectId: variables.projectId,
       extraDefinerId: variables.extraDefinerId,
-      issueLayoutConfig: fromlayoutConfigRespTolayoutConfig(response.data.issueLayoutConfiguration),
+      issueLayoutConfig: fromLayoutConfigRespToLayoutConfig(response.data.issueLayoutConfiguration),
     }
     const name = `${instance.value.name}_${issueLayoutResult.name}`
     const serviceIds = adapterElements.createServiceIds(value, 'id', layoutType.elemID)

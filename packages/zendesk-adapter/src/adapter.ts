@@ -334,7 +334,7 @@ const zendeskGuideEntriesFunc = (
   return getZendeskGuideEntriesResponseValues
 }
 
-const getBrandsFromElementsSourceNoCash = async (
+const getBrandsFromElementsSourceNoCache = async (
   elementsSource: ReadOnlyElementsSource
 ): Promise<InstanceElement[]> => (
   awu(await elementsSource.list())
@@ -698,9 +698,9 @@ export default class ZendeskAdapter implements AdapterOperations {
     return { elements, errors: fetchErrors, updatedConfig }
   }
 
-  private async getBrands(elementsSource: ReadOnlyElementsSource): Promise<InstanceElement[]> {
+  private getBrandsFromElementsSource(): Promise<InstanceElement[]> {
     if (this.brandsList === undefined) {
-      this.brandsList = getBrandsFromElementsSourceNoCash(elementsSource)
+      this.brandsList = getBrandsFromElementsSourceNoCache(this.elementsSource)
     }
     return this.brandsList
   }
@@ -709,7 +709,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     if (_.isEmpty(guideResolvedChanges)) {
       return []
     }
-    const brandsList = await this.getBrands(this.elementsSource)
+    const brandsList = await this.getBrandsFromElementsSource()
     log.debug('Found %d brands to handle %d guide changes', brandsList.length, guideResolvedChanges.length)
     const resolvedBrandIdToSubdomain = Object.fromEntries(brandsList.map(
       brandInstance => [brandInstance.value.id, brandInstance.value.subdomain]

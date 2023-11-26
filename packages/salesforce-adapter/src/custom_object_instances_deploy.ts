@@ -374,6 +374,7 @@ const deployAddInstances = async (
     // Building the object this way because order of keys is important
     const idFieldsValues = Object.fromEntries(
       idFieldsNames.map(fieldName => [fieldName, vals[fieldName]])
+        .map(([fieldName, value]) => [fieldName, isInstanceElement(value) ? apiNameSync(value) : value])
     )
     return toMD5(safeJsonStringify(idFieldsValues))
   }

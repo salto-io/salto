@@ -44,7 +44,7 @@
   "devDependencies": {
     "@salto-io/dag": "0.3.48",
     "@salto-io/test-utils": "0.3.48",
-    "@types/jest": "^27.4.0",
+    "@types/jest": "^29.5",
     "@types/lodash": "^4.14.168",
     "@types/moo": "^0.5.0",
     "@types/nearley": "^2.11.0",

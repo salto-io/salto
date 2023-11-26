@@ -38,7 +38,7 @@
   "devDependencies": {
     "@types/easy-table": "^0.0.32",
     "@types/humanize-duration": "^3.18.0",
-    "@types/jest": "^27.4.0",
+    "@types/jest": "^29.5",
     "@types/yargs": "^13.0.4",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",

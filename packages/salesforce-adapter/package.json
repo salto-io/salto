@@ -54,7 +54,7 @@
     "@salto-io/e2e-credentials-store": "0.3.48",
     "@salto-io/jsforce-types": "^0.1.0",
     "@salto-io/test-utils": "0.3.48",
-    "@types/jest": "^27.4.0",
+    "@types/jest": "^29.5",
     "@types/jszip": "^3.1.6",
     "@types/lodash": "^4.14.168",
     "@types/mime-types": "^2.1.0",

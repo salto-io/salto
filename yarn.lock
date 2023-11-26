@@ -2858,6 +2858,32 @@
   dependencies:
     esquery "^1.0.1"
 
+"@salto-io/jsforce-types@^0.1.0":
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/@salto-io/jsforce-types/-/jsforce-types-0.1.0.tgz#e1a6b1c8c8060dabee2055c39f0b1dd9655489f2"
+  integrity sha512-fKC9EdrVoT+5nwjgFi/ybHqT2gWYpCYGBpQ9zfdqc4Qc7rNbWlsr6c1WVrrBxSHNBaoiLpVlrssj166MdOPSAw==
+
+"@salto-io/jsforce@^1.9.3":
+  version "1.9.3"
+  resolved "https://registry.yarnpkg.com/@salto-io/jsforce/-/jsforce-1.9.3.tgz#6a7e2bd818432c40c2b5417e0c438ec16777617e"
+  integrity sha512-346nzB3qt9ljAYSKE8SXi4tyBVvx/m5M81yL1qDpeOjZi/FDoSoEpZII/4srMlKoZil9sUW2PKJ+eRlO9Hf9/w==
+  dependencies:
+    base64-url "^2.2.0"
+    co-prompt "^1.0.0"
+    coffeescript "^1.10.0"
+    commander "^2.9.0"
+    csv-parse "^4.6.3"
+    csv-stringify "^1.0.4"
+    faye "^1.2.0"
+    inherits "^2.0.1"
+    lodash "^4.17.14"
+    multistream "^2.0.5"
+    opn "^5.3.0"
+    promise "^7.1.1"
+    readable-stream "^2.1.0"
+    request "^2.72.0"
+    xml2js "^0.4.16"
+
 "@salto-io/node-diff3@3.1.0-salto.1":
   version "3.1.0-salto.1"
   resolved "https://registry.yarnpkg.com/@salto-io/node-diff3/-/node-diff3-3.1.0-salto.1.tgz#1d5fbee632a37ef1108e0d8c092603a448942684"
@@ -3195,10 +3221,10 @@
   dependencies:
     "@types/istanbul-lib-report" "*"
 
-"@types/jest@*":
-  version "29.5.5"
-  resolved "https://registry.yarnpkg.com/@types/jest/-/jest-29.5.5.tgz#727204e06228fe24373df9bae76b90f3e8236a2a"
-  integrity sha512-ebylz2hnsWR9mYvmBFbXJXr+33UPc4+ZdxyDXh5w0FlPBTfCVN3wPL+kuOiQt3xvrK419v7XWeAs+AeOksafXg==
+"@types/jest@^29.5":
+  version "29.5.10"
+  resolved "https://registry.yarnpkg.com/@types/jest/-/jest-29.5.10.tgz#a10fc5bab9e426081c12b2ef73d24d4f0c9b7f50"
+  integrity sha512-tE4yxKEphEyxj9s4inideLHktW/x6DwesIwWZ9NN1FKf9zbJYsnhBoA9vrHA/IuIOKwPa5PcFBNV4lpMIOEzyQ==
   dependencies:
     expect "^29.0.0"
     pretty-format "^29.0.0"
@@ -8159,13 +8185,13 @@ jest-haste-map@^29.7.0:
   optionalDependencies:
     fsevents "^2.3.2"
 
-jest-junit@*:
-  version "16.0.0"
-  resolved "https://registry.yarnpkg.com/jest-junit/-/jest-junit-16.0.0.tgz#d838e8c561cf9fdd7eb54f63020777eee4136785"
-  integrity sha512-A94mmw6NfJab4Fg/BlvVOUXzXgF0XIH6EmTgJ5NDPp4xoKq0Kr7sErb+4Xs9nZvu58pJojz5RFGpqnZYJTrRfQ==
+jest-junit@^12.0.0:
+  version "12.3.0"
+  resolved "https://registry.yarnpkg.com/jest-junit/-/jest-junit-12.3.0.tgz#ee41a74e439eecdc8965f163f83035cce5998d6d"
+  integrity sha512-+NmE5ogsEjFppEl90GChrk7xgz8xzvF0f+ZT5AnhW6suJC93gvQtmQjfyjDnE0Z2nXJqEkxF0WXlvjG/J+wn/g==
   dependencies:
     mkdirp "^1.0.4"
-    strip-ansi "^6.0.1"
+    strip-ansi "^5.2.0"
     uuid "^8.3.2"
     xml "^1.0.1"
 
@@ -8524,30 +8550,6 @@ jsesc@^2.5.1:
   version "2.5.2"
   resolved "https://registry.yarnpkg.com/jsesc/-/jsesc-2.5.2.tgz#80564d2e483dacf6e8ef209650a67df3f0c283a4"
   integrity sha512-OYu7XEzjkCQ3C5Ps3QIZsQfNpqoJyZZA99wd9aWd05NCtC5pWOkShK2mkL6HXQR6/Cy2lbNdPlZBpuQHXE63gA==
-
-"jsforce-types@https://github.com/salto-io/jsforce-types.git#5ad733cfe3d4d2abd2fbdda0c4f4613e165e50ef":
-  version "0.1.0"
-  resolved "https://github.com/salto-io/jsforce-types.git#5ad733cfe3d4d2abd2fbdda0c4f4613e165e50ef"
-
-"jsforce@https://github.com/salto-io/jsforce.git#3e8adeb2b14f8e443852605729990fd978efc209":
-  version "1.9.3"
-  resolved "https://github.com/salto-io/jsforce.git#3e8adeb2b14f8e443852605729990fd978efc209"
-  dependencies:
-    base64-url "^2.2.0"
-    co-prompt "^1.0.0"
-    coffeescript "^1.10.0"
-    commander "^2.9.0"
-    csv-parse "^4.6.3"
-    csv-stringify "^1.0.4"
-    faye "^1.2.0"
-    inherits "^2.0.1"
-    lodash "^4.17.14"
-    multistream "^2.0.5"
-    opn "^5.3.0"
-    promise "^7.1.1"
-    readable-stream "^2.1.0"
-    request "^2.72.0"
-    xml2js "^0.4.16"
 
 json-buffer@3.0.0:
   version "3.0.0"

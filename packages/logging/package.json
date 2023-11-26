@@ -38,7 +38,7 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@types/jest": "^27.4.0",
+    "@types/jest": "^29.5",
     "@types/lodash": "^4.14.168",
     "@types/minimatch": "^3.0.3",
     "@types/pino": "^6.3.12",

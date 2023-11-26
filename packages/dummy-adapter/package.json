@@ -42,7 +42,7 @@
     "unique-names-generator": "^4.3.1"
   },
   "devDependencies": {
-    "@types/jest": "^27.4.0",
+    "@types/jest": "^29.5",
     "@types/seedrandom": "^2.4.28",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",

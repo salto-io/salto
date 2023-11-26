@@ -66,7 +66,7 @@
     "@salto-io/test-utils": "0.3.48",
     "@types/express": "^4.17.7",
     "@types/inquirer": "7.3.1",
-    "@types/jest": "^27.4.0",
+    "@types/jest": "^29.5",
     "@types/semver": "^7.3.3",
     "@types/source-map-support": "^0.5.0",
     "@types/supertest": "^2.0.4",

@@ -40,7 +40,8 @@ export const appWithGroupPushValidator: ChangeValidator = async changes => {
       try {
         const parentApp = getParent(groupPush)
         return isAppSupportsGroupPush(parentApp) ? undefined : [groupPush.elemID.getFullName(), parentApp.elemID.name]
-      } catch (err) {
+      } catch (e) {
+        const err = e as Error
         log.error(`Could not find parent app for: ${groupPush.elemID.getFullName()}: ${err.message}`)
         return undefined
       }

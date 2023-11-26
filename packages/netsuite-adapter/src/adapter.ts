@@ -21,6 +21,7 @@ import {
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { filter, logDuration } from '@salto-io/adapter-utils'
 import { createElements } from './transformer'
 import { DeployResult, TYPES_TO_SKIP, isCustomRecordType } from './types'

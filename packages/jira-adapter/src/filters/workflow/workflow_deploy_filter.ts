@@ -229,11 +229,12 @@ const deployWithClone = async (
         || (!client.isDataCenter && path.name === 'name' && path.getFullNameParts().includes('statuses')),
     })
     getChangeData(resolvedChange).value.entityId = deployInstance.value.entityId
-  } catch (err) {
+  } catch (e) {
     // We have seen some cases where when creating a workflow, we get an error that a workflow with that name
     // already exists although it didn't exist before the deployment.
     // Even though we get that error the deployment succeeds and the workflow
     // is created, so we get the workflow id from the service and continue.
+    const err = e as Error
     if (!err.message.includes(`A workflow with the name '${deployInstance.value.name}' already exists`)) {
       throw err
     }

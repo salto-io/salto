@@ -34,7 +34,7 @@
     "@salto-io/logging": "0.3.48"
   },
   "devDependencies": {
-    "@types/jest": "^27.4.0",
+    "@types/jest": "^29.5",
     "@types/lodash": "^4.14.168",
     "@types/node": "^18",
     "@typescript-eslint/eslint-plugin": "4.22.1",

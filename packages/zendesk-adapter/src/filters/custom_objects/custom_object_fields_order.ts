@@ -148,7 +148,8 @@ const customObjectFieldsOrderFilter: FilterCreator = ({ client }) => ({
             },
           })
           return { change }
-        } catch (e) {
+        } catch (err) {
+          const e = err as {response: { status: number } }
           return {
             change,
             error: `fields reorder request failed, ${inspectValue(e.response)}`,

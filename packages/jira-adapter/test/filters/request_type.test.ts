@@ -158,6 +158,20 @@ describe('requestType filter', () => {
                       },
                     ],
                   },
+                  metadata: {
+                    configuration: {
+                      items: {
+                        nodes: [
+                          {
+                            fieldItemId: 'testField1',
+                          },
+                          {
+                            fieldItemId: 'testField2',
+                          },
+                        ],
+                      },
+                    },
+                  },
                 },
               },
             }

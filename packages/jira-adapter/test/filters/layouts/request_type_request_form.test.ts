@@ -137,6 +137,22 @@ describe('requestTypeLayoutsFilter', () => {
                     },
                   ],
                 },
+                metadata: {
+                  configuration: {
+                    items: {
+                      nodes: [
+                        {
+                          fieldItemId: 'testField1',
+                          required: true,
+                        },
+                        {
+                          fieldItemId: 'testField2',
+                          required: false,
+                        },
+                      ],
+                    },
+                  },
+                },
               },
             },
           }
@@ -210,6 +226,22 @@ describe('requestTypeLayoutsFilter', () => {
                       },
                     },
                   ],
+                },
+                metadata: {
+                  configuration: {
+                    items: {
+                      nodes: [
+                        {
+                          fieldItemId: 'testField1',
+                          required: true,
+                        },
+                        {
+                          fieldItemId: 'testField2',
+                          required: false,
+                        },
+                      ],
+                    },
+                  },
                 },
               },
             },

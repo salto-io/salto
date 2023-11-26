@@ -101,10 +101,10 @@ import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFil
 import { addDefaults, isCustomObjectSync, isCustomType, listMetadataObjects } from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
-import { getLookUpName, getLookupNameWithFallbackToElement } from './transformers/reference_mapping'
+import { getLookUpName, getLookupNameForDataInstances } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import nestedInstancesAuthorInformation from './filters/author_information/nested_instances'
-import { buildFetchProfile, buildFetchProfileForFetchWithChangesDetection } from './fetch_profile/fetch_profile'
+import { buildFetchProfile } from './fetch_profile/fetch_profile'
 import {
   ArtificialTypes,
   CUSTOM_OBJECT,
@@ -113,6 +113,7 @@ import {
   OWNER_ID,
   PROFILE_METADATA_TYPE,
 } from './constants'
+import { buildMetadataQuery, buildMetadataQueryForFetchWithChangesDetection } from './fetch_profile/metadata_query'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -423,15 +424,13 @@ export default class SalesforceAdapter implements AdapterOperations {
    */
   @logDuration('fetching account configuration')
   async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
-    const fetchProfile = withChangesDetection
-      ? await buildFetchProfileForFetchWithChangesDetection({
-        fetchParams: this.userConfig.fetch ?? {},
-        elementsSource: this.elementsSource,
-      })
-      : buildFetchProfile({
-        fetchParams: this.userConfig.fetch ?? {},
-        elementsSource: this.elementsSource,
-      })
+    const fetchParams = this.userConfig.fetch ?? {}
+    const metadataQuery = withChangesDetection
+      ? await buildMetadataQueryForFetchWithChangesDetection({ fetchParams, elementsSource: this.elementsSource })
+      : buildMetadataQuery({ fetchParams })
+    const fetchProfile = buildFetchProfile({ fetchParams,
+      metadataQuery,
+      maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest })
     if (!fetchProfile.isFeatureEnabled('fetchCustomObjectUsingRetrieveApi')) {
       // We have to fetch custom objects using retrieve in order to be able to fetch the field-level permissions
       // in profiles. If custom objects are fetched via the read API, we have to fetch profiles using that API too.
@@ -494,14 +493,12 @@ export default class SalesforceAdapter implements AdapterOperations {
     { changeGroup }: DeployOptions,
     checkOnly: boolean
   ): Promise<DeployResult> {
-    const fetchProfile = buildFetchProfile({
-      fetchParams: this.userConfig.fetch ?? {},
-      elementsSource: this.elementsSource,
-    })
+    const fetchParams = this.userConfig.fetch ?? {}
+    const fetchProfile = buildFetchProfile({ fetchParams })
     log.debug(`about to ${checkOnly ? 'validate' : 'deploy'} group ${changeGroup.groupID} with scope (first 100): ${safeJsonStringify(changeGroup.changes.slice(0, 100).map(getChangeData).map(e => e.elemID.getFullName()))}`)
     const isDataDeployGroup = await isCustomObjectInstanceChanges(changeGroup.changes)
     const getLookupNameFunc = isDataDeployGroup
-      ? getLookupNameWithFallbackToElement
+      ? getLookupNameForDataInstances
       : getLookUpName
     const resolvedChanges = await awu(changeGroup.changes)
       .map(change => resolveChangeElement(change, getLookupNameFunc))
@@ -636,8 +633,6 @@ export default class SalesforceAdapter implements AdapterOperations {
       retrieveMetadataInstances({
         client: this.client,
         types: metadataTypesToRetrieve,
-        metadataQuery: fetchProfile.metadataQuery,
-        maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest,
         fetchProfile,
         typesToSkip: new Set(this.metadataTypesOfInstancesFetchedInFilters),
       }),

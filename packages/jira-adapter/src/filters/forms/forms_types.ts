@@ -94,6 +94,7 @@ export const createFormType = (): {
     fields: {
       templateId: {
         refType: BuiltinTypes.NUMBER,
+        annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
       },
       name: {
         refType: BuiltinTypes.STRING,
@@ -103,6 +104,7 @@ export const createFormType = (): {
       },
       templateFormUuid: {
         refType: BuiltinTypes.STRING,
+        annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
       },
     },
   })
@@ -196,6 +198,7 @@ export const createFormType = (): {
       },
       updated: {
         refType: BuiltinTypes.STRING,
+        annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
       },
       design: {
         refType: formDesignType,

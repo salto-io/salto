@@ -344,21 +344,6 @@ const getBrandsFromElementsSourceNoCash = async (
     .toArray()
 )
 
-const getBrandsFromElementsSourceFunc = ():(elementsSource: ReadOnlyElementsSource) => Promise<InstanceElement[]> => {
-  let calculatedBrandsPromise: Promise<InstanceElement[]>
-
-  const getBrands = async (elementsSource: ReadOnlyElementsSource): Promise<InstanceElement[]> => {
-    if (calculatedBrandsPromise === undefined) {
-      calculatedBrandsPromise = getBrandsFromElementsSourceNoCash(elementsSource)
-    }
-    return calculatedBrandsPromise
-  }
-
-  return getBrands
-}
-
-const getBrandsFromElementsSource = getBrandsFromElementsSourceFunc()
-
 /**
  * Fetch Guide (help_center) elements for the given brands.
  * Each help_center requires a different paginator.
@@ -458,7 +443,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   private fixElementsFunc: FixElementsFunc
   private createClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private getClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
-  private getBrandsFromElementsSource: (elementsSource: ReadOnlyElementsSource) => Promise<InstanceElement[]>
+  private brandsList: Promise<InstanceElement[]> | undefined
   private createFiltersRunner: ({
     filterRunnerClient,
     paginator,
@@ -485,7 +470,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     this.logIdsFunc = wrapper?.logIdsFunc
     this.client = client
     this.elementsSource = elementsSource
-    this.getBrandsFromElementsSource = getBrandsFromElementsSource
+    this.brandsList = undefined
     this.paginator = createPaginator({
       client: this.client,
       paginationFuncCreator: paginate,
@@ -713,11 +698,18 @@ export default class ZendeskAdapter implements AdapterOperations {
     return { elements, errors: fetchErrors, updatedConfig }
   }
 
+  private async getBrands(elementsSource: ReadOnlyElementsSource): Promise<InstanceElement[]> {
+    if (this.brandsList === undefined) {
+      this.brandsList = getBrandsFromElementsSourceNoCash(elementsSource)
+    }
+    return this.brandsList
+  }
+
   private async deployGuideChanges(guideResolvedChanges: Change<InstanceElement>[]): Promise<DeployResult[]> {
     if (_.isEmpty(guideResolvedChanges)) {
       return []
     }
-    const brandsList = await this.getBrandsFromElementsSource(this.elementsSource)
+    const brandsList = await this.getBrands(this.elementsSource)
     log.debug('Found %d brands to handle %d guide changes', brandsList.length, guideResolvedChanges.length)
     const resolvedBrandIdToSubdomain = Object.fromEntries(brandsList.map(
       brandInstance => [brandInstance.value.id, brandInstance.value.subdomain]

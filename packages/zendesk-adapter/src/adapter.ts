@@ -458,6 +458,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   private fixElementsFunc: FixElementsFunc
   private createClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private getClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
+  private getBrandsFromElementsSource: (elementsSource: ReadOnlyElementsSource) => Promise<InstanceElement[]>
   private createFiltersRunner: ({
     filterRunnerClient,
     paginator,
@@ -484,6 +485,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     this.logIdsFunc = wrapper?.logIdsFunc
     this.client = client
     this.elementsSource = elementsSource
+    this.getBrandsFromElementsSource = getBrandsFromElementsSource
     this.paginator = createPaginator({
       client: this.client,
       paginationFuncCreator: paginate,
@@ -715,7 +717,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     if (_.isEmpty(guideResolvedChanges)) {
       return []
     }
-    const brandsList = await getBrandsFromElementsSource(this.elementsSource)
+    const brandsList = await this.getBrandsFromElementsSource(this.elementsSource)
     log.debug('Found %d brands to handle %d guide changes', brandsList.length, guideResolvedChanges.length)
     const resolvedBrandIdToSubdomain = Object.fromEntries(brandsList.map(
       brandInstance => [brandInstance.value.id, brandInstance.value.subdomain]

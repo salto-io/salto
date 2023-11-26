@@ -374,6 +374,7 @@ const deployAddInstances = async (
     // Building the object this way because order of keys is important
     const idFieldsValues = Object.fromEntries(
       idFieldsNames.map(fieldName => [fieldName, vals[fieldName]])
+        // Relevant for advanced deploy groups e.g. ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP
         .map(([fieldName, value]) => [fieldName, isInstanceElement(value) ? apiNameSync(value) : value])
     )
     return toMD5(safeJsonStringify(idFieldsValues))

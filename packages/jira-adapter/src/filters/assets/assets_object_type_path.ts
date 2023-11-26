@@ -14,11 +14,12 @@
 * limitations under the License.
 */
 
-import { InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { DAG } from '@salto-io/dag'
 import { pathNaclCase } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
+import { ASSESTS_SCHEMA_TYPE } from '../../constants'
 
 const { awu } = collections.asynciterable
 
@@ -36,25 +37,29 @@ const createPaths = async (assetsObjectTypes: InstanceElement[]): Promise<void> 
   await awu(graph.evaluationOrder()).forEach(
     graphNode => {
       const instance = graph.getData(graphNode.toString())
-      const parentPath = instance.value.parentObjectTypeId?.value.path
-      if (parentPath === undefined) {
-        instance.path = [
-          ...instance.path?.slice(0, -1) ?? [],
-          pathNaclCase(instance.value.name),
-          pathNaclCase(instance.value.name),
-        ]
-        return
+      if (instance.value.parentObjectTypeId === undefined) {
+        // add reference to assetsSchema to the root, in order to be able to later update its elemID.
+        [instance.value.parentObjectTypeId] = instance.annotations[CORE_ANNOTATIONS.PARENT]
       }
-      instance.path = [
-        ...parentPath.slice(0, -1),
-        pathNaclCase(instance.value.name),
-        pathNaclCase(instance.value.name)]
+      const parentPath = instance.value.parentObjectTypeId.value.path
+      const pathNaclCaseName = pathNaclCase(instance.value.name)
+      instance.path = instance.value.parentObjectTypeId.elemID.typeName === ASSESTS_SCHEMA_TYPE
+        ? [
+          ...parentPath.slice(0, -1),
+          'assetsObjectTypes',
+          pathNaclCaseName,
+          pathNaclCaseName,
+        ] : [
+          ...parentPath.slice(0, -1),
+          pathNaclCaseName,
+          pathNaclCaseName,
+        ]
     }
   )
 }
 
-/* This filter is responsible for creating the path for the assets object types
-* to be identical to the path in the jira UI. */
+/* This filter modifies the parentObjectTypeId of roots with AssetsObjectType to assetsSchema,
+* updating elemID in common filters. It also aligns the path of assets object types with the Jira UI. */
 const filter: FilterCreator = ({ config }) => ({
   name: 'assetsObjectTypePath',
   onFetch: async elements => {

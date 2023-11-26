@@ -15,7 +15,7 @@
 */
 import { filterUtils, elements as adapterElements } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { InstanceElement, ReferenceExpression, Element } from '@salto-io/adapter-api'
+import { InstanceElement, ReferenceExpression, Element, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { getDefaultConfig } from '../../../src/config/config'
 import assetsObjectTypePath from '../../../src/filters/assets/assets_object_type_path'
 import { createEmptyType, getFilterParams } from '../../utils'
@@ -37,6 +37,7 @@ describe('assetsObjectTypePathsFilter', () => {
         idAsInt: 5,
         name: 'assetsSchema',
       },
+      [JIRA, adapterElements.RECORDS_PATH, 'AssetsSchema', 'assetsSchema1', 'assetsSchema1'],
     )
     describe('on fetch', () => {
       beforeEach(async () => {
@@ -51,6 +52,9 @@ describe('assetsObjectTypePathsFilter', () => {
             name: 'parentInstance',
           },
           [JIRA, adapterElements.RECORDS_PATH, 'AssetsSchema', 'assetsSchema1', 'assetsObjectTypes', 'parentInstance'],
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(assetSchemaInstance.elemID, assetSchemaInstance)],
+          }
         )
         sonOneInstance = new InstanceElement(
           'sonOneInstance',

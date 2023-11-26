@@ -15,7 +15,6 @@
 */
 import fs from 'fs'
 import tmp from 'tmp-promise'
-import pako from 'pako'
 import { gzip as zlibGzip } from 'zlib'
 import { promisify } from 'util'
 import { Readable } from 'stream'
@@ -95,121 +94,6 @@ describe('gzip', () => {
 
       it('should throw error', async () => {
         await expectRejectWithIncorrectHeaderException(() => getStream(gzip.createGZipReadStream(dest)))
-      })
-    })
-  })
-
-  describe('isOldFormatStateZipFile', () => {
-    const source = __filename
-    let destTmp: tmp.FileResult
-    let dest: string
-
-    describe('when the file does not exist', () => {
-      it('should reject with ErrnoException', async () => {
-        await expectRejectWithErrnoException(() => gzip.isOldFormatStateZipFile('nosuchfile'))
-      })
-    })
-
-    describe('when reading a valid old-format gzip', () => {
-      const content = 'hello world'
-      beforeEach(async () => {
-        destTmp = await tmp.file()
-        dest = destTmp.path
-        // generate in the old way using pako
-        await file.writeFile(dest, pako.gzip(content, { to: 'string' }))
-      })
-
-      afterEach(async () => {
-        await destTmp.cleanup()
-      })
-
-      it('should return true', async () => {
-        expect(await file.exists(dest)).toBeTruthy()
-        expect(await gzip.isOldFormatStateZipFile(dest)).toEqual(true)
-      })
-    })
-
-    describe('when reading a valid new-format gzip', () => {
-      const content = 'hello world'
-      beforeEach(async () => {
-        destTmp = await tmp.file()
-        dest = destTmp.path
-        await file.writeFile(dest, await getStream(gzip.createGZipWriteStream(Readable.from(content))))
-      })
-
-      afterEach(async () => {
-        await destTmp.cleanup()
-      })
-
-      it('should return false', async () => {
-        expect(await file.exists(dest)).toBeTruthy()
-        expect(await gzip.isOldFormatStateZipFile(dest)).toEqual(false)
-      })
-    })
-
-    describe('when the file exists, but is not a zip file', () => {
-      beforeEach(async () => {
-        destTmp = await tmp.file()
-        dest = destTmp.path
-        await file.copyFile(source, dest)
-      })
-
-      afterEach(async () => {
-        await destTmp.cleanup()
-      })
-
-      it('should return false', async () => {
-        expect(await gzip.isOldFormatStateZipFile(dest)).toEqual(false)
-      })
-    })
-  })
-
-  describe('readOldFormatGZipFile', () => {
-    const source = __filename
-    let destTmp: tmp.FileResult
-    let dest: string
-
-    describe('when the file does not exist', () => {
-      it('should reject with ErrnoException', async () => {
-        await expectRejectWithErrnoException(() => gzip.readOldFormatGZipFile('nosuchfile'))
-      })
-    })
-
-    describe('when the zip file exists', () => {
-      const content = 'hello world'
-      beforeEach(async () => {
-        destTmp = await tmp.file()
-        dest = destTmp.path
-        // generate in the old way using pako
-        await file.writeFile(dest, pako.gzip(content, { to: 'string' }))
-      })
-
-      afterEach(async () => {
-        await destTmp.cleanup()
-      })
-
-      describe('when all is well with the file', () => {
-        it('should return its contents', async () => {
-          expect(await file.exists(dest)).toBeTruthy()
-          const r = await gzip.readOldFormatGZipFile(dest)
-          expect(content).toEqual(r)
-        })
-      })
-    })
-
-    describe('when the file exists, but is not a zip file', () => {
-      beforeEach(async () => {
-        destTmp = await tmp.file()
-        dest = destTmp.path
-        await file.copyFile(source, dest)
-      })
-
-      afterEach(async () => {
-        await destTmp.cleanup()
-      })
-
-      it('should throw error', async () => {
-        expect(await gzip.readOldFormatGZipFile(dest)).toBeUndefined()
       })
     })
   })

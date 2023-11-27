@@ -733,6 +733,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       .forEach(([typeName, elemIdsFromSource]) => {
         const metadataType = metadataTypesByName[typeName]
         if (metadataType === undefined) {
+          log.warn('Skipping deletion detections for type %s since the metadata ObjectType was not found', typeName)
           return
         }
         const listedElemIdsFullNames = new Set(Array.from(this.listedInstancesByType.getOrUndefined(typeName) ?? [])

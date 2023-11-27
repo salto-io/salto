@@ -31,16 +31,13 @@
   "dependencies": {
     "@salto-io/logging": "0.3.49",
     "@salto-io/lowerdash": "0.3.49",
-    "get-stream": "^6.0.1",
     "mkdirp": "^0.5.1",
-    "pako": "^1.0.11",
     "rimraf": "^3.0.0",
     "stream-chain": "^2.2.5"
   },
   "devDependencies": {
     "@types/jest": "^27.4.0",
     "@types/mkdirp": "^0.5.2",
-    "@types/pako": "^1.0.1",
     "@types/rimraf": "^2.0.3",
     "@types/stream-chain": "^2.0.1",
     "@typescript-eslint/eslint-plugin": "4.22.1",
@@ -53,6 +50,7 @@
     "eslint-plugin-jsx-a11y": "^6.2.1",
     "eslint-plugin-react": "^7.14.3",
     "eslint-plugin-react-hooks": "^1.7.0",
+    "get-stream": "^6.0.1",
     "jest": "^27.4.5",
     "jest-circus": "^27.4.5",
     "jest-junit": "^12.0.0",

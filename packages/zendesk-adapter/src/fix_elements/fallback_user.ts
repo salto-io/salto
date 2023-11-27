@@ -17,7 +17,6 @@
 import {
   ChangeError,
   ElemID,
-  FixElementsFunc,
   InstanceElement,
   isInstanceElement,
 } from '@salto-io/adapter-api'
@@ -27,13 +26,14 @@ import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { paginate } from '../client/pagination'
+import { DEPLOY_CONFIG } from '../config'
 import { MISSING_USERS_DOC_LINK, MISSING_USERS_ERROR_MSG, TYPE_NAME_TO_REPLACER, VALID_USER_VALUES, getUserFallbackValue, getUsers } from '../user_utils'
-import { FallBackUserHandler } from './fallback_user_handler'
+import { FixElementsHandler } from './types'
 
 const log = logger(module)
 const { createPaginator } = clientUtils
 
-const getFallbackUserIsMissingError = (
+const fallbackUserIsMissingError = (
   instance: InstanceElement,
   missingUsers: string[],
   userFallbackValue: string
@@ -44,7 +44,7 @@ const getFallbackUserIsMissingError = (
   detailedMessage: `The following users are referenced by this instance, but do not exist in the target environment: ${missingUsers.join(', ')}.\nIn addition, we could not get the defined fallback user ${userFallbackValue}. In order to deploy this instance, add these users to your target environment, edit this instance to use valid usernames, or set the target environment's user fallback options.\nLearn more: ${MISSING_USERS_DOC_LINK}`,
 })
 
-const getMissingUsersChangeWarning = (
+const missingUsersChangeWarning = (
   instance: InstanceElement,
   missingUsers: string[],
   userFallbackValue: string
@@ -69,10 +69,10 @@ const getMissingUserPaths = (
   }).filter(values.isDefined)
 }
 
-const getFallbackUserIsMissingUsers = (users: Set<string>) => (
+const getMissingUsers = (users: Set<string>) => (
   instance: InstanceElement
-): { instance: InstanceElement; users: string[] } =>
-  ({ instance, users: _.uniq(getMissingUserPaths(users, instance).map(({ user }) => user)) })
+): { instance: InstanceElement; missingUsers: string[] } =>
+  ({ instance, missingUsers: _.uniq(getMissingUserPaths(users, instance).map(({ user }) => user)) })
 
 const replaceMissingUsers = (
   users: Set<string>,
@@ -81,7 +81,7 @@ const replaceMissingUsers = (
 { fixedInstance: InstanceElement; missingUsers: string[] } => {
   const missingUserPaths = getMissingUserPaths(users, instance)
 
-  if (!missingUserPaths) {
+  if (_.isEmpty(missingUserPaths)) {
     return undefined
   }
   const fixedInstance = instance.clone()
@@ -96,16 +96,15 @@ const replaceMissingUsers = (
  * 1. If provided fallback user is valid, return warning severity errors
  * 2. If provided fallback user is not valid, return error severity errors
  */
-const missingUsersToFallback: FallBackUserHandler['missingUsersToFallback'] = (
-  client,
-  config
-): FixElementsFunc => async elements => {
+export const fallbackUsersHandler: FixElementsHandler = (
+  { client, config }
+) => async elements => {
   const paginator = createPaginator({
     client,
     paginationFuncCreator: paginate,
   })
   const users = await getUsers(paginator)
-  const { defaultMissingUserFallback } = config
+  const { defaultMissingUserFallback } = config[DEPLOY_CONFIG] || {}
   if (_.isEmpty(users) || defaultMissingUserFallback === undefined) {
     return { fixedElements: [], errors: [] }
   }
@@ -119,10 +118,10 @@ const missingUsersToFallback: FallBackUserHandler['missingUsersToFallback'] = (
   if (fallbackValue === undefined) {
     log.error('Error while trying to get defaultMissingUserFallback value')
     const errors = elements.filter(isInstanceElement)
-      .map(getFallbackUserIsMissingUsers(userEmails))
-      .filter(values.isDefined)
-      .map(({ instance, users: missingUsers }) =>
-        getFallbackUserIsMissingError(instance, missingUsers, defaultMissingUserFallback))
+      .map(getMissingUsers(userEmails))
+      .filter(({ missingUsers }) => !_.isEmpty(missingUsers))
+      .map(({ instance, missingUsers }) =>
+        fallbackUserIsMissingError(instance, missingUsers, defaultMissingUserFallback))
 
     return { fixedElements: [], errors }
   }
@@ -131,10 +130,6 @@ const missingUsersToFallback: FallBackUserHandler['missingUsersToFallback'] = (
     .map(replaceMissingUsers(userEmails, fallbackValue))
     .filter(values.isDefined)
   const errors = fixedElementsWithUserCount.map(({ fixedInstance, missingUsers }) =>
-    getMissingUsersChangeWarning(fixedInstance, missingUsers, fallbackValue))
+    missingUsersChangeWarning(fixedInstance, missingUsers, fallbackValue))
   return { fixedElements: fixedElementsWithUserCount.map(({ fixedInstance }) => fixedInstance), errors }
-}
-
-export const usersHandler: FallBackUserHandler = {
-  missingUsersToFallback,
 }

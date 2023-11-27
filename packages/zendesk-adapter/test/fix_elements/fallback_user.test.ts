@@ -16,8 +16,10 @@
 import { ChangeError, ElemID, InstanceElement, ObjectType, Element } from '@salto-io/adapter-api'
 import ZendeskClient from '../../src/client/client'
 import { ZENDESK } from '../../src/constants'
-import { usersHandler } from '../../src/fallback_user/user'
+import { fallbackUsersHandler } from '../../src/fix_elements/fallback_user'
 import * as userUtils from '../../src/user_utils'
+import { DEPLOY_CONFIG } from '../../src/config'
+import { FixElementsArgs } from '../../src/fix_elements/types'
 
 describe('missingUsersToFallback', () => {
   let client: ZendeskClient
@@ -64,10 +66,10 @@ describe('missingUsersToFallback', () => {
 
     beforeEach(async () => {
       const instances = [macroInstance, articleInstance].map(e => e.clone())
-      fallbackResponse = await usersHandler.missingUsersToFallback(
+      fallbackResponse = await fallbackUsersHandler({
         client,
-        { defaultMissingUserFallback: 'fallback@.com' },
-      )(instances)
+        config: { [DEPLOY_CONFIG]: { defaultMissingUserFallback: 'fallback@.com' } },
+      } as FixElementsArgs)(instances)
     })
     it('should replace missing user emails or ids', () => {
       const fallbackMacro = macroInstance.clone()
@@ -106,10 +108,10 @@ describe('missingUsersToFallback', () => {
 
     beforeEach(async () => {
       const instances = [macroInstance, articleInstance].map(e => e.clone())
-      fallbackResponse = await usersHandler.missingUsersToFallback(
+      fallbackResponse = await fallbackUsersHandler({
         client,
-        { defaultMissingUserFallback: 'non-existing-user@.com' },
-      )(instances)
+        config: { [DEPLOY_CONFIG]: { defaultMissingUserFallback: 'non-existing-user@.com' } },
+      } as FixElementsArgs)(instances)
     })
     it('should not replace missing user emails or ids', () => {
       expect(fallbackResponse.fixedElements).toEqual([])
@@ -134,15 +136,10 @@ describe('missingUsersToFallback', () => {
   describe('fallback user not provided', () => {
     it('should not replace missing users and should not report errors', async () => {
       const instances = [macroInstance, articleInstance].map(e => e.clone())
-      const { fixedElements, errors } = await usersHandler.missingUsersToFallback(
+      const { fixedElements, errors } = await fallbackUsersHandler({
         client,
-        { defaultMissingUserFallback: undefined },
-      )(instances)
-      const fallbackMacro = macroInstance.clone()
-      fallbackMacro.value.actions[1].value = 'fallback@.com'
-      fallbackMacro.value.actions[2].value = 'fallback@.com'
-      const fallbackArticle = articleInstance.clone()
-      fallbackArticle.value.author_id = 'fallback@.com'
+        config: { [DEPLOY_CONFIG]: { defaultMissingUserFallback: undefined } },
+      } as FixElementsArgs)(instances)
       expect(fixedElements).toEqual([])
       expect(errors).toEqual([])
     })

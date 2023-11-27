@@ -13,8 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { usersHandler } from './user'
+import { FixElementsFunc, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import ZendeskClient from '../client/client'
+import { ZendeskConfig } from '../config'
 
-export const fallbackUserHandlers = [
-  usersHandler,
-]
+export type FixElementsArgs = {
+  client: ZendeskClient
+  config: ZendeskConfig
+  elementsSource: ReadOnlyElementsSource
+}
+
+export type FixElementsHandler = (args: FixElementsArgs) => FixElementsFunc

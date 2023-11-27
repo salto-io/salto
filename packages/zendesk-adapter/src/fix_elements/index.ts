@@ -15,9 +15,13 @@
 */
 
 import { FixElementsFunc } from '@salto-io/adapter-api'
-import ZendeskClient from '../client/client'
-import { ZendeskDeployConfig } from '../config'
+import { customReferenceHandlers } from '../custom_references'
+import { fallbackUsersHandler } from './fallback_user'
+import { FixElementsArgs } from './types'
 
-export type FallBackUserHandler = {
-  missingUsersToFallback: (client: ZendeskClient, config: ZendeskDeployConfig) => FixElementsFunc
-}
+export const createFixElementFunctions = (
+  args: FixElementsArgs
+): FixElementsFunc[] => ([
+  ...customReferenceHandlers.map(handler => handler.removeWeakReferences(args)),
+  fallbackUsersHandler(args),
+])

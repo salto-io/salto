@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { orderElementsHandler } from './order_elements'
+import { orderElementsHandler } from './weak_references/order_elements'
 
-export const weakReferenceHandlers = [
+export const customReferenceHandlers = [
   orderElementsHandler,
 ]

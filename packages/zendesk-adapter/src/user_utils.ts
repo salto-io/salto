@@ -28,9 +28,11 @@ const log = logger(module)
 const { toArrayAsync } = collections.asynciterable
 const { makeArray } = collections.array
 
-const MISSING_DEPLOY_CONFIG_USER = 'User provided in defaultMissingUserFallback does not exist in the target environemt'
+const MISSING_DEPLOY_CONFIG_USER = 'User provided in defaultMissingUserFallback does not exist in the target environment'
 // system options that do not contain a specific user value
 export const VALID_USER_VALUES = ['current_user', 'all_agents', 'requester_id', 'assignee_id', 'requester_and_ccs', 'agent', 'end_user', '']
+export const MISSING_USERS_DOC_LINK = 'https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk'
+export const MISSING_USERS_ERROR_MSG = 'Instance references users which don\'t exist in target environment'
 
 export type User = {
   id: number

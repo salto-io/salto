@@ -154,7 +154,7 @@ import customObjectFilter from './filters/custom_objects/custom_object'
 import customObjectFieldFilter from './filters/custom_objects/custom_object_fields'
 import customObjectFieldsOrderFilter from './filters/custom_objects/custom_object_fields_order'
 import customObjectFieldOptionsFilter from './filters/custom_field_options/custom_object_field_options'
-import { weakReferenceHandlers } from './weak_references'
+import { createFixElementFunctions } from './fix_elements'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -527,9 +527,11 @@ export default class ZendeskAdapter implements AdapterOperations {
       )
     )
 
-    this.fixElementsFunc = combineElementFixers(
-      weakReferenceHandlers.map(handler => handler.removeWeakReferences({ elementsSource }))
-    )
+    this.fixElementsFunc = combineElementFixers(createFixElementFunctions({
+      client,
+      config,
+      elementsSource,
+    }))
   }
 
   @logDuration('generating instances and types from service')

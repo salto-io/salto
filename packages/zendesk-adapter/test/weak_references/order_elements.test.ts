@@ -15,7 +15,7 @@
 */
 import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { orderElementsHandler } from '../../src/weak_references/order_elements'
+import { orderElementsHandler } from '../../src/custom_references/weak_references/order_elements'
 import { AUTOMATION_ORDER_TYPE_NAME, CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME, TRIGGER_ORDER_TYPE_NAME, ZENDESK } from '../../src/constants'
 
 describe('order_elements', () => {

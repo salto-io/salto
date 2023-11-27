@@ -18,14 +18,12 @@ import { elementSource } from '@salto-io/workspace'
 import { ZENDESK, ARTICLE_TYPE_NAME } from '../../src/constants'
 import { usersValidator } from '../../src/change_validators'
 import ZendeskClient from '../../src/client/client'
-import { ZedneskDeployConfig } from '../../src/config'
 
 const { createInMemoryElementSource } = elementSource
 
 describe('usersValidator', () => {
   let client: ZendeskClient
   let mockGet: jest.SpyInstance
-  let deployConfig: ZedneskDeployConfig
   const articleType = new ObjectType({
     elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME),
   })
@@ -91,7 +89,6 @@ describe('usersValidator', () => {
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
-    deployConfig = {}
     mockGet = jest.spyOn(client, 'getSinglePage')
     mockGet.mockImplementation(() => (
       {
@@ -131,71 +128,6 @@ describe('usersValidator', () => {
       },
     ])
   })
-  it('should return warning in case of overriding missing users with user from deploy config', async () => {
-    const changes = [toChange({ after: articleInstance }), toChange({ after: macroInstance })]
-    deployConfig = { defaultMissingUserFallback: '4@salto.io' }
-    const changeValidator = usersValidator(client, deployConfig)
-    const errors = await changeValidator(changes, testsElementSource)
-    expect(errors).toHaveLength(2)
-    expect(errors).toEqual([
-      {
-        elemID: articleInstance.elemID,
-        severity: 'Warning',
-        message: '1 usernames will be overridden to 4@salto.io',
-        detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: article@salto.com.\nIf you continue, they will be set to 4@salto.io according to the environment\'s user fallback options.\nLearn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
-      },
-      {
-        elemID: macroInstance.elemID,
-        severity: 'Warning',
-        message: '2 usernames will be overridden to 4@salto.io',
-        detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: thisuserismissing@salto.com, thisuserismissing2@salto.com.\nIf you continue, they will be set to 4@salto.io according to the environment\'s user fallback options.\nLearn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
-      },
-    ])
-  })
-  it('should return error in case of user provided in deploy config does not exist', async () => {
-    const changes = [toChange({ after: articleInstance }), toChange({ after: macroInstance })]
-    deployConfig = { defaultMissingUserFallback: '9@salto.io' }
-    const changeValidator = usersValidator(client, deployConfig)
-    const errors = await changeValidator(changes, testsElementSource)
-    expect(errors).toHaveLength(2)
-    expect(errors).toEqual([
-      {
-        elemID: articleInstance.elemID,
-        severity: 'Error',
-        message: 'Instance references users which don\'t exist in target environment',
-        detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: article@salto.com.\nIn addition, we could not get the defined fallback user 9@salto.io. In order to deploy this instance, add these users to your target environment, edit this instance to use valid usernames, or set the target environment\'s user fallback options.\nLearn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
-      },
-      {
-        elemID: macroInstance.elemID,
-        severity: 'Error',
-        message: 'Instance references users which don\'t exist in target environment',
-        detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: thisuserismissing@salto.com, thisuserismissing2@salto.com.\nIn addition, we could not get the defined fallback user 9@salto.io. In order to deploy this instance, add these users to your target environment, edit this instance to use valid usernames, or set the target environment\'s user fallback options.\nLearn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
-      },
-    ])
-  })
-  it('should return error in case fallback value is to ##DEPLOYER## but we could not get its value', async () => {
-    const changes = [toChange({ after: articleInstance }), toChange({ after: macroInstance })]
-    deployConfig = { defaultMissingUserFallback: '##DEPLOYER##' }
-    jest.clearAllMocks()
-    mockGet.mockRejectedValue({ status: 400, data: {} })
-    const changeValidator = usersValidator(client, deployConfig)
-    const errors = await changeValidator(changes, testsElementSource)
-    expect(errors).toHaveLength(2)
-    expect(errors).toEqual([
-      {
-        elemID: articleInstance.elemID,
-        severity: 'Error',
-        message: 'Instance references users which don\'t exist in target environment',
-        detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: article@salto.com.\nIn addition, we could not get the defined fallback user ##DEPLOYER##. In order to deploy this instance, add these users to your target environment, edit this instance to use valid usernames, or set the target environment\'s user fallback options.\nLearn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
-      },
-      {
-        elemID: macroInstance.elemID,
-        severity: 'Error',
-        message: 'Instance references users which don\'t exist in target environment',
-        detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: thisuserismissing@salto.com, thisuserismissing2@salto.com.\nIn addition, we could not get the defined fallback user ##DEPLOYER##. In order to deploy this instance, add these users to your target environment, edit this instance to use valid usernames, or set the target environment\'s user fallback options.\nLearn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
-      },
-    ])
-  })
   it('should not return an error if user exists', async () => {
     const articleWithValidUser = new InstanceElement(
       'article',
@@ -203,7 +135,7 @@ describe('usersValidator', () => {
       { author_id: '1@salto.io', draft: false },
     )
     const changes = [toChange({ after: articleWithValidUser })]
-    const changeValidator = usersValidator(client, deployConfig)
+    const changeValidator = usersValidator(client)
     const errors = await changeValidator(changes, testsElementSource)
     expect(errors).toHaveLength(0)
   })
@@ -246,7 +178,7 @@ describe('usersValidator', () => {
       }
     )
     const changes = [toChange({ after: macroWithValidUserFields }), toChange({ after: triggerInstance })]
-    const changeValidator = usersValidator(client, deployConfig)
+    const changeValidator = usersValidator(client)
     const errors = await changeValidator(changes, testsElementSource)
     expect(errors).toHaveLength(0)
   })
@@ -261,7 +193,7 @@ describe('usersValidator', () => {
             {
               field: 'assignee_id',
               operator: 'is',
-              value: 'non@salto.io',
+              value: '6@salto.io',
             },
             {
               field: 'assignee_id',
@@ -271,7 +203,7 @@ describe('usersValidator', () => {
             {
               field: 'requester_id',
               operator: 'is',
-              value: 'non@salto.io',
+              value: '6@salto.io',
             },
             {
               field: 'requester_id',
@@ -291,7 +223,7 @@ describe('usersValidator', () => {
             {
               field: 'assignee_id',
               operator: 'is',
-              value: 'non@salto.io',
+              value: '6@salto.io',
             },
             {
               field: 'assignee_id',
@@ -301,7 +233,7 @@ describe('usersValidator', () => {
             {
               field: 'requester_id',
               operator: 'is',
-              value: 'non@salto.io',
+              value: '6@salto.io',
             },
             {
               field: 'requester_id',
@@ -312,38 +244,21 @@ describe('usersValidator', () => {
         },
       }
     )
-    deployConfig = { defaultMissingUserFallback: '6@salto.io' }
     const changes = [toChange({ after: triggerInstance }), toChange({ after: triggerInstance2 })]
-    const changeValidator = usersValidator(client, deployConfig)
+    const changeValidator = usersValidator(client)
     const errors = await changeValidator(changes, testsElementSource)
     expect(errors).toMatchObject([
       {
         elemID: triggerInstance.elemID,
         severity: 'Warning',
-        message: '2 usernames will be overridden to 6@salto.io',
-        detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: non@salto.io, non@salto.io.\n'
-            + 'If you continue, they will be set to 6@salto.io according to the environment\'s user fallback options.\n'
-            + 'Learn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
-      },
-      {
-        elemID: triggerInstance2.elemID,
-        severity: 'Warning',
-        message: '2 usernames will be overridden to 6@salto.io',
-        detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: non@salto.io, non@salto.io.\n'
-            + 'If you continue, they will be set to 6@salto.io according to the environment\'s user fallback options.\n'
-            + 'Learn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
-      },
-      {
-        elemID: triggerInstance.elemID,
-        severity: 'Warning',
         message: 'Some users do not have the required permissions to be set as assignees',
-        detailedMessage: 'The users 7@salto.io, 6@salto.io cannot be set as assignees because they don\'t have the ticket editing permission.',
+        detailedMessage: 'The users 6@salto.io, 7@salto.io cannot be set as assignees because they don\'t have the ticket editing permission.',
       },
       {
         elemID: triggerInstance2.elemID,
         severity: 'Warning',
         message: 'Some users do not have the required permissions to be set as assignees',
-        detailedMessage: 'The users 7@salto.io, 6@salto.io cannot be set as assignees because they don\'t have the ticket editing permission.',
+        detailedMessage: 'The users 6@salto.io, 7@salto.io cannot be set as assignees because they don\'t have the ticket editing permission.',
       },
     ])
   })

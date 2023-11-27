@@ -113,6 +113,7 @@ const deployRequestTypeLayout = async (
       data: {
         name: item.key.value.value.name,
         type: item.key.value.value.type ?? item.key.value.value.schema.system,
+        ...item.data,
       },
     }
   }).filter(isDefined)

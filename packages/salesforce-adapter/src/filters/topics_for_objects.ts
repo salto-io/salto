@@ -42,9 +42,9 @@ import {
 
 const { awu } = collections.asynciterable
 const { removeAsync } = promises.array
-const log = logger(module)
-
 const { ENABLE_TOPICS, ENTITY_API_NAME } = TOPICS_FOR_OBJECTS_FIELDS
+
+const log = logger(module)
 
 export const DEFAULT_ENABLE_TOPICS_VALUE = false
 

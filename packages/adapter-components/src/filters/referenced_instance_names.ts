@@ -39,6 +39,7 @@ type TransformationIdConfig = {
   idFields: string[]
   extendsParentId?: boolean
   nameMapping?: NameMappingOptions
+  shouldNestFiles: boolean
 }
 
 const getFirstParentElemId = (instance: InstanceElement): ElemID | undefined => {
@@ -106,13 +107,12 @@ const createInstanceNameAndFilePath = (
   instance: InstanceElement,
   idConfig: TransformationIdConfig,
   configByType: Record<string, TransformationConfig>,
-  transformationDefaultConfig: TransformationDefaultConfig,
   getElemIdFunc?: ElemIdGetter,
 ): { newNaclName: string; filePath: string[] } => {
   const { idFields, nameMapping } = idConfig
   const newNameParts = createInstanceReferencedNameParts(instance, idFields)
   const newName = joinInstanceNameParts(newNameParts) ?? instance.elemID.name
-  const parentName = idConfig.extendsParentId === false ? undefined : getFirstParentElemId(instance)?.name
+  const parentName = idConfig.extendsParentId ? getFirstParentElemId(instance)?.name : undefined
   const { typeName, adapter } = instance.elemID
   const { fileNameFields, serviceIdField } = configByType[typeName]
 
@@ -126,7 +126,6 @@ const createInstanceNameAndFilePath = (
     typeElemId: instance.refType.elemID,
     nameMapping,
   })
-  const parent = instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0]
   const filePath = getInstanceFilePath({
     fileNameFields,
     entry: instance.value,
@@ -135,12 +134,9 @@ const createInstanceNameAndFilePath = (
     isSettingType: configByType[typeName].isSingleton ?? false,
     nameMapping: configByType[typeName].nameMapping,
     adapterName: adapter,
-    nestedPaths: parent && shouldNestFiles(
-      transformationDefaultConfig,
-      configByType[parent.elemID.typeName]
-    ) ? [
-        ...instance.path?.slice(2, instance.path?.length - 1) ?? [],
-      ] : undefined,
+    nestedPaths: idConfig.shouldNestFiles ? [
+      ...instance.path?.slice(2, instance.path?.length - 1) ?? [],
+    ] : undefined,
   })
   return { newNaclName, filePath }
 }
@@ -148,12 +144,9 @@ const createInstanceNameAndFilePath = (
 /* Create new instance with the new naclName and file path */
 const createNewInstance = async (
   currentInstance: InstanceElement,
-  newNaclName: string | undefined,
-  newFilePath: string[] | undefined,
+  newNaclName: string,
+  newFilePath: string[],
 ): Promise<InstanceElement> => {
-  if (newNaclName === undefined || newFilePath === undefined) {
-    return currentInstance
-  }
   const { adapter, typeName } = currentInstance.elemID
   const newElemId = new ElemID(adapter, typeName, 'instance', newNaclName)
   const updatedInstance = await transformElement({
@@ -269,8 +262,8 @@ const updateAllReferences = ({
   delete referenceIndex[instanceOriginalName]
 }
 
-const shouldChangeElemId = (idFields: string[], extendsParentId: boolean | undefined): boolean => (
-  !!(idFields.some(field => isReferencedIdField(field)) || extendsParentId))
+const shouldChangeElemId = (idFields: string[], extendsParentId: boolean | undefined): boolean =>
+  (idFields.some(field => isReferencedIdField(field)) || extendsParentId === true)
 
 /* Create a graph with instance names as nodes and instance name dependencies as edges */
 const createGraph = (
@@ -346,14 +339,21 @@ export const addReferencesToInstanceNames = async (
       ])
   )
 
-  const instancesToIdConfig = instances.map(instance => ({
-    instance,
-    idConfig: {
-      idFields: configByType[instance.elemID.typeName].idFields,
-      extendsParentId: configByType[instance.elemID.typeName].extendsParentId,
-      nameMapping: configByType[instance.elemID.typeName].nameMapping,
-    },
-  }))
+  const instancesToIdConfig = instances.map(instance => {
+    const parent = instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0]
+    return {
+      instance,
+      idConfig: {
+        idFields: configByType[instance.elemID.typeName].idFields,
+        extendsParentId: configByType[instance.elemID.typeName].extendsParentId,
+        nameMapping: configByType[instance.elemID.typeName].nameMapping,
+        shouldNestFiles: parent !== undefined && shouldNestFiles(
+          transformationDefaultConfig,
+          configByType[parent.elemID.typeName]
+        ),
+      },
+    }
+  })
 
   const graph = createGraph(instances, instancesToIdConfig)
 
@@ -369,6 +369,9 @@ export const addReferencesToInstanceNames = async (
 
   await awu(graph.evaluationOrder()).forEach(
     async graphNode => {
+      if (!elemIdsToRename.has(graphNode.toString())) {
+        return
+      }
       const instanceIdConfig = nameToInstanceIdConfig[graphNode.toString()]
       if (instanceIdConfig !== undefined) {
         const { instance, idConfig } = instanceIdConfig
@@ -378,11 +381,10 @@ export const addReferencesToInstanceNames = async (
             instance,
             idConfig,
             configByType,
-            transformationDefaultConfig,
             getElemIdFunc,
           ) : { newNaclName: undefined, filePath: undefined }
-        const newInstance = await createNewInstance(instance, newNaclName, filePath)
-
+        const newInstance = (newNaclName === undefined || filePath === undefined)
+          ? instance : await createNewInstance(instance, newNaclName, filePath)
 
         updateAllReferences({
           referenceIndex,

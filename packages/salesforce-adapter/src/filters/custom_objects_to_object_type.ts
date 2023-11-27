@@ -45,7 +45,7 @@ import {
   MetadataTypeAnnotations, createInstanceElement, toCustomField, toCustomProperties, isLocalOnly,
   toMetadataInfo,
   isFieldOfCustomObject,
-  createInstanceServiceIds, MetadataInstanceElement,
+  createInstanceServiceIds, MetadataInstanceElement, isMetadataObjectType,
 } from '../transformers/transformer'
 import {
   addApiName, addMetadataType, addLabel, getNamespace, boolValue,
@@ -56,7 +56,7 @@ import {
   isInstanceOfType,
   isMasterDetailField,
   buildElementsSourceForFetch,
-  addKeyPrefix, addPluralLabel, getInstanceAlias, toListType,
+  addKeyPrefix, addPluralLabel, getInstanceAlias, toListType, isInstanceOfTypeSync,
 } from './utils'
 import { convertList } from './convert_lists'
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../metadata_deploy'
@@ -450,11 +450,6 @@ const createFromInstance = async (
   const nestedMetadataInstances = await createNestedMetadataInstances(instance, object,
     typesFromInstance.nestedMetadataTypes)
   return [object, ...nestedMetadataInstances]
-}
-
-const removeIrrelevantElements = async (elements: Element[]): Promise<void> => {
-  await removeAsync(elements, isInstanceOfType(CUSTOM_OBJECT))
-  await removeAsync(elements, async elem => await apiName(elem) === CUSTOM_OBJECT)
 }
 
 // Instances metadataTypes that should be under the customObject folder and have a PARENT reference
@@ -852,7 +847,14 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
         .filter(elem => !existingElementIDs.has(elem.elemID.getFullName()))
         .forEach(newElem => elements.push(newElem))
 
-      await removeIrrelevantElements(elements)
+      // Remove CustomObject instances & hide the CustomObject metadata type
+      _.remove(elements, isInstanceOfTypeSync(CUSTOM_OBJECT))
+      const customObjectType = elements
+        .filter(isMetadataObjectType)
+        .find(type => type.elemID.name === CUSTOM_OBJECT)
+      if (customObjectType !== undefined) {
+        customObjectType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
+      }
       log.debug('Changing paths for instances that are nested under custom objects')
       await fixDependentInstancesPathAndSetParent(
         elements,

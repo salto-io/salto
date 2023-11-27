@@ -160,10 +160,6 @@ export const localState = (
     await stateData.saltoMetadata.set('hash', newHash)
   }
 
-  const getRelevantStateFiles = async (): Promise<string[]> => (
-    glob(filePathGlob(currentFilePrefix))
-  )
-
   const getHashFromContent = (contents: string[]): string =>
     toMD5(safeJsonStringify(contents.map(toMD5).sort()))
 
@@ -178,7 +174,7 @@ export const localState = (
       staticFilesSource,
       persistent,
     )
-    const filePaths = await getRelevantStateFiles()
+    const filePaths = await findStateFiles(currentFilePrefix)
     const stateFilesHash = await getHash(filePaths)
     const quickAccessHash = (await quickAccessStateData.saltoMetadata.get('hash'))
       ?? toMD5(safeJsonStringify([]))

@@ -24,7 +24,7 @@ export const rm = promisify(rimRafLib)
 export const mkdirp = promisify(mkdirpLib)
 
 export const { copyFile, writeFile, readFile, readdir: readDir } = fs.promises
-export const { statSync, existsSync, readFileSync } = fs
+export const { statSync, existsSync, readFileSync, createReadStream, createWriteStream } = fs
 
 export const notFoundAsUndefined = <
   TArgs extends unknown[],

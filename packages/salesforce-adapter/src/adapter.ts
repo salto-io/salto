@@ -125,7 +125,6 @@ import { buildMetadataQuery, buildMetadataQueryForFetchWithChangesDetection } fr
 const { awu } = collections.asynciterable
 const { partition } = promises.array
 const { concatObjects } = objects
-// const { DefaultMap } = collections.map
 
 const log = logger(module)
 

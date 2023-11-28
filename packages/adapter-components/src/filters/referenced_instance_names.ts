@@ -33,7 +33,7 @@ const { awu } = collections.asynciterable
 
 const log = logger(module)
 const { isDefined } = lowerDashValues
-const { getUpdatedReference, createReferencesTransformFunc } = references
+const { createReferencesTransformFunc } = references
 
 type TransformationIdConfig = {
   idFields: string[]
@@ -206,12 +206,12 @@ const updateAllReferences = ({
   referenceIndex,
   instanceOriginalName,
   nameToInstance,
-  newElemId,
+  newInstance,
 }:{
   referenceIndex: Record<string, { path: ElemID; value: ReferenceExpression }[]>
   instanceOriginalName: string
-  nameToInstance: Record<string, Element>
-  newElemId: ElemID
+  nameToInstance: Record<string, InstanceElement>
+  newInstance: InstanceElement
 }): void => {
   const referencesToChange = referenceIndex[instanceOriginalName]
   if (referencesToChange === undefined || referencesToChange.length === 0) {
@@ -224,7 +224,11 @@ const updateAllReferences = ({
       if (!updatedReferenceMap.has(referenceValueFullName)) {
         updatedReferenceMap.set(
           referenceValueFullName,
-          getUpdatedReference(ref.value, newElemId)
+          new ReferenceExpression(
+            // reference might not be to the top level instance
+            newInstance.elemID.createNestedID(...ref.value.elemID.createTopLevelParentID().path),
+            newInstance,
+          )
         )
       }
       const updatedReference = updatedReferenceMap.get(referenceValueFullName)
@@ -371,7 +375,7 @@ export const addReferencesToInstanceNames = async (
           referenceIndex,
           instanceOriginalName: originalFullName,
           nameToInstance,
-          newElemId: newInstance.elemID,
+          newInstance,
         })
 
         if (nameToInstance[originalFullName] !== undefined) {

@@ -365,15 +365,13 @@ export const addReferencesToInstanceNames = async (
       if (instanceIdConfig !== undefined) {
         const { instance, idConfig } = instanceIdConfig
         const originalFullName = instance.elemID.getFullName()
-        const { newNaclName, filePath } = shouldChangeElemId(idConfig.idFields, idConfig.extendsParentId)
-          ? createInstanceNameAndFilePath(
-            instance,
-            idConfig,
-            configByType,
-            getElemIdFunc,
-          ) : { newNaclName: undefined, filePath: undefined }
-        const newInstance = (newNaclName === undefined || filePath === undefined)
-          ? instance : await createNewInstance(instance, newNaclName, filePath)
+        const { newNaclName, filePath } = createInstanceNameAndFilePath(
+          instance,
+          idConfig,
+          configByType,
+          getElemIdFunc,
+        )
+        const newInstance = await createNewInstance(instance, newNaclName, filePath)
 
         updateAllReferences({
           referenceIndex,

@@ -158,6 +158,7 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     removeDuplicateProjectRoles: true,
     addAlias: true,
     enableIssueLayouts: true,
+    enableNewWorkflowAPI: false,
 
   },
   deploy: {
@@ -374,6 +375,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
       'fetch.addAlias',
       'fetch.enableIssueLayouts',
       'fetch.removeDuplicateProjectRoles',
+      'fetch.enableNewWorkflowAPI',
       'deploy.taskMaxRetries',
       'deploy.taskRetryDelay',
       SCRIPT_RUNNER_API_DEFINITIONS,

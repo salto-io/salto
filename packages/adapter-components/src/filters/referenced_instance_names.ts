@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import wu from 'wu'
 import { Element, isInstanceElement, isReferenceExpression, InstanceElement, ElemID,
-  ElemIdGetter, ReferenceExpression, isTemplateExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+  ElemIdGetter, ReferenceExpression, isTemplateExpression } from '@salto-io/adapter-api'
 import { filter, references, getParents, transformElement, setPath,
   walkOnElement, WalkOnFunc, WALK_NEXT_STEP, resolvePath, createTemplateExpression } from '@salto-io/adapter-utils'
 import { DAG } from '@salto-io/dag'
@@ -25,7 +25,7 @@ import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter_utils'
 import { AdapterApiConfig, getTransformationConfigByType,
   TransformationConfig, TransformationDefaultConfig, getConfigWithDefault,
-  dereferenceFieldName, isReferencedIdField, NameMappingOptions, shouldNestFiles } from '../config'
+  dereferenceFieldName, isReferencedIdField, NameMappingOptions } from '../config'
 import { joinInstanceNameParts, getInstanceFilePath, getInstanceNaclName } from '../elements/instance_elements'
 
 const { findDuplicates } = collections.array
@@ -39,7 +39,6 @@ type TransformationIdConfig = {
   idFields: string[]
   extendsParentId?: boolean
   nameMapping?: NameMappingOptions
-  shouldNestFiles: boolean
 }
 
 const getFirstParentElemId = (instance: InstanceElement): ElemID | undefined => {
@@ -134,9 +133,6 @@ const createInstanceNameAndFilePath = (
     isSettingType: configByType[typeName].isSingleton ?? false,
     nameMapping: configByType[typeName].nameMapping,
     adapterName: adapter,
-    nestedPaths: idConfig.shouldNestFiles ? [
-      ...instance.path?.slice(2, instance.path?.length - 1) ?? [],
-    ] : undefined,
   })
   return { newNaclName, filePath }
 }
@@ -339,21 +335,14 @@ export const addReferencesToInstanceNames = async (
       ])
   )
 
-  const instancesToIdConfig = instances.map(instance => {
-    const parent = instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0]
-    return {
-      instance,
-      idConfig: {
-        idFields: configByType[instance.elemID.typeName].idFields,
-        extendsParentId: configByType[instance.elemID.typeName].extendsParentId,
-        nameMapping: configByType[instance.elemID.typeName].nameMapping,
-        shouldNestFiles: parent !== undefined && shouldNestFiles(
-          transformationDefaultConfig,
-          configByType[parent.elemID.typeName]
-        ),
-      },
-    }
-  })
+  const instancesToIdConfig = instances.map(instance => ({
+    instance,
+    idConfig: {
+      idFields: configByType[instance.elemID.typeName].idFields,
+      extendsParentId: configByType[instance.elemID.typeName].extendsParentId,
+      nameMapping: configByType[instance.elemID.typeName].nameMapping,
+    },
+  }))
 
   const graph = createGraph(instances, instancesToIdConfig)
 

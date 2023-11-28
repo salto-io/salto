@@ -344,7 +344,7 @@ export const mockTypes = {
   ApprovalCondition: createCustomObjectType(SBAA_APPROVAL_CONDITION, {
     fields: {
       [SBAA_APPROVAL_RULE]: {
-        refType: SBAA_APPROVAL_RULE_TYPE,
+        refType: Types.primitiveDataTypes.Lookup,
         annotations: {
           [FIELD_ANNOTATIONS.QUERYABLE]: true,
           [FIELD_ANNOTATIONS.CREATABLE]: true,

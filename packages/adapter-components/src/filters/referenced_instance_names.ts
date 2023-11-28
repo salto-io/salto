@@ -111,7 +111,7 @@ const createInstanceNameAndFilePath = (
   const { idFields, nameMapping } = idConfig
   const newNameParts = createInstanceReferencedNameParts(instance, idFields)
   const newName = joinInstanceNameParts(newNameParts) ?? instance.elemID.name
-  const parentName = getFirstParentElemId(instance)?.name
+  const parentName = idConfig.extendsParentId ? getFirstParentElemId(instance)?.name : undefined
   const { typeName, adapter } = instance.elemID
   const { fileNameFields, serviceIdField } = configByType[typeName]
 
@@ -125,7 +125,6 @@ const createInstanceNameAndFilePath = (
     typeElemId: instance.refType.elemID,
     nameMapping,
   })
-
   const filePath = getInstanceFilePath({
     fileNameFields,
     entry: instance.value,
@@ -259,14 +258,14 @@ const updateAllReferences = ({
   delete referenceIndex[instanceOriginalName]
 }
 
+const shouldChangeElemId = (idFields: string[], extendsParentId: boolean | undefined): boolean =>
+  (idFields.some(field => isReferencedIdField(field)) || extendsParentId === true)
+
 /* Create a graph with instance names as nodes and instance name dependencies as edges */
 const createGraph = (
   instances: InstanceElement[],
   instanceToIdConfig: {instance: InstanceElement; idConfig: TransformationIdConfig}[]
 ): DAG<InstanceElement> => {
-  const hasReferencedIdFields = (idFields: string[]): boolean => (
-    idFields.some(field => isReferencedIdField(field))
-  )
   const duplicateElemIds = new Set(findDuplicates(instances.map(i => i.elemID.getFullName())))
   const duplicateIdsToLog = new Set<string>()
   const isDuplicateInstance = (instanceFullName: string): boolean => {
@@ -280,7 +279,7 @@ const createGraph = (
   const graph = new DAG<InstanceElement>()
   instanceToIdConfig.forEach(({ instance, idConfig }) => {
     const { idFields, extendsParentId } = idConfig
-    if (hasReferencedIdFields(idFields) || extendsParentId) {
+    if (shouldChangeElemId(idFields, extendsParentId)) {
       // removing duplicate elemIDs to create a graph
       // we can traverse based on references to unique elemIDs
       if (!isDuplicateInstance(instance.elemID.getFullName())) {
@@ -359,6 +358,9 @@ export const addReferencesToInstanceNames = async (
 
   await awu(graph.evaluationOrder()).forEach(
     async graphNode => {
+      if (!elemIdsToRename.has(graphNode.toString())) {
+        return
+      }
       const instanceIdConfig = nameToInstanceIdConfig[graphNode.toString()]
       if (instanceIdConfig !== undefined) {
         const { instance, idConfig } = instanceIdConfig
@@ -395,11 +397,13 @@ export const referencedInstanceNamesFilterCreator: <
   TClient,
   TContext extends { apiDefinitions: AdapterApiConfig },
   TResult extends void | filter.FilterResult = void
->() => FilterCreator<TClient, TContext, TResult> = () => ({ config, getElemIdFunc }) => ({
+>(customApiDefinitions?: AdapterApiConfig) =>
+FilterCreator<TClient, TContext, TResult> = customApiDefinitions => ({ config, getElemIdFunc }) => ({
   name: 'referencedInstanceNames',
   onFetch: async (elements: Element[]) => {
-    const transformationDefault = config.apiDefinitions.typeDefaults.transformation
-    const configByType = config.apiDefinitions.types
+    const apiDefinitions = customApiDefinitions ?? config.apiDefinitions
+    const transformationDefault = apiDefinitions.typeDefaults.transformation
+    const configByType = apiDefinitions.types
     const transformationByType = getTransformationConfigByType(configByType)
     await addReferencesToInstanceNames(
       elements,

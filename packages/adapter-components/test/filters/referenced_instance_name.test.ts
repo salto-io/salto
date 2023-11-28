@@ -253,6 +253,7 @@ describe('referenced instances', () => {
         recipe: {
           transformation: {
             idFields: ['name', '&book_id'],
+            extendsParentId: true,
           },
         },
         group: {

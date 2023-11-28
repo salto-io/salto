@@ -164,6 +164,7 @@ export type GeneratorParams = {
     generateEnvName? : string
     fieldsToOmitOnDeploy?: string[]
     elementsToExclude?: string[]
+    conflictedElementsVersion?: 'a' | 'b' | 'c'
 }
 
 export const defaultParams: Omit<GeneratorParams, 'extraNaclPath'> = {
@@ -789,6 +790,100 @@ export const generateElements = async (
     }
     return res
   }
+  const generateConflictedElements = (): Element[] => {
+    const version = params.conflictedElementsVersion
+    if (!version) {
+      return []
+    }
+    const complicatedObject = new ObjectType({
+      elemID: new ElemID(DUMMY_ADAPTER, 'ComplicatedObject'),
+      fields: {
+        strField: {
+          refType: BuiltinTypes.STRING,
+        },
+        numField: {
+          refType: BuiltinTypes.NUMBER,
+        },
+        listField: {
+          refType: new ListType(BuiltinTypes.STRING),
+        },
+        staticFileField: {
+          refType: BuiltinTypes.STRING,
+        },
+        mapField: {
+          refType: new MapType(BuiltinTypes.STRING),
+        },
+      },
+      path: [DUMMY_ADAPTER, 'ConflictedStuff', 'ComplicatedObject'],
+      annotations: {
+        [CORE_ANNOTATIONS.ALIAS]: 'ComplicatedObject',
+      },
+    })
+    const complicatedInst = new InstanceElement('complicatedInst', complicatedObject, {
+      strField: version,
+      numField: version.charCodeAt(0),
+      listField: ['mockValue', `version: ${version}`],
+      staticFileField: new StaticFile({
+        content: Buffer.from(`Version is: ${version}`),
+        hash: calculateStaticFileHash(Buffer.from(`Version is: ${version}`)),
+        filepath: 'staticFileField.txt',
+      }),
+      mapField: {
+        firstValue: 'firstValue',
+        versionValue: version,
+      },
+    },
+    [DUMMY_ADAPTER, 'ConflictedStuff', 'complicatedInst'],
+    {
+      [CORE_ANNOTATIONS.ALIAS]: 'complicatedInst_alias',
+    })
+    const simpleObject = new ObjectType({
+      elemID: new ElemID(DUMMY_ADAPTER, 'SimpleObject'),
+      fields: {
+        strField: {
+          refType: BuiltinTypes.STRING,
+        },
+      },
+      path: [DUMMY_ADAPTER, 'ConflictedStuff', 'SimpleObject'],
+      annotations: {
+        [CORE_ANNOTATIONS.ALIAS]: 'SimpleObject',
+      },
+    })
+    const simpleInstDeletedInA = new InstanceElement('simpleInstDeletedInA', simpleObject, {
+      strField: version,
+    },
+    [DUMMY_ADAPTER, 'ConflictedStuff', 'simpleInstDeletedInA'],
+    {
+      [CORE_ANNOTATIONS.ALIAS]: 'simpleInstDeletedInA_alias',
+    })
+    const simpleInstDeletedInB = new InstanceElement('simpleInstDeletedInB', simpleObject, {
+      strField: version,
+    },
+    [DUMMY_ADAPTER, 'ConflictedStuff', 'simpleInstDeletedInB'],
+    {
+      [CORE_ANNOTATIONS.ALIAS]: 'simpleInstDeletedInB_alias',
+    })
+    const simpleInstDeletedInC = new InstanceElement('simpleInstDeletedInC', simpleObject, {
+      strField: version,
+    },
+    [DUMMY_ADAPTER, 'ConflictedStuff', 'simpleInstDeletedInC'],
+    {
+      [CORE_ANNOTATIONS.ALIAS]: 'simpleInstDeletedInC_alias',
+    })
+    const elements: Element[] = [complicatedObject, complicatedInst, simpleObject]
+    if (version === 'a') {
+      elements.push(simpleInstDeletedInB)
+      elements.push(simpleInstDeletedInC)
+    } else if (version === 'b') {
+      elements.push(simpleInstDeletedInA)
+      elements.push(simpleInstDeletedInC)
+    } else {
+      elements.push(simpleInstDeletedInA)
+      elements.push(simpleInstDeletedInB)
+    }
+    return elements
+  }
+
   const defaultTypes = [defaultObj, permissionsType, profileType, layoutAssignmentsType]
   progressReporter.reportProgress({ message: 'Generating primitive types' })
   const primtiveTypes = await generatePrimitiveTypes()
@@ -807,6 +902,8 @@ export const generateElements = async (
   const defaultExtraElements = await generateExtraElements(
     path.join(dataPath, 'fixtures')
   )
+  progressReporter.reportProgress({ message: 'Generating conflicted elements' })
+  const conflictedElements = generateConflictedElements()
   log.trace('default fixture element are: %s', defaultExtraElements.map(elem => elem.elemID.getFullName()).join(' , '))
   const envObjects = generateEnvElements()
   progressReporter.reportProgress({ message: 'Generation done' })
@@ -822,5 +919,6 @@ export const generateElements = async (
     ...extraElements,
     ...defaultExtraElements,
     ...envObjects,
+    ...conflictedElements,
   ].filter(e => !elementsToExclude.has(e.elemID.getFullName()))
 }

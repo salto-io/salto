@@ -843,8 +843,8 @@ export const generateElements = async (
         filepath: 'staticFileField.txt',
       }),
       autoMergedStaticFileInst: new StaticFile({
-        content: Buffer.from(`First line ${version === 'b' ? version : ''}
-Second line ${version === 'c' ? version : ''}`),
+        content: Buffer.from(`First line ${version === 'b' ? 'b' : 'a'}
+Second line ${version === 'c' ? 'c' : 'a'}`),
         filepath: 'autoMergedStaticFileInst.txt',
       }),
       mapField: {

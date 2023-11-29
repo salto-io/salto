@@ -324,7 +324,7 @@ describe('test operations on remote db', () => {
       it('should return a paged iterator', async () => {
         await remoteMap.setAll(createAsyncIterable(elements))
         const pages = await awu(remoteMap.keys({ pageSize: 3 })).toArray()
-        expect(pages).toHaveLength(8)
+        expect(pages).toHaveLength(7)
         expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
       })
 
@@ -343,7 +343,7 @@ describe('test operations on remote db', () => {
         await remoteMap.setAll(createAsyncIterable(elements))
         await remoteMap.flush()
         const pages = await awu(remoteMap.keys({ pageSize: 3 })).toArray()
-        expect(pages).toHaveLength(8)
+        expect(pages).toHaveLength(7)
         expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
         expect(_.flatten(pages)).toEqual(sortedElements)
       })
@@ -443,7 +443,7 @@ describe('test operations on remote db', () => {
         for await (const element of remoteMap.values({ first: 100, after })) {
           nextPageRes.push(element)
         }
-        expect(nextPageRes).toHaveLength(17)
+        expect(nextPageRes).toHaveLength(16)
         expect(nextPageRes.map(e => e.elemID.getFullName())).toEqual(sortedElements.slice(5))
       })
 
@@ -451,7 +451,7 @@ describe('test operations on remote db', () => {
         await remoteMap.setAll(createAsyncIterable(elements))
         const pages = await awu(remoteMap.values({ pageSize: 3 }))
           .toArray() as unknown as Element[][]
-        expect(pages).toHaveLength(8)
+        expect(pages).toHaveLength(7)
         expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
         expect(
           pages.flatMap(page => page.map(element => element.elemID.getFullName()))
@@ -474,7 +474,7 @@ describe('test operations on remote db', () => {
         await remoteMap.flush()
         const pages = await awu(remoteMap.values({ pageSize: 3 }))
           .toArray() as unknown as Element[][]
-        expect(pages).toHaveLength(8)
+        expect(pages).toHaveLength(7)
         expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
         expect(_.flatten(pages).map(e => e.elemID.getFullName())).toEqual(sortedElements)
       })
@@ -604,7 +604,7 @@ describe('test operations on remote db', () => {
         for await (const element of remoteMap.entries({ first: 100, after })) {
           nextPageRes.push(element)
         }
-        expect(nextPageRes).toHaveLength(17)
+        expect(nextPageRes).toHaveLength(16)
         expect(nextPageRes.map(e => e.value.elemID.getFullName()))
           .toEqual(sortedElements.slice(5))
         expect(nextPageRes.map(e => e.key)).toEqual(sortedElements.slice(5))
@@ -615,7 +615,7 @@ describe('test operations on remote db', () => {
         const pages = await awu(
           remoteMap.entries({ pageSize: 3 })
         ).toArray() as unknown as rm.RemoteMapEntry<Element>[][]
-        expect(pages).toHaveLength(8)
+        expect(pages).toHaveLength(7)
         expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
         expect(pages.flatMap(page => page.map(e => e.key))).toEqual(sortedElements)
       })
@@ -636,7 +636,7 @@ describe('test operations on remote db', () => {
         const pages = await awu(
           remoteMap.entries({ pageSize: 3 })
         ).toArray() as unknown as rm.RemoteMapEntry<Element>[][]
-        expect(pages).toHaveLength(8)
+        expect(pages).toHaveLength(7)
         expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
         expect(pages.flatMap(page => page.map(e => e.key))).toEqual(sortedElements)
       })
@@ -757,12 +757,12 @@ describe('test operations on remote db', () => {
     expect(await remoteMap.flush()).toEqual(true)
     expect(await remoteMap.flush()).toEqual(false)
     const cloneElements = elements.map(elem => elem.clone())
-    const changedElement = cloneElements[1] as ObjectType
+    const changedElement = cloneElements[0] as ObjectType
     const changedValue = Object.values(changedElement.fields)[0]
     changedValue.name += 'A CHANGE'
     changedElement.fields = { [Object.keys(changedElement.fields)[0].concat('A CHANGE')]:
       changedValue }
-    await remoteMap.set(cloneElements[1].elemID.getFullName(), cloneElements[1])
+    await remoteMap.set(cloneElements[0].elemID.getFullName(), cloneElements[0])
     const res = await awu(remoteMap.values()).toArray()
     const elemToFieldNameMapping = (elem: Element): string | undefined =>
       (isObjectType(elem) ? Object.values((elem as ObjectType).fields)

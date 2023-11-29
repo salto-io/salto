@@ -138,8 +138,13 @@ describe('elements generator', () => {
         const elements = await generateElements({ ...testParams, conflictedElementsVersion: 'a' }, mockProgressReporter)
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject'))
           .toBeDefined()
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject.instance.complicatedInst'))
-          .toBeDefined()
+        const complicatedInst = elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject.instance.complicatedInst')
+        expect(isInstanceElement(complicatedInst)).toBeTruthy()
+        if (isInstanceElement(complicatedInst)) {
+          expect(complicatedInst.value.strFieldToBeDeletedInA).toBeUndefined()
+          expect(complicatedInst.value.strFieldToBeDeletedInB).toEqual('a')
+          expect(complicatedInst.value.strFieldToBeDeletedInC).toEqual('a')
+        }
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject'))
           .toBeDefined()
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInA'))
@@ -155,8 +160,13 @@ describe('elements generator', () => {
         const elements = await generateElements({ ...testParams, conflictedElementsVersion: 'b' }, mockProgressReporter)
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject'))
           .toBeDefined()
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject.instance.complicatedInst'))
-          .toBeDefined()
+        const complicatedInst = elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject.instance.complicatedInst')
+        expect(isInstanceElement(complicatedInst)).toBeTruthy()
+        if (isInstanceElement(complicatedInst)) {
+          expect(complicatedInst.value.strFieldToBeDeletedInA).toEqual('b')
+          expect(complicatedInst.value.strFieldToBeDeletedInB).toBeUndefined()
+          expect(complicatedInst.value.strFieldToBeDeletedInC).toEqual('b')
+        }
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject'))
           .toBeDefined()
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInA'))
@@ -172,8 +182,13 @@ describe('elements generator', () => {
         const elements = await generateElements({ ...testParams, conflictedElementsVersion: 'c' }, mockProgressReporter)
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject'))
           .toBeDefined()
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject.instance.complicatedInst'))
-          .toBeDefined()
+        const complicatedInst = elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject.instance.complicatedInst')
+        expect(isInstanceElement(complicatedInst)).toBeTruthy()
+        if (isInstanceElement(complicatedInst)) {
+          expect(complicatedInst.value.strFieldToBeDeletedInA).toEqual('c')
+          expect(complicatedInst.value.strFieldToBeDeletedInB).toEqual('c')
+          expect(complicatedInst.value.strFieldToBeDeletedInC).toBeUndefined()
+        }
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject'))
           .toBeDefined()
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInA'))

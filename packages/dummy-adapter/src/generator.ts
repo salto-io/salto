@@ -801,6 +801,15 @@ export const generateElements = async (
         strField: {
           refType: BuiltinTypes.STRING,
         },
+        strFieldToBeDeletedInA: {
+          refType: BuiltinTypes.STRING,
+        },
+        strFieldToBeDeletedInB: {
+          refType: BuiltinTypes.STRING,
+        },
+        strFieldToBeDeletedInC: {
+          refType: BuiltinTypes.STRING,
+        },
         numField: {
           refType: BuiltinTypes.NUMBER,
         },
@@ -810,23 +819,33 @@ export const generateElements = async (
         staticFileField: {
           refType: BuiltinTypes.STRING,
         },
+        autoMergedStaticFileInst: {
+          refType: BuiltinTypes.STRING,
+        },
         mapField: {
           refType: new MapType(BuiltinTypes.STRING),
         },
       },
       path: [DUMMY_ADAPTER, 'ConflictedStuff', 'ComplicatedObject'],
       annotations: {
-        [CORE_ANNOTATIONS.ALIAS]: 'ComplicatedObject',
+        [CORE_ANNOTATIONS.ALIAS]: 'ComplicatedObject_alias',
       },
     })
     const complicatedInst = new InstanceElement('complicatedInst', complicatedObject, {
       strField: version,
+      ...(version === 'a' ? {} : { strFieldToBeDeletedInA: version }),
+      ...(version === 'b' ? {} : { strFieldToBeDeletedInB: version }),
+      ...(version === 'c' ? {} : { strFieldToBeDeletedInC: version }),
       numField: version.charCodeAt(0),
       listField: ['mockValue', `version: ${version}`],
       staticFileField: new StaticFile({
         content: Buffer.from(`Version is: ${version}`),
-        hash: calculateStaticFileHash(Buffer.from(`Version is: ${version}`)),
         filepath: 'staticFileField.txt',
+      }),
+      autoMergedStaticFileInst: new StaticFile({
+        content: Buffer.from(`first line not to be changed
+        ${version === 'c' ? '' : `Second line with version: ${version}`}`),
+        filepath: 'strField.txt',
       }),
       mapField: {
         firstValue: 'firstValue',
@@ -846,7 +865,7 @@ export const generateElements = async (
       },
       path: [DUMMY_ADAPTER, 'ConflictedStuff', 'SimpleObject'],
       annotations: {
-        [CORE_ANNOTATIONS.ALIAS]: 'SimpleObject',
+        [CORE_ANNOTATIONS.ALIAS]: 'SimpleObject_alias',
       },
     })
     const simpleInstDeletedInA = new InstanceElement('simpleInstDeletedInA', simpleObject, {

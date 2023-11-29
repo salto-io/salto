@@ -106,7 +106,10 @@ const setTopicsForObjectsForFetchWithChangesDetection = async ({
     map: obj => obj.annotations.topicsForObjects.enableTopics,
   })
   customObjects.forEach(customObject => {
-    const typeApiName = apiNameSync(customObject) ?? 'unknown'
+    const typeApiName = apiNameSync(customObject)
+    if (typeApiName === undefined) {
+      return
+    }
     const isTopicsEnabled = isTopicsEnabledByType[typeApiName] !== undefined
       ? isTopicsEnabledByType[typeApiName]
       : isTopicsEnabledForObjectFromSource.get(typeApiName)
@@ -123,6 +126,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     if (!config.fetchProfile.metadataQuery.isTypeMatch(TOPICS_FOR_OBJECTS_METADATA_TYPE)) {
       log.debug('skipping topicsForObjectsFilter since the MetadataType TopicsForObjects is excluded')
+      return
     }
     const customObjectTypes = await awu(elements).filter(isCustomObject).toArray() as ObjectType[]
     if (_.isEmpty(customObjectTypes)) {

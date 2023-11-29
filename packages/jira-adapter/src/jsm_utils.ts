@@ -44,99 +44,73 @@ const { getEntriesResponseValues } = elementUtils.ducktype
 const { makeArray } = collections.array
 const log = logger(module)
 
-export const jiraJSMEntriesFunc = (
-  projectInstance: InstanceElement,
-): elementUtils.ducktype.EntriesRequester => {
-  const getJiraJSMEntriesResponseValues = async ({
+// Common function to process entries
+const processEntries = async ({
+  paginator,
+  args,
+  typeName,
+  typesConfig,
+  additionalProcessing,
+} : {
+    paginator: clientUtils.Paginator
+    args: clientUtils.ClientGetWithPaginationParams
+    typeName: string
+    typesConfig: Record<string, configUtils.TypeDuckTypeConfig>
+    additionalProcessing: (entry: clientUtils.ResponseValue) => void
+  }): Promise<clientUtils.ResponseValue[]> => {
+  const jsmResponseValues = (await getEntriesResponseValues({
     paginator,
     args,
     typeName,
     typesConfig,
-  } : {
-      paginator: clientUtils.Paginator
-      args: clientUtils.ClientGetWithPaginationParams
-      typeName: string
-      typesConfig: Record<string, configUtils.TypeDuckTypeConfig>
-    }): Promise<clientUtils.ResponseValue[]> => {
-    log.debug(`Fetching type ${typeName} entries for service desk project ${projectInstance.elemID.name}`)
-    const jsmResponseValues = (await getEntriesResponseValues({
-      paginator,
-      args,
-      typeName,
-      typesConfig,
-    })).flat()
-    const responseEntryName = typesConfig[typeName].transformation?.dataField
-    return jsmResponseValues.flatMap(response => {
-      if (responseEntryName === undefined) {
-        return makeArray(response)
-      }
-      const responseEntries = makeArray(
-        (responseEntryName !== configUtils.DATA_FIELD_ENTIRE_OBJECT)
-          ? response[responseEntryName]
-          : response
-      ) as clientUtils.ResponseValue[]
-      // Defining JSM element to its corresponding project
-      responseEntries.forEach(entry => {
-        entry.projectKey = projectInstance.value.key
-      })
-      if (responseEntryName === configUtils.DATA_FIELD_ENTIRE_OBJECT) {
-        return responseEntries
-      }
-      return {
-        ...response,
-        [responseEntryName]: responseEntries,
-      }
-    }) as clientUtils.ResponseValue[]
-  }
+  })).flat()
+  const responseEntryName = typesConfig[typeName].transformation?.dataField
+  return jsmResponseValues.flatMap(response => {
+    if (responseEntryName === undefined) {
+      return makeArray(response)
+    }
+    const responseEntries = makeArray(
+      (responseEntryName !== configUtils.DATA_FIELD_ENTIRE_OBJECT)
+        ? response[responseEntryName]
+        : response
+    ) as clientUtils.ResponseValue[]
 
-  return getJiraJSMEntriesResponseValues
+    responseEntries.forEach(entry => additionalProcessing(entry))
+    if (responseEntryName === configUtils.DATA_FIELD_ENTIRE_OBJECT) {
+      return responseEntries
+    }
+    return {
+      ...response,
+      [responseEntryName]: responseEntries,
+    }
+  }) as clientUtils.ResponseValue[]
 }
 
-export const jiraJSMAssetsEntriesFunc = (): elementUtils.ducktype.EntriesRequester => {
-  const getJiraJSMAssetsEntriesResponseValues = async ({
+export const jiraJSMEntriesFunc = (projectInstance: InstanceElement):
+elementUtils.ducktype.EntriesRequester => async ({ paginator, args, typeName, typesConfig }) => {
+  log.debug(`Fetching type ${typeName} entries for service desk project ${projectInstance.elemID.name}`)
+  return processEntries({
     paginator,
     args,
     typeName,
     typesConfig,
-  } : {
-      paginator: clientUtils.Paginator
-      args: clientUtils.ClientGetWithPaginationParams
-      typeName: string
-      typesConfig: Record<string, configUtils.TypeDuckTypeConfig>
-    }): Promise<clientUtils.ResponseValue[]> => {
-    const jsmResponseValues = (await getEntriesResponseValues({
-      paginator,
-      args,
-      typeName,
-      typesConfig,
-    })).flat()
-    const responseEntryName = typesConfig[typeName].transformation?.dataField
-    return jsmResponseValues.flatMap(response => {
-      if (responseEntryName === undefined) {
-        return makeArray(response)
-      }
-      const responseEntries = makeArray(
-        (responseEntryName !== configUtils.DATA_FIELD_ENTIRE_OBJECT)
-          ? response[responseEntryName]
-          : response
-      ) as clientUtils.ResponseValue[]
-
-      responseEntries.forEach(entry => {
-        if (typeName === ASSETS_ATTRIBUTE_TYPE && isAttributeEntry(entry)) {
-          if (typeof entry.objectType !== 'string') {
-            entry.objectType = entry.objectType.id
-          }
-        }
-      })
-      if (responseEntryName === configUtils.DATA_FIELD_ENTIRE_OBJECT) {
-        return responseEntries
-      }
-      return {
-        ...response,
-        [responseEntryName]: responseEntries,
-      }
-    }) as clientUtils.ResponseValue[]
-  }
-
-  return getJiraJSMAssetsEntriesResponseValues
+    additionalProcessing: entry => {
+      entry.projectKey = projectInstance.value.key
+    },
+  })
 }
+
+export const jiraJSMAssetsEntriesFunc = ():
+elementUtils.ducktype.EntriesRequester => async ({ paginator, args, typeName, typesConfig }) => processEntries({
+  paginator,
+  args,
+  typeName,
+  typesConfig,
+  additionalProcessing: entry => {
+    if (typeName === ASSETS_ATTRIBUTE_TYPE && isAttributeEntry(entry)) {
+      if (typeof entry.objectType !== 'string') {
+        entry.objectType = entry.objectType.id
+      }
+    }
+  },
+})

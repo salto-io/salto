@@ -17,18 +17,17 @@ import { filterUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { InstanceElement, ReferenceExpression, Element, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { RECORDS_PATH } from '@salto-io/adapter-components/src/elements'
-import { pathNaclCase } from '@salto-io/adapter-utils'
 import { getDefaultConfig } from '../../../src/config/config'
 import addAttributesAsFieldsFilter from '../../../src/filters/assets/change_attributes_path'
 import { createEmptyType, getFilterParams } from '../../utils'
 import { ASSESTS_SCHEMA_TYPE, ASSETS_ATTRIBUTE_TYPE, ASSETS_OBJECT_TYPE, JIRA } from '../../../src/constants'
 
-describe('AddAttributesAsFields', () => {
+describe('ChaneAttributesPath', () => {
     type FilterType = filterUtils.FilterWith<'onFetch'>
     let filter: FilterType
     let elements: Element[]
     let parentInstance: InstanceElement
-    let sonOneInstance: InstanceElement
+    let sonInstance: InstanceElement
     let attributeInstance: InstanceElement
     let attributeInstance2: InstanceElement
     const assetSchemaInstance = new InstanceElement(
@@ -56,7 +55,7 @@ describe('AddAttributesAsFields', () => {
             [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(assetSchemaInstance.elemID, assetSchemaInstance)],
           }
         )
-        sonOneInstance = new InstanceElement(
+        sonInstance = new InstanceElement(
           'sonOneInstance',
           createEmptyType(ASSETS_OBJECT_TYPE),
           {
@@ -85,7 +84,7 @@ describe('AddAttributesAsFields', () => {
           createEmptyType(ASSETS_ATTRIBUTE_TYPE),
           {
             name: 'attributeInstance2',
-            objectType: new ReferenceExpression(sonOneInstance.elemID, sonOneInstance),
+            objectType: new ReferenceExpression(sonInstance.elemID, sonInstance),
           },
           undefined,
           {
@@ -94,7 +93,7 @@ describe('AddAttributesAsFields', () => {
         )
         elements = [
           parentInstance,
-          sonOneInstance,
+          sonInstance,
           assetSchemaInstance,
           attributeInstance,
           attributeInstance2,
@@ -103,9 +102,25 @@ describe('AddAttributesAsFields', () => {
       it('should change each attribute path to the objectType that created it', async () => {
         await filter.onFetch(elements)
         expect(attributeInstance.path).toEqual([
-          ...(parentInstance.path ?? []).slice(0, -1),
+          JIRA,
+          RECORDS_PATH,
+          ASSESTS_SCHEMA_TYPE,
+          assetSchemaInstance.elemID.name,
+          'assetsObjectTypes',
+          'parentInstance',
           'attributes',
-          pathNaclCase(attributeInstance.value.name),
+          'attributeInstance',
+        ])
+        expect(attributeInstance2.path).toEqual([
+          JIRA,
+          RECORDS_PATH,
+          ASSESTS_SCHEMA_TYPE,
+          assetSchemaInstance.elemID.name,
+          'assetsObjectTypes',
+          'parentInstance',
+          'sonOneInstance',
+          'attributes',
+          'attributeInstance2',
         ])
       })
     })

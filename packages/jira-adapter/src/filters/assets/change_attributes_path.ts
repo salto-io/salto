@@ -18,7 +18,7 @@ import { CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { pathNaclCase } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
-import { ASSETS_ATTRIBUTE_TYPE } from '../../constants'
+import { ASSESTS_SCHEMA_TYPE, ASSETS_ATTRIBUTE_TYPE } from '../../constants'
 
 /* This filter change the attributes path to be nested to the AssetsObjectType that created them.
 * The filter also removes the attributes from their parent asset schema.
@@ -45,7 +45,7 @@ const filter: FilterCreator = ({ config }) => ({
 
     elements
       .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === 'AssetsSchema')
+      .filter(instance => instance.elemID.typeName === ASSESTS_SCHEMA_TYPE)
       .forEach(instance => {
         delete instance.value.attributes
       })

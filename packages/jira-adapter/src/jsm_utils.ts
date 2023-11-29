@@ -24,6 +24,7 @@ import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
+import { ASSETS_ATTRIBUTE_TYPE } from './constants'
 
 const ATTRIBUTE_ENTRY_SCHEMA = Joi.object({
   objectType: Joi.object({
@@ -121,7 +122,7 @@ export const jiraJSMAssetsEntriesFunc = (): elementUtils.ducktype.EntriesRequest
       ) as clientUtils.ResponseValue[]
 
       responseEntries.forEach(entry => {
-        if (typeName === 'AssetsObjectTypeAttribute' && isAttributeEntry(entry)) {
+        if (typeName === ASSETS_ATTRIBUTE_TYPE && isAttributeEntry(entry)) {
           if (typeof entry.objectType !== 'string') {
             entry.objectType = entry.objectType.id
           }

@@ -6,7 +6,7 @@ dummy.FullComplexWithIV FullComplexInstWithIV {
   listField = [
     "three",
     "two",
-    "onw",
+    "one",
   ]
   userObj = {
     id = 123

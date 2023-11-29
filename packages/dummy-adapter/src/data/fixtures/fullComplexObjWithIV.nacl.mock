@@ -10,7 +10,7 @@ type dummy.FullComplexWithIV {
     }
     num refField {
     }
-    "List<string>" listField {
+    unknown listField {
     }
     dummy.FullComplexWithIV__userObj userObj {
     }

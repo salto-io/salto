@@ -2,7 +2,7 @@ dummy.FullComplexWithIV FullComplexInstWithIV {
   strField = "ComplexSTR"
   numField = 111
   boolField = true
-  refField = dummy.FullWithIV.instance.FullInst1WithIV
+  refField = dummy.FullObjWithIV.instance.FullInst1WithIV
   listField = [
     "three",
     "two",

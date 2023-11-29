@@ -127,7 +127,7 @@ export const changeErrorType = createMatchingObjectType<ChangeErrorFromConfigFil
   },
 })
 
-
+type ConflictedElementsVersion = 'a' | 'b' | 'c'
 export type GeneratorParams = {
     seed: number
     numOfPrimitiveTypes: number
@@ -164,7 +164,7 @@ export type GeneratorParams = {
     generateEnvName? : string
     fieldsToOmitOnDeploy?: string[]
     elementsToExclude?: string[]
-    conflictedElementsVersion?: 'a' | 'b' | 'c'
+    conflictedElementsVersion?: ConflictedElementsVersion
 }
 
 export const defaultParams: Omit<GeneratorParams, 'extraNaclPath'> = {
@@ -798,6 +798,12 @@ export const generateElements = async (
     const complicatedObject = new ObjectType({
       elemID: new ElemID(DUMMY_ADAPTER, 'ComplicatedObject'),
       fields: {
+        fieldWithNoChange: {
+          refType: BuiltinTypes.STRING,
+        },
+        fieldWithNoConflict: {
+          refType: BuiltinTypes.STRING,
+        },
         strField: {
           refType: BuiltinTypes.STRING,
         },
@@ -831,25 +837,35 @@ export const generateElements = async (
         [CORE_ANNOTATIONS.ALIAS]: 'ComplicatedObject_alias',
       },
     })
+    const versionToListField: Record<ConflictedElementsVersion, string[]> = {
+      a: ['a'],
+      b: ['b', 'b'],
+      c: ['c', 'c', 'c'],
+    }
+
     const complicatedInst = new InstanceElement('complicatedInst', complicatedObject, {
+      fieldWithNoChange: 'has not been changed',
+      fieldWithOnlyChange: version === 'a' ? 'after' : 'before',
       strField: version,
       ...(version === 'a' ? {} : { strFieldToBeDeletedInA: version }),
       ...(version === 'b' ? {} : { strFieldToBeDeletedInB: version }),
       ...(version === 'c' ? {} : { strFieldToBeDeletedInC: version }),
-      numField: version.charCodeAt(0),
-      listField: ['mockValue', `version: ${version}`],
+      numField: (version.charCodeAt(0) - 96),
+      listField: versionToListField[version],
       staticFileField: new StaticFile({
-        content: Buffer.from(`Version is: ${version}`),
+        content: Buffer.from(`First line is the same
+Second line changed by version: ${version}`),
         filepath: 'staticFileField.txt',
       }),
       autoMergedStaticFileInst: new StaticFile({
-        content: Buffer.from(`First line ${version === 'b' ? 'b' : 'a'}
+        content: Buffer.from(`First line ${version === 'a' ? 'a' : 'b'}
 Second line ${version === 'c' ? 'c' : 'a'}`),
         filepath: 'autoMergedStaticFileInst.txt',
       }),
       mapField: {
         firstValue: 'firstValue',
         versionValue: version,
+        [version]: 'version key',
       },
     },
     [DUMMY_ADAPTER, 'ConflictedStuff', 'complicatedInst'],

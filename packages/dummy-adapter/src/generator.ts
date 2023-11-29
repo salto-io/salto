@@ -931,7 +931,7 @@ export const generateElements = async (
       ...(version === 'a' ? {} : { strFieldToBeDeletedInA: version }),
       ...(version === 'b' ? {} : { strFieldToBeDeletedInB: version }),
       ...(version === 'c' ? {} : { strFieldToBeDeletedInC: version }),
-      numField: (version.charCodeAt(0) - 96),
+      numField: version.charCodeAt(0),
       listField: versionToListField[version],
       staticFileField: new StaticFile({
         content: Buffer.from(`First line is the same

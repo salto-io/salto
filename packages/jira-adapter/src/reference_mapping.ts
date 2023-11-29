@@ -995,6 +995,12 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: FIELD_TYPE_NAME },
   },
+  {
+    src: { field: 'parentObjectTypeId', parentTypes: ['AssetsObjectType'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: 'AssetsObjectType' },
+  },
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [

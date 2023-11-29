@@ -706,10 +706,10 @@ export const generateElements = async (
       elemID: new ElemID('dummy', 'PrimWithAnnos'),
       primitive: PrimitiveTypes.STRING,
       annotationRefsOrTypes: {
-        active: BuiltinTypes.BOOLEAN,
-        name: BuiltinTypes.STRING,
         SharedHidden: BuiltinTypes.HIDDEN_STRING,
         DiffHidden: BuiltinTypes.HIDDEN_STRING,
+        active: BuiltinTypes.BOOLEAN,
+        name: BuiltinTypes.STRING,
       },
       path: [DUMMY_ADAPTER, 'EnvStuff', 'PrimWithAnnos'],
       annotations: {
@@ -748,10 +748,10 @@ export const generateElements = async (
         [`${envID}FieldWithHidden`]: {
           refType: PrimWithHiddenAnnos,
           annotations: {
-            active: true,
-            name: 'test',
             SharedHidden: 'HIDDEN!',
             DiffHidden: `${envID}-HIDDENNNN!!!!`,
+            active: true,
+            name: 'test',
           },
         },
       },

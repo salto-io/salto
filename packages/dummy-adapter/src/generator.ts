@@ -918,41 +918,102 @@ export const generateElements = async (
         [CORE_ANNOTATIONS.ALIAS]: 'ComplicatedObject_alias',
       },
     })
-    const versionToListField: Record<ConflictedElementsVersion, string[]> = {
-      a: ['a'],
-      b: ['b', 'b'],
-      c: ['c', 'c', 'c'],
+    const versionToComplicatedObjectFields: Record<ConflictedElementsVersion, {
+      fieldWithNoChange: string
+      fieldWithOnlyChange: string
+      strField: string
+      strFieldToBeDeletedInA?: string
+      strFieldToBeDeletedInB?: string
+      strFieldToBeDeletedInC?: string
+      numField: number
+      listField: string[]
+      staticFileField: StaticFile
+      autoMergedStaticFileInst: StaticFile
+      mapField: Record<string, string>
+    }> = {
+      a: {
+        fieldWithNoChange: 'has not been changed',
+        fieldWithOnlyChange: 'after',
+        strField: 'prefix_aaa_suffix',
+        strFieldToBeDeletedInB: 'aaa',
+        strFieldToBeDeletedInC: 'aaa',
+        numField: 1,
+        listField: ['a'],
+        staticFileField: new StaticFile({
+          content: Buffer.from(`First line is the same
+Second line changed aaa`),
+          filepath: 'staticFileField.txt',
+        }),
+        autoMergedStaticFileInst: new StaticFile({
+          content: Buffer.from(`First line not change
+Second line changed in version a`),
+          filepath: 'autoMergedStaticFileInst.txt',
+        }),
+        mapField: {
+          firstValue: 'firstValue',
+          versionValue: 'a',
+          a: 'versionKey',
+        },
+      },
+      b: {
+        fieldWithNoChange: 'has not been changed',
+        fieldWithOnlyChange: 'before',
+        strField: 'prefix_bbb_suffix',
+        strFieldToBeDeletedInA: 'bbb',
+        strFieldToBeDeletedInC: 'bbb',
+        numField: 2,
+        listField: ['b', 'b'],
+        staticFileField: new StaticFile({
+          content: Buffer.from(`First line is the same
+Second line changed bbb`),
+          filepath: 'staticFileField.txt',
+        }),
+        autoMergedStaticFileInst: new StaticFile({
+          content: Buffer.from(`First line not change
+Second line not changed`),
+          filepath: 'autoMergedStaticFileInst.txt',
+        }),
+        mapField: {
+          firstValue: 'firstValue',
+          versionValue: 'b',
+          b: 'versionKey',
+        },
+      },
+      c: {
+        fieldWithNoChange: 'has not been changed',
+        fieldWithOnlyChange: 'before',
+        strField: 'prefix_ccc_suffix',
+        strFieldToBeDeletedInA: 'ccc',
+        strFieldToBeDeletedInB: 'ccc',
+        numField: 3,
+        listField: ['c', 'c', 'c'],
+        staticFileField: new StaticFile({
+          content: Buffer.from(`First line is the same
+Second line changed ccc`),
+          filepath: 'staticFileField.txt',
+        }),
+        autoMergedStaticFileInst: new StaticFile({
+          content: Buffer.from(`First line not change
+Second line changed in version c`),
+          filepath: 'autoMergedStaticFileInst.txt',
+        }),
+        mapField: {
+          firstValue: 'firstValue',
+          versionValue: 'c',
+          c: 'versionKey',
+        },
+      },
     }
 
-    const complicatedInst = new InstanceElement('complicatedInst', complicatedObject, {
-      fieldWithNoChange: 'has not been changed',
-      fieldWithOnlyChange: version === 'a' ? 'after' : 'before',
-      strField: version,
-      ...(version === 'a' ? {} : { strFieldToBeDeletedInA: version }),
-      ...(version === 'b' ? {} : { strFieldToBeDeletedInB: version }),
-      ...(version === 'c' ? {} : { strFieldToBeDeletedInC: version }),
-      numField: version.charCodeAt(0),
-      listField: versionToListField[version],
-      staticFileField: new StaticFile({
-        content: Buffer.from(`First line is the same
-Second line changed by version: ${version}`),
-        filepath: 'staticFileField.txt',
-      }),
-      autoMergedStaticFileInst: new StaticFile({
-        content: Buffer.from(`First line ${version === 'a' ? 'a' : 'b'}
-Second line ${version === 'c' ? 'c' : 'a'}`),
-        filepath: 'autoMergedStaticFileInst.txt',
-      }),
-      mapField: {
-        firstValue: 'firstValue',
-        versionValue: version,
-        [version]: 'version key',
-      },
-    },
-    [DUMMY_ADAPTER, 'ConflictedStuff', 'complicatedInst'],
-    {
-      [CORE_ANNOTATIONS.ALIAS]: 'complicatedInst_alias',
-    })
+    const complicatedInst = new InstanceElement(
+      'complicatedInst',
+      complicatedObject,
+      versionToComplicatedObjectFields[version],
+      [DUMMY_ADAPTER, 'ConflictedStuff', 'complicatedInst'],
+      {
+        [CORE_ANNOTATIONS.ALIAS]: 'complicatedInst_alias',
+      }
+    )
     const simpleObject = new ObjectType({
       elemID: new ElemID(DUMMY_ADAPTER, 'SimpleObject'),
       fields: {

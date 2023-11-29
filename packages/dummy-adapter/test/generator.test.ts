@@ -154,8 +154,8 @@ describe('elements generator', () => {
         expect(isInstanceElement(complicatedInst)).toBeTruthy()
         if (isInstanceElement(complicatedInst)) {
           expect(complicatedInst.value.strFieldToBeDeletedInA).toBeUndefined()
-          expect(complicatedInst.value.strFieldToBeDeletedInB).toEqual('a')
-          expect(complicatedInst.value.strFieldToBeDeletedInC).toEqual('a')
+          expect(complicatedInst.value.strFieldToBeDeletedInB).toEqual('aaa')
+          expect(complicatedInst.value.strFieldToBeDeletedInC).toEqual('aaa')
         }
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject'))
           .toBeDefined()
@@ -175,9 +175,9 @@ describe('elements generator', () => {
         const complicatedInst = elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject.instance.complicatedInst')
         expect(isInstanceElement(complicatedInst)).toBeTruthy()
         if (isInstanceElement(complicatedInst)) {
-          expect(complicatedInst.value.strFieldToBeDeletedInA).toEqual('b')
+          expect(complicatedInst.value.strFieldToBeDeletedInA).toEqual('bbb')
           expect(complicatedInst.value.strFieldToBeDeletedInB).toBeUndefined()
-          expect(complicatedInst.value.strFieldToBeDeletedInC).toEqual('b')
+          expect(complicatedInst.value.strFieldToBeDeletedInC).toEqual('bbb')
         }
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject'))
           .toBeDefined()
@@ -197,8 +197,8 @@ describe('elements generator', () => {
         const complicatedInst = elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject.instance.complicatedInst')
         expect(isInstanceElement(complicatedInst)).toBeTruthy()
         if (isInstanceElement(complicatedInst)) {
-          expect(complicatedInst.value.strFieldToBeDeletedInA).toEqual('c')
-          expect(complicatedInst.value.strFieldToBeDeletedInB).toEqual('c')
+          expect(complicatedInst.value.strFieldToBeDeletedInA).toEqual('ccc')
+          expect(complicatedInst.value.strFieldToBeDeletedInB).toEqual('ccc')
           expect(complicatedInst.value.strFieldToBeDeletedInC).toBeUndefined()
         }
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject'))

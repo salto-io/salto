@@ -19,14 +19,14 @@ import { collections } from '@salto-io/lowerdash'
 import { DAG } from '@salto-io/dag'
 import { pathNaclCase } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
-import { ASSESTS_SCHEMA_TYPE } from '../../constants'
+import { ASSESTS_SCHEMA_TYPE, ASSETS_OBJECT_TYPE } from '../../constants'
 
 const { awu } = collections.asynciterable
 
 const createPaths = async (assetsObjectTypes: InstanceElement[]): Promise<void> => {
   const graph = new DAG<InstanceElement>()
   assetsObjectTypes.forEach(assetsObjectType => {
-    const parentFullName = assetsObjectType.value.parentObjectTypeId.elemID.typeName === ASSESTS_SCHEMA_TYPE
+    const parentFullName = assetsObjectType.value.parentObjectTypeId?.elemID.typeName === ASSESTS_SCHEMA_TYPE
       ? undefined : assetsObjectType.value.parentObjectTypeId.elemID.name
     const dependencies = parentFullName ? [parentFullName] : []
     graph.addNode(
@@ -54,8 +54,7 @@ const createPaths = async (assetsObjectTypes: InstanceElement[]): Promise<void> 
   )
 }
 
-/* This filter modifies the parentObjectTypeId of roots with AssetsObjectType to assetsSchema,
-* updating elemID in common filters. It also aligns the path of assets object types with the Jira UI. */
+/* This filter aligns the path of assets object types with the Jira UI. */
 const filter: FilterCreator = ({ config }) => ({
   name: 'assetsObjectTypePath',
   onFetch: async elements => {
@@ -64,7 +63,7 @@ const filter: FilterCreator = ({ config }) => ({
     }
     const assetsObjectTypes = elements
       .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === 'AssetsObjectType')
+      .filter(instance => instance.elemID.typeName === ASSETS_OBJECT_TYPE)
     await createPaths(assetsObjectTypes)
   },
 })

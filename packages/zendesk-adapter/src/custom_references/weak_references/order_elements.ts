@@ -23,7 +23,7 @@ import {
 import { WeakReferencesHandler } from '@salto-io/adapter-components'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { ARTICLE_ORDER_TYPE_NAME, CATEGORY_ORDER_TYPE_NAME, CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME, ORDER_TYPE_NAMES, SECTION_ORDER_TYPE_NAME, TRIGGER_ORDER_TYPE_NAME } from '../constants'
+import { ARTICLE_ORDER_TYPE_NAME, CATEGORY_ORDER_TYPE_NAME, CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME, ORDER_TYPE_NAMES, SECTION_ORDER_TYPE_NAME, TRIGGER_ORDER_TYPE_NAME } from '../../constants'
 
 const { awu } = collections.asynciterable
 

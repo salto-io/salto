@@ -13,21 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import fs from 'fs'
-import { Readable } from 'stream'
-import { createGunzip, createGzip } from 'zlib'
-import { chain } from 'stream-chain'
+import { FixElementsFunc, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import ZendeskClient from '../client/client'
+import { ZendeskConfig } from '../config'
 
-export const createGZipReadStream = (
-  zipFilename: string,
-): Readable => chain([
-  fs.createReadStream(zipFilename),
-  createGunzip(),
-])
+export type FixElementsArgs = {
+  client: ZendeskClient
+  config: ZendeskConfig
+  elementsSource: ReadOnlyElementsSource
+}
 
-export const createGZipWriteStream = (
-  contents: Readable,
-): Readable => chain([
-  contents,
-  createGzip(),
-])
+export type FixElementsHandler = (args: FixElementsArgs) => FixElementsFunc

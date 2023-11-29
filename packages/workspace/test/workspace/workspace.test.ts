@@ -2007,12 +2007,17 @@ describe('workspace', () => {
   describe('getStateRecency', () => {
     let now: number
     let modificationDate: Date
+    let mockDateNow: jest.SpiedFunction<typeof Date.now>
     const durationAfterLastModificationMinutes = 7
     const durationAfterLastModificationMs = 1000 * 60 * durationAfterLastModificationMinutes
     beforeEach(async () => {
       now = Date.now()
-      jest.spyOn(Date, 'now').mockImplementation(() => now)
+      mockDateNow = jest.spyOn(Date, 'now')
+      mockDateNow.mockImplementation(() => now)
       modificationDate = new Date(now - durationAfterLastModificationMs)
+    })
+    afterEach(() => {
+      mockDateNow.mockRestore()
     })
     it('should return valid when the state is valid', async () => {
       const ws = await createWorkspace(undefined, undefined, mockWorkspaceConfigSource(
@@ -2964,10 +2969,13 @@ describe('workspace', () => {
   describe('accountConfig', () => {
     let workspace: Workspace
     let adaptersConfig: MockInterface<AdaptersConfigSource>
+    let resolveMock: jest.SpiedFunction<typeof resolve>
     const configElemId = new ElemID('dummy', 'new')
     const configObjectType = new ObjectType({ elemID: configElemId })
     const configInstanceElement = new InstanceElement('aaa', configObjectType)
-    const resolveMock = jest.spyOn(expressionsModule, 'resolve')
+    beforeAll(() => {
+      resolveMock = jest.spyOn(expressionsModule, 'resolve')
+    })
     beforeEach(async () => {
       resolveMock.mockClear()
       adaptersConfig = mockAdaptersConfigSource()

@@ -13,21 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import fs from 'fs'
-import { Readable } from 'stream'
-import { createGunzip, createGzip } from 'zlib'
-import { chain } from 'stream-chain'
 
-export const createGZipReadStream = (
-  zipFilename: string,
-): Readable => chain([
-  fs.createReadStream(zipFilename),
-  createGunzip(),
-])
+import { FixElementsFunc } from '@salto-io/adapter-api'
+import { customReferenceHandlers } from '../custom_references'
+import { fallbackUsersHandler } from './fallback_user'
+import { FixElementsArgs } from './types'
 
-export const createGZipWriteStream = (
-  contents: Readable,
-): Readable => chain([
-  contents,
-  createGzip(),
+export const createFixElementFunctions = (
+  args: FixElementsArgs
+): FixElementsFunc[] => ([
+  ...customReferenceHandlers.map(handler => handler.removeWeakReferences(args)),
+  fallbackUsersHandler(args),
 ])

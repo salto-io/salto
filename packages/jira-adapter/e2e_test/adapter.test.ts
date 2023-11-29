@@ -29,13 +29,14 @@ import { createInstances, createModifyInstances } from './instances'
 import { findInstance } from './utils'
 import { getLookUpName } from '../src/reference_mapping'
 import { getDefaultConfig } from '../src/config/config'
+import { ASSESTS_SCHEMA_TYPE } from '../src/constants'
 
 const { awu } = collections.asynciterable
 const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
 
 jest.setTimeout(600 * 1000)
 
-const excludedTypes = ['Behavior', 'Behavior__config', 'AssetsSchema', 'AssetsSchemas', 'AssetsStatuses', 'AssetsStatus']
+const excludedTypes = ['Behavior', 'Behavior__config', ASSESTS_SCHEMA_TYPE, 'AssetsSchemas', 'AssetsStatuses', 'AssetsStatus', 'AssetsObjectTypes', 'AssetsObjectType']
 
 each([
   ['Cloud', false],

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { logger } from '@salto-io/logging'
+import { logger, LogLevel } from '@salto-io/logging'
 import { loadLocalWorkspace } from '@salto-io/core'
 import { mockFunction } from '@salto-io/test-utils'
 import * as mocks from './mocks'
@@ -117,23 +117,38 @@ describe('Command builder', () => {
         expect(action.mock.calls[0][0].input).toEqual({ bool: true, choices: 'a', string: 'str', stringsList: ['str2', 'str3'] })
       })
 
-      it('Should add verbose option and up the log level if called with verbose', async () => {
-        expect(createdCommandDef.properties.keyedOptions?.find(op =>
-          String(op.name) === 'verbose')).toBeTruthy()
-        const setMinLevel = jest.spyOn(logger, 'setMinLevel')
-        await createdCommandDef.action({
-          output,
-          config,
-          workspacePath: '.',
-          telemetry,
-          spinnerCreator,
-          commanderInput: [
-            'str',
-            ['str2', 'str3'],
-            { bool: true, choices: 'a', verbose: true },
-          ],
+      describe('when log level is above debug', () => {
+        let savedLogLevel: LogLevel
+        beforeEach(() => {
+          const configLevel = logger.config.minLevel
+          if (configLevel !== 'none') {
+            savedLogLevel = configLevel
+            logger.setMinLevel('info')
+          }
         })
-        expect(setMinLevel).toHaveBeenCalledWith('debug')
+        afterEach(() => {
+          if (savedLogLevel !== undefined) {
+            logger.setMinLevel(savedLogLevel)
+          }
+        })
+        it('Should add verbose option and up the log level if called with verbose', async () => {
+          expect(createdCommandDef.properties.keyedOptions?.find(op =>
+            String(op.name) === 'verbose')).toBeTruthy()
+          const setMinLevel = jest.spyOn(logger, 'setMinLevel')
+          await createdCommandDef.action({
+            output,
+            config,
+            workspacePath: '.',
+            telemetry,
+            spinnerCreator,
+            commanderInput: [
+              'str',
+              ['str2', 'str3'],
+              { bool: true, choices: 'a', verbose: true },
+            ],
+          })
+          expect(setMinLevel).toHaveBeenCalledWith('debug')
+        })
       })
 
       it('Should throw an error when called with wrong choice', async () => {

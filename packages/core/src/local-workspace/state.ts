@@ -24,7 +24,7 @@ import { parser } from 'stream-json/jsonl/Parser'
 import getStream from 'get-stream'
 import { DetailedChange, Element, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { exists, readTextFile, mkdirp, rm, rename, replaceContents, createGZipWriteStream, isOldFormatStateZipFile, readOldFormatGZipFile, createGZipReadStream } from '@salto-io/file'
+import { exists, readTextFile, mkdirp, rm, rename, replaceContents, createGZipWriteStream, createGZipReadStream } from '@salto-io/file'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { serialization, pathIndex, state, remoteMap, staticFiles } from '@salto-io/workspace'
 import { hash, collections, promises, values as lowerdashValues } from '@salto-io/lowerdash'
@@ -42,27 +42,15 @@ const glob = promisify(origGlob)
 
 const log = logger(module)
 
-export const STATE_EXTENSION = '.jsonl'
 export const ZIPPED_STATE_EXTENSION = '.jsonl.zip'
 
 export const filePathGlob = (currentFilePrefix: string): string => (
   `${currentFilePrefix}.*([!.])${ZIPPED_STATE_EXTENSION}`
 )
 
-// This function is temporary for the transition to multiple services.
-// Remove this when no longer used, SALTO-1661
-const getUpdateDate = (data: state.StateData): remoteMap.RemoteMap<Date> => {
-  if ('servicesUpdateDate' in data) {
-    return data.servicesUpdateDate
-  }
-  return data.accountsUpdateDate
-}
-
-const findStateFiles = async (currentFilePrefix: string): Promise<string[]> => {
-  const stateFiles = await glob(filePathGlob(currentFilePrefix))
-  const oldStateFiles = await glob(`${currentFilePrefix}@(${ZIPPED_STATE_EXTENSION}|${STATE_EXTENSION})`)
-  return [...stateFiles, ...oldStateFiles]
-}
+const findStateFiles = async (currentFilePrefix: string): Promise<string[]> => (
+  glob(filePathGlob(currentFilePrefix))
+)
 
 // a single entry in the path index, [elemid, filepath[] ] - based on the types defined in workspace/path_index.ts
 type PathEntry = [string, string[][]]
@@ -83,30 +71,10 @@ const parseFromPaths = async (
     versions: [],
   }
 
-  // backward-compatible function for reading the state file (changed in SALTO-3149)
-  const createBackwardCompatibleGZipReadStream = async (
-    zipFilename: string,
-  ): Promise<Readable> => {
-    if (await isOldFormatStateZipFile(zipFilename)) {
-      // old state file compressed with UTF encoding, with an incorrectly-serialized version row
-      const data = await readOldFormatGZipFile(zipFilename) ?? ''
-      // hack to fix non-jsonl format in old state file
-      // (the last line which contains the version was missing quotes, e.g. 0.1.2 instead of "0.1.2")
-      const dataWithNewlines = (EOL !== '\n'
-        ? data.replace(EOL, '\n')
-        : data)
-      const lines = dataWithNewlines.split('\n')
-      const updatedData = [...lines.slice(0, 3), `"${lines[3]}"`].join(EOL)
-
-      return Readable.from(updatedData)
-    }
-    return createGZipReadStream(zipFilename)
-  }
-
   const streams = (await Promise.all(
     paths.map(async (p: string) => (
       await exists(p)
-        ? { filePath: p, stream: await createBackwardCompatibleGZipReadStream(p) }
+        ? { filePath: p, stream: createGZipReadStream(p) }
         : undefined
     ))
   )).filter(isDefined)
@@ -152,7 +120,6 @@ export const localState = (
   let dirty = false
   let cacheDirty = false
   let contentsAndHash: ContentsAndHash | undefined
-  let pathToClean = ''
   let currentFilePrefix = filePrefix
 
   const setDirty = (): void => {
@@ -179,7 +146,7 @@ export const localState = (
         .reduce((entry1, entry2) => Object.assign(entry1, entry2), {}) as Record<string, string>,
       dateStr => new Date(dateStr)
     )
-    const stateUpdateDate = getUpdateDate(stateData)
+    const stateUpdateDate = stateData.accountsUpdateDate
     if (stateUpdateDate !== undefined) {
       await stateUpdateDate.clear()
       await stateUpdateDate.setAll(awu(
@@ -191,19 +158,6 @@ export const localState = (
       await stateData.saltoMetadata.set('version', currentVersion)
     }
     await stateData.saltoMetadata.set('hash', newHash)
-  }
-
-  const getRelevantStateFiles = async (): Promise<string[]> => {
-    const currentFilePaths = await glob(filePathGlob(currentFilePrefix))
-    if (currentFilePaths.length > 0) {
-      return currentFilePaths
-    }
-    const oldStateFilePath = `${filePrefix}${ZIPPED_STATE_EXTENSION}`
-    if (await exists(oldStateFilePath)) {
-      pathToClean = oldStateFilePath
-      return [oldStateFilePath]
-    }
-    return []
   }
 
   const getHashFromContent = (contents: string[]): string =>
@@ -220,7 +174,7 @@ export const localState = (
       staticFilesSource,
       persistent,
     )
-    const filePaths = await getRelevantStateFiles()
+    const filePaths = await findStateFiles(currentFilePrefix)
     const stateFilesHash = await getHash(filePaths)
     const quickAccessHash = (await quickAccessStateData.saltoMetadata.get('hash'))
       ?? toMD5(safeJsonStringify([]))
@@ -324,7 +278,7 @@ export const localState = (
       setDirty()
     },
     flush: async (): Promise<void> => {
-      if (!dirty && pathToClean === '') {
+      if (!dirty) {
         if (cacheDirty) {
           await inMemState.flush()
           cacheDirty = false
@@ -332,9 +286,6 @@ export const localState = (
         return
       }
       await mkdirp(path.dirname(currentFilePrefix))
-      if (pathToClean !== '') {
-        await rm(pathToClean)
-      }
       const { contents: filePathToContent, hash: updatedHash } = await getContentAndHash()
       await awu(filePathToContent).forEach(f => replaceContents(...f))
       await inMemState.setVersion(version)

@@ -26,7 +26,6 @@ import _ from 'lodash'
 import { applyDetailedChanges, detailedCompare } from '@salto-io/adapter-utils'
 import { getNestedStaticFiles } from '../nacl_files/nacl_file_update'
 import { PathIndex, updateTopLevelPathIndex, updatePathIndex } from '../path_index'
-import { RemoteMap } from '../remote_map'
 import { State, StateData, UpdateStateElementsArgs } from './state'
 import { getDanglingStaticFiles } from '../nacl_files/nacl_files_source'
 
@@ -40,15 +39,6 @@ type InMemoryState = State & {
   setVersion(version: string): Promise<void>
 }
 
-// This function is temporary for the transition to multiple services.
-// Remove this when no longer used, SALTO-1661
-const getUpdateDate = (data: StateData): RemoteMap<Date> => {
-  if ('servicesUpdateDate' in data) {
-    return data.servicesUpdateDate
-  }
-  return data.accountsUpdateDate
-}
-
 export const buildInMemState = (
   loadData: () => Promise<StateData>,
   persistent = true
@@ -59,10 +49,6 @@ export const buildInMemState = (
       innerStateData = loadData()
     }
     return innerStateData
-  }
-  const getAccountsUpdateDates = async (): Promise<Record<string, Date>> => {
-    const stateDataVal = await awu(getUpdateDate(await stateData()).entries()).toArray()
-    return Object.fromEntries(stateDataVal.map(e => [e.key, e.value]))
   }
 
   const deleteFromFilesSource = async (elements: Element[]): Promise<void> => {
@@ -77,8 +63,8 @@ export const buildInMemState = (
 
   const updateAccounts = async (accounts?: string[]): Promise<void> => {
     const data = await stateData()
-    const newAccounts = accounts ?? await awu(getUpdateDate(data).keys()).toArray()
-    return getUpdateDate(data).setAll(newAccounts.map(s => ({ key: s, value: new Date(Date.now()) })))
+    const newAccounts = accounts ?? await awu(data.accountsUpdateDate.keys()).toArray()
+    return data.accountsUpdateDate.setAll(newAccounts.map(s => ({ key: s, value: new Date(Date.now()) })))
   }
 
   const updateStatePathIndex = async (
@@ -163,10 +149,12 @@ export const buildInMemState = (
     setAll: async (elements: ThenableIterable<Element>): Promise<void> => awu(elements).forEach(setElement),
     remove: removeId,
     isEmpty: async (): Promise<boolean> => (await stateData()).elements.isEmpty(),
-    getAccountsUpdateDates,
-    getServicesUpdateDates: getAccountsUpdateDates,
+    getAccountsUpdateDates: async () => {
+      const stateDataVal = await awu((await stateData()).accountsUpdateDate.entries()).toArray()
+      return Object.fromEntries(stateDataVal.map(e => [e.key, e.value]))
+    },
     existingAccounts: async (): Promise<string[]> =>
-      awu(getUpdateDate(await stateData()).keys()).toArray(),
+      awu((await stateData()).accountsUpdateDate.keys()).toArray(),
     getPathIndex: async (): Promise<PathIndex> =>
       (await stateData()).pathIndex,
     getTopLevelPathIndex: async (): Promise<PathIndex> =>
@@ -176,7 +164,7 @@ export const buildInMemState = (
       await currentStateData.elements.clear()
       await currentStateData.pathIndex.clear()
       await currentStateData.topLevelPathIndex.clear()
-      await getUpdateDate(currentStateData).clear()
+      await currentStateData.accountsUpdateDate.clear()
       await currentStateData.saltoMetadata.clear()
       await currentStateData.staticFilesSource.clear()
     },
@@ -188,7 +176,7 @@ export const buildInMemState = (
       await currentStateData.elements.flush()
       await currentStateData.pathIndex.flush()
       await currentStateData.topLevelPathIndex.flush()
-      await getUpdateDate(currentStateData).flush()
+      await currentStateData.accountsUpdateDate.flush()
       await currentStateData.saltoMetadata.flush()
       await currentStateData.staticFilesSource.flush()
     },

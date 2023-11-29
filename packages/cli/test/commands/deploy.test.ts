@@ -329,19 +329,11 @@ describe('deploy command', () => {
         { key: 'version', value: saltoVersion },
       ] as {key: state.StateMetadataKey; value: string}[] : []
       const saltoMetadata = new InMemoryRemoteMap<string, state.StateMetadataKey>(metaData)
-      let dateMap: remoteMap.RemoteMap<Date> | undefined
-      // This if statement is temporary for the transition to multiple services.
-      // Remove this when no longer used, SALTO-1661
-      if ('servicesUpdateDate' in data) {
-        dateMap = data.servicesUpdateDate
-      } else if ('accountsUpdateDate' in data) {
-        dateMap = data.accountsUpdateDate
-      }
       return state.buildInMemState(async () => ({
         elements: createInMemoryElementSource(),
         pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
         topLevelPathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
-        accountsUpdateDate: dateMap ?? new InMemoryRemoteMap(),
+        accountsUpdateDate: data.accountsUpdateDate ?? new InMemoryRemoteMap(),
         saltoMetadata,
         staticFilesSource: mocks.mockStateStaticFilesSource(),
       }))

@@ -164,6 +164,7 @@ export type GeneratorParams = {
     generateEnvName? : string
     fieldsToOmitOnDeploy?: string[]
     elementsToExclude?: string[]
+    conflictedElementsVersion?: 'a' | 'b' | 'c'
 }
 
 export const defaultParams: Omit<GeneratorParams, 'extraNaclPath'> = {
@@ -688,6 +689,7 @@ export const generateElements = async (
       })
       return parsedNaclFile.elements
     })).flat().toArray()
+
     const mergedElements = await merger.mergeElements(awu(elements))
     const inMemElemSource = elementSource.createInMemoryElementSource(
       await awu(mergedElements.merged.values()).toArray()
@@ -707,8 +709,29 @@ export const generateElements = async (
       annotationRefsOrTypes: {
         SharedHidden: BuiltinTypes.HIDDEN_STRING,
         DiffHidden: BuiltinTypes.HIDDEN_STRING,
+        active: BuiltinTypes.BOOLEAN,
+        name: BuiltinTypes.STRING,
       },
       path: [DUMMY_ADAPTER, 'EnvStuff', 'PrimWithAnnos'],
+      annotations: {
+        [CORE_ANNOTATIONS.IMPORTANT_VALUES]: [
+          {
+            value: 'active',
+            indexed: true,
+            highlighted: true,
+          },
+          {
+            value: 'name',
+            indexed: false,
+            highlighted: false,
+          },
+          {
+            value: 'doesNotExist',
+            indexed: false,
+            highlighted: true,
+          },
+        ],
+      },
     })
 
     const sharedObj = new ObjectType({
@@ -728,6 +751,8 @@ export const generateElements = async (
           annotations: {
             SharedHidden: 'HIDDEN!',
             DiffHidden: `${envID}-HIDDENNNN!!!!`,
+            active: true,
+            name: 'test',
           },
         },
       },
@@ -745,6 +770,40 @@ export const generateElements = async (
         SharedHidden: 'HIDDEN!',
         DiffHidden: `${envID}-HIDDENNNN!!!!`,
         [CORE_ANNOTATIONS.ALIAS]: 'EnvObj_alias',
+        [CORE_ANNOTATIONS.IMPORTANT_VALUES]: [
+          {
+            value: 'SharedButDiffField',
+            indexed: true,
+            highlighted: true,
+          },
+          {
+            value: 'SharedField',
+            indexed: false,
+            highlighted: false,
+          },
+          {
+            value: 'doesNotExist',
+            indexed: false,
+            highlighted: true,
+          },
+        ],
+        [CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES]: [
+          {
+            value: 'SharedButDiffAnno',
+            indexed: true,
+            highlighted: false,
+          },
+          {
+            value: 'SharedAnno',
+            indexed: false,
+            highlighted: true,
+          },
+          {
+            value: 'doesNotExist',
+            indexed: false,
+            highlighted: false,
+          },
+        ],
       },
       path: [DUMMY_ADAPTER, 'EnvStuff', 'EnvObj'],
     })
@@ -768,16 +827,39 @@ export const generateElements = async (
         Field: {
           refType: BuiltinTypes.STRING,
         },
+        active: {
+          refType: BuiltinTypes.BOOLEAN,
+        },
       },
       path: [DUMMY_ADAPTER, 'EnvStuff', `${envID}EnvObj`],
       annotations: {
         [CORE_ANNOTATIONS.ALIAS]: `${envID}EnvObj_alias`,
+        [CORE_ANNOTATIONS.IMPORTANT_VALUES]: [
+          {
+            value: 'Field',
+            indexed: false,
+            highlighted: true,
+          },
+          {
+            value: 'active',
+            indexed: true,
+            highlighted: false,
+          },
+          {
+            value: 'doesNotExist',
+            indexed: false,
+            highlighted: true,
+          },
+        ],
       },
     })
     const envSpecificInst = new InstanceElement(
       `${envID}EnvInst`,
       envSpecificObj,
-      { Field: 'FieldValue' },
+      {
+        Field: 'FieldValue',
+        active: true,
+      },
       [DUMMY_ADAPTER, 'EnvStuff', `${envID}EnvInst`],
       {
         [CORE_ANNOTATIONS.ALIAS]: `${envID}EnvInst_alias`,
@@ -789,6 +871,119 @@ export const generateElements = async (
     }
     return res
   }
+  const generateConflictedElements = (): Element[] => {
+    const version = params.conflictedElementsVersion
+    if (!version) {
+      return []
+    }
+    const complicatedObject = new ObjectType({
+      elemID: new ElemID(DUMMY_ADAPTER, 'ComplicatedObject'),
+      fields: {
+        strField: {
+          refType: BuiltinTypes.STRING,
+        },
+        strFieldToBeDeletedInA: {
+          refType: BuiltinTypes.STRING,
+        },
+        strFieldToBeDeletedInB: {
+          refType: BuiltinTypes.STRING,
+        },
+        strFieldToBeDeletedInC: {
+          refType: BuiltinTypes.STRING,
+        },
+        numField: {
+          refType: BuiltinTypes.NUMBER,
+        },
+        listField: {
+          refType: new ListType(BuiltinTypes.STRING),
+        },
+        staticFileField: {
+          refType: BuiltinTypes.STRING,
+        },
+        autoMergedStaticFileInst: {
+          refType: BuiltinTypes.STRING,
+        },
+        mapField: {
+          refType: new MapType(BuiltinTypes.STRING),
+        },
+      },
+      path: [DUMMY_ADAPTER, 'ConflictedStuff', 'ComplicatedObject'],
+      annotations: {
+        [CORE_ANNOTATIONS.ALIAS]: 'ComplicatedObject_alias',
+      },
+    })
+    const complicatedInst = new InstanceElement('complicatedInst', complicatedObject, {
+      strField: version,
+      ...(version === 'a' ? {} : { strFieldToBeDeletedInA: version }),
+      ...(version === 'b' ? {} : { strFieldToBeDeletedInB: version }),
+      ...(version === 'c' ? {} : { strFieldToBeDeletedInC: version }),
+      numField: version.charCodeAt(0),
+      listField: ['mockValue', `version: ${version}`],
+      staticFileField: new StaticFile({
+        content: Buffer.from(`Version is: ${version}`),
+        filepath: 'staticFileField.txt',
+      }),
+      autoMergedStaticFileInst: new StaticFile({
+        content: Buffer.from(`First line ${version === 'b' ? 'b' : 'a'}
+Second line ${version === 'c' ? 'c' : 'a'}`),
+        filepath: 'autoMergedStaticFileInst.txt',
+      }),
+      mapField: {
+        firstValue: 'firstValue',
+        versionValue: version,
+      },
+    },
+    [DUMMY_ADAPTER, 'ConflictedStuff', 'complicatedInst'],
+    {
+      [CORE_ANNOTATIONS.ALIAS]: 'complicatedInst_alias',
+    })
+    const simpleObject = new ObjectType({
+      elemID: new ElemID(DUMMY_ADAPTER, 'SimpleObject'),
+      fields: {
+        strField: {
+          refType: BuiltinTypes.STRING,
+        },
+      },
+      path: [DUMMY_ADAPTER, 'ConflictedStuff', 'SimpleObject'],
+      annotations: {
+        [CORE_ANNOTATIONS.ALIAS]: 'SimpleObject_alias',
+      },
+    })
+    const simpleInstDeletedInA = new InstanceElement('simpleInstDeletedInA', simpleObject, {
+      strField: version,
+    },
+    [DUMMY_ADAPTER, 'ConflictedStuff', 'simpleInstDeletedInA'],
+    {
+      [CORE_ANNOTATIONS.ALIAS]: 'simpleInstDeletedInA_alias',
+    })
+    const simpleInstDeletedInB = new InstanceElement('simpleInstDeletedInB', simpleObject, {
+      strField: version,
+    },
+    [DUMMY_ADAPTER, 'ConflictedStuff', 'simpleInstDeletedInB'],
+    {
+      [CORE_ANNOTATIONS.ALIAS]: 'simpleInstDeletedInB_alias',
+    })
+    const simpleInstDeletedInC = new InstanceElement('simpleInstDeletedInC', simpleObject, {
+      strField: version,
+    },
+    [DUMMY_ADAPTER, 'ConflictedStuff', 'simpleInstDeletedInC'],
+    {
+      [CORE_ANNOTATIONS.ALIAS]: 'simpleInstDeletedInC_alias',
+    })
+    const elements: Element[] = [complicatedObject, complicatedInst, simpleObject]
+    if (version === 'a') {
+      elements.push(simpleInstDeletedInB)
+      elements.push(simpleInstDeletedInC)
+    } else if (version === 'b') {
+      elements.push(simpleInstDeletedInA)
+      elements.push(simpleInstDeletedInC)
+    } else {
+      elements.push(simpleInstDeletedInA)
+      elements.push(simpleInstDeletedInB)
+    }
+    return elements
+  }
+
   const defaultTypes = [defaultObj, permissionsType, profileType, layoutAssignmentsType]
   progressReporter.reportProgress({ message: 'Generating primitive types' })
   const primtiveTypes = await generatePrimitiveTypes()
@@ -807,6 +1002,8 @@ export const generateElements = async (
   const defaultExtraElements = await generateExtraElements(
     path.join(dataPath, 'fixtures')
   )
+  progressReporter.reportProgress({ message: 'Generating conflicted elements' })
+  const conflictedElements = generateConflictedElements()
   log.trace('default fixture element are: %s', defaultExtraElements.map(elem => elem.elemID.getFullName()).join(' , '))
   const envObjects = generateEnvElements()
   progressReporter.reportProgress({ message: 'Generation done' })
@@ -822,5 +1019,6 @@ export const generateElements = async (
     ...extraElements,
     ...defaultExtraElements,
     ...envObjects,
+    ...conflictedElements,
   ].filter(e => !elementsToExclude.has(e.elemID.getFullName()))
 }

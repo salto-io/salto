@@ -13,7 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isObjectType, isInstanceElement, isPrimitiveType, isMapType, isListType } from '@salto-io/adapter-api'
+import {
+  isObjectType,
+  isInstanceElement,
+  isPrimitiveType,
+  isMapType,
+  isListType,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import path from 'path'
@@ -60,12 +66,12 @@ describe('elements generator', () => {
       expect(types).toHaveLength(testParams.numOfTypes)
       expect(
         _.uniq(objects.map(obj => obj.elemID.getFullName()))
-      ).toHaveLength(testParams.numOfObjs + 7) // 5 default types + 2q additional type
+      ).toHaveLength(testParams.numOfObjs + 11) // 7 default types + 2q additional type
       expect(profiles).toHaveLength(testParams.numOfProfiles * 4)
       expect(_.uniq(profiles.map(p => p.elemID.getFullName()))).toHaveLength(
         testParams.numOfProfiles
       )
-      expect(records).toHaveLength(testParams.numOfRecords + 5) // 5 default instance fragments
+      expect(records).toHaveLength(testParams.numOfRecords + 7) // 7 default instance fragments
     })
     // eslint-disable-next-line
     it.skip('should create list and map types', async () => {
@@ -108,6 +114,12 @@ describe('elements generator', () => {
         { fullName: 'dummy.Full.instance.FullInst1', numOfFragments: 1 },
         { fullName: 'dummy.Full.instance.FullInst2', numOfFragments: 1 },
         { fullName: 'dummy.Full', numOfFragments: 1 },
+        { fullName: 'dummy.FullObjWithIV.instance.FullInst1WithIV', numOfFragments: 1 },
+        { fullName: 'dummy.FullObjWithIV', numOfFragments: 1 },
+        { fullName: 'dummy.customFieldWithIV', numOfFragments: 1 },
+        { fullName: 'dummy.FullComplexWithIV.instance.FullComplexInstWithIV', numOfFragments: 1 },
+        { fullName: 'dummy.FullComplexWithIV', numOfFragments: 1 },
+        { fullName: 'dummy.FullComplexWithIV__userObj', numOfFragments: 1 },
         { fullName: 'dummy.Partial', numOfFragments: 2 },
         { fullName: 'dummy.Partial.instance.PartialInst', numOfFragments: 2 },
       ]
@@ -130,6 +142,91 @@ describe('elements generator', () => {
         .toBeDefined()
       expect(elements.find(e => e.elemID.getFullName() === 'dummy.EnvObj.instance.EnvInst'))
         .toBeDefined()
+    })
+  })
+  describe('conflictedElements', () => {
+    describe('when version is "a"', () => {
+      it('should return the correct conflicted elements', async () => {
+        const elements = await generateElements({ ...testParams, conflictedElementsVersion: 'a' }, mockProgressReporter)
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject'))
+          .toBeDefined()
+        const complicatedInst = elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject.instance.complicatedInst')
+        expect(isInstanceElement(complicatedInst)).toBeTruthy()
+        if (isInstanceElement(complicatedInst)) {
+          expect(complicatedInst.value.strFieldToBeDeletedInA).toBeUndefined()
+          expect(complicatedInst.value.strFieldToBeDeletedInB).toEqual('a')
+          expect(complicatedInst.value.strFieldToBeDeletedInC).toEqual('a')
+        }
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject'))
+          .toBeDefined()
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInA'))
+          .toBeUndefined()
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInB'))
+          .toBeDefined()
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInC'))
+          .toBeDefined()
+      })
+    })
+    describe('when version is "b"', () => {
+      it('should return the correct conflicted elements', async () => {
+        const elements = await generateElements({ ...testParams, conflictedElementsVersion: 'b' }, mockProgressReporter)
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject'))
+          .toBeDefined()
+        const complicatedInst = elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject.instance.complicatedInst')
+        expect(isInstanceElement(complicatedInst)).toBeTruthy()
+        if (isInstanceElement(complicatedInst)) {
+          expect(complicatedInst.value.strFieldToBeDeletedInA).toEqual('b')
+          expect(complicatedInst.value.strFieldToBeDeletedInB).toBeUndefined()
+          expect(complicatedInst.value.strFieldToBeDeletedInC).toEqual('b')
+        }
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject'))
+          .toBeDefined()
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInA'))
+          .toBeDefined()
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInB'))
+          .toBeUndefined()
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInC'))
+          .toBeDefined()
+      })
+    })
+    describe('when version is "c"', () => {
+      it('should return the correct conflicted elements', async () => {
+        const elements = await generateElements({ ...testParams, conflictedElementsVersion: 'c' }, mockProgressReporter)
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject'))
+          .toBeDefined()
+        const complicatedInst = elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject.instance.complicatedInst')
+        expect(isInstanceElement(complicatedInst)).toBeTruthy()
+        if (isInstanceElement(complicatedInst)) {
+          expect(complicatedInst.value.strFieldToBeDeletedInA).toEqual('c')
+          expect(complicatedInst.value.strFieldToBeDeletedInB).toEqual('c')
+          expect(complicatedInst.value.strFieldToBeDeletedInC).toBeUndefined()
+        }
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject'))
+          .toBeDefined()
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInA'))
+          .toBeDefined()
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInB'))
+          .toBeDefined()
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInC'))
+          .toBeUndefined()
+      })
+    })
+    describe('when version is undefined', () => {
+      it('should return no conflicted elements', async () => {
+        const elements = await generateElements(testParams, mockProgressReporter)
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject'))
+          .toBeUndefined()
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject.instance.complicatedInst'))
+          .toBeUndefined()
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject'))
+          .toBeUndefined()
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInA'))
+          .toBeUndefined()
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInB'))
+          .toBeUndefined()
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInC'))
+          .toBeUndefined()
+      })
     })
   })
 })

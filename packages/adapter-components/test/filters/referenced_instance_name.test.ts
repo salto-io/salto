@@ -157,6 +157,14 @@ describe('referenced instances', () => {
           fav_recipe: new ReferenceExpression(recipes[0].elemID, recipes[0]),
         },
       ),
+      new InstanceElement(
+        'group3',
+        groupType,
+        {
+          name: 'groupThree',
+          fav_recipe: new ReferenceExpression(recipes[1].elemID, recipes[1]),
+        },
+      ),
     ]
     const folderType = new ObjectType({
       elemID: new ElemID(ADAPTER_NAME, 'folder'),
@@ -245,6 +253,7 @@ describe('referenced instances', () => {
         recipe: {
           transformation: {
             idFields: ['name', '&book_id'],
+            extendsParentId: true,
           },
         },
         group: {
@@ -313,6 +322,7 @@ describe('referenced instances', () => {
           'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
           'myAdapter.group.instance.group1',
           'myAdapter.group.instance.group2',
+          'myAdapter.group.instance.group3',
           'myAdapter.noIdFields.instance.no_idFieldsParent',
           'myAdapter.recipe.instance.recipe123_123_ROOT',
           'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
@@ -343,7 +353,7 @@ describe('referenced instances', () => {
       const sortedResult = result
         .filter(isInstanceElement)
         .map(i => i.elemID.getFullName()).sort()
-      expect(result.length).toEqual(14)
+      expect(result.length).toEqual(15)
       expect(sortedResult)
         .toEqual(['myAdapter.book.instance.123_ROOT',
           'myAdapter.book.instance.456_123_ROOT',
@@ -351,11 +361,28 @@ describe('referenced instances', () => {
           'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
           'myAdapter.group.instance.group1',
           'myAdapter.group.instance.group2',
+          'myAdapter.group.instance.group3',
           'myAdapter.noIdFields.instance.no_idFieldsWithParent',
           'myAdapter.recipe.instance.recipe123_123_ROOT',
           'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
           'myAdapter.recipe.instance.recipe456_456_123_ROOT',
         ])
+    })
+    it('should update references to the renamed instance correctly', async () => {
+      elements = generateElements()
+      const result = await addReferencesToInstanceNames(
+        elements,
+        transformationConfigByType,
+        transformationDefaultConfig
+      )
+      const updatedRecipe = result.filter(isInstanceElement).find(inst => inst.elemID.name === 'recipe456_456_123_ROOT')
+      const updatedGroup = result.filter(isInstanceElement).find(inst => inst.elemID.name === 'group3')
+      const updatedReference = updatedGroup?.value.fav_recipe
+      expect(updatedReference).toBeInstanceOf(ReferenceExpression)
+      expect((updatedReference as ReferenceExpression).elemID).toEqual(updatedRecipe?.elemID)
+      // verify reference value was updates as well
+      expect((updatedReference as ReferenceExpression).value.value.book_id.elemID)
+        .toEqual(updatedRecipe?.value.book_id.elemID)
     })
     it('should change references correctly inside template expressions', async () => {
       elements = generateElements()
@@ -380,9 +407,9 @@ describe('referenced instances', () => {
       ])
     })
     it('should not change name for duplicate elemIDs', async () => {
-      elements = generateElements().filter(e => !['status', 'email'].includes(e.elemID.typeName))
+      elements = generateElements().filter(e => !['status', 'email', 'group'].includes(e.elemID.typeName))
       const result = await addReferencesToInstanceNames(
-        elements.slice(0, 9).concat(elements.slice(12)),
+        elements,
         transformationConfigByType,
         transformationDefaultConfig
       )
@@ -415,11 +442,11 @@ describe('referenced instances', () => {
         'myAdapter.book.instance.rootBook',
         'myAdapter.book.instance.book',
         'myAdapter.recipe.instance.recipe123',
-        'myAdapter.recipe.instance.last',
         'myAdapter.recipe.instance.recipe456',
+        'myAdapter.recipe.instance.last',
       ])
       expect(Object.values(res).map(n => n.length))
-        .toEqual([4, 3, 6, 2, 1])
+        .toEqual([4, 3, 6, 2, 2])
     })
     it('should not have different results on the second fetch', async () => {
       elements = generateElements()

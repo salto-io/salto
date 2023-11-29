@@ -256,7 +256,8 @@ describe('Custom Object Instances CRUD', () => {
                   defaultIdFields: ['SaltoName', 'NumField', 'Address', 'Name'],
                   overrides: [
                     { objectsRegex: 'TestType__c', idFields: ['Name'] },
-                    { objectsRegex: 'sbaa__ApprovalRule__c|sbaa__ApprovalCondition__c', idFields: ['Id'] },
+                    { objectsRegex: 'sbaa__ApprovalRule__c', idFields: ['Id'] },
+                    { objectsRegex: 'sbaa__ApprovalCondition__c', idFields: ['sbaa__ApprovalRule__c'] },
                   ],
                 },
               },

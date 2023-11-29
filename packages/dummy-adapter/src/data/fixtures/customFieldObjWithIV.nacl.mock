@@ -1,0 +1,22 @@
+type dummy.customFieldWithIV {
+  annotations {
+    string apiName {
+    }
+    string label {
+    }
+    boolean externalId {
+    }
+  }
+  _important_values = [
+    {
+      value = "apiName"
+      indexed = false
+      highlighted = true
+    },
+    {
+      value = "label"
+      indexed = true
+      highlighted = false
+    },
+  ]
+}

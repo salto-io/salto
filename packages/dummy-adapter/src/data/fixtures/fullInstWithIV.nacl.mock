@@ -1,4 +1,4 @@
-dummy.FullWithIV FullInst1WithIV {
+dummy.FullObjWithIV FullInst1WithIV {
   strField = "STR1"
   numField = 111
   boolField = false

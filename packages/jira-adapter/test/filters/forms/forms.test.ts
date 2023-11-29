@@ -19,7 +19,6 @@ import _ from 'lodash'
 import { InstanceElement, Element, isInstanceElement, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import moment from 'moment'
 import { getDefaultConfig } from '../../../src/config/config'
 import formsFilter from '../../../src/filters/forms/forms'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
@@ -484,8 +483,12 @@ describe('forms filter', () => {
         elements = [projectInstance, projectType]
       })
       it('should add the current updated time', async () => {
+        const timeBeforeFilter = new Date()
         await filter.preDeploy([{ action: 'add', data: { after: formInstance } }])
-        expect(moment(formInstance.value.updated).format('YYYY-MM-DDTHH:mm')).toEqual(moment(new Date().toISOString()).format('YYYY-MM-DDTHH:mm'))
+        const timeAfterFilter = new Date()
+        const updatedTime = new Date(formInstance.value.updated)
+        const isBetween = updatedTime >= timeBeforeFilter && updatedTime <= timeAfterFilter
+        expect(isBetween).toBeTruthy()
       })
     })
     describe('onDeploy', () => {

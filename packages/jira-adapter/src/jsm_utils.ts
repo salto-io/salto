@@ -14,10 +14,6 @@
 * limitations under the License.
 */
 
-/**
- * Fetch JSM elements of service desk project.
-*/
-
 import { InstanceElement } from '@salto-io/adapter-api'
 import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
@@ -52,12 +48,12 @@ const processEntries = async ({
   typesConfig,
   additionalProcessing,
 } : {
-    paginator: clientUtils.Paginator
-    args: clientUtils.ClientGetWithPaginationParams
-    typeName: string
-    typesConfig: Record<string, configUtils.TypeDuckTypeConfig>
-    additionalProcessing: (entry: clientUtils.ResponseValue) => void
-  }): Promise<clientUtils.ResponseValue[]> => {
+  paginator: clientUtils.Paginator
+  args: clientUtils.ClientGetWithPaginationParams
+  typeName: string
+  typesConfig: Record<string, configUtils.TypeDuckTypeConfig>
+  additionalProcessing: (entry: clientUtils.ResponseValue) => void
+}): Promise<clientUtils.ResponseValue[]> => {
   const jsmResponseValues = (await getEntriesResponseValues({
     paginator,
     args,

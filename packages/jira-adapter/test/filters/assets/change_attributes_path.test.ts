@@ -22,7 +22,7 @@ import addAttributesAsFieldsFilter from '../../../src/filters/assets/change_attr
 import { createEmptyType, getFilterParams } from '../../utils'
 import { ASSESTS_SCHEMA_TYPE, ASSETS_ATTRIBUTE_TYPE, ASSETS_OBJECT_TYPE, JIRA } from '../../../src/constants'
 
-describe('ChaneAttributesPath', () => {
+describe('ChangeAttributesPath', () => {
     type FilterType = filterUtils.FilterWith<'onFetch'>
     let filter: FilterType
     let elements: Element[]

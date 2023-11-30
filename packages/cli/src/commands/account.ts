@@ -232,7 +232,7 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
       await getLoginInputFlow(workspace, adapterCredentialsTypes, output,
         authType, theAccountName, loginParameters)
     } catch (e) {
-      errorOutputLine(formatAddServiceFailed(theAccountName, e.message), output)
+      errorOutputLine(formatAddServiceFailed(serviceType, e.message), output)
       return CliExitCode.AppError
     }
   }

@@ -16,7 +16,7 @@
 import { ChangeValidator, getChangeData, isAdditionChange, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { AUTOMATION_TYPE } from '../constants'
+import { AUTOMATION_TYPE } from '../../constants'
 
 const { awu } = collections.asynciterable
 

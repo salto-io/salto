@@ -798,6 +798,9 @@ export const generateElements = async (
     const changedObject = new ObjectType({
       elemID: new ElemID(DUMMY_ADAPTER, 'ChangedObject'),
       fields: {
+        alwaysHereField: {
+          refType: BuiltinTypes.STRING,
+        },
         ...(version !== 'a' ? { notInA: {
           refType: BuiltinTypes.STRING,
         } } : {}),

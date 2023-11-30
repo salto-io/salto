@@ -797,6 +797,42 @@ export const generateElements = async (
     if (!version) {
       return []
     }
+    const changedObject = new ObjectType({
+      elemID: new ElemID(DUMMY_ADAPTER, 'ChangedObject'),
+      fields: {
+        alwaysHereField: {
+          refType: BuiltinTypes.STRING,
+        },
+        ...(version !== 'a' ? { notInA: {
+          refType: BuiltinTypes.STRING,
+        } } : {}),
+        ...(version !== 'b' ? { notInB: {
+          refType: BuiltinTypes.STRING,
+        } } : {}),
+        ...(version !== 'c' ? { notInC: {
+          refType: BuiltinTypes.STRING,
+        } } : {}),
+      },
+      path: [DUMMY_ADAPTER, 'ConflictedStuff', 'ChangedObject'],
+      annotations: {
+        [CORE_ANNOTATIONS.ALIAS]: 'ChangedObject_alias',
+      },
+    })
+    const simpleObject = new ObjectType({
+      elemID: new ElemID(DUMMY_ADAPTER, 'SimpleObject'),
+      fields: {
+        strField: {
+          refType: BuiltinTypes.STRING,
+        },
+        numField: {
+          refType: BuiltinTypes.NUMBER,
+        },
+      },
+      path: [DUMMY_ADAPTER, 'ConflictedStuff', 'SimpleObject'],
+      annotations: {
+        [CORE_ANNOTATIONS.ALIAS]: 'SimpleObject_alias',
+      },
+    })
     const complicatedObject = new ObjectType({
       elemID: new ElemID(DUMMY_ADAPTER, 'ComplicatedObject'),
       fields: {
@@ -833,12 +869,16 @@ export const generateElements = async (
         mapField: {
           refType: new MapType(BuiltinTypes.STRING),
         },
+        objectsMapField: {
+          refType: new ListType(simpleObject),
+        },
       },
       path: [DUMMY_ADAPTER, 'ConflictedStuff', 'ComplicatedObject'],
       annotations: {
         [CORE_ANNOTATIONS.ALIAS]: 'ComplicatedObject_alias',
       },
     })
+
     const versionToComplicatedObjectFields: Record<ConflictedElementsVersion, {
       fieldWithNoChange: string
       fieldWithOnlyChange: string
@@ -851,6 +891,7 @@ export const generateElements = async (
       staticFileField: StaticFile
       autoMergedStaticFileInst: StaticFile
       mapField: Record<string, string>
+      objectsListField: InstanceElement[]
     }> = {
       a: {
         fieldWithNoChange: 'has not been changed',
@@ -877,6 +918,10 @@ Second line not changed`),
           firstValue: 'firstValue',
           versionValue: 'a',
         },
+        objectsListField: [
+          new InstanceElement('firstObjInMap', simpleObject, { strField: 'always the same', numField: 1 }),
+          new InstanceElement('versionObjInMap', simpleObject, { strField: 'aaa', numField: 1 }),
+        ],
       },
       b: {
         fieldWithNoChange: 'has not been changed',
@@ -903,6 +948,10 @@ Second line not changed`),
           firstValue: 'firstValue',
           versionValue: 'b',
         },
+        objectsListField: [
+          new InstanceElement('firstObjInMap', simpleObject, { strField: 'always the same', numField: 1 }),
+          new InstanceElement('versionObjInMap', simpleObject, { strField: 'bbb', numField: 1 }),
+        ],
       },
       c: {
         fieldWithNoChange: 'has not been changed',
@@ -929,6 +978,10 @@ Second line changed in version c`),
           firstValue: 'firstValue',
           versionValue: 'c',
         },
+        objectsListField: [
+          new InstanceElement('firstObjInMap', simpleObject, { strField: 'always the same', numField: 1 }),
+          new InstanceElement('versionObjInMap', simpleObject, { strField: 'ccc', numField: 1 }),
+        ],
       },
     }
 
@@ -941,18 +994,6 @@ Second line changed in version c`),
         [CORE_ANNOTATIONS.ALIAS]: 'complicatedInst_alias',
       }
     )
-    const simpleObject = new ObjectType({
-      elemID: new ElemID(DUMMY_ADAPTER, 'SimpleObject'),
-      fields: {
-        strField: {
-          refType: BuiltinTypes.STRING,
-        },
-      },
-      path: [DUMMY_ADAPTER, 'ConflictedStuff', 'SimpleObject'],
-      annotations: {
-        [CORE_ANNOTATIONS.ALIAS]: 'SimpleObject_alias',
-      },
-    })
     const simpleInstDeletedInA = new InstanceElement('simpleInstDeletedInA', simpleObject, {
       strField: version,
     },
@@ -974,7 +1015,7 @@ Second line changed in version c`),
     {
       [CORE_ANNOTATIONS.ALIAS]: 'simpleInstDeletedInC_alias',
     })
-    const elements: Element[] = [complicatedObject, complicatedInst, simpleObject]
+    const elements: Element[] = [complicatedObject, complicatedInst, simpleObject, changedObject]
     if (version === 'a') {
       elements.push(simpleInstDeletedInB)
       elements.push(simpleInstDeletedInC)

@@ -48,11 +48,13 @@ export const getConfig = async (
   options?: InstanceElement
 ): Promise<InstanceElement> => {
   const defaultConf = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
-  if (options !== undefined && isOptionsTypeInstance(options) && options.value.enableScriptRunnerAddon) {
-    defaultConf.value.fetch.enableScriptRunnerAddon = true
-  }
-  if (options !== undefined && isOptionsTypeInstance(options) && options.value.enableJSM) {
-    defaultConf.value.fetch.enableJSM = true
+  if (options !== undefined && isOptionsTypeInstance(options)) {
+    if (options.value.enableScriptRunnerAddon) {
+      defaultConf.value.fetch.enableScriptRunnerAddon = true
+    }
+    if (options.value.enableJSM) {
+      defaultConf.value.fetch.enableJSM = true
+    }
   }
   return defaultConf
 }

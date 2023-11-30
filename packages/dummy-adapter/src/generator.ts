@@ -861,7 +861,7 @@ export const generateElements = async (
         autoMergedStaticFileInst: {
           refType: BuiltinTypes.STRING,
         },
-        simpleMapField: {
+        mapField: {
           refType: new MapType(BuiltinTypes.STRING),
         },
         objectsMapField: {
@@ -885,7 +885,7 @@ export const generateElements = async (
       listField: string[]
       staticFileField: StaticFile
       autoMergedStaticFileInst: StaticFile
-      simpleMapField: Record<string, string>
+      mapField: Record<string, string>
       objectsListField: InstanceElement[]
     }> = {
       a: {
@@ -909,7 +909,7 @@ Fifth line is the same`),
 Second line not changed`),
           filepath: 'autoMergedStaticFileInst.txt',
         }),
-        simpleMapField: {
+        mapField: {
           firstValue: 'firstValue',
           versionValue: 'a',
         },
@@ -939,7 +939,7 @@ Fifth line is the same`),
 Second line not changed`),
           filepath: 'autoMergedStaticFileInst.txt',
         }),
-        simpleMapField: {
+        mapField: {
           firstValue: 'firstValue',
           versionValue: 'b',
         },
@@ -969,7 +969,7 @@ Fifth line is the same`),
 Second line changed in version c`),
           filepath: 'autoMergedStaticFileInst.txt',
         }),
-        simpleMapField: {
+        mapField: {
           firstValue: 'firstValue',
           versionValue: 'c',
         },

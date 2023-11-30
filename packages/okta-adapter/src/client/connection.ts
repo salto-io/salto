@@ -60,7 +60,7 @@ export const validateCredentials = async (_creds: {
   }
 }
 
-const APITokenAuthParamsFunc = (
+const apiTokenAuthParamsFunc = (
   { token }: AccessTokenCredentials
 ): clientUtils.AuthParams => ({
   headers: {
@@ -68,25 +68,19 @@ const APITokenAuthParamsFunc = (
   },
 })
 
-const OAuthAuthParamsFunc = async (
+const oauthAuthParamsFunc = async (
   creds: OAuthAccessTokenCredentials,
   retryOptions: clientUtils.RetryOptions,
 ): Promise<clientUtils.AuthParams> => {
-  const { baseUrl, clientId, clientSecret, refreshToken, accessToken } = creds
-  if (refreshToken !== undefined) {
-    return authUtils.oauthAccessTokenRefresh({
-      endpoint: '/oauth2/v1/token',
-      baseURL: baseUrl,
-      clientId,
-      clientSecret,
-      refreshToken,
-      retryOptions,
-    })
-  }
-  // if refreshToken in undefined, we might be able to use current accessToken
-  return {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  }
+  const { baseUrl, clientId, clientSecret, refreshToken } = creds
+  return authUtils.oauthAccessTokenRefresh({
+    endpoint: '/oauth2/v1/token',
+    baseURL: baseUrl,
+    clientId,
+    clientSecret,
+    refreshToken,
+    retryOptions,
+  })
 }
 
 export const createConnection: clientUtils.ConnectionCreator<Credentials> = (
@@ -96,8 +90,8 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = (
     retryOptions,
     authParamsFunc: async (creds: Credentials) => (
       isOAuthAccessTokenCredentials(creds)
-        ? OAuthAuthParamsFunc(creds, retryOptions)
-        : APITokenAuthParamsFunc(creds)
+        ? oauthAuthParamsFunc(creds, retryOptions)
+        : apiTokenAuthParamsFunc(creds)
     ),
     baseURLFunc: async ({ baseUrl }) => baseUrl,
     credValidateFunc: validateCredentials,

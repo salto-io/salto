@@ -95,7 +95,7 @@ describe('validateCredentials', () => {
   describe('when autheticating with oauth', () => {
     beforeEach(async () => {
       connection = await createConnection({ retries: 1 }).login(
-        { baseUrl: 'http://my.okta.net', accessToken: 'access_token', refreshToken: 'refresh_token', clientId: 'client', clientSecret: 'secret' }
+        { baseUrl: 'http://my.okta.net', refreshToken: 'refresh_token', clientId: 'client', clientSecret: 'secret' }
       )
     })
 
@@ -104,7 +104,7 @@ describe('validateCredentials', () => {
 
       beforeEach(async () => {
         result = await validateCredentials({
-          credentials: { baseUrl: 'http://my.okta.net', accessToken: 'access_token', refreshToken: 'refresh_token', clientId: 'client', clientSecret: 'secret' },
+          credentials: { baseUrl: 'http://my.okta.net', refreshToken: 'refresh_token', clientId: 'client', clientSecret: 'secret' },
           connection,
         })
       })

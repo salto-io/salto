@@ -15,11 +15,11 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { InstanceElement, Adapter } from '@salto-io/adapter-api'
+import { InstanceElement, Adapter, Values } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import OktaClient from './client/client'
 import OktaAdapter from './adapter'
-import { Credentials, accessTokenCredentialsType } from './auth'
+import { Credentials, OAuthAccessTokenCredentials, accessTokenCredentialsType } from './auth'
 import {
   configType,
   OktaConfig,
@@ -47,19 +47,25 @@ const {
   validateDuckTypeApiDefinitionConfig,
 } = configUtils
 
+const isOAuthAccessTokenCredentials = (configValue: Readonly<Values>): configValue is OAuthAccessTokenCredentials =>
+  configValue.authType === 'oauth'
+  && 'refreshToken' in configValue
+  && 'clientId' in configValue
+  && 'clientSecret' in configValue
+
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
-  const { baseUrl, authType } = config.value
+  const { value } = config
+  const { baseUrl } = value
   const hostName = new URL(baseUrl).hostname
   if (!hostName.includes(OKTA)) {
     throw new Error(`'${hostName}' is not a valid okta account url`)
   }
-  return authType === 'oauth'
+  return isOAuthAccessTokenCredentials(value)
     ? {
       baseUrl,
-      accessToken: config.value.accessToken,
-      clientId: config.value.clientId,
-      clientSecret: config.value.clientSecret,
-      refreshToken: config.value.refreshToken,
+      clientId: value.clientId,
+      clientSecret: value.clientSecret,
+      refreshToken: value.refreshToken,
     }
     : { baseUrl, token: config.value.token }
 }

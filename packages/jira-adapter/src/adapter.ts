@@ -148,7 +148,6 @@ import scriptRunnerFilter from './filters/script_runner/script_runner_filter'
 import scriptRunnerListenersDeployFilter from './filters/script_runner/script_runner_listeners_deploy'
 import scriptedFragmentsDeployFilter from './filters/script_runner/scripted_fragments_deploy'
 import fetchJsmTypesFilter from './filters/jsm_types_fetch_filter'
-import asstesDeployFilter from './filters/assets/assets_deploy_filter'
 import deployJsmTypesFilter from './filters/jsm_types_deploy_filter'
 import jsmPathFilter from './filters/jsm_paths'
 import portalSettingsFilter from './filters/portal_settings'
@@ -335,7 +334,7 @@ export const DEFAULT_FILTERS = [
   queueDeleteFilter,
   portalGroupsFilter,
   requestTypeFilter,
-  asstesDeployFilter,
+  // asstesDeployFilter,
   deployJsmTypesFilter,
   // Must be done after JsmTypesFilter
   jsmPathFilter,

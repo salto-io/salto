@@ -20,7 +20,7 @@ import { InstanceElement, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-i
 import { getDefaultConfig } from '../../src/config/config'
 import jsmTypesFilter from '../../src/filters/jsm_types_deploy_filter'
 import { createEmptyType, getFilterParams } from '../utils'
-import { PORTAL_GROUP_TYPE, PROJECT_TYPE } from '../../src/constants'
+import { ASSESTS_SCHEMA_TYPE, PORTAL_GROUP_TYPE, PROJECT_TYPE } from '../../src/constants'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -56,6 +56,7 @@ describe('jsmTypesDeployFilter', () => {
       )
     })
     describe('deploy', () => {
+      let assetsSchemaInstance: InstanceElement
       beforeEach(async () => {
         jest.clearAllMocks()
         portalGroupInstance = new InstanceElement(
@@ -70,6 +71,19 @@ describe('jsmTypesDeployFilter', () => {
             [CORE_ANNOTATIONS.PARENT]: [
               new ReferenceExpression(projectInstance.elemID, projectInstance),
             ],
+          },
+        )
+        assetsSchemaInstance = new InstanceElement(
+          'assetsSchema1',
+          createEmptyType(ASSESTS_SCHEMA_TYPE),
+          {
+            name: 'assetsSchema1',
+            objectSchemaKey: 'a1',
+            status: 'Ok',
+            description: 'test description',
+            atlassianTemplateId: 'people_new',
+            id: 5,
+            workspaceId: 'wid12',
           },
         )
       })
@@ -113,6 +127,24 @@ describe('jsmTypesDeployFilter', () => {
           ])
         expect(res.deployResult.errors).toHaveLength(0)
         expect(res.deployResult.appliedChanges).toHaveLength(0)
+      })
+      it('should depoly additon of assets types', async () => {
+        mockDeployChange.mockImplementation(async () => ({}))
+        const res = await filter
+          .deploy([{ action: 'add', data: { after: assetsSchemaInstance } }])
+        expect(mockDeployChange).toHaveBeenCalledTimes(1)
+        expect(res.leftoverChanges).toHaveLength(0)
+        expect(res.deployResult.errors).toHaveLength(0)
+        expect(res.deployResult.appliedChanges).toHaveLength(1)
+      })
+      it('should depoly remove of assets types', async () => {
+        mockDeployChange.mockImplementation(async () => ({}))
+        const res = await filter
+          .deploy([{ action: 'remove', data: { before: assetsSchemaInstance } }])
+        expect(mockDeployChange).toHaveBeenCalledTimes(1)
+        expect(res.leftoverChanges).toHaveLength(0)
+        expect(res.deployResult.errors).toHaveLength(0)
+        expect(res.deployResult.appliedChanges).toHaveLength(1)
       })
     })
 })

@@ -874,7 +874,6 @@ Second line not changed`),
         mapField: {
           firstValue: 'firstValue',
           versionValue: 'a',
-          a: 'versionKey',
         },
       },
       b: {
@@ -901,7 +900,6 @@ Second line not changed`),
         mapField: {
           firstValue: 'firstValue',
           versionValue: 'b',
-          b: 'versionKey',
         },
       },
       c: {
@@ -928,7 +926,6 @@ Second line changed in version c`),
         mapField: {
           firstValue: 'firstValue',
           versionValue: 'c',
-          c: 'versionKey',
         },
       },
     }

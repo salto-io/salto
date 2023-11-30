@@ -22,6 +22,10 @@ describe('automation_projects', () => {
   let projectInstance: InstanceElement
   let instance: InstanceElement
   let elementsSource: ReadOnlyElementsSource
+  const AdapterConfigType = new ObjectType({
+    elemID: new ElemID('adapter', 'AdapterConfig'),
+  })
+  const adapterConfig = new InstanceElement('settings', AdapterConfigType)
 
   beforeEach(() => {
     projectInstance = new InstanceElement(
@@ -46,7 +50,7 @@ describe('automation_projects', () => {
   })
   describe('findWeakReferences', () => {
     it('should return weak references projects', async () => {
-      const references = await automationProjectsHandler.findWeakReferences([instance])
+      const references = await automationProjectsHandler.findWeakReferences([instance], adapterConfig)
 
       expect(references).toEqual([
         { source: instance.elemID.createNestedID('1', 'projectId'), target: projectInstance.elemID, type: 'weak' },
@@ -56,14 +60,14 @@ describe('automation_projects', () => {
 
     it('should do nothing if received invalid automation', async () => {
       instance.value.projects = 'invalid'
-      const references = await automationProjectsHandler.findWeakReferences([instance])
+      const references = await automationProjectsHandler.findWeakReferences([instance], adapterConfig)
 
       expect(references).toEqual([])
     })
 
     it('should do nothing if there are no projects', async () => {
       delete instance.value.projects
-      const references = await automationProjectsHandler.findWeakReferences([instance])
+      const references = await automationProjectsHandler.findWeakReferences([instance], adapterConfig)
 
       expect(references).toEqual([])
     })

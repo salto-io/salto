@@ -242,17 +242,24 @@ export const getAdapterConfigsPerAccount = async (envs: EnvConfig[]): Promise<Ob
 export const getCustomReferences = async (
   elements: Element[],
   accountToServiceName: Record<string, string>,
+  adaptersConfig: adaptersConfigSource.AdaptersConfigSource,
 ): Promise<ReferenceInfo[]> => {
-  const accountToElements = _.groupBy(elements.filter(e => e.elemID.adapter !== GLOBAL_ADAPTER), e => e.elemID.adapter)
-  return (await Promise.all(Object.entries(accountToElements).map(async ([account, accountElements]) => {
+  const accountElementsToRefs = async ([account, accountElements]: [string, Element[]]): Promise<ReferenceInfo[]> => {
     const serviceName = accountToServiceName[account] ?? account
     try {
-      return await adapterCreators[serviceName]?.getCustomReferences?.(accountElements) ?? []
+      const adapterConfig = await adaptersConfig.getAdapter(account)
+      const refFunc = adapterCreators[serviceName]?.getCustomReferences
+      if (adapterConfig !== undefined && refFunc !== undefined) {
+        return await refFunc(accountElements, adapterConfig)
+      }
     } catch (err) {
       log.error('failed to get custom references for %s: %o', account, err)
-      return []
     }
-  }))).flat()
+    return []
+  }
+
+  const accountToElements = _.groupBy(elements.filter(e => e.elemID.adapter !== GLOBAL_ADAPTER), e => e.elemID.adapter)
+  return (await Promise.all(Object.entries(accountToElements).map(accountElementsToRefs))).flat()
 }
 
 

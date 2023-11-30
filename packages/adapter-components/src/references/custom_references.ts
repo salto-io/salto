@@ -24,9 +24,11 @@ const getReferenceInfoIdentifier = (ref: ReferenceInfo): string =>
  * When a reference is returned twice with different types the last one will override the previous ones.
  */
 export const combineCustomReferenceGetters = (customReferenceGetters: GetCustomReferencesFunc[])
-: GetCustomReferencesFunc => async elements => {
+: GetCustomReferencesFunc => async (elements, adapterConfig) => {
   const idToRef: Record<string, ReferenceInfo> = {}
-  const refGroups = await Promise.all(customReferenceGetters.map(getCustomReferences => getCustomReferences(elements)))
+  const refGroups = await Promise.all(
+    customReferenceGetters.map(getCustomReferences => getCustomReferences(elements, adapterConfig))
+  )
 
   // We don't use _.uniqBy to ensure that the last reference will override the previous ones.
   refGroups.forEach(refs => {

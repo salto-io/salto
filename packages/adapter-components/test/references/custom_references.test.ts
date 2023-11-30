@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { combineCustomReferenceGetters } from '../../src/references/custom_references'
 
 describe('combineCustomReferenceGetters', () => {
@@ -40,7 +40,11 @@ describe('combineCustomReferenceGetters', () => {
       ]),
     ])
 
-    const refs = await getCustomReferencesFunc([])
+    const AdapterConfigType = new ObjectType({
+      elemID: new ElemID('adapter', 'AdapterConfig'),
+    })
+    const adapterConfig = new InstanceElement('settings', AdapterConfigType)
+    const refs = await getCustomReferencesFunc([], adapterConfig)
 
     expect(refs).toEqual([
       {

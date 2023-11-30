@@ -20,6 +20,8 @@ import { REFERENCE_INDEXES_VERSION, ReferenceTargetIndexValue, updateReferenceIn
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
 import { RemoteMap } from '../../src/workspace/remote_map'
 import { createMockRemoteMap } from '../utils'
+import { AdaptersConfigSource } from '../../src/workspace/adapters_config_source'
+import { mockAdaptersConfigSource } from '../common/workspace'
 
 describe('updateReferenceIndexes', () => {
   let referenceTargetsIndex: MockInterface<RemoteMap<ReferenceTargetIndexValue>>
@@ -28,8 +30,10 @@ describe('updateReferenceIndexes', () => {
   let elementsSource: ElementsSource
   let object: ObjectType
   let instance: InstanceElement
+  let adaptersConfig: MockInterface<AdaptersConfigSource>
 
   beforeEach(() => {
+    adaptersConfig = mockAdaptersConfigSource()
     referenceTargetsIndex = createMockRemoteMap<ReferenceTargetIndexValue>()
 
     referenceSourcesIndex = createMockRemoteMap<ElemID[]>()
@@ -93,6 +97,7 @@ describe('updateReferenceIndexes', () => {
         elementsSource,
         true,
         async () => [],
+        adaptersConfig,
       )
     })
     it('should add the new references to the referenceTargets index', () => {
@@ -242,6 +247,7 @@ describe('updateReferenceIndexes', () => {
         elementsSource,
         true,
         async () => [],
+        adaptersConfig,
       )
     })
     it('old values should be removed and new values should be added from referenceTargets index', () => {
@@ -302,6 +308,7 @@ describe('updateReferenceIndexes', () => {
         elementsSource,
         true,
         async () => [],
+        adaptersConfig,
       )
     })
     it('should set the new tree in the referenceTargets index', () => {
@@ -361,6 +368,7 @@ describe('updateReferenceIndexes', () => {
         elementsSource,
         true,
         async () => [],
+        adaptersConfig,
       )
     })
 
@@ -399,6 +407,7 @@ describe('updateReferenceIndexes', () => {
           elementsSource,
           false,
           async () => [],
+          adaptersConfig,
         )
       })
       it('should update referenceTargets index using the element source', () => {
@@ -462,6 +471,7 @@ describe('updateReferenceIndexes', () => {
           elementsSource,
           true,
           async () => [],
+          adaptersConfig,
         )
       })
       it('should update referenceTargets index using the element source', () => {
@@ -524,6 +534,11 @@ describe('updateReferenceIndexes', () => {
           val3: 'string',
         }
       )
+      const AdapterConfigType = new ObjectType({
+        elemID: new ElemID('adapter', 'AdapterConfig'),
+      })
+      const adapterConfig = new InstanceElement('settings', AdapterConfigType)
+      await adaptersConfig.setAdapter('test', 'test', adapterConfig)
       const changes = [toChange({ after: inst })]
       await updateReferenceIndexes(
         changes,
@@ -544,6 +559,7 @@ describe('updateReferenceIndexes', () => {
             type: 'weak',
           },
         ] : []),
+        adaptersConfig,
       )
     })
     it('should override the default references with the custom references', () => {
@@ -584,6 +600,7 @@ describe('updateReferenceIndexes', () => {
             type: 'weak',
           },
         ],
+        adaptersConfig,
       )
     })
     it('should override the default references with the custom references', () => {
@@ -623,6 +640,7 @@ describe('updateReferenceIndexes', () => {
             type: 'weak',
           },
         ] : []),
+        adaptersConfig,
       )
     })
     it('should remove the removed custom references', () => {

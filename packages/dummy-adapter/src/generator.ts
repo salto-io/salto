@@ -860,18 +860,20 @@ export const generateElements = async (
         listField: ['a'],
         staticFileField: new StaticFile({
           content: Buffer.from(`First line is the same
-Second line changed aaa`),
+Second line changed aaa
+Third line is the same
+Fourth line changed aaa
+Fifth line is the same`),
           filepath: 'staticFileField.txt',
         }),
         autoMergedStaticFileInst: new StaticFile({
-          content: Buffer.from(`First line not change
-Second line changed in version a`),
+          content: Buffer.from(`First line changed in version a
+Second line not changed`),
           filepath: 'autoMergedStaticFileInst.txt',
         }),
         mapField: {
           firstValue: 'firstValue',
           versionValue: 'a',
-          a: 'versionKey',
         },
       },
       b: {
@@ -884,7 +886,10 @@ Second line changed in version a`),
         listField: ['b', 'b'],
         staticFileField: new StaticFile({
           content: Buffer.from(`First line is the same
-Second line changed bbb`),
+Second line changed bbb
+Third line is the same
+Fourth line changed bbb
+Fifth line is the same`),
           filepath: 'staticFileField.txt',
         }),
         autoMergedStaticFileInst: new StaticFile({
@@ -895,7 +900,6 @@ Second line not changed`),
         mapField: {
           firstValue: 'firstValue',
           versionValue: 'b',
-          b: 'versionKey',
         },
       },
       c: {
@@ -908,7 +912,10 @@ Second line not changed`),
         listField: ['c', 'c', 'c'],
         staticFileField: new StaticFile({
           content: Buffer.from(`First line is the same
-Second line changed ccc`),
+Second line changed ccc
+Third line is the same
+Fourth line changed ccc
+Fifth line is the same`),
           filepath: 'staticFileField.txt',
         }),
         autoMergedStaticFileInst: new StaticFile({
@@ -919,7 +926,6 @@ Second line changed in version c`),
         mapField: {
           firstValue: 'firstValue',
           versionValue: 'c',
-          c: 'versionKey',
         },
       },
     }

@@ -21,7 +21,7 @@ import {
   toChange, FetchResult, InstanceElement, ReferenceExpression, isReferenceExpression,
   Element, DeployResult, Values, isStaticFile, StaticFile, FetchOptions, Change,
   ChangeId, ChangeGroupId, ElemID, ChangeError, getChangeData, ObjectType, BuiltinTypes,
-  isInstanceElement, CORE_ANNOTATIONS, Field, isObjectType,
+  isInstanceElement, CORE_ANNOTATIONS, Field, isObjectType, ProgressReporter,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements, findElement, naclCase } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
@@ -58,6 +58,11 @@ const logging = (message: string): void => {
     // eslint-disable-next-line no-console
     console.log(message)
   }
+}
+
+const nullProgressReporter: ProgressReporter = {
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  reportProgress: () => {},
 }
 
 describe('Netsuite adapter E2E with real account', () => {
@@ -393,6 +398,7 @@ describe('Netsuite adapter E2E with real account', () => {
         logMessage(`running deploy for group ${id} with ${group.length} changes`)
         const result = await nsAdapter.deploy({
           changeGroup: { groupID: id, changes: group },
+          progressReporter: nullProgressReporter,
         })
         updateInternalIds(result.appliedChanges)
         return result
@@ -482,7 +488,10 @@ describe('Netsuite adapter E2E with real account', () => {
       let deployResult: DeployResult
       beforeAll(async () => {
         logMessage(`running deploy for group SDF with ${changes.length} changes`)
-        deployResult = await adapter.deploy({ changeGroup: { groupID: SDF_CREATE_OR_UPDATE_GROUP_ID, changes } })
+        deployResult = await adapter.deploy({
+          changeGroup: { groupID: SDF_CREATE_OR_UPDATE_GROUP_ID, changes },
+          progressReporter: nullProgressReporter,
+        })
       })
 
       it('should deploy new records that depend on existing ones', async () => {

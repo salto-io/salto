@@ -16,7 +16,10 @@
 import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { InstanceElement, isInstanceElement, ReferenceExpression, ObjectType, ElemID, CORE_ANNOTATIONS, AdapterOperations } from '@salto-io/adapter-api'
+import {
+  InstanceElement, isInstanceElement, ReferenceExpression, ObjectType, ElemID, CORE_ANNOTATIONS, AdapterOperations,
+  ProgressReporter,
+} from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { types } from '@salto-io/lowerdash'
 import mockReplies from './mock_replies.json'
@@ -487,7 +490,14 @@ describe('adapter', () => {
         ),
         elementsSource: buildElementsSourceFromElements([]),
       })
-      await expect(operations.deploy({ changeGroup: { groupID: '', changes: [] } })).rejects.toThrow(new Error('Not implemented.'))
+      const nullProgressReporter: ProgressReporter = {
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        reportProgress: () => {},
+      }
+      await expect(operations.deploy({
+        changeGroup: { groupID: '', changes: [] },
+        progressReporter: nullProgressReporter,
+      })).rejects.toThrow(new Error('Not implemented.'))
     })
   })
 })

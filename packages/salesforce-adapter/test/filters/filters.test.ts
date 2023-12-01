@@ -22,6 +22,7 @@ import { mockDeployResult, mockDeployMessage } from '../connection'
 import { apiName, createInstanceElement, metadataType } from '../../src/transformers/transformer'
 import { mockTypes } from '../mock_elements'
 import { FilterWith } from './mocks'
+import { nullProgressReporter } from '../utils'
 
 describe('SalesforceAdapter filters', () => {
   describe('when filter methods are implemented', () => {
@@ -85,6 +86,7 @@ describe('SalesforceAdapter filters', () => {
             groupID: instance.elemID.getFullName(),
             changes: inputChanges,
           },
+          progressReporter: nullProgressReporter,
         })
       })
 

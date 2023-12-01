@@ -834,8 +834,12 @@ export default class SalesforceClient {
     if (progressCallback) {
       const progressCallbackWrapper = async (): Promise<void> => {
         const partialResult = await deployStatus.check()
-        const detailedResult = await this.conn.metadata.checkDeployStatus(partialResult.id, true)
-        progressCallback(detailedResult)
+        try {
+          const detailedResult = await this.conn.metadata.checkDeployStatus(partialResult.id, true)
+          progressCallback(detailedResult)
+        } catch (e) {
+          log.warn('checkDeployStatus API call failed. Progress update will not take place. Error: %s', e.message)
+        }
       }
       const pollingInterval = setInterval(progressCallbackWrapper, DEPLOY_STATUS_POLLING_INTERVAL_MS)
 

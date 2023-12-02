@@ -34,7 +34,7 @@ import path from 'path'
 import seedrandom from 'seedrandom'
 import readdirp from 'readdirp'
 import { parser, merger, expressions, elementSource } from '@salto-io/workspace'
-import { createMatchingObjectType } from '@salto-io/adapter-utils'
+import { createMatchingObjectType, inspectValue } from '@salto-io/adapter-utils'
 
 const { mapValuesAsync } = promises.object
 const { arrayOf } = collections.array
@@ -670,10 +670,10 @@ export const generateElements = async (
     const allNaclMocks = await readdirp.promise(naclDir, {
       fileFilter: [`*.${MOCK_NACL_SUFFIX}`],
     })
-    log.trace('the list of files read in generateExtraElements is: %s', allNaclMocks.map(mock => mock.path).join(' , '))
+    log.debug('the list of files read in generateExtraElements is: %s', allNaclMocks.map(mock => mock.path).join(' , '))
     const elements = await awu(allNaclMocks.map(async file => {
       const content = fs.readFileSync(file.fullPath, 'utf8')
-      log.trace('content of file %s is %s', file.path, content)
+      log.debug('content of file %s is %s', file.path, content)
       const parsedNaclFile = await parser.parse(Buffer.from(content), file.basename, {
         file: {
           parse: async funcParams => new StaticFile({
@@ -684,12 +684,14 @@ export const generateElements = async (
           isSerializedAsFunction: () => true,
         },
       })
+      log.debug(`parsedNaclFile of file ${file.fullPath} is equal ${inspectValue(parsedNaclFile)}`)
       await awu(parsedNaclFile.elements).forEach(elem => {
         elem.path = [DUMMY_ADAPTER, 'extra', file.basename.replace(new RegExp(`.${MOCK_NACL_SUFFIX}$`), '')]
       })
       return parsedNaclFile.elements
     })).flat().toArray()
     const mergedElements = await merger.mergeElements(awu(elements))
+    log.debug(`mergedElements is equal ${inspectValue(mergedElements)}`)
     const inMemElemSource = elementSource.createInMemoryElementSource(
       await awu(mergedElements.merged.values()).toArray()
     )
@@ -795,6 +797,42 @@ export const generateElements = async (
     if (!version) {
       return []
     }
+    const changedObject = new ObjectType({
+      elemID: new ElemID(DUMMY_ADAPTER, 'ChangedObject'),
+      fields: {
+        alwaysHereField: {
+          refType: BuiltinTypes.STRING,
+        },
+        ...(version !== 'a' ? { notInA: {
+          refType: BuiltinTypes.STRING,
+        } } : {}),
+        ...(version !== 'b' ? { notInB: {
+          refType: BuiltinTypes.STRING,
+        } } : {}),
+        ...(version !== 'c' ? { notInC: {
+          refType: BuiltinTypes.STRING,
+        } } : {}),
+      },
+      path: [DUMMY_ADAPTER, 'ConflictedStuff', 'ChangedObject'],
+      annotations: {
+        [CORE_ANNOTATIONS.ALIAS]: 'ChangedObject_alias',
+      },
+    })
+    const simpleObject = new ObjectType({
+      elemID: new ElemID(DUMMY_ADAPTER, 'SimpleObject'),
+      fields: {
+        strField: {
+          refType: BuiltinTypes.STRING,
+        },
+        numField: {
+          refType: BuiltinTypes.NUMBER,
+        },
+      },
+      path: [DUMMY_ADAPTER, 'ConflictedStuff', 'SimpleObject'],
+      annotations: {
+        [CORE_ANNOTATIONS.ALIAS]: 'SimpleObject_alias',
+      },
+    })
     const complicatedObject = new ObjectType({
       elemID: new ElemID(DUMMY_ADAPTER, 'ComplicatedObject'),
       fields: {
@@ -831,12 +869,16 @@ export const generateElements = async (
         mapField: {
           refType: new MapType(BuiltinTypes.STRING),
         },
+        objectsMapField: {
+          refType: new ListType(simpleObject),
+        },
       },
       path: [DUMMY_ADAPTER, 'ConflictedStuff', 'ComplicatedObject'],
       annotations: {
         [CORE_ANNOTATIONS.ALIAS]: 'ComplicatedObject_alias',
       },
     })
+
     const versionToComplicatedObjectFields: Record<ConflictedElementsVersion, {
       fieldWithNoChange: string
       fieldWithOnlyChange: string
@@ -952,18 +994,6 @@ Second line changed in version c`),
         [CORE_ANNOTATIONS.ALIAS]: 'complicatedInst_alias',
       }
     )
-    const simpleObject = new ObjectType({
-      elemID: new ElemID(DUMMY_ADAPTER, 'SimpleObject'),
-      fields: {
-        strField: {
-          refType: BuiltinTypes.STRING,
-        },
-      },
-      path: [DUMMY_ADAPTER, 'ConflictedStuff', 'SimpleObject'],
-      annotations: {
-        [CORE_ANNOTATIONS.ALIAS]: 'SimpleObject_alias',
-      },
-    })
     const simpleInstDeletedInA = new InstanceElement('simpleInstDeletedInA', simpleObject, {
       strField: version,
     },
@@ -985,7 +1015,7 @@ Second line changed in version c`),
     {
       [CORE_ANNOTATIONS.ALIAS]: 'simpleInstDeletedInC_alias',
     })
-    const elements: Element[] = [complicatedObject, complicatedInst, simpleObject]
+    const elements: Element[] = [complicatedObject, complicatedInst, simpleObject, changedObject]
     if (version === 'a') {
       elements.push(simpleInstDeletedInB)
       elements.push(simpleInstDeletedInC)
@@ -1017,9 +1047,9 @@ Second line changed in version c`),
   const defaultExtraElements = await generateExtraElements(
     path.join(dataPath, 'fixtures')
   )
+  log.debug('default fixture element are: %s', defaultExtraElements.map(elem => elem.elemID.getFullName()).join(' , '))
   progressReporter.reportProgress({ message: 'Generating conflicted elements' })
   const conflictedElements = generateConflictedElements()
-  log.trace('default fixture element are: %s', defaultExtraElements.map(elem => elem.elemID.getFullName()).join(' , '))
   const envObjects = generateEnvElements()
   progressReporter.reportProgress({ message: 'Generation done' })
   const elementsToExclude = new Set(params.elementsToExclude ?? [])

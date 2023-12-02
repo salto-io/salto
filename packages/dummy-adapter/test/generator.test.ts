@@ -147,6 +147,8 @@ describe('elements generator', () => {
         }
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject'))
           .toBeDefined()
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.ChangedObject'))
+          .toBeDefined()
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInA'))
           .toBeUndefined()
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInB'))
@@ -168,6 +170,8 @@ describe('elements generator', () => {
           expect(complicatedInst.value.strFieldToBeDeletedInC).toEqual('bbb')
         }
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject'))
+          .toBeDefined()
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.ChangedObject'))
           .toBeDefined()
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInA'))
           .toBeDefined()
@@ -191,6 +195,8 @@ describe('elements generator', () => {
         }
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject'))
           .toBeDefined()
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.ChangedObject'))
+          .toBeDefined()
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInA'))
           .toBeDefined()
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInB'))
@@ -207,6 +213,8 @@ describe('elements generator', () => {
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject.instance.complicatedInst'))
           .toBeUndefined()
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject'))
+          .toBeUndefined()
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.ChangedObject'))
           .toBeUndefined()
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInA'))
           .toBeUndefined()

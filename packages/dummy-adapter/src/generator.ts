@@ -849,6 +849,7 @@ export const generateElements = async (
       staticFileField: StaticFile
       autoMergedStaticFileInst: StaticFile
       mapField: Record<string, string>
+      objectsListField: { strField: string; numField: number }[]
     }> = {
       a: {
         fieldWithNoChange: 'has not been changed',
@@ -875,6 +876,10 @@ Second line not changed`),
           firstValue: 'firstValue',
           versionValue: 'a',
         },
+        objectsListField: [
+          { strField: 'always the same', numField: 1 },
+          { strField: 'aaa', numField: 1 },
+        ],
       },
       b: {
         fieldWithNoChange: 'has not been changed',
@@ -901,6 +906,10 @@ Second line not changed`),
           firstValue: 'firstValue',
           versionValue: 'b',
         },
+        objectsListField: [
+          { strField: 'always the same', numField: 1 },
+          { strField: 'bbb', numField: 1 },
+        ],
       },
       c: {
         fieldWithNoChange: 'has not been changed',
@@ -927,6 +936,10 @@ Second line changed in version c`),
           firstValue: 'firstValue',
           versionValue: 'c',
         },
+        objectsListField: [
+          { strField: 'always the same', numField: 1 },
+          { strField: 'ccc', numField: 1 },
+        ],
       },
     }
 

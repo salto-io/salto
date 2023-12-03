@@ -805,7 +805,7 @@ export const generateElements = async (
     const changedObject = new ObjectType({
       elemID: new ElemID(DUMMY_ADAPTER, 'ChangedObject'),
       fields: {
-        alwaysTheSae: {
+        alwaysTheSame: {
           refType: BuiltinTypes.STRING,
         },
         changedByVersion: {

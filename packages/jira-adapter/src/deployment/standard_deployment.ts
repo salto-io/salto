@@ -61,6 +61,9 @@ export const defaultDeployChange = async ({
     resolvedChange,
     elementsSource,
   )
+  const typeDefinition = apiDefinitions.types[getChangeData(change).elemID.typeName]
+  const deployRequest = typeDefinition.deployRequests ? typeDefinition.deployRequests[change.action] : undefined
+  const configFieldsToIgnore = deployRequest?.fieldsToIgnore ?? []
 
   if (isModificationChange(changeToDeploy)) {
     const valuesBefore = (await deployment.filterIgnoredValues(
@@ -72,7 +75,7 @@ export const defaultDeployChange = async ({
     const valuesAfter = (await deployment.filterIgnoredValues(
       changeToDeploy.data.after.clone(),
       fieldsToIgnore,
-      [],
+      configFieldsToIgnore,
       elementsSource
     )).value
 

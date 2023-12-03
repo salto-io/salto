@@ -48,14 +48,10 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     const deployResult = await deployChanges(
       jsmTypesChanges,
       async change => {
-        const typeDefinition = jsmApiDefinitions.types[getChangeData(change).elemID.typeName]
-        const deployRequest = typeDefinition.deployRequests ? typeDefinition.deployRequests[change.action] : undefined
-        const fieldsToIgnore = deployRequest?.fieldsToIgnore ?? []
         await defaultDeployChange({
           change,
           client,
           apiDefinitions: jsmApiDefinitions,
-          fieldsToIgnore,
           additionalUrlVars,
         })
       }

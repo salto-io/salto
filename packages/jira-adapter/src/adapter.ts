@@ -334,7 +334,6 @@ export const DEFAULT_FILTERS = [
   queueDeleteFilter,
   portalGroupsFilter,
   requestTypeFilter,
-  // asstesDeployFilter,
   deployJsmTypesFilter,
   // Must be done after JsmTypesFilter
   jsmPathFilter,

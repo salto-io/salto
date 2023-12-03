@@ -37,13 +37,13 @@ const hasRelevantComponent = (components: Component[]): boolean =>
     || value.schemaId !== undefined
     || value.objectTypeId !== undefined)
 
-const getComponentIds = (components: Component[], key: 'workspaceId' | 'schemaId' | 'objectTypeId'): string[] =>
-  components.map(component => component.value[key]).filter(isDefined)
+const getUniqueValues = (components: Component[], key: keyof Component['value']): string[] =>
+  [...new Set(components.map(component => component.value[key]).filter(isDefined))].sort()
 
 const isComponentChanged = (beforeComponents: Component[], afterComponents: Component[]): boolean => {
   const keys: Array<'workspaceId' | 'schemaId' | 'objectTypeId'> = ['workspaceId', 'schemaId', 'objectTypeId']
   return keys.some(key =>
-    !_.isEqual(getComponentIds(beforeComponents, key), getComponentIds(afterComponents, key)))
+    !_.isEqual(getUniqueValues(beforeComponents, key), getUniqueValues(afterComponents, key)))
 }
 
 export const automationToAssetsValidator: (config: JiraConfig) => ChangeValidator = config => async changes => {

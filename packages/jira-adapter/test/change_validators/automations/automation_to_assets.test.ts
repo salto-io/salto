@@ -96,4 +96,19 @@ describe('automationsToAssetsValidator', () => {
     expect(await validator([toChange({ before: automationInstance, after: automationInstnaceAfter })]))
       .toEqual([])
   })
+  it('should not return a warning when adding another component with the same workspaceId and enableJSM is false', async () => {
+    const automationInstnaceAfter = automationInstance.clone()
+    automationInstnaceAfter.value.components.push({
+      component: 'BRANCH',
+      schemaVersion: 2,
+      type: 'cmdb.object.related',
+      value: {
+        workspaceId: 'workspaceId',
+        schemaId: 'schemaId',
+      },
+    })
+    const validator = automationToAssetsValidator(config)
+    expect(await validator([toChange({ before: automationInstance, after: automationInstnaceAfter })]))
+      .toEqual([])
+  })
 })

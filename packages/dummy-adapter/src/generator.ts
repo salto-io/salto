@@ -891,7 +891,7 @@ export const generateElements = async (
       staticFileField: StaticFile
       autoMergedStaticFileInst: StaticFile
       mapField: Record<string, string>
-      objectsListField: InstanceElement[]
+      objectsListField: { strField: string; numField: number }[]
     }> = {
       a: {
         fieldWithNoChange: 'has not been changed',
@@ -919,8 +919,8 @@ Second line not changed`),
           versionValue: 'a',
         },
         objectsListField: [
-          new InstanceElement('firstObjInMap', simpleObject, { strField: 'always the same', numField: 1 }),
-          new InstanceElement('versionObjInMap', simpleObject, { strField: 'aaa', numField: 1 }),
+          { strField: 'always the same', numField: 1 },
+          { strField: 'aaa', numField: 1 },
         ],
       },
       b: {
@@ -949,8 +949,8 @@ Second line not changed`),
           versionValue: 'b',
         },
         objectsListField: [
-          new InstanceElement('firstObjInMap', simpleObject, { strField: 'always the same', numField: 1 }),
-          new InstanceElement('versionObjInMap', simpleObject, { strField: 'bbb', numField: 1 }),
+          { strField: 'always the same', numField: 1 },
+          { strField: 'bbb', numField: 1 },
         ],
       },
       c: {
@@ -979,8 +979,8 @@ Second line changed in version c`),
           versionValue: 'c',
         },
         objectsListField: [
-          new InstanceElement('firstObjInMap', simpleObject, { strField: 'always the same', numField: 1 }),
-          new InstanceElement('versionObjInMap', simpleObject, { strField: 'ccc', numField: 1 }),
+          { strField: 'always the same', numField: 1 },
+          { strField: 'ccc', numField: 1 },
         ],
       },
     }

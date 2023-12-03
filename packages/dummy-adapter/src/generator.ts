@@ -797,21 +797,20 @@ export const generateElements = async (
     if (!version) {
       return []
     }
+    const versionToBuiltinType: Record<ConflictedElementsVersion, PrimitiveType> = {
+      a: BuiltinTypes.BOOLEAN,
+      b: BuiltinTypes.STRING,
+      c: BuiltinTypes.NUMBER,
+    }
     const changedObject = new ObjectType({
       elemID: new ElemID(DUMMY_ADAPTER, 'ChangedObject'),
       fields: {
-        alwaysHereField: {
+        alwaysTheSae: {
           refType: BuiltinTypes.STRING,
         },
-        ...(version !== 'a' ? { notInA: {
-          refType: BuiltinTypes.STRING,
-        } } : {}),
-        ...(version !== 'b' ? { notInB: {
-          refType: BuiltinTypes.STRING,
-        } } : {}),
-        ...(version !== 'c' ? { notInC: {
-          refType: BuiltinTypes.STRING,
-        } } : {}),
+        changedByVersion: {
+          refType: versionToBuiltinType[version],
+        },
       },
       path: [DUMMY_ADAPTER, 'ConflictedStuff', 'ChangedObject'],
       annotations: {

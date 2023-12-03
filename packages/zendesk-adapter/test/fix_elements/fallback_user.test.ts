@@ -15,16 +15,16 @@
 */
 import { ChangeError, ElemID, InstanceElement, ObjectType, Element } from '@salto-io/adapter-api'
 import ZendeskClient from '../../src/client/client'
-import { ZENDESK } from '../../src/constants'
+import { ARTICLE_TYPE_NAME, MACRO_TYPE_NAME, TRIGGER_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { fallbackUsersHandler } from '../../src/fix_elements/fallback_user'
 import * as userUtils from '../../src/user_utils'
 import { DEPLOY_CONFIG } from '../../src/config'
 import { FixElementsArgs } from '../../src/fix_elements/types'
 
-describe('missingUsersToFallback', () => {
+describe('fallbackUsersHandler', () => {
   let client: ZendeskClient
-  const macroType = new ObjectType({ elemID: new ElemID(ZENDESK, 'macro') })
-  const articleType = new ObjectType({ elemID: new ElemID(ZENDESK, 'article') })
+  const macroType = new ObjectType({ elemID: new ElemID(ZENDESK, MACRO_TYPE_NAME) })
+  const articleType = new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) })
 
   const articleInstance = new InstanceElement(
     'test',
@@ -48,6 +48,26 @@ describe('missingUsersToFallback', () => {
     },
   )
 
+  const triggerInstance = new InstanceElement(
+    'trigger',
+    new ObjectType({ elemID: new ElemID(ZENDESK, TRIGGER_TYPE_NAME) }),
+    {
+      conditions: {
+        all: [{
+          field: 'lookup:ticket.ticket_field_11.custom_fields.33',
+          operator: 'is',
+          value: 'non',
+          is_user_value: true,
+        },
+        {
+          field: 'lookup:ticket.ticket_field_12.custom_fields.34',
+          operator: 'is',
+          value: 'should not change',
+        }],
+      },
+    }
+  )
+
   beforeEach(() => {
     jest.clearAllMocks()
     const getUsersMock = jest.spyOn(userUtils, 'getUsers')
@@ -65,7 +85,7 @@ describe('missingUsersToFallback', () => {
     let fallbackResponse: {fixedElements: Element[]; errors: ChangeError[]}
 
     beforeEach(async () => {
-      const instances = [macroInstance, articleInstance].map(e => e.clone())
+      const instances = [macroInstance, articleInstance, triggerInstance].map(e => e.clone())
       fallbackResponse = await fallbackUsersHandler({
         client,
         config: { [DEPLOY_CONFIG]: { defaultMissingUserFallback: 'fallback@.com' } },
@@ -77,11 +97,15 @@ describe('missingUsersToFallback', () => {
       fallbackMacro.value.actions[2].value = 'fallback@.com'
       const fallbackArticle = articleInstance.clone()
       fallbackArticle.value.author_id = 'fallback@.com'
+      const fallbackTrigger = triggerInstance.clone()
+      fallbackTrigger.value.conditions.all[0].value = 'fallback@.com'
       expect(fallbackResponse.fixedElements).toEqual([
         fallbackMacro,
         fallbackArticle,
+        fallbackTrigger,
       ])
     })
+
     it('should create warning severity errors', () => {
       expect(fallbackResponse.errors).toEqual([
         {
@@ -97,6 +121,14 @@ describe('missingUsersToFallback', () => {
           message: '1 usernames will be overridden to fallback@.com',
           severity: 'Warning',
           detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: a@a.com.\n'
+          + "If you continue, they will be set to fallback@.com according to the environment's user fallback options.\n"
+          + 'Learn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
+        },
+        {
+          elemID: triggerInstance.elemID,
+          message: '1 usernames will be overridden to fallback@.com',
+          severity: 'Warning',
+          detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: non.\n'
           + "If you continue, they will be set to fallback@.com according to the environment's user fallback options.\n"
           + 'Learn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
         }])

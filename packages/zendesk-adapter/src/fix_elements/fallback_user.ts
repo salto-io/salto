@@ -29,6 +29,8 @@ import { paginate } from '../client/pagination'
 import { DEPLOY_CONFIG } from '../config'
 import { MISSING_USERS_DOC_LINK, MISSING_USERS_ERROR_MSG, TYPE_NAME_TO_REPLACER, VALID_USER_VALUES, getUserFallbackValue, getUsers } from '../user_utils'
 import { FixElementsHandler } from './types'
+import { CUSTOM_OBJECT_FIELD_TYPE_NAME, TICKET_FIELD_TYPE_NAME, TRIGGER_TYPE_NAME } from '../constants'
+import { FieldsParams, ValueReplacer, replaceConditionsAndActionsCreator } from '../replacers_utils'
 
 const log = logger(module)
 const { createPaginator } = clientUtils
@@ -55,11 +57,24 @@ const missingUsersChangeWarning = (
   detailedMessage: `The following users are referenced by this instance, but do not exist in the target environment: ${missingUsers.join(', ')}.\nIf you continue, they will be set to ${userFallbackValue} according to the environment's user fallback options.\nLearn more: ${MISSING_USERS_DOC_LINK}`,
 })
 
+const replacerParams = (primaryField: string): FieldsParams[] => [
+  { fieldName: [primaryField, 'all'], fieldsToReplace: [], overrideFilterCriteria: [condition => !!_.get(condition, 'is_user_value')] },
+  { fieldName: [primaryField, 'any'], fieldsToReplace: [], overrideFilterCriteria: [condition => !!_.get(condition, 'is_user_value')] },
+]
+
+const CUSTOM_OBJECT_FIELD_TYPES_TO_REPLACER: Record<string, ValueReplacer> = {
+  [TRIGGER_TYPE_NAME]: replaceConditionsAndActionsCreator(replacerParams('conditions')),
+  [TICKET_FIELD_TYPE_NAME]: replaceConditionsAndActionsCreator(replacerParams('relationship_filter')),
+  [CUSTOM_OBJECT_FIELD_TYPE_NAME]: replaceConditionsAndActionsCreator(replacerParams('relationship_filter')),
+}
+
 const getMissingUserPaths = (
   users: Set<string>,
   instance: InstanceElement
 ): { user: string; path: ElemID }[] => {
-  const userPaths = TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance)
+  const userPaths = TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance).concat(
+    CUSTOM_OBJECT_FIELD_TYPES_TO_REPLACER[instance.elemID.typeName]?.(instance) ?? []
+  )
   return userPaths.map(path => {
     const user = resolvePath(instance, path)
     if (!VALID_USER_VALUES.includes(user) && !users.has(user)) {

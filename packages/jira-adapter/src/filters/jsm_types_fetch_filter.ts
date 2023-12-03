@@ -17,7 +17,7 @@
 
 import { isObjectType, CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { ASSESTS_SCHEMA_TYPE, ASSETS_STATUS_TYPE, CALENDAR_TYPE, CUSTOMER_PERMISSIONS_TYPE, PORTAL_GROUP_TYPE, PORTAL_SETTINGS_TYPE_NAME, QUEUE_TYPE, REQUEST_TYPE_NAME, SLA_TYPE_NAME } from '../constants'
+import { ASSESTS_SCHEMA_TYPE, ASSETS_OBJECT_TYPE, ASSETS_STATUS_TYPE, CALENDAR_TYPE, CUSTOMER_PERMISSIONS_TYPE, PORTAL_GROUP_TYPE, PORTAL_SETTINGS_TYPE_NAME, QUEUE_TYPE, REQUEST_TYPE_NAME, SLA_TYPE_NAME } from '../constants'
 import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../utils'
 
 
@@ -34,6 +34,7 @@ const jsmSupportedTypes = [
 const assetsSupportedTypes = [
   ASSESTS_SCHEMA_TYPE,
   ASSETS_STATUS_TYPE,
+  ASSETS_OBJECT_TYPE,
 ]
 
 const filterCreator: FilterCreator = ({ config }) => ({

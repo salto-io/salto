@@ -16,13 +16,15 @@
 
 import { InstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { PROJECT_TYPE, SERVICE_DESK } from '../../src/constants'
+import { ASSETS_OBJECT_TYPE, PROJECT_TYPE, SERVICE_DESK } from '../../src/constants'
 import { createEmptyType, getFilterParams } from '../utils'
-import changeServiceDeskIdFieldProjectFilter from '../../src/filters/change_projects_service_desk_id'
+import changeJSMElementsFieldFilter from '../../src/filters/change_jsm_fields'
 
-describe('changeServiceDeskIdFieldProjectFilter', () => {
+describe('changeJSMElementsFieldFilter', () => {
     type FilterType = filterUtils.FilterWith<'onFetch'>
     let filter: FilterType
+    let AssetsObjectTypeInstance: InstanceElement
+    let elements: InstanceElement[]
     const projectInstance = new InstanceElement(
       'project1',
       createEmptyType(PROJECT_TYPE),
@@ -35,15 +37,38 @@ describe('changeServiceDeskIdFieldProjectFilter', () => {
         },
       },
     )
-    const elements = [projectInstance]
+
+    beforeEach(() => {
+      AssetsObjectTypeInstance = new InstanceElement(
+        'assetsObjectType',
+        createEmptyType(ASSETS_OBJECT_TYPE),
+        {
+          id: '11111',
+          name: 'AssetsObjectType',
+          icon: {
+            id: '12345',
+          },
+        },
+      )
+      elements = [projectInstance, AssetsObjectTypeInstance]
+    })
     it('should change service desk Id from object to string', async () => {
-      filter = changeServiceDeskIdFieldProjectFilter(getFilterParams({})) as typeof filter
+      filter = changeJSMElementsFieldFilter(getFilterParams({})) as typeof filter
       await filter.onFetch(elements)
       expect(projectInstance.value).toEqual({
         id: '11111',
         name: 'project1',
         projectTypeKey: SERVICE_DESK,
         serviceDeskId: '12345',
+      })
+    })
+    it('should change icon Id from object to string', async () => {
+      filter = changeJSMElementsFieldFilter(getFilterParams({})) as typeof filter
+      await filter.onFetch(elements)
+      expect(AssetsObjectTypeInstance.value).toEqual({
+        id: '11111',
+        name: 'AssetsObjectType',
+        iconId: '12345',
       })
     })
 })

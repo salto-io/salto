@@ -137,7 +137,7 @@ import addAliasFilter from './filters/add_alias'
 import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_specific_duplicate_roles'
 import issueLayoutFilter from './filters/layouts/issue_layout'
 import removeSimpleFieldProjectFilter from './filters/remove_simplified_field_project'
-import changeServiceDeskIdFieldProjectFilter from './filters/change_projects_service_desk_id'
+import changeJSMElementsFieldFilter from './filters/change_jsm_fields'
 import formsFilter from './filters/forms/forms'
 import addJsmTypesAsFieldsFilter from './filters/add_jsm_types_as_fields'
 import createReferencesIssueLayoutFilter from './filters/layouts/create_references_layouts'
@@ -183,7 +183,7 @@ const { query: queryFilter, ...otherCommonFilters } = commonFilters
 export const DEFAULT_FILTERS = [
   accountInfoFilter,
   storeUsersFilter,
-  changeServiceDeskIdFieldProjectFilter,
+  changeJSMElementsFieldFilter,
   changeQueueFieldsFilter,
   changePortalGroupFieldsFilter,
   automationLabelFetchFilter,

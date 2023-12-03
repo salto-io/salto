@@ -18,11 +18,11 @@ import { getChangeData, isAdditionChange, isInstanceChange } from '@salto-io/ada
 import { collections } from '@salto-io/lowerdash'
 import { getParent } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
-import { ASSETS_STATUS_TYPE } from '../../constants'
+import { ASSETS_OBJECT_TYPE, ASSETS_STATUS_TYPE } from '../../constants'
 
 
 const { awu } = collections.asynciterable
-
+const SUPPORTED_TYPES = [ASSETS_STATUS_TYPE, ASSETS_OBJECT_TYPE]
 const filter: FilterCreator = ({ config }) => ({
   name: 'assetsStatusAdditionFilter',
   preDeploy: async changes => {
@@ -37,7 +37,7 @@ const filter: FilterCreator = ({ config }) => ({
       .filter(isInstanceChange)
       .filter(isAdditionChange)
       .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === ASSETS_STATUS_TYPE)
+      .filter(instance => SUPPORTED_TYPES.includes(instance.elemID.typeName))
       .forEach(instance => {
         instance.value.objectSchemaId = getParent(instance).value.id
       })
@@ -54,7 +54,7 @@ const filter: FilterCreator = ({ config }) => ({
       .filter(isInstanceChange)
       .filter(isAdditionChange)
       .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === ASSETS_STATUS_TYPE)
+      .filter(instance => SUPPORTED_TYPES.includes(instance.elemID.typeName))
       .forEach(instance => {
         delete instance.value.objectSchemaId
       })

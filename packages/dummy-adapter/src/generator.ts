@@ -800,17 +800,26 @@ export const generateElements = async (
     const changedObject = new ObjectType({
       elemID: new ElemID(DUMMY_ADAPTER, 'ChangedObject'),
       fields: {
-        alwaysHereField: {
+        alwaysTheSame: {
           refType: BuiltinTypes.STRING,
         },
         ...(version !== 'a' ? { notInA: {
           refType: BuiltinTypes.STRING,
+          annotations: {
+            version,
+          },
         } } : {}),
         ...(version !== 'b' ? { notInB: {
           refType: BuiltinTypes.STRING,
+          annotations: {
+            version,
+          },
         } } : {}),
         ...(version !== 'c' ? { notInC: {
           refType: BuiltinTypes.STRING,
+          annotations: {
+            version,
+          },
         } } : {}),
       },
       path: [DUMMY_ADAPTER, 'ConflictedStuff', 'ChangedObject'],
@@ -911,7 +920,8 @@ Fifth line is the same`),
         }),
         autoMergedStaticFileInst: new StaticFile({
           content: Buffer.from(`First line changed in version a
-Second line not changed`),
+Second line not changed
+Third line not changed`),
           filepath: 'autoMergedStaticFileInst.txt',
         }),
         mapField: {
@@ -941,7 +951,8 @@ Fifth line is the same`),
         }),
         autoMergedStaticFileInst: new StaticFile({
           content: Buffer.from(`First line not change
-Second line not changed`),
+Second line not changed
+Third line not changed`),
           filepath: 'autoMergedStaticFileInst.txt',
         }),
         mapField: {
@@ -971,7 +982,8 @@ Fifth line is the same`),
         }),
         autoMergedStaticFileInst: new StaticFile({
           content: Buffer.from(`First line not change
-Second line changed in version c`),
+Second line not changed
+Third line changed in version c`),
           filepath: 'autoMergedStaticFileInst.txt',
         }),
         mapField: {

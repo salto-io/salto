@@ -197,6 +197,8 @@ describe('elements generator', () => {
           .toBeDefined()
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.ChangedObject'))
           .toBeDefined()
+        expect(elements.find(e => e.elemID.getFullName() === 'dummy.ChangedObject'))
+          .toBeDefined()
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInA'))
           .toBeDefined()
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInB'))

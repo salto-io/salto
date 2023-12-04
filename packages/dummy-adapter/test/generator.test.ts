@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isObjectType, isInstanceElement, isPrimitiveType, isMapType, isListType } from '@salto-io/adapter-api'
+import { isObjectType, isInstanceElement, isPrimitiveType, isMapType, isListType, BuiltinTypes } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import path from 'path'
@@ -147,8 +147,13 @@ describe('elements generator', () => {
         }
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject'))
           .toBeDefined()
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.ChangedObject'))
-          .toBeDefined()
+        const changedObject = elements.find(e => e.elemID.getFullName() === 'dummy.ChangedObject')
+        expect(isObjectType(changedObject)).toBeTruthy()
+        if (isObjectType(changedObject)) {
+          expect(changedObject.fields?.notInA).toBeUndefined()
+          expect(changedObject.fields.notInB.refType.elemID).toEqual(BuiltinTypes.BOOLEAN.elemID)
+          expect(changedObject.fields.notInC.refType.elemID).toEqual(BuiltinTypes.BOOLEAN.elemID)
+        }
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInA'))
           .toBeUndefined()
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInB'))
@@ -171,8 +176,13 @@ describe('elements generator', () => {
         }
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject'))
           .toBeDefined()
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.ChangedObject'))
-          .toBeDefined()
+        const changedObject = elements.find(e => e.elemID.getFullName() === 'dummy.ChangedObject')
+        expect(isObjectType(changedObject)).toBeTruthy()
+        if (isObjectType(changedObject)) {
+          expect(changedObject.fields.notInA.refType.elemID).toEqual(BuiltinTypes.STRING.elemID)
+          expect(changedObject.fields?.notInB).toBeUndefined()
+          expect(changedObject.fields.notInC.refType.elemID).toEqual(BuiltinTypes.STRING.elemID)
+        }
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInA'))
           .toBeDefined()
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInB'))
@@ -195,6 +205,13 @@ describe('elements generator', () => {
         }
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject'))
           .toBeDefined()
+        const changedObject = elements.find(e => e.elemID.getFullName() === 'dummy.ChangedObject')
+        expect(isObjectType(changedObject)).toBeTruthy()
+        if (isObjectType(changedObject)) {
+          expect(changedObject.fields.notInA.refType.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
+          expect(changedObject.fields.notInB.refType.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
+          expect(changedObject.fields?.notInC).toBeUndefined()
+        }
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.ChangedObject'))
           .toBeDefined()
         expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInA'))

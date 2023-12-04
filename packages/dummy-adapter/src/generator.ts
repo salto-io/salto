@@ -680,7 +680,7 @@ export const generateElements = async (
             const [filepath] = funcParams
             let fileContent: Buffer
             try {
-              fileContent = fs.readFileSync(filepath)
+              fileContent = fs.readFileSync(`mock-static-resources/${filepath}`)
             } catch {
               fileContent = Buffer.from('THIS IS STATIC FILE')
             }

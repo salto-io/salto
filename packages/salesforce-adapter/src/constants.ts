@@ -312,7 +312,6 @@ export const DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST = 2500
 export const DEFAULT_MAX_INSTANCES_PER_TYPE = 5000
 export const MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST = 500
 export const MAXIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST = 10000
-export const MAX_QUERY_LENGTH = 2000
 export const DEFAULT_ENUM_FIELD_PERMISSIONS = true
 export const DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS = {
   maxAttempts: 5,
@@ -323,6 +322,17 @@ export const DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS = {
   ],
 }
 export const MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD = 20
+
+// ref. https://developer.salesforce.com/docs/atlas.en-us.salesforce_app_limits_cheatsheet.meta/salesforce_app_limits_cheatsheet/salesforce_app_limits_platform_soslsoql.htm
+
+export type SoqlQueryLimits = {
+  maxQueryLength: number
+  maxWhereClauseLength: number
+}
+export const DefaultSoqlQueryLimits: SoqlQueryLimits = {
+  maxQueryLength: 100000,
+  maxWhereClauseLength: 2000,
+}
 
 // Fields and Values
 export const CURRENCY_ISO_CODE = 'CurrencyIsoCode'

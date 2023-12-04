@@ -157,9 +157,12 @@ import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
 import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uuid'
 import changeQueueFieldsFilter from './filters/change_queue_fields'
 import portalGroupsFilter from './filters/portal_groups'
+import assetsObjectTypePath from './filters/assets/assets_object_type_path'
+import assetsObjectTypeChangeFields from './filters/assets/assets_object_type_change_fields'
+import changeAttributesPathFilter from './filters/assets/change_attributes_path'
 import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
-import { jiraJSMEntriesFunc } from './jsm_utils'
+import { jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from './jsm_utils'
 import { getWorkspaceId } from './workspace_id'
 import { JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES } from './config/api_config'
 
@@ -281,6 +284,7 @@ export const DEFAULT_FILTERS = [
   addJsmTypesAsFieldsFilter,
   issueLayoutFilter,
   fetchJsmTypesFilter,
+  assetsObjectTypeChangeFields,
   // Must run after issueLayoutFilter
   removeSimpleFieldProjectFilter,
   requestTypeLayoutsFilter,
@@ -336,6 +340,10 @@ export const DEFAULT_FILTERS = [
   // Must be last
   defaultInstancesDeployFilter,
   ...Object.values(otherCommonFilters),
+  // Must run after otherCommonFilters and specificly after referencedInstanceNamesFilterCreator.
+  assetsObjectTypePath,
+  // Must run after assetsObjectTypePath
+  changeAttributesPathFilter,
 ]
 
 export interface JiraAdapterParams {
@@ -534,6 +542,7 @@ export default class JiraAdapter implements AdapterOperations {
       typeDefaults: jsmApiDefinitions.typeDefaults,
       additionalRequestContext: workspaceContext,
       getElemIdFunc: this.getElemIdFunc,
+      getEntriesResponseValuesFunc: jiraJSMAssetsEntriesFunc(),
     })
   }
 

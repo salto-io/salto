@@ -34,7 +34,7 @@ import {
 import ZendeskClient from './client/client'
 import { createConnection, instanceUrl } from './client/connection'
 import { configCreator } from './config_creator'
-import { weakReferenceHandlers } from './weak_references'
+import { customReferenceHandlers } from './custom_references'
 
 const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
@@ -197,5 +197,7 @@ export const adapter: Adapter = {
   },
   configType,
   configCreator,
-  getCustomReferences: combineCustomReferenceGetters(weakReferenceHandlers.map(handler => handler.findWeakReferences)),
+  getCustomReferences: combineCustomReferenceGetters(
+    customReferenceHandlers.map(handler => handler.findWeakReferences)
+  ),
 }

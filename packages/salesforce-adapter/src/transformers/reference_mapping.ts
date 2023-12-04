@@ -28,7 +28,7 @@ import { GetLookupNameFunc, GetLookupNameFuncArgs } from '@salto-io/adapter-util
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { apiName } from './transformer'
+import { apiName, isMetadataInstanceElement } from './transformer'
 import {
   LAYOUT_ITEM_METADATA_TYPE,
   WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
@@ -73,6 +73,7 @@ import {
   CPQ_CONSTRAINT_FIELD,
   CUSTOM_LABEL_METADATA_TYPE,
 } from '../constants'
+import { instanceInternalId } from '../filters/utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -97,7 +98,7 @@ const safeApiName = ({ ref, path, relative }: {
 }
 
 type ReferenceSerializationStrategyName = 'absoluteApiName' | 'relativeApiName' | 'configurationAttributeMapping' | 'lookupQueryMapping' | 'scheduleConstraintFieldMapping'
- | 'mapKey' | 'customLabel'
+ | 'mapKey' | 'customLabel' | 'fromDataInstance'
 const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName, ReferenceSerializationStrategy
 > = {
@@ -154,6 +155,14 @@ const ReferenceSerializationStrategyLookup: Record<
       }
       return val
     },
+  },
+  fromDataInstance: {
+    serialize: async args => (
+      await isMetadataInstanceElement(args.ref.value)
+        ? instanceInternalId(args.ref.value)
+        : ReferenceSerializationStrategyLookup.absoluteApiName.serialize(args)
+    ),
+    lookup: val => val,
   },
 }
 
@@ -849,9 +858,10 @@ export const generateReferenceResolverFinder = (
   ]).filter(resolver => resolver.match(field, element)).toArray())
 }
 
-const getLookUpNameImpl = ({ defs, resolveToElementFallback }: {
+const getLookUpNameImpl = ({ defs, resolveToElementFallback, defaultStrategyName }: {
   defs: FieldReferenceDefinition[]
   resolveToElementFallback: boolean
+  defaultStrategyName: ReferenceSerializationStrategyName
 }): GetLookupNameFunc => {
   const resolverFinder = generateReferenceResolverFinder(defs)
 
@@ -891,7 +901,7 @@ const getLookUpNameImpl = ({ defs, resolveToElementFallback }: {
         return strategy.serialize({ ref, field, element })
       }
       if (isElement(ref.value)) {
-        const defaultStrategy = ReferenceSerializationStrategyLookup.absoluteApiName
+        const defaultStrategy = ReferenceSerializationStrategyLookup[defaultStrategyName]
         const resolvedValue = await defaultStrategy.serialize({ ref, element })
         if (resolvedValue !== undefined) {
           return resolvedValue
@@ -913,8 +923,13 @@ const getLookUpNameImpl = ({ defs, resolveToElementFallback }: {
 /**
  * Translate a reference expression back to its original value before deploy.
  */
-export const getLookUpName = getLookUpNameImpl({ defs: fieldNameToTypeMappingDefs, resolveToElementFallback: false })
-export const getLookupNameWithFallbackToElement = getLookUpNameImpl({
+export const getLookUpName = getLookUpNameImpl({
+  defs: fieldNameToTypeMappingDefs,
+  resolveToElementFallback: false,
+  defaultStrategyName: 'absoluteApiName',
+})
+export const getLookupNameForDataInstances = getLookUpNameImpl({
   defs: fieldNameToTypeMappingDefs,
   resolveToElementFallback: true,
+  defaultStrategyName: 'fromDataInstance',
 })

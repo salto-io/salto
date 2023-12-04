@@ -18,7 +18,7 @@ import { logger } from '@salto-io/logging'
 import { ElemIdGetter, InstanceElement, ObjectType, Element, isInstanceElement, CORE_ANNOTATIONS, Change, DeployResult, getChangeData, isInstanceChange, isAdditionChange } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { createSchemeGuard, getParent, isResolvedReferenceExpression, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
-import { elements as adapterElements } from '@salto-io/adapter-components'
+import { elements as adapterElements, config as configUtils } from '@salto-io/adapter-components'
 import { FilterResult } from '@salto-io/adapter-utils/src/filter'
 import _ from 'lodash'
 import { deployChanges } from '../../deployment/standard_deployment'
@@ -26,11 +26,14 @@ import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../../ut
 import { JiraConfig } from '../../config/config'
 import JiraClient, { graphQLResponseType } from '../../client/client'
 import { QUERY, QUERY_JSM } from './layout_queries'
-import { ISSUE_LAYOUT_CONFIG_ITEM_SCHEME, ISSUE_LAYOUT_RESPONSE_SCHEME, issueLayoutConfig, layoutConfigItem, IssueLayoutResponse, containerIssueLayoutResponse, createLayoutType } from './layout_types'
+import { ISSUE_LAYOUT_CONFIG_ITEM_SCHEME, ISSUE_LAYOUT_RESPONSE_SCHEME, issueLayoutConfig, layoutConfigItem, IssueLayoutResponse, createLayoutType, IssueLayoutConfiguration } from './layout_types'
 import { ISSUE_LAYOUT_TYPE, ISSUE_VIEW_TYPE, JIRA, REQUEST_FORM_TYPE, REQUEST_TYPE_NAME } from '../../constants'
+import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
 
 const log = logger(module)
 const { isDefined } = lowerDashValues
+const { toBasicInstance } = adapterElements
+const { getTransformationConfigByType } = configUtils
 
 type LayoutTypeDetails = {
     pathParam: string
@@ -100,15 +103,22 @@ export const getLayoutResponse = async ({
   return { data: undefined }
 }
 
-const fromlayoutConfigRespTolayoutConfig = (
-  containers: containerIssueLayoutResponse[]
+const fromLayoutConfigRespToLayoutConfig = (
+  layoutConfig: IssueLayoutConfiguration
 ): issueLayoutConfig => {
+  const { containers } = layoutConfig.issueLayoutResult
+  const fieldItemIdToMetaData = Object.fromEntries(layoutConfig.metadata.configuration.items.nodes
+    .filter(node => !_.isEmpty(node))
+    .map(node => [node.fieldItemId, _.omit(node, 'fieldItemId')]))
+
   const items = containers
-    .flatMap(container => container.items.nodes.map(node => ({
-      type: 'FIELD',
-      sectionType: container.containerType,
-      key: node.fieldItemId,
-    })))
+    .flatMap(container => container.items.nodes
+      .map(node => ({
+        type: 'FIELD',
+        sectionType: container.containerType,
+        key: node.fieldItemId,
+        data: fieldItemIdToMetaData[node.fieldItemId],
+      })))
     .filter(isLayoutConfigItem)
 
   return { items }
@@ -131,23 +141,29 @@ export const getLayout = async ({
     }): Promise<InstanceElement | undefined> => {
   if (!Array.isArray(response.data) && isIssueLayoutResponse(response.data) && instance.path !== undefined) {
     const { issueLayoutResult } = response.data.issueLayoutConfiguration
-    const { containers } = issueLayoutResult
     const value = {
       id: issueLayoutResult.id,
       projectId: variables.projectId,
       extraDefinerId: variables.extraDefinerId,
-      issueLayoutConfig: fromlayoutConfigRespTolayoutConfig(containers),
+      issueLayoutConfig: fromLayoutConfigRespToLayoutConfig(response.data.issueLayoutConfiguration),
     }
     const name = `${instance.value.name}_${issueLayoutResult.name}`
     const serviceIds = adapterElements.createServiceIds(value, 'id', layoutType.elemID)
     const instanceName = getElemIdFunc ? getElemIdFunc(JIRA, serviceIds, naclCase(name)).name
       : naclCase(name)
-    return new InstanceElement(
-      instanceName,
-      layoutType,
-      value,
-      [...instance.path.slice(0, -1), LAYOUT_TYPE_NAME_TO_DETAILS[typeName].pathParam, pathNaclCase(instanceName)],
-    )
+    return toBasicInstance({
+      entry: value,
+      type: layoutType,
+      transformationConfigByType: getTransformationConfigByType(DEFAULT_API_DEFINITIONS.types),
+      transformationDefaultConfig: DEFAULT_API_DEFINITIONS.typeDefaults.transformation,
+      parent: instance,
+      defaultName: name,
+      getElemIdFunc,
+      nestedPath:
+      [...instance.path?.slice(2, instance.path?.length - 1),
+        LAYOUT_TYPE_NAME_TO_DETAILS[typeName].pathParam,
+        pathNaclCase(instanceName)],
+    })
   }
   return undefined
 }
@@ -171,6 +187,7 @@ const deployLayoutChange = async (
         data: {
           name: item.key.value.value.name,
           type: item.key.value.value.type ?? item.key.value.value.schema.system,
+          ...item.data,
         },
       }
     }

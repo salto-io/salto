@@ -87,7 +87,7 @@ export type ZendeskFetchConfig = configUtils.UserFetchConfig
   extractReferencesFromFreeText?: boolean
   convertJsonIdsToReferences?: boolean
 }
-export type ZedneskDeployConfig = configUtils.UserDeployConfig & configUtils.DefaultMissingUserFallbackConfig & {
+export type ZendeskDeployConfig = configUtils.UserDeployConfig & configUtils.DefaultMissingUserFallbackConfig & {
   createMissingOrganizations?: boolean
 }
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
@@ -98,7 +98,7 @@ export type ZendeskApiConfig = configUtils.AdapterApiConfig<
 export type ZendeskConfig = {
   [CLIENT_CONFIG]?: ZendeskClientConfig
   [FETCH_CONFIG]: ZendeskFetchConfig
-  [DEPLOY_CONFIG]?: ZedneskDeployConfig
+  [DEPLOY_CONFIG]?: ZendeskDeployConfig
   [API_DEFINITIONS_CONFIG]: ZendeskApiConfig
 }
 
@@ -3006,7 +3006,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
 
 export type FilterContext = {
   [FETCH_CONFIG]: ZendeskFetchConfig
-  [DEPLOY_CONFIG]?: ZedneskDeployConfig
+  [DEPLOY_CONFIG]?: ZendeskDeployConfig
   [API_DEFINITIONS_CONFIG]: ZendeskApiConfig
 }
 

@@ -26,7 +26,6 @@ import { FORM_TYPE, JIRA, PROJECT_TYPE } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
 import { CLOUD_RESOURCE_FIELD } from '../../../src/filters/automation/cloud_id'
 
-
 describe('forms filter', () => {
     type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy' | 'onDeploy' | 'preDeploy'>
     let filter: FilterType
@@ -484,8 +483,12 @@ describe('forms filter', () => {
         elements = [projectInstance, projectType]
       })
       it('should add the current updated time', async () => {
+        const timeBeforeFilter = new Date()
         await filter.preDeploy([{ action: 'add', data: { after: formInstance } }])
-        expect(formInstance.value.updated).toEqual(new Date().toISOString())
+        const timeAfterFilter = new Date()
+        const updatedTime = new Date(formInstance.value.updated)
+        const isBetween = updatedTime >= timeBeforeFilter && updatedTime <= timeAfterFilter
+        expect(isBetween).toBeTruthy()
       })
     })
     describe('onDeploy', () => {

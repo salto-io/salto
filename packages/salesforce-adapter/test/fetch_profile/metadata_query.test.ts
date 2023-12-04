@@ -468,37 +468,26 @@ describe('buildMetadataQuery', () => {
       })
     })
   })
-})
+  describe('buildMetadataQueryForFetchWithChangesDetection', () => {
+    const INCLUDED_TYPE = 'Role'
+    const EXCLUDED_TYPE = 'CustomLabels'
 
-describe('buildMetadataQueryForFetchWithChangesDetection', () => {
-  const INCLUDED_TYPE = 'Role'
-  const EXCLUDED_TYPE = 'CustomLabels'
-  let changedAtSingleton: InstanceElement
-  let metadataQuery: MetadataQuery
-  beforeEach(async () => {
-    changedAtSingleton = mockInstances().ChangedAtSingleton
-    const elementsSource = buildElementsSourceFromElements([changedAtSingleton])
-    metadataQuery = await buildMetadataQueryForFetchWithChangesDetection({
-      fetchParams: {
-        metadata: {
-          include: [
-            {
-              metadataType: '.*',
-            },
-          ],
-          exclude: [
-            { metadataType: 'CustomLabels' },
-          ],
-        },
-      },
-      elementsSource,
-      lastChangeDateOfTypesWithNestedInstances: {} as unknown as LastChangeDateOfTypesWithNestedInstances,
-    })
-  })
+    const emptyLastChangeDateOfTypesWithNestedInstances: LastChangeDateOfTypesWithNestedInstances = {
+      AssignmentRules: {},
+      AutoResponseRules: {},
+      CustomObject: {},
+      EscalationRules: {},
+      SharingRules: {},
+      Workflow: {},
+      CustomLabels: '2023-11-06T00:00:00.000Z',
+    }
 
-  describe('when is first fetch', () => {
-    it('should throw Error', async () => {
-      await expect(buildMetadataQueryForFetchWithChangesDetection({
+    let changedAtSingleton: InstanceElement
+    let metadataQuery: MetadataQuery
+    beforeEach(async () => {
+      changedAtSingleton = mockInstances().ChangedAtSingleton
+      const elementsSource = buildElementsSourceFromElements([changedAtSingleton])
+      metadataQuery = await buildMetadataQueryForFetchWithChangesDetection({
         fetchParams: {
           metadata: {
             include: [
@@ -511,183 +500,201 @@ describe('buildMetadataQueryForFetchWithChangesDetection', () => {
             ],
           },
         },
-        // In first fetch, the ChangedAtSingleton won't be defined
-        elementsSource: buildElementsSourceFromElements([]),
-        lastChangeDateOfTypesWithNestedInstances: {} as unknown as LastChangeDateOfTypesWithNestedInstances,
-      })).rejects.toThrow()
-    })
-  })
-
-  describe('isFetchWithChangesDetection', () => {
-    it('should return true', () => {
-      expect(metadataQuery.isFetchWithChangesDetection()).toBeTrue()
-    })
-  })
-  describe('isPartialFetch', () => {
-    it('should return true', () => {
-      expect(metadataQuery.isPartialFetch()).toBeTrue()
-    })
-  })
-  describe('isTargetedFetch', () => {
-    describe('without fetch targets', () => {
-      it('should return false', () => {
-        expect(metadataQuery.isTargetedFetch()).toBeFalse()
+        elementsSource,
+        lastChangeDateOfTypesWithNestedInstances: emptyLastChangeDateOfTypesWithNestedInstances,
       })
     })
-    describe('with fetch targets', () => {
-      beforeEach(async () => {
-        metadataQuery = await buildMetadataQueryForFetchWithChangesDetection({
-          fetchParams: { target: ['CustomObject'] },
-          elementsSource: buildElementsSourceFromElements([changedAtSingleton]),
-          lastChangeDateOfTypesWithNestedInstances: {} as unknown as LastChangeDateOfTypesWithNestedInstances,
-        })
+    describe('when is first fetch', () => {
+      it('should throw Error', async () => {
+        await expect(buildMetadataQueryForFetchWithChangesDetection({
+          fetchParams: {
+            metadata: {
+              include: [
+                {
+                  metadataType: '.*',
+                },
+              ],
+              exclude: [
+                { metadataType: 'CustomLabels' },
+              ],
+            },
+          },
+          // In first fetch, the ChangedAtSingleton won't be defined
+          elementsSource: buildElementsSourceFromElements([]),
+          lastChangeDateOfTypesWithNestedInstances: emptyLastChangeDateOfTypesWithNestedInstances,
+        })).rejects.toThrow()
       })
+    })
+    describe('isFetchWithChangesDetection', () => {
       it('should return true', () => {
-        expect(metadataQuery.isTargetedFetch()).toBeTrue()
+        expect(metadataQuery.isFetchWithChangesDetection()).toBeTrue()
       })
     })
-  })
-  describe('isTypeMatch', () => {
-    it('should return true for included type', () => {
-      expect(metadataQuery.isTypeMatch(INCLUDED_TYPE)).toBeTrue()
-    })
-    it('should return false for excluded type', () => {
-      expect(metadataQuery.isTypeMatch(EXCLUDED_TYPE)).toBeFalse()
-    })
-    it('should return false for unsupported fetch with changes detection type', () => {
-      expect(metadataQuery.isTypeMatch(CUSTOM_METADATA)).toBeFalse()
-    })
-  })
-  describe('isInstanceIncluded & isInstanceMatch', () => {
-    const UPDATED_INSTANCE_NAME = 'Updated'
-    const NON_UPDATED_INSTANCE_NAME = 'NonUpdated'
-
-    let instance: MetadataInstance
-
-    beforeEach(() => {
-      changedAtSingleton.value[INCLUDED_TYPE] = {
-        [UPDATED_INSTANCE_NAME]: '2023-11-06T00:00:00.000Z',
-        [NON_UPDATED_INSTANCE_NAME]: '2023-11-06T00:00:00.000Z',
-      }
-    })
-    describe('when instance was updated', () => {
-      beforeEach(() => {
-        instance = {
-          metadataType: INCLUDED_TYPE,
-          namespace: '',
-          name: UPDATED_INSTANCE_NAME,
-          isFolderType: false,
-          changedAt: '2023-11-07T00:00:00.000Z',
-        }
-      })
-      describe('isInstanceIncluded', () => {
-        it('should return true', () => {
-          expect(metadataQuery.isInstanceIncluded(instance)).toBeTrue()
-        })
-      })
-      describe('isInstanceMatch', () => {
-        it('should return true', () => {
-          expect(metadataQuery.isInstanceMatch(instance)).toBeTrue()
-        })
+    describe('isPartialFetch', () => {
+      it('should return true', () => {
+        expect(metadataQuery.isPartialFetch()).toBeTrue()
       })
     })
-    describe('when instance was not updated', () => {
-      beforeEach(() => {
-        instance = {
-          metadataType: INCLUDED_TYPE,
-          namespace: '',
-          name: UPDATED_INSTANCE_NAME,
-          isFolderType: false,
-          changedAt: '2023-11-06T00:00:00.000Z',
-        }
-      })
-      describe('isInstanceIncluded', () => {
-        it('should return true', () => {
-          expect(metadataQuery.isInstanceIncluded(instance)).toBeTrue()
-        })
-      })
-      describe('isInstanceMatch', () => {
+    describe('isTargetedFetch', () => {
+      describe('without fetch targets', () => {
         it('should return false', () => {
-          expect(metadataQuery.isInstanceMatch(instance)).toBeFalse()
+          expect(metadataQuery.isTargetedFetch()).toBeFalse()
+        })
+      })
+      describe('with fetch targets', () => {
+        beforeEach(async () => {
+          metadataQuery = await buildMetadataQueryForFetchWithChangesDetection({
+            fetchParams: { target: ['CustomObject'] },
+            elementsSource: buildElementsSourceFromElements([changedAtSingleton]),
+            lastChangeDateOfTypesWithNestedInstances: emptyLastChangeDateOfTypesWithNestedInstances,
+          })
+        })
+        it('should return true', () => {
+          expect(metadataQuery.isTargetedFetch()).toBeTrue()
+        })
+      })
+    })
+    describe('isTypeMatch', () => {
+      it('should return true for included type', () => {
+        expect(metadataQuery.isTypeMatch(INCLUDED_TYPE)).toBeTrue()
+      })
+      it('should return false for excluded type', () => {
+        expect(metadataQuery.isTypeMatch(EXCLUDED_TYPE)).toBeFalse()
+      })
+      it('should return false for unsupported fetch with changes detection type', () => {
+        expect(metadataQuery.isTypeMatch(CUSTOM_METADATA)).toBeFalse()
+      })
+    })
+    describe('isInstanceIncluded & isInstanceMatch', () => {
+      const UPDATED_INSTANCE_NAME = 'Updated'
+      const NON_UPDATED_INSTANCE_NAME = 'NonUpdated'
+
+      let instance: MetadataInstance
+
+      beforeEach(() => {
+        changedAtSingleton.value[INCLUDED_TYPE] = {
+          [UPDATED_INSTANCE_NAME]: '2023-11-06T00:00:00.000Z',
+          [NON_UPDATED_INSTANCE_NAME]: '2023-11-06T00:00:00.000Z',
+        }
+      })
+      describe('when instance was updated', () => {
+        beforeEach(() => {
+          instance = {
+            metadataType: INCLUDED_TYPE,
+            namespace: '',
+            name: UPDATED_INSTANCE_NAME,
+            isFolderType: false,
+            changedAt: '2023-11-07T00:00:00.000Z',
+          }
+        })
+        describe('isInstanceIncluded', () => {
+          it('should return true', () => {
+            expect(metadataQuery.isInstanceIncluded(instance)).toBeTrue()
+          })
+        })
+        describe('isInstanceMatch', () => {
+          it('should return true', () => {
+            expect(metadataQuery.isInstanceMatch(instance)).toBeTrue()
+          })
+        })
+      })
+      describe('when instance was not updated', () => {
+        beforeEach(() => {
+          instance = {
+            metadataType: INCLUDED_TYPE,
+            namespace: '',
+            name: UPDATED_INSTANCE_NAME,
+            isFolderType: false,
+            changedAt: '2023-11-06T00:00:00.000Z',
+          }
+        })
+        describe('isInstanceIncluded', () => {
+          it('should return true', () => {
+            expect(metadataQuery.isInstanceIncluded(instance)).toBeTrue()
+          })
+        })
+        describe('isInstanceMatch', () => {
+          it('should return false', () => {
+            expect(metadataQuery.isInstanceMatch(instance)).toBeFalse()
+          })
         })
       })
     })
   })
-})
+  describe('buildFilePropsMetadataQuery', () => {
+    const CHANGED_AT = '2023-11-07T00:00:00.000Z'
 
-describe('buildFilePropsMetadataQuery', () => {
-  const CHANGED_AT = '2023-11-07T00:00:00.000Z'
-
-  let fileProps: FileProperties
-  let metadataQuery: jest.Mocked<MetadataQuery>
-  let filePropsMetadataQuery: MetadataQuery<FileProperties>
-  beforeEach(() => {
-    metadataQuery = {
-      isInstanceIncluded: jest.fn(),
-      isInstanceMatch: jest.fn(),
-      isTypeMatch: jest.fn(),
-      isFetchWithChangesDetection: jest.fn(),
-      isPartialFetch: jest.fn(),
-      isTargetedFetch: jest.fn(),
-      getFolderPathsByName: jest.fn(),
-    }
-    filePropsMetadataQuery = buildFilePropsMetadataQuery(metadataQuery)
-  })
-  describe('isInstanceMatch & isInstanceIncluded', () => {
-    describe('when fileProps are of instance without namespace', () => {
-      beforeEach(() => {
-        fileProps = mockFileProperties({
-          fullName: 'Account',
-          type: 'CustomObject',
-          namespacePrefix: '',
-          lastModifiedDate: CHANGED_AT,
-        })
-      })
-      it('should invoke the underlying MetadataQuery with correct MetadataInstance', () => {
-        filePropsMetadataQuery.isInstanceMatch(fileProps)
-        expect(metadataQuery.isInstanceMatch).toHaveBeenCalledWith({
-          metadataType: 'CustomObject',
-          namespace: 'standard',
-          name: 'Account',
-          isFolderType: false,
-          changedAt: CHANGED_AT,
-        })
-        filePropsMetadataQuery.isInstanceIncluded(fileProps)
-        expect(metadataQuery.isInstanceIncluded).toHaveBeenCalledWith({
-          metadataType: 'CustomObject',
-          namespace: 'standard',
-          name: 'Account',
-          isFolderType: false,
-          changedAt: CHANGED_AT,
-        })
-      })
+    let fileProps: FileProperties
+    let metadataQuery: jest.Mocked<MetadataQuery>
+    let filePropsMetadataQuery: MetadataQuery<FileProperties>
+    beforeEach(() => {
+      metadataQuery = {
+        isInstanceIncluded: jest.fn(),
+        isInstanceMatch: jest.fn(),
+        isTypeMatch: jest.fn(),
+        isFetchWithChangesDetection: jest.fn(),
+        isPartialFetch: jest.fn(),
+        isTargetedFetch: jest.fn(),
+        getFolderPathsByName: jest.fn(),
+      }
+      filePropsMetadataQuery = buildFilePropsMetadataQuery(metadataQuery)
     })
-    describe('when fileProps are of instance with namespace', () => {
-      const NAMESPACE = 'test'
-      beforeEach(() => {
-        fileProps = mockFileProperties({
-          fullName: 'Account',
-          type: 'CustomObject',
-          namespacePrefix: NAMESPACE,
-          lastModifiedDate: CHANGED_AT,
+    describe('isInstanceMatch & isInstanceIncluded', () => {
+      describe('when fileProps are of instance without namespace', () => {
+        beforeEach(() => {
+          fileProps = mockFileProperties({
+            fullName: 'Account',
+            type: 'CustomObject',
+            namespacePrefix: '',
+            lastModifiedDate: CHANGED_AT,
+          })
+        })
+        it('should invoke the underlying MetadataQuery with correct MetadataInstance', () => {
+          filePropsMetadataQuery.isInstanceMatch(fileProps)
+          expect(metadataQuery.isInstanceMatch).toHaveBeenCalledWith({
+            metadataType: 'CustomObject',
+            namespace: 'standard',
+            name: 'Account',
+            isFolderType: false,
+            changedAt: CHANGED_AT,
+          })
+          filePropsMetadataQuery.isInstanceIncluded(fileProps)
+          expect(metadataQuery.isInstanceIncluded).toHaveBeenCalledWith({
+            metadataType: 'CustomObject',
+            namespace: 'standard',
+            name: 'Account',
+            isFolderType: false,
+            changedAt: CHANGED_AT,
+          })
         })
       })
-      it('should invoke the underlying MetadataQuery with correct MetadataInstance', () => {
-        filePropsMetadataQuery.isInstanceMatch(fileProps)
-        expect(metadataQuery.isInstanceMatch).toHaveBeenCalledWith({
-          metadataType: 'CustomObject',
-          namespace: NAMESPACE,
-          name: 'Account',
-          isFolderType: false,
-          changedAt: CHANGED_AT,
+      describe('when fileProps are of instance with namespace', () => {
+        const NAMESPACE = 'test'
+        beforeEach(() => {
+          fileProps = mockFileProperties({
+            fullName: 'Account',
+            type: 'CustomObject',
+            namespacePrefix: NAMESPACE,
+            lastModifiedDate: CHANGED_AT,
+          })
         })
-        filePropsMetadataQuery.isInstanceIncluded(fileProps)
-        expect(metadataQuery.isInstanceIncluded).toHaveBeenCalledWith({
-          metadataType: 'CustomObject',
-          namespace: NAMESPACE,
-          name: 'Account',
-          isFolderType: false,
-          changedAt: CHANGED_AT,
+        it('should invoke the underlying MetadataQuery with correct MetadataInstance', () => {
+          filePropsMetadataQuery.isInstanceMatch(fileProps)
+          expect(metadataQuery.isInstanceMatch).toHaveBeenCalledWith({
+            metadataType: 'CustomObject',
+            namespace: NAMESPACE,
+            name: 'Account',
+            isFolderType: false,
+            changedAt: CHANGED_AT,
+          })
+          filePropsMetadataQuery.isInstanceIncluded(fileProps)
+          expect(metadataQuery.isInstanceIncluded).toHaveBeenCalledWith({
+            metadataType: 'CustomObject',
+            namespace: NAMESPACE,
+            name: 'Account',
+            isFolderType: false,
+            changedAt: CHANGED_AT,
+          })
         })
       })
     })

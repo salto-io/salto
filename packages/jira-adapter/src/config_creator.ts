@@ -26,11 +26,13 @@ const optionsElemId = new ElemID(constants.JIRA, 'configOptionsType')
 
 type ConfigOptionsType = {
   enableScriptRunnerAddon?: boolean
+  enableJSM?: boolean
 }
 export const optionsType = createMatchingObjectType<ConfigOptionsType>({
   elemID: optionsElemId,
   fields: {
     enableScriptRunnerAddon: { refType: BuiltinTypes.BOOLEAN },
+    enableJSM: { refType: BuiltinTypes.BOOLEAN },
   },
 })
 const isOptionsTypeInstance = (instance: InstanceElement):
@@ -46,8 +48,13 @@ export const getConfig = async (
   options?: InstanceElement
 ): Promise<InstanceElement> => {
   const defaultConf = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
-  if (options !== undefined && isOptionsTypeInstance(options) && options.value.enableScriptRunnerAddon) {
-    defaultConf.value.fetch.enableScriptRunnerAddon = true
+  if (options !== undefined && isOptionsTypeInstance(options)) {
+    if (options.value.enableScriptRunnerAddon) {
+      defaultConf.value.fetch.enableScriptRunnerAddon = true
+    }
+    if (options.value.enableJSM) {
+      defaultConf.value.fetch.enableJSM = true
+    }
   }
   return defaultConf
 }

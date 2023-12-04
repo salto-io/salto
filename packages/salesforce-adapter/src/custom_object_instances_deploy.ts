@@ -24,7 +24,7 @@ import {
   SaltoElementError,
   SaltoError,
   SeverityLevel,
-  isInstanceElement, isInstanceChange, toChange,
+  isInstanceElement, isInstanceChange, toChange, isElement,
 } from '@salto-io/adapter-api'
 import { inspectValue, safeJsonStringify } from '@salto-io/adapter-utils'
 import { BatchResultInfo } from '@salto-io/jsforce-types'
@@ -41,7 +41,7 @@ import {
   SBAA_CONDITIONS_MET,
 } from './constants'
 import { getIdFields, transformRecordToValues } from './filters/custom_objects_instances'
-import { buildSelectQueries, getFieldNamesForQuery, isInstanceOfTypeChange } from './filters/utils'
+import { apiNameSync, buildSelectQueries, getFieldNamesForQuery, isInstanceOfTypeChange } from './filters/utils'
 import { isListCustomSettingsObject } from './filters/custom_settings_filter'
 import { SalesforceRecord } from './client/types'
 import { buildDataManagement } from './fetch_profile/data_management'
@@ -104,6 +104,22 @@ const groupInstancesAndResultsByIndex = (
 const escapeWhereStr = (str: string): string =>
   str.replace(/(\\)|(')/g, escaped => `\\${escaped}`)
 
+
+const getStringValueToEscape = (field: Field, value: Value): string => {
+  if (_.isString(value)) {
+    return value
+  }
+  // Relevant for advanced deploy groups e.g. ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP
+  if (isElement(value)) {
+    const referencedElementApiName = apiNameSync(value)
+    if (!_.isString(referencedElementApiName)) {
+      throw new Error(`Expected referenced element to have apiName in field ${field.elemID.getFullName()}`)
+    }
+    return referencedElementApiName
+  }
+  throw new Error(`Expected value of field ${field.elemID.getFullName()} to be string. received ${safeJsonStringify(value)}`)
+}
+
 const formatValueForWhere = async (field: Field, value: Value): Promise<string> => {
   if (value === undefined) {
     return 'null'
@@ -111,7 +127,7 @@ const formatValueForWhere = async (field: Field, value: Value): Promise<string> 
   const fieldType = await field.getType()
   if (isPrimitiveType(fieldType)) {
     if (fieldType.primitive === PrimitiveTypes.STRING) {
-      return `'${escapeWhereStr(value)}'`
+      return `'${escapeWhereStr(getStringValueToEscape(field, value))}'`
     }
     return value.toString()
   }
@@ -154,7 +170,7 @@ const getRecordsBySaltoIds = async (
     const idFieldsNameToValue = (await Promise.all(
       saltoIdFields.map(field => getFieldNamesToValues(inst, field))
     )).flat()
-    const r = Object.fromEntries(idFieldsNameToValue)
+    const r = idFieldsNameToValue.map(([fieldName, value]) => ({ fieldName, operator: 'IN' as const, value }))
     return r
   }))
 
@@ -168,7 +184,7 @@ const getRecordsBySaltoIds = async (
         (await awu(saltoIdFields).flatMap(getFieldNamesForQuery).toArray())
       )
   )
-  const queries = await buildSelectQueries(
+  const queries = buildSelectQueries(
     await apiName(type),
     fieldsToQuery,
     instanceIdValues,
@@ -358,6 +374,8 @@ const deployAddInstances = async (
     // Building the object this way because order of keys is important
     const idFieldsValues = Object.fromEntries(
       idFieldsNames.map(fieldName => [fieldName, vals[fieldName]])
+        // Relevant for advanced deploy groups e.g. ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP
+        .map(([fieldName, value]) => [fieldName, isInstanceElement(value) ? apiNameSync(value) : value])
     )
     return toMD5(safeJsonStringify(idFieldsValues))
   }

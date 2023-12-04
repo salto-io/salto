@@ -67,7 +67,6 @@ import { NON_TRANSIENT_SALESFORCE_ERRORS } from '../src/config_change'
 import SalesforceClient from '../src/client/client'
 import createMockClient from './client'
 import { mockInstances, mockTypes } from './mock_elements'
-import { buildMetadataQuery } from '../src/fetch_profile/metadata_query'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 
 const { makeArray } = collections.array
@@ -199,6 +198,110 @@ describe('SalesforceAdapter fetch', () => {
         )
       }
     }
+
+    describe('client cache', () => {
+      beforeEach(() => {
+        ({ connection, adapter } = mockAdapter({
+          adapterParams: {
+            getElemIdFunc: mockGetElemIdFunc,
+            config: {
+              fetch: {
+                optionalFeatures: {
+                  fixRetrieveFilePaths: true,
+                },
+                metadata: {
+                  include: [
+                    { metadataType: '.*' },
+                    { metadataType: 'ReportFolder', name: 'ReportFolder' },
+                    { metadataType: 'ReportFolder', name: 'ReportFolder/NestedFolder' },
+                  ],
+                },
+              },
+              maxItemsInRetrieveRequest: testMaxItemsInRetrieveRequest,
+              client: {
+                readMetadataChunkSize: { default: 3, overrides: { Test: 2 } },
+              },
+            },
+          },
+        }))
+        // Mock Report & ReportFolder to make sure we don't cache their list calls
+        mockMetadataTypes(
+          [
+            { xmlName: 'Report', directoryName: 'reports', inFolder: true, metaFile: true },
+            { xmlName: 'ReportFolder', directoryName: 'reports' },
+          ],
+
+          {
+            parentField: {
+              name: '',
+              soapType: 'string',
+              foreignKeyDomain: 'ReportFolder',
+            },
+            valueTypeFields: [
+              {
+                name: 'fullName',
+                soapType: 'string',
+              },
+            ],
+          },
+          {
+            Report: [
+              {
+                props: {
+                  fullName: 'TestReport',
+                  fileName: 'reports/ReportsFolder/TestReport.report',
+                },
+                values: {
+                  fullName: 'ReportsFolder/TestReport',
+                },
+              },
+              {
+                props: {
+                  fullName: 'TestNestedReport',
+                  fileName: 'reports/ReportsFolder/NestedFolder/TestNestedReport.report',
+                },
+                values: {
+                  fullName: 'NestedFolder/TestNestedReport',
+                },
+              },
+            ],
+            ReportFolder: [
+              {
+                props: {
+                  fullName: 'ReportsFolder',
+                  fileName: 'reports/ReportsFolder',
+                },
+                values: {
+                  fullName: 'ReportsFolder',
+                },
+              },
+              {
+                props: {
+                  fullName: 'NestedFolder',
+                  fileName: 'reports/ReportsFolder/NestedFolder',
+                },
+                values: {
+                  fullName: 'NestedFolder',
+                },
+              },
+            ],
+          },
+        )
+      })
+      describe('listMetadataObjects', () => {
+        it('should cache listMetadataObjects calls that are not on Folders', async () => {
+          await adapter.fetch(mockFetchOpts)
+          const listedQueries = connection.metadata.list.mock.calls.flatMap(args => args[0])
+          const queriesByType = _.groupBy(listedQueries, query => query.type)
+          const typesQueriedMoreThanOnce = Object.entries(queriesByType)
+            .reduce<string[]>((acc, [type, queries]) => (
+              queries.length > 1 ? acc.concat(type) : acc
+            ), [])
+          expect(typesQueriedMoreThanOnce).toEqual(['Report'])
+        })
+      })
+    })
+
 
     it('should fetch basic metadata type', async () => {
       mockMetadataType(
@@ -1952,14 +2055,9 @@ describe('Fetch via retrieve API', () => {
         {
           client,
           types: [mockTypes.ApexClass],
-          maxItemsInRetrieveRequest: DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
-          metadataQuery: buildMetadataQuery({
-            fetchParams: {},
-          }),
           fetchProfile: buildFetchProfile({
             fetchParams: { addNamespacePrefixToFullName: false },
           }),
-          typesToSkip: new Set(),
         }
       )
       ).elements
@@ -1987,14 +2085,10 @@ describe('Fetch via retrieve API', () => {
         {
           client,
           types: [mockTypes.ApexClass, mockTypes.CustomObject],
-          maxItemsInRetrieveRequest: chunkSize,
-          metadataQuery: buildMetadataQuery({
-            fetchParams: {},
-          }),
           fetchProfile: buildFetchProfile({
             fetchParams: { addNamespacePrefixToFullName: false },
+            maxItemsInRetrieveRequest: chunkSize,
           }),
-          typesToSkip: new Set(),
         }
       )
       ).elements
@@ -2026,14 +2120,10 @@ describe('Fetch via retrieve API', () => {
         {
           client,
           types: [mockTypes.CustomObject, mockTypes.Profile],
-          maxItemsInRetrieveRequest: chunkSize,
-          metadataQuery: buildMetadataQuery({
-            fetchParams: {},
-          }),
           fetchProfile: buildFetchProfile({
             fetchParams: { addNamespacePrefixToFullName: false },
+            maxItemsInRetrieveRequest: chunkSize,
           }),
-          typesToSkip: new Set(),
         }
       )
       ).elements
@@ -2073,14 +2163,10 @@ describe('Fetch via retrieve API', () => {
         {
           client,
           types: [mockTypes.CustomObject, mockTypes.Profile],
-          maxItemsInRetrieveRequest: 3,
-          metadataQuery: buildMetadataQuery({
-            fetchParams: {},
-          }),
           fetchProfile: buildFetchProfile({
             fetchParams: { addNamespacePrefixToFullName: false },
+            maxItemsInRetrieveRequest: 3,
           }),
-          typesToSkip: new Set(),
         }
       )
       ).elements

@@ -23,39 +23,46 @@ const { awu } = collections.asynciterable
 
 export type ValueReplacer = (instance: InstanceElement, mapping?: Record<string, string>) => ElemID[]
 
-type FieldsParams = {
+export type FieldsParams = {
   fieldName: string[]
   fieldsToReplace: { name: string; valuePath?: string[] }[]
+  overrideFilterCriteria?: ((condition: unknown) => boolean)[]
 }
 
 export const replaceConditionsAndActionsCreator = (
   params: FieldsParams[],
   isIdNumber = false,
 ): ValueReplacer => (instance, mapping) => (
-  params.flatMap(replacerParams => {
-    const conditions = _.get(instance.value, replacerParams.fieldName)
+  params.flatMap(({ fieldName, fieldsToReplace, overrideFilterCriteria }) => {
+    const conditions = _.get(instance.value, fieldName)
     const { typeName } = instance.elemID
-    // Coditions can be undefined - in that case, we don't want to log a warning
+    // Conditions can be undefined - in that case, we don't want to log a warning
     if (conditions === undefined
       || !isCorrectConditions(conditions, typeName)) {
       return []
     }
     return conditions
-      .flatMap((condition, i) => {
-        const fieldNamesToReplace = replacerParams.fieldsToReplace.map(f => f.name)
-        const conditionValue = conditionFieldValue(condition, typeName)
-        // these are standard fields so they will never be references + this may change in SALTO-2283
-        if (isReferenceExpression(conditionValue) || !fieldNamesToReplace.includes(conditionValue)) {
-          return []
+      // Preserve original indices because of filter (used for createNestedID)
+      .map((condition, index) => ({ condition, index }))
+      .filter(({ condition }) => {
+        if (overrideFilterCriteria === undefined || _.isEmpty(overrideFilterCriteria)) {
+          const conditionValue = conditionFieldValue(condition, typeName)
+          // these are standard fields so they will never be references + this may change in SALTO-2283
+          return !(isReferenceExpression(conditionValue) || !fieldsToReplace.map(f => f.name).includes(conditionValue))
         }
-        const valueRelativePath = replacerParams.fieldsToReplace
+        return overrideFilterCriteria?.every(criterion => criterion(condition))
+      })
+      .flatMap(({ condition, index }) => {
+        const conditionValue = conditionFieldValue(condition, typeName)
+
+        const valueRelativePath = fieldsToReplace
           .find(f => f.name === conditionValue)?.valuePath ?? ['value']
         const value = _.get(condition, valueRelativePath)?.toString()
         if (value === undefined) {
           return []
         }
         const valuePath = instance.elemID
-          .createNestedID(...replacerParams.fieldName, i.toString(), ...valueRelativePath)
+          .createNestedID(...fieldName, index.toString(), ...valueRelativePath)
         if (mapping !== undefined) {
           const newValue = Object.prototype.hasOwnProperty.call(mapping, value) ? mapping[value] : undefined
           if (newValue !== undefined) {

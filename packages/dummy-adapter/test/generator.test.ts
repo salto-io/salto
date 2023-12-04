@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isObjectType, isInstanceElement, isPrimitiveType, isMapType, isListType, BuiltinTypes } from '@salto-io/adapter-api'
+import { isObjectType, isInstanceElement, isPrimitiveType, isMapType, isListType } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import path from 'path'

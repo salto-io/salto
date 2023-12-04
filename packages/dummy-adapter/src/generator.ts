@@ -797,7 +797,7 @@ export const generateElements = async (
     if (!version) {
       return []
     }
-    const versionToBuiltinType: Record<ConflictedElementsVersion, PrimitiveType> = {
+    const versionToPrimitiveType: Record<ConflictedElementsVersion, PrimitiveType> = {
       a: BuiltinTypes.BOOLEAN,
       b: BuiltinTypes.STRING,
       c: BuiltinTypes.NUMBER,
@@ -809,13 +809,13 @@ export const generateElements = async (
           refType: BuiltinTypes.STRING,
         },
         ...(version !== 'a' ? { notInA: {
-          refType: versionToBuiltinType[version],
+          refType: versionToPrimitiveType[version],
         } } : {}),
         ...(version !== 'b' ? { notInB: {
-          refType: versionToBuiltinType[version],
+          refType: versionToPrimitiveType[version],
         } } : {}),
         ...(version !== 'c' ? { notInC: {
-          refType: versionToBuiltinType[version],
+          refType: versionToPrimitiveType[version],
         } } : {}),
       },
       path: [DUMMY_ADAPTER, 'ConflictedStuff', 'ChangedObject'],

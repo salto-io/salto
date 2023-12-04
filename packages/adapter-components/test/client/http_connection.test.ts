@@ -97,7 +97,13 @@ describe('client_http_connection', () => {
     })
 
     beforeEach(() => {
-      retryOptions = createRetryOptions({ maxAttempts: 3, retryDelay: 100, additionalStatusCodesToRetry: [] })
+      retryOptions = createRetryOptions({
+        maxAttempts: 3,
+        retryDelay: 100,
+        additionalStatusCodesToRetry: [],
+        shouldResetTimeout: true,
+        lastRetryNoTimeout: true,
+      })
     })
     it('should retry error code 429', () => {
       expect(retryOptions.retryCondition?.({
@@ -171,6 +177,35 @@ describe('client_http_connection', () => {
           url: 'url',
         },
       }))).toBe(100)
+    })
+
+    describe('onRetry', () => {
+      describe('last retry', () => {
+        it('should set the config timeout to be 0 if lastRetryNoTimeout is true', () => {
+          const requestConfig = { timeout: 4 }
+          retryOptions.onRetry?.(3, mockAxiosError({}), requestConfig)
+          expect(requestConfig.timeout).toBe(0)
+        })
+
+        it('should not update the config if lastRetryNoTimeout is false', () => {
+          retryOptions = createRetryOptions({
+            maxAttempts: 3,
+            retryDelay: 100,
+            additionalStatusCodesToRetry: [],
+            shouldResetTimeout: true,
+            lastRetryNoTimeout: false,
+          })
+          const requestConfig = { timeout: 4 }
+          retryOptions.onRetry?.(3, mockAxiosError({}), requestConfig)
+          expect(requestConfig.timeout).toBe(4)
+        })
+      })
+
+      it('should not update the config if not last retry', () => {
+        const requestConfig = { timeout: 4 }
+        retryOptions.onRetry?.(1, mockAxiosError({}), requestConfig)
+        expect(requestConfig.timeout).toBe(4)
+      })
     })
   })
 })

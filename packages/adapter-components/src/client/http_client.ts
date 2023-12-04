@@ -27,6 +27,8 @@ import { throttle } from './rate_limit'
 
 const log = logger(module)
 
+const NO_TIMEOUT = 0
+
 export type ClientOpts<
   TCredentials,
   TRateLimitConfig extends ClientRateLimitConfig,
@@ -105,6 +107,7 @@ export abstract class AdapterHTTPClient<
       rateLimit: Required<TRateLimitConfig>
       maxRequestsPerMinute: number
       pageSize: Required<ClientPageSizeConfig>
+      timeout?: number
     },
   ) {
     super(
@@ -115,6 +118,7 @@ export abstract class AdapterHTTPClient<
     this.conn = createClientConnection({
       connection,
       retryOptions: createRetryOptions(_.defaults({}, this.config?.retry, defaults.retry)),
+      timeout: this.config?.timeout || defaults.timeout || NO_TIMEOUT,
       createConnection,
     })
     this.credentials = credentials

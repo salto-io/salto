@@ -32,6 +32,8 @@ export type ClientRetryConfig = Partial<{
   retryDelay: number
   // This is not included in clientRetryConfigType because currently we don't want to allow the user to change it
   additionalStatusCodesToRetry: number[]
+  shouldResetTimeout: boolean
+  lastRetryNoTimeout: boolean
 }>
 
 export type ClientBaseConfig<RateLimitConfig extends ClientRateLimitConfig> = Partial<{
@@ -39,6 +41,7 @@ export type ClientBaseConfig<RateLimitConfig extends ClientRateLimitConfig> = Pa
   rateLimit: RateLimitConfig
   maxRequestsPerMinute: number
   pageSize: ClientPageSizeConfig
+  timeout: number
 }>
 
 export const createClientConfigType = <RateLimitConfig extends ClientRateLimitConfig>(

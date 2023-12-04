@@ -797,11 +797,6 @@ export const generateElements = async (
     if (!version) {
       return []
     }
-    const versionToPrimitiveType: Record<ConflictedElementsVersion, PrimitiveType> = {
-      a: BuiltinTypes.BOOLEAN,
-      b: BuiltinTypes.STRING,
-      c: BuiltinTypes.NUMBER,
-    }
     const changedObject = new ObjectType({
       elemID: new ElemID(DUMMY_ADAPTER, 'ChangedObject'),
       fields: {
@@ -809,13 +804,22 @@ export const generateElements = async (
           refType: BuiltinTypes.STRING,
         },
         ...(version !== 'a' ? { notInA: {
-          refType: versionToPrimitiveType[version],
+          refType: BuiltinTypes.STRING,
+          annotations: {
+            version,
+          },
         } } : {}),
         ...(version !== 'b' ? { notInB: {
-          refType: versionToPrimitiveType[version],
+          refType: BuiltinTypes.STRING,
+          annotations: {
+            version,
+          },
         } } : {}),
         ...(version !== 'c' ? { notInC: {
-          refType: versionToPrimitiveType[version],
+          refType: BuiltinTypes.STRING,
+          annotations: {
+            version,
+          },
         } } : {}),
       },
       path: [DUMMY_ADAPTER, 'ConflictedStuff', 'ChangedObject'],
@@ -916,7 +920,8 @@ Fifth line is the same`),
         }),
         autoMergedStaticFileInst: new StaticFile({
           content: Buffer.from(`First line changed in version a
-Second line not changed`),
+Second line not changed
+Third line not changed`),
           filepath: 'autoMergedStaticFileInst.txt',
         }),
         mapField: {
@@ -946,7 +951,8 @@ Fifth line is the same`),
         }),
         autoMergedStaticFileInst: new StaticFile({
           content: Buffer.from(`First line not change
-Second line not changed`),
+Second line not changed
+Third line not changed`),
           filepath: 'autoMergedStaticFileInst.txt',
         }),
         mapField: {
@@ -976,7 +982,8 @@ Fifth line is the same`),
         }),
         autoMergedStaticFileInst: new StaticFile({
           content: Buffer.from(`First line not change
-Second line changed in version c`),
+Second line not changed
+Third line changed in version c`),
           filepath: 'autoMergedStaticFileInst.txt',
         }),
         mapField: {

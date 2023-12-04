@@ -87,7 +87,7 @@ import automationOrderFilter from './filters/reorder/automation'
 import triggerOrderFilter from './filters/reorder/trigger'
 import viewOrderFilter from './filters/reorder/view'
 import businessHoursScheduleFilter from './filters/business_hours_schedule'
-import collisionErrorsFilter from './filters/collision_errors'
+import omitCollisionFilter from './filters/omit_collision'
 import accountSettingsFilter from './filters/account_settings'
 import ticketFieldFilter from './filters/custom_field_options/ticket_field'
 import userFieldFilter from './filters/custom_field_options/user_field'
@@ -254,7 +254,7 @@ export const DEFAULT_FILTERS = [
   // handleIdenticalAttachmentConflicts needs to be before collisionErrorsFilter and after referencedIdFieldsFilter
   // and articleBodyFilter
   handleIdenticalAttachmentConflicts,
-  collisionErrorsFilter, // needs to be after referencedIdFieldsFilter (which is part of the common filters)
+  omitCollisionFilter, // needs to be after referencedIdFieldsFilter (which is part of the common filters)
   deployBrandedGuideTypesFilter,
   guideArrangePaths,
   hideAccountFeatures,

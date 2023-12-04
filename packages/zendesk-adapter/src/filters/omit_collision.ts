@@ -41,12 +41,13 @@ const removeChildElements = (elements: Element[], collidingElements: InstanceEle
 
 
 /**
- * Adds collision warnings
+ * Adds collision warnings and remove colliding elements and their children
  */
 const filterCreator: FilterCreator = ({ config }) => ({
-  name: 'collisionErrorsFilter',
+  name: 'omitCollisionsFilter',
   onFetch: async (elements: Element[]) => {
     const collidingElements = getInstancesWithCollidingElemID(elements.filter(isInstanceElement))
+    const collidingElemIds = new Set(collidingElements.map(elem => elem.elemID.getFullName()))
     removeChildElements(elements, collidingElements)
     const collisionWarnings = await getAndLogCollisionWarnings({
       adapterName: ZENDESK,
@@ -63,6 +64,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
       docsUrl: 'https://help.salto.io/en/articles/6927157-salto-id-collisions',
       addChildrenMessage: true,
     })
+    _.remove(elements, e => collidingElemIds.has(e.elemID.getFullName()))
     return { errors: collisionWarnings }
   },
 })

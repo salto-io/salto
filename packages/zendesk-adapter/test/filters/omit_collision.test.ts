@@ -63,13 +63,11 @@ Alternatively, you can exclude obj from the service configuration in zendesk.nac
 
 Learn more at: https://help.salto.io/en/articles/6927157-salto-id-collisions`,
       })
-      expect(elements).toEqual([differentInst])
     })
     it('should return no errors if there were no collisions', async () => {
       const elements = [inst, differentInst]
       const filterResult = await filter.onFetch(elements) as FilterResult
       expect(filterResult.errors).toHaveLength(0)
-      expect(elements).toEqual([inst, differentInst])
     })
     it('should remove child element on collision', async () => {
       const elements = [inst, collidedInst, differentInst, childInst1]
@@ -82,6 +80,18 @@ Learn more at: https://help.salto.io/en/articles/6927157-salto-id-collisions`,
       const filterResult = await filter.onFetch(elements) as FilterResult
       expect(filterResult.errors).toHaveLength(0)
       expect(elements).toEqual([inst, differentInst, childInst1])
+    })
+    it('should omit colliding elements if there is a collision', async () => {
+      const elements = [inst, collidedInst, differentInst]
+      const filterResult = await filter.onFetch(elements) as FilterResult
+      expect(filterResult.errors).toHaveLength(1)
+      expect(elements).toEqual([differentInst])
+    })
+    it('should not remove elements if there were no collisions', async () => {
+      const elements = [inst, differentInst]
+      const filterResult = await filter.onFetch(elements) as FilterResult
+      expect(filterResult.errors).toHaveLength(0)
+      expect(elements).toEqual([inst, differentInst])
     })
   })
 })

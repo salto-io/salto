@@ -54,7 +54,6 @@ const filterCreator: FilterCreator = ({ config }) => ({
       configurationName: 'service',
       instances: collidingElements,
       getTypeName: async instance => instance.elemID.typeName,
-      // TODO fix it to use apiName once we have apiName
       getInstanceName: async instance => instance.elemID.name,
       getIdFieldsByType: typeName => configUtils.getConfigWithDefault(
         config[API_DEFINITIONS_CONFIG].types[typeName]?.transformation,

@@ -468,8 +468,6 @@ describe('adapter', () => {
           'zendesk.ticket_field.instance.Description_description',
           'zendesk.ticket_field.instance.Group_group',
           'zendesk.ticket_field.instance.Priority_priority',
-          'zendesk.ticket_field.instance.Product_components_multiselect@su',
-          'zendesk.ticket_field.instance.Product_components_multiselect@su', // intentional dup
           'zendesk.ticket_field.instance.Status_status',
           'zendesk.ticket_field.instance.Subject_subject',
           'zendesk.ticket_field.instance.Type_tickettype',
@@ -481,10 +479,6 @@ describe('adapter', () => {
           'zendesk.ticket_field__custom_field_options.instance.Customer_Tier_multiselect_su__enterprise@uumuu',
           'zendesk.ticket_field__custom_field_options.instance.Customer_Tier_multiselect_su__free@uumuu',
           'zendesk.ticket_field__custom_field_options.instance.Customer_Tier_multiselect_su__paying@uumuu',
-          'zendesk.ticket_field__custom_field_options.instance.Product_components_multiselect_su__component_a@uumuuu',
-          'zendesk.ticket_field__custom_field_options.instance.Product_components_multiselect_su__component_a@uumuuu', // intentional dup
-          'zendesk.ticket_field__custom_field_options.instance.Product_components_multiselect_su__component_b@uumuuu',
-          'zendesk.ticket_field__custom_field_options.instance.Product_components_multiselect_su__component_b@uumuuu', // intentional dup
           'zendesk.ticket_field__custom_field_options.instance.agent_dropdown_643_for_agent_multiselect_ssssu__v1@uuuuumuu',
           'zendesk.ticket_field__custom_field_options.instance.agent_dropdown_643_for_agent_multiselect_ssssu__v2_modified@uuuuumuuu',
           'zendesk.ticket_field__system_field_options',
@@ -1010,8 +1004,6 @@ describe('adapter', () => {
           'zendesk.ticket_field.instance.Description_description',
           'zendesk.ticket_field.instance.Group_group',
           'zendesk.ticket_field.instance.Priority_priority',
-          'zendesk.ticket_field.instance.Product_components_multiselect@su',
-          'zendesk.ticket_field.instance.Product_components_multiselect@su', // intentional dup
           'zendesk.ticket_field.instance.Status_status',
           'zendesk.ticket_field.instance.Subject_subject',
           'zendesk.ticket_field.instance.Type_tickettype',
@@ -1023,10 +1015,6 @@ describe('adapter', () => {
           'zendesk.ticket_field__custom_field_options.instance.Customer_Tier_multiselect_su__enterprise@uumuu',
           'zendesk.ticket_field__custom_field_options.instance.Customer_Tier_multiselect_su__free@uumuu',
           'zendesk.ticket_field__custom_field_options.instance.Customer_Tier_multiselect_su__paying@uumuu',
-          'zendesk.ticket_field__custom_field_options.instance.Product_components_multiselect_su__component_a@uumuuu',
-          'zendesk.ticket_field__custom_field_options.instance.Product_components_multiselect_su__component_a@uumuuu', // intentional dup
-          'zendesk.ticket_field__custom_field_options.instance.Product_components_multiselect_su__component_b@uumuuu',
-          'zendesk.ticket_field__custom_field_options.instance.Product_components_multiselect_su__component_b@uumuuu', // intentional dup
           'zendesk.ticket_field__custom_field_options.instance.agent_dropdown_643_for_agent_multiselect_ssssu__v1@uuuuumuu',
           'zendesk.ticket_field__custom_field_options.instance.agent_dropdown_643_for_agent_multiselect_ssssu__v2_modified@uuuuumuuu',
           'zendesk.ticket_field__system_field_options',

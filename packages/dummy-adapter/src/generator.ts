@@ -808,9 +808,15 @@ export const generateElements = async (
         alwaysTheSame: {
           refType: BuiltinTypes.STRING,
         },
-        changedByVersion: {
+        ...(version !== 'a' ? { notInA: {
           refType: versionToBuiltinType[version],
-        },
+        } } : {}),
+        ...(version !== 'b' ? { notInB: {
+          refType: versionToBuiltinType[version],
+        } } : {}),
+        ...(version !== 'c' ? { notInC: {
+          refType: versionToBuiltinType[version],
+        } } : {}),
       },
       path: [DUMMY_ADAPTER, 'ConflictedStuff', 'ChangedObject'],
       annotations: {

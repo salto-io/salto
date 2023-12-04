@@ -365,23 +365,6 @@ describe('customObjectFieldsFilter', () => {
       expect(trigger.value.conditions.all[1].value).toBe(USER.email)
       expect(trigger.value.conditions.any[0].value).toBe(USER.id.toString())
     })
-    it('should use fallback user if configurated', async () => {
-      const config = _.cloneDeep(DEFAULT_CONFIG)
-      config[DEPLOY_CONFIG] = { defaultMissingUserFallback: DEFAULT_USER.email }
-      const useFallbackFilter = filterCreator(createFilterCreatorParams({ config })) as FilterType
-      const trigger = createTrigger({
-        conditions: {
-          all: [{
-            field: `lookup:ticket.ticket_field_${ticketField.value.id}.custom_fields.${customObjectField.value.key}`,
-            operator: 'is',
-            value: 'non',
-            is_user_value: true,
-          }],
-        },
-      })
-      await useFallbackFilter.preDeploy([toChange({ after: trigger })])
-      expect(trigger.value.conditions.all[0].value).toBe(DEFAULT_USER.id.toString())
-    })
   })
   describe('onDeploy', () => {
     it('should revert the userIds to user names', async () => {
@@ -396,18 +379,11 @@ describe('customObjectFieldsFilter', () => {
             value: USER.email,
             is_user_value: true,
           }],
-          any: [{
-            field: `lookup:ticket.ticket_field_${ticketField.value.id}.custom_fields.${customObjectField.value.key}`,
-            operator: 'is',
-            value: 'non',
-            is_user_value: true,
-          }],
         },
       })
       await useFallbackFilter.preDeploy([toChange({ after: trigger })])
       await useFallbackFilter.onDeploy([toChange({ after: trigger })])
       expect(trigger.value.conditions.all[0].value).toBe(USER.email)
-      expect(trigger.value.conditions.any[0].value).toBe(DEFAULT_USER.email)
     })
   })
 })

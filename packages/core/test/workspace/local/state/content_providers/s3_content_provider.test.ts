@@ -13,4 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { oauthClientCredentialsBearerToken, oauthAccessTokenRefresh, OAuthClientCredentialsArgs } from './oauth'
+import { createS3StateContentProvider, StateContentProvider } from '../../../../../src/local-workspace/state/content_providers'
+
+describe('createS3StateContentProvider', () => {
+  let provider: StateContentProvider
+  beforeEach(() => {
+    provider = createS3StateContentProvider({ workspaceId: 'asd', bucketName: 'asd' })
+  })
+  it('exists', () => {
+    expect(provider).toBeDefined()
+  })
+})

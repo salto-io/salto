@@ -279,7 +279,7 @@ describe('Custom Object Instances filter', () => {
     const testInstanceId = 'some_id'
     const testType = createCustomObject(testTypeName, {
       [MANAGED_BY_SALTO_FIELD_NAME]: {
-        refType: BuiltinTypes.BOOLEAN,
+        refType: Types.primitiveDataTypes.Checkbox,
         annotations: {
           [LABEL]: 'Managed By Salto',
           [API_NAME]: MANAGED_BY_SALTO_FIELD_NAME,
@@ -1633,63 +1633,165 @@ describe('Custom Object Instances filter', () => {
   })
 
   describe('Managed by Salto', () => {
-    let elements: Element[]
-    let filterResult: FilterResult
-    const testTypeName = 'TestType'
-    const testInstanceId = 'some_id'
-    const testType = createCustomObject(testTypeName, {
-      [MANAGED_BY_SALTO_FIELD_NAME]: {
-        refType: BuiltinTypes.BOOLEAN,
-        annotations: {
-          [LABEL]: 'Managed By Salto',
-          [API_NAME]: MANAGED_BY_SALTO_FIELD_NAME,
-          [FIELD_ANNOTATIONS.QUERYABLE]: false,
-        },
-      },
-    })
-    const testRecords: SalesforceRecord[] = [
-      {
-        attributes: {
-          type: testTypeName,
-        },
-        Id: testInstanceId,
-        Name: 'Name',
-      },
-    ]
-    beforeEach(async () => {
-      filter = filterCreator(
-        {
-          client,
-          config: {
-            ...defaultFilterContext,
-            fetchProfile: buildTestFetchProfile([
-              {
-                typeName: testTypeName,
-                included: true,
-                excluded: false,
-                allowRef: false,
-              },
-            ]),
+    describe('When the field of one of the types is not queryable', () => {
+      let elements: Element[]
+      let filterResult: FilterResult
+      const testTypeName = 'TestType'
+      const testInstanceId = 'some_id'
+      const testType = createCustomObject(testTypeName, {
+        [MANAGED_BY_SALTO_FIELD_NAME]: {
+          refType: Types.primitiveDataTypes.Checkbox,
+          annotations: {
+            [LABEL]: 'Managed By Salto',
+            [API_NAME]: MANAGED_BY_SALTO_FIELD_NAME,
+            [FIELD_ANNOTATIONS.QUERYABLE]: false,
           },
-        }
-      ) as FilterType
+        },
+      })
+      const irrelevantType = createCustomObject('IrrelevantType', {
+        [MANAGED_BY_SALTO_FIELD_NAME]: {
+          refType: Types.primitiveDataTypes.Checkbox,
+          annotations: {
+            [LABEL]: 'Managed By Salto',
+            [API_NAME]: MANAGED_BY_SALTO_FIELD_NAME,
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
+            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          },
+        },
+      })
+      const testRecords: SalesforceRecord[] = [
+        {
+          attributes: {
+            type: testTypeName,
+          },
+          Id: testInstanceId,
+          Name: 'Name',
+        },
+      ]
+      beforeEach(async () => {
+        filter = filterCreator(
+          {
+            client,
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: buildTestFetchProfile([
+                {
+                  typeName: testTypeName,
+                  included: true,
+                  excluded: false,
+                  allowRef: false,
+                },
+                {
+                  typeName: 'unmanagedType',
+                  included: true,
+                  excluded: false,
+                  allowRef: false,
+                },
+                {
+                  typeName: 'IrrelevantType',
+                  included: true,
+                  excluded: false,
+                  allowRef: false,
+                },
+              ]),
+            },
+          }
+        ) as FilterType
 
-      elements = [testType]
+        elements = [testType, irrelevantType]
 
-      testRecords.forEach(record => { record[MANAGED_BY_SALTO_FIELD_NAME] = true })
-      setMockQueryResults(testRecords)
+        testRecords.forEach(record => { record[MANAGED_BY_SALTO_FIELD_NAME] = true })
+        setMockQueryResults(testRecords)
 
-      filterResult = await filter.onFetch(elements) as FilterResult
+        filterResult = await filter.onFetch(elements) as FilterResult
+      })
+
+      it('Should warn', () => {
+        expect(filterResult.errors).toEqual([{
+          message: expect.stringContaining('TestType') && expect.stringContaining(MANAGED_BY_SALTO_FIELD_NAME),
+          severity: 'Warning',
+        }])
+        expect(elements).toHaveLength(2)
+        expect(basicQueryImplementation).not.toHaveBeenCalledWith(expect.stringContaining('TestType'))
+      })
     })
+    describe('When all the types have inaccessible fields', () => {
+      let elements: Element[]
+      let filterResult: FilterResult
+      const testTypeName = 'TestType'
+      const otherTestTypeName = 'OtherTestType'
+      const testInstanceId = 'some_id'
+      const testType = createCustomObject(testTypeName, {
+        [MANAGED_BY_SALTO_FIELD_NAME]: {
+          refType: Types.primitiveDataTypes.Checkbox,
+          annotations: {
+            [LABEL]: 'Managed By Salto',
+            [API_NAME]: MANAGED_BY_SALTO_FIELD_NAME,
+            [FIELD_ANNOTATIONS.QUERYABLE]: false,
+          },
+        },
+      })
+      const unmanagedType = createCustomObject('unmanagedType', {})
+      const otherTestType = createCustomObject(otherTestTypeName, {
+        [MANAGED_BY_SALTO_FIELD_NAME]: {
+          refType: Types.primitiveDataTypes.Text,
+          annotations: {
+            [LABEL]: 'Managed By Salto',
+            [API_NAME]: MANAGED_BY_SALTO_FIELD_NAME,
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
+            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          },
+        },
+      })
+      const testRecords: SalesforceRecord[] = [
+        {
+          attributes: {
+            type: testTypeName,
+          },
+          Id: testInstanceId,
+          Name: 'Name',
+        },
+      ]
+      beforeEach(async () => {
+        filter = filterCreator(
+          {
+            client,
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: buildTestFetchProfile([
+                {
+                  typeName: testTypeName,
+                  included: true,
+                  excluded: false,
+                  allowRef: false,
+                },
+                {
+                  typeName: otherTestTypeName,
+                  included: true,
+                  excluded: false,
+                  allowRef: false,
+                },
+              ]),
+            },
+          }
+        ) as FilterType
 
-    it('Should warn if the field is not queryable', () => {
-      expect(filterResult.errors ?? []).not.toBeEmpty()
-      expect(filterResult.errors).toEqual([{
-        message: expect.stringContaining('TestType') && expect.stringContaining(MANAGED_BY_SALTO_FIELD_NAME),
-        severity: 'Warning',
-      }])
-      expect(elements).toHaveLength(1)
-      expect(basicQueryImplementation).not.toHaveBeenCalled()
+        elements = [testType, otherTestType, unmanagedType]
+
+        testRecords.forEach(record => { record[MANAGED_BY_SALTO_FIELD_NAME] = true })
+        setMockQueryResults(testRecords)
+
+        filterResult = await filter.onFetch(elements) as FilterResult
+      })
+
+      it('Should warn', () => {
+        expect(filterResult.errors ?? []).not.toBeEmpty()
+        expect(filterResult.errors).toEqual([{
+          message: expect.stringContaining('missing or is of the wrong type for all data records'),
+          severity: 'Warning',
+        }])
+        expect(elements).toHaveLength(3)
+      })
     })
   })
   describe('Omit Fields', () => {

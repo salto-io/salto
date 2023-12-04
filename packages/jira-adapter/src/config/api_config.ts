@@ -2149,6 +2149,13 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
           toField: 'assetsObjectTypes',
           context: [{ name: 'AssetsSchemaId', fromField: 'id' }],
         },
+        {
+          type: 'AssetsObjectTypeAttribute',
+          toField: 'attributes',
+          context: [
+            { name: 'AssetsSchemaId', fromField: 'id' },
+          ],
+        },
       ],
     },
     transformation: {
@@ -2170,6 +2177,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       standaloneFields: [
         { fieldName: 'assetsStatuses' },
         { fieldName: 'assetsObjectTypes' },
+        { fieldName: 'attributes' },
       ],
       fieldTypeOverrides: [
         { fieldName: 'assetsStatuses', fieldType: 'List<AssetsStatus>' },
@@ -2218,6 +2226,26 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'workspaceId' },
       ],
       extendsParentId: false,
+    },
+  },
+  AssetsObjectTypeAttribute: {
+    request: {
+      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/{AssetsSchemaId}/attributes',
+      queryParams: {
+        extended: 'true',
+      },
+    },
+    transformation: {
+      dataField: '.',
+      idFields: ['&objectType', 'name'],
+      sourceTypeName: 'AssetsSchema__attributes',
+      fieldsToHide: [
+        { fieldName: 'id' },
+      ],
+      fieldsToOmit: [
+        { fieldName: 'workspaceId' },
+        { fieldName: 'globalId' },
+      ],
     },
   },
 }

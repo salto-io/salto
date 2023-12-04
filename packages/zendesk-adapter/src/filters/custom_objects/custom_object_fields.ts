@@ -40,7 +40,7 @@ import {
   TRIGGER_TYPE_NAME,
   ZENDESK,
 } from '../../constants'
-import { DEPLOY_CONFIG, FETCH_CONFIG } from '../../config'
+import { FETCH_CONFIG } from '../../config'
 import {
   LOOKUP_REGEX,
   RELATIONSHIP_FILTER_REGEX,
@@ -48,7 +48,7 @@ import {
   transformRelationshipFilterField,
 } from './utils'
 import { paginate } from '../../client/pagination'
-import { getIdByEmail, getUserFallbackValue, getUsers } from '../../user_utils'
+import { getIdByEmail, getUsers } from '../../user_utils'
 
 const { makeArray } = collections.array
 const { createMissingInstance } = referencesUtils
@@ -393,27 +393,6 @@ const customObjectFieldsFilter: FilterCreator = ({ config, client }) => {
           missingUserConditions.push(condition)
         }
       })
-
-      const { defaultMissingUserFallback } = config[DEPLOY_CONFIG] ?? {}
-      if (missingUserConditions.length === 0 || defaultMissingUserFallback === undefined) {
-        return
-      }
-      const userEmails = new Set(users.map(user => user.email))
-      const fallbackValue = await getUserFallbackValue(
-        defaultMissingUserFallback,
-        userEmails,
-        client
-      )
-      if (fallbackValue !== undefined && usersByEmail[fallbackValue] !== undefined) {
-        const fallbackUserId = usersByEmail[fallbackValue].id.toString()
-        userPathToOriginalValue[fallbackUserId] = fallbackValue
-        // We do not need to revert the fallback value in onDeploy because we change the value in the service
-        missingUserConditions.forEach(condition => {
-          condition.value = fallbackUserId
-        })
-      } else {
-        log.error('Error while trying to get defaultMissingUserFallback value in customObjectFieldsFilter')
-      }
     },
     onDeploy: async changes => {
       getUserConditions(changes).forEach(condition => {

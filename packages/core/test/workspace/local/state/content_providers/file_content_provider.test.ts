@@ -13,4 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { oauthClientCredentialsBearerToken, oauthAccessTokenRefresh, OAuthClientCredentialsArgs } from './oauth'
+import { createFileStateContentProvider, StateContentProvider } from '../../../../../src/local-workspace/state/content_providers'
+
+describe('createFileStateContentProvider', () => {
+  let provider: StateContentProvider
+  beforeEach(() => {
+    provider = createFileStateContentProvider()
+  })
+  it('exists', () => {
+    expect(provider).toBeDefined()
+  })
+})

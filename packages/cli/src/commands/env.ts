@@ -349,6 +349,7 @@ Promise<CliExitCode> => {
         localStorage: workspaceConfig.localStorage,
         remoteMapCreator,
         persistent: true,
+        workspaceConfig: { uid: workspace.uid, name: workspace.name },
       })
     await workspace.addEnvironment(envName, rmcToEnvSource)
     await setEnvironment(envName, args.output, workspace)

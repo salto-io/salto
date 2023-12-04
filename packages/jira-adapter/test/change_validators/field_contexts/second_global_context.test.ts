@@ -374,5 +374,14 @@ describe('Field second global contexts', () => {
         elementsSource
       )).toEqual([])
     })
+    it('should not return an error when deleting a project that had no fieldContexts', async () => {
+      firstGlobalContextInstance.value.isGlobalContext = false
+      delete projectInstance.value.fieldContexts
+      changes = [toChange({ before: projectInstance })]
+      expect(await fieldSecondGlobalContextValidator(
+        changes,
+        elementsSource
+      )).toEqual([])
+    })
   })
 })

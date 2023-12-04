@@ -56,7 +56,7 @@ const buildLocalStateFileName = (prefix: string, account: string): string => (
   `${prefix}.${account}.json`
 )
 
-const findStateFiles = (prefix: string): Promise<string[]> => (
+const findLocalStateFiles = (prefix: string): Promise<string[]> => (
   glob(buildLocalStateFileName(prefix, '*([!.])'))
 )
 
@@ -73,17 +73,17 @@ export const createS3StateContentProvider = (
 
   const s3 = createS3Client()
   return {
-    findStateFiles,
+    findStateFiles: findLocalStateFiles,
     clear: async prefix => {
       // We do not clear the current state file content from S3 on purpose as we expect that historic states
       // could be useful, and if not, that a lifecycle can be setup on S3 to remove them
       // This is to keep in line with the fact that we do not delete the previous state file on every writeContents
-      const localFiles = await findStateFiles(prefix)
+      const localFiles = await findLocalStateFiles(prefix)
       await Promise.all(localFiles.map(filename => rm(filename)))
     },
     rename: async (oldPrefix, newPrefix) => {
-      // Rename has no affect on the remote files, we just need to move the local files
-      const stateFiles = await findStateFiles(oldPrefix)
+      // Rename has no effect on the remote files, we just need to move the local files
+      const stateFiles = await findLocalStateFiles(oldPrefix)
       await awu(stateFiles).forEach(async filename => {
         const newFilePath = filename.replace(oldPrefix, path.join(path.dirname(oldPrefix), newPrefix))
         await rename(filename, newFilePath)

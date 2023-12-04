@@ -267,13 +267,18 @@ export const localState = (
       await mkdirp(path.dirname(currentFilePrefix))
       const contents = await getContentAndHash()
       const updatedHash = getHashFromHashes(contents.map(({ contentHash }) => contentHash))
+      log.debug(
+        'Writing state content, hash=%s, account_hashes=%o',
+        updatedHash,
+        Object.fromEntries(contents.map(({ account, contentHash }) => [account, contentHash])),
+      )
       await contentProvider.writeContents(currentFilePrefix, contents)
       await inMemState.setVersion(version)
       await inMemState.setHash(updatedHash)
       await inMemState.flush()
       await staticFilesSource.flush()
       dirty = false
-      log.debug('finish flushing state')
+      log.debug('finished flushing state')
     },
     calculateHash: calculateHashImpl,
     clear: async (): Promise<void> => {

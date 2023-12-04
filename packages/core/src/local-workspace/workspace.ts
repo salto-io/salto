@@ -282,7 +282,6 @@ const loadLocalWorkspaceImpl = async ({
 
   const workspaceConfigSrc = await workspaceConfigSource(baseDir, undefined)
   const workspaceConfig = await workspaceConfigSrc.getWorkspaceConfig()
-  // const { envs, state: stateConfig } = await workspaceConfig.getWorkspaceConfig()
   const cacheDirName = path.join(workspaceConfigSrc.localStorage, CACHE_DIR_NAME)
   const remoteMapCreator = createRemoteMapCreator(cacheDirName)
   const adaptersConfig = await buildLocalAdaptersConfigSource(

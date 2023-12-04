@@ -42,8 +42,16 @@ export const createFileStateContentProvider = (): StateContentProvider => {
       })
     },
     getHash: async filePaths => {
-      const allHashes = await Promise.all(filePaths.map(filePath => getStream.buffer(createReadStream(filePath).pipe(createHash('md5')))))
-      return getHashFromHashes(allHashes.map(hashBuf => hashBuf.toString('hex')))
+      const allHashes = await Promise.all(
+        filePaths.map(filePath => getStream.buffer(
+          // We should not be passing an encoding here, but we do to maintain backwards compatibility
+          // fixing this would cause the hash to change to the correct hash value, but that would
+          // trigger invalidation in all caches
+          createReadStream(filePath, { encoding: 'utf8' }).pipe(createHash('md5'))
+        ))
+      )
+      const digests = allHashes.map(hashBuf => hashBuf.toString('hex'))
+      return getHashFromHashes(digests)
     },
     readContents: filePaths => (
       awu(filePaths).filter(exists).map(filePath => ({ name: filePath, stream: createReadStream(filePath) }))

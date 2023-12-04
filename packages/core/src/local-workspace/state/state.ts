@@ -210,6 +210,9 @@ export const localState = (
       .map(async ([account, fileContent]): Promise<ContentAndHash> => {
         const contentHash = createHash('md5')
         const zipContent = createGZipWriteStream(fileContent)
+        // We should call toString here, but we do to maintain backwards compatibility
+        // fixing this would cause the hash to change to the correct hash value, but that would
+        // trigger invalidation in all caches
         zipContent.on('data', chunk => contentHash.update(chunk.toString()))
         const content = await getStream.buffer(zipContent)
         return {

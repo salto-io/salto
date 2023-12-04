@@ -93,8 +93,6 @@ const MAX_ITEMS_IN_READ_METADATA_REQUEST = 10
 //  https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_listmetadata.htm?search_text=listmetadata
 const MAX_ITEMS_IN_LIST_METADATA_REQUEST = 3
 
-const DEPLOY_STATUS_POLLING_INTERVAL_MS = 500
-
 const DEFAULT_RETRY_OPTS: Required<ClientRetryConfig> = {
   maxAttempts: 3, // try 3 times
   retryDelay: 5000, // wait for 5s before trying again
@@ -830,6 +828,8 @@ export default class SalesforceClient {
         checkOnly,
       },
     )
+    this.setDeployPollingTimeout()
+
     let deployResult: DeployResult
     if (progressCallback) {
       const progressCallbackWrapper = async (): Promise<void> => {
@@ -841,21 +841,24 @@ export default class SalesforceClient {
           log.warn('checkDeployStatus API call failed. Progress update will not take place. Error: %s', e.message)
         }
       }
-      const pollingInterval = setInterval(progressCallbackWrapper, DEPLOY_STATUS_POLLING_INTERVAL_MS)
+      const pollingInterval = setInterval(progressCallbackWrapper, this.conn.metadata.pollInterval)
 
       const clearPollingInterval = (result: DeployResult): DeployResult => {
         clearInterval(pollingInterval)
         return result
       }
+      const clearPollingIntervalOnError = (error: Error): DeployResult => {
+        clearInterval(pollingInterval)
+        throw error
+      }
       // We can't use finally() because, despite what the type definition for jsforce says,
       // DeployResultLocator.complete() actually returns an AsyncResultLocator<T> and not a Promise<T>.
       // ref. https://github.com/jsforce/jsforce/blob/c04515846e91f84affa4eb87a7b2adb1f58bf04d/lib/api/metadata.js#L830
-      deployResult = await deployStatus.complete(true).then(clearPollingInterval, clearPollingInterval)
+      deployResult = await deployStatus.complete(true).then(clearPollingInterval, clearPollingIntervalOnError)
     } else {
       deployResult = await deployStatus.complete(true)
     }
 
-    this.setFetchPollingTimeout()
     return flatValues(deployResult)
   }
 

@@ -676,10 +676,19 @@ export const generateElements = async (
       log.debug('content of file %s is %s', file.path, content)
       const parsedNaclFile = await parser.parse(Buffer.from(content), file.basename, {
         file: {
-          parse: async funcParams => new StaticFile({
-            content: Buffer.from('THIS IS STATIC FILE'),
-            filepath: funcParams[0],
-          }),
+          parse: async funcParams => {
+            const [filepath] = funcParams
+            let fileContent: Buffer
+            try {
+              fileContent = fs.readFileSync(filepath)
+            } catch {
+              fileContent = Buffer.from('THIS IS STATIC FILE')
+            }
+            return new StaticFile({
+              content: fileContent,
+              filepath,
+            })
+          },
           dump: async () => ({ funcName: 'file', parameters: [] }),
           isSerializedAsFunction: () => true,
         },

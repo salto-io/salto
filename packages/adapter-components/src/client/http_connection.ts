@@ -201,6 +201,11 @@ export const axiosConnection = <TCredentials>({
       maxBodyLength: Infinity,
       timeout,
     })
+    if (timeout > 0) {
+      // When false, axios-retry interprets the request timeout as a global value,
+      // so it is not used for each retry but for the whole request lifecycle.
+      retryOptions.shouldResetTimeout = true
+    }
     axiosRetry(httpClient, retryOptions)
 
     try {

@@ -36,11 +36,11 @@ describe('field_configuration_items', () => {
       'inst',
       new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONFIGURATION_TYPE_NAME) }),
       {
-        fields: [
-          { id: 'field1ConfigurationItem1', description: '', isHidden: false, isRequired: false },
-          { id: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field1ConfigurationItem1')), description: '', isHidden: false, isRequired: false },
-          { id: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field1ConfigurationItem2')), description: '', isHidden: false, isRequired: false },
-        ],
+        fields: {
+          field1ConfigurationItem1: { id: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field1ConfigurationItem1')), description: '', isHidden: false, isRequired: false },
+          field1ConfigurationItem2: { id: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field1ConfigurationItem2')), description: '', isHidden: false, isRequired: false },
+          field1ConfigurationItem3: { id: 'field1ConfigurationItem3', description: '', isHidden: false, isRequired: false },
+        },
       }
     )
   })
@@ -49,8 +49,8 @@ describe('field_configuration_items', () => {
       const references = await fieldConfigurationsHandler.findWeakReferences([instance])
 
       expect(references).toEqual([
-        { source: instance.elemID.createNestedID('1', 'id'), target: fieldConfigurationItemInstance.elemID, type: 'weak' },
-        { source: instance.elemID.createNestedID('2', 'id'), target: new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field1ConfigurationItem2'), type: 'weak' },
+        { source: instance.elemID.createNestedID('fields', 'field1ConfigurationItem1', 'id'), target: fieldConfigurationItemInstance.elemID, type: 'weak' },
+        { source: instance.elemID.createNestedID('fields', 'field1ConfigurationItem2', 'id'), target: new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field1ConfigurationItem2'), type: 'weak' },
       ])
     })
 
@@ -83,9 +83,14 @@ describe('field_configuration_items', () => {
       ])
 
       expect(fixes.fixedElements).toHaveLength(1)
-      expect((fixes.fixedElements[0] as InstanceElement).value.fields).toEqual([
-        { id: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field1ConfigurationItem1')), description: '', isHidden: false, isRequired: false },
-      ])
+      expect((fixes.fixedElements[0] as InstanceElement).value.fields).toEqual({
+        field1ConfigurationItem1: {
+          id: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field1ConfigurationItem1')),
+          description: '',
+          isHidden: false,
+          isRequired: false,
+        },
+      })
     })
 
     it('should do nothing if received invalid fields configurations', async () => {

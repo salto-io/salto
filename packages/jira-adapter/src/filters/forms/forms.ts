@@ -66,10 +66,10 @@ const deployForms = async (
 * This filter fetches all forms from Jira Service Management and creates an instance element for each form.
 * We use filter because we need to use cloudId which is not available in the infrastructure.
 */
-const filter: FilterCreator = ({ config, client }) => ({
+const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
   name: 'formsFilter',
   onFetch: async elements => {
-    if (!config.fetch.enableJSM || client.isDataCenter) {
+    if (!config.fetch.enableJSM || client.isDataCenter || !fetchQuery.isTypeMatch(FORM_TYPE)) {
       return
     }
     const cloudId = await getCloudId(client)

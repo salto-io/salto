@@ -2280,6 +2280,7 @@ export const JSM_DUCKTYPE_SUPPORTED_TYPES = {
   Calendar: ['Calendar'],
   PortalSettings: ['PortalSettings'],
   SLA: ['SLA'],
+  Form: [],
 }
 
 export const JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES = {

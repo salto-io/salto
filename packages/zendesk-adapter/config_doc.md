@@ -50,9 +50,10 @@ zendesk {
 
 | Name                                                          | Default when undefined   | Description
 |---------------------------------------------------------------|--------------------------|------------
-| [retry](#client-retry-configuration-options)                         | `{}` (no overrides)      | Configuration for retrying on errors
-| [rateLimit](#client-rate-limit-configuration-options)                | `{}` (no overrides)      | Limits on the number of concurrent requests of different types
+| [retry](#client-retry-configuration-options)                  | `{}` (no overrides)      | Configuration for retrying on errors
+| [rateLimit](#client-rate-limit-configuration-options)         | `{}` (no overrides)      | Limits on the number of concurrent requests of different types
 | [maxRequestsPerMinute]                                        | unlimited                | Limits on the number of requests per minute
+| [timeout]                                                     | `5000` (5 seconds)       | Set a timeout (in milliseconds) on requests to Zendesk
 
 #### Client retry configuration options
 

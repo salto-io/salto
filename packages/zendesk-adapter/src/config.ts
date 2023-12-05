@@ -62,6 +62,8 @@ export const DEPLOY_CONFIG = 'deploy'
 
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
+export const DEFAULT_REQUEST_TIMEOUT = 5000 // Roughly p95 of observed request times
+
 export type IdLocator = {
   fieldRegex: string
   idRegex: string

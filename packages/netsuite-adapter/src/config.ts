@@ -463,6 +463,12 @@ export const fetchDefault: FetchParams = {
           .join('|'),
       }, // may be a lot of data that takes a lot of time to fetch
       ...inactiveElementsCriteria,
+      {
+        name: SAVED_SEARCH,
+        criteria: {
+          FLAG_PUBLIC: false,
+        },
+      },
     ],
     fileCabinet: [
       '^/Templates/Letter Templates/Mail Merge Folder.*',

@@ -15,11 +15,14 @@
 */
 
 
-import { CORE_ANNOTATIONS, Field, getChangeData, InstanceElement, isInstanceElement, MapType, Values } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Field, getChangeData, InstanceElement, isInstanceElement, MapType, Value, Values } from '@salto-io/adapter-api'
+import { collections, values } from '@salto-io/lowerdash'
 import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { FIELD_CONFIGURATION_TYPE_NAME } from '../../constants'
+
+const { awu } = collections.asynciterable
 
 const replaceToMap = (instance: InstanceElement): void => {
   instance.value.fields = Object.fromEntries(instance.value.fields
@@ -28,6 +31,16 @@ const replaceToMap = (instance: InstanceElement): void => {
       field.id.elemID.name,
       field,
     ]))
+}
+
+
+const replaceFromMap = async (
+  instance: InstanceElement,
+): Promise<void> => {
+  instance.value.fields = await awu(Object.values(instance.value.fields))
+    .map(async (config: Value) => config)
+    .filter(values.isDefined)
+    .toArray()
 }
 
 const filter: FilterCreator = ({ config }) => ({
@@ -57,6 +70,19 @@ const filter: FilterCreator = ({ config }) => ({
       .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
       .filter(instance => Array.isArray(instance.value.fields))
       .forEach(replaceToMap)
+  },
+
+  preDeploy: async changes => {
+    if (config.fetch.splitFieldConfiguration) {
+      return
+    }
+
+    await awu(changes)
+      .map(getChangeData)
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
+      .filter(instance => instance.value.fields !== undefined)
+      .forEach(async instance => replaceFromMap(instance))
   },
 
   onDeploy: async changes => {

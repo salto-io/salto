@@ -26,20 +26,24 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 type FieldConfigurationItems = {
-  id: unknown
-  description: string
-  isHidden: boolean
-  isRequired: boolean
-}[]
+  [key: string]: {
+    id: unknown
+    description: string
+    isHidden: boolean
+    isRequired: boolean
+    render: string
+  }
+}
 
-const FIELD_CONFIGURATION_ITEMS_SCHEME = Joi.array().items(
-  Joi.object({
-    id: Joi.optional(),
-    description: Joi.optional(),
-    isHidden: Joi.optional(),
-    isRequired: Joi.optional(),
-  }).unknown(true),
-)
+const FIELD_CONFIGURATION_ITEM_SCHEME = Joi.object({
+  id: Joi.optional(),
+  description: Joi.optional(),
+  isHidden: Joi.optional(),
+  isRequired: Joi.optional(),
+  renderer: Joi.optional(),
+})
+
+const FIELD_CONFIGURATION_ITEMS_SCHEME = Joi.object().pattern(/.*/, FIELD_CONFIGURATION_ITEM_SCHEME)
 
 const isFieldConfigurationItems = createSchemeGuard<FieldConfigurationItems>(FIELD_CONFIGURATION_ITEMS_SCHEME, 'Received an invalid field configuration item value')
 
@@ -48,13 +52,15 @@ const getFieldReferences = async (
 ): Promise<ReferenceInfo[]> => {
   const fieldConfigurationItems = instance.value.fields
   if (fieldConfigurationItems === undefined || !isFieldConfigurationItems(fieldConfigurationItems)) {
+    log.warn(`fields value is corrupted in instance ${instance.elemID.getFullName()}`)
     return []
   }
-
-  return awu(fieldConfigurationItems)
-    .map(async (field, index) => (
-      isReferenceExpression(field.id)
-        ? { source: instance.elemID.createNestedID(index.toString(), 'id'), target: field.id.elemID, type: 'weak' as const }
+  return awu(Object.entries(fieldConfigurationItems))
+    .map(async ([id, config]) => (
+      isReferenceExpression(config.id)
+        ? { source: instance.elemID.createNestedID('fields', id, 'id'),
+          target: config.id.elemID,
+          type: 'weak' as const }
         : undefined))
     .filter(values.isDefined)
     .toArray()
@@ -79,16 +85,18 @@ const removeMissingFields: WeakReferencesHandler['removeWeakReferences'] = ({ el
       }
 
       const fixedInstance = instance.clone()
-      fixedInstance.value.fields = await awu(fieldConfigurationItems)
-        .filter(async field => (field.id === undefined
-          || (
-            isReferenceExpression(field.id)
+      fixedInstance.value.fields = await awu(Object.entries(fieldConfigurationItems))
+        .filter(async ([_id, field]) =>
+          (isReferenceExpression(field.id)
             // eslint-disable-next-line no-return-await
             && await elementsSource.has(field.id.elemID)
-          )))
-        .toArray()
+          ))
+        .reduce((obj, [id, field]) => {
+          obj[id] = field
+          return obj
+        }, {} as FieldConfigurationItems)
 
-      if (fixedInstance.value.fields.length === instance.value.fields.length) {
+      if (Object.keys(fixedInstance.value.fields).length === Object.keys(instance.value.fields).length) {
         return undefined
       }
 

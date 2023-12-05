@@ -51,6 +51,7 @@ import fieldConfigurationSplitFilter from './filters/field_configuration/field_c
 import fieldConfigurationItemsFilter from './filters/field_configuration/field_configuration_items'
 import missingFieldDescriptionsFilter from './filters/field_configuration/missing_field_descriptions'
 import fieldConfigurationDependenciesFilter from './filters/field_configuration/field_configuration_dependencies'
+import replaceFieldConfigurationReferences from './filters/field_configuration/replace_field_configuration_references'
 import fieldConfigurationDeployment from './filters/field_configuration/field_configuration_deployment'
 import missingDescriptionsFilter from './filters/missing_descriptions'
 import fieldConfigurationSchemeFilter from './filters/field_configurations_scheme'
@@ -299,6 +300,8 @@ export const DEFAULT_FILTERS = [
   fieldConfigurationIrrelevantFields,
   // Must run after fieldConfigurationIrrelevantFields
   fieldConfigurationSplitFilter,
+  // Must run after fieldReferencesFilter
+  replaceFieldConfigurationReferences,
   fieldConfigurationDeployment,
   // Must run after fieldConfigurationSplitFilter
   fieldConfigurationDependenciesFilter,

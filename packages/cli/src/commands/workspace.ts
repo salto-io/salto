@@ -15,7 +15,7 @@
 */
 import { EOL } from 'os'
 import { cleanWorkspace } from '@salto-io/core'
-import { WorkspaceComponents } from '@salto-io/workspace'
+import { StateConfig, WorkspaceComponents } from '@salto-io/workspace'
 import { getUserBooleanInput } from '../callbacks'
 import { header, formatCleanWorkspace, formatCancelCommand, formatStepStart, formatStepFailed, formatStepCompleted } from '../formatter'
 import { outputLine, errorOutputLine } from '../outputer'
@@ -152,6 +152,58 @@ const cacheGroupDef = createCommandGroupDef({
   ],
 })
 
+type SetStateProviderArgs = {
+  provider?: StateConfig['provider']
+  bucket?: string
+}
+
+export const setStateProviderAction: WorkspaceCommandAction<SetStateProviderArgs> = async ({
+  workspace,
+  input,
+  output,
+}) => {
+  const { provider, bucket } = input
+  outputLine(`Setting state provider ${provider} for workspace`, output)
+  const stateConfig: StateConfig = { provider: provider ?? 'file' }
+
+  if (provider === 's3') {
+    if (bucket === undefined) {
+      errorOutputLine('Must set bucket name with provider of type s3', output)
+      return CliExitCode.UserInputError
+    }
+    stateConfig.options = { s3: { bucket } }
+  }
+  if (provider !== 's3' && bucket !== undefined) {
+    errorOutputLine('bucket argument is only valid with provider type s3', output)
+    return CliExitCode.UserInputError
+  }
+
+  await workspace.updateStateProvider(provider === undefined ? undefined : stateConfig)
+  return CliExitCode.Success
+}
+
+const setStateProviderDef = createWorkspaceCommand({
+  action: setStateProviderAction,
+  properties: {
+    name: 'set-state-provider',
+    description: 'Set the location where state data will be stored',
+    keyedOptions: [
+      {
+        name: 'provider',
+        alias: 'p',
+        type: 'string',
+        choices: ['file', 's3'],
+        required: false,
+      },
+      {
+        name: 'bucket',
+        type: 'string',
+        description: 'When provider is S3, the bucket name were state data can be stored',
+      },
+    ],
+  },
+})
+
 // Group definition
 const wsGroupDef = createCommandGroupDef({
   properties: {
@@ -161,6 +213,7 @@ const wsGroupDef = createCommandGroupDef({
   subCommands: [
     wsCleanDef,
     cacheGroupDef,
+    setStateProviderDef,
   ],
 })
 

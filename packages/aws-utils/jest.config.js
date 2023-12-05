@@ -23,10 +23,11 @@ module.exports = deepMerge(
     rootDir: `${__dirname}`,
     collectCoverageFrom: [
       '!<rootDir>/index.ts',
+      '!<rootDir>/src/index.ts',
     ],
     coverageThreshold: {
       global: {
-        branches: 85,
+        branches: 90,
         functions: 65,
         lines: 90,
         statements: 90,

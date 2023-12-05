@@ -2245,6 +2245,9 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   AssetsObjectTypes: {
     request: {
       url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/{AssetsSchemaId}/objecttypes/flat',
+      queryParams: {
+        includeObjectCounts: 'true',
+      },
     },
     transformation: {
       dataField: '.',
@@ -2261,7 +2264,6 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'created' },
         { fieldName: 'updated' },
         { fieldName: 'globalId' },
-        { fieldName: 'objectCount' },
         { fieldName: 'objectSchemaId' },
         { fieldName: 'workspaceId' },
       ],
@@ -2271,10 +2273,12 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       add: {
         url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objecttype/create',
         method: 'post',
+        fieldsToIgnore: ['objectCount'],
       },
       modify: {
         url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objecttype/{id}',
         method: 'put',
+        fieldsToIgnore: ['objectCount'],
       },
       remove: {
         url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objecttype/{id}',
@@ -2300,7 +2304,27 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
       fieldsToOmit: [
         { fieldName: 'globalId' },
+        { fieldName: 'system' },
+        { fieldName: 'referenceObjectType' }, // API returns referenceObjectTypeId as well.
       ],
+      fieldTypeOverrides: [
+        { fieldName: 'typeValue', fieldType: 'string' },
+      ],
+    },
+    deployRequests: {
+      add: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objecttypeattribute/{objectType}',
+        method: 'post',
+      },
+      modify: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objecttypeattribute/{objectType}/{id}',
+        method: 'put',
+      },
+      remove: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1//objecttypeattribute/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
     },
   },
 }

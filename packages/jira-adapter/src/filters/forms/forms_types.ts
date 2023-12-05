@@ -64,7 +64,7 @@ export const DETAILED_FORM_RESPONSE_SCHEME = Joi.object({
         lock: Joi.boolean().required(),
         pdf: Joi.boolean().required(),
       }).unknown(true).required(),
-      templateFormUuid: Joi.string().required(),
+      templateFormUuid: Joi.string(),
     }).unknown(true).required(),
     questions: Joi.object().unknown(true).required(),
     sections: Joi.object().unknown(true).required(),

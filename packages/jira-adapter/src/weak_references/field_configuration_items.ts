@@ -45,7 +45,7 @@ const FIELD_CONFIGURATION_ITEM_SCHEME = Joi.object({
 
 const FIELD_CONFIGURATION_ITEMS_SCHEME = Joi.object().pattern(/.*/, FIELD_CONFIGURATION_ITEM_SCHEME)
 
-const isFieldConfigurationItems = createSchemeGuard<FieldConfigurationItems>(FIELD_CONFIGURATION_ITEMS_SCHEME, 'Received an invalid field configuration item value')
+const isFieldConfigurationItems = createSchemeGuard<FieldConfigurationItems>(FIELD_CONFIGURATION_ITEMS_SCHEME, 'Received an invalid field configuration items value')
 
 const getFieldReferences = async (
   instance: InstanceElement,
@@ -66,14 +66,19 @@ const getFieldReferences = async (
     .toArray()
 }
 
-const getFieldConfigurationItemsReferences: GetCustomReferencesFunc = async elements =>
-  awu(elements)
-    .filter(isInstanceElement)
-    .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
-    .flatMap(instance => getFieldReferences(instance))
-    .toArray()
+/**
+ * Marks each field reference in field configuration as a weak reference.
+ */
+const getFieldConfigurationItemsReferences: GetCustomReferencesFunc = async elements => log.time(() => awu(elements)
+  .filter(isInstanceElement)
+  .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
+  .flatMap(instance => getFieldReferences(instance))
+  .toArray(), 'getFieldConfigurationItemsReferences')
 
-const removeMissingFields: WeakReferencesHandler['removeWeakReferences'] = ({ elementsSource }) => async elements => {
+/**
+ * Remove invalid fields (not references or missing references) from field configuration.
+ */
+const removeMissingFields: WeakReferencesHandler['removeWeakReferences'] = ({ elementsSource }) => async elements => log.time(async () => {
   const fixedElements = await awu(elements)
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
@@ -112,7 +117,7 @@ const removeMissingFields: WeakReferencesHandler['removeWeakReferences'] = ({ el
     detailedMessage: 'This field configuration is attached to some field configuration items that do not exist in the target environment. It will be deployed without referencing these field configuration items.',
   }))
   return { fixedElements, errors }
-}
+}, 'removeMissingFields')
 
 export const fieldConfigurationsHandler: WeakReferencesHandler = {
   findWeakReferences: getFieldConfigurationItemsReferences,

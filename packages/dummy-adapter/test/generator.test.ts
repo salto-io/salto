@@ -13,13 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  isObjectType,
-  isInstanceElement,
-  isPrimitiveType,
-  isMapType,
-  isListType,
-} from '@salto-io/adapter-api'
+import { isObjectType, isInstanceElement, isPrimitiveType, isMapType, isListType } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import path from 'path'
@@ -66,12 +60,12 @@ describe('elements generator', () => {
       expect(types).toHaveLength(testParams.numOfTypes)
       expect(
         _.uniq(objects.map(obj => obj.elemID.getFullName()))
-      ).toHaveLength(testParams.numOfObjs + 11) // 7 default types + 2q additional type
+      ).toHaveLength(testParams.numOfObjs + 7) // 5 default types + 2q additional type
       expect(profiles).toHaveLength(testParams.numOfProfiles * 4)
       expect(_.uniq(profiles.map(p => p.elemID.getFullName()))).toHaveLength(
         testParams.numOfProfiles
       )
-      expect(records).toHaveLength(testParams.numOfRecords + 7) // 7 default instance fragments
+      expect(records).toHaveLength(testParams.numOfRecords + 5) // 5 default instance fragments
     })
     // eslint-disable-next-line
     it.skip('should create list and map types', async () => {
@@ -114,12 +108,6 @@ describe('elements generator', () => {
         { fullName: 'dummy.Full.instance.FullInst1', numOfFragments: 1 },
         { fullName: 'dummy.Full.instance.FullInst2', numOfFragments: 1 },
         { fullName: 'dummy.Full', numOfFragments: 1 },
-        { fullName: 'dummy.FullObjWithIV.instance.FullInst1WithIV', numOfFragments: 1 },
-        { fullName: 'dummy.FullObjWithIV', numOfFragments: 1 },
-        { fullName: 'dummy.customFieldWithIV', numOfFragments: 1 },
-        { fullName: 'dummy.FullComplexWithIV.instance.FullComplexInstWithIV', numOfFragments: 1 },
-        { fullName: 'dummy.FullComplexWithIV', numOfFragments: 1 },
-        { fullName: 'dummy.FullComplexWithIV__userObj', numOfFragments: 1 },
         { fullName: 'dummy.Partial', numOfFragments: 2 },
         { fullName: 'dummy.Partial.instance.PartialInst', numOfFragments: 2 },
       ]

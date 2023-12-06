@@ -561,6 +561,7 @@ export default class JiraAdapter implements AdapterOperations {
       .filter(project => project.elemID.typeName === PROJECT_TYPE)
       .filter(isInstanceElement)
       .filter(project => project.value.projectTypeKey === SERVICE_DESK)
+      .filter(project => project.value.serviceDeskId?.id !== undefined)
 
     const fetchResultWithDuplicateTypes = await Promise.all(serviceDeskProjects.map(async projectInstance => {
       const serviceDeskProjRecord: Record<string, string> = {
@@ -568,7 +569,7 @@ export default class JiraAdapter implements AdapterOperations {
         serviceDeskId: projectInstance.value.serviceDeskId.id,
         projectId: projectInstance.value.id,
       }
-      log.debug(`Fetching elements for brand ${projectInstance.elemID.name}`)
+      log.debug(`Fetching elements for project ${projectInstance.elemID.name}`)
       return getAllElements({
         adapterName: JIRA,
         types: jsmApiDefinitions.types,

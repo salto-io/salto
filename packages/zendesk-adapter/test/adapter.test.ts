@@ -134,6 +134,14 @@ describe('adapter', () => {
                   brands: ['.*'],
                 },
               },
+              [API_DEFINITIONS_CONFIG]: {
+                ...DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
+                typeDefaults: {
+                  transformation: {
+                    omitInactive: false,
+                  },
+                },
+              },
             }
           ),
           elementsSource: buildElementsSourceFromElements([]),
@@ -670,6 +678,14 @@ describe('adapter', () => {
                 ],
                 guide: {
                   brands: ['.*'],
+                },
+              },
+              [API_DEFINITIONS_CONFIG]: {
+                ...DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
+                typeDefaults: {
+                  transformation: {
+                    omitInactive: false,
+                  },
                 },
               },
             }
@@ -1745,6 +1761,14 @@ describe('adapter', () => {
                   brands: ['.*'],
                 },
               },
+              [API_DEFINITIONS_CONFIG]: {
+                ...DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
+                typeDefaults: {
+                  transformation: {
+                    omitInactive: false,
+                  },
+                },
+              },
             }
           ),
           elementsSource: buildElementsSourceFromElements([]),
@@ -1788,6 +1812,14 @@ describe('adapter', () => {
                 exclude: [],
                 guide: {
                   brands: ['.*'],
+                },
+              },
+              [API_DEFINITIONS_CONFIG]: {
+                ...DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
+                typeDefaults: {
+                  transformation: {
+                    omitInactive: false,
+                  },
                 },
               },
             }
@@ -1876,6 +1908,14 @@ describe('adapter', () => {
               exclude: [],
               guide: {
                 brands: ['BestBrand'],
+              },
+            },
+            [API_DEFINITIONS_CONFIG]: {
+              ...DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
+              typeDefaults: {
+                transformation: {
+                  omitInactive: false,
+                },
               },
             },
           }

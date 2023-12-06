@@ -2752,6 +2752,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
         fieldsToOmit: FIELDS_TO_OMIT,
         fieldsToHide: FIELDS_TO_HIDE,
         serviceIdField: DEFAULT_SERVICE_ID_FIELD,
+        omitInactive: true,
         // TODO: change this to true for SALTO-3593.
         nestStandaloneInstances: false,
       },

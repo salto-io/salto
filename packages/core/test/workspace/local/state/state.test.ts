@@ -24,6 +24,7 @@ import { state as wsState, pathIndex, remoteMap, staticFiles, serialization } fr
 import { hash, collections } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
 import { getStateContentProvider, loadState, localState } from '../../../../src/local-workspace/state/state'
+import * as stateFunctions from '../../../../src/local-workspace/state/state'
 import { getTopLevelElements } from '../../../common/elements'
 import { version as currentSaltoVersion } from '../../../../src/generated/version.json'
 import { mockStaticFilesSource } from '../../../common/state'
@@ -238,6 +239,58 @@ describe('localState', () => {
             )
           )
         )
+      })
+    })
+
+    describe('updateConfig', () => {
+      let getStateContentProviderSpy: jest.SpiedFunction<typeof getStateContentProvider>
+      let newContentProvider: jest.Mocked<StateContentProvider>
+      beforeEach(async () => {
+        getStateContentProviderSpy = jest.spyOn(stateFunctions, 'getStateContentProvider')
+        newContentProvider = mockContentProvider({})
+        getStateContentProviderSpy.mockReturnValue(newContentProvider)
+      })
+      afterEach(() => {
+        getStateContentProviderSpy.mockRestore()
+      })
+      describe('when writing to the new provider works', () => {
+        beforeEach(async () => {
+          await state.updateConfig({ workspaceId: 'wsId', stateConfig: undefined })
+        })
+        it('should write the contents of the current provider to the new provider', () => {
+          expect(newContentProvider.writeContents).toHaveBeenLastCalledWith(
+            expect.any(String),
+            expect.arrayContaining(
+              ['netsuite', 'salesforce'].map(
+                account => ({ account, content: expect.any(Buffer), contentHash: expect.any(String) })
+              )
+            )
+          )
+        })
+        it('should clear the old content provider', () => {
+          expect(contentProvider.clear).toHaveBeenCalled()
+        })
+        it('should end with the new provider having state files in the correct prefix', async () => {
+          expect(await newContentProvider.findStateFiles(pathPrefix)).toHaveLength(2)
+        })
+      })
+      describe('when writing to the new provider fails', () => {
+        let result: Promise<void>
+        beforeEach(() => {
+          newContentProvider.writeContents.mockRejectedValue(new Error('failed to write content'))
+          result = state.updateConfig({ workspaceId: 'wsId', stateConfig: undefined })
+        })
+        it('should fail', async () => {
+          await expect(result).rejects.toThrow()
+        })
+        it('should not clear the old provider', async () => {
+          try {
+            await result
+          } catch (e) {
+            // We expect this to fail
+          }
+          expect(contentProvider.clear).not.toHaveBeenCalled()
+        })
       })
     })
   })

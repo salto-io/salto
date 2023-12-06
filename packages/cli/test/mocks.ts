@@ -385,6 +385,7 @@ export const mockWorkspace = ({
     demoteAll: mockFunction<Workspace['demoteAll']>(),
     copyTo: mockFunction<Workspace['copyTo']>(),
     sync: mockFunction<Workspace['sync']>(),
+    updateStateProvider: mockFunction<Workspace['updateStateProvider']>(),
     getValue: mockFunction<Workspace['getValue']>(),
     getSearchableNames: mockFunction<Workspace['getSearchableNames']>(),
     getSearchableNamesOfEnv: mockFunction<Workspace['getSearchableNamesOfEnv']>(),

@@ -14,8 +14,9 @@
 * limitations under the License.
 */
 
-import { Element, Values } from '@salto-io/adapter-api'
+import { Element } from '@salto-io/adapter-api'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
+import { WorkspaceConfig } from '../../src/workspace/config/workspace_config_types'
 import { Errors } from '../../src/errors'
 import { AdaptersConfigSource } from '../../src/workspace/adapters_config_source'
 import { ConfigSource } from '../../src/workspace/config_source'
@@ -33,8 +34,8 @@ import { createMockNaclFileSource } from './nacl_file_source'
 import { mockDirStore } from './nacl_file_store'
 
 const services = ['salesforce']
-export const mockWorkspaceConfigSource = (conf?: Values,
-  secondaryEnv?: boolean): WorkspaceConfigSource => ({
+export const mockWorkspaceConfigSource = (conf?: Partial<WorkspaceConfig>,
+  secondaryEnv?: boolean): jest.Mocked<WorkspaceConfigSource> => ({
   getWorkspaceConfig: jest.fn().mockImplementation(() => ({
     envs: [
       { name: 'default',

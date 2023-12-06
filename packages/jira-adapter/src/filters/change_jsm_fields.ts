@@ -15,8 +15,19 @@
 */
 
 import { isInstanceElement } from '@salto-io/adapter-api'
+import Joi from 'joi'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { ASSETS_OBJECT_TYPE, PROJECT_TYPE, SERVICE_DESK } from '../constants'
+
+type ObjectWithId = {
+  id: number
+}
+const OBJECT_RESPONSE_SCHEME = Joi.object({
+  id: Joi.number().required(),
+}).unknown(true).required()
+
+const isObjectWithId = createSchemeGuard<ObjectWithId>(OBJECT_RESPONSE_SCHEME)
 
 const filter: FilterCreator = () => ({
   name: 'changeJSMElementsFieldFilter',
@@ -27,12 +38,15 @@ const filter: FilterCreator = () => ({
       .filter(e => e.elemID.typeName === PROJECT_TYPE)
       .filter(project => project.value.projectTypeKey === SERVICE_DESK)
       .filter(project => project.value.serviceDeskId !== undefined)
-      .forEach(project => { project.value.serviceDeskId = project.value.serviceDeskId.id })
+      .forEach(project => {
+        project.value.serviceDeskId = isObjectWithId(project.value.serviceDeskId)
+          ? project.value.serviceDeskId.id : project.value.serviceDeskId
+      })
 
     instanceElements
       .filter(e => e.elemID.typeName === ASSETS_OBJECT_TYPE)
       .forEach(instance => {
-        instance.value.iconId = instance.value.icon.id
+        instance.value.iconId = isObjectWithId(instance.value.icon) ? instance.value.icon.id : instance.value.icon
         delete instance.value.icon
       })
   },

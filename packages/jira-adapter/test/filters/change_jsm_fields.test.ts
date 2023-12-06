@@ -71,4 +71,23 @@ describe('changeJSMElementsFieldFilter', () => {
         iconId: '12345',
       })
     })
+    it('should not change icon Id  if icon isnt an object', async () => {
+      AssetsObjectTypeInstance = new InstanceElement(
+        'assetsObjectType',
+        createEmptyType(ASSETS_OBJECT_TYPE),
+        {
+          id: '11111',
+          name: 'AssetsObjectType',
+          icon: '12345',
+        },
+      )
+      elements = [projectInstance, AssetsObjectTypeInstance]
+      filter = changeJSMElementsFieldFilter(getFilterParams({})) as typeof filter
+      await filter.onFetch(elements)
+      expect(AssetsObjectTypeInstance.value).toEqual({
+        id: '11111',
+        name: 'AssetsObjectType',
+        iconId: '12345',
+      })
+    })
 })

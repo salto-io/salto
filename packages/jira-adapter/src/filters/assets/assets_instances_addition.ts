@@ -20,11 +20,14 @@ import { getParent } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { ASSETS_OBJECT_TYPE, ASSETS_STATUS_TYPE } from '../../constants'
 
-
 const { awu } = collections.asynciterable
 const SUPPORTED_TYPES = [ASSETS_STATUS_TYPE, ASSETS_OBJECT_TYPE]
+
+/* This filter adds objectSchemaId to some assets instances
+* that need it in order to be deployed.
+*/
 const filter: FilterCreator = ({ config }) => ({
-  name: 'assetsStatusAdditionFilter',
+  name: 'assetsInstancesAdditionFilter',
   preDeploy: async changes => {
     const { jsmApiDefinitions } = config
     if (!config.fetch.enableJSM

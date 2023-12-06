@@ -17,7 +17,7 @@ import { filterUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { InstanceElement, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { getDefaultConfig } from '../../../src/config/config'
-import assetsStatusAdditionFilter from '../../../src/filters/assets/assets_status_addition'
+import assetsStatusAdditionFilter from '../../../src/filters/assets/assets_instances_addition'
 import { createEmptyType, getFilterParams } from '../../utils'
 import { ASSESTS_SCHEMA_TYPE, ASSETS_STATUS_TYPE } from '../../../src/constants'
 

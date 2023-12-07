@@ -380,7 +380,7 @@ const customObjectFieldsFilter: FilterCreator = ({ config, client }) => {
       if (userConditions.length === 0) {
         return
       }
-      const users = await getUsers(paginator)
+      const { users } = await getUsers(paginator)
       const usersByEmail = _.keyBy(users, user => user.email)
 
       const missingUserConditions: CustomObjectCondition[] = []

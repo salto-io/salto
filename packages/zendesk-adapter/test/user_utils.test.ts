@@ -56,7 +56,7 @@ describe('userUtils', () => {
           ]
         })
 
-      const users = await userUtils.getUsers(mockPaginator)
+      const { users } = await userUtils.getUsers(mockPaginator)
       expect(users).toEqual(
         [
           { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
@@ -78,7 +78,7 @@ describe('userUtils', () => {
             ] },
           ]
         })
-      const users = await userUtils.getUsers(mockPaginator)
+      const { users } = await userUtils.getUsers(mockPaginator)
       expect(users).toEqual(
         [
           { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
@@ -86,7 +86,7 @@ describe('userUtils', () => {
           { id: 2, email: 'd@d.com', role: 'agent', custom_role_id: null, name: 'd', locale: 'en-US' },
         ]
       )
-      const getUsersAfterCache = await userUtils.getUsers(mockPaginator)
+      const { users: getUsersAfterCache } = await userUtils.getUsers(mockPaginator)
       expect(getUsersAfterCache).toEqual(
         [
           { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
@@ -108,7 +108,7 @@ describe('userUtils', () => {
             ] },
           ]
         })
-      const users = await userUtils.getUsers(mockPaginator)
+      const { users } = await userUtils.getUsers(mockPaginator)
       expect(users).toEqual([])
       expect(mockPaginator).toHaveBeenCalledTimes(1)
     })

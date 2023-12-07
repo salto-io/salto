@@ -19,7 +19,7 @@ import { logger } from '@salto-io/logging'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
-import { Values } from '@salto-io/adapter-api'
+import { SaltoError, Values } from '@salto-io/adapter-api'
 import ZendeskClient from './client/client'
 import { ValueReplacer, replaceConditionsAndActionsCreator, fieldReplacer } from './replacers_utils'
 import { CURSOR_BASED_PAGINATION_FIELD, DEFAULT_QUERY_PARAMS } from './config'
@@ -161,7 +161,9 @@ export const TYPE_NAME_TO_REPLACER: Record<string, ValueReplacer> = {
   article_translation: fieldReplacer(['created_by_id', 'updated_by_id']),
 }
 
-const getUsersNoCache = async (paginator: clientUtils.Paginator): Promise<User[]> => {
+const getUsersNoCache = async (
+  paginator: clientUtils.Paginator
+): Promise<{ users: User[]; errors?: SaltoError[] }> => {
   const paginationArgs = {
     url: '/api/v2/users',
     paginationField: CURSOR_BASED_PAGINATION_FIELD,
@@ -170,13 +172,24 @@ const getUsersNoCache = async (paginator: clientUtils.Paginator): Promise<User[]
       ...DEFAULT_QUERY_PARAMS,
     },
   }
-  const users = (await toArrayAsync(
-    paginator(paginationArgs, page => makeArray(page) as clientUtils.ResponseValue[])
-  )).flat().flatMap(response => response.users)
-  if (!areUsers(users)) {
-    return []
+  try {
+    const users = (await toArrayAsync(
+      paginator(paginationArgs, page => makeArray(page) as clientUtils.ResponseValue[])
+    )).flat().flatMap(response => response.users)
+    if (!areUsers(users)) {
+      return { users: [] }
+    }
+    return { users }
+  } catch (e) {
+    if (e.response?.status === 403 || e.response?.status === 401) {
+      const newError: SaltoError = {
+        message: 'Salto could not access the users resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto\'s fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource',
+        severity: 'Warning',
+      }
+      return { users: [], errors: [newError] }
+    }
+    throw e
   }
-  return users
 }
 
 /*
@@ -184,10 +197,10 @@ const getUsersNoCache = async (paginator: clientUtils.Paginator): Promise<User[]
 * Results are cached after the initial call to improve performance.
 *
 */
-const getUsersFunc = ():(paginator: clientUtils.Paginator) => Promise<User[]> => {
-  let calculatedUsersPromise: Promise<User[]>
+const getUsersFunc = ():(paginator: clientUtils.Paginator) => Promise<{ users: User[]; errors?: SaltoError[] }> => {
+  let calculatedUsersPromise: Promise<{ users: User[]; errors?: SaltoError[] }>
 
-  const getUsers = async (paginator: clientUtils.Paginator): Promise<User[]> => {
+  const getUsers = async (paginator: clientUtils.Paginator): Promise<{ users: User[]; errors?: SaltoError[] }> => {
     if (calculatedUsersPromise === undefined) {
       calculatedUsersPromise = getUsersNoCache(paginator)
     }
@@ -236,7 +249,7 @@ const getIdByEmailFunc = ():(paginator: clientUtils.Paginator) => Promise<Record
     if (idToEmail !== undefined) {
       return idToEmail
     }
-    const users = await getUsers(paginator)
+    const { users } = await getUsers(paginator)
     if (_.isEmpty(users)) {
       idToEmail = {}
       return {}
@@ -258,7 +271,7 @@ const getIdByNameFunc = ():(paginator: clientUtils.Paginator) => Promise<Record<
     if (idToName !== undefined) {
       return idToName
     }
-    const users = await getUsers(paginator)
+    const { users } = await getUsers(paginator)
     if (_.isEmpty(users)) {
       idToName = {}
       return {}

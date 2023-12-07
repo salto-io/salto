@@ -115,7 +115,7 @@ export const usersValidator: (client: ZendeskClient) =>
         client,
         paginationFuncCreator: paginate,
       })
-      const users = await getUsers(paginator)
+      const { users } = await getUsers(paginator)
 
       const existingUsersEmails = new Set(users.map(user => user.email))
       const instancesUserPaths = relevantInstances.flatMap(instance => {

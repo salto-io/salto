@@ -43,7 +43,7 @@ export const customRoleRemovalValidator: (client: ZendeskClient) =>
       client,
       paginationFuncCreator: paginate,
     })
-    const users = await getUsers(paginator)
+    const { users } = await getUsers(paginator)
     if (_.isEmpty(users)) {
       return []
     }

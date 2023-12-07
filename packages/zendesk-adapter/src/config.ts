@@ -84,6 +84,7 @@ export type ZendeskFetchConfig = configUtils.UserFetchConfig
   appReferenceLocators?: IdLocator[]
   guide?: Guide
   resolveOrganizationIDs?: boolean
+  resolveUserIDs: boolean
   extractReferencesFromFreeText?: boolean
   convertJsonIdsToReferences?: boolean
 }
@@ -2734,6 +2735,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     hideTypes: true,
     enableMissingReferences: true,
     resolveOrganizationIDs: false,
+    resolveUserIDs: true,
     includeAuditDetails: false,
     addAlias: true,
     handleIdenticalAttachmentConflicts: false,

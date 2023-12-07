@@ -39,11 +39,13 @@ const filterCreator: FilterCreator = ({ client }) => {
         client,
         paginationFuncCreator: paginate,
       })
+      const { errors } = await getUsers(paginator)
       const mapping = await getIdByEmail(paginator)
       const instances = elements.filter(isInstanceElement)
       instances.forEach(instance => {
         TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance, mapping)
       })
+      return { errors }
     },
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       const relevantChanges = changes.filter(isRelevantChange)
@@ -54,7 +56,7 @@ const filterCreator: FilterCreator = ({ client }) => {
         client,
         paginationFuncCreator: paginate,
       })
-      const users = await getUsers(paginator)
+      const { users } = await getUsers(paginator)
       if (_.isEmpty(users)) {
         return
       }

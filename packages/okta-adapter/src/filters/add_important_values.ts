@@ -47,15 +47,9 @@ const importantValuesMap: Record<string, ImportantValues> = {
     },
   ],
   [GROUP_TYPE_NAME]: [
-    // TODO ask Eden about nested types
-    {
-      value: 'profile.name',
-      highlighted: true,
-      indexed: false,
-    },
     {
       value: 'type',
-      highlighted: true,
+      highlighted: false,
       indexed: true,
     },
     {
@@ -75,11 +69,10 @@ const importantValuesMap: Record<string, ImportantValues> = {
       highlighted: true,
       indexed: true,
     },
-    // TODO ask Eden about nested types
     {
       value: 'actions.assignUserToGroups.groupIds',
-      highlighted: true,
-      indexed: false,
+      highlighted: false,
+      indexed: true,
     },
     {
       value: 'allGroupsValid',

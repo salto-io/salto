@@ -16,7 +16,7 @@
 import { CORE_ANNOTATIONS, Element, isObjectType } from '@salto-io/adapter-api'
 import { ImportantValues } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
-import { APPLICATION_TYPE_NAME, AUTHENTICATOR_TYPE_NAME, BEHAVIOR_RULE_TYPE_NAME, BRAND_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, NETWORK_ZONE_TYPE_NAME } from '../constants'
+import { APPLICATION_TYPE_NAME, AUTHENTICATOR_TYPE_NAME, BEHAVIOR_RULE_TYPE_NAME, BRAND_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, NETWORK_ZONE_TYPE_NAME, POLICY_TYPE_NAMES, POLICY_RULE_TYPE_NAMES } from '../constants'
 
 const importantValuesMap: Record<string, ImportantValues> = {
   [APPLICATION_TYPE_NAME]: [
@@ -155,6 +155,15 @@ const importantValuesMap: Record<string, ImportantValues> = {
       indexed: true,
     },
   ],
+  ...Object.fromEntries(
+    POLICY_TYPE_NAMES.concat(POLICY_RULE_TYPE_NAMES).map(policyName => ([
+      policyName,
+      [
+        { value: 'name', highlighted: true, indexed: false },
+        { value: 'status', highlighted: true, indexed: true },
+      ],
+    ]))
+  ),
 }
 
 const filterCreator: FilterCreator = () => ({

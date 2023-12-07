@@ -23,6 +23,8 @@ import filterCreator from '../../src/filters/add_important_values'
 import {
   APPLICATION_TYPE_NAME,
   GROUP_RULE_TYPE_NAME,
+  ACCESS_POLICY_TYPE_NAME,
+  ACCESS_POLICY_RULE_TYPE_NAME,
   OKTA,
 } from '../../src/constants'
 import { getFilterParams } from '../utils'
@@ -33,6 +35,8 @@ describe('add important values filter', () => {
 
   const appType = new ObjectType({ elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME) })
   const groupRuleType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_RULE_TYPE_NAME) })
+  const accessType = new ObjectType({ elemID: new ElemID(OKTA, ACCESS_POLICY_TYPE_NAME) })
+  const accessRuleType = new ObjectType({ elemID: new ElemID(OKTA, ACCESS_POLICY_RULE_TYPE_NAME) })
 
   beforeEach(async () => {
     filter = filterCreator(getFilterParams()) as FilterType
@@ -40,7 +44,7 @@ describe('add important values filter', () => {
 
   describe('onFetch', () => {
     it('should add important values annotation correctly', async () => {
-      await filter.onFetch([appType, groupRuleType])
+      await filter.onFetch([appType, groupRuleType, accessType, accessRuleType])
       expect(appType.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES]).toEqual([
         {
           value: 'label',
@@ -90,6 +94,14 @@ describe('add important values filter', () => {
           indexed: true,
         },
       ],)
+      expect(accessType.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES]).toEqual([
+        { value: 'name', highlighted: true, indexed: false },
+        { value: 'status', highlighted: true, indexed: true },
+      ],)
+      expect(accessRuleType.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES]).toEqual([
+        { value: 'name', highlighted: true, indexed: false },
+        { value: 'status', highlighted: true, indexed: true },
+      ])
     })
   })
 })

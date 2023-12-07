@@ -18,8 +18,8 @@ import axios, { AxiosError, AxiosBasicCredentials, AxiosRequestConfig, AxiosRequ
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { AccountInfo, CredentialError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { ClientRetryConfig } from './config'
-import { DEFAULT_RETRY_OPTS } from './constants'
+import { ClientRetryConfig, ClientTimeoutOptions } from './config'
+import { DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS } from './constants'
 
 const log = logger(module)
 
@@ -112,7 +112,9 @@ const getRetryDelay = (retryOptions: Required<ClientRetryConfig>, error: AxiosEr
 const shouldRetryStatusCode = (statusCode?: number, additionalStatusesToRetry: number[] = []): boolean =>
   statusCode !== undefined && [429, ...additionalStatusesToRetry].includes(statusCode)
 
-export const createRetryOptions = (retryOptions: Required<ClientRetryConfig>): RetryOptions => ({
+export const createRetryOptions = (
+  retryOptions: Required<ClientRetryConfig>, timeoutOptions?: ClientTimeoutOptions
+): RetryOptions => ({
   retries: retryOptions.maxAttempts,
   retryDelay: (retryCount, err) => {
     const retryDelay = getRetryDelay(retryOptions, err)
@@ -128,13 +130,13 @@ export const createRetryOptions = (retryOptions: Required<ClientRetryConfig>): R
   retryCondition: err => axiosRetry.isNetworkOrIdempotentRequestError(err)
     || shouldRetryStatusCode(err.response?.status, retryOptions.additionalStatusCodesToRetry),
   onRetry: (retryCount, _err, requestConfig) => {
-    if (retryOptions.lastRetryNoTimeout && retryCount === retryOptions.maxAttempts) {
+    if (timeoutOptions?.lastRetryNoTimeout && retryCount === retryOptions.maxAttempts) {
       requestConfig.timeout = 0
     }
   },
   // When false, axios-retry interprets the request timeout as a global value,
   // so it is not used for each retry but for the whole request lifecycle.
-  shouldResetTimeout: retryOptions.resetTimeoutBetweenAttempts,
+  shouldResetTimeout: timeoutOptions?.resetTimeoutBetweenAttempts ?? false,
 })
 
 type ConnectionParams<TCredentials> = {
@@ -147,11 +149,11 @@ type ConnectionParams<TCredentials> = {
 export const createClientConnection = <TCredentials>({
   connection,
   retryOptions,
-  timeout = 0,
+  timeout = DEFAULT_TIMEOUT_OPTS.timeout,
   createConnection,
 }: ConnectionParams<TCredentials>): Connection<TCredentials> => (
     connection ?? createConnection(
-      _.defaults({}, retryOptions, createRetryOptions(DEFAULT_RETRY_OPTS)),
+      _.defaults({}, retryOptions, createRetryOptions(DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS)),
       timeout
     )
   )

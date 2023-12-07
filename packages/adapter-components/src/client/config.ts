@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, ObjectType, BuiltinTypes, FieldDefinition, createRestriction, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
 
 /* Client config */
 
@@ -32,6 +33,10 @@ export type ClientRetryConfig = Partial<{
   retryDelay: number
   // This is not included in clientRetryConfigType because currently we don't want to allow the user to change it
   additionalStatusCodesToRetry: number[]
+}>
+
+export type ClientTimeoutOptions = Partial<{
+  timeout: number
   resetTimeoutBetweenAttempts: boolean
   lastRetryNoTimeout: boolean
 }>
@@ -41,7 +46,7 @@ export type ClientBaseConfig<RateLimitConfig extends ClientRateLimitConfig> = Pa
   rateLimit: RateLimitConfig
   maxRequestsPerMinute: number
   pageSize: ClientPageSizeConfig
-  timeout: number
+  timeoutOptions: ClientTimeoutOptions
 }>
 
 export const createClientConfigType = <RateLimitConfig extends ClientRateLimitConfig>(
@@ -93,6 +98,18 @@ export const createClientConfigType = <RateLimitConfig extends ClientRateLimitCo
     },
   })
 
+  const clientTimeoutOptionsType = createMatchingObjectType<ClientTimeoutOptions>({
+    elemID: new ElemID(adapter, 'clientTimeoutOptions'),
+    fields: {
+      timeout: { refType: BuiltinTypes.NUMBER },
+      resetTimeoutBetweenAttempts: { refType: BuiltinTypes.BOOLEAN },
+      lastRetryNoTimeout: { refType: BuiltinTypes.BOOLEAN },
+    },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+    },
+  })
+
   const clientConfigType = new ObjectType({
     elemID: new ElemID(adapter, 'clientConfig'),
     fields: {
@@ -100,6 +117,7 @@ export const createClientConfigType = <RateLimitConfig extends ClientRateLimitCo
       rateLimit: { refType: clientRateLimitConfigType },
       maxRequestsPerMinute: createFieldDefWithMin(-1),
       pageSize: { refType: clientPageSizeConfigType },
+      timeoutOptions: { refType: clientTimeoutOptionsType },
     },
     annotations: {
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

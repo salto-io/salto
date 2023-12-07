@@ -101,6 +101,8 @@ describe('client_http_connection', () => {
         maxAttempts: 3,
         retryDelay: 100,
         additionalStatusCodesToRetry: [],
+      },
+      {
         resetTimeoutBetweenAttempts: true,
         lastRetryNoTimeout: true,
       })
@@ -192,6 +194,8 @@ describe('client_http_connection', () => {
             maxAttempts: 3,
             retryDelay: 100,
             additionalStatusCodesToRetry: [],
+          },
+          {
             resetTimeoutBetweenAttempts: true,
             lastRetryNoTimeout: false,
           })

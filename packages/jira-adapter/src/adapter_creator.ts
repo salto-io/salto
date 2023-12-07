@@ -31,7 +31,7 @@ import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
 
 const log = logger(module)
-const { validateClientConfig, createRetryOptions, DEFAULT_RETRY_OPTS } = clientUtils
+const { validateClientConfig, createRetryOptions, DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS } = clientUtils
 const { validateSwaggerApiDefinitionConfig,
   validateDuckTypeApiDefinitionConfig } = configUtils
 
@@ -158,7 +158,7 @@ export const adapter: Adapter = {
     }
   },
   validateCredentials: async config => {
-    const connection = createConnection(createRetryOptions(DEFAULT_RETRY_OPTS))
+    const connection = createConnection(createRetryOptions(DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS))
     const creds = credentialsFromConfig(config)
     const productSettings = getProductSettings({ isDataCenter: Boolean(creds.isDataCenter) })
 

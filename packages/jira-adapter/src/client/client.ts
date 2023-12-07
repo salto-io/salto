@@ -27,7 +27,7 @@ import { JSP_API_HEADERS, PRIVATE_API_HEADERS } from './headers'
 const log = logger(module)
 
 const {
-  DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+  DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
 } = clientUtils
 
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
@@ -70,6 +70,7 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
         rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
         maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
         retry: DEFAULT_RETRY_OPTS,
+        timeoutOptions: DEFAULT_TIMEOUT_OPTS,
       }
     )
     this.isDataCenter = clientOpts.isDataCenter

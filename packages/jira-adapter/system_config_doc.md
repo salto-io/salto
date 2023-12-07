@@ -2265,9 +2265,6 @@ jira {
       WorkflowScheme = [
         "WorkflowSchemes",
       ]
-      ServerInformation = [
-        "ServerInformation",
-      ]
       Board = [
         "Boards",
       ]

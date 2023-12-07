@@ -137,7 +137,7 @@ import addAliasFilter from './filters/add_alias'
 import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_specific_duplicate_roles'
 import issueLayoutFilter from './filters/layouts/issue_layout'
 import removeSimpleFieldProjectFilter from './filters/remove_simplified_field_project'
-import changeServiceDeskIdFieldProjectFilter from './filters/change_projects_service_desk_id'
+import changeJSMElementsFieldFilter from './filters/change_jsm_fields'
 import formsFilter from './filters/forms/forms'
 import addJsmTypesAsFieldsFilter from './filters/add_jsm_types_as_fields'
 import createReferencesIssueLayoutFilter from './filters/layouts/create_references_layouts'
@@ -148,6 +148,7 @@ import scriptRunnerFilter from './filters/script_runner/script_runner_filter'
 import scriptRunnerListenersDeployFilter from './filters/script_runner/script_runner_listeners_deploy'
 import scriptedFragmentsDeployFilter from './filters/script_runner/scripted_fragments_deploy'
 import fetchJsmTypesFilter from './filters/jsm_types_fetch_filter'
+import assetsInstancesAdditionFilter from './filters/assets/assets_instances_addition'
 import deployJsmTypesFilter from './filters/jsm_types_deploy_filter'
 import jsmPathFilter from './filters/jsm_paths'
 import portalSettingsFilter from './filters/portal_settings'
@@ -182,7 +183,7 @@ const { query: queryFilter, ...otherCommonFilters } = commonFilters
 export const DEFAULT_FILTERS = [
   accountInfoFilter,
   storeUsersFilter,
-  changeServiceDeskIdFieldProjectFilter,
+  changeJSMElementsFieldFilter,
   changeQueueFieldsFilter,
   changePortalGroupFieldsFilter,
   automationLabelFetchFilter,
@@ -334,6 +335,8 @@ export const DEFAULT_FILTERS = [
   queueDeleteFilter,
   portalGroupsFilter,
   requestTypeFilter,
+  // Must run before asstesDeployFilter
+  assetsInstancesAdditionFilter,
   deployJsmTypesFilter,
   // Must be done after JsmTypesFilter
   jsmPathFilter,

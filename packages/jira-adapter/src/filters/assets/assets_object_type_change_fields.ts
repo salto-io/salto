@@ -35,7 +35,6 @@ const filter: FilterCreator = ({ config }) => ({
           // add reference to assetsSchema to the root, in order to be able to later update its elemID.
           [instance.value.parentObjectTypeId] = instance.annotations[CORE_ANNOTATIONS.PARENT]
         }
-        delete instance.annotations[CORE_ANNOTATIONS.PARENT]
       })
   },
 })

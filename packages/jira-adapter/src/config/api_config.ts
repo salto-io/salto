@@ -2219,8 +2219,26 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       sourceTypeName: 'AssetsSchema__assetsStatuses',
       fieldsToHide: [
         { fieldName: 'id' },
+        { fieldName: 'workspaceId' },
+      ],
+      fieldsToOmit: [
         { fieldName: 'objectSchemaId' },
       ],
+    },
+    deployRequests: {
+      add: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/statustype',
+        method: 'post',
+      },
+      modify: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/statustype/{id}',
+        method: 'put',
+      },
+      remove: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/statustype/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
     },
   },
   AssetsObjectTypes: {
@@ -2242,12 +2260,26 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'created' },
         { fieldName: 'updated' },
         { fieldName: 'globalId' },
-        { fieldName: 'icon' },
         { fieldName: 'objectCount' },
         { fieldName: 'objectSchemaId' },
         { fieldName: 'workspaceId' },
       ],
       extendsParentId: false,
+    },
+    deployRequests: {
+      add: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objecttype/create',
+        method: 'post',
+      },
+      modify: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objecttype/{id}',
+        method: 'put',
+      },
+      remove: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objecttype/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
     },
   },
   AssetsObjectTypeAttribute: {
@@ -2263,9 +2295,9 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       sourceTypeName: 'AssetsSchema__attributes',
       fieldsToHide: [
         { fieldName: 'id' },
+        { fieldName: 'workspaceId' },
       ],
       fieldsToOmit: [
-        { fieldName: 'workspaceId' },
         { fieldName: 'globalId' },
       ],
     },

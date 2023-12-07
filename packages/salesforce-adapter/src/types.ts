@@ -302,6 +302,7 @@ export type FetchParameters = {
   preferActiveFlowVersions?: boolean
   addNamespacePrefixToFullName?: boolean
   warningSettings?: WarningSettings
+  extraDependenciesIdsPerQuery?: number
 }
 
 export type DeprecatedMetadataParams = {
@@ -777,6 +778,7 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
     preferActiveFlowVersions: { refType: BuiltinTypes.BOOLEAN },
     addNamespacePrefixToFullName: { refType: BuiltinTypes.BOOLEAN },
     warningSettings: { refType: warningSettingsType },
+    extraDependenciesIdsPerQuery: { refType: BuiltinTypes.NUMBER },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -895,4 +897,5 @@ export type FetchProfile = {
   readonly addNamespacePrefixToFullName: boolean
   isWarningEnabled: (name: keyof WarningSettings) => boolean
   readonly maxItemsInRetrieveRequest: number
+  readonly extraDependenciesIdsPerQuery?: number
 }

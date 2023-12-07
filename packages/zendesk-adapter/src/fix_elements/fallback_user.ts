@@ -105,10 +105,10 @@ const replaceMissingUsers = (
 }
 
 const noRelevantUsers = (
-  users: User[], defaultMissingUserFallback: string | undefined, resolveUserIDs: boolean
+  users: User[], defaultMissingUserFallback: string | undefined, resolveUserIDs: boolean | undefined
 ): boolean => {
   if (_.isEmpty(users)) {
-    if (!resolveUserIDs && defaultMissingUserFallback === configUtils.DEPLOYER_FALLBACK_VALUE) {
+    if (resolveUserIDs === false && defaultMissingUserFallback === configUtils.DEPLOYER_FALLBACK_VALUE) {
       return false
     }
     return true

@@ -84,7 +84,7 @@ export type ZendeskFetchConfig = configUtils.UserFetchConfig
   appReferenceLocators?: IdLocator[]
   guide?: Guide
   resolveOrganizationIDs?: boolean
-  resolveUserIDs: boolean
+  resolveUserIDs?: boolean
   extractReferencesFromFreeText?: boolean
   convertJsonIdsToReferences?: boolean
 }

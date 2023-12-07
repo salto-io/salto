@@ -32,7 +32,7 @@ const glob = promisify(origGlob)
 
 const log = logger(module)
 
-export type LocalStateFileContent = {
+type LocalStateFileContent = {
   account: string
   contentHash: string
 }
@@ -95,17 +95,16 @@ export const createS3StateContentProvider = (
     },
     readContents: filePaths => (
       awu(filePaths)
-        .map(async filePath => {
-          const parsedFile = await parseLocalStateFile(filePath)
+        .map(parseLocalStateFile)
+        .map(async parsedFile => {
           const remoteStatePath = buildRemoteStateFileName(parsedFile)
           log.debug('Creating state content read stream from %s/%s', bucketName, remoteStatePath)
           const readRes = await s3.getObject({ Bucket: bucketName, Key: remoteStatePath })
           const stream = readRes.Body
           if (!(stream instanceof Readable)) {
-            // Should never happen
             throw new Error(`Failed to read content of remote state ${remoteStatePath}: ${inspectValue(readRes)}`)
           }
-          return { name: filePath, stream }
+          return { name: parsedFile.account, stream }
         })
     ),
     writeContents: async (prefix, contents) => {

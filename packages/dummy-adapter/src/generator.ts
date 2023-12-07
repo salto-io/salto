@@ -28,14 +28,16 @@ import {
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { uniqueNamesGenerator, adjectives, colors, names } from 'unique-names-generator'
-import { collections, promises } from '@salto-io/lowerdash'
+import { collections, promises, values as lowerDashValues } from '@salto-io/lowerdash'
 import fs from 'fs'
 import path from 'path'
 import seedrandom from 'seedrandom'
 import readdirp from 'readdirp'
 import { parser, merger, expressions, elementSource } from '@salto-io/workspace'
-import { createMatchingObjectType, inspectValue } from '@salto-io/adapter-utils'
+import { createMatchingObjectType, ImportantValues, inspectValue } from '@salto-io/adapter-utils'
 
+
+const { isDefined } = lowerDashValues
 const { mapValuesAsync } = promises.object
 const { arrayOf } = collections.array
 const { awu } = collections.asynciterable
@@ -446,7 +448,11 @@ export const generateElements = async (
 
   const generateAnnotations = async (annoTypes: TypeMap, hidden = false): Promise<Values> => {
     const anno = await mapValuesAsync(
-      _.omit(annoTypes, CORE_ANNOTATIONS.RESTRICTION) as TypeMap,
+      _.omit(annoTypes, [
+        CORE_ANNOTATIONS.RESTRICTION,
+        CORE_ANNOTATIONS.IMPORTANT_VALUES,
+        CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES,
+      ]) as TypeMap,
       type => generateValue(type, hidden)
     )
     if (hidden) {
@@ -529,6 +535,29 @@ export const generateElements = async (
       return objType
     })))
 
+  const generateImportantValues = (fieldNames: string[]): ImportantValues | undefined => {
+    // the  important values should be only a small portion of the fields
+    const halfLength = Math.floor((fieldNames.length / 2) + 1)
+    const numberOfImportantValues = Math.floor(randomGen() * halfLength)
+    const fieldSet = new Set<string>()
+    const importantValuesDef = Array.from({ length: numberOfImportantValues }).map(() => {
+      const value = weightedRandomSelect(fieldNames)
+      if (fieldSet.has(value)) {
+        return undefined
+      }
+      fieldSet.add(value)
+      const singleImportantValue = {
+        value,
+        highlighted: generateBoolean(),
+        indexed: generateBoolean(),
+      }
+      return singleImportantValue.highlighted === false && singleImportantValue.indexed === false
+        ? undefined
+        : singleImportantValue
+    }).filter(isDefined)
+    return !_.isEmpty(importantValuesDef) ? importantValuesDef : undefined
+  }
+
 
   const generateObjects = async (): Promise<ObjectType[]> => (
     await Promise.all(arrayOf(params.numOfObjs, async () => {
@@ -542,6 +571,10 @@ export const generateElements = async (
         annotationRefsOrTypes,
         annotations: await generateAnnotations(annotationRefsOrTypes),
       })
+      const fieldNames = Object.keys(fullObjType.fields)
+      const annotationNames = Object.keys(fullObjType.annotations)
+      fullObjType.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] = generateImportantValues(fieldNames)
+      fullObjType.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] = generateImportantValues(annotationNames)
       fullObjType.annotations[CORE_ANNOTATIONS.ALIAS] = `${fullObjType.elemID.name}_alias`
       const fieldsObjType = new ObjectType({
         elemID: fullObjType.elemID,

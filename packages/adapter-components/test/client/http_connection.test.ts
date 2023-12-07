@@ -101,7 +101,7 @@ describe('client_http_connection', () => {
         maxAttempts: 3,
         retryDelay: 100,
         additionalStatusCodesToRetry: [],
-        shouldResetTimeout: true,
+        resetTimeoutBetweenAttempts: true,
         lastRetryNoTimeout: true,
       })
     })
@@ -192,7 +192,7 @@ describe('client_http_connection', () => {
             maxAttempts: 3,
             retryDelay: 100,
             additionalStatusCodesToRetry: [],
-            shouldResetTimeout: true,
+            resetTimeoutBetweenAttempts: true,
             lastRetryNoTimeout: false,
           })
           const requestConfig = { timeout: 4 }

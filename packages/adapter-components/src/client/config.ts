@@ -32,7 +32,7 @@ export type ClientRetryConfig = Partial<{
   retryDelay: number
   // This is not included in clientRetryConfigType because currently we don't want to allow the user to change it
   additionalStatusCodesToRetry: number[]
-  shouldResetTimeout: boolean
+  resetTimeoutBetweenAttempts: boolean
   lastRetryNoTimeout: boolean
 }>
 

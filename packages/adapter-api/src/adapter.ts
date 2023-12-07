@@ -46,8 +46,15 @@ export type Group = {
   url?: string
 }
 
+export type Artifact = {
+  name: string
+  content: Buffer
+  account: string
+}
+
 export type DeployExtraProperties = {
   groups?: Group[]
+  artifacts? : ReadonlyArray<Artifact>
 }
 
 type SaltoDeployErrors = {

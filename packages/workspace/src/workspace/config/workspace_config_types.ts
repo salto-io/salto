@@ -27,27 +27,10 @@ export type AdaptersConfig = {
   adapters: Record<string, InstanceElement>
 }
 
-export type ProviderOptionsS3 = {
-  bucket: string
-}
-
-export type ProviderOptions = {
-  s3?: ProviderOptionsS3
-}
-
-
-export type StateProviders = 'file' | 's3'
-
-export type StateConfig = {
-  provider: StateProviders
-  options?: ProviderOptions
-}
-
 export type WorkspaceConfig = {
   uid: string
   name: string
   staleStateThresholdMinutes?: number
   envs: EnvConfig[]
   currentEnv: string
-  state?: StateConfig
 }

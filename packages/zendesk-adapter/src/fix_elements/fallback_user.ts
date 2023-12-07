@@ -108,10 +108,11 @@ const noRelevantUsers = (
   users: User[], defaultMissingUserFallback: string | undefined, resolveUserIDs: boolean | undefined
 ): boolean => {
   if (_.isEmpty(users)) {
-    if (resolveUserIDs === false && defaultMissingUserFallback === configUtils.DEPLOYER_FALLBACK_VALUE) {
-      return false
-    }
-    return true
+    // If the user does not want to resolve user IDs (fetch all users),
+    // we will replace them to the deployer's ID if requested.
+    const doNotResolveIdsAndDeployerFallback = resolveUserIDs === false
+      && defaultMissingUserFallback === configUtils.DEPLOYER_FALLBACK_VALUE
+    return !doNotResolveIdsAndDeployerFallback
   }
   return false
 }
@@ -130,7 +131,7 @@ export const fallbackUsersHandler: FixElementsHandler = (
     client,
     paginationFuncCreator: paginate,
   })
-  const { users } = await getUsers(paginator)
+  const { users } = await getUsers(paginator, config[FETCH_CONFIG].resolveUserIDs)
   const { defaultMissingUserFallback } = config[DEPLOY_CONFIG] || {}
   if (defaultMissingUserFallback === undefined
     || noRelevantUsers(users, defaultMissingUserFallback, config[FETCH_CONFIG].resolveUserIDs)) {

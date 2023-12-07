@@ -176,10 +176,34 @@ describe('fallbackUsersHandler', () => {
       const instances = [macroInstance, articleInstance].map(e => e.clone())
       const { fixedElements, errors } = await fallbackUsersHandler({
         client,
-        config: { [DEPLOY_CONFIG]: { defaultMissingUserFallback: undefined } },
+        config: {
+          [DEPLOY_CONFIG]: { defaultMissingUserFallback: undefined },
+          [FETCH_CONFIG]: { resolveUserIDs: true },
+        },
       } as FixElementsArgs)(instances)
       expect(fixedElements).toEqual([])
       expect(errors).toEqual([])
+    })
+  })
+
+  describe('resolveUserIDs is false and fallback is not deployer', () => {
+    let fallbackResponse: {fixedElements: Element[]; errors: ChangeError[]}
+
+    beforeEach(async () => {
+      mockGetUsers.mockResolvedValue({ users: [], errors: [{ message: 'No users here!', severity: 'Warning' }] })
+      const instances = [macroInstance, articleInstance].map(e => e.clone())
+      fallbackResponse = await fallbackUsersHandler({
+        client,
+        config: {
+          [DEPLOY_CONFIG]: { defaultMissingUserFallback: 'notDeployer@.com' },
+          [FETCH_CONFIG]: { resolveUserIDs: false },
+        },
+      } as FixElementsArgs)(instances)
+    })
+
+    it('should not replace missing users and should not report errors', () => {
+      expect(fallbackResponse.fixedElements).toEqual([])
+      expect(fallbackResponse.errors).toEqual([])
     })
   })
 

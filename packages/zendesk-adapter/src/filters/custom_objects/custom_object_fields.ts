@@ -336,7 +336,7 @@ const customObjectFieldsFilter: FilterCreator = ({ config, client }) => {
       const instances = elements.filter(isInstanceElement)
 
       // It is possible to key all instance by id because the internal Id is unique across all types (SALTO-4805)
-      const usersById = await getIdByEmail(paginator)
+      const usersById = await getIdByEmail(paginator, config[FETCH_CONFIG].resolveUserIDs)
       const instancesById = _.keyBy(
         instances.filter(instance => _.isNumber(instance.value.id)),
         instance => _.parseInt(instance.value.id)
@@ -380,7 +380,7 @@ const customObjectFieldsFilter: FilterCreator = ({ config, client }) => {
       if (userConditions.length === 0) {
         return
       }
-      const { users } = await getUsers(paginator)
+      const { users } = await getUsers(paginator, config[FETCH_CONFIG].resolveUserIDs)
       const usersByEmail = _.keyBy(users, user => user.email)
 
       const missingUserConditions: CustomObjectCondition[] = []

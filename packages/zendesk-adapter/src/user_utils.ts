@@ -197,12 +197,20 @@ const getUsersNoCache = async (
 * Results are cached after the initial call to improve performance.
 *
 */
-const getUsersFunc = ():(paginator: clientUtils.Paginator) => Promise<{ users: User[]; errors?: SaltoError[] }> => {
+const getUsersFunc = ():
+  (paginator: clientUtils.Paginator, runQuery: boolean | undefined)
+=> Promise<{ users: User[]; errors?: SaltoError[] }> => {
   let calculatedUsersPromise: Promise<{ users: User[]; errors?: SaltoError[] }>
 
-  const getUsers = async (paginator: clientUtils.Paginator): Promise<{ users: User[]; errors?: SaltoError[] }> => {
+  const getUsers = async (
+    paginator: clientUtils.Paginator, runQuery: boolean | undefined
+  ): Promise<{ users: User[]; errors?: SaltoError[] }> => {
     if (calculatedUsersPromise === undefined) {
-      calculatedUsersPromise = getUsersNoCache(paginator)
+      if (runQuery === false) {
+        calculatedUsersPromise = Promise.resolve({ users: [], errors: [] })
+      } else {
+        calculatedUsersPromise = getUsersNoCache(paginator)
+      }
     }
     return calculatedUsersPromise
   }
@@ -242,14 +250,17 @@ export const getUserFallbackValue = async (
   return defaultMissingUserFallback
 }
 
-const getIdByEmailFunc = ():(paginator: clientUtils.Paginator) => Promise<Record<string, string>> => {
+const getIdByEmailFunc = (): (
+  paginator: clientUtils.Paginator, runQuery: boolean | undefined) => Promise<Record<string, string>> => {
   let idToEmail: Record<string, string>
 
-  const getIdByEmail = async (paginator: clientUtils.Paginator): Promise<Record<string, string>> => {
+  const getIdByEmail = async (
+    paginator: clientUtils.Paginator, runQuery: boolean | undefined
+  ): Promise<Record<string, string>> => {
     if (idToEmail !== undefined) {
       return idToEmail
     }
-    const { users } = await getUsers(paginator)
+    const { users } = await getUsers(paginator, runQuery)
     if (_.isEmpty(users)) {
       idToEmail = {}
       return {}
@@ -264,14 +275,18 @@ const getIdByEmailFunc = ():(paginator: clientUtils.Paginator) => Promise<Record
 
 export const getIdByEmail = getIdByEmailFunc()
 
-const getIdByNameFunc = ():(paginator: clientUtils.Paginator) => Promise<Record<string, string>> => {
+const getIdByNameFunc = ():
+  (paginator: clientUtils.Paginator, runQuery: boolean | undefined)
+=> Promise<Record<string, string>> => {
   let idToName: Record<string, string>
 
-  const getIdByName = async (paginator: clientUtils.Paginator): Promise<Record<string, string>> => {
+  const getIdByName = async (
+    paginator: clientUtils.Paginator, runQuery: boolean | undefined
+  ): Promise<Record<string, string>> => {
     if (idToName !== undefined) {
       return idToName
     }
-    const { users } = await getUsers(paginator)
+    const { users } = await getUsers(paginator, runQuery)
     if (_.isEmpty(users)) {
       idToName = {}
       return {}

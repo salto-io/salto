@@ -2958,6 +2958,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
         ZENDESK,
         {
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
+          resolveUserIDs: { refType: BuiltinTypes.BOOLEAN },
           includeAuditDetails: { refType: BuiltinTypes.BOOLEAN },
           addAlias: { refType: BuiltinTypes.BOOLEAN },
           handleIdenticalAttachmentConflicts: { refType: BuiltinTypes.BOOLEAN },
@@ -2995,6 +2996,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       `${FETCH_CONFIG}.enableMissingReferences`,
       `${FETCH_CONFIG}.guide`,
       `${FETCH_CONFIG}.resolveOrganizationIDs`,
+      `${FETCH_CONFIG}.resolveUserIDs`,
       `${FETCH_CONFIG}.includeAuditDetails`,
       `${FETCH_CONFIG}.addAlias`,
       `${FETCH_CONFIG}.handleIdenticalAttachmentConflicts`,

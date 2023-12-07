@@ -32,6 +32,7 @@ import { lookupFunc } from '../filters/field_references'
 import { paginate } from '../client/pagination'
 import ZendeskClient from '../client/client'
 import { CUSTOM_ROLE_TYPE_NAME } from '../constants'
+import { ZendeskFetchConfig } from '../config'
 
 const { createPaginator } = clientUtils
 const { awu } = collections.asynciterable
@@ -97,8 +98,8 @@ const handleExistingUsers = ({ existingUsersPaths, customRolesById, usersByEmail
  *  1. If we could not use user fallback value for some reason, we will return an error.
  *  2. If the user has no permissions to its field, we will return a warning (default user included).
  */
-export const usersValidator: (client: ZendeskClient) =>
-    ChangeValidator = client => async (changes, elementSource) => {
+export const usersValidator: (client: ZendeskClient, fetchConfig: ZendeskFetchConfig) =>
+    ChangeValidator = (client, fetchConfig) => async (changes, elementSource) => {
       const relevantInstances = await awu(changes)
         .filter(isAdditionOrModificationChange)
         .filter(isInstanceChange)
@@ -115,7 +116,7 @@ export const usersValidator: (client: ZendeskClient) =>
         client,
         paginationFuncCreator: paginate,
       })
-      const { users } = await getUsers(paginator)
+      const { users } = await getUsers(paginator, fetchConfig.resolveUserIDs)
 
       const existingUsersEmails = new Set(users.map(user => user.email))
       const instancesUserPaths = relevantInstances.flatMap(instance => {

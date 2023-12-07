@@ -25,7 +25,7 @@ type TempDir = {
   name: () => string
 }
 
-export const setupTmpDir = (
+export const setupTestDir = (
   setupType: 'each' | 'all' = 'each',
 ): TempDir => {
   const [setupFunc, teardownFunc] = setupType === 'all' ? [beforeAll, afterAll] : [beforeEach, afterEach]

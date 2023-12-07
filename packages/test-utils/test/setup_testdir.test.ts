@@ -15,11 +15,11 @@
 */
 import fs from 'fs'
 import path from 'path'
-import { setupTmpDir } from '../src/setup_tmpdir'
+import { setupTestDir } from '../src/setup_testdir'
 
-describe('setupTmpDir', () => {
+describe('setupTestDir', () => {
   describe('when set before all', () => {
-    const testDir = setupTmpDir('all')
+    const testDir = setupTestDir('all')
     let testFileName: string
     it('should create a test dir', async () => {
       expect(testDir.name()).toBeDefined()
@@ -35,7 +35,7 @@ describe('setupTmpDir', () => {
     })
   })
   describe('when set to before each', () => {
-    const testDir = setupTmpDir()
+    const testDir = setupTestDir()
     let testFileName: string
     it('should create a test dir', async () => {
       expect(testDir.name()).toBeDefined()

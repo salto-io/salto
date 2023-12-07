@@ -12,6 +12,5 @@
     ],
     "references": [
         { "path": "../logging" },
-        { "path": "../test-utils" },
     ],
 }

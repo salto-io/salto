@@ -332,12 +332,6 @@ describe('state', () => {
         expect(stateStaticFilesSource.delete).toHaveBeenCalledWith(staticFile)
       })
     })
-
-    describe('updateConfig', () => {
-      it('should do nothing', async () => {
-        await expect(state.updateConfig({ workspaceId: '', stateConfig: undefined })).resolves.not.toThrow()
-      })
-    })
   })
 
   describe('non persistent state', () => {

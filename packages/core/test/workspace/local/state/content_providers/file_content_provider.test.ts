@@ -16,7 +16,7 @@
 import path from 'path'
 import getStream from 'get-stream'
 import { collections } from '@salto-io/lowerdash'
-import { setupTmpDir } from '@salto-io/test-utils'
+import { setupTestDir } from '@salto-io/test-utils'
 import { writeFile, readDir } from '@salto-io/file'
 import { createFileStateContentProvider, StateContentProvider } from '../../../../../src/local-workspace/state/content_providers'
 
@@ -27,7 +27,7 @@ describe('createFileStateContentProvider', () => {
   beforeEach(() => {
     provider = createFileStateContentProvider()
   })
-  const testDir = setupTmpDir()
+  const testDir = setupTestDir()
   const accountNames = ['salesforce', 'netsuite', 'dummy']
   const nonStateFiles = ['env.jsonl.zip', 'env.bar.jsonl.zip.not', 'env.json', 'not_env.dummy.jsonl.zip']
   const envPrefix = (): string => path.join(testDir.name(), 'env')

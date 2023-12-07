@@ -16,7 +16,7 @@
 import * as core from '@salto-io/core'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
-import { cleanAction, cacheUpdateAction, setStateProviderAction } from '../../src/commands/workspace'
+import { cleanAction, cacheUpdateAction } from '../../src/commands/workspace'
 import { CliExitCode } from '../../src/types'
 
 
@@ -235,74 +235,6 @@ describe('workspace command group', () => {
       })
       it('should return success', () => {
         expect(result).toEqual(CliExitCode.Success)
-      })
-    })
-  })
-
-  describe('set state provider', () => {
-    const commandName = 'set-state-provider'
-    let cliCommandArgs: mocks.MockCommandArgs
-    let workspace: mocks.MockWorkspace
-    beforeEach(async () => {
-      cliCommandArgs = mocks.mockCliCommandArgs(commandName, cliArgs)
-      workspace = mocks.mockWorkspace({})
-    })
-
-    describe('when provider is undefined', () => {
-      let result: CliExitCode
-      beforeEach(async () => {
-        result = await setStateProviderAction({
-          ...cliCommandArgs,
-          input: {},
-          workspace,
-        })
-      })
-      it('should return success', () => {
-        expect(result).toEqual(CliExitCode.Success)
-      })
-      it('should set the state config to be undefined', () => {
-        expect(workspace.updateStateProvider).toHaveBeenCalledWith(undefined)
-      })
-    })
-
-    describe('when provider is file', () => {
-      it('should set the state config to have a file provider', async () => {
-        const result = await setStateProviderAction({
-          ...cliCommandArgs,
-          input: { provider: 'file' },
-          workspace,
-        })
-        expect(result).toEqual(CliExitCode.Success)
-        expect(workspace.updateStateProvider).toHaveBeenCalledWith({ provider: 'file' })
-      })
-      it('should fail if it gets an unexpected parameter', async () => {
-        const result = await setStateProviderAction({
-          ...cliCommandArgs,
-          input: { provider: 'file', bucket: 'my-bucket' },
-          workspace,
-        })
-        expect(result).toEqual(CliExitCode.UserInputError)
-        expect(workspace.updateStateProvider).not.toHaveBeenCalled()
-      })
-    })
-    describe('when provider is s3', () => {
-      it('should set the state config to have a s3 provider', async () => {
-        const result = await setStateProviderAction({
-          ...cliCommandArgs,
-          input: { provider: 's3', bucket: 'my-bucket' },
-          workspace,
-        })
-        expect(result).toEqual(CliExitCode.Success)
-        expect(workspace.updateStateProvider).toHaveBeenCalledWith({ provider: 's3', options: { s3: { bucket: 'my-bucket' } } })
-      })
-      it('should fail if the bucket argument is missing', async () => {
-        const result = await setStateProviderAction({
-          ...cliCommandArgs,
-          input: { provider: 's3' },
-          workspace,
-        })
-        expect(result).toEqual(CliExitCode.UserInputError)
-        expect(workspace.updateStateProvider).not.toHaveBeenCalled()
       })
     })
   })

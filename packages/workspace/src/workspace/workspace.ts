@@ -21,7 +21,6 @@ import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, Detail
 import { logger } from '@salto-io/logging'
 import {
   applyDetailedChanges,
-  inspectValue,
   naclCase,
   resolvePath,
   safeJsonStringify,
@@ -38,7 +37,7 @@ import { ElementSelector } from './element_selector'
 import { Errors, AccountDuplicationError, EnvDuplicationError, UnknownEnvError,
   DeleteCurrentEnvError, InvalidEnvNameError, MAX_ENV_NAME_LEN, UnknownAccountError,
   InvalidAccountNameError } from './errors'
-import { EnvConfig, StateConfig } from './config/workspace_config_types'
+import { EnvConfig } from './config/workspace_config_types'
 import { handleHiddenChanges, getElementHiddenParts, isHidden } from './hidden_values'
 import { WorkspaceConfigSource } from './workspace_config_source'
 import { MergeError, mergeElements } from '../merger'
@@ -217,7 +216,6 @@ export type Workspace = {
   deleteEnvironment: (env: string, keepNacls?: boolean) => Promise<void>
   renameEnvironment: (envName: string, newEnvName: string, newSourceName? : string) => Promise<void>
   setCurrentEnv: (env: string, persist?: boolean) => Promise<void>
-  updateStateProvider: (stateConfig: StateConfig | undefined) => Promise<void>
   updateAccountCredentials: (account: string, creds: Readonly<InstanceElement>) => Promise<void>
   // updateServiceCredentials is deprecated, kept for backwards compatibility.
   // use updateAccountCredentials.
@@ -1465,22 +1463,6 @@ export const loadWorkspace = async (
         return 'Valid'
       })()
       return { serviceName: accountName, accountName, status, date }
-    },
-
-    updateStateProvider: async stateConfig => {
-      if (_.isEqual(workspaceConfig.state, stateConfig)) {
-        // The config did not change, nothing to do
-        return
-      }
-      log.debug('Changing state config from %s to %s', inspectValue(workspaceConfig.state), inspectValue(stateConfig))
-      await Promise.all(
-        Object.values(environmentsSources.sources)
-          .map(source => source.state)
-          .filter(values.isDefined)
-          .map(sourceState => sourceState.updateConfig({ workspaceId: workspaceConfig.uid, stateConfig }))
-      )
-      workspaceConfig.state = stateConfig
-      await config.setWorkspaceConfig(workspaceConfig)
     },
     getValue: async (id: ElemID, env?: string): Promise<Value | undefined> => (
       (await elements(env)).get(id)

@@ -18,7 +18,7 @@ import path from 'path'
 import { Readable } from 'stream'
 import getStream from 'get-stream'
 import { collections } from '@salto-io/lowerdash'
-import { setupTmpDir } from '@salto-io/test-utils'
+import { setupTestDir } from '@salto-io/test-utils'
 import { writeFile, readDir } from '@salto-io/file'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { GetObjectCommand, NoSuchKey, PutObjectCommandInput, S3Client, ServiceInputTypes, ServiceOutputTypes } from '@aws-sdk/client-s3'
@@ -30,7 +30,7 @@ import { LocalStateFileContent } from '../../../../../src/local-workspace/state/
 const { awu } = collections.asynciterable
 
 describe('createS3StateContentProvider', () => {
-  const testDir = setupTmpDir()
+  const testDir = setupTestDir()
   const accountNames = ['jira', 'dummy']
   const nonStateFiles = ['env.dummy.jsonl.zip', 'nonEnv.dummy.json', 'env.dummy.json.bla']
   const workspaceId = 'ws'

@@ -266,6 +266,7 @@ type LoadLocalWorkspaceArgs = {
   persistent?: boolean
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource
   credentialSource?: cs.ConfigSource
+  ignoreFileChanges?: boolean
 }
 
 const loadLocalWorkspaceImpl = async ({
@@ -274,6 +275,7 @@ const loadLocalWorkspaceImpl = async ({
   persistent = true,
   credentialSource,
   stateStaticFilesSource,
+  ignoreFileChanges = false,
 }: LoadLocalWorkspaceArgs): Promise<Workspace> => {
   const baseDir = await locateWorkspaceRoot(path.resolve(lookupDir))
   if (_.isUndefined(baseDir)) {
@@ -309,7 +311,7 @@ const loadLocalWorkspaceImpl = async ({
     credentials,
     elemSources,
     remoteMapCreator,
-    false,
+    ignoreFileChanges,
     persistent,
     undefined,
     getCustomReferences,

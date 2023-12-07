@@ -165,6 +165,7 @@ export type GeneratorParams = {
     generateEnvName? : string
     fieldsToOmitOnDeploy?: string[]
     elementsToExclude?: string[]
+    importantValuesFreq: number
 }
 
 export const defaultParams: Omit<GeneratorParams, 'extraNaclPaths'> = {
@@ -198,6 +199,7 @@ export const defaultParams: Omit<GeneratorParams, 'extraNaclPaths'> = {
   staticFileLinesStd: 4.85,
   listLengthMean: 8.7,
   listLengthStd: 3.6,
+  importantValuesFreq: 0.75,
 }
 
 const MOCK_NACL_SUFFIX = 'nacl.mock'
@@ -391,7 +393,9 @@ export const generateElements = async (
   const generateImportantValues = (fieldNames: string[]): ImportantValues | undefined => {
     // the  important values should be only a small portion of the fields
     const halfLength = Math.floor((fieldNames.length / 2) + 1)
-    const numberOfImportantValues = Math.floor(randomGen() * halfLength)
+    const randomNum = randomGen()
+    const randomNumToUse = randomNum < params.importantValuesFreq ? randomNum : 0
+    const numberOfImportantValues = Math.floor(randomNumToUse * halfLength)
     const fieldSet = new Set<string>()
     const importantValuesDef = Array.from({ length: numberOfImportantValues }).map(() => {
       const value = weightedRandomSelect(fieldNames)

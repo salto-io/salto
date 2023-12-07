@@ -387,6 +387,30 @@ export const generateElements = async (
   const generateFileContent = (): Buffer => Buffer.from(getMultiLine(
     normalRandom(params.staticFileLinesMean, params.staticFileLinesStd)
   ))
+
+  const generateImportantValues = (fieldNames: string[]): ImportantValues | undefined => {
+    // the  important values should be only a small portion of the fields
+    const halfLength = Math.floor((fieldNames.length / 2) + 1)
+    const numberOfImportantValues = Math.floor(randomGen() * halfLength)
+    const fieldSet = new Set<string>()
+    const importantValuesDef = Array.from({ length: numberOfImportantValues }).map(() => {
+      const value = weightedRandomSelect(fieldNames)
+      if (fieldSet.has(value) || value.startsWith('_')) {
+        return undefined
+      }
+      fieldSet.add(value)
+      const singleImportantValue = {
+        value,
+        highlighted: generateBoolean(),
+        indexed: generateBoolean(),
+      }
+      return singleImportantValue.highlighted === false && singleImportantValue.indexed === false
+        ? undefined
+        : singleImportantValue
+    }).filter(isDefined)
+    return !_.isEmpty(importantValuesDef) ? importantValuesDef : undefined
+  }
+
   const chooseObjIgnoreRank = (): ObjectType => weightedRandomSelect(
     weightedRandomSelect(objByRank.filter(rank => rank.length > 0))
   ) || defaultObj
@@ -531,33 +555,13 @@ export const generateElements = async (
         annotations: await generateAnnotations(annotationRefsOrTypes, true),
         path: [DUMMY_ADAPTER, 'Types', name],
       })
+      const fieldNames = Object.keys(objType.fields)
+      const annotationNames = Object.keys(objType.annotations)
+      objType.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] = generateImportantValues(fieldNames)
+      objType.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] = generateImportantValues(annotationNames)
       await updateElementRank(objType)
       return objType
     })))
-
-  const generateImportantValues = (fieldNames: string[]): ImportantValues | undefined => {
-    // the  important values should be only a small portion of the fields
-    const halfLength = Math.floor((fieldNames.length / 2) + 1)
-    const numberOfImportantValues = Math.floor(randomGen() * halfLength)
-    const fieldSet = new Set<string>()
-    const importantValuesDef = Array.from({ length: numberOfImportantValues }).map(() => {
-      const value = weightedRandomSelect(fieldNames)
-      if (fieldSet.has(value)) {
-        return undefined
-      }
-      fieldSet.add(value)
-      const singleImportantValue = {
-        value,
-        highlighted: generateBoolean(),
-        indexed: generateBoolean(),
-      }
-      return singleImportantValue.highlighted === false && singleImportantValue.indexed === false
-        ? undefined
-        : singleImportantValue
-    }).filter(isDefined)
-    return !_.isEmpty(importantValuesDef) ? importantValuesDef : undefined
-  }
-
 
   const generateObjects = async (): Promise<ObjectType[]> => (
     await Promise.all(arrayOf(params.numOfObjs, async () => {

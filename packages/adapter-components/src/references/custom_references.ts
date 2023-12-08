@@ -13,8 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { GetCustomReferencesFunc, ReferenceInfo } from '@salto-io/adapter-api'
+import { GetCustomReferencesFunc, InstanceElement, ReferenceInfo } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { getEnabledEntries } from '../config_utils'
 
 const getReferenceInfoIdentifier = (ref: ReferenceInfo): string =>
   `${ref.source.getFullName()}-${ref.target.getFullName()}`
@@ -23,8 +24,14 @@ const getReferenceInfoIdentifier = (ref: ReferenceInfo): string =>
  * Combine several getCustomReferences functions into one that will run all of them.
  * When a reference is returned twice with different types the last one will override the previous ones.
  */
-export const combineCustomReferenceGetters = (customReferenceGetters: GetCustomReferencesFunc[])
+export const combineCustomReferenceGetters = (
+  namedCustomReferenceGetters: Record<string, GetCustomReferencesFunc>,
+  getCustomRefsConfig: (adapterConfig: InstanceElement) => Record<string, boolean> = () => ({}),
+)
 : GetCustomReferencesFunc => async (elements, adapterConfig) => {
+  const customReferenceGetters = Object.values(
+    getEnabledEntries(namedCustomReferenceGetters, getCustomRefsConfig(adapterConfig))
+  )
   const idToRef: Record<string, ReferenceInfo> = {}
   const refGroups = await Promise.all(
     customReferenceGetters.map(getCustomReferences => getCustomReferences(elements, adapterConfig))

@@ -18,8 +18,8 @@ import { combineCustomReferenceGetters } from '../../src/references/custom_refer
 
 describe('combineCustomReferenceGetters', () => {
   it('should run all the custom reference getters', async () => {
-    const getCustomReferencesFunc = combineCustomReferenceGetters([
-      async () => ([
+    const getCustomReferencesFunc = combineCustomReferenceGetters({
+      strong: async () => ([
         {
           source: new ElemID('adapter', 'type1', 'instance', 'inst1'),
           target: new ElemID('adapter', 'type1', 'instance', 'inst2'),
@@ -31,14 +31,14 @@ describe('combineCustomReferenceGetters', () => {
           type: 'strong',
         },
       ]),
-      async () => ([
+      weak: async () => ([
         {
           source: new ElemID('adapter', 'type1', 'instance', 'inst1'),
           target: new ElemID('adapter', 'type1', 'instance', 'inst2'),
           type: 'weak',
         },
       ]),
-    ])
+    })
 
     const AdapterConfigType = new ObjectType({
       elemID: new ElemID('adapter', 'AdapterConfig'),

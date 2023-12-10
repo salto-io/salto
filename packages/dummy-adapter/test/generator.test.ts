@@ -93,7 +93,7 @@ describe('elements generator', () => {
       }, mockProgressReporter)
       const singleFileObj = elements.find(e => e.elemID.getFullName() === 'dummy.singleFileObj')
       const multiFilesObj = elements.filter(e => e.elemID.getFullName() === 'dummy.multiFilesObj')
-      const InstWithStatic1 = elements.find(e => e.elemID.getFullName().startsWith('dummy.multiFilesObj.instance.'))
+      const InstWithStatic1 = elements.find(e => e.elemID.getFullName() === 'dummy.multiFilesObj.instance.InstWithStatic1')
       const InstWithStatic2 = elements.find(e => e.elemID.getFullName() === 'dummy.multiFilesObj.instance.InstWithStatic2')
       expect(singleFileObj).toBeDefined()
       expect(multiFilesObj).toHaveLength(2)

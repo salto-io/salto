@@ -26,11 +26,12 @@ import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { localDirectoryStore, createExtensionFileFilter } from './dir_store'
 import { CONFIG_DIR_NAME, getLocalStoragePath } from '../app_config'
-import { localState } from './state'
+import { loadState } from './state'
 import { workspaceConfigSource } from './workspace_config'
 import { createRemoteMapCreator } from './remote_map'
 import { adapterCreators, getAdaptersConfigTypesMap } from '../core/adapters'
 import { buildLocalAdaptersConfigSource } from './adapters_config'
+import { WorkspaceMetadataConfig } from './workspace_config_types'
 
 const { awu } = collections.asynciterable
 const { configSource } = cs
@@ -137,7 +138,7 @@ const getLocalEnvName = (env: string): string => (env === COMMON_ENV_PREFIX
   : path.join(ENVS_PREFIX, env))
 
 export const createEnvironmentSource = async ({
-  env, baseDir, localStorage, remoteMapCreator, stateStaticFilesSource, persistent,
+  env, baseDir, localStorage, remoteMapCreator, stateStaticFilesSource, persistent, workspaceConfig,
 }: {
   env: string
   baseDir: string
@@ -145,6 +146,7 @@ export const createEnvironmentSource = async ({
   remoteMapCreator: remoteMap.RemoteMapCreator
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource
   persistent: boolean
+  workspaceConfig: WorkspaceMetadataConfig
 }): Promise<EnvironmentSource> => {
   log.debug('Creating environment source for %s at %s', env, baseDir)
   return {
@@ -154,16 +156,17 @@ export const createEnvironmentSource = async ({
       persistent,
       remoteMapCreator,
     ),
-    state: localState(
-      path.join(path.resolve(baseDir), CONFIG_DIR_NAME, STATES_DIR_NAME, env),
-      env,
+    state: loadState({
+      workspaceId: workspaceConfig.uid,
+      stateConfig: workspaceConfig.state,
+      baseDir: path.join(path.resolve(baseDir), CONFIG_DIR_NAME, STATES_DIR_NAME, env),
+      envName: env,
       remoteMapCreator,
-      stateStaticFilesSource ?? state.buildOverrideStateStaticFilesSource(localDirectoryStore({
-        baseDir: path.resolve(localStorage, STATIC_RESOURCES_FOLDER),
-        name: env,
-      })),
-      persistent
-    ),
+      persistent,
+      staticFilesSource: stateStaticFilesSource ?? state.buildOverrideStateStaticFilesSource(
+        localDirectoryStore({ baseDir: path.resolve(localStorage, STATIC_RESOURCES_FOLDER) })
+      ),
+    }),
   }
 }
 
@@ -173,6 +176,7 @@ export const loadLocalElementsSources = async ({
   envs,
   remoteMapCreator,
   stateStaticFilesSource,
+  workspaceConfig,
   persistent = true,
 }: {
   baseDir: string
@@ -180,6 +184,7 @@ export const loadLocalElementsSources = async ({
   envs: ReadonlyArray<string>
   remoteMapCreator: remoteMap.RemoteMapCreator
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource
+  workspaceConfig: WorkspaceMetadataConfig
   persistent?: boolean
 }): Promise<EnvironmentsSources> => ({
   commonSourceName: COMMON_ENV_PREFIX,
@@ -188,7 +193,7 @@ export const loadLocalElementsSources = async ({
       [
         env,
         await createEnvironmentSource({
-          env, baseDir, localStorage, remoteMapCreator, persistent, stateStaticFilesSource,
+          env, baseDir, localStorage, remoteMapCreator, persistent, stateStaticFilesSource, workspaceConfig,
         }),
       ]))),
     [COMMON_ENV_PREFIX]: {
@@ -277,30 +282,31 @@ const loadLocalWorkspaceImpl = async ({
     throw new NotAWorkspaceError()
   }
 
-  const workspaceConfig = await workspaceConfigSource(baseDir, undefined)
-  const { envs } = await workspaceConfig.getWorkspaceConfig()
-  const cacheDirName = path.join(workspaceConfig.localStorage, CACHE_DIR_NAME)
+  const workspaceConfigSrc = await workspaceConfigSource(baseDir, undefined)
+  const workspaceConfig = await workspaceConfigSrc.getWorkspaceConfig()
+  const cacheDirName = path.join(workspaceConfigSrc.localStorage, CACHE_DIR_NAME)
   const remoteMapCreator = createRemoteMapCreator(cacheDirName)
   const adaptersConfig = await buildLocalAdaptersConfigSource(
     baseDir,
     remoteMapCreator,
     persistent,
-    await getAdapterConfigsPerAccount(envs),
+    await getAdapterConfigsPerAccount(workspaceConfig.envs),
     configOverrides,
   )
-  const envNames = envs.map(e => e.name)
-  const credentials = credentialSource ?? credentialsSource(workspaceConfig.localStorage)
+  const envNames = workspaceConfig.envs.map(e => e.name)
+  const credentials = credentialSource ?? credentialsSource(workspaceConfigSrc.localStorage)
 
   const elemSources = await loadLocalElementsSources({
     baseDir,
-    localStorage: workspaceConfig.localStorage,
+    localStorage: workspaceConfigSrc.localStorage,
     envs: envNames,
     remoteMapCreator,
     stateStaticFilesSource,
     persistent,
+    workspaceConfig,
   })
   const ws = await loadWorkspace(
-    workspaceConfig,
+    workspaceConfigSrc,
     adaptersConfig,
     credentials,
     elemSources,
@@ -379,7 +385,7 @@ Promise<Workspace> => {
     throw new errors.InvalidEnvNameError(envName)
   }
 
-  const workspaceConfig = await workspaceConfigSource(baseDir, localStorage)
+  const workspaceConfigSrc = await workspaceConfigSource(baseDir, localStorage)
   const remoteMapCreator = createRemoteMapCreator(path.join(localStorage, CACHE_DIR_NAME))
   const persistentMode = true
 
@@ -398,13 +404,14 @@ Promise<Workspace> => {
     remoteMapCreator,
     stateStaticFilesSource,
     persistent: persistentMode,
+    workspaceConfig: { uid, name: workspaceName },
   })
 
   return initWorkspace(
     workspaceName,
     uid,
     envName,
-    workspaceConfig,
+    workspaceConfigSrc,
     adaptersConfig,
     credentials,
     elemSources,

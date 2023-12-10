@@ -16,3 +16,4 @@
 export * from './mock'
 export * from './promise'
 export * from './setup_envvar'
+export * from './setup_tmpdir'

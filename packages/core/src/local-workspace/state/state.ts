@@ -17,40 +17,30 @@ import { EOL } from 'os'
 import _ from 'lodash'
 import path from 'path'
 import { Readable } from 'stream'
+import { createHash } from 'crypto'
 import { chain } from 'stream-chain'
-
 import { parser } from 'stream-json/jsonl/Parser'
-
 import getStream from 'get-stream'
+import { createGunzip } from 'zlib'
 import { DetailedChange, Element, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { exists, readTextFile, mkdirp, rm, rename, replaceContents, createGZipWriteStream, createGZipReadStream } from '@salto-io/file'
+import { mkdirp, createGZipWriteStream } from '@salto-io/file'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { serialization, pathIndex, state, remoteMap, staticFiles } from '@salto-io/workspace'
-import { hash, collections, promises, values as lowerdashValues } from '@salto-io/lowerdash'
-import origGlob from 'glob'
+import { serialization, pathIndex, state, remoteMap, staticFiles, StateConfig } from '@salto-io/workspace'
+import { hash, collections, promises } from '@salto-io/lowerdash'
 import semver from 'semver'
-import { promisify } from 'util'
-import { version } from '../generated/version.json'
 
-const { isDefined } = lowerdashValues
+
+import { ContentAndHash, createFileStateContentProvider, createS3StateContentProvider, getHashFromHashes, NamedStream, StateContentProvider } from './content_providers'
+import { version } from '../../generated/version.json'
+
 const { awu } = collections.asynciterable
 const { serializeStream, deserializeParsed } = serialization
 const { toMD5 } = hash
 
-const glob = promisify(origGlob)
 
 const log = logger(module)
 
-export const ZIPPED_STATE_EXTENSION = '.jsonl.zip'
-
-export const filePathGlob = (currentFilePrefix: string): string => (
-  `${currentFilePrefix}.*([!.])${ZIPPED_STATE_EXTENSION}`
-)
-
-const findStateFiles = async (currentFilePrefix: string): Promise<string[]> => (
-  glob(filePathGlob(currentFilePrefix))
-)
 
 // a single entry in the path index, [elemid, filepath[] ] - based on the types defined in workspace/path_index.ts
 type PathEntry = [string, string[][]]
@@ -61,8 +51,8 @@ type ParsedState = {
   versions: string[]
 }
 
-const parseFromPaths = async (
-  paths: string[],
+const parseStateContent = async (
+  contentStreams: AsyncIterable<NamedStream>,
 ): Promise<ParsedState> => {
   const res: ParsedState = {
     elements: [],
@@ -71,15 +61,9 @@ const parseFromPaths = async (
     versions: [],
   }
 
-  const streams = (await Promise.all(
-    paths.map(async (p: string) => (
-      await exists(p)
-        ? { filePath: p, stream: createGZipReadStream(p) }
-        : undefined
-    ))
-  )).filter(isDefined)
-  await awu(streams).forEach(async ({ filePath, stream }) => getStream(chain([
+  await awu(contentStreams).forEach(async ({ name, stream }) => getStream(chain([
     stream,
+    createGunzip(),
     parser({ checkErrors: true }),
     async ({ key, value }) => {
       if (key === 0) {
@@ -101,26 +85,47 @@ const parseFromPaths = async (
           res.versions.push(value)
         }
       } else {
-        log.error('found unexpected entry in state file %s - key %s. ignoring', filePath, key)
+        log.error('found unexpected entry in state file %s - key %s. ignoring', name, key)
       }
     },
   ])))
   return res
 }
 
-type ContentsAndHash = { contents: [string, Buffer][]; hash: string }
+
+export const getStateContentProvider = (
+  workspaceId: string,
+  stateConfig: StateConfig = { provider: 'file' },
+): StateContentProvider => {
+  switch (stateConfig.provider) {
+    case 'file': {
+      return createFileStateContentProvider()
+    }
+    case 's3': {
+      const bucketName = stateConfig.options?.s3?.bucket
+      if (bucketName === undefined) {
+        throw new Error('Missing key "options.s3.bucket" in workspace state configuration')
+      }
+      return createS3StateContentProvider({ workspaceId, bucketName })
+    }
+    default:
+      throw new Error(`Unsupported state provider ${stateConfig.provider}`)
+  }
+}
 
 export const localState = (
   filePrefix: string,
   envName: string,
   remoteMapCreator: remoteMap.RemoteMapCreator,
   staticFilesSource: staticFiles.StateStaticFilesSource,
+  contentProvider: StateContentProvider,
   persistent = true
 ): state.State => {
   let dirty = false
   let cacheDirty = false
-  let contentsAndHash: ContentsAndHash | undefined
+  let contentsAndHash: Promise<ContentAndHash[]> | undefined
   let currentFilePrefix = filePrefix
+  let currentContentProvider = contentProvider
 
   const setDirty = (): void => {
     dirty = true
@@ -134,7 +139,7 @@ export const localState = (
     filePaths: string[]
     newHash: string
   }): Promise<void> => {
-    const res = await parseFromPaths(filePaths)
+    const res = await parseStateContent(currentContentProvider.readContents(filePaths))
     await stateData.elements.clear()
     await stateData.elements.setAll(res.elements)
     await stateData.pathIndex.clear()
@@ -160,13 +165,6 @@ export const localState = (
     await stateData.saltoMetadata.set('hash', newHash)
   }
 
-  const getHashFromContent = (contents: string[]): string =>
-    toMD5(safeJsonStringify(contents.map(toMD5).sort()))
-
-  const getHash = async (filePaths: string[]): Promise<string> =>
-    // TODO fix?
-    getHashFromContent((await Promise.all(filePaths.map(readTextFile))))
-
   const loadStateData = async (): Promise<state.StateData> => {
     const quickAccessStateData = await state.buildStateData(
       envName,
@@ -174,10 +172,9 @@ export const localState = (
       staticFilesSource,
       persistent,
     )
-    const filePaths = await findStateFiles(currentFilePrefix)
-    const stateFilesHash = await getHash(filePaths)
-    const quickAccessHash = (await quickAccessStateData.saltoMetadata.get('hash'))
-      ?? toMD5(safeJsonStringify([]))
+    const filePaths = await currentContentProvider.findStateFiles(currentFilePrefix)
+    const stateFilesHash = await currentContentProvider.getHash(filePaths)
+    const quickAccessHash = (await quickAccessStateData.saltoMetadata.get('hash')) ?? toMD5(safeJsonStringify([]))
     if (quickAccessHash !== stateFilesHash) {
       log.debug('found different hash - loading state data (quickAccessHash=%s stateFilesHash=%s)', quickAccessHash, stateFilesHash)
       await syncQuickAccessStateData({
@@ -228,18 +225,30 @@ export const localState = (
       return Readable.from(iterable)
     })
   }
-  const getContentAndHash = async (): Promise<ContentsAndHash> => {
+
+  const calculateContentAndHash = async (): Promise<ContentAndHash[]> => {
+    const stateTextPerAccount = await createStateTextPerAccount()
+    return awu(Object.entries(stateTextPerAccount))
+      .map(async ([account, fileContent]): Promise<ContentAndHash> => {
+        const contentHash = createHash('md5')
+        const zipContent = createGZipWriteStream(fileContent)
+        // We should call toString here, but we do to maintain backwards compatibility
+        // fixing this would cause the hash to change to the correct hash value, but that would
+        // trigger invalidation in all caches
+        zipContent.on('data', chunk => contentHash.update(chunk.toString()))
+        const content = await getStream.buffer(zipContent)
+        return {
+          account,
+          content,
+          contentHash: contentHash.digest('hex'),
+        }
+      })
+      .toArray()
+  }
+
+  const getContentAndHash = async (): Promise<ContentAndHash[]> => {
     if (contentsAndHash === undefined) {
-      const stateTextPerAccount = await createStateTextPerAccount()
-      const contents = await awu(Object.keys(stateTextPerAccount))
-        .map(async (account: string): Promise<[string, Buffer]> => [
-          `${currentFilePrefix}.${account}${ZIPPED_STATE_EXTENSION}`,
-          await getStream.buffer(createGZipWriteStream(stateTextPerAccount[account])),
-        ]).toArray()
-      contentsAndHash = {
-        contents,
-        hash: getHashFromContent(contents.map(e => e[1].toString())),
-      }
+      contentsAndHash = calculateContentAndHash()
     }
     return contentsAndHash
   }
@@ -250,8 +259,8 @@ export const localState = (
       // the content will end up being on disk, we should also not re-calculate the hash
       return
     }
-    const contentHash = contentsAndHash?.hash ?? (await getContentAndHash()).hash
-    await inMemState.setHash(contentHash)
+    const finalHash = getHashFromHashes((await getContentAndHash()).map(({ contentHash }) => contentHash))
+    await inMemState.setHash(finalHash)
   }
 
   return {
@@ -265,15 +274,10 @@ export const localState = (
       setDirty()
     },
     rename: async (newPrefix: string): Promise<void> => {
-      await staticFilesSource.rename(newPrefix)
-
-      const stateFiles = await findStateFiles(currentFilePrefix)
-      await awu(stateFiles).forEach(async filename => {
-        const newFilePath = filename.replace(currentFilePrefix,
-          path.join(path.dirname(currentFilePrefix), newPrefix))
-        await rename(filename, newFilePath)
-      })
-
+      await Promise.all([
+        staticFilesSource.rename(newPrefix),
+        currentContentProvider.rename(currentFilePrefix, newPrefix),
+      ])
       currentFilePrefix = newPrefix
       setDirty()
     },
@@ -286,20 +290,27 @@ export const localState = (
         return
       }
       await mkdirp(path.dirname(currentFilePrefix))
-      const { contents: filePathToContent, hash: updatedHash } = await getContentAndHash()
-      await awu(filePathToContent).forEach(f => replaceContents(...f))
+      const contents = await getContentAndHash()
+      const updatedHash = getHashFromHashes(contents.map(({ contentHash }) => contentHash))
+      log.debug(
+        'Writing state content, hash=%s, account_hashes=%o',
+        updatedHash,
+        Object.fromEntries(contents.map(({ account, contentHash }) => [account, contentHash])),
+      )
+      await currentContentProvider.writeContents(currentFilePrefix, contents)
       await inMemState.setVersion(version)
       await inMemState.setHash(updatedHash)
       await inMemState.flush()
       await staticFilesSource.flush()
       dirty = false
-      log.debug('finish flushing state')
+      log.debug('finished flushing state')
     },
     calculateHash: calculateHashImpl,
     clear: async (): Promise<void> => {
-      const stateFiles = await findStateFiles(currentFilePrefix)
-      await inMemState.clear()
-      await Promise.all(stateFiles.map(filename => rm(filename)))
+      await Promise.all([
+        currentContentProvider.clear(currentFilePrefix),
+        inMemState.clear(),
+      ])
       setDirty()
     },
     updateStateFromChanges: async ({ changes, unmergedElements, fetchAccounts } : {
@@ -310,5 +321,49 @@ export const localState = (
       await inMemState.updateStateFromChanges({ changes, unmergedElements, fetchAccounts })
       setDirty()
     },
+    updateConfig: async args => {
+      const newProvider = getStateContentProvider(args.workspaceId, args.stateConfig)
+      const contents = await getContentAndHash()
+
+      const tempPrefix = path.join(path.dirname(currentFilePrefix), `.tmp_${path.basename(currentFilePrefix)}`)
+      await newProvider.writeContents(tempPrefix, contents)
+
+      // swap the contents from the old provider to the new one
+      // note - we have to clear before we rename in case the providers use the same file names
+      await currentContentProvider.clear(currentFilePrefix)
+      await newProvider.rename(tempPrefix, path.basename(currentFilePrefix))
+
+      currentContentProvider = newProvider
+
+      await inMemState.updateConfig(args)
+    },
   }
 }
+
+type LoadStateArgs = {
+  workspaceId: string
+  stateConfig?: StateConfig
+  baseDir: string
+  envName: string
+  remoteMapCreator: remoteMap.RemoteMapCreator
+  staticFilesSource: staticFiles.StateStaticFilesSource
+  persistent: boolean
+}
+export const loadState = ({
+  workspaceId,
+  stateConfig,
+  baseDir,
+  envName,
+  remoteMapCreator,
+  staticFilesSource,
+  persistent,
+}: LoadStateArgs): state.State => (
+  localState(
+    baseDir,
+    envName,
+    remoteMapCreator,
+    staticFilesSource,
+    getStateContentProvider(workspaceId, stateConfig),
+    persistent,
+  )
+)

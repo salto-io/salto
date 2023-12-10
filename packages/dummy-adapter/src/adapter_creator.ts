@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Adapter, ElemID, CORE_ANNOTATIONS, BuiltinTypes, ObjectType, ListType, GetCustomReferencesFunc, createRestriction } from '@salto-io/adapter-api'
+import { Adapter, ElemID, CORE_ANNOTATIONS, BuiltinTypes, ObjectType, ListType, GetCustomReferencesFunc } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import DummyAdapter from './adapter'
 import { GeneratorParams, DUMMY_ADAPTER, defaultParams, changeErrorType } from './generator'
@@ -30,15 +30,11 @@ export const configType = new ObjectType({
       },
     })),
     changeErrors: { refType: new ListType(changeErrorType) },
-    extraNaclPath: { refType: BuiltinTypes.STRING },
+    extraNaclPaths: { refType: new ListType(BuiltinTypes.STRING) },
     generateEnvName: { refType: BuiltinTypes.STRING },
     fieldsToOmitOnDeploy: { refType: new ListType(BuiltinTypes.STRING) },
     // Exclude elements from the fetch by their elemIDs
     elementsToExclude: { refType: new ListType(BuiltinTypes.STRING) },
-    conflictedElementsVersion: { refType: BuiltinTypes.STRING,
-      annotations: {
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['a', 'b', 'c'] }),
-      } },
   },
 })
 

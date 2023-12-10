@@ -192,6 +192,7 @@ const filter: FilterCreator = ({ config, client }) => ({
     }
 
     setFieldDeploymentAnnotations(boardType, COLUMNS_CONFIG_FIELD)
+    boardType.fields.columnConfig.annotations[CORE_ANNOTATIONS.REQUIRED] = true
     await addAnnotationRecursively(columnConfigType, CORE_ANNOTATIONS.CREATABLE)
     await addAnnotationRecursively(columnConfigType, CORE_ANNOTATIONS.UPDATABLE)
   },

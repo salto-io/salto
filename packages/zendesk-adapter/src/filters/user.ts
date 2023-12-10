@@ -20,6 +20,7 @@ import { FilterCreator } from '../filter'
 import { TYPE_NAME_TO_REPLACER, getIdByEmail, getUsers } from '../user_utils'
 import { deployModificationFunc } from '../replacers_utils'
 import { paginate } from '../client/pagination'
+import { FETCH_CONFIG } from '../config'
 
 const { createPaginator } = clientUtils
 
@@ -30,8 +31,9 @@ const isRelevantChange = (change: Change<InstanceElement>): boolean => (
 /**
  * Replaces the user ids with emails
  */
-const filterCreator: FilterCreator = ({ client }) => {
+const filterCreator: FilterCreator = ({ client, config }) => {
   let userIdToEmail: Record<string, string> = {}
+  const { resolveUserIDs } = config[FETCH_CONFIG]
   return {
     name: 'usersFilter',
     onFetch: async elements => {
@@ -39,11 +41,13 @@ const filterCreator: FilterCreator = ({ client }) => {
         client,
         paginationFuncCreator: paginate,
       })
-      const mapping = await getIdByEmail(paginator)
+      const { errors } = await getUsers(paginator, resolveUserIDs)
+      const mapping = await getIdByEmail(paginator, resolveUserIDs)
       const instances = elements.filter(isInstanceElement)
       instances.forEach(instance => {
         TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance, mapping)
       })
+      return { errors }
     },
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       const relevantChanges = changes.filter(isRelevantChange)
@@ -54,14 +58,14 @@ const filterCreator: FilterCreator = ({ client }) => {
         client,
         paginationFuncCreator: paginate,
       })
-      const users = await getUsers(paginator)
+      const { users } = await getUsers(paginator, resolveUserIDs)
       if (_.isEmpty(users)) {
         return
       }
       userIdToEmail = Object.fromEntries(
         users.map(user => [user.id.toString(), user.email])
       ) as Record<string, string>
-      userIdToEmail = await getIdByEmail(paginator)
+      userIdToEmail = await getIdByEmail(paginator, resolveUserIDs)
       const emailToUserId = Object.fromEntries(
         users.map(user => [user.email, user.id.toString()])
       ) as Record<string, string>

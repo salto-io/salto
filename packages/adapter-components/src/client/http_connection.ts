@@ -129,6 +129,8 @@ export const createRetryOptions = (
   },
   retryCondition: err => axiosRetry.isNetworkOrIdempotentRequestError(err)
     || shouldRetryStatusCode(err.response?.status, retryOptions.additionalStatusCodesToRetry),
+  // Note that changing the config is consistent on all retries. For the current use-case, that's fine,
+  // as we are updating the last retry.
   onRetry: (retryCount, _err, requestConfig) => {
     if (timeoutOptions?.lastRetryNoTimeout && retryCount === retryOptions.maxAttempts) {
       requestConfig.timeout = 0

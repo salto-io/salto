@@ -25,7 +25,7 @@ import {
   isStaticFile, TemplateExpression,
 } from '@salto-io/adapter-api'
 import { findElement, applyDetailedChanges } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
 import { InvalidValueValidationError, ValidationError } from '../../src/validator'
 import { WorkspaceConfigSource } from '../../src/workspace/workspace_config_source'
@@ -50,7 +50,7 @@ import { DeleteCurrentEnvError, UnknownEnvError, EnvDuplicationError,
 import { MissingStaticFile } from '../../src/workspace/static_files'
 import * as dump from '../../src/parser/dump'
 import { mockDirStore } from '../common/nacl_file_store'
-import { EnvConfig } from '../../src/workspace/config/workspace_config_types'
+import { EnvConfig, StateConfig } from '../../src/workspace/config/workspace_config_types'
 import { resolve } from '../../src/expressions'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
 import { InMemoryRemoteMap, RemoteMapCreator, RemoteMap, CreateRemoteMapParams } from '../../src/workspace/remote_map'
@@ -2047,6 +2047,58 @@ describe('workspace', () => {
       const recency = await ws.getStateRecency('salesforce')
       expect(recency.status).toBe('Nonexistent')
       expect(recency.date).toBe(undefined)
+    })
+  })
+
+  describe('updateStateProvider', () => {
+    let ws: Workspace
+    let stateUpdateConfigFuncs: jest.SpiedFunction<State['updateConfig']>[]
+    let workspaceConfigSrc: jest.Mocked<WorkspaceConfigSource>
+    beforeEach(async () => {
+      const elemSources: Record<string, EnvironmentSource> = {
+        '': { naclFiles: createMockNaclFileSource([]) },
+        default: { naclFiles: createMockNaclFileSource([]), state: createState([]) },
+        inactive: { naclFiles: createMockNaclFileSource([]), state: createState([]) },
+      }
+      stateUpdateConfigFuncs = Object.values(elemSources)
+        .map(({ state }) => state)
+        .filter(values.isDefined)
+        .map(state => jest.spyOn(state, 'updateConfig'))
+      workspaceConfigSrc = mockWorkspaceConfigSource({ uid: 'wsId' }, true)
+      ws = await createWorkspace(
+        undefined,
+        undefined,
+        workspaceConfigSrc,
+        undefined,
+        undefined,
+        undefined,
+        elemSources
+      )
+    })
+
+    describe('when configuration changed', () => {
+      const newStateConfig: StateConfig = {
+        provider: 's3',
+        options: { s3: { bucket: 'my-bucket' } },
+      }
+      beforeEach(async () => {
+        await ws.updateStateProvider(newStateConfig)
+      })
+      it('should set the new configuration in the workspace config', () => {
+        expect(workspaceConfigSrc.setWorkspaceConfig).toHaveBeenCalledWith(
+          expect.objectContaining({ state: newStateConfig })
+        )
+      })
+      it('should update the state config in all env sources', () => {
+        stateUpdateConfigFuncs.forEach(updateFunc => expect(updateFunc).toHaveBeenCalledWith({ workspaceId: 'wsId', stateConfig: newStateConfig }))
+      })
+    })
+    describe('when configuration is the same', () => {
+      it('should not do anything', async () => {
+        await ws.updateStateProvider(undefined)
+        expect(workspaceConfigSrc.setWorkspaceConfig).not.toHaveBeenCalled()
+        stateUpdateConfigFuncs.forEach(updateFunc => expect(updateFunc).not.toHaveBeenCalled())
+      })
     })
   })
 

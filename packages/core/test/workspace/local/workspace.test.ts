@@ -129,6 +129,7 @@ describe('local workspace', () => {
         envs: ['env1', 'env2'],
         remoteMapCreator: creator,
         stateStaticFilesSource: mockStaticFilesSource(),
+        workspaceConfig: { name: 'asd', uid: 'asd' },
       })
       expect(Object.keys(elemSources.sources)).toHaveLength(3)
       expect(mockCreateDirStore).toHaveBeenCalledTimes(6)
@@ -152,7 +153,7 @@ describe('local workspace', () => {
       await expect(initLocalWorkspace('/fake/tmp/')).rejects.toThrow(NotAnEmptyWorkspaceError)
     })
 
-    it('should call initWorkspace with currect input', async () => {
+    it('should call initWorkspace with correct input', async () => {
       const envName = 'env-name'
       const wsName = 'ws-name'
       mockExists.mockResolvedValue(false)

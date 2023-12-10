@@ -20,10 +20,11 @@ describe('client_config', () => {
   describe('createClientConfigType', () => {
     it('should return default type when no custom buckets were added', async () => {
       const type = createClientConfigType('myAdapter')
-      expect(Object.keys(type.fields)).toHaveLength(4)
+      expect(Object.keys(type.fields)).toHaveLength(5)
       expect(type.fields.rateLimit).toBeDefined()
       expect(type.fields.retry).toBeDefined()
       expect(type.fields.pageSize).toBeDefined()
+      expect(type.fields.timeout).toBeDefined()
       const rateLimitType = await type.fields.rateLimit.getType()
       expect(rateLimitType).toBeInstanceOf(ObjectType)
       expect(new Set(Object.keys((rateLimitType as ObjectType).fields))).toEqual(new Set(['get', 'total']))
@@ -35,10 +36,11 @@ describe('client_config', () => {
         a: number
         b: number
       }>('myAdapter', ['a', 'b'])
-      expect(Object.keys(type.fields)).toHaveLength(4)
+      expect(Object.keys(type.fields)).toHaveLength(5)
       expect(type.fields.rateLimit).toBeDefined()
       expect(type.fields.retry).toBeDefined()
       expect(type.fields.pageSize).toBeDefined()
+      expect(type.fields.timeout).toBeDefined()
       const rateLimitType = await type.fields.rateLimit.getType()
       expect(rateLimitType).toBeInstanceOf(ObjectType)
       expect(new Set(Object.keys((rateLimitType as ObjectType).fields))).toEqual(new Set(['get', 'total', 'a', 'b']))

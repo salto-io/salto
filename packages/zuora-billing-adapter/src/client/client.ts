@@ -22,7 +22,7 @@ import { Credentials } from '../auth'
 const log = logger(module)
 
 const {
-  DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+  DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
 } = clientUtils
 
 // https://knowledgecenter.zuora.com/BB_Introducing_Z_Business/Policies/Concurrent_Request_Limits#Rate_limits
@@ -51,6 +51,7 @@ export default class ZuoraClient extends clientUtils.AdapterHTTPClient<
         rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
         maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
         retry: DEFAULT_RETRY_OPTS,
+        timeout: DEFAULT_TIMEOUT_OPTS,
       }
     )
   }

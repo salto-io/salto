@@ -48,6 +48,7 @@ const STANDARD_ENTITY_TYPES = ['StandardEntity', 'User']
 // types to their own queries to increase the limit (may extend / make this dynamic in the future)
 const REFERENCING_TYPES_TO_FETCH_INDIVIDUALLY = ['Layout', 'Flow', 'ApexClass', 'ApexPage', 'CustomField']
 
+// The current limit for using Bulk API V1 to query Tooling Records
 const TOOLING_QUERY_MAX_RECORDS = 2000
 const INITIAL_QUERY_CHUNK_SIZE = 1000
 

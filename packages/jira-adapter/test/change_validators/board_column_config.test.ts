@@ -13,17 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { toChange, InstanceElement } from '@salto-io/adapter-api'
 import { boardColumnConfigValidator } from '../../src/change_validators/board_culomn_config'
-import { BOARD_TYPE_NAME, JIRA } from '../../src/constants'
+import { BOARD_TYPE_NAME } from '../../src/constants'
+import { createEmptyType } from '../utils'
 
 describe('boardColumnConfigValidator', () => {
-  let type: ObjectType
   let instance: InstanceElement
 
   beforeEach(() => {
-    type = new ObjectType({ elemID: new ElemID(JIRA, BOARD_TYPE_NAME) })
-    instance = new InstanceElement('instance', type, {
+    instance = new InstanceElement('instance', createEmptyType(BOARD_TYPE_NAME), {
       columnConfig: {
         columns: [
           {

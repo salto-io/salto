@@ -46,9 +46,8 @@ const isInvalidColumnConfig = (boardInstance: InstanceElement): boolean => {
     return true
   }
   const { columns } = boardInstance.value.columnConfig
-  const columnsWithStatuses = columns.map(column => column.statuses)
-    .filter(statuses => !_.isEmpty(statuses))
-  return columnsWithStatuses.length === 0
+  const hasNonEmptyStatuses = columns.some(column => !_.isEmpty(column.statuses))
+  return !hasNonEmptyStatuses
 }
 export const boardColumnConfigValidator: ChangeValidator = async changes => (
   awu(changes)

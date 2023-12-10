@@ -93,8 +93,8 @@ describe('elements generator', () => {
       }, mockProgressReporter)
       const singleFileObj = elements.find(e => e.elemID.getFullName() === 'dummy.singleFileObj')
       const multiFilesObj = elements.filter(e => e.elemID.getFullName() === 'dummy.multiFilesObj')
-      const InstWithStatic1 = elements.find(e => e.elemID.getFullName() === 'dummy.multiFilesObj.instance.InstWithStatic1')
-      const InstWithStatic2 = elements.find(e => e.elemID.getFullName() === 'dummy.multiFilesObj.instance.InstWithStatic2')
+      const instWithStatic1 = elements.find(e => e.elemID.getFullName() === 'dummy.multiFilesObj.instance.InstWithStatic1')
+      const instWithStatic2 = elements.find(e => e.elemID.getFullName() === 'dummy.multiFilesObj.instance.InstWithStatic2')
       expect(singleFileObj).toBeDefined()
       expect(multiFilesObj).toHaveLength(2)
       expect(singleFileObj?.path).toEqual(['dummy', 'extra', 'single'])
@@ -102,15 +102,15 @@ describe('elements generator', () => {
         ['dummy', 'extra', 'multi1'],
         ['dummy', 'extra', 'multi2'],
       ])
-      expect(isInstanceElement(InstWithStatic1)).toBeTruthy()
-      if (isInstanceElement(InstWithStatic1)) {
-        const staticFile = InstWithStatic1.value.aField as StaticFile
+      expect(isInstanceElement(instWithStatic1)).toBeTruthy()
+      if (isInstanceElement(instWithStatic1)) {
+        const staticFile = instWithStatic1.value.aField as StaticFile
         const content = await staticFile.getContent()
         expect(content?.toString(staticFile.encoding)).toEqual('CONTENT OF REAL FILE')
       }
-      expect(isInstanceElement(InstWithStatic2)).toBeTruthy()
-      if (isInstanceElement(InstWithStatic2)) {
-        const staticFile = InstWithStatic2.value.aField as StaticFile
+      expect(isInstanceElement(instWithStatic2)).toBeTruthy()
+      if (isInstanceElement(instWithStatic2)) {
+        const staticFile = instWithStatic2.value.aField as StaticFile
         const content = await staticFile.getContent()
         expect(content?.toString(staticFile.encoding)).toEqual('THIS IS STATIC FILE') // fall back content
       }

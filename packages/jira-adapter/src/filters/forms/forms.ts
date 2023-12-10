@@ -16,7 +16,7 @@
 
 import { CORE_ANNOTATIONS, Change, InstanceElement, ReferenceExpression, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { getParent, pathNaclCase } from '@salto-io/adapter-utils'
+import { getParent, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { FORM_TYPE, JSM_DUCKTYPE_API_DEFINITIONS, PROJECT_TYPE, SERVICE_DESK } from '../../constants'
@@ -100,7 +100,7 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
             if (!isDetailedFormsResponse(detailedRes.data)) {
               return undefined
             }
-            const name = `${project.value.name}_${formResponse.name}`
+            const name = naclCase(`${project.value.key}_${formResponse.name}`)
             const formValue = detailedRes.data
             const parentPath = project.path ?? []
             const jsmDuckTypeApiDefinitions = config[JSM_DUCKTYPE_API_DEFINITIONS]

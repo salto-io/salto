@@ -945,6 +945,22 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldsToHide: [{ fieldName: 'id' }],
       serviceUrl: '/secure/admin/EditNotifications!default.jspa?schemeId={id}',
     },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/notificationscheme',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/notificationscheme/{id}',
+        method: 'put',
+        fieldsToIgnore: ['notificationSchemeEvents'],
+      },
+      remove: {
+        url: '/rest/api/3/notificationscheme/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
+    },
   },
   NotificationSchemeEvent: {
     transformation: {
@@ -952,6 +968,25 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'eventType', fieldType: 'number' },
         { fieldName: 'notifications', fieldType: 'List<PermissionHolder>' },
       ],
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/notificationscheme/{notificationSchemeId}/notification',
+        method: 'put',
+        urlParamsToFields: {
+          notificationSchemeId: 'notificationSchemeId',
+        },
+        fieldsToIgnore: ['notificationSchemeId'],
+      },
+      remove: {
+        url: '/rest/api/3/notificationscheme/{notificationSchemeId}/notification/{notificationId}',
+        method: 'delete',
+        urlParamsToFields: {
+          notificationSchemeId: 'notificationSchemeId',
+          notificationId: 'id',
+        },
+        omitRequestBody: true,
+      },
     },
   },
   PageBeanIssueTypeScreenSchemesProjects: {
@@ -2411,7 +2446,8 @@ const SUPPORTED_TYPES = {
 
 export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
   platformSwagger: {
-    url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/main/jira/platform-swagger.v3.json',
+    url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/8f9045fb5bbc528cead1741820c59ae9d60720d1/jira/platform-swagger.v3.json',
+    // url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/main/jira/platform-swagger.v3.json',
     typeNameOverrides: [
       {
         originalName: 'FilterDetails',
@@ -2556,7 +2592,8 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
     ],
   },
   jiraSwagger: {
-    url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/main/jira/software-swagger.v3.json',
+    url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/8f9045fb5bbc528cead1741820c59ae9d60720d1/jira/software-swagger.v3.json',
+    // url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/main/jira/software-swagger.v3.json',
     typeNameOverrides: [
       {
         originalName: 'rest__agile__1_0__board@uuuuvuu',

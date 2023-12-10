@@ -13,21 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, Field, InstanceElement, isInstanceElement, MapType, Values } from '@salto-io/adapter-api'
-import _ from 'lodash'
-import { values } from '@salto-io/lowerdash'
+import { BuiltinTypes, CORE_ANNOTATIONS, Field, MapType, Values, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
 import { NOTIFICATION_SCHEME_TYPE_NAME } from '../../constants'
 import { findObject } from '../../utils'
-import { getEventKey, getEventsValues, transformAllNotificationEvents } from './notification_events'
+import { transformAllNotificationEvents, generateNotificationIds } from './notification_events'
 
-const generateNotificationIds = (instance: InstanceElement): Record<string, string> =>
-  _(getEventsValues(instance.value))
-    .keyBy(getEventKey)
-    .mapValues(({ id }) => id)
-    .pickBy(values.isDefined)
-    .value()
-
+/**
+ * The filter stores a hidden map of notification ids for each NotificationSchemeEvent
+ */
 const filter: FilterCreator = () => ({
   name: 'notificationSchemeStructureFilter',
   onFetch: async elements => {
@@ -35,13 +29,13 @@ const filter: FilterCreator = () => ({
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === NOTIFICATION_SCHEME_TYPE_NAME)
       .forEach(instance => {
-        transformAllNotificationEvents(instance.value)
-
-        instance.value.notificationIds = generateNotificationIds(instance)
+        instance.value.notificationIds = generateNotificationIds(instance.value)
         instance.value.notificationSchemeEvents
           ?.forEach((event: Values) => event.notifications?.forEach((notification: Values) => {
             delete notification.id
           }))
+
+        transformAllNotificationEvents(instance.value)
       })
 
     const notificationSchemeType = findObject(elements, NOTIFICATION_SCHEME_TYPE_NAME)

@@ -56,7 +56,6 @@ export const buildFetchProfile = ({
     preferActiveFlowVersions,
     addNamespacePrefixToFullName,
     warningSettings,
-    extraDependenciesIdsPerQuery,
   } = fetchParams
   return {
     dataManagement: data && buildDataManagement(data),
@@ -70,7 +69,6 @@ export const buildFetchProfile = ({
     ),
     metadataQuery,
     maxItemsInRetrieveRequest,
-    extraDependenciesIdsPerQuery,
   }
 }
 

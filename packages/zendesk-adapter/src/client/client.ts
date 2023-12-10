@@ -78,13 +78,13 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
         maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
         // These statuses are returned by Zendesk and are not related to our data, a retry should solve them
         retry: Object.assign(DEFAULT_RETRY_OPTS, { additionalStatusCodesToRetry: [409, 503] }),
-        timeoutOptions: DEFAULT_TIMEOUT_OPTS,
+        timeout: DEFAULT_TIMEOUT_OPTS,
       },
     )
     this.resourceConn = clientUtils.createClientConnection({
       retryOptions: clientUtils.createRetryOptions(
         _.defaults({}, this.config?.retry, DEFAULT_RETRY_OPTS),
-        _.defaults({}, this.config?.timeoutOptions, DEFAULT_TIMEOUT_OPTS)
+        _.defaults({}, this.config?.timeout, DEFAULT_TIMEOUT_OPTS)
       ),
       createConnection: createResourceConnection,
     })

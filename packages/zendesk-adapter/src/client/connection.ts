@@ -97,9 +97,7 @@ const accessTokenAuthParamsFunc = (
   },
 })
 
-export const createConnection: clientUtils.ConnectionCreator<Credentials> = (
-  retryOptions: clientUtils.RetryOptions,
-) => (
+export const createConnection: clientUtils.ConnectionCreator<Credentials> = (retryOptions, timeout) => (
   clientUtils.axiosConnection({
     retryOptions,
     authParamsFunc: async (creds: Credentials) => (
@@ -109,6 +107,7 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = (
     ),
     baseURLFunc: async ({ subdomain, domain }) => baseUrl(subdomain, domain),
     credValidateFunc: validateCredentials,
+    timeout,
   })
 )
 

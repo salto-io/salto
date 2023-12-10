@@ -56,7 +56,7 @@ describe('client_http_client', () => {
             retryDelay: 123,
             additionalStatusCodesToRetry: STATUSES_TO_RETRY,
           },
-          timeoutOptions: {
+          timeout: {
             lastRetryNoTimeout: true,
             resetTimeoutBetweenAttempts: true,
           },

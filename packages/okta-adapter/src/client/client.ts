@@ -167,7 +167,7 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
           ? DEFAULT_MAX_REQUESTS_PER_MINUTE // This means the dynamic calculation is disabled, so we use the default
           : UNLIMITED_MAX_REQUESTS_PER_MINUTE, // Unlimited because the rate max requests is calculated dynamically
         retry: DEFAULT_RETRY_OPTS,
-        timeoutOptions: DEFAULT_TIMEOUT_OPTS,
+        timeout: DEFAULT_TIMEOUT_OPTS,
       }
     )
     this.rateLimitBuffer = clientOpts.config?.rateLimit?.rateLimitBuffer ?? DEFAULT_RATE_LIMIT_BUFFER

@@ -18,7 +18,7 @@ import axios, { AxiosError, AxiosBasicCredentials, AxiosRequestConfig, AxiosRequ
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { AccountInfo, CredentialError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { ClientRetryConfig, ClientTimeoutOptions } from './config'
+import { ClientRetryConfig, ClientTimeoutConfig } from './config'
 import { DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS } from './constants'
 
 const log = logger(module)
@@ -113,7 +113,7 @@ const shouldRetryStatusCode = (statusCode?: number, additionalStatusesToRetry: n
   statusCode !== undefined && [429, ...additionalStatusesToRetry].includes(statusCode)
 
 export const createRetryOptions = (
-  retryOptions: Required<ClientRetryConfig>, timeoutOptions?: ClientTimeoutOptions
+  retryOptions: Required<ClientRetryConfig>, timeoutOptions?: ClientTimeoutConfig
 ): RetryOptions => ({
   retries: retryOptions.maxAttempts,
   retryDelay: (retryCount, err) => {
@@ -149,7 +149,7 @@ type ConnectionParams<TCredentials> = {
 export const createClientConnection = <TCredentials>({
   connection,
   retryOptions,
-  timeout = DEFAULT_TIMEOUT_OPTS.timeout,
+  timeout = DEFAULT_TIMEOUT_OPTS.maxDuration,
   createConnection,
 }: ConnectionParams<TCredentials>): Connection<TCredentials> => (
     connection ?? createConnection(

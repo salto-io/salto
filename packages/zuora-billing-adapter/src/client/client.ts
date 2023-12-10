@@ -51,7 +51,7 @@ export default class ZuoraClient extends clientUtils.AdapterHTTPClient<
         rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
         maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
         retry: DEFAULT_RETRY_OPTS,
-        timeoutOptions: DEFAULT_TIMEOUT_OPTS,
+        timeout: DEFAULT_TIMEOUT_OPTS,
       }
     )
   }

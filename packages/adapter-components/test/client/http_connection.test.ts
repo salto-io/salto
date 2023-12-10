@@ -55,22 +55,24 @@ describe('client_http_connection', () => {
     it('should throw Unauthorized on UnauthorizedError', async () => {
       await expect(() => validateCredentials(
         { username: 'user123', password: 'pass' },
-        { createConnection: retryOptions => (axiosConnection({
+        { createConnection: (retryOptions, timeout) => (axiosConnection({
           retryOptions,
           authParamsFunc: async () => ({}),
           baseURLFunc: async () => BASE_URL,
           credValidateFunc: async () => { throw new UnauthorizedError('aaa') },
+          timeout,
         })) },
       )).rejects.toThrow(new UnauthorizedError('Unauthorized - update credentials and try again'))
     })
     it('should throw Error on other errors', async () => {
       await expect(() => validateCredentials(
         { username: 'user123', password: 'pass' },
-        { createConnection: retryOptions => (axiosConnection({
+        { createConnection: (retryOptions, timeout) => (axiosConnection({
           retryOptions,
           authParamsFunc: async () => ({}),
           baseURLFunc: async () => BASE_URL,
           credValidateFunc: async () => { throw new Error('aaa') },
+          timeout,
         })) },
       )).rejects.toThrow(new Error('Login failed with error: Error: aaa'))
     })

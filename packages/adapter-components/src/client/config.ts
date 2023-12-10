@@ -35,8 +35,8 @@ export type ClientRetryConfig = Partial<{
   additionalStatusCodesToRetry: number[]
 }>
 
-export type ClientTimeoutOptions = Partial<{
-  timeout: number
+export type ClientTimeoutConfig = Partial<{
+  maxDuration: number
   resetTimeoutBetweenAttempts: boolean
   lastRetryNoTimeout: boolean
 }>
@@ -46,7 +46,7 @@ export type ClientBaseConfig<RateLimitConfig extends ClientRateLimitConfig> = Pa
   rateLimit: RateLimitConfig
   maxRequestsPerMinute: number
   pageSize: ClientPageSizeConfig
-  timeoutOptions: ClientTimeoutOptions
+  timeout: ClientTimeoutConfig
 }>
 
 export const createClientConfigType = <RateLimitConfig extends ClientRateLimitConfig>(
@@ -98,10 +98,10 @@ export const createClientConfigType = <RateLimitConfig extends ClientRateLimitCo
     },
   })
 
-  const clientTimeoutOptionsType = createMatchingObjectType<ClientTimeoutOptions>({
-    elemID: new ElemID(adapter, 'clientTimeoutOptions'),
+  const clientTimeoutConfigType = createMatchingObjectType<ClientTimeoutConfig>({
+    elemID: new ElemID(adapter, 'clientTimeoutConfig'),
     fields: {
-      timeout: { refType: BuiltinTypes.NUMBER },
+      maxDuration: { refType: BuiltinTypes.NUMBER },
       resetTimeoutBetweenAttempts: { refType: BuiltinTypes.BOOLEAN },
       lastRetryNoTimeout: { refType: BuiltinTypes.BOOLEAN },
     },
@@ -117,7 +117,7 @@ export const createClientConfigType = <RateLimitConfig extends ClientRateLimitCo
       rateLimit: { refType: clientRateLimitConfigType },
       maxRequestsPerMinute: createFieldDefWithMin(-1),
       pageSize: { refType: clientPageSizeConfigType },
-      timeoutOptions: { refType: clientTimeoutOptionsType },
+      timeout: { refType: clientTimeoutConfigType },
     },
     annotations: {
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

@@ -166,7 +166,24 @@ describe('elements generator', () => {
         numOfProfiles: 0,
         numOfRecords: 0,
         numOfTypes: 10,
-        importantValuesFreq: 0.75,
+      }
+      const elements = await generateElements(importantValuesTestParams, mockProgressReporter)
+      const elementsWithImportantValues = elements
+        .filter(isObjectType)
+        .filter(obj =>
+          obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] !== undefined
+          || obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] !== undefined)
+      expect(_.isEmpty(elementsWithImportantValues)).toBeFalsy()
+    })
+    it('should create some important values if importantValuesFreq is undefined', async () => {
+      const importantValuesTestParams: GeneratorParams = {
+        ...defaultParams,
+        numOfObjs: 10,
+        numOfPrimitiveTypes: 0,
+        numOfProfiles: 0,
+        numOfRecords: 0,
+        numOfTypes: 10,
+        importantValuesFreq: undefined,
       }
       const elements = await generateElements(importantValuesTestParams, mockProgressReporter)
       const elementsWithImportantValues = elements

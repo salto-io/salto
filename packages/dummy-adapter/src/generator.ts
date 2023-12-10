@@ -165,7 +165,7 @@ export type GeneratorParams = {
     generateEnvName? : string
     fieldsToOmitOnDeploy?: string[]
     elementsToExclude?: string[]
-    importantValuesFreq: number
+    importantValuesFreq?: number
 }
 
 export const defaultParams: Omit<GeneratorParams, 'extraNaclPaths'> = {
@@ -394,12 +394,14 @@ export const generateElements = async (
     // the  important values should be only a small portion of the fields
     const halfLength = Math.floor((fieldNames.length / 2) + 1)
     const randomNum = randomGen()
-    const randomNumToUse = randomNum < params.importantValuesFreq ? randomNum : 0
+    const importantValuesFreq = params.importantValuesFreq ?? 1
+    const randomNumToUse = randomNum < importantValuesFreq ? randomNum : 0
     const numberOfImportantValues = Math.floor(randomNumToUse * halfLength)
     const fieldSet = new Set<string>()
+    const finalFieldNames = fieldNames.filter(name => name.startsWith('_'))
     const importantValuesDef = Array.from({ length: numberOfImportantValues }).map(() => {
-      const value = weightedRandomSelect(fieldNames)
-      if (fieldSet.has(value) || value.startsWith('_')) {
+      const value = weightedRandomSelect(finalFieldNames)
+      if (fieldSet.has(value)) {
         return undefined
       }
       fieldSet.add(value)

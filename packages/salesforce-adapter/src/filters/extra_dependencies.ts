@@ -19,13 +19,25 @@ import {
 } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues, multiIndex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { getAllReferencedIds, buildElementsSourceFromElements, extendGeneratedDependencies } from '@salto-io/adapter-utils'
+import {
+  getAllReferencedIds,
+  buildElementsSourceFromElements,
+  extendGeneratedDependencies,
+  safeJsonStringify,
+} from '@salto-io/adapter-utils'
 import { RemoteFilterCreator } from '../filter'
 import { metadataType, apiName, isCustomObject } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
-import { getInternalId, buildElementsSourceForFetch, extractFlatCustomObjectFields, hasInternalId, ensureSafeFilterFetch } from './utils'
+import {
+  getInternalId,
+  buildElementsSourceForFetch,
+  extractFlatCustomObjectFields,
+  hasInternalId,
+  ensureSafeFilterFetch,
+  isStandardObjectSync, apiNameSync,
+} from './utils'
 
-const { awu } = collections.asynciterable
+const { awu, toArrayAsync } = collections.asynciterable
 const { isDefined } = lowerDashValues
 const log = logger(module)
 
@@ -36,6 +48,9 @@ const STANDARD_ENTITY_TYPES = ['StandardEntity', 'User']
 // types to their own queries to increase the limit (may extend / make this dynamic in the future)
 const REFERENCING_TYPES_TO_FETCH_INDIVIDUALLY = ['Layout', 'Flow', 'ApexClass', 'ApexPage', 'CustomField']
 
+const TOOLING_QUERY_MAX_RECORDS = 2000
+const INITIAL_QUERY_CHUNK_SIZE = 1000
+
 type DependencyDetails = {
   type: string
   id: string
@@ -45,6 +60,16 @@ type DependencyDetails = {
 type DependencyGroup = {
   from: DependencyDetails
   to: DependencyDetails[]
+}
+
+type Dependency = {
+  from: DependencyDetails
+  to: DependencyDetails
+}
+
+type GetDependenciesParams = {
+  client: SalesforceClient
+  elements: Element[]
 }
 
 /**
@@ -118,6 +143,82 @@ const getDependencies = async (
   }))
 }
 
+const resolveDeps = async ({ client, elements }: GetDependenciesParams): Promise<Dependency[]> => {
+  const elementsByMetadataComponentId = _.keyBy(elements.filter(hasInternalId), getInternalId)
+  // The MetadataComponentId of standard objects is the object name
+  elements.filter(isStandardObjectSync).forEach(standardObject => {
+    const objectName = apiNameSync(standardObject)
+    if (objectName !== undefined) {
+      elementsByMetadataComponentId[objectName] = standardObject
+    }
+  })
+  if (Object.keys(elementsByMetadataComponentId).length === 0) {
+    log.debug('No elements to query dependencies for')
+    return []
+  }
+  let queriesExecuted = 0
+  const errorIds = new Set<string>()
+  const chunkedQuery = async (ids: string[], chunkSize: number): Promise<Dependency[]> => {
+    if (chunkSize === 1) {
+      errorIds.add(ids[0])
+      return []
+    }
+    return Promise.all(_.chunk(ids, chunkSize)
+      .map(async idsChunk => {
+        const query = `SELECT 
+    MetadataComponentId, MetadataComponentType, MetadataComponentName, 
+    RefMetadataComponentId, RefMetadataComponentType, RefMetadataComponentName 
+  FROM MetadataComponentDependency WHERE MetadataComponentId IN (${idsChunk.map(id => `'${id}'`).join(', ')})`
+        const allRecords = (await toArrayAsync(await client.queryAll(query, true))).flat()
+        queriesExecuted += 1
+        if (allRecords.length === TOOLING_QUERY_MAX_RECORDS) {
+          // A single Element has more than 2000 dependencies
+          if (chunkSize === 1) {
+            errorIds.add(idsChunk[0])
+          } else {
+            return chunkedQuery(idsChunk, Math.ceil(chunkSize / 2))
+          }
+        }
+        return allRecords.map(rec => ({
+          from: {
+            type: rec.MetadataComponentType,
+            id: rec.MetadataComponentId,
+            name: rec.MetadataComponentName,
+          },
+          to: {
+            type: rec.RefMetadataComponentType,
+            id: rec.RefMetadataComponentId,
+            name: rec.RefMetadataComponentName,
+          },
+        }))
+      })).then(res => res.flat())
+  }
+  return chunkedQuery(Object.keys(elementsByMetadataComponentId), INITIAL_QUERY_CHUNK_SIZE)
+    .then(deps => {
+      if (errorIds.size === 0) {
+        log.error('Could not add all the dependencies on the following elements since they have more than 2000 dependencies: %s', Array.from(errorIds).map(id => elementsByMetadataComponentId[id]?.elemID.getFullName()).join(', '))
+      }
+      log.debug('resolve extra dependencies info: %s', safeJsonStringify({
+        queriesExecuted,
+        idsCount: Object.keys(elementsByMetadataComponentId).length,
+        totalQueriedDependencies: deps.length,
+      }))
+      return deps
+    })
+}
+
+const getDependenciesV2 = async (
+  params: GetDependenciesParams
+): Promise<DependencyGroup[]> => {
+  const deps = await resolveDeps(params)
+  return _.values(
+    _.groupBy(deps, dep => Object.entries(dep.from))
+  ).map(depArr => ({
+    from: depArr[0].from,
+    to: depArr.map(dep => dep.to),
+  }))
+}
+
 /**
  * Add references to the generated-dependencies annotation,
  * except for those already referenced elsewhere.
@@ -125,9 +226,9 @@ const getDependencies = async (
  * @param elem        The element to modify
  * @param refElemIDs  The reference ids to add
  */
-const addGeneratedDependencies = (elem: Element, refElemIDs: ElemID[]): void => {
+const addGeneratedDependencies = (elem: Element, refElemIDs: ElemID[]): ReferenceExpression[] => {
   if (refElemIDs.length === 0) {
-    return
+    return []
   }
 
   const existingReferences = getAllReferencedIds(elem)
@@ -141,6 +242,7 @@ const addGeneratedDependencies = (elem: Element, refElemIDs: ElemID[]): void => 
       newDependencies.map(reference => ({ reference })),
     )
   }
+  return newDependencies
 }
 
 /**
@@ -177,14 +279,14 @@ const addExtraReferences = async (
       : undefined
   }
 
-  await awu(groupedDeps).forEach(async edge => {
+  const addedDeps: ReferenceExpression[] = await awu(groupedDeps).map(async edge => {
     const elemId = getElemId(edge.from)
     if (elemId === undefined) {
       log.debug(
         'Element %s:%s (%s) no found, skipping %d dependencies',
         edge.from.type, edge.from.id, edge.from.name, edge.to.length,
       )
-      return
+      return []
     }
     const elem = await getFetchedElement(elemId)
     if (elem === undefined) {
@@ -192,7 +294,7 @@ const addExtraReferences = async (
         'Element %s was not fetched in this operation, skipping %d dependencies',
         elemId.getFullName(), edge.to.length,
       )
-      return
+      return []
     }
     const dependencies = edge.to.map(dst => ({ dep: dst, elemId: getElemId(dst) }))
     const missingDeps = dependencies
@@ -203,11 +305,12 @@ const addExtraReferences = async (
         elem.elemID.getFullName()}`)
     })
 
-    addGeneratedDependencies(
+    return addGeneratedDependencies(
       elem,
       dependencies.map(item => item.elemId).filter(isDefined),
     )
-  })
+  }).toArray().then(references => references.flat())
+  log.debug('Added %d extra dependencies', addedDeps.length)
 }
 
 export const WARNING_MESSAGE = 'Encountered an error while trying to query your salesforce account for additional configuration dependencies.'
@@ -223,7 +326,9 @@ const creator: RemoteFilterCreator = ({ client, config }) => ({
     config,
     filterName: 'extraDependencies',
     fetchFilterFunc: async (elements: Element[]) => {
-      const groupedDeps = await getDependencies(client, config.fetchProfile.isFeatureEnabled('toolingDepsOfCurrentNamespace'))
+      const groupedDeps = config.fetchProfile.isFeatureEnabled('extraDependenciesV2')
+        ? await getDependenciesV2({ client, elements })
+        : await getDependencies(client, config.fetchProfile.isFeatureEnabled('toolingDepsOfCurrentNamespace'))
       const fetchedElements = buildElementsSourceFromElements(elements)
       const allElements = buildElementsSourceForFetch(elements, config)
 

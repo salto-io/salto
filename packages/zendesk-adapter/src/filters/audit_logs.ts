@@ -385,7 +385,7 @@ const filterCreator: FilterCreator = ({ elementsSource, client, paginator, confi
     }
     await addPrevChangedBy(elementsSource, idByInstance)
 
-    const idToName = await getIdByName(paginator)
+    const idToName = await getIdByName(paginator, config[FETCH_CONFIG].resolveUserIDs)
     await addNewChangedBy({ instances, idToName, newLastAuditTime, auditTimeInstance, client })
   },
 })

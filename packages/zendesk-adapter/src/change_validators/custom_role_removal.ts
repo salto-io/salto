@@ -20,6 +20,7 @@ import { getUsers } from '../user_utils'
 import { paginate } from '../client/pagination'
 import ZendeskClient from '../client/client'
 import { CUSTOM_ROLE_TYPE_NAME } from '../constants'
+import { ZendeskFetchConfig } from '../config'
 
 const { createPaginator } = clientUtils
 
@@ -27,8 +28,8 @@ const { createPaginator } = clientUtils
 * Checks that no user with agent role is associated with the removed custom_role
 *
 */
-export const customRoleRemovalValidator: (client: ZendeskClient) =>
-  ChangeValidator = client => async changes => {
+export const customRoleRemovalValidator: (client: ZendeskClient, fetchConfig: ZendeskFetchConfig) =>
+  ChangeValidator = (client, fetchConfig) => async changes => {
     const relevantInstances = changes
       .filter(isRemovalChange)
       .filter(isInstanceChange)
@@ -43,7 +44,7 @@ export const customRoleRemovalValidator: (client: ZendeskClient) =>
       client,
       paginationFuncCreator: paginate,
     })
-    const users = await getUsers(paginator)
+    const { users } = await getUsers(paginator, fetchConfig.resolveUserIDs)
     if (_.isEmpty(users)) {
       return []
     }

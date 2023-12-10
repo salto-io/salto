@@ -17,10 +17,12 @@ import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter
 import { ZENDESK, CUSTOM_ROLE_TYPE_NAME } from '../../src/constants'
 import { customRoleRemovalValidator } from '../../src/change_validators/custom_role_removal'
 import ZendeskClient from '../../src/client/client'
+import { ZendeskFetchConfig } from '../../src/config'
 
 describe('customRoleRemovalValidator', () => {
   let client: ZendeskClient
   let mockGet: jest.SpyInstance
+  const config = { resolveUserIDs: true } as ZendeskFetchConfig
   const customRoleType = new ObjectType({
     elemID: new ElemID(ZENDESK, CUSTOM_ROLE_TYPE_NAME),
   })
@@ -63,7 +65,7 @@ describe('customRoleRemovalValidator', () => {
 
   it('should return an error if the custom role is deleted and it has associated agents', async () => {
     const changes = [toChange({ before: customRole1 }), toChange({ before: customRole2 })]
-    const changeValidator = customRoleRemovalValidator(client)
+    const changeValidator = customRoleRemovalValidator(client, config)
     const errors = await changeValidator(changes)
     expect(errors).toHaveLength(2)
     expect(errors).toEqual([
@@ -83,7 +85,7 @@ describe('customRoleRemovalValidator', () => {
   })
   it('should not return an error if custom role is deleted but it has no associated agents', async () => {
     const changes = [toChange({ before: customRole3 })]
-    const changeValidator = customRoleRemovalValidator(client)
+    const changeValidator = customRoleRemovalValidator(client, config)
     const errors = await changeValidator(changes)
     expect(errors).toHaveLength(0)
   })

@@ -104,7 +104,6 @@ export const workspaceConfigSource = async (
         uid: config.uid,
         name: config.name,
         staleStateThresholdMinutes: config.staleStateThresholdMinutes,
-        state: config.state,
       })
       await repoCs.set(ENVS_CONFIG_NAME, envsInstance)
       await repoCs.set(WORKSPACE_CONFIG_NAME, workspaceMetadata)

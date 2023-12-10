@@ -14,13 +14,12 @@
 * limitations under the License.
 */
 
-import _ from 'lodash'
 import { EnvConfig, WorkspaceConfig } from '@salto-io/workspace'
 import { InstanceElement, ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, ListType, MapType } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 
 export type WorkspaceMetadataConfig = Pick<
-  WorkspaceConfig, 'uid' | 'name' | 'staleStateThresholdMinutes' | 'state'
+  WorkspaceConfig, 'uid' | 'name' | 'staleStateThresholdMinutes'
 >
 export type EnvsConfig = Pick<WorkspaceConfig, 'envs'>
 export type UserDataConfig = Pick<WorkspaceConfig, 'currentEnv'>
@@ -84,4 +83,4 @@ export const envsConfigInstance = (envs: EnvsConfig): InstanceElement =>
 export const workspaceMetadataConfigInstance = (
   wsConfig: WorkspaceMetadataConfig
 ): InstanceElement =>
-  new InstanceElement(WORKSPACE_CONFIG_NAME, workspaceMetadataConfigType, _.omitBy(wsConfig, _.isUndefined))
+  new InstanceElement(WORKSPACE_CONFIG_NAME, workspaceMetadataConfigType, wsConfig)

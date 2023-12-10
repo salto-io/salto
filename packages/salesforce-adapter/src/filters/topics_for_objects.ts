@@ -16,10 +16,10 @@
 import {
   ObjectType, Element, Values, isObjectTypeChange, InstanceElement,
   isAdditionOrModificationChange, getChangeData, isAdditionChange, isModificationChange,
-  ElemID, toChange, CORE_ANNOTATIONS,
+  ElemID, toChange, CORE_ANNOTATIONS, ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { collections, promises } from '@salto-io/lowerdash'
+import { collections, multiIndex, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { TOPICS_FOR_OBJECTS_FIELDS, TOPICS_FOR_OBJECTS_ANNOTATION, TOPICS_FOR_OBJECTS_METADATA_TYPE, SALESFORCE } from '../constants'
 import {
@@ -32,11 +32,16 @@ import {
 } from '../transformers/transformer'
 import { LocalFilterCreator } from '../filter'
 import { TopicsForObjectsInfo } from '../client/types'
-import { apiNameSync, boolValue, getInstancesOfMetadataType, isInstanceOfTypeChange } from './utils'
+import {
+  apiNameSync,
+  boolValue,
+  getInstancesOfMetadataType,
+  isCustomObjectSync,
+  isInstanceOfTypeChange,
+} from './utils'
 
 const { awu } = collections.asynciterable
 const { removeAsync } = promises.array
-
 const { ENABLE_TOPICS, ENTITY_API_NAME } = TOPICS_FOR_OBJECTS_FIELDS
 
 const log = logger(module)
@@ -68,9 +73,61 @@ const createTopicsForObjectsInstance = (values: TopicsForObjectsInfo): InstanceE
   )
 )
 
-const filterCreator: LocalFilterCreator = () => ({
+type CustomObjectWithTopics = ObjectType & {
+  annotations: {
+    [TOPICS_FOR_OBJECTS_ANNOTATION]: {
+      [ENABLE_TOPICS]: boolean
+    }
+  }
+}
+
+const isCustomObjectWithTopics = (element: Element): element is CustomObjectWithTopics => (
+  isCustomObjectSync(element) && _.isBoolean(getTopicsForObjects(element)[ENABLE_TOPICS])
+)
+
+type SetTopicsForObjectsForFetchWithChangesDetectionParams = {
+  customObjects: ObjectType[]
+  isTopicsEnabledByType: Record<string, boolean>
+  elementsSource: ReadOnlyElementsSource
+}
+
+// In fetch with changes detection mode we won't have the TopicsForObjects instances that
+// were not updated from the previous fetch, hence we need the current value from the Elements Source.
+const setTopicsForObjectsForFetchWithChangesDetection = async ({
+  customObjects, isTopicsEnabledByType, elementsSource,
+}: SetTopicsForObjectsForFetchWithChangesDetectionParams): Promise<void> => {
+  if (Object.keys(isTopicsEnabledByType).length > 0) {
+    log.debug('isTopicsEnabledByType in fetchWithChangesDetection: %o', isTopicsEnabledByType)
+  }
+  const isTopicsEnabledForObjectFromSource = await multiIndex.keyByAsync({
+    iter: await elementsSource.getAll(),
+    filter: isCustomObjectWithTopics,
+    key: obj => [apiNameSync(obj) ?? ''],
+    map: obj => obj.annotations.topicsForObjects.enableTopics,
+  })
+  customObjects.forEach(customObject => {
+    const typeApiName = apiNameSync(customObject)
+    if (typeApiName === undefined) {
+      return
+    }
+    const isTopicsEnabled = isTopicsEnabledByType[typeApiName] !== undefined
+      ? isTopicsEnabledByType[typeApiName]
+      : isTopicsEnabledForObjectFromSource.get(typeApiName)
+    if (isTopicsEnabled === undefined) {
+      log.error('expected isTopicsEnabled to be defined in Elements source or have a corresponding TopicsForObjects Instance for type %s', typeApiName)
+      return
+    }
+    setTopicsForObjects(customObject, isTopicsEnabled)
+  })
+}
+
+const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'topicsForObjectsFilter',
   onFetch: async (elements: Element[]): Promise<void> => {
+    if (!config.fetchProfile.metadataQuery.isTypeMatch(TOPICS_FOR_OBJECTS_METADATA_TYPE)) {
+      log.debug('skipping topicsForObjectsFilter since the MetadataType TopicsForObjects is excluded')
+      return
+    }
     const customObjectTypes = await awu(elements).filter(isCustomObject).toArray() as ObjectType[]
     if (_.isEmpty(customObjectTypes)) {
       return
@@ -78,22 +135,25 @@ const filterCreator: LocalFilterCreator = () => ({
 
     const topicsForObjectsInstances = await getInstancesOfMetadataType(elements,
       TOPICS_FOR_OBJECTS_METADATA_TYPE)
-    if (_.isEmpty(topicsForObjectsInstances)) {
-      return
-    }
-
     const topicsPerObject = topicsForObjectsInstances.map(instance =>
       ({ [instance.value[ENTITY_API_NAME]]: boolValue(instance.value[ENABLE_TOPICS]) }))
     const topics: Record<string, boolean> = _.merge({}, ...topicsPerObject)
 
     // Add topics for objects to all fetched elements
-    await awu(customObjectTypes).forEach(async obj => {
-      const fullName = await apiName(obj)
-      if (Object.keys(topics).includes(fullName)) {
-        setTopicsForObjects(obj, topics[fullName])
-      }
-    })
-
+    if (config.fetchProfile.metadataQuery.isFetchWithChangesDetection()) {
+      await setTopicsForObjectsForFetchWithChangesDetection({
+        customObjects: customObjectTypes,
+        isTopicsEnabledByType: topics,
+        elementsSource: config.elementsSource,
+      })
+    } else {
+      await awu(customObjectTypes).forEach(async obj => {
+        const fullName = await apiName(obj)
+        if (Object.keys(topics).includes(fullName)) {
+          setTopicsForObjects(obj, topics[fullName])
+        }
+      })
+    }
     // Remove TopicsForObjects Instances & hide the TopicsForObjects metadata type
     _.pullAll(elements, topicsForObjectsInstances)
     const topicsForObjectsType = elements

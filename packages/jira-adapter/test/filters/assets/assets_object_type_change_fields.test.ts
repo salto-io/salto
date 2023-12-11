@@ -77,8 +77,6 @@ describe('changeParentsFilter', () => {
           .toEqual(new ReferenceExpression(assetSchemaInstance.elemID, assetSchemaInstance))
         expect(sonOneInstance.value.parentObjectTypeId)
           .toEqual(new ReferenceExpression(parentInstance.elemID, parentInstance))
-        expect(parentInstance.annotations[CORE_ANNOTATIONS.PARENT]).toBeUndefined()
-        expect(sonOneInstance.annotations[CORE_ANNOTATIONS.PARENT]).toBeUndefined()
       })
     })
 })

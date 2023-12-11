@@ -47,7 +47,7 @@ describe('omit fields filter', () => {
       elemID: new ElemID(NETSUITE, 'custrecord1'),
       annotations: {
         scriptid: 'custrecord1',
-        isinactive: false,
+        test: false,
         [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
       },
     })
@@ -55,7 +55,7 @@ describe('omit fields filter', () => {
       elemID: new ElemID(NETSUITE, 'custrecord2'),
       annotations: {
         scriptid: 'custrecord2',
-        isinactive: true,
+        test: true,
         [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
       },
     })
@@ -64,7 +64,7 @@ describe('omit fields filter', () => {
       standardType,
       {
         scriptid: 'workflow1',
-        isinactive: true,
+        test: true,
       }
     )
     otherTypeInstance = new InstanceElement(
@@ -72,7 +72,7 @@ describe('omit fields filter', () => {
       otherType,
       {
         name: 'some instance',
-        isinactive: true,
+        test: true,
       }
     )
     noMatchInstance = new InstanceElement(
@@ -80,7 +80,7 @@ describe('omit fields filter', () => {
       standardType,
       {
         scriptid: 'workflow2',
-        isinactive: false,
+        test: false,
       }
     )
     customRecordInstance = new InstanceElement(
@@ -88,7 +88,7 @@ describe('omit fields filter', () => {
       customRecordTypeToExclude,
       {
         scriptid: 'val_123',
-        isinactive: false,
+        test: false,
       }
     )
     customRecordInstanceToExclude = new InstanceElement(
@@ -96,7 +96,7 @@ describe('omit fields filter', () => {
       customRecordType,
       {
         scriptid: 'val_456',
-        isinactive: true,
+        test: true,
       }
     )
     elements = [
@@ -128,7 +128,7 @@ describe('omit fields filter', () => {
   it('should exclude instance by criteria', async () => {
     filterOpts.config.fetch.exclude.types.push({
       name: WORKFLOW,
-      criteria: { isinactive: true },
+      criteria: { test: true },
     })
     const elementsLength = elements.length
     await filter.filtersRunner(filterOpts, filters).onFetch?.(elements)
@@ -140,7 +140,7 @@ describe('omit fields filter', () => {
       name: '.*',
       criteria: {
         scriptid: 'workflow.*',
-        isinactive: true,
+        test: true,
       },
     })
     const elementsLength = elements.length
@@ -151,7 +151,7 @@ describe('omit fields filter', () => {
   it('should exclude custom record type by criteria with its instances', async () => {
     filterOpts.config.fetch.exclude.types.push({
       name: CUSTOM_RECORD_TYPE,
-      criteria: { isinactive: true },
+      criteria: { test: true },
     })
     const elementsLength = elements.length
     await filter.filtersRunner(filterOpts, filters).onFetch?.(elements)
@@ -162,7 +162,7 @@ describe('omit fields filter', () => {
   it('should exclude custom record instance by criteria', async () => {
     filterOpts.config.fetch.exclude.customRecords = [{
       name: '.*',
-      criteria: { isinactive: true },
+      criteria: { test: true },
     }]
     const elementsLength = elements.length
     await filter.filtersRunner(filterOpts, filters).onFetch?.(elements)

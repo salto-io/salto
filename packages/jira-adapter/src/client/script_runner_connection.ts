@@ -123,7 +123,7 @@ export const createScriptRunnerConnection = (
     return urlPromise
   }
 
-  return retryOptions => (
+  return (retryOptions, timeout) => (
     clientUtils.axiosConnection({
       retryOptions,
       authParamsFunc: async _credentials => ({
@@ -133,6 +133,7 @@ export const createScriptRunnerConnection = (
       }),
       baseURLFunc: async _credentials => getBaseUrl(getUrl()),
       credValidateFunc: async () => ({ accountId: '' }), // There is no login endpoint to call
+      timeout,
     })
   )
 }

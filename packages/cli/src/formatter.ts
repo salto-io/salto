@@ -641,9 +641,9 @@ export const formatLoginToAccountFailed = (accountName: string, errorMessage: st
   emptyLine(),
 ].join('\n')
 
-export const formatAddServiceFailed = (accountName: string, errorMessage: string): string => [
-  formatSimpleError(Prompts.ACCOUNT_LOGIN_FAILED(accountName, errorMessage)),
-  Prompts.ACCOUNT_ADD_FAILED_TRY_AGAIN(accountName),
+export const formatAddServiceFailed = (serviceName: string, errorMessage: string): string => [
+  formatSimpleError(Prompts.ACCOUNT_LOGIN_FAILED(serviceName, errorMessage)),
+  Prompts.ACCOUNT_ADD_FAILED_TRY_AGAIN(serviceName),
   emptyLine(),
 ].join('\n')
 

@@ -13,11 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { logger } from '@salto-io/logging'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { hash } from '@salto-io/lowerdash'
 import { Readable } from 'stream'
 
 const { toMD5 } = hash
+const log = logger(module)
 
 export type ContentAndHash = {
   account: string
@@ -40,6 +42,8 @@ export type StateContentProvider = {
 }
 
 
-export const getHashFromHashes = (hashes: string[]): string => (
-  toMD5(safeJsonStringify(hashes.sort()))
-)
+export const getHashFromHashes = (hashes: string[]): string => {
+  const finalHash = toMD5(safeJsonStringify(hashes.sort()))
+  log.debug('Calculating hash from hashes %s, got %s', hashes.join(','), finalHash)
+  return finalHash
+}

@@ -40,7 +40,7 @@ const DEFAULT_USER = { id: 222, email: 'DefaultUser' }
 jest.mock('../../../src/user_utils', () => ({
   ...jest.requireActual<{}>('../../../src/user_utils'),
   getIdByEmail: () => ({ [USER.id]: USER.email }),
-  getUsers: () => [USER, DEFAULT_USER],
+  getUsers: () => ({ users: [USER, DEFAULT_USER], errors: [] }),
 }))
 
 type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'deploy' | 'onDeploy'>

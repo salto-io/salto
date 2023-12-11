@@ -18,12 +18,14 @@ import { elementSource } from '@salto-io/workspace'
 import { ZENDESK, ARTICLE_TYPE_NAME } from '../../src/constants'
 import { usersValidator } from '../../src/change_validators'
 import ZendeskClient from '../../src/client/client'
+import { ZendeskFetchConfig } from '../../src/config'
 
 const { createInMemoryElementSource } = elementSource
 
 describe('usersValidator', () => {
   let client: ZendeskClient
   let mockGet: jest.SpyInstance
+  const config = { resolveUserIDs: true } as ZendeskFetchConfig
   const articleType = new ObjectType({
     elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME),
   })
@@ -110,7 +112,7 @@ describe('usersValidator', () => {
 
   it('should return errors if users are missing and there is no deploy config', async () => {
     const changes = [toChange({ after: articleInstance }), toChange({ after: macroInstance })]
-    const changeValidator = usersValidator(client)
+    const changeValidator = usersValidator(client, config)
     const errors = await changeValidator(changes, testsElementSource)
     expect(errors).toHaveLength(2)
     expect(errors).toEqual([
@@ -135,7 +137,7 @@ describe('usersValidator', () => {
       { author_id: '1@salto.io', draft: false },
     )
     const changes = [toChange({ after: articleWithValidUser })]
-    const changeValidator = usersValidator(client)
+    const changeValidator = usersValidator(client, config)
     const errors = await changeValidator(changes, testsElementSource)
     expect(errors).toHaveLength(0)
   })
@@ -178,7 +180,7 @@ describe('usersValidator', () => {
       }
     )
     const changes = [toChange({ after: macroWithValidUserFields }), toChange({ after: triggerInstance })]
-    const changeValidator = usersValidator(client)
+    const changeValidator = usersValidator(client, config)
     const errors = await changeValidator(changes, testsElementSource)
     expect(errors).toHaveLength(0)
   })
@@ -245,7 +247,7 @@ describe('usersValidator', () => {
       }
     )
     const changes = [toChange({ after: triggerInstance }), toChange({ after: triggerInstance2 })]
-    const changeValidator = usersValidator(client)
+    const changeValidator = usersValidator(client, config)
     const errors = await changeValidator(changes, testsElementSource)
     expect(errors).toMatchObject([
       {

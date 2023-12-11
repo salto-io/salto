@@ -17,7 +17,6 @@ import { EOL } from 'os'
 import _ from 'lodash'
 import path from 'path'
 import { Readable } from 'stream'
-import { createHash } from 'crypto'
 import { chain } from 'stream-chain'
 import { parser } from 'stream-json/jsonl/Parser'
 import getStream from 'get-stream'
@@ -92,6 +91,27 @@ const parseStateContent = async (
   return res
 }
 
+
+export const getStateContentProvider = (
+  workspaceId: string,
+  stateConfig: StateConfig = { provider: 'file' },
+): StateContentProvider => {
+  switch (stateConfig.provider) {
+    case 'file': {
+      return createFileStateContentProvider()
+    }
+    case 's3': {
+      const bucketName = stateConfig.options?.s3?.bucket
+      if (bucketName === undefined) {
+        throw new Error('Missing key "options.s3.bucket" in workspace state configuration')
+      }
+      return createS3StateContentProvider({ workspaceId, bucketName })
+    }
+    default:
+      throw new Error(`Unsupported state provider ${stateConfig.provider}`)
+  }
+}
+
 export const localState = (
   filePrefix: string,
   envName: string,
@@ -104,6 +124,7 @@ export const localState = (
   let cacheDirty = false
   let contentsAndHash: Promise<ContentAndHash[]> | undefined
   let currentFilePrefix = filePrefix
+  let currentContentProvider = contentProvider
 
   const setDirty = (): void => {
     dirty = true
@@ -117,7 +138,7 @@ export const localState = (
     filePaths: string[]
     newHash: string
   }): Promise<void> => {
-    const res = await parseStateContent(contentProvider.readContents(filePaths))
+    const res = await parseStateContent(currentContentProvider.readContents(filePaths))
     await stateData.elements.clear()
     await stateData.elements.setAll(res.elements)
     await stateData.pathIndex.clear()
@@ -150,8 +171,8 @@ export const localState = (
       staticFilesSource,
       persistent,
     )
-    const filePaths = await contentProvider.findStateFiles(currentFilePrefix)
-    const stateFilesHash = await contentProvider.getHash(filePaths)
+    const filePaths = await currentContentProvider.findStateFiles(currentFilePrefix)
+    const stateFilesHash = await currentContentProvider.getHash(filePaths)
     const quickAccessHash = (await quickAccessStateData.saltoMetadata.get('hash')) ?? toMD5(safeJsonStringify([]))
     if (quickAccessHash !== stateFilesHash) {
       log.debug('found different hash - loading state data (quickAccessHash=%s stateFilesHash=%s)', quickAccessHash, stateFilesHash)
@@ -208,18 +229,12 @@ export const localState = (
     const stateTextPerAccount = await createStateTextPerAccount()
     return awu(Object.entries(stateTextPerAccount))
       .map(async ([account, fileContent]): Promise<ContentAndHash> => {
-        const contentHash = createHash('md5')
-        const zipContent = createGZipWriteStream(fileContent)
-        // We should call toString here, but we do to maintain backwards compatibility
+        const content = await getStream.buffer(createGZipWriteStream(fileContent))
+        // We should not call toString here, but we do to maintain backwards compatibility
         // fixing this would cause the hash to change to the correct hash value, but that would
         // trigger invalidation in all caches
-        zipContent.on('data', chunk => contentHash.update(chunk.toString()))
-        const content = await getStream.buffer(zipContent)
-        return {
-          account,
-          content,
-          contentHash: contentHash.digest('hex'),
-        }
+        const contentHash = toMD5(content.toString())
+        return { account, content, contentHash }
       })
       .toArray()
   }
@@ -254,7 +269,7 @@ export const localState = (
     rename: async (newPrefix: string): Promise<void> => {
       await Promise.all([
         staticFilesSource.rename(newPrefix),
-        contentProvider.rename(currentFilePrefix, newPrefix),
+        currentContentProvider.rename(currentFilePrefix, newPrefix),
       ])
       currentFilePrefix = newPrefix
       setDirty()
@@ -275,7 +290,7 @@ export const localState = (
         updatedHash,
         Object.fromEntries(contents.map(({ account, contentHash }) => [account, contentHash])),
       )
-      await contentProvider.writeContents(currentFilePrefix, contents)
+      await currentContentProvider.writeContents(currentFilePrefix, contents)
       await inMemState.setVersion(version)
       await inMemState.setHash(updatedHash)
       await inMemState.flush()
@@ -286,7 +301,7 @@ export const localState = (
     calculateHash: calculateHashImpl,
     clear: async (): Promise<void> => {
       await Promise.all([
-        contentProvider.clear(currentFilePrefix),
+        currentContentProvider.clear(currentFilePrefix),
         inMemState.clear(),
       ])
       setDirty()
@@ -299,26 +314,22 @@ export const localState = (
       await inMemState.updateStateFromChanges({ changes, unmergedElements, fetchAccounts })
       setDirty()
     },
-  }
-}
+    updateConfig: async args => {
+      const newProvider = getStateContentProvider(args.workspaceId, args.stateConfig)
+      const contents = await getContentAndHash()
 
-export const getStateContentProvider = (
-  workspaceId: string,
-  stateConfig: StateConfig = { provider: 'file' },
-): StateContentProvider => {
-  switch (stateConfig.provider) {
-    case 'file': {
-      return createFileStateContentProvider()
-    }
-    case 's3': {
-      const bucketName = stateConfig.options?.s3?.bucket
-      if (bucketName === undefined) {
-        throw new Error('Missing key "options.s3.bucket" in workspace state configuration')
-      }
-      return createS3StateContentProvider({ workspaceId, bucketName })
-    }
-    default:
-      throw new Error(`Unsupported state provider ${stateConfig.provider}`)
+      const tempPrefix = path.join(path.dirname(currentFilePrefix), `.tmp_${path.basename(currentFilePrefix)}`)
+      await newProvider.writeContents(tempPrefix, contents)
+
+      // swap the contents from the old provider to the new one
+      // note - we have to clear before we rename in case the providers use the same file names
+      await currentContentProvider.clear(currentFilePrefix)
+      await newProvider.rename(tempPrefix, path.basename(currentFilePrefix))
+
+      currentContentProvider = newProvider
+
+      await inMemState.updateConfig(args)
+    },
   }
 }
 

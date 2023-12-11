@@ -24,6 +24,7 @@ import { state as wsState, pathIndex, remoteMap, staticFiles, serialization } fr
 import { hash, collections } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
 import { getStateContentProvider, loadState, localState } from '../../../../src/local-workspace/state/state'
+import * as stateFunctions from '../../../../src/local-workspace/state/state'
 import { getTopLevelElements } from '../../../common/elements'
 import { version as currentSaltoVersion } from '../../../../src/generated/version.json'
 import { mockStaticFilesSource } from '../../../common/state'
@@ -91,6 +92,7 @@ describe('localState', () => {
     let initialStateHash: string | undefined
     let sfUpdateDate: Date
     let nsUpdateDate: Date
+    const pathPrefix = 'multiple_files'
     let mapCreator: remoteMap.RemoteMapCreator
     beforeEach(async () => {
       stateStaticFilesSource = mockStaticFilesSource()
@@ -99,11 +101,11 @@ describe('localState', () => {
       sfUpdateDate = new Date('2023-02-01T00:00:00.000Z')
       nsUpdateDate = new Date('2023-02-02T00:00:00.000Z')
       contentProvider = mockContentProvider({
-        'multiple_files/netsuite': await mockStateContent({ elements: nsElements, date: nsUpdateDate, version: '0.1.23' }),
-        'multiple_files/salesforce': await mockStateContent({ elements: sfElements, date: sfUpdateDate, version: '0.0.1' }),
+        [`${pathPrefix}/netsuite`]: await mockStateContent({ elements: nsElements, date: nsUpdateDate, version: '0.1.23' }),
+        [`${pathPrefix}/salesforce`]: await mockStateContent({ elements: sfElements, date: sfUpdateDate, version: '0.0.1' }),
       })
       mapCreator = inMemRemoteMapCreator()
-      state = localState('multiple_files', 'env', mapCreator, stateStaticFilesSource, contentProvider)
+      state = localState(pathPrefix, 'env', mapCreator, stateStaticFilesSource, contentProvider)
       initialStateHash = await state.getHash()
     })
 
@@ -141,8 +143,13 @@ describe('localState', () => {
         await state.flush()
       })
       it('should write updated content', async () => {
-        // TODO: check the contents make sense
-        expect(contentProvider.writeContents).toHaveBeenCalled()
+        expect(contentProvider.writeContents).toHaveBeenCalledWith(
+          pathPrefix,
+          expect.arrayContaining(
+            ['netsuite', 'salesforce', 'salto']
+              .map(account => ({ account, content: expect.any(Buffer), contentHash: expect.any(String) }))
+          ),
+        )
       })
       it('should update the state salto version', async () => {
         // TODO: this is not really the correct behavior, we should only really update the salto version
@@ -166,7 +173,7 @@ describe('localState', () => {
 
     it('should rename files', async () => {
       await state.rename('new')
-      expect(contentProvider.rename).toHaveBeenCalledWith('multiple_files', 'new')
+      expect(contentProvider.rename).toHaveBeenCalledWith(pathPrefix, 'new')
     })
 
     it('should clear contents when clear is called', async () => {
@@ -225,13 +232,65 @@ describe('localState', () => {
       })
       it('should write the content of the final data', () => {
         expect(contentProvider.writeContents).toHaveBeenLastCalledWith(
-          'multiple_files',
+          pathPrefix,
           expect.arrayContaining(
-            ['salesforce', 'netsuite', 'newAccount', 'newerAccount'].map(
-              account => expect.objectContaining({ account })
+            ['netsuite', 'salesforce', 'newAccount', 'newerAccount'].map(
+              account => ({ account, content: expect.any(Buffer), contentHash: expect.any(String) })
             )
           )
         )
+      })
+    })
+
+    describe('updateConfig', () => {
+      let getStateContentProviderSpy: jest.SpiedFunction<typeof getStateContentProvider>
+      let newContentProvider: jest.Mocked<StateContentProvider>
+      beforeEach(async () => {
+        getStateContentProviderSpy = jest.spyOn(stateFunctions, 'getStateContentProvider')
+        newContentProvider = mockContentProvider({})
+        getStateContentProviderSpy.mockReturnValue(newContentProvider)
+      })
+      afterEach(() => {
+        getStateContentProviderSpy.mockRestore()
+      })
+      describe('when writing to the new provider works', () => {
+        beforeEach(async () => {
+          await state.updateConfig({ workspaceId: 'wsId', stateConfig: undefined })
+        })
+        it('should write the contents of the current provider to the new provider', () => {
+          expect(newContentProvider.writeContents).toHaveBeenLastCalledWith(
+            expect.any(String),
+            expect.arrayContaining(
+              ['netsuite', 'salesforce'].map(
+                account => ({ account, content: expect.any(Buffer), contentHash: expect.any(String) })
+              )
+            )
+          )
+        })
+        it('should clear the old content provider', () => {
+          expect(contentProvider.clear).toHaveBeenCalled()
+        })
+        it('should end with the new provider having state files in the correct prefix', async () => {
+          expect(await newContentProvider.findStateFiles(pathPrefix)).toHaveLength(2)
+        })
+      })
+      describe('when writing to the new provider fails', () => {
+        let result: Promise<void>
+        beforeEach(() => {
+          newContentProvider.writeContents.mockRejectedValue(new Error('failed to write content'))
+          result = state.updateConfig({ workspaceId: 'wsId', stateConfig: undefined })
+        })
+        it('should fail', async () => {
+          await expect(result).rejects.toThrow()
+        })
+        it('should not clear the old provider', async () => {
+          try {
+            await result
+          } catch (e) {
+            // We expect this to fail
+          }
+          expect(contentProvider.clear).not.toHaveBeenCalled()
+        })
       })
     })
   })

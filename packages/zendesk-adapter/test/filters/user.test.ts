@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, InstanceElement, isInstanceElement, toChange, getChangeData } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, isInstanceElement, toChange, getChangeData, SaltoError } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { mockFunction } from '@salto-io/test-utils'
 import { ZENDESK } from '../../src/constants'
@@ -86,6 +86,10 @@ describe('user filter', () => {
   })
 
   describe('onFetch', () => {
+    beforeEach(() => {
+      getUsersMock.mockResolvedValue({ users: [] })
+    })
+
     const filter = filterCreator(
       createFilterCreatorParams({ paginator: mockPaginator })
     ) as FilterType
@@ -188,6 +192,28 @@ describe('user filter', () => {
         restriction: { type: 'User', id: 3 },
       })
     })
+    it('returns a warning if users query is forbidden, and does not replace anything', async () => {
+      const elements = [macroType.clone(), macroInstance.clone()]
+      const errors: SaltoError[] = [{ message: 'Bad user, go away!', severity: 'Warning' }]
+      getUsersMock.mockResolvedValueOnce({ users: [], errors })
+      getIdByEmailMock.mockResolvedValueOnce({})
+      const paginator = mockFunction<clientUtils.Paginator>()
+      const newFilter = filterCreator(
+        createFilterCreatorParams({ paginator })
+      ) as FilterType
+      expect(await newFilter.onFetch(elements)).toEqual({ errors })
+      const instances = elements.filter(isInstanceElement)
+      const macro = instances.find(e => e.elemID.typeName === 'macro')
+      expect(macro?.value).toEqual({
+        title: 'test',
+        actions: [
+          { field: 'status', value: 'closed' },
+          { field: 'assignee_id', value: '2' },
+          { field: 'follower', value: '1' },
+        ],
+        restriction: { type: 'User', id: 3 },
+      })
+    })
   })
   describe('preDeploy', () => {
     let filter: FilterType
@@ -201,11 +227,11 @@ describe('user filter', () => {
         createFilterCreatorParams({ paginator: mockPaginator })
       ) as FilterType
       getUsersMock
-        .mockResolvedValue([
+        .mockResolvedValue({ users: [
           { id: 1, email: 'a@a.com', role: 'admin', custom_role_id: 123, name: 'a', locale: 'en-US' },
           { id: 2, email: 'b@b.com', role: 'admin', custom_role_id: 123, name: 'b', locale: 'en-US' },
           { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
-        ])
+        ] })
       getIdByEmailMock
         .mockResolvedValue({ 1: 'a@a.com',
           2: 'b@b.com',
@@ -243,11 +269,11 @@ describe('user filter', () => {
     ) as FilterType
     it('should change the user ids to emails', async () => {
       getUsersMock
-        .mockResolvedValue([
+        .mockResolvedValue({ users: [
           { id: 1, email: 'a@a.com', role: 'admin', custom_role_id: 123, name: 'a', locale: 'en-US' },
           { id: 2, email: 'b@b.com', role: 'admin', custom_role_id: 123, name: 'b', locale: 'en-US' },
           { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
-        ])
+        ] })
       getIdByEmailMock
         .mockResolvedValue({ 1: 'a@a.com',
           2: 'b@b.com',
@@ -282,7 +308,7 @@ describe('user filter', () => {
     it('should not replace anything if the users response is invalid', async () => {
       const instances = [macroInstance.clone()]
       const paginator = mockFunction<clientUtils.Paginator>()
-      getUsersMock.mockResolvedValueOnce([])
+      getUsersMock.mockResolvedValueOnce({ users: [] })
       getIdByEmailMock.mockResolvedValueOnce({
 
       })

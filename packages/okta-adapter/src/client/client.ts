@@ -28,7 +28,7 @@ import { OktaClientRateLimitConfig } from '../config'
 
 const { sleep } = promises.timeout
 const {
-  RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS, DEFAULT_RETRY_OPTS,
+  RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS, DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS,
   throttle, logDecorator,
 } = clientUtils
 const log = logger(module)
@@ -167,6 +167,7 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
           ? DEFAULT_MAX_REQUESTS_PER_MINUTE // This means the dynamic calculation is disabled, so we use the default
           : UNLIMITED_MAX_REQUESTS_PER_MINUTE, // Unlimited because the rate max requests is calculated dynamically
         retry: DEFAULT_RETRY_OPTS,
+        timeout: DEFAULT_TIMEOUT_OPTS,
       }
     )
     this.rateLimitBuffer = clientOpts.config?.rateLimit?.rateLimitBuffer ?? DEFAULT_RATE_LIMIT_BUFFER

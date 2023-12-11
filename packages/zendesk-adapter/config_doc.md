@@ -76,6 +76,7 @@ zendesk {
 | [exclude](#fetch-entry-options)    | []                                | List of entries to determine what instances to exclude in the fetch
 | [guide]                            | undefined (Guide will be disabled)| Configuration for defining which brands will be included in Zendesk Guide fetch
 | [resolveOrganizationIDs]           | false                             | When enabled, organization IDs will be replaced with organization names
+| [resolveUserIDs]                   | true                              | When enabled, user IDs will be replaced with user emails
 | includeAuditDetails                | false                             | When enabled, changed_at and changed_by information will be added to instances
 | handleIdenticalAttachmentConflicts | false                             | When enabled, one attachment will be kept from each set of identical attachments (having the same hash) associated with the same article
 | extractReferencesFromFreeText      | false                             | When enabled, convert ids in zendesk links in string values to salto references

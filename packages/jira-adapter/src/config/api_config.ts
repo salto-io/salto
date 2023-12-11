@@ -2169,10 +2169,15 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'created' },
         { fieldName: 'updated' },
         { fieldName: 'globalId' },
+        { fieldName: 'objectCount' },
+        { fieldName: 'objectTypeCount' },
+        { fieldName: 'canManage' },
+        { fieldName: 'atlassianTemplateId' },
       ],
       fieldsToHide: [
         { fieldName: 'id' },
         { fieldName: 'idAsInt' },
+        { fieldName: 'workspaceId' },
       ],
       standaloneFields: [
         { fieldName: 'assetsStatuses' },
@@ -2182,6 +2187,23 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'assetsStatuses', fieldType: 'List<AssetsStatus>' },
       ],
+    },
+    deployRequests: {
+      add: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/create',
+        method: 'post',
+        fieldsToIgnore: ['assetsStatuses', 'assetsObjectTypes'],
+      },
+      modify: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/{id}',
+        method: 'put',
+        fieldsToIgnore: ['assetsStatuses', 'assetsObjectTypes'],
+      },
+      remove: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
     },
   },
   AssetsStatuses: {
@@ -2197,8 +2219,26 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       sourceTypeName: 'AssetsSchema__assetsStatuses',
       fieldsToHide: [
         { fieldName: 'id' },
+        { fieldName: 'workspaceId' },
+      ],
+      fieldsToOmit: [
         { fieldName: 'objectSchemaId' },
       ],
+    },
+    deployRequests: {
+      add: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/statustype',
+        method: 'post',
+      },
+      modify: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/statustype/{id}',
+        method: 'put',
+      },
+      remove: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/statustype/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
     },
   },
   AssetsObjectTypes: {
@@ -2220,12 +2260,26 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'created' },
         { fieldName: 'updated' },
         { fieldName: 'globalId' },
-        { fieldName: 'icon' },
         { fieldName: 'objectCount' },
         { fieldName: 'objectSchemaId' },
         { fieldName: 'workspaceId' },
       ],
       extendsParentId: false,
+    },
+    deployRequests: {
+      add: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objecttype/create',
+        method: 'post',
+      },
+      modify: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objecttype/{id}',
+        method: 'put',
+      },
+      remove: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objecttype/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
     },
   },
   AssetsObjectTypeAttribute: {
@@ -2241,9 +2295,9 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       sourceTypeName: 'AssetsSchema__attributes',
       fieldsToHide: [
         { fieldName: 'id' },
+        { fieldName: 'workspaceId' },
       ],
       fieldsToOmit: [
-        { fieldName: 'workspaceId' },
         { fieldName: 'globalId' },
       ],
     },
@@ -2258,6 +2312,7 @@ export const JSM_DUCKTYPE_SUPPORTED_TYPES = {
   Calendar: ['Calendar'],
   PortalSettings: ['PortalSettings'],
   SLA: ['SLA'],
+  Form: [],
 }
 
 export const JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES = {
@@ -2345,7 +2400,6 @@ const SUPPORTED_TYPES = {
   StatusCategory: ['StatusCategories'],
   Workflow: ['Workflows'],
   WorkflowScheme: ['WorkflowSchemes'],
-  ServerInformation: ['ServerInformation'],
   Board: ['Boards'],
   Group: ['Groups'],
   Automation: [],

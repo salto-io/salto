@@ -27,7 +27,7 @@ import {
   CURRENCY, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_NAME_PREFIX, DATASET, EXCHANGE_RATE,
   NETSUITE, PERMISSIONS, SAVED_SEARCH, WORKBOOK,
 } from './constants'
-import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, checkTypeNameRegMatch, noSupportedTypeMatch, validateNetsuiteQueryParameters, validateDefined, LockedElementsConfig, emptyQueryParams, fullFetchConfig, isCriteriaQuery } from './query'
+import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, checkTypeNameRegMatch, noSupportedTypeMatch, validateNetsuiteQueryParameters, validateDefined, LockedElementsConfig, emptyQueryParams, fullFetchConfig, isCriteriaQuery, CriteriaQuery } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING } from './data_elements/types'
 import { isCustomRecordTypeName, netsuiteSupportedTypes } from './types'
 import { FetchByQueryFailures } from './change_validators/safe_deploy'
@@ -55,6 +55,17 @@ export const DEFAULT_MAX_INSTANCES_PER_TYPE = [
 ]
 export const UNLIMITED_INSTANCES_VALUE = -1
 export const DEFAULT_AXIOS_TIMEOUT_IN_MINUTES = 20
+
+const ALL_TYPES_REGEX = '.*'
+const INACTIVE_FIELDS_NAMES = ['isinactive', 'inactive', 'isInactive']
+const FILE_TYPES_TO_EXCLUDE_REGEX = '.*\\.(csv|pdf|eml|png|gif|jpeg|xls|xlsx|doc|docx|ppt|pptx)'
+
+const inactiveElementsCriteria = INACTIVE_FIELDS_NAMES.map((fieldName): CriteriaQuery => ({
+  name: ALL_TYPES_REGEX,
+  criteria: {
+    [fieldName]: true,
+  },
+}))
 
 // Taken from https://github.com/salto-io/netsuite-suitecloud-sdk/blob/e009e0eefcd918635353d093be6a6c2222d223b8/packages/node-cli/src/validation/InteractiveAnswersValidator.js#L27
 const SUITEAPP_ID_FORMAT_REGEX = /^[a-z0-9]+(\.[a-z0-9]+){2}$/
@@ -451,9 +462,18 @@ export const fetchDefault: FetchParams = {
           .filter(itemTypeName => !['giftCertificateItem', 'downloadItem'].includes(itemTypeName))
           .join('|'),
       }, // may be a lot of data that takes a lot of time to fetch
+      ...inactiveElementsCriteria,
+      {
+        name: SAVED_SEARCH,
+        criteria: {
+          FLAG_PUBLIC: false,
+        },
+      },
     ],
     fileCabinet: [
       '^/Templates/Letter Templates/Mail Merge Folder.*',
+      FILE_TYPES_TO_EXCLUDE_REGEX,
+      FILE_TYPES_TO_EXCLUDE_REGEX.toUpperCase(),
     ],
   },
 }

@@ -113,6 +113,7 @@ export const ISSUE_VIEW_TYPE = 'IssueView'
 export const REQUEST_FORM_TYPE = 'RequestForm'
 export const FORM_TYPE = 'Form'
 export const ASSESTS_SCHEMA_TYPE = 'AssetsSchema'
+export const ASSETS_STATUS_TYPE = 'AssetsStatus'
 export const ASSETS_OBJECT_TYPE = 'AssetsObjectType'
 export const ASSETS_ATTRIBUTE_TYPE = 'AssetsObjectTypeAttribute'
 // almost constant functions

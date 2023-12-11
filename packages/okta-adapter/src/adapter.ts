@@ -54,6 +54,7 @@ import profileMappingPropertiesFilter from './filters/profile_mapping_properties
 import profileMappingAdditionFilter from './filters/profile_mapping_addition'
 import omitAuthenticatorMappingFilter from './filters/omit_authenticator_mapping'
 import groupPushFilter from './filters/group_push'
+import addImportantValues from './filters/add_important_values'
 import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
 
@@ -82,6 +83,7 @@ export const DEFAULT_FILTERS = [
   groupPushFilter,
   oktaExpressionLanguageFilter,
   profileEnrollmentAttributesFilter,
+  addImportantValues,
   defaultPolicyRuleDeployment,
   policyRuleRemoval,
   schemaFieldsRemovalFilter,

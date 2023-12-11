@@ -162,7 +162,7 @@ const queryDeps = async ({ client, elements }: QueryDepsParams): Promise<Depende
   const chunkedQuery = async (
     ids: string[],
     chunkSize: number
-  ): Promise<Dependency[]> => Promise.all(_.chunk(ids, chunkSize)
+  ): Promise<Dependency[]> => (await Promise.all(_.chunk(ids, chunkSize)
     .map(async idsChunk => {
       const query = `SELECT 
     MetadataComponentId, MetadataComponentType, MetadataComponentName, 
@@ -190,19 +190,17 @@ const queryDeps = async ({ client, elements }: QueryDepsParams): Promise<Depende
           name: rec.RefMetadataComponentName,
         },
       }))
-    })).then(res => res.flat())
-  return chunkedQuery(Object.keys(elementsByMetadataComponentId), INITIAL_QUERY_CHUNK_SIZE)
-    .then(deps => {
-      if (errorIds.size === 0) {
-        log.error('Could not add all the dependencies on the following elements since they have more than 2000 dependencies: %s', Array.from(errorIds).map(id => elementsByMetadataComponentId[id]?.elemID.getFullName()).join(', '))
-      }
-      log.debug('query extra dependencies info: %s', safeJsonStringify({
-        queriesExecuted,
-        idsCount: Object.keys(elementsByMetadataComponentId).length,
-        totalQueriedDependencies: deps.length,
-      }))
-      return deps
-    })
+    }))).flat()
+  const deps = await chunkedQuery(Object.keys(elementsByMetadataComponentId), INITIAL_QUERY_CHUNK_SIZE)
+  if (errorIds.size === 0) {
+    log.error('Could not add all the dependencies on the following elements since they have more than 2000 dependencies: %s', Array.from(errorIds).map(id => elementsByMetadataComponentId[id]?.elemID.getFullName()).join(', '))
+  }
+  log.debug('query extra dependencies info: %s', safeJsonStringify({
+    queriesExecuted,
+    idsCount: Object.keys(elementsByMetadataComponentId).length,
+    totalQueriedDependencies: deps.length,
+  }))
+  return deps
 }
 
 const getDependenciesV2 = async (
@@ -277,7 +275,7 @@ const addExtraReferences = async (
       : undefined
   }
 
-  const addedDeps: ReferenceExpression[] = await awu(groupedDeps).map(async edge => {
+  const addedDeps: ReferenceExpression[] = (await awu(groupedDeps).map(async edge => {
     const elemId = getElemId(edge.from)
     if (elemId === undefined) {
       log.debug(
@@ -307,7 +305,7 @@ const addExtraReferences = async (
       elem,
       dependencies.map(item => item.elemId).filter(isDefined),
     )
-  }).toArray().then(references => references.flat())
+  }).toArray()).flat()
   log.debug('Added %d extra dependencies', addedDeps.length)
 }
 

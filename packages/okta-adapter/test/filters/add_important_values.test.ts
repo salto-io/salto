@@ -85,8 +85,8 @@ describe('add important values filter', () => {
         },
         {
           value: 'actions.assignUserToGroups.groupIds',
-          highlighted: true,
-          indexed: false,
+          highlighted: false,
+          indexed: true,
         },
         {
           value: 'allGroupsValid',

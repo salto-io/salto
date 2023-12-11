@@ -192,7 +192,7 @@ const queryDeps = async ({ client, elements }: QueryDepsParams): Promise<Depende
       }))
     }))).flat()
   const deps = await chunkedQuery(Object.keys(elementsByMetadataComponentId), INITIAL_QUERY_CHUNK_SIZE)
-  if (errorIds.size === 0) {
+  if (errorIds.size > 0) {
     log.error('Could not add all the dependencies on the following elements since they have more than 2000 dependencies: %s', Array.from(errorIds).map(id => elementsByMetadataComponentId[id]?.elemID.getFullName()).join(', '))
   }
   log.debug('query extra dependencies info: %s', safeJsonStringify({

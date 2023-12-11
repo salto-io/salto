@@ -156,266 +156,268 @@ describe('extra dependencies filter', () => {
     }) as FilterType
   })
 
-  describe('resolve internal ids', () => {
-    let numElements: number
-    let mockQueryAll: jest.Mock
+  describe('onFetch v1', () => {
+    describe('resolve internal ids', () => {
+      let numElements: number
+      let mockQueryAll: jest.Mock
 
-    async function *mockQueryAllImpl(): AsyncIterable<SalesforceRecord[]> {
-      yield [
-        {
-          MetadataComponentType: 'meta',
-          MetadataComponentId: 'inst1 id',
-          MetadataComponentName: 'inst1',
-          RefMetadataComponentType: CUSTOM_FIELD,
-          RefMetadataComponentId: 'first field',
-          RefMetadataComponentName: 'first field',
-        },
-        {
-          MetadataComponentType: 'meta',
-          MetadataComponentId: 'inst1 id',
-          MetadataComponentName: 'inst1',
-          RefMetadataComponentType: CUSTOM_FIELD,
-          RefMetadataComponentId: 'second field',
-          RefMetadataComponentName: 'second field',
-        },
-        {
-          MetadataComponentType: 'meta',
-          MetadataComponentId: 'inst1 id',
-          MetadataComponentName: 'inst1',
-          RefMetadataComponentType: 'meta2',
-          RefMetadataComponentId: 'inst3 id',
-          RefMetadataComponentName: 'inst3',
-        },
-        {
-          MetadataComponentType: 'meta2',
-          MetadataComponentId: 'inst3 id',
-          MetadataComponentName: 'inst3',
-          RefMetadataComponentType: 'meta',
-          RefMetadataComponentId: 'inst2 id',
-          RefMetadataComponentName: 'inst2',
-        },
-        {
-          MetadataComponentType: CUSTOM_FIELD,
-          MetadataComponentId: 'lead field',
-          MetadataComponentName: 'lead field',
-          RefMetadataComponentType: CUSTOM_FIELD,
-          RefMetadataComponentId: 'second field',
-          RefMetadataComponentName: 'second field',
-        },
-        {
-          MetadataComponentType: 'meta',
-          MetadataComponentId: 'inst2 id',
-          MetadataComponentName: 'inst2',
-          RefMetadataComponentType: CUSTOM_FIELD,
-          RefMetadataComponentId: 'first field',
-          RefMetadataComponentName: 'first field',
-        },
-      ] as unknown as SalesforceRecord[]
-      yield [
-        {
-          MetadataComponentType: 'meta',
-          MetadataComponentId: 'inst2 id',
-          MetadataComponentName: 'inst2',
-          RefMetadataComponentType: CUSTOM_FIELD,
-          RefMetadataComponentId: 'lead field',
-          RefMetadataComponentName: 'lead field',
-        },
-        {
-          MetadataComponentType: 'meta',
-          MetadataComponentId: 'inst2 id',
-          MetadataComponentName: 'inst2',
-          RefMetadataComponentType: CUSTOM_FIELD,
-          RefMetadataComponentId: 'unknown field',
-          RefMetadataComponentName: 'unknown field',
-        },
-        {
-          MetadataComponentType: 'meta',
-          MetadataComponentId: 'inst2 id',
-          MetadataComponentName: 'inst2',
-          RefMetadataComponentType: 'StandardEntity',
-          RefMetadataComponentId: 'Lead',
-          RefMetadataComponentName: 'Lead',
-        },
-        {
-          MetadataComponentType: 'meta',
-          MetadataComponentId: 'unknown src id',
-          MetadataComponentName: 'unknown src name',
-          RefMetadataComponentType: CUSTOM_FIELD,
-          RefMetadataComponentId: 'custom id',
-          RefMetadataComponentName: 'custom name',
-        },
-      ] as unknown as SalesforceRecord[]
-    }
-
-    async function *mockQueryAllImplEmpty(): AsyncIterable<SalesforceRecord[]> {
-      yield [
-      ] as unknown as SalesforceRecord[]
-    }
-
-    async function *mockQueryAllImplLayout(): AsyncIterable<SalesforceRecord[]> {
-      yield [
-        {
-          MetadataComponentType: 'Layout',
-          MetadataComponentId: 'layoutId1',
-          MetadataComponentName: 'layout1 name',
-          RefMetadataComponentType: CUSTOM_FIELD,
-          RefMetadataComponentId: 'first field',
-          RefMetadataComponentName: 'first field',
-        },
-      ] as unknown as SalesforceRecord[]
-    }
-
-    beforeEach(async () => {
-      mockQueryAll = jest.fn()
-        .mockImplementationOnce(mockQueryAllImplLayout)
-        .mockImplementationOnce(mockQueryAllImplEmpty)
-        .mockImplementationOnce(mockQueryAllImplEmpty)
-        .mockImplementationOnce(mockQueryAllImplEmpty)
-        .mockImplementationOnce(mockQueryAllImplEmpty)
-        .mockImplementationOnce(mockQueryAllImpl)
-      SalesforceClient.prototype.queryAll = mockQueryAll
-      numElements = elements.length
-    })
-
-    describe('when toolingDepsOfCurrentNamespace is disabled', () => {
-      beforeEach(async () => {
-        filter = filterCreator({
-          client,
-          config: {
-            ...defaultFilterContext,
-            fetchProfile: buildFetchProfile({
-              fetchParams: {
-                target: ['meta'],
-                optionalFeatures: { toolingDepsOfCurrentNamespace: false },
-              },
-            }),
-            elementsSource,
+      async function *mockQueryAllImpl(): AsyncIterable<SalesforceRecord[]> {
+        yield [
+          {
+            MetadataComponentType: 'meta',
+            MetadataComponentId: 'inst1 id',
+            MetadataComponentName: 'inst1',
+            RefMetadataComponentType: CUSTOM_FIELD,
+            RefMetadataComponentId: 'first field',
+            RefMetadataComponentName: 'first field',
           },
-        }) as FilterType
-        await filter.onFetch(elements)
-      })
-      it('should not change # of elements', () => {
-        expect(elements.length).toEqual(numElements)
+          {
+            MetadataComponentType: 'meta',
+            MetadataComponentId: 'inst1 id',
+            MetadataComponentName: 'inst1',
+            RefMetadataComponentType: CUSTOM_FIELD,
+            RefMetadataComponentId: 'second field',
+            RefMetadataComponentName: 'second field',
+          },
+          {
+            MetadataComponentType: 'meta',
+            MetadataComponentId: 'inst1 id',
+            MetadataComponentName: 'inst1',
+            RefMetadataComponentType: 'meta2',
+            RefMetadataComponentId: 'inst3 id',
+            RefMetadataComponentName: 'inst3',
+          },
+          {
+            MetadataComponentType: 'meta2',
+            MetadataComponentId: 'inst3 id',
+            MetadataComponentName: 'inst3',
+            RefMetadataComponentType: 'meta',
+            RefMetadataComponentId: 'inst2 id',
+            RefMetadataComponentName: 'inst2',
+          },
+          {
+            MetadataComponentType: CUSTOM_FIELD,
+            MetadataComponentId: 'lead field',
+            MetadataComponentName: 'lead field',
+            RefMetadataComponentType: CUSTOM_FIELD,
+            RefMetadataComponentId: 'second field',
+            RefMetadataComponentName: 'second field',
+          },
+          {
+            MetadataComponentType: 'meta',
+            MetadataComponentId: 'inst2 id',
+            MetadataComponentName: 'inst2',
+            RefMetadataComponentType: CUSTOM_FIELD,
+            RefMetadataComponentId: 'first field',
+            RefMetadataComponentName: 'first field',
+          },
+        ] as unknown as SalesforceRecord[]
+        yield [
+          {
+            MetadataComponentType: 'meta',
+            MetadataComponentId: 'inst2 id',
+            MetadataComponentName: 'inst2',
+            RefMetadataComponentType: CUSTOM_FIELD,
+            RefMetadataComponentId: 'lead field',
+            RefMetadataComponentName: 'lead field',
+          },
+          {
+            MetadataComponentType: 'meta',
+            MetadataComponentId: 'inst2 id',
+            MetadataComponentName: 'inst2',
+            RefMetadataComponentType: CUSTOM_FIELD,
+            RefMetadataComponentId: 'unknown field',
+            RefMetadataComponentName: 'unknown field',
+          },
+          {
+            MetadataComponentType: 'meta',
+            MetadataComponentId: 'inst2 id',
+            MetadataComponentName: 'inst2',
+            RefMetadataComponentType: 'StandardEntity',
+            RefMetadataComponentId: 'Lead',
+            RefMetadataComponentName: 'Lead',
+          },
+          {
+            MetadataComponentType: 'meta',
+            MetadataComponentId: 'unknown src id',
+            MetadataComponentName: 'unknown src name',
+            RefMetadataComponentType: CUSTOM_FIELD,
+            RefMetadataComponentId: 'custom id',
+            RefMetadataComponentName: 'custom name',
+          },
+        ] as unknown as SalesforceRecord[]
+      }
+
+      async function *mockQueryAllImplEmpty(): AsyncIterable<SalesforceRecord[]> {
+        yield [
+        ] as unknown as SalesforceRecord[]
+      }
+
+      async function *mockQueryAllImplLayout(): AsyncIterable<SalesforceRecord[]> {
+        yield [
+          {
+            MetadataComponentType: 'Layout',
+            MetadataComponentId: 'layoutId1',
+            MetadataComponentName: 'layout1 name',
+            RefMetadataComponentType: CUSTOM_FIELD,
+            RefMetadataComponentId: 'first field',
+            RefMetadataComponentName: 'first field',
+          },
+        ] as unknown as SalesforceRecord[]
+      }
+
+      beforeEach(async () => {
+        mockQueryAll = jest.fn()
+          .mockImplementationOnce(mockQueryAllImplLayout)
+          .mockImplementationOnce(mockQueryAllImplEmpty)
+          .mockImplementationOnce(mockQueryAllImplEmpty)
+          .mockImplementationOnce(mockQueryAllImplEmpty)
+          .mockImplementationOnce(mockQueryAllImplEmpty)
+          .mockImplementationOnce(mockQueryAllImpl)
+        SalesforceClient.prototype.queryAll = mockQueryAll
+        numElements = elements.length
       })
 
-      it('should add field dependencies to instances', () => {
-        const firstFieldRef = new ReferenceExpression(customObjType.fields.first.elemID)
-        const secondFieldRef = new ReferenceExpression(customObjType.fields.second.elemID)
-        const leadFieldRef = new ReferenceExpression(leadObjType.fields.custom.elemID)
-        expect(getGeneratedDeps(instances[0])).toContainEqual({ reference: secondFieldRef })
-        expect(getGeneratedDeps(instances[1])).toEqual(
-          expect.arrayContaining([{ reference: firstFieldRef }, { reference: leadFieldRef }])
-        )
-        expect(getGeneratedDeps(instances[2])).toEqual([{ reference: firstFieldRef }])
-      })
+      describe('when toolingDepsOfCurrentNamespace is disabled', () => {
+        beforeEach(async () => {
+          filter = filterCreator({
+            client,
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: buildFetchProfile({
+                fetchParams: {
+                  target: ['meta'],
+                  optionalFeatures: { toolingDepsOfCurrentNamespace: false },
+                },
+              }),
+              elementsSource,
+            },
+          }) as FilterType
+          await filter.onFetch(elements)
+        })
+        it('should not change # of elements', () => {
+          expect(elements.length).toEqual(numElements)
+        })
 
-      it('should not add generated dependencies to targets that already have a reference in the element', () => {
-        expect(getGeneratedDeps(instances[0])).not.toContainEqual(
-          { reference: new ReferenceExpression(customObjType.fields.first.elemID) }
-        )
-      })
+        it('should add field dependencies to instances', () => {
+          const firstFieldRef = new ReferenceExpression(customObjType.fields.first.elemID)
+          const secondFieldRef = new ReferenceExpression(customObjType.fields.second.elemID)
+          const leadFieldRef = new ReferenceExpression(leadObjType.fields.custom.elemID)
+          expect(getGeneratedDeps(instances[0])).toContainEqual({ reference: secondFieldRef })
+          expect(getGeneratedDeps(instances[1])).toEqual(
+            expect.arrayContaining([{ reference: firstFieldRef }, { reference: leadFieldRef }])
+          )
+          expect(getGeneratedDeps(instances[2])).toEqual([{ reference: firstFieldRef }])
+        })
 
-      it('should add dependencies to standard objects', () => {
-        expect(getGeneratedDeps(instances[1])).toEqual(
-          expect.arrayContaining([{ reference: new ReferenceExpression(leadObjType.elemID) }])
-        )
-      })
+        it('should not add generated dependencies to targets that already have a reference in the element', () => {
+          expect(getGeneratedDeps(instances[0])).not.toContainEqual(
+            { reference: new ReferenceExpression(customObjType.fields.first.elemID) }
+          )
+        })
 
-      it('should add generated dependencies annotation to fields', () => {
-        expect(getGeneratedDeps(leadObjType.fields.custom)).toEqual(
-          [{ reference: new ReferenceExpression(customObjType.fields.second.elemID) }]
-        )
-      })
+        it('should add dependencies to standard objects', () => {
+          expect(getGeneratedDeps(instances[1])).toEqual(
+            expect.arrayContaining([{ reference: new ReferenceExpression(leadObjType.elemID) }])
+          )
+        })
 
-      it('should sort generated dependencies by name', () => {
-        expect(getGeneratedDeps(instances[1])).toEqual([
-          { reference: new ReferenceExpression(leadObjType.elemID) },
-          { reference: new ReferenceExpression(leadObjType.fields.custom.elemID) },
-          { reference: new ReferenceExpression(customObjType.fields.first.elemID) },
-        ])
-      })
+        it('should add generated dependencies annotation to fields', () => {
+          expect(getGeneratedDeps(leadObjType.fields.custom)).toEqual(
+            [{ reference: new ReferenceExpression(customObjType.fields.second.elemID) }]
+          )
+        })
 
-      it('should have individual queries for types marked for individual query', () => {
-        expect(mockQueryAll).toHaveBeenCalledTimes(6)
-        mockQueryAll.mock.calls.forEach(([query]: [string, boolean]) => {
-          expect(query).not.toContain('MetadataComponentNamespace')
+        it('should sort generated dependencies by name', () => {
+          expect(getGeneratedDeps(instances[1])).toEqual([
+            { reference: new ReferenceExpression(leadObjType.elemID) },
+            { reference: new ReferenceExpression(leadObjType.fields.custom.elemID) },
+            { reference: new ReferenceExpression(customObjType.fields.first.elemID) },
+          ])
+        })
+
+        it('should have individual queries for types marked for individual query', () => {
+          expect(mockQueryAll).toHaveBeenCalledTimes(6)
+          mockQueryAll.mock.calls.forEach(([query]: [string, boolean]) => {
+            expect(query).not.toContain('MetadataComponentNamespace')
+          })
+        })
+
+        it('should add generated dependencies to elements that were not fetched', () => {
+          expect(getGeneratedDeps(instances[0])).toContainEqual(
+            { reference: new ReferenceExpression(workspaceInstance.elemID) }
+          )
+        })
+
+        it('should not modify workspace elements that were not fetched', () => {
+          expect(getGeneratedDeps(workspaceInstance)).toBeUndefined()
         })
       })
-
-      it('should add generated dependencies to elements that were not fetched', () => {
-        expect(getGeneratedDeps(instances[0])).toContainEqual(
-          { reference: new ReferenceExpression(workspaceInstance.elemID) }
-        )
-      })
-
-      it('should not modify workspace elements that were not fetched', () => {
-        expect(getGeneratedDeps(workspaceInstance)).toBeUndefined()
+      describe('when toolingDepsOfCurrentNamespace is enabled', () => {
+        beforeEach(async () => {
+          filter = filterCreator({
+            client,
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: buildFetchProfile({
+                fetchParams: {
+                  target: ['meta'],
+                  optionalFeatures: { toolingDepsOfCurrentNamespace: true },
+                },
+              }),
+              elementsSource: buildElementsSourceFromElements(elements),
+            },
+          }) as FilterType
+          await filter.onFetch(elements)
+        })
+        it('should have individual queries for types marked for individual query', () => {
+          expect(mockQueryAll).toHaveBeenCalledTimes(12)
+          mockQueryAll.mock.calls.forEach(([query]: [string, boolean]) => {
+            expect(query).toContain('MetadataComponentNamespace')
+          })
+        })
       })
     })
-    describe('when toolingDepsOfCurrentNamespace is enabled', () => {
+
+    describe('when feature is throwing an error', () => {
+      const mockQueryAll: jest.Mock = jest.fn()
+      SalesforceClient.prototype.queryAll = mockQueryAll
+
+      it('should return a warning', async () => {
+        const { connection } = mockClient()
+        connection.query.mockImplementation(() => { throw new Error() })
+        const res = await filter.onFetch(elements) as FilterResult
+        const err = res.errors ?? []
+        expect(res.errors).toHaveLength(1)
+        expect(err[0]).toEqual({
+          severity: 'Warning',
+          message: WARNING_MESSAGE,
+        })
+      })
+    })
+
+    describe('when feature is disabled', () => {
+      let connection: MockInterface<Connection>
       beforeEach(async () => {
+        const mockClientInst = mockClient()
+        client = mockClientInst.client
+        connection = mockClientInst.connection
         filter = filterCreator({
           client,
           config: {
             ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
-              fetchParams: {
-                target: ['meta'],
-                optionalFeatures: { toolingDepsOfCurrentNamespace: true },
-              },
+              fetchParams: {optionalFeatures: {extraDependencies: false}},
             }),
             elementsSource: buildElementsSourceFromElements(elements),
           },
         }) as FilterType
         await filter.onFetch(elements)
       })
-      it('should have individual queries for types marked for individual query', () => {
-        expect(mockQueryAll).toHaveBeenCalledTimes(12)
-        mockQueryAll.mock.calls.forEach(([query]: [string, boolean]) => {
-          expect(query).toContain('MetadataComponentNamespace')
-        })
+
+      it('should not run any query', () => {
+        expect(connection.query).not.toHaveBeenCalled()
       })
-    })
-  })
-
-  describe('when feature is throwing an error', () => {
-    const mockQueryAll: jest.Mock = jest.fn()
-    SalesforceClient.prototype.queryAll = mockQueryAll
-
-    it('should return a warning', async () => {
-      const { connection } = mockClient()
-      connection.query.mockImplementation(() => { throw new Error() })
-      const res = await filter.onFetch(elements) as FilterResult
-      const err = res.errors ?? []
-      expect(res.errors).toHaveLength(1)
-      expect(err[0]).toEqual({
-        severity: 'Warning',
-        message: WARNING_MESSAGE,
-      })
-    })
-  })
-
-  describe('when feature is disabled', () => {
-    let connection: MockInterface<Connection>
-    beforeEach(async () => {
-      const mockClientInst = mockClient()
-      client = mockClientInst.client
-      connection = mockClientInst.connection
-      filter = filterCreator({
-        client,
-        config: {
-          ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({
-            fetchParams: { optionalFeatures: { extraDependencies: false } },
-          }),
-          elementsSource: buildElementsSourceFromElements(elements),
-        },
-      }) as FilterType
-      await filter.onFetch(elements)
-    })
-
-    it('should not run any query', () => {
-      expect(connection.query).not.toHaveBeenCalled()
     })
   })
 })

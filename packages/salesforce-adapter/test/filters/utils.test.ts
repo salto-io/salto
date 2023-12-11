@@ -44,7 +44,7 @@ import {
   isElementWithResolvedParent,
   getElementAuthorInformation,
   getNamespaceSync,
-  referenceFieldTargetTypes,
+  referenceFieldTargetTypes, isStandardObjectSync,
 } from '../../src/filters/utils'
 import {
   API_NAME,
@@ -357,6 +357,20 @@ describe('filter utils', () => {
       it.each(INSTANCE_SUFFIXES.map(suffix => `TestObject__${suffix}`))('Should return false for CustomObject with name TestObject__%s', async (customObjectName: string) => {
         const customObject = createCustomObjectType(customObjectName, {})
         expect(await isStandardObject(customObject)).toBeFalse()
+      })
+    })
+  })
+  describe('isStandardObjectSync', () => {
+    it('should return true for Standard CustomObject', () => {
+      expect(mockTypes.Account).toSatisfy(isStandardObjectSync)
+    })
+    it('should return false for object with no custom suffix that is not of type CustomObject', () => {
+      expect(mockTypes.Profile).not.toSatisfy(isStandardObjectSync)
+    })
+    describe('when CustomObject has a custom suffix', () => {
+      it.each(INSTANCE_SUFFIXES.map(suffix => `TestObject__${suffix}`))('Should return false for CustomObject with name TestObject__%s', (customObjectName: string) => {
+        const customObject = createCustomObjectType(customObjectName, {})
+        expect(customObject).not.toSatisfy(isStandardObjectSync)
       })
     })
   })

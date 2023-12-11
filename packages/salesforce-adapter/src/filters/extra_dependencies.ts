@@ -144,7 +144,7 @@ const getDependencies = async (
   }))
 }
 
-const resolveDeps = async ({ client, elements }: GetDependenciesParams): Promise<Dependency[]> => {
+const queryDeps = async ({ client, elements }: GetDependenciesParams): Promise<Dependency[]> => {
   const elementsByMetadataComponentId = _.keyBy(elements.filter(hasInternalId), getInternalId)
   // The MetadataComponentId of standard objects is the object name
   elements.filter(isStandardObjectSync).forEach(standardObject => {
@@ -160,10 +160,6 @@ const resolveDeps = async ({ client, elements }: GetDependenciesParams): Promise
   let queriesExecuted = 0
   const errorIds = new Set<string>()
   const chunkedQuery = async (ids: string[], chunkSize: number): Promise<Dependency[]> => {
-    if (chunkSize === 1) {
-      errorIds.add(ids[0])
-      return []
-    }
     return Promise.all(_.chunk(ids, chunkSize)
       .map(async idsChunk => {
         const query = `SELECT 
@@ -199,7 +195,7 @@ const resolveDeps = async ({ client, elements }: GetDependenciesParams): Promise
       if (errorIds.size === 0) {
         log.error('Could not add all the dependencies on the following elements since they have more than 2000 dependencies: %s', Array.from(errorIds).map(id => elementsByMetadataComponentId[id]?.elemID.getFullName()).join(', '))
       }
-      log.debug('resolve extra dependencies info: %s', safeJsonStringify({
+      log.debug('query extra dependencies info: %s', safeJsonStringify({
         queriesExecuted,
         idsCount: Object.keys(elementsByMetadataComponentId).length,
         totalQueriedDependencies: deps.length,
@@ -211,7 +207,7 @@ const resolveDeps = async ({ client, elements }: GetDependenciesParams): Promise
 const getDependenciesV2 = async (
   params: GetDependenciesParams
 ): Promise<DependencyGroup[]> => {
-  const deps = await resolveDeps(params)
+  const deps = await queryDeps(params)
   return _.values(
     _.groupBy(deps, dep => Object.entries(dep.from))
   ).map(depArr => ({

@@ -32,6 +32,7 @@ export const retryDecider: RetryDecider = error => {
 export const createS3Client = (
   numberOfRetries = NUMBER_OF_RETRIES
 ): AWS.S3 => new AWS.S3({
+  ...process.env.AWS_ENDPOINT_URL === undefined ? {} : { endpoint: process.env.AWS_ENDPOINT_URL, forcePathStyle: true },
   retryStrategy: new StandardRetryStrategy(
     () => Promise.resolve(numberOfRetries),
     { retryDecider }

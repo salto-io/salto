@@ -73,7 +73,7 @@ export const validateCredentials = async (
   throw new CredentialError('Invalid Credentials')
 }
 
-export const createConnection: clientUtils.ConnectionCreator<Credentials> = retryOptions => (
+export const createConnection: clientUtils.ConnectionCreator<Credentials> = (retryOptions, timeout) => (
   clientUtils.axiosConnection({
     retryOptions,
     authParamsFunc: async credentials => (
@@ -87,5 +87,6 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = retr
     ),
     baseURLFunc: async ({ baseUrl }) => baseUrl,
     credValidateFunc: async () => ({ accountId: '' }), // There is no login endpoint to call
+    timeout,
   })
 )

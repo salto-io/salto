@@ -19,7 +19,7 @@ import { createConnection } from './connection'
 import { WORKATO } from '../constants'
 import { Credentials } from '../auth'
 
-const { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
+const { DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
 const log = logger(module)
 
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
@@ -48,6 +48,7 @@ export default class WorkatoClient extends clientUtils.AdapterHTTPClient<
         rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
         maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
         retry: DEFAULT_RETRY_OPTS,
+        timeout: DEFAULT_TIMEOUT_OPTS,
       }
     )
   }

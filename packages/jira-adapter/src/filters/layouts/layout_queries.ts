@@ -40,7 +40,6 @@ fragment JiraIssueLayoutItemContainerFragment on JiraIssueItemContainer {
   containerType
   items {
     nodes {
-      __typename
       ... JiraIssueLayoutActiveFieldItemFragment,
       ... JiraIssueLayoutActivePanelItemFragment,
       ... JiraIssueLayoutTabContainerFragment,
@@ -60,7 +59,6 @@ fragment FieldItemBaseFragment on JiraIssueLayoutFieldItemConfiguration {
   description
   configuration
   required
-  externalUuid
   defaultValue
 }
 

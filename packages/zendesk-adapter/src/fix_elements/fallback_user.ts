@@ -20,15 +20,17 @@ import {
   InstanceElement,
   isInstanceElement,
 } from '@salto-io/adapter-api'
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { resolvePath, setPath } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { paginate } from '../client/pagination'
-import { DEPLOY_CONFIG } from '../config'
-import { MISSING_USERS_DOC_LINK, MISSING_USERS_ERROR_MSG, TYPE_NAME_TO_REPLACER, VALID_USER_VALUES, getUserFallbackValue, getUsers } from '../user_utils'
+import { DEPLOY_CONFIG, FETCH_CONFIG } from '../config'
+import { MISSING_USERS_DOC_LINK, MISSING_USERS_ERROR_MSG, TYPE_NAME_TO_REPLACER, VALID_USER_VALUES, getUserFallbackValue, getUsers, User } from '../user_utils'
 import { FixElementsHandler } from './types'
+import { CUSTOM_OBJECT_FIELD_TYPE_NAME, TICKET_FIELD_TYPE_NAME, TRIGGER_TYPE_NAME } from '../constants'
+import { FieldsParams, ValueReplacer, replaceConditionsAndActionsCreator } from '../replacers_utils'
 
 const log = logger(module)
 const { createPaginator } = clientUtils
@@ -55,11 +57,24 @@ const missingUsersChangeWarning = (
   detailedMessage: `The following users are referenced by this instance, but do not exist in the target environment: ${missingUsers.join(', ')}.\nIf you continue, they will be set to ${userFallbackValue} according to the environment's user fallback options.\nLearn more: ${MISSING_USERS_DOC_LINK}`,
 })
 
+const replacerParams = (primaryField: string): FieldsParams[] => [
+  { fieldName: [primaryField, 'all'], fieldsToReplace: [], overrideFilterCriteria: [condition => !!_.get(condition, 'is_user_value')] },
+  { fieldName: [primaryField, 'any'], fieldsToReplace: [], overrideFilterCriteria: [condition => !!_.get(condition, 'is_user_value')] },
+]
+
+const CUSTOM_OBJECT_FIELD_TYPES_TO_REPLACER: Record<string, ValueReplacer> = {
+  [TRIGGER_TYPE_NAME]: replaceConditionsAndActionsCreator(replacerParams('conditions')),
+  [TICKET_FIELD_TYPE_NAME]: replaceConditionsAndActionsCreator(replacerParams('relationship_filter')),
+  [CUSTOM_OBJECT_FIELD_TYPE_NAME]: replaceConditionsAndActionsCreator(replacerParams('relationship_filter')),
+}
+
 const getMissingUserPaths = (
   users: Set<string>,
   instance: InstanceElement
 ): { user: string; path: ElemID }[] => {
-  const userPaths = TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance)
+  const userPaths = TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance).concat(
+    CUSTOM_OBJECT_FIELD_TYPES_TO_REPLACER[instance.elemID.typeName]?.(instance) ?? []
+  )
   return userPaths.map(path => {
     const user = resolvePath(instance, path)
     if (!VALID_USER_VALUES.includes(user) && !users.has(user)) {
@@ -89,6 +104,19 @@ const replaceMissingUsers = (
   return { fixedInstance, missingUsers: _.uniq(missingUserPaths.map(({ user }) => user)) }
 }
 
+const noRelevantUsers = (
+  users: User[], defaultMissingUserFallback: string | undefined, resolveUserIDs: boolean | undefined
+): boolean => {
+  if (_.isEmpty(users)) {
+    // If the user does not want to resolve user IDs (fetch all users),
+    // we will replace them to the deployer's ID if requested.
+    const doNotResolveIdsAndDeployerFallback = resolveUserIDs === false
+      && defaultMissingUserFallback === configUtils.DEPLOYER_FALLBACK_VALUE
+    return !doNotResolveIdsAndDeployerFallback
+  }
+  return false
+}
+
 /**
  * Change missing users (emails or ids) to fallback user.
  * If fallback user is not provided, do nothing
@@ -103,9 +131,10 @@ export const fallbackUsersHandler: FixElementsHandler = (
     client,
     paginationFuncCreator: paginate,
   })
-  const users = await getUsers(paginator)
+  const { users } = await getUsers(paginator, config[FETCH_CONFIG].resolveUserIDs)
   const { defaultMissingUserFallback } = config[DEPLOY_CONFIG] || {}
-  if (_.isEmpty(users) || defaultMissingUserFallback === undefined) {
+  if (defaultMissingUserFallback === undefined
+    || noRelevantUsers(users, defaultMissingUserFallback, config[FETCH_CONFIG].resolveUserIDs)) {
     return { fixedElements: [], errors: [] }
   }
 

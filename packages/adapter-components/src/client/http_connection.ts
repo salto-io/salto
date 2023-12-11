@@ -15,11 +15,11 @@
 */
 import _ from 'lodash'
 import axios, { AxiosError, AxiosBasicCredentials, AxiosRequestConfig, AxiosRequestHeaders } from 'axios'
-import axiosRetry from 'axios-retry'
+import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { AccountInfo, CredentialError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { ClientRetryConfig } from './config'
-import { DEFAULT_RETRY_OPTS } from './constants'
+import { ClientRetryConfig, ClientTimeoutConfig } from './config'
+import { DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS } from './constants'
 
 const log = logger(module)
 
@@ -53,11 +53,7 @@ export type AuthenticatedAPIConnection = APIConnection & {
   accountInfo: AccountInfo
 }
 
-export type RetryOptions = {
-  retries: number
-  retryDelay?: (retryCount: number, error: AxiosError) => number
-  retryCondition?: (error: AxiosError) => boolean
-}
+export type RetryOptions = Partial<IAxiosRetryConfig>
 
 type LoginFunc<TCredentials> = (creds: TCredentials) => Promise<AuthenticatedAPIConnection>
 
@@ -67,6 +63,7 @@ export interface Connection<TCredentials> {
 
 export type ConnectionCreator<TCredentials> = (
   retryOptions: RetryOptions,
+  timeout?: number
 ) => Connection<TCredentials>
 
 const getRetryDelayFromHeaders = (headers: Record<string, string>): number | undefined => {
@@ -115,7 +112,9 @@ const getRetryDelay = (retryOptions: Required<ClientRetryConfig>, error: AxiosEr
 const shouldRetryStatusCode = (statusCode?: number, additionalStatusesToRetry: number[] = []): boolean =>
   statusCode !== undefined && [429, ...additionalStatusesToRetry].includes(statusCode)
 
-export const createRetryOptions = (retryOptions: Required<ClientRetryConfig>): RetryOptions => ({
+export const createRetryOptions = (
+  retryOptions: Required<ClientRetryConfig>, timeoutOptions?: ClientTimeoutConfig
+): RetryOptions => ({
   retries: retryOptions.maxAttempts,
   retryDelay: (retryCount, err) => {
     const retryDelay = getRetryDelay(retryOptions, err)
@@ -130,21 +129,34 @@ export const createRetryOptions = (retryOptions: Required<ClientRetryConfig>): R
   },
   retryCondition: err => axiosRetry.isNetworkOrIdempotentRequestError(err)
     || shouldRetryStatusCode(err.response?.status, retryOptions.additionalStatusCodesToRetry),
+  // Note that changing the config is consistent on all retries. For the current use-case, that's fine,
+  // as we are updating the last retry.
+  onRetry: (retryCount, _err, requestConfig) => {
+    if (timeoutOptions?.lastRetryNoTimeout && retryCount === retryOptions.maxAttempts) {
+      requestConfig.timeout = 0
+    }
+  },
+  // When false, axios-retry interprets the request timeout as a global value,
+  // so it is not used for each retry but for the whole request lifecycle.
+  shouldResetTimeout: timeoutOptions?.resetTimeoutBetweenAttempts ?? false,
 })
 
 type ConnectionParams<TCredentials> = {
   connection?: Connection<TCredentials>
   retryOptions?: RetryOptions
+  timeout?: number
   createConnection: ConnectionCreator<TCredentials>
 }
 
 export const createClientConnection = <TCredentials>({
   connection,
   retryOptions,
+  timeout = DEFAULT_TIMEOUT_OPTS.maxDuration,
   createConnection,
 }: ConnectionParams<TCredentials>): Connection<TCredentials> => (
     connection ?? createConnection(
-      _.defaults({}, retryOptions, createRetryOptions(DEFAULT_RETRY_OPTS))
+      _.defaults({}, retryOptions, createRetryOptions(DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS)),
+      timeout
     )
   )
 
@@ -170,6 +182,7 @@ type AxiosConnectionParams<TCredentials> = {
     credentials: TCredentials
     connection: APIConnection
   }) => Promise<AccountInfo>
+  timeout?: number
 }
 
 export const axiosConnection = <TCredentials>({
@@ -177,6 +190,7 @@ export const axiosConnection = <TCredentials>({
   authParamsFunc,
   baseURLFunc,
   credValidateFunc,
+  timeout = 0,
 }: AxiosConnectionParams<TCredentials>): Connection<TCredentials> => {
   const login = async (
     creds: TCredentials,
@@ -185,6 +199,7 @@ export const axiosConnection = <TCredentials>({
       baseURL: await baseURLFunc(creds),
       ...await authParamsFunc(creds),
       maxBodyLength: Infinity,
+      timeout,
     })
     axiosRetry(httpClient, retryOptions)
 

@@ -20,6 +20,7 @@ import { PathIndex, Path } from '../path_index'
 import { RemoteMap, RemoteMapCreator } from '../remote_map'
 import { serialize, deserializeSingleElement } from '../../serializer/elements'
 import { StateStaticFilesSource } from '../static_files/common'
+import { StateConfig } from '../config/workspace_config_types'
 
 export type StateMetadataKey = 'version' | 'hash'
 
@@ -39,6 +40,10 @@ export type StateData = {
   topLevelPathIndex: PathIndex
 }
 
+type UpdateConfigArgs = {
+  workspaceId: string
+  stateConfig: StateConfig | undefined
+}
 export interface State extends ElementsSource {
   set(element: Element): Promise<void>
   remove(id: ElemID): Promise<void>
@@ -51,6 +56,7 @@ export interface State extends ElementsSource {
   calculateHash(): Promise<void>
   getStateSaltoVersion(): Promise<string | undefined>
   updateStateFromChanges(args: UpdateStateElementsArgs): Promise<void>
+  updateConfig(args: UpdateConfigArgs): Promise<void>
 }
 
 

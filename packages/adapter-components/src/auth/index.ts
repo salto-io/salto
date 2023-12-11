@@ -13,4 +13,4 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { oauthClientCredentialsBearerToken, OAuthClientCredentialsArgs } from './oauth'
+export { oauthClientCredentialsBearerToken, oauthAccessTokenRefresh, OAuthClientCredentialsArgs } from './oauth'

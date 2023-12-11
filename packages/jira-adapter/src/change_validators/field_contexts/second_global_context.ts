@@ -79,7 +79,7 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
       .filter(change => getChangeData(change).elemID.typeName === PROJECT_TYPE)
       .filter(isRemovalOrModificationChange)
       .forEach(async change => {
-        await awu(change.data.before.value.fieldContexts).filter(isReferenceExpression)
+        await awu(change.data.before.value.fieldContexts ?? []).filter(isReferenceExpression)
           .forEach(async (context: ReferenceExpression) => {
             if (fieldContextToProjectChangeData.get(context.elemID.getFullName()) === undefined) {
               const fieldElemId = getParentElemID(await context.getResolvedValue(elementSource))

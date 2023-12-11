@@ -80,7 +80,7 @@ export const buildStaticFilesSource = (
   staticFilesCache: StaticFilesCache,
 ): Required<StaticFilesSource> => {
   const getStaticFileData = async (filepath: string): Promise<
-    ({ hasChanged: false } | { hasChanged: true; buffer: Buffer}) & StaticFilesData
+    ({ hasChanged: boolean; buffer?: Buffer }) & StaticFilesData
   > => {
     const cachedResult = await staticFilesCache.get(filepath)
     let modified: number | undefined
@@ -114,7 +114,7 @@ export const buildStaticFilesSource = (
         hash,
         modified,
         buffer: staticFileBuffer,
-        hasChanged: true,
+        hasChanged: hash !== cachedResult?.hash,
       }
     }
     return {
@@ -163,7 +163,7 @@ export const buildStaticFilesSource = (
           return new StaticFile({ filepath, encoding, hash })
         }
 
-        if (staticFileData.hasChanged) {
+        if (staticFileData.buffer !== undefined) {
           const staticFileWithHashAndContent = new AbsoluteStaticFile(
             {
               filepath,

@@ -24,6 +24,7 @@ import {
   CORE_ANNOTATIONS,
   SaltoError,
   isInstanceElement,
+  isPrimitiveType,
 } from '@salto-io/adapter-api'
 import { pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import {
@@ -81,7 +82,7 @@ export type CustomObjectFetchSetting = {
   aliasFields: Field[]
   invalidIdFields: string[]
   invalidAliasFields: string[]
-  invalidManagedBySaltoField?: string
+  invalidManagedBySaltoField?: Field
   managedBySaltoField?: string
   omittedFields: string[]
 }
@@ -484,21 +485,27 @@ export const getCustomObjectsFetchSettings = async (
   dataManagement: DataManagement,
 ): Promise<CustomObjectFetchSetting[]> => {
   const isInvalidManagedBySaltoField = (type: ObjectType): boolean => {
+    const isBooleanField = (field: Field): boolean => {
+      const fieldType = field.getTypeSync()
+      return isPrimitiveType(fieldType) && fieldType.isEqual(Types.primitiveDataTypes.Checkbox)
+    }
     const managedBySaltoFieldName = dataManagement.managedBySaltoFieldForType(type)
     if (managedBySaltoFieldName === undefined) {
       return false
     }
     return (type.fields[managedBySaltoFieldName].annotations[FIELD_ANNOTATIONS.QUERYABLE] ?? true) === false
+    || !isBooleanField(type.fields[managedBySaltoFieldName])
   }
   const typeToFetchSettings = async (type: ObjectType): Promise<CustomObjectFetchSetting> => {
     const managedBySaltoFieldName = dataManagement.managedBySaltoFieldForType(type)
+    const managedBySaltoField = managedBySaltoFieldName ? type.fields[managedBySaltoFieldName] : undefined
     const typeApiName = apiNameSync(type)
     return {
       objectType: type,
       isBase: await dataManagement.shouldFetchObjectType(type) === 'Always',
       ...await getIdFields(type, dataManagement),
       managedBySaltoField: managedBySaltoFieldName,
-      invalidManagedBySaltoField: isInvalidManagedBySaltoField(type) ? managedBySaltoFieldName : undefined,
+      invalidManagedBySaltoField: isInvalidManagedBySaltoField(type) ? managedBySaltoField : undefined,
       omittedFields: typeApiName ? dataManagement.omittedFieldsForType(typeApiName) : [],
     }
   }
@@ -560,12 +567,25 @@ const createInvalidAliasFieldFetchWarning = async (
   severity: 'Warning',
 })
 
-const createInvalidManagedBySaltoFieldFetchWarning = async (
-  { objectType, invalidManagedBySaltoField }: CustomObjectFetchSetting
-): Promise<SaltoError> => ({
-  message: `The field ${await apiName(objectType)}${API_NAME_SEPARATOR}${invalidManagedBySaltoField} is configured as the filter field in the saltoManagementFieldSettings.defaultFieldName section of the Salto environment configuration. However, the user configured for fetch does not have read access to this field. Records of type ${await apiName(objectType)} will not be fetched.`,
-  severity: 'Warning',
-})
+const createInvalidManagedBySaltoFieldFetchWarning = (
+  objectType: ObjectType,
+  invalidManagedBySaltoField: Field,
+): SaltoError => {
+  const fieldName = apiNameSync(invalidManagedBySaltoField) as string
+  const typeName = apiNameSync(objectType) as string
+  const errorPreamble = `The field ${typeName}${API_NAME_SEPARATOR}${fieldName} is configured as the filter field in the saltoManagementFieldSettings.defaultFieldName section of the Salto environment configuration.`
+  if ((objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.QUERYABLE] ?? true) === false) {
+    return {
+      message: `${errorPreamble} However, the user configured for fetch does not have read access to this field. Records of type ${typeName} will not be fetched.`,
+      severity: 'Warning',
+    }
+  }
+  // we assume if the issue is not the queryability of the field then it must be that the field is of the wrong type
+  return {
+    message: `${errorPreamble} However, the type of the field (${objectType.fields[fieldName].getTypeSync().elemID.getFullName()}) is not boolean. Records of type ${typeName} will not be fetched.`,
+    severity: 'Warning',
+  }
+}
 
 const createInaccessibleFieldsFetchWarning = (
   objectType: ObjectType,
@@ -592,6 +612,20 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       customObjectFetchSetting,
       setting => setting.invalidIdFields.length === 0 && setting.invalidManagedBySaltoField === undefined
     )
+
+    if (validFetchSettings.length === 0
+    && invalidFetchSettings.length > 0
+    && invalidFetchSettings.every(setting => setting.invalidManagedBySaltoField !== undefined)) {
+      return {
+        errors: [
+          {
+            message: 'The Salto environment is configured to use a Salto Management field but the field is missing or is of the wrong type for all data records. No data records will be fetched. Please verify the field name in saltoManagementFieldSettings.defaultFieldName in the environment configuration file.',
+            severity: 'Warning',
+          },
+        ],
+      }
+    }
+
     const validChangesFetchSettings = await keyByAsync(
       validFetchSettings,
       setting => apiName(setting.objectType),
@@ -613,6 +647,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     instances.forEach(instance => elements.push(instance))
     log.debug(`Fetched ${instances.length} instances of Custom Objects`)
     const invalidFieldSuggestions = await awu(invalidFetchSettings)
+      .filter(settings => settings.invalidIdFields.length > 0)
       .map(async setting =>
         createInvlidIdFieldConfigChange(
           await apiName(setting.objectType),
@@ -624,9 +659,10 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       .filter(setting => setting.invalidAliasFields.length > 0)
       .map(createInvalidAliasFieldFetchWarning)
 
-    const invalidManagedBySaltoFieldWarnings = awu(invalidFetchSettings)
+    const invalidManagedBySaltoFieldWarnings = invalidFetchSettings
       .filter(setting => setting.invalidManagedBySaltoField !== undefined)
-      .map(createInvalidManagedBySaltoFieldFetchWarning)
+      .map(settings => ({ type: settings.objectType, field: settings.invalidManagedBySaltoField as Field }))
+      .map(({ type, field }) => createInvalidManagedBySaltoFieldFetchWarning(type, field))
 
     const typesOfFetchedInstances = new Set(
       elements

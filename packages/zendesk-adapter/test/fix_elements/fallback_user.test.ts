@@ -15,16 +15,17 @@
 */
 import { ChangeError, ElemID, InstanceElement, ObjectType, Element } from '@salto-io/adapter-api'
 import ZendeskClient from '../../src/client/client'
-import { ZENDESK } from '../../src/constants'
+import { ARTICLE_TYPE_NAME, MACRO_TYPE_NAME, TRIGGER_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { fallbackUsersHandler } from '../../src/fix_elements/fallback_user'
 import * as userUtils from '../../src/user_utils'
-import { DEPLOY_CONFIG } from '../../src/config'
+import { DEPLOY_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { FixElementsArgs } from '../../src/fix_elements/types'
 
-describe('missingUsersToFallback', () => {
+describe('fallbackUsersHandler', () => {
   let client: ZendeskClient
-  const macroType = new ObjectType({ elemID: new ElemID(ZENDESK, 'macro') })
-  const articleType = new ObjectType({ elemID: new ElemID(ZENDESK, 'article') })
+  const mockGetUsers = jest.spyOn(userUtils, 'getUsers')
+  const macroType = new ObjectType({ elemID: new ElemID(ZENDESK, MACRO_TYPE_NAME) })
+  const articleType = new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) })
 
   const articleInstance = new InstanceElement(
     'test',
@@ -48,13 +49,32 @@ describe('missingUsersToFallback', () => {
     },
   )
 
+  const triggerInstance = new InstanceElement(
+    'trigger',
+    new ObjectType({ elemID: new ElemID(ZENDESK, TRIGGER_TYPE_NAME) }),
+    {
+      conditions: {
+        all: [{
+          field: 'lookup:ticket.ticket_field_11.custom_fields.33',
+          operator: 'is',
+          value: 'non',
+          is_user_value: true,
+        },
+        {
+          field: 'lookup:ticket.ticket_field_12.custom_fields.34',
+          operator: 'is',
+          value: 'should not change',
+        }],
+      },
+    }
+  )
+
   beforeEach(() => {
     jest.clearAllMocks()
-    const getUsersMock = jest.spyOn(userUtils, 'getUsers')
-    getUsersMock.mockResolvedValue([
+    mockGetUsers.mockResolvedValue({ users: [
       { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
       { id: 4, email: 'fallback@.com', role: 'agent', custom_role_id: 12, name: 'fallback', locale: 'en-US' },
-    ])
+    ] })
 
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
@@ -65,10 +85,13 @@ describe('missingUsersToFallback', () => {
     let fallbackResponse: {fixedElements: Element[]; errors: ChangeError[]}
 
     beforeEach(async () => {
-      const instances = [macroInstance, articleInstance].map(e => e.clone())
+      const instances = [macroInstance, articleInstance, triggerInstance].map(e => e.clone())
       fallbackResponse = await fallbackUsersHandler({
         client,
-        config: { [DEPLOY_CONFIG]: { defaultMissingUserFallback: 'fallback@.com' } },
+        config: {
+          [DEPLOY_CONFIG]: { defaultMissingUserFallback: 'fallback@.com' },
+          [FETCH_CONFIG]: { resolveUserIDs: true },
+        },
       } as FixElementsArgs)(instances)
     })
     it('should replace missing user emails or ids', () => {
@@ -77,11 +100,15 @@ describe('missingUsersToFallback', () => {
       fallbackMacro.value.actions[2].value = 'fallback@.com'
       const fallbackArticle = articleInstance.clone()
       fallbackArticle.value.author_id = 'fallback@.com'
+      const fallbackTrigger = triggerInstance.clone()
+      fallbackTrigger.value.conditions.all[0].value = 'fallback@.com'
       expect(fallbackResponse.fixedElements).toEqual([
         fallbackMacro,
         fallbackArticle,
+        fallbackTrigger,
       ])
     })
+
     it('should create warning severity errors', () => {
       expect(fallbackResponse.errors).toEqual([
         {
@@ -99,6 +126,14 @@ describe('missingUsersToFallback', () => {
           detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: a@a.com.\n'
           + "If you continue, they will be set to fallback@.com according to the environment's user fallback options.\n"
           + 'Learn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
+        },
+        {
+          elemID: triggerInstance.elemID,
+          message: '1 usernames will be overridden to fallback@.com',
+          severity: 'Warning',
+          detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: non.\n'
+          + "If you continue, they will be set to fallback@.com according to the environment's user fallback options.\n"
+          + 'Learn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
         }])
     })
   })
@@ -110,7 +145,10 @@ describe('missingUsersToFallback', () => {
       const instances = [macroInstance, articleInstance].map(e => e.clone())
       fallbackResponse = await fallbackUsersHandler({
         client,
-        config: { [DEPLOY_CONFIG]: { defaultMissingUserFallback: 'non-existing-user@.com' } },
+        config: {
+          [DEPLOY_CONFIG]: { defaultMissingUserFallback: 'non-existing-user@.com' },
+          [FETCH_CONFIG]: { resolveUserIDs: true },
+        },
       } as FixElementsArgs)(instances)
     })
     it('should not replace missing user emails or ids', () => {
@@ -138,10 +176,67 @@ describe('missingUsersToFallback', () => {
       const instances = [macroInstance, articleInstance].map(e => e.clone())
       const { fixedElements, errors } = await fallbackUsersHandler({
         client,
-        config: { [DEPLOY_CONFIG]: { defaultMissingUserFallback: undefined } },
+        config: {
+          [DEPLOY_CONFIG]: { defaultMissingUserFallback: undefined },
+          [FETCH_CONFIG]: { resolveUserIDs: true },
+        },
       } as FixElementsArgs)(instances)
       expect(fixedElements).toEqual([])
       expect(errors).toEqual([])
+    })
+  })
+
+  describe('resolveUserIDs is false and fallback is not deployer', () => {
+    let fallbackResponse: {fixedElements: Element[]; errors: ChangeError[]}
+
+    beforeEach(async () => {
+      mockGetUsers.mockResolvedValue({ users: [], errors: [{ message: 'No users here!', severity: 'Warning' }] })
+      const instances = [macroInstance, articleInstance].map(e => e.clone())
+      fallbackResponse = await fallbackUsersHandler({
+        client,
+        config: {
+          [DEPLOY_CONFIG]: { defaultMissingUserFallback: 'notDeployer@.com' },
+          [FETCH_CONFIG]: { resolveUserIDs: false },
+        },
+      } as FixElementsArgs)(instances)
+    })
+
+    it('should not replace missing users and should not report errors', () => {
+      expect(fallbackResponse.fixedElements).toEqual([])
+      expect(fallbackResponse.errors).toEqual([])
+    })
+  })
+
+  describe('resolveUserIDs is false and fallback is deployer', () => {
+    let fallbackResponse: {fixedElements: Element[]; errors: ChangeError[]}
+
+    beforeEach(async () => {
+      mockGetUsers.mockResolvedValue({ users: [], errors: [{ message: 'No users here!', severity: 'Warning' }] })
+      const instances = [macroInstance, articleInstance].map(e => e.clone())
+      jest.spyOn(client, 'getSinglePage').mockImplementation(({ url }) => {
+        if (url === '/api/v2/users/me') {
+          return Promise.resolve({ data: { user: { id: 1, name: 'name', locale: 'l', email: 'deployer@.com' } }, status: 202 })
+        }
+        return Promise.resolve({ data: {}, status: 202 })
+      })
+      fallbackResponse = await fallbackUsersHandler({
+        client,
+        config: {
+          [DEPLOY_CONFIG]: { defaultMissingUserFallback: '##DEPLOYER##' },
+          [FETCH_CONFIG]: { resolveUserIDs: false },
+        },
+      } as FixElementsArgs)(instances)
+    })
+
+    it('should replace all users as fallback', () => {
+      const fallbackMacro = macroInstance.clone()
+      fallbackMacro.value.actions[1].value = 'deployer@.com'
+      fallbackMacro.value.actions[2].value = 'deployer@.com'
+      fallbackMacro.value.restriction.id = 'deployer@.com'
+      const fallbackArticle = articleInstance.clone()
+      fallbackArticle.value.author_id = 'deployer@.com'
+
+      expect(fallbackResponse.fixedElements).toEqual([fallbackMacro, fallbackArticle])
     })
   })
 })

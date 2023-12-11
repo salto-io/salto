@@ -186,7 +186,9 @@ const deployLayoutChange = async (
         key,
         data: {
           name: item.key.value.value.name,
-          type: item.key.value.value.type ?? item.key.value.value.schema.system,
+          type: item.key.value.value.type
+          ?? item.key.value.value.schema?.system
+          ?? item.key.value.value.name.toLowerCase(),
           ...item.data,
         },
       }

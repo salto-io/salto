@@ -115,12 +115,6 @@ describe('dummy adapter', () => {
           && elem.path[1] === 'Objects'
           && _.last(elem.path)?.endsWith('Annotations')) {
           expect(elem.annotations[CORE_ANNOTATIONS.ALIAS]).toBeDefined()
-        } else if (isInstanceElement(elem)
-          && elem.elemID.typeName !== 'Profile'
-          && elem.path
-          && elem.path[1] === 'extra'
-          && elem.elemID.name === 'FullInst1WithIV') {
-          expect(elem.annotations[CORE_ANNOTATIONS.ALIAS]).toBeDefined()
         } else {
           expect(elem.annotations[CORE_ANNOTATIONS.ALIAS]).not.toBeDefined()
         }

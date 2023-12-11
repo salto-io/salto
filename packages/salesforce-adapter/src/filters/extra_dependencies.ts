@@ -159,37 +159,38 @@ const queryDeps = async ({ client, elements }: GetDependenciesParams): Promise<D
   }
   let queriesExecuted = 0
   const errorIds = new Set<string>()
-  const chunkedQuery = async (ids: string[], chunkSize: number): Promise<Dependency[]> => {
-    return Promise.all(_.chunk(ids, chunkSize)
-      .map(async idsChunk => {
-        const query = `SELECT 
+  const chunkedQuery = async (
+    ids: string[],
+    chunkSize: number
+  ): Promise<Dependency[]> => Promise.all(_.chunk(ids, chunkSize)
+    .map(async idsChunk => {
+      const query = `SELECT 
     MetadataComponentId, MetadataComponentType, MetadataComponentName, 
     RefMetadataComponentId, RefMetadataComponentType, RefMetadataComponentName 
   FROM MetadataComponentDependency WHERE MetadataComponentId IN (${idsChunk.map(id => `'${id}'`).join(', ')})`
-        const allRecords = (await toArrayAsync(await client.queryAll(query, true))).flat()
-        queriesExecuted += 1
-        if (allRecords.length === TOOLING_QUERY_MAX_RECORDS) {
-          // A single Element has more than 2000 dependencies
-          if (chunkSize === 1) {
-            errorIds.add(idsChunk[0])
-          } else {
-            return chunkedQuery(idsChunk, Math.ceil(chunkSize / 2))
-          }
+      const allRecords = (await toArrayAsync(await client.queryAll(query, true))).flat()
+      queriesExecuted += 1
+      if (allRecords.length === TOOLING_QUERY_MAX_RECORDS) {
+        // A single Element has more than 2000 dependencies
+        if (chunkSize === 1) {
+          errorIds.add(idsChunk[0])
+        } else {
+          return chunkedQuery(idsChunk, Math.ceil(Math.ceil(idsChunk.length / 2)))
         }
-        return allRecords.map(rec => ({
-          from: {
-            type: rec.MetadataComponentType,
-            id: rec.MetadataComponentId,
-            name: rec.MetadataComponentName,
-          },
-          to: {
-            type: rec.RefMetadataComponentType,
-            id: rec.RefMetadataComponentId,
-            name: rec.RefMetadataComponentName,
-          },
-        }))
-      })).then(res => res.flat())
-  }
+      }
+      return allRecords.map(rec => ({
+        from: {
+          type: rec.MetadataComponentType,
+          id: rec.MetadataComponentId,
+          name: rec.MetadataComponentName,
+        },
+        to: {
+          type: rec.RefMetadataComponentType,
+          id: rec.RefMetadataComponentId,
+          name: rec.RefMetadataComponentName,
+        },
+      }))
+    })).then(res => res.flat())
   return chunkedQuery(Object.keys(elementsByMetadataComponentId), INITIAL_QUERY_CHUNK_SIZE)
     .then(deps => {
       if (errorIds.size === 0) {

@@ -331,9 +331,9 @@ const deployProgressMessage = async (
   const url = await getDeployStatusUrl(deployResult, client)
   const testStatus = `${deployResult.numberTestsCompleted}/${deployResult.numberComponentsTotal} (${deployResult.numberTestErrors} errors)`
   const componentStatus = `${deployResult.numberComponentsDeployed}/${deployResult.numberComponentsTotal} (${deployResult.numberComponentErrors} errors)`
-  const logLine = `Tests: ${testStatus} Components: ${componentStatus} URL: ${url}`
-  log.debug(logLine)
-  return logLine
+  const progressMessage = `Tests: ${testStatus} Components: ${componentStatus} URL: ${url}`
+  log.debug(progressMessage)
+  return progressMessage
 }
 
 const quickDeployOrDeploy = async (

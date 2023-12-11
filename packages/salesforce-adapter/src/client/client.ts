@@ -24,6 +24,7 @@ import {
   Connection as RealConnection,
   DeployOptions as JSForceDeployOptions,
   DeployResult,
+  DeployResultLocator,
   DescribeGlobalSObjectResult,
   DescribeSObjectResult,
   DescribeValueTypeResult,
@@ -799,6 +800,35 @@ export default class SalesforceClient {
     )
   }
 
+  private async reportDeployProgressUntilComplete(
+    deployStatus: DeployResultLocator<DeployResult>,
+    progressCallback: (inProgressResult: DeployResult) => void
+  ): Promise<DeployResult> {
+    const progressCallbackWrapper = async (): Promise<void> => {
+      const partialResult = await deployStatus.check()
+      try {
+        const detailedResult = await this.conn.metadata.checkDeployStatus(partialResult.id, true)
+        progressCallback(detailedResult)
+      } catch (e) {
+        log.warn('checkDeployStatus API call failed. Progress update will not take place. Error: %s', e.message)
+      }
+    }
+    const pollingInterval = setInterval(progressCallbackWrapper, this.conn.metadata.pollInterval)
+
+    const clearPollingInterval = (result: DeployResult): DeployResult => {
+      clearInterval(pollingInterval)
+      return result
+    }
+    const clearPollingIntervalOnError = (error: Error): DeployResult => {
+      clearInterval(pollingInterval)
+      throw error
+    }
+    // We can't use finally() because, despite what the type definition for jsforce says,
+    // DeployResultLocator.complete() actually returns an AsyncResultLocator<T> and not a Promise<T>.
+    // ref. https://github.com/jsforce/jsforce/blob/c04515846e91f84affa4eb87a7b2adb1f58bf04d/lib/api/metadata.js#L830
+    return deployStatus.complete(true).then(clearPollingInterval, clearPollingIntervalOnError)
+  }
+
   /**
    * Updates salesforce metadata with the Deploy API
    * @param zip The package zip
@@ -828,39 +858,22 @@ export default class SalesforceClient {
         checkOnly,
       },
     )
-    this.setDeployPollingTimeout()
 
-    let deployResult: DeployResult
-    if (progressCallback) {
-      const progressCallbackWrapper = async (): Promise<void> => {
-        const partialResult = await deployStatus.check()
-        try {
-          const detailedResult = await this.conn.metadata.checkDeployStatus(partialResult.id, true)
-          progressCallback(detailedResult)
-        } catch (e) {
-          log.warn('checkDeployStatus API call failed. Progress update will not take place. Error: %s', e.message)
-        }
-      }
-      const pollingInterval = setInterval(progressCallbackWrapper, this.conn.metadata.pollInterval)
+    try {
+      let deployResult: DeployResult
 
-      const clearPollingInterval = (result: DeployResult): DeployResult => {
-        clearInterval(pollingInterval)
-        return result
+      if (progressCallback) {
+        deployResult = await this.reportDeployProgressUntilComplete(deployStatus, progressCallback)
+      } else {
+        deployResult = await deployStatus.complete(true)
       }
-      const clearPollingIntervalOnError = (error: Error): DeployResult => {
-        clearInterval(pollingInterval)
-        throw error
-      }
-      // We can't use finally() because, despite what the type definition for jsforce says,
-      // DeployResultLocator.complete() actually returns an AsyncResultLocator<T> and not a Promise<T>.
-      // ref. https://github.com/jsforce/jsforce/blob/c04515846e91f84affa4eb87a7b2adb1f58bf04d/lib/api/metadata.js#L830
-      deployResult = await deployStatus.complete(true).then(clearPollingInterval, clearPollingIntervalOnError)
-    } else {
-      deployResult = await deployStatus.complete(true)
+
+      return flatValues(deployResult)
+    } finally {
+      this.setFetchPollingTimeout() // Revert the timeouts to what they were before
     }
-
-    return flatValues(deployResult)
   }
+
 
   /**
    * preform quick deploy to salesforce metadata

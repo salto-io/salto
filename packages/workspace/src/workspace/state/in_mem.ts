@@ -202,5 +202,8 @@ export const buildInMemState = (
         await updateStatePathIndex(unmergedElements, removedElementsFullNames)
       }
     },
+    updateConfig: async () => {
+      // Currently there is no configuration that affects this implementation
+    },
   }
 }

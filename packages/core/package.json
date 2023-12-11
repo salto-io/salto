@@ -59,6 +59,7 @@
     "get-stream": "^6.0.1",
     "glob": "^7.1.6",
     "istextorbinary": "^6.0.0",
+    "joi": "^17.4.0",
     "levelup": "^4.4.0",
     "lodash": "^4.17.21",
     "lru-cache": "^6.0.0",
@@ -72,6 +73,7 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
+    "@aws-sdk/util-stream-node": "3.198.0",
     "@salto-io/test-utils": "0.3.50",
     "@types/async-lock": "^1.1.2",
     "@types/fs-extra": "^9.0.8",
@@ -88,6 +90,7 @@
     "@types/wu": "^2.1.40",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",
+    "aws-sdk-client-mock": "^0.5.5",
     "eslint": "^6.2.2",
     "eslint-config-airbnb": "18.0.1",
     "eslint-plugin-header": "^3.0.0",

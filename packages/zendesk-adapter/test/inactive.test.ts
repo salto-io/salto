@@ -65,6 +65,11 @@ describe('omit inactive', () => {
                   omitInactive: true,
                 },
               },
+              view: {
+                transformation: {
+                  omitInactive: false,
+                },
+              },
             },
           },
         }

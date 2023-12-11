@@ -13,26 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-const deepMerge = require('../../build_utils/deep_merge')
-
-module.exports = deepMerge(
-  require('../../jest.base.config.js'),
-  {
-    name: 'aws-utils',
-    displayName: 'aws-utils',
-    rootDir: `${__dirname}`,
-    collectCoverageFrom: [
-      '!<rootDir>/index.ts',
-      '!<rootDir>/src/index.ts',
-    ],
-    coverageThreshold: {
-      global: {
-        branches: 90,
-        functions: 65,
-        lines: 90,
-        statements: 90,
-      },
-    },
-  }
-)
-
+export { ContentAndHash, NamedStream, StateContentProvider, getHashFromHashes } from './common'
+export { createFileStateContentProvider } from './file_content_provider'
+export { createS3StateContentProvider } from './s3_content_provider'

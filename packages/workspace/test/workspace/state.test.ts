@@ -139,9 +139,16 @@ describe('state', () => {
     it('get', async () => {
       expect(await state.get(elemID)).toEqual(elem)
     })
-    it('set', async () => {
-      await state.set(newElem)
-      expect(await state.get(newElemID)).toEqual(newElem)
+    describe('set', () => {
+      beforeEach(async () => {
+        await state.set(newElem)
+      })
+      it('should set element such that get would return it', async () => {
+        expect(await state.get(newElemID)).toEqual(newElem)
+      })
+      it('should not change account update date', async () => {
+        expect(await state.getAccountsUpdateDates()).toEqual(accountsUpdateDate)
+      })
     })
     it('remove', async () => {
       await state.set(newElem)
@@ -323,6 +330,12 @@ describe('state', () => {
         })
 
         expect(stateStaticFilesSource.delete).toHaveBeenCalledWith(staticFile)
+      })
+    })
+
+    describe('updateConfig', () => {
+      it('should do nothing', async () => {
+        await expect(state.updateConfig({ workspaceId: '', stateConfig: undefined })).resolves.not.toThrow()
       })
     })
   })

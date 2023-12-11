@@ -37,6 +37,13 @@ zuora_billing {
 | [retry](#retry-configuration-options)                         | `{}` (no overrides)      | Configuration for retrying on errors
 | [rateLimit](#rate-limit-configuration-options)                | `{}` (no overrides)      | Limits on the number of concurrent requests of different types
 | [maxRequestsPerMinute]                                        | unlimited                | Limits on the number of requests per minute
+| [timeout](#client-timeout-configuration-options)              | `{}` (no overrides)      | Configuration for setting request timeouts
+
+#### Client timeout configuration options
+
+| Name           | Default when undefined | Description
+|----------------|------------------------|------------
+| [maxDuration]  | `0` (unlimited)     | Set a timeout (in milliseconds) on requests
 
 #### Client retry options
 

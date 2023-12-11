@@ -22,10 +22,10 @@ import { Values } from '@salto-io/adapter-api'
 import { createConnection, createResourceConnection, instanceUrl } from './connection'
 import { ZENDESK } from '../constants'
 import { Credentials } from '../auth'
-import { PAGE_SIZE, DEFAULT_REQUEST_TIMEOUT } from '../config'
+import { PAGE_SIZE, DEFAULT_TIMEOUT_OPTS } from '../config'
 
 const {
-  DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+  DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
   throttle, logDecorator, requiresLogin,
 } = clientUtils
 const log = logger(module)

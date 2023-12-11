@@ -20,8 +20,6 @@ export const DEFAULT_RETRY_OPTS: Required<ClientRetryConfig> = {
   maxAttempts: 5, // try 5 times
   retryDelay: 5000, // wait for 5s before trying again
   additionalStatusCodesToRetry: [],
-  shouldResetTimeout: true,
-  lastRetryNoTimeout: true,
 }
 
 export const DEFAULT_TIMEOUT_OPTS: Required<ClientTimeoutConfig> = {

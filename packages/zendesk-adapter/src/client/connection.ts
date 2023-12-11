@@ -97,10 +97,7 @@ const accessTokenAuthParamsFunc = (
   },
 })
 
-export const createConnection: clientUtils.ConnectionCreator<Credentials> = (
-  retryOptions: clientUtils.RetryOptions,
-  timeout = 0,
-) => (
+export const createConnection: clientUtils.ConnectionCreator<Credentials> = (retryOptions, timeout) => (
   clientUtils.axiosConnection({
     retryOptions,
     authParamsFunc: async (creds: Credentials) => (

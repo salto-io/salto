@@ -407,7 +407,8 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.client = new Proxy(client, {
       get: (target, propertyKey) => {
         if (propertyKey === 'listMetadataObjects') {
-          // This proxy simply populates the listedInstancesByType
+          // This proxy populates the listedInstancesByType
+          // which is later used to detect deleted elements in partial fetch
           const proxyListMetadataObjects: SalesforceClient['listMetadataObjects'] = (
             ...args
           ) => target.listMetadataObjects(...args)

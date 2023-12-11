@@ -13,34 +13,24 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-
-import { CORE_ANNOTATIONS, Field, getChangeData, InstanceElement, isInstanceElement, MapType, Value, Values } from '@salto-io/adapter-api'
-import { collections, values } from '@salto-io/lowerdash'
+import _ from 'lodash'
+import { CORE_ANNOTATIONS, Field, getChangeData, InstanceElement, isInstanceElement, MapType, Values } from '@salto-io/adapter-api'
 import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { FIELD_CONFIGURATION_TYPE_NAME } from '../../constants'
 
-const { awu } = collections.asynciterable
-
 const replaceToMap = (instance: InstanceElement): void => {
-  instance.value.fields = Object.fromEntries(instance.value.fields
-    .filter((field: Values) => isResolvedReferenceExpression(field.id))
-    .map((field: Values) => [
-      field.id.elemID.name,
-      field,
-    ]))
+  instance.value.fields = _.keyBy(
+    instance.value.fields.filter((field: Values) => isResolvedReferenceExpression(field.id)),
+    field => field.id.elemID.name,
+  )
 }
 
-
-const replaceFromMap = async (
+const replaceFromMap = (
   instance: InstanceElement,
-): Promise<void> => {
-  instance.value.fields = await awu(Object.values(instance.value.fields))
-    .map(async (config: Value) => config)
-    .filter(values.isDefined)
-    .toArray()
+): void => {
+  instance.value.fields = Object.values(instance.value.fields)
 }
 
 const filter: FilterCreator = ({ config }) => ({
@@ -77,12 +67,12 @@ const filter: FilterCreator = ({ config }) => ({
       return
     }
 
-    await awu(changes)
+    changes
       .map(getChangeData)
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
       .filter(instance => instance.value.fields !== undefined)
-      .forEach(async instance => replaceFromMap(instance))
+      .forEach(replaceFromMap)
   },
 
   onDeploy: async changes => {

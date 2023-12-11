@@ -75,7 +75,7 @@ const removeMissingAutomationProjects: WeakReferencesHandler['removeWeakReferenc
     .map(async instance => {
       const automationProjects = instance.value.projects
       if (automationProjects === undefined || !isAutomationProjects(automationProjects)) {
-        log.warn(`projects value is corrupted in instance ${instance.elemID.getFullName()}`)
+        log.warn(`projects value is corrupted in instance ${instance.elemID.getFullName()}, hence not omitting missing projects`)
         return undefined
       }
 

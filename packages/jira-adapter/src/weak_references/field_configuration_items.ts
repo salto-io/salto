@@ -36,10 +36,10 @@ type FieldConfigurationItems = {
 }
 
 const FIELD_CONFIGURATION_ITEM_SCHEME = Joi.object({
-  id: Joi.optional(),
+  id: Joi.required(),
   description: Joi.optional(),
-  isHidden: Joi.optional(),
-  isRequired: Joi.optional(),
+  isHidden: Joi.boolean().required(),
+  isRequired: Joi.boolean().required(),
   renderer: Joi.optional(),
 })
 
@@ -85,21 +85,17 @@ const removeMissingFields: WeakReferencesHandler['removeWeakReferences'] = ({ el
     .map(async instance => {
       const fieldConfigurationItems = instance.value.fields
       if (fieldConfigurationItems === undefined || !isFieldConfigurationItems(fieldConfigurationItems)) {
-        log.warn(`fields value is corrupted in instance ${instance.elemID.getFullName()}`)
+        log.warn(`fields value is corrupted in instance ${instance.elemID.getFullName()}, hence not omitting missing fields`)
         return undefined
       }
 
       const fixedInstance = instance.clone()
-      fixedInstance.value.fields = await awu(Object.entries(fieldConfigurationItems))
+      fixedInstance.value.fields = Object.fromEntries(await awu(Object.entries(fieldConfigurationItems))
         .filter(async ([_id, field]) =>
           (isReferenceExpression(field.id)
             // eslint-disable-next-line no-return-await
             && await elementsSource.has(field.id.elemID)
-          ))
-        .reduce((obj, [id, field]) => {
-          obj[id] = field
-          return obj
-        }, {} as FieldConfigurationItems)
+          )).toArray())
 
       if (Object.keys(fixedInstance.value.fields).length === Object.keys(instance.value.fields).length) {
         return undefined

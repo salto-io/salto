@@ -16,7 +16,7 @@
 
 import { CORE_ANNOTATIONS, Change, InstanceElement, ReferenceExpression, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { getParent, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { WALK_NEXT_STEP, getParent, invertNaclCase, naclCase, pathNaclCase, walkOnElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { FORM_TYPE, JSM_DUCKTYPE_API_DEFINITIONS, PROJECT_TYPE, SERVICE_DESK } from '../../constants'
@@ -27,11 +27,45 @@ import JiraClient from '../../client/client'
 import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../../utils'
 
 const { isDefined } = lowerDashValues
+
+const fixFormsKeysName = ({
+  instance,
+  transformKeyFunc,
+}: {
+  instance: InstanceElement
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  transformKeyFunc: (key: string, value: any) => void
+}): void => {
+  walkOnElement({
+    element: instance,
+    func: ({ value }) => {
+      if (!_.isPlainObject(value)) {
+        return WALK_NEXT_STEP.RECURSE
+      }
+      // Convert numeric keys to naclCase
+      Object.keys(value).forEach(key => {
+        transformKeyFunc(key, value)
+      })
+      return WALK_NEXT_STEP.RECURSE
+    },
+  })
+}
+
 const deployForms = async (
   change: Change<InstanceElement>,
   client: JiraClient,
 ): Promise<void> => {
   const form = getChangeData(change)
+  fixFormsKeysName({
+    instance: form,
+    transformKeyFunc: ((key, value) => {
+      if (key.endsWith('@')) {
+        const newKey = invertNaclCase(key)
+        value[newKey] = value[key]
+        delete value[key]
+      }
+    }),
+  })
   const project = getParent(form)
   if (form.value.design?.settings?.name === undefined) {
     throw new Error('Form name is missing')
@@ -120,7 +154,19 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       })))
       .flat()
       .filter(isDefined)
-    forms.forEach(form => elements.push(form))
+    forms.forEach(form => {
+      fixFormsKeysName({
+        instance: form,
+        transformKeyFunc: ((key, value) => {
+          if (!Number.isNaN(Number(key))) {
+            const newKey = naclCase(key)
+            value[newKey] = value[key]
+            delete value[key]
+          }
+        }),
+      })
+      elements.push(form)
+    })
   },
   preDeploy: async changes => {
     changes

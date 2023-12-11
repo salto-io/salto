@@ -68,7 +68,7 @@ type Dependency = {
   to: DependencyDetails
 }
 
-type GetDependenciesParams = {
+type QueryDepsParams = {
   client: SalesforceClient
   elements: Element[]
 }
@@ -144,7 +144,7 @@ const getDependencies = async (
   }))
 }
 
-const queryDeps = async ({ client, elements }: GetDependenciesParams): Promise<Dependency[]> => {
+const queryDeps = async ({ client, elements }: QueryDepsParams): Promise<Dependency[]> => {
   const elementsByMetadataComponentId = _.keyBy(elements.filter(hasInternalId), getInternalId)
   // The MetadataComponentId of standard objects is the object name
   elements.filter(isStandardObjectSync).forEach(standardObject => {
@@ -206,7 +206,7 @@ const queryDeps = async ({ client, elements }: GetDependenciesParams): Promise<D
 }
 
 const getDependenciesV2 = async (
-  params: GetDependenciesParams
+  params: QueryDepsParams
 ): Promise<DependencyGroup[]> => {
   const deps = await queryDeps(params)
   return _.values(

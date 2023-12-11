@@ -50,7 +50,7 @@ const REFERENCING_TYPES_TO_FETCH_INDIVIDUALLY = ['Layout', 'Flow', 'ApexClass', 
 
 // The current limit for using Bulk API V1 to query Tooling Records
 const TOOLING_QUERY_MAX_RECORDS = 2000
-const INITIAL_QUERY_CHUNK_SIZE = 1000
+const INITIAL_QUERY_CHUNK_SIZE = 500
 
 type DependencyDetails = {
   type: string

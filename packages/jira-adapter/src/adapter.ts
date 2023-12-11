@@ -163,7 +163,7 @@ import assetsObjectTypeChangeFields from './filters/assets/assets_object_type_ch
 import changeAttributesPathFilter from './filters/assets/change_attributes_path'
 import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
-import { jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from './jsm_utils'
+import { getServerInfoTitle, jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from './jsm_utils'
 import { getWorkspaceId } from './workspace_id'
 import { JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES } from './config/api_config'
 
@@ -465,7 +465,8 @@ export default class JiraAdapter implements AdapterOperations {
   @logDuration('generating swagger instances from service')
   private async getSwaggerInstances(
     allTypes: TypeMap,
-    parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
+    parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>,
+    supportedTypes: Record<string, string[]>
   ): Promise<elementUtils.FetchElements<InstanceElement[]>> {
     const updatedApiDefinitionsConfig = {
       ...this.userConfig.apiDefinitions,
@@ -482,7 +483,7 @@ export default class JiraAdapter implements AdapterOperations {
       objectTypes: _.pickBy(allTypes, isObjectType),
       apiConfig: updatedApiDefinitionsConfig,
       fetchQuery: this.fetchQuery,
-      supportedTypes: this.userConfig.apiDefinitions.supportedTypes,
+      supportedTypes,
       getElemIdFunc: this.getElemIdFunc,
     })
   }
@@ -631,9 +632,12 @@ export default class JiraAdapter implements AdapterOperations {
     log.debug('going to fetch jira account configuration..')
     progressReporter.reportProgress({ message: 'Fetching types' })
     const { allTypes: swaggerTypes, parsedConfigs } = await this.getAllTypes(swaggers)
+    const userConfigSupportedTypes = this.userConfig.apiDefinitions.supportedTypes
+    const shuldModifySupportedTypes = await getServerInfoTitle(this.client) === 'Jira Service Desk'
+    const supportedTypes = shuldModifySupportedTypes ? _.omit(userConfigSupportedTypes, 'Board') : userConfigSupportedTypes
     progressReporter.reportProgress({ message: 'Fetching instances' })
     const [swaggerResponse, scriptRunnerElements] = await Promise.all([
-      this.getSwaggerInstances(swaggerTypes, parsedConfigs),
+      this.getSwaggerInstances(swaggerTypes, parsedConfigs, supportedTypes),
       this.getScriptRunnerElements(),
     ])
 

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { config as configUtils } from '@salto-io/adapter-components'
-import { AUTOMATION_LABEL_TYPE, AUTOMATION_TYPE, BOARD_COLUMN_CONFIG_TYPE, BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME } from '../constants'
+import { AUTOMATION_LABEL_TYPE, AUTOMATION_TYPE, BOARD_COLUMN_CONFIG_TYPE, BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, PROJECTS_FIELD, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME } from '../constants'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../filters/fields/constants'
 
 const DEFAULT_MAX_RESULTS = '1000'
@@ -1555,6 +1555,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   Automation: {
     transformation: {
       serviceUrl: '/jira/settings/automation#/rule/{id}',
+      idFields: ['name', PROJECTS_FIELD], // idFields is handled separately in automation filter.
     },
   },
 

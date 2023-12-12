@@ -15,10 +15,12 @@
 */
 import _ from 'lodash'
 import { EOL } from 'os'
-import { promises } from '@salto-io/lowerdash'
+import { promises, types } from '@salto-io/lowerdash'
 import { PlanItem, Plan, preview, DeployResult, ItemStatus, deploy, summarizeDeployChanges } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
+import fs from 'fs'
+import { Artifact } from '@salto-io/adapter-api'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts, getTagsForAccounts } from './common/accounts'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
@@ -92,6 +94,7 @@ type DeployArgs = {
   dryRun: boolean
   detailedPlan: boolean
   checkOnly: boolean
+  artifactsDir?: string
 } & AccountsArg & EnvArg
 
 const deployPlan = async (
@@ -191,6 +194,20 @@ const deployPlan = async (
   return result
 }
 
+const writeArtifacts = (
+  artifacts: types.NonEmptyArray<Artifact>,
+  artifactsDir: string,
+): void => {
+  log.debug('writing deploy artifacts to %s', artifactsDir)
+  artifacts.forEach(artifact => {
+    const artifactDir = `${artifactsDir}/${artifact.account ?? 'unknown'}`
+    fs.mkdirSync(artifactDir, { recursive: true })
+    const artifactPath = `${artifactDir}/${artifact.name}`
+    fs.writeFileSync(artifactPath, artifact.content)
+    log.debug('Successfully wrote artifact %s', artifactPath)
+  })
+}
+
 export const action: WorkspaceCommandAction<DeployArgs> = async ({
   input,
   cliTelemetry,
@@ -233,6 +250,20 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
     checkOnly,
     actualAccounts,
   )
+
+  try {
+    if (input.artifactsDir) {
+      const artifacts = result.extraProperties?.artifacts ?? []
+      if (types.isNonEmptyArray(artifacts)) {
+        writeArtifacts(artifacts, input.artifactsDir)
+      } else {
+        log.debug('No artifacts to write')
+      }
+    }
+  } catch (e: unknown) {
+    log.warn('Failed to write artifacts with error %o', e)
+  }
+
   let cliExitCode = result.success ? CliExitCode.Success : CliExitCode.AppError
   // We don't flush the workspace for check-only deployments
   if (!_.isUndefined(result.changes) && !checkOnly) {
@@ -292,6 +323,13 @@ const deployDef = createWorkspaceCommand({
         required: false,
         description: 'Run check-only deployment against the service',
         type: 'boolean',
+      },
+      {
+        name: 'artifactsDir',
+        alias: 'a',
+        required: false,
+        description: 'The directory to write the deploy artifacts to',
+        type: 'string',
       },
       ACCOUNTS_OPTION,
       ENVIRONMENT_OPTION,

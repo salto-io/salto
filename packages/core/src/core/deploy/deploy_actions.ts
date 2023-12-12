@@ -18,15 +18,17 @@ import {
   AdapterOperations, getChangeData, Change,
   isAdditionOrModificationChange,
   DeployExtraProperties, DeployOptions, Group,
-  SaltoElementError, SaltoError, SeverityLevel, DeployResult, ChangeDataType, SaltoErrorType,
+  SaltoElementError, SaltoError, SeverityLevel, DeployResult, ChangeDataType, SaltoErrorType, Artifact,
 } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { WalkError, NodeSkippedError } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import wu from 'wu'
+import { collections } from '@salto-io/lowerdash'
 import { Plan, PlanItem, PlanItemId } from '../plan'
 
 const log = logger(module)
+const { makeArray } = collections.array
 
 type DeployOrValidateParams = {
   adapter: AdapterOperations
@@ -69,7 +71,7 @@ const deployAction = async (
   checkOnly: boolean
 ): Promise<DeployResult> => {
   const changes = [...planItem.changes()]
-  const adapterName = getChangeData(changes[0]).elemID.adapter
+  const adapterName = planItem.account
   const adapter = adapters[adapterName]
   if (!adapter) {
     throw new Error(`Missing adapter for ${adapterName}`)
@@ -125,7 +127,8 @@ export const deployActions = async (
   checkOnly: boolean
 ): Promise<DeployActionResult> => {
   const appliedChanges: Change[] = []
-  const groups: Group[] = []
+  const allGroups: Group[] = []
+  const allArtifacts: Required<Artifact>[] = []
   try {
     await deployPlan.walkAsync(async (itemId: PlanItemId): Promise<void> => {
       const item = deployPlan.getItem(itemId) as PlanItem
@@ -137,9 +140,11 @@ export const deployActions = async (
       try {
         const result = await deployAction(item, adapters, checkOnly)
         result.appliedChanges.forEach(appliedChange => appliedChanges.push(appliedChange))
-        if (result.extraProperties?.groups !== undefined) {
-          groups.push(...result.extraProperties.groups)
-        }
+        const { groups, artifacts } = result.extraProperties ?? {}
+        makeArray(groups).forEach(group => allGroups.push(group))
+        makeArray(artifacts)
+          .map(artifact => Object.assign(artifact, { account: item.account }))
+          .forEach(artifact => allArtifacts.push(artifact))
         // Update element with changes so references to it
         // will have an updated version throughout the deploy plan
         updatePlanElement(item, result.appliedChanges)
@@ -159,7 +164,7 @@ export const deployActions = async (
         throw error
       }
     })
-    return { errors: [], appliedChanges, extraProperties: { groups } }
+    return { errors: [], appliedChanges, extraProperties: { groups: allGroups, artifacts: allArtifacts } }
   } catch (error) {
     const deployErrors: DeployError[] = []
     if (error instanceof WalkError) {
@@ -189,6 +194,6 @@ export const deployActions = async (
         })
       }
     }
-    return { errors: deployErrors, appliedChanges, extraProperties: { groups } }
+    return { errors: deployErrors, appliedChanges, extraProperties: { groups: allGroups, artifacts: allArtifacts } }
   }
 }

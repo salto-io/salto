@@ -38,7 +38,7 @@ import SalesforceClient from './client/client'
 import { createDeployPackage, DeployPackage } from './transformers/xml_transformer'
 import { isMetadataInstanceElement, apiName, metadataType, isMetadataObjectType, MetadataInstanceElement, assertMetadataObjectType } from './transformers/transformer'
 import { fullApiName } from './filters/utils'
-import { GLOBAL_VALUE_SET_SUFFIX, INSTANCE_FULL_NAME_FIELD } from './constants'
+import { GLOBAL_VALUE_SET_SUFFIX, INSTANCE_FULL_NAME_FIELD, SalesforceArtifacts } from './constants'
 import { RunTestsResult } from './client/jsforce'
 import { getUserFriendlyDeployMessage } from './client/user_facing_errors'
 import { QuickDeployParams } from './types'
@@ -417,6 +417,9 @@ export const deployMetadata = async (
       groups: isQuickDeployable(sfDeployRes)
         ? [{ id: groupId, requestId: sfDeployRes.id, hash: planHash, url: deploymentUrl }]
         : [{ id: groupId, url: deploymentUrl }],
+      artifacts: [
+        { name: SalesforceArtifacts.DeployPackageXml, content: pkg.getPackageXmlContent() },
+      ],
     },
   }
 }

@@ -49,12 +49,12 @@ export type Group = {
 export type Artifact = {
   name: string
   content: Buffer
-  account: string
+  account?: string
 }
 
 export type DeployExtraProperties = {
   groups?: Group[]
-  artifacts? : ReadonlyArray<Artifact>
+  artifacts? : Artifact[]
 }
 
 type SaltoDeployErrors = {

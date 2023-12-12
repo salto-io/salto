@@ -497,6 +497,7 @@ const toPlanItem = (
     [parent, ...subChanges].map(c => [_.uniqueId(), c])
   ),
   action: parent.action,
+  account: getChangeData(parent).elemID.adapter,
   changes: () => {
     const changes = [parent, ...subChanges]
     const detailedChangesByChange = _.groupBy(detailed, change => change.id.createBaseID().parent.getFullName())

@@ -147,8 +147,9 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       fixFormsKeysName({
         instance: form,
         transformKeyFunc: ((key, value) => {
-          if (naclCase(key) !== key) {
-            const newKey = naclCase(key)
+          const naclKey = naclCase(key)
+          if (naclKey !== key) {
+            const newKey = naclKey
             value[newKey] = value[key]
             delete value[key]
           }
@@ -167,8 +168,9 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
         fixFormsKeysName({
           instance,
           transformKeyFunc: ((key, value) => {
-            if (invertNaclCase(key) !== key) {
-              const newKey = invertNaclCase(key)
+            const invertedKey = invertNaclCase(key)
+            if (invertedKey !== key) {
+              const newKey = invertedKey
               value[newKey] = value[key]
               delete value[key]
             }
@@ -206,8 +208,9 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
         fixFormsKeysName({
           instance,
           transformKeyFunc: ((key, value) => {
-            if (naclCase(key) !== key) {
-              const newKey = naclCase(key)
+            const naclKey = naclCase(key)
+            if (naclKey !== key) {
+              const newKey = naclKey
               value[newKey] = value[key]
               delete value[key]
             }

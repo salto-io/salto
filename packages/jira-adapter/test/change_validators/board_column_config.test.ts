@@ -46,8 +46,8 @@ describe('boardColumnConfigValidator', () => {
       {
         elemID: instance.elemID,
         severity: 'Error',
-        message: "Can't deploy board without at least one column with at least one status.",
-        detailedMessage: "Can't deploy board without at least one column with at least one status.",
+        message: 'Unable to deploy Board without Columns and Statuses.',
+        detailedMessage: 'The board must have at least one column, and at least one of these columns must include a status. Please verify that these conditions are met before deploying it.',
       },
     ])
   })
@@ -62,8 +62,8 @@ describe('boardColumnConfigValidator', () => {
       {
         elemID: instance.elemID,
         severity: 'Error',
-        message: "Can't deploy board without at least one column with at least one status.",
-        detailedMessage: "Can't deploy board without at least one column with at least one status.",
+        message: 'Unable to deploy Board without Columns and Statuses.',
+        detailedMessage: 'The board must have at least one column, and at least one of these columns must include a status. Please verify that these conditions are met before deploying it.',
       },
     ])
   })
@@ -78,8 +78,8 @@ describe('boardColumnConfigValidator', () => {
       {
         elemID: instance.elemID,
         severity: 'Error',
-        message: "Can't deploy board without at least one column with at least one status.",
-        detailedMessage: "Can't deploy board without at least one column with at least one status.",
+        message: 'Unable to deploy Board without Columns and Statuses.',
+        detailedMessage: 'The board must have at least one column, and at least one of these columns must include a status. Please verify that these conditions are met before deploying it.',
       },
     ])
   })

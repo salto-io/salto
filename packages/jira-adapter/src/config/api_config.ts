@@ -1555,6 +1555,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   Automation: {
     transformation: {
       serviceUrl: '/jira/settings/automation#/rule/{id}',
+      idFields: ['name', 'projects'],
     },
   },
 

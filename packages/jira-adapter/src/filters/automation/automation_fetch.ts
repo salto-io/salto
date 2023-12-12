@@ -15,7 +15,7 @@
 */
 import { ElemIdGetter, InstanceElement, isInstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
 import { createSchemeGuard, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
-import { elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { elements as elementUtils, client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
@@ -29,7 +29,7 @@ import { getCloudId } from './cloud_id'
 import { convertRuleScopeValueToProjects } from './automation_structure'
 
 const DEFAULT_PAGE_SIZE = 1000
-
+const { getInstanceName } = elementUtils
 const log = logger(module)
 
 type PageResponse = {
@@ -87,15 +87,20 @@ const createInstance = (
   values: Values,
   type: ObjectType,
   idToProject: Record<string, InstanceElement>,
+  config: JiraConfig,
   getElemIdFunc?: ElemIdGetter,
 ): InstanceElement => {
   const serviceIds = elementUtils.createServiceIds(values, 'id', type.elemID)
+  const idFields = configUtils.getTypeTransformationConfig(
+    AUTOMATION_TYPE, config.apiDefinitions.types, config.apiDefinitions.typeDefaults
+  ).idFields ?? ['name']
+  const idFieldsWithoutProjects = idFields.filter(field => field !== 'projects')
   const defaultName = naclCase([
-    values.name,
-    ...(convertRuleScopeValueToProjects(values) ?? [])
+    (getInstanceName(values, idFieldsWithoutProjects, AUTOMATION_TYPE) ?? ''),
+    ...(idFields.includes('projects') ? (convertRuleScopeValueToProjects(values) ?? [])
       .map((project: Values) => idToProject[project.projectId]?.value.name)
       .filter(lowerdashValues.isDefined)
-      .sort(),
+      .sort() : []),
   ].join('_'))
 
   const instanceName = getElemIdFunc && serviceIds
@@ -154,7 +159,7 @@ const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuery }) =>
       const { automationType, subTypes } = createAutomationTypes()
 
       automations.forEach(automation => elements.push(
-        createInstance(automation, automationType, idToProject, getElemIdFunc),
+        createInstance(automation, automationType, idToProject, config, getElemIdFunc),
       ))
       elements.push(automationType, ...subTypes)
       return undefined

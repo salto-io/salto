@@ -13,11 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, Field, MapType, Values, isInstanceElement } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, Field, MapType, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
 import { NOTIFICATION_SCHEME_TYPE_NAME } from '../../constants'
 import { findObject } from '../../utils'
-import { transformAllNotificationEvents, generateNotificationIds } from './notification_events'
+import { transformNotificationEvent, generateNotificationIds, isNotificationScheme } from './notification_events'
 
 /**
  * The filter stores a hidden map of notification ids for each NotificationSchemeEvent
@@ -29,13 +29,12 @@ const filter: FilterCreator = () => ({
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === NOTIFICATION_SCHEME_TYPE_NAME)
       .forEach(instance => {
-        instance.value.notificationIds = generateNotificationIds(instance.value)
-        instance.value.notificationSchemeEvents
-          ?.forEach((event: Values) => event.notifications?.forEach((notification: Values) => {
-            delete notification.id
-          }))
-
-        transformAllNotificationEvents(instance.value)
+        const { value } = instance
+        if (isNotificationScheme(value) && value.notificationSchemeEvents) {
+          instance.value.notificationIds = generateNotificationIds(value.notificationSchemeEvents)
+          value.notificationSchemeEvents
+            .forEach(transformNotificationEvent)
+        }
       })
 
     const notificationSchemeType = findObject(elements, NOTIFICATION_SCHEME_TYPE_NAME)

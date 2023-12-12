@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, getChangeData, getDeepInnerType, InstanceElement, isObjectType, ModificationChange, ObjectType, toChange, Value, Values } from '@salto-io/adapter-api'
+import { Change, getChangeData, getDeepInnerType, InstanceElement, isObjectType, ModificationChange, ObjectType, toChange, Values } from '@salto-io/adapter-api'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
@@ -39,6 +39,7 @@ export type NotificationEvent = {
     notificationType: string
     user?: unknown
     additionalProperties?: unknown
+    id?: number
   }[]
 }
 
@@ -55,6 +56,7 @@ const NOTIFICATION_SCHEME = Joi.object({
       notifications: Joi.array().items(
         Joi.object({
           notificationType: Joi.string().required(),
+          id: Joi.number().optional(),
         }).unknown(true)
       ).optional(),
     }).unknown(true)
@@ -63,7 +65,7 @@ const NOTIFICATION_SCHEME = Joi.object({
 
 export const isNotificationScheme = createSchemeGuard<NotificationScheme>(NOTIFICATION_SCHEME, 'Received an invalid notification scheme')
 
-const transformNotificationEvent = (notificationEvent: NotificationEvent): void => {
+export const transformNotificationEvent = (notificationEvent: NotificationEvent): void => {
   notificationEvent.eventType = notificationEvent.event?.id
   delete notificationEvent.event
   notificationEvent.notifications?.forEach((notification: Values) => {
@@ -71,43 +73,39 @@ const transformNotificationEvent = (notificationEvent: NotificationEvent): void 
     delete notification.notificationType
     delete notification.additionalProperties
     delete notification.user
+    delete notification.id
   })
-}
-
-export const transformAllNotificationEvents = (notificationSchemeValues: Values): void => {
-  if (!isNotificationScheme(notificationSchemeValues)) {
-    throw new Error('Received an invalid notification scheme')
-  }
-  notificationSchemeValues.notificationSchemeEvents
-    ?.forEach(transformNotificationEvent)
 }
 
 const getEventKey = (eventEntry: EventValues): string =>
   `${eventEntry.event?.id}-${eventEntry.notification?.notificationType}-${eventEntry.notification?.parameter}`
 
 const getEventsValues = (
-  instanceValues: Values,
+  notificationEvents: NotificationEvent[],
 ): EventValues[] =>
-  (instanceValues.notificationSchemeEvents ?? [])
+  notificationEvents
     .flatMap((eventEntry: Values) => (eventEntry.notifications ?? []).map((notification: Values) => ({
       event: { id: eventEntry.event?.id },
       notification,
     })))
 
-export const generateNotificationIds = (value: Value): Record<string, string> =>
-  _(getEventsValues(value))
+export const generateNotificationIds = (notificationEvents: NotificationEvent[]): Record<string, string> =>
+  _(getEventsValues(notificationEvents))
     .keyBy(getEventKey)
     .mapValues(({ notification }) => notification?.id)
     .pickBy(lowerdashValues.isDefined)
     .value()
 
-
 const getEventInstances = (
   instance: InstanceElement,
   eventType: ObjectType,
   notificationSchemeId: string,
-): InstanceElement[] =>
-  getEventsValues(instance.value)
+): InstanceElement[] => {
+  const { value } = instance
+  if (!isNotificationScheme(value)) {
+    throw new Error(`received invalid structure for notificationSchemeEvents in instance ${instance.elemID.getFullName()}`)
+  }
+  return getEventsValues(value.notificationSchemeEvents ?? [])
     .map(eventEntry => new InstanceElement(
       getEventKey(eventEntry),
       eventType,
@@ -118,6 +116,7 @@ const getEventInstances = (
         notificationSchemeId,
       }
     ),)
+}
 
 const getEventType = async (change: Change<InstanceElement>): Promise<ObjectType> => {
   const notificationSchemeType = await getChangeData(change).getType()
@@ -132,7 +131,7 @@ const getEventType = async (change: Change<InstanceElement>): Promise<ObjectType
   return eventType
 }
 
-export const getEventChanges = async (
+export const getEventChangesToDeploy = async (
   notificationSchemeChange: ModificationChange<InstanceElement>
 ): Promise<Change<InstanceElement>[]> => {
   const eventType = await getEventType(notificationSchemeChange)

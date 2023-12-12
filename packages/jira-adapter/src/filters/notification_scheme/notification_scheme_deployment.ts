@@ -24,11 +24,10 @@ import { FilterCreator } from '../../filter'
 import { NOTIFICATION_EVENT_TYPE_NAME, NOTIFICATION_SCHEME_TYPE_NAME } from '../../constants'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import JiraClient from '../../client/client'
-import { getEventChanges, generateNotificationIds, isNotificationScheme, transformAllNotificationEvents, NotificationEvent } from './notification_events'
+import { getEventChangesToDeploy, generateNotificationIds, isNotificationScheme, NotificationEvent, transformNotificationEvent } from './notification_events'
 import { getLookUpName } from '../../reference_mapping'
 
 const { awu } = collections.asynciterable
-
 const log = logger(module)
 
 type NotificationEventValue = {
@@ -51,32 +50,29 @@ const NOTIFICATION_EVENT_VALUE_SCHEME = Joi.array().items(
 
 const isNotificationEventValue = createSchemeGuard<NotificationEventValue>(NOTIFICATION_EVENT_VALUE_SCHEME, 'Found an invalid notificationEventScheme value')
 
-const getDeployableNotificationEvent = (eventEntries: NotificationEventValue): NotificationEvent[] =>
+const toDeployableNotificationEvent = (eventEntries: NotificationEventValue): NotificationEvent[] =>
   eventEntries.map(eventEntry =>
     ({
-      event: {
-        id: eventEntry.eventType,
-      },
-      notifications: eventEntry.notifications?.map(notification => ({
-        notificationType: notification.type,
-        ...notification,
-      })),
+      event: { id: eventEntry.eventType },
+      notifications: eventEntry
+        .notifications?.map(notification => ({ notificationType: notification.type, ..._.omit(notification, 'type') })),
     }))
 
 const assignEventIds = async (change: Change<InstanceElement>, client: JiraClient): Promise<void> => {
   const notificationSchemeId = getChangeData(change).value.id
-  const res = await client.getSinglePage({
+  const { data } = await client.getSinglePage({
     url: `/rest/api/3/notificationscheme/${notificationSchemeId}`,
     queryParams: { expand: 'all' },
   })
-  if (Array.isArray(res.data)) {
+  if (!isNotificationScheme(data)) {
+    log.error(`Failed to assign event ids after deployment to NotificationScheme with id: ${notificationSchemeId}`)
     throw new Error(`Received unexpected response from ${NOTIFICATION_EVENT_TYPE_NAME}`)
   }
   await applyFunctionToChangeData<Change<InstanceElement>>(
     change,
     async instance => {
-      if (isNotificationScheme(res.data)) {
-        instance.value.notificationIds = generateNotificationIds(res.data)
+      if (data.notificationSchemeEvents) {
+        instance.value.notificationIds = generateNotificationIds(data.notificationSchemeEvents)
       }
       return instance
     }
@@ -88,11 +84,6 @@ const filter: FilterCreator = ({ client, config }) => {
   return {
     name: 'notificationSchemeDeploymentFilter',
     onFetch: async (elements: Element[]) => {
-      if (!config.client.usePrivateAPI) {
-        log.debug('Skipping notification scheme deployment filter because private API is not enabled')
-        return
-      }
-
       const notificationSchemeType = findObject(elements, NOTIFICATION_SCHEME_TYPE_NAME)
       if (notificationSchemeType !== undefined) {
         setTypeDeploymentAnnotations(notificationSchemeType)
@@ -129,7 +120,7 @@ const filter: FilterCreator = ({ client, config }) => {
               const resolvedInstance = await resolveValues(instance, getLookUpName)
               const { notificationSchemeEvents } = resolvedInstance.value
               if (notificationSchemeEvents && isNotificationEventValue(notificationSchemeEvents)) {
-                resolvedInstance.value.notificationSchemeEvents = getDeployableNotificationEvent(
+                resolvedInstance.value.notificationSchemeEvents = toDeployableNotificationEvent(
                   notificationSchemeEvents
                 )
               }
@@ -168,7 +159,7 @@ const filter: FilterCreator = ({ client, config }) => {
             apiDefinitions: config.apiDefinitions,
           })
           if (isModificationChange(change)) {
-            const eventChanges = await getEventChanges(change)
+            const eventChanges = await getEventChangesToDeploy(change)
             await awu(eventChanges).forEach(async eventChange => {
               await defaultDeployChange({
                 change: eventChange,
@@ -205,7 +196,11 @@ const filter: FilterCreator = ({ client, config }) => {
           await applyFunctionToChangeData<Change<InstanceElement>>(
             change,
             instance => {
-              transformAllNotificationEvents(instance.value)
+              const { value } = instance
+              if (!isNotificationScheme(value)) {
+                throw new Error('Received an invalid notification scheme')
+              }
+              value.notificationSchemeEvents?.forEach(transformNotificationEvent)
               return instance
             }
           )

@@ -20,7 +20,7 @@ import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
 import _ from 'lodash'
-import { AUTOMATION_TYPE, fetchFailedWarnings, JIRA, PROJECT_TYPE } from '../../constants'
+import { AUTOMATION_TYPE, fetchFailedWarnings, JIRA, PROJECT_TYPE, PROJECTS_FIELD } from '../../constants'
 import JiraClient from '../../client/client'
 import { FilterCreator } from '../../filter'
 import { createAutomationTypes } from './types'
@@ -94,14 +94,13 @@ const createInstance = (
   const idFields = configUtils.getTypeTransformationConfig(
     AUTOMATION_TYPE, config.apiDefinitions.types, config.apiDefinitions.typeDefaults
   ).idFields ?? ['name']
-  const idFieldsWithoutProjects = idFields.filter(field => field !== 'projects')
+  const idFieldsWithoutProjects = idFields.filter(field => field !== PROJECTS_FIELD)
   const defaultName = naclCase([
     (getInstanceName(values, idFieldsWithoutProjects, AUTOMATION_TYPE) ?? ''),
-    ...(idFields.includes('projects') ? (convertRuleScopeValueToProjects(values) ?? [])
+    ...(idFields.includes(PROJECTS_FIELD) ? (convertRuleScopeValueToProjects(values) ?? [])
       .map((project: Values) => idToProject[project.projectId]?.value.name)
       .filter(lowerdashValues.isDefined)
-      .sort() : []),
-  ].join('_'))
+      .sort() : [])].join('_'))
 
   const instanceName = getElemIdFunc && serviceIds
     ? getElemIdFunc(JIRA, serviceIds, defaultName).name

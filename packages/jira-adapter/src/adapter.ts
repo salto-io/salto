@@ -105,7 +105,7 @@ import removeEmptyValuesFilter from './filters/remove_empty_values'
 import jqlReferencesFilter from './filters/jql/jql_references'
 import userFilter from './filters/user'
 import changePortalGroupFieldsFilter from './filters/change_portal_group_fields'
-import { JIRA, PROJECT_TYPE, SERVICE_DESK } from './constants'
+import { JIRA, JIRA_SERVICE_DESK_FIELD, PROJECT_TYPE, SERVICE_DESK } from './constants'
 import { paginate, removeScopedObjects } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
@@ -633,7 +633,7 @@ export default class JiraAdapter implements AdapterOperations {
     progressReporter.reportProgress({ message: 'Fetching types' })
     const { allTypes: swaggerTypes, parsedConfigs } = await this.getAllTypes(swaggers)
     const userConfigSupportedTypes = this.userConfig.apiDefinitions.supportedTypes
-    const shuldModifySupportedTypes = await getServerInfoTitle(this.client) === 'Jira Service Desk'
+    const shuldModifySupportedTypes = await getServerInfoTitle(this.client) === JIRA_SERVICE_DESK_FIELD
     const supportedTypes = shuldModifySupportedTypes ? _.omit(userConfigSupportedTypes, 'Board') : userConfigSupportedTypes
     progressReporter.reportProgress({ message: 'Fetching instances' })
     const [swaggerResponse, scriptRunnerElements] = await Promise.all([

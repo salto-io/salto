@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isObjectType, isInstanceElement, isPrimitiveType, isMapType, isListType } from '@salto-io/adapter-api'
+import { isObjectType, isInstanceElement, isPrimitiveType, isMapType, isListType, StaticFile } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import path from 'path'
@@ -86,13 +86,15 @@ describe('elements generator', () => {
       expect(maps.length).toBeGreaterThan(0)
     })
 
-    it('should return elements in the extra nacl dir', async () => {
+    it('should return elements in the extra nacl dir and handle static file correctly', async () => {
       const elements = await generateElements({
         ...testParams,
-        extraNaclPath: EXTRA_NACL_PATH,
+        extraNaclPaths: [EXTRA_NACL_PATH, 'should/handle/path/not/exists'],
       }, mockProgressReporter)
       const singleFileObj = elements.find(e => e.elemID.getFullName() === 'dummy.singleFileObj')
       const multiFilesObj = elements.filter(e => e.elemID.getFullName() === 'dummy.multiFilesObj')
+      const instWithStatic1 = elements.find(e => e.elemID.getFullName() === 'dummy.multiFilesObj.instance.InstWithStatic1')
+      const instWithStatic2 = elements.find(e => e.elemID.getFullName() === 'dummy.multiFilesObj.instance.InstWithStatic2')
       expect(singleFileObj).toBeDefined()
       expect(multiFilesObj).toHaveLength(2)
       expect(singleFileObj?.path).toEqual(['dummy', 'extra', 'single'])
@@ -100,6 +102,18 @@ describe('elements generator', () => {
         ['dummy', 'extra', 'multi1'],
         ['dummy', 'extra', 'multi2'],
       ])
+      expect(isInstanceElement(instWithStatic1)).toBeTruthy()
+      if (isInstanceElement(instWithStatic1)) {
+        const staticFile = instWithStatic1.value.aField as StaticFile
+        const content = await staticFile.getContent()
+        expect(content?.toString(staticFile.encoding)).toEqual('CONTENT OF REAL FILE')
+      }
+      expect(isInstanceElement(instWithStatic2)).toBeTruthy()
+      if (isInstanceElement(instWithStatic2)) {
+        const staticFile = instWithStatic2.value.aField as StaticFile
+        const content = await staticFile.getContent()
+        expect(content?.toString(staticFile.encoding)).toEqual('THIS IS STATIC FILE') // fall back content
+      }
     })
 
     it('should generate a set of fixture elements', async () => {
@@ -130,101 +144,6 @@ describe('elements generator', () => {
         .toBeDefined()
       expect(elements.find(e => e.elemID.getFullName() === 'dummy.EnvObj.instance.EnvInst'))
         .toBeDefined()
-    })
-  })
-  describe('conflictedElements', () => {
-    describe('when version is "a"', () => {
-      it('should return the correct conflicted elements', async () => {
-        const elements = await generateElements({ ...testParams, conflictedElementsVersion: 'a' }, mockProgressReporter)
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject'))
-          .toBeDefined()
-        const complicatedInst = elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject.instance.complicatedInst')
-        expect(isInstanceElement(complicatedInst)).toBeTruthy()
-        if (isInstanceElement(complicatedInst)) {
-          expect(complicatedInst.value.strFieldToBeDeletedInA).toBeUndefined()
-          expect(complicatedInst.value.strFieldToBeDeletedInB).toEqual('aaa')
-          expect(complicatedInst.value.strFieldToBeDeletedInC).toEqual('aaa')
-        }
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject'))
-          .toBeDefined()
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.ChangedObject'))
-          .toBeDefined()
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInA'))
-          .toBeUndefined()
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInB'))
-          .toBeDefined()
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInC'))
-          .toBeDefined()
-      })
-    })
-    describe('when version is "b"', () => {
-      it('should return the correct conflicted elements', async () => {
-        const elements = await generateElements({ ...testParams, conflictedElementsVersion: 'b' }, mockProgressReporter)
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject'))
-          .toBeDefined()
-        const complicatedInst = elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject.instance.complicatedInst')
-        expect(isInstanceElement(complicatedInst)).toBeTruthy()
-        if (isInstanceElement(complicatedInst)) {
-          expect(complicatedInst.value.strFieldToBeDeletedInA).toEqual('bbb')
-          expect(complicatedInst.value.strFieldToBeDeletedInB).toBeUndefined()
-          expect(complicatedInst.value.strFieldToBeDeletedInC).toEqual('bbb')
-        }
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject'))
-          .toBeDefined()
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.ChangedObject'))
-          .toBeDefined()
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInA'))
-          .toBeDefined()
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInB'))
-          .toBeUndefined()
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInC'))
-          .toBeDefined()
-      })
-    })
-    describe('when version is "c"', () => {
-      it('should return the correct conflicted elements', async () => {
-        const elements = await generateElements({ ...testParams, conflictedElementsVersion: 'c' }, mockProgressReporter)
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject'))
-          .toBeDefined()
-        const complicatedInst = elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject.instance.complicatedInst')
-        expect(isInstanceElement(complicatedInst)).toBeTruthy()
-        if (isInstanceElement(complicatedInst)) {
-          expect(complicatedInst.value.strFieldToBeDeletedInA).toEqual('ccc')
-          expect(complicatedInst.value.strFieldToBeDeletedInB).toEqual('ccc')
-          expect(complicatedInst.value.strFieldToBeDeletedInC).toBeUndefined()
-        }
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject'))
-          .toBeDefined()
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.ChangedObject'))
-          .toBeDefined()
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.ChangedObject'))
-          .toBeDefined()
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInA'))
-          .toBeDefined()
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInB'))
-          .toBeDefined()
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInC'))
-          .toBeUndefined()
-      })
-    })
-    describe('when version is undefined', () => {
-      it('should return no conflicted elements', async () => {
-        const elements = await generateElements(testParams, mockProgressReporter)
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject'))
-          .toBeUndefined()
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.ComplicatedObject.instance.complicatedInst'))
-          .toBeUndefined()
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject'))
-          .toBeUndefined()
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.ChangedObject'))
-          .toBeUndefined()
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInA'))
-          .toBeUndefined()
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInB'))
-          .toBeUndefined()
-        expect(elements.find(e => e.elemID.getFullName() === 'dummy.SimpleObject.instance.simpleInstDeletedInC'))
-          .toBeUndefined()
-      })
     })
   })
 })

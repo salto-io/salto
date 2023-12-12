@@ -127,7 +127,6 @@ export const changeErrorType = createMatchingObjectType<ChangeErrorFromConfigFil
   },
 })
 
-type ConflictedElementsVersion = 'a' | 'b' | 'c'
 export type GeneratorParams = {
     seed: number
     numOfPrimitiveTypes: number
@@ -160,14 +159,13 @@ export type GeneratorParams = {
     listLengthMean: number
     listLengthStd: number
     changeErrors?: ChangeErrorFromConfigFile[]
-    extraNaclPath?: string
+    extraNaclPaths?: string[]
     generateEnvName? : string
     fieldsToOmitOnDeploy?: string[]
     elementsToExclude?: string[]
-    conflictedElementsVersion?: ConflictedElementsVersion
 }
 
-export const defaultParams: Omit<GeneratorParams, 'extraNaclPath'> = {
+export const defaultParams: Omit<GeneratorParams, 'extraNaclPaths'> = {
   seed: 123456,
   numOfRecords: 522,
   numOfPrimitiveTypes: 44,
@@ -666,20 +664,29 @@ export const generateElements = async (
       }
     ).flat()
   }
-  const generateExtraElements = async (naclDir: string): Promise<Element[]> => {
-    const allNaclMocks = await readdirp.promise(naclDir, {
+  const generateExtraElements = async (naclDirs: string[]): Promise<Element[]> => {
+    const allNaclMocks = (await Promise.all(naclDirs.map(naclDir => readdirp.promise(naclDir, {
       fileFilter: [`*.${MOCK_NACL_SUFFIX}`],
-    })
+    })))).flatMap(list => list)
     log.debug('the list of files read in generateExtraElements is: %s', allNaclMocks.map(mock => mock.path).join(' , '))
     const elements = await awu(allNaclMocks.map(async file => {
       const content = fs.readFileSync(file.fullPath, 'utf8')
       log.debug('content of file %s is %s', file.path, content)
       const parsedNaclFile = await parser.parse(Buffer.from(content), file.basename, {
         file: {
-          parse: async funcParams => new StaticFile({
-            content: Buffer.from('THIS IS STATIC FILE'),
-            filepath: funcParams[0],
-          }),
+          parse: async funcParams => {
+            const [filepath] = funcParams
+            let fileContent: Buffer
+            try {
+              fileContent = fs.readFileSync(`${file.fullPath.replace(file.basename, '')}${filepath}`)
+            } catch {
+              fileContent = Buffer.from('THIS IS STATIC FILE')
+            }
+            return new StaticFile({
+              content: fileContent,
+              filepath,
+            })
+          },
           dump: async () => ({ funcName: 'file', parameters: [] }),
           isSerializedAsFunction: () => true,
         },
@@ -792,254 +799,6 @@ export const generateElements = async (
     }
     return res
   }
-  const generateConflictedElements = (): Element[] => {
-    const version = params.conflictedElementsVersion
-    if (!version) {
-      return []
-    }
-    const changedObject = new ObjectType({
-      elemID: new ElemID(DUMMY_ADAPTER, 'ChangedObject'),
-      fields: {
-        alwaysTheSame: {
-          refType: BuiltinTypes.STRING,
-        },
-        ...(version !== 'a' ? { notInA: {
-          refType: BuiltinTypes.STRING,
-          annotations: {
-            version,
-          },
-        } } : {}),
-        ...(version !== 'b' ? { notInB: {
-          refType: BuiltinTypes.STRING,
-          annotations: {
-            version,
-          },
-        } } : {}),
-        ...(version !== 'c' ? { notInC: {
-          refType: BuiltinTypes.STRING,
-          annotations: {
-            version,
-          },
-        } } : {}),
-      },
-      path: [DUMMY_ADAPTER, 'ConflictedStuff', 'ChangedObject'],
-      annotations: {
-        [CORE_ANNOTATIONS.ALIAS]: 'ChangedObject_alias',
-      },
-    })
-    const simpleObject = new ObjectType({
-      elemID: new ElemID(DUMMY_ADAPTER, 'SimpleObject'),
-      fields: {
-        strField: {
-          refType: BuiltinTypes.STRING,
-        },
-        numField: {
-          refType: BuiltinTypes.NUMBER,
-        },
-      },
-      path: [DUMMY_ADAPTER, 'ConflictedStuff', 'SimpleObject'],
-      annotations: {
-        [CORE_ANNOTATIONS.ALIAS]: 'SimpleObject_alias',
-      },
-    })
-    const complicatedObject = new ObjectType({
-      elemID: new ElemID(DUMMY_ADAPTER, 'ComplicatedObject'),
-      fields: {
-        fieldWithNoChange: {
-          refType: BuiltinTypes.STRING,
-        },
-        fieldWithNoConflict: {
-          refType: BuiltinTypes.STRING,
-        },
-        strField: {
-          refType: BuiltinTypes.STRING,
-        },
-        strFieldToBeDeletedInA: {
-          refType: BuiltinTypes.STRING,
-        },
-        strFieldToBeDeletedInB: {
-          refType: BuiltinTypes.STRING,
-        },
-        strFieldToBeDeletedInC: {
-          refType: BuiltinTypes.STRING,
-        },
-        numField: {
-          refType: BuiltinTypes.NUMBER,
-        },
-        listField: {
-          refType: new ListType(BuiltinTypes.STRING),
-        },
-        staticFileField: {
-          refType: BuiltinTypes.STRING,
-        },
-        autoMergedStaticFileInst: {
-          refType: BuiltinTypes.STRING,
-        },
-        mapField: {
-          refType: new MapType(BuiltinTypes.STRING),
-        },
-        objectsMapField: {
-          refType: new ListType(simpleObject),
-        },
-      },
-      path: [DUMMY_ADAPTER, 'ConflictedStuff', 'ComplicatedObject'],
-      annotations: {
-        [CORE_ANNOTATIONS.ALIAS]: 'ComplicatedObject_alias',
-      },
-    })
-
-    const versionToComplicatedObjectFields: Record<ConflictedElementsVersion, {
-      fieldWithNoChange: string
-      fieldWithOnlyChange: string
-      strField: string
-      strFieldToBeDeletedInA?: string
-      strFieldToBeDeletedInB?: string
-      strFieldToBeDeletedInC?: string
-      numField: number
-      listField: string[]
-      staticFileField: StaticFile
-      autoMergedStaticFileInst: StaticFile
-      mapField: Record<string, string>
-      objectsListField: { strField: string; numField: number }[]
-    }> = {
-      a: {
-        fieldWithNoChange: 'has not been changed',
-        fieldWithOnlyChange: 'after',
-        strField: 'prefix_aaa_suffix',
-        strFieldToBeDeletedInB: 'aaa',
-        strFieldToBeDeletedInC: 'aaa',
-        numField: 1,
-        listField: ['a'],
-        staticFileField: new StaticFile({
-          content: Buffer.from(`First line is the same
-Second line changed aaa
-Third line is the same
-Fourth line changed aaa
-Fifth line is the same`),
-          filepath: 'staticFileField.txt',
-        }),
-        autoMergedStaticFileInst: new StaticFile({
-          content: Buffer.from(`First line changed in version a
-Second line not changed
-Third line not changed`),
-          filepath: 'autoMergedStaticFileInst.txt',
-        }),
-        mapField: {
-          firstValue: 'firstValue',
-          versionValue: 'a',
-        },
-        objectsListField: [
-          { strField: 'always the same', numField: 1 },
-          { strField: 'aaa', numField: 1 },
-        ],
-      },
-      b: {
-        fieldWithNoChange: 'has not been changed',
-        fieldWithOnlyChange: 'before',
-        strField: 'prefix_bbb_suffix',
-        strFieldToBeDeletedInA: 'bbb',
-        strFieldToBeDeletedInC: 'bbb',
-        numField: 2,
-        listField: ['b', 'b'],
-        staticFileField: new StaticFile({
-          content: Buffer.from(`First line is the same
-Second line changed bbb
-Third line is the same
-Fourth line changed bbb
-Fifth line is the same`),
-          filepath: 'staticFileField.txt',
-        }),
-        autoMergedStaticFileInst: new StaticFile({
-          content: Buffer.from(`First line not change
-Second line not changed
-Third line not changed`),
-          filepath: 'autoMergedStaticFileInst.txt',
-        }),
-        mapField: {
-          firstValue: 'firstValue',
-          versionValue: 'b',
-        },
-        objectsListField: [
-          { strField: 'always the same', numField: 1 },
-          { strField: 'bbb', numField: 1 },
-        ],
-      },
-      c: {
-        fieldWithNoChange: 'has not been changed',
-        fieldWithOnlyChange: 'before',
-        strField: 'prefix_ccc_suffix',
-        strFieldToBeDeletedInA: 'ccc',
-        strFieldToBeDeletedInB: 'ccc',
-        numField: 3,
-        listField: ['c', 'c', 'c'],
-        staticFileField: new StaticFile({
-          content: Buffer.from(`First line is the same
-Second line changed ccc
-Third line is the same
-Fourth line changed ccc
-Fifth line is the same`),
-          filepath: 'staticFileField.txt',
-        }),
-        autoMergedStaticFileInst: new StaticFile({
-          content: Buffer.from(`First line not change
-Second line not changed
-Third line changed in version c`),
-          filepath: 'autoMergedStaticFileInst.txt',
-        }),
-        mapField: {
-          firstValue: 'firstValue',
-          versionValue: 'c',
-        },
-        objectsListField: [
-          { strField: 'always the same', numField: 1 },
-          { strField: 'ccc', numField: 1 },
-        ],
-      },
-    }
-
-    const complicatedInst = new InstanceElement(
-      'complicatedInst',
-      complicatedObject,
-      versionToComplicatedObjectFields[version],
-      [DUMMY_ADAPTER, 'ConflictedStuff', 'complicatedInst'],
-      {
-        [CORE_ANNOTATIONS.ALIAS]: 'complicatedInst_alias',
-      }
-    )
-    const simpleInstDeletedInA = new InstanceElement('simpleInstDeletedInA', simpleObject, {
-      strField: version,
-    },
-    [DUMMY_ADAPTER, 'ConflictedStuff', 'simpleInstDeletedInA'],
-    {
-      [CORE_ANNOTATIONS.ALIAS]: 'simpleInstDeletedInA_alias',
-    })
-    const simpleInstDeletedInB = new InstanceElement('simpleInstDeletedInB', simpleObject, {
-      strField: version,
-    },
-    [DUMMY_ADAPTER, 'ConflictedStuff', 'simpleInstDeletedInB'],
-    {
-      [CORE_ANNOTATIONS.ALIAS]: 'simpleInstDeletedInB_alias',
-    })
-    const simpleInstDeletedInC = new InstanceElement('simpleInstDeletedInC', simpleObject, {
-      strField: version,
-    },
-    [DUMMY_ADAPTER, 'ConflictedStuff', 'simpleInstDeletedInC'],
-    {
-      [CORE_ANNOTATIONS.ALIAS]: 'simpleInstDeletedInC_alias',
-    })
-    const elements: Element[] = [complicatedObject, complicatedInst, simpleObject, changedObject]
-    if (version === 'a') {
-      elements.push(simpleInstDeletedInB)
-      elements.push(simpleInstDeletedInC)
-    } else if (version === 'b') {
-      elements.push(simpleInstDeletedInA)
-      elements.push(simpleInstDeletedInC)
-    } else {
-      elements.push(simpleInstDeletedInA)
-      elements.push(simpleInstDeletedInB)
-    }
-    return elements
-  }
 
   const defaultTypes = [defaultObj, permissionsType, profileType, layoutAssignmentsType]
   progressReporter.reportProgress({ message: 'Generating primitive types' })
@@ -1053,15 +812,14 @@ Third line changed in version c`),
   progressReporter.reportProgress({ message: 'Generating profile likes' })
   const profiles = generateProfileLike()
   progressReporter.reportProgress({ message: 'Generating extra elements' })
-  const extraElements = params.extraNaclPath
-    ? await generateExtraElements(params.extraNaclPath)
+  const extraElements = params.extraNaclPaths
+    ? await generateExtraElements(params.extraNaclPaths)
     : []
   const defaultExtraElements = await generateExtraElements(
-    path.join(dataPath, 'fixtures')
+    [path.join(dataPath, 'fixtures')]
   )
   log.debug('default fixture element are: %s', defaultExtraElements.map(elem => elem.elemID.getFullName()).join(' , '))
   progressReporter.reportProgress({ message: 'Generating conflicted elements' })
-  const conflictedElements = generateConflictedElements()
   const envObjects = generateEnvElements()
   progressReporter.reportProgress({ message: 'Generation done' })
   const elementsToExclude = new Set(params.elementsToExclude ?? [])
@@ -1076,6 +834,5 @@ Third line changed in version c`),
     ...extraElements,
     ...defaultExtraElements,
     ...envObjects,
-    ...conflictedElements,
   ].filter(e => !elementsToExclude.has(e.elemID.getFullName()))
 }

@@ -226,7 +226,7 @@ export const createInstances = (
     { [CORE_ANNOTATIONS.PARENT]: [jsmProject] }
   )
   const form = new InstanceElement(
-    `Support_${randomString}`,
+    `SUP_${randomString}`,
     findType(FORM_TYPE, fetchedElements),
     createFormValues(randomString),
     undefined,

@@ -4538,12 +4538,12 @@ axios-ntlm@^1.2.0:
   dependencies:
     axios "^0.21.3"
 
-axios-retry@^3.1.9:
-  version "3.1.9"
-  resolved "https://registry.yarnpkg.com/axios-retry/-/axios-retry-3.1.9.tgz#6c30fc9aeb4519aebaec758b90ef56fa03fe72e8"
-  integrity sha512-NFCoNIHq8lYkJa6ku4m+V1837TP6lCa7n79Iuf8/AqATAHYB0ISaAS1eyIenDOfHOLtym34W65Sjke2xjg2fsA==
+axios-retry@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/axios-retry/-/axios-retry-4.0.0.tgz#d5cb8ea1db18e05ce6f08aa5fe8b2663bba48e60"
+  integrity sha512-F6P4HVGITD/v4z9Lw2mIA24IabTajvpDZmKa6zq/gGwn57wN5j1P3uWrAV0+diqnW6kTM2fTqmWNfgYWGmMuiA==
   dependencies:
-    is-retry-allowed "^1.1.0"
+    is-retry-allowed "^2.2.0"
 
 axios@^0.21.3:
   version "0.21.4"
@@ -8097,6 +8097,11 @@ is-retry-allowed@^1.1.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/is-retry-allowed/-/is-retry-allowed-1.2.0.tgz#d778488bd0a4666a3be8a1482b9f2baafedea8b4"
   integrity sha512-RUbUeKwvm3XG2VYamhJL1xFktgjvPzL0Hq8C+6yrWIswDy3BIXGqCxhxkc30N9jqK311gVU137K8Ei55/zVJRg==
+
+is-retry-allowed@^2.2.0:
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/is-retry-allowed/-/is-retry-allowed-2.2.0.tgz#88f34cbd236e043e71b6932d09b0c65fb7b4d71d"
+  integrity sha512-XVm7LOeLpTW4jV19QSH38vkswxoLud8sQ57YwJVTPWdiaI9I8keEhGFpBlslyVsgdQy4Opg8QOLb8YRgsyZiQg==
 
 is-ssh@^1.4.0:
   version "1.4.0"

@@ -2400,7 +2400,6 @@ const SUPPORTED_TYPES = {
   StatusCategory: ['StatusCategories'],
   Workflow: ['Workflows'],
   WorkflowScheme: ['WorkflowSchemes'],
-  ServerInformation: ['ServerInformation'],
   Board: ['Boards'],
   Group: ['Groups'],
   Automation: [],

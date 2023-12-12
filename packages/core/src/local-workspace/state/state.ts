@@ -17,7 +17,6 @@ import { EOL } from 'os'
 import _ from 'lodash'
 import path from 'path'
 import { Readable } from 'stream'
-import { createHash } from 'crypto'
 import { chain } from 'stream-chain'
 import { parser } from 'stream-json/jsonl/Parser'
 import getStream from 'get-stream'
@@ -230,18 +229,12 @@ export const localState = (
     const stateTextPerAccount = await createStateTextPerAccount()
     return awu(Object.entries(stateTextPerAccount))
       .map(async ([account, fileContent]): Promise<ContentAndHash> => {
-        const contentHash = createHash('md5')
-        const zipContent = createGZipWriteStream(fileContent)
-        // We should call toString here, but we do to maintain backwards compatibility
+        const content = await getStream.buffer(createGZipWriteStream(fileContent))
+        // We should not call toString here, but we do to maintain backwards compatibility
         // fixing this would cause the hash to change to the correct hash value, but that would
         // trigger invalidation in all caches
-        zipContent.on('data', chunk => contentHash.update(chunk.toString()))
-        const content = await getStream.buffer(zipContent)
-        return {
-          account,
-          content,
-          contentHash: contentHash.digest('hex'),
-        }
+        const contentHash = toMD5(content.toString())
+        return { account, content, contentHash }
       })
       .toArray()
   }

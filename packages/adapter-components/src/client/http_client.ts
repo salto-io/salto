@@ -21,11 +21,13 @@ import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { Connection, ConnectionCreator, createRetryOptions, createClientConnection, ResponseValue, Response } from './http_connection'
 import { AdapterClientBase } from './base'
-import { ClientRetryConfig, ClientRateLimitConfig, ClientPageSizeConfig, ClientBaseConfig } from './config'
+import { ClientRetryConfig, ClientRateLimitConfig, ClientPageSizeConfig, ClientBaseConfig, ClientTimeoutConfig } from './config'
 import { requiresLogin, logDecorator } from './decorators'
 import { throttle } from './rate_limit'
 
 const log = logger(module)
+
+const NO_TIMEOUT = 0
 
 export type ClientOpts<
   TCredentials,
@@ -105,6 +107,7 @@ export abstract class AdapterHTTPClient<
       rateLimit: Required<TRateLimitConfig>
       maxRequestsPerMinute: number
       pageSize: Required<ClientPageSizeConfig>
+      timeout?: ClientTimeoutConfig
     },
   ) {
     super(
@@ -114,7 +117,11 @@ export abstract class AdapterHTTPClient<
     )
     this.conn = createClientConnection({
       connection,
-      retryOptions: createRetryOptions(_.defaults({}, this.config?.retry, defaults.retry)),
+      retryOptions: createRetryOptions(
+        _.defaults({}, this.config?.retry, defaults.retry),
+        _.defaults({}, this.config?.timeout, defaults.timeout),
+      ),
+      timeout: this.config?.timeout?.maxDuration ?? defaults.timeout?.maxDuration ?? NO_TIMEOUT,
       createConnection,
     })
     this.credentials = credentials

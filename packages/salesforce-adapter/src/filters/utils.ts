@@ -601,9 +601,17 @@ export const ensureSafeFilterFetch = ({
     }
   }
 
+/**
+  @deprecated use {@link isStandardObjectSync} instead.
+ */
 export const isStandardObject = async (objectType: ObjectType): Promise<boolean> => (
   await isCustomObject(objectType)
   && !ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(await safeApiName(objectType) ?? '')
+)
+
+export const isStandardObjectSync = (element: Element): element is ObjectType => (
+  isCustomObjectSync(element)
+  && !ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(apiNameSync(element) ?? '')
 )
 
 export const getInstanceAlias = async (

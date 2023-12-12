@@ -953,7 +953,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       modify: {
         url: '/rest/api/3/notificationscheme/{id}',
         method: 'put',
-        fieldsToIgnore: ['notificationSchemeEvents'],
+        fieldsToIgnore: ['notificationSchemeEvents', 'notificationIds', 'id'],
       },
       remove: {
         url: '/rest/api/3/notificationscheme/{id}',

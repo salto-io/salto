@@ -42,7 +42,6 @@ const fixFormsKeysName = ({
       if (!_.isPlainObject(value)) {
         return WALK_NEXT_STEP.RECURSE
       }
-      // Convert numeric keys to naclCase
       Object.keys(value).forEach(key => {
         transformKeyFunc(key, value)
       })
@@ -56,16 +55,6 @@ const deployForms = async (
   client: JiraClient,
 ): Promise<void> => {
   const form = getChangeData(change)
-  fixFormsKeysName({
-    instance: form,
-    transformKeyFunc: ((key, value) => {
-      if (key.endsWith('@')) {
-        const newKey = invertNaclCase(key)
-        value[newKey] = value[key]
-        delete value[key]
-      }
-    }),
-  })
   const project = getParent(form)
   if (form.value.design?.settings?.name === undefined) {
     throw new Error('Form name is missing')
@@ -158,7 +147,7 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       fixFormsKeysName({
         instance: form,
         transformKeyFunc: ((key, value) => {
-          if (!Number.isNaN(Number(key))) {
+          if (naclCase(key) !== key) {
             const newKey = naclCase(key)
             value[newKey] = value[key]
             delete value[key]
@@ -175,6 +164,16 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       .filter(instance => instance.elemID.typeName === FORM_TYPE)
       .forEach(instance => {
         instance.value.updated = new Date().toISOString()
+        fixFormsKeysName({
+          instance,
+          transformKeyFunc: ((key, value) => {
+            if (invertNaclCase(key) !== key) {
+              const newKey = invertNaclCase(key)
+              value[newKey] = value[key]
+              delete value[key]
+            }
+          }),
+        })
       })
   },
   deploy: async changes => {
@@ -204,6 +203,16 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       .filter(instance => instance.elemID.typeName === FORM_TYPE)
       .forEach(instance => {
         delete instance.value.updated
+        fixFormsKeysName({
+          instance,
+          transformKeyFunc: ((key, value) => {
+            if (naclCase(key) !== key) {
+              const newKey = naclCase(key)
+              value[newKey] = value[key]
+              delete value[key]
+            }
+          }),
+        })
       })
   },
 })

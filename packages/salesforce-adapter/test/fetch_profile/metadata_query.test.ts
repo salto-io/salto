@@ -28,9 +28,10 @@ import {
   CUSTOM_OBJECT,
   TOPICS_FOR_OBJECTS_METADATA_TYPE,
 } from '../../src/constants'
-import { LastChangeDateOfTypesWithNestedInstances, MetadataInstance, MetadataQuery } from '../../src/types'
+import { MetadataInstance, MetadataQuery } from '../../src/types'
 import { mockInstances } from '../mock_elements'
 import { mockFileProperties } from '../connection'
+import { emptyLastChangeDateOfTypesWithNestedInstances } from '../utils'
 
 describe('validateMetadataParams', () => {
   describe('invalid regex in include list', () => {
@@ -472,16 +473,6 @@ describe('buildMetadataQuery', () => {
     const INCLUDED_TYPE = 'Role'
     const EXCLUDED_TYPE = 'CustomLabels'
 
-    const emptyLastChangeDateOfTypesWithNestedInstances: LastChangeDateOfTypesWithNestedInstances = {
-      AssignmentRules: {},
-      AutoResponseRules: {},
-      CustomObject: {},
-      EscalationRules: {},
-      SharingRules: {},
-      Workflow: {},
-      CustomLabels: '2023-11-06T00:00:00.000Z',
-    }
-
     let changedAtSingleton: InstanceElement
     let metadataQuery: MetadataQuery
     beforeEach(async () => {
@@ -501,7 +492,7 @@ describe('buildMetadataQuery', () => {
           },
         },
         elementsSource,
-        lastChangeDateOfTypesWithNestedInstances: emptyLastChangeDateOfTypesWithNestedInstances,
+        lastChangeDateOfTypesWithNestedInstances: emptyLastChangeDateOfTypesWithNestedInstances(),
       })
     })
     describe('when is first fetch', () => {
@@ -521,7 +512,7 @@ describe('buildMetadataQuery', () => {
           },
           // In first fetch, the ChangedAtSingleton won't be defined
           elementsSource: buildElementsSourceFromElements([]),
-          lastChangeDateOfTypesWithNestedInstances: emptyLastChangeDateOfTypesWithNestedInstances,
+          lastChangeDateOfTypesWithNestedInstances: emptyLastChangeDateOfTypesWithNestedInstances(),
         })).rejects.toThrow()
       })
     })
@@ -546,7 +537,7 @@ describe('buildMetadataQuery', () => {
           metadataQuery = await buildMetadataQueryForFetchWithChangesDetection({
             fetchParams: { target: ['CustomObject'] },
             elementsSource: buildElementsSourceFromElements([changedAtSingleton]),
-            lastChangeDateOfTypesWithNestedInstances: emptyLastChangeDateOfTypesWithNestedInstances,
+            lastChangeDateOfTypesWithNestedInstances: emptyLastChangeDateOfTypesWithNestedInstances(),
           })
         })
         it('should return true', () => {

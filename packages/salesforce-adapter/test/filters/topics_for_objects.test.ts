@@ -29,7 +29,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { apiName, MetadataTypeAnnotations } from '../../src/transformers/transformer'
 import * as constants from '../../src/constants'
 import filterCreator from '../../src/filters/topics_for_objects'
-import { defaultFilterContext } from '../utils'
+import { defaultFilterContext, emptyLastChangeDateOfTypesWithNestedInstances } from '../utils'
 import { FilterWith } from './mocks'
 import { isInstanceOfTypeSync } from '../../src/filters/utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
@@ -113,7 +113,11 @@ describe('Topics for objects filter', () => {
             ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
               fetchParams: {},
-              metadataQuery: await buildMetadataQueryForFetchWithChangesDetection({ fetchParams: {}, elementsSource }),
+              metadataQuery: await buildMetadataQueryForFetchWithChangesDetection({
+                fetchParams: {},
+                elementsSource,
+                lastChangeDateOfTypesWithNestedInstances: emptyLastChangeDateOfTypesWithNestedInstances(),
+              }),
             }),
           },
         }) as typeof filter

@@ -37,6 +37,7 @@ import { annotationsFileName, customFieldsFileName, standardFieldsFileName } fro
 import { FilterContext } from '../src/filter'
 import { SYSTEM_FIELDS } from '../src/adapter'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
+import { LastChangeDateOfTypesWithNestedInstances } from '../src/types'
 
 export const findElements = (
   elements: ReadonlyArray<Element>,
@@ -381,3 +382,13 @@ export const defaultFilterContext: FilterContext = {
 export const mockFetchOpts: MockInterface<FetchOptions> = {
   progressReporter: { reportProgress: jest.fn() },
 }
+
+export const emptyLastChangeDateOfTypesWithNestedInstances = (): LastChangeDateOfTypesWithNestedInstances => ({
+  AssignmentRules: {},
+  AutoResponseRules: {},
+  CustomObject: {},
+  EscalationRules: {},
+  SharingRules: {},
+  Workflow: {},
+  CustomLabels: '2023-11-06T00:00:00.000Z',
+})

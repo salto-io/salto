@@ -16,7 +16,7 @@
 
 import { CORE_ANNOTATIONS, Change, InstanceElement, ReferenceExpression, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { WALK_NEXT_STEP, getParent, invertNaclCase, naclCase, pathNaclCase, walkOnElement } from '@salto-io/adapter-utils'
+import { getParent, invertNaclCase, mapKeysRecursive, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { FORM_TYPE, JSM_DUCKTYPE_API_DEFINITIONS, PROJECT_TYPE, SERVICE_DESK } from '../../constants'
@@ -27,28 +27,6 @@ import JiraClient from '../../client/client'
 import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../../utils'
 
 const { isDefined } = lowerDashValues
-
-const fixFormsKeysName = ({
-  instance,
-  transformKeyFunc,
-}: {
-  instance: InstanceElement
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  transformKeyFunc: (key: string, value: any) => void
-}): void => {
-  walkOnElement({
-    element: instance,
-    func: ({ value }) => {
-      if (!_.isPlainObject(value)) {
-        return WALK_NEXT_STEP.RECURSE
-      }
-      Object.keys(value).forEach(key => {
-        transformKeyFunc(key, value)
-      })
-      return WALK_NEXT_STEP.RECURSE
-    },
-  })
-}
 
 const deployForms = async (
   change: Change<InstanceElement>,
@@ -74,9 +52,10 @@ const deployForms = async (
       form.value.id = resp.data.id
       form.value.design.settings.templateId = resp.data.id
     }
+    const data = mapKeysRecursive(form.value, ({ key }) => invertNaclCase(key))
     await client.put({
       url: `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms/${form.value.id}`,
-      data: form.value,
+      data,
     })
   } else {
     await client.delete({
@@ -144,17 +123,7 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       .flat()
       .filter(isDefined)
     forms.forEach(form => {
-      fixFormsKeysName({
-        instance: form,
-        transformKeyFunc: ((key, value) => {
-          const naclKey = naclCase(key)
-          if (naclKey !== key) {
-            const newKey = naclKey
-            value[newKey] = value[key]
-            delete value[key]
-          }
-        }),
-      })
+      form.value = mapKeysRecursive(form.value, ({ key }) => naclCase(key))
       elements.push(form)
     })
   },
@@ -165,17 +134,6 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       .filter(instance => instance.elemID.typeName === FORM_TYPE)
       .forEach(instance => {
         instance.value.updated = new Date().toISOString()
-        fixFormsKeysName({
-          instance,
-          transformKeyFunc: ((key, value) => {
-            const invertedKey = invertNaclCase(key)
-            if (invertedKey !== key) {
-              const newKey = invertedKey
-              value[newKey] = value[key]
-              delete value[key]
-            }
-          }),
-        })
       })
   },
   deploy: async changes => {
@@ -205,17 +163,6 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       .filter(instance => instance.elemID.typeName === FORM_TYPE)
       .forEach(instance => {
         delete instance.value.updated
-        fixFormsKeysName({
-          instance,
-          transformKeyFunc: ((key, value) => {
-            const naclKey = naclCase(key)
-            if (naclKey !== key) {
-              const newKey = naclKey
-              value[newKey] = value[key]
-              delete value[key]
-            }
-          }),
-        })
       })
   },
 })

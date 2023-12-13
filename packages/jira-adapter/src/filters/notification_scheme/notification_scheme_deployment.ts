@@ -159,7 +159,7 @@ const filter: FilterCreator = ({ client, config }) => {
             apiDefinitions: config.apiDefinitions,
           })
           if (isModificationChange(change)) {
-            const eventChanges = await getEventChangesToDeploy(change)
+            const eventChanges = getEventChangesToDeploy(change)
             await awu(eventChanges).forEach(async eventChange => {
               await defaultDeployChange({
                 change: eventChange,

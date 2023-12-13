@@ -119,9 +119,9 @@ const getEventInstances = (
     ),)
 }
 
-export const getEventChangesToDeploy = async (
+export const getEventChangesToDeploy = (
   notificationSchemeChange: ModificationChange<InstanceElement>
-): Promise<Change<InstanceElement>[]> => {
+): Change<InstanceElement>[] => {
   const eventType = new ObjectType({ elemID: new ElemID(JIRA, NOTIFICATION_EVENT_TYPE_NAME) })
   const eventInstancesBefore = _.keyBy(
     getEventInstances(

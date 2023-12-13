@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ModificationChange, ObjectType, Value, getChangeData, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ModificationChange, ObjectType, Value, getChangeData, isAdditionChange, isRemovalChange, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
@@ -22,6 +22,7 @@ import notificationSchemeDeploymentFilter from '../../../src/filters/notificatio
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { JIRA, NOTIFICATION_SCHEME_TYPE_NAME, NOTIFICATION_EVENT_TYPE_NAME } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
+import { getEventChangesToDeploy } from '../../../src/filters/notification_scheme/notification_events'
 
 describe('notificationSchemeDeploymentFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
@@ -181,6 +182,12 @@ describe('notificationSchemeDeploymentFilter', () => {
       expect(afterInstance.value.notificationSchemeEvents[0].eventType).toEqual(2)
       expect(afterInstance.value.notificationSchemeEvents[0].notifications[0]?.notificationType).toBeUndefined()
       expect(afterInstance.value.notificationSchemeEvents[0].notifications[0]?.type).toEqual('EmailAddress')
+    })
+    it('should throw if change is not in the correct format', async () => {
+      const testInstance = instance.clone()
+      const change = toChange({ before: testInstance, after: testInstance }) as ModificationChange<InstanceElement>
+      const changes = [change]
+      await expect(filter.onDeploy(changes)).rejects.toThrow()
     })
     it('should do nothing when account is DC', async () => {
       const { client: cli, connection: conn } = mockClient(true)
@@ -445,6 +452,55 @@ describe('notificationSchemeDeploymentFilter', () => {
       expect(deployResult.appliedChanges).toHaveLength(0)
       expect(deployResult.errors).toHaveLength(0)
       expect(leftoverChanges).toHaveLength(1)
+    })
+  })
+  describe('getEventChangesToDeploy', () => {
+    let deployableInstance: InstanceElement
+    let notificationSchemeEvents: Value
+    beforeEach(() => {
+      notificationSchemeEvents = [
+        {
+          event: { id: 3 },
+          notifications: [
+            { notificationType: 'EmailAddress', parameter: 'email' },
+            { notificationType: 'Reporter' },
+          ],
+        },
+      ]
+      deployableInstance = new InstanceElement(
+        'test',
+        notificationSchemeType,
+        {
+          name: 'test',
+          description: 'description',
+          notificationSchemeEvents,
+        },
+      )
+    })
+    it('should return nothing if nothing has changed', () => {
+      const change = toChange(
+        { before: deployableInstance, after: deployableInstance }
+      ) as ModificationChange<InstanceElement>
+      const eventChanges = getEventChangesToDeploy(change)
+      expect(eventChanges).toHaveLength(0)
+    })
+    it('should create only removals if notificationSchemeEvents was deleted', () => {
+      const after = deployableInstance.clone()
+      delete after.value.notificationSchemeEvents
+      const change = toChange({ before: deployableInstance, after }) as ModificationChange<InstanceElement>
+      const eventChanges = getEventChangesToDeploy(change)
+      expect(eventChanges.filter(isRemovalChange)).toHaveLength(2)
+      expect(eventChanges.filter(isRemovalChange)[0].data.before.elemID.name).toEqual('3-EmailAddress-email')
+      expect(eventChanges.filter(isRemovalChange)[1].data.before.elemID.name).toEqual('3-Reporter-undefined')
+    })
+    it('should create only additions if notificationSchemeEvents was added', () => {
+      const before = deployableInstance.clone()
+      delete before.value.notificationSchemeEvents
+      const change = toChange({ before, after: deployableInstance }) as ModificationChange<InstanceElement>
+      const eventChanges = getEventChangesToDeploy(change)
+      expect(eventChanges.filter(isAdditionChange)).toHaveLength(2)
+      expect(eventChanges.filter(isAdditionChange)[0].data.after.elemID.name).toEqual('3-EmailAddress-email')
+      expect(eventChanges.filter(isAdditionChange)[1].data.after.elemID.name).toEqual('3-Reporter-undefined')
     })
   })
 })

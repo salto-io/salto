@@ -35,7 +35,7 @@
     "@salto-io/dag": "0.3.50",
     "@salto-io/logging": "0.3.50",
     "@salto-io/lowerdash": "0.3.50",
-    "axios": "^0.26.1",
+    "axios": "^1.6.0",
     "axios-retry": "^4.0.0",
     "bottleneck": "^2.19.5",
     "joi": "^17.4.0",

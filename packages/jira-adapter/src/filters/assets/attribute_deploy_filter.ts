@@ -16,7 +16,7 @@
 
 import { config as configUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { Change, DeployResult, InstanceElement, SaltoError, getChangeData, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
+import { Change, DeployResult, InstanceElement, SaltoElementError, SaltoError, createSaltoElementError, getChangeData, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { FilterCreator } from '../../filter'
@@ -26,12 +26,17 @@ import JiraClient from '../../client/client'
 
 const log = logger(module)
 
-const deployAttributeChanges = async (
-  jsmApiDefinitions: configUtils.AdapterDuckTypeApiConfig,
-  changes: Change<InstanceElement>[],
-  client: JiraClient,
-  workspaceId: string):
-  Promise<Omit<DeployResult, 'extraProperties'>> => {
+const deployAttributeChanges = async ({
+  jsmApiDefinitions,
+  changes,
+  client,
+  workspaceId,
+}: {
+  jsmApiDefinitions: configUtils.AdapterDuckTypeApiConfig
+  changes: Change<InstanceElement>[]
+  client: JiraClient
+  workspaceId: string
+}): Promise<Omit<DeployResult, 'extraProperties'>> => {
   const additionalUrlVars = { workspaceId }
   return deployChanges(
     changes,
@@ -75,16 +80,22 @@ const filter: FilterCreator = ({ config, client }) => ({
     const workspaceId = await getWorkspaceId(client)
     if (workspaceId === undefined) {
       log.error(`Skip deployment of ${ASSETS_ATTRIBUTE_TYPE} types because workspaceId is undefined`)
-      const error: SaltoError = {
-        message: `The following changes were not deployed, due to error with the workspaceId: ${attributesChanges.map(c => getChangeData(c).elemID.getFullName()).join(', ')}`,
+      const errors = attributesChanges.map(change => createSaltoElementError({
+        message: 'workspaceId could not be found.',
         severity: 'Error',
-      }
+        elemID: getChangeData(change).elemID,
+      }))
       return {
-        deployResult: { appliedChanges: [], errors: [error] },
+        deployResult: { appliedChanges: [], errors },
         leftoverChanges,
       }
     }
-    const deployResult = await deployAttributeChanges(jsmApiDefinitions, attributesChanges, client, workspaceId)
+    const deployResult = await deployAttributeChanges({
+      jsmApiDefinitions,
+      changes: attributesChanges,
+      client,
+      workspaceId,
+    })
 
     return {
       leftoverChanges,

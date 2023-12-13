@@ -65,7 +65,7 @@ export const automationToAssetsValidator: (config: JiraConfig) => ChangeValidato
     .map(instance => ({
       elemID: instance.elemID,
       severity: 'Warning' as SeverityLevel,
-      message: 'JSM Add-On Missing for Automation with Assets elements.',
-      detailedMessage: `The automation ${instance.annotations[CORE_ANNOTATIONS.ALIAS]} linked to the Assets object requires the JSM Add-On in Salto. Currently, this automation is referencing internal IDs without JSM enablement. If you've modified internal Ids, please ensure they are correctly set for the new environment. Without the JSM Add-On, these Ids can potentially lead to deployment issues.`,
+      message: 'Missing JSM Add-On for Automation Linked to Assets Elements.',
+      detailedMessage: `The automation '${instance.annotations[CORE_ANNOTATIONS.ALIAS]}', linked to the Assets object, requires the JSM Add-On in Salto. This automation currently uses internal IDs but does not have the JSM Add-On. If you have modified internal IDs, ensure they are accurate in the target environment. Incorrect IDs, without the JSM Add-On, could lead to deployment issues.`,
     }))
 }

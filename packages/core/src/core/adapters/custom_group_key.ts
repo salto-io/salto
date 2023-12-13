@@ -31,14 +31,14 @@ export const getAdapterChangeGroupIdFunctions = (
       apply: (target, thisArg, args) => target.apply(thisArg, args)
         .then(result => {
           log.debug(`Adding account name prefix to change group ids for account ${accountName}`)
-          const changesWithAccountNamePrefix = new Map<ChangeId, ChangeGroupId>()
+          const changeGroupIdMapWithAccountNamePrefix = new Map<ChangeId, ChangeGroupId>()
           result.changeGroupIdMap.forEach((groupId, changeId) => {
-            changesWithAccountNamePrefix.set(
+            changeGroupIdMapWithAccountNamePrefix.set(
               changeId,
               `${accountName}__${groupId}`
             )
           })
-          return Object.assign(result, { changeGroupIdMap: changesWithAccountNamePrefix })
+          return Object.assign(result, { changeGroupIdMap: changeGroupIdMapWithAccountNamePrefix })
         }),
     }))
     .value()

@@ -15,7 +15,8 @@
 */
 
 import { config as configUtils } from '@salto-io/adapter-components'
-import { Change, DeployResult, InstanceElement, getChangeData, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
+import { Change, DeployResult, InstanceElement, SaltoError, getChangeData, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { FilterCreator } from '../../filter'
@@ -23,14 +24,15 @@ import { ASSETS_ATTRIBUTE_TYPE } from '../../constants'
 import { getWorkspaceId } from '../../workspace_id'
 import JiraClient from '../../client/client'
 
+const log = logger(module)
 
 const deployAttributeChanges = async (
   jsmApiDefinitions: configUtils.AdapterDuckTypeApiConfig,
   changes: Change<InstanceElement>[],
-  client: JiraClient):
+  client: JiraClient,
+  workspaceId: string):
   Promise<Omit<DeployResult, 'extraProperties'>> => {
-  const workspaceId = await getWorkspaceId(client)
-  const additionalUrlVars = workspaceId ? { workspaceId } : undefined
+  const additionalUrlVars = { workspaceId }
   return deployChanges(
     changes,
     async change => {
@@ -53,6 +55,7 @@ const deployAttributeChanges = async (
   )
 }
 
+/* This filter deploys JSM attribute changes using two different endpoints. */
 const filter: FilterCreator = ({ config, client }) => ({
   name: 'deployAttributesFilter',
   deploy: async changes => {
@@ -64,11 +67,24 @@ const filter: FilterCreator = ({ config, client }) => ({
       }
     }
     const [attributesChanges, leftoverChanges] = _.partition(
-      changes,
-      (change): change is Change<InstanceElement> => isInstanceChange(change)
+      changes.filter(isInstanceChange),
+      change => isInstanceChange(change)
       && getChangeData(change).elemID.typeName === ASSETS_ATTRIBUTE_TYPE
     )
-    const deployResult = await deployAttributeChanges(jsmApiDefinitions, attributesChanges, client)
+
+    const workspaceId = await getWorkspaceId(client)
+    if (workspaceId === undefined) {
+      log.error(`Skip deployment of ${ASSETS_ATTRIBUTE_TYPE} types because workspaceId is undefined`)
+      const error: SaltoError = {
+        message: `The following changes were not deployed, due to error with the workspaceId: ${attributesChanges.map(c => getChangeData(c).elemID.getFullName()).join(', ')}`,
+        severity: 'Error',
+      }
+      return {
+        deployResult: { appliedChanges: [], errors: [error] },
+        leftoverChanges,
+      }
+    }
+    const deployResult = await deployAttributeChanges(jsmApiDefinitions, attributesChanges, client, workspaceId)
 
     return {
       leftoverChanges,

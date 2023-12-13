@@ -99,7 +99,7 @@ describe('deployAttributesFilter', () => {
       expect(connection.post).toHaveBeenCalledTimes(1)
       expect(connection.put).toHaveBeenCalledTimes(1)
     })
-    it('should modify attribute when chaning values for first api', async () => {
+    it('should modify attribute when changing values for first api', async () => {
       const attributesInstanceAfter = attributesInstance.clone()
       attributesInstanceAfter.value.description = 'new description'
       const changes = [toChange({ before: attributesInstance, after: attributesInstanceAfter })]
@@ -110,7 +110,7 @@ describe('deployAttributesFilter', () => {
       expect(connection.post).toHaveBeenCalledTimes(0)
       expect(connection.put).toHaveBeenCalledTimes(2)
     })
-    it('should modify attribute when chaning values for second api', async () => {
+    it('should modify attribute when changing values for second api', async () => {
       const attributesInstanceAfter = attributesInstance.clone()
       attributesInstanceAfter.value.uniqueAttribute = true
       const changes = [toChange({ before: attributesInstance, after: attributesInstanceAfter })]
@@ -131,14 +131,14 @@ describe('deployAttributesFilter', () => {
       expect(connection.put).toHaveBeenCalledTimes(0)
       expect(connection.delete).toHaveBeenCalledTimes(1)
     })
-    it('should return error when workspaceId is not found', async () => {
+    it('should return error when workspaceId is undefined', async () => {
       connection.get.mockResolvedValueOnce({ status: 200, data: { values: [] } })
       const changes = [toChange({ after: attributesInstance })]
       const res = await filter.deploy(changes)
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)
-      expect(connection.post).toHaveBeenCalledTimes(1)
+      expect(connection.post).toHaveBeenCalledTimes(0)
       expect(connection.put).toHaveBeenCalledTimes(0)
     })
   })

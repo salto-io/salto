@@ -55,7 +55,7 @@ export const getCustomGroupIds = async (
     wu(changes.keys()).map(id => ({ id, change: changes.getData(id) })),
     ({ change }) => getChangeData(change).elemID.adapter,
   )
-  const changeGroupInfoPerAdapter = await awu(changesPerAccount.entries())
+  const changeGroupInfoPerAccount = await awu(changesPerAccount.entries())
     .filter(([accountName]) => accountName in customGroupIdFunctions)
     .map(([accountName, adapterChanges]) => (
       customGroupIdFunctions[accountName](new Map(adapterChanges.map(({ id, change }) => [id, change])))
@@ -72,7 +72,7 @@ export const getCustomGroupIds = async (
         })
     )).toArray()
 
-  return mergeChangeGroupInfo(changeGroupInfoPerAdapter)
+  return mergeChangeGroupInfo(changeGroupInfoPerAccount)
 }
 
 // If we add / remove an object type, we can omit all the field add / remove

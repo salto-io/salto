@@ -293,5 +293,49 @@ describe('requestTypeLayoutsFilter', () => {
       const issueLayoutInstance = instances.find(e => e.elemID.typeName === REQUEST_FORM_TYPE)
       expect(issueLayoutInstance?.elemID.getFullName()).toEqual('jira.RequestForm.instance.someName')
     })
+    it('should add request form when metadata is null', async () => {
+      mockGet.mockImplementation(params => {
+        if (params.url === '/rest/gira/1') {
+          return {
+            data: {
+              issueLayoutConfiguration: {
+                issueLayoutResult: {
+                  id: '2',
+                  name: 'Default Issue Layout',
+                  containers: [
+                    {
+                      containerType: 'PRIMARY',
+                      items: {
+                        nodes: [
+                          {
+                            fieldItemId: 'testField1',
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      containerType: 'SECONDARY',
+                      items: {
+                        nodes: [
+                          {
+                            fieldItemId: 'testField2',
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+                metadata: null,
+              },
+            },
+          }
+        }
+        throw new Error('Err')
+      })
+      await filter.onFetch(elements)
+      const instances = elements.filter(isInstanceElement)
+      const issueLayoutInstance = instances.find(e => e.elemID.typeName === REQUEST_FORM_TYPE)
+      expect(issueLayoutInstance).toBeDefined()
+    })
   })
 })

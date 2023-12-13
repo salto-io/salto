@@ -102,7 +102,7 @@ export type IssueLayoutConfiguration = {
     name: string
     containers: containerIssueLayoutResponse[]
   }
-  metadata: {
+  metadata?: {
     configuration: {
       items: {
         nodes: {
@@ -145,6 +145,6 @@ export const ISSUE_LAYOUT_RESPONSE_SCHEME = Joi.object({
           nodes: Joi.array().items(Joi.object({}).unknown(true).required()).required(),
         }).required(),
       }).unknown(true).required(),
-    }).unknown(true).required(),
+    }).unknown(true).allow(null).required(),
   }).unknown(true).required(),
 }).unknown(true).required()

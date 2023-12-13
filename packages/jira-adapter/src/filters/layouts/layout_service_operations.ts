@@ -107,7 +107,7 @@ const fromLayoutConfigRespToLayoutConfig = (
   layoutConfig: IssueLayoutConfiguration
 ): issueLayoutConfig => {
   const { containers } = layoutConfig.issueLayoutResult
-  const fieldItemIdToMetaData = Object.fromEntries(layoutConfig.metadata.configuration.items.nodes
+  const fieldItemIdToMetaData = Object.fromEntries((layoutConfig.metadata?.configuration.items.nodes ?? [])
     .filter(node => !_.isEmpty(node))
     .map(node => [node.fieldItemId, _.omit(node, 'fieldItemId')]))
 

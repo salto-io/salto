@@ -77,6 +77,7 @@ export type FetchParams = {
   fieldsToOmit?: FieldToOmitParams[]
   addAlias?: boolean
   addBundles?: boolean
+  addImportantValues?: boolean
 } & LockedElementsConfig['fetch']
 
 export const isCriteriaQuery = (
@@ -114,6 +115,7 @@ export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
   fieldsToOmit: 'fieldsToOmit',
   addAlias: 'addAlias',
   addBundles: 'addBundles',
+  addImportantValues: 'addImportantValues',
 }
 
 export const convertToQueryParams = ({

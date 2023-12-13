@@ -19,11 +19,9 @@ import { AdditionChange, Change, ChangeError, InstanceElement, ModificationChang
 import { collections } from '@salto-io/lowerdash'
 import { isDataObjectType, isCustomRecordType } from '../types'
 import { NetsuiteChangeValidator } from './types'
-import { PARENT } from '../constants'
+import { INACTIVE_FIELDS, PARENT } from '../constants'
 
 const { awu } = collections.asynciterable
-
-const IS_INACTIVE_FIELD = 'isInactive'
 
 const isDataElementChange = async (change: Change<InstanceElement>): Promise<boolean> => {
   const changeType = await getChangeData(change).getType()
@@ -49,7 +47,7 @@ const hasInactiveParent = async (
 ): Promise<boolean> => (
   isReferenceExpression(instance.value[PARENT])
     && isInstanceElement(instance.value[PARENT].value)
-    ? (instance.value[PARENT].value.value[IS_INACTIVE_FIELD] === true)
+    ? (instance.value[PARENT].value.value[INACTIVE_FIELDS.isInactive] === true)
     : false
 )
 

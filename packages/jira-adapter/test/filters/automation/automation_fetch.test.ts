@@ -19,6 +19,7 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { HTTPError } from '@salto-io/adapter-components/src/client'
+import { TransformationConfig } from '@salto-io/adapter-components/src/config'
 import { getFilterParams, mockClient } from '../../utils'
 import automationFetchFilter from '../../../src/filters/automation/automation_fetch'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
@@ -486,5 +487,59 @@ describe('automationFetchFilter', () => {
         severity: 'Warning',
       }],
     })
+  })
+  it('should adjust elemID correctly when projects is part of idFields', async () => {
+    const { client: cli, connection: conn } = mockClient(true)
+    client = cli
+    connection = conn
+    conn.get.mockImplementation(async url => {
+      if (url === '/rest/cb-automation/latest/project/GLOBAL/rule') {
+        return {
+          status: 200,
+          data: automationResponse.data.values,
+        }
+      }
+
+      throw new Error(`Unexpected url ${url}`)
+    })
+
+    filter = automationFetchFilter(getFilterParams({
+      client,
+    })) as filterUtils.FilterWith<'onFetch'>
+
+    const elements = [project2Instance]
+    await filter.onFetch(elements)
+
+    const automation = elements[1]
+    expect(automation.elemID.getFullName()).toEqual('jira.Automation.instance.automationName_projectName')
+  })
+  it('should not include project name in elemID if not part of idFields', async () => {
+    const { client: cli, connection: conn } = mockClient(true)
+    client = cli
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+    const apiDefinitions = config.apiDefinitions.types.Automation.transformation as TransformationConfig
+    apiDefinitions.idFields = ['name']
+    connection = conn
+    conn.get.mockImplementation(async url => {
+      if (url === '/rest/cb-automation/latest/project/GLOBAL/rule') {
+        return {
+          status: 200,
+          data: automationResponse.data.values,
+        }
+      }
+
+      throw new Error(`Unexpected url ${url}`)
+    })
+
+    filter = automationFetchFilter(getFilterParams({
+      client,
+      config,
+    })) as filterUtils.FilterWith<'onFetch'>
+
+    const elements = [project3Instance]
+    await filter.onFetch(elements)
+
+    const automation = elements[1]
+    expect(automation.elemID.getFullName()).toEqual('jira.Automation.instance.automationName')
   })
 })

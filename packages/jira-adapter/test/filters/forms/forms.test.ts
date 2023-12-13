@@ -105,8 +105,45 @@ describe('forms filter', () => {
                 },
               ],
               conditions: {},
-              sections: {},
-              questions: {},
+              sections: {
+                36: {
+                  t: 'sh',
+                  i: {
+                    co: {
+                      cIds: {
+                        3: [
+                          '2',
+                        ],
+                      },
+                    },
+                  },
+                  o: {
+                    sIds: [
+                      '4',
+                    ],
+                  },
+                },
+              },
+              questions: {
+                3: {
+                  type: 'cm',
+                  label: 'Items to be verified',
+                  description: '',
+                  choices: [
+                    {
+                      id: '1',
+                      label: 'Education',
+                      other: false,
+                    },
+                    {
+                      id: '2',
+                      label: 'Licenses',
+                      other: false,
+                    },
+                  ],
+                  questionKey: '',
+                },
+              },
             },
           },
         })
@@ -148,8 +185,45 @@ describe('forms filter', () => {
               },
             ],
             conditions: {},
-            sections: {},
-            questions: {},
+            sections: {
+              '36@': {
+                t: 'sh',
+                i: {
+                  co: {
+                    cIds: {
+                      '3@': [
+                        '2',
+                      ],
+                    },
+                  },
+                },
+                o: {
+                  sIds: [
+                    '4',
+                  ],
+                },
+              },
+            },
+            questions: {
+              '3@': {
+                type: 'cm',
+                label: 'Items to be verified',
+                description: '',
+                choices: [
+                  {
+                    id: '1',
+                    label: 'Education',
+                    other: false,
+                  },
+                  {
+                    id: '2',
+                    label: 'Licenses',
+                    other: false,
+                  },
+                ],
+                questionKey: '',
+              },
+            },
           },
         })
       })

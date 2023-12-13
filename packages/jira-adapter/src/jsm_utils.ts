@@ -21,6 +21,7 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import { ASSETS_ATTRIBUTE_TYPE } from './constants'
+import JiraClient from './client/client'
 
 const ATTRIBUTE_ENTRY_SCHEMA = Joi.object({
   objectType: Joi.object({
@@ -110,3 +111,28 @@ elementUtils.ducktype.EntriesRequester => async ({ paginator, args, typeName, ty
     }
   },
 })
+
+type ServerInfo = {
+  serverTitle: string
+}
+
+const SERVER_INFO_SCHEMA = Joi.object({
+  serverTitle: Joi.string().required(),
+}).unknown(true).required()
+
+const isServerInfo = createSchemeGuard<ServerInfo>(SERVER_INFO_SCHEMA)
+
+export const getServerInfoTitle = async (client: JiraClient):
+Promise<string> => {
+  try {
+    const response = await client.getSinglePage({
+      url: '/rest/api/3/serverInfo',
+    })
+    if (isServerInfo(response.data)) {
+      return response.data.serverTitle
+    }
+  } catch (e) {
+    log.error(`Failed to get server info: ${e}`)
+  }
+  return 'Jira'
+}

@@ -13,14 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, InstanceElement, isInstanceElement, toChange, getChangeData } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, isInstanceElement, toChange, getChangeData, SaltoError } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { mockFunction } from '@salto-io/test-utils'
 import { ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/user'
 import { createFilterCreatorParams } from '../utils'
 import { getIdByEmail, getUsers } from '../../src/user_utils'
-import { DEFAULT_CONFIG } from '../../src/config'
 
 jest.mock('../../src/user_utils', () => ({
   ...jest.requireActual<{}>('../../src/user_utils'),
@@ -87,6 +86,10 @@ describe('user filter', () => {
   })
 
   describe('onFetch', () => {
+    beforeEach(() => {
+      getUsersMock.mockResolvedValue({ users: [] })
+    })
+
     const filter = filterCreator(
       createFilterCreatorParams({ paginator: mockPaginator })
     ) as FilterType
@@ -189,6 +192,28 @@ describe('user filter', () => {
         restriction: { type: 'User', id: 3 },
       })
     })
+    it('returns a warning if users query is forbidden, and does not replace anything', async () => {
+      const elements = [macroType.clone(), macroInstance.clone()]
+      const errors: SaltoError[] = [{ message: 'Bad user, go away!', severity: 'Warning' }]
+      getUsersMock.mockResolvedValueOnce({ users: [], errors })
+      getIdByEmailMock.mockResolvedValueOnce({})
+      const paginator = mockFunction<clientUtils.Paginator>()
+      const newFilter = filterCreator(
+        createFilterCreatorParams({ paginator })
+      ) as FilterType
+      expect(await newFilter.onFetch(elements)).toEqual({ errors })
+      const instances = elements.filter(isInstanceElement)
+      const macro = instances.find(e => e.elemID.typeName === 'macro')
+      expect(macro?.value).toEqual({
+        title: 'test',
+        actions: [
+          { field: 'status', value: 'closed' },
+          { field: 'assignee_id', value: '2' },
+          { field: 'follower', value: '1' },
+        ],
+        restriction: { type: 'User', id: 3 },
+      })
+    })
   })
   describe('preDeploy', () => {
     let filter: FilterType
@@ -202,11 +227,11 @@ describe('user filter', () => {
         createFilterCreatorParams({ paginator: mockPaginator })
       ) as FilterType
       getUsersMock
-        .mockResolvedValue([
+        .mockResolvedValue({ users: [
           { id: 1, email: 'a@a.com', role: 'admin', custom_role_id: 123, name: 'a', locale: 'en-US' },
           { id: 2, email: 'b@b.com', role: 'admin', custom_role_id: 123, name: 'b', locale: 'en-US' },
           { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
-        ])
+        ] })
       getIdByEmailMock
         .mockResolvedValue({ 1: 'a@a.com',
           2: 'b@b.com',
@@ -237,40 +262,6 @@ describe('user filter', () => {
         author_id: 1,
       })
     })
-    it('should replace missing user values with user from deploy config if provided', async () => {
-      filter = filterCreator(createFilterCreatorParams({
-        paginator: mockPaginator,
-        config: {
-          ...DEFAULT_CONFIG,
-          deploy: { defaultMissingUserFallback: 'fallback@.com' },
-        },
-      })) as FilterType
-      getUsersMock
-        .mockResolvedValue([
-          { id: 2, email: 'b@b.com', role: 'admin', custom_role_id: 123, name: 'b', locale: 'en-US' },
-          { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
-          { id: 4, email: 'fallback@.com', role: 'agent', custom_role_id: 12, name: 'fallback', locale: 'en-US' },
-        ])
-      const instances2 = [macroInstance, articleInstance].map(e => e.clone())
-      await filter.onFetch(instances2)
-      const changes2 = instances2.map(instance => toChange({ after: instance }))
-      await filter.preDeploy(changes2)
-      const macro = instances2.find(inst => inst.elemID.typeName === 'macro')
-      expect(macro?.value).toEqual({
-        title: 'test',
-        actions: [
-          { field: 'status', value: 'closed' },
-          { field: 'assignee_id', value: '2' },
-          { field: 'follower', value: '4' },
-        ],
-        restriction: { type: 'User', id: '3' },
-      })
-      const article = instances2.find(e => e.elemID.typeName === 'article')
-      expect(article?.value).toEqual({
-        title: 'test',
-        author_id: 4,
-      })
-    })
   })
   describe('onDeploy', () => {
     const filter = filterCreator(
@@ -278,11 +269,11 @@ describe('user filter', () => {
     ) as FilterType
     it('should change the user ids to emails', async () => {
       getUsersMock
-        .mockResolvedValue([
+        .mockResolvedValue({ users: [
           { id: 1, email: 'a@a.com', role: 'admin', custom_role_id: 123, name: 'a', locale: 'en-US' },
           { id: 2, email: 'b@b.com', role: 'admin', custom_role_id: 123, name: 'b', locale: 'en-US' },
           { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
-        ])
+        ] })
       getIdByEmailMock
         .mockResolvedValue({ 1: 'a@a.com',
           2: 'b@b.com',
@@ -317,7 +308,7 @@ describe('user filter', () => {
     it('should not replace anything if the users response is invalid', async () => {
       const instances = [macroInstance.clone()]
       const paginator = mockFunction<clientUtils.Paginator>()
-      getUsersMock.mockResolvedValueOnce([])
+      getUsersMock.mockResolvedValueOnce({ users: [] })
       getIdByEmailMock.mockResolvedValueOnce({
 
       })

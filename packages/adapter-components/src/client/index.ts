@@ -15,7 +15,7 @@
 */
 export { AdapterClientBase } from './base'
 export { ClientBaseConfig, ClientRateLimitConfig, ClientPageSizeConfig, createClientConfigType, validateClientConfig } from './config'
-export { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from './constants'
+export { DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from './constants'
 export { logDecorator, requiresLogin } from './decorators'
 export { AdapterHTTPClient, ClientBaseParams, ClientDataParams, ClientOpts, HTTPReadClientInterface, HTTPWriteClientInterface, HTTPError, HttpMethodToClientParams } from './http_client'
 export { axiosConnection, createClientConnection, createRetryOptions, validateCredentials, APIConnection, ConnectionCreator, Response, ResponseValue, UnauthorizedError, Connection, RetryOptions, AuthParams, AuthenticatedAPIConnection } from './http_connection'

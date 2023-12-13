@@ -37,7 +37,7 @@ import {
   isDataManagementConfigSuggestions,
   SaltoAliasSettings,
 } from '../../src/types'
-import { buildSelectQueries, getFieldNamesForQuery } from '../../src/filters/utils'
+import { buildSelectQueries, getFieldNamesForQuery, QueryOperator, SoqlQuery } from '../../src/filters/utils'
 import { FilterResult } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
@@ -54,12 +54,11 @@ import {
   METADATA_TYPE,
   OBJECTS_PATH,
   RECORDS_PATH,
-  SALESFORCE,
+  SALESFORCE, SoqlQueryLimits,
 } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 import {
   buildFetchProfile,
-
 } from '../../src/fetch_profile/fetch_profile'
 import {
   defaultFilterContext,
@@ -280,7 +279,7 @@ describe('Custom Object Instances filter', () => {
     const testInstanceId = 'some_id'
     const testType = createCustomObject(testTypeName, {
       [MANAGED_BY_SALTO_FIELD_NAME]: {
-        refType: BuiltinTypes.BOOLEAN,
+        refType: Types.primitiveDataTypes.Checkbox,
         annotations: {
           [LABEL]: 'Managed By Salto',
           [API_NAME]: MANAGED_BY_SALTO_FIELD_NAME,
@@ -1634,63 +1633,165 @@ describe('Custom Object Instances filter', () => {
   })
 
   describe('Managed by Salto', () => {
-    let elements: Element[]
-    let filterResult: FilterResult
-    const testTypeName = 'TestType'
-    const testInstanceId = 'some_id'
-    const testType = createCustomObject(testTypeName, {
-      [MANAGED_BY_SALTO_FIELD_NAME]: {
-        refType: BuiltinTypes.BOOLEAN,
-        annotations: {
-          [LABEL]: 'Managed By Salto',
-          [API_NAME]: MANAGED_BY_SALTO_FIELD_NAME,
-          [FIELD_ANNOTATIONS.QUERYABLE]: false,
-        },
-      },
-    })
-    const testRecords: SalesforceRecord[] = [
-      {
-        attributes: {
-          type: testTypeName,
-        },
-        Id: testInstanceId,
-        Name: 'Name',
-      },
-    ]
-    beforeEach(async () => {
-      filter = filterCreator(
-        {
-          client,
-          config: {
-            ...defaultFilterContext,
-            fetchProfile: buildTestFetchProfile([
-              {
-                typeName: testTypeName,
-                included: true,
-                excluded: false,
-                allowRef: false,
-              },
-            ]),
+    describe('When the field of one of the types is not queryable', () => {
+      let elements: Element[]
+      let filterResult: FilterResult
+      const testTypeName = 'TestType'
+      const testInstanceId = 'some_id'
+      const testType = createCustomObject(testTypeName, {
+        [MANAGED_BY_SALTO_FIELD_NAME]: {
+          refType: Types.primitiveDataTypes.Checkbox,
+          annotations: {
+            [LABEL]: 'Managed By Salto',
+            [API_NAME]: MANAGED_BY_SALTO_FIELD_NAME,
+            [FIELD_ANNOTATIONS.QUERYABLE]: false,
           },
-        }
-      ) as FilterType
+        },
+      })
+      const irrelevantType = createCustomObject('IrrelevantType', {
+        [MANAGED_BY_SALTO_FIELD_NAME]: {
+          refType: Types.primitiveDataTypes.Checkbox,
+          annotations: {
+            [LABEL]: 'Managed By Salto',
+            [API_NAME]: MANAGED_BY_SALTO_FIELD_NAME,
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
+            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          },
+        },
+      })
+      const testRecords: SalesforceRecord[] = [
+        {
+          attributes: {
+            type: testTypeName,
+          },
+          Id: testInstanceId,
+          Name: 'Name',
+        },
+      ]
+      beforeEach(async () => {
+        filter = filterCreator(
+          {
+            client,
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: buildTestFetchProfile([
+                {
+                  typeName: testTypeName,
+                  included: true,
+                  excluded: false,
+                  allowRef: false,
+                },
+                {
+                  typeName: 'unmanagedType',
+                  included: true,
+                  excluded: false,
+                  allowRef: false,
+                },
+                {
+                  typeName: 'IrrelevantType',
+                  included: true,
+                  excluded: false,
+                  allowRef: false,
+                },
+              ]),
+            },
+          }
+        ) as FilterType
 
-      elements = [testType]
+        elements = [testType, irrelevantType]
 
-      testRecords.forEach(record => { record[MANAGED_BY_SALTO_FIELD_NAME] = true })
-      setMockQueryResults(testRecords)
+        testRecords.forEach(record => { record[MANAGED_BY_SALTO_FIELD_NAME] = true })
+        setMockQueryResults(testRecords)
 
-      filterResult = await filter.onFetch(elements) as FilterResult
+        filterResult = await filter.onFetch(elements) as FilterResult
+      })
+
+      it('Should warn', () => {
+        expect(filterResult.errors).toEqual([{
+          message: expect.stringContaining('TestType') && expect.stringContaining(MANAGED_BY_SALTO_FIELD_NAME),
+          severity: 'Warning',
+        }])
+        expect(elements).toHaveLength(2)
+        expect(basicQueryImplementation).not.toHaveBeenCalledWith(expect.stringContaining('TestType'))
+      })
     })
+    describe('When all the types have inaccessible fields', () => {
+      let elements: Element[]
+      let filterResult: FilterResult
+      const testTypeName = 'TestType'
+      const otherTestTypeName = 'OtherTestType'
+      const testInstanceId = 'some_id'
+      const testType = createCustomObject(testTypeName, {
+        [MANAGED_BY_SALTO_FIELD_NAME]: {
+          refType: Types.primitiveDataTypes.Checkbox,
+          annotations: {
+            [LABEL]: 'Managed By Salto',
+            [API_NAME]: MANAGED_BY_SALTO_FIELD_NAME,
+            [FIELD_ANNOTATIONS.QUERYABLE]: false,
+          },
+        },
+      })
+      const unmanagedType = createCustomObject('unmanagedType', {})
+      const otherTestType = createCustomObject(otherTestTypeName, {
+        [MANAGED_BY_SALTO_FIELD_NAME]: {
+          refType: Types.primitiveDataTypes.Text,
+          annotations: {
+            [LABEL]: 'Managed By Salto',
+            [API_NAME]: MANAGED_BY_SALTO_FIELD_NAME,
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
+            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          },
+        },
+      })
+      const testRecords: SalesforceRecord[] = [
+        {
+          attributes: {
+            type: testTypeName,
+          },
+          Id: testInstanceId,
+          Name: 'Name',
+        },
+      ]
+      beforeEach(async () => {
+        filter = filterCreator(
+          {
+            client,
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: buildTestFetchProfile([
+                {
+                  typeName: testTypeName,
+                  included: true,
+                  excluded: false,
+                  allowRef: false,
+                },
+                {
+                  typeName: otherTestTypeName,
+                  included: true,
+                  excluded: false,
+                  allowRef: false,
+                },
+              ]),
+            },
+          }
+        ) as FilterType
 
-    it('Should warn if the field is not queryable', () => {
-      expect(filterResult.errors ?? []).not.toBeEmpty()
-      expect(filterResult.errors).toEqual([{
-        message: expect.stringContaining('TestType') && expect.stringContaining(MANAGED_BY_SALTO_FIELD_NAME),
-        severity: 'Warning',
-      }])
-      expect(elements).toHaveLength(1)
-      expect(basicQueryImplementation).not.toHaveBeenCalled()
+        elements = [testType, otherTestType, unmanagedType]
+
+        testRecords.forEach(record => { record[MANAGED_BY_SALTO_FIELD_NAME] = true })
+        setMockQueryResults(testRecords)
+
+        filterResult = await filter.onFetch(elements) as FilterResult
+      })
+
+      it('Should warn', () => {
+        expect(filterResult.errors ?? []).not.toBeEmpty()
+        expect(filterResult.errors).toEqual([{
+          message: expect.stringContaining('missing or is of the wrong type for all data records'),
+          severity: 'Warning',
+        }])
+        expect(elements).toHaveLength(3)
+      })
     })
   })
   describe('Omit Fields', () => {
@@ -1853,22 +1954,22 @@ describe('buildSelectQueries', () => {
     let queries: string[]
     beforeEach(async () => {
       const fieldNames = await awu(Object.values(customObject.fields)).flatMap(getFieldNamesForQuery).toArray()
-      queries = await buildSelectQueries('Test', fieldNames)
+      queries = buildSelectQueries('Test', fieldNames)
     })
     it('should create a select query on the specified fields', () => {
       expect(queries).toHaveLength(1)
       expect(queries[0]).toEqual('SELECT Id,Name,TestField FROM Test')
     })
   })
-  describe('with conditions', () => {
+  describe('with exact conditions', () => {
     describe('with short query', () => {
       let queries: string[]
       beforeEach(async () => {
         const fieldNames = await awu([customObject.fields.Id]).flatMap(getFieldNamesForQuery).toArray()
-        queries = await buildSelectQueries(
+        queries = buildSelectQueries(
           'Test',
           fieldNames,
-          _.range(0, 2).map(idx => ({ Id: `'id${idx}'`, Name: `'name${idx}'` })),
+          _.range(0, 2).map(idx => ([[{ fieldName: 'Id', operator: 'IN' as const, value: `'id${idx}'` }], [{ fieldName: 'Name', operator: 'IN' as const, value: `'name${idx}'` }]])).flat(),
         )
       })
       it('should create query with WHERE clause', () => {
@@ -1880,11 +1981,15 @@ describe('buildSelectQueries', () => {
       let queries: string[]
       beforeEach(async () => {
         const fieldNames = await awu([customObject.fields.Id]).flatMap(getFieldNamesForQuery).toArray()
-        queries = await buildSelectQueries(
+        const queryLimits: SoqlQueryLimits = {
+          maxQueryLength: 80,
+          maxWhereClauseLength: 55,
+        }
+        queries = buildSelectQueries(
           'Test',
           fieldNames,
-          _.range(0, 4).map(idx => ({ Id: `'id${idx}'`, Name: `'name${idx}'` })),
-          80,
+          _.range(0, 4).map(idx => ([[{ fieldName: 'Id', operator: 'IN' as const, value: `'id${idx}'` }], [{ fieldName: 'Name', operator: 'IN' as const, value: `'name${idx}'` }]])).flat(),
+          queryLimits,
         )
       })
       it('should create queries that do not exceed query length', () => {
@@ -1893,6 +1998,89 @@ describe('buildSelectQueries', () => {
         expect(_.max(queryLengths)).toBeLessThanOrEqual(80)
         expect(queries[0]).toEqual("SELECT Id FROM Test WHERE Id IN ('id0','id1') AND Name IN ('name0','name1')")
         expect(queries[1]).toEqual("SELECT Id FROM Test WHERE Id IN ('id2','id3') AND Name IN ('name2','name3')")
+      })
+    })
+  })
+  describe('with limiting conditions', () => {
+    let queries: string[]
+    const limitIdTo = (operator: QueryOperator, operand: string): SoqlQuery => ({
+      fieldName: 'Id',
+      operator,
+      value: operand,
+    })
+    describe('with no exact conditions', () => {
+      beforeEach(async () => {
+        const fieldNames = ['Id']
+        queries = buildSelectQueries('Test', fieldNames, [[limitIdTo('>', '7')]])
+      })
+      it('should create a single valid query', () => {
+        expect(queries).toEqual([
+          'SELECT Id FROM Test WHERE Id > 7',
+        ])
+      })
+    })
+    describe('with exact conditions', () => {
+      beforeEach(async () => {
+        const fieldNames = ['Id']
+        queries = buildSelectQueries('Test', fieldNames, [[{ fieldName: 'Id', operator: 'IN', value: "'8'" }], [limitIdTo('>', '7')]])
+      })
+      it('should create a single valid query that ends with the complex query', () => {
+        expect(queries).toEqual([
+          "SELECT Id FROM Test WHERE Id IN ('8') AND Id > 7",
+        ])
+      })
+    })
+    describe('with exact conditions that are too long for a single query', () => {
+      beforeEach(async () => {
+        const fieldNames = ['Id']
+        const queryLimits: SoqlQueryLimits = {
+          maxQueryLength: 45,
+          maxWhereClauseLength: 15,
+        }
+        queries = buildSelectQueries(
+          'Test',
+          fieldNames,
+          [[{ fieldName: 'Id', operator: 'IN', value: "'8'" }], [{ fieldName: 'Id', operator: 'IN', value: "'9'" }], [limitIdTo('>', '7')]],
+          queryLimits,
+        )
+      })
+      it('should create multiple valid queries that end with the complex query', () => {
+        expect(queries).toEqual([
+          "SELECT Id FROM Test WHERE Id IN ('8') AND Id > 7",
+          "SELECT Id FROM Test WHERE Id IN ('9') AND Id > 7",
+        ])
+      })
+    })
+    describe('with multiple complex conditions', () => {
+      beforeEach(async () => {
+        const fieldNames = ['Id']
+        queries = buildSelectQueries('Test', fieldNames, [[{ fieldName: 'Id', operator: 'IN', value: "'8'" }], [limitIdTo('>', '7'), limitIdTo('<', '10')]])
+      })
+      it('should create a single valid query that ends with the complex query', () => {
+        expect(queries).toEqual([
+          "SELECT Id FROM Test WHERE Id IN ('8') AND Id > 7 AND Id < 10",
+        ])
+      })
+    })
+    describe('with a exact conditions that is too long for a single query and multiple complex conditions', () => {
+      beforeEach(async () => {
+        const fieldNames = ['Id']
+        const queryLimits: SoqlQueryLimits = {
+          maxQueryLength: 55,
+          maxWhereClauseLength: 35,
+        }
+        queries = buildSelectQueries(
+          'Test',
+          fieldNames,
+          [[{ fieldName: 'Id', operator: 'IN', value: "'8'" }], [{ fieldName: 'Id', operator: 'IN', value: "'9'" }], [limitIdTo('>', '7'), limitIdTo('<', '10')]],
+          queryLimits,
+        )
+      })
+      it('should create multiple valid queries that end with the entire complex query', () => {
+        expect(queries).toEqual([
+          "SELECT Id FROM Test WHERE Id IN ('8') AND Id > 7 AND Id < 10",
+          "SELECT Id FROM Test WHERE Id IN ('9') AND Id > 7 AND Id < 10",
+        ])
       })
     })
   })

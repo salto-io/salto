@@ -73,6 +73,7 @@ type JiraFetchConfig = configUtils.UserFetchConfig<JiraFetchFilters> & {
   splitFieldConfiguration?: boolean
   enableMissingReferences?: boolean
   enableIssueLayouts?: boolean
+  enableNewWorkflowAPI?: boolean
 }
 
 export type MaskingConfig = {
@@ -157,6 +158,7 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     removeDuplicateProjectRoles: true,
     addAlias: true,
     enableIssueLayouts: true,
+    enableNewWorkflowAPI: false,
 
   },
   deploy: {
@@ -236,6 +238,7 @@ export type ChangeValidatorName = (
   | 'issueTypeHierarchy'
   | 'automationProjects'
   | 'deleteLastQueueValidator'
+  | 'automationToAssets'
   )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -286,6 +289,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     issueTypeHierarchy: { refType: BuiltinTypes.BOOLEAN },
     automationProjects: { refType: BuiltinTypes.BOOLEAN },
     deleteLastQueueValidator: { refType: BuiltinTypes.BOOLEAN },
+    automationToAssets: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -327,6 +331,7 @@ const fetchConfigType = createUserFetchConfigType(
     splitFieldConfiguration: { refType: BuiltinTypes.BOOLEAN },
     enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
     enableIssueLayouts: { refType: BuiltinTypes.BOOLEAN },
+    enableNewWorkflowAPI: { refType: BuiltinTypes.BOOLEAN },
   },
   fetchFiltersType,
 )
@@ -372,6 +377,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
       'fetch.addAlias',
       'fetch.enableIssueLayouts',
       'fetch.removeDuplicateProjectRoles',
+      'fetch.enableNewWorkflowAPI',
       'deploy.taskMaxRetries',
       'deploy.taskRetryDelay',
       SCRIPT_RUNNER_API_DEFINITIONS,

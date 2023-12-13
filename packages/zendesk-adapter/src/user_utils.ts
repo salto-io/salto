@@ -19,7 +19,7 @@ import { logger } from '@salto-io/logging'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
-import { Values } from '@salto-io/adapter-api'
+import { SaltoError, Values } from '@salto-io/adapter-api'
 import ZendeskClient from './client/client'
 import { ValueReplacer, replaceConditionsAndActionsCreator, fieldReplacer } from './replacers_utils'
 import { CURSOR_BASED_PAGINATION_FIELD, DEFAULT_QUERY_PARAMS } from './config'
@@ -28,9 +28,11 @@ const log = logger(module)
 const { toArrayAsync } = collections.asynciterable
 const { makeArray } = collections.array
 
-const MISSING_DEPLOY_CONFIG_USER = 'User provided in defaultMissingUserFallback does not exist in the target environemt'
+const MISSING_DEPLOY_CONFIG_USER = 'User provided in defaultMissingUserFallback does not exist in the target environment'
 // system options that do not contain a specific user value
 export const VALID_USER_VALUES = ['current_user', 'all_agents', 'requester_id', 'assignee_id', 'requester_and_ccs', 'agent', 'end_user', '']
+export const MISSING_USERS_DOC_LINK = 'https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk'
+export const MISSING_USERS_ERROR_MSG = 'Instance references users which don\'t exist in target environment'
 
 export type User = {
   id: number
@@ -159,7 +161,9 @@ export const TYPE_NAME_TO_REPLACER: Record<string, ValueReplacer> = {
   article_translation: fieldReplacer(['created_by_id', 'updated_by_id']),
 }
 
-const getUsersNoCache = async (paginator: clientUtils.Paginator): Promise<User[]> => {
+const getUsersNoCache = async (
+  paginator: clientUtils.Paginator
+): Promise<{ users: User[]; errors?: SaltoError[] }> => {
   const paginationArgs = {
     url: '/api/v2/users',
     paginationField: CURSOR_BASED_PAGINATION_FIELD,
@@ -168,13 +172,24 @@ const getUsersNoCache = async (paginator: clientUtils.Paginator): Promise<User[]
       ...DEFAULT_QUERY_PARAMS,
     },
   }
-  const users = (await toArrayAsync(
-    paginator(paginationArgs, page => makeArray(page) as clientUtils.ResponseValue[])
-  )).flat().flatMap(response => response.users)
-  if (!areUsers(users)) {
-    return []
+  try {
+    const users = (await toArrayAsync(
+      paginator(paginationArgs, page => makeArray(page) as clientUtils.ResponseValue[])
+    )).flat().flatMap(response => response.users)
+    if (!areUsers(users)) {
+      return { users: [] }
+    }
+    return { users }
+  } catch (e) {
+    if (e.response?.status === 403 || e.response?.status === 401) {
+      const newError: SaltoError = {
+        message: 'Salto could not access the users resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto\'s fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource',
+        severity: 'Warning',
+      }
+      return { users: [], errors: [newError] }
+    }
+    throw e
   }
-  return users
 }
 
 /*
@@ -182,12 +197,20 @@ const getUsersNoCache = async (paginator: clientUtils.Paginator): Promise<User[]
 * Results are cached after the initial call to improve performance.
 *
 */
-const getUsersFunc = ():(paginator: clientUtils.Paginator) => Promise<User[]> => {
-  let calculatedUsersPromise: Promise<User[]>
+const getUsersFunc = ():
+  (paginator: clientUtils.Paginator, runQuery: boolean | undefined)
+=> Promise<{ users: User[]; errors?: SaltoError[] }> => {
+  let calculatedUsersPromise: Promise<{ users: User[]; errors?: SaltoError[] }>
 
-  const getUsers = async (paginator: clientUtils.Paginator): Promise<User[]> => {
+  const getUsers = async (
+    paginator: clientUtils.Paginator, runQuery: boolean | undefined
+  ): Promise<{ users: User[]; errors?: SaltoError[] }> => {
     if (calculatedUsersPromise === undefined) {
-      calculatedUsersPromise = getUsersNoCache(paginator)
+      if (runQuery === false) {
+        calculatedUsersPromise = Promise.resolve({ users: [], errors: [] })
+      } else {
+        calculatedUsersPromise = getUsersNoCache(paginator)
+      }
     }
     return calculatedUsersPromise
   }
@@ -227,14 +250,17 @@ export const getUserFallbackValue = async (
   return defaultMissingUserFallback
 }
 
-const getIdByEmailFunc = ():(paginator: clientUtils.Paginator) => Promise<Record<string, string>> => {
+const getIdByEmailFunc = (): (
+  paginator: clientUtils.Paginator, runQuery: boolean | undefined) => Promise<Record<string, string>> => {
   let idToEmail: Record<string, string>
 
-  const getIdByEmail = async (paginator: clientUtils.Paginator): Promise<Record<string, string>> => {
+  const getIdByEmail = async (
+    paginator: clientUtils.Paginator, runQuery: boolean | undefined
+  ): Promise<Record<string, string>> => {
     if (idToEmail !== undefined) {
       return idToEmail
     }
-    const users = await getUsers(paginator)
+    const { users } = await getUsers(paginator, runQuery)
     if (_.isEmpty(users)) {
       idToEmail = {}
       return {}
@@ -249,14 +275,18 @@ const getIdByEmailFunc = ():(paginator: clientUtils.Paginator) => Promise<Record
 
 export const getIdByEmail = getIdByEmailFunc()
 
-const getIdByNameFunc = ():(paginator: clientUtils.Paginator) => Promise<Record<string, string>> => {
+const getIdByNameFunc = ():
+  (paginator: clientUtils.Paginator, runQuery: boolean | undefined)
+=> Promise<Record<string, string>> => {
   let idToName: Record<string, string>
 
-  const getIdByName = async (paginator: clientUtils.Paginator): Promise<Record<string, string>> => {
+  const getIdByName = async (
+    paginator: clientUtils.Paginator, runQuery: boolean | undefined
+  ): Promise<Record<string, string>> => {
     if (idToName !== undefined) {
       return idToName
     }
-    const users = await getUsers(paginator)
+    const { users } = await getUsers(paginator, runQuery)
     if (_.isEmpty(users)) {
       idToName = {}
       return {}

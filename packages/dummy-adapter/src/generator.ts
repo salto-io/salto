@@ -34,7 +34,7 @@ import path from 'path'
 import seedrandom from 'seedrandom'
 import readdirp from 'readdirp'
 import { parser, merger, expressions, elementSource } from '@salto-io/workspace'
-import { createMatchingObjectType } from '@salto-io/adapter-utils'
+import { createMatchingObjectType, inspectValue } from '@salto-io/adapter-utils'
 
 const { mapValuesAsync } = promises.object
 const { arrayOf } = collections.array
@@ -127,7 +127,6 @@ export const changeErrorType = createMatchingObjectType<ChangeErrorFromConfigFil
   },
 })
 
-
 export type GeneratorParams = {
     seed: number
     numOfPrimitiveTypes: number
@@ -160,13 +159,13 @@ export type GeneratorParams = {
     listLengthMean: number
     listLengthStd: number
     changeErrors?: ChangeErrorFromConfigFile[]
-    extraNaclPath?: string
+    extraNaclPaths?: string[]
     generateEnvName? : string
     fieldsToOmitOnDeploy?: string[]
     elementsToExclude?: string[]
 }
 
-export const defaultParams: Omit<GeneratorParams, 'extraNaclPath'> = {
+export const defaultParams: Omit<GeneratorParams, 'extraNaclPaths'> = {
   seed: 123456,
   numOfRecords: 522,
   numOfPrimitiveTypes: 44,
@@ -665,30 +664,41 @@ export const generateElements = async (
       }
     ).flat()
   }
-  const generateExtraElements = async (naclDir: string): Promise<Element[]> => {
-    const allNaclMocks = await readdirp.promise(naclDir, {
+  const generateExtraElements = async (naclDirs: string[]): Promise<Element[]> => {
+    const allNaclMocks = (await Promise.all(naclDirs.map(naclDir => readdirp.promise(naclDir, {
       fileFilter: [`*.${MOCK_NACL_SUFFIX}`],
-    })
-    log.trace('the list of files read in generateExtraElements is: %s', allNaclMocks.map(mock => mock.path).join(' , '))
+    })))).flatMap(list => list)
+    log.debug('the list of files read in generateExtraElements is: %s', allNaclMocks.map(mock => mock.path).join(' , '))
     const elements = await awu(allNaclMocks.map(async file => {
       const content = fs.readFileSync(file.fullPath, 'utf8')
-      log.trace('content of file %s is %s', file.path, content)
+      log.debug('content of file %s is %s', file.path, content)
       const parsedNaclFile = await parser.parse(Buffer.from(content), file.basename, {
         file: {
-          parse: async funcParams => new StaticFile({
-            content: Buffer.from('THIS IS STATIC FILE'),
-            filepath: funcParams[0],
-          }),
+          parse: async funcParams => {
+            const [filepath] = funcParams
+            let fileContent: Buffer
+            try {
+              fileContent = fs.readFileSync(`${file.fullPath.replace(file.basename, '')}${filepath}`)
+            } catch {
+              fileContent = Buffer.from('THIS IS STATIC FILE')
+            }
+            return new StaticFile({
+              content: fileContent,
+              filepath,
+            })
+          },
           dump: async () => ({ funcName: 'file', parameters: [] }),
           isSerializedAsFunction: () => true,
         },
       })
+      log.debug(`parsedNaclFile of file ${file.fullPath} is equal ${inspectValue(parsedNaclFile)}`)
       await awu(parsedNaclFile.elements).forEach(elem => {
         elem.path = [DUMMY_ADAPTER, 'extra', file.basename.replace(new RegExp(`.${MOCK_NACL_SUFFIX}$`), '')]
       })
       return parsedNaclFile.elements
     })).flat().toArray()
     const mergedElements = await merger.mergeElements(awu(elements))
+    log.debug(`mergedElements is equal ${inspectValue(mergedElements)}`)
     const inMemElemSource = elementSource.createInMemoryElementSource(
       await awu(mergedElements.merged.values()).toArray()
     )
@@ -789,6 +799,7 @@ export const generateElements = async (
     }
     return res
   }
+
   const defaultTypes = [defaultObj, permissionsType, profileType, layoutAssignmentsType]
   progressReporter.reportProgress({ message: 'Generating primitive types' })
   const primtiveTypes = await generatePrimitiveTypes()
@@ -801,13 +812,14 @@ export const generateElements = async (
   progressReporter.reportProgress({ message: 'Generating profile likes' })
   const profiles = generateProfileLike()
   progressReporter.reportProgress({ message: 'Generating extra elements' })
-  const extraElements = params.extraNaclPath
-    ? await generateExtraElements(params.extraNaclPath)
+  const extraElements = params.extraNaclPaths
+    ? await generateExtraElements(params.extraNaclPaths)
     : []
   const defaultExtraElements = await generateExtraElements(
-    path.join(dataPath, 'fixtures')
+    [path.join(dataPath, 'fixtures')]
   )
-  log.trace('default fixture element are: %s', defaultExtraElements.map(elem => elem.elemID.getFullName()).join(' , '))
+  log.debug('default fixture element are: %s', defaultExtraElements.map(elem => elem.elemID.getFullName()).join(' , '))
+  progressReporter.reportProgress({ message: 'Generating conflicted elements' })
   const envObjects = generateEnvElements()
   progressReporter.reportProgress({ message: 'Generation done' })
   const elementsToExclude = new Set(params.elementsToExclude ?? [])

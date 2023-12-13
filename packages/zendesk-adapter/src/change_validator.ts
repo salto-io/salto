@@ -80,7 +80,7 @@ import {
   dynamicContentDeletionValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
-import { ChangeValidatorName, ZedneskDeployConfig, ZendeskFetchConfig, ZendeskConfig } from './config'
+import { ChangeValidatorName, ZendeskDeployConfig, ZendeskFetchConfig, ZendeskConfig } from './config'
 
 const {
   deployTypesNotSupportedValidator,
@@ -102,7 +102,7 @@ export default ({
   config: ZendeskConfig
   apiConfig: configUtils.AdapterDuckTypeApiConfig
   fetchConfig: ZendeskFetchConfig
-  deployConfig?: ZedneskDeployConfig
+  deployConfig?: ZendeskDeployConfig
   typesDeployedViaParent: string[]
   typesWithNoDeploy: string[]
 }): ChangeValidator => {
@@ -137,9 +137,9 @@ export default ({
     customStatusCategory: customStatusCategoryValidator,
     customStatusActiveDefault: customStatusActiveDefaultValidator,
     defaultCustomStatuses: defaultCustomStatusesValidator,
-    customRoleRemoval: customRoleRemovalValidator(client),
+    customRoleRemoval: customRoleRemovalValidator(client, fetchConfig),
     sideConversations: sideConversationsValidator,
-    users: usersValidator(client, deployConfig),
+    users: usersValidator(client, fetchConfig),
     requiredAppOwnedParameters: requiredAppOwnedParametersValidator,
     oneTranslationPerLocale: oneTranslationPerLocaleValidator,
     articleRemoval: articleRemovalValidator,

@@ -84,10 +84,11 @@ export type ZendeskFetchConfig = configUtils.UserFetchConfig
   appReferenceLocators?: IdLocator[]
   guide?: Guide
   resolveOrganizationIDs?: boolean
+  resolveUserIDs?: boolean
   extractReferencesFromFreeText?: boolean
   convertJsonIdsToReferences?: boolean
 }
-export type ZedneskDeployConfig = configUtils.UserDeployConfig & configUtils.DefaultMissingUserFallbackConfig & {
+export type ZendeskDeployConfig = configUtils.UserDeployConfig & configUtils.DefaultMissingUserFallbackConfig & {
   createMissingOrganizations?: boolean
 }
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
@@ -98,7 +99,7 @@ export type ZendeskApiConfig = configUtils.AdapterApiConfig<
 export type ZendeskConfig = {
   [CLIENT_CONFIG]?: ZendeskClientConfig
   [FETCH_CONFIG]: ZendeskFetchConfig
-  [DEPLOY_CONFIG]?: ZedneskDeployConfig
+  [DEPLOY_CONFIG]?: ZendeskDeployConfig
   [API_DEFINITIONS_CONFIG]: ZendeskApiConfig
 }
 
@@ -2734,6 +2735,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     hideTypes: true,
     enableMissingReferences: true,
     resolveOrganizationIDs: false,
+    resolveUserIDs: true,
     includeAuditDetails: false,
     addAlias: true,
     handleIdenticalAttachmentConflicts: false,
@@ -2752,6 +2754,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
         fieldsToOmit: FIELDS_TO_OMIT,
         fieldsToHide: FIELDS_TO_HIDE,
         serviceIdField: DEFAULT_SERVICE_ID_FIELD,
+        omitInactive: true,
         // TODO: change this to true for SALTO-3593.
         nestStandaloneInstances: false,
       },
@@ -2956,6 +2959,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
         ZENDESK,
         {
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
+          resolveUserIDs: { refType: BuiltinTypes.BOOLEAN },
           includeAuditDetails: { refType: BuiltinTypes.BOOLEAN },
           addAlias: { refType: BuiltinTypes.BOOLEAN },
           handleIdenticalAttachmentConflicts: { refType: BuiltinTypes.BOOLEAN },
@@ -2993,6 +2997,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       `${FETCH_CONFIG}.enableMissingReferences`,
       `${FETCH_CONFIG}.guide`,
       `${FETCH_CONFIG}.resolveOrganizationIDs`,
+      `${FETCH_CONFIG}.resolveUserIDs`,
       `${FETCH_CONFIG}.includeAuditDetails`,
       `${FETCH_CONFIG}.addAlias`,
       `${FETCH_CONFIG}.handleIdenticalAttachmentConflicts`,
@@ -3006,7 +3011,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
 
 export type FilterContext = {
   [FETCH_CONFIG]: ZendeskFetchConfig
-  [DEPLOY_CONFIG]?: ZedneskDeployConfig
+  [DEPLOY_CONFIG]?: ZendeskDeployConfig
   [API_DEFINITIONS_CONFIG]: ZendeskApiConfig
 }
 

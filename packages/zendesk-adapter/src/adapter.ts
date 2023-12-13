@@ -87,7 +87,7 @@ import automationOrderFilter from './filters/reorder/automation'
 import triggerOrderFilter from './filters/reorder/trigger'
 import viewOrderFilter from './filters/reorder/view'
 import businessHoursScheduleFilter from './filters/business_hours_schedule'
-import collisionErrorsFilter from './filters/collision_errors'
+import omitCollisionFilter from './filters/omit_collision'
 import accountSettingsFilter from './filters/account_settings'
 import ticketFieldFilter from './filters/custom_field_options/ticket_field'
 import userFieldFilter from './filters/custom_field_options/user_field'
@@ -154,7 +154,7 @@ import customObjectFilter from './filters/custom_objects/custom_object'
 import customObjectFieldFilter from './filters/custom_objects/custom_object_fields'
 import customObjectFieldsOrderFilter from './filters/custom_objects/custom_object_fields_order'
 import customObjectFieldOptionsFilter from './filters/custom_field_options/custom_object_field_options'
-import { weakReferenceHandlers } from './weak_references'
+import { createFixElementFunctions } from './fix_elements'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -254,7 +254,7 @@ export const DEFAULT_FILTERS = [
   // handleIdenticalAttachmentConflicts needs to be before collisionErrorsFilter and after referencedIdFieldsFilter
   // and articleBodyFilter
   handleIdenticalAttachmentConflicts,
-  collisionErrorsFilter, // needs to be after referencedIdFieldsFilter (which is part of the common filters)
+  omitCollisionFilter, // needs to be after referencedIdFieldsFilter (which is part of the common filters)
   deployBrandedGuideTypesFilter,
   guideArrangePaths,
   hideAccountFeatures,
@@ -334,7 +334,7 @@ const zendeskGuideEntriesFunc = (
   return getZendeskGuideEntriesResponseValues
 }
 
-const getBrandsFromElementsSource = async (
+const getBrandsFromElementsSourceNoCache = async (
   elementsSource: ReadOnlyElementsSource
 ): Promise<InstanceElement[]> => (
   awu(await elementsSource.list())
@@ -443,6 +443,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   private fixElementsFunc: FixElementsFunc
   private createClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private getClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
+  private brandsList: Promise<InstanceElement[]> | undefined
   private createFiltersRunner: ({
     filterRunnerClient,
     paginator,
@@ -469,6 +470,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     this.logIdsFunc = wrapper?.logIdsFunc
     this.client = client
     this.elementsSource = elementsSource
+    this.brandsList = undefined
     this.paginator = createPaginator({
       client: this.client,
       paginationFuncCreator: paginate,
@@ -525,9 +527,11 @@ export default class ZendeskAdapter implements AdapterOperations {
       )
     )
 
-    this.fixElementsFunc = combineElementFixers(
-      weakReferenceHandlers.map(handler => handler.removeWeakReferences({ elementsSource }))
-    )
+    this.fixElementsFunc = combineElementFixers(createFixElementFunctions({
+      client,
+      config,
+      elementsSource,
+    }))
   }
 
   @logDuration('generating instances and types from service')
@@ -696,11 +700,18 @@ export default class ZendeskAdapter implements AdapterOperations {
     return { elements, errors: fetchErrors, updatedConfig }
   }
 
+  private getBrandsFromElementsSource(): Promise<InstanceElement[]> {
+    if (this.brandsList === undefined) {
+      this.brandsList = getBrandsFromElementsSourceNoCache(this.elementsSource)
+    }
+    return this.brandsList
+  }
+
   private async deployGuideChanges(guideResolvedChanges: Change<InstanceElement>[]): Promise<DeployResult[]> {
     if (_.isEmpty(guideResolvedChanges)) {
       return []
     }
-    const brandsList = await getBrandsFromElementsSource(this.elementsSource)
+    const brandsList = await this.getBrandsFromElementsSource()
     log.debug('Found %d brands to handle %d guide changes', brandsList.length, guideResolvedChanges.length)
     const resolvedBrandIdToSubdomain = Object.fromEntries(brandsList.map(
       brandInstance => [brandInstance.value.id, brandInstance.value.subdomain]

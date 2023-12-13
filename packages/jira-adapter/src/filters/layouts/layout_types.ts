@@ -80,7 +80,7 @@ export type containerIssueLayoutResponse = {
   containerType: string
   items: {
     nodes: {
-      fieldItemId?: string
+      fieldItemId: string
       panelItemId?: string
     }[]
   }
@@ -96,20 +96,32 @@ const CONTAINER_ISSUE_LAYOUT_RESPONSE_SCHEME = Joi.object({
   }).required(),
 }).unknown(true).required()
 
-export type IssueLayoutResponse = {
-  issueLayoutConfiguration: {
-      issueLayoutResult: {
-          id: string
-          name: string
-          containers: containerIssueLayoutResponse[]
+export type IssueLayoutConfiguration = {
+  issueLayoutResult: {
+    id: string
+    name: string
+    containers: containerIssueLayoutResponse[]
+  }
+  metadata: {
+    configuration: {
+      items: {
+        nodes: {
+          fieldItemId: string
+        }[]
       }
     }
+  }
+}
+
+export type IssueLayoutResponse = {
+  issueLayoutConfiguration: IssueLayoutConfiguration
   }
 
 export type layoutConfigItem = {
   type: string
   sectionType: 'PRIMARY' | 'SECONDARY' | 'CONTENT' | 'REQUEST'
   key: string
+  data: {}
 }
 
 export const ISSUE_LAYOUT_CONFIG_ITEM_SCHEME = Joi.object({
@@ -126,6 +138,13 @@ export const ISSUE_LAYOUT_RESPONSE_SCHEME = Joi.object({
   issueLayoutConfiguration: Joi.object({
     issueLayoutResult: Joi.object({
       containers: Joi.array().items(CONTAINER_ISSUE_LAYOUT_RESPONSE_SCHEME).required(),
+    }).unknown(true).required(),
+    metadata: Joi.object({
+      configuration: Joi.object({
+        items: Joi.object({
+          nodes: Joi.array().items(Joi.object({}).unknown(true).required()).required(),
+        }).required(),
+      }).unknown(true).required(),
     }).unknown(true).required(),
   }).unknown(true).required(),
 }).unknown(true).required()

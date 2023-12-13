@@ -150,7 +150,7 @@ const CLOUD_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
     },
     ServiceDeskId: {
       request: {
-        url: 'rest/servicedeskapi/servicedesk/projectId:{projectId}',
+        url: '/rest/servicedeskapi/servicedesk/projectId:{projectId}',
       },
       transformation: {
         dataField: '.',

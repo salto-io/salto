@@ -15,8 +15,8 @@
 */
 import { InstanceElement, Element, CORE_ANNOTATIONS, ReferenceExpression, ModificationChange, ElemID } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
-import { AUTOMATION_TYPE, CALENDAR_TYPE, ESCALATION_SERVICE_TYPE, ISSUE_TYPE_SCHEMA_NAME, JIRA,
-  NOTIFICATION_SCHEME_TYPE_NAME, PORTAL_GROUP_TYPE, PORTAL_SETTINGS_TYPE_NAME, QUEUE_TYPE,
+import { AUTOMATION_TYPE, CALENDAR_TYPE, ESCALATION_SERVICE_TYPE, FORM_TYPE, ISSUE_TYPE_SCHEMA_NAME, JIRA,
+  PORTAL_GROUP_TYPE, PORTAL_SETTINGS_TYPE_NAME, QUEUE_TYPE,
   SCHEDULED_JOB_TYPE, SCRIPTED_FIELD_TYPE, SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE,
   SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, SLA_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { createSecurityLevelValues, createSecuritySchemeValues } from './securityScheme'
@@ -25,7 +25,7 @@ import { createDashboardValues, createGadget1Values, createGadget2Values } from 
 import { createReference, findType } from '../../utils'
 import { createWorkflowValues } from './workflow'
 import { createFieldConfigurationValues } from './fieldConfiguration'
-import { createNotificationSchemeValues } from './notificationScheme'
+// import { createNotificationSchemeValues } from './notificationScheme'
 import { createAutomationValues } from './automation'
 import { createKanbanBoardValues, createScrumBoardValues } from './board'
 import { createFilterValues } from './filter'
@@ -43,6 +43,7 @@ import { createQueueValues } from './jsm/queue'
 import { createCalendarValues } from './jsm/calendar'
 import { createSLAValues } from './jsm/SLA'
 import { createrequestTypeValues } from './jsm/request_type'
+import { createFormValues } from './jsm/form'
 
 export const createInstances = (
   randomString: string,
@@ -107,11 +108,11 @@ export const createInstances = (
   ]
 
 
-  const notificationScheme = new InstanceElement(
-    randomString,
-    findType(NOTIFICATION_SCHEME_TYPE_NAME, fetchedElements),
-    createNotificationSchemeValues(randomString),
-  )
+  // const notificationScheme = new InstanceElement(
+  //   randomString,
+  //   findType(NOTIFICATION_SCHEME_TYPE_NAME, fetchedElements),
+  //   createNotificationSchemeValues(randomString),
+  // )
 
   const automation = new InstanceElement(
     randomString,
@@ -217,10 +218,17 @@ export const createInstances = (
     { [CORE_ANNOTATIONS.PARENT]: [jsmProject] }
   )
 
-  const RequestType = new InstanceElement(
+  const requestType = new InstanceElement(
     `${randomString}_SUP`,
     findType('RequestType', fetchedElements),
     createrequestTypeValues(randomString, fetchedElements),
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [jsmProject] }
+  )
+  const form = new InstanceElement(
+    `SUP_${randomString}`,
+    findType(FORM_TYPE, fetchedElements),
+    createFormValues(randomString),
     undefined,
     { [CORE_ANNOTATIONS.PARENT]: [jsmProject] }
   )
@@ -233,7 +241,7 @@ export const createInstances = (
     [workflow],
     [fieldConfiguration],
     [securityScheme, securityLevel],
-    [notificationScheme],
+    // [notificationScheme],
     [automation],
     [kanbanBoard],
     [scrumBoard],
@@ -250,7 +258,8 @@ export const createInstances = (
     [queue],
     [calendar],
     [SLA],
-    [RequestType],
+    [requestType],
+    [form],
   ]
 }
 

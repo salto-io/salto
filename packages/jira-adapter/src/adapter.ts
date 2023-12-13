@@ -105,7 +105,7 @@ import removeEmptyValuesFilter from './filters/remove_empty_values'
 import jqlReferencesFilter from './filters/jql/jql_references'
 import userFilter from './filters/user'
 import changePortalGroupFieldsFilter from './filters/change_portal_group_fields'
-import { JIRA, PROJECT_TYPE, SERVICE_DESK } from './constants'
+import { JIRA, JIRA_SERVICE_DESK_FIELD, PROJECT_TYPE, SERVICE_DESK } from './constants'
 import { paginate, removeScopedObjects } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
@@ -137,7 +137,7 @@ import addAliasFilter from './filters/add_alias'
 import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_specific_duplicate_roles'
 import issueLayoutFilter from './filters/layouts/issue_layout'
 import removeSimpleFieldProjectFilter from './filters/remove_simplified_field_project'
-import changeServiceDeskIdFieldProjectFilter from './filters/change_projects_service_desk_id'
+import changeJSMElementsFieldFilter from './filters/change_jsm_fields'
 import formsFilter from './filters/forms/forms'
 import addJsmTypesAsFieldsFilter from './filters/add_jsm_types_as_fields'
 import createReferencesIssueLayoutFilter from './filters/layouts/create_references_layouts'
@@ -148,6 +148,7 @@ import scriptRunnerFilter from './filters/script_runner/script_runner_filter'
 import scriptRunnerListenersDeployFilter from './filters/script_runner/script_runner_listeners_deploy'
 import scriptedFragmentsDeployFilter from './filters/script_runner/scripted_fragments_deploy'
 import fetchJsmTypesFilter from './filters/jsm_types_fetch_filter'
+import assetsInstancesAdditionFilter from './filters/assets/assets_instances_addition'
 import deployJsmTypesFilter from './filters/jsm_types_deploy_filter'
 import jsmPathFilter from './filters/jsm_paths'
 import portalSettingsFilter from './filters/portal_settings'
@@ -157,9 +158,12 @@ import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
 import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uuid'
 import changeQueueFieldsFilter from './filters/change_queue_fields'
 import portalGroupsFilter from './filters/portal_groups'
+import assetsObjectTypePath from './filters/assets/assets_object_type_path'
+import assetsObjectTypeChangeFields from './filters/assets/assets_object_type_change_fields'
+import changeAttributesPathFilter from './filters/assets/change_attributes_path'
 import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
-import { jiraJSMEntriesFunc } from './jsm_utils'
+import { getServerInfoTitle, jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from './jsm_utils'
 import { getWorkspaceId } from './workspace_id'
 import { JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES } from './config/api_config'
 
@@ -179,7 +183,7 @@ const { query: queryFilter, ...otherCommonFilters } = commonFilters
 export const DEFAULT_FILTERS = [
   accountInfoFilter,
   storeUsersFilter,
-  changeServiceDeskIdFieldProjectFilter,
+  changeJSMElementsFieldFilter,
   changeQueueFieldsFilter,
   changePortalGroupFieldsFilter,
   automationLabelFetchFilter,
@@ -281,6 +285,7 @@ export const DEFAULT_FILTERS = [
   addJsmTypesAsFieldsFilter,
   issueLayoutFilter,
   fetchJsmTypesFilter,
+  assetsObjectTypeChangeFields,
   // Must run after issueLayoutFilter
   removeSimpleFieldProjectFilter,
   requestTypeLayoutsFilter,
@@ -330,12 +335,18 @@ export const DEFAULT_FILTERS = [
   queueDeleteFilter,
   portalGroupsFilter,
   requestTypeFilter,
+  // Must run before asstesDeployFilter
+  assetsInstancesAdditionFilter,
   deployJsmTypesFilter,
   // Must be done after JsmTypesFilter
   jsmPathFilter,
   // Must be last
   defaultInstancesDeployFilter,
   ...Object.values(otherCommonFilters),
+  // Must run after otherCommonFilters and specificly after referencedInstanceNamesFilterCreator.
+  assetsObjectTypePath,
+  // Must run after assetsObjectTypePath
+  changeAttributesPathFilter,
 ]
 
 export interface JiraAdapterParams {
@@ -454,7 +465,8 @@ export default class JiraAdapter implements AdapterOperations {
   @logDuration('generating swagger instances from service')
   private async getSwaggerInstances(
     allTypes: TypeMap,
-    parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
+    parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>,
+    supportedTypes: Record<string, string[]>
   ): Promise<elementUtils.FetchElements<InstanceElement[]>> {
     const updatedApiDefinitionsConfig = {
       ...this.userConfig.apiDefinitions,
@@ -471,7 +483,7 @@ export default class JiraAdapter implements AdapterOperations {
       objectTypes: _.pickBy(allTypes, isObjectType),
       apiConfig: updatedApiDefinitionsConfig,
       fetchQuery: this.fetchQuery,
-      supportedTypes: this.userConfig.apiDefinitions.supportedTypes,
+      supportedTypes,
       getElemIdFunc: this.getElemIdFunc,
     })
   }
@@ -534,6 +546,7 @@ export default class JiraAdapter implements AdapterOperations {
       typeDefaults: jsmApiDefinitions.typeDefaults,
       additionalRequestContext: workspaceContext,
       getElemIdFunc: this.getElemIdFunc,
+      getEntriesResponseValuesFunc: jiraJSMAssetsEntriesFunc(),
     })
   }
 
@@ -552,6 +565,13 @@ export default class JiraAdapter implements AdapterOperations {
       .filter(project => project.elemID.typeName === PROJECT_TYPE)
       .filter(isInstanceElement)
       .filter(project => project.value.projectTypeKey === SERVICE_DESK)
+      .filter(project => {
+        if (project.value.serviceDeskId?.id === undefined) {
+          log.debug(`Service desk project ${project.elemID.name} does not have a service desk id`)
+          return false
+        }
+        return true
+      })
 
     const fetchResultWithDuplicateTypes = await Promise.all(serviceDeskProjects.map(async projectInstance => {
       const serviceDeskProjRecord: Record<string, string> = {
@@ -559,7 +579,7 @@ export default class JiraAdapter implements AdapterOperations {
         serviceDeskId: projectInstance.value.serviceDeskId.id,
         projectId: projectInstance.value.id,
       }
-      log.debug(`Fetching elements for brand ${projectInstance.elemID.name}`)
+      log.debug(`Fetching elements for project ${projectInstance.elemID.name}`)
       return getAllElements({
         adapterName: JIRA,
         types: jsmApiDefinitions.types,
@@ -612,9 +632,12 @@ export default class JiraAdapter implements AdapterOperations {
     log.debug('going to fetch jira account configuration..')
     progressReporter.reportProgress({ message: 'Fetching types' })
     const { allTypes: swaggerTypes, parsedConfigs } = await this.getAllTypes(swaggers)
+    const userConfigSupportedTypes = this.userConfig.apiDefinitions.supportedTypes
+    const shuldModifySupportedTypes = await getServerInfoTitle(this.client) === JIRA_SERVICE_DESK_FIELD
+    const supportedTypes = shuldModifySupportedTypes ? _.omit(userConfigSupportedTypes, 'Board') : userConfigSupportedTypes
     progressReporter.reportProgress({ message: 'Fetching instances' })
     const [swaggerResponse, scriptRunnerElements] = await Promise.all([
-      this.getSwaggerInstances(swaggerTypes, parsedConfigs),
+      this.getSwaggerInstances(swaggerTypes, parsedConfigs, supportedTypes),
       this.getScriptRunnerElements(),
     ])
 

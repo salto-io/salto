@@ -518,9 +518,9 @@ describe('Custom Objects to Object Type filter', () => {
         expect(isListType(await compactLayoutType.fields.fields.getType())).toBeTruthy()
       })
 
-      it('should remove the custom object type and its instances from the fetch result', async () => {
+      it('should hide the custom object type and remove its instances from the fetch result', async () => {
         await filter.onFetch(result)
-        expect(result).not.toContain(customObjectType)
+        expect(customObjectType.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeTrue()
         expect(result).not.toContain(caseInstance)
       })
 

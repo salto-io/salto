@@ -20,6 +20,7 @@ import { PathIndex, Path } from '../path_index'
 import { RemoteMap, RemoteMapCreator } from '../remote_map'
 import { serialize, deserializeSingleElement } from '../../serializer/elements'
 import { StateStaticFilesSource } from '../static_files/common'
+import { StateConfig } from '../config/workspace_config_types'
 
 export type StateMetadataKey = 'version' | 'hash'
 
@@ -29,9 +30,7 @@ export type UpdateStateElementsArgs = {
   fetchAccounts?: string[]
 }
 
-// This distinction is temporary for the transition to multiple services.
-// Remove this when no longer used, SALTO-1661
-type OldStateData = {
+export type StateData = {
   elements: RemoteElementSource
   // The date of the last fetch
   accountsUpdateDate: RemoteMap<Date>
@@ -41,28 +40,14 @@ type OldStateData = {
   topLevelPathIndex: PathIndex
 }
 
-// This distinction is temporary for the transition to multiple services.
-// Remove this when no longer used, SALTO-1661
-type NewStateData = {
-  elements: RemoteElementSource
-  // The date of the last fetch
-  servicesUpdateDate: RemoteMap<Date>
-  pathIndex: PathIndex
-  saltoMetadata: RemoteMap<string, StateMetadataKey>
-  staticFilesSource: StateStaticFilesSource
-  topLevelPathIndex: PathIndex
+type UpdateConfigArgs = {
+  workspaceId: string
+  stateConfig: StateConfig | undefined
 }
-
-export type StateData = OldStateData | NewStateData
-
 export interface State extends ElementsSource {
   set(element: Element): Promise<void>
   remove(id: ElemID): Promise<void>
   getAccountsUpdateDates(): Promise<Record<string, Date>>
-  // getServicesUpdateDates is deprecated, kept for backwards compatibility.
-  // use getAccountsUpdateDates.
-  // Remove this when no longer used, SALTO-1661
-  getServicesUpdateDates(): Promise<Record<string, Date>>
   existingAccounts(): Promise<string[]>
   getPathIndex(): Promise<PathIndex>
   getTopLevelPathIndex(): Promise<PathIndex>
@@ -71,6 +56,7 @@ export interface State extends ElementsSource {
   calculateHash(): Promise<void>
   getStateSaltoVersion(): Promise<string | undefined>
   updateStateFromChanges(args: UpdateStateElementsArgs): Promise<void>
+  updateConfig(args: UpdateConfigArgs): Promise<void>
 }
 
 

@@ -1,0 +1,3 @@
+dummy.multiFilesObj InstWithStatic2 {
+    aField = file("notRealFile.txt")
+}

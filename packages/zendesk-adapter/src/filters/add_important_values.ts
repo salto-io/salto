@@ -34,7 +34,7 @@ import {
   TICKET_FIELD_TYPE_NAME,
   TICKET_FORM_TYPE_NAME,
   TRIGGER_TYPE_NAME,
-  USER_FIELD_TYPE_NAME,
+  USER_FIELD_TYPE_NAME, USER_SEGMENT_TYPE_NAME,
   VIEW_TYPE_NAME, WEBHOOK_TYPE_NAME, WORKSPACE_TYPE_NAME,
 } from '../constants'
 import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from './dynamic_content'
@@ -458,6 +458,11 @@ const importantValuesMap: Record<string, ImportantValues> = {
       highlighted: false,
       indexed: true,
     },
+    {
+      value: 'label_names',
+      highlighted: false,
+      indexed: true,
+    },
   ],
   [ARTICLE_TRANSLATION_TYPE_NAME]: [
     {
@@ -547,6 +552,13 @@ const importantValuesMap: Record<string, ImportantValues> = {
   [SECTION_TYPE_NAME]: [
     {
       value: 'sorting',
+      highlighted: false,
+      indexed: true,
+    },
+  ],
+  [USER_SEGMENT_TYPE_NAME]: [
+    {
+      value: 'added_user_ids',
       highlighted: false,
       indexed: true,
     },

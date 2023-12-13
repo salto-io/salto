@@ -22,6 +22,13 @@ export type AccessTokenCredentials = {
   token: string
 }
 
+export type OAuthAccessTokenCredentials = {
+  baseUrl: string
+  refreshToken: string
+  clientId: string
+  clientSecret: string
+}
+
 export const accessTokenCredentialsType = createMatchingObjectType<AccessTokenCredentials>({
   elemID: new ElemID(constants.OKTA),
   fields: {
@@ -36,4 +43,33 @@ export const accessTokenCredentialsType = createMatchingObjectType<AccessTokenCr
   },
 })
 
-export type Credentials = AccessTokenCredentials
+export const oauthAccessTokenCredentialsType = createMatchingObjectType<
+OAuthAccessTokenCredentials
+>({
+  elemID: new ElemID(constants.OKTA),
+  fields: {
+    baseUrl: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
+    refreshToken: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
+    clientId: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
+    clientSecret: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
+  },
+})
+
+export type Credentials = AccessTokenCredentials | OAuthAccessTokenCredentials
+
+export const isOAuthAccessTokenCredentials = (
+  credentials: Credentials
+): credentials is OAuthAccessTokenCredentials =>
+  'refreshToken' in credentials

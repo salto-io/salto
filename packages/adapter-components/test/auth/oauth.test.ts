@@ -15,7 +15,7 @@
 */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { oauthClientCredentialsBearerToken } from '../../src/auth'
+import { oauthClientCredentialsBearerToken, oauthAccessTokenRefresh } from '../../src/auth'
 
 describe('oauth', () => {
   describe('oauthClientCredentialsBearerToken', () => {
@@ -126,6 +126,94 @@ describe('oauth', () => {
         aaa: 'bbb',
         ccc: 'ddd',
       })
+    })
+  })
+  describe('oauthAccessTokenRefresh', () => {
+    let mockAxiosAdapter: MockAdapter
+    beforeEach(() => {
+      mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
+    })
+
+    afterEach(() => {
+      mockAxiosAdapter.restore()
+    })
+
+    it('should make the right request and return a header on success', async () => {
+      mockAxiosAdapter.onPost(
+        '/oauth/token',
+      ).reply(200, {
+        // eslint-disable-next-line camelcase
+        access_token: 'token123', expires_in: 3599, token_type: 'Bearer', scope: 'abc def',
+      })
+
+      expect(await oauthAccessTokenRefresh({
+        endpoint: '/oauth/token',
+        baseURL: 'localhost',
+        clientId: 'client id',
+        clientSecret: 'secret',
+        refreshToken: 'refresh',
+        retryOptions: { retries: 2 },
+      })).toEqual({ headers: { Authorization: 'Bearer token123' } })
+      expect(mockAxiosAdapter.history.post.length).toBe(1)
+      const req = mockAxiosAdapter.history.post[0]
+      expect(req.url).toEqual('/oauth/token')
+      expect(req.auth).toBeUndefined()
+      expect(req.data).toEqual('refresh_token=refresh&grant_type=refresh_token')
+      expect(req.headers).toEqual({
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: expect.stringContaining('application/json'),
+        Authorization: expect.stringContaining('Basic'),
+      })
+    })
+    it('should throw error on failure', async () => {
+      mockAxiosAdapter.onPost(
+        '/oauth/token',
+      ).reply(400, {})
+
+      await expect(() => oauthAccessTokenRefresh({
+        endpoint: '/oauth/token',
+        baseURL: 'localhost',
+        clientId: 'client id',
+        clientSecret: 'secret',
+        refreshToken: 'refresh',
+        retryOptions: { retries: 2 },
+      })).rejects.toThrow(new Error('Request failed with status code 400'))
+    })
+    it('should throw error on unexpected token type', async () => {
+      mockAxiosAdapter.onPost(
+        '/oauth/token',
+      ).reply(200, {
+        // eslint-disable-next-line camelcase
+        access_token: 'token123', expires_in: 3599, token_type: 'mac', scope: 'abc def',
+      })
+
+      await expect(() => oauthAccessTokenRefresh({
+        endpoint: '/oauth/token',
+        baseURL: 'localhost',
+        clientId: 'client id',
+        clientSecret: 'secret',
+        refreshToken: 'refresh',
+        retryOptions: { retries: 2 },
+      })).rejects.toThrow(new Error('Unsupported token type mac'))
+    })
+    it('should retry on transient errors', async () => {
+      mockAxiosAdapter.onPost(
+        '/oauth/token',
+      ).reply(503).onPost(
+        '/oauth/token',
+      ).reply(200, {
+        // eslint-disable-next-line camelcase
+        access_token: 'token123', expires_in: 3599, token_type: 'bearer', scope: 'abc def',
+      })
+
+      expect(await oauthAccessTokenRefresh({
+        endpoint: '/oauth/token',
+        baseURL: 'localhost',
+        clientId: 'client id',
+        clientSecret: 'secret',
+        refreshToken: 'refresh',
+        retryOptions: { retries: 2 },
+      })).toEqual({ headers: { Authorization: 'Bearer token123' } })
     })
   })
 })

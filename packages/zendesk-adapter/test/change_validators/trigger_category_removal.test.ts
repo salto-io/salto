@@ -57,6 +57,7 @@ describe('triggerCategoryRemovalValidator', () => {
       { active: false, category_id: triggerCategoryRef }
     )
     apiConfig = DEFAULT_CONFIG[API_DEFINITIONS_CONFIG]
+    apiConfig.typeDefaults.transformation.omitInactive = false
   })
 
   it('should error on removal of a trigger category with active trigger', async () => {

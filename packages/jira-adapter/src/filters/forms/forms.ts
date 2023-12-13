@@ -16,7 +16,7 @@
 
 import { CORE_ANNOTATIONS, Change, InstanceElement, ReferenceExpression, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { getParent, pathNaclCase } from '@salto-io/adapter-utils'
+import { getParent, invertNaclCase, mapKeysRecursive, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { FORM_TYPE, JSM_DUCKTYPE_API_DEFINITIONS, PROJECT_TYPE, SERVICE_DESK } from '../../constants'
@@ -27,6 +27,7 @@ import JiraClient from '../../client/client'
 import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../../utils'
 
 const { isDefined } = lowerDashValues
+
 const deployForms = async (
   change: Change<InstanceElement>,
   client: JiraClient,
@@ -51,9 +52,10 @@ const deployForms = async (
       form.value.id = resp.data.id
       form.value.design.settings.templateId = resp.data.id
     }
+    const data = mapKeysRecursive(form.value, ({ key }) => invertNaclCase(key))
     await client.put({
       url: `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms/${form.value.id}`,
-      data: form.value,
+      data,
     })
   } else {
     await client.delete({
@@ -66,10 +68,10 @@ const deployForms = async (
 * This filter fetches all forms from Jira Service Management and creates an instance element for each form.
 * We use filter because we need to use cloudId which is not available in the infrastructure.
 */
-const filter: FilterCreator = ({ config, client }) => ({
+const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
   name: 'formsFilter',
   onFetch: async elements => {
-    if (!config.fetch.enableJSM || client.isDataCenter) {
+    if (!config.fetch.enableJSM || client.isDataCenter || !fetchQuery.isTypeMatch(FORM_TYPE)) {
       return
     }
     const cloudId = await getCloudId(client)
@@ -100,7 +102,7 @@ const filter: FilterCreator = ({ config, client }) => ({
             if (!isDetailedFormsResponse(detailedRes.data)) {
               return undefined
             }
-            const name = `${project.value.name}_${formResponse.name}`
+            const name = naclCase(`${project.value.key}_${formResponse.name}`)
             const formValue = detailedRes.data
             const parentPath = project.path ?? []
             const jsmDuckTypeApiDefinitions = config[JSM_DUCKTYPE_API_DEFINITIONS]
@@ -120,7 +122,10 @@ const filter: FilterCreator = ({ config, client }) => ({
       })))
       .flat()
       .filter(isDefined)
-    forms.forEach(form => elements.push(form))
+    forms.forEach(form => {
+      form.value = mapKeysRecursive(form.value, ({ key }) => naclCase(key))
+      elements.push(form)
+    })
   },
   preDeploy: async changes => {
     changes

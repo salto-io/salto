@@ -52,7 +52,7 @@ const getFieldReferences = async (
 ): Promise<ReferenceInfo[]> => {
   const fieldConfigurationItems = instance.value.fields
   if (fieldConfigurationItems === undefined || !isFieldConfigurationItems(fieldConfigurationItems)) {
-    log.warn(`fields value is corrupted in instance ${instance.elemID.getFullName()}`)
+    log.warn(`fields value is corrupted in instance ${instance.elemID.getFullName()}, hence not calculating fields weak references`)
     return []
   }
   return awu(Object.entries(fieldConfigurationItems))

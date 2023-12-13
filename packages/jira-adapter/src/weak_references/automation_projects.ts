@@ -43,6 +43,7 @@ const getProjectReferences = async (
 ): Promise<ReferenceInfo[]> => {
   const automationProjects = instance.value.projects
   if (automationProjects === undefined || !isAutomationProjects(automationProjects)) {
+    log.warn(`projects value is corrupted in instance ${instance.elemID.getFullName()}, hence not calculating projects weak references`)
     return []
   }
 

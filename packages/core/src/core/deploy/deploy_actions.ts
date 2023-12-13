@@ -148,9 +148,8 @@ export const deployActions = async (
       try {
         const result = await deployAction(item, adapters, checkOnly)
         result.appliedChanges.forEach(appliedChange => appliedChanges.push(appliedChange))
-        makeArray(result.extraProperties?.groups).map(group => {
-          return Object.assign(group, { accountName: item.account, id: item.groupKey })
-        })
+        makeArray(result.extraProperties?.groups)
+          .map(group => Object.assign(group, { accountName: item.account, id: item.groupKey }))
           .map(group => allGroups.push(group))
         // Update element with changes so references to it
         // will have an updated version throughout the deploy plan

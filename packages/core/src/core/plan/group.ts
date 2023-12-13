@@ -59,7 +59,7 @@ export const getCustomGroupIds = async (
     .filter(([accountName]) => accountName in customGroupIdFunctions)
     .map(([accountName, adapterChanges]) => (
       customGroupIdFunctions[accountName](new Map(adapterChanges.map(({ id, change }) => [id, change])))
-        .then(({changeGroupIdMap, disjointGroups}) => {
+        .then(({ changeGroupIdMap, disjointGroups }) => {
           log.debug(`Adding account name prefix to change group ids for account ${accountName}`)
           const changeGroupIdMapWithAccountNamePrefix = new Map<ChangeId, ChangeGroupId>()
           changeGroupIdMap.forEach((groupId, changeId) => {

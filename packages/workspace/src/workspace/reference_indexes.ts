@@ -24,9 +24,8 @@ import {
   isAdditionOrModificationChange,
   isTemplateExpression,
   isObjectTypeChange,
-  GetCustomReferencesFunc,
   ReferenceInfo,
-  ReferenceType, InstanceElement,
+  ReferenceType,
 } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -35,11 +34,8 @@ import { collections } from '@salto-io/lowerdash'
 import { ElementsSource } from './elements_source'
 import { getAllElementsChanges } from './index_utils'
 import { RemoteMap, RemoteMapEntry } from './remote_map'
-import { AdaptersConfigSource } from './adapters_config_source'
 
 const log = logger(module)
-
-const { awu } = collections.asynciterable
 
 export const REFERENCE_INDEXES_VERSION = 4
 export const REFERENCE_INDEXES_KEY = 'reference_indexes'
@@ -263,18 +259,15 @@ const updateReferenceSourcesIndex = async (
 }
 
 const getIdToCustomReferencesForAdapter = async (
-  getCustomReferences: GetCustomReferencesFunc,
+  getCustomReferences: (elements: Element[]) => Promise<ReferenceInfo[]>,
   changes: Change<Element>[],
-  adapterConfig: InstanceElement,
 ): Promise<{ before: Record<string, ReferenceInfo[]>; after: Record<string, ReferenceInfo[]> }> => {
   const customReferencesAfter = await getCustomReferences(
     changes.filter(isAdditionOrModificationChange).map(change => change.data.after),
-    adapterConfig,
   )
 
   const customReferencesBefore = await getCustomReferences(
     changes.filter(isRemovalOrModificationChange).map(change => change.data.before),
-    adapterConfig,
   )
 
   return {
@@ -291,8 +284,7 @@ export const updateReferenceIndexes = async (
   mapVersions: RemoteMap<number>,
   elementsSource: ElementsSource,
   isCacheValid: boolean,
-  getCustomReferences: GetCustomReferencesFunc,
-  adaptersConfig: AdaptersConfigSource,
+  getCustomReferences: (elements: Element[]) => Promise<ReferenceInfo[]>,
 ): Promise<void> => log.time(async () => {
   let relevantChanges = changes
   let initialIndex = false
@@ -314,33 +306,10 @@ export const updateReferenceIndexes = async (
     initialIndex = true
   }
 
-  const changesForCustomRefs = _(changes)
-    .groupBy(change => getChangeData(change).elemID.adapter)
-    .toPairs()
-    .map(([adapterName, adapterChanges]) => ({ adapterName, adapterChanges }))
-    .value()
-
-  type CustomRefs = {
-    before: Record<string, ReferenceInfo[]>
-    after: Record<string, ReferenceInfo[]>
-  }
-
-  const customReferences = await awu(changesForCustomRefs)
-    .reduce(
-      async (total: CustomRefs, currentValue: {adapterName: string; adapterChanges: Change<Element>[]}) => {
-        const adapterConfig = await adaptersConfig.getAdapter(currentValue.adapterName)
-        if (adapterConfig === undefined) {
-          return total
-        }
-        const addedRefs = await getIdToCustomReferencesForAdapter(
-          getCustomReferences,
-          currentValue.adapterChanges,
-          adapterConfig
-        )
-        return _.merge(total, addedRefs)
-      },
-      { before: {}, after: {} }
-    )
+  const customReferences = await getIdToCustomReferencesForAdapter(
+    getCustomReferences,
+    changes,
+  )
 
   const changeToReferences = Object.fromEntries(relevantChanges
     .map(change => [

@@ -97,7 +97,6 @@ describe('updateReferenceIndexes', () => {
         elementsSource,
         true,
         async () => [],
-        adaptersConfig,
       )
     })
     it('should add the new references to the referenceTargets index', () => {
@@ -247,7 +246,6 @@ describe('updateReferenceIndexes', () => {
         elementsSource,
         true,
         async () => [],
-        adaptersConfig,
       )
     })
     it('old values should be removed and new values should be added from referenceTargets index', () => {
@@ -308,7 +306,6 @@ describe('updateReferenceIndexes', () => {
         elementsSource,
         true,
         async () => [],
-        adaptersConfig,
       )
     })
     it('should set the new tree in the referenceTargets index', () => {
@@ -368,7 +365,6 @@ describe('updateReferenceIndexes', () => {
         elementsSource,
         true,
         async () => [],
-        adaptersConfig,
       )
     })
 
@@ -407,7 +403,6 @@ describe('updateReferenceIndexes', () => {
           elementsSource,
           false,
           async () => [],
-          adaptersConfig,
         )
       })
       it('should update referenceTargets index using the element source', () => {
@@ -471,7 +466,6 @@ describe('updateReferenceIndexes', () => {
           elementsSource,
           true,
           async () => [],
-          adaptersConfig,
         )
       })
       it('should update referenceTargets index using the element source', () => {
@@ -559,7 +553,6 @@ describe('updateReferenceIndexes', () => {
             type: 'weak',
           },
         ] : []),
-        adaptersConfig,
       )
     })
     it('should override the default references with the custom references', () => {
@@ -600,7 +593,6 @@ describe('updateReferenceIndexes', () => {
             type: 'weak',
           },
         ],
-        adaptersConfig,
       )
     })
     it('should override the default references with the custom references', () => {
@@ -640,7 +632,6 @@ describe('updateReferenceIndexes', () => {
             type: 'weak',
           },
         ] : []),
-        adaptersConfig,
       )
     })
     it('should remove the removed custom references', () => {

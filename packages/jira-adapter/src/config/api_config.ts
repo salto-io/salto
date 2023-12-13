@@ -945,6 +945,22 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldsToHide: [{ fieldName: 'id' }],
       serviceUrl: '/secure/admin/EditNotifications!default.jspa?schemeId={id}',
     },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/notificationscheme',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/notificationscheme/{id}',
+        method: 'put',
+        fieldsToIgnore: ['notificationSchemeEvents', 'notificationIds', 'id'],
+      },
+      remove: {
+        url: '/rest/api/3/notificationscheme/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
+    },
   },
   NotificationSchemeEvent: {
     transformation: {
@@ -952,6 +968,25 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'eventType', fieldType: 'number' },
         { fieldName: 'notifications', fieldType: 'List<PermissionHolder>' },
       ],
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/notificationscheme/{notificationSchemeId}/notification',
+        method: 'put',
+        urlParamsToFields: {
+          notificationSchemeId: 'notificationSchemeId',
+        },
+        fieldsToIgnore: ['notificationSchemeId'],
+      },
+      remove: {
+        url: '/rest/api/3/notificationscheme/{notificationSchemeId}/notification/{notificationId}',
+        method: 'delete',
+        urlParamsToFields: {
+          notificationSchemeId: 'notificationSchemeId',
+          notificationId: 'id',
+        },
+        omitRequestBody: true,
+      },
     },
   },
   PageBeanIssueTypeScreenSchemesProjects: {

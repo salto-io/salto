@@ -150,6 +150,8 @@ export const DC_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
         modify: {
           url: '/rest/api/3/notificationscheme/{id}',
           method: 'put',
+          // Overrides fieldsToIgnore in default apiDefinitions
+          fieldsToIgnore: [],
         },
         remove: {
           url: '/rest/api/3/notificationscheme/{id}',

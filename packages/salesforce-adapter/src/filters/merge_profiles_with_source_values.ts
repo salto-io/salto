@@ -27,6 +27,12 @@ const { awu } = collections.asynciterable
 
 const log = logger(module)
 
+
+/**
+ * This filter merges the values of profile instances with their source values.
+ * This is required in fetch with changes detection where we retrieve partial profile instances
+ * with the modified related props only.
+ */
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'mergeProfilesWithSourceValues',
   onFetch: async elements => {
@@ -38,13 +44,17 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
     if (profileInstances.length === 0) {
       return
     }
-    const profileValuesFromSourceByFullName: Record<string, Values> = {}
-    await awu(await config.elementsSource.getAll())
+    const profileValuesFromSourceByFullName = await awu(await config.elementsSource.getAll())
       .filter(isInstanceOfTypeSync(PROFILE_METADATA_TYPE))
-      .forEach(instanceFromSource => {
-        const fullName = apiNameSync(instanceFromSource) ?? ''
-        profileValuesFromSourceByFullName[fullName] = instanceFromSource.value
-      })
+      .reduce<Record<string, Values>>((acc, instanceFromSource) => {
+        const fullName = apiNameSync(instanceFromSource)
+        if (fullName === undefined) {
+          log.warn('profile instance from source %s does not have fullName', instanceFromSource.elemID.getFullName())
+          return acc
+        }
+        acc[fullName] = instanceFromSource.value
+        return acc
+      }, {})
 
     profileInstances.forEach(profileInstance => {
       profileInstance.value = _.merge(

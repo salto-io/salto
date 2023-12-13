@@ -51,14 +51,25 @@ export const getCustomGroupIds = async (
   if (Object.keys(customGroupIdFunctions).length === 0) {
     return { changeGroupIdMap: new Map() }
   }
-  const changesPerAdapter = collections.iterable.groupBy(
+  const changesPerAccount = collections.iterable.groupBy(
     wu(changes.keys()).map(id => ({ id, change: changes.getData(id) })),
     ({ change }) => getChangeData(change).elemID.adapter,
   )
-  const changeGroupInfoPerAdapter = await awu(changesPerAdapter.entries())
-    .filter(([adapterName]) => adapterName in customGroupIdFunctions)
-    .map(([name, adapterChanges]) => (
-      customGroupIdFunctions[name](new Map(adapterChanges.map(({ id, change }) => [id, change])))
+  const changeGroupInfoPerAdapter = await awu(changesPerAccount.entries())
+    .filter(([accountName]) => accountName in customGroupIdFunctions)
+    .map(([accountName, adapterChanges]) => (
+      customGroupIdFunctions[accountName](new Map(adapterChanges.map(({ id, change }) => [id, change])))
+        .then(result => {
+          log.debug(`Adding account name prefix to change group ids for account ${accountName}`)
+          const changeGroupIdMapWithAccountNamePrefix = new Map<ChangeId, ChangeGroupId>()
+          result.changeGroupIdMap.forEach((groupId, changeId) => {
+            changeGroupIdMapWithAccountNamePrefix.set(
+              changeId,
+              `${accountName}__${groupId}`
+            )
+          })
+          return Object.assign(result, { changeGroupIdMap: changeGroupIdMapWithAccountNamePrefix })
+        })
     )).toArray()
 
   return mergeChangeGroupInfo(changeGroupInfoPerAdapter)

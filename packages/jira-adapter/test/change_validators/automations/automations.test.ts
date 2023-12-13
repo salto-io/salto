@@ -15,8 +15,8 @@
 */
 import { ObjectType, ElemID, ReadOnlyElementsSource, InstanceElement, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { automationsValidator } from '../../src/change_validators/automations'
-import { AUTOMATION_TYPE, JIRA } from '../../src/constants'
+import { automationsValidator } from '../../../src/change_validators/automation/automations'
+import { AUTOMATION_TYPE, JIRA } from '../../../src/constants'
 
 describe('automationsValidator', () => {
   let automationType: ObjectType

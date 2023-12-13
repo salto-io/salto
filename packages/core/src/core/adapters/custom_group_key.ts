@@ -15,7 +15,10 @@
 */
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
-import { AdapterOperations, ChangeGroupIdFunction } from '@salto-io/adapter-api'
+import { AdapterOperations, ChangeGroupId, ChangeGroupIdFunction, ChangeId } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
+
+const log = logger(module)
 
 export const getAdapterChangeGroupIdFunctions = (
   adapters: Record<string, AdapterOperations>
@@ -23,4 +26,19 @@ export const getAdapterChangeGroupIdFunctions = (
   _(adapters)
     .mapValues(adapter => adapter.deployModifiers?.getChangeGroupIds)
     .pickBy(values.isDefined)
+    // Add the account name prefix to the change group ids to avoid collisions between accounts
+    .mapValues((func, accountName) => new Proxy(func, {
+      apply: (target, thisArg, args) => target.apply(thisArg, args)
+        .then(result => {
+          log.debug(`Adding account name prefix to change group ids for account ${accountName}`)
+          const changesWithAccountNamePrefix = new Map<ChangeId, ChangeGroupId>()
+          result.changeGroupIdMap.forEach((groupId, changeId) => {
+            changesWithAccountNamePrefix.set(
+              changeId,
+              `${accountName}__${groupId}`
+            )
+          })
+          return Object.assign(result, { changeGroupIdMap: changesWithAccountNamePrefix })
+        }),
+    }))
     .value()

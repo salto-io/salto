@@ -32,10 +32,12 @@ import semver from 'semver'
 
 import { ContentAndHash, createFileStateContentProvider, createS3StateContentProvider, getHashFromHashes, NamedStream, StateContentProvider } from './content_providers'
 import { version } from '../../generated/version.json'
+import { getLocalStoragePath } from '../../app_config'
 
 const { awu } = collections.asynciterable
 const { serializeStream, deserializeParsed } = serialization
 const { toMD5 } = hash
+
 
 const log = logger(module)
 
@@ -93,11 +95,11 @@ const parseStateContent = async (
 
 export const getStateContentProvider = (
   workspaceId: string,
-  localStorageDir: string,
   stateConfig: StateConfig = { provider: 'file' },
 ): StateContentProvider => {
   switch (stateConfig.provider) {
     case 'file': {
+      const localStorageDir = stateConfig.options?.file?.localStorageDir ?? getLocalStoragePath(workspaceId)
       return createFileStateContentProvider(localStorageDir)
     }
     case 's3': {
@@ -117,7 +119,6 @@ export const localState = (
   envName: string,
   remoteMapCreator: remoteMap.RemoteMapCreator,
   contentProvider: StateContentProvider,
-  localStorageDir: string,
   staticFilesSource?: staticFiles.StateStaticFilesSource,
   persistent = true
 ): state.State => {
@@ -299,7 +300,6 @@ export const localState = (
       await inMemState.setVersion(version)
       await inMemState.setHash(updatedHash)
       await inMemState.flush()
-      await currentStaticFilesSource().flush()
       dirty = false
       log.debug('finished flushing state')
     },
@@ -320,7 +320,7 @@ export const localState = (
       setDirty()
     },
     updateConfig: async args => {
-      const newProvider = getStateContentProvider(args.workspaceId, localStorageDir, args.stateConfig)
+      const newProvider = getStateContentProvider(args.workspaceId, args.stateConfig)
       const contents = await getContentAndHash()
 
       const tempPrefix = path.join(path.dirname(currentFilePrefix), `.tmp_${path.basename(currentFilePrefix)}`)
@@ -345,7 +345,6 @@ type LoadStateArgs = {
   envName: string
   remoteMapCreator: remoteMap.RemoteMapCreator
   staticFilesSource?: staticFiles.StateStaticFilesSource
-  localStorageDir: string
   persistent: boolean
 }
 export const loadState = ({
@@ -355,15 +354,13 @@ export const loadState = ({
   envName,
   remoteMapCreator,
   staticFilesSource,
-  localStorageDir,
   persistent,
 }: LoadStateArgs): state.State => (
   localState(
     baseDir,
     envName,
     remoteMapCreator,
-    getStateContentProvider(workspaceId, localStorageDir, stateConfig),
-    localStorageDir,
+    getStateContentProvider(workspaceId, stateConfig),
     staticFilesSource,
     persistent,
   )

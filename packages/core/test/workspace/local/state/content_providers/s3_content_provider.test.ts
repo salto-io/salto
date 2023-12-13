@@ -61,7 +61,7 @@ describe('createS3StateContentProvider', () => {
     const localContent: LocalStateFileContent = { account, contentHash }
     await writeFile(path.join(testDir.name(), `env.${account}.json`), safeJsonStringify(localContent))
     s3mock
-      .on(GetObjectCommand, { Bucket: bucketName, Key: `${workspaceId}/${account}/${remoteHash ?? contentHash}` })
+      .on(GetObjectCommand, { Bucket: bucketName, Key: `state/${workspaceId}/${account}/${remoteHash ?? contentHash}` })
       .resolves({ Body: sdkStreamMixin(Readable.from('stateData')) })
   }
 
@@ -168,7 +168,7 @@ describe('createS3StateContentProvider', () => {
     })
     it('should upload new data to S3', () => {
       expect(s3mock.calls().map(({ args }) => args[0].input)).toIncludeSameMembers(
-        accountNames.map(account => expect.objectContaining({ Bucket: bucketName, Key: `${workspaceId}/${account}/newHash` }))
+        accountNames.map(account => expect.objectContaining({ Bucket: bucketName, Key: `state/${workspaceId}/${account}/newHash` }))
       )
     })
     it('should return the new contents when reading', async () => {

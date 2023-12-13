@@ -72,12 +72,12 @@ describe('group', () => {
         }),
       }
     })
-    it('should append the account name suffix to the custom group ids', async () => {
+    it('should append the account name prefix to the custom group ids', async () => {
       const { changeGroupIdMap, disjointGroups } = await getCustomGroupIds(changesMap, customGroupIdFunctions)
       expect(changeGroupIdMap.size).toEqual(2)
-      expect(changeGroupIdMap.get('account1.Type.instance.InstanceName')).toEqual('account1__customKey')
-      expect(changeGroupIdMap.get('account2.Type.instance.InstanceName')).toEqual('account2__customKey')
-      expect(disjointGroups).toEqual(new Set(['account1__customKey', 'account2__customKey']))
+      expect(changeGroupIdMap.get('account1.Type.instance.InstanceName')).toEqual('account1.customKey')
+      expect(changeGroupIdMap.get('account2.Type.instance.InstanceName')).toEqual('account2.customKey')
+      expect(disjointGroups).toEqual(new Set(['account1.customKey', 'account2.customKey']))
     })
   })
 })

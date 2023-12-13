@@ -21,7 +21,7 @@ import { exists, isEmptyDir, rm } from '@salto-io/file'
 import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl, remoteMap,
   configSource as cs, staticFiles, dirStore, WorkspaceComponents, errors, elementSource,
   COMMON_ENV_PREFIX, isValidEnvName, EnvironmentSource, EnvConfig, adaptersConfigSource,
-  createAdapterReplacedID, state, buildStaticFilesCache } from '@salto-io/workspace'
+  createAdapterReplacedID, buildStaticFilesCache } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { localDirectoryStore, createExtensionFileFilter } from './dir_store'
@@ -163,9 +163,8 @@ export const createEnvironmentSource = async ({
       envName: env,
       remoteMapCreator,
       persistent,
-      staticFilesSource: stateStaticFilesSource ?? state.buildOverrideStateStaticFilesSource(
-        localDirectoryStore({ baseDir: path.resolve(localStorage, STATIC_RESOURCES_FOLDER) })
-      ),
+      staticFilesSource: stateStaticFilesSource,
+      localStorageDir: localStorage,
     }),
   }
 }

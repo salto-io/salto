@@ -29,6 +29,8 @@ export type AdaptersConfig = {
 
 export type ProviderOptionsS3 = {
   bucket: string
+  prefix?: string
+  uploadConcurrencyLimit?: number
 }
 
 export type ProviderOptions = {

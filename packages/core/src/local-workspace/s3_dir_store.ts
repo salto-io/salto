@@ -22,7 +22,7 @@ import { dirStore, staticFiles } from '@salto-io/workspace'
 import Bottleneck from 'bottleneck'
 import getStream from 'get-stream'
 import { Readable } from 'stream'
-import { values } from '@salto-io/lowerdash'
+// import { values } from '@salto-io/lowerdash'
 
 const log = logger(module)
 
@@ -97,35 +97,36 @@ export const buildS3DirectoryStore = (
     }
   }
 
-  const listPage = async (token: string | undefined): Promise<AWS.ListObjectsV2CommandOutput> =>
-    bottleneck.schedule(
-      () => {
-        log.trace('Listing %s in S3 bucket %s with token %s', baseDir, bucketName, token)
-        return s3.listObjectsV2({
-          Bucket: bucketName,
-          Prefix: baseDir,
-          ContinuationToken: token,
-        })
-      }
-    )
+  // const listPage = async (token: string | undefined): Promise<AWS.ListObjectsV2CommandOutput> =>
+  //   bottleneck.schedule(
+  //     () => {
+  //       log.trace('Listing %s in S3 bucket %s with token %s', baseDir, bucketName, token)
+  //       return s3.listObjectsV2({
+  //         Bucket: bucketName,
+  //         Prefix: baseDir,
+  //         ContinuationToken: token,
+  //       })
+  //     }
+  //   )
 
   const list = async (): Promise<string[]> => log.time(
     async () => {
       const paths = new Set<string>(Object.keys(updated))
-      let currentPage: AWS.ListObjectsV2CommandOutput | undefined
-      try {
-        do {
-          // eslint-disable-next-line no-await-in-loop
-          currentPage = await listPage(currentPage?.NextContinuationToken)
-          currentPage.Contents
-            ?.map(({ Key }) => Key && path.posix.relative(baseDir, Key))
-            .filter(values.isDefined)
-            .forEach(key => paths.add(key))
-        } while (currentPage?.NextContinuationToken !== undefined)
-      } catch (err) {
-        log.warn('Failed listing %s in S3 bucket %s with token %s', baseDir, bucketName, currentPage?.NextContinuationToken)
-        throw err
-      }
+      // let currentPage: AWS.ListObjectsV2CommandOutput | undefined
+      // try {
+      //   do {
+      //     // eslint-disable-next-line no-await-in-loop
+      //     currentPage = await listPage(currentPage?.NextContinuationToken)
+      //     currentPage.Contents
+      //       ?.map(({ Key }) => Key && path.posix.relative(baseDir, Key))
+      //       .filter(values.isDefined)
+      //       .forEach(key => paths.add(key))
+      //   } while (currentPage?.NextContinuationToken !== undefined)
+      // } catch (err) {
+      // eslint-disable-next-line max-len
+      //   log.warn('Failed listing %s in S3 bucket %s with token %s', baseDir, bucketName, currentPage?.NextContinuationToken)
+      //   throw err
+      // }
 
       return Array.from(paths)
     },

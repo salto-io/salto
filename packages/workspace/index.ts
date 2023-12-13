@@ -22,7 +22,7 @@ import * as hiddenValues from './src/workspace/hidden_values'
 import * as configSource from './src/workspace/config_source'
 import * as workspaceConfigSource from './src/workspace/workspace_config_source'
 import * as adaptersConfigSource from './src/workspace/adapters_config_source'
-import { WorkspaceConfig, EnvConfig, StateConfig } from './src/workspace/config/workspace_config_types'
+import { WorkspaceConfig, EnvConfig, StateConfig, ProviderOptionsS3 } from './src/workspace/config/workspace_config_types'
 import * as state from './src/workspace/state'
 import * as dirStore from './src/workspace/dir_store'
 import * as parseCache from './src/workspace/nacl_files/parsed_nacl_files_cache'
@@ -63,6 +63,7 @@ export {
   elementSource,
   remoteMap,
   WorkspaceConfig,
+  ProviderOptionsS3,
   EnvConfig,
   StateConfig,
   // Workspace exports

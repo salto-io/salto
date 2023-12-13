@@ -37,7 +37,6 @@ const { awu } = collections.asynciterable
 const { serializeStream, deserializeParsed } = serialization
 const { toMD5 } = hash
 
-
 const log = logger(module)
 
 
@@ -94,18 +93,19 @@ const parseStateContent = async (
 
 export const getStateContentProvider = (
   workspaceId: string,
+  localStorageDir: string,
   stateConfig: StateConfig = { provider: 'file' },
 ): StateContentProvider => {
   switch (stateConfig.provider) {
     case 'file': {
-      return createFileStateContentProvider()
+      return createFileStateContentProvider(localStorageDir)
     }
     case 's3': {
-      const bucketName = stateConfig.options?.s3?.bucket
-      if (bucketName === undefined) {
+      const options = stateConfig.options?.s3
+      if (options === undefined || options.bucket === undefined) {
         throw new Error('Missing key "options.s3.bucket" in workspace state configuration')
       }
-      return createS3StateContentProvider({ workspaceId, bucketName })
+      return createS3StateContentProvider({ workspaceId, options })
     }
     default:
       throw new Error(`Unsupported state provider ${stateConfig.provider}`)
@@ -116,8 +116,9 @@ export const localState = (
   filePrefix: string,
   envName: string,
   remoteMapCreator: remoteMap.RemoteMapCreator,
-  staticFilesSource: staticFiles.StateStaticFilesSource,
   contentProvider: StateContentProvider,
+  localStorageDir: string,
+  staticFilesSource?: staticFiles.StateStaticFilesSource,
   persistent = true
 ): state.State => {
   let dirty = false
@@ -125,6 +126,10 @@ export const localState = (
   let contentsAndHash: Promise<ContentAndHash[]> | undefined
   let currentFilePrefix = filePrefix
   let currentContentProvider = contentProvider
+
+  const currentStaticFilesSource = (): staticFiles.StateStaticFilesSource => (
+    staticFilesSource ?? currentContentProvider.staticFilesSource
+  )
 
   const setDirty = (): void => {
     dirty = true
@@ -168,7 +173,7 @@ export const localState = (
     const quickAccessStateData = await state.buildStateData(
       envName,
       remoteMapCreator,
-      staticFilesSource,
+      currentStaticFilesSource(),
       persistent,
     )
     const filePaths = await currentContentProvider.findStateFiles(currentFilePrefix)
@@ -268,7 +273,7 @@ export const localState = (
     },
     rename: async (newPrefix: string): Promise<void> => {
       await Promise.all([
-        staticFilesSource.rename(newPrefix),
+        currentStaticFilesSource().rename(newPrefix),
         currentContentProvider.rename(currentFilePrefix, newPrefix),
       ])
       currentFilePrefix = newPrefix
@@ -294,7 +299,7 @@ export const localState = (
       await inMemState.setVersion(version)
       await inMemState.setHash(updatedHash)
       await inMemState.flush()
-      await staticFilesSource.flush()
+      await currentStaticFilesSource().flush()
       dirty = false
       log.debug('finished flushing state')
     },
@@ -315,7 +320,7 @@ export const localState = (
       setDirty()
     },
     updateConfig: async args => {
-      const newProvider = getStateContentProvider(args.workspaceId, args.stateConfig)
+      const newProvider = getStateContentProvider(args.workspaceId, localStorageDir, args.stateConfig)
       const contents = await getContentAndHash()
 
       const tempPrefix = path.join(path.dirname(currentFilePrefix), `.tmp_${path.basename(currentFilePrefix)}`)
@@ -339,7 +344,8 @@ type LoadStateArgs = {
   baseDir: string
   envName: string
   remoteMapCreator: remoteMap.RemoteMapCreator
-  staticFilesSource: staticFiles.StateStaticFilesSource
+  staticFilesSource?: staticFiles.StateStaticFilesSource
+  localStorageDir: string
   persistent: boolean
 }
 export const loadState = ({
@@ -349,14 +355,16 @@ export const loadState = ({
   envName,
   remoteMapCreator,
   staticFilesSource,
+  localStorageDir,
   persistent,
 }: LoadStateArgs): state.State => (
   localState(
     baseDir,
     envName,
     remoteMapCreator,
+    getStateContentProvider(workspaceId, localStorageDir, stateConfig),
+    localStorageDir,
     staticFilesSource,
-    getStateContentProvider(workspaceId, stateConfig),
     persistent,
   )
 )

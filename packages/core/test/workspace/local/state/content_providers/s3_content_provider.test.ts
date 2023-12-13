@@ -67,7 +67,7 @@ describe('createS3StateContentProvider', () => {
 
   beforeEach(async () => {
     s3mock.reset()
-    provider = createS3StateContentProvider({ workspaceId, bucketName })
+    provider = createS3StateContentProvider({ workspaceId, options: { bucket: bucketName } })
     await Promise.all(
       accountNames.map(name => setupStateFile(name, 'hash'))
     )

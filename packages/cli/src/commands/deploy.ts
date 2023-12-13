@@ -15,12 +15,12 @@
 */
 import _ from 'lodash'
 import { EOL } from 'os'
-import { promises, types } from '@salto-io/lowerdash'
+import { collections, promises, types } from '@salto-io/lowerdash'
 import { PlanItem, Plan, preview, DeployResult, ItemStatus, deploy, summarizeDeployChanges } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
 import fs from 'fs'
-import { Artifact } from '@salto-io/adapter-api'
+import { Group } from '@salto-io/adapter-api'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts, getTagsForAccounts } from './common/accounts'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
@@ -47,6 +47,7 @@ import { updateWorkspace, isValidWorkspaceForCommand, shouldRecommendFetch } fro
 import { ENVIRONMENT_OPTION, EnvArg, validateAndSetEnv } from './common/env'
 
 const log = logger(module)
+const { makeArray } = collections.array
 
 const ACTION_INPROGRESS_INTERVAL = 5000
 
@@ -194,17 +195,25 @@ const deployPlan = async (
   return result
 }
 
+
+type GroupWithArtifacts = Group & Required<Pick<Group, 'accountName' | 'artifacts'>>
+const isArtifactsGroup = (group: Group): group is GroupWithArtifacts => (
+  group.artifacts !== undefined && group.accountName !== undefined
+)
+
 const writeArtifacts = (
-  artifacts: types.NonEmptyArray<Artifact>,
+  groups: types.NonEmptyArray<GroupWithArtifacts>,
   artifactsDir: string,
 ): void => {
   log.debug('writing deploy artifacts to %s', artifactsDir)
-  artifacts.forEach(artifact => {
-    const artifactDir = `${artifactsDir}/${artifact.account ?? 'unknown'}`
+  groups.forEach(({ accountName, artifacts }) => {
+    const artifactDir = `${artifactsDir}/${accountName ?? 'unknown'}`
     fs.mkdirSync(artifactDir, { recursive: true })
-    const artifactPath = `${artifactDir}/${artifact.name}`
-    fs.writeFileSync(artifactPath, artifact.content)
-    log.debug('Successfully wrote artifact %s', artifactPath)
+    artifacts.forEach(artifact => {
+      const artifactPath = `${artifactDir}/${artifact.name}`
+      fs.writeFileSync(artifactPath, artifact.content)
+      log.debug('Successfully wrote artifact %s', artifactPath)
+    })
   })
 }
 
@@ -253,7 +262,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
 
   try {
     if (input.artifactsDir) {
-      const artifacts = result.extraProperties?.artifacts ?? []
+      const artifacts = makeArray(result.extraProperties?.groups).filter(isArtifactsGroup)
       if (types.isNonEmptyArray(artifacts)) {
         writeArtifacts(artifacts, input.artifactsDir)
       } else {

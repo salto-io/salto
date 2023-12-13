@@ -410,16 +410,16 @@ export const deployMetadata = async (
   }
 
   const deploymentUrl = await getDeployStatusUrl(sfDeployRes, client)
+  const artifacts = [
+    { name: SalesforceArtifacts.DeployPackageXml, content: pkg.getPackageXmlContent() },
+  ]
   return {
     appliedChanges: validChanges.filter(isSuccessfulChange),
     errors: [...validationErrors, ...errors],
     extraProperties: {
       groups: isQuickDeployable(sfDeployRes)
-        ? [{ id: groupId, requestId: sfDeployRes.id, hash: planHash, url: deploymentUrl }]
-        : [{ id: groupId, url: deploymentUrl }],
-      artifacts: [
-        { name: SalesforceArtifacts.DeployPackageXml, content: pkg.getPackageXmlContent() },
-      ],
+        ? [{ id: groupId, requestId: sfDeployRes.id, hash: planHash, url: deploymentUrl, artifacts }]
+        : [{ id: groupId, url: deploymentUrl, artifacts }],
     },
   }
 }

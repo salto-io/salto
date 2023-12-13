@@ -15,10 +15,19 @@
 */
 import _ from 'lodash'
 import {
-  AdapterOperations, getChangeData, Change,
+  AdapterOperations,
+  getChangeData,
+  Change,
   isAdditionOrModificationChange,
-  DeployExtraProperties, DeployOptions, Group,
-  SaltoElementError, SaltoError, SeverityLevel, DeployResult, ChangeDataType, SaltoErrorType, Artifact,
+  DeployExtraProperties,
+  DeployOptions,
+  Group,
+  SaltoElementError,
+  SaltoError,
+  SeverityLevel,
+  DeployResult,
+  ChangeDataType,
+  SaltoErrorType,
 } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { WalkError, NodeSkippedError } from '@salto-io/dag'
@@ -127,8 +136,7 @@ export const deployActions = async (
   checkOnly: boolean
 ): Promise<DeployActionResult> => {
   const appliedChanges: Change[] = []
-  const allGroups: Group[] = []
-  const allArtifacts: Required<Artifact>[] = []
+  const allGroups: Group & Required<Pick<Group, 'accountName' | 'id'>>[] = []
   try {
     await deployPlan.walkAsync(async (itemId: PlanItemId): Promise<void> => {
       const item = deployPlan.getItem(itemId) as PlanItem
@@ -140,11 +148,9 @@ export const deployActions = async (
       try {
         const result = await deployAction(item, adapters, checkOnly)
         result.appliedChanges.forEach(appliedChange => appliedChanges.push(appliedChange))
-        const { groups, artifacts } = result.extraProperties ?? {}
-        makeArray(groups).forEach(group => allGroups.push(group))
-        makeArray(artifacts)
-          .map(artifact => Object.assign(artifact, { account: item.account }))
-          .forEach(artifact => allArtifacts.push(artifact))
+        makeArray(result.extraProperties?.groups)
+          .map(group => Object.assign(group, { accountName: item.account, id: item.groupKey }))
+          .map(group => allGroups.push(group))
         // Update element with changes so references to it
         // will have an updated version throughout the deploy plan
         updatePlanElement(item, result.appliedChanges)
@@ -164,7 +170,7 @@ export const deployActions = async (
         throw error
       }
     })
-    return { errors: [], appliedChanges, extraProperties: { groups: allGroups, artifacts: allArtifacts } }
+    return { errors: [], appliedChanges, extraProperties: { groups: allGroups } }
   } catch (error) {
     const deployErrors: DeployError[] = []
     if (error instanceof WalkError) {
@@ -194,6 +200,6 @@ export const deployActions = async (
         })
       }
     }
-    return { errors: deployErrors, appliedChanges, extraProperties: { groups: allGroups, artifacts: allArtifacts } }
+    return { errors: deployErrors, appliedChanges, extraProperties: { groups: allGroups } }
   }
 }

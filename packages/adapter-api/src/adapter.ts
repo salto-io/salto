@@ -39,11 +39,18 @@ export interface FetchResult {
   partialFetchData?: PartialFetchData
 }
 
+export type Artifact = {
+  name: string
+  content: Buffer
+}
+
 export type Group = {
   id?: string
+  accountName?: string
+  url?: string
+  artifacts?: Artifact[]
   requestId?: string
   hash?: string
-  url?: string
 }
 
 export type DeployExtraProperties = {

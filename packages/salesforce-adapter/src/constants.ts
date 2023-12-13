@@ -541,3 +541,9 @@ export const isSalesforceError = (error: Error): error is SalesforceError => {
   const errorCode = _.get(error, ERROR_PROPERTIES.ERROR_CODE)
   return _.isString(errorCode) && (Object.values(SALESFORCE_ERRORS) as ReadonlyArray<string>).includes(errorCode)
 }
+
+
+// Artifacts
+export const SalesforceArtifacts = {
+  DeployPackageXml: 'package.xml',
+} as const

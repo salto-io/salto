@@ -561,6 +561,26 @@ describe('adapter', () => {
           objectType: '1',
         })
       })
+      it('should not change the objectType object struct if no id was found', async () => {
+        responseValue = [{
+          objectType: {
+            id: undefined,
+          },
+        }];
+        (getEntriesResponseValues as jest.MockedFunction<typeof getEntriesResponseValues>)
+          .mockResolvedValue(responseValue)
+        const result = await EntriesRequesterFunc({
+          paginator,
+          args: { url: '/gateway/api/jsm/assets/workspace/defualtWorkSpaceId/v1/objectschema/2/attributes' },
+          typeName: ASSETS_ATTRIBUTE_TYPE,
+          typesConfig: { AssetsObjectTypeAttribute: { transformation: { dataField: '.' } } },
+        })
+        expect(result[0]).toEqual({
+          objectType: {
+            id: undefined,
+          },
+        })
+      })
     })
   })
 })

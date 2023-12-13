@@ -146,6 +146,24 @@ describe('notificationSchemeDeploymentFilter', () => {
       expect(afterInstance.value.notificationSchemeEvents[0].notifications[0]?.notificationType).toEqual('EmailAddress')
       expect(afterInstance.value.notificationSchemeEvents[0].notifications[0]?.type).toBeUndefined()
     })
+    it('should do nothing when account is DC', async () => {
+      const { client: cli, connection: conn } = mockClient(true)
+      connection = conn
+      client = cli
+      const filterWithDc = notificationSchemeDeploymentFilter(getFilterParams({ client })) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
+      const change = toChange(
+        { before: instance.clone(), after: instance.clone() }
+      ) as ModificationChange<InstanceElement>
+      const changes = [change]
+      await filterWithDc.preDeploy(changes)
+      expect(changes).toHaveLength(1)
+      const beforeInstance = changes[0].data.before
+      const afterInstance = changes[0].data.after
+      expect(beforeInstance.value.notificationSchemeEvents[0].eventType).toEqual(2)
+      expect(beforeInstance.value.notificationSchemeEvents[0].notifications[0]?.type).toEqual('EmailAddress')
+      expect(afterInstance.value.notificationSchemeEvents[0].eventType).toEqual(2)
+      expect(afterInstance.value.notificationSchemeEvents[0].notifications[0]?.type).toEqual('EmailAddress')
+    })
   })
 
   describe('onDeploy', () => {
@@ -162,6 +180,22 @@ describe('notificationSchemeDeploymentFilter', () => {
       expect(afterInstance.value.notificationSchemeEvents[0].event?.id).toBeUndefined()
       expect(afterInstance.value.notificationSchemeEvents[0].eventType).toEqual(2)
       expect(afterInstance.value.notificationSchemeEvents[0].notifications[0]?.notificationType).toBeUndefined()
+      expect(afterInstance.value.notificationSchemeEvents[0].notifications[0]?.type).toEqual('EmailAddress')
+    })
+    it('should do nothing when account is DC', async () => {
+      const { client: cli, connection: conn } = mockClient(true)
+      connection = conn
+      client = cli
+      const filterWithDc = notificationSchemeDeploymentFilter(getFilterParams({ client })) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
+      const testInstance = instance.clone()
+      const change = toChange(
+        { before: testInstance, after: testInstance }
+      ) as ModificationChange<InstanceElement>
+      const changes = [change]
+      await filterWithDc.preDeploy(changes) // preDeploy sets the mappings
+      await filterWithDc.onDeploy(changes)
+      const afterInstance = changes[0].data.after as InstanceElement
+      expect(afterInstance.value.notificationSchemeEvents[0].eventType).toEqual(2)
       expect(afterInstance.value.notificationSchemeEvents[0].notifications[0]?.type).toEqual('EmailAddress')
     })
   })
@@ -260,6 +294,21 @@ describe('notificationSchemeDeploymentFilter', () => {
         expect(inst.value.id).toEqual('1')
         expect(inst.value.notificationIds['3-EmailAddress-email']).toEqual('123')
       })
+      it('should throw if recived unexpected response when trying to set notificaitonIds', async () => {
+        connection.get.mockResolvedValue({
+          status: 200,
+          data: {
+            id: '1',
+            name: 'test',
+            description: 'description',
+            notificationSchemeEvents: {},
+          },
+        })
+        const addition = toChange({ after: deployableInstance })
+        const res = await filter.deploy([addition])
+        expect(res.deployResult.appliedChanges).toHaveLength(0)
+        expect(res.deployResult.errors).toHaveLength(1)
+      })
     })
     describe('modification change', () => {
       let beforeInstance: InstanceElement
@@ -349,6 +398,19 @@ describe('notificationSchemeDeploymentFilter', () => {
         expect(inst.value.notificationIds['3-User-abc']).toEqual(234)
         expect(inst.value.notificationIds['4-EmailAddress-email']).toEqual(345)
         expect(inst.value.notificationIds['3-EmailAddress-email']).toBeUndefined()
+      })
+      it('should throw if notificationSchemeEvents structure is invalid', async () => {
+        const invalidAfterInstance = afterInstance.clone()
+        invalidAfterInstance.value.notificationSchemeEvents = [
+          {
+            eventType: 2, notifications: [{ type: 'EmailAddress', parameter: 'email' }],
+          },
+        ]
+        const changes = [toChange({ before: beforeInstance.clone(), after: invalidAfterInstance })]
+        const res = await filter.deploy(changes)
+        expect(res.deployResult.appliedChanges).toHaveLength(0)
+        expect(res.deployResult.errors).toHaveLength(1)
+        expect(res.deployResult.errors[0].message).toEqual('Error: received invalid structure for notificationSchemeEvents in instance jira.NotificationScheme.instance.before')
       })
     })
     describe('removal change', () => {

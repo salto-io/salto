@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, getChangeData, getDeepInnerType, InstanceElement, isObjectType, ModificationChange, ObjectType, toChange, Values } from '@salto-io/adapter-api'
+import { Change, ElemID, getChangeData, InstanceElement, ModificationChange, ObjectType, toChange, Values } from '@salto-io/adapter-api'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import Joi from 'joi'
+import { JIRA, NOTIFICATION_EVENT_TYPE_NAME } from '../../constants'
 
 type EventValues = {
   event: {
@@ -118,23 +119,10 @@ const getEventInstances = (
     ),)
 }
 
-const getEventType = async (change: Change<InstanceElement>): Promise<ObjectType> => {
-  const notificationSchemeType = await getChangeData(change).getType()
-  const eventType = await getDeepInnerType(
-    await notificationSchemeType.fields.notificationSchemeEvents.getType()
-  )
-
-  if (!isObjectType(eventType)) {
-    throw new Error('Expected event type to be an object type')
-  }
-
-  return eventType
-}
-
 export const getEventChangesToDeploy = async (
   notificationSchemeChange: ModificationChange<InstanceElement>
 ): Promise<Change<InstanceElement>[]> => {
-  const eventType = await getEventType(notificationSchemeChange)
+  const eventType = new ObjectType({ elemID: new ElemID(JIRA, NOTIFICATION_EVENT_TYPE_NAME) })
   const eventInstancesBefore = _.keyBy(
     getEventInstances(
       notificationSchemeChange.data.before,

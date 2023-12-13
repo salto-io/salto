@@ -15,7 +15,7 @@
 */
 import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { AUTOMATION_TYPE } from '../constants'
+import { AUTOMATION_TYPE } from '../../constants'
 
 export const automationProjectsValidator: ChangeValidator = async changes =>
   changes

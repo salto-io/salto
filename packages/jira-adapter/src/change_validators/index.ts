@@ -29,7 +29,7 @@ import { dashboardGadgetsValidator } from './dashboard_gadgets'
 import { dashboardLayoutValidator } from './dashboard_layout'
 import { permissionTypeValidator } from './permission_type'
 import { maskingValidator } from './masking'
-import { automationsValidator } from './automations'
+import { automationsValidator } from './automation/automations'
 import { lockedFieldsValidator } from './locked_fields'
 import { systemFieldsValidator } from './system_fields'
 import { workflowPropertiesValidator } from './workflows/workflow_properties'
@@ -57,8 +57,9 @@ import { unresolvedFieldConfigurationItemsValidator } from './unresolved_field_c
 import { fieldSecondGlobalContextValidator } from './field_contexts/second_global_context'
 import { customFieldsWith10KOptionValidator } from './field_contexts/custom_field_with_10K_options'
 import { issueTypeHierarchyValidator } from './issue_type_hierarchy'
-import { automationProjectsValidator } from './automation_projects'
+import { automationProjectsValidator } from './automation/automation_projects'
 import { deleteLastQueueValidator } from './last_queue'
+import { automationToAssetsValidator } from './automation/automation_to_assets'
 
 const {
   deployTypesNotSupportedValidator,
@@ -115,6 +116,7 @@ export default (
     issueTypeHierarchy: issueTypeHierarchyValidator,
     automationProjects: automationProjectsValidator,
     deleteLastQueueValidator: deleteLastQueueValidator(config),
+    automationToAssets: automationToAssetsValidator(config),
   }
 
   return createChangeValidator({

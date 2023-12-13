@@ -102,7 +102,7 @@ export type IssueLayoutConfiguration = {
     name: string
     containers: containerIssueLayoutResponse[]
   }
-  metadata: {
+  metadata?: {
     configuration: {
       items: {
         nodes: {

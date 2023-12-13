@@ -57,21 +57,22 @@ export const getCustomGroupIds = async (
   )
   const changeGroupInfoPerAccount = await awu(changesPerAccount.entries())
     .filter(([accountName]) => accountName in customGroupIdFunctions)
-    .map(([accountName, adapterChanges]) => (
-      customGroupIdFunctions[accountName](new Map(adapterChanges.map(({ id, change }) => [id, change])))
+    .map(([accountName, accountChanges]) => (
+      customGroupIdFunctions[accountName](new Map(accountChanges.map(({ id, change }) => [id, change])))
         .then(({ changeGroupIdMap, disjointGroups }) => {
           log.debug(`Adding account name prefix to change group ids for account ${accountName}`)
+          const withAccountNamePrefix = (groupId: ChangeGroupId): ChangeGroupId => `${accountName}__${groupId}`
           const changeGroupIdMapWithAccountNamePrefix = new Map<ChangeId, ChangeGroupId>()
           changeGroupIdMap.forEach((groupId, changeId) => {
             changeGroupIdMapWithAccountNamePrefix.set(
               changeId,
-              `${accountName}__${groupId}`
+              withAccountNamePrefix(groupId)
             )
           })
           return {
             changeGroupIdMap: changeGroupIdMapWithAccountNamePrefix,
             disjointGroups: disjointGroups
-              ? new Set(Array.from(disjointGroups).map(groupId => `${accountName}__${groupId}`))
+              ? new Set(Array.from(disjointGroups).map(withAccountNamePrefix))
               : undefined,
           }
         })

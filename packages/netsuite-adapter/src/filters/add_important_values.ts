@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { CORE_ANNOTATIONS, ObjectType, isObjectType } from '@salto-io/adapter-api'
-import { ImportantValues } from '@salto-io/adapter-utils'
+import { ImportantValues, toImportantValues } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
 import { isCustomRecordType, netsuiteSupportedTypes } from '../types'
 import { CUSTOM_RECORD_TYPE, INACTIVE_FIELDS, NAME_FIELD, SCRIPT_ID } from '../constants'
@@ -45,31 +45,9 @@ const customRecordInstancesImportantValues = (): ImportantValues => [
   },
 ]
 
-const toHighlightedImportantValues = (
-  type: ObjectType,
-  fieldNames: string[]
-): ImportantValues => fieldNames
-  .filter(fieldName => type.fields[fieldName] !== undefined)
-  .map(fieldName => ({
-    value: fieldName,
-    highlighted: true,
-    indexed: false,
-  }))
-
-const toIndexedHighlightedImportantValues = (
-  type: ObjectType,
-  fieldNames: string[]
-): ImportantValues => fieldNames
-  .filter(fieldName => type.fields[fieldName] !== undefined)
-  .map(fieldName => ({
-    value: fieldName,
-    highlighted: true,
-    indexed: true,
-  }))
-
 const getImportantValues = (type: ObjectType): ImportantValues => [
-  ...toHighlightedImportantValues(type, HIGHLIGHTED_FIELD_NAMES),
-  ...toIndexedHighlightedImportantValues(type, Object.values(INACTIVE_FIELDS)),
+  ...toImportantValues(type, HIGHLIGHTED_FIELD_NAMES, { highlighted: true }),
+  ...toImportantValues(type, Object.values(INACTIVE_FIELDS), { indexed: true, highlighted: true }),
 ]
 
 const filterCreator: LocalFilterCreator = ({ config }) => ({

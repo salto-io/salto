@@ -33,6 +33,7 @@ import { mockDeployResult, mockRunTestFailure, mockDeployResultComplete } from '
 import { MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE, MappableSalesforceProblem } from '../src/client/user_facing_errors'
 import { GLOBAL_VALUE_SET } from '../src/filters/global_value_sets'
 import { apiNameSync, metadataTypeSync } from '../src/filters/utils'
+import { SalesforceArtifacts } from '../src/constants'
 
 const { makeArray } = collections.array
 
@@ -1091,6 +1092,13 @@ describe('SalesforceAdapter CRUD', () => {
         it('should return deployment URL containing the deployment ID in the extra properties', async () => {
           const receivedUrl = (result.extraProperties?.groups ?? [])[0].url
           expect(receivedUrl).toContain(DEPLOYMENT_ID)
+        })
+        it('should return correct artifacts', () => {
+          const groups = result.extraProperties?.groups ?? []
+          expect(groups).toHaveLength(1)
+          const artifacts = groups[0].artifacts ?? []
+          expect(artifacts).toHaveLength(1)
+          expect(artifacts[0]).toSatisfy(artifact => artifact.name === SalesforceArtifacts.DeployPackageXml)
         })
       })
 

@@ -37,6 +37,8 @@ const emptyMockService = 'salto2'
 const mockServiceWithInstall = 'adapterWithInstallMethod'
 const mockServiceWithConfigCreator = 'adapterWithConfigCreator'
 
+const { makeArray } = collections.array
+
 
 const ACCOUNTS = [mockService, emptyMockService]
 
@@ -362,6 +364,12 @@ describe('api.ts', () => {
           appliedChanges: changeGroup.changes
             .map(change => (isAdditionChange(change) ? cloneAndAddAnnotation(change) : change)),
           errors: [],
+          extraProperties: {
+            groups: [{
+              artifacts: [{ name: 'test', content: Buffer.from('test') }],
+              url: 'https://test.deploymentUrl.com/123343',
+            }],
+          },
         }))
         result = await api.deploy(ws, actionPlan, jest.fn(), ACCOUNTS)
       })
@@ -382,6 +390,16 @@ describe('api.ts', () => {
         const [addedChange, removedChange] = result.appliedChanges ?? []
         expect(addedChange.action).toEqual('add')
         expect(removedChange.action).toEqual('remove')
+      })
+      it('should return correct group extra properties', () => {
+        const groups = makeArray(result.extraProperties?.groups)
+        expect(groups).toHaveLength(1)
+        expect(groups[0]).toEqual({
+          url: 'https://test.deploymentUrl.com/123343',
+          artifacts: [{ name: 'test', content: Buffer.from('test') }],
+          id: `${mockService}.employee`,
+          accountName: mockService,
+        })
       })
     })
     describe('with field changes', () => {

@@ -14,25 +14,70 @@
 * limitations under the License.
 */
 
-import { ChangeGroupIdFunctionReturn } from '@salto-io/adapter-api'
-import { mergeChangeGroupInfo } from '../../../src/core/plan/group'
+import {
+  Change,
+  ChangeGroupIdFunction,
+  ChangeGroupIdFunctionReturn,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  toChange,
+} from '@salto-io/adapter-api'
+import { DataNodeMap } from '@salto-io/dag'
+import { getCustomGroupIds, mergeChangeGroupInfo } from '../../../src/core/plan/group'
 
-describe('getCustomGroupId', () => {
-  it('should do nothing for a single group info', () => {
-    const groupInfo: ChangeGroupIdFunctionReturn = { changeGroupIdMap: new Map(), disjointGroups: new Set('abc') }
-    expect(mergeChangeGroupInfo([groupInfo])).toMatchObject({
-      disjointGroups: new Set('abc'),
+describe('group', () => {
+  describe('mergeChangeGroupInfo', () => {
+    it('should do nothing for a single group info', () => {
+      const groupInfo: ChangeGroupIdFunctionReturn = { changeGroupIdMap: new Map(), disjointGroups: new Set('abc') }
+      expect(mergeChangeGroupInfo([groupInfo])).toMatchObject({
+        disjointGroups: new Set('abc'),
+      })
+    })
+    it('should correcly merge several group infos', () => {
+      const groups1 = { changeGroupIdMap: new Map([['A', 'A1'], ['B', 'B1']]), disjointGroups: new Set('a') }
+      const groups2 = { changeGroupIdMap: new Map([['C', 'C1']]), disjointGroups: new Set('bcd') }
+      const groups3 = { changeGroupIdMap: new Map(), disjointGroups: new Set('be') }
+      const groups4 = { changeGroupIdMap: new Map() }
+
+      expect(mergeChangeGroupInfo([groups1, groups2, groups3, groups4])).toMatchObject({
+        changeGroupIdMap: new Map([['A', 'A1'], ['B', 'B1'], ['C', 'C1']]),
+        disjointGroups: new Set('abcde'),
+      })
     })
   })
-  it('should correcly merge several group infos', () => {
-    const groups1 = { changeGroupIdMap: new Map([['A', 'A1'], ['B', 'B1']]), disjointGroups: new Set('a') }
-    const groups2 = { changeGroupIdMap: new Map([['C', 'C1']]), disjointGroups: new Set('bcd') }
-    const groups3 = { changeGroupIdMap: new Map(), disjointGroups: new Set('be') }
-    const groups4 = { changeGroupIdMap: new Map() }
+  describe('getCustomGroupIds', () => {
+    let changesMap: DataNodeMap<Change>
+    let customGroupIdFunctions: Record<string, ChangeGroupIdFunction>
+    beforeEach(() => {
+      const account1Type = new ObjectType({ elemID: new ElemID('account1', 'Type') })
+      const account2Type = new ObjectType({ elemID: new ElemID('account2', 'Type') })
+      const account1Instance = new InstanceElement('InstanceName', account1Type, {})
+      const account2Instance = new InstanceElement('InstanceName', account2Type, {})
+      const account1Change = toChange({ after: account1Instance })
+      const account2Change = toChange({ after: account2Instance })
 
-    expect(mergeChangeGroupInfo([groups1, groups2, groups3, groups4])).toMatchObject({
-      changeGroupIdMap: new Map([['A', 'A1'], ['B', 'B1'], ['C', 'C1']]),
-      disjointGroups: new Set('abcde'),
+      changesMap = new DataNodeMap<Change>()
+      changesMap.addNode('account1', [], account1Change)
+      changesMap.addNode('account2', [], account2Change)
+
+      customGroupIdFunctions = {
+        account1: async () => ({
+          changeGroupIdMap: new Map([[account1Instance.elemID.getFullName(), 'customKey']]),
+          disjointGroups: new Set(['customKey']),
+        }),
+        account2: async () => ({
+          changeGroupIdMap: new Map([[account2Instance.elemID.getFullName(), 'customKey']]),
+          disjointGroups: new Set(['customKey']),
+        }),
+      }
+    })
+    it('should add the account name prefix to the custom group ids', async () => {
+      const { changeGroupIdMap, disjointGroups } = await getCustomGroupIds(changesMap, customGroupIdFunctions)
+      expect(changeGroupIdMap.size).toEqual(2)
+      expect(changeGroupIdMap.get('account1.Type.instance.InstanceName')).toEqual('account1.customKey')
+      expect(changeGroupIdMap.get('account2.Type.instance.InstanceName')).toEqual('account2.customKey')
+      expect(disjointGroups).toEqual(new Set(['account1.customKey', 'account2.customKey']))
     })
   })
 })

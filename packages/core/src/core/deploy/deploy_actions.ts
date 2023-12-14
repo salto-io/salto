@@ -63,6 +63,10 @@ const deployOrValidate = async (
   }
 }
 
+const getAdapterGroupId = (planGroupId: string): string => (
+  _.last(planGroupId.split('.')) ?? planGroupId
+)
+
 const deployAction = async (
   planItem: PlanItem,
   adapters: Record<string, AdapterOperations>,
@@ -74,7 +78,7 @@ const deployAction = async (
   if (!adapter) {
     throw new Error(`Missing adapter for ${adapterName}`)
   }
-  const opts = { changeGroup: { groupID: planItem.groupKey, changes } }
+  const opts = { changeGroup: { groupID: getAdapterGroupId(planItem.groupKey), changes } }
   return deployOrValidate({ adapter, adapterName, opts, checkOnly })
 }
 

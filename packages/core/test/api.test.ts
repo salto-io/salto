@@ -19,6 +19,7 @@ import * as workspace from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { loadElementsFromFolder, adapter as salesforceAdapter } from '@salto-io/salesforce-adapter'
+import wu from 'wu'
 import * as api from '../src/api'
 import * as plan from '../src/core/plan/plan'
 import * as fetch from '../src/core/fetch'
@@ -330,6 +331,7 @@ describe('api.ts', () => {
     let result: api.DeployResult
 
     describe('with element changes', () => {
+      let actionPlan: plan.Plan
       let addedElem: ObjectType
       beforeAll(async () => {
         const workspaceElements = mockElements.getAllElements()
@@ -344,7 +346,7 @@ describe('api.ts', () => {
           stateElements: stateElements.filter(elem => !isEqualElements(elem, addedElem)),
         })
 
-        const actionPlan = mockPlan.createPlan([[
+        actionPlan = mockPlan.createPlan([[
           { action: 'add', data: { after: addedElem.clone() } },
           { action: 'remove', data: { before: removedElem.clone() } },
         ]])
@@ -368,6 +370,18 @@ describe('api.ts', () => {
 
       it('should call adapter deploy function', async () => {
         expect(mockAdapterOps.deploy).toHaveBeenCalledTimes(1)
+        expect(mockAdapterOps.deploy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            // Validate the adapter does not receive the groupID with the account prefix
+            changeGroup: expect.objectContaining({ groupID: 'employee' }),
+          })
+        )
+      })
+
+      it('should have accountName prefix in planItem group keys', () => {
+        wu(actionPlan.itemsByEvalOrder()).forEach(item => {
+          expect(item.groupKey).toStartWith(`${mockService}.`)
+        })
       })
 
       it('should return updates to existing elements', async () => {

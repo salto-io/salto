@@ -63,6 +63,7 @@ const deployOrValidate = async (
   }
 }
 
+// Adapters are not aware to the accountName prefix, so we remove it
 const getAdapterGroupId = (planGroupId: string): string => (
   _.last(planGroupId.split('.')) ?? planGroupId
 )

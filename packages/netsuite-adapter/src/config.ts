@@ -22,11 +22,7 @@ import {
 import { createMatchingObjectType, safeJsonStringify, formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { config as configUtils } from '@salto-io/adapter-components'
-import {
-  BIN,
-  CURRENCY, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_NAME_PREFIX, DATASET, EXCHANGE_RATE,
-  NETSUITE, PERMISSIONS, SAVED_SEARCH, WORKBOOK,
-} from './constants'
+import { BIN, CURRENCY, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_NAME_PREFIX, DATASET, EXCHANGE_RATE, INACTIVE_FIELDS, NETSUITE, PERMISSIONS, SAVED_SEARCH, WORKBOOK } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, checkTypeNameRegMatch, noSupportedTypeMatch, validateNetsuiteQueryParameters, validateDefined, LockedElementsConfig, emptyQueryParams, fullFetchConfig, isCriteriaQuery, CriteriaQuery } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING } from './data_elements/types'
 import { isCustomRecordTypeName, netsuiteSupportedTypes } from './types'
@@ -57,15 +53,15 @@ export const UNLIMITED_INSTANCES_VALUE = -1
 export const DEFAULT_AXIOS_TIMEOUT_IN_MINUTES = 20
 
 const ALL_TYPES_REGEX = '.*'
-const INACTIVE_FIELDS_NAMES = ['isinactive', 'inactive', 'isInactive']
 const FILE_TYPES_TO_EXCLUDE_REGEX = '.*\\.(csv|pdf|eml|png|gif|jpeg|xls|xlsx|doc|docx|ppt|pptx)'
 
-const inactiveElementsCriteria = INACTIVE_FIELDS_NAMES.map((fieldName): CriteriaQuery => ({
-  name: ALL_TYPES_REGEX,
-  criteria: {
-    [fieldName]: true,
-  },
-}))
+const inactiveElementsCriteria = Object.values(INACTIVE_FIELDS)
+  .map((fieldName): CriteriaQuery => ({
+    name: ALL_TYPES_REGEX,
+    criteria: {
+      [fieldName]: true,
+    },
+  }))
 
 // Taken from https://github.com/salto-io/netsuite-suitecloud-sdk/blob/e009e0eefcd918635353d093be6a6c2222d223b8/packages/node-cli/src/validation/InteractiveAnswersValidator.js#L27
 const SUITEAPP_ID_FORMAT_REGEX = /^[a-z0-9]+(\.[a-z0-9]+){2}$/
@@ -531,6 +527,7 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
     fieldsToOmit: { refType: new ListType(fieldsToOmitConfig) },
     addAlias: { refType: BuiltinTypes.BOOLEAN },
     addBundles: { refType: BuiltinTypes.BOOLEAN },
+    addImportantValues: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

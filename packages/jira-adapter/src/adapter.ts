@@ -149,6 +149,7 @@ import scriptRunnerListenersDeployFilter from './filters/script_runner/script_ru
 import scriptedFragmentsDeployFilter from './filters/script_runner/scripted_fragments_deploy'
 import fetchJsmTypesFilter from './filters/jsm_types_fetch_filter'
 import assetsInstancesAdditionFilter from './filters/assets/assets_instances_addition'
+import deployAttributesFilter from './filters/assets/attribute_deploy_filter'
 import deployJsmTypesFilter from './filters/jsm_types_deploy_filter'
 import jsmPathFilter from './filters/jsm_paths'
 import portalSettingsFilter from './filters/portal_settings'
@@ -337,6 +338,7 @@ export const DEFAULT_FILTERS = [
   requestTypeFilter,
   // Must run before asstesDeployFilter
   assetsInstancesAdditionFilter,
+  deployAttributesFilter,
   deployJsmTypesFilter,
   // Must be done after JsmTypesFilter
   jsmPathFilter,

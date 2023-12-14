@@ -91,7 +91,7 @@ describe('fetchAttributesFilter', () => {
         .filter(isInstanceElement)
         .filter(e => e.elemID.typeName === ASSETS_OBJECT_TYPE_ORDER_TYPE)
       expect(orderInstances[1]).toBeDefined()
-      expect(orderInstances[1].elemID.name).toEqual('assetsObjectTypeOrder_parentObjectTypeInstance')
+      expect(orderInstances[1].elemID.name).toEqual('parentObjectTypeInstance_order')
       expect(orderInstances[1].value.objectTypes).toEqual([
         new ReferenceExpression(assetsObjectTypeInstanceOne.elemID, assetsObjectTypeInstanceOne),
         new ReferenceExpression(assetsObjectTypeInstanceTwo.elemID, assetsObjectTypeInstanceTwo),

@@ -14,26 +14,36 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, isInstanceElement, ListType, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, isInstanceElement, isReferenceExpression, ListType, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { elements as adapterElements } from '@salto-io/adapter-components'
 import { pathNaclCase } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { ASSETS_OBJECT_TYPE, ASSETS_OBJECT_TYPE_ORDER_TYPE, JIRA } from '../../constants'
-import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../../utils'
 
 const createOrderType = (): ObjectType => new ObjectType({
   elemID: new ElemID(JIRA, ASSETS_OBJECT_TYPE_ORDER_TYPE),
   fields: {
-    objectTypes: { refType: new ListType(BuiltinTypes.NUMBER) },
-    assetsSchema: { refType: BuiltinTypes.NUMBER },
+    objectTypes: {
+      refType: new ListType(BuiltinTypes.NUMBER),
+      annotations: { [CORE_ANNOTATIONS.CREATABLE]: true, [CORE_ANNOTATIONS.UPDATABLE]: true },
+    },
+    assetsSchema: {
+      refType: BuiltinTypes.NUMBER,
+      annotations: { [CORE_ANNOTATIONS.CREATABLE]: true, [CORE_ANNOTATIONS.UPDATABLE]: true },
+    },
   },
   path: [JIRA, adapterElements.TYPES_PATH, ASSETS_OBJECT_TYPE_ORDER_TYPE],
+  annotations: {
+    [CORE_ANNOTATIONS.CREATABLE]: true,
+    [CORE_ANNOTATIONS.UPDATABLE]: true,
+    [CORE_ANNOTATIONS.DELETABLE]: true,
+  },
 })
 
 const createAssetsObjectTypeOrder = (assetsObjectTypes: InstanceElement[], orderType: ObjectType): InstanceElement => {
   const treeParent = assetsObjectTypes[0].value.parentObjectTypeId.value
   const schema = assetsObjectTypes[0].annotations[CORE_ANNOTATIONS.PARENT]?.[0]
-  const name = `assetsObjectTypeOrder_${treeParent.elemID.name}`
+  const name = `${treeParent.elemID.name}_order`
   return new InstanceElement(
     name,
     orderType,
@@ -49,37 +59,31 @@ const createAssetsObjectTypeOrder = (assetsObjectTypes: InstanceElement[], order
   )
 }
 
-/**
- * Handles the assetsObjectTypes order inside each assets objectType
- */
+/* Handles the assetsObjectTypes order inside each assets objectType
+ by creating an InstanceElement of the assetsObjectTypes order inside the assets objectType. */
 const filterCreator: FilterCreator = ({ config }) => ({
   name: 'fetchAssetsObjectTypeOrderFilter',
-  /* Create an InstanceElement of the assetsObjectTypes order inside the assets objectType */
   onFetch: async (elements: Element[]) => {
     if (!config.fetch.enableJSM || !config.fetch.enableJsmExperimental) {
       return
     }
 
-    const assetsObjectTypes = elements.filter(isInstanceElement)
+    const assetsObjectTypeInstances = elements.filter(isInstanceElement)
       .filter(e => e.elemID.typeName === ASSETS_OBJECT_TYPE)
-    const parentToObjectTypes = _.groupBy(assetsObjectTypes,
-      e => e.value.parentObjectTypeId?.elemID.getFullName())
+
+    const parentToObjectTypes = _.groupBy(
+      assetsObjectTypeInstances.filter(objectType => isReferenceExpression(objectType.value.parentObjectTypeId)),
+      objectType => objectType.value.parentObjectTypeId.elemID.getFullName()
+    )
     const orderType = createOrderType()
-    setTypeDeploymentAnnotations(orderType)
-    await addAnnotationRecursively(orderType, CORE_ANNOTATIONS.CREATABLE)
-    await addAnnotationRecursively(orderType, CORE_ANNOTATIONS.UPDATABLE)
     elements.push(orderType)
-    Object.entries(parentToObjectTypes).forEach(([key, assetsOjectTypes]) => {
-      if (key === 'undefined') {
-        // We are not supposed to get here, but just in case
-        return
-      }
-      const orderInstance = createAssetsObjectTypeOrder(assetsOjectTypes, orderType)
+    Object.values(parentToObjectTypes).forEach(assetsObjectTypes => {
+      const orderInstance = createAssetsObjectTypeOrder(assetsObjectTypes, orderType)
       elements.push(orderInstance)
     })
-    /* Remove the posion field from the assetsObjectTypes */
-    assetsObjectTypes.forEach(assetsObjectType => {
-      delete assetsObjectType.value.position
+    // Remove position field from the assetsObjectTypes
+    assetsObjectTypeInstances.forEach(assetsObjectTypeInstance => {
+      delete assetsObjectTypeInstance.value.position
     })
   },
 })

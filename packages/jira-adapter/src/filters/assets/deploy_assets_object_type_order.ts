@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { getChangeData, isAdditionChange, isInstanceChange, isModificationChange, isReferenceExpression, ReferenceExpression, SaltoError } from '@salto-io/adapter-api'
+import { createSaltoElementError, getChangeData, isAdditionChange, isInstanceChange, isModificationChange, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { deployChanges } from '../../deployment/standard_deployment'
@@ -27,7 +27,7 @@ import JiraClient from '../../client/client'
 const { awu } = collections.asynciterable
 const log = logger(module)
 
-const sendRequest = async ({
+const deployOrderChange = async ({
   client, workspaceId, position, toObjectTypeId, assetsObjectType,
 }: {
   client: JiraClient
@@ -64,12 +64,13 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     const workspaceId = await getWorkspaceId(client)
     if (workspaceId === undefined) {
       log.error(`Skip deployment of ${ASSETS_OBJECT_TYPE_ORDER_TYPE} types because workspaceId is undefined`)
-      const error: SaltoError = {
+      const errors = relevantChanges.map(change => createSaltoElementError({
         message: `The following changes were not deployed, due to error with the workspaceId: ${relevantChanges.map(c => getChangeData(c).elemID.getFullName()).join(', ')}`,
         severity: 'Error',
-      }
+        elemID: getChangeData(change).elemID,
+      }))
       return {
-        deployResult: { appliedChanges: [], errors: [error] },
+        deployResult: { appliedChanges: [], errors },
         leftoverChanges,
       }
     }
@@ -82,7 +83,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         if (isAdditionChange(change)) {
           await awu(instance.value.objectTypes).filter(isReferenceExpression)
             .forEach(async (assetsObjectType, position) => {
-              await sendRequest({
+              await deployOrderChange({
                 client, workspaceId, position, toObjectTypeId, assetsObjectType,
               })
             })
@@ -92,7 +93,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           await awu(instance.value.objectTypes).filter(isReferenceExpression)
             .forEach(async (assetsObjectType, position) => {
               if (positionsBefore[position]?.elemID.getFullName() !== assetsObjectType.elemID.getFullName()) {
-                await sendRequest({
+                await deployOrderChange({
                   client, workspaceId, position, toObjectTypeId, assetsObjectType,
                 })
               }

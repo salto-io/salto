@@ -247,10 +247,9 @@ export const getCustomReferences = async (
   const accountElementsToRefs = async ([account, accountElements]: [string, Element[]]): Promise<ReferenceInfo[]> => {
     const serviceName = accountToServiceName[account] ?? account
     try {
-      const adapterConfig = await adaptersConfig.getAdapter(account)
       const refFunc = adapterCreators[serviceName]?.getCustomReferences
-      if (adapterConfig !== undefined && refFunc !== undefined) {
-        return await refFunc(accountElements, adapterConfig)
+      if (refFunc !== undefined) {
+        return await refFunc(accountElements, await adaptersConfig.getAdapter(account))
       }
     } catch (err) {
       log.error('failed to get custom references for %s: %o', account, err)

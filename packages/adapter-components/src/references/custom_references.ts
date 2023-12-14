@@ -29,8 +29,9 @@ export const combineCustomReferenceGetters = (
   getCustomRefsConfig: (adapterConfig: InstanceElement) => Record<string, boolean> = () => ({}),
 )
 : GetCustomReferencesFunc => async (elements, adapterConfig) => {
+  const adapterConfigValues = adapterConfig ? getCustomRefsConfig(adapterConfig) : {}
   const customReferenceGetters = Object.values(
-    getEnabledEntries(namedCustomReferenceGetters, getCustomRefsConfig(adapterConfig))
+    getEnabledEntries(namedCustomReferenceGetters, adapterConfigValues)
   )
   const idToRef: Record<string, ReferenceInfo> = {}
   const refGroups = await Promise.all(

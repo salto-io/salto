@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, Change, InstanceElement, ReferenceExpression, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Change, InstanceElement, ReferenceExpression, SeverityLevel, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { getParent, invertNaclCase, mapKeysRecursive, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
@@ -72,7 +72,7 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
   name: 'formsFilter',
   onFetch: async elements => {
     if (!config.fetch.enableJSM || client.isDataCenter || !fetchQuery.isTypeMatch(FORM_TYPE)) {
-      return
+      return { errors: [] }
     }
     const cloudId = await getCloudId(client)
     const { formType, subTypes } = createFormType()
@@ -100,7 +100,10 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
             const detailedUrl = `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms/${formResponse.id}`
             const detailedRes = await client.getSinglePage({ url: detailedUrl })
             if (!isDetailedFormsResponse(detailedRes.data)) {
-              return undefined
+              return {
+                message: `Unable to fetch form for project ${project.value.name} as it lacks a title`,
+                severity: 'Warning' as SeverityLevel,
+              }
             }
             const name = naclCase(`${project.value.key}_${formResponse.name}`)
             const formValue = detailedRes.data
@@ -122,10 +125,13 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       })))
       .flat()
       .filter(isDefined)
-    forms.forEach(form => {
+    const [formsInstances, errors] = _.partition(forms, isInstanceElement)
+    formsInstances.forEach(form => {
       form.value = mapKeysRecursive(form.value, ({ key }) => naclCase(key))
       elements.push(form)
     })
+
+    return { errors }
   },
   preDeploy: async changes => {
     changes

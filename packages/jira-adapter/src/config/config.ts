@@ -238,6 +238,7 @@ export type ChangeValidatorName = (
   | 'issueTypeHierarchy'
   | 'automationProjects'
   | 'deleteLastQueueValidator'
+  | 'boardColumnConfig'
   | 'automationToAssets'
   )
 
@@ -247,6 +248,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
   elemID: new ElemID(JIRA, 'changeValidatorConfig'),
   fields: {
     unresolvedReference: { refType: BuiltinTypes.BOOLEAN },
+    boardColumnConfig: { refType: BuiltinTypes.BOOLEAN },
     brokenReferences: { refType: BuiltinTypes.BOOLEAN },
     deployTypesNotSupported: { refType: BuiltinTypes.BOOLEAN },
     readOnlyProjectRoleChange: { refType: BuiltinTypes.BOOLEAN },

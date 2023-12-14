@@ -16,6 +16,7 @@
 import { InstanceElement, Element, CORE_ANNOTATIONS, ReferenceExpression, ModificationChange, ElemID } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { AUTOMATION_TYPE, CALENDAR_TYPE, ESCALATION_SERVICE_TYPE, FORM_TYPE, ISSUE_TYPE_SCHEMA_NAME, JIRA,
+  NOTIFICATION_SCHEME_TYPE_NAME,
   PORTAL_GROUP_TYPE, PORTAL_SETTINGS_TYPE_NAME, QUEUE_TYPE,
   SCHEDULED_JOB_TYPE, SCRIPTED_FIELD_TYPE, SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE,
   SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, SLA_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../../src/constants'
@@ -25,7 +26,7 @@ import { createDashboardValues, createGadget1Values, createGadget2Values } from 
 import { createReference, findType } from '../../utils'
 import { createWorkflowValues } from './workflow'
 import { createFieldConfigurationValues } from './fieldConfiguration'
-// import { createNotificationSchemeValues } from './notificationScheme'
+import { createNotificationSchemeValues } from './notificationScheme'
 import { createAutomationValues } from './automation'
 import { createKanbanBoardValues, createScrumBoardValues } from './board'
 import { createFilterValues } from './filter'
@@ -108,11 +109,11 @@ export const createInstances = (
   ]
 
 
-  // const notificationScheme = new InstanceElement(
-  //   randomString,
-  //   findType(NOTIFICATION_SCHEME_TYPE_NAME, fetchedElements),
-  //   createNotificationSchemeValues(randomString),
-  // )
+  const notificationScheme = new InstanceElement(
+    randomString,
+    findType(NOTIFICATION_SCHEME_TYPE_NAME, fetchedElements),
+    createNotificationSchemeValues(randomString),
+  )
 
   const automation = new InstanceElement(
     randomString,
@@ -241,7 +242,7 @@ export const createInstances = (
     [workflow],
     [fieldConfiguration],
     [securityScheme, securityLevel],
-    // [notificationScheme],
+    [notificationScheme],
     [automation],
     [kanbanBoard],
     [scrumBoard],

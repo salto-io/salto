@@ -28,6 +28,7 @@ import { readOnlyWorkflowValidator } from './workflows/read_only_workflow'
 import { dashboardGadgetsValidator } from './dashboard_gadgets'
 import { dashboardLayoutValidator } from './dashboard_layout'
 import { permissionTypeValidator } from './permission_type'
+import { boardColumnConfigValidator } from './board_culomn_config'
 import { maskingValidator } from './masking'
 import { automationsValidator } from './automation/automations'
 import { lockedFieldsValidator } from './locked_fields'
@@ -115,6 +116,7 @@ export default (
     customFieldsWith10KOptions: customFieldsWith10KOptionValidator,
     issueTypeHierarchy: issueTypeHierarchyValidator,
     automationProjects: automationProjectsValidator,
+    boardColumnConfig: boardColumnConfigValidator,
     deleteLastQueueValidator: deleteLastQueueValidator(config),
     automationToAssets: automationToAssetsValidator(config),
   }

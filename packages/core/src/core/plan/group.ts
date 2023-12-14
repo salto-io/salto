@@ -51,17 +51,27 @@ export const getCustomGroupIds = async (
   if (Object.keys(customGroupIdFunctions).length === 0) {
     return { changeGroupIdMap: new Map() }
   }
-  const changesPerAdapter = collections.iterable.groupBy(
+  const changesPerAccount = collections.iterable.groupBy(
     wu(changes.keys()).map(id => ({ id, change: changes.getData(id) })),
     ({ change }) => getChangeData(change).elemID.adapter,
   )
-  const changeGroupInfoPerAdapter = await awu(changesPerAdapter.entries())
-    .filter(([adapterName]) => adapterName in customGroupIdFunctions)
-    .map(([name, adapterChanges]) => (
-      customGroupIdFunctions[name](new Map(adapterChanges.map(({ id, change }) => [id, change])))
-    )).toArray()
-
-  return mergeChangeGroupInfo(changeGroupInfoPerAdapter)
+  const changeGroupInfoPerAccount = await awu(changesPerAccount.entries())
+    .filter(([accountName]) => accountName in customGroupIdFunctions)
+    .map(async ([accountName, accountChanges]) => {
+      const withAccountNamePrefix = (groupId: ChangeGroupId): ChangeGroupId => `${accountName}.${groupId}`
+      const result = await customGroupIdFunctions[accountName](
+        new Map(accountChanges.map(({ id, change }) => [id, change]))
+      )
+      // Add the account name prefix to the group ids
+      return {
+        changeGroupIdMap: new Map(wu(result.changeGroupIdMap.entries())
+          .map(([changeId, groupId]) => [changeId, withAccountNamePrefix(groupId)])),
+        disjointGroups: result.disjointGroups
+          ? new Set(Array.from(result.disjointGroups).map(withAccountNamePrefix))
+          : undefined,
+      }
+    }).toArray()
+  return mergeChangeGroupInfo(changeGroupInfoPerAccount)
 }
 
 // If we add / remove an object type, we can omit all the field add / remove

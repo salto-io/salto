@@ -16,7 +16,7 @@
 
 import { config as configUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { Change, DeployResult, InstanceElement, SaltoElementError, SaltoError, createSaltoElementError, getChangeData, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
+import { Change, DeployResult, InstanceElement, createSaltoElementError, getChangeData, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { FilterCreator } from '../../filter'

@@ -24,7 +24,7 @@ import {
   ReadOnlyElementsSource, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '../src/element_source'
-import { getImportantValues } from '../src/important_values'
+import { getImportantValues, toImportantValues } from '../src/important_values'
 
 const userType = new ObjectType({
   elemID: new ElemID('salto', 'user'),
@@ -112,6 +112,38 @@ const inst = new InstanceElement(
   }
 )
 
+describe('toImportantValues', () => {
+  it('should return only existing fields', () => {
+    expect(toImportantValues(obj, ['name', 'description'], { indexed: true }))
+      .toEqual([
+        {
+          value: 'name',
+          indexed: true,
+          highlighted: false,
+        },
+      ])
+  })
+  it('should return fields in the given order', () => {
+    expect(toImportantValues(obj, ['user', 'name', 'active'], { highlighted: true }))
+      .toEqual([
+        {
+          value: 'user',
+          indexed: false,
+          highlighted: true,
+        },
+        {
+          value: 'name',
+          indexed: false,
+          highlighted: true,
+        },
+        {
+          value: 'active',
+          indexed: false,
+          highlighted: true,
+        },
+      ])
+  })
+})
 
 describe('getImportantValues', () => {
   let elementSource: ReadOnlyElementsSource

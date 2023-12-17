@@ -61,6 +61,7 @@ import currencyUndeployableFieldsFilter from './filters/currency_omit_fields'
 import additionalChanges from './filters/additional_changes'
 import addInstancesFetchTime from './filters/add_instances_fetch_time'
 import addAliasFilter from './filters/add_alias'
+import addImportantValuesFilter from './filters/add_important_values'
 import addBundleReferences from './filters/bundle_ids'
 import excludeCustomRecordTypes from './filters/exclude_by_criteria/exclude_custom_record_types'
 import excludeInstances from './filters/exclude_by_criteria/exclude_instances'
@@ -134,6 +135,7 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   { creator: customRecordsFilter },
   { creator: addInstancesFetchTime },
   { creator: addAliasFilter },
+  { creator: addImportantValuesFilter },
   // serviceUrls must run after suiteAppInternalIds and SDFInternalIds filter
   { creator: serviceUrls, addsNewInformation: true },
   { creator: addBundleReferences },

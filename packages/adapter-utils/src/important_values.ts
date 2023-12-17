@@ -13,17 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { logger } from '@salto-io/logging'
-import {
-  CORE_ANNOTATIONS,
-  Element,
-  isField,
-  isInstanceElement,
-  isObjectType, isPrimitiveValue, isReferenceExpression,
-  ReadOnlyElementsSource, Value,
-} from '@salto-io/adapter-api'
-import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
+import { values } from '@salto-io/lowerdash'
+import { CORE_ANNOTATIONS, Element, isField, isInstanceElement, isObjectType, isPrimitiveValue, isReferenceExpression, ObjectType, ReadOnlyElementsSource, Value } from '@salto-io/adapter-api'
 
 const log = logger(module)
 const { isDefined } = values
@@ -31,6 +24,17 @@ const { isDefined } = values
 type ImportantValue = { value: string; indexed: boolean; highlighted: boolean }
 export type ImportantValues = ImportantValue[]
 export type FormattedImportantValueData = { key: string; value: Value }
+
+export const toImportantValues = (
+  type: ObjectType,
+  fieldNames: string[],
+  { indexed = false, highlighted = false }: {
+    indexed?: boolean
+    highlighted?: boolean
+  }
+): ImportantValues => fieldNames
+  .filter(fieldName => type.fields[fieldName] !== undefined)
+  .map(fieldName => ({ value: fieldName, highlighted, indexed }))
 
 const isValidIndexedValueData = (importantValue: ImportantValue, valueData: unknown): boolean => {
   if (importantValue.indexed !== true) {

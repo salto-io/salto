@@ -13,144 +13,205 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, getChangeData, isAdditionOrModificationChange, isInstanceChange, isRemovalChange, isRemovalOrModificationChange } from '@salto-io/adapter-api'
-import { client as clientUtils } from '@salto-io/adapter-components'
-import { logger } from '@salto-io/logging'
 import _ from 'lodash'
+import Joi from 'joi'
+import { Change, Element, InstanceElement, getChangeData, isAdditionOrModificationChange, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
+import { applyFunctionToChangeData, createSchemeGuard, resolveValues, restoreChangeElement } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { findObject, setFieldDeploymentAnnotations, setTypeDeploymentAnnotations } from '../../utils'
 import { FilterCreator } from '../../filter'
-import { deployWithJspEndpoints } from '../../deployment/jsp_deployment'
 import { NOTIFICATION_EVENT_TYPE_NAME, NOTIFICATION_SCHEME_TYPE_NAME } from '../../constants'
-import { deployChanges } from '../../deployment/standard_deployment'
-import { deployEvents } from './notification_events'
+import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
+import JiraClient from '../../client/client'
+import { getEventChangesToDeploy, generateNotificationIds, isNotificationScheme, NotificationEvent, transformNotificationEvent } from './notification_events'
+import { getLookUpName } from '../../reference_mapping'
 
 const { awu } = collections.asynciterable
-
 const log = logger(module)
 
+type NotificationEventValue = {
+  eventType: number
+  notifications?: {
+    type: string
+  }[]
+}[]
 
-const filter: FilterCreator = ({ client, config, paginator }) => ({
-  name: 'notificationSchemeDeploymentFilter',
-  onFetch: async (elements: Element[]) => {
-    if (!config.client.usePrivateAPI) {
-      log.debug('Skipping notification scheme deployment filter because private API is not enabled')
-      return
-    }
+const NOTIFICATION_EVENT_VALUE_SCHEME = Joi.array().items(
+  Joi.object({
+    eventType: Joi.number().required(),
+    notifications: Joi.array().items(
+      Joi.object({
+        type: Joi.string().required(),
+      }).unknown(true)
+    ).optional(),
+  }).unknown(true)
+)
 
-    const notificationSchemeType = findObject(elements, NOTIFICATION_SCHEME_TYPE_NAME)
-    if (notificationSchemeType !== undefined) {
-      setTypeDeploymentAnnotations(notificationSchemeType)
-      setFieldDeploymentAnnotations(notificationSchemeType, 'id')
-      setFieldDeploymentAnnotations(notificationSchemeType, 'name')
-      setFieldDeploymentAnnotations(notificationSchemeType, 'description')
-      setFieldDeploymentAnnotations(notificationSchemeType, 'notificationSchemeEvents')
-    }
+const isNotificationEventValue = createSchemeGuard<NotificationEventValue>(NOTIFICATION_EVENT_VALUE_SCHEME, 'Found an invalid notificationEventScheme value')
 
-    const notificationEventType = findObject(elements, NOTIFICATION_EVENT_TYPE_NAME)
-    if (notificationEventType !== undefined) {
-      setFieldDeploymentAnnotations(notificationEventType, 'eventType')
-      setFieldDeploymentAnnotations(notificationEventType, 'notifications')
-    }
-  },
+const toDeployableNotificationEvent = (eventEntries: NotificationEventValue): NotificationEvent[] =>
+  eventEntries.map(eventEntry =>
+    ({
+      event: { id: eventEntry.eventType },
+      notifications: eventEntry
+        .notifications?.map(notification => ({ notificationType: notification.type, ..._.omit(notification, 'type') })),
+    }))
 
-  deploy: async changes => {
-    if (client.isDataCenter) {
-      return {
-        leftoverChanges: changes,
-        deployResult: {
-          appliedChanges: [],
-          errors: [],
-        },
+const assignEventIds = async (change: Change<InstanceElement>, client: JiraClient): Promise<void> => {
+  const notificationSchemeId = getChangeData(change).value.id
+  const { data } = await client.getSinglePage({
+    url: `/rest/api/3/notificationscheme/${notificationSchemeId}`,
+    queryParams: { expand: 'all' },
+  })
+  if (!isNotificationScheme(data)) {
+    log.error(`Failed to assign event ids after deployment to NotificationScheme with id: ${notificationSchemeId}`)
+    throw new Error(`Received unexpected response from ${NOTIFICATION_EVENT_TYPE_NAME}`)
+  }
+  await applyFunctionToChangeData<Change<InstanceElement>>(
+    change,
+    async instance => {
+      if (data.notificationSchemeEvents) {
+        instance.value.notificationIds = generateNotificationIds(data.notificationSchemeEvents)
       }
+      return instance
     }
-    const [relevantChanges, leftoverChanges] = _.partition(
-      changes,
-      change => isInstanceChange(change)
-        && getChangeData(change).elemID.typeName === NOTIFICATION_SCHEME_TYPE_NAME
-    )
+  )
+}
 
-    const jspRequests = config.apiDefinitions.types[NOTIFICATION_SCHEME_TYPE_NAME]?.jspRequests
-    if (jspRequests === undefined) {
-      throw new Error(`${NOTIFICATION_SCHEME_TYPE_NAME} jsp urls are missing from the configuration`)
-    }
+const filter: FilterCreator = ({ client, config }) => {
+  const originalChanges: Record<string, Change<InstanceElement>> = {}
+  return {
+    name: 'notificationSchemeDeploymentFilter',
+    onFetch: async (elements: Element[]) => {
+      const notificationSchemeType = findObject(elements, NOTIFICATION_SCHEME_TYPE_NAME)
+      if (notificationSchemeType !== undefined) {
+        setTypeDeploymentAnnotations(notificationSchemeType)
+        setFieldDeploymentAnnotations(notificationSchemeType, 'id')
+        setFieldDeploymentAnnotations(notificationSchemeType, 'name')
+        setFieldDeploymentAnnotations(notificationSchemeType, 'description')
+        setFieldDeploymentAnnotations(notificationSchemeType, 'notificationSchemeEvents')
+      }
 
-    const requestConfig = config.apiDefinitions.types.NotificationSchemes.request
-    if (requestConfig === undefined) {
-      throw new Error(`${NOTIFICATION_SCHEME_TYPE_NAME} is missing request config`)
-    }
+      const notificationEventType = findObject(elements, NOTIFICATION_EVENT_TYPE_NAME)
+      if (notificationEventType !== undefined) {
+        setFieldDeploymentAnnotations(notificationEventType, 'eventType')
+        setFieldDeploymentAnnotations(notificationEventType, 'notifications')
+      }
+    },
 
-    const deployResult = await deployWithJspEndpoints({
-      changes: relevantChanges.filter(isInstanceChange),
-      client,
-      urls: jspRequests,
-      queryFunction: async () => awu(paginator(
-        requestConfig,
-        page => collections.array.makeArray(page.values) as clientUtils.ResponseValue[]
-      )).flat().toArray(),
-      serviceValuesTransformer: serviceValues => ({
-        ...serviceValues,
-        schemeId: serviceValues.id,
-      }),
-      fieldsToIgnore: [
-        'notificationSchemeEvents',
-      ],
-    })
-
-    const eventsDeployResult = await deployChanges(
-      deployResult.appliedChanges
+    // NotificationScheme structure was converted in notificationSchemeStructureFilter
+    preDeploy: async changes => {
+      if (client.isDataCenter) {
+        return
+      }
+      const relevantChanges = changes
+        .filter(isInstanceChange)
         .filter(isAdditionOrModificationChange)
-        .filter(isInstanceChange),
+        .filter(instance => getChangeData(instance).elemID.typeName === NOTIFICATION_SCHEME_TYPE_NAME)
 
-      change => deployEvents(
-        change,
-        client,
-        config,
+      const changesToReturn = await awu(relevantChanges)
+        .map(async change => {
+          originalChanges[getChangeData(change).elemID.getFullName()] = change
+          return applyFunctionToChangeData<Change<InstanceElement>>(
+            change,
+            async instance => {
+              // We need to resolve references before we change instance structure
+              const resolvedInstance = await resolveValues(instance, getLookUpName)
+              const { notificationSchemeEvents } = resolvedInstance.value
+              if (notificationSchemeEvents && isNotificationEventValue(notificationSchemeEvents)) {
+                resolvedInstance.value.notificationSchemeEvents = toDeployableNotificationEvent(
+                  notificationSchemeEvents
+                )
+              }
+              return resolvedInstance
+            }
+          )
+        })
+        .toArray()
+
+      _.pullAll(changes, relevantChanges)
+      changesToReturn.forEach(change => changes.push(change))
+    },
+
+    deploy: async changes => {
+      if (client.isDataCenter) {
+        return {
+          leftoverChanges: changes,
+          deployResult: {
+            appliedChanges: [],
+            errors: [],
+          },
+        }
+      }
+      const [relevantChanges, leftoverChanges] = _.partition(
+        changes,
+        change => isInstanceChange(change)
+        && getChangeData(change).elemID.typeName === NOTIFICATION_SCHEME_TYPE_NAME
       )
-    )
 
-    return {
-      leftoverChanges,
-      deployResult: {
-        appliedChanges: [
-          ...deployResult.appliedChanges.filter(isRemovalChange),
-          ...eventsDeployResult.appliedChanges,
-        ],
-        errors: [
-          ...deployResult.errors,
-          ...eventsDeployResult.errors,
-        ],
-      },
-    }
-  },
+      const deployResult = await deployChanges(
+        relevantChanges.filter(isInstanceChange),
+        async change => {
+          await defaultDeployChange({
+            change,
+            client,
+            apiDefinitions: config.apiDefinitions,
+          })
+          if (isModificationChange(change)) {
+            const eventChanges = getEventChangesToDeploy(change)
+            await awu(eventChanges).forEach(async eventChange => {
+              await defaultDeployChange({
+                change: eventChange,
+                client,
+                apiDefinitions: config.apiDefinitions,
+              })
+            })
+          }
+          if (isAdditionOrModificationChange(change)) {
+          // we should store created event ids in instance.value.notificationIds mapping
+            await assignEventIds(change, client)
+          }
+        }
+      )
 
-  preDeploy: async changes => {
-    if (client.isDataCenter) {
-      return
-    }
-    changes
-      .filter(isInstanceChange)
-      .filter(isRemovalOrModificationChange)
-      .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === NOTIFICATION_SCHEME_TYPE_NAME)
-      .forEach(instance => {
-        instance.value.schemeId = instance.value.id
-      })
-  },
+      return {
+        leftoverChanges,
+        deployResult,
+      }
+    },
 
-  onDeploy: async changes => {
-    if (client.isDataCenter) {
-      return
-    }
-    changes
-      .filter(isInstanceChange)
-      .filter(isRemovalOrModificationChange)
-      .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === NOTIFICATION_SCHEME_TYPE_NAME)
-      .forEach(instance => {
-        delete instance.value.schemeId
-      })
-  },
-})
+    // NotificationScheme structure was converted in notificationSchemeStructureFilter
+    onDeploy: async changes => {
+      if (client.isDataCenter) {
+        return
+      }
+      const relevantChanges = changes
+        .filter(isInstanceChange)
+        .filter(isAdditionOrModificationChange)
+        .filter(instance => getChangeData(instance).elemID.typeName === NOTIFICATION_SCHEME_TYPE_NAME)
+
+      const changesToReturn = await awu(relevantChanges)
+        .map(async change => {
+          await applyFunctionToChangeData<Change<InstanceElement>>(
+            change,
+            instance => {
+              const { value } = instance
+              if (!isNotificationScheme(value)) {
+                throw new Error('Received an invalid notification scheme')
+              }
+              value.notificationSchemeEvents?.forEach(transformNotificationEvent)
+              return instance
+            }
+          )
+          return restoreChangeElement(change, originalChanges, getLookUpName)
+        })
+        .toArray()
+
+      _.pullAll(changes, relevantChanges)
+      changesToReturn.forEach(change => changes.push(change))
+    },
+  }
+}
 
 export default filter

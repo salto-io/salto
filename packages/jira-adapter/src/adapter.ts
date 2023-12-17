@@ -105,7 +105,7 @@ import removeEmptyValuesFilter from './filters/remove_empty_values'
 import jqlReferencesFilter from './filters/jql/jql_references'
 import userFilter from './filters/user'
 import changePortalGroupFieldsFilter from './filters/change_portal_group_fields'
-import { JIRA, PROJECT_TYPE, SERVICE_DESK } from './constants'
+import { JIRA, JIRA_SERVICE_DESK_FIELD, PROJECT_TYPE, SERVICE_DESK } from './constants'
 import { paginate, removeScopedObjects } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
@@ -149,6 +149,7 @@ import scriptRunnerListenersDeployFilter from './filters/script_runner/script_ru
 import scriptedFragmentsDeployFilter from './filters/script_runner/scripted_fragments_deploy'
 import fetchJsmTypesFilter from './filters/jsm_types_fetch_filter'
 import assetsInstancesAdditionFilter from './filters/assets/assets_instances_addition'
+import deployAttributesFilter from './filters/assets/attribute_deploy_filter'
 import deployJsmTypesFilter from './filters/jsm_types_deploy_filter'
 import jsmPathFilter from './filters/jsm_paths'
 import portalSettingsFilter from './filters/portal_settings'
@@ -163,7 +164,7 @@ import assetsObjectTypeChangeFields from './filters/assets/assets_object_type_ch
 import changeAttributesPathFilter from './filters/assets/change_attributes_path'
 import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
-import { jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from './jsm_utils'
+import { getServerInfoTitle, jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from './jsm_utils'
 import { getWorkspaceId } from './workspace_id'
 import { JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES } from './config/api_config'
 
@@ -337,6 +338,7 @@ export const DEFAULT_FILTERS = [
   requestTypeFilter,
   // Must run before asstesDeployFilter
   assetsInstancesAdditionFilter,
+  deployAttributesFilter,
   deployJsmTypesFilter,
   // Must be done after JsmTypesFilter
   jsmPathFilter,
@@ -465,7 +467,8 @@ export default class JiraAdapter implements AdapterOperations {
   @logDuration('generating swagger instances from service')
   private async getSwaggerInstances(
     allTypes: TypeMap,
-    parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
+    parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>,
+    supportedTypes: Record<string, string[]>
   ): Promise<elementUtils.FetchElements<InstanceElement[]>> {
     const updatedApiDefinitionsConfig = {
       ...this.userConfig.apiDefinitions,
@@ -482,7 +485,7 @@ export default class JiraAdapter implements AdapterOperations {
       objectTypes: _.pickBy(allTypes, isObjectType),
       apiConfig: updatedApiDefinitionsConfig,
       fetchQuery: this.fetchQuery,
-      supportedTypes: this.userConfig.apiDefinitions.supportedTypes,
+      supportedTypes,
       getElemIdFunc: this.getElemIdFunc,
     })
   }
@@ -631,9 +634,12 @@ export default class JiraAdapter implements AdapterOperations {
     log.debug('going to fetch jira account configuration..')
     progressReporter.reportProgress({ message: 'Fetching types' })
     const { allTypes: swaggerTypes, parsedConfigs } = await this.getAllTypes(swaggers)
+    const userConfigSupportedTypes = this.userConfig.apiDefinitions.supportedTypes
+    const shuldModifySupportedTypes = await getServerInfoTitle(this.client) === JIRA_SERVICE_DESK_FIELD
+    const supportedTypes = shuldModifySupportedTypes ? _.omit(userConfigSupportedTypes, 'Board') : userConfigSupportedTypes
     progressReporter.reportProgress({ message: 'Fetching instances' })
     const [swaggerResponse, scriptRunnerElements] = await Promise.all([
-      this.getSwaggerInstances(swaggerTypes, parsedConfigs),
+      this.getSwaggerInstances(swaggerTypes, parsedConfigs, supportedTypes),
       this.getScriptRunnerElements(),
     ])
 

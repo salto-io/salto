@@ -198,6 +198,7 @@ describe('boardColumnsFilter', () => {
     it('should add deployment annotations', async () => {
       await filter.onFetch([type, columnConfigType])
       expect(type.fields[COLUMNS_CONFIG_FIELD].annotations).toEqual({
+        [CORE_ANNOTATIONS.REQUIRED]: true,
         [CORE_ANNOTATIONS.CREATABLE]: true,
         [CORE_ANNOTATIONS.UPDATABLE]: true,
       })

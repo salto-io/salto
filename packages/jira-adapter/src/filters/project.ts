@@ -25,6 +25,8 @@ import { FilterCreator } from '../filter'
 import { findObject, isAllFreeLicense, setFieldDeploymentAnnotations } from '../utils'
 import { PROJECT_CONTEXTS_FIELD } from './fields/contexts_projects_filter'
 import { JiraConfig } from '../config/config'
+import { isObjectWithId } from './change_jsm_fields'
+import { SERVICE_DESK } from '../constants'
 
 const PROJECT_TYPE_NAME = 'Project'
 
@@ -99,6 +101,20 @@ const deployCustomerPermissions = async (
       data: instance.value.customerPermissions,
     })
   }
+}
+
+const getServiceDeskId = async (
+  change: Change<InstanceElement>,
+  client: JiraClient,
+): Promise<number> => {
+  const instance = getChangeData(change)
+  const response = await client.getSinglePage({
+    url: `/rest/servicedeskapi/servicedesk/projectId:${instance.value.id}`,
+  })
+  if (!isObjectWithId(response.data)) {
+    throw new Error('Received an invalid serviceDesk id response')
+  }
+  return response.data.id
 }
 
 type ComponentsResponse = {
@@ -312,6 +328,10 @@ const filter: FilterCreator = ({ config, client, elementsSource }) => ({
         }
 
         const instance = await resolveValues(getChangeData(change), getLookUpName)
+        if (isAdditionChange(change) && config.fetch.enableJSM && instance.value.projectTypeKey === SERVICE_DESK) {
+          change.data.after.value.serviceDeskId = await getServiceDeskId(change, client)
+        }
+
         if (shouldSeparateSchemeDeployment(change, client.isDataCenter)) {
           await deployProjectSchemes(instance, client)
         }

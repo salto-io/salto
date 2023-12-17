@@ -27,7 +27,7 @@ const OBJECT_RESPONSE_SCHEME = Joi.object({
   id: Joi.number().required(),
 }).unknown(true).required()
 
-const isObjectWithId = createSchemeGuard<ObjectWithId>(OBJECT_RESPONSE_SCHEME)
+export const isObjectWithId = createSchemeGuard<ObjectWithId>(OBJECT_RESPONSE_SCHEME)
 
 /* This filter modifies JSM object fields to ensure compatibility with their deployment requirements. */
 const filter: FilterCreator = () => ({

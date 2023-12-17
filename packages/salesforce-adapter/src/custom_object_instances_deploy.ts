@@ -545,9 +545,9 @@ const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
       return await deployModifyChanges(changes, client, groupId)
     }
     return customObjectInstancesDeployError('Custom Object Instances change group must have one action')
-  } catch (error: unknown) {
-    log.error('Unknown error occurred for Data Deploy group %s: %o', groupId, error)
-    return customObjectInstancesDeployError('Unknown error occurred')
+  } catch (error) {
+    log.error('Error occurred for Data Deploy group %s: %o', groupId, error)
+    return customObjectInstancesDeployError(error.message)
   }
 }
 

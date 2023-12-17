@@ -17,6 +17,7 @@ import semver from 'semver'
 import moment from 'moment'
 import { Plan, PlanItem } from '@salto-io/core'
 import { Workspace, state, remoteMap, elementSource, pathIndex } from '@salto-io/workspace'
+import fs from 'fs'
 import Prompts from '../../src/prompts'
 import { CliExitCode } from '../../src/types'
 import * as callbacks from '../../src/callbacks'
@@ -24,6 +25,7 @@ import * as mocks from '../mocks'
 import { action } from '../../src/commands/deploy'
 import { version as currentVersion } from '../../src/generated/version.json'
 import * as workspaceModule from '../../src/workspace/workspace'
+import { testArtifact } from '../mocks'
 
 const { InMemoryRemoteMap } = remoteMap
 const { createInMemoryElementSource } = elementSource
@@ -50,6 +52,13 @@ jest.mock('@salto-io/core', () => ({
     _accounts: string[],
   ) => mockPreview()),
 }))
+
+jest.mock('fs', () => ({
+  ...jest.requireActual('fs'),
+  mkdirSync: jest.fn(),
+  writeFileSync: jest.fn(),
+}))
+const mockedFs = jest.mocked(fs)
 
 const commandName = 'deploy'
 
@@ -96,6 +105,34 @@ describe('deploy command', () => {
 
     it('should print success message', () => {
       expect(output.stdout.content).toContain('Deployment succeeded')
+    })
+  })
+
+  describe('when artifactsDir param is provided', () => {
+    let result: number
+
+    const ARTIFACTS_DIR = '/tmp/artifacts'
+
+    beforeEach(async () => {
+      mockGetUserBooleanInput.mockResolvedValueOnce(true)
+      result = await action({
+        ...cliCommandArgs,
+        input: {
+          force: false,
+          dryRun: false,
+          detailedPlan: false,
+          checkOnly: false,
+          artifactsDir: ARTIFACTS_DIR,
+          accounts,
+        },
+        workspace,
+      })
+    })
+    it('should write artifacts', () => {
+      expect(result).toBe(CliExitCode.Success)
+      expect(mockedFs.mkdirSync).toHaveBeenCalledWith(`${ARTIFACTS_DIR}/dummy`, { recursive: true })
+      expect(mockedFs.writeFileSync)
+        .toHaveBeenCalledWith(`${ARTIFACTS_DIR}/dummy/${testArtifact.name}`, testArtifact.content)
     })
   })
 

@@ -751,6 +751,12 @@ export const preview = (): Plan => {
   return result as Plan
 }
 
+
+export const testArtifact = {
+  name: 'testArtifact.txt',
+  content: Buffer.from('test'),
+}
+
 export const deploy = async (
   _workspace: Workspace,
   actionPlan: Plan,
@@ -781,6 +787,13 @@ export const deploy = async (
       showOnFailureDummyChanges.successful.withShowOnFailure,
       showOnFailureDummyChanges.successful.withoutShowOnFailure],
     errors: [],
+    extraProperties: {
+      groups: [{
+        id: 'testGroup',
+        accountName: 'dummy',
+        artifacts: [testArtifact],
+      }],
+    },
   }
 }
 

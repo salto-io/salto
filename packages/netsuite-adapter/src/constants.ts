@@ -88,6 +88,13 @@ export const CUSTOM_FIELD = 'customField'
 export const CUSTOM_FIELD_LIST = 'customFieldList'
 export const CONTENT = 'content'
 
+type InactiveFields = 'isinactive' | 'inactive' | 'isInactive'
+export const INACTIVE_FIELDS: { [K in InactiveFields]: K } = {
+  isinactive: 'isinactive',
+  inactive: 'inactive',
+  isInactive: 'isInactive',
+}
+
 // Field Annotations
 export const SOAP = 'soap'
 export const IS_ATTRIBUTE = 'isAttribute'

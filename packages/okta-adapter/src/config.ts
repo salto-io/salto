@@ -1193,6 +1193,26 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToHide: [{ fieldName: 'id' }],
     },
+    deployRequests: {
+      add: {
+        url: '/api/v1/templates/sms',
+        method: 'post',
+      },
+      modify: {
+        url: '/api/v1/templates/sms/{templateId}',
+        method: 'put',
+        urlParamsToFields: {
+          templateId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/templates/sms/{templateId}',
+        urlParamsToFields: {
+          templateId: 'id',
+        },
+        method: 'delete',
+      },
+    },
   },
   Protocol: {
     transformation: {

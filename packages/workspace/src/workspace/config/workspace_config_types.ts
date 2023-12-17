@@ -29,10 +29,17 @@ export type AdaptersConfig = {
 
 export type ProviderOptionsS3 = {
   bucket: string
+  prefix?: string
+  uploadConcurrencyLimit?: number
+}
+
+export type ProviderOptionsFile = {
+  localStorageDir: string
 }
 
 export type ProviderOptions = {
   s3?: ProviderOptionsS3
+  file?: ProviderOptionsFile
 }
 
 

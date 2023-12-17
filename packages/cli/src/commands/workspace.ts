@@ -15,7 +15,7 @@
 */
 import { EOL } from 'os'
 import { cleanWorkspace } from '@salto-io/core'
-import { StateConfig, WorkspaceComponents } from '@salto-io/workspace'
+import { ProviderOptionsS3, StateConfig, WorkspaceComponents } from '@salto-io/workspace'
 import { getUserBooleanInput } from '../callbacks'
 import { header, formatCleanWorkspace, formatCancelCommand, formatStepStart, formatStepFailed, formatStepCompleted } from '../formatter'
 import { outputLine, errorOutputLine } from '../outputer'
@@ -154,15 +154,14 @@ const cacheGroupDef = createCommandGroupDef({
 
 type SetStateProviderArgs = {
   provider?: StateConfig['provider']
-  bucket?: string
-}
+} & Partial<ProviderOptionsS3>
 
 export const setStateProviderAction: WorkspaceCommandAction<SetStateProviderArgs> = async ({
   workspace,
   input,
   output,
 }) => {
-  const { provider, bucket } = input
+  const { provider, bucket, prefix } = input
   outputLine(`Setting state provider ${provider} for workspace`, output)
   const stateConfig: StateConfig = { provider: provider ?? 'file' }
 
@@ -171,7 +170,7 @@ export const setStateProviderAction: WorkspaceCommandAction<SetStateProviderArgs
       errorOutputLine('Must set bucket name with provider of type s3', output)
       return CliExitCode.UserInputError
     }
-    stateConfig.options = { s3: { bucket } }
+    stateConfig.options = { s3: { bucket, prefix } }
   }
   if (provider !== 's3' && bucket !== undefined) {
     errorOutputLine('bucket argument is only valid with provider type s3', output)
@@ -199,6 +198,11 @@ const setStateProviderDef = createWorkspaceCommand({
         name: 'bucket',
         type: 'string',
         description: 'When provider is S3, the bucket name were state data can be stored',
+      },
+      {
+        name: 'prefix',
+        type: 'string',
+        description: 'A prefix inside the bucket where files will be stored',
       },
     ],
   },

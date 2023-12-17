@@ -125,14 +125,12 @@ describe('local workspace', () => {
         new ws.remoteMap.InMemoryRemoteMap<T, K>()
       const elemSources = await loadLocalElementsSources({
         baseDir: '.',
-        localStorage: path.join(getSaltoHome(), 'local'),
         envs: ['env1', 'env2'],
         remoteMapCreator: creator,
         stateStaticFilesSource: mockStaticFilesSource(),
         workspaceConfig: { name: 'asd', uid: 'asd' },
       })
       expect(Object.keys(elemSources.sources)).toHaveLength(3)
-      expect(mockCreateDirStore).toHaveBeenCalledTimes(6)
       const dirStoresBaseDirs = mockCreateDirStore.mock.calls.map(c => c[0])
         .map(params => toWorkspaceRelative(params))
       expect(dirStoresBaseDirs).toContain(path.join(ENVS_PREFIX, 'env1'))

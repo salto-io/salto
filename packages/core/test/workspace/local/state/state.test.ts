@@ -18,9 +18,9 @@ import { Readable } from 'stream'
 import { createGzip } from 'zlib'
 import getStream from 'get-stream'
 import { chain } from 'stream-chain'
-import { ObjectType, ElemID, isObjectType, Element, toChange } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, isObjectType, Element, toChange, InstanceElement, StaticFile } from '@salto-io/adapter-api'
 import { getDetailedChanges, safeJsonStringify } from '@salto-io/adapter-utils'
-import { state as wsState, pathIndex, remoteMap, staticFiles, serialization } from '@salto-io/workspace'
+import { state as wsState, pathIndex, remoteMap, staticFiles, serialization, StateConfig, ProviderOptionsS3 } from '@salto-io/workspace'
 import { hash, collections } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
 import { getStateContentProvider, loadState, localState } from '../../../../src/local-workspace/state/state'
@@ -31,6 +31,7 @@ import { mockStaticFilesSource } from '../../../common/state'
 import { inMemRemoteMapCreator } from '../../../common/helpers'
 import { getHashFromHashes, StateContentProvider } from '../../../../src/local-workspace/state/content_providers'
 import * as contentProviders from '../../../../src/local-workspace/state/content_providers'
+import { getLocalStoragePath } from '../../../../src/app_config'
 
 const { awu } = collections.asynciterable
 const { toMD5 } = hash
@@ -80,12 +81,12 @@ describe('localState', () => {
       writeContents: mockFunction<StateContentProvider['writeContents']>().mockImplementation(async (prefix, newContents) => {
         currentContent = Object.fromEntries(newContents.map(({ account, content }) => [`${prefix}/${account}`, content]))
       }),
+      staticFilesSource: mockStaticFilesSource(),
     }
   }
 
   describe('multiple state files', () => {
     let state: wsState.State
-    let stateStaticFilesSource: staticFiles.StateStaticFilesSource
     let contentProvider: jest.Mocked<StateContentProvider>
     let sfElements: Element[]
     let nsElements: Element[]
@@ -95,7 +96,6 @@ describe('localState', () => {
     const pathPrefix = 'multiple_files'
     let mapCreator: remoteMap.RemoteMapCreator
     beforeEach(async () => {
-      stateStaticFilesSource = mockStaticFilesSource()
       nsElements = getTopLevelElements('netsuite')
       sfElements = getTopLevelElements('salesforce')
       sfUpdateDate = new Date('2023-02-01T00:00:00.000Z')
@@ -105,7 +105,7 @@ describe('localState', () => {
         [`${pathPrefix}/salesforce`]: await mockStateContent({ elements: sfElements, date: sfUpdateDate, version: '0.0.1' }),
       })
       mapCreator = inMemRemoteMapCreator()
-      state = localState(pathPrefix, 'env', mapCreator, stateStaticFilesSource, contentProvider)
+      state = localState(pathPrefix, 'env', mapCreator, contentProvider)
       initialStateHash = await state.getHash()
     })
 
@@ -300,7 +300,7 @@ describe('localState', () => {
     let contentProvider: jest.Mocked<StateContentProvider>
     beforeEach(() => {
       contentProvider = mockContentProvider({})
-      state = localState('empty', '', inMemRemoteMapCreator(), mockStaticFilesSource(), contentProvider)
+      state = localState('empty', '', inMemRemoteMapCreator(), contentProvider)
     })
 
     it('should return an undefined hash', async () => {
@@ -419,12 +419,38 @@ describe('localState', () => {
         'env/extraLine': await mockStateContent({ elements: getTopLevelElements('extra'), extraLine: '"more data?"' }),
         'env/emptyVersion': await mockStateContent({ elements: getTopLevelElements('noVersion'), version: '' }),
       })
-      state = localState('malformed', '', inMemRemoteMapCreator(), mockStaticFilesSource(), contentProvider)
+      state = localState('malformed', '', inMemRemoteMapCreator(), contentProvider)
     })
     it('should still read elements successfully', async () => {
       await expect(state.getAll()).resolves.toBeDefined()
       const elements = await awu(await state.getAll()).toArray()
       expect(elements).toHaveLength(getTopLevelElements().length * 3)
+    })
+  })
+
+  describe('when given an overriding static files source', () => {
+    let state: wsState.State
+    let contentProvider: jest.Mocked<StateContentProvider>
+    let overridingStateFilesSource: staticFiles.StateStaticFilesSource
+    let instanceWithStaticFile: InstanceElement
+    beforeEach(() => {
+      instanceWithStaticFile = new InstanceElement('inst', mockElement, { content: new StaticFile({ filepath: 'path', content: Buffer.from('asd') }) })
+      overridingStateFilesSource = mockStaticFilesSource([])
+      contentProvider = mockContentProvider({})
+      state = localState('empty', '', inMemRemoteMapCreator(), contentProvider, overridingStateFilesSource)
+    })
+    it('should use the overriding files source and not the one from the content provider', async () => {
+      await state.set(instanceWithStaticFile)
+      await state.flush()
+      expect(overridingStateFilesSource.flush).toHaveBeenCalledTimes(1)
+      expect(contentProvider.staticFilesSource.flush).not.toHaveBeenCalled()
+    })
+    it('should keep the overriding static file source after config update', async () => {
+      await state.updateConfig({ workspaceId: 'wsId', stateConfig: undefined })
+      await state.set(instanceWithStaticFile)
+      await state.flush()
+      expect(overridingStateFilesSource.flush).toHaveBeenCalledTimes(1)
+      expect(contentProvider.staticFilesSource.flush).not.toHaveBeenCalled()
     })
   })
 })
@@ -441,30 +467,36 @@ describe('getStateContentProvider', () => {
     it('should return a file content provider', () => {
       const createFileStateContentProvider = jest.spyOn(contentProviders, 'createFileStateContentProvider')
       getStateContentProvider('workspaceId', { provider: 'file' })
-      expect(createFileStateContentProvider).toHaveBeenCalled()
+      expect(createFileStateContentProvider).toHaveBeenCalledWith(getLocalStoragePath('workspaceId'))
+    })
+    describe('when local storage is provided in the config', () => {
+      it('should use the local storage from the config', () => {
+        const createFileStateContentProvider = jest.spyOn(contentProviders, 'createFileStateContentProvider')
+        getStateContentProvider('workspaceId', { provider: 'file', options: { file: { localStorageDir: 'myLocalStorage' } } })
+        expect(createFileStateContentProvider).toHaveBeenCalledWith('myLocalStorage')
+      })
     })
   })
   describe('when state config says s3 provider', () => {
     describe('when the config is valid', () => {
       it('should return a s3 content provider', () => {
         const createS3StateContentProvider = jest.spyOn(contentProviders, 'createS3StateContentProvider')
-        getStateContentProvider('workspaceId', { provider: 's3', options: { s3: { bucket: 'my_bucket' } } })
-        expect(createS3StateContentProvider).toHaveBeenCalledWith({ workspaceId: 'workspaceId', bucketName: 'my_bucket' })
+        const s3Options: ProviderOptionsS3 = { bucket: 'my_bucket', prefix: 'my_prefix' }
+        getStateContentProvider('workspaceId', { provider: 's3', options: { s3: s3Options } })
+        expect(createS3StateContentProvider).toHaveBeenCalledWith({ workspaceId: 'workspaceId', options: s3Options })
       })
     })
     describe('when the config is missing the bucket', () => {
       it('should fail', () => {
         expect(() => getStateContentProvider('workspaceId', { provider: 's3' })).toThrow()
         expect(() => getStateContentProvider('workspaceId', { provider: 's3', options: {} })).toThrow()
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        expect(() => getStateContentProvider('workspaceId', { provider: 's3', options: { s3: {} as any } })).toThrow()
+        expect(() => getStateContentProvider('workspaceId', { provider: 's3', options: { s3: {} as unknown as ProviderOptionsS3 } })).toThrow()
       })
     })
   })
   describe('when state config says unknown provider', () => {
     it('should fail', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect(() => getStateContentProvider('workspaceId', { provider: 'something' as any })).toThrow()
+      expect(() => getStateContentProvider('workspaceId', { provider: 'something' } as unknown as StateConfig)).toThrow()
     })
   })
 })

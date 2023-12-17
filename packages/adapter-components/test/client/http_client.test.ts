@@ -58,7 +58,7 @@ describe('client_http_client', () => {
           },
           timeout: {
             lastRetryNoTimeout: true,
-            resetTimeoutBetweenAttempts: true,
+            retryOnTimeout: true,
           },
         }
       )

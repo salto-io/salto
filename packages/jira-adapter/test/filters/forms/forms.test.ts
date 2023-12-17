@@ -356,7 +356,7 @@ describe('forms filter', () => {
       it('should return saltoError when failed to fetch form becuase it doesn\'t have name', async () => {
         const res = await filter.onFetch(elements) as FilterResult
         expect(res.errors).toHaveLength(1)
-        expect(res.errors?.[0].message).toEqual('Unable to fetch form for project project1 as it lacks a title')
+        expect(res.errors?.[0].message).toEqual('Unable to fetch form for project project1 as it is missing a title.')
       })
     })
     describe('deploy', () => {

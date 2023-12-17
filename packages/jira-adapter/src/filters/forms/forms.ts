@@ -102,7 +102,7 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
             const detailedRes = await client.getSinglePage({ url: detailedUrl })
             if (!isDetailedFormsResponse(detailedRes.data)) {
               const error = {
-                message: `Unable to fetch form for project ${project.elemID.name} as it lacks a title`,
+                message: `Unable to fetch form for project ${project.elemID.name} as it is missing a title.`,
                 severity: 'Warning' as SeverityLevel,
               }
               errors.push(error)

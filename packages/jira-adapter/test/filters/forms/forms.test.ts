@@ -19,6 +19,7 @@ import _ from 'lodash'
 import { InstanceElement, Element, isInstanceElement, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { FilterResult } from '../../../src/filter'
 import { getDefaultConfig } from '../../../src/config/config'
 import formsFilter from '../../../src/filters/forms/forms'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
@@ -27,7 +28,7 @@ import JiraClient from '../../../src/client/client'
 import { CLOUD_RESOURCE_FIELD } from '../../../src/filters/automation/cloud_id'
 
 describe('forms filter', () => {
-    type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy' | 'onDeploy' | 'preDeploy'>
+    type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy' | 'onDeploy' | 'preDeploy', FilterResult>
     let filter: FilterType
     let connection: MockInterface<clientUtils.APIConnection>
     let client: JiraClient
@@ -235,6 +236,127 @@ describe('forms filter', () => {
         const instances = elements.filter(isInstanceElement)
         const formInstance = instances.find(e => e.elemID.typeName === FORM_TYPE)
         expect(formInstance).toBeUndefined()
+      })
+    })
+    describe('on fetch errors', () => {
+      beforeEach(async () => {
+        const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+        config.fetch.enableJSM = true
+        const { client: cli, connection: conn } = mockClient(false)
+        connection = conn
+        client = cli
+        filter = formsFilter(getFilterParams({ config, client })) as typeof filter
+        projectInstance = new InstanceElement(
+          'project1',
+          projectType,
+          {
+            id: 11111,
+            name: 'project1',
+            projectTypeKey: 'service_desk',
+            key: 'project1Key',
+          },
+          [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1']
+        )
+        connection.post.mockResolvedValueOnce({
+          status: 200,
+          data: {
+            unparsedData: {
+              [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
+                tenantId: 'cloudId',
+              }),
+            },
+          },
+        })
+
+        connection.get.mockResolvedValueOnce({
+          status: 200,
+          data: [{
+            id: 1,
+            name: '',
+          }],
+        })
+
+        connection.get.mockResolvedValueOnce({
+          status: 200,
+          data: {
+            updated: '2023-09-28T08:20:31.552322Z',
+            uuid: 'uuid',
+            design: {
+              settings: {
+                templateId: 6,
+                name: '',
+                submit: {
+                  lock: false,
+                  pdf: false,
+                },
+                templateFormUuid: 'templateFormUuid',
+              },
+              layout: [
+                {
+                  version: 1,
+                  type: 'doc',
+                  content: [
+                    {
+                      type: 'paragraph',
+                      content: [
+                        {
+                          type: 'text',
+                          text: 'form 6 content',
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+              conditions: {},
+              sections: {
+                36: {
+                  t: 'sh',
+                  i: {
+                    co: {
+                      cIds: {
+                        3: [
+                          '2',
+                        ],
+                      },
+                    },
+                  },
+                  o: {
+                    sIds: [
+                      '4',
+                    ],
+                  },
+                },
+              },
+              questions: {
+                3: {
+                  type: 'cm',
+                  label: 'Items to be verified',
+                  description: '',
+                  choices: [
+                    {
+                      id: '1',
+                      label: 'Education',
+                      other: false,
+                    },
+                    {
+                      id: '2',
+                      label: 'Licenses',
+                      other: false,
+                    },
+                  ],
+                  questionKey: '',
+                },
+              },
+            },
+          },
+        })
+        elements = [projectInstance, projectType]
+      })
+      it('should return saltoError when failed to fetch form becuase it doesn\'t have name', async () => {
+        const res = await filter.onFetch(elements) as FilterResult
+        expect(res.errors).toHaveLength(1)
+        expect(res.errors?.[0].message).toEqual('Unable to fetch form for project project1 as it is missing a title.')
       })
     })
     describe('deploy', () => {

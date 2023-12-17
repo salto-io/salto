@@ -14,41 +14,47 @@
 * limitations under the License.
 */
 
-import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { filterUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { CORE_ANNOTATIONS, InstanceElement, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, InstanceElement, ReferenceExpression, isInstanceElement, toChange } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { getDefaultConfig } from '../../../src/config/config'
-import deployAssetsObjectTypeOrderFilter from '../../../src/filters/assets/deploy_assets_object_type_order'
+import assetsObjectTypeOrderFilter from '../../../src/filters/assets/assets_object_type_order'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
-import { ASSESTS_SCHEMA_TYPE, ASSETS_OBJECT_TYPE, ASSETS_OBJECT_TYPE_ORDER_TYPE } from '../../../src/constants'
+import { ASSESTS_SCHEMA_TYPE, ASSETS_OBJECT_TYPE, ASSETS_OBJECT_TYPE_ORDER_TYPE, JIRA } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
 
-const createAssetsObjectTypeInstance = (id: string, suffix: string, assetSchema: InstanceElement):
-InstanceElement => new InstanceElement(
+const createAssetsObjectTypeInstance = (
+  id: number,
+  suffix: string,
+  assetSchema: InstanceElement,
+  parentObjectTypeInstance: InstanceElement
+): InstanceElement => new InstanceElement(
   `assetsObjectType${suffix}`,
   createEmptyType(ASSETS_OBJECT_TYPE),
   {
     id,
     name: `assetsObjectType${suffix}`,
+    position: id - 1,
+    parentObjectTypeId: new ReferenceExpression(parentObjectTypeInstance.elemID, parentObjectTypeInstance),
   },
-  undefined,
+  [JIRA, elementUtils.RECORDS_PATH, ASSESTS_SCHEMA_TYPE, 'assetsSchema', 'assetsObjectTypes', 'parentObjectTypeInstance', `assetsObjectType${suffix}`, `assetsObjectType${suffix}`],
   {
     [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(assetSchema.elemID, assetSchema)],
   }
 )
 
-describe('deployAttributesFilter', () => {
-  type FilterType = filterUtils.FilterWith<'deploy'>
+describe('fetchAttributesFilter', () => {
+  type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy'>
   let filter: FilterType
   let client: JiraClient
-  let connection: MockInterface<clientUtils.APIConnection>
   const assetSchema = new InstanceElement(
     'assetsSchema',
     createEmptyType(ASSESTS_SCHEMA_TYPE),
     {
       name: 'AssetsSchema',
     },
+    [JIRA, elementUtils.RECORDS_PATH, ASSESTS_SCHEMA_TYPE, 'assetsSchema'],
   )
   const parentObjectTypeInstance = new InstanceElement(
     'parentObjectTypeInstance',
@@ -56,17 +62,58 @@ describe('deployAttributesFilter', () => {
     {
       id: 'p1',
       name: 'AssetsObjectTypeP1',
+      parentObjectTypeId: new ReferenceExpression(assetSchema.elemID, assetSchema),
     },
-    undefined,
+    [JIRA, elementUtils.RECORDS_PATH, ASSESTS_SCHEMA_TYPE, 'assetsSchema', 'assetsObjectTypes', 'parentObjectTypeInstance', 'parentObjectTypeInstance'],
     {
       [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(assetSchema.elemID, assetSchema)],
     }
   )
-  const assetsObjectTypeInstanceOne = createAssetsObjectTypeInstance('1', 'One', assetSchema)
-  const assetsObjectTypeInstanceTwo = createAssetsObjectTypeInstance('2', 'Two', assetSchema)
-  const assetsObjectTypeInstanceThree = createAssetsObjectTypeInstance('3', 'Three', assetSchema)
-  let assetsObjectTypeOrderInstance: InstanceElement
+  const assetsObjectTypeInstanceOne = createAssetsObjectTypeInstance(1, 'One', assetSchema, parentObjectTypeInstance)
+  const assetsObjectTypeInstanceTwo = createAssetsObjectTypeInstance(2, 'Two', assetSchema, parentObjectTypeInstance)
+  const assetsObjectTypeInstanceThree = createAssetsObjectTypeInstance(3, 'Three', assetSchema, parentObjectTypeInstance)
+  describe('fetch', () => {
+    beforeEach(() => {
+      const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config.fetch.enableJSM = true
+      config.fetch.enableJsmExperimental = true
+      filter = assetsObjectTypeOrderFilter(getFilterParams({ config, client })) as typeof filter
+    })
+    it('should add assetsObjectTypeOrder to the elements', async () => {
+      const elements = [
+        parentObjectTypeInstance,
+        assetsObjectTypeInstanceOne,
+        assetsObjectTypeInstanceTwo,
+        assetsObjectTypeInstanceThree,
+      ]
+      await filter.onFetch(elements)
+      expect(elements).toHaveLength(7)
+      const orderInstances = elements
+        .filter(isInstanceElement)
+        .filter(e => e.elemID.typeName === ASSETS_OBJECT_TYPE_ORDER_TYPE)
+      expect(orderInstances[1]).toBeDefined()
+      expect(orderInstances[1].elemID.name).toEqual('parentObjectTypeInstance_order')
+      expect(orderInstances[1].value.objectTypes).toEqual([
+        new ReferenceExpression(assetsObjectTypeInstanceOne.elemID, assetsObjectTypeInstanceOne),
+        new ReferenceExpression(assetsObjectTypeInstanceTwo.elemID, assetsObjectTypeInstanceTwo),
+        new ReferenceExpression(assetsObjectTypeInstanceThree.elemID, assetsObjectTypeInstanceThree),
+      ])
+    })
+    it('should do nothing for instnaces without parentObjectTypeId', async () => {
+      const elements = [
+        parentObjectTypeInstance,
+        assetsObjectTypeInstanceOne,
+        assetsObjectTypeInstanceTwo,
+        assetsObjectTypeInstanceThree,
+      ]
+      delete parentObjectTypeInstance.value.parentObjectTypeId
+      await filter.onFetch(elements)
+      expect(elements).toHaveLength(6)
+    })
+  })
   describe('deploy', () => {
+    let connection: MockInterface<clientUtils.APIConnection>
+    let assetsObjectTypeOrderInstance: InstanceElement
     beforeEach(() => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
@@ -74,7 +121,7 @@ describe('deployAttributesFilter', () => {
       const { client: cli, connection: conn } = mockClient(false)
       client = cli
       connection = conn
-      filter = deployAssetsObjectTypeOrderFilter(getFilterParams({ config, client })) as typeof filter
+      filter = assetsObjectTypeOrderFilter(getFilterParams({ config, client })) as typeof filter
       assetsObjectTypeOrderInstance = new InstanceElement(
         'assetsObjectTypeOrderInstance',
         createEmptyType(ASSETS_OBJECT_TYPE_ORDER_TYPE),
@@ -163,7 +210,7 @@ describe('deployAttributesFilter', () => {
       expect(connection.post).toHaveBeenCalledTimes(3)
     })
     it('should change order when adding another assetsObjectType and change order', async () => {
-      const assetsObjectTypeInstanceFour = createAssetsObjectTypeInstance('4', 'Four', assetSchema)
+      const assetsObjectTypeInstanceFour = createAssetsObjectTypeInstance(4, 'Four', assetSchema, parentObjectTypeInstance)
       const assetsObjectTypeOrderInstanceAfer = assetsObjectTypeOrderInstance.clone()
       assetsObjectTypeOrderInstanceAfer.value.objectTypes = [
         new ReferenceExpression(assetsObjectTypeInstanceOne.elemID, assetsObjectTypeInstanceOne),

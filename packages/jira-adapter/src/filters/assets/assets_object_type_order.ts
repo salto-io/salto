@@ -14,14 +14,15 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { logger } from '@salto-io/logging'
-import { createSaltoElementError, getChangeData, isAdditionChange, isInstanceChange, isModificationChange, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
-import { getParent } from '@salto-io/adapter-utils'
+import { BuiltinTypes, CORE_ANNOTATIONS, createSaltoElementError, Element, ElemID, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isInstanceElement, isModificationChange, isReferenceExpression, ListType, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import { elements as adapterElements } from '@salto-io/adapter-components'
+import { getParent, pathNaclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { deployChanges } from '../../deployment/standard_deployment'
-import { FilterCreator } from '../../filter'
-import { ASSETS_OBJECT_TYPE, ASSETS_OBJECT_TYPE_ORDER_TYPE } from '../../constants'
 import { getWorkspaceId } from '../../workspace_id'
+import { ASSETS_OBJECT_TYPE, ASSETS_OBJECT_TYPE_ORDER_TYPE, JIRA } from '../../constants'
+import { FilterCreator } from '../../filter'
 import JiraClient from '../../client/client'
 
 const { awu } = collections.asynciterable
@@ -42,12 +43,74 @@ Promise<void> => {
   const url = `/gateway/api/jsm/assets/workspace/${workspaceId}/v1/objecttype/${id}/position`
   await client.post({ url, data })
 }
-/**
- * Handles the assetsObjectTypes order inside each assets objectType
- */
+
+const createOrderType = (): ObjectType => new ObjectType({
+  elemID: new ElemID(JIRA, ASSETS_OBJECT_TYPE_ORDER_TYPE),
+  fields: {
+    objectTypes: {
+      refType: new ListType(BuiltinTypes.NUMBER),
+      annotations: { [CORE_ANNOTATIONS.CREATABLE]: true, [CORE_ANNOTATIONS.UPDATABLE]: true },
+    },
+    assetsSchema: {
+      refType: BuiltinTypes.NUMBER,
+      annotations: { [CORE_ANNOTATIONS.CREATABLE]: true, [CORE_ANNOTATIONS.UPDATABLE]: true },
+    },
+  },
+  path: [JIRA, adapterElements.TYPES_PATH, ASSETS_OBJECT_TYPE_ORDER_TYPE],
+  annotations: {
+    [CORE_ANNOTATIONS.CREATABLE]: true,
+    [CORE_ANNOTATIONS.UPDATABLE]: true,
+    [CORE_ANNOTATIONS.DELETABLE]: true,
+  },
+})
+
+const createAssetsObjectTypeOrder = (assetsObjectTypes: InstanceElement[], orderType: ObjectType): InstanceElement => {
+  const treeParent = assetsObjectTypes[0].value.parentObjectTypeId.value
+  const schema = assetsObjectTypes[0].annotations[CORE_ANNOTATIONS.PARENT]?.[0]
+  const name = `${treeParent.elemID.name}_order`
+  const subFolder = treeParent.elemID.typeName === ASSETS_OBJECT_TYPE ? ['childOrder'] : ['assetsObjectTypes', 'childOrder']
+  return new InstanceElement(
+    name,
+    orderType,
+    {
+      objectTypes: assetsObjectTypes.sort((a, b) => a.value.position - b.value.position)
+        .map(inst => new ReferenceExpression(inst.elemID, inst)),
+      assetsSchema: schema,
+    },
+    [...treeParent.path.slice(0, -1), ...subFolder, pathNaclCase(name)],
+    {
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(treeParent.elemID, treeParent)],
+    }
+  )
+}
+
+/* Handles the assetsObjectTypes order inside each assets objectType
+ by creating an InstanceElement of the assetsObjectTypes order inside the assets objectType. */
 const filterCreator: FilterCreator = ({ config, client }) => ({
-  name: 'deployAssetsObjectTypeOrderFilter',
-  /* changes the position for all objectTypes that needed to be change */
+  name: 'assetsObjectTypeOrderFilter',
+  onFetch: async (elements: Element[]) => {
+    if (!config.fetch.enableJSM || !config.fetch.enableJsmExperimental) {
+      return
+    }
+
+    const assetsObjectTypeInstances = elements.filter(isInstanceElement)
+      .filter(e => e.elemID.typeName === ASSETS_OBJECT_TYPE)
+
+    const parentToObjectTypes = _.groupBy(
+      assetsObjectTypeInstances.filter(objectType => isReferenceExpression(objectType.value.parentObjectTypeId)),
+      objectType => objectType.value.parentObjectTypeId.elemID.getFullName()
+    )
+    const orderType = createOrderType()
+    elements.push(orderType)
+    Object.values(parentToObjectTypes).forEach(assetsObjectTypes => {
+      const orderInstance = createAssetsObjectTypeOrder(assetsObjectTypes, orderType)
+      elements.push(orderInstance)
+    })
+    // Remove position field from the assetsObjectTypes
+    assetsObjectTypeInstances.forEach(assetsObjectTypeInstance => {
+      delete assetsObjectTypeInstance.value.position
+    })
+  },
   deploy: async changes => {
     const { jsmApiDefinitions } = config
     if (!config.fetch.enableJSM || !config.fetch.enableJsmExperimental || jsmApiDefinitions === undefined) {

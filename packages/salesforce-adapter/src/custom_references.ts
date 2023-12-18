@@ -25,6 +25,7 @@ import {
   PERMISSION_SET_METADATA_TYPE,
 } from './constants'
 import { Types } from './transformers/transformer'
+import { CUSTOM_REFS_CONFIG, DATA_CONFIGURATION, FETCH_CONFIG } from './types'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -226,4 +227,11 @@ const customReferencesHandlers: Record<string, GetCustomReferencesFunc> = {
   profiles: getProfilesCustomReferences,
 }
 
-export const getCustomReferences: GetCustomReferencesFunc = combineCustomReferenceGetters(customReferencesHandlers)
+const getCustomReferencesConfig = (adapterConfig: InstanceElement): Record<string, boolean> => (
+  adapterConfig.value[FETCH_CONFIG]?.[DATA_CONFIGURATION]?.[CUSTOM_REFS_CONFIG] ?? {}
+)
+
+export const getCustomReferences: GetCustomReferencesFunc = combineCustomReferenceGetters(
+  customReferencesHandlers,
+  getCustomReferencesConfig,
+)

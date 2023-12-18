@@ -41,6 +41,7 @@ export const CUSTOM_OBJECTS_DEPLOY_RETRY_OPTIONS = 'customObjectsDeployRetryOpti
 export const FETCH_CONFIG = 'fetch'
 export const DEPLOY_CONFIG = 'deploy'
 export const METADATA_CONFIG = 'metadata'
+export const CUSTOM_REFS_CONFIG = 'customReferences'
 export const METADATA_INCLUDE_LIST = 'include'
 export const METADATA_EXCLUDE_LIST = 'exclude'
 const METADATA_TYPE = 'metadataType'
@@ -160,6 +161,11 @@ export type BrokenOutgoingReferencesSettings = {
   perTargetTypeOverrides?: Record<string, OutgoingReferenceBehavior>
 }
 
+const customReferencesTypeNames = ['profiles'] as const
+type customReferencesTypes = typeof customReferencesTypeNames[number]
+
+export type CustomReferencesSettings = Partial<Record<customReferencesTypes, boolean>>
+
 const objectIdSettings = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'objectIdSettings'),
   fields: {
@@ -268,6 +274,11 @@ const brokenOutgoingReferencesSettingsType = new ObjectType({
   },
 })
 
+const customReferencesSettingsType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'saltoCustomReferencesSettings'),
+  fields: Object.fromEntries(customReferencesTypeNames.map(name => [name, { refType: BuiltinTypes.BOOLEAN }])),
+})
+
 const warningSettingsType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'saltoWarningSettings'),
   fields: {
@@ -291,6 +302,7 @@ export type DataManagementConfig = {
   saltoManagementFieldSettings?: SaltoManagementFieldSettings
   brokenOutgoingReferencesSettings?: BrokenOutgoingReferencesSettings
   omittedFields?: string[]
+  [CUSTOM_REFS_CONFIG]?: CustomReferencesSettings
 }
 
 export type FetchParameters = {
@@ -548,6 +560,9 @@ const dataManagementType = new ObjectType({
     },
     omittedFields: {
       refType: new ListType(BuiltinTypes.STRING),
+    },
+    [CUSTOM_REFS_CONFIG]: {
+      refType: customReferencesSettingsType,
     },
   } as Record<keyof DataManagementConfig, FieldDefinition>,
   annotations: {

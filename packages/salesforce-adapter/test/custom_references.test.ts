@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ReferenceInfo, Values } from '@salto-io/adapter-api'
+import { InstanceElement, ReferenceInfo, Values, ObjectType, ElemID } from '@salto-io/adapter-api'
 import { INSTANCE_FULL_NAME_FIELD } from '../src/constants'
 import { mockTypes } from './mock_elements'
 import { createCustomObjectType, createMetadataTypeElement } from './utils'
 import { getCustomReferences } from '../src/custom_references'
+import { CUSTOM_REFS_CONFIG, DATA_CONFIGURATION, FETCH_CONFIG } from '../src/types'
 
 describe('getCustomReferences', () => {
   let refs: ReferenceInfo[]
@@ -27,6 +28,39 @@ describe('getCustomReferences', () => {
     new InstanceElement('test', mockTypes.Profile, fields),
     new InstanceElement('test', mockTypes.PermissionSet, fields),
   ]
+
+  describe('when profile refs are disabled', () => {
+    beforeEach(async () => {
+      [permissionSetInstance, profileInstance] = createTestInstances({
+        fieldPermissions: {
+          Account: {
+            testField__c: 'ReadWrite',
+          },
+        },
+      })
+
+      const AdapterConfigType = new ObjectType({
+        elemID: new ElemID('adapter'),
+        isSettings: true,
+      })
+      const adapterConfig = new InstanceElement(ElemID.CONFIG_NAME, AdapterConfigType, {
+        [FETCH_CONFIG]: {
+          [DATA_CONFIGURATION]: {
+            [CUSTOM_REFS_CONFIG]: {
+              profiles: false,
+            },
+          },
+        },
+      })
+      refs = await getCustomReferences(
+        [permissionSetInstance, profileInstance],
+        adapterConfig,
+      )
+    })
+    it('should not generate references', () => {
+      expect(refs).toBeEmpty()
+    })
+  })
 
   describe('fields', () => {
     describe('when the fields are inaccessible', () => {

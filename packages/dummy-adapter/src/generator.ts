@@ -392,16 +392,16 @@ export const generateElements = async (
 
   const generateImportantValues = (fieldNames: string[]): ImportantValues | undefined => {
     // the  important values should be only a small portion of the fields
-    const halfLength = Math.floor((fieldNames.length / 2) + 1)
+    const finalFieldNames = fieldNames.filter(name => !name.startsWith('_'))
+    const halfLength = Math.floor((finalFieldNames.length / 2) + 1)
     const randomNum = randomGen()
     const importantValuesFreq = params.importantValuesFreq ?? 1
     const randomNumToUse = randomNum < importantValuesFreq ? randomNum : 0
     const numberOfImportantValues = Math.floor(randomNumToUse * halfLength)
     const fieldSet = new Set<string>()
-    const finalFieldNames = fieldNames.filter(name => name.startsWith('_'))
     const importantValuesDef = Array.from({ length: numberOfImportantValues }).map(() => {
       const value = weightedRandomSelect(finalFieldNames)
-      if (fieldSet.has(value)) {
+      if (fieldSet.has(value) || value === undefined) {
         return undefined
       }
       fieldSet.add(value)

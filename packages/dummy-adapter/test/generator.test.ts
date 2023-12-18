@@ -25,6 +25,7 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import path from 'path'
+import { ImportantValue } from '@salto-io/adapter-utils'
 import { defaultParams, generateElements, GeneratorParams } from '../src/generator'
 import testParams from './test_params'
 
@@ -140,6 +141,12 @@ describe('elements generator', () => {
     })
   })
   describe('important values', () => {
+    const isValidImportantValue = (importantValue: ImportantValue): boolean => {
+      const { value, highlighted, indexed } = importantValue
+      return _.isString(value)
+        && _.isBoolean(highlighted)
+        && _.isBoolean(indexed)
+    }
     it('should not create important values if importantValuesFreq is 0', async () => {
       const importantValuesTestParams: GeneratorParams = {
         ...defaultParams,
@@ -154,8 +161,10 @@ describe('elements generator', () => {
       const elementsWithImportantValues = elements
         .filter(isObjectType)
         .filter(obj =>
-          obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] !== undefined
-          || obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] !== undefined)
+          (obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] !== undefined
+          && obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES].every(isValidImportantValue))
+          || (obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] !== undefined
+        && obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES].every(isValidImportantValue)))
       expect(_.isEmpty(elementsWithImportantValues)).toBeTruthy()
     })
     it('should create some important values if importantValuesFreq is 0.75', async () => {
@@ -171,8 +180,10 @@ describe('elements generator', () => {
       const elementsWithImportantValues = elements
         .filter(isObjectType)
         .filter(obj =>
-          obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] !== undefined
-          || obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] !== undefined)
+          (obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] !== undefined
+            && obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES].every(isValidImportantValue))
+          || (obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] !== undefined
+            && obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES].every(isValidImportantValue)))
       expect(_.isEmpty(elementsWithImportantValues)).toBeFalsy()
     })
     it('should create some important values if importantValuesFreq is undefined', async () => {
@@ -189,8 +200,10 @@ describe('elements generator', () => {
       const elementsWithImportantValues = elements
         .filter(isObjectType)
         .filter(obj =>
-          obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] !== undefined
-          || obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] !== undefined)
+          (obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] !== undefined
+            && obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES].every(isValidImportantValue))
+          || (obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] !== undefined
+            && obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES].every(isValidImportantValue)))
       expect(_.isEmpty(elementsWithImportantValues)).toBeFalsy()
     })
   })

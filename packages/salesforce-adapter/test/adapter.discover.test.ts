@@ -63,8 +63,9 @@ import * as fetchModule from '../src/fetch'
 import { fetchMetadataInstances, retrieveMetadataInstances } from '../src/fetch'
 import * as xmlTransformerModule from '../src/transformers/xml_transformer'
 import {
+  APEX_CLASS_METADATA_TYPE,
   CUSTOM_OBJECT,
-  DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
+  DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST, PROFILE_METADATA_TYPE,
   SALESFORCE,
   SALESFORCE_ERRORS,
   SOCKET_TIMEOUT,
@@ -209,6 +210,158 @@ describe('SalesforceAdapter fetch', () => {
         )
       }
     }
+
+    describe('profiles fetch with changes detection', () => {
+      const DATE = '2023-01-12T00:00:00.000Z'
+      const GREATER_DATE = '2023-02-12T00:00:00.000Z'
+      const UPDATED_PROFILE_FULL_NAME = 'updatedProfile'
+      const NON_UPDATED_PROFILE_FULL_NAME = 'nonUpdatedProfile'
+      const APEX_CLASS_FULL_NAME = 'apexClass'
+
+      const testData = {
+        [UPDATED_PROFILE_FULL_NAME]: {
+          zipFileName: `profiles/${UPDATED_PROFILE_FULL_NAME}.profile`,
+          zipFileContent: `<?xml version="1.0" encoding="UTF-8"?>
+                          <Profile xmlns="http://soap.sforce.com/2006/04/metadata">
+                              <apiVersion>58.0</apiVersion>
+                          </Profile>`,
+        },
+        [NON_UPDATED_PROFILE_FULL_NAME]: {
+          zipFileName: `profiles/${NON_UPDATED_PROFILE_FULL_NAME}.profile`,
+          zipFileContent: `<?xml version="1.0" encoding="UTF-8"?>
+                          <Profile xmlns="http://soap.sforce.com/2006/04/metadata">
+                              <apiVersion>58.0</apiVersion>
+                          </Profile>`,
+        },
+        [APEX_CLASS_FULL_NAME]: {
+          zipFileName: `profiles/${UPDATED_PROFILE_FULL_NAME}.profile`,
+          zipFileContent: `<?xml version="1.0" encoding="UTF-8"?>
+                          <Profile xmlns="http://soap.sforce.com/2006/04/metadata">
+                              <apiVersion>58.0</apiVersion>
+                          </Profile>`,
+        },
+      } as const
+
+      type SetMocksMode = 'relatedApexChanged' | 'relatedApexNotChanged'
+
+      const setupMocks = (mode: SetMocksMode): void => {
+        connection.metadata.describe.mockResolvedValue(
+          mockDescribeResult([
+            {xmlName: PROFILE_METADATA_TYPE, metaFile: false },
+            {xmlName: APEX_CLASS_METADATA_TYPE, metaFile: false },
+          ])
+        )
+        connection.metadata.list.mockImplementation(async queries => {
+          return makeArray(queries).flatMap(query => {
+            if (query.type === PROFILE_METADATA_TYPE) {
+              return [
+                mockFileProperties({
+                  type: PROFILE_METADATA_TYPE,
+                  fullName: UPDATED_PROFILE_FULL_NAME,
+                  lastModifiedDate: GREATER_DATE,
+                }),
+                mockFileProperties({
+                  type: PROFILE_METADATA_TYPE,
+                  fullName: NON_UPDATED_PROFILE_FULL_NAME,
+                  lastModifiedDate: DATE,
+                }),
+              ]
+            } else if (query.type === APEX_CLASS_METADATA_TYPE) {
+              return [
+                mockFileProperties({
+                  type: APEX_CLASS_METADATA_TYPE,
+                  fullName: APEX_CLASS_FULL_NAME,
+                  lastModifiedDate: mode === 'relatedApexChanged' ? GREATER_DATE : DATE,
+                }),
+              ]
+            }
+            return []
+          })
+        })
+        connection.metadata.retrieve.mockImplementation(request => {
+          console.log(request)
+          return mockRetrieveLocator({
+            zipFiles: [
+              {
+                path: testData[UPDATED_PROFILE_FULL_NAME].zipFileName,
+                content: testData[UPDATED_PROFILE_FULL_NAME].zipFileContent,
+              },
+              {
+                path: testData[NON_UPDATED_PROFILE_FULL_NAME].zipFileName,
+                content: testData[NON_UPDATED_PROFILE_FULL_NAME].zipFileContent,
+              },
+              {
+                path: testData[APEX_CLASS_FULL_NAME].zipFileName,
+                content: testData[APEX_CLASS_FULL_NAME].zipFileContent,
+              },
+            ],
+          })
+        })
+      }
+
+      beforeEach(() => {
+        const updatedProfileInstance = createInstanceElement({
+          fullName: UPDATED_PROFILE_FULL_NAME,
+          apiVersion: '57.0',
+        }, mockTypes.Profile)
+        const nonUpdatedProfileInstance = createInstanceElement({
+          fullName: NON_UPDATED_PROFILE_FULL_NAME,
+          apiVersion: '57.0',
+        }, mockTypes.Profile)
+        const apexClassInstance = createInstanceElement({
+          fullName: APEX_CLASS_FULL_NAME,
+          apiVersion: '57.0',
+        }, mockTypes.ApexClass)
+
+        const changedAtSingleton = mockInstances().ChangedAtSingleton
+        changedAtSingleton.value = {
+          [PROFILE_METADATA_TYPE]: {
+            [UPDATED_PROFILE_FULL_NAME]: DATE,
+            [NON_UPDATED_PROFILE_FULL_NAME]: DATE,
+          },
+          [APEX_CLASS_METADATA_TYPE]: {
+            [APEX_CLASS_FULL_NAME]: DATE,
+          },
+        }
+        const elementsSource = buildElementsSourceFromElements([
+          mockTypes.ApexClass,
+          mockTypes.Profile,
+          apexClassInstance,
+          updatedProfileInstance,
+          nonUpdatedProfileInstance,
+          changedAtSingleton,
+        ]);
+        ({connection, adapter} = mockAdapter({
+          adapterParams: {
+            getElemIdFunc: mockGetElemIdFunc,
+            config: {
+              fetch: {
+                metadata: {
+                  include: [
+                    {metadataType: '.*'},
+                  ],
+                },
+              },
+              maxItemsInRetrieveRequest: testMaxItemsInRetrieveRequest,
+              client: {
+                readMetadataChunkSize: {default: 3, overrides: {Test: 2}},
+              },
+            },
+            elementsSource,
+          },
+        }))
+      })
+      describe('when no related instances were changed', () => {
+        beforeEach(() => {
+          setupMocks('relatedApexNotChanged')
+        })
+        it('should only update the updated profile instance', async () => {
+          const fetchRes = await adapter.fetch({...mockFetchOpts, withChangesDetection: true})
+          const fetchedInstances = fetchRes.elements.filter(isInstanceElement)
+          expect(fetchedInstances).toBeEmpty()
+        })
+      })
+    })
 
     describe('partial fetch deletions detection', () => {
       let testAdapter: SalesforceAdapter

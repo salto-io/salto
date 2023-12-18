@@ -13,44 +13,25 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, Change, getChangeData, getDeepInnerType, InstanceElement, isAdditionChange, isModificationChange, isObjectType, isRemovalChange, ModificationChange, ObjectType, toChange, Values } from '@salto-io/adapter-api'
+import { Change, ElemID, getChangeData, InstanceElement, ModificationChange, ObjectType, toChange, Values } from '@salto-io/adapter-api'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { logger } from '@salto-io/logging'
-import { resolveChangeElement, safeJsonStringify } from '@salto-io/adapter-utils'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import Joi from 'joi'
-import { getFilledJspUrls } from '../../utils'
-import JiraClient from '../../client/client'
-import { JiraConfig } from '../../config/config'
-import { deployWithJspEndpoints } from '../../deployment/jsp_deployment'
-import { NOTIFICATION_EVENT_TYPE_NAME } from '../../constants'
-import { getLookUpName } from '../../reference_mapping'
-
-const log = logger(module)
+import { JIRA, NOTIFICATION_EVENT_TYPE_NAME } from '../../constants'
 
 type EventValues = {
-  eventType: string
-  type: string
-  parameter?: unknown
-  id?: string
+  event: {
+    id: string
+  }
+  notification: {
+    id: string
+    notificationType: string
+    parameter?: string
+  }
 }
 
-const EVENT_TYPES: Record<string, string> = {
-  ProjectLead: 'Project_Lead',
-  CurrentAssignee: 'Current_Assignee',
-  Reporter: 'Current_Reporter',
-  CurrentUser: 'Remote_User',
-  ComponentLead: 'Component_Lead',
-  User: 'Single_User',
-  Group: 'Group_Dropdown',
-  ProjectRole: 'Project_Role',
-  EmailAddress: 'Single_Email_Address',
-  AllWatchers: 'All_Watchers',
-  UserCustomField: 'User_Custom_Field_Value',
-  GroupCustomField: 'Group_Custom_Field_Value',
-}
-
-type NotificationEvent = {
+export type NotificationEvent = {
   event?: {
     id: number
   }
@@ -59,6 +40,7 @@ type NotificationEvent = {
     notificationType: string
     user?: unknown
     additionalProperties?: unknown
+    id?: number
   }[]
 }
 
@@ -75,22 +57,16 @@ const NOTIFICATION_SCHEME = Joi.object({
       notifications: Joi.array().items(
         Joi.object({
           notificationType: Joi.string().required(),
+          id: Joi.number().optional(),
         }).unknown(true)
       ).optional(),
     }).unknown(true)
   ).optional(),
 }).unknown(true).required()
 
-const isNotificationScheme = (value: unknown): value is NotificationScheme => {
-  const { error } = NOTIFICATION_SCHEME.validate(value)
-  if (error !== undefined) {
-    log.error(`Received an invalid notification scheme: ${error.message}, ${safeJsonStringify(value)}`)
-    return false
-  }
-  return true
-}
+export const isNotificationScheme = createSchemeGuard<NotificationScheme>(NOTIFICATION_SCHEME, 'Received an invalid notification scheme')
 
-const transformNotificationEvent = (notificationEvent: NotificationEvent): void => {
+export const transformNotificationEvent = (notificationEvent: NotificationEvent): void => {
   notificationEvent.eventType = notificationEvent.event?.id
   delete notificationEvent.event
   notificationEvent.notifications?.forEach((notification: Values) => {
@@ -98,85 +74,70 @@ const transformNotificationEvent = (notificationEvent: NotificationEvent): void 
     delete notification.notificationType
     delete notification.additionalProperties
     delete notification.user
+    delete notification.id
   })
 }
 
-export const transformAllNotificationEvents = (notificationSchemeValues: Values): void => {
-  if (!isNotificationScheme(notificationSchemeValues)) {
-    throw new Error('Received an invalid notification scheme')
-  }
-  notificationSchemeValues.notificationSchemeEvents
-    ?.forEach(transformNotificationEvent)
-}
+const getEventKey = (eventEntry: EventValues): string =>
+  `${eventEntry.event?.id}-${eventEntry.notification?.notificationType}-${eventEntry.notification?.parameter}`
 
-const convertValuesToJSPBody = (values: Values, instance: InstanceElement): Values => {
-  const type = EVENT_TYPES[values.type] ?? values.type
-
-  return _.pickBy({
-    id: values.id,
-    schemeId: instance.value.id,
-    name: values.name,
-    eventTypeIds: values.eventType,
-    type,
-    [type]: values.parameter?.toString(),
-  }, lowerdashValues.isDefined)
-}
-
-export const getEventKey = (event: EventValues): string =>
-  `${event.eventType}-${event.type}-${event.parameter}`
-
-export const getEventsValues = (
-  instanceValues: Values,
+const getEventsValues = (
+  notificationEvents: NotificationEvent[],
 ): EventValues[] =>
-  (instanceValues.notificationSchemeEvents ?? [])
-    .flatMap((event: Values) => (event.notifications ?? []).map((notification: Values) => ({
-      eventType: event.eventType,
-      type: notification.type,
-      parameter: notification.parameter,
-      id: notification.id,
+  notificationEvents
+    .flatMap((eventEntry: Values) => (eventEntry.notifications ?? []).map((notification: Values) => ({
+      event: { id: eventEntry.event?.id },
+      notification,
     })))
+
+export const generateNotificationIds = (notificationEvents: NotificationEvent[]): Record<string, string> =>
+  _(getEventsValues(notificationEvents))
+    .keyBy(getEventKey)
+    .mapValues(({ notification }) => notification?.id)
+    .pickBy(lowerdashValues.isDefined)
+    .value()
 
 const getEventInstances = (
   instance: InstanceElement,
   eventType: ObjectType,
-): InstanceElement[] =>
-  getEventsValues(instance.value)
-    .map(event => new InstanceElement(
-      getEventKey(event),
-      eventType,
-      convertValuesToJSPBody({
-        ...event,
-        name: getEventKey(event),
-        id: instance.value.notificationIds?.[getEventKey(event)],
-      }, instance),
-    ))
-
-const getEventType = async (change: Change<InstanceElement>): Promise<ObjectType> => {
-  const notificationSchemeType = await getChangeData(change).getType()
-  const eventType = await getDeepInnerType(
-    await notificationSchemeType.fields.notificationSchemeEvents.getType()
-  )
-
-  if (!isObjectType(eventType)) {
-    throw new Error('Expected event type to be an object type')
+  notificationSchemeId: string,
+): InstanceElement[] => {
+  const { value } = instance
+  if (!isNotificationScheme(value)) {
+    throw new Error(`received invalid structure for notificationSchemeEvents in instance ${instance.elemID.getFullName()}`)
   }
-
-  return eventType
+  return getEventsValues(value.notificationSchemeEvents ?? [])
+    .map(eventEntry => new InstanceElement(
+      getEventKey(eventEntry),
+      eventType,
+      {
+        notificationSchemeEvents: [{ event: eventEntry.event, notifications: [eventEntry.notification] }],
+        // notificaitonIds might not exist
+        id: instance.value.notificationIds?.[getEventKey(eventEntry)],
+        notificationSchemeId,
+      }
+    ),)
 }
 
-const getEventChanges = async (
-  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
-): Promise<Change<InstanceElement>[]> => {
-  const eventType = await getEventType(change)
+export const getEventChangesToDeploy = (
+  notificationSchemeChange: ModificationChange<InstanceElement>
+): Change<InstanceElement>[] => {
+  const eventType = new ObjectType({ elemID: new ElemID(JIRA, NOTIFICATION_EVENT_TYPE_NAME) })
   const eventInstancesBefore = _.keyBy(
-    isModificationChange(change)
-      ? getEventInstances(change.data.before, eventType)
-      : [],
+    getEventInstances(
+      notificationSchemeChange.data.before,
+      eventType,
+      getChangeData(notificationSchemeChange).value.id
+    ),
     instance => instance.elemID.getFullName(),
   )
 
   const eventInstancesAfter = _.keyBy(
-    getEventInstances(change.data.after, eventType),
+    getEventInstances(
+      notificationSchemeChange.data.after,
+      eventType,
+      getChangeData(notificationSchemeChange).value.id
+    ),
     instance => instance.elemID.getFullName(),
   )
 
@@ -190,53 +151,4 @@ const getEventChanges = async (
     ...removedEvents.map(event => toChange({ before: event })),
     ...newEvents.map(event => toChange({ after: event })),
   ]
-}
-
-export const deployEvents = async (
-  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
-  client: JiraClient,
-  config: JiraConfig,
-): Promise<void> => {
-  const eventChanges = await getEventChanges(await resolveChangeElement(change, getLookUpName))
-  const instance = getChangeData(change)
-
-  const urls = getFilledJspUrls(instance, config, NOTIFICATION_EVENT_TYPE_NAME)
-
-  const res = await deployWithJspEndpoints({
-    changes: eventChanges,
-    client,
-    urls,
-    queryFunction: async () => {
-      if (urls.query === undefined) {
-        throw new Error(`${NOTIFICATION_EVENT_TYPE_NAME} is missing a JSP query url`)
-      }
-      const response = await client.getSinglePage({ url: urls.query })
-      if (Array.isArray(response.data)) {
-        throw new Error(`Received unexpected response from ${NOTIFICATION_EVENT_TYPE_NAME}`)
-      }
-      transformAllNotificationEvents(response.data)
-      return getEventsValues(response.data)
-        .map(event => ({ ...event, name: getEventKey(event) }))
-        .map(eventValues => convertValuesToJSPBody(eventValues, instance))
-    },
-  })
-
-  eventChanges.forEach(eventChange => {
-    const eventInstance = getChangeData(eventChange)
-    if (isRemovalChange(eventChange)) {
-      delete instance.value.notificationIds[eventInstance.value.name]
-    }
-
-    if (isAdditionChange(eventChange)) {
-      if (instance.value.notificationIds === undefined) {
-        instance.value.notificationIds = {}
-      }
-      instance.value.notificationIds[eventInstance.value.name] = eventInstance.value.id
-    }
-  })
-
-  if (res.errors.length !== 0) {
-    log.error(`Failed to deploy notification scheme events of ${instance.elemID.getFullName()}: ${res.errors.join(', ')}`)
-    throw new Error(`Failed to deploy notification scheme events of ${instance.elemID.getFullName()}`)
-  }
 }

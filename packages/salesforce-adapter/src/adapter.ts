@@ -16,8 +16,7 @@
 import {
   TypeElement, ObjectType, InstanceElement, isAdditionChange, getChangeData, Change,
   ElemIdGetter, FetchResult, AdapterOperations, DeployResult, FetchOptions, DeployOptions,
-  ReadOnlyElementsSource,
-  setPartialFetchData,
+  ReadOnlyElementsSource, ElemID, PartialFetchData, Element,
 } from '@salto-io/adapter-api'
 import {
   filter,
@@ -37,6 +36,7 @@ import {
   Types,
   isMetadataObjectType,
   MetadataObjectType,
+  createInstanceElement,
 } from './transformers/transformer'
 import layoutFilter from './filters/layouts'
 import customObjectsFromDescribeFilter from './filters/custom_objects_from_soap_describe'
@@ -106,15 +106,17 @@ import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
 import {
   addDefaults,
+  apiNameSync,
   isCustomObjectSync,
-  isCustomType,
+  isCustomType, isMetadataInstanceElementSync,
   listMetadataObjects,
+  metadataTypeSync,
 } from './filters/utils'
 import {
   retrieveMetadataInstances,
   fetchMetadataType,
   fetchMetadataInstances,
-  retrieveMetadataInstanceForFetchWithChangesDetection,
+  retrieveMetadataInstanceForFetchWithChangesDetection
 } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 import { getLookUpName, getLookupNameForDataInstances } from './transformers/reference_mapping'
@@ -359,6 +361,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private client: SalesforceClient
   private userConfig: SalesforceConfig
   private elementsSource: ReadOnlyElementsSource
+  private listedInstancesByType: collections.map.DefaultMap<string, Set<string>>
 
   public constructor({
     metadataTypesOfInstancesFetchedInFilters = [FLOW_METADATA_TYPE, FLOW_DEFINITION_METADATA_TYPE],
@@ -416,11 +419,33 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.userConfig = config
     this.metadataTypesOfInstancesFetchedInFilters = metadataTypesOfInstancesFetchedInFilters
     this.nestedMetadataTypes = nestedMetadataTypes
-    this.client = client
+    this.listedInstancesByType = new collections.map.DefaultMap(() => new Set())
+    this.client = new Proxy(client, {
+      get: (target, propertyKey) => {
+        if (propertyKey === 'listMetadataObjects') {
+          // This proxy populates the listedInstancesByType
+          // which is later used to detect deleted elements in partial fetch
+          const proxyListMetadataObjects: SalesforceClient['listMetadataObjects'] = (
+            ...args
+          ) => target.listMetadataObjects(...args)
+            .then(listMetadataObjectsResult => {
+              _(listMetadataObjectsResult.result)
+                .groupBy(({ type }) => type)
+                .forEach((props, typeName) => {
+                  const listedInstances = this.listedInstancesByType.get(typeName)
+                  props.forEach(({ fullName }) => listedInstances.add(fullName))
+                })
+              return listMetadataObjectsResult
+            })
+          return proxyListMetadataObjects
+        }
+        return target[propertyKey as keyof SalesforceClient]
+      },
+    })
     this.elementsSource = elementsSource
     this.createFiltersRunner = async (fetchProfile: FetchProfile) => filter.filtersRunner(
       {
-        client,
+        client: this.client,
         config: {
           unsupportedSystemFields,
           systemFields,
@@ -502,11 +527,21 @@ export default class SalesforceAdapter implements AdapterOperations {
       configChangeSuggestions,
       this.userConfig,
     )
+    const getPartialFetchData = async (): Promise<PartialFetchData | undefined> => {
+      if (!fetchProfile.metadataQuery.isPartialFetch()) {
+        return undefined
+      }
+      const deletedElemIds = await this.getDeletedElemIdsForPartialFetch({ fetchProfile, fetchElements: elements })
+      if (deletedElemIds.length > 0) {
+        log.debug('The following elemIDs were deleted in partial fetch: %s', safeJsonStringify(deletedElemIds.map(e => e.getFullName())))
+      }
+      return { isPartial: true, deletedElements: deletedElemIds }
+    }
     return {
       elements,
       errors: onFetchFilterResult.errors ?? [],
       updatedConfig,
-      partialFetchData: setPartialFetchData(fetchProfile.metadataQuery.isPartialFetch()),
+      partialFetchData: await getPartialFetchData(),
     }
   }
 
@@ -688,5 +723,46 @@ export default class SalesforceAdapter implements AdapterOperations {
       elements: instances.elements,
       configChanges: [...instances.configChanges, ...configChanges],
     }
+  }
+
+  private async getElemIdsByTypeFromSource(): Promise<Record<string, ElemID[]>> {
+    const metadataElements = (await awu(await this.elementsSource.getAll()).toArray())
+      .filter(element => isMetadataInstanceElementSync(element) || isCustomObjectSync(element))
+    return _(metadataElements)
+      .groupBy(metadataTypeSync)
+      .mapValues(elems => elems.map(e => e.elemID))
+      .value()
+  }
+
+  private async getDeletedElemIdsForPartialFetch({ fetchProfile, fetchElements }: {
+    fetchElements: ReadonlyArray<Element>
+    fetchProfile: FetchProfile
+  }): Promise<Required<PartialFetchData>['deletedElements']> {
+    const metadataTypesByName = _.keyBy(
+      fetchElements.filter(isMetadataObjectType),
+      type => apiNameSync(type) ?? 'unknown'
+    )
+    const elemIdsByTypeFromSource = await this.getElemIdsByTypeFromSource()
+    const deletedElemIds = new Set<ElemID>()
+    Object.entries(elemIdsByTypeFromSource)
+      // We only want to check types that are included. This is especially relevant for targeted fetch
+      .filter(([typeName]) => fetchProfile.metadataQuery.isTypeMatch(typeName))
+      .forEach(([typeName, elemIdsFromSource]) => {
+        const metadataType = metadataTypesByName[typeName]
+        if (metadataType === undefined) {
+          log.warn('Skipping deletion detections for type %s since the metadata ObjectType was not found', typeName)
+          return
+        }
+        const listedElemIdsFullNames = new Set(Array.from(this.listedInstancesByType.getOrUndefined(typeName) ?? [])
+          // We invoke createInstanceElement to have the correct elemID that we calculate in fetch
+          .map(fullName => createInstanceElement({ fullName }, metadataType).elemID.getFullName()))
+
+        elemIdsFromSource.forEach(sourceElemId => {
+          if (!listedElemIdsFullNames.has(sourceElemId.getFullName())) {
+            deletedElemIds.add(sourceElemId)
+          }
+        })
+      })
+    return Array.from(deletedElemIds)
   }
 }

@@ -25,7 +25,7 @@ const { awu } = collections.asynciterable
 describe('createFileStateContentProvider', () => {
   let provider: StateContentProvider
   beforeEach(() => {
-    provider = createFileStateContentProvider()
+    provider = createFileStateContentProvider('localStorage')
   })
   const testDir = setupTmpDir()
   const accountNames = ['salesforce', 'netsuite', 'dummy']

@@ -15,7 +15,7 @@
 */
 import { ChangeError, ElemID, InstanceElement, ObjectType, Element } from '@salto-io/adapter-api'
 import ZendeskClient from '../../src/client/client'
-import { ARTICLE_TYPE_NAME, MACRO_TYPE_NAME, TRIGGER_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { ARTICLE_TYPE_NAME, MACRO_TYPE_NAME, TRIGGER_CATEGORY_TYPE_NAME, TRIGGER_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { fallbackUsersHandler } from '../../src/fix_elements/fallback_user'
 import * as userUtils from '../../src/user_utils'
 import { DEPLOY_CONFIG, FETCH_CONFIG } from '../../src/config'
@@ -238,5 +238,22 @@ describe('fallbackUsersHandler', () => {
 
       expect(fallbackResponse.fixedElements).toEqual([fallbackMacro, fallbackArticle])
     })
+  })
+
+  it('does not replace types that do not need replacement', async () => {
+    const triggerCategoryInstance = new InstanceElement(
+      'triggerCategory',
+      new ObjectType({ elemID: new ElemID(ZENDESK, TRIGGER_CATEGORY_TYPE_NAME) }),
+      {}
+    )
+    const instances = [triggerCategoryInstance].map(e => e.clone())
+    const fallbackResponse = await fallbackUsersHandler({
+      client,
+      config: {
+        [DEPLOY_CONFIG]: { defaultMissingUserFallback: 'fallback@.com' },
+        [FETCH_CONFIG]: { resolveUserIDs: true },
+      },
+    } as FixElementsArgs)(instances)
+    expect(fallbackResponse.fixedElements).toEqual([])
   })
 })

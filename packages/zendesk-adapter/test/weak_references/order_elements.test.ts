@@ -27,9 +27,10 @@ describe('order_elements', () => {
   let triggerOrderInstance: InstanceElement
 
   const AdapterConfigType = new ObjectType({
-    elemID: new ElemID('adapter', 'AdapterConfig'),
+    elemID: new ElemID('adapter'),
+    isSettings: true,
   })
-  const adapterConfig = new InstanceElement('settings', AdapterConfigType)
+  const adapterConfig = new InstanceElement(ElemID.CONFIG_NAME, AdapterConfigType)
 
   beforeEach(() => {
     const objType = new ObjectType({ elemID: new ElemID(ZENDESK, AUTOMATION_ORDER_TYPE_NAME) })

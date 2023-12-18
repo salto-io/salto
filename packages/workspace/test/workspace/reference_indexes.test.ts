@@ -529,9 +529,10 @@ describe('updateReferenceIndexes', () => {
         }
       )
       const AdapterConfigType = new ObjectType({
-        elemID: new ElemID('adapter', 'AdapterConfig'),
+        elemID: new ElemID('adapter'),
+        isSettings: true,
       })
-      const adapterConfig = new InstanceElement('settings', AdapterConfigType)
+      const adapterConfig = new InstanceElement(ElemID.CONFIG_NAME, AdapterConfigType)
       await adaptersConfig.setAdapter('test', 'test', adapterConfig)
       const changes = [toChange({ after: inst })]
       await updateReferenceIndexes(
@@ -554,6 +555,9 @@ describe('updateReferenceIndexes', () => {
           },
         ] : []),
       )
+    })
+    afterEach(() => {
+      adaptersConfig.getAdapter.mockClear()
     })
     it('should override the default references with the custom references', () => {
       expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([

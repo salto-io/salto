@@ -23,9 +23,10 @@ describe('automation_projects', () => {
   let instance: InstanceElement
   let elementsSource: ReadOnlyElementsSource
   const AdapterConfigType = new ObjectType({
-    elemID: new ElemID('adapter', 'AdapterConfig'),
+    elemID: new ElemID('adapter'),
+    isSettings: true,
   })
-  const adapterConfig = new InstanceElement('settings', AdapterConfigType)
+  const adapterConfig = new InstanceElement(ElemID.CONFIG_NAME, AdapterConfigType)
 
   beforeEach(() => {
     projectInstance = new InstanceElement(

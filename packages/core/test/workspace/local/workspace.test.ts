@@ -534,9 +534,10 @@ describe('local workspace', () => {
     })
     it('Should call the right adapter getCustomReferences', async () => {
       const AdapterConfigType = new ObjectType({
-        elemID: new ElemID('adapter', 'AdapterConfig'),
+        elemID: new ElemID('adapter'),
+        isSettings: true,
       })
-      const adapterConfig = new InstanceElement('settings', AdapterConfigType)
+      const adapterConfig = new InstanceElement(ElemID.CONFIG_NAME, AdapterConfigType)
       await adaptersConfigSource.setAdapter('test2', 'test', adapterConfig)
       const references = await getCustomReferences([instance], { test2: 'test' }, adaptersConfigSource)
       expect(references).toEqual([{
@@ -546,7 +547,7 @@ describe('local workspace', () => {
       }])
     })
 
-    it('Should call use the adapter name when it is not present in the account to service name mapping', async () => {
+    it('Should use the adapter name when it is not present in the account to service name mapping', async () => {
       const references = await getCustomReferences([instance], {}, adaptersConfigSource)
       expect(references).toEqual([{
         source: new ElemID('test2', 'type', 'instance', 'inst3'),
@@ -558,6 +559,13 @@ describe('local workspace', () => {
     it('Should return empty array if adapter does not have getCustomReferences func', async () => {
       adapterCreators.test = {} as unknown as Adapter
       const references = await getCustomReferences([instance], { test2: 'test' }, adaptersConfigSource)
+      expect(references).toEqual([])
+    })
+
+    it('Should not access the adapter config if adapter does not have getCustomReferences func', async () => {
+      adapterCreators.test = {} as unknown as Adapter
+      const references = await getCustomReferences([instance], { test2: 'test' }, adaptersConfigSource)
+      expect(adaptersConfigSource.getAdapter).not.toHaveBeenCalled()
       expect(references).toEqual([])
     })
 

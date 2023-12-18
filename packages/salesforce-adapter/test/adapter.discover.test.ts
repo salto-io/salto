@@ -37,7 +37,13 @@ import { FileProperties } from '@salto-io/jsforce-types'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
-import { apiName, isMetadataObjectType, MetadataObjectType, Types } from '../src/transformers/transformer'
+import {
+  apiName,
+  createInstanceElement,
+  isMetadataObjectType,
+  MetadataObjectType,
+  Types,
+} from '../src/transformers/transformer'
 import { findElements, ZipFile } from './utils'
 import mockAdapter from './adapter'
 import * as constants from '../src/constants'
@@ -203,6 +209,71 @@ describe('SalesforceAdapter fetch', () => {
         )
       }
     }
+
+    describe('partial fetch deletions detection', () => {
+      let testAdapter: SalesforceAdapter
+      let testConnection: MockInterface<Connection>
+      beforeEach(() => {
+        const existingElements = [
+          mockInstances().ChangedAtSingleton,
+          mockTypes.Layout,
+          mockTypes.ApexClass,
+          createInstanceElement({ fullName: 'Layout1' }, mockTypes.Layout),
+          createInstanceElement({ fullName: 'Layout2' }, mockTypes.Layout),
+          createInstanceElement({ fullName: 'DeletedLayout' }, mockTypes.Layout),
+          createInstanceElement({ fullName: 'Apex1' }, mockTypes.ApexClass),
+          createInstanceElement({ fullName: 'Apex2' }, mockTypes.ApexClass),
+          createInstanceElement({ fullName: 'DeletedApex' }, mockTypes.ApexClass),
+        ]
+        const elementsSource = buildElementsSourceFromElements(existingElements);
+        ({ connection: testConnection, adapter: testAdapter } = mockAdapter({
+          adapterParams: {
+            getElemIdFunc: mockGetElemIdFunc,
+            config: {
+              fetch: {
+                metadata: {
+                  include: [
+                    { metadataType: '.*' },
+                  ],
+                },
+              },
+              maxItemsInRetrieveRequest: testMaxItemsInRetrieveRequest,
+              client: {
+                readMetadataChunkSize: { default: 3, overrides: { Test: 2 } },
+              },
+            },
+            elementsSource,
+          },
+        }))
+        testConnection.metadata.describe.mockResolvedValue(mockDescribeResult([
+          { xmlName: 'Layout' }, { xmlName: 'ApexClass' },
+        ]))
+        testConnection.metadata.list.mockImplementation(async queries => makeArray(queries).flatMap(query => {
+          if (query.type === 'Layout') {
+            return [
+              mockFileProperties({ type: 'Layout', fullName: 'Layout1' }),
+              mockFileProperties({ type: 'Layout', fullName: 'Layout2' }),
+            ]
+          } if (query.type === 'ApexClass') {
+            return [
+              mockFileProperties({ type: 'ApexClass', fullName: 'Apex1' }),
+              mockFileProperties({ type: 'ApexClass', fullName: 'Apex2' }),
+            ]
+          }
+          return []
+        }))
+      })
+      it('should return correct deleted elemIDs', async () => {
+        const fetchResult = await testAdapter.fetch({
+          ...mockFetchOpts,
+          withChangesDetection: true,
+        })
+        expect(makeArray(fetchResult.partialFetchData?.deletedElements).map(id => id.getFullName())).toEqual([
+          'salesforce.Layout.instance.DeletedLayout',
+          'salesforce.ApexClass.instance.DeletedApex',
+        ])
+      })
+    })
 
     describe('client cache', () => {
       beforeEach(() => {

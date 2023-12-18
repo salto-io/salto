@@ -20,7 +20,7 @@ import { fileType } from '../src/types/file_cabinet_types'
 import getChangeValidator from '../src/change_validator'
 import netsuiteClientValidation from '../src/change_validators/client_validation'
 import { FetchByQueryFunc, FetchByQueryReturnType } from '../src/change_validators/safe_deploy'
-import { NetsuiteQuery } from '../src/query'
+import { NetsuiteQuery, fullFetchConfig } from '../src/query'
 import NetsuiteClient from '../src/client/client'
 import * as dependencies from '../src/change_validators/dependencies'
 import { INTERNAL_ID } from '../src/constants'
@@ -39,6 +39,9 @@ const DEFAULT_OPTIONS = {
   }) as unknown as Required<Filter>,
   elementsSource: jest.fn() as unknown as ReadOnlyElementsSource,
   fetchByQuery: jest.fn(),
+  userConfig: {
+    fetch: fullFetchConfig(),
+  },
 }
 
 jest.mock('../src/change_validators/client_validation')

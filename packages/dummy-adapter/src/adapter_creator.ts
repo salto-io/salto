@@ -35,6 +35,7 @@ export const configType = new ObjectType({
     fieldsToOmitOnDeploy: { refType: new ListType(BuiltinTypes.STRING) },
     // Exclude elements from the fetch by their elemIDs
     elementsToExclude: { refType: new ListType(BuiltinTypes.STRING) },
+    importantValuesFreq: { refType: new ListType(BuiltinTypes.NUMBER) },
   },
 })
 

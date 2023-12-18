@@ -13,36 +13,59 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { collections } from '@salto-io/lowerdash'
+import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
-
 import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 
-const { makeArray } = collections.array
+const { isDefined } = lowerdashValues
 const FETCH_CONFIG = 'fetch'
+const CLIENT_CONFIG = 'client'
+
+export const TYPE_TO_EXCLUDE = 'typeToExclude'
+export const DISABLE_PRIVATE_API = 'disablePrivateAPI'
+type ConfigSuggestionType = 'typeToExclude' | 'disablePrivateAPI'
 
 export type ConfigChangeSuggestion = {
-  typeToExclude: string
+  type: ConfigSuggestionType
+  value?: string
+  reason: string
 }
 
-// When some items cannot be fetched, they are excluded from the fetch process, and the user is notified.
-export const getConfigWithExcludeFromConfigChanges = ({
+/**
+ * Update config with types to exclude or disabling private API according to config changes
+ */
+export const getUpdatedCofigFromConfigChanges = ({
   configChanges,
   currentConfig,
   configType,
-  adapterName,
 }: {
   configChanges: ConfigChangeSuggestion[]
   currentConfig: InstanceElement
   configType: ObjectType
-  adapterName: string
 }): { config: InstanceElement[]; message: string } | undefined => {
-  const typesToRemove = makeArray(configChanges).map(e => e.typeToExclude)
-
-  if (typesToRemove.length === 0) {
+  if (configChanges.length === 0) {
     return undefined
   }
-  const stopManagingItmesMsg = `Salto failed to fetch some items from ${adapterName}. Failed items must be excluded from the fetch.`
+
+  const typesToExclude = configChanges
+    .filter(configChange => configChange.type === TYPE_TO_EXCLUDE && isDefined(configChange.value))
+    .map(configChange => ({ type: configChange.value }))
+
+  const shouldDisablePrivateApi = configChanges.find(configChange => configChange.type === DISABLE_PRIVATE_API)
+
+  const updatedFetchConfig = typesToExclude.length > 0
+    ? {
+      ...currentConfig.value[FETCH_CONFIG],
+      exclude: [
+        ...currentConfig.value[FETCH_CONFIG].exclude,
+        ...typesToExclude,
+      ],
+    }
+    : currentConfig.value[FETCH_CONFIG]
+
+  const updatedClientconfig = shouldDisablePrivateApi
+    ? { ...currentConfig.value[CLIENT_CONFIG], usePrivateAPI: false }
+    : currentConfig.value[CLIENT_CONFIG]
 
   return {
     config: [new InstanceElement(
@@ -50,15 +73,10 @@ export const getConfigWithExcludeFromConfigChanges = ({
       configType,
       {
         ...currentConfig.value,
-        fetch: {
-          ...currentConfig.value[FETCH_CONFIG],
-          exclude: [
-            ...currentConfig.value[FETCH_CONFIG].exclude,
-            ...typesToRemove.map(type => ({ type })),
-          ],
-        },
+        fetch: updatedFetchConfig,
+        client: updatedClientconfig,
       },
     )],
-    message: formatConfigSuggestionsReasons([stopManagingItmesMsg]),
+    message: formatConfigSuggestionsReasons(configChanges.map(configChange => configChange.reason)),
   }
 }

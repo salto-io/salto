@@ -31,7 +31,7 @@ import { shouldRecurseIntoEntry } from '../instance_elements'
 import { addRemainingTypes } from './add_remaining_types'
 import { ElementQuery } from '../query'
 import { AdapterFetchError, InvalidSingletonType } from '../../config/shared'
-import { ConfigChangeSuggestion } from '../../config/config_change'
+import { ConfigChangeSuggestion, TYPE_TO_EXCLUDE } from '../../config/config_change'
 
 const { makeArray } = collections.array
 const { toArrayAsync, awu } = collections.asynciterable
@@ -80,7 +80,7 @@ export const getEntriesResponseValues: EntriesRequester = async ({
 
 export const getUniqueConfigSuggestions = (
   configSuggestions: ConfigChangeSuggestion[]
-): ConfigChangeSuggestion[] => (_.uniqBy(configSuggestions, suggestion => suggestion.typeToExclude))
+): ConfigChangeSuggestion[] => (_.uniqBy(configSuggestions, suggestion => `${suggestion.type}-${suggestion.value}-${suggestion.reason}`))
 
 /**
  * Creates new type based on instances values,
@@ -413,7 +413,11 @@ export const getAllElements = async ({
           && (reversedSupportedTypes[args.typeName] !== undefined)) {
           const typesToExclude = reversedSupportedTypes[args.typeName]
           typesToExclude.forEach(type => {
-            configSuggestions.push({ typeToExclude: type })
+            configSuggestions.push({
+              type: TYPE_TO_EXCLUDE,
+              value: type,
+              reason: `Salto failed to fetch type ${type}`,
+            })
           })
           return { elements: [], errors: [] }
         }

@@ -15,7 +15,7 @@
 */
 
 import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
-import { createAdapterApiConfigType, createTransformationConfigTypes, getConfigWithExcludeFromConfigChanges } from '../../src/config'
+import { createAdapterApiConfigType, createTransformationConfigTypes, getUpdatedCofigFromConfigChanges } from '../../src/config'
 
 describe('config_change', () => {
   let config: InstanceElement
@@ -38,18 +38,24 @@ describe('config_change', () => {
     )
   })
   it('should return undefined when no changes are suggested', () => {
-    expect(getConfigWithExcludeFromConfigChanges({ configChanges: [], currentConfig: config, configType, adapterName: 'Defualt' })).toBeUndefined()
+    expect(getUpdatedCofigFromConfigChanges({ configChanges: [], currentConfig: config, configType })).toBeUndefined()
   })
   it('should return new config when changes are suggested and a message', () => {
-    const configChange = getConfigWithExcludeFromConfigChanges({
-      configChanges: [{ typeToExclude: 'bType' }],
+    const configChange = getUpdatedCofigFromConfigChanges({
+      configChanges: [
+        { type: 'typeToExclude', value: 'bType', reason: 'r1' },
+        { type: 'typeToExclude', value: 'cType', reason: 'r2' },
+        { type: 'disablePrivateAPI', reason: 'can not fetch private api' },
+      ],
       currentConfig: config,
       configType,
-      adapterName: 'Defualt',
     })
     expect(configChange?.config).toHaveLength(1)
     expect(configChange?.config[0].value.fetch.include).toEqual([{ type: 'aType' }])
-    expect(configChange?.config[0].value.fetch.exclude).toEqual([{ type: 'Type1' }, { type: 'bType' }])
-    expect(configChange?.message).toEqual('    * Salto failed to fetch some items from Defualt. Failed items must be excluded from the fetch.')
+    expect(configChange?.config[0].value.fetch.exclude).toEqual([{ type: 'Type1' }, { type: 'bType' }, { type: 'cType' }])
+    expect(configChange?.config[0].value.client).toEqual({ usePrivateAPI: false })
+    expect(configChange?.message).toContain('r1')
+    expect(configChange?.message).toContain('r2')
+    expect(configChange?.message).toContain('can not fetch private api')
   })
 })

@@ -19,7 +19,7 @@ import { InstanceElement, Adapter, Values } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import OktaClient from './client/client'
 import OktaAdapter from './adapter'
-import { Credentials, OAuthAccessTokenCredentials, accessTokenCredentialsType } from './auth'
+import { Credentials, accessTokenCredentialsType, OAuthAccessTokenCredentials, isOAuthAccessTokenCredentials } from './auth'
 import {
   configType,
   OktaConfig,
@@ -47,7 +47,7 @@ const {
   validateDuckTypeApiDefinitionConfig,
 } = configUtils
 
-const isOAuthAccessTokenCredentials = (configValue: Readonly<Values>): configValue is OAuthAccessTokenCredentials =>
+const isOAuthConfigCredentials = (configValue: Readonly<Values>): configValue is OAuthAccessTokenCredentials =>
   configValue.authType === 'oauth'
   && 'refreshToken' in configValue
   && 'clientId' in configValue
@@ -60,7 +60,7 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
   if (!hostName.includes(OKTA)) {
     throw new Error(`'${hostName}' is not a valid okta account url`)
   }
-  return isOAuthAccessTokenCredentials(value)
+  return isOAuthConfigCredentials(value)
     ? {
       baseUrl,
       clientId: value.clientId,
@@ -139,26 +139,23 @@ export const adapter: Adapter = {
       context.config,
     )
     const credentials = credentialsFromConfig(context.credentials)
+    const isOAuthLogin = isOAuthAccessTokenCredentials(credentials)
     const adapterOperations = new OktaAdapter({
       client: new OktaClient({
         credentials,
         config: config.client,
       }),
       config,
+      configInstance: context.config,
       getElemIdFunc: context.getElemIdFunc,
       elementsSource: context.elementsSource,
-      adminClient: createAdminClient(credentials, config),
+      isOAuthLogin,
+      adminClient: !isOAuthLogin ? createAdminClient(credentials, config) : undefined,
     })
 
     return {
       deploy: adapterOperations.deploy.bind(adapterOperations),
-      fetch: async args => {
-        const fetchRes = await adapterOperations.fetch(args)
-        return {
-          ...fetchRes,
-          updatedConfig: fetchRes.updatedConfig,
-        }
-      },
+      fetch: async args => adapterOperations.fetch(args),
       deployModifiers: adapterOperations.deployModifiers,
     }
   },

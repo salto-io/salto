@@ -89,15 +89,10 @@ describe('groupPushFilter', () => {
       await filter.onFetch(elements)
       expect(elements).toHaveLength(3)
     })
-    it('should return fetch error when admin client is undefined', async () => {
+    it('should do nothing if admin client is', async () => {
       filter = groupPushFilter(getFilterParams({ adminClient: undefined })) as typeof filter
       const res = await filter.onFetch([appType, appWithGroupPush, appWithNoGroupPush])
-      expect(res).toEqual({
-        errors: [{
-          message: 'Failed to fetch group push instances',
-          severity: 'Warning',
-        }],
-      })
+      expect(res).toEqual({ errors: [] })
     })
     it('should create group push type and group push rule type', async () => {
       mockGet.mockImplementation(params => {

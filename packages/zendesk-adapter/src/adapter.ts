@@ -686,11 +686,10 @@ export default class ZendeskAdapter implements AdapterOperations {
     const result = await (await this.createFiltersRunner({ brandIdToClient }))
       .onFetch(elements) as FilterResult
     const updatedConfig = this.configInstance && configChanges
-      ? configUtils.getConfigWithExcludeFromConfigChanges({
+      ? configUtils.getUpdatedCofigFromConfigChanges({
         configChanges,
         currentConfig: this.configInstance,
         configType,
-        adapterName: ZENDESK,
       }) : undefined
 
     const fetchErrors = (errors ?? []).concat(result.errors ?? []).concat(localeError ?? [])

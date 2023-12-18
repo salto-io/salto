@@ -19,5 +19,5 @@ export { createAdapterApiConfigType, getConfigWithDefault, AdapterApiConfig, Use
 export { mergeWithDefaultConfig } from './merge'
 export { createTypeNameOverrideConfigType, createSwaggerAdapterApiConfigType, AdapterSwaggerApiConfig, RequestableAdapterSwaggerApiConfig, TypeSwaggerConfig, RequestableTypeSwaggerConfig, TypeSwaggerDefaultConfig, TypeNameOverrideConfig, validateApiDefinitionConfig as validateSwaggerApiDefinitionConfig, validateFetchConfig as validateSwaggerFetchConfig } from './swagger'
 export { createTransformationConfigTypes, validateTransoformationConfig, TransformationDefaultConfig, TransformationConfig, StandaloneFieldConfigType, FieldToOmitType, FieldToHideType, getTransformationConfigByType, dereferenceFieldName, isReferencedIdField, NameMappingOptions, DATA_FIELD_ENTIRE_OBJECT, getTypeTransformationConfig, shouldNestFiles } from './transformation'
-export { getConfigWithExcludeFromConfigChanges, ConfigChangeSuggestion } from './config_change'
+export { getUpdatedCofigFromConfigChanges, ConfigChangeSuggestion } from './config_change'
 export * as configMigrations from './config_migrations'

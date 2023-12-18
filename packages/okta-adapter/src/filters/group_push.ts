@@ -230,11 +230,7 @@ const groupPushFilter: FilterCreator = ({ config, adminClient, getElemIdFunc }) 
 
     if (adminClient === undefined) {
       log.error('Admin client is undefined, could not fetch group push instances')
-      const error: SaltoError = {
-        message: 'Failed to fetch group push instances',
-        severity: 'Warning',
-      }
-      return { errors: [error] }
+      return { errors: [] }
     }
 
     const appsWithGroupPush = elements

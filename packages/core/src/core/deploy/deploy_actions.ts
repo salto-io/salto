@@ -76,17 +76,17 @@ const deployOrValidate = async (
 
 const deployAction = async (
   planItem: PlanItem,
-  adapters: Record<string, AdapterOperations>,
+  adapterByAccountName: Record<string, AdapterOperations>,
   checkOnly: boolean
 ): Promise<DeployResult> => {
   const changes = [...planItem.changes()]
-  const adapterName = planItem.account
-  const adapter = adapters[adapterName]
+  const accountName = planItem.account
+  const adapter = adapterByAccountName[accountName]
   if (!adapter) {
-    throw new Error(`Missing adapter for ${adapterName}`)
+    throw new Error(`Missing adapter for ${accountName}`)
   }
   const opts = { changeGroup: { groupID: planItem.groupKey, changes } }
-  return deployOrValidate({ adapter, adapterName, opts, checkOnly })
+  return deployOrValidate({ adapter, adapterName: accountName, opts, checkOnly })
 }
 
 export type DeployError = (SaltoError | SaltoElementError) & {
@@ -149,8 +149,11 @@ export const deployActions = async (
         const result = await deployAction(item, adapters, checkOnly)
         result.appliedChanges.forEach(appliedChange => appliedChanges.push(appliedChange))
         makeArray(result.extraProperties?.groups)
-          .map(group => Object.assign(group, { accountName: item.account, id: item.groupKey }))
-          .map(group => allGroups.push(group))
+          .forEach(group => allGroups.push({
+            ...group,
+            accountName: item.account,
+            id: item.groupKey,
+          }))
         // Update element with changes so references to it
         // will have an updated version throughout the deploy plan
         updatePlanElement(item, result.appliedChanges)

@@ -17,7 +17,7 @@ import semver from 'semver'
 import moment from 'moment'
 import { Plan, PlanItem } from '@salto-io/core'
 import { Workspace, state, remoteMap, elementSource, pathIndex } from '@salto-io/workspace'
-import fs from 'fs'
+import * as saltoFileModule from '@salto-io/file'
 import Prompts from '../../src/prompts'
 import { CliExitCode } from '../../src/types'
 import * as callbacks from '../../src/callbacks'
@@ -53,12 +53,12 @@ jest.mock('@salto-io/core', () => ({
   ) => mockPreview()),
 }))
 
-jest.mock('fs', () => ({
-  ...jest.requireActual('fs'),
-  mkdirSync: jest.fn(),
-  writeFileSync: jest.fn(),
+jest.mock('@salto-io/file', () => ({
+  ...jest.requireActual('@salto-io/file'),
+  writeFile: jest.fn(),
+  mkdirp: jest.fn(),
 }))
-const mockedFs = jest.mocked(fs)
+const mockedSaltoFile = jest.mocked(saltoFileModule)
 
 const commandName = 'deploy'
 
@@ -130,8 +130,8 @@ describe('deploy command', () => {
     })
     it('should write artifacts', () => {
       expect(result).toBe(CliExitCode.Success)
-      expect(mockedFs.mkdirSync).toHaveBeenCalledWith(`${ARTIFACTS_DIR}/dummy`, { recursive: true })
-      expect(mockedFs.writeFileSync)
+      expect(mockedSaltoFile.mkdirp).toHaveBeenCalledWith(`${ARTIFACTS_DIR}/dummy`)
+      expect(mockedSaltoFile.writeFile)
         .toHaveBeenCalledWith(`${ARTIFACTS_DIR}/dummy/${testArtifact.name}`, testArtifact.content)
     })
   })

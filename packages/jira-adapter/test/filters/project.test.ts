@@ -289,6 +289,7 @@ describe('projectFilter', () => {
       instance.value.customerPermissions = {
         serviceDeskOpenAccess: true,
       }
+      instance.value.projectTypeKey = 'service_desk'
       const afterInstance = instance.clone()
       afterInstance.value.customerPermissions = {
         serviceDeskOpenAccess: false,
@@ -314,10 +315,54 @@ describe('projectFilter', () => {
         undefined,
       )
     })
+    it('should not call to post customerPermissions when project is not jsm', async () => {
+      instance.value.customerPermissions = {
+        serviceDeskOpenAccess: true,
+      }
+      instance.value.projectTypeKey = 'software'
+      const afterInstance = instance.clone()
+      afterInstance.value.customerPermissions = {
+        serviceDeskOpenAccess: false,
+      }
+      change = toChange({ before: instance, after: afterInstance })
+      const { paginator } = mockClient()
+      const elementsSource = getLicenseElementSource(true)
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config.fetch.enableJSM = true
+      filter = projectFilter(getFilterParams({
+        client,
+        paginator,
+        elementsSource,
+        config,
+      })) as typeof filter
+      await filter.deploy([change])
+      expect(deployChangeMock).toHaveBeenCalledTimes(0)
+      expect(connection.post).toHaveBeenCalledTimes(0)
+    })
+    it('should not call to post customerPermissions when project is jsm but there is no customerPremissions', async () => {
+      instance.value.customerPermissions = undefined
+      instance.value.projectTypeKey = 'service_desk'
+      const afterInstance = instance.clone()
+      change = toChange({ before: instance, after: afterInstance })
+      const { paginator } = mockClient()
+      const elementsSource = getLicenseElementSource(true)
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config.fetch.enableJSM = true
+      filter = projectFilter(getFilterParams({
+        client,
+        paginator,
+        elementsSource,
+        config,
+      })) as typeof filter
+      await filter.deploy([change])
+      expect(deployChangeMock).toHaveBeenCalledTimes(0)
+      expect(connection.post).toHaveBeenCalledTimes(0)
+    })
     it('should not deploy customerPermissions modification when enableJSM is false', async () => {
       instance.value.customerPermissions = {
         serviceDeskOpenAccess: true,
       }
+      instance.value.projectTypeKey = 'service_desk'
       const afterInstance = instance.clone()
       afterInstance.value.customerPermissions = {
         serviceDeskOpenAccess: false,

@@ -131,9 +131,9 @@ export const createRetryOptions = (
       retryCount)
     return retryDelay
   },
-  // We use isSafeRequestError and isIdempotentRequestError instead of isNetworkOrIdempotentRequestError
+  // We use isNetworkError and isSafeRequestError instead of isNetworkOrIdempotentRequestError
   // because we don't want to assume all adapters are idempotent on PUT or DELETE requests
-  retryCondition: err => axiosRetry.isSafeRequestError(err) || axiosRetry.isIdempotentRequestError(err)
+  retryCondition: err => axiosRetry.isNetworkError(err) || axiosRetry.isSafeRequestError(err)
     || shouldRetryStatusCode(err.response?.status, retryOptions.additionalStatusCodesToRetry)
     || shouldRetryOnTimeout(err.code, timeoutOptions?.retryOnTimeout),
   // Note that changing the config is consistent on all retries. For the current use-case, that's fine,

@@ -38,10 +38,10 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([
-          permissionSetInstance,
-          profileInstance,
-        ])
+        refs = await getCustomReferences(
+          [permissionSetInstance, profileInstance],
+          undefined,
+        )
       })
       it('should not create references', async () => {
         expect(refs).toBeEmpty()
@@ -57,10 +57,7 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([
-          permissionSetInstance,
-          profileInstance,
-        ])
+        refs = await getCustomReferences([permissionSetInstance, profileInstance], undefined)
       })
       it('should create references', async () => {
         const expectedSource = ['fieldPermissions', 'Account', 'testField__c']
@@ -91,7 +88,7 @@ describe('getCustomReferences', () => {
           },
         })
 
-        refs = await getCustomReferences([profileInstance, permissionSetInstance])
+        refs = await getCustomReferences([profileInstance, permissionSetInstance], undefined)
       })
 
       it('should not create a reference', () => {
@@ -111,7 +108,7 @@ describe('getCustomReferences', () => {
           },
         })
 
-        refs = await getCustomReferences([profileInstance, permissionSetInstance])
+        refs = await getCustomReferences([profileInstance, permissionSetInstance], undefined)
       })
 
       it('should create a reference', () => {
@@ -142,7 +139,7 @@ describe('getCustomReferences', () => {
           },
         })
 
-        refs = await getCustomReferences([profileInstance, permissionSetInstance])
+        refs = await getCustomReferences([profileInstance, permissionSetInstance], undefined)
       })
 
       it('should create a reference', () => {
@@ -178,7 +175,7 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance, permissionSetInstance])
+        refs = await getCustomReferences([profileInstance, permissionSetInstance], undefined)
       })
 
       it('should not create a reference', () => {
@@ -196,7 +193,7 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance, permissionSetInstance])
+        refs = await getCustomReferences([profileInstance, permissionSetInstance], undefined)
       })
 
       it('should create a reference', () => {
@@ -232,7 +229,7 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance, permissionSetInstance])
+        refs = await getCustomReferences([profileInstance, permissionSetInstance], undefined)
       })
       it('should not create a reference', () => {
         expect(refs).toBeEmpty()
@@ -248,7 +245,7 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance, permissionSetInstance])
+        refs = await getCustomReferences([profileInstance, permissionSetInstance], undefined)
       })
       it('should create a reference', () => {
         expect(refs).toEqual([
@@ -284,7 +281,7 @@ describe('getCustomReferences', () => {
             ],
           },
         })
-        refs = await getCustomReferences([profileInstance, permissionSetInstance])
+        refs = await getCustomReferences([profileInstance, permissionSetInstance], undefined)
       })
       it('should create a reference', () => {
         expect(refs).toEqual([
@@ -329,7 +326,7 @@ describe('getCustomReferences', () => {
             ],
           },
         })
-        refs = await getCustomReferences([profileInstance, permissionSetInstance])
+        refs = await getCustomReferences([profileInstance, permissionSetInstance], undefined)
       })
       it('should create a reference', () => {
         expect(refs).toEqual([
@@ -386,7 +383,7 @@ describe('getCustomReferences', () => {
           },
         })
 
-        refs = await getCustomReferences([profileInstance, permissionSetInstance])
+        refs = await getCustomReferences([profileInstance, permissionSetInstance], undefined)
       })
 
       it('should not create references', () => {
@@ -410,7 +407,7 @@ describe('getCustomReferences', () => {
           },
         })
 
-        refs = await getCustomReferences([profileInstance, permissionSetInstance])
+        refs = await getCustomReferences([profileInstance, permissionSetInstance], undefined)
       })
 
       it('should create a reference', () => {
@@ -446,7 +443,7 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance, permissionSetInstance])
+        refs = await getCustomReferences([profileInstance, permissionSetInstance], undefined)
       })
 
       it('should not create a reference', () => {
@@ -464,7 +461,7 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance, permissionSetInstance])
+        refs = await getCustomReferences([profileInstance, permissionSetInstance], undefined)
       })
 
       it('should create a reference', () => {
@@ -502,7 +499,7 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance, permissionSetInstance])
+        refs = await getCustomReferences([profileInstance, permissionSetInstance], undefined)
       })
       it('should not create a reference', () => {
         expect(refs).toBeEmpty()
@@ -521,7 +518,7 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance, permissionSetInstance])
+        refs = await getCustomReferences([profileInstance, permissionSetInstance], undefined)
       })
       it('should create a reference', () => {
         expect(refs).toEqual([
@@ -551,7 +548,7 @@ describe('getCustomReferences', () => {
             },
           },
         })
-        refs = await getCustomReferences([profileInstance, permissionSetInstance])
+        refs = await getCustomReferences([profileInstance, permissionSetInstance], undefined)
       })
       it('should create a reference', () => {
         expect(refs).toEqual([

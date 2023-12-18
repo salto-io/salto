@@ -21,7 +21,7 @@ import { CORE_ANNOTATIONS, Element, isField, isInstanceElement, isObjectType, is
 const log = logger(module)
 const { isDefined } = values
 
-type ImportantValue = { value: string; indexed: boolean; highlighted: boolean }
+export type ImportantValue = { value: string; indexed: boolean; highlighted: boolean }
 export type ImportantValues = ImportantValue[]
 export type FormattedImportantValueData = { key: string; value: Value }
 

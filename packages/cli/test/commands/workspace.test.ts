@@ -289,11 +289,11 @@ describe('workspace command group', () => {
       it('should set the state config to have a s3 provider', async () => {
         const result = await setStateProviderAction({
           ...cliCommandArgs,
-          input: { provider: 's3', bucket: 'my-bucket' },
+          input: { provider: 's3', bucket: 'my-bucket', prefix: 'prefix' },
           workspace,
         })
         expect(result).toEqual(CliExitCode.Success)
-        expect(workspace.updateStateProvider).toHaveBeenCalledWith({ provider: 's3', options: { s3: { bucket: 'my-bucket' } } })
+        expect(workspace.updateStateProvider).toHaveBeenCalledWith({ provider: 's3', options: { s3: { bucket: 'my-bucket', prefix: 'prefix' } } })
       })
       it('should fail if the bucket argument is missing', async () => {
         const result = await setStateProviderAction({

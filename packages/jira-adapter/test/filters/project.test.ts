@@ -341,7 +341,6 @@ describe('projectFilter', () => {
 
   describe('When deploying an addition change', () => {
     let change: Change
-
     beforeEach(async () => {
       instance.value.id = 3
       instance.value.priorityScheme = 11
@@ -428,6 +427,69 @@ describe('projectFilter', () => {
         {
           id: 11,
         },
+        undefined,
+      )
+    })
+    it('should call the endpoint to get serviceDeskId', async () => {
+      const { paginator } = mockClient()
+      const elementsSource = getLicenseElementSource(true)
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config.fetch.enableJSM = true
+      filter = projectFilter(getFilterParams({
+        client,
+        paginator,
+        elementsSource,
+        config,
+      })) as typeof filter
+      instance.value.serviceDeskId = '100'
+      instance.value.projectTypeKey = 'service_desk'
+      change = toChange({ after: instance })
+      await filter.deploy([change])
+
+      expect(connection.get).toHaveBeenCalledWith(
+        '/rest/servicedeskapi/servicedesk/projectId:3',
+        undefined,
+      )
+    })
+    it('should not call the endpoint to get serviceDeskId when enableJSM is false', async () => {
+      const { paginator } = mockClient()
+      const elementsSource = getLicenseElementSource(true)
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config.fetch.enableJSM = false
+      filter = projectFilter(getFilterParams({
+        client,
+        paginator,
+        elementsSource,
+        config,
+      })) as typeof filter
+      instance.value.serviceDeskId = '100'
+      instance.value.projectTypeKey = 'service_desk'
+      change = toChange({ after: instance })
+      await filter.deploy([change])
+
+      expect(connection.get).not.toHaveBeenCalledWith(
+        '/rest/servicedeskapi/servicedesk/projectId:3',
+        undefined,
+      )
+    })
+    it('should not call the endpoint to get serviceDeskId when project is not serviceDesk project', async () => {
+      const { paginator } = mockClient()
+      const elementsSource = getLicenseElementSource(true)
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config.fetch.enableJSM = false
+      filter = projectFilter(getFilterParams({
+        client,
+        paginator,
+        elementsSource,
+        config,
+      })) as typeof filter
+      instance.value.serviceDeskId = '100'
+      instance.value.projectTypeKey = 'software'
+      change = toChange({ after: instance })
+      await filter.deploy([change])
+
+      expect(connection.get).not.toHaveBeenCalledWith(
+        '/rest/servicedeskapi/servicedesk/projectId:3',
         undefined,
       )
     })

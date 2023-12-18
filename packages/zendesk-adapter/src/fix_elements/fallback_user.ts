@@ -117,6 +117,9 @@ const noRelevantUsers = (
   return false
 }
 
+const isRelevantElement = (element: unknown): element is InstanceElement =>
+  isInstanceElement(element) && Object.keys(TYPE_NAME_TO_REPLACER).includes(element.elemID.typeName)
+
 /**
  * Change missing users (emails or ids) to fallback user.
  * If fallback user is not provided, do nothing
@@ -155,7 +158,7 @@ export const fallbackUsersHandler: FixElementsHandler = (
     return { fixedElements: [], errors }
   }
   const fixedElementsWithUserCount = elements
-    .filter(isInstanceElement)
+    .filter(isRelevantElement)
     .map(replaceMissingUsers(userEmails, fallbackValue))
     .filter(values.isDefined)
   const errors = fixedElementsWithUserCount.map(({ fixedInstance, missingUsers }) =>

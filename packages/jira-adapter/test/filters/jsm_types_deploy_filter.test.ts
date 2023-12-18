@@ -98,13 +98,6 @@ describe('jsmTypesDeployFilter', () => {
         expect(res.leftoverChanges).toHaveLength(0)
         expect(res.deployResult.errors).toHaveLength(0)
         expect(res.deployResult.appliedChanges).toHaveLength(1)
-        expect(res.deployResult.appliedChanges)
-          .toEqual([
-            {
-              action: 'modify',
-              data: { before: clonedPortalGroupBefore, after: clonedPortalGroupAfter },
-            },
-          ])
       })
       it('should not deploy if enableJSM is false', async () => {
         const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))

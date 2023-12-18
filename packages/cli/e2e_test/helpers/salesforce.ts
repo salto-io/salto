@@ -22,7 +22,9 @@ import SalesforceAdapter, {
 // eslint-disable-next-line no-restricted-imports
 import { testHelpers as salesforceTestHelpers, testTypes as salesforceTestTypes } from '@salto-io/salesforce-adapter/dist/e2e_test/jest_environment'
 import _ from 'lodash'
-import { InstanceElement, ElemID, ObjectType, ChangeGroup, getChangeData } from '@salto-io/adapter-api'
+import {
+  InstanceElement, ElemID, ObjectType, ChangeGroup, getChangeData, ProgressReporter,
+} from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 
 export const naclNameToSFName = (objName: string): string => `${objName}__c`
@@ -101,6 +103,10 @@ export const getSalesforceClient = (credentials: UsernamePasswordCredentials): S
   })
 )
 
+const nullProgressReporter: ProgressReporter = {
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  reportProgress: () => {},
+}
 export const addElements = async <T extends InstanceElement | ObjectType>(
   client: SalesforceClient,
   elements: T[]
@@ -112,7 +118,7 @@ export const addElements = async <T extends InstanceElement | ObjectType>(
     groupID: elements[0].elemID.getFullName(),
     changes: elements.map(e => ({ action: 'add', data: { after: e } })),
   }
-  const deployResult = await adapter.deploy({ changeGroup })
+  const deployResult = await adapter.deploy({ changeGroup, progressReporter: nullProgressReporter })
   if (deployResult.errors.length > 0) {
     throw new Error(`Failed to remove elements with: ${deployResult.errors.join('\n')}`)
   }
@@ -131,7 +137,7 @@ export const removeElements = async <T extends InstanceElement | ObjectType>(
     groupID: elements[0].elemID.getFullName(),
     changes: elements.map(e => ({ action: 'remove', data: { before: e } })),
   }
-  const deployResult = await adapter.deploy({ changeGroup })
+  const deployResult = await adapter.deploy({ changeGroup, progressReporter: nullProgressReporter })
   if (deployResult.errors.length > 0) {
     throw new Error(`Failed to remove elements with: ${deployResult.errors.join('\n')}`)
   }

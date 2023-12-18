@@ -37,7 +37,7 @@ import SalesforceAdapter from '../src/adapter'
 import { findElements } from '../test/utils'
 import {
   getMetadataInstance, getMetadata, removeMetadataIfAlreadyExists, createAndVerify,
-  removeElementAndVerify, fetchTypes, runFiltersOnFetch,
+  removeElementAndVerify, fetchTypes, runFiltersOnFetch, nullProgressReporter,
 } from './utils'
 import { testHelpers } from './jest_environment'
 
@@ -263,6 +263,7 @@ describe('workflow filter', () => {
               groupID: newAlert.elemID.getFullName(),
               changes: [{ action: 'modify', data: { before: oldAlert, after: newAlert } }],
             },
+            progressReporter: nullProgressReporter,
           })
 
           const postUpdate = await getMetadata(client, alertType, newInstanceName)
@@ -327,6 +328,7 @@ describe('workflow filter', () => {
               groupID: newInstance.elemID.getFullName(),
               changes: [{ action: 'modify', data: { before: old, after: newInstance } }],
             },
+            progressReporter: nullProgressReporter,
           })
 
           const workflowFieldUpdateInfo = await getMetadata(client, fieldUpdateType,
@@ -382,6 +384,7 @@ describe('workflow filter', () => {
               groupID: newInstance.elemID.getFullName(),
               changes: [{ action: 'modify', data: { before: old, after: newInstance } }],
             },
+            progressReporter: nullProgressReporter,
           })
 
           const workflowTaskInfo = await getMetadata(client, taskType, newInstanceName)
@@ -473,6 +476,7 @@ describe('workflow filter', () => {
               groupID: newInstance.elemID.getFullName(),
               changes: [{ action: 'modify', data: { before: old, after: newInstance } }],
             },
+            progressReporter: nullProgressReporter,
           })
 
           const workflowRuleInfo = await getMetadata(client, rulesType, newInstanceName)

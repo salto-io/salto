@@ -18,7 +18,8 @@ import {
   AdapterOperations, getChangeData, Change,
   isAdditionOrModificationChange,
   DeployExtraProperties, DeployOptions, Group,
-  SaltoElementError, SaltoError, SeverityLevel, DeployResult, ChangeDataType, SaltoErrorType,
+  SaltoElementError, SaltoError, SeverityLevel, DeployResult, ChangeDataType, SaltoErrorType, ProgressReporter,
+  Progress,
 } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { WalkError, NodeSkippedError } from '@salto-io/dag'
@@ -66,7 +67,8 @@ const deployOrValidate = async (
 const deployAction = async (
   planItem: PlanItem,
   adapters: Record<string, AdapterOperations>,
-  checkOnly: boolean
+  checkOnly: boolean,
+  progressReporter: ProgressReporter,
 ): Promise<DeployResult> => {
   const changes = [...planItem.changes()]
   const adapterName = getChangeData(changes[0]).elemID.adapter
@@ -74,7 +76,7 @@ const deployAction = async (
   if (!adapter) {
     throw new Error(`Missing adapter for ${adapterName}`)
   }
-  const opts = { changeGroup: { groupID: planItem.groupKey, changes } }
+  const opts = { changeGroup: { groupID: planItem.groupKey, changes }, progressReporter }
   return deployOrValidate({ adapter, adapterName, opts, checkOnly })
 }
 
@@ -135,7 +137,10 @@ export const deployActions = async (
       })
       reportProgress(item, 'started')
       try {
-        const result = await deployAction(item, adapters, checkOnly)
+        const progressReporter = {
+          reportProgress: (progress: Progress) => reportProgress(item, 'started', progress.message),
+        }
+        const result = await deployAction(item, adapters, checkOnly, progressReporter)
         result.appliedChanges.forEach(appliedChange => appliedChanges.push(appliedChange))
         if (result.extraProperties?.groups !== undefined) {
           groups.push(...result.extraProperties.groups)

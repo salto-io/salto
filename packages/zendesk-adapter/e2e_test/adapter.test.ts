@@ -30,7 +30,7 @@ import {
   isInstanceElement,
   isObjectType, isReferenceExpression, isTemplateExpression,
   ListType,
-  ObjectType,
+  ObjectType, ProgressReporter,
   ReferenceExpression,
   StaticFile,
   TemplateExpression,
@@ -140,8 +140,13 @@ const deployChanges = async (
   const deployResults = await awu(Object.entries(changes))
     .map(async ([id, group]) => {
       planElementById = _.keyBy(group.map(getChangeData), data => data.elemID.getFullName())
+      const nullProgressReporter: ProgressReporter = {
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        reportProgress: () => {},
+      }
       const deployResult = await adapterAttr.adapter.deploy({
         changeGroup: { groupID: id, changes: group },
+        progressReporter: nullProgressReporter,
       })
       expect(deployResult.errors).toHaveLength(0)
       expect(deployResult.appliedChanges).not.toHaveLength(0)

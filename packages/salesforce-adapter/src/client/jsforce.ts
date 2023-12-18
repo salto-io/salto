@@ -28,6 +28,8 @@ import { Value } from '@salto-io/adapter-api'
 export interface Metadata {
   pollInterval: number
   pollTimeout: number
+
+  checkDeployStatus(id: string, includeDetails?: boolean, callback?: Callback<DeployResult>): Promise<DeployResult>
   describe(): Promise<{ metadataObjects: MetadataObject[]; organizationNamespace: string }>
   describeValueType(type: string): Promise<DescribeValueTypeResult>
   read(type: string, fullNames: string | string[]): Promise<MetadataInfo | MetadataInfo[]>

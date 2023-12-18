@@ -14,7 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Value, ObjectType, ElemID, InstanceElement, Element, isObjectType, ChangeGroup, getChangeData, DeployResult } from '@salto-io/adapter-api'
+import {
+  Value, ObjectType, ElemID, InstanceElement, Element, isObjectType, ChangeGroup, getChangeData, DeployResult,
+  ProgressReporter,
+} from '@salto-io/adapter-api'
 import { filter, findElement } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { MetadataInfo } from '@salto-io/jsforce'
@@ -173,6 +176,11 @@ export const removeElementIfAlreadyExists = async (
   }
 }
 
+export const nullProgressReporter: ProgressReporter = {
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  reportProgress: () => {},
+}
+
 export const createElement = async <T extends InstanceElement | ObjectType>(
   adapter: SalesforceAdapter, element: T, verify = true,
 ): Promise<T> => {
@@ -180,7 +188,7 @@ export const createElement = async <T extends InstanceElement | ObjectType>(
     groupID: 'add test elements',
     changes: [{ action: 'add', data: { after: element } }],
   }
-  const result = await adapter.deploy({ changeGroup })
+  const result = await adapter.deploy({ changeGroup, progressReporter: nullProgressReporter })
   if (verify && result.errors.length > 0) {
     if (result.errors.length === 1) throw result.errors[0]
     throw new Error(`Failed adding element ${element.elemID.getFullName()} with errors: ${result.errors}`)
@@ -217,7 +225,7 @@ export const removeElement = async <T extends InstanceElement | ObjectType>(
     groupID: 'remove test elements',
     changes: [{ action: 'remove', data: { before: element } }],
   }
-  const result = await adapter.deploy({ changeGroup })
+  const result = await adapter.deploy({ changeGroup, progressReporter: nullProgressReporter })
   if (verify && result.errors.length > 0) {
     if (result.errors.length === 1) throw result.errors[0]
     throw new Error(`Failed adding element ${element.elemID.getFullName()} with errors: ${result.errors}`)

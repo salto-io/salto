@@ -62,6 +62,11 @@ describe('adapter', () => {
   let adapter: AdapterOperations
   let getElemIdFunc: ElemIdGetter
 
+  const nullProgressReporter: ProgressReporter = {
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    reportProgress: () => {},
+  }
+
   beforeEach(() => {
     const elementsSource = buildElementsSourceFromElements([])
     getElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string): ElemID =>
@@ -103,6 +108,7 @@ describe('adapter', () => {
             toChange({ before: new InstanceElement('inst2', fieldConfigurationIssueTypeItemType) }),
           ],
         },
+        progressReporter: nullProgressReporter,
       })
 
       expect(deployRes.appliedChanges).toEqual([
@@ -129,6 +135,7 @@ describe('adapter', () => {
             }),
           ],
         },
+        progressReporter: nullProgressReporter,
       })
 
       expect(deployChangeMock).toHaveBeenCalledWith({
@@ -154,6 +161,7 @@ describe('adapter', () => {
             toChange({ before: new InstanceElement('inst2', fieldConfigurationIssueTypeItemType) }),
           ],
         },
+        progressReporter: nullProgressReporter,
       })
       expect(deployRes.errors).toEqual([
         {
@@ -178,6 +186,7 @@ describe('adapter', () => {
             toChange({ after: instance }),
           ],
         },
+        progressReporter: nullProgressReporter,
       })
 
       expect((getChangeData(appliedChanges[0]) as InstanceElement)?.value.id).toEqual(2)
@@ -192,6 +201,7 @@ describe('adapter', () => {
             toChange({ after: instance }),
           ],
         },
+        progressReporter: nullProgressReporter,
       })
 
       expect((getChangeData(appliedChanges[0]) as InstanceElement)?.value.id).toBeUndefined()

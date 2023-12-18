@@ -57,9 +57,11 @@ zendesk {
 
 #### Client timeout configuration options
 
-| Name           | Default when undefined | Description
-|----------------|------------------------|------------
-| [maxDuration]  | `5000` (5 seconds)     | Set a timeout (in milliseconds) on requests
+| Name                  | Default when undefined | Description
+|-----------------------|------------------------|------------
+| [maxDuration]         | `5000` (5 seconds)     | Set a timeout (in milliseconds) on requests (setting `0` is unlimited)
+| [retryOnTimeout]      | true                   | Whether to retry requests that returned a timeout response
+| [lastRetryNoTimeout]  | true                   | Whether to disable the timeout duration on the last retry (if we assume the service will eventually return a response)
 
 #### Client retry configuration options
 

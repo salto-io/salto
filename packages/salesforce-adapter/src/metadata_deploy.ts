@@ -15,10 +15,9 @@
 */
 import _ from 'lodash'
 import util from 'util'
-import {collections, values, hash as hashUtils, types} from '@salto-io/lowerdash'
+import { collections, values, hash as hashUtils, types } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import {
-  SaltoError,
+import { SaltoError,
   DeployResult,
   Change,
   getChangeData,
@@ -410,7 +409,6 @@ export const deployMetadata = async (
   }
 
   const sfDeployRes = await quickDeployOrDeploy(client, pkgData, checkOnly, quickDeployParams, progressReporter)
-  const deploymentUrl = await getDeployStatusUrl(sfDeployRes, client)
 
   log.debug('final deploy result: %s', safeJsonStringify({
     ...sfDeployRes,

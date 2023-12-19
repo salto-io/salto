@@ -23,7 +23,7 @@ import queueFilter from '../../src/filters/queue'
 import { createEmptyType, getFilterParams, mockClient } from '../utils'
 import { PROJECT_TYPE, QUEUE_TYPE } from '../../src/constants'
 import JiraClient from '../../src/client/client'
-
+import { FIELD_TYPE_NAME } from '../../src/filters/fields/constants'
 
 describe('queue filter', () => {
     type FilterType = filterUtils.FilterWith<'deploy'>
@@ -41,22 +41,18 @@ describe('queue filter', () => {
         serviceDeskId: 3,
       },
     )
+    const fieldType = createEmptyType(FIELD_TYPE_NAME)
     const queueType = new ObjectType({
       elemID: new ElemID('jira', QUEUE_TYPE),
       fields: {
-        id: { refType: BuiltinTypes.NUMBER },
+        id: { refType: BuiltinTypes.STRING },
         name: { refType: BuiltinTypes.STRING },
-        fields: { refType: new ListType(BuiltinTypes.STRING) },
+        columns: {
+          refType: new ListType(BuiltinTypes.STRING),
+        },
       },
     })
     let queueInstance: InstanceElement
-    const fieldType = new ObjectType({
-      elemID: new ElemID('jira', 'field'),
-      fields: {
-        id: { refType: BuiltinTypes.NUMBER },
-        name: { refType: BuiltinTypes.STRING },
-      },
-    })
     const fieldInstanceOne = new InstanceElement(
       'field1',
       fieldType,
@@ -79,7 +75,7 @@ describe('queue filter', () => {
           {
             id: 11,
             name: 'queue1',
-            fields: [new ReferenceExpression(fieldInstanceOne.elemID, fieldInstanceOne)],
+            columns: [new ReferenceExpression(fieldInstanceOne.elemID, fieldInstanceOne)],
           },
           undefined,
           {
@@ -121,7 +117,7 @@ describe('queue filter', () => {
           queueType,
           {
             name: 'All Open',
-            fields: [new ReferenceExpression(fieldInstanceOne.elemID, fieldInstanceOne)],
+            columns: [new ReferenceExpression(fieldInstanceOne.elemID, fieldInstanceOne)],
           },
           undefined,
           {
@@ -154,10 +150,10 @@ describe('queue filter', () => {
         expect(connection.post).toHaveBeenCalledTimes(0)
         expect(connection.put).toHaveBeenCalledOnce()
         expect(connection.put).toHaveBeenCalledWith(
-          '/rest/servicedesk/1/servicedesk/project1Key/queues',
+          '/rest/servicedesk/1/servicedesk/project1Key/queues/11',
           {
             name: 'All Open',
-            fields: ['field1'],
+            columns: ['field1'],
           },
           undefined
         )
@@ -171,7 +167,7 @@ describe('queue filter', () => {
       })
       it('should not deploy modification of a queue with default name', async () => {
         const queueInstnaceAfter = queueInstance.clone()
-        queueInstnaceAfter.value.fields = []
+        queueInstnaceAfter.value.columns = []
         const res = await filter.deploy([{ action: 'modify', data: { before: queueInstance, after: queueInstnaceAfter } }])
         expect(res.leftoverChanges).toHaveLength(1)
         expect(res.leftoverChanges).toEqual([{ action: 'modify', data: { before: queueInstance, after: queueInstnaceAfter } }])

@@ -106,7 +106,7 @@ const deployQueueRemovalChange = async (
 }
 
 /* This filter responsible for deploying queue deletions and deploying queues with default names.
-* Modification change and addition non defualt named queues, will be deployed through the
+* Modification change and addition non default named queues, will be deployed through the
 * standard JSM deployment */
 const filter: FilterCreator = ({ config, client }) => ({
   name: 'queue',

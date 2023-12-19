@@ -146,7 +146,7 @@ describe('queue filter', () => {
         })
         filter = queueFilter(getFilterParams({ config, client })) as typeof filter
       })
-      it('should deploy addition of a queue with defualt name', async () => {
+      it('should deploy addition of a queue with default name', async () => {
         const res = await filter.deploy([{ action: 'add', data: { after: queueInstance } }])
         expect(res.leftoverChanges).toHaveLength(0)
         expect(res.deployResult.errors).toHaveLength(0)
@@ -162,14 +162,14 @@ describe('queue filter', () => {
           undefined
         )
       })
-      it('should not deploy addition of a queue with non defualt name', async () => {
+      it('should not deploy addition of a queue with non default name', async () => {
         queueInstance.value.name = 'queue1'
         const res = await filter.deploy([{ action: 'add', data: { after: queueInstance } }])
         expect(res.leftoverChanges).toHaveLength(1)
         expect(res.leftoverChanges).toEqual([{ action: 'add', data: { after: queueInstance } }])
         expect(res.deployResult.appliedChanges).toHaveLength(0)
       })
-      it('should not deploy modification of a queue with defualt name', async () => {
+      it('should not deploy modification of a queue with default name', async () => {
         const queueInstnaceAfter = queueInstance.clone()
         queueInstnaceAfter.value.fields = []
         const res = await filter.deploy([{ action: 'modify', data: { before: queueInstance, after: queueInstnaceAfter } }])

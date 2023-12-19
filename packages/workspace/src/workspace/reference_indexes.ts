@@ -24,7 +24,6 @@ import {
   isAdditionOrModificationChange,
   isTemplateExpression,
   isObjectTypeChange,
-  GetCustomReferencesFunc,
   ReferenceInfo,
   ReferenceType,
 } from '@salto-io/adapter-api'
@@ -37,8 +36,10 @@ import { getAllElementsChanges } from './index_utils'
 import { RemoteMap, RemoteMapEntry } from './remote_map'
 
 const log = logger(module)
+
 export const REFERENCE_INDEXES_VERSION = 4
 export const REFERENCE_INDEXES_KEY = 'reference_indexes'
+
 
 type ChangeReferences = {
   removed: ReferenceInfo[]
@@ -46,6 +47,8 @@ type ChangeReferences = {
 }
 
 export type ReferenceTargetIndexValue = collections.treeMap.TreeMap<{ id: ElemID; type: ReferenceType }>
+
+type GetCustomReferencesFunc = (elements: Element[]) => Promise<ReferenceInfo[]>
 
 const getReferenceDetailsIdentifier = (referenceDetails: ReferenceInfo): string =>
   `${referenceDetails.target.getFullName()} - ${referenceDetails.source.getFullName()}`
@@ -257,14 +260,16 @@ const updateReferenceSourcesIndex = async (
   ])
 }
 
-const getIdToCustomReferences = async (getCustomReferences: GetCustomReferencesFunc, changes: Change<Element>[])
-: Promise<{ before: Record<string, ReferenceInfo[]>; after: Record<string, ReferenceInfo[]> }> => {
+const getIdToCustomReferences = async (
+  getCustomReferences: GetCustomReferencesFunc,
+  changes: Change<Element>[],
+): Promise<{ before: Record<string, ReferenceInfo[]>; after: Record<string, ReferenceInfo[]> }> => {
   const customReferencesAfter = await getCustomReferences(
-    changes.filter(isAdditionOrModificationChange).map(change => change.data.after)
+    changes.filter(isAdditionOrModificationChange).map(change => change.data.after),
   )
 
   const customReferencesBefore = await getCustomReferences(
-    changes.filter(isRemovalOrModificationChange).map(change => change.data.before)
+    changes.filter(isRemovalOrModificationChange).map(change => change.data.before),
   )
 
   return {
@@ -272,6 +277,7 @@ const getIdToCustomReferences = async (getCustomReferences: GetCustomReferencesF
     after: _.groupBy(customReferencesAfter, ref => ref.source.createTopLevelParentID().parent.getFullName()),
   }
 }
+
 
 export const updateReferenceIndexes = async (
   changes: Change<Element>[],
@@ -302,7 +308,10 @@ export const updateReferenceIndexes = async (
     initialIndex = true
   }
 
-  const customReferences = await getIdToCustomReferences(getCustomReferences, changes)
+  const customReferences = await getIdToCustomReferences(
+    getCustomReferences,
+    changes,
+  )
 
   const changeToReferences = Object.fromEntries(relevantChanges
     .map(change => [

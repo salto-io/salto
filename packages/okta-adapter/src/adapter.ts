@@ -21,7 +21,7 @@ import { logger } from '@salto-io/logging'
 import { collections, objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 import changeValidator from './change_validators'
-import { OktaConfig, API_DEFINITIONS_CONFIG, CLIENT_CONFIG } from './config'
+import { OktaConfig, API_DEFINITIONS_CONFIG, CLIENT_CONFIG, configType } from './config'
 import fetchCriteria from './fetch_criteria'
 import { paginate } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
@@ -115,8 +115,10 @@ export interface OktaAdapterParams {
   filterCreators?: FilterCreator[]
   client: OktaClient
   config: OktaConfig
+  configInstance?: InstanceElement
   getElemIdFunc?: ElemIdGetter
   elementsSource: ReadOnlyElementsSource
+  isOAuthLogin: boolean
   adminClient?: OktaClient
 }
 
@@ -124,9 +126,11 @@ export default class OktaAdapter implements AdapterOperations {
   private createFiltersRunner: () => Required<Filter>
   private client: OktaClient
   private userConfig: OktaConfig
+  private configInstance?: InstanceElement
   private paginator: clientUtils.Paginator
   private getElemIdFunc?: ElemIdGetter
   private fetchQuery: elementUtils.query.ElementQuery
+  private isOAuthLogin: boolean
   private adminClient?: OktaClient
 
   public constructor({
@@ -134,13 +138,17 @@ export default class OktaAdapter implements AdapterOperations {
     client,
     getElemIdFunc,
     config,
+    configInstance,
     elementsSource,
+    isOAuthLogin,
     adminClient,
   }: OktaAdapterParams) {
     this.userConfig = config
+    this.configInstance = configInstance
     this.getElemIdFunc = getElemIdFunc
     this.client = client
     this.adminClient = adminClient
+    this.isOAuthLogin = isOAuthLogin
     const paginator = createPaginator({
       client: this.client,
       paginationFuncCreator: paginate,
@@ -210,6 +218,14 @@ export default class OktaAdapter implements AdapterOperations {
 
   private async getPrivateApiElements(): Promise<elementUtils.FetchElements<Element[]>> {
     const { privateApiDefinitions } = this.userConfig
+    if (this.isOAuthLogin && this.userConfig[CLIENT_CONFIG]?.usePrivateAPI) {
+      log.warn('Fetching private APIs is not supported for OAuth login, creating config suggestion to exclude private APIs')
+      return {
+        elements: [],
+        errors: [{ message: 'Salto could not access private API when connecting with OAuth. Group Push and Settings types could not be fetched', severity: 'Warning' }],
+        configChanges: [{ type: 'disablePrivateAPI', reason: 'Private APIs can not be accessed when using OAuth login' }],
+      }
+    }
     if (this.adminClient === undefined || this.userConfig[CLIENT_CONFIG]?.usePrivateAPI !== true) {
       return { elements: [] }
     }
@@ -242,30 +258,36 @@ export default class OktaAdapter implements AdapterOperations {
     progressReporter.reportProgress({ message: 'Fetching instances' })
     const { errors, elements: instances } = await this.getSwaggerInstances(allTypes, parsedConfigs)
 
-    const privateApiElements = await this.getPrivateApiElements()
+    const privateApiResult = await this.getPrivateApiElements()
 
     const elements = [
       ...Object.values(allTypes),
       ...instances,
-      ...privateApiElements.elements,
+      ...privateApiResult.elements,
     ]
-    return { elements, errors: (errors ?? []).concat(privateApiElements.errors ?? []) }
+    return {
+      elements,
+      errors: (errors ?? []).concat(privateApiResult.errors ?? []),
+      configChanges: privateApiResult.configChanges,
+    }
   }
 
   @logDuration('fetching account configuration')
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch okta account configuration..')
-    const { elements, errors } = await this.getAllElements(progressReporter)
+    const { elements, errors, configChanges } = await this.getAllElements(progressReporter)
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
     const filterResult = await this.createFiltersRunner().onFetch(elements) || {}
 
-    // TODO SALTO-2690: addDeploymentAnnotations
-
+    const updatedConfig = configChanges && this.configInstance
+      ? configUtils.getUpdatedCofigFromConfigChanges({ configChanges, currentConfig: this.configInstance, configType })
+      : undefined
     return {
       elements,
       errors: (errors ?? []).concat(filterResult.errors ?? []),
+      updatedConfig,
     }
   }
 

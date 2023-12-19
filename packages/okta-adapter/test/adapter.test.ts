@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdapterOperations, ElemID, FetchResult, ElemIdGetter, ServiceIds, ObjectType, InstanceElement } from '@salto-io/adapter-api'
+import { AdapterOperations, ElemID, ElemIdGetter, ServiceIds, ObjectType, InstanceElement } from '@salto-io/adapter-api'
 import { elements } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import MockAdapter from 'axios-mock-adapter'
@@ -22,6 +22,7 @@ import { adapter as adapterCreator } from '../src/adapter_creator'
 import { DEFAULT_CONFIG } from '../src/config'
 import { OKTA } from '../src/constants'
 import { createCredentialsInstance, createConfigInstance } from './utils'
+import { oauthAccessTokenCredentialsType } from '../src/auth'
 
 
 const { generateTypes, getAllInstances } = elements.swagger
@@ -49,26 +50,23 @@ jest.mock('@salto-io/adapter-components', () => {
 })
 
 describe('Okta adapter', () => {
-  let adapter: AdapterOperations
   let getElemIdFunc: ElemIdGetter
-
-  beforeEach(() => {
+  const adapterSetup = (credentials: InstanceElement): AdapterOperations => {
     const elementsSource = buildElementsSourceFromElements([])
     getElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string): ElemID =>
       new ElemID(adapterName, name)
 
     const config = createConfigInstance(DEFAULT_CONFIG)
 
-    adapter = adapterCreator.operations({
+    return adapterCreator.operations({
       elementsSource,
-      credentials: createCredentialsInstance({ baseUrl: 'http:/okta.test', token: 't' }),
+      credentials,
       config,
       getElemIdFunc,
     })
-  })
+  }
 
   describe('fetch', () => {
-    let result: FetchResult
     let oktaTestType: ObjectType
     let testInstance: InstanceElement
     let mockAxiosAdapter: MockAdapter
@@ -89,10 +87,37 @@ describe('Okta adapter', () => {
       mockAxiosAdapter = new MockAdapter(axios)
       // mock as there are gets of users during fetch
       mockAxiosAdapter.onGet().reply(200, { })
-      result = await adapter.fetch({ progressReporter: { reportProgress: () => null } })
+
+      mockAxiosAdapter.onPost('/oauth2/v1/token').reply(200, {
+        // eslint-disable-next-line camelcase
+        token_type: 'Bearer', access_token: 'token123', expires_in: 10000, refresh_token: 'refresh',
+      })
     })
 
-    it('should return all types and instances returned from the infrastructure', () => {
+    it('should return all types and instances returned from the infrastructure', async () => {
+      const adapter = adapterSetup(createCredentialsInstance({ baseUrl: 'http:/okta.test', token: 't' }))
+      const result = await adapter.fetch({ progressReporter: { reportProgress: () => null } })
+      expect(result.elements).toContain(oktaTestType)
+      expect(result.elements).toContain(testInstance)
+    })
+
+    it('should config change suggestion and fetch warning when usePrivateApi is enabled and authentication method is OAuth', async () => {
+      const oauthCredentials = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        oauthAccessTokenCredentialsType,
+        { authType: 'oauth', baseUrl: 'https://okta.com', refreshToken: 'refresh', clientId: 'a', clientSecret: 'b' },
+      )
+      const adapter = adapterSetup(oauthCredentials)
+      const result = await adapter.fetch({ progressReporter: { reportProgress: () => null } })
+      expect(result.errors).toHaveLength(1)
+      expect(result.errors).toEqual([{
+        message: 'Salto could not access private API when connecting with OAuth. Group Push and Settings types could not be fetched',
+        severity: 'Warning',
+      }])
+      expect(result.updatedConfig?.message).toContain('Private APIs can not be accessed when using OAuth login')
+      expect(result.updatedConfig?.config[0].value.client).toEqual({
+        usePrivateAPI: false,
+      })
       expect(result.elements).toContain(oktaTestType)
       expect(result.elements).toContain(testInstance)
     })

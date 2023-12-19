@@ -670,11 +670,10 @@ export default class JiraAdapter implements AdapterOperations {
     const filterResult = await this.createFiltersRunner().onFetch(elements) || {}
 
     const updatedConfig = this.configInstance && configChanges
-      ? configUtils.getConfigWithExcludeFromConfigChanges({
+      ? configUtils.getUpdatedCofigFromConfigChanges({
         configChanges,
         currentConfig: this.configInstance,
         configType,
-        adapterName: JIRA,
       }) : undefined
     // This needs to happen after the onFetch since some filters
     // may add fields that deployment annotation should be added to

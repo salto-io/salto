@@ -24,7 +24,7 @@ export const DEFAULT_RETRY_OPTS: Required<ClientRetryConfig> = {
 
 export const DEFAULT_TIMEOUT_OPTS: Required<ClientTimeoutConfig> = {
   maxDuration: 0,
-  resetTimeoutBetweenAttempts: true,
+  retryOnTimeout: true,
   lastRetryNoTimeout: true,
 }
 

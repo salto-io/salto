@@ -198,7 +198,7 @@ describe('OrganizationExistence', () => {
   })
   it('should not crash if the request for organizations fails', async () => {
     const validator = organizationExistenceValidator(client, DEFAULT_CONFIG[FETCH_CONFIG])
-    mockAxios.onGet().abortRequestOnce()
+    mockAxios.onGet().reply(404)
 
     const slaInstance = createSlaInstance()
     const changes = [toChange({ after: slaInstance })]

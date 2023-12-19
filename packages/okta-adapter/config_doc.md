@@ -45,6 +45,15 @@ okta {
 | [rateLimit](#rate-limit-configuration-options)                | `{}` (no overrides)      | Limits on the number of concurrent requests of different types
 | [maxRequestsPerMinute]                                        |  700                     | Limits on the number of requests per minute
 | usePrivateAPI                                                 | true                     | Whether to use Okta Private API when fetching and deploying changes
+| [timeout](#client-timeout-configuration-options)              | `{}` (no overrides)      | Configuration for setting request timeouts
+
+#### Client timeout configuration options
+
+| Name                  | Default when undefined | Description
+|-----------------------|------------------------|------------
+| [maxDuration]         | `0` (unlimited)        | Set a timeout (in milliseconds) on requests
+| [retryOnTimeout]      | true                   | Whether to retry requests that returned a timeout response
+| [lastRetryNoTimeout]  | true                   | Whether to disable the timeout duration on the last retry (if we assume the service will eventually return a response)
 
 #### Client retry options
 

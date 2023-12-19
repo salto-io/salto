@@ -20,8 +20,6 @@ import { REFERENCE_INDEXES_VERSION, ReferenceTargetIndexValue, updateReferenceIn
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
 import { RemoteMap } from '../../src/workspace/remote_map'
 import { createMockRemoteMap } from '../utils'
-import { AdaptersConfigSource } from '../../src/workspace/adapters_config_source'
-import { mockAdaptersConfigSource } from '../common/workspace'
 
 describe('updateReferenceIndexes', () => {
   let referenceTargetsIndex: MockInterface<RemoteMap<ReferenceTargetIndexValue>>
@@ -30,10 +28,8 @@ describe('updateReferenceIndexes', () => {
   let elementsSource: ElementsSource
   let object: ObjectType
   let instance: InstanceElement
-  let adaptersConfig: MockInterface<AdaptersConfigSource>
 
   beforeEach(() => {
-    adaptersConfig = mockAdaptersConfigSource()
     referenceTargetsIndex = createMockRemoteMap<ReferenceTargetIndexValue>()
 
     referenceSourcesIndex = createMockRemoteMap<ElemID[]>()
@@ -528,12 +524,6 @@ describe('updateReferenceIndexes', () => {
           val3: 'string',
         }
       )
-      const AdapterConfigType = new ObjectType({
-        elemID: new ElemID('adapter'),
-        isSettings: true,
-      })
-      const adapterConfig = new InstanceElement(ElemID.CONFIG_NAME, AdapterConfigType)
-      await adaptersConfig.setAdapter('test', 'test', adapterConfig)
       const changes = [toChange({ after: inst })]
       await updateReferenceIndexes(
         changes,
@@ -555,9 +545,6 @@ describe('updateReferenceIndexes', () => {
           },
         ] : []),
       )
-    })
-    afterEach(() => {
-      adaptersConfig.getAdapter.mockClear()
     })
     it('should override the default references with the custom references', () => {
       expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([

@@ -18,7 +18,8 @@ import { combineCustomReferenceGetters } from '../../src/references/custom_refer
 
 describe('combineCustomReferenceGetters', () => {
   const adapterConfigType = new ObjectType({
-    elemID: new ElemID('adapter', 'AdapterConfig'),
+    elemID: new ElemID('adapter'),
+    isSettings: true,
   })
   const customRefsGetters: Record<string, GetCustomReferencesFunc> = {
     strong: async () => ([

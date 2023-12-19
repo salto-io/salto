@@ -16,25 +16,24 @@
 import _ from 'lodash'
 import {
   AdapterOperations,
-  getChangeData,
   Change,
-  isAdditionOrModificationChange,
-  DeployExtraProperties,
+  ChangeDataType,
   DeployOptions,
-  Group,
+  DeployResult as AdapterDeployResult,
+  getChangeData,
+  isAdditionOrModificationChange,
   SaltoElementError,
   SaltoError,
-  SeverityLevel,
-  DeployResult,
-  ChangeDataType,
   SaltoErrorType,
+  SeverityLevel,
 } from '@salto-io/adapter-api'
-import { detailedCompare, applyDetailedChanges } from '@salto-io/adapter-utils'
-import { WalkError, NodeSkippedError } from '@salto-io/dag'
+import { applyDetailedChanges, detailedCompare } from '@salto-io/adapter-utils'
+import { NodeSkippedError, WalkError } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
 import { Plan, PlanItem, PlanItemId } from '../plan'
+import { DeployError, DeployResult, GroupProperties } from '../../types'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -58,7 +57,7 @@ const addElemIDsToError = (
 
 const deployOrValidate = async (
   { adapter, adapterName, opts, checkOnly }: DeployOrValidateParams
-): Promise<DeployResult> => {
+): Promise<AdapterDeployResult> => {
   const deployOrValidateFn = checkOnly ? adapter.validate?.bind(adapter) : adapter.deploy.bind(adapter)
   if (deployOrValidateFn === undefined) {
     throw new Error(`${checkOnly ? 'Check-Only deployment' : 'Deployment'} is not supported in adapter ${adapterName}`)
@@ -78,7 +77,7 @@ const deployAction = async (
   planItem: PlanItem,
   adapterByAccountName: Record<string, AdapterOperations>,
   checkOnly: boolean
-): Promise<DeployResult> => {
+): Promise<AdapterDeployResult> => {
   const changes = [...planItem.changes()]
   const accountName = planItem.account
   const adapter = adapterByAccountName[accountName]
@@ -87,10 +86,6 @@ const deployAction = async (
   }
   const opts = { changeGroup: { groupID: planItem.groupKey, changes } }
   return deployOrValidate({ adapter, adapterName: accountName, opts, checkOnly })
-}
-
-export type DeployError = (SaltoError | SaltoElementError) & {
-  groupId: string | string[]
 }
 
 export type ItemStatus = 'started' | 'finished' | 'error' | 'cancelled'
@@ -103,7 +98,7 @@ export type StepEvents<T = void> = {
 type DeployActionResult = {
   errors: DeployError[]
   appliedChanges: Change[]
-  extraProperties: Required<DeployExtraProperties>
+  extraProperties: DeployResult['extraProperties']
 }
 
 const updatePlanElement = (item: PlanItem, appliedChanges: ReadonlyArray<Change>): void => {
@@ -136,7 +131,7 @@ export const deployActions = async (
   checkOnly: boolean
 ): Promise<DeployActionResult> => {
   const appliedChanges: Change[] = []
-  const allGroups: Group & Required<Pick<Group, 'accountName' | 'id'>>[] = []
+  const allGroups: GroupProperties[] = []
   try {
     await deployPlan.walkAsync(async (itemId: PlanItemId): Promise<void> => {
       const item = deployPlan.getItem(itemId) as PlanItem

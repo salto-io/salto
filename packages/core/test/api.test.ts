@@ -14,12 +14,42 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression, Field, getChangeData, toChange, SeverityLevel, GetAdditionalReferencesFunc, Change, FixElementsFunc, isAdditionOrModificationChange, ChangeValidator } from '@salto-io/adapter-api'
+import {
+  Adapter,
+  AdapterOperations,
+  AdditionChange,
+  BuiltinTypes,
+  Change,
+  ChangeDataType,
+  ChangeValidator,
+  CORE_ANNOTATIONS,
+  DetailedChange,
+  Element,
+  ElemID,
+  Field,
+  FixElementsFunc,
+  GetAdditionalReferencesFunc,
+  getChangeData,
+  InstanceElement,
+  isAdditionChange,
+  isAdditionOrModificationChange,
+  isEqualElements,
+  isInstanceElement,
+  isModificationChange,
+  isObjectType,
+  ObjectType,
+  PrimitiveType,
+  PrimitiveTypes,
+  ReferenceExpression,
+  SeverityLevel,
+  toChange,
+} from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
-import { loadElementsFromFolder, adapter as salesforceAdapter } from '@salto-io/salesforce-adapter'
+import { adapter as salesforceAdapter, loadElementsFromFolder } from '@salto-io/salesforce-adapter'
 import * as api from '../src/api'
+import { getAdapterConfigOptionsType, getAdditionalReferences, getLoginStatuses } from '../src/api'
 import * as plan from '../src/core/plan/plan'
 import * as fetch from '../src/core/fetch'
 import * as adapters from '../src/core/adapters/adapters'
@@ -28,8 +58,8 @@ import adapterCreators from '../src/core/adapters/creators'
 import * as mockElements from './common/elements'
 import * as mockPlan from './common/plan'
 import { createElementSource } from './common/helpers'
-import { mockConfigType, mockEmptyConfigType, mockWorkspace, mockConfigInstance } from './common/workspace'
-import { getAdapterConfigOptionsType, getLoginStatuses, getAdditionalReferences } from '../src/api'
+import { mockConfigInstance, mockConfigType, mockEmptyConfigType, mockWorkspace } from './common/workspace'
+import { DeployResult, FetchChange } from '../src/types'
 
 const { awu } = collections.asynciterable
 const mockService = 'salto'
@@ -329,7 +359,7 @@ describe('api.ts', () => {
 
   describe('deploy', () => {
     let ws: workspace.Workspace
-    let result: api.DeployResult
+    let result: DeployResult
 
     describe('with element changes', () => {
       let addedElem: ObjectType
@@ -518,7 +548,7 @@ describe('api.ts', () => {
       })
     })
     describe('with checkOnly deployment', () => {
-      let executeDeploy: () => Promise<api.DeployResult>
+      let executeDeploy: () => Promise<DeployResult>
       beforeEach(async () => {
         const workspaceElements = mockElements.getAllElements()
         const stateElements = mockElements.getAllElements()
@@ -944,7 +974,7 @@ describe('api.ts', () => {
         .map(element => ({ key: element.elemID.getFullName(), value: [['test']] }))
     )
 
-    let patchChanges: fetch.FetchChange[]
+    let patchChanges: FetchChange[]
     beforeEach(async () => {
       const elements = [
         new InstanceElement('modified', type, { name: 'other', label: 'before', _service_id: 123 }),

@@ -14,58 +14,69 @@
 * limitations under the License.
 */
 import {
+  AccountInfo,
   Adapter,
-  InstanceElement,
-  ObjectType,
-  ElemID,
-  getChangeData,
-  isField,
+  AdapterAuthentication,
+  AdapterFailureInstallResult,
+  AdapterOperations,
+  AdapterSuccessInstallResult,
   Change,
   ChangeDataType,
-  isFieldChange,
-  AdapterFailureInstallResult,
-  isAdapterSuccessInstallResult,
-  AdapterSuccessInstallResult,
-  AdapterAuthentication,
-  SaltoError,
-  Element,
-  DetailedChange,
-  DeployExtraProperties,
-  ReferenceMapping,
-  AccountInfo,
-  isAdditionOrModificationChange,
   ChangeError,
-  AdapterOperations,
-  TopLevelElement,
+  DetailedChange,
+  Element,
+  ElemID,
+  getChangeData,
+  InstanceElement,
+  isAdapterSuccessInstallResult,
   isAdditionChange,
+  isAdditionOrModificationChange,
+  isField,
+  isFieldChange,
   isRemovalChange,
+  ObjectType,
+  ReferenceMapping,
+  SaltoError,
+  TopLevelElement,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { promises, collections, values, objects } from '@salto-io/lowerdash'
-import { Workspace, ElementSelector, elementSource, expressions, merger, selectElementIdsByTraversal, isTopLevelSelector, pathIndex as pathIndexModule } from '@salto-io/workspace'
+import { collections, objects, promises, values } from '@salto-io/lowerdash'
+import {
+  ElementSelector,
+  elementSource,
+  expressions,
+  isTopLevelSelector,
+  merger,
+  pathIndex as pathIndexModule,
+  selectElementIdsByTraversal,
+  Workspace,
+} from '@salto-io/workspace'
 import { EOL } from 'os'
 import {
   buildElementsSourceFromElements,
   detailedCompare,
   getDetailedChanges as getDetailedChangesFromChange,
 } from '@salto-io/adapter-utils'
-import { deployActions, DeployError, ItemStatus } from './core/deploy'
+import { deployActions, ItemStatus } from './core/deploy'
 import {
-  adapterCreators, getAdaptersCredentialsTypes, getAdapters, getAdapterDependencyChangers,
-  initAdapters, getDefaultAdapterConfig,
+  adapterCreators,
+  getAdapterDependencyChangers,
+  getAdapters,
+  getAdaptersCredentialsTypes,
+  getDefaultAdapterConfig,
+  initAdapters,
 } from './core/adapters'
 import { getPlan, Plan, PlanItem } from './core/plan'
 import {
-  FetchChange,
+  calcFetchChanges,
   fetchChanges,
+  fetchChangesFromWorkspace,
   FetchProgressEvents,
   getDetailedChanges,
-  MergeErrorWithElements,
-  fetchChangesFromWorkspace,
   getFetchAdapterAndServicesSetup,
-  calcFetchChanges,
+  MergeErrorWithElements,
 } from './core/fetch'
 import { defaultDependencyChangers } from './core/plan/plan'
 import { createRestoreChanges, createRestorePathChanges } from './core/restore'
@@ -74,6 +85,7 @@ import { createDiffChanges } from './core/diff'
 import getChangeValidators from './core/plan/change_validators'
 import { renameChecks, renameElement } from './core/rename'
 import { ChangeWithDetails } from './core/plan/plan_item'
+import { DeployResult, FetchChange } from './types'
 
 export { cleanWorkspace } from './core/clean'
 
@@ -157,14 +169,6 @@ export const preview = async (
     topLevelFilters: [shouldElementBeIncluded(accounts)],
     compareOptions: { compareByValue: true },
   })
-}
-
-export interface DeployResult {
-  success: boolean
-  errors: DeployError[]
-  changes?: Iterable<FetchChange>
-  appliedChanges?: Change[]
-  extraProperties?: DeployExtraProperties
 }
 
 export const deploy = async (

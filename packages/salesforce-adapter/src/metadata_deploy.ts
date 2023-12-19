@@ -15,9 +15,10 @@
 */
 import _ from 'lodash'
 import util from 'util'
-import { collections, values, hash as hashUtils } from '@salto-io/lowerdash'
+import {collections, values, hash as hashUtils, types} from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { SaltoError,
+import {
+  SaltoError,
   DeployResult,
   Change,
   getChangeData,
@@ -28,7 +29,8 @@ import { SaltoError,
   isAdditionChange,
   SaltoElementError,
   SeverityLevel,
-  ElemID } from '@salto-io/adapter-api'
+  ElemID, Artifact
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 
 
@@ -342,7 +344,6 @@ const isQuickDeployable = (deployRes: SFDeployResult): boolean =>
 export const deployMetadata = async (
   changes: ReadonlyArray<Change>,
   client: SalesforceClient,
-  groupId: string,
   nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>,
   deleteBeforeUpdate?: boolean,
   checkOnly?: boolean,
@@ -410,7 +411,7 @@ export const deployMetadata = async (
   }
 
   const deploymentUrl = await getDeployStatusUrl(sfDeployRes, client)
-  const artifacts = [
+  const artifacts: types.NonEmptyArray<Artifact> = [
     { name: SalesforceArtifacts.DeployPackageXml, content: pkg.getPackageXmlContent() },
   ]
   return {
@@ -418,8 +419,8 @@ export const deployMetadata = async (
     errors: [...validationErrors, ...errors],
     extraProperties: {
       groups: isQuickDeployable(sfDeployRes)
-        ? [{ id: groupId, requestId: sfDeployRes.id, hash: planHash, url: deploymentUrl, artifacts }]
-        : [{ id: groupId, url: deploymentUrl, artifacts }],
+        ? [{ requestId: sfDeployRes.id, hash: planHash, url: deploymentUrl, artifacts }]
+        : [{ url: deploymentUrl, artifacts }],
     },
   }
 }

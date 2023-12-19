@@ -15,11 +15,10 @@
 */
 import _ from 'lodash'
 import { EOL } from 'os'
-import { collections, promises, types } from '@salto-io/lowerdash'
-import { PlanItem, Plan, preview, DeployResult, ItemStatus, deploy, summarizeDeployChanges } from '@salto-io/core'
+import { collections, promises } from '@salto-io/lowerdash'
+import { PlanItem, Plan, preview, DeployResult, ItemStatus, deploy, summarizeDeployChanges, GroupProperties } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
-import { Group } from '@salto-io/adapter-api'
 import { mkdirp, writeFile } from '@salto-io/file'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts, getTagsForAccounts } from './common/accounts'
@@ -165,7 +164,7 @@ const deployPlan = async (
   }
   const executingDeploy = (force || await shouldDeploy(actionPlan, checkOnly))
   await printStartDeploy(output, executingDeploy, checkOnly)
-  const result = executingDeploy
+  const result: DeployResult = executingDeploy
     ? await deploy(
       workspace,
       actionPlan,
@@ -197,25 +196,36 @@ const deployPlan = async (
 }
 
 
-type GroupWithArtifacts = Group & Required<Pick<Group, 'accountName' | 'artifacts'>>
-const isArtifactsGroup = (group: Group): group is GroupWithArtifacts => (
-  group.artifacts !== undefined && group.accountName !== undefined
+type GroupWithArtifacts = GroupProperties & Required<Pick<GroupProperties, 'artifacts'>>
+const isGroupWithArtifacts = (group: GroupProperties): group is GroupWithArtifacts => (
+  group.artifacts !== undefined
 )
 
 const writeArtifacts = async (
-  groups: types.NonEmptyArray<GroupWithArtifacts>,
-  artifactsDir: string,
+  { extraProperties }: DeployResult,
+  artifactsDir?: string,
 ): Promise<void> => {
-  log.debug('writing deploy artifacts to %s', artifactsDir)
-  await awu(groups).forEach(async ({ accountName, artifacts }) => {
-    const artifactDir = `${artifactsDir}/${accountName}`
-    await mkdirp(artifactDir)
-    await awu(artifacts).forEach(async artifact => {
-      const artifactPath = `${artifactDir}/${artifact.name}`
-      await writeFile(artifactPath, artifact.content)
-      log.debug('Successfully wrote artifact %s', artifactPath)
+  try {
+    const groupsWithArtifacts = makeArray(extraProperties?.groups).filter(isGroupWithArtifacts)
+    if (artifactsDir === undefined || groupsWithArtifacts.length === 0) {
+      return
+    }
+    const artifactsByAccountName = _(groupsWithArtifacts)
+      .groupBy(group => group.accountName)
+      .mapValues(groups => groups.flatMap(group => group.artifacts))
+      .value()
+    await awu(Object.entries(artifactsByAccountName)).forEach(async ([accountName, artifacts]) => {
+      const artifactDir = `${artifactsDir}/${accountName}`
+      await mkdirp(artifactDir)
+      await awu(artifacts).forEach(async artifact => {
+        const artifactPath = `${artifactDir}/${artifact.name}`
+        await writeFile(artifactPath, artifact.content)
+        log.debug('Successfully wrote artifact %s', artifactPath)
+      })
     })
-  })
+  } catch (e: unknown) {
+    log.error('Error occurred while writing artifacts: %o', e)
+  }
 }
 
 export const action: WorkspaceCommandAction<DeployArgs> = async ({
@@ -251,7 +261,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
   const actionPlan = await preview(workspace, actualAccounts, checkOnly)
   await printPlan(actionPlan, output, workspace, detailedPlan)
 
-  const result = dryRun ? { success: true, errors: [] } : await deployPlan(
+  const result: DeployResult = dryRun ? { success: true, errors: [] } : await deployPlan(
     actionPlan,
     workspace,
     cliTelemetry,
@@ -260,20 +270,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
     checkOnly,
     actualAccounts,
   )
-
-  try {
-    if (input.artifactsDir) {
-      const artifacts = makeArray(result.extraProperties?.groups).filter(isArtifactsGroup)
-      if (types.isNonEmptyArray(artifacts)) {
-        await writeArtifacts(artifacts, input.artifactsDir)
-      } else {
-        log.debug('No artifacts to write')
-      }
-    }
-  } catch (e: unknown) {
-    log.warn('Failed to write artifacts with error %o', e)
-  }
-
+  await writeArtifacts(result, input.artifactsDir)
   let cliExitCode = result.success ? CliExitCode.Success : CliExitCode.AppError
   // We don't flush the workspace for check-only deployments
   if (!_.isUndefined(result.changes) && !checkOnly) {

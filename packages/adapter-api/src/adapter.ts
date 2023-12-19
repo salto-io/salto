@@ -22,6 +22,7 @@ import { Change } from './change'
 import { DependencyChanger } from './dependency_changer'
 import { SaltoElementError, SaltoError } from './error'
 import { ChangeGroup, ChangeGroupIdFunction } from './change_group'
+import {types} from "@salto-io/lowerdash";
 
 export type PartialFetchData = {
   isPartial: true
@@ -44,17 +45,15 @@ export type Artifact = {
   content: Buffer
 }
 
-export type Group = {
-  id?: string
-  accountName?: string
+export type AdapterGroupProperties = {
   url?: string
-  artifacts?: Artifact[]
+  artifacts?: types.NonEmptyArray<Artifact>
   requestId?: string
   hash?: string
 }
 
 export type DeployExtraProperties = {
-  groups?: Group[]
+  groups?: AdapterGroupProperties[]
 }
 
 type SaltoDeployErrors = {

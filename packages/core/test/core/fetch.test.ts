@@ -33,13 +33,14 @@ import { elementSource, pathIndex, remoteMap, createAdapterReplacedID } from '@s
 import { mockFunction } from '@salto-io/test-utils'
 import { mockWorkspace } from '../common/workspace'
 import {
-  fetchChanges, FetchChange, generateServiceIdToStateElemId,
+  fetchChanges, generateServiceIdToStateElemId,
   FetchChangesResult, FetchProgressEvents, getAdaptersFirstFetchPartial,
   fetchChangesFromWorkspace, createElemIdGetter, calcFetchChanges,
 } from '../../src/core/fetch'
 import { getPlan, Plan } from '../../src/core/plan'
 import { createElementSource } from '../common/helpers'
 import { mockStaticFilesSource } from '../common/state'
+import { FetchChange } from '../../src/types'
 
 const { createInMemoryElementSource } = elementSource
 const { awu } = collections.asynciterable

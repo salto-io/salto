@@ -564,7 +564,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         fetchProfile.dataManagement,
       )
     } else {
-      deployResult = await deployMetadata(resolvedChanges, this.client, changeGroup.groupID,
+      deployResult = await deployMetadata(resolvedChanges, this.client,
         this.nestedMetadataTypes, this.userConfig.client?.deploy?.deleteBeforeUpdate, checkOnly,
           this.userConfig.client?.deploy?.quickDeployParams)
     }

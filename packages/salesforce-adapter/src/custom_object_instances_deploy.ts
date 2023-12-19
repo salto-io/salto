@@ -427,9 +427,6 @@ const deployAddInstances = async (
   return {
     appliedChanges: allSuccessInstances.map(instance => ({ action: 'add', data: { after: instance } })),
     errors: [...insertErrorInstances, ...errorUpdateInstances],
-    extraProperties: {
-      groups: [{ id: groupId }],
-    },
   }
 }
 
@@ -446,9 +443,6 @@ const deployRemoveInstances = async (
   return {
     appliedChanges: successInstances.map(instance => ({ action: 'remove', data: { before: instance } })),
     errors: errorInstances,
-    extraProperties: {
-      groups: [{ id: groupId }],
-    },
   }
 }
 
@@ -482,9 +476,6 @@ const deployModifyChanges = async (
   return {
     appliedChanges: successData.map(data => ({ action: 'modify', data })),
     errors,
-    extraProperties: {
-      groups: [{ id: groupId }],
-    },
   }
 }
 

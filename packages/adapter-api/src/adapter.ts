@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { types } from '@salto-io/lowerdash'
 import {
   InstanceElement, ObjectType, Element, ReadOnlyElementsSource,
 } from './elements'
@@ -22,7 +23,6 @@ import { Change } from './change'
 import { DependencyChanger } from './dependency_changer'
 import { SaltoElementError, SaltoError } from './error'
 import { ChangeGroup, ChangeGroupIdFunction } from './change_group'
-import {types} from "@salto-io/lowerdash";
 
 export type PartialFetchData = {
   isPartial: true

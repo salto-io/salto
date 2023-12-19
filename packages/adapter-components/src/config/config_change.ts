@@ -48,8 +48,9 @@ export const getUpdatedCofigFromConfigChanges = ({
   }
 
   const typesToExclude = configChanges
-    .filter(configChange => configChange.type === TYPE_TO_EXCLUDE && isDefined(configChange.value))
-    .map(configChange => ({ type: configChange.value }))
+    .filter(configChange => configChange.type === TYPE_TO_EXCLUDE)
+    .map(configChange => configChange.value)
+    .filter(isDefined)
 
   const shouldDisablePrivateApi = configChanges.find(configChange => configChange.type === DISABLE_PRIVATE_API)
 
@@ -58,7 +59,7 @@ export const getUpdatedCofigFromConfigChanges = ({
       ...currentConfig.value[FETCH_CONFIG],
       exclude: [
         ...currentConfig.value[FETCH_CONFIG].exclude,
-        ...typesToExclude,
+        ...typesToExclude.map(typeName => ({ type: typeName })),
       ],
     }
     : currentConfig.value[FETCH_CONFIG]

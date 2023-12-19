@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import Joi from 'joi'
-import { Element, InstanceElement, isInstanceElement, ObjectType, ElemID, BuiltinTypes, SaltoError, ElemIdGetter, CORE_ANNOTATIONS, Change, getChangeData, isRemovalChange, isInstanceChange } from '@salto-io/adapter-api'
+import { Element, InstanceElement, isInstanceElement, ObjectType, ElemID, BuiltinTypes, ElemIdGetter, CORE_ANNOTATIONS, Change, getChangeData, isRemovalChange, isInstanceChange } from '@salto-io/adapter-api'
 import { elements as elementUtils, client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -225,12 +225,12 @@ const groupPushFilter: FilterCreator = ({ config, adminClient, getElemIdFunc }) 
   onFetch: async (elements: Element[]) => {
     if (config[CLIENT_CONFIG]?.usePrivateAPI !== true) {
       log.debug('Skipping fetch of group push because private API is not enabled')
-      return { errors: [] }
+      return
     }
 
     if (adminClient === undefined) {
-      log.error('Admin client is undefined, could not fetch group push instances')
-      return { errors: [] }
+      log.debug('Admin client is undefined, could not fetch group push instances')
+      return
     }
 
     const appsWithGroupPush = elements
@@ -272,7 +272,6 @@ const groupPushFilter: FilterCreator = ({ config, adminClient, getElemIdFunc }) 
       .flat()
 
     instances.forEach(instance => elements.push(instance))
-    return { errors: [] }
   },
   preDeploy: async (changes: Change<InstanceElement>[]) => {
     changes

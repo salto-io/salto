@@ -416,7 +416,7 @@ export const getAllElements = async ({
             configSuggestions.push({
               type: TYPE_TO_EXCLUDE,
               value: type,
-              reason: `Salto failed to fetch type ${type}`,
+              reason: `Salto failed to fetch ${type} type`,
             })
           })
           return { elements: [], errors: [] }

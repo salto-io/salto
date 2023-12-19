@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isInstanceChange, SeverityLevel, isRemovalChange, CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isInstanceChange, SeverityLevel, isRemovalChange, CORE_ANNOTATIONS, isInstanceElement, isAdditionChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { getParent } from '@salto-io/adapter-utils'
 import { PROJECT_TYPE, QUEUE_TYPE } from '../constants'
@@ -21,7 +21,7 @@ import { JiraConfig } from '../config/config'
 
 const { awu } = collections.asynciterable
 
-export const deleteLastQueueValidator: (
+export const queueValidator: (
     config: JiraConfig,
   ) => ChangeValidator = config => async (changes, elementsSource) => {
     if (elementsSource === undefined || !config.fetch.enableJSM) {
@@ -40,7 +40,7 @@ export const deleteLastQueueValidator: (
       .filter(queue => queue.annotations[CORE_ANNOTATIONS.PARENT]?.[0] !== undefined)
       .groupBy(queue => queue.annotations[CORE_ANNOTATIONS.PARENT][0].elemID.getFullName())
 
-    return awu(changes)
+    const lastQueuesRemovalsMessages = await awu(changes)
       .filter(isInstanceChange)
       .filter(isRemovalChange)
       .map(getChangeData)
@@ -57,4 +57,24 @@ export const deleteLastQueueValidator: (
         detailedMessage: `Cannot delete this queue, as its the last remaining queue in project ${getParent(instance).elemID.name}.`,
       }))
       .toArray()
+
+    const duplicateNameQueuesAdditionsMessages = await awu(changes)
+      .filter(isInstanceChange)
+      .filter(isAdditionChange)
+      .map(getChangeData)
+      .filter(instance => instance.elemID.typeName === QUEUE_TYPE)
+      .filter(queue => queue.annotations[CORE_ANNOTATIONS.PARENT]?.[0] !== undefined)
+      .filter(async instance => {
+        const relatedQueues = projectToQueues[getParent(instance).elemID.getFullName()]
+        return relatedQueues !== undefined
+        && relatedQueues.some(relatedQueue => relatedQueue.value.name === instance.value.name)
+      })
+      .map(instance => ({
+        elemID: instance.elemID,
+        severity: 'Error' as SeverityLevel,
+        message: 'Cannot deploy queue with duplicate name',
+        detailedMessage: `Cannot deploy this queue, as it has the same name as another queue in project ${getParent(instance).elemID.name}.`,
+      }))
+      .toArray()
+    return [...lastQueuesRemovalsMessages, ...duplicateNameQueuesAdditionsMessages]
   }

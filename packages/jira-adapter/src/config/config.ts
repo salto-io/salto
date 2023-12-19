@@ -236,7 +236,7 @@ export type ChangeValidatorName = (
   | 'customFieldsWith10KOptions'
   | 'issueTypeHierarchy'
   | 'automationProjects'
-  | 'deleteLastQueueValidator'
+  | 'queueValidator'
   | 'boardColumnConfig'
   | 'automationToAssets'
   )
@@ -288,7 +288,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     customFieldsWith10KOptions: { refType: BuiltinTypes.BOOLEAN },
     issueTypeHierarchy: { refType: BuiltinTypes.BOOLEAN },
     automationProjects: { refType: BuiltinTypes.BOOLEAN },
-    deleteLastQueueValidator: { refType: BuiltinTypes.BOOLEAN },
+    queueValidator: { refType: BuiltinTypes.BOOLEAN },
     automationToAssets: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {

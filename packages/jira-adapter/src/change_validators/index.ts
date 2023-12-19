@@ -58,7 +58,7 @@ import { fieldSecondGlobalContextValidator } from './field_contexts/second_globa
 import { customFieldsWith10KOptionValidator } from './field_contexts/custom_field_with_10K_options'
 import { issueTypeHierarchyValidator } from './issue_type_hierarchy'
 import { automationProjectsValidator } from './automation/automation_projects'
-import { deleteLastQueueValidator } from './last_queue'
+import { queueValidator } from './queue'
 import { automationToAssetsValidator } from './automation/automation_to_assets'
 
 const {
@@ -115,7 +115,7 @@ export default (
     issueTypeHierarchy: issueTypeHierarchyValidator,
     automationProjects: automationProjectsValidator,
     boardColumnConfig: boardColumnConfigValidator,
-    deleteLastQueueValidator: deleteLastQueueValidator(config),
+    queueValidator: queueValidator(config),
     automationToAssets: automationToAssetsValidator(config),
   }
 

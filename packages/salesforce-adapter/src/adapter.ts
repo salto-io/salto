@@ -16,7 +16,7 @@
 import {
   TypeElement, ObjectType, InstanceElement, isAdditionChange, getChangeData, Change,
   ElemIdGetter, FetchResult, AdapterOperations, DeployResult, FetchOptions, DeployOptions,
-  ReadOnlyElementsSource, ElemID, PartialFetchData, Element,
+  ReadOnlyElementsSource, ElemID, PartialFetchData, Element, ProgressReporter,
 } from '@salto-io/adapter-api'
 import {
   filter,
@@ -530,7 +530,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   }
 
   private async deployOrValidate(
-    { changeGroup }: DeployOptions,
+    { changeGroup, progressReporter }: DeployOptions,
     checkOnly: boolean
   ): Promise<DeployResult> {
     const fetchParams = this.userConfig.fetch ?? {}
@@ -564,9 +564,14 @@ export default class SalesforceAdapter implements AdapterOperations {
         fetchProfile.dataManagement,
       )
     } else {
+      const nullProgressReporter: ProgressReporter = {
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        reportProgress: () => {},
+      }
       deployResult = await deployMetadata(resolvedChanges, this.client,
-        this.nestedMetadataTypes, this.userConfig.client?.deploy?.deleteBeforeUpdate, checkOnly,
-          this.userConfig.client?.deploy?.quickDeployParams)
+        this.nestedMetadataTypes, progressReporter ?? nullProgressReporter,
+        this.userConfig.client?.deploy?.deleteBeforeUpdate, checkOnly,
+        this.userConfig.client?.deploy?.quickDeployParams)
     }
     log.debug(`received deployResult for group ${changeGroup.groupID}`)
     // onDeploy can change the change list in place, so we need to give it a list it can modify

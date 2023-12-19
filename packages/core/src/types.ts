@@ -22,6 +22,19 @@ import {
   SaltoError,
 } from '@salto-io/adapter-api'
 
+export type FetchChangeMetadata = AuthorInformation
+export type FetchChange = {
+  // The actual change to apply to the workspace
+  change: DetailedChange
+  // The change that happened in the service
+  serviceChanges: DetailedChange[]
+  // The change between the working copy and the state
+  pendingChanges?: DetailedChange[]
+  // Metadata information about the change.
+  metadata?: FetchChangeMetadata
+}
+
+
 export type GroupProperties = AdapterGroupProperties & {
   id: string
   accountName: string
@@ -39,16 +52,4 @@ export interface DeployResult {
   extraProperties?: {
     groups?: GroupProperties[]
   }
-}
-
-export type FetchChangeMetadata = AuthorInformation
-export type FetchChange = {
-  // The actual change to apply to the workspace
-  change: DetailedChange
-  // The change that happened in the service
-  serviceChanges: DetailedChange[]
-  // The change between the working copy and the state
-  pendingChanges?: DetailedChange[]
-  // Metadata information about the change.
-  metadata?: FetchChangeMetadata
 }

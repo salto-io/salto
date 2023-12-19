@@ -17,15 +17,12 @@ import _ from 'lodash'
 import {
   AdapterOperations,
   Change,
-  ChangeDataType,
   DeployOptions,
   DeployResult as AdapterDeployResult,
   getChangeData,
   isAdditionOrModificationChange,
-  SaltoElementError,
-  SaltoError,
-  SaltoErrorType,
-  SeverityLevel,
+  SaltoElementError, SaltoError, SeverityLevel, ChangeDataType, SaltoErrorType, ProgressReporter,
+  Progress,
 } from '@salto-io/adapter-api'
 import { applyDetailedChanges, detailedCompare } from '@salto-io/adapter-utils'
 import { NodeSkippedError, WalkError } from '@salto-io/dag'
@@ -76,7 +73,8 @@ const deployOrValidate = async (
 const deployAction = async (
   planItem: PlanItem,
   adapterByAccountName: Record<string, AdapterOperations>,
-  checkOnly: boolean
+  checkOnly: boolean,
+  progressReporter: ProgressReporter,
 ): Promise<AdapterDeployResult> => {
   const changes = [...planItem.changes()]
   const accountName = planItem.account
@@ -84,7 +82,7 @@ const deployAction = async (
   if (!adapter) {
     throw new Error(`Missing adapter for ${accountName}`)
   }
-  const opts = { changeGroup: { groupID: planItem.groupKey, changes } }
+  const opts = { changeGroup: { groupID: planItem.groupKey, changes }, progressReporter }
   return deployOrValidate({ adapter, adapterName: accountName, opts, checkOnly })
 }
 
@@ -141,7 +139,10 @@ export const deployActions = async (
       })
       reportProgress(item, 'started')
       try {
-        const result = await deployAction(item, adapters, checkOnly)
+        const progressReporter = {
+          reportProgress: (progress: Progress) => reportProgress(item, 'started', progress.message),
+        }
+        const result = await deployAction(item, adapters, checkOnly, progressReporter)
         result.appliedChanges.forEach(appliedChange => appliedChanges.push(appliedChange))
         makeArray(result.extraProperties?.groups)
           .forEach(group => allGroups.push({

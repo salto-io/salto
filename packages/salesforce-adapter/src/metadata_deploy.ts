@@ -29,8 +29,9 @@ import {
   isAdditionChange,
   SaltoElementError,
   SeverityLevel,
-  ElemID, Artifact
-} from '@salto-io/adapter-api'
+  Artifact,
+  ProgressReporter,
+  ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 
 
@@ -323,12 +324,34 @@ const getDeployStatusUrl = async (
   return `${baseUrl}lightning/setup/DeployStatus/page?address=%2Fchangemgmt%2FmonitorDeploymentsDetails.apexp%3FasyncId%3D${id}`
 }
 
+const deployProgressMessage = async (
+  client: SalesforceClient,
+  deployResult: SFDeployResult,
+): Promise<string> => {
+  const url = await getDeployStatusUrl(deployResult, client)
+  const testStatus = `${deployResult.numberTestsCompleted}/${deployResult.numberComponentsTotal} (${deployResult.numberTestErrors} errors)`
+  const componentStatus = `${deployResult.numberComponentsDeployed}/${deployResult.numberComponentsTotal} (${deployResult.numberComponentErrors} errors)`
+  const progressMessage = `Tests: ${testStatus} Components: ${componentStatus} URL: ${url}`
+  log.debug(progressMessage)
+  return progressMessage
+}
+
 const quickDeployOrDeploy = async (
   client: SalesforceClient,
   pkgData: Buffer,
   checkOnly?: boolean,
   quickDeployParams?: QuickDeployParams,
+  progressReporter?: ProgressReporter,
 ): Promise<SFDeployResult> => {
+  const progressReportCallback = async (deployResult: SFDeployResult): Promise<void> => {
+    if (!progressReporter) {
+      return
+    }
+    progressReporter.reportProgress({
+      message: await deployProgressMessage(client, deployResult),
+    })
+  }
+
   if (quickDeployParams !== undefined) {
     try {
       return await client.quickDeploy(quickDeployParams.requestId)
@@ -336,8 +359,9 @@ const quickDeployOrDeploy = async (
       log.warn(`preforming regular deploy instead of quick deploy due to error: ${e.message}`)
     }
   }
-  return client.deploy(pkgData, { checkOnly })
+  return client.deploy(pkgData, { checkOnly }, progressReportCallback)
 }
+
 const isQuickDeployable = (deployRes: SFDeployResult): boolean =>
   deployRes.id !== undefined && deployRes.checkOnly && deployRes.success && deployRes.numberTestsCompleted >= 1
 
@@ -345,6 +369,7 @@ export const deployMetadata = async (
   changes: ReadonlyArray<Change>,
   client: SalesforceClient,
   nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>,
+  progressReporter: ProgressReporter,
   deleteBeforeUpdate?: boolean,
   checkOnly?: boolean,
   quickDeployParams?: QuickDeployParams,
@@ -384,9 +409,10 @@ export const deployMetadata = async (
     }
   }
 
-  const sfDeployRes = await quickDeployOrDeploy(client, pkgData, checkOnly, quickDeployParams)
+  const sfDeployRes = await quickDeployOrDeploy(client, pkgData, checkOnly, quickDeployParams, progressReporter)
+  const deploymentUrl = await getDeployStatusUrl(sfDeployRes, client)
 
-  log.debug('deploy result: %s', safeJsonStringify({
+  log.debug('final deploy result: %s', safeJsonStringify({
     ...sfDeployRes,
     details: sfDeployRes.details?.map(detail => ({
       ...detail,

@@ -24,7 +24,7 @@ import {
   MapType,
   ObjectType,
   PrimitiveType,
-  PrimitiveTypes,
+  PrimitiveTypes, ProgressReporter,
   TypeElement,
   Values,
 } from '@salto-io/adapter-api'
@@ -375,4 +375,9 @@ export const defaultFilterContext: FilterContext = {
   fetchProfile: buildFetchProfile({ fetchParams: {} }),
   elementsSource: buildElementsSourceFromElements([]),
   enumFieldPermissions: false,
+}
+
+export const nullProgressReporter: ProgressReporter = {
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  reportProgress: () => {},
 }

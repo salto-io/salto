@@ -14,8 +14,11 @@
 * limitations under the License.
 */
 
-import { ElemID, InstanceElement, StaticFile, ChangeDataType, DeployResult,
-  getChangeData, FetchOptions, ObjectType, Change, isObjectType, toChange, BuiltinTypes, SaltoError, SaltoElementError } from '@salto-io/adapter-api'
+import {
+  ElemID, InstanceElement, StaticFile, ChangeDataType, DeployResult,
+  getChangeData, FetchOptions, ObjectType, Change, isObjectType, toChange, BuiltinTypes, SaltoError, SaltoElementError,
+  ProgressReporter,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
@@ -93,6 +96,11 @@ const secondDummyFilter: LocalFilterCreator = () => ({
   name: 'secondDummyFilter',
   onFetch: () => onFetchMock(2),
 })
+
+const nullProgressReporter: ProgressReporter = {
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  reportProgress: () => {},
+}
 
 describe('Adapter', () => {
   const client = createClient()
@@ -629,6 +637,7 @@ describe('Adapter', () => {
         groupID: SDF_CREATE_OR_UPDATE_GROUP_ID,
         changes: [{ action: 'add', data: { after } }],
       },
+      progressReporter: nullProgressReporter,
     })
 
     describe('add', () => {
@@ -714,6 +723,7 @@ describe('Adapter', () => {
               folderChange,
             ],
           },
+          progressReporter: nullProgressReporter,
         })
         const folderCustInfo = await toCustomizationInfo(folderInstance)
         const fileCustInfo = await toCustomizationInfo(fileInstance)
@@ -751,6 +761,7 @@ describe('Adapter', () => {
               folderChange,
             ],
           },
+          progressReporter: nullProgressReporter,
         })
         const folderCustInfo = await toCustomizationInfo(folderInstance)
         const fileCustInfo = await toCustomizationInfo(fileInstance)
@@ -785,6 +796,7 @@ describe('Adapter', () => {
           groupID: SDF_CREATE_OR_UPDATE_GROUP_ID,
           changes: [{ action: 'modify', data: { before, after } }],
         },
+        progressReporter: nullProgressReporter,
       })
 
       it('should update custom type instance', async () => {
@@ -947,6 +959,7 @@ describe('Adapter', () => {
             groupID: SDF_CREATE_OR_UPDATE_GROUP_ID,
             changes: [{ action: 'add', data: { after: instance } }],
           },
+          progressReporter: nullProgressReporter,
         })
         testGraph.addNodes([
           new GraphNode(
@@ -1151,6 +1164,7 @@ describe('Adapter', () => {
             changes: [toChange({ after: customRecordType.fields.custom_field })],
             groupID: SDF_CREATE_OR_UPDATE_GROUP_ID,
           },
+          progressReporter: nullProgressReporter,
         })
         expect(deployRes).toEqual({
           appliedChanges: [],

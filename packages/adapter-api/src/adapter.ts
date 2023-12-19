@@ -81,6 +81,7 @@ export type FetchOptions = {
 }
 
 export type DeployOptions = {
+  progressReporter: ProgressReporter
   changeGroup: ChangeGroup
 }
 

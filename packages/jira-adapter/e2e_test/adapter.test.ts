@@ -13,9 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { DeployResult, Element, getChangeData, InstanceElement, isAdditionChange, isInstanceElement, isObjectType,
-  ModificationChange,
-  ReadOnlyElementsSource, toChange } from '@salto-io/adapter-api'
+import {
+  DeployResult, Element, getChangeData, InstanceElement, isAdditionChange, isInstanceElement, isObjectType,
+  ModificationChange, ProgressReporter,
+  ReadOnlyElementsSource, toChange,
+} from '@salto-io/adapter-api'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { buildElementsSourceFromElements, getParents, resolveValues } from '@salto-io/adapter-utils'
@@ -38,6 +40,10 @@ jest.setTimeout(600 * 1000)
 
 const excludedTypes = ['Behavior', 'Behavior__config', ASSESTS_SCHEMA_TYPE, 'AssetsSchemas', 'AssetsStatuses', 'AssetsStatus', 'AssetsObjectTypes', ASSETS_OBJECT_TYPE, ASSETS_ATTRIBUTE_TYPE]
 
+const nullProgressReporter: ProgressReporter = {
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  reportProgress: () => {},
+}
 each([
   ['Cloud', false],
   ['Data Center', true],
@@ -135,6 +141,7 @@ each([
             groupID: group[0].elemID.getFullName(),
             changes: group.map(instance => toChange({ after: instance })),
           },
+          progressReporter: nullProgressReporter,
         })
 
         res.appliedChanges.forEach(appliedChange => {
@@ -158,6 +165,7 @@ each([
             groupID: group[0].data.after.elemID.getFullName(),
             changes: group,
           },
+          progressReporter: nullProgressReporter,
         })
 
         res.appliedChanges.forEach(appliedChange => {
@@ -248,6 +256,7 @@ each([
             groupID: getChangeData(change).elemID.getFullName(),
             changes: [change],
           },
+          progressReporter: nullProgressReporter,
         })))
 
       const errors = addDeployResults.flatMap(res => res.errors)

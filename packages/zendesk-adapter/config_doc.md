@@ -50,9 +50,18 @@ zendesk {
 
 | Name                                                          | Default when undefined   | Description
 |---------------------------------------------------------------|--------------------------|------------
-| [retry](#client-retry-configuration-options)                         | `{}` (no overrides)      | Configuration for retrying on errors
-| [rateLimit](#client-rate-limit-configuration-options)                | `{}` (no overrides)      | Limits on the number of concurrent requests of different types
+| [retry](#client-retry-configuration-options)                  | `{}` (no overrides)      | Configuration for retrying on errors
+| [rateLimit](#client-rate-limit-configuration-options)         | `{}` (no overrides)      | Limits on the number of concurrent requests of different types
 | [maxRequestsPerMinute]                                        | unlimited                | Limits on the number of requests per minute
+| [timeout](#client-timeout-configuration-options)              | `{}` (no overrides)      | Configuration for setting request timeouts
+
+#### Client timeout configuration options
+
+| Name                  | Default when undefined | Description
+|-----------------------|------------------------|------------
+| [maxDuration]         | `5000` (5 seconds)     | Set a timeout (in milliseconds) on requests (setting `0` is unlimited)
+| [retryOnTimeout]      | true                   | Whether to retry requests that returned a timeout response
+| [lastRetryNoTimeout]  | true                   | Whether to disable the timeout duration on the last retry (if we assume the service will eventually return a response)
 
 #### Client retry configuration options
 

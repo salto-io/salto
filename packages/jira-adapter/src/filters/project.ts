@@ -90,12 +90,13 @@ const deployCustomerPermissions = async (
   client: JiraClient,
   config: JiraConfig
 ): Promise<void> => {
-  if (!config.fetch.enableJSM) {
+  if (!config.fetch.enableJSM || instance.value.projectTypeKey !== SERVICE_DESK) {
     return
   }
-  if ((isAdditionChange(change))
+  if (((isAdditionChange(change))
   || (isModificationChange(change)
-  && !isEqualValues(change.data.before.value.customerPermissions, change.data.after.value.customerPermissions))) {
+    && !isEqualValues(change.data.before.value.customerPermissions, change.data.after.value.customerPermissions)))
+  && instance.value.customerPermissions !== undefined) {
     await client.post({
       url: `/rest/servicedesk/1/servicedesk/${instance.value.key}/settings/requestsecurity`,
       data: instance.value.customerPermissions,

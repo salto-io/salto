@@ -37,7 +37,7 @@ export type ClientRetryConfig = Partial<{
 
 export type ClientTimeoutConfig = Partial<{
   maxDuration: number
-  resetTimeoutBetweenAttempts: boolean
+  retryOnTimeout: boolean
   lastRetryNoTimeout: boolean
 }>
 
@@ -102,7 +102,7 @@ export const createClientConfigType = <RateLimitConfig extends ClientRateLimitCo
     elemID: new ElemID(adapter, 'clientTimeoutConfig'),
     fields: {
       maxDuration: { refType: BuiltinTypes.NUMBER },
-      resetTimeoutBetweenAttempts: { refType: BuiltinTypes.BOOLEAN },
+      retryOnTimeout: { refType: BuiltinTypes.BOOLEAN },
       lastRetryNoTimeout: { refType: BuiltinTypes.BOOLEAN },
     },
     annotations: {

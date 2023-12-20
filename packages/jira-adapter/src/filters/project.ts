@@ -26,7 +26,7 @@ import { findObject, isAllFreeLicense, setFieldDeploymentAnnotations } from '../
 import { PROJECT_CONTEXTS_FIELD } from './fields/contexts_projects_filter'
 import { JiraConfig } from '../config/config'
 import { isObjectWithId } from './change_jsm_fields'
-import { SERVICE_DESK } from '../constants'
+import { PROJECT_TYPE_TYPE_NAME, SERVICE_DESK } from '../constants'
 
 const PROJECT_TYPE_NAME = 'Project'
 
@@ -41,6 +41,14 @@ const PROJECT_CATEGORY_FIELD = 'projectCategory'
 const CUSTOMER_PERMISSIONS = 'customerPermissions'
 
 const log = logger(module)
+
+const changeProjectPath = (
+  instance: InstanceElement,
+  projectTypesKeysToFormatedKeys: Record<string, string>
+): void => {
+  const subPath = projectTypesKeysToFormatedKeys[instance.value.projectTypeKey] ?? 'Other'
+  instance.path = [...(instance.path?.slice(0, -2) ?? []), subPath, ...(instance.path?.slice(-2,) ?? [])]
+}
 
 const deployScheme = async (
   instance: InstanceElement,
@@ -238,6 +246,11 @@ const filter: FilterCreator = ({ config, client, elementsSource }) => ({
       }
     }
 
+    const projectTypesKeysToFormattedKeys: Record<string, string> = Object.fromEntries(elements
+      .filter(isInstanceElement)
+      .filter(inst => inst.elemID.typeName === PROJECT_TYPE_TYPE_NAME)
+      .map(inst => [inst.value.key, inst.value.formattedKey]))
+
     elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === PROJECT_TYPE_NAME)
@@ -257,6 +270,7 @@ const filter: FilterCreator = ({ config, client, elementsSource }) => ({
         instance.value.notificationScheme = instance.value.notificationScheme?.id?.toString()
         instance.value.permissionScheme = instance.value.permissionScheme?.id?.toString()
         instance.value.issueSecurityScheme = instance.value.issueSecurityScheme?.id?.toString()
+        changeProjectPath(instance, projectTypesKeysToFormattedKeys)
       })
   },
 

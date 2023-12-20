@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Change, Element, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isRemovalChange } from '@salto-io/adapter-api'
-import { getParents } from '@salto-io/adapter-utils'
+import { getParent, getParents } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -36,6 +36,12 @@ const filter: FilterCreator = ({ client, config }) => ({
         if (leadAccountId !== undefined) {
           instance.value.leadAccountId = leadAccountId
           delete instance.value.lead
+        }
+        try {
+          const parentPath = getParent(instance).path
+          instance.path = [...(parentPath?.slice(0, -1) ?? []), 'components', ...(instance.path?.slice(-1,) ?? [])]
+        } catch (err) {
+          log.error('failed to get parent path for %s: %o', instance.elemID.getFullName(), err)
         }
       })
   },

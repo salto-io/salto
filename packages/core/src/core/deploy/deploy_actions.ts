@@ -129,7 +129,7 @@ export const deployActions = async (
   checkOnly: boolean
 ): Promise<DeployActionResult> => {
   const appliedChanges: Change[] = []
-  const allGroups: GroupProperties[] = []
+  const groups: GroupProperties[] = []
   try {
     await deployPlan.walkAsync(async (itemId: PlanItemId): Promise<void> => {
       const item = deployPlan.getItem(itemId) as PlanItem
@@ -145,7 +145,7 @@ export const deployActions = async (
         const result = await deployAction(item, adapters, checkOnly, progressReporter)
         result.appliedChanges.forEach(appliedChange => appliedChanges.push(appliedChange))
         makeArray(result.extraProperties?.groups)
-          .forEach(group => allGroups.push({
+          .forEach(group => groups.push({
             ...group,
             accountName: item.account,
             id: item.groupKey,
@@ -169,7 +169,7 @@ export const deployActions = async (
         throw error
       }
     })
-    return { errors: [], appliedChanges, extraProperties: { groups: allGroups } }
+    return { errors: [], appliedChanges, extraProperties: { groups: groups } }
   } catch (error) {
     const deployErrors: DeployError[] = []
     if (error instanceof WalkError) {
@@ -199,6 +199,6 @@ export const deployActions = async (
         })
       }
     }
-    return { errors: deployErrors, appliedChanges, extraProperties: { groups: allGroups } }
+    return { errors: deployErrors, appliedChanges, extraProperties: { groups } }
   }
 }

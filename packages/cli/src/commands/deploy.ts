@@ -20,6 +20,7 @@ import { PlanItem, Plan, preview, DeployResult, ItemStatus, deploy, summarizeDep
 import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
 import { mkdirp, writeFile } from '@salto-io/file'
+import path from 'path'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts, getTagsForAccounts } from './common/accounts'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
@@ -47,7 +48,6 @@ import { ENVIRONMENT_OPTION, EnvArg, validateAndSetEnv } from './common/env'
 
 const log = logger(module)
 const { makeArray } = collections.array
-const { awu } = collections.asynciterable
 
 const ACTION_INPROGRESS_INTERVAL = 5000
 
@@ -164,7 +164,7 @@ const deployPlan = async (
   }
   const executingDeploy = (force || await shouldDeploy(actionPlan, checkOnly))
   await printStartDeploy(output, executingDeploy, checkOnly)
-  const result: DeployResult = executingDeploy
+  const result = executingDeploy
     ? await deploy(
       workspace,
       actionPlan,
@@ -214,15 +214,15 @@ const writeArtifacts = async (
       .groupBy(group => group.accountName)
       .mapValues(groups => groups.flatMap(group => group.artifacts))
       .value()
-    await awu(Object.entries(artifactsByAccountName)).forEach(async ([accountName, artifacts]) => {
-      const artifactDir = `${artifactsDir}/${accountName}`
-      await mkdirp(artifactDir)
-      await awu(artifacts).forEach(async artifact => {
-        const artifactPath = `${artifactDir}/${artifact.name}`
+    await Promise.all((Object.entries(artifactsByAccountName)).map(async ([accountName, artifacts]) => {
+      const accountArtifactsDir = path.join(artifactsDir, accountName)
+      await mkdirp(accountArtifactsDir)
+      await Promise.all(artifacts.map(async artifact => {
+        const artifactPath = path.join(accountArtifactsDir, artifact.name)
         await writeFile(artifactPath, artifact.content)
         log.debug('Successfully wrote artifact %s', artifactPath)
-      })
-    })
+      }))
+    }))
   } catch (e: unknown) {
     log.error('Error occurred while writing artifacts: %o', e)
   }
@@ -261,7 +261,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
   const actionPlan = await preview(workspace, actualAccounts, checkOnly)
   await printPlan(actionPlan, output, workspace, detailedPlan)
 
-  const result: DeployResult = dryRun ? { success: true, errors: [] } : await deployPlan(
+  const result = dryRun ? { success: true, errors: [] } : await deployPlan(
     actionPlan,
     workspace,
     cliTelemetry,

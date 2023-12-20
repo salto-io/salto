@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import util from 'util'
-import { collections, values, hash as hashUtils, types } from '@salto-io/lowerdash'
+import { collections, values, hash as hashUtils } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { SaltoError,
   DeployResult,
@@ -435,8 +435,8 @@ export const deployMetadata = async (
   }
 
   const deploymentUrl = await getDeployStatusUrl(sfDeployRes, client)
-  const artifacts: types.NonEmptyArray<Artifact> = [
-    { name: SalesforceArtifacts.DeployPackageXml, content: pkg.getPackageXmlContent() },
+  const artifacts: Artifact[] = [
+    { name: SalesforceArtifacts.DeployPackageXml, content: Buffer.from(pkg.getPackageXmlContent()) },
   ]
   return {
     appliedChanges: validChanges.filter(isSuccessfulChange),

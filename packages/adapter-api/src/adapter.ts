@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { types } from '@salto-io/lowerdash'
 import {
   InstanceElement, ObjectType, Element, ReadOnlyElementsSource,
 } from './elements'
@@ -47,7 +46,7 @@ export type Artifact = {
 
 export type AdapterGroupProperties = {
   url?: string
-  artifacts?: types.NonEmptyArray<Artifact>
+  artifacts?: Artifact[]
   requestId?: string
   hash?: string
 }

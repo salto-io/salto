@@ -15,9 +15,11 @@
 */
 import semver from 'semver'
 import moment from 'moment'
-import { Plan, PlanItem } from '@salto-io/core'
+import { DeployResult, GroupProperties } from '@salto-io/core'
+import * as saltoCoreModule from '@salto-io/core'
 import { Workspace, state, remoteMap, elementSource, pathIndex } from '@salto-io/workspace'
 import * as saltoFileModule from '@salto-io/file'
+import { Artifact } from '@salto-io/adapter-api'
 import Prompts from '../../src/prompts'
 import { CliExitCode } from '../../src/types'
 import * as callbacks from '../../src/callbacks'
@@ -25,33 +27,34 @@ import * as mocks from '../mocks'
 import { action } from '../../src/commands/deploy'
 import { version as currentVersion } from '../../src/generated/version.json'
 import * as workspaceModule from '../../src/workspace/workspace'
-import { testArtifact } from '../mocks'
 
 const { InMemoryRemoteMap } = remoteMap
 const { createInMemoryElementSource } = elementSource
 
 const mockDeploy = mocks.deploy
 const mockPreview = mocks.preview
+
+const mockDeployImpl = (extraProperties?: DeployResult['extraProperties']): typeof saltoCoreModule.deploy => async (...args) =>
+// Deploy with Nacl files will fail, doing this trick as we cannot reference vars, we get error:
+// "The module factory of `jest.mock()` is not allowed to reference any
+// out-of-scope variables."
+// Notice that Nacl files are ignored in mockDeploy.
+  ({
+    ...await mockDeploy(...args),
+    extraProperties,
+  })
+
+
 jest.mock('../../src/callbacks')
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual<{}>('@salto-io/core'),
-  deploy: jest.fn().mockImplementation((
-    ws: Workspace,
-    actionPlan: Plan,
-    reportProgress: (action: PlanItem, step: string, details?: string) => void,
-    accounts = new Array<string>(),
-  ) =>
-  // Deploy with Nacl files will fail, doing this trick as we cannot reference vars, we get error:
-  // "The module factory of `jest.mock()` is not allowed to reference any
-  // out-of-scope variables."
-  // Notice that Nacl files are ignored in mockDeploy.
-
-    mockDeploy(ws, actionPlan, reportProgress, accounts)),
+  deploy: jest.fn(),
   preview: jest.fn().mockImplementation((
     _workspace: Workspace,
     _accounts: string[],
   ) => mockPreview()),
 }))
+const mockedCore = jest.mocked(saltoCoreModule)
 
 jest.mock('@salto-io/file', () => ({
   ...jest.requireActual('@salto-io/file'),
@@ -71,6 +74,8 @@ describe('deploy command', () => {
   const mockShouldCancel = callbacks.shouldCancelCommand as jest.Mock
 
   beforeEach(() => {
+    jest.clearAllMocks()
+    mockedCore.deploy.mockImplementation(mockDeployImpl())
     const cliArgs = mocks.mockCliArgs()
     cliCommandArgs = mocks.mockCliCommandArgs(commandName, cliArgs)
     output = cliArgs.output
@@ -108,33 +113,160 @@ describe('deploy command', () => {
     })
   })
 
-  describe('when artifactsDir param is provided', () => {
-    let result: number
-
+  describe('deploy artifacts', () => {
     const ARTIFACTS_DIR = '/tmp/artifacts'
+
+    const ARTIFACT: Artifact = {
+      name: 'testArtifact.txt',
+      content: Buffer.from('test'),
+    }
+
+    let groups: GroupProperties[]
 
     beforeEach(async () => {
       mockGetUserBooleanInput.mockResolvedValueOnce(true)
-      result = await action({
-        ...cliCommandArgs,
-        input: {
-          force: false,
-          dryRun: false,
-          detailedPlan: false,
-          checkOnly: false,
-          artifactsDir: ARTIFACTS_DIR,
-          accounts,
+      groups = [
+        {
+          id: 'testGroup',
+          accountName: 'dummy',
+          artifacts: [ARTIFACT],
         },
-        workspace,
+        {
+          id: 'testGroup',
+          accountName: 'dummy2',
+          artifacts: [ARTIFACT],
+        },
+      ]
+    })
+    describe('when artifactsDir param is provided', () => {
+      describe('when DeployResult has artifacts', () => {
+        beforeEach(() => {
+          mockedCore.deploy.mockImplementation(mockDeployImpl({
+            groups,
+          }))
+        })
+        it('should write artifacts', async () => {
+          const result = await action({
+            ...cliCommandArgs,
+            input: {
+              force: false,
+              dryRun: false,
+              detailedPlan: false,
+              checkOnly: false,
+              artifactsDir: ARTIFACTS_DIR,
+              accounts,
+            },
+            workspace,
+          })
+          expect(result).toBe(CliExitCode.Success)
+          expect(mockedSaltoFile.mkdirp).toHaveBeenCalledWith(`${ARTIFACTS_DIR}/dummy`)
+          expect(mockedSaltoFile.mkdirp).toHaveBeenCalledWith(`${ARTIFACTS_DIR}/dummy2`)
+          expect(mockedSaltoFile.writeFile)
+            .toHaveBeenCalledWith(`${ARTIFACTS_DIR}/dummy/${ARTIFACT.name}`, ARTIFACT.content)
+          expect(mockedSaltoFile.writeFile)
+            .toHaveBeenCalledWith(`${ARTIFACTS_DIR}/dummy2/${ARTIFACT.name}`, ARTIFACT.content)
+        })
+      })
+      describe('when DeployResult has no artifacts', () => {
+        beforeEach(() => {
+          mockedCore.deploy.mockImplementation(mockDeployImpl({
+            groups: [
+              {
+                id: 'testGroup',
+                accountName: 'dummy',
+              },
+            ],
+          }))
+        })
+        it('should not write artifacts', async () => {
+          const result = await action({
+            ...cliCommandArgs,
+            input: {
+              force: false,
+              dryRun: false,
+              detailedPlan: false,
+              checkOnly: false,
+              artifactsDir: ARTIFACTS_DIR,
+              accounts,
+            },
+            workspace,
+          })
+          expect(result).toBe(CliExitCode.Success)
+          expect(mockedSaltoFile.mkdirp).not.toHaveBeenCalledWith(`${ARTIFACTS_DIR}/dummy`)
+          expect(mockedSaltoFile.mkdirp).not.toHaveBeenCalledWith(`${ARTIFACTS_DIR}/dummy2`)
+          expect(mockedSaltoFile.writeFile)
+            .not.toHaveBeenCalledWith(`${ARTIFACTS_DIR}/dummy/${ARTIFACT.name}`, ARTIFACT.content)
+          expect(mockedSaltoFile.writeFile)
+            .not.toHaveBeenCalledWith(`${ARTIFACTS_DIR}/dummy2/${ARTIFACT.name}`, ARTIFACT.content)
+        })
       })
     })
-    it('should write artifacts', () => {
-      expect(result).toBe(CliExitCode.Success)
-      expect(mockedSaltoFile.mkdirp).toHaveBeenCalledWith(`${ARTIFACTS_DIR}/dummy`)
-      expect(mockedSaltoFile.writeFile)
-        .toHaveBeenCalledWith(`${ARTIFACTS_DIR}/dummy/${testArtifact.name}`, testArtifact.content)
+    describe('when artifactsDir param is not provided', () => {
+      beforeEach(async () => {
+        mockGetUserBooleanInput.mockResolvedValueOnce(true)
+      })
+      describe('when DeployResult has artifacts', () => {
+        beforeEach(() => {
+          mockedCore.deploy.mockImplementation(mockDeployImpl({
+            groups,
+          }))
+        })
+        it('should not write artifacts', async () => {
+          const result = await action({
+            ...cliCommandArgs,
+            input: {
+              force: false,
+              dryRun: false,
+              detailedPlan: false,
+              checkOnly: false,
+              accounts,
+            },
+            workspace,
+          })
+          expect(result).toBe(CliExitCode.Success)
+          expect(mockedSaltoFile.mkdirp).not.toHaveBeenCalledWith(`${ARTIFACTS_DIR}/dummy`)
+          expect(mockedSaltoFile.mkdirp).not.toHaveBeenCalledWith(`${ARTIFACTS_DIR}/dummy2`)
+          expect(mockedSaltoFile.writeFile)
+            .not.toHaveBeenCalledWith(`${ARTIFACTS_DIR}/dummy/${ARTIFACT.name}`, ARTIFACT.content)
+          expect(mockedSaltoFile.writeFile)
+            .not.toHaveBeenCalledWith(`${ARTIFACTS_DIR}/dummy2/${ARTIFACT.name}`, ARTIFACT.content)
+        })
+      })
+      describe('when DeployResult has no artifacts', () => {
+        beforeEach(() => {
+          mockedCore.deploy.mockImplementation(mockDeployImpl({
+            groups: [
+              {
+                id: 'testGroup',
+                accountName: 'dummy',
+              },
+            ],
+          }))
+        })
+        it('should not write artifacts', async () => {
+          const result = await action({
+            ...cliCommandArgs,
+            input: {
+              force: false,
+              dryRun: false,
+              detailedPlan: false,
+              checkOnly: false,
+              accounts,
+            },
+            workspace,
+          })
+          expect(result).toBe(CliExitCode.Success)
+          expect(mockedSaltoFile.mkdirp).not.toHaveBeenCalledWith(`${ARTIFACTS_DIR}/dummy`)
+          expect(mockedSaltoFile.mkdirp).not.toHaveBeenCalledWith(`${ARTIFACTS_DIR}/dummy2`)
+          expect(mockedSaltoFile.writeFile)
+            .not.toHaveBeenCalledWith(`${ARTIFACTS_DIR}/dummy/${ARTIFACT.name}`, ARTIFACT.content)
+          expect(mockedSaltoFile.writeFile)
+            .not.toHaveBeenCalledWith(`${ARTIFACTS_DIR}/dummy2/${ARTIFACT.name}`, ARTIFACT.content)
+        })
+      })
     })
   })
+
 
   describe('should deploy considering user input', () => {
     it('should continue with deploy when user input is y', async () => {

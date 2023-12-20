@@ -13,9 +13,21 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { automationProjectsHandler } from './automation_projects'
-import { WeakReferencesHandler } from './weak_references_handler'
+import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 
-export const weakReferenceHandlers: Record<string, WeakReferencesHandler> = {
-  automationProjects: automationProjectsHandler,
+const log = logger(module)
+
+export const getEnabledEntries = <T>(
+  possibleEntries: Record<string, T>,
+  config: Record<string, boolean>,
+): Record<string, T> => {
+  const disabledEntriesNames = new Set<string>(
+    Object.entries(config).filter(([, enabled]) => !enabled).map(([name]) => name)
+  )
+  if (disabledEntriesNames.size > 0) {
+    log.info(`The following entries are disabled: ${Array.from(disabledEntriesNames.keys()).join(', ')}`)
+  }
+
+  return _.pickBy(possibleEntries, (_entry, name) => !disabledEntriesNames.has(name))
 }

@@ -16,6 +16,7 @@
 import { ChangeValidator } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
+import { getEnabledEntries } from '../../config_utils'
 
 const log = logger(module)
 
@@ -27,15 +28,7 @@ export const createChangeValidator = ({
   validators: Record<string, ChangeValidator>
   validatorsActivationConfig?: ValidatorsActivationConfig
 }): ChangeValidator => async (changes, elementSource) => {
-  const disabledValidatorNames = new Set<string>(
-    Object.entries(validatorsActivationConfig).filter(([, enabled]) => !enabled).map(([name]) => name)
-  )
-
-  const activeValidators = Object.entries(validators).filter(([name]) => !disabledValidatorNames.has(name))
-
-  if (disabledValidatorNames.size > 0) {
-    log.info(`Running change validators with the following disabled: ${Array.from(disabledValidatorNames.keys()).join(', ')}`)
-  }
+  const activeValidators = Object.entries(getEnabledEntries(validators, validatorsActivationConfig))
 
   return _.flatten(await Promise.all(
     activeValidators.map(([name, validator]) => log.time(() => validator(changes, elementSource), `validator ${name}`))

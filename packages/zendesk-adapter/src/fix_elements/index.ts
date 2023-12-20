@@ -22,6 +22,6 @@ import { FixElementsArgs } from './types'
 export const createFixElementFunctions = (
   args: FixElementsArgs
 ): FixElementsFunc[] => ([
-  ...customReferenceHandlers.map(handler => handler.removeWeakReferences(args)),
+  ...Object.values(customReferenceHandlers).map(handler => handler.removeWeakReferences(args)),
   fallbackUsersHandler(args),
 ])

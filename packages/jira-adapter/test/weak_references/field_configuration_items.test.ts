@@ -77,8 +77,8 @@ describe('field_configuration_items', () => {
         {
           elemID: instance.elemID.createNestedID('fields'),
           severity: 'Info',
-          message: 'Deploying field configuration without all attached field configuration items',
-          detailedMessage: 'This field configuration is attached to some field configuration items that do not exist in the target environment. It will be deployed without referencing these field configuration items.',
+          message: 'Deploying field configuration without all of its fields',
+          detailedMessage: 'This field configuration references some fields that do not exist in the target environment. It will be deployed without them.',
         },
       ])
 

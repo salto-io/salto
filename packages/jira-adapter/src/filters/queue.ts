@@ -14,25 +14,28 @@
 * limitations under the License.
 */
 
-import { Change, InstanceElement, getChangeData, isAdditionChange, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
-import { createSchemeGuard, getParent, resolveChangeElement } from '@salto-io/adapter-utils'
+import { Change, InstanceElement, getChangeData, isAdditionChange, isInstanceChange, isRemovalChange, toChange } from '@salto-io/adapter-api'
+import { createSchemeGuard, getParent } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import Joi from 'joi'
-import { deployChanges } from '../deployment/standard_deployment'
+import { AdapterDuckTypeApiConfig } from '@salto-io/adapter-components/src/config'
+import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 import { FilterCreator } from '../filter'
 import { QUEUE_TYPE } from '../constants'
-import { getLookUpName } from '../reference_mapping'
 import JiraClient from '../client/client'
 
+const log = logger(module)
 const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
-const { awu } = collections.asynciterable
-type queueGetRsponse = {
-  values: {
-    id: string
-    name: string
-  }[]
+
+type QueueParams = {
+  id: string
+  name: string
+}
+
+type QueueGetResponse = {
+  values: QueueParams[]
 }
 const QUEUE_RESOPNSE_SCHEME = Joi.object({
   values: Joi.array().items(Joi.object({
@@ -41,62 +44,58 @@ const QUEUE_RESOPNSE_SCHEME = Joi.object({
   }).unknown(true)).required(),
 }).unknown(true).required()
 
-const isQueueResponse = createSchemeGuard<queueGetRsponse>(QUEUE_RESOPNSE_SCHEME)
+const isQueueResponse = createSchemeGuard<QueueGetResponse>(QUEUE_RESOPNSE_SCHEME)
 
-const isDefaultNameAddition = async (
-  change: Change<InstanceElement>,
+const getExsitingQueuesNames = async (
+  changes: Change<InstanceElement>[],
   client: JiraClient,
-):Promise<boolean> => {
-  const instance = getChangeData(change)
+):Promise<(string | string)[][]> => {
+  const firstQueueAdditionChange = changes.find(change => isAdditionChange(change)
+  && change.data.after.elemID.typeName === QUEUE_TYPE)
+  if (firstQueueAdditionChange === undefined) {
+    return []
+  }
+  const instance = getChangeData(firstQueueAdditionChange)
   const parent = getParent(instance)
   const { serviceDeskId } = parent.value
   if (serviceDeskId === undefined) {
-    throw new Error(`failed to deploy queue, because ${parent.value.name} does not have a service desk id`)
+    log.error(`failed to deploy queue, because ${parent.value.name} does not have a service desk id`)
+    return []
   }
   const response = await client.getSinglePage({
     url: `/rest/servicedeskapi/servicedesk/${serviceDeskId}/queue`,
   })
   if (!isQueueResponse(response.data)) {
-    return false
+    return []
   }
-  const existingQueuesNames = response.data.values.map(queue => queue.name)
-  return existingQueuesNames.includes(instance.value.name)
+  const existingQueues = response.data.values.map(queue => [queue.name, queue.id])
+  return existingQueues
 }
 
 const deployExistingQueue = async (
   change: Change<InstanceElement>,
   client: JiraClient,
+  existingQueues: Record<string, string>,
+  jsmApiDefinitions: AdapterDuckTypeApiConfig
 ): Promise<void> => {
-  if (isRemovalChange(change)) {
+  if (!isAdditionChange(change)) {
     return
   }
-  const instance = getChangeData(change)
-  const parent = getParent(instance)
-  const response = await client.getSinglePage({
-    url: `/rest/servicedeskapi/servicedesk/${parent.value.serviceDeskId}/queue`,
+  change.data.after.value.id = existingQueues[change.data.after.value.name]
+  const emptyQueueInstance = change.data.after.clone()
+  emptyQueueInstance.value = {}
+  const modifyChange = toChange({ before: emptyQueueInstance, after: change.data.after })
+  await defaultDeployChange({
+    change: modifyChange,
+    client,
+    apiDefinitions: jsmApiDefinitions,
   })
-  if (!isQueueResponse(response.data)) {
-    return
-  }
-  const queueId = response.data.values.find(queue => queue.name === instance.value.name)?.id
-  if (queueId === undefined) {
-    throw new Error(`failed to deploy queue, because ${instance.value.name} does not have id`)
-  }
-  const resolvedChange = await resolveChangeElement(change, getLookUpName)
-  await client.put({
-    url: `/rest/servicedesk/1/servicedesk/${parent.value.key}/queues/${queueId}`,
-    data: resolvedChange.data.after.value,
-  })
-  instance.value.id = queueId
 }
 
 const deployQueueRemovalChange = async (
   change: Change<InstanceElement>,
   client: JiraClient,
 ): Promise<void> => {
-  if (!isRemovalChange(change)) {
-    return
-  }
   const parent = getParent(getChangeData(change))
   const instanceId = getChangeData(change).value.id
   await client.put({
@@ -105,11 +104,13 @@ const deployQueueRemovalChange = async (
   })
 }
 
-/* This filter responsible for deploying queue deletions and deploying queues with default names.
+/*
+* This filter responsible for deploying queue deletions and deploying queues with default names.
 * Modification change and addition non default named queues, will be deployed through the
-* standard JSM deployment */
+* standard JSM deployment
+*/
 const filter: FilterCreator = ({ config, client }) => ({
-  name: 'queue',
+  name: 'queueFilter',
   deploy: async changes => {
     const { jsmApiDefinitions } = config
     if (!config.fetch.enableJSM || jsmApiDefinitions === undefined) {
@@ -118,19 +119,16 @@ const filter: FilterCreator = ({ config, client }) => ({
         leftoverChanges: changes,
       }
     }
-    const relevantQueueAdditions = await awu(changes)
-      .filter(change => isAdditionChange(change))
-      .filter(change => getChangeData(change).elemID.typeName === QUEUE_TYPE)
-      .filter(change => isInstanceChange(change))
-      .filter(async change => isDefaultNameAddition(change as Change<InstanceElement>, client))
-      .toArray()
 
+    const existingQueues: Record<string, string> = Object.fromEntries(
+      await getExsitingQueuesNames(changes.filter(isInstanceChange), client)
+    )
 
     const [queueChanges, leftoverChanges] = _.partition(
       changes,
       change => isInstanceChange(change)
       && getChangeData(change).elemID.typeName === QUEUE_TYPE
-      && (isRemovalChange(change) || relevantQueueAdditions.includes(change))
+      && (isRemovalChange(change) || Object.keys(existingQueues).includes(getChangeData(change).value.name))
     )
 
     const typeFixedChanges = queueChanges
@@ -145,8 +143,10 @@ const filter: FilterCreator = ({ config, client }) => ({
 
     const deployResult = await deployChanges(typeFixedChanges.filter(isInstanceChange),
       async change => {
-        await deployQueueRemovalChange(change, client)
-        await deployExistingQueue(change, client)
+        if (isRemovalChange(change)) {
+          return deployQueueRemovalChange(change, client)
+        }
+        return deployExistingQueue(change, client, existingQueues, jsmApiDefinitions)
       })
 
     return {

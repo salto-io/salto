@@ -19,7 +19,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { PROJECT_TYPE, QUEUE_TYPE } from '../../src/constants'
 import { createEmptyType } from '../utils'
-import { queueValidator } from '../../src/change_validators/queue'
+import { deleteLastQueueValidator } from '../../src/change_validators/last_queue'
 import { JiraConfig, getDefaultConfig } from '../../src/config/config'
 
 describe('lastQueueValidator', () => {
@@ -57,7 +57,7 @@ describe('lastQueueValidator', () => {
     config.fetch.enableJSM = true
   })
   it('should return error if trying delete the last queue of a project', async () => {
-    const validator = queueValidator(config)
+    const validator = deleteLastQueueValidator(config)
     const changeErrors = await validator(
       [toChange({ before: queueInstance })],
       elementsSource
@@ -85,7 +85,7 @@ describe('lastQueueValidator', () => {
         ],
       },
     )
-    const validator = queueValidator(config)
+    const validator = deleteLastQueueValidator(config)
     const changeErrors = await validator(
       [toChange({ before: queueInstance })],
       buildElementsSourceFromElements([otherQueueInstance, projectInstance])
@@ -107,7 +107,7 @@ describe('lastQueueValidator', () => {
         ],
       },
     )
-    const validator = queueValidator(config)
+    const validator = deleteLastQueueValidator(config)
     const changeErrors = await validator(
       [toChange({ before: queueInstance }), toChange({ before: otherQueueInstance })],
       buildElementsSourceFromElements([projectInstance])
@@ -122,15 +122,15 @@ describe('lastQueueValidator', () => {
   })
   it('should not return error if enableJSM is false', async () => {
     config.fetch.enableJSM = false
-    const validator = queueValidator(config)
+    const validator = deleteLastQueueValidator(config)
     const changeErrors = await validator(
       [toChange({ before: queueInstance })],
       elementsSource
     )
     expect(changeErrors).toHaveLength(0)
   })
-  it('should not return error if is addition change of a new named queue', async () => {
-    const validator = queueValidator(config)
+  it('should not return error if is addition change', async () => {
+    const validator = deleteLastQueueValidator(config)
     const changeErrors = await validator(
       [toChange({ after: queueInstance })],
       elementsSource
@@ -138,39 +138,11 @@ describe('lastQueueValidator', () => {
     expect(changeErrors).toHaveLength(0)
   })
   it('should not return error if trying to delete the lase queue with the project', async () => {
-    const validator = queueValidator(config)
+    const validator = deleteLastQueueValidator(config)
     const changeErrors = await validator(
       [toChange({ before: projectInstance }), toChange({ before: queueInstance })],
       buildElementsSourceFromElements([])
     )
     expect(changeErrors).toHaveLength(0)
-  })
-  it('shuould return error if trying to add a queue with the same name as another queue in the project', async () => {
-    const otherQueueInstance = new InstanceElement(
-      'queue2',
-      queueType,
-      {
-        id: 33,
-        name: 'queue1',
-      },
-      undefined,
-      {
-        [CORE_ANNOTATIONS.PARENT]: [
-          new ReferenceExpression(projectInstance.elemID, projectInstance),
-        ],
-      },
-    )
-    const validator = queueValidator(config)
-    const changeErrors = await validator(
-      [toChange({ after: otherQueueInstance })],
-      buildElementsSourceFromElements([queueInstance, projectInstance])
-    )
-    expect(changeErrors).toHaveLength(1)
-    expect(changeErrors[0]).toEqual({
-      elemID: otherQueueInstance.elemID,
-      severity: 'Error' as SeverityLevel,
-      message: 'Cannot deploy queue with duplicate name',
-      detailedMessage: 'Cannot deploy this queue, as it has the same name as another queue in project project1.',
-    })
   })
 })

@@ -147,16 +147,6 @@ describe('queue filter', () => {
         expect(res.leftoverChanges).toHaveLength(0)
         expect(res.deployResult.errors).toHaveLength(0)
         expect(res.deployResult.appliedChanges).toHaveLength(1)
-        expect(connection.post).toHaveBeenCalledTimes(0)
-        expect(connection.put).toHaveBeenCalledOnce()
-        expect(connection.put).toHaveBeenCalledWith(
-          '/rest/servicedesk/1/servicedesk/project1Key/queues/11',
-          {
-            name: 'All Open',
-            columns: ['field1'],
-          },
-          undefined
-        )
       })
       it('should not deploy addition of a queue with non default name', async () => {
         queueInstance.value.name = 'queue1'

@@ -169,7 +169,7 @@ export const deployActions = async (
         throw error
       }
     })
-    return { errors: [], appliedChanges, extraProperties: { groups: groups } }
+    return { errors: [], appliedChanges, extraProperties: { groups } }
   } catch (error) {
     const deployErrors: DeployError[] = []
     if (error instanceof WalkError) {

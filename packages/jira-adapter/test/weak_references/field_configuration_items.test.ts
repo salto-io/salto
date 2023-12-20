@@ -23,6 +23,11 @@ describe('field_configuration_items', () => {
   let fieldConfigurationItemInstance: InstanceElement
   let instance: InstanceElement
   let elementsSource: ReadOnlyElementsSource
+  const AdapterConfigType = new ObjectType({
+    elemID: new ElemID('adapter'),
+    isSettings: true,
+  })
+  const adapterConfig = new InstanceElement(ElemID.CONFIG_NAME, AdapterConfigType)
 
   beforeEach(() => {
     fieldConfigurationItemInstance = new InstanceElement(
@@ -46,7 +51,7 @@ describe('field_configuration_items', () => {
   })
   describe('findWeakReferences', () => {
     it('should return weak references field configuration items', async () => {
-      const references = await fieldConfigurationsHandler.findWeakReferences([instance])
+      const references = await fieldConfigurationsHandler.findWeakReferences([instance], adapterConfig)
 
       expect(references).toEqual([
         { source: instance.elemID.createNestedID('fields', 'field1ConfigurationItem1', 'id'), target: fieldConfigurationItemInstance.elemID, type: 'weak' },
@@ -56,14 +61,14 @@ describe('field_configuration_items', () => {
 
     it('should do nothing if received invalid field configurations', async () => {
       instance.value.fields = 'invalid'
-      const references = await fieldConfigurationsHandler.findWeakReferences([instance])
+      const references = await fieldConfigurationsHandler.findWeakReferences([instance], adapterConfig)
 
       expect(references).toEqual([])
     })
 
     it('should do nothing if there are no field configuration items', async () => {
       delete instance.value.fields
-      const references = await fieldConfigurationsHandler.findWeakReferences([instance])
+      const references = await fieldConfigurationsHandler.findWeakReferences([instance], adapterConfig)
 
       expect(references).toEqual([])
     })

@@ -109,8 +109,8 @@ const removeMissingFields: WeakReferencesHandler['removeWeakReferences'] = ({ el
   const errors = fixedElements.map(instance => ({
     elemID: instance.elemID.createNestedID('fields'),
     severity: 'Info' as const,
-    message: 'Deploying field configuration without all attached field configuration items',
-    detailedMessage: 'This field configuration is attached to some field configuration items that do not exist in the target environment. It will be deployed without referencing these field configuration items.',
+    message: 'Deploying field configuration without all of its fields',
+    detailedMessage: 'This field configuration references some fields that do not exist in the target environment. It will be deployed without them.',
   }))
   return { fixedElements, errors }
 }, 'removeMissingFields')

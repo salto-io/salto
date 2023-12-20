@@ -198,7 +198,7 @@ const deployPlan = async (
 
 type GroupWithArtifacts = GroupProperties & Required<Pick<GroupProperties, 'artifacts'>>
 const isGroupWithArtifacts = (group: GroupProperties): group is GroupWithArtifacts => (
-  group.artifacts !== undefined
+  group.artifacts !== undefined && group.artifacts.length > 0
 )
 
 const writeArtifacts = async (

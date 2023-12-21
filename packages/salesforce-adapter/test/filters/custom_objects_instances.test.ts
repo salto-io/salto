@@ -26,10 +26,11 @@ import {
   isInstanceElement,
   ObjectType,
   PrimitiveType,
-  PrimitiveTypes,
+  PrimitiveTypes, ReadOnlyElementsSource,
   SaltoError,
   ServiceIds,
 } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import {
   ConfigChangeSuggestion,
@@ -44,9 +45,9 @@ import Connection from '../../src/client/jsforce'
 import filterCreator from '../../src/filters/custom_objects_instances'
 import mockAdapter from '../adapter'
 import {
-  API_NAME,
+  API_NAME, CHANGED_AT_SINGLETON,
   CUSTOM_OBJECT,
-  CUSTOM_OBJECT_ID_FIELD,
+  CUSTOM_OBJECT_ID_FIELD, DATA_INSTANCES_CHANGED_AT_MAGIC,
   DETECTS_PARENTS_INDICATOR,
   FIELD_ANNOTATIONS,
   INSTALLED_PACKAGES_PATH,
@@ -63,9 +64,12 @@ import {
 import {
   defaultFilterContext,
 } from '../utils'
-import { mockTypes } from '../mock_elements'
+import { mockInstances, mockTypes } from '../mock_elements'
 import { FilterWith } from './mocks'
 import { SalesforceRecord } from '../../src/client/types'
+import {
+  buildMetadataQuery, buildMetadataQueryForFetchWithChangesDetection,
+} from '../../src/fetch_profile/metadata_query'
 
 const { awu } = collections.asynciterable
 
@@ -241,10 +245,17 @@ describe('Custom Object Instances filter', () => {
     excluded: boolean
     allowRef: boolean
   }
-  const buildTestFetchProfile = (
-    types: TestFetchProfileParams[],
-    omittedFields: string[] = [],
-  ): FetchProfile => {
+  const buildTestFetchProfile = async (
+    {
+      types,
+      omittedFields = [],
+      elementsSourceForQuickFetch,
+    } : {
+      types: TestFetchProfileParams[]
+      omittedFields?: string[]
+      elementsSourceForQuickFetch?: ReadOnlyElementsSource
+    },
+  ): Promise<FetchProfile> => {
     const fetchProfileParams: FetchParameters = {
       data: {
         includeObjects: types
@@ -267,8 +278,17 @@ describe('Custom Object Instances filter', () => {
         ...(omittedFields ? { omittedFields } : {}),
       },
     }
+    const metadataQuery = elementsSourceForQuickFetch
+      ? await buildMetadataQueryForFetchWithChangesDetection({
+        fetchParams: fetchProfileParams,
+        elementsSource: elementsSourceForQuickFetch,
+      })
+      : buildMetadataQuery({
+        fetchParams: fetchProfileParams,
+      })
     return buildFetchProfile({
       fetchParams: fetchProfileParams,
+      metadataQuery,
     })
   }
 
@@ -383,7 +403,9 @@ describe('Custom Object Instances filter', () => {
             client,
             config: {
               ...defaultFilterContext,
-              fetchProfile: buildTestFetchProfile([{ typeName: testTypeName, included, excluded, allowRef }]),
+              fetchProfile: await buildTestFetchProfile({
+                types: [{ typeName: testTypeName, included, excluded, allowRef }],
+              }),
             },
           }
         ) as FilterType
@@ -433,7 +455,9 @@ describe('Custom Object Instances filter', () => {
             client,
             config: {
               ...defaultFilterContext,
-              fetchProfile: buildTestFetchProfile(([{ typeName: testTypeName, included, excluded, allowRef }])),
+              fetchProfile: await buildTestFetchProfile({
+                types: [{ typeName: testTypeName, included, excluded, allowRef }],
+              }),
             },
           }
         ) as FilterType
@@ -466,10 +490,12 @@ describe('Custom Object Instances filter', () => {
             client,
             config: {
               ...defaultFilterContext,
-              fetchProfile: buildTestFetchProfile([
-                { typeName: testTypeName, included: false, excluded, allowRef: true },
-                { typeName: refererTypeName, included: true, excluded: false, allowRef: false },
-              ]),
+              fetchProfile: await buildTestFetchProfile({
+                types: [
+                  { typeName: testTypeName, included: false, excluded, allowRef: true },
+                  { typeName: refererTypeName, included: true, excluded: false, allowRef: false },
+                ],
+              }),
             },
           }
         ) as FilterType
@@ -1674,26 +1700,28 @@ describe('Custom Object Instances filter', () => {
             client,
             config: {
               ...defaultFilterContext,
-              fetchProfile: buildTestFetchProfile([
-                {
-                  typeName: testTypeName,
-                  included: true,
-                  excluded: false,
-                  allowRef: false,
-                },
-                {
-                  typeName: 'unmanagedType',
-                  included: true,
-                  excluded: false,
-                  allowRef: false,
-                },
-                {
-                  typeName: 'IrrelevantType',
-                  included: true,
-                  excluded: false,
-                  allowRef: false,
-                },
-              ]),
+              fetchProfile: await buildTestFetchProfile({
+                types: [
+                  {
+                    typeName: testTypeName,
+                    included: true,
+                    excluded: false,
+                    allowRef: false,
+                  },
+                  {
+                    typeName: 'unmanagedType',
+                    included: true,
+                    excluded: false,
+                    allowRef: false,
+                  },
+                  {
+                    typeName: 'IrrelevantType',
+                    included: true,
+                    excluded: false,
+                    allowRef: false,
+                  },
+                ],
+              }),
             },
           }
         ) as FilterType
@@ -1758,20 +1786,22 @@ describe('Custom Object Instances filter', () => {
             client,
             config: {
               ...defaultFilterContext,
-              fetchProfile: buildTestFetchProfile([
-                {
-                  typeName: testTypeName,
-                  included: true,
-                  excluded: false,
-                  allowRef: false,
-                },
-                {
-                  typeName: otherTestTypeName,
-                  included: true,
-                  excluded: false,
-                  allowRef: false,
-                },
-              ]),
+              fetchProfile: await buildTestFetchProfile({
+                types: [
+                  {
+                    typeName: testTypeName,
+                    included: true,
+                    excluded: false,
+                    allowRef: false,
+                  },
+                  {
+                    typeName: otherTestTypeName,
+                    included: true,
+                    excluded: false,
+                    allowRef: false,
+                  },
+                ],
+              }),
             },
           }
         ) as FilterType
@@ -1815,8 +1845,8 @@ describe('Custom Object Instances filter', () => {
           client,
           config: {
             ...defaultFilterContext,
-            fetchProfile: buildTestFetchProfile(
-              [
+            fetchProfile: await buildTestFetchProfile({
+              types: [
                 {
                   typeName: testTypeName,
                   included: true,
@@ -1824,10 +1854,10 @@ describe('Custom Object Instances filter', () => {
                   allowRef: false,
                 },
               ],
-              [
+              omittedFields: [
                 `${testTypeName}.TestField`,
               ],
-            ),
+            }),
           },
         }
       ) as FilterType
@@ -1909,20 +1939,22 @@ describe('Custom Object Instances filter', () => {
             client,
             config: {
               ...defaultFilterContext,
-              fetchProfile: buildTestFetchProfile([
-                {
-                  typeName: testTypeName,
-                  included: false,
-                  excluded: false,
-                  allowRef: true,
-                },
-                {
-                  typeName: refFromTypeName,
-                  included: true,
-                  excluded: false,
-                  allowRef: false,
-                },
-              ]),
+              fetchProfile: await buildTestFetchProfile({
+                types: [
+                  {
+                    typeName: testTypeName,
+                    included: false,
+                    excluded: false,
+                    allowRef: true,
+                  },
+                  {
+                    typeName: refFromTypeName,
+                    included: true,
+                    excluded: false,
+                    allowRef: false,
+                  },
+                ],
+              }),
             },
           }
         ) as FilterType
@@ -1940,6 +1972,74 @@ describe('Custom Object Instances filter', () => {
           { elemID: new ElemID(SALESFORCE, testTypeName, 'instance', `${NAME_FROM_GET_ELEM_ID}${testInstanceId1}`) },
           { elemID: new ElemID(SALESFORCE, testTypeName, 'instance', `${NAME_FROM_GET_ELEM_ID}${testInstanceId2}`) },
         ])
+      })
+    })
+  })
+  describe('Quickfetch', () => {
+    let fetchProfile: FetchProfile
+    const testTypeName = 'TestType'
+    const changedAtCutoff = new Date(2023, 12, 21).toISOString()
+
+    describe('When enabled', () => {
+      beforeEach(async () => {
+        const changedAtSingleton = mockInstances()[CHANGED_AT_SINGLETON]
+        _.set(changedAtSingleton.value, [DATA_INSTANCES_CHANGED_AT_MAGIC, CUSTOM_OBJECT, testTypeName], changedAtCutoff)
+
+        const elementsSource = buildElementsSourceFromElements([
+          changedAtSingleton,
+        ])
+        fetchProfile = await buildTestFetchProfile({
+          types: [
+            {
+              typeName: testTypeName,
+              included: true,
+              excluded: false,
+              allowRef: false,
+            },
+          ],
+          elementsSourceForQuickFetch: elementsSource,
+        })
+        filter = filterCreator(
+          {
+            client,
+            config: {
+              ...defaultFilterContext,
+              fetchProfile,
+            },
+          }
+        ) as FilterType
+        await filter.onFetch([createCustomObject(testTypeName), changedAtSingleton])
+      })
+      it('Should query using the changed-at value', () => {
+        expect(basicQueryImplementation).toHaveBeenLastCalledWith(expect.stringContaining(`LastModifiedDate > ${changedAtCutoff}`))
+      })
+    })
+
+    describe('When disabled', () => {
+      beforeEach(async () => {
+        fetchProfile = await buildTestFetchProfile({
+          types: [
+            {
+              typeName: testTypeName,
+              included: true,
+              excluded: false,
+              allowRef: false,
+            },
+          ],
+        })
+        filter = filterCreator(
+          {
+            client,
+            config: {
+              ...defaultFilterContext,
+              fetchProfile,
+            },
+          }
+        ) as FilterType
+        await filter.onFetch([createCustomObject(testTypeName)])
+      })
+      it('Should query using the changed-at value', () => {
+        expect(basicQueryImplementation).toHaveBeenLastCalledWith(expect.not.stringContaining(`LastModifiedDate > ${changedAtCutoff}`))
       })
     })
   })

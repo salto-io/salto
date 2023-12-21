@@ -62,7 +62,7 @@ const getScriptedFragmentsGroup: deployment.ChangeIdFunction = async change =>
     ? 'Scripted Fragments'
     : undefined)
 
-const getQueuesAdditionGroup: deployment.ChangeIdFunction = async change => {
+const getQueuesAdditionByProjectGroup: deployment.ChangeIdFunction = async change => {
   const instance = getChangeData(change)
   if (!isAdditionChange(change)
     || instance.elemID.typeName !== QUEUE_TYPE) {
@@ -78,5 +78,5 @@ export const getChangeGroupIds = deployment.getChangeGroupIdsFunc([
   getFieldConfigItemGroup,
   getScriptListenersGroup,
   getScriptedFragmentsGroup,
-  getQueuesAdditionGroup,
+  getQueuesAdditionByProjectGroup,
 ])

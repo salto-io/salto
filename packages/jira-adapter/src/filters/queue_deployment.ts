@@ -46,17 +46,11 @@ const QUEUE_RESOPNSE_SCHEME = Joi.object({
 
 const isQueueResponse = createSchemeGuard<QueueGetResponse>(QUEUE_RESOPNSE_SCHEME)
 
-const getExsitingQueuesNames = async (
+const getExsitingQueuesNamesAndIds = async (
   changes: Change<InstanceElement>[],
   client: JiraClient,
-):Promise<(string | string)[][]> => {
-  const firstQueueAdditionChange = changes.find(change => isAdditionChange(change)
-  && change.data.after.elemID.typeName === QUEUE_TYPE)
-  if (firstQueueAdditionChange === undefined) {
-    return []
-  }
-  const instance = getChangeData(firstQueueAdditionChange)
-  const parent = getParent(instance)
+):Promise<string[][]> => {
+  const parent = getParent(getChangeData(changes[0]))
   const { serviceDeskId } = parent.value
   if (serviceDeskId === undefined) {
     log.error(`failed to deploy queue, because ${parent.value.name} does not have a service desk id`)
@@ -72,7 +66,7 @@ const getExsitingQueuesNames = async (
   return existingQueues
 }
 
-const deployExistingQueue = async (
+const updateDefaultQueue = async (
   change: Change<InstanceElement>,
   client: JiraClient,
   existingQueues: Record<string, string>,
@@ -110,7 +104,7 @@ const deployQueueRemovalChange = async (
 * standard JSM deployment
 */
 const filter: FilterCreator = ({ config, client }) => ({
-  name: 'queueFilter',
+  name: 'queueDeploymentFilter',
   deploy: async changes => {
     const { jsmApiDefinitions } = config
     if (!config.fetch.enableJSM || jsmApiDefinitions === undefined) {
@@ -119,39 +113,63 @@ const filter: FilterCreator = ({ config, client }) => ({
         leftoverChanges: changes,
       }
     }
+    try {
+      const queueAdditionChanges = changes.filter(isAdditionChange)
+        .filter(change => isInstanceChange(change))
+        .filter(change => getChangeData(change).elemID.typeName === QUEUE_TYPE)
 
-    const existingQueues: Record<string, string> = Object.fromEntries(
-      await getExsitingQueuesNames(changes.filter(isInstanceChange), client)
-    )
-
-    const [queueChanges, leftoverChanges] = _.partition(
-      changes,
-      change => isInstanceChange(change)
-      && getChangeData(change).elemID.typeName === QUEUE_TYPE
-      && (isRemovalChange(change) || Object.keys(existingQueues).includes(getChangeData(change).value.name))
-    )
-
-    const typeFixedChanges = queueChanges
-      .map(change => ({
-        action: change.action,
-        data: _.mapValues(change.data, (instance: InstanceElement) =>
-          replaceInstanceTypeForDeploy({
-            instance,
-            config: jsmApiDefinitions,
-          })),
-      })) as Change<InstanceElement>[]
-
-    const deployResult = await deployChanges(typeFixedChanges.filter(isInstanceChange),
-      async change => {
-        if (isRemovalChange(change)) {
-          return deployQueueRemovalChange(change, client)
-        }
-        return deployExistingQueue(change, client, existingQueues, jsmApiDefinitions)
+      const projectToQueueAdditions = _.groupBy(queueAdditionChanges, change => {
+        const parent = getParent(getChangeData(change))
+        return parent.elemID.getFullName()
       })
+      const projectToExistiningQueues: Record<string, string[][]> = Object.fromEntries(
+        await Promise.all(Object.entries(projectToQueueAdditions).map(async ([projectName, queueChanges]) =>
+          [projectName, await getExsitingQueuesNamesAndIds(queueChanges.filter(isInstanceChange), client)]))
+      )
 
+      const [queueChanges, leftoverChanges] = _.partition(
+        changes,
+        change => {
+          const existingQueues = isAdditionChange(change)
+            ? projectToExistiningQueues[getParent(getChangeData(change)).elemID.getFullName()]
+              .map(entry => entry[0]) : []
+          return isInstanceChange(change)
+      && getChangeData(change).elemID.typeName === QUEUE_TYPE
+      && (isRemovalChange(change) || existingQueues.includes(getChangeData(change).value.name))
+        }
+      )
+
+      const typeFixedChanges = queueChanges
+        .map(change => ({
+          action: change.action,
+          data: _.mapValues(change.data, (instance: InstanceElement) =>
+            replaceInstanceTypeForDeploy({
+              instance,
+              config: jsmApiDefinitions,
+            })),
+        })) as Change<InstanceElement>[]
+
+      const deployResult = await deployChanges(typeFixedChanges.filter(isInstanceChange),
+        async change => {
+          if (isRemovalChange(change)) {
+            return deployQueueRemovalChange(change, client)
+          }
+          const existingQueues = Object.fromEntries(
+            projectToExistiningQueues[getParent(getChangeData(change)).elemID.getFullName()]
+          )
+          return updateDefaultQueue(change, client, existingQueues, jsmApiDefinitions)
+        })
+
+      return {
+        leftoverChanges,
+        deployResult,
+      }
+    } catch (e) {
+      log.error('skipping queue_deployment filter due to an error %o', e)
+    }
     return {
-      leftoverChanges,
-      deployResult,
+      deployResult: { appliedChanges: [], errors: [] },
+      leftoverChanges: changes,
     }
   },
 })

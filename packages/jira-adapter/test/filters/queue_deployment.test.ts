@@ -19,13 +19,13 @@ import _ from 'lodash'
 import { InstanceElement, ReferenceExpression, CORE_ANNOTATIONS, BuiltinTypes, ListType, ObjectType, ElemID } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { getDefaultConfig } from '../../src/config/config'
-import queueFilter from '../../src/filters/queue'
+import queueFilter from '../../src/filters/queue_deployment'
 import { createEmptyType, getFilterParams, mockClient } from '../utils'
 import { PROJECT_TYPE, QUEUE_TYPE } from '../../src/constants'
 import JiraClient from '../../src/client/client'
 import { FIELD_TYPE_NAME } from '../../src/filters/fields/constants'
 
-describe('queue filter', () => {
+describe('queue deployment filter', () => {
     type FilterType = filterUtils.FilterWith<'deploy'>
     let filter: FilterType
     let connection: MockInterface<clientUtils.APIConnection>
@@ -161,6 +161,30 @@ describe('queue filter', () => {
         const res = await filter.deploy([{ action: 'modify', data: { before: queueInstance, after: queueInstnaceAfter } }])
         expect(res.leftoverChanges).toHaveLength(1)
         expect(res.leftoverChanges).toEqual([{ action: 'modify', data: { before: queueInstance, after: queueInstnaceAfter } }])
+        expect(res.deployResult.appliedChanges).toHaveLength(0)
+      })
+      it('should not deploy addition of a queue, if parent does not have serviceDeskId', async () => {
+        queueInstance.annotations[CORE_ANNOTATIONS.PARENT][0].value.value.serviceDeskId = undefined
+        const res = await filter.deploy([{ action: 'add', data: { after: queueInstance } }])
+        expect(res.leftoverChanges).toHaveLength(1)
+        expect(res.leftoverChanges).toEqual([{ action: 'add', data: { after: queueInstance } }])
+        expect(res.deployResult.appliedChanges).toHaveLength(0)
+      })
+      it('should not deploy addition of a queue, if failed to get defualt queues', async () => {
+        connection.get.mockImplementationOnce(async () => ({
+          status: 200,
+          data: {},
+        }))
+        const res = await filter.deploy([{ action: 'add', data: { after: queueInstance } }])
+        expect(res.leftoverChanges).toHaveLength(1)
+        expect(res.leftoverChanges).toEqual([{ action: 'add', data: { after: queueInstance } }])
+        expect(res.deployResult.appliedChanges).toHaveLength(0)
+      })
+      it('should not deploy addition of a queue, if queue doesn\'t have a parent', async () => {
+        queueInstance.annotations[CORE_ANNOTATIONS.PARENT] = undefined
+        const res = await filter.deploy([{ action: 'add', data: { after: queueInstance } }])
+        expect(res.leftoverChanges).toHaveLength(1)
+        expect(res.leftoverChanges).toEqual([{ action: 'add', data: { after: queueInstance } }])
         expect(res.deployResult.appliedChanges).toHaveLength(0)
       })
     })

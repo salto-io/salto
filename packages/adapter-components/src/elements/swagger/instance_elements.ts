@@ -60,10 +60,10 @@ const extractStandaloneFields = async (
     getElemIdFunc?: ElemIdGetter
   },
 ): Promise<InstanceElement[]> => {
+  const allInstances: InstanceElement[] = [inst]
   if (_.isEmpty(transformationConfigByType[inst.refType.elemID.name]?.standaloneFields)) {
-    return [inst]
+    return allInstances
   }
-  const additionalInstances: InstanceElement[] = []
 
   const replaceWithReference = async ({
     values,
@@ -88,7 +88,7 @@ const extractStandaloneFields = async (
       nestedPath: updatedNestedPath,
       getElemIdFunc,
     })
-    additionalInstances.push(...refInstances)
+    allInstances.push(...refInstances)
     return refInstances.map(refInst => new ReferenceExpression(refInst.elemID, refInst))
   }
 
@@ -137,9 +137,8 @@ const extractStandaloneFields = async (
     type: await inst.getType(),
     values: inst.value,
     strict: false,
-  }) ?? {}
-  additionalInstances.push(inst)
-  return additionalInstances
+  }) ?? inst.value
+  return allInstances
 }
 
 const getListDeepInnerType = async (

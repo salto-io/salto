@@ -65,11 +65,13 @@ import projectComponentFilter from './filters/project_component'
 import archivedProjectComponentsFilter from './filters/archived_project_components'
 import defaultInstancesDeployFilter from './filters/default_instances_deploy'
 import workflowStructureFilter from './filters/workflow/workflow_structure_filter'
+// import workflowFetchFilter from './filters/workflowV2/workflow_fetch_filter'
 import workflowDiagramFilter from './filters/workflow/workflow_diagrams'
 import resolutionPropertyFilter from './filters/workflow/resolution_property_filter'
 import workflowPropertiesFilter from './filters/workflow/workflow_properties_filter'
 import transitionIdsFilter from './filters/workflow/transition_ids_filter'
 import workflowDeployFilter from './filters/workflow/workflow_deploy_filter'
+import workflowFilter from './filters/workflowV2/workflow_filter'
 import workflowModificationFilter from './filters/workflow/workflow_modification_filter'
 import emptyValidatorWorkflowFilter from './filters/workflow/empty_validator_workflow'
 import workflowGroupsFilter from './filters/workflow/groups_filter'
@@ -197,6 +199,7 @@ export const DEFAULT_FILTERS = [
   // Should run before duplicateIdsFilter
   fieldNameFilter,
   workflowStructureFilter,
+  // workflowFetchFilter,
   // This should happen after workflowStructureFilter and before fieldStructureFilter
   queryFilter,
   // This should run before duplicateIdsFilter
@@ -233,6 +236,7 @@ export const DEFAULT_FILTERS = [
   scriptRunnerWorkflowReferencesFilter,
   transitionIdsFilter,
   workflowDeployFilter,
+  workflowFilter,
   workflowModificationFilter,
   emptyValidatorWorkflowFilter,
   groupNameFilter,

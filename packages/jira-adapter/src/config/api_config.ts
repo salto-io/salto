@@ -136,6 +136,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'gadgets', fieldType: 'List<DashboardGadget>' },
         { fieldName: 'layout', fieldType: 'string' },
+        { fieldName: 'test', fieldType: 'JiraWorkflow' },
       ],
       fieldsToHide: [
         {
@@ -1180,6 +1181,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'name', fieldType: 'string' },
         { fieldName: 'entityId', fieldType: 'string' },
+        { fieldName: 'tempWorkflowType', fieldType: 'JiraWorkflow' },
       ],
       idFields: ['id.name'],
       serviceIdField: 'entityId',
@@ -1202,6 +1204,34 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       // Works only for inactive workflows
       remove: {
         url: '/rest/api/3/workflow/{entityId}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
+    },
+  },
+  JiraWorkflow: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'name', fieldType: 'string' },
+        { fieldName: 'tempWorkflowType', fieldType: 'JiraWorkflow' },
+        { fieldName: 'statusMappings', fieldType: 'StatusMappingDTO' },
+      ],
+      idFields: ['id.name'],
+      serviceIdField: 'id',
+      serviceUrl: '/secure/admin/workflows/ViewWorkflowSteps.jspa?workflowMode=live&workflowName={name}',
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/workflows/create',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/workflows/update',
+        method: 'post',
+      },
+      // Works only for inactive workflows
+      remove: {
+        url: '/rest/api/3/workflow/{id}',
         method: 'delete',
         omitRequestBody: true,
       },
@@ -2446,7 +2476,8 @@ const SUPPORTED_TYPES = {
 
 export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
   platformSwagger: {
-    url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/main/jira/platform-swagger.v3.json',
+    url: 'https://raw.githubusercontent.com/salto-io/jira-swaggers/latest/platform-swagger.v3.pretty.json',
+    // url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/main/jira/platform-swagger.v3.json',
     typeNameOverrides: [
       {
         originalName: 'FilterDetails',
@@ -2591,7 +2622,8 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
     ],
   },
   jiraSwagger: {
-    url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/main/jira/software-swagger.v3.json',
+    url: 'https://raw.githubusercontent.com/salto-io/jira-swaggers/latest/software-swagger.v3.pretty.json',
+    // url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/main/jira/software-swagger.v3.json',
     typeNameOverrides: [
       {
         originalName: 'rest__agile__1_0__board@uuuuvuu',

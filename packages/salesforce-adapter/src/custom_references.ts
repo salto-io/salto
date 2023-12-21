@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
@@ -40,7 +41,7 @@ const RECORD_TYPE_SECTION = 'recordTypeVisibilities'
 
 const FIELD_NO_ACCESS = 'NoAccess'
 
-const fullNameToElemIdName = (fullName: string): string => (
+const getMetadataElementName = (fullName: string): string => (
   Types.getElemId(
     fullName.replace(API_NAME_SEPARATOR, '_'),
     true,
@@ -54,16 +55,27 @@ type ReferenceInSection = {
 
 type RefTargetsGetter = (sectionEntry: Values, sectionEntryKey: string) => ReferenceInSection[]
 
-const referencesFromSection = (
-  profile: InstanceElement,
-  sectionName: string,
-  filter: (sectionEntry: Values) => boolean,
-  targetsGetter: RefTargetsGetter,
-): ReferenceInfo[] => {
-  if (!profile.value[sectionName]) {
+type ReferenceFromSectionParams = {
+  profile: InstanceElement
+  sectionName: string
+  filter?:(sectionEntry: Values) => boolean
+  targetsGetter:RefTargetsGetter
+}
+
+const referencesFromSection = ({
+  profile,
+  sectionName,
+  filter = () => true,
+  targetsGetter,
+}: ReferenceFromSectionParams): ReferenceInfo[] => {
+  const sectionValue = profile.value[sectionName]
+  if (!_.isPlainObject(sectionValue)) {
+    if (sectionValue !== undefined) {
+      log.warn('Section %s of %s is not an object. References will not be extracted.', sectionName, profile.elemID)
+    }
     return []
   }
-  return Object.entries(profile.value[sectionName] as Values)
+  return Object.entries(sectionValue as Values)
     .filter(([, sectionEntry]) => filter(sectionEntry))
     .flatMap(([sectionEntryKey, sectionEntry]): ReferenceInfo[] => {
       const refTargets = targetsGetter(sectionEntry, sectionEntryKey)
@@ -76,16 +88,18 @@ const referencesFromSection = (
 }
 
 const isEnabled = (sectionEntry: Values): boolean => (
-  sectionEntry.enabled
+  sectionEntry.enabled === true
 )
 
 const isAnyAccessEnabledForObject = (objectAccessSectionEntry: Values): boolean => (
-  objectAccessSectionEntry.allowCreate
-  || objectAccessSectionEntry.allowDelete
-  || objectAccessSectionEntry.allowEdit
-  || objectAccessSectionEntry.allowRead
-  || objectAccessSectionEntry.modifyAllRecords
-  || objectAccessSectionEntry.viewAllRecords
+  [
+    objectAccessSectionEntry.allowCreate,
+    objectAccessSectionEntry.allowDelete,
+    objectAccessSectionEntry.allowEdit,
+    objectAccessSectionEntry.allowRead,
+    objectAccessSectionEntry.modifyAllRecords,
+    objectAccessSectionEntry.viewAllRecords,
+  ].some(permission => permission === true)
 )
 
 const isAnyAccessEnabledForField = (fieldPermissionsSectionEntry: Values): boolean => (
@@ -94,7 +108,7 @@ const isAnyAccessEnabledForField = (fieldPermissionsSectionEntry: Values): boole
 
 const referenceToInstance = (fieldName: string, targetType: string): RefTargetsGetter => (
   sectionEntry => {
-    const elemIdName = fullNameToElemIdName(sectionEntry[fieldName])
+    const elemIdName = getMetadataElementName(sectionEntry[fieldName])
     return [{
       target: Types.getElemId(targetType, false).createNestedID('instance', elemIdName),
     }]
@@ -112,92 +126,89 @@ const referencesToFields: RefTargetsGetter = (sectionEntry, sectionEntryKey) => 
   return Object.entries(sectionEntry)
     .filter(([, fieldAccess]) => fieldAccess !== FIELD_NO_ACCESS)
     .map(([fieldName]) => ({
-      target: typeElemId.createNestedID('field', fullNameToElemIdName(fieldName)),
+      target: typeElemId.createNestedID('field', getMetadataElementName(fieldName)),
       sourceField: fieldName,
     }))
 }
 
 const layoutReferences: RefTargetsGetter = sectionEntry => {
-  const layoutElemIdName = fullNameToElemIdName(sectionEntry[0].layout)
+  const layoutElemIdName = getMetadataElementName(sectionEntry[0].layout)
   const layoutRef = {
     target: new ElemID(SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, 'instance', layoutElemIdName),
   }
 
   const recordTypeRefs = sectionEntry
-    .filter((layoutAssignment: Values) => layoutAssignment.recordType !== undefined)
+    .filter((layoutAssignment: Values) => _.isString(layoutAssignment.recordType))
     .map((layoutAssignment: Values) => ({
-      target: new ElemID(SALESFORCE, RECORD_TYPE_METADATA_TYPE, 'instance', fullNameToElemIdName(layoutAssignment.recordType)),
+      target: new ElemID(SALESFORCE, RECORD_TYPE_METADATA_TYPE, 'instance', getMetadataElementName(layoutAssignment.recordType)),
     }))
 
-  return [
-    ...makeArray(layoutRef),
-    ...recordTypeRefs,
-  ]
+  return [layoutRef].concat(recordTypeRefs)
 }
 
 const recordTypeReferences: RefTargetsGetter = sectionEntry => (
   Object.entries(sectionEntry)
-    .filter(([, recordTypeVisibility]) => recordTypeVisibility.default || recordTypeVisibility.visible)
+    .filter(([, recordTypeVisibility]) => (
+      recordTypeVisibility.default === true || recordTypeVisibility.visible === true
+    ))
     .map(([recordTypeVisibilityKey, recordTypeVisibility]) => ({
-      target: new ElemID(SALESFORCE, RECORD_TYPE_METADATA_TYPE, 'instance', fullNameToElemIdName(recordTypeVisibility.recordType)),
+      target: new ElemID(SALESFORCE, RECORD_TYPE_METADATA_TYPE, 'instance', getMetadataElementName(recordTypeVisibility.recordType)),
       sourceField: recordTypeVisibilityKey,
     }))
 )
 
 const referencesFromProfile = (profile: InstanceElement): ReferenceInfo[] => {
-  const appVisibilityRefs = referencesFromSection(
+  const appVisibilityRefs = referencesFromSection({
     profile,
-    APP_VISIBILITY_SECTION,
-    appVisibilityEntry => appVisibilityEntry.default || appVisibilityEntry.visible,
-    referenceToInstance('application', CUSTOM_APPLICATION_METADATA_TYPE),
-  )
-  const apexClassRefs = referencesFromSection(
+    sectionName: APP_VISIBILITY_SECTION,
+    filter: appVisibilityEntry => appVisibilityEntry.default || appVisibilityEntry.visible,
+    targetsGetter: referenceToInstance('application', CUSTOM_APPLICATION_METADATA_TYPE),
+  })
+  const apexClassRefs = referencesFromSection({
     profile,
-    APEX_CLASS_SECTION,
-    isEnabled,
-    referenceToInstance('apexClass', APEX_CLASS_METADATA_TYPE),
-  )
-  const flowRefs = referencesFromSection(
+    sectionName: APEX_CLASS_SECTION,
+    filter: isEnabled,
+    targetsGetter: referenceToInstance('apexClass', APEX_CLASS_METADATA_TYPE),
+  })
+  const flowRefs = referencesFromSection({
     profile,
-    FLOW_SECTION,
-    isEnabled,
-    referenceToInstance('flow', FLOW_METADATA_TYPE),
-  )
+    sectionName: FLOW_SECTION,
+    filter: isEnabled,
+    targetsGetter: referenceToInstance('flow', FLOW_METADATA_TYPE),
+  })
 
-  const apexPageRefs = referencesFromSection(
+  const apexPageRefs = referencesFromSection({
     profile,
-    APEX_PAGE_SECTION,
-    isEnabled,
-    referenceToInstance('apexPage', APEX_PAGE_METADATA_TYPE),
-  )
+    sectionName: APEX_PAGE_SECTION,
+    filter: isEnabled,
+    targetsGetter: referenceToInstance('apexPage', APEX_PAGE_METADATA_TYPE),
+  })
 
-  const objectRefs = referencesFromSection(
+  const objectRefs = referencesFromSection({
     profile,
-    OBJECT_SECTION,
-    isAnyAccessEnabledForObject,
-    referenceToType('object'),
-  )
+    sectionName: OBJECT_SECTION,
+    filter: isAnyAccessEnabledForObject,
+    targetsGetter: referenceToType('object'),
+  })
 
-  const fieldPermissionsRefs = referencesFromSection(
+  const fieldPermissionsRefs = referencesFromSection({
     profile,
-    FIELD_PERMISSIONS,
-    isAnyAccessEnabledForField,
-    referencesToFields,
-  )
+    sectionName: FIELD_PERMISSIONS,
+    filter: isAnyAccessEnabledForField,
+    targetsGetter: referencesToFields,
+  })
 
-  const layoutAssignmentRefs = referencesFromSection(
+  const layoutAssignmentRefs = referencesFromSection({
     profile,
-    LAYOUTS_SECTION,
-    () => true,
-    layoutReferences,
-  )
+    sectionName: LAYOUTS_SECTION,
+    targetsGetter: layoutReferences,
+  })
 
-  const recordTypeRefs = referencesFromSection(
+  const recordTypeRefs = referencesFromSection({
     profile,
-    RECORD_TYPE_SECTION,
-    () => true,
-    recordTypeReferences,
-  )
+    sectionName: RECORD_TYPE_SECTION,
+    targetsGetter: recordTypeReferences,
+  })
 
   return appVisibilityRefs
     .concat(apexClassRefs)
@@ -223,15 +234,25 @@ const getProfilesCustomReferences = async (elements: Element[]): Promise<Referen
   return refs
 }
 
-const customReferencesHandlers: Record<string, GetCustomReferencesFunc> = {
-  profiles: getProfilesCustomReferences,
+type CustomRefsHandlersConfig = {
+  handler: GetCustomReferencesFunc
+  isEnabledByDefault: boolean
 }
 
-const getCustomReferencesConfig = (adapterConfig: InstanceElement): Record<string, boolean> => (
-  adapterConfig.value[FETCH_CONFIG]?.[DATA_CONFIGURATION]?.[CUSTOM_REFS_CONFIG] ?? {}
-)
+const customReferencesHandlers: Record<string, CustomRefsHandlersConfig> = {
+  profiles: {
+    handler: getProfilesCustomReferences,
+    isEnabledByDefault: false,
+  },
+}
+
+const getCustomReferencesConfig = (adapterConfig: InstanceElement): Record<string, boolean> => {
+  const actualConfig = adapterConfig.value[FETCH_CONFIG]?.[DATA_CONFIGURATION]?.[CUSTOM_REFS_CONFIG] ?? {}
+  const defaultConfig = _.mapValues(customReferencesHandlers, ({ isEnabledByDefault }) => isEnabledByDefault)
+  return _.defaults(actualConfig, defaultConfig)
+}
 
 export const getCustomReferences: GetCustomReferencesFunc = combineCustomReferenceGetters(
-  customReferencesHandlers,
+  _.mapValues(customReferencesHandlers, ({ handler }) => handler),
   getCustomReferencesConfig,
 )

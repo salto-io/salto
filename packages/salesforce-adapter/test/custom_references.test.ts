@@ -61,7 +61,30 @@ describe('getCustomReferences', () => {
       expect(refs).toBeEmpty()
     })
   })
+  describe('when profile custom refs config is not set', () => {
+    beforeEach(async () => {
+      [permissionSetInstance, profileInstance] = createTestInstances({
+        fieldPermissions: {
+          Account: {
+            testField__c: 'ReadWrite',
+          },
+        },
+      })
 
+      const AdapterConfigType = new ObjectType({
+        elemID: new ElemID('adapter'),
+        isSettings: true,
+      })
+      const adapterConfig = new InstanceElement(ElemID.CONFIG_NAME, AdapterConfigType)
+      refs = await getCustomReferences(
+        [permissionSetInstance, profileInstance],
+        adapterConfig,
+      )
+    })
+    it('should not generate references', () => {
+      expect(refs).toBeEmpty()
+    })
+  })
   describe('fields', () => {
     describe('when the fields are inaccessible', () => {
       beforeEach(async () => {

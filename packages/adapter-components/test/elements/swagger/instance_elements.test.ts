@@ -412,23 +412,23 @@ describe('swagger_instance_elements', () => {
       expect(res.elements).toHaveLength(8)
       expect(res.elements.map(e => e.elemID.getFullName())).toEqual([
         `${ADAPTER_NAME}.Owner.instance.owner2`,
-        `${ADAPTER_NAME}.Pet.instance.dog`,
         `${ADAPTER_NAME}.Owner.instance.dog__o1`,
         `${ADAPTER_NAME}.Owner.instance.dog__primary`,
-        `${ADAPTER_NAME}.Pet.instance.cat`,
+        `${ADAPTER_NAME}.Pet.instance.dog`,
         `${ADAPTER_NAME}.Owner.instance.cat__o2`,
-        `${ADAPTER_NAME}.Pet.instance.mouse`,
+        `${ADAPTER_NAME}.Pet.instance.cat`,
         `${ADAPTER_NAME}.Owner.instance.mouse__o3`,
+        `${ADAPTER_NAME}.Pet.instance.mouse`,
       ])
       expect(res.elements.map(e => e.path)).toEqual([
         [ADAPTER_NAME, 'Records', 'Owner', 'owner2'],
-        [ADAPTER_NAME, 'Records', 'Pet', 'dog'],
         [ADAPTER_NAME, 'Records', 'Owner', 'dog__o1'],
         [ADAPTER_NAME, 'Records', 'Owner', 'dog__primary'],
-        [ADAPTER_NAME, 'Records', 'Pet', 'cat'],
+        [ADAPTER_NAME, 'Records', 'Pet', 'dog'],
         [ADAPTER_NAME, 'Records', 'Owner', 'cat__o2'],
-        [ADAPTER_NAME, 'Records', 'Pet', 'mouse'],
+        [ADAPTER_NAME, 'Records', 'Pet', 'cat'],
         [ADAPTER_NAME, 'Records', 'Owner', 'mouse__o3'],
+        [ADAPTER_NAME, 'Records', 'Pet', 'mouse'],
       ])
     })
     it('should extract standalone fields', async () => {
@@ -485,23 +485,23 @@ describe('swagger_instance_elements', () => {
       expect(res.elements).toHaveLength(8)
       expect(res.elements.map(e => e.elemID.getFullName())).toEqual([
         `${ADAPTER_NAME}.Owner.instance.owner2`,
-        `${ADAPTER_NAME}.Pet.instance.dog`,
         `${ADAPTER_NAME}.Owner.instance.dog__o1`,
         `${ADAPTER_NAME}.Owner.instance.dog__primary`,
-        `${ADAPTER_NAME}.Pet.instance.cat`,
+        `${ADAPTER_NAME}.Pet.instance.dog`,
         `${ADAPTER_NAME}.Owner.instance.cat__o2`,
-        `${ADAPTER_NAME}.Pet.instance.mouse`,
+        `${ADAPTER_NAME}.Pet.instance.cat`,
         `${ADAPTER_NAME}.Owner.instance.mouse__o3`,
+        `${ADAPTER_NAME}.Pet.instance.mouse`,
       ])
       expect(res.elements.map(e => e.path)).toEqual([
         [ADAPTER_NAME, 'Records', 'Owner', 'owner2'],
-        [ADAPTER_NAME, 'Records', 'Pet', 'dog', 'dog'],
         [ADAPTER_NAME, 'Records', 'Pet', 'dog', 'owners', 'dog__o1'],
         [ADAPTER_NAME, 'Records', 'Pet', 'dog', 'primaryOwner', 'dog__primary'],
-        [ADAPTER_NAME, 'Records', 'Pet', 'cat', 'cat'],
+        [ADAPTER_NAME, 'Records', 'Pet', 'dog', 'dog'],
         [ADAPTER_NAME, 'Records', 'Pet', 'cat', 'owners', 'cat__o2'],
-        [ADAPTER_NAME, 'Records', 'Pet', 'mouse', 'mouse'],
+        [ADAPTER_NAME, 'Records', 'Pet', 'cat', 'cat'],
         [ADAPTER_NAME, 'Records', 'Pet', 'mouse', 'owners', 'mouse__o3'],
+        [ADAPTER_NAME, 'Records', 'Pet', 'mouse', 'mouse'],
       ])
       expect(mockPaginator).toHaveBeenCalledTimes(2)
       expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet', queryParams: { a: 'b' }, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())

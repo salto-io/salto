@@ -18,7 +18,7 @@ import {
   InstanceElement, Values, ObjectType, isObjectType, ReferenceExpression, isReferenceExpression,
   isListType, isMapType, TypeElement, PrimitiveType, MapType, ElemIdGetter, SaltoError,
 } from '@salto-io/adapter-api'
-import { transformElement, TransformFunc, safeJsonStringify } from '@salto-io/adapter-utils'
+import { transformElement, TransformFunc, safeJsonStringify, transformValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { ADDITIONAL_PROPERTIES_FIELD, ARRAY_ITEMS_FIELD } from './type_elements/swagger_parser'
@@ -132,13 +132,14 @@ const extractStandaloneFields = async (
       updatedNestedPath: [...nestedPath, field.name],
     }))[0]
   }
-
-  const updatedInst = await transformElement({
-    element: inst,
+  inst.value = await transformValues({
     transformFunc: extractFields,
+    type: await inst.getType(),
+    values: inst.value,
     strict: false,
-  })
-  return [updatedInst, ...additionalInstances]
+  }) ?? {}
+  additionalInstances.push(inst)
+  return additionalInstances
 }
 
 const getListDeepInnerType = async (

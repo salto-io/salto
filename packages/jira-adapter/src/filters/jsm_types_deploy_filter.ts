@@ -15,6 +15,7 @@
 */
 
 import _ from 'lodash'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import { getChangeData, isInstanceChange, Change, InstanceElement } from '@salto-io/adapter-api'
 import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 import { FilterCreator } from '../filter'
@@ -22,6 +23,9 @@ import { JSM_DUCKTYPE_SUPPORTED_TYPES } from '../config/api_config'
 import { ASSESTS_SCHEMA_TYPE, ASSETS_OBJECT_TYPE, ASSETS_STATUS_TYPE } from '../constants'
 import { getWorkspaceId } from '../workspace_id'
 
+const {
+  replaceInstanceTypeForDeploy,
+} = elementUtils.ducktype
 const ASSETS_SUPPORTED_TYPES = [ASSESTS_SCHEMA_TYPE, ASSETS_STATUS_TYPE, ASSETS_OBJECT_TYPE]
 const SUPPORTED_TYPES = new Set(Object.keys(JSM_DUCKTYPE_SUPPORTED_TYPES).concat(ASSETS_SUPPORTED_TYPES))
 
@@ -45,8 +49,18 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     const workspaceId = await getWorkspaceId(client)
     const additionalUrlVars = workspaceId ? { workspaceId } : undefined
 
+    const typeFixedChanges = jsmTypesChanges
+      .map(change => ({
+        action: change.action,
+        data: _.mapValues(change.data, (instance: InstanceElement) =>
+          replaceInstanceTypeForDeploy({
+            instance,
+            config: jsmApiDefinitions,
+          })),
+      })) as Change<InstanceElement>[]
+
     const deployResult = await deployChanges(
-      jsmTypesChanges,
+      typeFixedChanges,
       async change => {
         const typeDefinition = jsmApiDefinitions.types[getChangeData(change).elemID.typeName]
         const deployRequest = typeDefinition.deployRequests ? typeDefinition.deployRequests[change.action] : undefined

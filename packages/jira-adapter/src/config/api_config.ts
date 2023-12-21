@@ -1877,6 +1877,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'id' },
         { fieldName: 'icon' },
       ],
+      serviceIdField: 'id',
     },
     deployRequests: {
       add: {
@@ -1919,6 +1920,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldsToHide: [
         { fieldName: 'id' },
       ],
+      serviceIdField: 'id',
     },
   },
   Queue: {
@@ -1927,6 +1929,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
     },
     transformation: {
       idFields: ['name', 'projectKey'],
+      serviceIdField: 'id',
       sourceTypeName: 'Queue__values',
       dataField: 'values',
       fieldsToHide: [
@@ -1975,6 +1978,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldsToHide: [
         { fieldName: 'id' },
       ],
+      serviceIdField: 'id',
       fieldTypeOverrides: [
         { fieldName: 'ticketTypeIds', fieldType: 'List<RequestType>' },
       ],
@@ -2018,6 +2022,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldsToHide: [
         { fieldName: 'id' },
       ],
+      serviceIdField: 'id',
       fieldsToOmit: [
         { fieldName: 'canUpdate' },
         { fieldName: 'canDelete' },
@@ -2107,6 +2112,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'id' },
         { fieldName: 'customFieldId' },
       ],
+      serviceIdField: 'id',
     },
     deployRequests: {
       add: {
@@ -2215,6 +2221,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'idAsInt' },
         { fieldName: 'workspaceId' },
       ],
+      serviceIdField: 'id',
       standaloneFields: [
         { fieldName: 'assetsStatuses' },
         { fieldName: 'assetsObjectTypes' },
@@ -2257,6 +2264,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'id' },
         { fieldName: 'workspaceId' },
       ],
+      serviceIdField: 'id',
       fieldsToOmit: [
         { fieldName: 'objectSchemaId' },
       ],

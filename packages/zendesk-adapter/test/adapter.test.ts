@@ -27,7 +27,7 @@ import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
   isRemovalChange,
-  getChangeData, TemplateExpression, isObjectType,
+  getChangeData, TemplateExpression, isObjectType, ProgressReporter,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
@@ -94,6 +94,10 @@ const callbackResponseFuncWith403 = (config: AxiosRequestConfig): any => {
   return callbackResponseFunc(config)
 }
 
+const nullProgressReporter: ProgressReporter = {
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  reportProgress: () => {},
+}
 
 describe('adapter', () => {
   let mockAxiosAdapter: MockAdapter
@@ -2301,6 +2305,7 @@ describe('adapter', () => {
             modificationChange,
           ],
         },
+        progressReporter: nullProgressReporter,
       })
 
       // Mind that brands have filter that deploys them before the default instances
@@ -2333,6 +2338,7 @@ describe('adapter', () => {
             toChange({ before: new InstanceElement('inst2', groupType) }),
           ],
         },
+        progressReporter: nullProgressReporter,
       })
 
       expect(deployRes.errors).toEqual([
@@ -2355,6 +2361,7 @@ describe('adapter', () => {
             toChange({ after: new InstanceElement('inst', groupType) }),
           ],
         },
+        progressReporter: nullProgressReporter,
       })
       expect(deployRes.appliedChanges).toEqual([
         toChange({ after: new InstanceElement(
@@ -2405,6 +2412,7 @@ describe('adapter', () => {
             additionChange,
           ],
         },
+        progressReporter: nullProgressReporter,
       })
       expect(deployRes.appliedChanges).toEqual([
         appliedChanges,
@@ -2419,6 +2427,7 @@ describe('adapter', () => {
             toChange({ after: new InstanceElement('inst', groupType) }),
           ],
         },
+        progressReporter: nullProgressReporter,
       })
       expect(deployRes.appliedChanges).toEqual([
         toChange({ after: new InstanceElement(
@@ -2439,6 +2448,7 @@ describe('adapter', () => {
             toChange({ after: new InstanceElement('inst', groupType) }),
           ],
         },
+        progressReporter: nullProgressReporter,
       })
       expect(deployRes.appliedChanges).toEqual([
         toChange({ after: new InstanceElement(
@@ -2459,6 +2469,7 @@ describe('adapter', () => {
             toChange({ after: instance }),
           ],
         },
+        progressReporter: nullProgressReporter,
       })
       expect(mockDeployChange).toHaveBeenCalledWith({
         change: toChange({
@@ -2511,6 +2522,7 @@ describe('adapter', () => {
             toChange({ after: new ObjectType({ elemID: new ElemID(ZENDESK, 'test') }) }),
           ],
         },
+        progressReporter: nullProgressReporter,
       })
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
       expect(mockDeployChange).toHaveBeenCalledWith({
@@ -2581,6 +2593,7 @@ describe('adapter', () => {
             groupID: '1',
             changes: [toChange({ after: settings1 }), toChange({ after: settings2 })],
           },
+          progressReporter: nullProgressReporter,
         })
         const guideFilterRunnerCall = expect.objectContaining({
           filterRunnerClient: expect.objectContaining({
@@ -2616,12 +2629,14 @@ describe('adapter', () => {
             groupID: '1',
             changes: [toChange({ after: settings1 })],
           },
+          progressReporter: nullProgressReporter,
         })
         await zendeskAdapter.deploy({
           changeGroup: {
             groupID: '2',
             changes: [toChange({ before: settings1 })],
           },
+          progressReporter: nullProgressReporter,
         })
         expect(getClientSpy).toHaveBeenCalledTimes(2)
         expect(createClientSpy).toHaveBeenCalledTimes(1)

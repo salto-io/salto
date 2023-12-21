@@ -174,5 +174,7 @@ export const adapter: Adapter = {
   },
   configType,
   configCreator,
-  getCustomReferences: combineCustomReferenceGetters(weakReferenceHandlers.map(handler => handler.findWeakReferences)),
+  getCustomReferences: combineCustomReferenceGetters(
+    _.mapValues(weakReferenceHandlers, handler => handler.findWeakReferences),
+  ),
 }

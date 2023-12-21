@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, Adapter, Values, OAuthRequestParameters, OauthAccessTokenResponse, ElemID } from '@salto-io/adapter-api'
 import { client as clientUtils, combineCustomReferenceGetters, config as configUtils } from '@salto-io/adapter-components'
@@ -198,6 +199,6 @@ export const adapter: Adapter = {
   configType,
   configCreator,
   getCustomReferences: combineCustomReferenceGetters(
-    customReferenceHandlers.map(handler => handler.findWeakReferences)
+    _.mapValues(customReferenceHandlers, handler => handler.findWeakReferences)
   ),
 }

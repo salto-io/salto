@@ -42,7 +42,12 @@ describe('accountInfoFilter', () => {
         applicationRoleType,
         { key: 'jira-other', userCount: '8' },
       )
-      elements = [applicationRoleOther, applicationRoleSoftware]
+      const applicationRoleServiceDesk = new InstanceElement(
+        'jira-servicedesk',
+        applicationRoleType,
+        { key: 'jira-servicedesk', userCount: '11' },
+      )
+      elements = [applicationRoleOther, applicationRoleSoftware, applicationRoleServiceDesk]
     })
     describe('onFetch', () => {
       it('should populate license successfully', async () => {
@@ -57,16 +62,21 @@ describe('accountInfoFilter', () => {
               id: 'other-app',
               plan: 'PAID',
             },
+            {
+              id: 'jira-servicedesk',
+              plan: 'FREE',
+            },
           ] },
         })
         await filter.onFetch?.(elements)
-        expect(elements.length).toEqual(6)
-        expect(elements[2].elemID.getFullName()).toEqual('jira.License')
-        expect(elements[3].elemID.getFullName()).toEqual('jira.LicensedApplication')
-        expect(elements[4].elemID.getFullName()).toEqual('jira.AccountInfo')
-        expect(elements[5].value).toEqual({ license: { applications: [
+        expect(elements.length).toEqual(7)
+        expect(elements[3].elemID.getFullName()).toEqual('jira.License')
+        expect(elements[4].elemID.getFullName()).toEqual('jira.LicensedApplication')
+        expect(elements[5].elemID.getFullName()).toEqual('jira.AccountInfo')
+        expect(elements[6].value).toEqual({ license: { applications: [
           { id: 'jira-software', plan: 'FREE' },
           { id: 'other-app', plan: 'PAID' },
+          { id: 'jira-servicedesk', plan: 'FREE' },
         ] } })
       })
       it('should do nothing for a wrong license answer', async () => {
@@ -80,16 +90,18 @@ describe('accountInfoFilter', () => {
           ] },
         })
         await filter.onFetch?.(elements)
-        expect(elements.length).toEqual(2)
+        expect(elements.length).toEqual(3)
       })
     })
     it('should remove users count from application roles', async () => {
       await filter.onFetch?.(elements)
-      expect(elements.length).toEqual(2)
+      expect(elements.length).toEqual(3)
       expect(elements[0].elemID.getFullName()).toEqual('jira.ApplicationRole.instance.jira-other')
       expect(elements[0].value.userCount).toBeUndefined()
       expect(elements[1].elemID.getFullName()).toEqual('jira.ApplicationRole.instance.jira-software')
       expect(elements[1].value.userCount).toBeUndefined()
+      expect(elements[2].elemID.getFullName()).toEqual('jira.ApplicationRole.instance.jira-servicedesk')
+      expect(elements[2].value.userCount).toBeUndefined()
     })
   })
   describe('dc', () => {

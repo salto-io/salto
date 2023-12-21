@@ -28,14 +28,16 @@ import {
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { uniqueNamesGenerator, adjectives, colors, names } from 'unique-names-generator'
-import { collections, promises } from '@salto-io/lowerdash'
+import { collections, promises, values as lowerDashValues } from '@salto-io/lowerdash'
 import fs from 'fs'
 import path from 'path'
 import seedrandom from 'seedrandom'
 import readdirp from 'readdirp'
 import { parser, merger, expressions, elementSource } from '@salto-io/workspace'
-import { createMatchingObjectType, inspectValue } from '@salto-io/adapter-utils'
+import { createMatchingObjectType, ImportantValues, inspectValue } from '@salto-io/adapter-utils'
 
+
+const { isDefined } = lowerDashValues
 const { mapValuesAsync } = promises.object
 const { arrayOf } = collections.array
 const { awu } = collections.asynciterable
@@ -163,6 +165,7 @@ export type GeneratorParams = {
     generateEnvName? : string
     fieldsToOmitOnDeploy?: string[]
     elementsToExclude?: string[]
+    importantValuesFreq?: number
 }
 
 export const defaultParams: Omit<GeneratorParams, 'extraNaclPaths'> = {
@@ -196,6 +199,7 @@ export const defaultParams: Omit<GeneratorParams, 'extraNaclPaths'> = {
   staticFileLinesStd: 4.85,
   listLengthMean: 8.7,
   listLengthStd: 3.6,
+  importantValuesFreq: 0.75,
 }
 
 const MOCK_NACL_SUFFIX = 'nacl.mock'
@@ -385,6 +389,34 @@ export const generateElements = async (
   const generateFileContent = (): Buffer => Buffer.from(getMultiLine(
     normalRandom(params.staticFileLinesMean, params.staticFileLinesStd)
   ))
+
+  const generateImportantValues = (fieldNames: string[]): ImportantValues | undefined => {
+    // the  important values should be only a small portion of the fields
+    const finalFieldNames = fieldNames.filter(name => !name.startsWith('_'))
+    const halfLength = Math.floor((finalFieldNames.length / 2) + 1)
+    const randomNum = randomGen()
+    const importantValuesFreq = params.importantValuesFreq ?? 1
+    const randomNumToUse = randomNum < importantValuesFreq ? randomNum : 0
+    const numberOfImportantValues = Math.floor(randomNumToUse * halfLength)
+    const fieldSet = new Set<string>()
+    const importantValuesDef = Array.from({ length: numberOfImportantValues }).map(() => {
+      const value = weightedRandomSelect(finalFieldNames)
+      if (fieldSet.has(value) || value === undefined) {
+        return undefined
+      }
+      fieldSet.add(value)
+      const singleImportantValue = {
+        value,
+        highlighted: generateBoolean(),
+        indexed: generateBoolean(),
+      }
+      return singleImportantValue.highlighted === false && singleImportantValue.indexed === false
+        ? undefined
+        : singleImportantValue
+    }).filter(isDefined)
+    return !_.isEmpty(importantValuesDef) ? importantValuesDef : undefined
+  }
+
   const chooseObjIgnoreRank = (): ObjectType => weightedRandomSelect(
     weightedRandomSelect(objByRank.filter(rank => rank.length > 0))
   ) || defaultObj
@@ -446,7 +478,11 @@ export const generateElements = async (
 
   const generateAnnotations = async (annoTypes: TypeMap, hidden = false): Promise<Values> => {
     const anno = await mapValuesAsync(
-      _.omit(annoTypes, CORE_ANNOTATIONS.RESTRICTION) as TypeMap,
+      _.omit(annoTypes, [
+        CORE_ANNOTATIONS.RESTRICTION,
+        CORE_ANNOTATIONS.IMPORTANT_VALUES,
+        CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES,
+      ]) as TypeMap,
       type => generateValue(type, hidden)
     )
     if (hidden) {
@@ -525,10 +561,13 @@ export const generateElements = async (
         annotations: await generateAnnotations(annotationRefsOrTypes, true),
         path: [DUMMY_ADAPTER, 'Types', name],
       })
+      const fieldNames = Object.keys(objType.fields)
+      const annotationNames = Object.keys(objType.annotations)
+      objType.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] = generateImportantValues(fieldNames)
+      objType.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] = generateImportantValues(annotationNames)
       await updateElementRank(objType)
       return objType
     })))
-
 
   const generateObjects = async (): Promise<ObjectType[]> => (
     await Promise.all(arrayOf(params.numOfObjs, async () => {
@@ -542,6 +581,10 @@ export const generateElements = async (
         annotationRefsOrTypes,
         annotations: await generateAnnotations(annotationRefsOrTypes),
       })
+      const fieldNames = Object.keys(fullObjType.fields)
+      const annotationNames = Object.keys(fullObjType.annotations)
+      fullObjType.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] = generateImportantValues(fieldNames)
+      fullObjType.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] = generateImportantValues(annotationNames)
       fullObjType.annotations[CORE_ANNOTATIONS.ALIAS] = `${fullObjType.elemID.name}_alias`
       const fieldsObjType = new ObjectType({
         elemID: fullObjType.elemID,
@@ -717,8 +760,24 @@ export const generateElements = async (
       annotationRefsOrTypes: {
         SharedHidden: BuiltinTypes.HIDDEN_STRING,
         DiffHidden: BuiltinTypes.HIDDEN_STRING,
+        active: BuiltinTypes.BOOLEAN,
+        name: BuiltinTypes.STRING,
       },
       path: [DUMMY_ADAPTER, 'EnvStuff', 'PrimWithAnnos'],
+      annotations: {
+        [CORE_ANNOTATIONS.IMPORTANT_VALUES]: [
+          {
+            value: 'active',
+            indexed: true,
+            highlighted: true,
+          },
+          {
+            value: 'name',
+            indexed: false,
+            highlighted: false,
+          },
+        ],
+      },
     })
 
     const sharedObj = new ObjectType({
@@ -738,6 +797,8 @@ export const generateElements = async (
           annotations: {
             SharedHidden: 'HIDDEN!',
             DiffHidden: `${envID}-HIDDENNNN!!!!`,
+            active: true,
+            name: 'test',
           },
         },
       },
@@ -755,6 +816,35 @@ export const generateElements = async (
         SharedHidden: 'HIDDEN!',
         DiffHidden: `${envID}-HIDDENNNN!!!!`,
         [CORE_ANNOTATIONS.ALIAS]: 'EnvObj_alias',
+        [CORE_ANNOTATIONS.IMPORTANT_VALUES]: [
+          {
+            value: 'SharedButDiffField',
+            indexed: true,
+            highlighted: true,
+          },
+          {
+            value: 'SharedField',
+            indexed: false,
+            highlighted: false,
+          },
+          {
+            value: 'doesNotExist',
+            indexed: false,
+            highlighted: true,
+          },
+        ],
+        [CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES]: [
+          {
+            value: 'SharedButDiffAnno',
+            indexed: true,
+            highlighted: false,
+          },
+          {
+            value: 'SharedAnno',
+            indexed: false,
+            highlighted: true,
+          },
+        ],
       },
       path: [DUMMY_ADAPTER, 'EnvStuff', 'EnvObj'],
     })
@@ -778,16 +868,34 @@ export const generateElements = async (
         Field: {
           refType: BuiltinTypes.STRING,
         },
+        active: {
+          refType: BuiltinTypes.BOOLEAN,
+        },
       },
       path: [DUMMY_ADAPTER, 'EnvStuff', `${envID}EnvObj`],
       annotations: {
         [CORE_ANNOTATIONS.ALIAS]: `${envID}EnvObj_alias`,
+        [CORE_ANNOTATIONS.IMPORTANT_VALUES]: [
+          {
+            value: 'Field',
+            indexed: false,
+            highlighted: true,
+          },
+          {
+            value: 'active',
+            indexed: true,
+            highlighted: false,
+          },
+        ],
       },
     })
     const envSpecificInst = new InstanceElement(
       `${envID}EnvInst`,
       envSpecificObj,
-      { Field: 'FieldValue' },
+      {
+        Field: 'FieldValue',
+        active: true,
+      },
       [DUMMY_ADAPTER, 'EnvStuff', `${envID}EnvInst`],
       {
         [CORE_ANNOTATIONS.ALIAS]: `${envID}EnvInst_alias`,

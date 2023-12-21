@@ -25,6 +25,7 @@ import { SalesforceConfig, UsernamePasswordCredentials } from '../src/types'
 import { testHelpers } from './jest_environment'
 import { mockTypes } from '../test/mock_elements'
 import { createInstanceElement, MetadataInstanceElement } from '../src/transformers/transformer'
+import { nullProgressReporter } from './utils'
 
 describe('validation and quick deploy e2e', () => {
   // Set long timeout as we communicate with salesforce API
@@ -72,7 +73,10 @@ describe('validation and quick deploy e2e', () => {
       { credentials: new UsernamePasswordCredentials(credLease.value) },
       validationConfig
     )
-    const validationResult = await adapterValidation.adapter.validate({ changeGroup })
+    const validationResult = await adapterValidation.adapter.validate({
+      changeGroup,
+      progressReporter: nullProgressReporter,
+    })
     const groupResult = validationResult.extraProperties?.groups?.[0] ?? {}
     const { requestId, hash } = groupResult
     expect(requestId).toBeDefined()
@@ -98,7 +102,7 @@ describe('validation and quick deploy e2e', () => {
   })
 
   it('should perform quick deploy', async () => {
-    const deployResult = await adapter.deploy({ changeGroup })
+    const deployResult = await adapter.deploy({ changeGroup, progressReporter: nullProgressReporter })
     expect(deployResult.appliedChanges).toHaveLength(changeGroup.changes.length)
     expect(quickDeploySpy).toHaveBeenCalledOnce()
   })
@@ -113,7 +117,7 @@ describe('validation and quick deploy e2e', () => {
         groupID: 'remove test elements',
         changes: [toChange({ before: apexClassInstance }), toChange({ before: apexTestInstance })],
       }
-      await adapterDeploy.adapter.deploy({ changeGroup: removeInstances })
+      await adapterDeploy.adapter.deploy({ changeGroup: removeInstances, progressReporter: nullProgressReporter })
     } finally {
       if (credLease.return) {
         await credLease.return()

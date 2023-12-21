@@ -48,6 +48,7 @@ export const realAdapter = ({ adapterParams, credentials, elementsSource }: Opts
     config: config ?? DEFAULT_CONFIG,
     elementsSource,
     adminClient,
+    isOAuthLogin: false,
   })
   return { client, adapter }
 }

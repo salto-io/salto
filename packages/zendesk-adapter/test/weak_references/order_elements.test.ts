@@ -26,6 +26,12 @@ describe('order_elements', () => {
   let customObjectFieldOrderInstance: InstanceElement
   let triggerOrderInstance: InstanceElement
 
+  const AdapterConfigType = new ObjectType({
+    elemID: new ElemID('adapter'),
+    isSettings: true,
+  })
+  const adapterConfig = new InstanceElement(ElemID.CONFIG_NAME, AdapterConfigType)
+
   beforeEach(() => {
     const objType = new ObjectType({ elemID: new ElemID(ZENDESK, AUTOMATION_ORDER_TYPE_NAME) })
     inst1 = new InstanceElement('inst1', objType, { id: 11, position: 1, title: 'inst2', active: true })
@@ -84,7 +90,7 @@ describe('order_elements', () => {
   })
   describe('findWeakReferences', () => {
     it('should return weak references', async () => {
-      const references = await orderElementsHandler.findWeakReferences([orderInstance])
+      const references = await orderElementsHandler.findWeakReferences([orderInstance], adapterConfig)
 
       expect(references).toEqual([
         { source: orderInstance.elemID.createNestedID('active', '0'), target: inst1.elemID, type: 'weak' },
@@ -94,7 +100,10 @@ describe('order_elements', () => {
     })
     describe('special order cases: custom_object_field_order', () => {
       it('should return weak references', async () => {
-        const references = await orderElementsHandler.findWeakReferences([customObjectFieldOrderInstance])
+        const references = await orderElementsHandler.findWeakReferences(
+          [customObjectFieldOrderInstance],
+          adapterConfig
+        )
 
         expect(references).toEqual([
           { source: customObjectFieldOrderInstance.elemID.createNestedID('custom_object_fields', '0'), target: inst1.elemID, type: 'weak' },
@@ -104,7 +113,7 @@ describe('order_elements', () => {
     })
     describe('special order cases: trigger_order', () => {
       it('should return weak references', async () => {
-        const references = await orderElementsHandler.findWeakReferences([triggerOrderInstance])
+        const references = await orderElementsHandler.findWeakReferences([triggerOrderInstance], adapterConfig)
 
         expect(references).toEqual([
           { source: triggerOrderInstance.elemID.createNestedID('order.0.active', '0'), target: inst1.elemID, type: 'weak' },
@@ -118,7 +127,7 @@ describe('order_elements', () => {
     it('should do nothing if received invalid order list', async () => {
       orderInstance.value.active = 'invalid'
       orderInstance.value.inactive = 'invalid'
-      const references = await orderElementsHandler.findWeakReferences([orderInstance])
+      const references = await orderElementsHandler.findWeakReferences([orderInstance], adapterConfig)
 
       expect(references).toEqual([])
     })
@@ -126,7 +135,7 @@ describe('order_elements', () => {
     it('should do nothing if there are no list references', async () => {
       delete orderInstance.value.active
       delete orderInstance.value.inactive
-      const references = await orderElementsHandler.findWeakReferences([orderInstance])
+      const references = await orderElementsHandler.findWeakReferences([orderInstance], adapterConfig)
 
       expect(references).toEqual([])
     })

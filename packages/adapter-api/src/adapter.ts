@@ -75,6 +75,7 @@ export type FetchOptions = {
 }
 
 export type DeployOptions = {
+  progressReporter: ProgressReporter
   changeGroup: ChangeGroup
 }
 
@@ -197,7 +198,10 @@ export type ReferenceInfo = {
   type: ReferenceType
 }
 
-export type GetCustomReferencesFunc = (elements: Element[]) => Promise<ReferenceInfo[]>
+export type GetCustomReferencesFunc = (
+  elements: Element[],
+  adapterConfig: InstanceElement | undefined,
+) => Promise<ReferenceInfo[]>
 
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations

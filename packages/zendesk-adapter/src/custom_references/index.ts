@@ -15,6 +15,6 @@
 */
 import { orderElementsHandler } from './weak_references/order_elements'
 
-export const customReferenceHandlers = [
-  orderElementsHandler,
-]
+export const customReferenceHandlers = {
+  orderElements: orderElementsHandler,
+}

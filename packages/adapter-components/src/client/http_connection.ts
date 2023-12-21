@@ -112,6 +112,10 @@ const getRetryDelay = (retryOptions: Required<ClientRetryConfig>, error: AxiosEr
 const shouldRetryStatusCode = (statusCode?: number, additionalStatusesToRetry: number[] = []): boolean =>
   statusCode !== undefined && [429, ...additionalStatusesToRetry].includes(statusCode)
 
+const shouldRetryOnTimeout = (errorCode: string | undefined, retryOnTimeout: boolean | undefined): boolean =>
+  // axios returns ECONNABORTED on timeouts, but servers can sometimes return ETIMEDOUT
+  (retryOnTimeout ? ['ECONNABORTED', 'ETIMEDOUT'].includes(errorCode ?? '') : false)
+
 export const createRetryOptions = (
   retryOptions: Required<ClientRetryConfig>, timeoutOptions?: ClientTimeoutConfig
 ): RetryOptions => ({
@@ -127,8 +131,11 @@ export const createRetryOptions = (
       retryCount)
     return retryDelay
   },
-  retryCondition: err => axiosRetry.isNetworkOrIdempotentRequestError(err)
-    || shouldRetryStatusCode(err.response?.status, retryOptions.additionalStatusCodesToRetry),
+  // We use isNetworkError and isSafeRequestError instead of isNetworkOrIdempotentRequestError
+  // because we don't want to assume all adapters are idempotent on PUT or DELETE requests
+  retryCondition: err => axiosRetry.isNetworkError(err) || axiosRetry.isSafeRequestError(err)
+    || shouldRetryStatusCode(err.response?.status, retryOptions.additionalStatusCodesToRetry)
+    || shouldRetryOnTimeout(err.code, timeoutOptions?.retryOnTimeout),
   // Note that changing the config is consistent on all retries. For the current use-case, that's fine,
   // as we are updating the last retry.
   onRetry: (retryCount, _err, requestConfig) => {
@@ -138,7 +145,8 @@ export const createRetryOptions = (
   },
   // When false, axios-retry interprets the request timeout as a global value,
   // so it is not used for each retry but for the whole request lifecycle.
-  shouldResetTimeout: timeoutOptions?.resetTimeoutBetweenAttempts ?? false,
+  // In our case, if the user wants to retry on timeouts, we need to reset it per retry.
+  shouldResetTimeout: timeoutOptions?.retryOnTimeout,
 })
 
 type ConnectionParams<TCredentials> = {

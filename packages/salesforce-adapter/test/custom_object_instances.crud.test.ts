@@ -27,7 +27,7 @@ import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
 import Connection from '../src/client/jsforce'
 import mockAdapter from './adapter'
-import { createCustomObjectType } from './utils'
+import { createCustomObjectType, nullProgressReporter } from './utils'
 import {
   ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP, CUSTOM_OBJECT_ID_FIELD,
   FIELD_ANNOTATIONS, OWNER_ID, SBAA_APPROVAL_CONDITION,
@@ -369,6 +369,7 @@ describe('Custom Object Instances CRUD', () => {
               { action: 'add', data: { after: nonExistingSettingInstance } },
             ],
           },
+          progressReporter: nullProgressReporter,
         })
       })
       it('Should query according to instance values', () => {
@@ -450,6 +451,7 @@ describe('Custom Object Instances CRUD', () => {
                   { action: 'add', data: { after: newInstanceWithRef } },
                 ],
               },
+              progressReporter: nullProgressReporter,
             })
           })
 
@@ -548,6 +550,7 @@ describe('Custom Object Instances CRUD', () => {
                     { action: 'add', data: { after: anotherNewInstance } },
                   ],
                 },
+                progressReporter: nullProgressReporter,
               })
             })
 
@@ -661,6 +664,7 @@ describe('Custom Object Instances CRUD', () => {
                     { action: 'add', data: { after: instanceWithoutRef } },
                   ],
                 },
+                progressReporter: nullProgressReporter,
               })
             })
             it('should update the partially deployed instances after inserting them', () => {
@@ -699,6 +703,7 @@ describe('Custom Object Instances CRUD', () => {
                   { action: 'add', data: { after: anotherExistingInstance } },
                 ],
               },
+              progressReporter: nullProgressReporter,
             })
           })
 
@@ -768,6 +773,7 @@ describe('Custom Object Instances CRUD', () => {
                 groupID: 'add_Test_instances',
                 changes: _.times(100, createTestInstanceAddition),
               },
+              progressReporter: nullProgressReporter,
             })
           })
           it('should not not exceed max query size', () => {
@@ -815,6 +821,7 @@ describe('Custom Object Instances CRUD', () => {
                 { action: 'add', data: { after: anotherNewInstance } },
               ],
             },
+            progressReporter: nullProgressReporter,
           })
         })
         it('Should query according to instance values', () => {
@@ -902,7 +909,7 @@ describe('Custom Object Instances CRUD', () => {
       } as ChangeGroup
       describe('when loadBulk succeeds for all', () => {
         beforeEach(async () => {
-          result = await adapter.deploy({ changeGroup: modifyDeployGroup })
+          result = await adapter.deploy({ changeGroup: modifyDeployGroup, progressReporter: nullProgressReporter })
         })
 
         it('should return no errors and 2 fitting applied changes', async () => {
@@ -922,7 +929,7 @@ describe('Custom Object Instances CRUD', () => {
       describe('when loadBulk partially succeeds', () => {
         beforeEach(async () => {
           connection.bulk.load = partialBulkLoad
-          result = await adapter.deploy({ changeGroup: modifyDeployGroup })
+          result = await adapter.deploy({ changeGroup: modifyDeployGroup, progressReporter: nullProgressReporter })
         })
 
         it('should return one error and one applied change', async () => {
@@ -950,7 +957,7 @@ describe('Custom Object Instances CRUD', () => {
       describe('when loadBulk fails for all', () => {
         beforeEach(async () => {
           connection.bulk.load = getBulkLoadMock('fail')
-          result = await adapter.deploy({ changeGroup: modifyDeployGroup })
+          result = await adapter.deploy({ changeGroup: modifyDeployGroup, progressReporter: nullProgressReporter })
         })
 
         it('should return only errors', async () => {
@@ -996,7 +1003,7 @@ describe('Custom Object Instances CRUD', () => {
       } as ChangeGroup
       describe('when loadBulk succeeds for all', () => {
         beforeEach(async () => {
-          result = await adapter.deploy({ changeGroup: removeChangeGroup })
+          result = await adapter.deploy({ changeGroup: removeChangeGroup, progressReporter: nullProgressReporter })
         })
 
         it('should return no errors and 2 fitting applied changes', () => {
@@ -1017,7 +1024,7 @@ describe('Custom Object Instances CRUD', () => {
         describe('when loadBulk succeeds for all', () => {
           beforeEach(async () => {
             connection.bulk.load = partialBulkLoad
-            result = await adapter.deploy({ changeGroup: removeChangeGroup })
+            result = await adapter.deploy({ changeGroup: removeChangeGroup, progressReporter: nullProgressReporter })
           })
 
           it('should return two error', () => {
@@ -1047,7 +1054,7 @@ describe('Custom Object Instances CRUD', () => {
         describe('when loadBulk fails for all', () => {
           beforeEach(async () => {
             connection.bulk.load = getBulkLoadMock('fail')
-            result = await adapter.deploy({ changeGroup: removeChangeGroup })
+            result = await adapter.deploy({ changeGroup: removeChangeGroup, progressReporter: nullProgressReporter })
           })
 
           it('should return only errors', () => {
@@ -1099,6 +1106,7 @@ describe('Custom Object Instances CRUD', () => {
                   { action: 'add', data: { after: instanceOfAnotherType } },
                 ],
               },
+              progressReporter: nullProgressReporter,
             })
           })
         })
@@ -1112,6 +1120,7 @@ describe('Custom Object Instances CRUD', () => {
                   { action: 'modify', data: { before: instanceOfAnotherType, after: instanceOfAnotherType } },
                 ],
               },
+              progressReporter: nullProgressReporter,
             })
           })
         })
@@ -1125,6 +1134,7 @@ describe('Custom Object Instances CRUD', () => {
                   { action: 'remove', data: { before: instanceOfAnotherType } },
                 ],
               },
+              progressReporter: nullProgressReporter,
             })
           })
         })
@@ -1151,6 +1161,7 @@ describe('Custom Object Instances CRUD', () => {
                 { action: 'modify', data: { before: instanceToModify, after: anotherInstanceToModify } },
               ],
             },
+            progressReporter: nullProgressReporter,
           })
           expect(result.errors).toEqual([
             expect.objectContaining({
@@ -1172,6 +1183,7 @@ describe('Custom Object Instances CRUD', () => {
                 { action: 'remove', data: { before: newInstanceWithRef } },
               ],
             },
+            progressReporter: nullProgressReporter,
           })
           expect(result.errors).toEqual(([
             expect.objectContaining({
@@ -1206,6 +1218,7 @@ describe('Custom Object Instances CRUD', () => {
           }
           result = await adapter.deploy({
             changeGroup,
+            progressReporter: nullProgressReporter,
           })
         })
         it('should deploy successfully', () => {
@@ -1306,6 +1319,7 @@ describe('Custom Object Instances CRUD', () => {
 
           result = await adapter.deploy({
             changeGroup,
+            progressReporter: nullProgressReporter,
           })
         })
 
@@ -1345,7 +1359,7 @@ describe('Custom Object Instances CRUD', () => {
           }
         })
         it('should throw an error', async () => {
-          await expect(adapter.deploy({ changeGroup })).rejects.toThrow()
+          await expect(adapter.deploy({ changeGroup, progressReporter: nullProgressReporter })).rejects.toThrow()
         })
       })
     })
@@ -1378,6 +1392,7 @@ describe('Custom Object Instances CRUD', () => {
             { action: 'add', data: { after: existingInstance } },
           ],
         },
+        progressReporter: nullProgressReporter,
       })
       expect(result.errors).toEqual(([
         expect.objectContaining({
@@ -1407,6 +1422,7 @@ describe('Custom Object Instances CRUD', () => {
               { action: 'add', data: { after: existingInstance } },
             ],
           },
+          progressReporter: nullProgressReporter,
         })
       })
     })
@@ -1420,6 +1436,7 @@ describe('Custom Object Instances CRUD', () => {
               { action: 'modify', data: { before: existingInstance, after: existingInstance } },
             ],
           },
+          progressReporter: nullProgressReporter,
         })
       })
     })
@@ -1433,6 +1450,7 @@ describe('Custom Object Instances CRUD', () => {
               { action: 'remove', data: { before: existingInstance } },
             ],
           },
+          progressReporter: nullProgressReporter,
         })
       })
     })

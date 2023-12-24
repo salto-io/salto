@@ -14,17 +14,36 @@
 * limitations under the License.
 */
 import {
-  Element, isObjectType, isInstanceElement, isField,
+  Element, isObjectType, isField, isInstanceElement,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { RemoteFilterCreator } from '../filter'
 import { apiName, metadataType } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
-import { getFullName, getInternalId, setInternalId, ensureSafeFilterFetch } from './utils'
+import {
+  getFullName,
+  getInternalId,
+  setInternalId,
+  ensureSafeFilterFetch,
+  isMetadataInstanceElementSync,
+  isStandardField,
+} from './utils'
 
 const log = logger(module)
 const { awu, groupByAsync } = collections.asynciterable
+
+
+const shouldElementHaveInternalId = (element: Element): boolean => {
+  if (isInstanceElement(element)) {
+    return !element.getTypeSync().isSettings
+    && isMetadataInstanceElementSync(element)
+  } if (isField(element)) {
+    return !isStandardField(element)
+  }
+  return false
+}
 
 export const getIdsForType = async (
   client: SalesforceClient, type: string,
@@ -50,14 +69,18 @@ const addMissingIds = async (
   client: SalesforceClient,
   typeName: string,
   elements: Element[],
-): Promise<void> => {
+): Promise<Element[]> => {
+  const errorElements: Element[] = []
   const allIds = await getIdsForType(client, typeName)
   await awu(elements).forEach(async element => {
     const id = allIds[await apiName(element)]
     if (id !== undefined) {
       setInternalId(element, id)
+    } else {
+      errorElements.push(element)
     }
   })
+  return errorElements
 }
 
 const elementsWithMissingIds = async (elements: Element[]): Promise<Element[]> => (
@@ -86,10 +109,15 @@ const filter: RemoteFilterCreator = ({ client, config }) => ({
         metadataType,
       )
       log.debug(`Getting missing ids for the following types: ${Object.keys(groupedElements)}`)
-      await Promise.all(
+      const errorElements = (await Promise.all(
         Object.entries(groupedElements)
           .map(([typeName, typeElements]) => addMissingIds(client, typeName, typeElements))
-      )
+      ))
+        .flat()
+        .filter(shouldElementHaveInternalId)
+      if (errorElements.length > 0) {
+        log.debug('Could not add internalIds on the following elements: %s', safeJsonStringify(errorElements.map(e => e.elemID.getFullName())))
+      }
     },
   }),
 })

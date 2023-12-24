@@ -614,6 +614,11 @@ export const isStandardObjectSync = (element: Element): element is ObjectType =>
   && !ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(apiNameSync(element) ?? '')
 )
 
+export const isStandardField = (field: Field): boolean => {
+  const fieldApiName = apiNameSync(field)
+  return fieldApiName !== undefined && !ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(fieldApiName)
+}
+
 export const getInstanceAlias = async (
   instance: MetadataInstanceElement,
   useLabelAsAlias: boolean

@@ -192,6 +192,18 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: STATUS_TYPE_NAME },
   },
   {
+    src: { field: 'statusReference', parentTypes: ['WorkflowReferenceStatus'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: STATUS_TYPE_NAME },
+  },
+  {
+    src: { field: 'statusReference', parentTypes: ['WorkflowStatusAndPort'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: STATUS_TYPE_NAME },
+  },
+  {
     src: { field: 'id', parentTypes: ['TransitionScreenDetails'] },
     serializationStrategy: 'id',
     jiraMissingRefStrategy: 'typeAndValue',

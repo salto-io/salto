@@ -1207,6 +1207,17 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       },
     },
   },
+  JiraWorkflow: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'name', fieldType: 'string' },
+        { fieldName: 'tempWorkflowType', fieldType: 'JiraWorkflow' },
+      ],
+      idFields: ['id.name'],
+      serviceIdField: 'id',
+      serviceUrl: '/secure/admin/workflows/ViewWorkflowSteps.jspa?workflowMode=live&workflowName={name}',
+    },
+  },
   WorkflowSchemes: {
     request: {
       url: '/rest/api/3/workflowscheme',

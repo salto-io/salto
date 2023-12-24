@@ -16,7 +16,7 @@
 
 import { filterUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { CORE_ANNOTATIONS, InstanceElement, ReferenceExpression, isInstanceElement, toChange } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, InstanceElement, ReferenceExpression, isInstanceElement, isObjectType, toChange } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { getDefaultConfig } from '../../../src/config/config'
 import assetsObjectTypeOrderFilter from '../../../src/filters/assets/assets_object_type_order'
@@ -44,7 +44,7 @@ const createAssetsObjectTypeInstance = (
   }
 )
 
-describe('fetchAttributesFilter', () => {
+describe('assetsObjectTypeOrderFilter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy'>
   let filter: FilterType
   let client: JiraClient
@@ -79,25 +79,28 @@ describe('fetchAttributesFilter', () => {
       config.fetch.enableJsmExperimental = true
       filter = assetsObjectTypeOrderFilter(getFilterParams({ config, client })) as typeof filter
     })
-    it('should add assetsObjectTypeOrder to the elements', async () => {
+    it('should add assetsObjectTypeOrderInstance and type to the elements', async () => {
       const elements = [
         parentObjectTypeInstance,
         assetsObjectTypeInstanceOne,
         assetsObjectTypeInstanceTwo,
         assetsObjectTypeInstanceThree,
+        assetSchema,
       ]
       await filter.onFetch(elements)
-      expect(elements).toHaveLength(7)
+      expect(elements).toHaveLength(8)
       const orderInstances = elements
         .filter(isInstanceElement)
         .filter(e => e.elemID.typeName === ASSETS_OBJECT_TYPE_ORDER_TYPE)
       expect(orderInstances[1]).toBeDefined()
-      expect(orderInstances[1].elemID.name).toEqual('parentObjectTypeInstance_order')
+      expect(orderInstances[1].elemID.name).toEqual('AssetsObjectTypeP1_order')
       expect(orderInstances[1].value.objectTypes).toEqual([
         new ReferenceExpression(assetsObjectTypeInstanceOne.elemID, assetsObjectTypeInstanceOne),
         new ReferenceExpression(assetsObjectTypeInstanceTwo.elemID, assetsObjectTypeInstanceTwo),
         new ReferenceExpression(assetsObjectTypeInstanceThree.elemID, assetsObjectTypeInstanceThree),
       ])
+      const orderType = elements.filter(isObjectType).find(e => e.elemID.typeName === ASSETS_OBJECT_TYPE_ORDER_TYPE)
+      expect(orderType).toBeDefined()
     })
     it('should do nothing for instnaces without parentObjectTypeId', async () => {
       const elements = [

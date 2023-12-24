@@ -16,12 +16,13 @@
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { elements as adapterElements, config as configUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { CORE_ANNOTATIONS, Element } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Element, InstanceElement, ObjectType, SaltoError } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
 import { addAnnotationRecursively, findObject, setTypeDeploymentAnnotations } from '../../utils'
 import { CHUNK_SIZE, isWorkflowIdsResponse, isWorkflowResponse } from './types'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
 import { JIRA_WORKFLOW_TYPE } from '../../constants'
+import JiraClient from '../../client/client'
 
 
 const { awu } = collections.asynciterable
@@ -29,7 +30,12 @@ const { makeArray } = collections.array
 const { toBasicInstance } = adapterElements
 const { getTransformationConfigByType } = configUtils
 
-const fetchWorkflowIds = async (paginator: clientUtils.Paginator): Promise<string[]> => {
+type WorkflowIdsOrFilterResult = {
+  workflowIds?: string[]
+  errors: SaltoError[]
+}
+
+const fetchWorkflowIds = async (paginator: clientUtils.Paginator): Promise<WorkflowIdsOrFilterResult> => {
   const paginationArgs = {
     url: '/rest/api/3/workflow/search',
     paginationField: 'startAt',
@@ -39,48 +45,84 @@ const fetchWorkflowIds = async (paginator: clientUtils.Paginator): Promise<strin
     page => makeArray(page.values) as clientUtils.ResponseValue[]
   )).flat().toArray()
   if (!isWorkflowIdsResponse(workflowValues)) {
-    throw new Error('Received an invalid workflow response from service')
+    return {
+      errors: [{
+        message: 'Received an invalid workflow response from service',
+        severity: 'Warning',
+      }],
+    }
   }
-  return workflowValues.map(value => value.id.entityId)
+  return { workflowIds: workflowValues.map(value => value.id.entityId), errors: [] }
 }
 
-// This filter transforms the workflow values structure so it will fit its deployment endpoint
-const filter: FilterCreator = ({ config, client, paginator }) => ({
-  name: 'jiraWorkflowDeployFilter',
+const createWorkspaceInstance = async (
+  client: JiraClient,
+  workflowIds: string[],
+  jiraWorkflowType: ObjectType,
+  errors: SaltoError[])
+: Promise<InstanceElement[] | undefined> => {
+  const response = await client.post({
+    url: '/rest/api/3/workflows',
+    data: {
+      workflowIds,
+    },
+  })
+  if (response.status !== 200) {
+    errors.push({
+      message: `Failed to fetch workflows with error code ${response.status}.`,
+      severity: 'Warning',
+    })
+    return undefined
+  }
+  if (!isWorkflowResponse(response.data)) {
+    errors.push({
+      message: 'Received an invalid workflow response from service.',
+      severity: 'Warning',
+    })
+    return undefined
+  }
+  return Promise.all(response.data.workflows.map(workflow => (
+    toBasicInstance({
+      entry: workflow,
+      type: jiraWorkflowType,
+      transformationConfigByType: getTransformationConfigByType(DEFAULT_API_DEFINITIONS.types),
+      transformationDefaultConfig: DEFAULT_API_DEFINITIONS.typeDefaults.transformation,
+      defaultName: workflow.name,
+    })
+  )))
+}
+
+
+// This filter uses the new workflow API to fetch workflows
+const filter: FilterCreator = ({ config, client, paginator, fetchQuery }) => ({
+  name: 'jiraWorkflowFilter',
   onFetch: async (elements: Element[]) => {
-    if (!config.fetch.enableNewWorkflowAPI) {
-      return
+    const errors: SaltoError[] = []
+    if (!config.fetch.enableNewWorkflowAPI || !fetchQuery.isTypeMatch(JIRA_WORKFLOW_TYPE)) {
+      return { errors }
     }
     const jiraWorkflow = findObject(elements, JIRA_WORKFLOW_TYPE)
     if (jiraWorkflow === undefined) {
-      throw new Error('JiraWorkflow type not found')
+      errors.push({
+        message: 'JiraWorkflow type was not found',
+        severity: 'Warning',
+      })
+      return { errors }
     }
     setTypeDeploymentAnnotations(jiraWorkflow)
     await addAnnotationRecursively(jiraWorkflow, CORE_ANNOTATIONS.CREATABLE)
     await addAnnotationRecursively(jiraWorkflow, CORE_ANNOTATIONS.UPDATABLE)
     await addAnnotationRecursively(jiraWorkflow, CORE_ANNOTATIONS.DELETABLE)
-    const workflowIds = await fetchWorkflowIds(paginator)
+    const { workflowIds, errors: fetchWorkflowIdsErrors } = await fetchWorkflowIds(paginator)
+    if (!_.isEmpty(fetchWorkflowIdsErrors)) {
+      errors.push(...fetchWorkflowIdsErrors)
+      return { errors }
+    }
     const workflowChunks = _.chunk(workflowIds, CHUNK_SIZE)
-    workflowChunks.forEach(async chunk => {
-      const response = await client.post({
-        url: '/rest/api/3/workflows',
-        data: {
-          workflowIds: chunk,
-        },
-      })
-      if (!isWorkflowResponse(response.data)) {
-        throw new Error('Received an invalid workflow response from service')
-      }
-      elements.push(...await Promise.all(response.data.workflows.map(async workflow => (
-        toBasicInstance({
-          entry: workflow,
-          type: jiraWorkflow,
-          transformationConfigByType: getTransformationConfigByType(DEFAULT_API_DEFINITIONS.types),
-          transformationDefaultConfig: DEFAULT_API_DEFINITIONS.typeDefaults.transformation,
-          defaultName: workflow.name,
-        })
-      ))))
+    await awu(workflowChunks).forEach(async chunk => {
+      elements.push(...(await createWorkspaceInstance(client, chunk, jiraWorkflow, errors)) ?? [])
     })
+    return { errors }
   },
 })
 

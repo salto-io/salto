@@ -1213,7 +1213,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'name', fieldType: 'string' },
         { fieldName: 'tempWorkflowType', fieldType: 'JiraWorkflow' },
       ],
-      idFields: ['id.name'],
+      idFields: ['name'],
       serviceIdField: 'id',
       serviceUrl: '/secure/admin/workflows/ViewWorkflowSteps.jspa?workflowMode=live&workflowName={name}',
     },
@@ -2485,6 +2485,7 @@ const SUPPORTED_TYPES = {
   Webhook: [],
   [AUTOMATION_LABEL_TYPE]: [],
   IssueLayout: [],
+  JiraWorkflow: [],
 }
 
 export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {

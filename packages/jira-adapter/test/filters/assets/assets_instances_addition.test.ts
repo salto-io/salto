@@ -19,12 +19,13 @@ import { InstanceElement, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-i
 import { getDefaultConfig } from '../../../src/config/config'
 import assetsStatusAdditionFilter from '../../../src/filters/assets/assets_instances_addition'
 import { createEmptyType, getFilterParams } from '../../utils'
-import { OBJECT_SCHEMA_TYPE, OBJECT_SCHEMA_STATUS_TYPE } from '../../../src/constants'
+import { OBJECT_SCHEMA_TYPE, OBJECT_SCHEMA_STATUS_TYPE, OBJECT_TYPE_TYPE } from '../../../src/constants'
 
 describe('assetsStatusAddition', () => {
     type FilterType = filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
     let filter: FilterType
     let assetsStatusInstance: InstanceElement
+    let objectTypeInstance: InstanceElement
     const assetSchemaInstance = new InstanceElement(
       'assetsSchema1',
       createEmptyType(OBJECT_SCHEMA_TYPE),
@@ -52,10 +53,31 @@ describe('assetsStatusAddition', () => {
             [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(assetSchemaInstance.elemID, assetSchemaInstance)],
           }
         )
+        objectTypeInstance = new InstanceElement(
+          'objectTypeInstance',
+          createEmptyType(OBJECT_TYPE_TYPE),
+          {
+            name: 'objectTypeInstance',
+            description: 'test Description',
+            category: 2,
+            parentObjectTypeId: new ReferenceExpression(
+              assetSchemaInstance.elemID,
+              assetSchemaInstance
+            ),
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(assetSchemaInstance.elemID, assetSchemaInstance)],
+          }
+        )
       })
       it('should add objectSchemaId on addition', async () => {
         await filter.preDeploy([{ action: 'add', data: { after: assetsStatusInstance } }])
         expect(assetsStatusInstance.value.objectSchemaId).toEqual(5)
+      })
+      it('should delete parentObjectTypeId for root object type', async () => {
+        await filter.preDeploy([{ action: 'add', data: { after: objectTypeInstance } }])
+        expect(objectTypeInstance.value.parentObjectTypeId).toBeUndefined()
       })
     })
     describe('onDeploy', () => {
@@ -78,10 +100,29 @@ describe('assetsStatusAddition', () => {
             [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(assetSchemaInstance.elemID, assetSchemaInstance)],
           }
         )
+        objectTypeInstance = new InstanceElement(
+          'objectTypeInstance',
+          createEmptyType(OBJECT_TYPE_TYPE),
+          {
+            name: 'objectTypeInstance',
+            description: 'test Description',
+            category: 2,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(assetSchemaInstance.elemID, assetSchemaInstance)],
+          }
+        )
       })
       it('should delete objectSchemaId', async () => {
         await filter.onDeploy([{ action: 'add', data: { after: assetsStatusInstance } }])
         expect(assetsStatusInstance.value.objectSchemaId).toBeUndefined()
+      })
+      it('should add parentObjectTypeId for root object type', async () => {
+        await filter.onDeploy([{ action: 'add', data: { after: objectTypeInstance } }])
+        expect(objectTypeInstance.value.parentObjectTypeId).toEqual(
+          new ReferenceExpression(assetSchemaInstance.elemID, assetSchemaInstance)
+        )
       })
     })
 })

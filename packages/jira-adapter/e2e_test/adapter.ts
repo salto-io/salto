@@ -55,6 +55,7 @@ export const realAdapter = (
   config.fetch.enableScriptRunnerAddon = enableScriptRunner
   config.fetch.enableIssueLayouts = true
   config.fetch.enableJSM = true
+  config.fetch.enableJsmExperimental = true
   const adapter = new JiraAdapter({
     client,
     config,

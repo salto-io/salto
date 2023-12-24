@@ -17,6 +17,10 @@ import { InstanceElement, Element, CORE_ANNOTATIONS, ReferenceExpression, Modifi
 import { naclCase } from '@salto-io/adapter-utils'
 import { AUTOMATION_TYPE, CALENDAR_TYPE, ESCALATION_SERVICE_TYPE, FORM_TYPE, ISSUE_TYPE_SCHEMA_NAME, JIRA,
   NOTIFICATION_SCHEME_TYPE_NAME,
+  OBJECT_SCHEMA_STATUS_TYPE,
+  OBJECT_SCHEMA_TYPE,
+  OBJECT_TYPE_ATTRIBUTE_TYPE,
+  OBJECT_TYPE_TYPE,
   PORTAL_GROUP_TYPE, PORTAL_SETTINGS_TYPE_NAME, QUEUE_TYPE,
   SCHEDULED_JOB_TYPE, SCRIPTED_FIELD_TYPE, SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE,
   SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, SLA_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../../src/constants'
@@ -45,6 +49,10 @@ import { createCalendarValues } from './jsm/calendar'
 import { createSLAValues } from './jsm/SLA'
 import { createrequestTypeValues } from './jsm/request_type'
 import { createFormValues } from './jsm/form'
+import { createObjectSchmaValues } from './jsm/objectSchema'
+import { createObjectSchemaStatusValues } from './jsm/objectSchemaStatus'
+import { createObjectTypeValues } from './jsm/objectType'
+import { createObjectTypeAttributeValues } from './jsm/objectTypeAttribute'
 
 export const createInstances = (
   randomString: string,
@@ -234,6 +242,40 @@ export const createInstances = (
     { [CORE_ANNOTATIONS.PARENT]: [jsmProject] }
   )
 
+  const objectSchemaRef = createReference(new ElemID(JIRA, 'ObjectSchema', 'instance', 'testSchema'), fetchedElements)
+
+  const objectSchema = new InstanceElement(
+    randomString,
+    findType(OBJECT_SCHEMA_TYPE, fetchedElements),
+    createObjectSchmaValues(randomString),
+    undefined,
+  )
+
+  const objectSchemaStatus = new InstanceElement(
+    `testSchema__${randomString}`,
+    findType(OBJECT_SCHEMA_STATUS_TYPE, fetchedElements),
+    createObjectSchemaStatusValues(randomString),
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [objectSchemaRef] }
+  )
+
+  const objectType = new InstanceElement(
+    `testSchema_Hardware_Assets_us_${randomString}@uumu`,
+    findType(OBJECT_TYPE_TYPE, fetchedElements),
+    createObjectTypeValues(randomString, fetchedElements),
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [objectSchemaRef] }
+  )
+
+  const objecttypeattribute = new InstanceElement(
+    `testSchema_Hardware_Assets_us_${randomString}@uumu`,
+    findType(OBJECT_TYPE_ATTRIBUTE_TYPE, fetchedElements),
+    createObjectTypeAttributeValues(randomString, fetchedElements),
+    undefined,
+  )
+  // eslint-disable-next-line no-console
+  console.log(`name are: ${objecttypeattribute.value.name}, ${objectType.value.name}, ${objectSchemaStatus.elemID.name}`)
+
   return [
     [dashboard],
     [dashboardGadget1],
@@ -261,6 +303,10 @@ export const createInstances = (
     [SLA],
     [requestType],
     [form],
+    [objectSchema],
+    [objectSchemaStatus],
+    [objectType],
+    [objecttypeattribute],
   ]
 }
 

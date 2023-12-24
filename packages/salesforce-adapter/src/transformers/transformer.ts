@@ -66,12 +66,11 @@ import {
   COMPOUND_FIELDS_SOAP_TYPE_NAMES, CUSTOM_OBJECT_ID_FIELD, FOREIGN_KEY_DOMAIN,
   XML_ATTRIBUTE_PREFIX, INTERNAL_ID_FIELD, INTERNAL_FIELD_TYPE_NAMES, CUSTOM_SETTINGS_TYPE,
   LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME, INTERNAL_ID_ANNOTATION, KEY_PREFIX,
-  SALESFORCE_DATE_PLACEHOLDER,
+  SALESFORCE_DATE_PLACEHOLDER, INSTALLED_PACKAGE_METADATA,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingSubTypes } from './salesforce_types'
 import { defaultMissingFields } from './missing_fields'
-
 
 const log = logger(module)
 const { mapValuesAsync, pickAsync } = promises.object
@@ -1517,13 +1516,21 @@ export const isMetadataInstanceElement = async (
   && elem.value[INSTANCE_FULL_NAME_FIELD] !== undefined
 )
 
+const ID_FIELDS_BY_TYPE: Record<string, string[]> = {
+  [INSTALLED_PACKAGE_METADATA]: [INSTANCE_FULL_NAME_FIELD, 'versionNumber'],
+}
+
 export const createInstanceElement = (
   values: MetadataValues,
   type: ObjectType,
   namespacePrefix?: string,
   annotations?: Values,
 ): MetadataInstanceElement => {
+  const typeApiName = type.elemID.name
   const fullName = values[INSTANCE_FULL_NAME_FIELD]
+  const instanceIdValues: Record<string, unknown> = _.pick(
+    values, ID_FIELDS_BY_TYPE[typeApiName] ?? [INSTANCE_FULL_NAME_FIELD]
+  )
   const getPackagePath = (): string[] => {
     if (namespacePrefix) {
       if (namespacePrefix === 'standard' || fullName === namespacePrefix) {
@@ -1536,11 +1543,11 @@ export const createInstanceElement = (
     return [SALESFORCE]
   }
 
-  const typeName = pathNaclCase(type.elemID.name)
+  const typeName = pathNaclCase(typeApiName)
   const { name } = Types.getElemId(
-    fullName,
+    Object.values(instanceIdValues).map(_.toString).join('_'),
     true,
-    createInstanceServiceIds(_.pick(values, INSTANCE_FULL_NAME_FIELD), type)
+    createInstanceServiceIds(instanceIdValues, type)
   )
   return new InstanceElement(
     type.isSettings ? ElemID.CONFIG_NAME : name,

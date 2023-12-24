@@ -111,4 +111,11 @@ describe('automationsToAssetsValidator', () => {
     expect(await validator([toChange({ before: automationInstance, after: automationInstnaceAfter })]))
       .toEqual([])
   })
+  it('should not return a warning when value is undefined in addition change and enableJSM is false', async () => {
+    const automationInstnaceAfter = automationInstance.clone()
+    automationInstnaceAfter.value.components[0].value = undefined
+    const validator = automationToAssetsValidator(config)
+    expect(await validator([toChange({ after: automationInstnaceAfter })]))
+      .toEqual([])
+  })
 })

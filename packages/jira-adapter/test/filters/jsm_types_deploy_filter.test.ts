@@ -20,7 +20,7 @@ import { InstanceElement, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-i
 import { getDefaultConfig } from '../../src/config/config'
 import jsmTypesFilter from '../../src/filters/jsm_types_deploy_filter'
 import { createEmptyType, getFilterParams } from '../utils'
-import { ASSESTS_SCHEMA_TYPE, PORTAL_GROUP_TYPE, PROJECT_TYPE } from '../../src/constants'
+import { OBJECT_SCHEMA_TYPE, PORTAL_GROUP_TYPE, PROJECT_TYPE } from '../../src/constants'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -75,7 +75,7 @@ describe('jsmTypesDeployFilter', () => {
         )
         assetsSchemaInstance = new InstanceElement(
           'assetsSchema1',
-          createEmptyType(ASSESTS_SCHEMA_TYPE),
+          createEmptyType(OBJECT_SCHEMA_TYPE),
           {
             name: 'assetsSchema1',
             objectSchemaKey: 'a1',

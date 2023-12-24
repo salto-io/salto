@@ -234,7 +234,7 @@ describe('SalesforceAdapter fetch', () => {
                           </Profile>`,
         },
         [APEX_CLASS_FULL_NAME]: {
-          zipFileName: `profiles/${UPDATED_PROFILE_FULL_NAME}.profile`,
+          zipFileName: `apexClass/${APEX_CLASS_FULL_NAME}.apex_class`,
           zipFileContent: `<?xml version="1.0" encoding="UTF-8"?>
                           <Profile xmlns="http://soap.sforce.com/2006/04/metadata">
                               <apiVersion>58.0</apiVersion>
@@ -259,11 +259,13 @@ describe('SalesforceAdapter fetch', () => {
                   type: PROFILE_METADATA_TYPE,
                   fullName: UPDATED_PROFILE_FULL_NAME,
                   lastModifiedDate: GREATER_DATE,
+                  fileName: testData.updatedProfile.zipFileName,
                 }),
                 mockFileProperties({
                   type: PROFILE_METADATA_TYPE,
                   fullName: NON_UPDATED_PROFILE_FULL_NAME,
                   lastModifiedDate: DATE,
+                  fileName: testData.nonUpdatedProfile.zipFileName,
                 }),
               ]
             } else if (query.type === APEX_CLASS_METADATA_TYPE) {
@@ -272,6 +274,7 @@ describe('SalesforceAdapter fetch', () => {
                   type: APEX_CLASS_METADATA_TYPE,
                   fullName: APEX_CLASS_FULL_NAME,
                   lastModifiedDate: mode === 'relatedApexChanged' ? GREATER_DATE : DATE,
+                  fileName: testData.apexClass.zipFileName,
                 }),
               ]
             }
@@ -283,16 +286,16 @@ describe('SalesforceAdapter fetch', () => {
           return mockRetrieveLocator({
             zipFiles: [
               {
-                path: testData[UPDATED_PROFILE_FULL_NAME].zipFileName,
-                content: testData[UPDATED_PROFILE_FULL_NAME].zipFileContent,
+                path: `$unpackaged/${testData.updatedProfile.zipFileName}$-meta.xml`,
+                content: testData.updatedProfile.zipFileContent,
               },
               {
-                path: testData[NON_UPDATED_PROFILE_FULL_NAME].zipFileName,
+                path: `$unpackaged/${testData.nonUpdatedProfile.zipFileName}$-meta.xml`,
                 content: testData[NON_UPDATED_PROFILE_FULL_NAME].zipFileContent,
               },
               {
-                path: testData[APEX_CLASS_FULL_NAME].zipFileName,
-                content: testData[APEX_CLASS_FULL_NAME].zipFileContent,
+                path: `$unpackaged/${testData.apexClass.zipFileName}$-meta.xml`,
+                content: testData.apexClass.zipFileContent,
               },
             ],
           })

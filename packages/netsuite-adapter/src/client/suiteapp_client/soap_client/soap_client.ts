@@ -837,12 +837,12 @@ export default class SoapClient {
   }
 
   @retryOnBadResponse
-  public async getSelectValue(
+  private async sendGetSelectValueRequest(
     type: string,
     field: string,
     filterBy: { field: string; internalId: string }[],
-    pageIndex = 1,
-  ): Promise<Record<string, string[]>> {
+    pageIndex: number
+  ): Promise<GetSelectValueResponse> {
     // https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_N3504236.html#getSelectValue
     const body = {
       pageIndex,
@@ -869,19 +869,31 @@ export default class SoapClient {
       log.error(`Got invalid response from getSelectValue request with SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
       throw new Error(`VALIDATION_ERROR - Got invalid response from getSelectValue request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
     }
-    if (!isGetSelectValueSuccessResponse(response)) {
+    return response
+  }
+
+  public async getSelectValue(
+    type: string,
+    field: string,
+    filterBy: { field: string; internalId: string }[],
+  ): Promise<Record<string, string[]>> {
+    const firstResponse = await this.sendGetSelectValueRequest(type, field, filterBy, 1)
+    if (!isGetSelectValueSuccessResponse(firstResponse)) {
       return {}
     }
-    const allResults = pageIndex < response.getSelectValueResult.totalPages
-      ? await this.getSelectValue(type, field, filterBy, pageIndex + 1)
-      : {}
-    response.getSelectValueResult.baseRefList?.baseRef.forEach(row => {
-      if (allResults[row.name] === undefined) {
-        allResults[row.name] = []
-      }
-      allResults[row.name].push(row.attributes.internalId)
-    })
-    return allResults
+    const restOfResponses = await Promise.all(
+      _.range(2, firstResponse.getSelectValueResult.totalPages + 1, 1)
+        .map(pageIndex => this.sendGetSelectValueRequest(type, field, filterBy, pageIndex))
+    ).then(results => results.filter(isGetSelectValueSuccessResponse))
+    const responses = [firstResponse].concat(restOfResponses)
+
+    const result = _(responses)
+      .flatMap(res => res.getSelectValueResult.baseRefList?.baseRef ?? [])
+      .groupBy(row => row.name)
+      .mapValues(rows => rows.map(item => item.attributes.internalId))
+      .value()
+
+    return result
   }
 
   @retryOnBadResponse

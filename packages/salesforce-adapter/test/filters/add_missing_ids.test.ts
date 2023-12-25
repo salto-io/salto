@@ -113,7 +113,7 @@ describe('Internal IDs filter', () => {
           {
             id: 'custom field id 456',
             namespacePrefix: 'pre',
-            fullName: 'Obj.special__c',
+            fullName: 'pre__Obj.special__c',
           },
           {
             id: 'custom field id 123',

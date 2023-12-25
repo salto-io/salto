@@ -23,22 +23,36 @@ import { RemoteFilterCreator } from '../filter'
 import { apiName, metadataType } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import {
-  getFullName,
   getInternalId,
   setInternalId,
   ensureSafeFilterFetch,
   isMetadataInstanceElementSync,
   isStandardField,
+  isInstanceOfTypeSync,
 } from './utils'
+import { GLOBAL_VALUE_SET_TRANSLATION_METADATA_TYPE, TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../constants'
 
 const log = logger(module)
 const { awu, groupByAsync } = collections.asynciterable
 
 
-const shouldElementHaveInternalId = (element: Element): boolean => {
+const ELEMENTS_WITH_NO_INTERNAL_IDS = new Set([
+  'salesforce.RecordType.instance.Idea_InternalIdeasIdeaRecordType',
+])
+
+const TYPES_WITH_NO_INTERNAL_IDS = [
+  TOPICS_FOR_OBJECTS_METADATA_TYPE,
+  GLOBAL_VALUE_SET_TRANSLATION_METADATA_TYPE,
+]
+
+// Used for logging
+const shouldHaveInternalId = (element: Element): boolean => {
+  if (ELEMENTS_WITH_NO_INTERNAL_IDS.has(element.elemID.getFullName())) {
+    return false
+  }
   if (isInstanceElement(element)) {
-    return !element.getTypeSync().isSettings
-    && isMetadataInstanceElementSync(element)
+    return isMetadataInstanceElementSync(element)
+    && !isInstanceOfTypeSync(...TYPES_WITH_NO_INTERNAL_IDS)(element)
   } if (isField(element)) {
     return !isStandardField(element)
   }
@@ -53,9 +67,7 @@ export const getIdsForType = async (
     log.debug(`Encountered errors while listing ${type}: ${errors}`)
   }
   return Object.fromEntries(
-    result
-      .filter(info => info.id !== undefined && info.id !== '')
-      .map(info => [getFullName(info), info.id])
+    result.map(info => [info.fullName, info.id])
   )
 }
 
@@ -74,10 +86,10 @@ const addMissingIds = async (
   const allIds = await getIdsForType(client, typeName)
   await awu(elements).forEach(async element => {
     const id = allIds[await apiName(element)]
-    if (id !== undefined) {
-      setInternalId(element, id)
-    } else {
+    if (id === undefined) {
       errorElements.push(element)
+    } else if (id !== '') {
+      setInternalId(element, id)
     }
   })
   return errorElements
@@ -114,9 +126,13 @@ const filter: RemoteFilterCreator = ({ client, config }) => ({
           .map(([typeName, typeElements]) => addMissingIds(client, typeName, typeElements))
       ))
         .flat()
-        .filter(shouldElementHaveInternalId)
+        .filter(shouldHaveInternalId)
       if (errorElements.length > 0) {
-        log.debug('Could not add internalIds on the following elements: %s', safeJsonStringify(errorElements.map(e => e.elemID.getFullName())))
+        /**
+         * If this warning shows up, please investigate the issue. Update the implementation
+         * of shouldHaveInternalId if the element should not have an internal id.
+         */
+        log.warn('Could not add internalIds on the following elements (first 100): %s', safeJsonStringify(errorElements.slice(0, 100).map(e => e.elemID.getFullName())))
       }
     },
   }),

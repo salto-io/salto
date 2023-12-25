@@ -386,12 +386,6 @@ export const addElementParentReference = (instance: InstanceElement,
 export const fullApiName = (parent: string, child: string): string =>
   ([parent, child].join(API_NAME_SEPARATOR))
 
-export const getFullName = (obj: FileProperties): string => {
-  const namePrefix = obj.namespacePrefix
-    ? `${obj.namespacePrefix}${NAMESPACE_SEPARATOR}` : ''
-  return obj.fullName.startsWith(namePrefix) ? obj.fullName : `${namePrefix}${obj.fullName}`
-}
-
 export const getInternalId = (elem: Element): string => (
   (isInstanceElement(elem))
     ? elem.value[INTERNAL_ID_FIELD]

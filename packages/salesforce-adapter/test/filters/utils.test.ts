@@ -44,7 +44,7 @@ import {
   isElementWithResolvedParent,
   getElementAuthorInformation,
   getNamespaceSync,
-  referenceFieldTargetTypes, isStandardObjectSync,
+  referenceFieldTargetTypes, isStandardObjectSync, isStandardField,
 } from '../../src/filters/utils'
 import {
   API_NAME,
@@ -685,6 +685,22 @@ describe('filter utils', () => {
         expect(referenceTargets).toBeArrayOfSize(1)
         expect(referenceTargets).toContainValue('SomeCustomObject')
       })
+    })
+  })
+  describe('isStandardField', () => {
+    it('should return true for Standard Field', () => {
+      expect(mockTypes.Account.fields.Name).toSatisfy(isStandardField)
+    })
+    it('should return false for Custom Field', () => {
+      const customField = new Field(
+        mockTypes.Account,
+        'CustomField__c',
+        Types.primitiveDataTypes.Text,
+        {
+          [API_NAME]: 'Account.CustomField__c',
+        },
+      )
+      expect(customField).not.toSatisfy(isStandardField)
     })
   })
 })

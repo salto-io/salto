@@ -586,4 +586,15 @@ export default class NetsuiteClient {
     }
     return this.suiteAppClient.getCustomRecords(customRecordTypes)
   }
+
+  public async getSelectValue(
+    type: string,
+    field: string,
+    filterBy: { field: string; internalId: string }[] = [],
+  ): Promise<Record<string, string[]>> {
+    if (this.suiteAppClient === undefined) {
+      throw new Error('Cannot call getSelectValue when SuiteApp is not installed')
+    }
+    return this.suiteAppClient.getSelectValue(type, field, filterBy)
+  }
 }

@@ -50,20 +50,25 @@ const getExsitingQueuesNamesAndIds = async (
   changes: Change<InstanceElement>[],
   client: JiraClient,
 ):Promise<string[][]> => {
-  const parent = getParent(getChangeData(changes[0]))
-  const { serviceDeskId } = parent.value
-  if (serviceDeskId === undefined) {
-    log.error(`failed to deploy queue, because ${parent.value.name} does not have a service desk id`)
+  try {
+    const parent = getParent(getChangeData(changes[0]))
+    const { serviceDeskId } = parent.value
+    if (serviceDeskId === undefined) {
+      log.error(`failed to deploy queue, because ${parent.value.name} does not have a service desk id`)
+      return []
+    }
+    const response = await client.getSinglePage({
+      url: `/rest/servicedeskapi/servicedesk/${serviceDeskId}/queue`,
+    })
+    if (!isQueueResponse(response.data)) {
+      return []
+    }
+    const existingQueues = response.data.values.map(queue => [queue.name, queue.id])
+    return existingQueues
+  } catch (e) {
+    log.error(`failed to get existing queues due to an error ${e}`)
     return []
   }
-  const response = await client.getSinglePage({
-    url: `/rest/servicedeskapi/servicedesk/${serviceDeskId}/queue`,
-  })
-  if (!isQueueResponse(response.data)) {
-    return []
-  }
-  const existingQueues = response.data.values.map(queue => [queue.name, queue.id])
-  return existingQueues
 }
 
 const updateDefaultQueue = async (
@@ -113,63 +118,65 @@ const filter: FilterCreator = ({ config, client }) => ({
         leftoverChanges: changes,
       }
     }
-    try {
-      const queueAdditionChanges = changes.filter(isAdditionChange)
-        .filter(change => isInstanceChange(change))
-        .filter(change => getChangeData(change).elemID.typeName === QUEUE_TYPE)
+    const queueAdditionChanges = changes.filter(isAdditionChange)
+      .filter(change => isInstanceChange(change))
+      .filter(change => getChangeData(change).elemID.typeName === QUEUE_TYPE)
 
-      const projectToQueueAdditions = _.groupBy(queueAdditionChanges, change => {
+    const projectToQueueAdditions = _.groupBy(queueAdditionChanges, change => {
+      try {
         const parent = getParent(getChangeData(change))
         return parent.elemID.getFullName()
-      })
-      const projectToExistiningQueues: Record<string, string[][]> = Object.fromEntries(
-        await Promise.all(Object.entries(projectToQueueAdditions).map(async ([projectName, queueChanges]) =>
-          [projectName, await getExsitingQueuesNamesAndIds(queueChanges.filter(isInstanceChange), client)]))
-      )
+      } catch (e) {
+        log.error(`failed to get project name for change ${getChangeData(change).elemID.name} due to an error ${e}`)
+        return ''
+      }
+    })
+    const projectToExistiningQueues: Record<string, string[][]> = Object.fromEntries(
+      await Promise.all(Object.entries(projectToQueueAdditions).map(async ([projectName, queueChanges]) =>
+        [projectName, await getExsitingQueuesNamesAndIds(queueChanges.filter(isInstanceChange), client)]))
+    )
 
-      const [queueChanges, leftoverChanges] = _.partition(
-        changes,
-        change => {
+    const [queueChanges, leftoverChanges] = _.partition(
+      changes,
+      change => {
+        try {
           const existingQueues = isAdditionChange(change)
             ? projectToExistiningQueues[getParent(getChangeData(change)).elemID.getFullName()]
               .map(entry => entry[0]) : []
           return isInstanceChange(change)
       && getChangeData(change).elemID.typeName === QUEUE_TYPE
       && (isRemovalChange(change) || existingQueues.includes(getChangeData(change).value.name))
+        } catch (e) {
+          log.error(`failed to get project name for change ${getChangeData(change).elemID.name} due to an error ${e}`)
+          return false
         }
-      )
-
-      const typeFixedChanges = queueChanges
-        .map(change => ({
-          action: change.action,
-          data: _.mapValues(change.data, (instance: InstanceElement) =>
-            replaceInstanceTypeForDeploy({
-              instance,
-              config: jsmApiDefinitions,
-            })),
-        })) as Change<InstanceElement>[]
-
-      const deployResult = await deployChanges(typeFixedChanges.filter(isInstanceChange),
-        async change => {
-          if (isRemovalChange(change)) {
-            return deployQueueRemovalChange(change, client)
-          }
-          const existingQueues = Object.fromEntries(
-            projectToExistiningQueues[getParent(getChangeData(change)).elemID.getFullName()]
-          )
-          return updateDefaultQueue(change, client, existingQueues, jsmApiDefinitions)
-        })
-
-      return {
-        leftoverChanges,
-        deployResult,
       }
-    } catch (e) {
-      log.error('skipping queue_deployment filter due to an error %o', e)
-    }
+    )
+
+    const typeFixedChanges = queueChanges
+      .map(change => ({
+        action: change.action,
+        data: _.mapValues(change.data, (instance: InstanceElement) =>
+          replaceInstanceTypeForDeploy({
+            instance,
+            config: jsmApiDefinitions,
+          })),
+      })) as Change<InstanceElement>[]
+
+    const deployResult = await deployChanges(typeFixedChanges.filter(isInstanceChange),
+      async change => {
+        if (isRemovalChange(change)) {
+          return deployQueueRemovalChange(change, client)
+        }
+        const existingQueues = Object.fromEntries(
+          projectToExistiningQueues[getParent(getChangeData(change)).elemID.getFullName()]
+        )
+        return updateDefaultQueue(change, client, existingQueues, jsmApiDefinitions)
+      })
+
     return {
-      deployResult: { appliedChanges: [], errors: [] },
-      leftoverChanges: changes,
+      leftoverChanges,
+      deployResult,
     }
   },
 })

@@ -25,6 +25,7 @@ import { isCustomObject, apiName, isCustom, createInstanceElement, metadataAnnot
 import { LocalFilterCreator } from '../filter'
 import { ProfileInfo, FieldPermissions, ObjectPermissions } from '../client/types'
 import { isInstanceOfType, isMasterDetailField } from './utils'
+import { FetchProfile } from '../types'
 
 const { removeAsync } = promises.array
 const { awu } = collections.asynciterable
@@ -54,13 +55,15 @@ const getObjectPermissions = (object: string): ObjectPermissions => ({
   viewAllRecords: true,
 })
 
-const createAdminProfile = (): InstanceElement => createInstanceElement(
-  {
+const createAdminProfile = (fetchProfile: FetchProfile): InstanceElement => createInstanceElement({
+  values: {
     fullName: ADMIN_PROFILE,
-    fieldPermissions: [],
-    objectPermissions: [],
+    fieldPermissions:
+  [],
+    objectPermissions:
+  [],
   } as ProfileInfo,
-  new ObjectType({
+  type: new ObjectType({
     elemID: new ElemID(SALESFORCE, PROFILE_METADATA_TYPE),
     annotationRefsOrTypes: _.clone(metadataAnnotationTypes),
     annotations: {
@@ -68,8 +71,9 @@ const createAdminProfile = (): InstanceElement => createInstanceElement(
       dirName: 'profiles',
       suffix: 'profile',
     } as MetadataTypeAnnotations,
-  })
-)
+  }),
+  fetchProfile,
+})
 
 const addMissingPermissions = async (
   profile: InstanceElement,
@@ -121,7 +125,7 @@ const isAdminProfileChange = async (change: Change): Promise<boolean> => {
  * Typically, this also ensures that the next fetch will contain the new objects/fields, because the fetching user is
  * usually an Admin.
  */
-const filterCreator: LocalFilterCreator = () => {
+const filterCreator: LocalFilterCreator = ({ config }) => {
   let isPartialAdminProfile = false
   return {
     name: 'profilePermissionsFilter',
@@ -146,7 +150,7 @@ const filterCreator: LocalFilterCreator = () => {
 
       const adminProfile = adminProfileChange !== undefined
         ? getChangeData(adminProfileChange) as InstanceElement
-        : createAdminProfile()
+        : createAdminProfile(config.fetchProfile)
 
       await addMissingPermissions(adminProfile, 'object', newCustomObjects)
       await addMissingPermissions(adminProfile, 'field', newFields)
@@ -155,7 +159,7 @@ const filterCreator: LocalFilterCreator = () => {
         // If we did not originally have a change to the admin profile, we need to create a new one
         isPartialAdminProfile = true
         changes.push(
-          { action: 'modify', data: { before: createAdminProfile(), after: adminProfile } }
+          { action: 'modify', data: { before: createAdminProfile(config.fetchProfile), after: adminProfile } }
         )
       }
     },

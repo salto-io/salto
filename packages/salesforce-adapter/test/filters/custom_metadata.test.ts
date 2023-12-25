@@ -72,10 +72,13 @@ describe('CustomMetadata filter', () => {
   const createCustomMetadataInstanceFromService = (
     values: ServiceMDTRecordValue & MetadataValues
   ): MetadataInstanceElement => (
-    createInstanceElement(
-      { ...values, 'attr_xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance' },
-      mockTypes.CustomMetadata,
-    )
+    createInstanceElement({
+      values: { ...values,
+        'attr_xmlns:xsi':
+    'http://www.w3.org/2001/XMLSchema-instance' },
+      type: mockTypes.CustomMetadata,
+      fetchProfile: defaultFilterContext.fetchProfile,
+    })
   )
 
   const getInstanceByApiName = (
@@ -179,7 +182,11 @@ describe('CustomMetadata filter', () => {
       let afterPreDeployInstance: MetadataInstanceElement
       let afterOnDeployChange: Change
       beforeAll(async () => {
-        const initialInstance = createInstanceElement(naclValues, customMetadataRecordType)
+        const initialInstance = createInstanceElement({
+          values: naclValues,
+          type: customMetadataRecordType,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
         initialChange = toChange({ after: initialInstance })
         const changes = [initialChange]
         await filter.preDeploy(changes)

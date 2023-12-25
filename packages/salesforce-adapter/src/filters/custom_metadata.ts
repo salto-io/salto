@@ -46,6 +46,7 @@ import {
   MetadataValues,
   XsdType,
 } from '../transformers/transformer'
+import { FetchProfile } from '../types'
 
 const log = logger(module)
 const { awu, keyByAsync } = collections.asynciterable
@@ -203,7 +204,8 @@ const formatRecordValuesForService = async (
 
 const getInstanceWithCorrectType = async (
   instance: InstanceElement,
-  customMetadataRecordTypes: ObjectType[]
+  customMetadataRecordTypes: ObjectType[],
+  fetchProfile: FetchProfile,
 ): Promise<InstanceElement | undefined> => {
   const correctType = await getCustomMetadataType(instance, customMetadataRecordTypes)
   if (_.isUndefined(correctType)) {
@@ -217,7 +219,7 @@ const getInstanceWithCorrectType = async (
     log.warn('CustomMetadata instance %s is missing the fullName field, skipping.', instance.elemID.getFullName())
     return undefined
   }
-  return createInstanceElement(formattedValues, correctType)
+  return createInstanceElement({ values: formattedValues, type: correctType, fetchProfile })
 }
 
 const CUSTOM_METADATA_TYPE = new ObjectType({
@@ -230,18 +232,20 @@ const CUSTOM_METADATA_TYPE = new ObjectType({
 })
 
 const toDeployableChange = async (
-  change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>
+  change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
+  fetchProfile: FetchProfile
 ): Promise<Change<InstanceElement>> => {
-  const deployableAfter = createInstanceElement(
-    await formatRecordValuesForService(getChangeData(change)) as MetadataValues,
-    CUSTOM_METADATA_TYPE,
-  )
+  const deployableAfter = createInstanceElement({
+    values: await formatRecordValuesForService(getChangeData(change)) as MetadataValues,
+    type: CUSTOM_METADATA_TYPE,
+    fetchProfile,
+  })
   return isModificationChange(change)
     ? toChange({ before: change.data.before, after: deployableAfter })
     : toChange({ after: deployableAfter })
 }
 
-const filterCreator: LocalFilterCreator = () => {
+const filterCreator: LocalFilterCreator = ({ config }) => {
   let originalChangesByApiName: Record<string, Change>
   return {
     name: 'customMetadataRecordsFilter',
@@ -255,7 +259,7 @@ const filterCreator: LocalFilterCreator = () => {
         .filter(isInstanceOfType(CUSTOM_METADATA))
         .toArray()
       const newInstances = await awu(oldInstances)
-        .map(instance => getInstanceWithCorrectType(instance, customMetadataRecordTypes))
+        .map(instance => getInstanceWithCorrectType(instance, customMetadataRecordTypes, config.fetchProfile))
         .filter(isDefined)
         .toArray()
       _.pullAll(elements, oldInstances)
@@ -272,7 +276,9 @@ const filterCreator: LocalFilterCreator = () => {
         originalChanges,
         c => apiName(getChangeData(c))
       )
-      const deployableChanges = await awu(originalChanges).map(toDeployableChange).toArray()
+      const deployableChanges = await awu(originalChanges)
+        .map(change => toDeployableChange(change, config.fetchProfile))
+        .toArray()
 
       _.pullAll(changes, originalChanges)
       deployableChanges.forEach(change => changes.push(change))

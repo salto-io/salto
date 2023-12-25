@@ -113,10 +113,14 @@ describe('Standard Value Sets filter', () => {
   ]
 
   const svsInstanceFromSource = createInstanceElement({
-    [INSTANCE_FULL_NAME_FIELD]: 'FromSource',
-    sorted: false,
-    standardValue: SVS_INSTANCE_STANDARD_VALUE,
-  }, mockSVSType)
+    values: {
+      [INSTANCE_FULL_NAME_FIELD]: 'FromSource',
+      sorted: false,
+      standardValue: SVS_INSTANCE_STANDARD_VALUE,
+    },
+    type: mockSVSType,
+    fetchProfile: defaultFilterContext.fetchProfile,
+  })
 
   const filterCreator = async (
     sfClient: SalesforceClient,

@@ -36,6 +36,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   toolingDepsOfCurrentNamespace: false,
   fixRetrieveFilePaths: true,
   extraDependenciesV2: false,
+  installedPackageWithVersion: false,
 }
 
 type BuildFetchProfileParams = {

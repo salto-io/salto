@@ -219,19 +219,26 @@ const getPropsWithFullName = (
   }
 }
 
-const getInstanceFromMetadataInformation = (metadata: MetadataInfo,
-  filePropertiesMap: Record<string, FileProperties>, metadataType: ObjectType): InstanceElement => {
+const getInstanceFromMetadataInformation = (
+  metadata: MetadataInfo,
+  filePropertiesMap: Record<string, FileProperties>,
+  metadataType: ObjectType,
+  fetchProfile: FetchProfile,
+): InstanceElement => {
   const newMetadata = filePropertiesMap[metadata.fullName]?.id !== undefined && filePropertiesMap[metadata.fullName]?.id !== ''
     ? { ...metadata, [INTERNAL_ID_FIELD]: filePropertiesMap[metadata.fullName]?.id } : metadata
-  return createInstanceElement(newMetadata, metadataType,
-    filePropertiesMap[newMetadata.fullName]?.namespacePrefix,
-    getAuthorAnnotations(filePropertiesMap[newMetadata.fullName]))
+  return createInstanceElement({ values: newMetadata,
+    type: metadataType,
+    namespacePrefix: filePropertiesMap[newMetadata.fullName]?.namespacePrefix,
+    annotations: getAuthorAnnotations(filePropertiesMap[newMetadata.fullName]),
+    fetchProfile })
 }
 
 export const fetchMetadataInstances = async ({
   client, metadataType, fileProps, metadataQuery,
   maxInstancesPerType = UNLIMITED_INSTANCES_VALUE,
   addNamespacePrefixToFullName = true,
+  fetchProfile,
 }: {
   client: SalesforceClient
   fileProps: FileProperties[]
@@ -239,6 +246,7 @@ export const fetchMetadataInstances = async ({
   metadataQuery: MetadataQuery
   maxInstancesPerType?: number
   addNamespacePrefixToFullName?: boolean
+  fetchProfile: FetchProfile
 }): Promise<FetchElements<InstanceElement[]>> => {
   if (fileProps.length === 0) {
     return { elements: [], configChanges: [] }
@@ -296,7 +304,7 @@ export const fetchMetadataInstances = async ({
   const elements = metadataInfos
     .filter(m => !_.isEmpty(m))
     .filter(m => m.fullName !== undefined)
-    .map(m => getInstanceFromMetadataInformation(m, filePropertiesMap, metadataType))
+    .map(m => getInstanceFromMetadataInformation(m, filePropertiesMap, metadataType, fetchProfile))
   return {
     elements,
     configChanges: makeArray(errors)
@@ -435,8 +443,11 @@ export const retrieveMetadataInstances = async ({
       fetchProfile.isFeatureEnabled('fixRetrieveFilePaths')
     )
     return allValues.map(({ file, values }) => (
-      createInstanceElement(values, typesByName[file.type], file.namespacePrefix,
-        getAuthorAnnotations(file))
+      createInstanceElement({ values,
+        type: typesByName[file.type],
+        namespacePrefix: file.namespacePrefix,
+        annotations: getAuthorAnnotations(file),
+        fetchProfile })
     ))
   }
 

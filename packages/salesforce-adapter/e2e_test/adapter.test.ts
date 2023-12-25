@@ -46,7 +46,7 @@ import {
 import realAdapter from './adapter'
 import {
   findElements, findStandardFieldsObject, findAnnotationsObject, findCustomFieldsObject,
-  findFullCustomObject,
+  findFullCustomObject, defaultFilterContext,
 } from '../test/utils'
 import SalesforceClient, { API_VERSION } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
@@ -684,73 +684,101 @@ describe('Salesforce adapter E2E with real account', () => {
 
     it('should modify an instance', async () => {
       const instanceElementName = 'TestProfileInstanceUpdate__c'
-      const oldInstance = createInstanceElement(
-        {
+      const oldInstance = createInstanceElement({
+        values: {
           ...mockDefaultValues.Profile,
-          [constants.INSTANCE_FULL_NAME_FIELD]: instanceElementName,
+          [constants.INSTANCE_FULL_NAME_FIELD]:
+        instanceElementName,
         },
-        mockTypes.Profile,
-      )
-      const newInstance = createInstanceElement(
-        {
+        type: mockTypes.Profile,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
+      const newInstance = createInstanceElement({
+        values: {
           ...oldInstance.value,
-          fieldPermissions: {
-            Lead: {
-              Fax: {
-                field: 'Lead.Fax',
-                readable: true,
-                editable: true,
-              },
-            },
-            Account: {
-              AccountNumber: {
-                editable: false,
-                field: 'Account.AccountNumber',
-                readable: false,
-              },
-              AnnualRevenue: {
-                editable: false,
-                field: 'Account.AnnualRevenue',
-                readable: false,
-              },
-            },
+          fieldPermissions:
+        {
+          Lead: {
+            Fax: {
+              field: 'Lead.Fax',
+              readable:
+              true,
+              editable:
+              true,
+            }
+            ,
           },
+          Account: {
+            AccountNumber: {
+              editable: false,
+              field:
+              'Account.AccountNumber',
+              readable:
+              false,
+            },
+            AnnualRevenue: {
+              editable: false,
+              field:
+              'Account.AnnualRevenue',
+              readable:
+              false,
+            }
+            ,
+          }
+          ,
+        },
           objectPermissions: {
             Account: {
               allowCreate: true,
-              allowDelete: true,
-              allowEdit: true,
-              allowRead: true,
-              modifyAllRecords: true,
-              viewAllRecords: true,
-              object: 'Account',
-            },
+              allowDelete:
+            true,
+              allowEdit:
+            true,
+              allowRead:
+            true,
+              modifyAllRecords:
+            true,
+              viewAllRecords:
+            true,
+              object:
+            'Account',
+            }
+            ,
           },
           userPermissions: {
             ApiEnabled: {
               name: 'ApiEnabled',
-              enabled: true,
-            },
+              enabled:
+            true,
+            }
+            ,
           },
           pageAccesses: {
             ApexPageForProfile: {
               apexPage: 'ApexPageForProfile',
-              enabled: true,
-            },
+              enabled:
+            true,
+            }
+            ,
           },
           classAccesses: {
             ApexClassForProfile: {
               apexClass: 'ApexClassForProfile',
-              enabled: true,
-            },
+              enabled:
+            true,
+            }
+            ,
           },
           loginHours: {
             sundayStart: 300,
-            sundayEnd: 420,
-          },
+            sundayEnd:
+          420,
+          }
+          ,
         },
-        mockTypes.Profile,
-      )
+        type: mockTypes.Profile,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
 
       await removeElementIfAlreadyExists(client, oldInstance)
       const post = await createElement(adapter, oldInstance)
@@ -2809,10 +2837,16 @@ describe('Salesforce adapter E2E with real account', () => {
           type: MetadataObjectType,
           fullName: string,
           content: Value,
-        ): MetadataInstanceElement => createInstanceElement(
-          { fullName, apiVersion: API_VERSION, content },
+        ): MetadataInstanceElement => createInstanceElement({
+          values: {
+            fullName,
+            apiVersion:
+          API_VERSION,
+            content,
+          },
           type,
-        )
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
 
         describe('apex class manipulation', () => {
           const apexClassInstance = createApexInstance(
@@ -3811,7 +3845,11 @@ describe('Salesforce adapter E2E with real account', () => {
     describe('Deploy QuickAction', () => {
       let quickAction: InstanceElement
       beforeAll(async () => {
-        quickAction = createInstanceElement({ fullName: 'onec', optionsCreateFeedItem: true, standardLabel: 'LogACall', type: 'LogACall', targetObject: 'Task', quickActionLayout: { layoutSectionStyle: 'TwoColumnsLeftToRight', quickActionLayoutColumns: [{ quickActionLayoutItems: [{ field: 'Subject', uiBehavior: 'Edit' }] }, {}] } }, mockTypes.QuickAction)
+        quickAction = createInstanceElement({
+          values: { fullName: 'onec', optionsCreateFeedItem: true, standardLabel: 'LogACall', type: 'LogACall', targetObject: 'Task', quickActionLayout: { layoutSectionStyle: 'TwoColumnsLeftToRight', quickActionLayoutColumns: [{ quickActionLayoutItems: [{ field: 'Subject', uiBehavior: 'Edit' }] }, {}] } },
+          type: mockTypes.QuickAction,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        },)
       })
       it('should deploy empty quickActionLayoutColumns without deleting it', async () => {
         const changes: Change[] = [{

@@ -24,7 +24,7 @@ import { RetrieveResult, FileProperties } from '@salto-io/jsforce'
 import { fromRetrieveResult, createDeployPackage, DeployPackage, CONTENT_FILENAME_OVERRIDE } from '../../src/transformers/xml_transformer'
 import { MetadataValues, createInstanceElement } from '../../src/transformers/transformer'
 import { API_VERSION } from '../../src/client/client'
-import { createEncodedZipContent } from '../utils'
+import { createEncodedZipContent, defaultFilterContext } from '../utils'
 import { mockFileProperties } from '../connection'
 import { mockTypes, mockDefaultValues } from '../mock_elements'
 import { LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE, XML_ATTRIBUTE_PREFIX } from '../../src/constants'
@@ -81,9 +81,17 @@ describe('XML Transformer', () => {
     describe('with simple types', () => {
       const profileValues = { fullName: 'TestProfile', num: 12, str: 'str <> bla', b: true }
       beforeEach(async () => {
-        await pkg.add(createInstanceElement({ fullName: 'TestLayout' }, mockTypes.Layout))
-        await pkg.add(createInstanceElement({ fullName: 'TestLayout2' }, mockTypes.Layout))
-        await pkg.add(createInstanceElement(profileValues, mockTypes.Profile))
+        await pkg.add(createInstanceElement({
+          values: { fullName: 'TestLayout' },
+          type: mockTypes.Layout,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        }))
+        await pkg.add(createInstanceElement({ values: { fullName: 'TestLayout2' },
+          type: mockTypes.Layout,
+          fetchProfile: defaultFilterContext.fetchProfile }))
+        await pkg.add(createInstanceElement({ values: profileValues,
+          type: mockTypes.Profile,
+          fetchProfile: defaultFilterContext.fetchProfile }))
         pkg.delete(mockTypes.Profile, 'foo')
         zipFiles = await getZipFiles(pkg)
       })
@@ -129,8 +137,14 @@ describe('XML Transformer', () => {
     describe('with types that have a meta file', () => {
       const apexClassValues = { fullName: 'MyClass', someVal: 'asd', content: Buffer.from('some data') }
       beforeEach(async () => {
-        await pkg.add(createInstanceElement(apexClassValues, mockTypes.ApexClass))
-        await pkg.add(createInstanceElement({ fullName: 'TestFolder' }, mockTypes.EmailFolder))
+        await pkg.add(createInstanceElement({ values: apexClassValues,
+          type: mockTypes.ApexClass,
+          fetchProfile: defaultFilterContext.fetchProfile }))
+        await pkg.add(createInstanceElement({
+          values: { fullName: 'TestFolder' },
+          type: mockTypes.EmailFolder,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        }))
         zipFiles = await getZipFiles(pkg)
       })
       describe('for metadata with content', () => {
@@ -165,10 +179,11 @@ describe('XML Transformer', () => {
     describe('with complex types', () => {
       describe('AuraDefinitionBundle', () => {
         beforeEach(async () => {
-          await pkg.add(createInstanceElement(
-            mockDefaultValues.AuraDefinitionBundle,
-            mockTypes.AuraDefinitionBundle
-          ))
+          await pkg.add(createInstanceElement({
+            values: mockDefaultValues.AuraDefinitionBundle,
+            type: mockTypes.AuraDefinitionBundle,
+            fetchProfile: defaultFilterContext.fetchProfile,
+          }))
           zipFiles = await getZipFiles(pkg)
         })
         it('should contain metadata xml', () => {
@@ -204,10 +219,11 @@ describe('XML Transformer', () => {
         describe('when a field is missing', () => {
           beforeEach(async () => {
             pkg = createDeployPackage()
-            await pkg.add(createInstanceElement(
-              _.omit(mockDefaultValues.AuraDefinitionBundle, 'designContent'),
-              mockTypes.AuraDefinitionBundle,
-            ))
+            await pkg.add(createInstanceElement({
+              values: _.omit(mockDefaultValues.AuraDefinitionBundle, 'designContent'),
+              type: mockTypes.AuraDefinitionBundle,
+              fetchProfile: defaultFilterContext.fetchProfile,
+            }))
             zipFiles = await getZipFiles(pkg)
           })
           it('should not create file for missing field', () => {
@@ -218,10 +234,11 @@ describe('XML Transformer', () => {
       })
       describe('LightningComponentBundle', () => {
         beforeEach(async () => {
-          await pkg.add(createInstanceElement(
-            mockDefaultValues.LightningComponentBundle,
-            mockTypes.LightningComponentBundle,
-          ))
+          await pkg.add(createInstanceElement({
+            values: mockDefaultValues.LightningComponentBundle,
+            type: mockTypes.LightningComponentBundle,
+            fetchProfile: defaultFilterContext.fetchProfile,
+          }))
           zipFiles = await getZipFiles(pkg)
         })
         it('should contain metadata xml', () => {
@@ -255,7 +272,9 @@ describe('XML Transformer', () => {
     })
     describe('with Settings types', () => {
       beforeEach(async () => {
-        await pkg.add(createInstanceElement({ fullName: 'TestSettings', testField: true }, mockTypes.TestSettings))
+        await pkg.add(createInstanceElement({ values: { fullName: 'TestSettings', testField: true },
+          type: mockTypes.TestSettings,
+          fetchProfile: defaultFilterContext.fetchProfile }))
         zipFiles = await getZipFiles(pkg)
       })
       it('manifest should include "Settings"', () => {
@@ -274,12 +293,14 @@ describe('XML Transformer', () => {
     describe('content file name override for territory types', () => {
       describe('Territory2Model type', () => {
         beforeEach(async () => {
-          await pkg.add(createInstanceElement(
-            { fullName: 'testTerModel' },
-            mockTypes.TerritoryModel,
-            undefined,
-            { [CONTENT_FILENAME_OVERRIDE]: ['testTerModel', 'testTerModel.territory2Model'] }
-          ))
+          await pkg.add(createInstanceElement({
+            values: {
+              fullName: 'testTerModel',
+            },
+            type: mockTypes.TerritoryModel,
+            annotations: { [CONTENT_FILENAME_OVERRIDE]: ['testTerModel', 'testTerModel.territory2Model'] },
+            fetchProfile: defaultFilterContext.fetchProfile,
+          }))
           zipFiles = await getZipFiles(pkg)
         })
         it('manifest should include Territory2Model and override path correctly', () => {
@@ -295,12 +316,14 @@ describe('XML Transformer', () => {
 
       describe('Territory2Rule type', () => {
         beforeEach(async () => {
-          await pkg.add(createInstanceElement(
-            { fullName: 'testTerModel.testTerRule' },
-            mockTypes.TerritoryRule,
-            undefined,
-            { [CONTENT_FILENAME_OVERRIDE]: ['testTerModel', 'rules', 'testTerRule.territory2Rule'] }
-          ))
+          await pkg.add(createInstanceElement({
+            values: {
+              fullName: 'testTerModel.testTerRule',
+            },
+            type: mockTypes.TerritoryRule,
+            annotations: { [CONTENT_FILENAME_OVERRIDE]: ['testTerModel', 'rules', 'testTerRule.territory2Rule'] },
+            fetchProfile: defaultFilterContext.fetchProfile,
+          }))
           zipFiles = await getZipFiles(pkg)
         })
 

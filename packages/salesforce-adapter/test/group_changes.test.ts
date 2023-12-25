@@ -39,6 +39,7 @@ import {
 import { getChangeGroupIds } from '../src/group_changes'
 import { createInstanceElement } from '../src/transformers/transformer'
 import { mockDefaultValues, mockTypes } from './mock_elements'
+import { defaultFilterContext } from './utils'
 
 describe('Group changes function', () => {
   describe('when changes are not additions of sbaa__ApprovalRule__c and sbaa__ApprovalCondition__c', () => {
@@ -98,10 +99,11 @@ describe('Group changes function', () => {
         path: [SALESFORCE, OBJECTS_PATH, differentCustomObjectName],
       }
     )
-    const metadataInstance = createInstanceElement(
-      mockDefaultValues.StaticResource,
-      mockTypes.StaticResource,
-    )
+    const metadataInstance = createInstanceElement({
+      values: mockDefaultValues.StaticResource,
+      type: mockTypes.StaticResource,
+      fetchProfile: defaultFilterContext.fetchProfile,
+    })
     let changeGroupIds: Map<ChangeId, ChangeGroupId>
 
     const addInstance = new InstanceElement('addInstance', customObject)

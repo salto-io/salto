@@ -56,13 +56,16 @@ describe('createMissingInstalledPackagesInstancesFilter', () => {
     )
 
     const createInstalledPackageInstance = (namespace: string): InstanceElement => (
-      createInstanceElement(
-        {
-          [INSTANCE_FULL_NAME_FIELD]: namespace,
-          version: '1.0.0',
+      createInstanceElement({
+        values: {
+          [INSTANCE_FULL_NAME_FIELD]:
+      namespace,
+          version:
+      '1.0.0',
         },
-        mockTypes.InstalledPackage,
-      )
+        type: mockTypes.InstalledPackage,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
     )
 
 

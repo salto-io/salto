@@ -39,6 +39,7 @@ import {
   isCustomObjectSync,
   isInstanceOfTypeChange,
 } from './utils'
+import { FetchProfile } from '../types'
 
 const { awu } = collections.asynciterable
 const { removeAsync } = promises.array
@@ -58,10 +59,10 @@ const setTopicsForObjects = (object: ObjectType, enableTopics: boolean): void =>
 const setDefaultTopicsForObjects = (object: ObjectType): void => setTopicsForObjects(object,
   DEFAULT_ENABLE_TOPICS_VALUE)
 
-const createTopicsForObjectsInstance = (values: TopicsForObjectsInfo): InstanceElement => (
-  createInstanceElement(
+const createTopicsForObjectsInstance = (values: TopicsForObjectsInfo, fetchProfile: FetchProfile): InstanceElement => (
+  createInstanceElement({
     values,
-    new ObjectType({
+    type: new ObjectType({
       elemID: new ElemID(SALESFORCE, TOPICS_FOR_OBJECTS_METADATA_TYPE),
       annotationRefsOrTypes: _.clone(metadataAnnotationTypes),
       annotations: {
@@ -69,8 +70,9 @@ const createTopicsForObjectsInstance = (values: TopicsForObjectsInfo): InstanceE
         dirName: 'topicsForObjects',
         suffix: 'topicsForObjects',
       } as MetadataTypeAnnotations,
-    })
-  )
+    }),
+    fetchProfile,
+  })
 )
 
 type CustomObjectWithTopics = ObjectType & {
@@ -204,7 +206,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
           const topicsEnabled = boolValue(topics[ENABLE_TOPICS] ?? false)
           return new TopicsForObjectsInfo(await apiName(obj), await apiName(obj), topicsEnabled)
         })
-        .map(createTopicsForObjectsInstance)
+        .map(values => createTopicsForObjectsInstance(values, config.fetchProfile))
         .map(after => toChange({ after }))
         .toArray()
     )

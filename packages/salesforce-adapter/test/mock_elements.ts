@@ -52,7 +52,7 @@ import { createInstanceElement, createMetadataObjectType, Types } from '../src/t
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
 import { API_VERSION } from '../src/client/client'
 import { WORKFLOW_FIELD_TO_TYPE } from '../src/filters/workflow'
-import { createCustomObjectType } from './utils'
+import { createCustomObjectType, defaultFilterContext } from './utils'
 import { SORT_ORDER } from '../src/change_validators/duplicate_rules_sort_order'
 
 
@@ -735,10 +735,11 @@ export const mockDefaultValues = {
 export const mockInstances = () => ({
   ..._.mapValues(
     mockDefaultValues,
-    (values, typeName) => createInstanceElement(
+    (values, typeName) => createInstanceElement({
       values,
-      mockTypes[typeName as keyof typeof mockDefaultValues],
-    )
+      type: mockTypes[typeName as keyof typeof mockDefaultValues],
+      fetchProfile: defaultFilterContext.fetchProfile,
+    })
   ),
   [CHANGED_AT_SINGLETON]: new InstanceElement(
     ElemID.CONFIG_NAME,
@@ -761,17 +762,25 @@ export const createFlowChange = ({
   let afterInstance: InstanceElement | undefined
   if (beforeStatus) {
     beforeInstance = createInstanceElement({
-      [INSTANCE_FULL_NAME_FIELD]: flowApiName,
-      [STATUS]: beforeStatus,
-      [LABEL]: flowApiName,
-    }, mockTypes.Flow)
+      values: {
+        [INSTANCE_FULL_NAME_FIELD]: flowApiName,
+        [STATUS]: beforeStatus,
+        [LABEL]: flowApiName,
+      },
+      type: mockTypes.Flow,
+      fetchProfile: defaultFilterContext.fetchProfile,
+    })
   }
   if (afterStatus) {
     afterInstance = createInstanceElement({
-      [INSTANCE_FULL_NAME_FIELD]: flowApiName,
-      [STATUS]: afterStatus,
-      [LABEL]: `${flowApiName}${additionalModifications ? 'Modified' : ''}`,
-    }, mockTypes.Flow)
+      values: {
+        [INSTANCE_FULL_NAME_FIELD]: flowApiName,
+        [STATUS]: afterStatus,
+        [LABEL]: `${flowApiName}${additionalModifications ? 'Modified' : ''}`,
+      },
+      type: mockTypes.Flow,
+      fetchProfile: defaultFilterContext.fetchProfile,
+    })
   }
   return toChange({ before: beforeInstance, after: afterInstance })
 }

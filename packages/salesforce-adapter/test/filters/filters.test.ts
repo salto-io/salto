@@ -22,7 +22,7 @@ import { mockDeployResult, mockDeployMessage } from '../connection'
 import { apiName, createInstanceElement, metadataType } from '../../src/transformers/transformer'
 import { mockTypes } from '../mock_elements'
 import { FilterWith } from './mocks'
-import { nullProgressReporter } from '../utils'
+import { defaultFilterContext, nullProgressReporter } from '../utils'
 
 describe('SalesforceAdapter filters', () => {
   describe('when filter methods are implemented', () => {
@@ -61,9 +61,13 @@ describe('SalesforceAdapter filters', () => {
       let inputChanges: Change[]
       let preDeployInputChanges: Change[]
       beforeEach(async () => {
-        const instance = createInstanceElement(
-          { fullName: 'TestLayout' }, mockTypes.Layout,
-        )
+        const instance = createInstanceElement({
+          values: {
+            fullName: 'TestLayout',
+          },
+          type: mockTypes.Layout,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
         connection.metadata.deploy.mockReturnValueOnce(mockDeployResult({
           componentSuccess: [mockDeployMessage(
             { fullName: await apiName(instance), componentType: await metadataType(instance) }

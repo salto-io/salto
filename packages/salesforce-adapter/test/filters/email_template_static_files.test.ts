@@ -47,10 +47,13 @@ describe('emailTemplate static files filter', () => {
   describe('on fetch', () => {
     describe('attachment as an object', () => {
       beforeEach(async () => {
-        const emailNoArrayAttachment = createInstanceElement({ fullName: 'unfiled$public/emailTemplate',
-          content: staticContent,
-          attachments: { name: ATTACHMENT_NAME, content: ATTACHMENT_AS_STRING } },
-        mockTypes.EmailTemplate)
+        const emailNoArrayAttachment = createInstanceElement({
+          values: { fullName: 'unfiled$public/emailTemplate',
+            content: staticContent,
+            attachments: { name: ATTACHMENT_NAME, content: ATTACHMENT_AS_STRING } },
+          type: mockTypes.EmailTemplate,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
 
         elements = [emailNoArrayAttachment]
 
@@ -70,10 +73,13 @@ describe('emailTemplate static files filter', () => {
 
     describe('attachment as an array', () => {
       beforeEach(async () => {
-        const emailArrayAttachment = createInstanceElement({ fullName: 'unfiled$public/emailTemplate',
-          content: staticContent,
-          attachments: [{ name: ATTACHMENT_NAME, content: ATTACHMENT_AS_STRING }] },
-        mockTypes.EmailTemplate)
+        const emailArrayAttachment = createInstanceElement({
+          values: { fullName: 'unfiled$public/emailTemplate',
+            content: staticContent,
+            attachments: [{ name: ATTACHMENT_NAME, content: ATTACHMENT_AS_STRING }] },
+          type: mockTypes.EmailTemplate,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
 
         elements = [emailArrayAttachment]
 
@@ -97,10 +103,13 @@ describe('emailTemplate static files filter', () => {
 
     let deployedInstance: InstanceElement
     beforeEach(async () => {
-      deployedInstance = createInstanceElement({ fullName: 'unfiled$public/emailTemplate',
-        content: staticContent,
-        attachments: [{ name: ATTACHMENT_NAME, content: ATTACHMENT_AS_BUFFER }] },
-      mockTypes.EmailTemplate)
+      deployedInstance = createInstanceElement({
+        values: { fullName: 'unfiled$public/emailTemplate',
+          content: staticContent,
+          attachments: [{ name: ATTACHMENT_NAME, content: ATTACHMENT_AS_BUFFER }] },
+        type: mockTypes.EmailTemplate,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
     })
 
     it('should encode the attachment to base64 string on preDeploy and revert back to binary buffer on onDeploy', async () => {

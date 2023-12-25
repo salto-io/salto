@@ -59,7 +59,7 @@ import {
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import { CustomObject } from '../../src/client/types'
 import { createFlowChange, mockInstances, mockTypes } from '../mock_elements'
-import { createCustomObjectType, createField } from '../utils'
+import { createCustomObjectType, createField, defaultFilterContext } from '../utils'
 import { INSTANCE_SUFFIXES } from '../../src/types'
 import { mockFileProperties } from '../connection'
 
@@ -254,14 +254,22 @@ describe('filter utils', () => {
     })
   })
   describe('isCustomMetadataRecordInstance', () => {
-    const customMetadataRecordInstance = createInstanceElement(
-      { [INSTANCE_FULL_NAME_FIELD]: 'MDType.MDTypeInstance' },
-      mockTypes.CustomMetadataRecordType
-    )
-    const profileInstance = createInstanceElement(
-      { [INSTANCE_FULL_NAME_FIELD]: 'profileInstance' },
-      mockTypes.Profile
-    )
+    const customMetadataRecordInstance = createInstanceElement({
+      values: {
+        [INSTANCE_FULL_NAME_FIELD]:
+      'MDType.MDTypeInstance',
+      },
+      type: mockTypes.CustomMetadataRecordType,
+      fetchProfile: defaultFilterContext.fetchProfile,
+    })
+    const profileInstance = createInstanceElement({
+      values: {
+        [INSTANCE_FULL_NAME_FIELD]:
+      'profileInstance',
+      },
+      type: mockTypes.Profile,
+      fetchProfile: defaultFilterContext.fetchProfile,
+    })
     it('should return true for customMetadataRecordType instance', async () => {
       expect(await isCustomMetadataRecordInstance(customMetadataRecordInstance)).toBeTrue()
     })
@@ -289,11 +297,19 @@ describe('filter utils', () => {
         'Parent.Instance',
         ...INSTANCE_SUFFIXES.map(suffix => `Instance__${suffix}`),
       ])('%s', async (name: string) => {
-        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: name }, mockTypes.Profile)
+        const instance = createInstanceElement({
+          values: { [INSTANCE_FULL_NAME_FIELD]: name },
+          type: mockTypes.Profile,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
         expect(await getNamespace(instance)).toBeUndefined()
       })
       it('Layout instance', async () => {
-        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: 'Account-Test Layout-Name' }, mockTypes.Layout)
+        const instance = createInstanceElement({
+          values: { [INSTANCE_FULL_NAME_FIELD]: 'Account-Test Layout-Name' },
+          type: mockTypes.Layout,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
         expect(await getNamespace(instance)).toBeUndefined()
       })
     })
@@ -305,11 +321,19 @@ describe('filter utils', () => {
         `${NAMESPACE}__configurationSummary`, // There was an edge-case where __c was replaced and caused incorrect result
         ...INSTANCE_SUFFIXES.map(suffix => `${NAMESPACE}__Instance__${suffix}`),
       ])('%s', async (name: string) => {
-        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: name }, mockTypes.Profile)
+        const instance = createInstanceElement({
+          values: { [INSTANCE_FULL_NAME_FIELD]: name },
+          type: mockTypes.Profile,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
         expect(await getNamespace(instance)).toEqual(NAMESPACE)
       })
       it('Layout instance', async () => {
-        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: `Account-${NAMESPACE}__Test Layout-Name` }, mockTypes.Layout)
+        const instance = createInstanceElement({
+          values: { [INSTANCE_FULL_NAME_FIELD]: `Account-${NAMESPACE}__Test Layout-Name` },
+          type: mockTypes.Layout,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
         expect(await getNamespace(instance)).toEqual(NAMESPACE)
       })
     })
@@ -321,11 +345,19 @@ describe('filter utils', () => {
         'Parent.Instance',
         ...INSTANCE_SUFFIXES.map(suffix => `Instance__${suffix}`),
       ])('%s', (name: string) => {
-        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: name }, mockTypes.Profile)
+        const instance = createInstanceElement({
+          values: { [INSTANCE_FULL_NAME_FIELD]: name },
+          type: mockTypes.Profile,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
         expect(getNamespaceSync(instance)).toBeUndefined()
       })
       it('Layout instance', () => {
-        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: 'Account-Test Layout-Name' }, mockTypes.Layout)
+        const instance = createInstanceElement({
+          values: { [INSTANCE_FULL_NAME_FIELD]: 'Account-Test Layout-Name' },
+          type: mockTypes.Layout,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
         expect(getNamespaceSync(instance)).toBeUndefined()
       })
     })
@@ -337,11 +369,19 @@ describe('filter utils', () => {
         `${NAMESPACE}__configurationSummary`, // There was an edge-case where __c was replaced and caused incorrect result
         ...INSTANCE_SUFFIXES.map(suffix => `${NAMESPACE}__Instance__${suffix}`),
       ])('%s', (name: string) => {
-        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: name }, mockTypes.Profile)
+        const instance = createInstanceElement({
+          values: { [INSTANCE_FULL_NAME_FIELD]: name },
+          type: mockTypes.Profile,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
         expect(getNamespaceSync(instance)).toEqual(NAMESPACE)
       })
       it('Layout instance', () => {
-        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: `Account-${NAMESPACE}__Test Layout-Name` }, mockTypes.Layout)
+        const instance = createInstanceElement({
+          values: { [INSTANCE_FULL_NAME_FIELD]: `Account-${NAMESPACE}__Test Layout-Name` },
+          type: mockTypes.Layout,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
         expect(getNamespaceSync(instance)).toEqual(NAMESPACE)
       })
     })
@@ -424,7 +464,11 @@ describe('filter utils', () => {
     let parent: ObjectType
 
     beforeEach(() => {
-      instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: 'TestFullName' }, mockTypes.WebLink)
+      instance = createInstanceElement({
+        values: { [INSTANCE_FULL_NAME_FIELD]: 'TestFullName' },
+        type: mockTypes.WebLink,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
       parent = mockTypes.Account
     })
     it('should return false for element with unresolved parent', () => {
@@ -485,7 +529,11 @@ describe('filter utils', () => {
     let instance: InstanceElement
 
     beforeEach(() => {
-      instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: 'TestFullName' }, mockTypes.WebLink)
+      instance = createInstanceElement({
+        values: { [INSTANCE_FULL_NAME_FIELD]: 'TestFullName' },
+        type: mockTypes.WebLink,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
     })
 
     it('should return undefined on all properties when element is not annotated with any', () => {
@@ -533,9 +581,13 @@ describe('filter utils', () => {
     let instance: InstanceElement
     beforeEach(() => {
       instance = createInstanceElement({
-        [INSTANCE_FULL_NAME_FIELD]: 'TestInstance',
-        description: 'Test Instance',
-      }, mockTypes.Profile)
+        values: {
+          [INSTANCE_FULL_NAME_FIELD]: 'TestInstance',
+          description: 'Test Instance',
+        },
+        type: mockTypes.Profile,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
     })
     describe('isInstanceOfTypeSync', () => {
       it('should return true when the instance type is one of the provided types', () => {
@@ -583,13 +635,21 @@ describe('filter utils', () => {
     it('should return false when a non Flow instance was deactivated', () => {
       const workflowChange = toChange({
         before: createInstanceElement({
-          [INSTANCE_FULL_NAME_FIELD]: 'workflow',
-          [STATUS]: 'Active',
-        }, mockTypes.Workflow),
+          values: {
+            [INSTANCE_FULL_NAME_FIELD]: 'workflow',
+            [STATUS]: 'Active',
+          },
+          type: mockTypes.Workflow,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        }),
         after: createInstanceElement({
-          [INSTANCE_FULL_NAME_FIELD]: 'workflow',
-          [STATUS]: 'Draft',
-        }, mockTypes.Workflow),
+          values: {
+            [INSTANCE_FULL_NAME_FIELD]: 'workflow',
+            [STATUS]: 'Draft',
+          },
+          type: mockTypes.Workflow,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        }),
       })
       expect(workflowChange).not.toSatisfy(isDeactivatedFlowChange)
     })
@@ -614,13 +674,21 @@ describe('filter utils', () => {
       it('should return false when a non Flow instance was deactivated with no additional changes', () => {
         const workflowChange = toChange({
           before: createInstanceElement({
-            [INSTANCE_FULL_NAME_FIELD]: 'workflow',
-            [STATUS]: 'Active',
-          }, mockTypes.Workflow),
+            values: {
+              [INSTANCE_FULL_NAME_FIELD]: 'workflow',
+              [STATUS]: 'Active',
+            },
+            type: mockTypes.Workflow,
+            fetchProfile: defaultFilterContext.fetchProfile,
+          }),
           after: createInstanceElement({
-            [INSTANCE_FULL_NAME_FIELD]: 'workflow',
-            [STATUS]: 'Draft',
-          }, mockTypes.Workflow),
+            values: {
+              [INSTANCE_FULL_NAME_FIELD]: 'workflow',
+              [STATUS]: 'Draft',
+            },
+            type: mockTypes.Workflow,
+            fetchProfile: defaultFilterContext.fetchProfile,
+          }),
         })
         expect(workflowChange).not.toSatisfy(isDeactivatedFlowChangeOnly)
       })

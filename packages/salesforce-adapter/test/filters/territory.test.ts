@@ -41,16 +41,19 @@ describe('territory filter', () => {
           },
         }
       )
-      instance = createInstanceElement(
-        {
+      instance = createInstanceElement({
+        values: {
           fullName: 'TerModel.Territory',
-          description: 'Desc',
-          customFields: [
-            { name: 'f__c', value: { 'attr_xsi:type': 'xsd:boolean', '#text': 'false' } },
-          ],
+          description:
+        'Desc',
+          customFields:
+        [
+          { name: 'f__c', value: { 'attr_xsi:type': 'xsd:boolean', '#text': 'false' } },
+        ],
         },
         type,
-      )
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
       await filter.onFetch([type, instance])
     })
     it('should remove custom fields from instance', () => {
@@ -96,13 +99,15 @@ describe('territory filter', () => {
           },
         }
       )
-      const territoryInstance = createInstanceElement(
-        {
+      const territoryInstance = createInstanceElement({
+        values: {
           fullName: 'TerModel.testTerritory',
-          description: 'Desc',
+          description:
+        'Desc',
         },
-        territoryType,
-      )
+        type: territoryType,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
       beforeElenentTerritory = territoryInstance
       afterElementTerritory = territoryInstance.clone()
       afterElementTerritory.value.description = 'Desc yay'
@@ -121,7 +126,11 @@ describe('territory filter', () => {
           },
         })
 
-      const modelInstance = createInstanceElement({ description: 'Desc', fullName: 'TerModel' }, modelType)
+      const modelInstance = createInstanceElement({
+        values: { description: 'Desc', fullName: 'TerModel' },
+        type: modelType,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
       beforeElementModel = modelInstance
       afterElementModel = modelInstance.clone()
       afterElementModel.value.description = 'Desc yay'
@@ -140,16 +149,19 @@ describe('territory filter', () => {
           },
         }
       )
-      const nonTerritoryInstance = createInstanceElement(
-        {
+      const nonTerritoryInstance = createInstanceElement({
+        values: {
           fullName: 'myCustomObject',
-          description: 'Desc',
-          customFields: [
-            { name: 'f__c', value: { 'attr_xsi:type': 'xsd:boolean', '#text': 'false' } },
-          ],
+          description:
+        'Desc',
+          customFields:
+        [
+          { name: 'f__c', value: { 'attr_xsi:type': 'xsd:boolean', '#text': 'false' } },
+        ],
         },
-        nonTerritoryType,
-      )
+        type: nonTerritoryType,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
       beforeRegularInstance = nonTerritoryInstance
       afterRegularInstance = nonTerritoryInstance.clone()
       afterRegularInstance.value.description = 'bla'

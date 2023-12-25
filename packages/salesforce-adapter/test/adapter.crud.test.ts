@@ -30,7 +30,7 @@ import { Types, createInstanceElement, apiName, metadataType, createMetadataObje
 import Connection from '../src/client/jsforce'
 import { CustomObject } from '../src/client/types'
 import mockAdapter from './adapter'
-import { createValueSetEntry, createCustomObjectType, nullProgressReporter } from './utils'
+import { createValueSetEntry, createCustomObjectType, nullProgressReporter, defaultFilterContext } from './utils'
 import { createElement, removeElement } from '../e2e_test/utils'
 import { mockTypes, mockDefaultValues } from './mock_elements'
 import { mockDeployResult, mockRunTestFailure, mockDeployResultComplete } from './connection'
@@ -160,13 +160,25 @@ describe('SalesforceAdapter CRUD', () => {
         let workflowFieldUpdate: InstanceElement
 
         beforeEach(async () => {
-          profileInstance = createInstanceElement(mockDefaultValues.Profile, mockTypes.Profile)
-          businessProcessInstance = createInstanceElement(
-            mockDefaultValues.BusinessProcess, mockTypes.BusinessProcess, undefined,
-            { [CORE_ANNOTATIONS.PARENT]:
-              new ReferenceExpression(mockTypes.TestCustomObject__c.elemID, mockTypes.TestCustomObject__c) }
-          )
-          workflowFieldUpdate = createInstanceElement(mockDefaultValues.WorkflowFieldUpdate, mockTypes.Workflow)
+          profileInstance = createInstanceElement({
+            values: mockDefaultValues.Profile,
+            type: mockTypes.Profile,
+            fetchProfile: defaultFilterContext.fetchProfile,
+          })
+          businessProcessInstance = createInstanceElement({
+            values: mockDefaultValues.BusinessProcess,
+            type: mockTypes.BusinessProcess,
+            annotations: {
+              [CORE_ANNOTATIONS.PARENT]:
+            new ReferenceExpression(mockTypes.TestCustomObject__c.elemID, mockTypes.TestCustomObject__c),
+            },
+            fetchProfile: defaultFilterContext.fetchProfile,
+          })
+          workflowFieldUpdate = createInstanceElement({
+            values: mockDefaultValues.WorkflowFieldUpdate,
+            type: mockTypes.Workflow,
+            fetchProfile: defaultFilterContext.fetchProfile,
+          })
 
           connection.metadata.deploy.mockReturnValueOnce(mockDeployResult({
             success: false,
@@ -236,7 +248,11 @@ describe('SalesforceAdapter CRUD', () => {
         const MAPPABLE_PROBLEM: MappableSalesforceProblem = 'This schedulable class has jobs pending or in progress'
         let result: DeployResult
         beforeEach(async () => {
-          const newInst = createInstanceElement(mockDefaultValues.Profile, mockTypes.Profile)
+          const newInst = createInstanceElement({
+            values: mockDefaultValues.Profile,
+            type: mockTypes.Profile,
+            fetchProfile: defaultFilterContext.fetchProfile,
+          })
 
           connection.metadata.deploy.mockReturnValueOnce(mockDeployResult({
             success: false,
@@ -863,7 +879,11 @@ describe('SalesforceAdapter CRUD', () => {
       let deployResultParams: Parameters<typeof mockDeployResult>[0]
       let deployChangeGroup: ChangeGroup
       beforeEach(async () => {
-        instance = createInstanceElement(mockDefaultValues.ApexClass, mockTypes.ApexClass)
+        instance = createInstanceElement({
+          values: mockDefaultValues.ApexClass,
+          type: mockTypes.ApexClass,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
         deployResultParams = {
           success: false,
           componentSuccess: [
@@ -1058,17 +1078,20 @@ describe('SalesforceAdapter CRUD', () => {
       let afterInstance: InstanceElement
 
       beforeEach(() => {
-        beforeInstance = createInstanceElement(
-          mockDefaultValues.Profile,
-          mockTypes.Profile,
-        )
-        afterInstance = createInstanceElement(
-          {
+        beforeInstance = createInstanceElement({
+          values: mockDefaultValues.Profile,
+          type: mockTypes.Profile,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
+        afterInstance = createInstanceElement({
+          values: {
             ...mockDefaultValues.Profile,
-            description: 'Updated profile description',
+            description:
+          'Updated profile description',
           },
-          mockTypes.Profile,
-        )
+          type: mockTypes.Profile,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
       })
 
       describe('when the request succeeds', () => {
@@ -1191,16 +1214,19 @@ describe('SalesforceAdapter CRUD', () => {
       describe('delete metadata objects inside of instances upon update', () => {
         describe('objects names are nested', () => {
           const assignmentRuleFieldName = 'assignmentRule'
-          const oldAssignmentRules = createInstanceElement(
-            {
-              [constants.INSTANCE_FULL_NAME_FIELD]: instanceName,
-              [assignmentRuleFieldName]: [
-                { [constants.INSTANCE_FULL_NAME_FIELD]: 'Val1' },
-                { [constants.INSTANCE_FULL_NAME_FIELD]: 'Val2' },
-              ],
+          const oldAssignmentRules = createInstanceElement({
+            values: {
+              [constants.INSTANCE_FULL_NAME_FIELD]:
+            instanceName,
+              [assignmentRuleFieldName]:
+            [
+              { [constants.INSTANCE_FULL_NAME_FIELD]: 'Val1' },
+              { [constants.INSTANCE_FULL_NAME_FIELD]: 'Val2' },
+            ],
             },
-            mockTypes.AssignmentRules,
-          )
+            type: mockTypes.AssignmentRules,
+            fetchProfile: defaultFilterContext.fetchProfile,
+          })
 
           beforeEach(async () => {
             const newAssignmentRules = oldAssignmentRules.clone()
@@ -1779,26 +1805,31 @@ describe('SalesforceAdapter CRUD', () => {
         // Testing a validation rule specifically because it goes through a filter
         // that has stateful preDeploy/onDeploy (preDeploy stores context that onDeploy uses)
         const testObject = createCustomObjectType('Test__c', {})
-        const testValidationRule = createInstanceElement(
-          {
+        const testValidationRule = createInstanceElement({
+          values: {
             fullName: 'Test__c.Valid',
-            active: true,
-            errorConditionFormula: 'One__c > 10',
-            errorDisplayField: 'One__c',
-            errorMessage: 'one is not bigger than 10',
+            active:
+          true,
+            errorConditionFormula:
+          'One__c > 10',
+            errorDisplayField:
+          'One__c',
+            errorMessage:
+          'one is not bigger than 10',
           },
-          createMetadataObjectType({ annotations: { metadataType: 'ValidationRule' } }),
-          undefined,
-          {
+          type: createMetadataObjectType({ annotations: { metadataType: 'ValidationRule' } }),
+          annotations: {
             [INSTANCE_ANNOTATIONS.PARENT]: [
               new ReferenceExpression(testObject.elemID, testObject),
             ],
-          }
-        )
-        const testProfile = createInstanceElement(
-          mockDefaultValues.Profile,
-          mockTypes.Profile,
-        )
+          },
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
+        const testProfile = createInstanceElement({
+          values: mockDefaultValues.Profile,
+          type: mockTypes.Profile,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
         const validationRulePromise = adapter.deploy({
           changeGroup: {
             groupID: testValidationRule.elemID.getFullName(),
@@ -1832,8 +1863,16 @@ describe('SalesforceAdapter CRUD', () => {
       const createChangeGroup = (valueSetNames: string[]): ChangeGroup => ({
         groupID: 'metadata',
         changes: valueSetNames.map(fullName => toChange({
-          before: createInstanceElement({ fullName, customValue: [{ fullName: 'a' }] }, mockTypes.GlobalValueSet),
-          after: createInstanceElement({ fullName, customValue: [{ fullName: 'b' }] }, mockTypes.GlobalValueSet),
+          before: createInstanceElement({
+            values: { fullName, customValue: [{ fullName: 'a' }] },
+            type: mockTypes.GlobalValueSet,
+            fetchProfile: defaultFilterContext.fetchProfile,
+          }),
+          after: createInstanceElement({
+            values: { fullName, customValue: [{ fullName: 'b' }] },
+            type: mockTypes.GlobalValueSet,
+            fetchProfile: defaultFilterContext.fetchProfile,
+          }),
         })),
       })
       describe('when instance fullName has __gvs suffix and result has __gvs suffix', () => {

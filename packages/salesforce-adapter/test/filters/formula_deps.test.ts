@@ -130,9 +130,21 @@ describe('Formula dependencies', () => {
       customObjectTypeWithFields('SRM_API_Metadata_Client_Setting__mdt', { CreatedDate: BuiltinTypes.STRING }),
     ]
     referredInstances = [
-      createInstanceElement({ fullName: 'Details' }, mockTypes.CustomLabel),
-      createInstanceElement({ fullName: 'Trigger_Context_Status.by_class' }, someCustomMetadataType),
-      createInstanceElement({ fullName: 'Trigger_Context_Status.by_handler' }, someCustomMetadataType),
+      createInstanceElement({
+        values: { fullName: 'Details' },
+        type: mockTypes.CustomLabel,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      }),
+      createInstanceElement({
+        values: { fullName: 'Trigger_Context_Status.by_class' },
+        type: someCustomMetadataType,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      }),
+      createInstanceElement({
+        values: { fullName: 'Trigger_Context_Status.by_handler' },
+        type: someCustomMetadataType,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      }),
     ]
   })
 
@@ -152,7 +164,11 @@ describe('Formula dependencies', () => {
       const elements = [
         typeUnderTest,
         customMetadataType,
-        createInstanceElement({ fullName: 'SomeCustomMetadataType.SomeCustomMetadataTypeRecord' }, customMetadataType),
+        createInstanceElement({
+          values: { fullName: 'SomeCustomMetadataType.SomeCustomMetadataTypeRecord' },
+          type: customMetadataType,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        }),
       ]
       await filter.onFetch(elements)
       // eslint-disable-next-line no-underscore-dangle

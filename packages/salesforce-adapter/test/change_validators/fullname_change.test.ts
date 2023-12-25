@@ -18,12 +18,17 @@ import changeValidator from '../../src/change_validators/fullname_changed'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
 import { INSTANCE_FULL_NAME_FIELD } from '../../src/constants'
+import { defaultFilterContext } from '../utils'
 
 describe('fullname change validator', () => {
   describe('when fullname changes', () => {
     let fullnameChange: Change
     beforeEach(() => {
-      const beforeRecord = createInstanceElement({ fullName: 'original_fullname' }, mockTypes.RecordType)
+      const beforeRecord = createInstanceElement({
+        values: { fullName: 'original_fullname' },
+        type: mockTypes.RecordType,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
       const afterRecord = beforeRecord.clone()
       afterRecord.value[INSTANCE_FULL_NAME_FIELD] = 'modified_fullname'
       fullnameChange = toChange({ before: beforeRecord, after: afterRecord })
@@ -43,7 +48,11 @@ describe('fullname change validator', () => {
   describe('when fullname does not change', () => {
     let fullnameChange: Change
     beforeEach(() => {
-      const beforeRecord = createInstanceElement({ fullName: 'original_fullname', status: 'ACTIVE' }, mockTypes.Flow)
+      const beforeRecord = createInstanceElement({
+        values: { fullName: 'original_fullname', status: 'ACTIVE' },
+        type: mockTypes.Flow,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
       const afterRecord = beforeRecord.clone()
       afterRecord.value.status = 'INACTIVE'
       fullnameChange = toChange({ before: beforeRecord, after: afterRecord })

@@ -20,7 +20,7 @@ import {
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import multipleDefaultsValidator from '../../src/change_validators/multiple_defaults'
-import { createField } from '../utils'
+import { createField, defaultFilterContext } from '../utils'
 import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE } from '../../src/constants'
 
 
@@ -156,24 +156,26 @@ describe('multiple defaults change validator', () => {
       }
 
       it('should have warning for a GlobalValueSet instance', async () => {
-        const beforeInstance = createInstanceElement(
-          {
+        const beforeInstance = createInstanceElement({
+          values: {
             fullName: 'globalValueSetInstance',
-            customValue: [
-              {
-                fullName: 'lolo',
-                default: true,
-                label: 'lolo',
-              },
-              {
-                fullName: 'lala',
-                default: false,
-                label: 'lala',
-              },
-            ],
+            customValue:
+          [
+            {
+              fullName: 'lolo',
+              default: true,
+              label: 'lolo',
+            },
+            {
+              fullName: 'lala',
+              default: false,
+              label: 'lala',
+            },
+          ],
           },
           type,
-        )
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
         const afterInstance = createAfterInstance(beforeInstance)
         const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
         expect(changeErrors).toHaveLength(1)
@@ -182,11 +184,36 @@ describe('multiple defaults change validator', () => {
         expect(changeError.severity).toEqual('Warning')
       })
       it('should not have error for <= 1 default values GlobalValueSet', async () => {
-        const beforeInstance = createInstanceElement({ fullName: 'globalValueSetInstance',
-          customValue: [
+        const beforeInstance = createInstanceElement({
+          values: { fullName: 'globalValueSetInstance',
+            customValue: [
+              {
+                fullName: 'lolo',
+                default: false,
+                label: 'lolo',
+              },
+              {
+                fullName: 'lala',
+                default: false,
+                label: 'lala',
+              },
+            ] },
+          type,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
+        const afterInstance = createAfterInstance(beforeInstance)
+        const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
+        expect(changeErrors).toHaveLength(0)
+      })
+      it('should handle fields that don`t appear in the type (SALTO-4882)', async () => {
+        const beforeInstance = createInstanceElement({
+          values: {
+            fullName: 'globalValueSetInstance',
+            customValue:
+          [
             {
               fullName: 'lolo',
-              default: false,
+              default: true,
               label: 'lolo',
             },
             {
@@ -194,42 +221,24 @@ describe('multiple defaults change validator', () => {
               default: false,
               label: 'lala',
             },
-          ] }, type)
-        const afterInstance = createAfterInstance(beforeInstance)
-        const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
-        expect(changeErrors).toHaveLength(0)
-      })
-      it('should handle fields that don`t appear in the type (SALTO-4882)', async () => {
-        const beforeInstance = createInstanceElement(
-          {
-            fullName: 'globalValueSetInstance',
-            customValue: [
-              {
-                fullName: 'lolo',
-                default: true,
-                label: 'lolo',
-              },
-              {
-                fullName: 'lala',
-                default: false,
-                label: 'lala',
-              },
-            ],
-            standardValue: [
-              {
-                fullName: 'lolo',
-                default: true,
-                label: 'lolo',
-              },
-              {
-                fullName: 'lala',
-                default: false,
-                label: 'lala',
-              },
-            ],
+          ],
+            standardValue:
+          [
+            {
+              fullName: 'lolo',
+              default: true,
+              label: 'lolo',
+            },
+            {
+              fullName: 'lala',
+              default: false,
+              label: 'lala',
+            },
+          ],
           },
           type,
-        )
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
         const afterInstance = createAfterInstance(beforeInstance)
         const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
         expect(changeErrors).toHaveLength(1)
@@ -276,16 +285,20 @@ describe('multiple defaults change validator', () => {
 
         it('should have warning for ProfileApplicationVisibility', async () => {
           const beforeInstance = createInstanceElement({
-            fullName: 'ProfileInstance',
-            applicationVisibilities: {
-              app: {
-                default: false,
-              },
-              anotherApp: {
-                default: true,
+            values: {
+              fullName: 'ProfileInstance',
+              applicationVisibilities: {
+                app: {
+                  default: false,
+                },
+                anotherApp: {
+                  default: true,
+                },
               },
             },
-          }, type)
+            type,
+            fetchProfile: defaultFilterContext.fetchProfile,
+          })
 
           const afterInstance = createAfterInstance(beforeInstance)
           const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
@@ -297,16 +310,20 @@ describe('multiple defaults change validator', () => {
 
         it('should not have error for <= 1 default values in ProfileApplicationVisibility', async () => {
           const beforeInstance = createInstanceElement({
-            fullName: 'ProfileInstance',
-            applicationVisibilities: {
-              app: {
-                default: false,
-              },
-              anotherApp: {
-                default: false,
+            values: {
+              fullName: 'ProfileInstance',
+              applicationVisibilities: {
+                app: {
+                  default: false,
+                },
+                anotherApp: {
+                  default: false,
+                },
               },
             },
-          }, type)
+            type,
+            fetchProfile: defaultFilterContext.fetchProfile,
+          })
 
           const afterInstance = createAfterInstance(beforeInstance)
           const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
@@ -322,24 +339,28 @@ describe('multiple defaults change validator', () => {
         }
         it('should have error for ProfileRecordTypeVisibility', async () => {
           const beforeInstance = createInstanceElement({
-            fullName: 'ProfileInstance',
-            recordTypeVisibilities: {
-              test1: {
-                testRecordType1: {
-                  default: false,
+            values: {
+              fullName: 'ProfileInstance',
+              recordTypeVisibilities: {
+                test1: {
+                  testRecordType1: {
+                    default: false,
+                  },
+                  testRecordType2: {
+                    default: true,
+                  },
                 },
-                testRecordType2: {
-                  default: true,
+                test2: {
+                  testRecordType3: {
+                    default: false,
+                  },
                 },
-              },
-              test2: {
-                testRecordType3: {
-                  default: false,
-                },
-              },
 
+              },
             },
-          }, type)
+            type,
+            fetchProfile: defaultFilterContext.fetchProfile,
+          })
 
           const afterInstance = createAfterInstance(beforeInstance)
           const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
@@ -351,21 +372,25 @@ describe('multiple defaults change validator', () => {
 
         it('should not have error for <= 1 default values in ProfileRecordTypeVisibility', async () => {
           const beforeInstance = createInstanceElement({
-            fullName: 'ProfileInstance',
-            recordTypeVisibilities: {
-              test1: {
-                testRecordType1: {
-                  default: false,
+            values: {
+              fullName: 'ProfileInstance',
+              recordTypeVisibilities: {
+                test1: {
+                  testRecordType1: {
+                    default: false,
+                  },
                 },
-              },
-              test2: {
-                testRecordType2: {
-                  default: true,
+                test2: {
+                  testRecordType2: {
+                    default: true,
+                  },
                 },
-              },
 
+              },
             },
-          }, type)
+            type,
+            fetchProfile: defaultFilterContext.fetchProfile,
+          })
 
           const afterInstance = createAfterInstance(beforeInstance)
           const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
@@ -382,26 +407,30 @@ describe('multiple defaults change validator', () => {
         }
         it('should have 2 errors', async () => {
           const beforeInstance = createInstanceElement({
-            fullName: 'ProfileInstance',
-            recordTypeVisibilities: {
-              test1: {
-                testRecordType1: {
+            values: {
+              fullName: 'ProfileInstance',
+              recordTypeVisibilities: {
+                test1: {
+                  testRecordType1: {
+                    default: false,
+                  },
+                  testRecordType2: {
+                    default: true,
+                  },
+                },
+              },
+              applicationVisibilities: {
+                app: {
                   default: false,
                 },
-                testRecordType2: {
+                anotherApp: {
                   default: true,
                 },
               },
             },
-            applicationVisibilities: {
-              app: {
-                default: false,
-              },
-              anotherApp: {
-                default: true,
-              },
-            },
-          }, type)
+            type,
+            fetchProfile: defaultFilterContext.fetchProfile,
+          })
 
           const afterInstance = createAfterInstance(beforeInstance)
           const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)

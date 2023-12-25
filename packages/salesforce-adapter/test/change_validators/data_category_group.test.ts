@@ -17,9 +17,14 @@ import { toChange } from '@salto-io/adapter-api'
 import changeValidator from '../../src/change_validators/data_category_group'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
+import { defaultFilterContext } from '../utils'
 
 describe('DataCategoryGroup ChangeValidator', () => {
-  const afterRecord = createInstanceElement({ fullName: 'obj__c.record' }, mockTypes.DataCategoryGroup)
+  const afterRecord = createInstanceElement({
+    values: { fullName: 'obj__c.record' },
+    type: mockTypes.DataCategoryGroup,
+    fetchProfile: defaultFilterContext.fetchProfile,
+  })
 
   it('should have warning when trying to add a new data category group', async () => {
     const changeErrors = await changeValidator(

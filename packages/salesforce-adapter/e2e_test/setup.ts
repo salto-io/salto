@@ -23,6 +23,7 @@ import { MetadataValues, createInstanceElement } from '../src/transformers/trans
 import SalesforceClient from '../src/client/client'
 import { mockTypes, mockDefaultValues } from '../test/mock_elements'
 import { removeMetadataIfAlreadyExists } from './utils'
+import { defaultFilterContext } from '../test/utils'
 
 
 export const gvsName = 'TestGlobalValueSet'
@@ -855,7 +856,11 @@ export const verifyElementsExist = async (client: SalesforceClient): Promise<voi
     ]
     const pkg = createDeployPackage()
     await awu(instances).forEach(async ([values, type]) => {
-      await pkg.add(createInstanceElement(values, type))
+      await pkg.add(createInstanceElement({
+        values,
+        type,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      }))
     })
     await client.deploy(await pkg.getZip())
   }

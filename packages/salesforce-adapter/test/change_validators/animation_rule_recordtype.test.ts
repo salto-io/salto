@@ -17,6 +17,7 @@ import { BuiltinTypes, ElemID, ObjectType, toChange } from '@salto-io/adapter-ap
 import changeValidator from '../../src/change_validators/animation_rule_recordtype'
 import { METADATA_TYPE, SALESFORCE } from '../../src/constants'
 import { createInstanceElement } from '../../src/transformers/transformer'
+import { defaultFilterContext } from '../utils'
 
 describe('Invalid AnimationRule RecordType change validator', () => {
   const animationRuleType = new ObjectType({
@@ -33,12 +34,13 @@ describe('Invalid AnimationRule RecordType change validator', () => {
       [METADATA_TYPE]: 'AnimationRule',
     },
   })
-  const animationRuleInstance = createInstanceElement(
-    {
+  const animationRuleInstance = createInstanceElement({
+    values: {
       fullName: new ElemID(SALESFORCE, 'AnimationRule', 'instance', 'SomeAnimationRule').getFullName(),
     },
-    animationRuleType,
-  )
+    type: animationRuleType,
+    fetchProfile: defaultFilterContext.fetchProfile,
+  })
   it('should fail validation if the RecordTypeContext is invalid', async () => {
     const instance = animationRuleInstance.clone()
     instance.value.recordTypeContext = 'Custom'

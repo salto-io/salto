@@ -20,9 +20,14 @@ import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
 import changeValidatorCreator from '../../src/change_validators/account_settings'
 import { SALESFORCE, TYPES_PATH } from '../../src/constants'
+import { defaultFilterContext } from '../utils'
 
 describe('Account settings validator', () => {
-  const instanceBefore = createInstanceElement({ fullName: 'whatever' }, mockTypes.AccountSettings)
+  const instanceBefore = createInstanceElement({
+    values: { fullName: 'whatever' },
+    type: mockTypes.AccountSettings,
+    fetchProfile: defaultFilterContext.fetchProfile,
+  })
   const changeValidator = changeValidatorCreator
 
   const ORGANIZATION_OBJECT_TYPE = new ObjectType({
@@ -37,13 +42,14 @@ describe('Account settings validator', () => {
   })
 
   const mockElementsSource = (defaultAccountAccess: string): ReadOnlyElementsSource => {
-    const element = createInstanceElement(
-      {
+    const element = createInstanceElement({
+      values: {
         fullName: 'OrganizationSettings',
         defaultAccountAccess,
       },
-      ORGANIZATION_OBJECT_TYPE
-    )
+      type: ORGANIZATION_OBJECT_TYPE,
+      fetchProfile: defaultFilterContext.fetchProfile,
+    })
     return buildElementsSourceFromElements([element])
   }
 

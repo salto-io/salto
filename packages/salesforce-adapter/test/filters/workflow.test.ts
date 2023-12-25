@@ -76,11 +76,12 @@ describe('Workflow filter', () => {
     values: MetadataValues,
     fieldName: string
   ): Promise<InstanceElement> => (
-    createInstanceElement(
+    createInstanceElement({
       values,
-      await (await mockTypes.Workflow.fields[fieldName].getType() as ListType)
+      type: await (await mockTypes.Workflow.fields[fieldName].getType() as ListType)
         .getInnerType() as ObjectType,
-    )
+      fetchProfile: defaultFilterContext.fetchProfile,
+    })
   )
 
   describe('on fetch', () => {

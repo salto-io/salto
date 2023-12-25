@@ -35,6 +35,7 @@ import {
 } from '../transformers/transformer'
 import { fullApiName, parentApiName, getDataFromChanges, isInstanceOfTypeChange, isInstanceOfType } from './utils'
 import { WorkflowField } from '../fetch_profile/metadata_types'
+import { FetchProfile } from '../types'
 
 const { awu, groupByAsync } = collections.asynciterable
 const { makeArray } = collections.array
@@ -79,19 +80,21 @@ const createPartialWorkflowInstance = async (
   fullInstance: InstanceElement,
   changes: ReadonlyArray<Change>,
   dataField: 'before' | 'after',
+  fetchProfile: FetchProfile,
 ): Promise<InstanceElement> => (
-  createInstanceElement(
-    {
-      [INSTANCE_FULL_NAME_FIELD]: fullInstance.value[INSTANCE_FULL_NAME_FIELD],
+  createInstanceElement({
+    values: {
+      [INSTANCE_FULL_NAME_FIELD]:
+  fullInstance.value[INSTANCE_FULL_NAME_FIELD],
       ..._.omit(fullInstance.value, Object.keys(WORKFLOW_FIELD_TO_TYPE)),
       ...await mapValuesAsync(
         WORKFLOW_FIELD_TO_TYPE,
         async fieldType => (
           Promise.all(getDataFromChanges(
             dataField,
-            await awu(changes)
-              .filter(isInstanceOfTypeChange(fieldType))
-              .toArray() as Change<InstanceElement>[]
+        await awu(changes)
+          .filter(isInstanceOfTypeChange(fieldType))
+          .toArray() as Change<InstanceElement>[]
           ).map(async nestedInstance => ({
             ...await toMetadataInfo(nestedInstance),
             [INSTANCE_FULL_NAME_FIELD]: await apiName(nestedInstance, true),
@@ -99,14 +102,15 @@ const createPartialWorkflowInstance = async (
         )
       ),
     },
-    await fullInstance.getType(),
-    undefined,
-    fullInstance.annotations,
-  )
+    type: await fullInstance.getType(),
+    annotations: fullInstance.annotations,
+    fetchProfile,
+  })
 )
 
 const createDummyWorkflowInstance = async (
-  changes: ReadonlyArray<Change<InstanceElement>>
+  changes: ReadonlyArray<Change<InstanceElement>>,
+  fetchProfile: FetchProfile,
 ): Promise<InstanceElement> => {
   // Unfortunately we do not have access to the real workflow type here so we create it hard coded
   // using as much known information as possible
@@ -141,18 +145,22 @@ const createDummyWorkflowInstance = async (
     } as MetadataTypeAnnotations,
   })
 
-  return createInstanceElement(
-    { fullName: await parentApiName(getChangeData(changes[0])) },
-    workflowType,
-  )
+  return createInstanceElement({
+    values: {
+      fullName: await parentApiName(getChangeData(changes[0])),
+    },
+    type: workflowType,
+    fetchProfile,
+  })
 }
 
 const createWorkflowChange = async (
   changes: ReadonlyArray<Change<InstanceElement>>,
+  fetchProfile: FetchProfile,
 ): Promise<Change<InstanceElement>> => {
-  const parent = await createDummyWorkflowInstance(changes)
-  const after = await createPartialWorkflowInstance(parent, changes, 'after')
-  const before = await createPartialWorkflowInstance(parent, changes, 'before')
+  const parent = await createDummyWorkflowInstance(changes, fetchProfile)
+  const after = await createPartialWorkflowInstance(parent, changes, 'after', fetchProfile)
+  const before = await createPartialWorkflowInstance(parent, changes, 'before', fetchProfile)
   /*
    * we cannot know if the workflow instance change is add or modify
    * but it does not matter in this use case because changes
@@ -166,7 +174,7 @@ const getWorkflowApiName = async (change: Change<InstanceElement>): Promise<stri
   return await isWorkflowInstance(inst) ? apiName(inst) : parentApiName(inst)
 }
 
-const filterCreator: LocalFilterCreator = () => {
+const filterCreator: LocalFilterCreator = ({ config }) => {
   let originalWorkflowChanges: Record<string, Change<InstanceElement>[]> = {}
   return {
     name: 'workflowFilter',
@@ -189,12 +197,14 @@ const filterCreator: LocalFilterCreator = () => {
           }
           const workflowApiName = await apiName(workflowInst)
           const innerInstances = await Promise.all(makeArray(workflowInst.value[fieldName])
-            .map(async innerValue => createInstanceElement(
-              { ...innerValue,
-                [INSTANCE_FULL_NAME_FIELD]: fullApiName(workflowApiName,
-                  innerValue[INSTANCE_FULL_NAME_FIELD]) },
-              objType,
-            )))
+            .map(async innerValue => createInstanceElement({
+              values: { ...innerValue,
+                [INSTANCE_FULL_NAME_FIELD]:
+            fullApiName(workflowApiName,
+              innerValue[INSTANCE_FULL_NAME_FIELD]) },
+              type: objType,
+              fetchProfile: config.fetchProfile,
+            })))
 
           return innerInstances
         })
@@ -216,7 +226,7 @@ const filterCreator: LocalFilterCreator = () => {
       originalWorkflowChanges = await groupByAsync(allWorkflowRelatedChanges, getWorkflowApiName)
 
       const deployableWorkflowChanges = await awu(Object.values(originalWorkflowChanges))
-        .map(createWorkflowChange)
+        .map(originalChanges => createWorkflowChange(originalChanges, config.fetchProfile))
         .toArray()
       // Remove all the non-deployable workflow changes from the original list and replace them
       // with the deployable changes we created here

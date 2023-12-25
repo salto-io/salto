@@ -120,10 +120,16 @@ describe('flows filter', () => {
           lastModifiedByName: 'Ruler',
           lastModifiedDate: '2021-10-19T06:30:10.000Z',
         })
-        const flowdef1 = createInstanceElement({ fullName: 'flow1' },
-          mockTypes.FlowDefinition)
-        const flowdef2 = createInstanceElement({ fullName: 'flow2', activeVersionNumber: 2 },
-          mockTypes.FlowDefinition)
+        const flowdef1 = createInstanceElement({
+          values: { fullName: 'flow1' },
+          type: mockTypes.FlowDefinition,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
+        const flowdef2 = createInstanceElement({
+          values: { fullName: 'flow2', activeVersionNumber: 2 },
+          type: mockTypes.FlowDefinition,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
         const result = createActiveVersionFileProperties(
           [mockedFileProperties1, mockedFileProperties2],
           [flowdef1, flowdef2]
@@ -164,13 +170,19 @@ describe('flows filter', () => {
       // Deactivating a non Flow instance should not be handled
       workflowChange = toChange({
         before: createInstanceElement({
-          [INSTANCE_FULL_NAME_FIELD]: 'workflow',
-          [STATUS]: 'Active',
-        }, mockTypes.Workflow),
-        after: createInstanceElement({
+          values: {
+            [INSTANCE_FULL_NAME_FIELD]: 'workflow',
+            [STATUS]: 'Active',
+          },
+          type: mockTypes.Workflow,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        }),
+        after: createInstanceElement({ values: {
           [INSTANCE_FULL_NAME_FIELD]: 'workflow',
           [STATUS]: 'Draft',
-        }, mockTypes.Workflow),
+        },
+        type: mockTypes.Workflow,
+        fetchProfile: defaultFilterContext.fetchProfile }),
       })
       changes = [alreadyInactiveFlowChange, deactivatedFlowChange, activeFlowChange,
         newInactiveFlowChange, workflowChange, deactivatedFlowChangeWithAdditionalChanges]

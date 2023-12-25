@@ -17,12 +17,15 @@ import { Change, toChange } from '@salto-io/adapter-api'
 import caseChangeValidator from '../../src/change_validators/case_assignmentRules'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
+import { defaultFilterContext } from '../utils'
 
 describe('case AssignmentRules change validator', () => {
   let caseRuleChange: Change
   describe('case AssignmentRules with case teams', () => {
     beforeEach(() => {
-      const caseRule = createInstanceElement({ fullName: 'Case', assignmentRule: [{ ruleEntry: [{ assignedTo: 'user1' }, { assignedTo: 'user2', team: 'team1' }] }] }, mockTypes.AssignmentRules)
+      const caseRule = createInstanceElement({ values: { fullName: 'Case', assignmentRule: [{ ruleEntry: [{ assignedTo: 'user1' }, { assignedTo: 'user2', team: 'team1' }] }] },
+        type: mockTypes.AssignmentRules,
+        fetchProfile: defaultFilterContext.fetchProfile })
       caseRuleChange = toChange({ after: caseRule })
     })
 
@@ -37,7 +40,11 @@ describe('case AssignmentRules change validator', () => {
   })
   describe('case AssignmentRules without case teams', () => {
     beforeEach(() => {
-      const caseRule = createInstanceElement({ fullName: 'Case', assignmentRule: [{ ruleEntry: [{ assignedTo: 'user1' }, { assignedTo: 'user2' }] }] }, mockTypes.AssignmentRules)
+      const caseRule = createInstanceElement({
+        values: { fullName: 'Case', assignmentRule: [{ ruleEntry: [{ assignedTo: 'user1' }, { assignedTo: 'user2' }] }] },
+        type: mockTypes.AssignmentRules,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
       caseRuleChange = toChange({ after: caseRule })
     })
 

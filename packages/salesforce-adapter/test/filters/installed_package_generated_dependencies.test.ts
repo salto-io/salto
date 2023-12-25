@@ -29,8 +29,16 @@ describe('installedPackageElementsFilter', () => {
   describe('onFetch', () => {
     beforeEach(() => {
       installedPackageInstances = [
-        createInstanceElement({ fullName: NAMESPACE }, mockTypes.InstalledPackage,),
-        createInstanceElement({ fullName: 'namespace1' }, mockTypes.InstalledPackage,),
+        createInstanceElement({
+          values: { fullName: NAMESPACE },
+          type: mockTypes.InstalledPackage,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        }),
+        createInstanceElement({
+          values: { fullName: 'namespace1' },
+          type: mockTypes.InstalledPackage,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        }),
       ]
       filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch'>
     })
@@ -119,8 +127,16 @@ describe('installedPackageElementsFilter', () => {
       let instanceFromInstalledPackage: InstanceElement
 
       beforeEach(async () => {
-        instance = createInstanceElement({ fullName: 'TestInstance' }, mockTypes.ApexClass)
-        instanceFromInstalledPackage = createInstanceElement({ fullName: `${NAMESPACE}__TestInstance` }, mockTypes.ApexClass)
+        instance = createInstanceElement({
+          values: { fullName: 'TestInstance' },
+          type: mockTypes.ApexClass,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
+        instanceFromInstalledPackage = createInstanceElement({
+          values: { fullName: `${NAMESPACE}__TestInstance` },
+          type: mockTypes.ApexClass,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
         await filter.onFetch([...installedPackageInstances, instance, instanceFromInstalledPackage])
       })
       it('should add generated dependencies', () => {

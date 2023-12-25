@@ -244,6 +244,7 @@ export const makeFilter = (
           metadataType: svsMetadataType,
           metadataQuery: config.fetchProfile.metadataQuery,
           maxInstancesPerType: config.fetchProfile.maxInstancesPerType,
+          fetchProfile: config.fetchProfile,
         })
         elements.push(...svsInstances.elements)
 

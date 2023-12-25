@@ -70,15 +70,21 @@ export const createActiveVersionFileProperties = (fileProp: FileProperties[],
   return fileProp.map(prop => fixFilePropertiesName(prop, activeVersions))
 }
 
-const getFlowWithoutVersion = (element: InstanceElement, flowType: ObjectType): InstanceElement => {
+const getFlowWithoutVersion = (
+  element: InstanceElement,
+  flowType: ObjectType,
+  fetchProfile: FetchProfile,
+): InstanceElement => {
   const prevFullName = element.value.fullName
   const flowName = prevFullName.includes('-') ? prevFullName.split('-').slice(0, -1).join('-') : prevFullName
-  return createInstanceElement(
-    { ...element.value, fullName: flowName },
-    flowType,
-    undefined,
-    element.annotations
-  )
+  return createInstanceElement({
+    values: { ...element.value,
+      fullName:
+    flowName },
+    type: flowType,
+    annotations: element.annotations,
+    fetchProfile,
+  })
 }
 
 const createActiveVersionProps = async (
@@ -96,6 +102,7 @@ const createActiveVersionProps = async (
     metadataType: flowDefinitionType,
     metadataQuery: fetchProfile.metadataQuery,
     maxInstancesPerType: fetchProfile.maxInstancesPerType,
+    fetchProfile,
   })
   return createActiveVersionFileProperties(fileProps, flowDefinitionInstances.elements)
 }
@@ -103,15 +110,20 @@ const createActiveVersionProps = async (
 const createDeactivatedFlowDefinitionChange = (
   flowChange: Change<InstanceElement>,
   flowDefinitionMetadataType: ObjectType,
+  fetchProfile: FetchProfile,
 ): Change<InstanceElement> => {
   const flowApiName = apiNameSync(getChangeData(flowChange))
   if (flowApiName === undefined) {
     throw new Error('Attempting to deploy a flow with no apiName')
   }
   const flowDefinitionInstance = createInstanceElement({
-    [INSTANCE_FULL_NAME_FIELD]: flowApiName,
-    [ACTIVE_VERSION_NUMBER]: 0,
-  }, flowDefinitionMetadataType)
+    values: {
+      [INSTANCE_FULL_NAME_FIELD]: flowApiName,
+      [ACTIVE_VERSION_NUMBER]: 0,
+    },
+    type: flowDefinitionMetadataType,
+    fetchProfile,
+  })
   return toChange({ after: flowDefinitionInstance })
 }
 
@@ -137,10 +149,11 @@ const getFlowInstances = async (
     metadataType: flowType,
     metadataQuery: fetchProfile.metadataQuery,
     maxInstancesPerType: fetchProfile.maxInstancesPerType,
+    fetchProfile,
   })
   return { configChanges: instances.configChanges.concat(configChanges),
     elements: instances.elements.map(e =>
-      (fetchProfile.preferActiveFlowVersions ? getFlowWithoutVersion(e, flowType) : e)) }
+      (fetchProfile.preferActiveFlowVersions ? getFlowWithoutVersion(e, flowType, fetchProfile) : e)) }
 }
 
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
@@ -176,7 +189,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       return
     }
     deactivatedFlowOnlyChanges
-      .map(flowChange => createDeactivatedFlowDefinitionChange(flowChange, flowDefinitionType))
+      .map(flowChange => createDeactivatedFlowDefinitionChange(flowChange, flowDefinitionType, config.fetchProfile))
       .forEach(flowDefinitionChange => changes.push(flowDefinitionChange))
   },
 

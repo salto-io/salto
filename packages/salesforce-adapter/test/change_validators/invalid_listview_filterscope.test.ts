@@ -17,13 +17,18 @@ import { Change, CORE_ANNOTATIONS, getAllChangeData, InstanceElement, toChange }
 import changeValidator from '../../src/change_validators/invalid_listview_filterscope'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
+import { defaultFilterContext } from '../utils'
 
-const createListView = (filterScopeValue: string): InstanceElement => createInstanceElement(
-  { fullName: 'Some.FullName', filterScope: filterScopeValue },
-  mockTypes.ListView,
-  undefined,
-  { [CORE_ANNOTATIONS.PARENT]: 'Opportunity' },
-)
+const createListView = (filterScopeValue: string): InstanceElement => createInstanceElement({
+  values: {
+    fullName: 'Some.FullName',
+    filterScope:
+  filterScopeValue,
+  },
+  type: mockTypes.ListView,
+  annotations: { [CORE_ANNOTATIONS.PARENT]: 'Opportunity' },
+  fetchProfile: defaultFilterContext.fetchProfile,
+})
 
 describe('ListView filterScope validator', () => {
   describe('when filterScope changes to invalid value', () => {

@@ -41,10 +41,10 @@ import {
   apiName,
   createInstanceElement,
   isMetadataObjectType,
-  MetadataObjectType,
+  MetadataObjectType, MetadataValues,
   Types,
 } from '../src/transformers/transformer'
-import { findElements, ZipFile } from './utils'
+import { defaultFilterContext, findElements, ZipFile } from './utils'
 import mockAdapter from './adapter'
 import * as constants from '../src/constants'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
@@ -213,17 +213,22 @@ describe('SalesforceAdapter fetch', () => {
     describe('partial fetch deletions detection', () => {
       let testAdapter: SalesforceAdapter
       let testConnection: MockInterface<Connection>
+
+      const createTestInstance = (metadataValues: MetadataValues, type: ObjectType): InstanceElement => (
+        createInstanceElement({ values: metadataValues, type, fetchProfile: defaultFilterContext.fetchProfile })
+      )
+
       beforeEach(() => {
         const existingElements = [
           mockInstances().ChangedAtSingleton,
           mockTypes.Layout,
           mockTypes.ApexClass,
-          createInstanceElement({ fullName: 'Layout1' }, mockTypes.Layout),
-          createInstanceElement({ fullName: 'Layout2' }, mockTypes.Layout),
-          createInstanceElement({ fullName: 'DeletedLayout' }, mockTypes.Layout),
-          createInstanceElement({ fullName: 'Apex1' }, mockTypes.ApexClass),
-          createInstanceElement({ fullName: 'Apex2' }, mockTypes.ApexClass),
-          createInstanceElement({ fullName: 'DeletedApex' }, mockTypes.ApexClass),
+          createTestInstance({ fullName: 'Layout1' }, mockTypes.Layout),
+          createTestInstance({ fullName: 'Layout2' }, mockTypes.Layout),
+          createTestInstance({ fullName: 'DeletedLayout' }, mockTypes.Layout),
+          createTestInstance({ fullName: 'Apex1' }, mockTypes.ApexClass),
+          createTestInstance({ fullName: 'Apex2' }, mockTypes.ApexClass),
+          createTestInstance({ fullName: 'DeletedApex' }, mockTypes.ApexClass),
         ]
         const elementsSource = buildElementsSourceFromElements(existingElements);
         ({ connection: testConnection, adapter: testAdapter } = mockAdapter({
@@ -1643,6 +1648,7 @@ public class LargeClass${index} {
           metadataQuery,
           fileProps,
           maxInstancesPerType,
+          fetchProfile: defaultFilterContext.fetchProfile,
         })
 
       beforeAll(() => {

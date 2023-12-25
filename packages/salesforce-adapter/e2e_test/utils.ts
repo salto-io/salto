@@ -130,7 +130,7 @@ export function createInstance(
   const objectType = isObjectType(type)
     ? type
     : findElement(typeElements as Iterable<Element>, new ElemID(SALESFORCE, type)) as ObjectType
-  return createInstanceElement(value, objectType)
+  return createInstanceElement({ values: value, type: objectType, fetchProfile: defaultFilterContext.fetchProfile })
 }
 
 export const getMetadataInstance = async (client: SalesforceClient, type: ObjectType,

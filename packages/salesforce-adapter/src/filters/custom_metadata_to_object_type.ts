@@ -106,7 +106,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
       )
 
       const deployableChanges = await awu(Object.entries(groupedOriginalChangesByApiName))
-        .map(entry => createCustomObjectChange(config.systemFields, ...entry))
+        .map(entry => createCustomObjectChange(config.systemFields, ...entry, config.fetchProfile))
         .toArray()
       _.pullAll(changes, customMetadataRelatedChanges)
       deployableChanges.forEach(c => changes.push(c))

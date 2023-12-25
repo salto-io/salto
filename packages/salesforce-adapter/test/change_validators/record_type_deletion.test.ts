@@ -20,6 +20,7 @@ import recordTypeChangeValidator from '../../src/change_validators/record_type_d
 import { CUSTOM_OBJECT } from '../../src/constants'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
+import { defaultFilterContext } from '../utils'
 
 describe('record type deletion change validator', () => {
   const objectType = new ObjectType({
@@ -27,7 +28,11 @@ describe('record type deletion change validator', () => {
     annotations: { metadataType: CUSTOM_OBJECT, apiName: 'obj__c' },
   })
 
-  const beforeRecord = createInstanceElement({ fullName: 'obj__c.record' }, mockTypes.RecordType)
+  const beforeRecord = createInstanceElement({
+    values: { fullName: 'obj__c.record' },
+    type: mockTypes.RecordType,
+    fetchProfile: defaultFilterContext.fetchProfile,
+  })
 
   describe('deletion of record type without the deletion of the type', () => {
     it('should have error when trying to remove record type', async () => {

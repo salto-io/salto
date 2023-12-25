@@ -62,7 +62,7 @@ import { convertList } from './convert_lists'
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../metadata_deploy'
 import { CustomObject } from '../client/types'
 import { WORKFLOW_FIELD_TO_TYPE, WORKFLOW_TYPE_TO_FIELD, WORKFLOW_DIR_NAME } from './workflow'
-import { INSTANCE_SUFFIXES } from '../types'
+import { FetchProfile, INSTANCE_SUFFIXES } from '../types'
 import { CustomObjectField } from '../fetch_profile/metadata_types'
 
 const log = logger(module)
@@ -580,7 +580,7 @@ const getNestedCustomObjectValues = async (
   )).map(field => toCustomField(field as Field)).toArray(),
 })
 
-const createCustomObjectInstance = (values: MetadataValues): InstanceElement => {
+const createCustomObjectInstance = (values: MetadataValues, fetchProfile: FetchProfile): InstanceElement => {
   const customFieldType = new ObjectType({
     elemID: new ElemID(SALESFORCE, CUSTOM_FIELD),
     annotations: { [METADATA_TYPE]: CUSTOM_FIELD },
@@ -614,7 +614,7 @@ const createCustomObjectInstance = (values: MetadataValues): InstanceElement => 
       ),
     },
   })
-  return createInstanceElement(values, customObjectType)
+  return createInstanceElement({ values, type: customObjectType, fetchProfile })
 }
 
 const getCustomObjectFromChange = async (change: Change): Promise<ObjectType> => {
@@ -652,6 +652,7 @@ export const createCustomObjectChange = async (
   fieldsToSkip: string[] = [],
   fullName: string,
   changes: ReadonlyArray<Change>,
+  fetchProfile: FetchProfile
 ): Promise<Change<InstanceElement>> => {
   const objectChange = changes.find(isObjectTypeChange)
   if (objectChange !== undefined && objectChange.action === 'remove') {
@@ -669,7 +670,7 @@ export const createCustomObjectChange = async (
           ...await getNestedCustomObjectValues(
             fullName, masterDetailFieldRemovals, fieldsToSkip, 'before'
           ),
-        }),
+        }, fetchProfile),
       },
     }
   }
@@ -715,7 +716,7 @@ export const createCustomObjectChange = async (
     }
   }
 
-  const after = createCustomObjectInstance(await getAfterInstanceValues())
+  const after = createCustomObjectInstance(await getAfterInstanceValues(), fetchProfile)
 
   if (objectChange !== undefined && objectChange.action === 'add') {
     return { action: 'add', data: { after } }
@@ -725,7 +726,7 @@ export const createCustomObjectChange = async (
   const before = createCustomObjectInstance({
     ...await getNestedCustomObjectValues(fullName, changes, fieldsToSkip, 'before'),
     ...(beforeParent === undefined ? {} : await toCustomProperties(beforeParent, false)),
-  })
+  }, fetchProfile)
 
   return { action: 'modify', data: { before, after } }
 }
@@ -869,7 +870,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
       )
 
       const deployableCustomObjectChanges = await awu(Object.entries(originalChangeMapping))
-        .map(entry => createCustomObjectChange(config.systemFields, ...entry))
+        .map(entry => createCustomObjectChange(config.systemFields, ...entry, config.fetchProfile))
         .toArray()
 
       // Handle known side effects - if we remove a custom object we don't need to also remove

@@ -21,6 +21,7 @@ import { fetchMetadataInstances } from '../src/fetch'
 import { buildMetadataQuery } from '../src/fetch_profile/metadata_query'
 import { mockFileProperties, MockFilePropertiesInput } from './connection'
 import { mockTypes } from './mock_elements'
+import { defaultFilterContext } from './utils'
 
 describe('Test fetching installed package metadata', () => {
   type MockFetchArgs = {
@@ -49,6 +50,7 @@ describe('Test fetching installed package metadata', () => {
       metadataType: mockType,
       metadataQuery,
       addNamespacePrefixToFullName,
+      fetchProfile: defaultFilterContext.fetchProfile,
     })
     return elements.filter(isInstanceElement)[0]
   }

@@ -160,7 +160,11 @@ describe('FieldReferences filter', () => {
         ],
       }
     )
-    const checkLabel = createInstanceElement({ fullName: 'check' }, mockTypes.CustomLabel)
+    const checkLabel = createInstanceElement({
+      values: { fullName: 'check' },
+      type: mockTypes.CustomLabel,
+      fetchProfile: defaultFilterContext.fetchProfile,
+    })
     return [
       customObjectType,
       // sharingRules555 should point to Account.name (rule contains instanceTypes constraint)

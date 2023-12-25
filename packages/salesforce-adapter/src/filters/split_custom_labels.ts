@@ -36,6 +36,7 @@ import {
   INSTANCE_FULL_NAME_FIELD, METADATA_TYPE, RECORDS_PATH,
   SALESFORCE,
 } from '../constants'
+import { FetchProfile } from '../types'
 
 
 const log = logger(module)
@@ -111,26 +112,32 @@ const resolveCustomLabelsType = async (
   })
 }
 
-const createCustomLabelsChange = async (customLabelChanges: Change[]): Promise<Change> => {
+const createCustomLabelsChange = async (customLabelChanges: Change[], fetchProfile: FetchProfile): Promise<Change> => {
   const customLabelsType = await resolveCustomLabelsType(customLabelChanges)
-  const beforeCustomLabelsInstance = createInstanceElement(
-    {
-      [INSTANCE_FULL_NAME_FIELD]: CUSTOM_LABELS_FULL_NAME,
-      labels: getDataFromChanges('before', customLabelChanges)
-        .filter(isInstanceElement)
-        .map(e => e.value),
+  const beforeCustomLabelsInstance = createInstanceElement({
+    values: {
+      [INSTANCE_FULL_NAME_FIELD]:
+    CUSTOM_LABELS_FULL_NAME,
+      labels:
+    getDataFromChanges('before', customLabelChanges)
+      .filter(isInstanceElement)
+      .map(e => e.value),
     },
-    customLabelsType,
-  )
-  const afterCustomLabelsInstance = createInstanceElement(
-    {
-      [INSTANCE_FULL_NAME_FIELD]: CUSTOM_LABELS_FULL_NAME,
-      labels: getDataFromChanges('after', customLabelChanges)
-        .filter(isInstanceElement)
-        .map(e => e.value),
+    type: customLabelsType,
+    fetchProfile,
+  })
+  const afterCustomLabelsInstance = createInstanceElement({
+    values: {
+      [INSTANCE_FULL_NAME_FIELD]:
+    CUSTOM_LABELS_FULL_NAME,
+      labels:
+    getDataFromChanges('after', customLabelChanges)
+      .filter(isInstanceElement)
+      .map(e => e.value),
     },
-    customLabelsType,
-  )
+    type: customLabelsType,
+    fetchProfile,
+  })
   return {
     action: 'modify',
     data: {
@@ -143,7 +150,7 @@ const createCustomLabelsChange = async (customLabelChanges: Change[]): Promise<C
 /**
  * Split custom labels into individual instances
  */
-const filterCreator: LocalFilterCreator = () => {
+const filterCreator: LocalFilterCreator = ({ config }) => {
   let customLabelChanges: Change[]
   return {
     name: 'splitCustomLabels',
@@ -185,7 +192,7 @@ const filterCreator: LocalFilterCreator = () => {
       if (_.isEmpty(customLabelChanges)) {
         return
       }
-      changes.push(await createCustomLabelsChange(customLabelChanges))
+      changes.push(await createCustomLabelsChange(customLabelChanges, config.fetchProfile))
       _.pullAll(changes, customLabelChanges)
     },
     onDeploy: async changes => {

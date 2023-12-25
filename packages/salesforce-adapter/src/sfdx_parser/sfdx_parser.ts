@@ -27,6 +27,7 @@ import { METADATA_TYPES_TO_RENAME, createInstanceElement, createMetadataObjectTy
 import { buildFetchProfile } from '../fetch_profile/fetch_profile'
 import { CUSTOM_OBJECT, METADATA_CONTENT_FIELD, SALESFORCE, RECORDS_PATH } from '../constants'
 import { sfdxFilters } from './filters'
+import { FetchProfile } from '../types'
 
 
 const log = logger(module)
@@ -65,6 +66,7 @@ const getElementsFromFile = async (
   fileName: string,
   resolvedTypes: Record<string, ObjectType>,
   staticFileNames: string[],
+  fetchProfile: FetchProfile,
 ): Promise<Element[]> => {
   // Turns out we cannot rely on the folder name for most of the types
   // some of the types (specifically aura definition bundle, but maybe other types as well...) do
@@ -115,7 +117,7 @@ const getElementsFromFile = async (
   }
 
   return [
-    createInstanceElement(values as MetadataValues, type),
+    createInstanceElement({ values: values as MetadataValues, type, fetchProfile }),
   ]
 }
 
@@ -134,8 +136,11 @@ const getElementsFromDXFolder = async (
   const fileNames = allFiles.map(entry => path.relative(packageDir, entry.fullPath))
   const [sourceFileNames, staticFileNames] = _.partition(fileNames, name => name.endsWith('-meta.xml'))
 
+  const fetchProfile = buildFetchProfile({
+    fetchParams: { target: ['hack to make filters think this is partial fetch'] },
+  })
   const elements = await awu(sourceFileNames)
-    .flatMap(name => getElementsFromFile(packageDir, name, types, staticFileNames))
+    .flatMap(name => getElementsFromFile(packageDir, name, types, staticFileNames, fetchProfile))
     .toArray()
 
   const localFilters = allFilters
@@ -147,9 +152,7 @@ const getElementsFromDXFolder = async (
       config: {
         unsupportedSystemFields: UNSUPPORTED_SYSTEM_FIELDS,
         systemFields: SYSTEM_FIELDS,
-        fetchProfile: buildFetchProfile({
-          fetchParams: { target: ['hack to make filters think this is partial fetch'] },
-        }),
+        fetchProfile,
         elementsSource: workspaceElements,
       },
       files: {

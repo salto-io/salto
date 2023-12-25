@@ -71,6 +71,7 @@ import {
 import SalesforceClient from '../client/client'
 import { allMissingSubTypes } from './salesforce_types'
 import { defaultMissingFields } from './missing_fields'
+import { FetchProfile } from '../types'
 
 const log = logger(module)
 const { mapValuesAsync, pickAsync } = promises.object
@@ -1520,12 +1521,20 @@ const ID_FIELDS_BY_TYPE: Record<string, string[]> = {
   [INSTALLED_PACKAGE_METADATA]: [INSTANCE_FULL_NAME_FIELD, 'versionNumber'],
 }
 
-export const createInstanceElement = (
-  values: MetadataValues,
-  type: ObjectType,
-  namespacePrefix?: string,
-  annotations?: Values,
-): MetadataInstanceElement => {
+
+type CrateInstanceElementParams = {
+  values: MetadataValues
+  type: ObjectType
+  namespacePrefix?: string
+  annotations?: Values
+  fetchProfile: FetchProfile
+}
+export const createInstanceElement = ({
+  values,
+  type,
+  namespacePrefix,
+  annotations,
+}: CrateInstanceElementParams): MetadataInstanceElement => {
   const typeApiName = type.elemID.name
   const fullName = values[INSTANCE_FULL_NAME_FIELD]
   const instanceIdValues: Record<string, unknown> = _.pick(

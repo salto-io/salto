@@ -946,13 +946,17 @@ describe('Custom Objects to Object Type filter', () => {
       beforeAll(async () => {
         filter = filterCreator({ config: defaultFilterContext }) as typeof filter
 
-        testFieldSet = createInstanceElement(
-          { fullName: 'Test__c.MyFieldSet', description: 'my field set' },
-          await customObjectType.fields[NESTED_INSTANCE_VALUE_NAME.FIELD_SETS]
+        testFieldSet = createInstanceElement({
+          values: {
+            fullName: 'Test__c.MyFieldSet',
+            description:
+          'my field set',
+          },
+          type: await customObjectType.fields[NESTED_INSTANCE_VALUE_NAME.FIELD_SETS]
             .getType() as ObjectType,
-          undefined,
-          parentAnnotation,
-        )
+          annotations: parentAnnotation,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
         changes = [
           toChange({ after: testFieldSet }),
         ]
@@ -990,12 +994,16 @@ describe('Custom Objects to Object Type filter', () => {
       let changes: Change[]
       let sideEffectInst: InstanceElement
       beforeAll(() => {
-        sideEffectInst = createInstanceElement(
-          { fullName: 'SideEffect', description: 'desc' },
-          mockTypes.Layout,
-          undefined,
-          parentAnnotation,
-        )
+        sideEffectInst = createInstanceElement({
+          values: {
+            fullName: 'SideEffect',
+            description:
+          'desc',
+          },
+          type: mockTypes.Layout,
+          annotations: parentAnnotation,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
         filter = filterCreator({ config: defaultFilterContext }) as typeof filter
         changes = [
           toChange({ before: testObject }),

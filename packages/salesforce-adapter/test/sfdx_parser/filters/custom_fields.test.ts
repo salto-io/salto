@@ -105,7 +105,9 @@ describe('custom fields filter', () => {
   describe('when called with custom object instances', () => {
     let elements: InstanceElement[]
     beforeEach(async () => {
-      elements = [createInstanceElement({ fullName: 'obj__c' }, mockTypes.CustomObject)]
+      elements = [createInstanceElement({ values: { fullName: 'obj__c' },
+        type: mockTypes.CustomObject,
+        fetchProfile: defaultFilterContext.fetchProfile })]
       await filter.onFetch?.(elements)
     })
     it('should add fields to the custom object that exists', () => {

@@ -25,7 +25,7 @@ import {
 } from '@salto-io/adapter-api'
 import {
   createCustomObjectType,
-  createField,
+  createField, defaultFilterContext,
 } from '../utils'
 import { createInstanceElement } from '../../src/transformers/transformer'
 import { FIELD_ANNOTATIONS } from '../../src/constants'
@@ -63,7 +63,11 @@ describe('deletedNonQueryableFields', () => {
           fieldIsHidden: false,
           fieldIsReadOnly: false,
         })
-        const instance = createInstanceElement({ fullName: 'SomeInstance', SomeField: true }, objectType)
+        const instance = createInstanceElement({
+          values: { fullName: 'SomeInstance', SomeField: true },
+          type: objectType,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
         warnings = await changeValidator([toChange({ after: instance })])
       })
       it('should not warn', () => {
@@ -74,7 +78,11 @@ describe('deletedNonQueryableFields', () => {
 
   describe('modification change', () => {
     const createInstanceChangeForType = (objectType: ObjectType): ModificationChange<InstanceElement> => {
-      const instanceBefore = createInstanceElement({ fullName: 'SomeInstance', SomeField: true }, objectType)
+      const instanceBefore = createInstanceElement({
+        values: { fullName: 'SomeInstance', SomeField: true },
+        type: objectType,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
       const instanceAfter = instanceBefore.clone()
       instanceAfter.value.SomeField = false
       return toChange({ before: instanceBefore, after: instanceAfter }) as ModificationChange<InstanceElement>

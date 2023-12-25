@@ -26,6 +26,7 @@ import { testHelpers } from './jest_environment'
 import { mockTypes } from '../test/mock_elements'
 import { createInstanceElement, MetadataInstanceElement } from '../src/transformers/transformer'
 import { nullProgressReporter } from './utils'
+import { defaultFilterContext } from '../test/utils'
 
 describe('validation and quick deploy e2e', () => {
   // Set long timeout as we communicate with salesforce API
@@ -39,21 +40,27 @@ describe('validation and quick deploy e2e', () => {
   let apexTestInstance: MetadataInstanceElement
 
   beforeAll(async () => {
-    apexClassInstance = createInstanceElement({ fullName: 'MyApexClass',
-      apiVersion: API_VERSION,
-      content: new StaticFile({
-        filepath: 'MyApexClass.cls',
-        content: Buffer.from('public class MyApexClass {\n    public static Integer one(){\n          return 1;\n    }\n}'),
-      }) },
-    mockTypes.ApexClass)
+    apexClassInstance = createInstanceElement({
+      values: { fullName: 'MyApexClass',
+        apiVersion: API_VERSION,
+        content: new StaticFile({
+          filepath: 'MyApexClass.cls',
+          content: Buffer.from('public class MyApexClass {\n    public static Integer one(){\n          return 1;\n    }\n}'),
+        }) },
+      type: mockTypes.ApexClass,
+      fetchProfile: defaultFilterContext.fetchProfile,
+    })
 
-    apexTestInstance = createInstanceElement({ fullName: 'MyApexTest',
-      apiVersion: API_VERSION,
-      content: new StaticFile({
-        filepath: 'ApexTest.cls',
-        content: Buffer.from('@isTest\n private class MyApexTest {\n    @isTest static void inOne() {\n         System.assert(MyApexClass.one() == 1);\n    }\n}'),
-      }) },
-    mockTypes.ApexClass)
+    apexTestInstance = createInstanceElement({
+      values: { fullName: 'MyApexTest',
+        apiVersion: API_VERSION,
+        content: new StaticFile({
+          filepath: 'ApexTest.cls',
+          content: Buffer.from('@isTest\n private class MyApexTest {\n    @isTest static void inOne() {\n         System.assert(MyApexClass.one() == 1);\n    }\n}'),
+        }) },
+      type: mockTypes.ApexClass,
+      fetchProfile: defaultFilterContext.fetchProfile,
+    })
 
     changeGroup = {
       groupID: 'add test elements',

@@ -531,7 +531,11 @@ describe('Convert maps filter', () => {
     type FilterType = FilterWith<'onFetch'| 'preDeploy'>
     let filter: FilterType
     beforeAll(async () => {
-      const lwc = createInstanceElement({ fullName: 'lwc', lwcResources: { lwcResource: [{ filePath: 'lwc/dir/lwc.js', source: 'lwc.ts' }, { filePath: 'lwc/dir/__mocks__/lwc.js', source: 'lwc.ts' }] } }, mockTypes.LightningComponentBundle)
+      const lwc = createInstanceElement({
+        values: { fullName: 'lwc', lwcResources: { lwcResource: [{ filePath: 'lwc/dir/lwc.js', source: 'lwc.ts' }, { filePath: 'lwc/dir/__mocks__/lwc.js', source: 'lwc.ts' }] } },
+        type: mockTypes.LightningComponentBundle,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
       const lwcType = mockTypes.LightningComponentBundle
       elements = [lwc, lwcType]
 

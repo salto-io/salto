@@ -22,16 +22,21 @@ import { isInstanceOfType, listMetadataObjects } from './utils'
 import { INSTALLED_PACKAGE_METADATA, INSTANCE_FULL_NAME_FIELD } from '../constants'
 import { notInSkipList } from '../fetch'
 import { apiName, createInstanceElement, getAuthorAnnotations } from '../transformers/transformer'
+import { FetchProfile } from '../types'
 
 const { awu } = collections.asynciterable
 
-const createMissingInstalledPackageInstance = (file: FileProperties, installedPackageType: ObjectType): Element => (
-  createInstanceElement(
-    { [INSTANCE_FULL_NAME_FIELD]: file.fullName },
-    installedPackageType,
-    undefined,
-    getAuthorAnnotations(file)
-  )
+const createMissingInstalledPackageInstance = (
+  file: FileProperties,
+  installedPackageType: ObjectType,
+  fetchProfile: FetchProfile,
+): Element => (
+  createInstanceElement({
+    values: { [INSTANCE_FULL_NAME_FIELD]: file.fullName },
+    type: installedPackageType,
+    annotations: getAuthorAnnotations(file),
+    fetchProfile,
+  })
 )
 
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
@@ -57,7 +62,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     listResult
       .filter(file => notInSkipList(config.fetchProfile.metadataQuery, file, false))
       .filter(file => !existingInstalledPackageNamespaces.includes(file.fullName))
-      .map(file => createMissingInstalledPackageInstance(file, installedPackageType))
+      .map(file => createMissingInstalledPackageInstance(file, installedPackageType, config.fetchProfile))
       .forEach(missingInstalledPackageInstance => elements.push(missingInstalledPackageInstance))
   },
 })

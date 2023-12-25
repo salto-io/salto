@@ -40,7 +40,7 @@ import {
 } from '../../src/constants'
 import { SalesforceRecord } from '../../src/client/types'
 import { mockTypes } from '../mock_elements'
-import { createCustomObjectType } from '../utils'
+import { createCustomObjectType, defaultFilterContext } from '../utils'
 import * as filterUtilsModule from '../../src/filters/utils'
 
 jest.mock('../../src/filters/utils', () => ({
@@ -81,7 +81,11 @@ describe('unknown user change validator', () => {
     })
     let irrelevantChange: Change
     beforeEach(() => {
-      const beforeRecord = createInstanceElement({ fullName: 'someName', defaultCaseOwner: IRRELEVANT_USERNAME }, irrelevantType)
+      const beforeRecord = createInstanceElement({
+        values: { fullName: 'someName', defaultCaseOwner: IRRELEVANT_USERNAME },
+        type: irrelevantType,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
       const afterRecord = beforeRecord.clone()
       afterRecord.value.userName = ANOTHER_TEST_USERNAME
       irrelevantChange = toChange({ before: beforeRecord, after: afterRecord })
@@ -95,7 +99,11 @@ describe('unknown user change validator', () => {
   describe('when a username exists in Salesforce', () => {
     let change: Change
     beforeEach(() => {
-      const beforeRecord = createInstanceElement({ fullName: 'someName', defaultCaseUser: IRRELEVANT_USERNAME }, mockTypes.CaseSettings)
+      const beforeRecord = createInstanceElement({
+        values: { fullName: 'someName', defaultCaseUser: IRRELEVANT_USERNAME },
+        type: mockTypes.CaseSettings,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
       const afterRecord = beforeRecord.clone()
       afterRecord.value.defaultCaseUser = TEST_USERNAME
       change = toChange({ before: beforeRecord, after: afterRecord })
@@ -115,10 +123,14 @@ describe('unknown user change validator', () => {
       userField: string,
       typeField: string,
     ): InstanceElement => createInstanceElement({
-      fullName: 'someFullName',
-      [userField]: IRRELEVANT_USERNAME,
-      [typeField]: 'User',
-    }, type)
+      values: {
+        fullName: 'someFullName',
+        [userField]: IRRELEVANT_USERNAME,
+        [typeField]: 'User',
+      },
+      type,
+      fetchProfile: defaultFilterContext.fetchProfile,
+    })
 
     describe.each([
       {
@@ -219,7 +231,11 @@ describe('unknown user change validator', () => {
   describe('when a username does not exist in Salesforce', () => {
     let change: Change
     beforeEach(() => {
-      const beforeRecord = createInstanceElement({ fullName: 'someName', defaultCaseUser: IRRELEVANT_USERNAME }, mockTypes.CaseSettings)
+      const beforeRecord = createInstanceElement({
+        values: { fullName: 'someName', defaultCaseUser: IRRELEVANT_USERNAME },
+        type: mockTypes.CaseSettings,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
       const afterRecord = beforeRecord.clone()
       afterRecord.value.defaultCaseUser = ANOTHER_TEST_USERNAME
       change = toChange({ before: beforeRecord, after: afterRecord })
@@ -247,12 +263,15 @@ describe('unknown user change validator', () => {
     let change: Change
     beforeEach(() => {
       const beforeRecord = createInstanceElement({
-        fullName: 'someName',
-        defaultCaseUser: IRRELEVANT_USERNAME,
-        defaultCaseOwnerType: 'User',
-        defaultCaseOwner: TEST_USERNAME,
-      },
-      mockTypes.CaseSettings)
+        values: {
+          fullName: 'someName',
+          defaultCaseUser: IRRELEVANT_USERNAME,
+          defaultCaseOwnerType: 'User',
+          defaultCaseOwner: TEST_USERNAME,
+        },
+        type: mockTypes.CaseSettings,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
       const afterRecord = beforeRecord.clone()
       afterRecord.value.defaultCaseUser = ANOTHER_TEST_USERNAME
       change = toChange({ before: beforeRecord, after: afterRecord })
@@ -284,23 +303,26 @@ describe('unknown user change validator', () => {
     let change: Change
     beforeEach(() => {
       const beforeRecord = createInstanceElement({
-        fullName: new ElemID(SALESFORCE, 'WorkflowAlert', 'instance', 'SomeWorkflowAlert').getFullName(),
-        recipients: [
-          {
-            type: 'user',
-            recipient: TEST_USERNAME,
-          },
-          {
-            type: 'user',
-            recipient: ANOTHER_TEST_USERNAME,
-          },
-          {
-            type: 'email',
-            recipient: IRRELEVANT_USERNAME,
-          },
-        ],
-      },
-      mockTypes.WorkflowAlert)
+        values: {
+          fullName: new ElemID(SALESFORCE, 'WorkflowAlert', 'instance', 'SomeWorkflowAlert').getFullName(),
+          recipients: [
+            {
+              type: 'user',
+              recipient: TEST_USERNAME,
+            },
+            {
+              type: 'user',
+              recipient: ANOTHER_TEST_USERNAME,
+            },
+            {
+              type: 'email',
+              recipient: IRRELEVANT_USERNAME,
+            },
+          ],
+        },
+        type: mockTypes.WorkflowAlert,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
       const afterRecord = beforeRecord.clone()
       afterRecord.value.defaultCaseUser = ANOTHER_TEST_USERNAME
       change = toChange({ before: beforeRecord, after: afterRecord })
@@ -318,10 +340,14 @@ describe('unknown user change validator', () => {
     let changeErrors: readonly ChangeError[]
     describe('when the recipients field has no value', () => {
       beforeEach(async () => {
-        const instance = createInstanceElement(
-          { [INSTANCE_FULL_NAME_FIELD]: 'TestWorkflowAlert' },
-          mockTypes.WorkflowAlert
-        )
+        const instance = createInstanceElement({
+          values: {
+            [INSTANCE_FULL_NAME_FIELD]:
+          'TestWorkflowAlert',
+          },
+          type: mockTypes.WorkflowAlert,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
         changeErrors = await validator([toChange({ after: instance })])
       })
       it('should not create errors', () => {
@@ -376,28 +402,31 @@ describe('unknown user change validator', () => {
     let changeErrors: readonly ChangeError[]
     beforeEach(async () => {
       const newRecord = createInstanceElement({
-        [INSTANCE_FULL_NAME_FIELD]: 'SomeApprovalProcess',
-        approvalStep: [
-          {
-            assignedApprover: {
-              approver: {
-                name: TEST_USERNAME,
-                type: 'User',
+        values: {
+          [INSTANCE_FULL_NAME_FIELD]: 'SomeApprovalProcess',
+          approvalStep: [
+            {
+              assignedApprover: {
+                approver: {
+                  name: TEST_USERNAME,
+                  type: 'User',
+                },
               },
             },
-          },
 
-          {
-            assignedApprover: {
-              approver: {
-                name: ANOTHER_TEST_USERNAME,
-                type: 'User',
+            {
+              assignedApprover: {
+                approver: {
+                  name: ANOTHER_TEST_USERNAME,
+                  type: 'User',
+                },
               },
             },
-          },
-        ],
-      },
-      approvalProcessType)
+          ],
+        },
+        type: approvalProcessType,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
       const change = toChange({ after: newRecord })
       setupClientMock([IRRELEVANT_USERNAME])
       changeErrors = await validator([change])
@@ -446,27 +475,30 @@ describe('unknown user change validator', () => {
     let changeErrors: readonly ChangeError[]
     beforeEach(async () => {
       const newRecord = createInstanceElement({
-        fullName: 'SomeAssignmentRules',
-        assignmentRule: [
-          {
-            ruleEntry: [
-              {
-                assignedTo: TEST_USERNAME,
-                assignedToType: 'User',
-              },
-            ],
-          },
-          {
-            ruleEntry: [
-              {
-                assignedTo: ANOTHER_TEST_USERNAME,
-                assignedToType: 'User',
-              },
-            ],
-          },
-        ],
-      },
-      assignmentRulesType)
+        values: {
+          fullName: 'SomeAssignmentRules',
+          assignmentRule: [
+            {
+              ruleEntry: [
+                {
+                  assignedTo: TEST_USERNAME,
+                  assignedToType: 'User',
+                },
+              ],
+            },
+            {
+              ruleEntry: [
+                {
+                  assignedTo: ANOTHER_TEST_USERNAME,
+                  assignedToType: 'User',
+                },
+              ],
+            },
+          ],
+        },
+        type: assignmentRulesType,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
       const change = toChange({ after: newRecord })
       setupClientMock([IRRELEVANT_USERNAME])
       changeErrors = await validator([change])

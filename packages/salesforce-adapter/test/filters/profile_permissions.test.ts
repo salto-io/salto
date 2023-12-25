@@ -49,10 +49,13 @@ describe('Object Permissions filter', () => {
   const mockAdminProfile = (
     objectPermissions: ProfileInfo['objectPermissions'],
     fieldPermissions: ProfileInfo['fieldPermissions'],
-  ): InstanceElement => createInstanceElement(
-    { fullName: 'Admin', objectPermissions, fieldPermissions },
-    mockTypes.Profile,
-  )
+  ): InstanceElement => createInstanceElement({
+    values: {
+      fullName: 'Admin', objectPermissions, fieldPermissions,
+    },
+    type: mockTypes.Profile,
+    fetchProfile: defaultFilterContext.fetchProfile,
+  })
 
   let filter: FilterWith<'preDeploy' | 'onDeploy'>
 

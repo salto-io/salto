@@ -707,6 +707,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       metadataQuery: fetchProfile.metadataQuery,
       maxInstancesPerType: fetchProfile.maxInstancesPerType,
       addNamespacePrefixToFullName: fetchProfile.addNamespacePrefixToFullName,
+      fetchProfile,
     })
     return {
       elements: instances.elements,
@@ -744,7 +745,11 @@ export default class SalesforceAdapter implements AdapterOperations {
         }
         const listedElemIdsFullNames = new Set(Array.from(this.listedInstancesByType.getOrUndefined(typeName) ?? [])
           // We invoke createInstanceElement to have the correct elemID that we calculate in fetch
-          .map(fullName => createInstanceElement({ fullName }, metadataType).elemID.getFullName()))
+          .map(fullName => createInstanceElement({
+            values: { fullName },
+            type: metadataType,
+            fetchProfile,
+          }).elemID.getFullName()))
 
         elemIdsFromSource.forEach(sourceElemId => {
           if (!listedElemIdsFullNames.has(sourceElemId.getFullName())) {

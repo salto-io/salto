@@ -19,6 +19,7 @@ import flowsChangeValidator from '../../src/change_validators/flows'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
 import mockClient from '../client'
+import { defaultFilterContext } from '../utils'
 
 describe('flows change validator', () => {
   let flowChanges: Change
@@ -30,7 +31,12 @@ describe('flows change validator', () => {
     let statusChange: InstanceElement
     let otherModifications: InstanceElement
     beforeEach(() => {
-      beforeRecord = createInstanceElement({ fullName: 'flow1', status: 'Active', actionType: 'quick' }, mockTypes.Flow)
+      beforeRecord = createInstanceElement({
+        values: { fullName: 'flow1', status: 'Active', actionType: 'quick' },
+        type: mockTypes.Flow,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
+
       statusChange = beforeRecord.clone()
       statusChange.value.status = 'Obsolete'
       otherModifications = statusChange.clone()
@@ -61,7 +67,11 @@ describe('flows change validator', () => {
   })
   describe('adding and editing an active flow', () => {
     beforeEach(() => {
-      const beforeRecord = createInstanceElement({ fullName: 'flow2', status: 'Active', actionType: 'quick' }, mockTypes.Flow)
+      const beforeRecord = createInstanceElement({
+        values: { fullName: 'flow2', status: 'Active', actionType: 'quick' },
+        type: mockTypes.Flow,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
       const afterRecord = beforeRecord.clone()
       afterRecord.value.actionType = 'case'
       flowChanges = toChange({ before: beforeRecord, after: afterRecord })
@@ -80,8 +90,12 @@ describe('flows change validator', () => {
       })
     })
     describe('non-sandbox env', () => {
-      const flowSettings = createInstanceElement({ fullName: '',
-        enableFlowDeployAsActiveEnabled: true }, mockTypes.FlowSettings)
+      const flowSettings = createInstanceElement({
+        values: { fullName: '',
+          enableFlowDeployAsActiveEnabled: true },
+        type: mockTypes.FlowSettings,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
       const elementsSource = buildElementsSourceFromElements([flowSettings])
       // const elementsSources = elementSource.createInMemoryElementSource([flowSettings])
       beforeEach(() => {
@@ -111,7 +125,11 @@ describe('flows change validator', () => {
       })
       describe('activating a flow', () => {
         beforeEach(() => {
-          const beforeRecord = createInstanceElement({ fullName: 'flow3', status: 'Draft', actionType: 'quick' }, mockTypes.Flow)
+          const beforeRecord = createInstanceElement({
+            values: { fullName: 'flow3', status: 'Draft', actionType: 'quick' },
+            type: mockTypes.Flow,
+            fetchProfile: defaultFilterContext.fetchProfile,
+          })
           const afterRecord = beforeRecord.clone()
           afterRecord.value.status = 'Active'
           flowChanges = toChange({ before: beforeRecord, after: afterRecord })
@@ -135,7 +153,11 @@ describe('flows change validator', () => {
       })
       describe('adding an active flow', () => {
         beforeEach(() => {
-          const afterRecord = createInstanceElement({ fullName: 'flow2', status: 'Active', actionType: 'quick' }, mockTypes.Flow)
+          const afterRecord = createInstanceElement({
+            values: { fullName: 'flow2', status: 'Active', actionType: 'quick' },
+            type: mockTypes.Flow,
+            fetchProfile: defaultFilterContext.fetchProfile,
+          })
           flowChanges = toChange({ after: afterRecord })
         })
         it('should have post deploy action regarding the new flow version', async () => {
@@ -164,7 +186,11 @@ describe('flows change validator', () => {
       changeValidator = flowsChangeValidator(
         { }, false, client
       )
-      const beforeRecord = createInstanceElement({ fullName: 'flow', status: 'Active' }, mockTypes.Flow)
+      const beforeRecord = createInstanceElement({
+        values: { fullName: 'flow', status: 'Active' },
+        type: mockTypes.Flow,
+        fetchProfile: defaultFilterContext.fetchProfile,
+      })
       flowChanges = toChange({ before: beforeRecord })
     })
 
@@ -185,7 +211,11 @@ describe('flows change validator', () => {
     })
     describe('add a new draft flow', () => {
       beforeEach(() => {
-        const afterRecord = createInstanceElement({ fullName: 'flow', status: 'Draft', actionType: 'quick' }, mockTypes.Flow)
+        const afterRecord = createInstanceElement({
+          values: { fullName: 'flow', status: 'Draft', actionType: 'quick' },
+          type: mockTypes.Flow,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
         flowChanges = toChange({ after: afterRecord })
       })
       it('should not throw any error', async () => {
@@ -197,7 +227,11 @@ describe('flows change validator', () => {
     })
     describe('edit draft flow', () => {
       beforeEach(() => {
-        const beforeRecord = createInstanceElement({ fullName: 'flow', status: 'Draft', actionType: 'quick' }, mockTypes.Flow)
+        const beforeRecord = createInstanceElement({
+          values: { fullName: 'flow', status: 'Draft', actionType: 'quick' },
+          type: mockTypes.Flow,
+          fetchProfile: defaultFilterContext.fetchProfile,
+        })
         const afterRecord = beforeRecord.clone()
         afterRecord.value.actionType = 'fast'
         flowChanges = toChange({ before: beforeRecord, after: afterRecord })

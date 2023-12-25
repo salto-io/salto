@@ -110,6 +110,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
           fileProps: [info],
           metadataQuery: config.fetchProfile.metadataQuery,
           maxInstancesPerType: config.fetchProfile.maxInstancesPerType,
+          fetchProfile: config.fetchProfile,
         }))
     )
     const settingsInstances = settingsInstanceCreateResults.flatMap(res => res.elements)

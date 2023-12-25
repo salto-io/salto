@@ -168,6 +168,7 @@ describe('workflowFilter', () => {
       expect(errors).toBeDefined()
       expect(errors).toHaveLength(1)
       expect(errors[0].message).toEqual('JiraWorkflow type was not found')
+      expect(errors[0].severity).toEqual('Error')
     })
     it('should fail when id response data is not valid', async () => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
@@ -190,6 +191,7 @@ describe('workflowFilter', () => {
       expect(errors).toBeDefined()
       expect(errors).toHaveLength(1)
       expect(errors[0].message).toEqual('Received an invalid workflow response from service')
+      expect(errors[0].severity).toEqual('Error')
     })
     it('should throw when response status is not 200', async () => {
       connection.post.mockResolvedValue({
@@ -202,6 +204,7 @@ describe('workflowFilter', () => {
       expect(errors).toBeDefined()
       expect(errors).toHaveLength(1)
       expect(errors[0].message).toEqual('Failed to fetch workflows with error code 400.')
+      expect(errors[0].severity).toEqual('Error')
     })
     it('should throw when response data is not valid', async () => {
       connection.post.mockResolvedValue({
@@ -218,6 +221,7 @@ describe('workflowFilter', () => {
       expect(errors).toBeDefined()
       expect(errors).toHaveLength(1)
       expect(errors[0].message).toEqual('Received an invalid workflow response from service.')
+      expect(errors[0].severity).toEqual('Error')
     })
   })
 })

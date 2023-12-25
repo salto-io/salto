@@ -32,7 +32,12 @@ const { getTransformationConfigByType } = configUtils
 
 type WorkflowIdsOrFilterResult = {
   workflowIds?: string[]
-  errors: SaltoError[]
+  errors?: SaltoError[]
+}
+
+type WorkflowInstancesOrFilterResult = {
+  workflowInstances?: InstanceElement[]
+  errors?: SaltoError[]
 }
 
 const fetchWorkflowIds = async (paginator: clientUtils.Paginator): Promise<WorkflowIdsOrFilterResult> => {
@@ -48,19 +53,18 @@ const fetchWorkflowIds = async (paginator: clientUtils.Paginator): Promise<Workf
     return {
       errors: [{
         message: 'Received an invalid workflow response from service',
-        severity: 'Warning',
+        severity: 'Error',
       }],
     }
   }
-  return { workflowIds: workflowValues.map(value => value.id.entityId), errors: [] }
+  return { workflowIds: workflowValues.map(value => value.id.entityId) }
 }
 
-const createWorkspaceInstance = async (
+const createWorkflowInstances = async (
   client: JiraClient,
   workflowIds: string[],
   jiraWorkflowType: ObjectType,
-  errors: SaltoError[])
-: Promise<InstanceElement[] | undefined> => {
+): Promise<WorkflowInstancesOrFilterResult> => {
   const response = await client.post({
     url: '/rest/api/3/workflows',
     data: {
@@ -68,20 +72,22 @@ const createWorkspaceInstance = async (
     },
   })
   if (response.status !== 200) {
-    errors.push({
-      message: `Failed to fetch workflows with error code ${response.status}.`,
-      severity: 'Warning',
-    })
-    return undefined
+    return {
+      errors: [{
+        message: `Failed to fetch workflows with error code ${response.status}.`,
+        severity: 'Error',
+      }],
+    }
   }
   if (!isWorkflowResponse(response.data)) {
-    errors.push({
-      message: 'Received an invalid workflow response from service.',
-      severity: 'Warning',
-    })
-    return undefined
+    return {
+      errors: [{
+        message: 'Received an invalid workflow response from service.',
+        severity: 'Error',
+      }],
+    }
   }
-  return Promise.all(response.data.workflows.map(workflow => (
+  const workflowInstances = await Promise.all(response.data.workflows.map(workflow => (
     toBasicInstance({
       entry: workflow,
       type: jiraWorkflowType,
@@ -90,6 +96,7 @@ const createWorkspaceInstance = async (
       defaultName: workflow.name,
     })
   )))
+  return { workflowInstances }
 }
 
 
@@ -97,17 +104,17 @@ const createWorkspaceInstance = async (
 const filter: FilterCreator = ({ config, client, paginator, fetchQuery }) => ({
   name: 'jiraWorkflowFilter',
   onFetch: async (elements: Element[]) => {
-    const errors: SaltoError[] = []
     if (!config.fetch.enableNewWorkflowAPI || !fetchQuery.isTypeMatch(JIRA_WORKFLOW_TYPE)) {
-      return { errors }
+      return { errors: [] }
     }
     const jiraWorkflow = findObject(elements, JIRA_WORKFLOW_TYPE)
     if (jiraWorkflow === undefined) {
-      errors.push({
-        message: 'JiraWorkflow type was not found',
-        severity: 'Warning',
-      })
-      return { errors }
+      return {
+        errors: [{
+          message: 'JiraWorkflow type was not found',
+          severity: 'Error',
+        }],
+      }
     }
     setTypeDeploymentAnnotations(jiraWorkflow)
     await addAnnotationRecursively(jiraWorkflow, CORE_ANNOTATIONS.CREATABLE)
@@ -115,12 +122,16 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery }) => ({
     await addAnnotationRecursively(jiraWorkflow, CORE_ANNOTATIONS.DELETABLE)
     const { workflowIds, errors: fetchWorkflowIdsErrors } = await fetchWorkflowIds(paginator)
     if (!_.isEmpty(fetchWorkflowIdsErrors)) {
-      errors.push(...fetchWorkflowIdsErrors)
-      return { errors }
+      return { errors: fetchWorkflowIdsErrors }
     }
     const workflowChunks = _.chunk(workflowIds, CHUNK_SIZE)
+    const errors: SaltoError[] = []
     await awu(workflowChunks).forEach(async chunk => {
-      elements.push(...(await createWorkspaceInstance(client, chunk, jiraWorkflow, errors)) ?? [])
+      const { workflowInstances, errors: createWorkflowInstancesErrors } = await createWorkflowInstances(
+        client, chunk, jiraWorkflow
+      )
+      errors.push(...(createWorkflowInstancesErrors ?? []))
+      elements.push(...(workflowInstances ?? []))
     })
     return { errors }
   },

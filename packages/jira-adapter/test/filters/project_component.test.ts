@@ -67,7 +67,7 @@ describe('projectComponentFilter', () => {
       'instance',
       type,
       {},
-      [JIRA, elementUtils.RECORDS_PATH, 'Project', 'Software', 'proj1', 'components', 'instance'],
+      [JIRA, elementUtils.RECORDS_PATH, 'Project', 'proj1', 'components', 'instance'],
       {
         [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(projectInstance.elemID, projectInstance)],
       }
@@ -103,7 +103,7 @@ describe('projectComponentFilter', () => {
     it('should not change path if there is no parent', async () => {
       delete instance.annotations[CORE_ANNOTATIONS.PARENT]
       await filter.onFetch([type, instance])
-      expect(instance.path).toEqual([JIRA, elementUtils.RECORDS_PATH, 'Project', 'Software', 'proj1', 'components', 'instance'])
+      expect(instance.path).toEqual([JIRA, elementUtils.RECORDS_PATH, 'Project', 'proj1', 'components', 'instance'])
     })
   })
 

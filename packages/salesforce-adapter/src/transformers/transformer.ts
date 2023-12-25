@@ -1534,11 +1534,14 @@ export const createInstanceElement = ({
   type,
   namespacePrefix,
   annotations,
+  fetchProfile,
 }: CrateInstanceElementParams): MetadataInstanceElement => {
   const typeApiName = type.elemID.name
   const fullName = values[INSTANCE_FULL_NAME_FIELD]
+  const typeIdFields = ID_FIELDS_BY_TYPE[typeApiName] ?? [INSTANCE_FULL_NAME_FIELD]
   const instanceIdValues: Record<string, unknown> = _.pick(
-    values, ID_FIELDS_BY_TYPE[typeApiName] ?? [INSTANCE_FULL_NAME_FIELD]
+    values,
+    fetchProfile.isFeatureEnabled('installedPackageWithVersion') ? typeIdFields : [INSTANCE_FULL_NAME_FIELD]
   )
   const getPackagePath = (): string[] => {
     if (namespacePrefix) {

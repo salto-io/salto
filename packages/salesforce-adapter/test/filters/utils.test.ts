@@ -755,4 +755,40 @@ describe('filter utils', () => {
       })
     })
   })
+  describe('createInstanceElement', () => {
+    describe('InstalledPackage instances', () => {
+      describe('when the feature installedPackageWithVersion is enabled', () => {
+        it('should create instance with ElemID that contains the versionNumber', () => {
+          const instance = createInstanceElement({
+            type: mockTypes.InstalledPackage,
+            values: {
+              [INSTANCE_FULL_NAME_FIELD]: 'Test',
+              versionNumber: '130.12',
+            },
+            fetchProfile: {
+              ...defaultFilterContext.fetchProfile,
+              isFeatureEnabled: (feature: string) => feature === 'installedPackageWithVersion',
+            },
+          })
+          expect(instance.elemID.getFullName()).toEqual('salesforce.InstalledPackage.instance.Test_130_12@uv')
+        })
+        describe('when the feature installedPackageWithVersion is disabled', () => {
+          it('should not create instance with ElemID that contains the versionNumber', () => {
+            const instance = createInstanceElement({
+              type: mockTypes.InstalledPackage,
+              values: {
+                [INSTANCE_FULL_NAME_FIELD]: 'Test',
+                versionNumber: '130.12',
+              },
+              fetchProfile: {
+                ...defaultFilterContext.fetchProfile,
+                isFeatureEnabled: (_feature: string) => false,
+              },
+            })
+            expect(instance.elemID.getFullName()).toEqual('salesforce.InstalledPackage.instance.Test')
+          })
+        })
+      })
+    })
+  })
 })

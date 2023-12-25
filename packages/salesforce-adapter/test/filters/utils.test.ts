@@ -759,7 +759,7 @@ describe('filter utils', () => {
     describe('InstalledPackage instances', () => {
       describe('when the feature installedPackageWithVersion is enabled', () => {
         it('should create instance with ElemID that contains the versionNumber', () => {
-          const instance = createInstanceElement({
+          const instanceWithVersion = createInstanceElement({
             type: mockTypes.InstalledPackage,
             values: {
               [INSTANCE_FULL_NAME_FIELD]: 'Test',
@@ -770,7 +770,22 @@ describe('filter utils', () => {
               isFeatureEnabled: (feature: string) => feature === 'installedPackageWithVersion',
             },
           })
-          expect(instance.elemID.getFullName()).toEqual('salesforce.InstalledPackage.instance.Test_130_12@uv')
+          // This is relevant for InstalledPackage instances that were created as part of the
+          // create_missing_installed_packages_instances filter where we don't have a versionNumber value.
+          const instanceWithoutVersion = createInstanceElement({
+            type: mockTypes.InstalledPackage,
+            values: {
+              [INSTANCE_FULL_NAME_FIELD]: 'Test2',
+            },
+            fetchProfile: {
+              ...defaultFilterContext.fetchProfile,
+              isFeatureEnabled: (feature: string) => feature === 'installedPackageWithVersion',
+            },
+          })
+          expect(instanceWithVersion.elemID.getFullName())
+            .toEqual('salesforce.InstalledPackage.instance.Test_130_12@uv')
+          expect(instanceWithoutVersion.elemID.getFullName())
+            .toEqual('salesforce.InstalledPackage.instance.Test2')
         })
         describe('when the feature installedPackageWithVersion is disabled', () => {
           it('should not create instance with ElemID that contains the versionNumber', () => {

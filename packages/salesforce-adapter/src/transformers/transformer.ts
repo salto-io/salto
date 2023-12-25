@@ -1538,10 +1538,13 @@ export const createInstanceElement = ({
 }: CrateInstanceElementParams): MetadataInstanceElement => {
   const typeApiName = type.elemID.name
   const fullName = values[INSTANCE_FULL_NAME_FIELD]
-  const typeIdFields = ID_FIELDS_BY_TYPE[typeApiName] ?? [INSTANCE_FULL_NAME_FIELD]
-  const instanceIdValues: Record<string, unknown> = _.pick(
-    values,
-    fetchProfile.isFeatureEnabled('installedPackageWithVersion') ? typeIdFields : [INSTANCE_FULL_NAME_FIELD]
+  const typeIdFields = fetchProfile.isFeatureEnabled('installedPackageWithVersion')
+    ? ID_FIELDS_BY_TYPE[typeApiName] ?? [INSTANCE_FULL_NAME_FIELD]
+    : [INSTANCE_FULL_NAME_FIELD]
+  const instanceIdValues: Record<string, unknown> = Object.fromEntries(
+    typeIdFields
+      .map(idField => [idField, values[idField]])
+      .filter(([_idField, idValue]) => idValue !== undefined)
   )
   const getPackagePath = (): string[] => {
     if (namespacePrefix) {

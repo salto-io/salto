@@ -13,22 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, Values, Element } from '@salto-io/adapter-api'
-import { createReference } from '../../utils'
-import { FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
-import { JIRA } from '../../../src/constants'
+import { Values } from '@salto-io/adapter-api'
 
 export const createFieldConfigurationValues = (
   name: string,
-  allElements: Element[],
 ): Values => ({
   name,
   description: name,
   fields: {
     Assignee__user: {
-      id: createReference(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Assignee__user'), allElements),
       description: 'For example operating system, software platform and/or hardware specifications (include as appropriate for the issue).',
-      isHidden: true,
+      isHidden: false,
       isRequired: false,
     },
   },

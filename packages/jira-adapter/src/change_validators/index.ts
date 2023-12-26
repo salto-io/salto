@@ -54,6 +54,7 @@ import { sameIssueTypeNameChangeValidator } from './same_issue_type_name'
 import { issueTypeSchemeMigrationValidator } from './issue_type_scheme_migration'
 import { issueTypeDeletionValidator } from './issue_type_deletion'
 import { projectCategoryValidator } from './project_category'
+import { unresolvedFieldConfigurationItemsValidator } from './unresolved_field_configuration_items'
 import { fieldSecondGlobalContextValidator } from './field_contexts/second_global_context'
 import { customFieldsWith10KOptionValidator } from './field_contexts/custom_field_with_10K_options'
 import { issueTypeHierarchyValidator } from './issue_type_hierarchy'
@@ -112,6 +113,7 @@ export default (
     workflowTransitionDuplicateName: workflowTransitionDuplicateNameValidator,
     permissionSchemeDeployment: permissionSchemeDeploymentValidator(client),
     projectCategory: projectCategoryValidator(client),
+    unresolvedFieldConfigurationItems: unresolvedFieldConfigurationItemsValidator,
     customFieldsWith10KOptions: customFieldsWith10KOptionValidator,
     issueTypeHierarchy: issueTypeHierarchyValidator,
     automationProjects: automationProjectsValidator,

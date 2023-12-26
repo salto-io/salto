@@ -167,7 +167,7 @@ describe('workflowFilter', () => {
       const errors = filterResult.errors ?? []
       expect(errors).toBeDefined()
       expect(errors).toHaveLength(1)
-      expect(errors[0].message).toEqual('JiraWorkflow type was not found')
+      expect(errors[0].message).toEqual('Failed to fetch Workflows.')
       expect(errors[0].severity).toEqual('Error')
     })
     it('should fail when id response data is not valid', async () => {
@@ -190,20 +190,17 @@ describe('workflowFilter', () => {
       const errors = filterResult?.errors ?? []
       expect(errors).toBeDefined()
       expect(errors).toHaveLength(1)
-      expect(errors[0].message).toEqual('Received an invalid workflow response from service')
+      expect(errors[0].message).toEqual('Failed to fetch Workflows.')
       expect(errors[0].severity).toEqual('Error')
     })
-    it('should throw when response status is not 200', async () => {
-      connection.post.mockResolvedValue({
-        status: 400,
-        data: {},
-      })
+    it('should fail when bulk get post request is rejected', async () => {
+      connection.post.mockRejectedValue(new Error('code 400'))
       const elements = [workflowType]
       const filterResult = await filter.onFetch(elements) as FilterResult
       const errors = filterResult?.errors ?? []
       expect(errors).toBeDefined()
       expect(errors).toHaveLength(1)
-      expect(errors[0].message).toEqual('Failed to fetch workflows with error code 400.')
+      expect(errors[0].message).toEqual('Failed to fetch Workflows: Failed to post /rest/api/3/workflows with error: Error: code 400.')
       expect(errors[0].severity).toEqual('Error')
     })
     it('should throw when response data is not valid', async () => {
@@ -220,7 +217,7 @@ describe('workflowFilter', () => {
       const errors = filterResult?.errors ?? []
       expect(errors).toBeDefined()
       expect(errors).toHaveLength(1)
-      expect(errors[0].message).toEqual('Received an invalid workflow response from service.')
+      expect(errors[0].message).toEqual('Failed to fetch Workflows.')
       expect(errors[0].severity).toEqual('Error')
     })
   })

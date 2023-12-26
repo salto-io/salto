@@ -1211,6 +1211,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'name', fieldType: 'string' },
+        // JiraWorkflow fieldType exists in the swagger but not as a get response
+        // this line creates the type despite that
         { fieldName: 'tempWorkflowType', fieldType: 'JiraWorkflow' },
       ],
       idFields: ['name'],

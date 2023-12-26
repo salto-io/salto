@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { elements as adapterElements, config as configUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { CORE_ANNOTATIONS, Element, InstanceElement, ObjectType, SaltoError } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
@@ -25,10 +26,18 @@ import { JIRA_WORKFLOW_TYPE } from '../../constants'
 import JiraClient from '../../client/client'
 
 
+const log = logger(module)
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 const { toBasicInstance } = adapterElements
 const { getTransformationConfigByType } = configUtils
+
+const workflowFetchError = (errorMessage?: string): SaltoError => ({
+  message: errorMessage
+    ? `Failed to fetch Workflows: ${errorMessage}.`
+    : 'Failed to fetch Workflows.',
+  severity: 'Error',
+})
 
 type WorkflowIdsOrFilterResult = {
   workflowIds?: string[]
@@ -51,10 +60,7 @@ const fetchWorkflowIds = async (paginator: clientUtils.Paginator): Promise<Workf
   )).flat().toArray()
   if (!isWorkflowIdsResponse(workflowValues)) {
     return {
-      errors: [{
-        message: 'Received an invalid workflow response from service',
-        severity: 'Error',
-      }],
+      errors: [workflowFetchError()],
     }
   }
   return { workflowIds: workflowValues.map(value => value.id.entityId) }
@@ -65,42 +71,39 @@ const createWorkflowInstances = async (
   workflowIds: string[],
   jiraWorkflowType: ObjectType,
 ): Promise<WorkflowInstancesOrFilterResult> => {
-  const response = await client.post({
-    url: '/rest/api/3/workflows',
-    data: {
-      workflowIds,
-    },
-  })
-  if (response.status !== 200) {
-    return {
-      errors: [{
-        message: `Failed to fetch workflows with error code ${response.status}.`,
-        severity: 'Error',
-      }],
-    }
-  }
-  if (!isWorkflowResponse(response.data)) {
-    return {
-      errors: [{
-        message: 'Received an invalid workflow response from service.',
-        severity: 'Error',
-      }],
-    }
-  }
-  const workflowInstances = await Promise.all(response.data.workflows.map(workflow => (
-    toBasicInstance({
-      entry: workflow,
-      type: jiraWorkflowType,
-      transformationConfigByType: getTransformationConfigByType(DEFAULT_API_DEFINITIONS.types),
-      transformationDefaultConfig: DEFAULT_API_DEFINITIONS.typeDefaults.transformation,
-      defaultName: workflow.name,
+  try {
+    // The GET response content is limited, we are using a POST request to obtain the necessary additional information.
+    const response = await client.post({
+      url: '/rest/api/3/workflows',
+      data: {
+        workflowIds,
+      },
     })
-  )))
-  return { workflowInstances }
+    if (!isWorkflowResponse(response.data)) {
+      return {
+        errors: [workflowFetchError()],
+      }
+    }
+    const workflowInstances = await Promise.all(response.data.workflows.map(workflow => (
+      toBasicInstance({
+        entry: workflow,
+        type: jiraWorkflowType,
+        transformationConfigByType: getTransformationConfigByType(DEFAULT_API_DEFINITIONS.types),
+        transformationDefaultConfig: DEFAULT_API_DEFINITIONS.typeDefaults.transformation,
+        defaultName: workflow.name,
+      })
+    )))
+    return { workflowInstances }
+  } catch (error) {
+    return {
+      errors: [workflowFetchError(error.message)],
+    }
+  }
 }
 
-
-// This filter uses the new workflow API to fetch workflows
+/*
+* This filter uses the new workflow API to fetch workflows
+*/
 const filter: FilterCreator = ({ config, client, paginator, fetchQuery }) => ({
   name: 'jiraWorkflowFilter',
   onFetch: async (elements: Element[]) => {
@@ -109,11 +112,9 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery }) => ({
     }
     const jiraWorkflow = findObject(elements, JIRA_WORKFLOW_TYPE)
     if (jiraWorkflow === undefined) {
+      log.error('JiraWorkflow type was not found')
       return {
-        errors: [{
-          message: 'JiraWorkflow type was not found',
-          severity: 'Error',
-        }],
+        errors: [workflowFetchError()],
       }
     }
     setTypeDeploymentAnnotations(jiraWorkflow)

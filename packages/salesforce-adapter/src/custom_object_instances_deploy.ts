@@ -64,14 +64,16 @@ type InstanceAndResult = {
   result: BatchResultInfo
 }
 
-const logErroredInstances = (instancesAndResults: InstanceAndResult[]): void => (
+type ErrorType = 'recoverable' | 'fatal' | 'given-up-on-recoverable'
+
+const logErroredInstances = (instancesAndResults: InstanceAndResult[], errorType: ErrorType): void => (
   instancesAndResults.forEach(({ instance, result }) => {
     if (result.errors !== undefined) {
-      log.error(`Instance ${instance.elemID.getFullName()} had deploy errors - ${['', ...result.errors].join('\n\t')}
-
-and values -
-${inspectValue(instance.value)}
-`)
+      log.error('Instance %s had %s deploy errors - %s and values - %o',
+        instance.elemID.getFullName(),
+        errorType,
+        ['', ...result.errors].join('\n\t'),
+        inspectValue(instance.value))
     }
   })
 )
@@ -88,10 +90,10 @@ const getErrorInstancesFromInstAndResults = (instancesAndResults: InstanceAndRes
         } as SaltoElementError))
       : []))
 
-const getAndLogErrors = (instancesAndResults: InstanceAndResult[]): SaltoElementError[] => {
+const getAndLogErrors = (instancesAndResults: InstanceAndResult[], errorType: ErrorType): SaltoElementError[] => {
   const errored = instancesAndResults
     .filter(({ result }) => !result.success && result.errors !== undefined)
-  logErroredInstances(errored)
+  logErroredInstances(errored, errorType)
   return getErrorInstancesFromInstAndResults(errored)
 }
 
@@ -242,7 +244,7 @@ export const retryFlow = async (
   const [recoverable, notRecoverable] = _.partition(failed, isRetryableErr(retryableFailures))
 
   successes = successes.concat(succeeded.map(instAndRes => instAndRes.instance))
-  errors = errors.concat(getAndLogErrors(notRecoverable))
+  errors = errors.concat(getAndLogErrors(notRecoverable, 'fatal'))
 
   if (_.isEmpty(recoverable)) {
     return { successInstances: successes, errorInstances: errors }
@@ -250,14 +252,14 @@ export const retryFlow = async (
   if (retriesLeft === 0) {
     return {
       successInstances: successes,
-      errorInstances: errors.concat(getAndLogErrors(recoverable)),
+      errorInstances: errors.concat(getAndLogErrors(recoverable, 'given-up-on-recoverable')),
     }
   }
 
   await sleep(retryDelay)
 
-  log.debug(`in custom object deploy retry-flow. retries left: ${retriesLeft},
-                  remaining retryable failures are: ${recoverable}`)
+  log.debug('in custom object deploy retry-flow. retries left: %d', retriesLeft)
+  logErroredInstances(recoverable, 'recoverable')
 
   const { successInstances, errorInstances } = await retryFlow(
     crudFn,

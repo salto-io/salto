@@ -19,7 +19,6 @@ import { createReference } from '../../utils'
 import { JIRA } from '../../../src/constants'
 
 export const createIssueLayoutValues = (allElements: Element[]): Values => ({
-  projectId: createReference(new ElemID(JIRA, 'Project', 'instance', 'Test_Project@s'), allElements),
   extraDefinerId: createReference(new ElemID(JIRA, 'Screen', 'instance', 'TP__Kanban_Default_Issue_Screen@fssss'), allElements),
   issueLayoutConfig: {
     items: [

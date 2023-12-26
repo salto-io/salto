@@ -143,6 +143,8 @@ export const createInstances = (
     'Test_Project_TP__Kanban_Default_Issue_Screen@sufssss',
     findType('IssueLayout', fetchedElements),
     createIssueLayoutValues(fetchedElements),
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [createReference(new ElemID(JIRA, 'Project', 'instance', 'Test_Project@s'), fetchedElements)] }
   )
   // const behavior = new InstanceElement(
   //   randomString,

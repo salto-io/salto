@@ -912,7 +912,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: ISSUE_TYPE_NAME },
   },
   {
-    src: { field: 'projectId', parentTypes: [ISSUE_LAYOUT_TYPE, REQUEST_FORM_TYPE, ISSUE_VIEW_TYPE] },
+    src: { field: 'projectId', parentTypes: [REQUEST_FORM_TYPE, ISSUE_VIEW_TYPE] },
     serializationStrategy: 'id',
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: PROJECT_TYPE },

@@ -233,7 +233,6 @@ export type ChangeValidatorName = (
   | 'workflowTransitionDuplicateName'
   | 'permissionSchemeDeployment'
   | 'projectCategory'
-  | 'unresolvedFieldConfigurationItems'
   | 'customFieldsWith10KOptions'
   | 'issueTypeHierarchy'
   | 'automationProjects'
@@ -286,7 +285,6 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     workflowTransitionDuplicateName: { refType: BuiltinTypes.BOOLEAN },
     permissionSchemeDeployment: { refType: BuiltinTypes.BOOLEAN },
     projectCategory: { refType: BuiltinTypes.BOOLEAN },
-    unresolvedFieldConfigurationItems: { refType: BuiltinTypes.BOOLEAN },
     customFieldsWith10KOptions: { refType: BuiltinTypes.BOOLEAN },
     issueTypeHierarchy: { refType: BuiltinTypes.BOOLEAN },
     automationProjects: { refType: BuiltinTypes.BOOLEAN },

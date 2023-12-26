@@ -40,9 +40,10 @@ const filter: FilterCreator = ({ client, config }) => ({
         try {
           const parentPath = getParent(instance).path
           if (parentPath === undefined || instance.path === undefined) {
+            log.error(`failed to get path for ${instance.elemID.getFullName()} or its parent`)
             return
           }
-          instance.path = [...parentPath?.slice(0, -1), 'components', ...instance.path?.slice(-1,)]
+          instance.path = [...parentPath.slice(0, -1), 'components', ...instance.path.slice(-1,)]
         } catch (err) {
           log.error('failed to get parent path for %s: %o', instance.elemID.getFullName(), err)
         }

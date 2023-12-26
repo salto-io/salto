@@ -47,10 +47,11 @@ const changeProjectPath = (
   projectTypesKeysToFormatedKeys: Record<string, string>
 ): void => {
   if (instance.path === undefined) {
+    log.error(`Cannot change instance's path, because instance ${instance.elemID.name} path is undefined`)
     return
   }
   const subPath = projectTypesKeysToFormatedKeys[instance.value.projectTypeKey] ?? 'Other'
-  instance.path = [...instance.path?.slice(0, -2), subPath, ...instance.path?.slice(-2,)]
+  instance.path = [...instance.path.slice(0, -2), subPath, ...instance.path.slice(-2,)]
 }
 
 const deployScheme = async (

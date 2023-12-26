@@ -13,53 +13,27 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-import { CORE_ANNOTATIONS, ElemID, Field, getChangeData, InstanceElement, isInstanceElement, MapType, ReadOnlyElementsSource, ReferenceExpression, Value, Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { collections, values } from '@salto-io/lowerdash'
-import { logger } from '@salto-io/logging'
+import { CORE_ANNOTATIONS, Field, getChangeData, InstanceElement, isInstanceElement, MapType, Values } from '@salto-io/adapter-api'
 import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
-import { FIELD_CONFIGURATION_TYPE_NAME, JIRA } from '../../constants'
-import { FIELD_TYPE_NAME } from '../fields/constants'
-
-const log = logger(module)
-
-const { awu } = collections.asynciterable
+import { FIELD_CONFIGURATION_TYPE_NAME } from '../../constants'
 
 const replaceToMap = (instance: InstanceElement): void => {
-  instance.value.fields = Object.fromEntries(instance.value.fields
-    .filter((field: Values) => isResolvedReferenceExpression(field.id))
-    .map((field: Values) => [
-      field.id.elemID.name,
-      _.omit(field, 'id'),
-    ]))
+  instance.value.fields = _.keyBy(
+    instance.value.fields.filter((field: Values) => isResolvedReferenceExpression(field.id)),
+    field => field.id.elemID.name,
+  )
 }
 
-const replaceFromMap = async (
+const replaceFromMap = (
   instance: InstanceElement,
-  elementSource: ReadOnlyElementsSource,
-): Promise<void> => {
-  instance.value.fields = await awu(Object.entries(instance.value.fields))
-    .map(async ([id, config]: [string, Value]) => {
-      const elemId = new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', id)
-      const fieldInstance = await elementSource.get(elemId)
-      if (fieldInstance === undefined) {
-        log.debug(`Omitting element id ${elemId.getFullName()} from ${instance.elemID.getFullName()} since it does not exist in the account`)
-        return undefined
-      }
-      return {
-        id: new ReferenceExpression(elemId, fieldInstance),
-        ...config,
-      }
-    })
-    .filter(values.isDefined)
-    .toArray()
+): void => {
+  instance.value.fields = Object.values(instance.value.fields)
 }
 
-
-const filter: FilterCreator = ({ config, elementsSource }) => ({
+const filter: FilterCreator = ({ config }) => ({
   name: 'replaceFieldConfigurationReferences',
   onFetch: async elements => {
     if (config.fetch.splitFieldConfiguration) {
@@ -93,12 +67,12 @@ const filter: FilterCreator = ({ config, elementsSource }) => ({
       return
     }
 
-    await awu(changes)
+    changes
       .map(getChangeData)
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
       .filter(instance => instance.value.fields !== undefined)
-      .forEach(async instance => replaceFromMap(instance, elementsSource))
+      .forEach(replaceFromMap)
   },
 
   onDeploy: async changes => {

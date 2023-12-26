@@ -87,6 +87,10 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
       await filter.onFetch?.([instance, fieldConfigType])
       expect(instance.value.fields).toEqual({
         fieldInstance: {
+          id: new ReferenceExpression(
+            new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'fieldInstance'),
+            {}
+          ),
           isRequired: true,
         },
       })
@@ -112,6 +116,10 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
         {
           fields: {
             fieldInstance: {
+              id: new ReferenceExpression(
+                new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'fieldInstance'),
+                {}
+              ),
               isRequired: true,
             },
           },
@@ -124,23 +132,13 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
       await filter.onDeploy?.([toChange({ after: instance })])
       expect(instance.value.fields).toEqual({
         fieldInstance: {
+          id: new ReferenceExpression(
+            new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'fieldInstance'),
+            {}
+          ),
           isRequired: true,
         },
       })
-    })
-
-    it('should not add a field to the list if not in element source', async () => {
-      const elementsSource = buildElementsSourceFromElements([])
-      filter = replaceFieldConfigurationReferencesFilter(getFilterParams({
-        config,
-        elementsSource,
-      })) as typeof filter
-      await filter.preDeploy?.([toChange({ after: instance })])
-
-      expect(instance.value.fields).toBeArrayOfSize(0)
-
-      await filter.onDeploy?.([toChange({ after: instance })])
-      expect(instance.value.fields).toEqual({})
     })
 
     it('should do nothing if splitFieldConfiguration is true', async () => {
@@ -148,6 +146,10 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
       await filter.preDeploy?.([toChange({ after: instance })])
       expect(instance.value.fields).toEqual({
         fieldInstance: {
+          id: new ReferenceExpression(
+            new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'fieldInstance'),
+            {}
+          ),
           isRequired: true,
         },
       })
@@ -155,6 +157,10 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
       await filter.onDeploy?.([toChange({ after: instance })])
       expect(instance.value.fields).toEqual({
         fieldInstance: {
+          id: new ReferenceExpression(
+            new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'fieldInstance'),
+            {}
+          ),
           isRequired: true,
         },
       })

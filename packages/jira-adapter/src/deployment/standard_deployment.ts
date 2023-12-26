@@ -31,6 +31,11 @@ type DeployChangeParam = {
   fieldsToIgnore?: string[] | ((path: ElemID) => boolean)
   additionalUrlVars?: Record<string, string>
   elementsSource?: ReadOnlyElementsSource
+  modifyChangeFunc?: (
+    instance: InstanceElement,
+    serviceIdField: string,
+    response: clientUtils.ResponseValue)
+    => void
 }
 
 const invertKeysNames = (instance: Record<string, unknown>): void => {
@@ -52,6 +57,9 @@ export const defaultDeployChange = async ({
   fieldsToIgnore = [],
   additionalUrlVars,
   elementsSource,
+  modifyChangeFunc = (instance, serviceIdField, response) => {
+    instance.value[serviceIdField] = response[serviceIdField]
+  },
 }: DeployChangeParam): Promise<
   clientUtils.ResponseValue | clientUtils.ResponseValue[] | undefined
 > => {
@@ -94,7 +102,7 @@ export const defaultDeployChange = async ({
     if (!Array.isArray(response)) {
       const serviceIdField = apiDefinitions.types[getChangeData(change).elemID.typeName]?.transformation?.serviceIdField ?? 'id'
       if (response?.[serviceIdField] !== undefined) {
-        getChangeData(change).value[serviceIdField] = response[serviceIdField]
+        modifyChangeFunc(change.data.after, serviceIdField, response)
       }
     } else {
       log.warn('Received unexpected response from deployChange: %o', response)

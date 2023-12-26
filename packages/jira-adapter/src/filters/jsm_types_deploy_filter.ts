@@ -20,7 +20,7 @@ import { getChangeData, isInstanceChange, Change, InstanceElement } from '@salto
 import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 import { FilterCreator } from '../filter'
 import { JSM_DUCKTYPE_SUPPORTED_TYPES } from '../config/api_config'
-import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_TYPE, OBJECT_SCHEMA_STATUS_TYPE } from '../constants'
+import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_TYPE, OBJECT_SCHEMA_STATUS_TYPE, QUEUE_TYPE } from '../constants'
 import { getWorkspaceId } from '../workspace_id'
 
 const {
@@ -71,6 +71,12 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           apiDefinitions: jsmApiDefinitions,
           fieldsToIgnore,
           additionalUrlVars,
+          modifyChangeFunc: (instance, serviceIdField, response) => {
+            const serviceFieldValue = response?.[serviceIdField]
+            if (instance.elemID.typeName === QUEUE_TYPE && _.isNumber(serviceFieldValue)) {
+              instance.value[serviceIdField] = serviceFieldValue.toString()
+            }
+          },
         })
       }
     )

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { config as configUtils } from '@salto-io/adapter-components'
-import { ASSETS_OBJECT_TYPE_ORDER_TYPE, AUTOMATION_LABEL_TYPE, AUTOMATION_TYPE, BOARD_COLUMN_CONFIG_TYPE, BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, PROJECTS_FIELD, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME } from '../constants'
+import { AUTOMATION_LABEL_TYPE, AUTOMATION_TYPE, BOARD_COLUMN_CONFIG_TYPE, BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, OBJECT_TYPE_ORDER_TYPE, PROJECTS_FIELD, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME } from '../constants'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../filters/fields/constants'
 
 const DEFAULT_MAX_RESULTS = '1000'
@@ -2385,7 +2385,7 @@ export const JSM_DUCKTYPE_SUPPORTED_TYPES = {
   AssetsStatus: [], // being fetched by recurseInto.
   AssetsObjectType: [], // being fetched by recurseInto.
   AssetsObjectTypeAttribute: [], // being fetched by recurseInto.
-  [ASSETS_OBJECT_TYPE_ORDER_TYPE]: [], // being fetch by a filter.
+  [OBJECT_TYPE_ORDER_TYPE]: [], // being fetch by a filter.
 }
 
 export const JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES = {

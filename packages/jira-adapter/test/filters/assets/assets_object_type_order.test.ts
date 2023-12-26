@@ -21,7 +21,7 @@ import { MockInterface } from '@salto-io/test-utils'
 import { getDefaultConfig } from '../../../src/config/config'
 import assetsObjectTypeOrderFilter from '../../../src/filters/assets/assets_object_type_order'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
-import { ASSESTS_SCHEMA_TYPE, ASSETS_OBJECT_TYPE, ASSETS_OBJECT_TYPE_ORDER_TYPE, JIRA } from '../../../src/constants'
+import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_TYPE, OBJECT_TYPE_ORDER_TYPE, JIRA } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
 
 const createAssetsObjectTypeInstance = (
@@ -31,14 +31,14 @@ const createAssetsObjectTypeInstance = (
   parentObjectTypeInstance: InstanceElement
 ): InstanceElement => new InstanceElement(
   `assetsObjectType${suffix}`,
-  createEmptyType(ASSETS_OBJECT_TYPE),
+  createEmptyType(OBJECT_TYPE_TYPE),
   {
     id,
     name: `assetsObjectType${suffix}`,
     position: id - 1,
     parentObjectTypeId: new ReferenceExpression(parentObjectTypeInstance.elemID, parentObjectTypeInstance),
   },
-  [JIRA, elementUtils.RECORDS_PATH, ASSESTS_SCHEMA_TYPE, 'assetsSchema', 'assetsObjectTypes', 'parentObjectTypeInstance', `assetsObjectType${suffix}`, `assetsObjectType${suffix}`],
+  [JIRA, elementUtils.RECORDS_PATH, OBJECT_SCHEMA_TYPE, 'assetsSchema', 'assetsObjectTypes', 'parentObjectTypeInstance', `assetsObjectType${suffix}`, `assetsObjectType${suffix}`],
   {
     [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(assetSchema.elemID, assetSchema)],
   }
@@ -50,21 +50,21 @@ describe('assetsObjectTypeOrderFilter', () => {
   let client: JiraClient
   const assetSchema = new InstanceElement(
     'assetsSchema',
-    createEmptyType(ASSESTS_SCHEMA_TYPE),
+    createEmptyType(OBJECT_SCHEMA_TYPE),
     {
       name: 'AssetsSchema',
     },
-    [JIRA, elementUtils.RECORDS_PATH, ASSESTS_SCHEMA_TYPE, 'assetsSchema'],
+    [JIRA, elementUtils.RECORDS_PATH, OBJECT_SCHEMA_TYPE, 'assetsSchema'],
   )
   const parentObjectTypeInstance = new InstanceElement(
     'parentObjectTypeInstance',
-    createEmptyType(ASSETS_OBJECT_TYPE),
+    createEmptyType(OBJECT_TYPE_TYPE),
     {
       id: 'p1',
       name: 'AssetsObjectTypeP1',
       parentObjectTypeId: new ReferenceExpression(assetSchema.elemID, assetSchema),
     },
-    [JIRA, elementUtils.RECORDS_PATH, ASSESTS_SCHEMA_TYPE, 'assetsSchema', 'assetsObjectTypes', 'parentObjectTypeInstance', 'parentObjectTypeInstance'],
+    [JIRA, elementUtils.RECORDS_PATH, OBJECT_SCHEMA_TYPE, 'assetsSchema', 'assetsObjectTypes', 'parentObjectTypeInstance', 'parentObjectTypeInstance'],
     {
       [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(assetSchema.elemID, assetSchema)],
     }
@@ -91,7 +91,7 @@ describe('assetsObjectTypeOrderFilter', () => {
       expect(elements).toHaveLength(8)
       const orderInstances = elements
         .filter(isInstanceElement)
-        .filter(e => e.elemID.typeName === ASSETS_OBJECT_TYPE_ORDER_TYPE)
+        .filter(e => e.elemID.typeName === OBJECT_TYPE_ORDER_TYPE)
       expect(orderInstances[1]).toBeDefined()
       expect(orderInstances[1].elemID.name).toEqual('AssetsObjectTypeP1_order')
       expect(orderInstances[1].value.objectTypes).toEqual([
@@ -99,7 +99,7 @@ describe('assetsObjectTypeOrderFilter', () => {
         new ReferenceExpression(assetsObjectTypeInstanceTwo.elemID, assetsObjectTypeInstanceTwo),
         new ReferenceExpression(assetsObjectTypeInstanceThree.elemID, assetsObjectTypeInstanceThree),
       ])
-      const orderType = elements.filter(isObjectType).find(e => e.elemID.typeName === ASSETS_OBJECT_TYPE_ORDER_TYPE)
+      const orderType = elements.filter(isObjectType).find(e => e.elemID.typeName === OBJECT_TYPE_ORDER_TYPE)
       expect(orderType).toBeDefined()
     })
     it('should do nothing for instnaces without parentObjectTypeId', async () => {
@@ -127,7 +127,7 @@ describe('assetsObjectTypeOrderFilter', () => {
       filter = assetsObjectTypeOrderFilter(getFilterParams({ config, client })) as typeof filter
       assetsObjectTypeOrderInstance = new InstanceElement(
         'assetsObjectTypeOrderInstance',
-        createEmptyType(ASSETS_OBJECT_TYPE_ORDER_TYPE),
+        createEmptyType(OBJECT_TYPE_ORDER_TYPE),
         {
           objectTypes: [
             new ReferenceExpression(assetsObjectTypeInstanceOne.elemID, assetsObjectTypeInstanceOne),
@@ -194,7 +194,7 @@ describe('assetsObjectTypeOrderFilter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.errors[0].message).toEqual(
-        'The following changes were not deployed, due to error with the workspaceId: jira.AssetsObjectTypeOrder.instance.assetsObjectTypeOrderInstance'
+        'The following changes were not deployed, due to error with the workspaceId: jira.ObjectTypeOrder.instance.assetsObjectTypeOrderInstance'
       )
       expect(res.deployResult.appliedChanges).toHaveLength(0)
       expect(connection.post).toHaveBeenCalledTimes(0)

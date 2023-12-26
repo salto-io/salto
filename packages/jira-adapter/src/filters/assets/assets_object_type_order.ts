@@ -21,7 +21,7 @@ import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { deployChanges } from '../../deployment/standard_deployment'
 import { getWorkspaceId } from '../../workspace_id'
-import { ASSESTS_SCHEMA_TYPE, ASSETS_OBJECT_TYPE, ASSETS_OBJECT_TYPE_ORDER_TYPE, JIRA } from '../../constants'
+import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_TYPE, OBJECT_TYPE_ORDER_TYPE, JIRA } from '../../constants'
 import { FilterCreator } from '../../filter'
 import JiraClient from '../../client/client'
 
@@ -45,7 +45,7 @@ Promise<void> => {
 }
 
 const createOrderType = (): ObjectType => new ObjectType({
-  elemID: new ElemID(JIRA, ASSETS_OBJECT_TYPE_ORDER_TYPE),
+  elemID: new ElemID(JIRA, OBJECT_TYPE_ORDER_TYPE),
   fields: {
     objectTypes: {
       refType: new ListType(BuiltinTypes.NUMBER),
@@ -56,7 +56,7 @@ const createOrderType = (): ObjectType => new ObjectType({
       annotations: { [CORE_ANNOTATIONS.CREATABLE]: true, [CORE_ANNOTATIONS.UPDATABLE]: true },
     },
   },
-  path: [JIRA, adapterElements.TYPES_PATH, ASSETS_OBJECT_TYPE_ORDER_TYPE],
+  path: [JIRA, adapterElements.TYPES_PATH, OBJECT_TYPE_ORDER_TYPE],
   annotations: {
     [CORE_ANNOTATIONS.CREATABLE]: true,
     [CORE_ANNOTATIONS.UPDATABLE]: true,
@@ -69,15 +69,15 @@ const createAssetsObjectTypeOrder = (
   orderType: ObjectType,
   treeParent: InstanceElement
 ): InstanceElement | undefined => {
-  const schema = treeParent.elemID?.typeName === ASSETS_OBJECT_TYPE
+  const schema = treeParent.elemID?.typeName === OBJECT_TYPE_TYPE
     ? treeParent.annotations[CORE_ANNOTATIONS.PARENT]?.[0]
     : new ReferenceExpression(treeParent.elemID, treeParent)
-  if (schema.elemID?.typeName !== ASSESTS_SCHEMA_TYPE) {
-    log.error(`Failed to create ${ASSETS_OBJECT_TYPE_ORDER_TYPE} for ${treeParent.elemID.getFullName()} because it's parent is not ${ASSESTS_SCHEMA_TYPE}`)
+  if (schema.elemID?.typeName !== OBJECT_SCHEMA_TYPE) {
+    log.error(`Failed to create ${OBJECT_TYPE_ORDER_TYPE} for ${treeParent.elemID.getFullName()} because it's parent is not ${OBJECT_SCHEMA_TYPE}`)
     return undefined
   }
   const name = naclCase(`${treeParent.value.name}_order`)
-  const subFolder = treeParent.elemID.typeName === ASSETS_OBJECT_TYPE ? ['childOrder'] : ['assetsObjectTypes', 'childOrder']
+  const subFolder = treeParent.elemID.typeName === OBJECT_TYPE_TYPE ? ['childOrder'] : ['assetsObjectTypes', 'childOrder']
   return new InstanceElement(
     name,
     orderType,
@@ -101,12 +101,12 @@ const filterCreator: FilterCreator = ({ config, client, fetchQuery }) => ({
   onFetch: async (elements: Element[]) => {
     if (!config.fetch.enableJSM
     || !config.fetch.enableJsmExperimental
-    || !fetchQuery.isTypeMatch(ASSETS_OBJECT_TYPE_ORDER_TYPE)) {
+    || !fetchQuery.isTypeMatch(OBJECT_TYPE_ORDER_TYPE)) {
       return
     }
 
     const assetsObjectTypeInstances = elements.filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === ASSETS_OBJECT_TYPE)
+      .filter(e => e.elemID.typeName === OBJECT_TYPE_TYPE)
 
     const parentToObjectTypes = _.groupBy(
       assetsObjectTypeInstances.filter(objectType => isReferenceExpression(objectType.value.parentObjectTypeId)),
@@ -114,8 +114,8 @@ const filterCreator: FilterCreator = ({ config, client, fetchQuery }) => ({
     )
 
     const instanceNameToInstcne = _.keyBy(elements.filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === ASSETS_OBJECT_TYPE
-        || e.elemID.typeName === ASSESTS_SCHEMA_TYPE), inst => inst.elemID.getFullName())
+      .filter(e => e.elemID.typeName === OBJECT_TYPE_TYPE
+        || e.elemID.typeName === OBJECT_SCHEMA_TYPE), inst => inst.elemID.getFullName())
 
     const orderType = createOrderType()
     elements.push(orderType)
@@ -146,11 +146,11 @@ const filterCreator: FilterCreator = ({ config, client, fetchQuery }) => ({
 
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
-      change => getChangeData(change).elemID.typeName === ASSETS_OBJECT_TYPE_ORDER_TYPE
+      change => getChangeData(change).elemID.typeName === OBJECT_TYPE_ORDER_TYPE
     )
     const workspaceId = await getWorkspaceId(client)
     if (workspaceId === undefined) {
-      log.error(`Skip deployment of ${ASSETS_OBJECT_TYPE_ORDER_TYPE} types because workspaceId is undefined`)
+      log.error(`Skip deployment of ${OBJECT_TYPE_ORDER_TYPE} types because workspaceId is undefined`)
       const errors = relevantChanges.map(change => createSaltoElementError({
         message: `The following changes were not deployed, due to error with the workspaceId: ${relevantChanges.map(c => getChangeData(c).elemID.getFullName()).join(', ')}`,
         severity: 'Error',
@@ -166,7 +166,7 @@ const filterCreator: FilterCreator = ({ config, client, fetchQuery }) => ({
       async change => {
         const instance = getChangeData(change)
         const parent = getParent(instance)
-        const toObjectTypeId = parent.elemID.typeName === ASSETS_OBJECT_TYPE ? parent.value.id : undefined
+        const toObjectTypeId = parent.elemID.typeName === OBJECT_TYPE_TYPE ? parent.value.id : undefined
         if (isAdditionChange(change)) {
           await awu(instance.value.objectTypes).filter(isReferenceExpression)
             .forEach(async (assetsObjectType, position) => {
@@ -178,7 +178,7 @@ const filterCreator: FilterCreator = ({ config, client, fetchQuery }) => ({
         if (isModificationChange(change)) {
           const positionsBefore = change.data.before.value.objectTypes
           await awu(instance.value.objectTypes).filter(isReferenceExpression)
-            .filter(ref => ref.elemID.typeName === ASSETS_OBJECT_TYPE)
+            .filter(ref => ref.elemID.typeName === OBJECT_TYPE_TYPE)
             .forEach(async (assetsObjectType, position) => {
               if (positionsBefore[position]?.elemID.getFullName() !== assetsObjectType.elemID.getFullName()) {
                 await deployOrderChange({

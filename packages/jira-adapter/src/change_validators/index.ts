@@ -59,6 +59,7 @@ import { customFieldsWith10KOptionValidator } from './field_contexts/custom_fiel
 import { issueTypeHierarchyValidator } from './issue_type_hierarchy'
 import { automationProjectsValidator } from './automation/automation_projects'
 import { deleteLastQueueValidator } from './last_queue'
+import { defaultAdditionQueueValidator } from './default_addition_queue'
 import { automationToAssetsValidator } from './automation/automation_to_assets'
 
 const {
@@ -116,6 +117,7 @@ export default (
     automationProjects: automationProjectsValidator,
     boardColumnConfig: boardColumnConfigValidator,
     deleteLastQueueValidator: deleteLastQueueValidator(config),
+    defaultAdditionQueueValidator: defaultAdditionQueueValidator(config),
     automationToAssets: automationToAssetsValidator(config),
   }
 

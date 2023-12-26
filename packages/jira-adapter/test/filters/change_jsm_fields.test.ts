@@ -117,7 +117,7 @@ describe('changeJSMElementsFieldFilter', () => {
         typeValue: '6',
       })
     })
-    it('should change defualtTypeId to -1 if defualtType isnt an object', async () => {
+    it('should change defaultTypeId to -1 if defaultType isnt an object', async () => {
       assetsAttributeInstance.value.defaultType = '1'
       elements = [projectInstance, assetsAttributeInstance]
       filter = changeJSMElementsFieldFilter(getFilterParams({})) as typeof filter

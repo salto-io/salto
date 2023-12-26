@@ -44,7 +44,7 @@ const getProjectToScreenMapping = async (elements: Element[]): Promise<Record<st
         const screens = Array.from(new Set(screenSchemes
           .map(screenScheme => screenScheme.value.screens.default)
           .filter(isResolvedReferenceExpression)
-          .map(defualtScreen => defualtScreen.value.value.id)))
+          .map(defaultScreen => defaultScreen.value.value.id)))
         return [project.value.id, screens]
       })))
   )

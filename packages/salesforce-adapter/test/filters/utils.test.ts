@@ -44,7 +44,7 @@ import {
   isElementWithResolvedParent,
   getElementAuthorInformation,
   getNamespaceSync,
-  referenceFieldTargetTypes, isStandardObjectSync, isStandardField,
+  referenceFieldTargetTypes, isStandardObjectSync, isStandardField, getFullName,
 } from '../../src/filters/utils'
 import {
   API_NAME,
@@ -701,6 +701,26 @@ describe('filter utils', () => {
         },
       )
       expect(customField).not.toSatisfy(isStandardField)
+    })
+  })
+  describe('getFullName', () => {
+    it('should return correct fullNames', () => {
+      // instances with no parent
+      expect(getFullName(mockFileProperties({ fullName: 'Test', type: 'ApexClass' }))).toEqual('Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Test', namespacePrefix: 'test', type: 'ApexClass' }))).toEqual('test__Test')
+      expect(getFullName(mockFileProperties({ fullName: 'test__Test', namespacePrefix: 'test', type: 'ApexClass' }))).toEqual('test__Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Test', namespacePrefix: 'test', type: 'ApexClass' }), false)).toEqual('Test')
+      // layout instances
+      expect(getFullName(mockFileProperties({ fullName: 'Test-Test', type: 'Layout' }))).toEqual('Test-Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Test-Test', namespacePrefix: 'test', type: 'Layout' }))).toEqual('Test-test__Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Test-test__Test', namespacePrefix: 'test', type: 'Layout' }))).toEqual('Test-test__Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Test-Test', namespacePrefix: 'test', type: 'Layout' }), false)).toEqual('Test-test__Test')
+      // instances with parent
+      expect(getFullName(mockFileProperties({ fullName: 'Parent.Test', type: 'ValidationRule' }))).toEqual('Parent.Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Parent.Test', namespacePrefix: 'test', type: 'ValidationRule' }))).toEqual('Parent.test__Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Parent.test__Test', namespacePrefix: 'test', type: 'ValidationRule' }))).toEqual('Parent.test__Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Parent.Test', namespacePrefix: 'test', type: 'ValidationRule' }), false)).toEqual('Parent.Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Parent.Test', namespacePrefix: 'test', type: 'ValidationRule' }), false)).toEqual('Parent.Test')
     })
   })
 })

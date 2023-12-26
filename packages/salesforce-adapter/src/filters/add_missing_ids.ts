@@ -28,7 +28,7 @@ import {
   ensureSafeFilterFetch,
   isMetadataInstanceElementSync,
   isStandardField,
-  isInstanceOfTypeSync,
+  isInstanceOfTypeSync, getFullName,
 } from './utils'
 import { GLOBAL_VALUE_SET_TRANSLATION_METADATA_TYPE, TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../constants'
 
@@ -67,7 +67,7 @@ export const getIdsForType = async (
     log.debug(`Encountered errors while listing ${type}: ${errors}`)
   }
   return Object.fromEntries(
-    result.map(info => [info.fullName, info.id])
+    result.map(info => [getFullName(info), info.id])
   )
 }
 

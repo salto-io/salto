@@ -21,7 +21,7 @@ import { MockInterface } from '@salto-io/test-utils'
 import { getDefaultConfig } from '../../../src/config/config'
 import deployAttributesFilter from '../../../src/filters/assets/attribute_deploy_filter'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
-import { ASSETS_ATTRIBUTE_TYPE, ASSETS_OBJECT_TYPE, JIRA } from '../../../src/constants'
+import { OBJECT_TYPE_ATTRIBUTE_TYPE, OBJECT_TYPE_TYPE, JIRA } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
 
 
@@ -32,14 +32,14 @@ describe('deployAttributesFilter', () => {
   let connection: MockInterface<clientUtils.APIConnection>
   const assetsObjectTypeInstance = new InstanceElement(
     'assetsObjectType',
-    createEmptyType(ASSETS_OBJECT_TYPE),
+    createEmptyType(OBJECT_TYPE_TYPE),
     {
       id: '11111',
-      name: 'AssetsObjectType',
+      name: 'ObjectType',
     },
   )
   const attributeType = new ObjectType({
-    elemID: new ElemID(JIRA, ASSETS_ATTRIBUTE_TYPE),
+    elemID: new ElemID(JIRA, OBJECT_TYPE_ATTRIBUTE_TYPE),
     fields: {
       objectType: { refType: BuiltinTypes.STRING },
     },

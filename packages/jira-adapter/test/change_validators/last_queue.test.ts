@@ -129,7 +129,7 @@ describe('lastQueueValidator', () => {
     )
     expect(changeErrors).toHaveLength(0)
   })
-  it('should not return error if not a removal change', async () => {
+  it('should not return error if is addition change', async () => {
     const validator = deleteLastQueueValidator(config)
     const changeErrors = await validator(
       [toChange({ after: queueInstance })],

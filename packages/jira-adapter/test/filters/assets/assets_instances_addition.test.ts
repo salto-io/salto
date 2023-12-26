@@ -19,7 +19,7 @@ import { InstanceElement, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-i
 import { getDefaultConfig } from '../../../src/config/config'
 import assetsStatusAdditionFilter from '../../../src/filters/assets/assets_instances_addition'
 import { createEmptyType, getFilterParams } from '../../utils'
-import { ASSESTS_SCHEMA_TYPE, ASSETS_STATUS_TYPE } from '../../../src/constants'
+import { OBJECT_SCHEMA_TYPE, OBJECT_SCHEMA_STATUS_TYPE } from '../../../src/constants'
 
 describe('assetsStatusAddition', () => {
     type FilterType = filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
@@ -27,7 +27,7 @@ describe('assetsStatusAddition', () => {
     let assetsStatusInstance: InstanceElement
     const assetSchemaInstance = new InstanceElement(
       'assetsSchema1',
-      createEmptyType(ASSESTS_SCHEMA_TYPE),
+      createEmptyType(OBJECT_SCHEMA_TYPE),
       {
         id: 5,
         name: 'assetsSchema',
@@ -41,7 +41,7 @@ describe('assetsStatusAddition', () => {
         filter = assetsStatusAdditionFilter(getFilterParams({ config })) as typeof filter
         assetsStatusInstance = new InstanceElement(
           'assetsStatusInstance',
-          createEmptyType(ASSETS_STATUS_TYPE),
+          createEmptyType(OBJECT_SCHEMA_STATUS_TYPE),
           {
             name: 'assetsStatusInstance',
             description: 'test Description',
@@ -66,7 +66,7 @@ describe('assetsStatusAddition', () => {
         filter = assetsStatusAdditionFilter(getFilterParams({ config })) as typeof filter
         assetsStatusInstance = new InstanceElement(
           'assetsStatusInstance',
-          createEmptyType(ASSETS_STATUS_TYPE),
+          createEmptyType(OBJECT_SCHEMA_STATUS_TYPE),
           {
             name: 'assetsStatusInstance',
             description: 'test Description',

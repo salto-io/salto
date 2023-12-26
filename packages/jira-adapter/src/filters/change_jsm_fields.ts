@@ -18,7 +18,7 @@ import { isInstanceElement } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
-import { ASSETS_ATTRIBUTE_TYPE, ASSETS_OBJECT_TYPE, PROJECT_TYPE, SERVICE_DESK } from '../constants'
+import { OBJECT_TYPE_ATTRIBUTE_TYPE, OBJECT_TYPE_TYPE, PROJECT_TYPE, SERVICE_DESK } from '../constants'
 
 type ObjectWithId = {
   id: number
@@ -45,14 +45,14 @@ const filter: FilterCreator = () => ({
       })
 
     instanceElements
-      .filter(e => e.elemID.typeName === ASSETS_OBJECT_TYPE)
+      .filter(e => e.elemID.typeName === OBJECT_TYPE_TYPE)
       .forEach(instance => {
         instance.value.iconId = isObjectWithId(instance.value.icon) ? instance.value.icon.id : instance.value.icon
         delete instance.value.icon
       })
 
     instanceElements
-      .filter(e => e.elemID.typeName === ASSETS_ATTRIBUTE_TYPE)
+      .filter(e => e.elemID.typeName === OBJECT_TYPE_ATTRIBUTE_TYPE)
       .forEach(instance => {
         instance.value.defaultTypeId = isObjectWithId(instance.value.defaultType) ? instance.value.defaultType.id : -1
         delete instance.value.defaultType

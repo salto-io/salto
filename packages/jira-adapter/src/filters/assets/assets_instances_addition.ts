@@ -18,10 +18,10 @@ import { getChangeData, isAdditionChange, isInstanceChange } from '@salto-io/ada
 import { collections } from '@salto-io/lowerdash'
 import { getParent } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
-import { ASSETS_OBJECT_TYPE, ASSETS_STATUS_TYPE } from '../../constants'
+import { OBJECT_TYPE_TYPE, OBJECT_SCHEMA_STATUS_TYPE } from '../../constants'
 
 const { awu } = collections.asynciterable
-const SUPPORTED_TYPES = [ASSETS_STATUS_TYPE, ASSETS_OBJECT_TYPE]
+const SUPPORTED_TYPES = [OBJECT_SCHEMA_STATUS_TYPE, OBJECT_TYPE_TYPE]
 
 /* This filter adds objectSchemaId to some assets instances
 * that need it in order to be deployed.

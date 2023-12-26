@@ -22,7 +22,7 @@ import { mockFunction } from '@salto-io/test-utils'
 import JiraClient from '../src/client/client'
 import { adapter as adapterCreator } from '../src/adapter_creator'
 import { getDefaultConfig } from '../src/config/config'
-import { ASSETS_ATTRIBUTE_TYPE, ISSUE_TYPE_NAME, JIRA, PROJECT_TYPE, SERVICE_DESK } from '../src/constants'
+import { OBJECT_TYPE_ATTRIBUTE_TYPE, ISSUE_TYPE_NAME, JIRA, PROJECT_TYPE, SERVICE_DESK } from '../src/constants'
 import { createCredentialsInstance, createConfigInstance, mockClient, createEmptyType } from './utils'
 import { jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from '../src/jsm_utils'
 import { CLOUD_RESOURCE_FIELD } from '../src/filters/automation/cloud_id'
@@ -564,8 +564,8 @@ describe('adapter', () => {
         const result = await EntriesRequesterFunc({
           paginator,
           args: { url: '/gateway/api/jsm/assets/workspace/defualtWorkSpaceId/v1/objectschema/2/attributes' },
-          typeName: ASSETS_ATTRIBUTE_TYPE,
-          typesConfig: { AssetsObjectTypeAttribute: { transformation: { dataField: '.' } } },
+          typeName: OBJECT_TYPE_ATTRIBUTE_TYPE,
+          typesConfig: { ObjectTypeAttribute: { transformation: { dataField: '.' } } },
         })
         expect(result[0]).toEqual({
           objectType: '1',
@@ -582,8 +582,8 @@ describe('adapter', () => {
         const result = await EntriesRequesterFunc({
           paginator,
           args: { url: '/gateway/api/jsm/assets/workspace/defualtWorkSpaceId/v1/objectschema/2/attributes' },
-          typeName: ASSETS_ATTRIBUTE_TYPE,
-          typesConfig: { AssetsObjectTypeAttribute: { transformation: { dataField: '.' } } },
+          typeName: OBJECT_TYPE_ATTRIBUTE_TYPE,
+          typesConfig: { ObjectTypeAttribute: { transformation: { dataField: '.' } } },
         })
         expect(result[0]).toEqual({
           objectType: {

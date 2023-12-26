@@ -13,29 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isInstanceChange, SeverityLevel, isRemovalChange, CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isInstanceChange, SeverityLevel, CORE_ANNOTATIONS, isAdditionChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { getParent } from '@salto-io/adapter-utils'
-import { PROJECT_TYPE, QUEUE_TYPE } from '../constants'
+import { QUEUE_TYPE } from '../constants'
 import { JiraConfig } from '../config/config'
 
 const { awu } = collections.asynciterable
 
 /*
-* This validator prevents the deletion of the last queue of a project.
+* This validator prevents the addition of a queue with the same name as another queue in the same project.
 */
-export const deleteLastQueueValidator: (
+export const defaultAdditionQueueValidator: (
     config: JiraConfig,
   ) => ChangeValidator = config => async (changes, elementsSource) => {
     if (elementsSource === undefined || !config.fetch.enableJSM) {
       return []
     }
-    const projects = await awu(await elementsSource.list())
-      .filter(id => id.typeName === PROJECT_TYPE)
-      .map(id => elementsSource.get(id))
-      .filter(isInstanceElement)
-      .map(instance => instance.elemID.getFullName())
-      .toArray()
 
     const projectToQueues = await awu(await elementsSource.list())
       .filter(id => id.typeName === QUEUE_TYPE && id.idType === 'instance')
@@ -43,21 +37,22 @@ export const deleteLastQueueValidator: (
       .filter(queue => queue.annotations[CORE_ANNOTATIONS.PARENT]?.[0] !== undefined)
       .groupBy(queue => queue.annotations[CORE_ANNOTATIONS.PARENT][0].elemID.getFullName())
 
+
     return awu(changes)
       .filter(isInstanceChange)
-      .filter(isRemovalChange)
+      .filter(isAdditionChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === QUEUE_TYPE)
       .filter(queue => getParent(queue) !== undefined)
       .filter(async instance => {
         const relatedQueues = projectToQueues[getParent(instance).elemID.getFullName()]
-        return relatedQueues === undefined && projects.includes(getParent(instance).elemID.getFullName())
+        return relatedQueues.filter(relatedQueue => relatedQueue.value.name === instance.value.name).length > 1
       })
       .map(instance => ({
         elemID: instance.elemID,
         severity: 'Error' as SeverityLevel,
-        message: 'Cannot delete a project’s only queue',
-        detailedMessage: `Cannot delete this queue, as its the last remaining queue in project ${getParent(instance).elemID.name}.`,
+        message: 'Cannot deploy queue, because queues names must be unique',
+        detailedMessage: `Cannot deploy this queue, as it has the same name as another queue in project ${getParent(instance).elemID.name}.`,
       }))
       .toArray()
   }

@@ -54,11 +54,13 @@ import { sameIssueTypeNameChangeValidator } from './same_issue_type_name'
 import { issueTypeSchemeMigrationValidator } from './issue_type_scheme_migration'
 import { issueTypeDeletionValidator } from './issue_type_deletion'
 import { projectCategoryValidator } from './project_category'
+import { unresolvedFieldConfigurationItemsValidator } from './unresolved_field_configuration_items'
 import { fieldSecondGlobalContextValidator } from './field_contexts/second_global_context'
 import { customFieldsWith10KOptionValidator } from './field_contexts/custom_field_with_10K_options'
 import { issueTypeHierarchyValidator } from './issue_type_hierarchy'
 import { automationProjectsValidator } from './automation/automation_projects'
 import { deleteLastQueueValidator } from './last_queue'
+import { defaultAdditionQueueValidator } from './default_addition_queue'
 import { automationToAssetsValidator } from './automation/automation_to_assets'
 
 const {
@@ -111,11 +113,13 @@ export default (
     workflowTransitionDuplicateName: workflowTransitionDuplicateNameValidator,
     permissionSchemeDeployment: permissionSchemeDeploymentValidator(client),
     projectCategory: projectCategoryValidator(client),
+    unresolvedFieldConfigurationItems: unresolvedFieldConfigurationItemsValidator,
     customFieldsWith10KOptions: customFieldsWith10KOptionValidator,
     issueTypeHierarchy: issueTypeHierarchyValidator,
     automationProjects: automationProjectsValidator,
     boardColumnConfig: boardColumnConfigValidator,
     deleteLastQueueValidator: deleteLastQueueValidator(config),
+    defaultAdditionQueueValidator: defaultAdditionQueueValidator(config),
     automationToAssets: automationToAssetsValidator(config),
   }
 

@@ -19,7 +19,7 @@ import { InstanceElement, ReferenceExpression, Element, CORE_ANNOTATIONS } from 
 import { getDefaultConfig } from '../../../src/config/config'
 import assetsObjectTypeChangeFields from '../../../src/filters/assets/assets_object_type_change_fields'
 import { createEmptyType, getFilterParams } from '../../utils'
-import { ASSESTS_SCHEMA_TYPE, ASSETS_OBJECT_TYPE } from '../../../src/constants'
+import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_TYPE } from '../../../src/constants'
 
 describe('changeParentsFilter', () => {
     type FilterType = filterUtils.FilterWith<'onFetch'>
@@ -29,7 +29,7 @@ describe('changeParentsFilter', () => {
     let sonOneInstance: InstanceElement
     const assetSchemaInstance = new InstanceElement(
       'assetsSchema1',
-      createEmptyType(ASSESTS_SCHEMA_TYPE),
+      createEmptyType(OBJECT_SCHEMA_TYPE),
       {
         idAsInt: 5,
         name: 'assetsSchema',
@@ -43,7 +43,7 @@ describe('changeParentsFilter', () => {
         filter = assetsObjectTypeChangeFields(getFilterParams({ config })) as typeof filter
         parentInstance = new InstanceElement(
           'parentInstance',
-          createEmptyType(ASSETS_OBJECT_TYPE),
+          createEmptyType(OBJECT_TYPE_TYPE),
           {
             name: 'parentInstance',
           },
@@ -54,7 +54,7 @@ describe('changeParentsFilter', () => {
         )
         sonOneInstance = new InstanceElement(
           'sonOneInstance',
-          createEmptyType(ASSETS_OBJECT_TYPE),
+          createEmptyType(OBJECT_TYPE_TYPE),
           {
             name: 'sonOneInstance',
             parentObjectTypeId: new ReferenceExpression(parentInstance.elemID, parentInstance),

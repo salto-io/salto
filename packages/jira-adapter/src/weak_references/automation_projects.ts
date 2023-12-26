@@ -14,17 +14,14 @@
 * limitations under the License.
 */
 
-import { GetCustomReferencesFunc, InstanceElement, ReferenceInfo, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
+import { FixElementsFunc, GetCustomReferencesFunc, InstanceElement, ReferenceInfo, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { collections, values } from '@salto-io/lowerdash'
-import { logger } from '@salto-io/logging'
 import { AUTOMATION_TYPE } from '../constants'
 import { WeakReferencesHandler } from './weak_references_handler'
 
 const { awu } = collections.asynciterable
-
-const log = logger(module)
 
 type AutomationProjects = {
   projectId: unknown
@@ -43,7 +40,6 @@ const getProjectReferences = async (
 ): Promise<ReferenceInfo[]> => {
   const automationProjects = instance.value.projects
   if (automationProjects === undefined || !isAutomationProjects(automationProjects)) {
-    log.warn(`projects value is corrupted in instance ${instance.elemID.getFullName()}, hence not calculating projects weak references`)
     return []
   }
 
@@ -69,14 +65,14 @@ const getAutomationProjectsReferences: GetCustomReferencesFunc = async elements 
 /**
  * Remove invalid projects (not references or missing references) from automations.
  */
-const removeMissingAutomationProjects: WeakReferencesHandler['removeWeakReferences'] = ({ elementsSource }) => async elements => {
+const removeMissingAutomationProjects: WeakReferencesHandler['removeWeakReferences'] = ({ elementsSource })
+: FixElementsFunc => async elements => {
   const fixedElements = await awu(elements)
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
     .map(async instance => {
       const automationProjects = instance.value.projects
       if (automationProjects === undefined || !isAutomationProjects(automationProjects)) {
-        log.warn(`projects value is corrupted in instance ${instance.elemID.getFullName()}, hence not omitting missing projects`)
         return undefined
       }
 

@@ -390,6 +390,7 @@ export const DATA_CATEGORY_GROUP_METADATA_TYPE = 'DataCategoryGroup'
 export const CUSTOM_APPLICATION_METADATA_TYPE = 'CustomApplication'
 export const APEX_CLASS_METADATA_TYPE = 'ApexClass'
 export const APEX_PAGE_METADATA_TYPE = 'ApexPage'
+export const GLOBAL_VALUE_SET_TRANSLATION_METADATA_TYPE = 'GlobalValueSetTranslation'
 
 // Artificial Types
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'

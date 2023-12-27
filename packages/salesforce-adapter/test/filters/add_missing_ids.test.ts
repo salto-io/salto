@@ -50,7 +50,7 @@ describe('Internal IDs filter', () => {
         },
         special: {
           annotations: {
-            [API_NAME]: 'pre__Obj.special__c',
+            [API_NAME]: 'Obj.pre__special__c',
           },
           refType: BuiltinTypes.STRING,
         },
@@ -113,7 +113,7 @@ describe('Internal IDs filter', () => {
           {
             id: 'custom field id 456',
             namespacePrefix: 'pre',
-            fullName: 'Obj.special__c',
+            fullName: 'Obj.pre__special__c',
           },
           {
             id: 'custom field id 123',

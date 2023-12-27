@@ -162,6 +162,7 @@ import changeQueueFieldsFilter from './filters/change_queue_fields'
 import portalGroupsFilter from './filters/portal_groups'
 import assetsObjectTypePath from './filters/assets/assets_object_type_path'
 import assetsObjectTypeChangeFields from './filters/assets/assets_object_type_change_fields'
+import assetsObjectTypeOrderFilter from './filters/assets/assets_object_type_order'
 import changeAttributesPathFilter from './filters/assets/change_attributes_path'
 import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
@@ -340,17 +341,18 @@ export const DEFAULT_FILTERS = [
   requestTypeFilter,
   // Must run before asstesDeployFilter
   assetsInstancesAdditionFilter,
-  deployAttributesFilter,
-  deployJsmTypesFilter,
   // Must be done after JsmTypesFilter
   jsmPathFilter,
-  // Must be last
-  defaultInstancesDeployFilter,
   ...Object.values(otherCommonFilters),
   // Must run after otherCommonFilters and specificly after referencedInstanceNamesFilterCreator.
   assetsObjectTypePath,
   // Must run after assetsObjectTypePath
   changeAttributesPathFilter,
+  assetsObjectTypeOrderFilter,
+  deployAttributesFilter,
+  deployJsmTypesFilter,
+  // Must be last
+  defaultInstancesDeployFilter,
 ]
 
 export interface JiraAdapterParams {

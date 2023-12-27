@@ -2393,7 +2393,11 @@ export const JSM_DUCKTYPE_SUPPORTED_TYPES = {
   Calendar: ['Calendar'],
   PortalSettings: ['PortalSettings'],
   SLA: ['SLA'],
-  Form: [],
+  Form: [], // being fetched by a filter.
+  ObjectSchema: [],
+  ObjectSchemaStatus: [], // being fetched by recurseInto.
+  ObjectType: [], // being fetched by recurseInto.
+  ObjectTypeAttribute: [], // being fetched by recurseInto.
 }
 
 export const JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES = {

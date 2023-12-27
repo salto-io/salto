@@ -232,7 +232,7 @@ export const retryFlow = async (
   retriesLeft: number,
 ): Promise<ActionResult> => {
   const { client } = crudFnArgs
-  const { retryDelay, retryableFailures } = client.dataRetry
+  const { retryDelayStrategy, retryableFailures } = client.dataRetry
 
   let successes: InstanceElement[] = []
   let errors: (SaltoElementError | SaltoError)[] = []
@@ -256,7 +256,13 @@ export const retryFlow = async (
     }
   }
 
-  await sleep(retryDelay)
+  const retryDelay = retryDelayStrategy()
+  if (_.isNumber(retryDelay)) {
+    await sleep(retryDelay)
+  } else {
+    log.warn('Invalid delay %s', retryDelay)
+    await sleep(1000)
+  }
 
   log.debug('in custom object deploy retry-flow. retries left: %d', retriesLeft)
   logErroredInstances(recoverable, 'recoverable')

@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { EOL } from 'os'
 import requestretry, { RequestRetryOptions, RetryStrategies, RetryStrategy } from 'requestretry'
 import Bottleneck from 'bottleneck'
-import { collections, decorators, hash } from '@salto-io/lowerdash'
+import { collections, decorators, hash, retry as lowerDashRetry } from '@salto-io/lowerdash'
 import {
   BatchResultInfo,
   BulkLoadOperation,
@@ -45,7 +45,6 @@ import { Options, RequestCallback } from 'request'
 import { AccountInfo, CredentialError, Value } from '@salto-io/adapter-api'
 import {
   CUSTOM_OBJECT_ID_FIELD,
-  DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS,
   DEFAULT_MAX_CONCURRENT_API_REQUESTS,
   SALESFORCE,
 } from '../constants'
@@ -66,6 +65,7 @@ import { mapToUserFriendlyErrorMessages } from './user_facing_errors'
 import { HANDLED_ERROR_PREDICATES } from '../config_change'
 
 const { makeArray } = collections.array
+const { exponentialBackoff, intervals: constantDelay } = lowerDashRetry.retryStrategies
 const { toMD5 } = hash
 
 const log = logger(module)
@@ -524,6 +524,20 @@ export const validateCredentials = async (
 
 type DeployProgressCallback = (inProgressResult: DeployResult) => void
 
+export type ClientDataRetry = Omit<CustomObjectsDeployRetryConfig, 'retryDelay'> & {
+  retryDelayStrategy: lowerDashRetry.RetryStrategy
+}
+
+export const DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS: ClientDataRetry = {
+  maxAttempts: 5,
+  retryDelayStrategy: exponentialBackoff({ initial: 1000 })(),
+  retryableFailures: [
+    'FIELD_CUSTOM_VALIDATION_EXCEPTION',
+    'UNABLE_TO_LOCK_ROW',
+  ],
+}
+
+
 export default class SalesforceClient {
   private readonly retryOptions: RequestRetryOptions
   private readonly conn: Connection
@@ -534,7 +548,7 @@ export default class SalesforceClient {
   private readonly setFetchPollingTimeout: () => void
   private readonly setDeployPollingTimeout: () => void
   readonly rateLimiters: Record<RateLimitBucketName, Bottleneck>
-  readonly dataRetry: CustomObjectsDeployRetryConfig
+  readonly dataRetry: ClientDataRetry
   readonly clientName: string
   readonly readMetadataChunkSize: Required<ReadMetadataChunkSizeConfig>
   private readonly filePropsByType: Record<string, FileProperties[]>
@@ -542,6 +556,16 @@ export default class SalesforceClient {
   constructor(
     { credentials, connection, config }: SalesforceClientOpts
   ) {
+    const buildDataRetryFromConfig = (retryConfig: CustomObjectsDeployRetryConfig): ClientDataRetry => (
+      _.assign(
+        {},
+        _.omit(retryConfig, 'retryDelay'),
+        {
+          retryDelayStrategy: constantDelay({ interval: retryConfig.retryDelay })(),
+        }
+      )
+    )
+
     this.credentials = credentials
     this.config = config
     this.retryOptions = createRetryOptions(_.defaults({}, config?.retry, DEFAULT_RETRY_OPTS))
@@ -567,7 +591,10 @@ export default class SalesforceClient {
       ),
       clientName: SALESFORCE,
     })
-    this.dataRetry = config?.dataRetry ?? DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS
+    this.dataRetry = config?.dataRetry
+      ? buildDataRetryFromConfig(config.dataRetry)
+      : DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS
+
     this.clientName = 'SFDC'
     this.readMetadataChunkSize = _.merge(
       {},

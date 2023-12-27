@@ -80,6 +80,23 @@ describe('deployAttributesFilter', () => {
             },
           }
         }
+        if (url === '/gateway/api/jsm/assets/workspace/workspaceId/v1/objecttype/11111/attributes') {
+          return {
+            status: 200,
+            data: [
+              {
+                name: 'Key',
+                id: '1',
+                editable: false,
+              },
+              {
+                name: 'Name',
+                id: '2',
+                editable: true,
+              },
+            ],
+          }
+        }
         throw new Error('Unexpected url')
       })
       connection.post.mockImplementation(async url => {
@@ -138,6 +155,28 @@ describe('deployAttributesFilter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)
+      expect(connection.post).toHaveBeenCalledTimes(0)
+      expect(connection.put).toHaveBeenCalledTimes(0)
+    })
+    it('should add an editable default attribute', async () => {
+      const defaultAttributeInstance = attributesInstance.clone()
+      defaultAttributeInstance.value.name = 'Name'
+      const changes = [toChange({ after: defaultAttributeInstance })]
+      const res = await filter.deploy(changes)
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(connection.post).toHaveBeenCalledTimes(0)
+      expect(connection.put).toHaveBeenCalledTimes(2)
+    })
+    it('should not call deploy request on a non editable default attribute', async () => {
+      const defaultAttributeInstance = attributesInstance.clone()
+      defaultAttributeInstance.value.name = 'Key'
+      const changes = [toChange({ after: defaultAttributeInstance })]
+      const res = await filter.deploy(changes)
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
       expect(connection.post).toHaveBeenCalledTimes(0)
       expect(connection.put).toHaveBeenCalledTimes(0)
     })

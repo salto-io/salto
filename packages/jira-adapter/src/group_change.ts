@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeData, isModificationChange, isAdditionChange } from '@salto-io/adapter-api'
+import { getChangeData, isModificationChange, isAdditionChange, isInstanceChange } from '@salto-io/adapter-api'
 import { getParent, getParents, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { deployment } from '@salto-io/adapter-components'
-import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, QUEUE_TYPE, SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE, SECURITY_LEVEL_TYPE, WORKFLOW_TYPE_NAME } from './constants'
+import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, OBJECT_TYPE_ATTRIBUTE_TYPE, QUEUE_TYPE, SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE, SECURITY_LEVEL_TYPE, WORKFLOW_TYPE_NAME } from './constants'
 
 export const getWorkflowGroup: deployment.ChangeIdFunction = async change => (
   isModificationChange(change)
@@ -71,6 +71,14 @@ const getQueuesAdditionByProjectGroup: deployment.ChangeIdFunction = async chang
   const parent = getParent(instance)
   return `queue addition of ${parent.elemID.getFullName()}`
 }
+const getAttributeAdditionByObjectTypeGroup: deployment.ChangeIdFunction = async change => {
+  if (!isAdditionChange(change) || !isInstanceChange(change)
+    || getChangeData(change).elemID.typeName !== OBJECT_TYPE_ATTRIBUTE_TYPE) {
+    return undefined
+  }
+  const instance = getChangeData(change)
+  return `queue addition of ${instance.value.objectType.elemID.getFullName()}`
+}
 
 export const getChangeGroupIds = deployment.getChangeGroupIdsFunc([
   getWorkflowGroup,
@@ -79,4 +87,5 @@ export const getChangeGroupIds = deployment.getChangeGroupIdsFunc([
   getScriptListenersGroup,
   getScriptedFragmentsGroup,
   getQueuesAdditionByProjectGroup,
+  getAttributeAdditionByObjectTypeGroup,
 ])

@@ -239,6 +239,7 @@ export type ChangeValidatorName = (
   | 'automationProjects'
   | 'deleteLastQueueValidator'
   | 'defaultAdditionQueueValidator'
+  | 'defaultAttributeValidator'
   | 'boardColumnConfig'
   | 'automationToAssets'
   )
@@ -293,6 +294,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     automationProjects: { refType: BuiltinTypes.BOOLEAN },
     deleteLastQueueValidator: { refType: BuiltinTypes.BOOLEAN },
     defaultAdditionQueueValidator: { refType: BuiltinTypes.BOOLEAN },
+    defaultAttributeValidator: { refType: BuiltinTypes.BOOLEAN },
     automationToAssets: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {

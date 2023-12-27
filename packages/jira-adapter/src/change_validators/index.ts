@@ -61,6 +61,7 @@ import { issueTypeHierarchyValidator } from './issue_type_hierarchy'
 import { automationProjectsValidator } from './automation/automation_projects'
 import { deleteLastQueueValidator } from './last_queue'
 import { defaultAdditionQueueValidator } from './default_addition_queue'
+import { defaultAttributeValidator } from './assets/default_attribute'
 import { automationToAssetsValidator } from './automation/automation_to_assets'
 
 const {
@@ -121,6 +122,7 @@ export default (
     deleteLastQueueValidator: deleteLastQueueValidator(config),
     defaultAdditionQueueValidator: defaultAdditionQueueValidator(config),
     automationToAssets: automationToAssetsValidator(config),
+    defaultAttributeValidator: defaultAttributeValidator(config, client),
   }
 
   return createChangeValidator({

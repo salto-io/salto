@@ -31,6 +31,7 @@ describe('groupPushToApplicationUniquenessValidator', () => {
     undefined,
     {
       [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID(APPLICATION_NAME))],
+      [CORE_ANNOTATIONS.ALIAS]: 'groupPush1_alias',
     },
   )
   const groupPush2 = new InstanceElement(
@@ -42,6 +43,7 @@ describe('groupPushToApplicationUniquenessValidator', () => {
     undefined,
     {
       [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID(`${APPLICATION_NAME}2`))],
+      [CORE_ANNOTATIONS.ALIAS]: 'groupPush2_alias',
     },
   )
   const groupPush3 = new InstanceElement(
@@ -53,6 +55,7 @@ describe('groupPushToApplicationUniquenessValidator', () => {
     undefined,
     {
       [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID(APPLICATION_NAME))],
+      [CORE_ANNOTATIONS.ALIAS]: 'groupPush3_alias',
     },
   )
   const groupPushInElementSource = new InstanceElement(
@@ -64,6 +67,7 @@ describe('groupPushToApplicationUniquenessValidator', () => {
     undefined,
     {
       [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID(APPLICATION_NAME))],
+      [CORE_ANNOTATIONS.ALIAS]: 'groupPushInElementSource_alias',
     },
   )
   const elementSource = buildElementsSourceFromElements([groupPushInElementSource])
@@ -95,12 +99,11 @@ describe('groupPushToApplicationUniquenessValidator', () => {
       ],
       elementSource
     )
-    expect(changeErrors).toHaveLength(1)
     expect(changeErrors).toEqual([
       {
         elemID: groupPush1.elemID,
-        detailedMessage: `${GROUP_NAME} to ${APPLICATION_NAME} can only be defined on a single groupPush instance`,
-        message: `${GROUP_NAME} to ${APPLICATION_NAME} can only be defined on a single groupPush instance`,
+        detailedMessage: `GroupPush groupPushInElementSource_alias already maps group ${GROUP_NAME} to application ${APPLICATION_NAME}`,
+        message: `Group ${GROUP_NAME} is already mapped to ${APPLICATION_NAME}`,
         severity: 'Error',
       },
     ])

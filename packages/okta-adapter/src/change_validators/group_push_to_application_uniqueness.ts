@@ -29,31 +29,46 @@ export const groupPushToApplicationUniquenessValidator: ChangeValidator = async 
     log.warn('elementsSource was not provided to groupPushToApplicationUniqueness, skipping validator')
     return []
   }
-
-  const existingGroupToApplication = Object.fromEntries(await (awu(await elementsSource.getAll())
-    .filter(isInstanceElement)
-    .filter(instance => instance.elemID.typeName === GROUP_PUSH_TYPE_NAME)
-    .map(groupPush =>
-      ([
-        groupPush.value?.userGroupId?.elemID?.getFullName(),
-        groupPush.annotations[CORE_ANNOTATIONS.PARENT]?.[0]?.elemID?.getFullName(),
-      ])))
-    .toArray())
-
-  return changes
+  const groupPushAdditionChanges = changes
     .filter(isInstanceChange)
     .filter(isAdditionChange)
     .map(change => getChangeData(change))
     .filter(instance => instance.elemID.typeName === GROUP_PUSH_TYPE_NAME)
+  if (groupPushAdditionChanges.length === 0) {
+    return []
+  }
+  const existingGroupToApplication = await awu(await elementsSource.getAll())
+    .filter(isInstanceElement)
+    .filter(instance => instance.elemID.typeName === GROUP_PUSH_TYPE_NAME)
+    .reduce<Record<string, { application: string; groupPushAlias: string }[]>>((record, currentGroupPush) => {
+      const currentGroup = currentGroupPush.value?.userGroupId?.elemID?.getFullName() as string
+      const currentApplication = currentGroupPush
+        .annotations[CORE_ANNOTATIONS.PARENT]?.[0]?.elemID?.getFullName() as string
+      if (!currentGroup || !currentApplication) {
+        return record
+      }
+      return {
+        ...record,
+        [currentGroup]: (record[currentGroup] || [])
+          .concat({
+            application: currentApplication,
+            groupPushAlias: currentGroupPush.annotations[CORE_ANNOTATIONS.ALIAS],
+          }),
+      }
+    }, {})
+
+  return groupPushAdditionChanges
     .flatMap((instance): ChangeError[] => {
       const group = instance.value?.userGroupId?.elemID?.getFullName()
       const application = instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0]?.elemID?.getFullName()
-      if (group && application && existingGroupToApplication[group] === application) {
+      const existingRecord = (existingGroupToApplication[group] || [])
+        .find(record => record.application === application)
+      if (existingRecord) {
         return [{
           elemID: instance.elemID,
           severity: 'Error',
-          message: `${group} to ${application} can only be defined on a single groupPush instance`,
-          detailedMessage: `${group} to ${application} can only be defined on a single groupPush instance`,
+          message: `Group ${group} is already mapped to ${application}`,
+          detailedMessage: `GroupPush ${existingRecord.groupPushAlias} already maps group ${group} to application ${application}`,
         }]
       }
       return []

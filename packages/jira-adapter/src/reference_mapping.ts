@@ -303,6 +303,36 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: SCREEN_TYPE_NAME },
   },
   {
+    src: { field: 'date1FieldKey', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'date2FieldKey', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'fieldKey', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'fieldsRequired', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'groupsExemptFromValidation', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    jiraSerializationStrategy: 'groupId',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: GROUP_TYPE_NAME },
+  },
+  {
     src: { field: 'customIssueEventId', parentTypes: ['WorkflowTransitions'] },
     serializationStrategy: 'id',
     jiraMissingRefStrategy: 'typeAndValue',

@@ -48,19 +48,27 @@ type WorkflowResponse = {
 }
 
 export type ConditionParameters = {
-  accountIds?: string | string[]
   roleIds?: string | string[]
   groupIds?: string | string[]
-  groupCustomFieldIds?: string | string[]
-  allowUserCustomFieldIds?: string | string[]
-  denyUserCustomFieldIds?: string | string[]
   statusIds?: string | string[]
 }
 
 export type Condition = {
   ruleKey: string
-  parameters: ConditionParameters
-  id: string
+  parameters?: ConditionParameters
+  id?: string
+}
+
+export type ValidatorParameters = {
+  statusIds?: string | string[]
+  fieldsRequired?: string | string[]
+  groupsExemptFromValidation?: string | string[]
+}
+
+type TransitionValidator = {
+  ruleKey: string
+  parameters?: ValidatorParameters
+  id?: string
 }
 
 
@@ -71,6 +79,7 @@ type TransitionConditions = {
 
 export type Transition = {
   conditions?: TransitionConditions
+  validators?: TransitionValidator[]
 }
 
 const WORKFLOW_IDS_RESPONSE_SCHEMA = Joi.array().items(Joi.object({

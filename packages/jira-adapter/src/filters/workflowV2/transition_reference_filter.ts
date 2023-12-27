@@ -16,11 +16,12 @@
 import _ from 'lodash'
 import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
-import { ConditionParameters, Transition } from './types'
+import { ConditionParameters, Transition, ValidatorParameters } from './types'
 import { JIRA_WORKFLOW_TYPE } from '../../constants'
 
-const RESTRICT_ISSUE_RULE_KEY = 'system:restrict-issue-transition'
-const BLOCKING_CONDITION_RULE_KEY = 'system:parent-or-child-blocking-condition'
+
+const VALIDATOR_LIST_FIELDS = new Set(['statusIds', 'groupsExemptFromValidation', 'fieldsRequired'])
+const CONDITION_LIST_FIELDS = new Set(['roleIds', 'groupIds', 'statusIds'])
 
 const convertIdsStringToList = (idOrIdList: string | string[]): string[] => {
   if (_.isArray(idOrIdList)) {
@@ -29,12 +30,29 @@ const convertIdsStringToList = (idOrIdList: string | string[]): string[] => {
   return _.split(idOrIdList, ',')
 }
 
+const convertParameters = (
+  parameters: ConditionParameters | ValidatorParameters | undefined,
+  listFields: Set<string>
+): void => {
+  if (parameters === undefined) {
+    return
+  }
+  Object.entries(parameters)
+    .filter(([, value]) => !_.isEmpty(value))
+    .forEach(([key, value]) => {
+      if (value === undefined || !listFields.has(key)) {
+        return
+      }
+      parameters[key as keyof (typeof parameters)] = convertIdsStringToList(value)
+    })
+}
 
 /*
-* This filter uses the new workflow API to fetch workflows
+* This filter converts workflow transition validators and conditions parameters from a concatenated string
+* to a list of strings to create references
 */
 const filter: FilterCreator = ({ config, fetchQuery }) => ({
-  name: 'workflowConditionReferenceFilter',
+  name: 'workflowTransitionReferenceFilter',
   onFetch: async (elements: Element[]) => {
     if (!config.fetch.enableNewWorkflowAPI || !fetchQuery.isTypeMatch(JIRA_WORKFLOW_TYPE)) {
       return
@@ -46,24 +64,11 @@ const filter: FilterCreator = ({ config, fetchQuery }) => ({
         instance.value.transitions.forEach((transition: Transition) => {
           transition.conditions?.conditions
             ?.forEach(condition => {
-              if (condition.ruleKey === RESTRICT_ISSUE_RULE_KEY) {
-                const parameters: ConditionParameters = {}
-                Object.entries(condition.parameters)
-                  .filter(([, value]) => !_.isEmpty(value))
-                  .forEach(([key, value]) => {
-                    if (value === undefined) {
-                      return
-                    }
-                    parameters[key as keyof ConditionParameters] = convertIdsStringToList(value)
-                  })
-                condition.parameters = parameters
-              }
-              if (condition.ruleKey === BLOCKING_CONDITION_RULE_KEY) {
-                if (condition.parameters.statusIds !== undefined) {
-                  condition.parameters.statusIds = convertIdsStringToList(condition.parameters.statusIds)
-                }
-              }
+              convertParameters(condition.parameters, CONDITION_LIST_FIELDS)
             })
+          transition.validators?.forEach(validator => {
+            convertParameters(validator.parameters, VALIDATOR_LIST_FIELDS)
+          })
         })
       })
   },

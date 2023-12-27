@@ -24,6 +24,7 @@ import { getWorkspaceId } from '../../workspace_id'
 import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_TYPE, OBJECT_TYPE_ORDER_TYPE, JIRA } from '../../constants'
 import { FilterCreator } from '../../filter'
 import JiraClient from '../../client/client'
+import { setTypeDeploymentAnnotations } from '../../utils'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -118,6 +119,7 @@ const filterCreator: FilterCreator = ({ config, client, fetchQuery }) => ({
         || e.elemID.typeName === OBJECT_SCHEMA_TYPE), inst => inst.elemID.getFullName())
 
     const orderType = createOrderType()
+    setTypeDeploymentAnnotations(orderType)
     elements.push(orderType)
     Object.entries(parentToObjectTypes).forEach(([treeParentName, assetsObjectTypes]) => {
       const orderInstance = createAssetsObjectTypeOrder(

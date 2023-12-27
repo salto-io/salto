@@ -201,6 +201,7 @@ export const DEFAULT_FILTERS = [
   fieldNameFilter,
   workflowStructureFilter,
   workflowFilter,
+  // must run before references are transformed
   workflowTransitionReferenceFilter,
   // This should happen after workflowStructureFilter and before fieldStructureFilter
   queryFilter,

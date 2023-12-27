@@ -69,6 +69,7 @@ const { sleep } = promises.timeout
 
 const USER_SEGMENT_ID_FIELD = 'user_segment_id'
 const ATTACHMENTS_IDS_REGEX = new RegExp(`(?<url>/${ARTICLE_ATTACHMENTS_FIELD}/)(?<id>\\d+)`, 'g')
+const RATE_LIMIT_FOR_UNASSOCIATED_ATTACHMENT = 50
 
 export type TranslationType = {
   title: string
@@ -264,13 +265,15 @@ const handleArticleAttachmentsPreDeploy = async ({
   if (attachmentChanges.length === 0) {
     return []
   }
-  const rateLimit = config[CLIENT_CONFIG]?.rateLimit?.get ?? 50
+  const rateLimit = config[CLIENT_CONFIG]?.rateLimit?.get
+    ?? RATE_LIMIT_FOR_UNASSOCIATED_ATTACHMENT
   log.debug(`there are ${attachmentChanges.length} attachment changes, going to handle them in chunks of ${rateLimit}`)
   const attachChangesChunks = _.chunk(attachmentChanges, rateLimit)
   await awu(attachChangesChunks)
     .forEach(async (
       attachmentChangesChunk: (AdditionChange<InstanceElement> | ModificationChange<InstanceElement>)[],
-      index: number) => {
+      index: number,
+    ) => {
       log.debug(`starting article attachment change chunk ${index + 1}/${attachChangesChunks.length}`)
       await awu(attachmentChangesChunk).forEach(attachmentChange => createUnassociatedAttachmentFromChange({
         attachmentChange,

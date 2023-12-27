@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, ChangeError, ChangeValidator, getChangeData, isAdditionChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ChangeError, ChangeValidator, InstanceElement, getChangeData, isAdditionChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { GROUP_PUSH_TYPE_NAME } from '../constants'
@@ -40,22 +40,24 @@ export const groupPushToApplicationUniquenessValidator: ChangeValidator = async 
   const existingGroupToApplication = await awu(await elementsSource.getAll())
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === GROUP_PUSH_TYPE_NAME)
-    .reduce<Record<string, { application: string; groupPushAlias: string }[]>>((record, currentGroupPush) => {
-      const currentGroup = currentGroupPush.value?.userGroupId?.elemID?.getFullName() as string
-      const currentApplication = currentGroupPush
-        .annotations[CORE_ANNOTATIONS.PARENT]?.[0]?.elemID?.getFullName() as string
-      if (!currentGroup || !currentApplication) {
-        return record
-      }
-      return {
-        ...record,
-        [currentGroup]: (record[currentGroup] || [])
-          .concat({
-            application: currentApplication,
-            groupPushAlias: currentGroupPush.annotations[CORE_ANNOTATIONS.ALIAS],
-          }),
-      }
-    }, {})
+    .reduce<Record<string, { application: string; groupPushInstance: InstanceElement }[]>>(
+      (record, currentGroupPush) => {
+        const currentGroup = currentGroupPush.value?.userGroupId?.elemID?.getFullName() as string
+        const currentApplication = currentGroupPush
+          .annotations[CORE_ANNOTATIONS.PARENT]?.[0]?.elemID?.getFullName() as string
+        if (!currentGroup || !currentApplication) {
+          return record
+        }
+        return {
+          ...record,
+          [currentGroup]: (record[currentGroup] || [])
+            .concat({
+              application: currentApplication,
+              groupPushInstance: currentGroupPush,
+            }),
+        }
+      }, {}
+    )
 
   return groupPushAdditionChanges
     .flatMap((instance): ChangeError[] => {
@@ -63,12 +65,12 @@ export const groupPushToApplicationUniquenessValidator: ChangeValidator = async 
       const application = instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0]?.elemID?.getFullName()
       const existingRecord = (existingGroupToApplication[group] || [])
         .find(record => record.application === application)
-      if (existingRecord) {
+      if (existingRecord && !existingRecord.groupPushInstance.elemID.isEqual(instance.elemID)) {
         return [{
           elemID: instance.elemID,
           severity: 'Error',
           message: `Group ${group} is already mapped to ${application}`,
-          detailedMessage: `GroupPush ${existingRecord.groupPushAlias} already maps group ${group} to application ${application}`,
+          detailedMessage: `GroupPush ${existingRecord.groupPushInstance.annotations[CORE_ANNOTATIONS.ALIAS]} already maps group ${group} to application ${application}`,
         }]
       }
       return []

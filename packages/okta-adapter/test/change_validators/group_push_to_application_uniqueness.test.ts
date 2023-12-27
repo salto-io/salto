@@ -90,6 +90,15 @@ describe('groupPushToApplicationUniquenessValidator', () => {
     )
     expect(changeErrors).toHaveLength(0)
   })
+  it('should return empty list when addition change is on existing instance', async () => {
+    const changeErrors = await groupPushToApplicationUniquenessValidator(
+      [
+        toChange({ after: groupPushInElementSource }),
+      ],
+      elementSource
+    )
+    expect(changeErrors).toHaveLength(0)
+  })
   it('should return errors only when group to application are defined in element source', async () => {
     const changeErrors = await groupPushToApplicationUniquenessValidator(
       [

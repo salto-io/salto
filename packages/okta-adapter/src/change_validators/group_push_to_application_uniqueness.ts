@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, ChangeError, ChangeValidator, InstanceElement, getChangeData, isAdditionChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ChangeError, ChangeValidator, getChangeData, isAdditionChange, isInstanceChange, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import { groupBy } from 'lodash'
 import { GROUP_PUSH_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
@@ -29,48 +30,46 @@ export const groupPushToApplicationUniquenessValidator: ChangeValidator = async 
     log.warn('elementsSource was not provided to groupPushToApplicationUniqueness, skipping validator')
     return []
   }
-  const groupPushAdditionChanges = changes
+  const addedGroupPushInstances = changes
     .filter(isInstanceChange)
     .filter(isAdditionChange)
     .map(change => getChangeData(change))
     .filter(instance => instance.elemID.typeName === GROUP_PUSH_TYPE_NAME)
-  if (groupPushAdditionChanges.length === 0) {
+    .filter(groupPush =>
+      isReferenceExpression(groupPush.value.userGroupId)
+      && isReferenceExpression(groupPush.annotations[CORE_ANNOTATIONS.PARENT]?.[0]))
+
+  if (addedGroupPushInstances.length === 0) {
     return []
   }
-  const existingGroupToApplication = await awu(await elementsSource.getAll())
+
+  const existingGroupPushInstances = await awu(await elementsSource.getAll())
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === GROUP_PUSH_TYPE_NAME)
-    .reduce<Record<string, { application: string; groupPushInstance: InstanceElement }[]>>(
-      (record, currentGroupPush) => {
-        const currentGroup = currentGroupPush.value?.userGroupId?.elemID?.getFullName() as string
-        const currentApplication = currentGroupPush
-          .annotations[CORE_ANNOTATIONS.PARENT]?.[0]?.elemID?.getFullName() as string
-        if (!currentGroup || !currentApplication) {
-          return record
-        }
-        return {
-          ...record,
-          [currentGroup]: (record[currentGroup] || [])
-            .concat({
-              application: currentApplication,
-              groupPushInstance: currentGroupPush,
-            }),
-        }
-      }, {}
-    )
+    .filter(groupPush =>
+      isReferenceExpression(groupPush.value.userGroupId)
+      && isReferenceExpression(groupPush.annotations[CORE_ANNOTATIONS.PARENT]?.[0]))
+    .toArray()
 
-  return groupPushAdditionChanges
+  const groupPushByApp = groupBy(existingGroupPushInstances,
+    groupPush => groupPush.annotations[CORE_ANNOTATIONS.PARENT][0])
+
+  return addedGroupPushInstances
     .flatMap((instance): ChangeError[] => {
-      const group = instance.value?.userGroupId?.elemID?.getFullName()
-      const application = instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0]?.elemID?.getFullName()
-      const existingRecord = (existingGroupToApplication[group] || [])
-        .find(record => record.application === application)
-      if (existingRecord && !existingRecord.groupPushInstance.elemID.isEqual(instance.elemID)) {
+      const groupElemId = instance.value.userGroupId.elemID
+      const applicationElemId = instance.annotations[CORE_ANNOTATIONS.PARENT][0].elemID
+      const groupName = groupElemId.getFullName()
+      const applicationName = applicationElemId.getFullName()
+      const existingGroupPushInstance = (groupPushByApp[applicationElemId] ?? [])
+        .find(groupPush =>
+          groupPush.value.userGroupId.elemID.isEqual(groupElemId)
+          && !groupPush.elemID.isEqual(instance.elemID))
+      if (existingGroupPushInstance) {
         return [{
           elemID: instance.elemID,
           severity: 'Error',
-          message: `Group ${group} is already mapped to ${application}`,
-          detailedMessage: `GroupPush ${existingRecord.groupPushInstance.annotations[CORE_ANNOTATIONS.ALIAS]} already maps group ${group} to application ${application}`,
+          message: `Group ${groupName} is already mapped to ${applicationName}`,
+          detailedMessage: `GroupPush ${existingGroupPushInstance.annotations[CORE_ANNOTATIONS.ALIAS]} already maps group ${groupName} to application ${applicationName}`,
         }]
       }
       return []

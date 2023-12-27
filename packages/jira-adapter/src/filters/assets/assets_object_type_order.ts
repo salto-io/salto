@@ -77,7 +77,7 @@ const createAssetsObjectTypeOrder = (
     return undefined
   }
   const name = naclCase(`${treeParent.value.name}_order`)
-  const subFolder = treeParent.elemID.typeName === OBJECT_TYPE_TYPE ? ['childOrder'] : ['assetsObjectTypes', 'childOrder']
+  const subFolder = treeParent.elemID.typeName === OBJECT_TYPE_TYPE ? ['childOrder'] : ['objectTypes', 'childOrder']
   return new InstanceElement(
     name,
     orderType,
@@ -101,7 +101,7 @@ const filterCreator: FilterCreator = ({ config, client, fetchQuery }) => ({
   onFetch: async (elements: Element[]) => {
     if (!config.fetch.enableJSM
     || !config.fetch.enableJsmExperimental
-    || !fetchQuery.isTypeMatch(OBJECT_TYPE_ORDER_TYPE)) {
+    || !fetchQuery.isTypeMatch(OBJECT_TYPE_TYPE)) {
       return
     }
 
@@ -113,7 +113,7 @@ const filterCreator: FilterCreator = ({ config, client, fetchQuery }) => ({
       objectType => objectType.value.parentObjectTypeId.elemID.getFullName()
     )
 
-    const instanceNameToInstcne = _.keyBy(elements.filter(isInstanceElement)
+    const instanceNameToInstacne = _.keyBy(elements.filter(isInstanceElement)
       .filter(e => e.elemID.typeName === OBJECT_TYPE_TYPE
         || e.elemID.typeName === OBJECT_SCHEMA_TYPE), inst => inst.elemID.getFullName())
 
@@ -123,7 +123,7 @@ const filterCreator: FilterCreator = ({ config, client, fetchQuery }) => ({
       const orderInstance = createAssetsObjectTypeOrder(
         assetsObjectTypes,
         orderType,
-        instanceNameToInstcne[treeParentName]
+        instanceNameToInstacne[treeParentName]
       )
       if (orderInstance === undefined) {
         return
@@ -177,6 +177,8 @@ const filterCreator: FilterCreator = ({ config, client, fetchQuery }) => ({
         }
         if (isModificationChange(change)) {
           const positionsBefore = change.data.before.value.objectTypes
+            .filter(isReferenceExpression)
+            .filter((ref: ReferenceExpression) => ref.elemID.typeName === OBJECT_TYPE_TYPE)
           await awu(instance.value.objectTypes).filter(isReferenceExpression)
             .filter(ref => ref.elemID.typeName === OBJECT_TYPE_TYPE)
             .forEach(async (assetsObjectType, position) => {

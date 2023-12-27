@@ -31,11 +31,11 @@ type DeployChangeParam = {
   fieldsToIgnore?: string[] | ((path: ElemID) => boolean)
   additionalUrlVars?: Record<string, string>
   elementsSource?: ReadOnlyElementsSource
-  modifyChangeFunc?: (
+  serviceIdSetter?: (
     instance: InstanceElement,
     serviceIdField: string,
-    response: clientUtils.ResponseValue)
-    => void
+    response: clientUtils.ResponseValue
+    ) => void
 }
 
 const invertKeysNames = (instance: Record<string, unknown>): void => {
@@ -45,6 +45,14 @@ const invertKeysNames = (instance: Record<string, unknown>): void => {
       instance[invertNaclCase(key)] = instance[key]
       delete instance[key]
     })
+}
+
+const defaultServiceIdSetter = (
+  instance: InstanceElement,
+  serviceIdField: string,
+  response: clientUtils.ResponseValue
+): void => {
+  instance.value[serviceIdField] = response[serviceIdField]
 }
 
 /**
@@ -57,9 +65,7 @@ export const defaultDeployChange = async ({
   fieldsToIgnore = [],
   additionalUrlVars,
   elementsSource,
-  modifyChangeFunc = (instance, serviceIdField, response) => {
-    instance.value[serviceIdField] = response[serviceIdField]
-  },
+  serviceIdSetter = defaultServiceIdSetter,
 }: DeployChangeParam): Promise<
   clientUtils.ResponseValue | clientUtils.ResponseValue[] | undefined
 > => {
@@ -102,7 +108,7 @@ export const defaultDeployChange = async ({
     if (!Array.isArray(response)) {
       const serviceIdField = apiDefinitions.types[getChangeData(change).elemID.typeName]?.transformation?.serviceIdField ?? 'id'
       if (response?.[serviceIdField] !== undefined) {
-        modifyChangeFunc(change.data.after, serviceIdField, response)
+        serviceIdSetter(change.data.after, serviceIdField, response)
       }
     } else {
       log.warn('Received unexpected response from deployChange: %o', response)

@@ -71,11 +71,12 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           apiDefinitions: jsmApiDefinitions,
           fieldsToIgnore,
           additionalUrlVars,
-          modifyChangeFunc: (instance, serviceIdField, response) => {
+          serviceIdSetter: (instance, serviceIdField, response) => {
             const serviceFieldValue = response?.[serviceIdField]
             if (instance.elemID.typeName === QUEUE_TYPE && _.isNumber(serviceFieldValue)) {
               instance.value[serviceIdField] = serviceFieldValue.toString()
             }
+            instance.value[serviceIdField] = serviceFieldValue
           },
         })
       }

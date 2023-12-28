@@ -20,7 +20,7 @@ import { InstanceElement, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-i
 import { getDefaultConfig } from '../../src/config/config'
 import jsmTypesFilter from '../../src/filters/jsm_types_deploy_filter'
 import { createEmptyType, getFilterParams } from '../utils'
-import { OBJECT_SCHEMA_TYPE, PORTAL_GROUP_TYPE, PROJECT_TYPE } from '../../src/constants'
+import { OBJECT_SCHEMA_TYPE, PORTAL_GROUP_TYPE, PROJECT_TYPE, QUEUE_TYPE } from '../../src/constants'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -120,6 +120,23 @@ describe('jsmTypesDeployFilter', () => {
           ])
         expect(res.deployResult.errors).toHaveLength(0)
         expect(res.deployResult.appliedChanges).toHaveLength(0)
+      })
+      it('should deploy addition of queue types', async () => {
+        const queueInstance = new InstanceElement(
+          'queue110',
+          createEmptyType(QUEUE_TYPE),
+          {
+            id: 'q11',
+            name: 'queue110',
+          },
+        )
+        mockDeployChange.mockImplementation(async () => ({}))
+        const res = await filter
+          .deploy([{ action: 'add', data: { after: queueInstance } }])
+        expect(mockDeployChange).toHaveBeenCalledTimes(1)
+        expect(res.leftoverChanges).toHaveLength(0)
+        expect(res.deployResult.errors).toHaveLength(0)
+        expect(res.deployResult.appliedChanges).toHaveLength(1)
       })
       it('should depoly additon of assets types', async () => {
         mockDeployChange.mockImplementation(async () => ({}))

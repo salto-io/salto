@@ -14,9 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, isInstanceElement } from '@salto-io/adapter-api'
+import { Element, Values, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
-import { ConditionParameters, Transition, ValidatorParameters } from './types'
 import { JIRA_WORKFLOW_TYPE } from '../../constants'
 
 
@@ -27,23 +26,20 @@ const convertIdsStringToList = (idOrIdList: string | string[]): string[] => {
   if (_.isArray(idOrIdList)) {
     return idOrIdList
   }
-  return _.split(idOrIdList, ',')
+  return idOrIdList.split(',')
 }
 
 const convertParameters = (
-  parameters: ConditionParameters | ValidatorParameters | undefined,
+  parameters: Record<string, string | string[]> | undefined,
   listFields: Set<string>
 ): void => {
   if (parameters === undefined) {
     return
   }
   Object.entries(parameters)
-    .filter(([, value]) => !_.isEmpty(value))
+    .filter(([key, value]) => !_.isEmpty(value) && listFields.has(key))
     .forEach(([key, value]) => {
-      if (value === undefined || !listFields.has(key)) {
-        return
-      }
-      parameters[key as keyof (typeof parameters)] = convertIdsStringToList(value)
+      parameters[key] = convertIdsStringToList(value)
     })
 }
 
@@ -51,23 +47,22 @@ const convertParameters = (
 * This filter converts workflow transition validators and conditions parameters from a concatenated string
 * to a list of strings to create references
 */
-const filter: FilterCreator = ({ config, fetchQuery }) => ({
-  name: 'workflowTransitionReferenceFilter',
+const filter: FilterCreator = ({ config }) => ({
+  name: 'workflowTransitionParametersFilter',
   onFetch: async (elements: Element[]) => {
-    if (!config.fetch.enableNewWorkflowAPI || !fetchQuery.isTypeMatch(JIRA_WORKFLOW_TYPE)) {
+    if (!config.fetch.enableNewWorkflowAPI) {
       return
     }
     elements
       .filter(element => element.elemID.typeName === JIRA_WORKFLOW_TYPE)
       .filter(isInstanceElement)
       .forEach(instance => {
-        instance.value.transitions.forEach((transition: Transition) => {
-          transition.conditions?.conditions
-            ?.forEach(condition => {
-              convertParameters(condition.parameters, CONDITION_LIST_FIELDS)
-            })
-          transition.validators?.forEach(validator => {
-            convertParameters(validator.parameters, VALIDATOR_LIST_FIELDS)
+        instance.value.transitions.forEach((transition: Values) => {
+          transition.conditions?.conditions?.forEach((condition: Values) => {
+            convertParameters(condition?.parameters, CONDITION_LIST_FIELDS)
+          })
+          transition.validators?.forEach((validator:Values) => {
+            convertParameters(validator?.parameters, VALIDATOR_LIST_FIELDS)
           })
         })
       })

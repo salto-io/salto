@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { FilterResult } from '../../../src/filter'
-import conditionReferenceFilter from '../../../src/filters/workflowV2/transition_reference_filter'
+import conditionReferenceFilter from '../../../src/filters/workflowV2/transition_parameters_filter'
 import { createEmptyType, getFilterParams } from '../../utils'
 import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA_WORKFLOW_TYPE } from '../../../src/constants'
@@ -46,7 +46,7 @@ describe('workflowTransitionReferenceFilter', () => {
                   parameters: {
                     roleIds: '1,2',
                     groupIds: '3',
-                    groupCustomFieldIds: '',
+                    statusIds: '',
                     anotherField: '4,5',
                   },
                 },
@@ -84,7 +84,7 @@ describe('workflowTransitionReferenceFilter', () => {
     it('should remain fields with empty string', async () => {
       const { parameters: conditionParameters } = instance.value.transitions[0].conditions.conditions[0]
       const { parameters: validatorParameters } = instance.value.transitions[0].validators[0]
-      expect(conditionParameters.groupCustomFieldIds).toEqual('')
+      expect(conditionParameters.statusIds).toEqual('')
       expect(validatorParameters.fieldsRequired).toEqual('')
     })
     it('should not convert fields that not in the relevant field list', async () => {

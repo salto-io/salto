@@ -1025,6 +1025,7 @@ describe('Zendesk adapter E2E', () => {
             exclude: [],
             guide: {
               brands: ['.*'],
+              themes: true,
             },
           },
           [API_DEFINITIONS_CONFIG]: {

@@ -41,7 +41,6 @@ export type Workflow = {
   id: string
 }
 
-
 type WorkflowResponse = {
   workflows: Workflow[]
   taskId?: string

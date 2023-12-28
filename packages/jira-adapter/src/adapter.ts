@@ -65,6 +65,7 @@ import projectComponentFilter from './filters/project_component'
 import archivedProjectComponentsFilter from './filters/archived_project_components'
 import defaultInstancesDeployFilter from './filters/default_instances_deploy'
 import workflowFilter from './filters/workflowV2/workflow_filter'
+import workflowTransitionParametersFilter from './filters/workflowV2/transition_parameters_filter'
 import workflowStructureFilter from './filters/workflow/workflow_structure_filter'
 import workflowDiagramFilter from './filters/workflow/workflow_diagrams'
 import resolutionPropertyFilter from './filters/workflow/resolution_property_filter'
@@ -201,6 +202,8 @@ export const DEFAULT_FILTERS = [
   fieldNameFilter,
   workflowStructureFilter,
   workflowFilter,
+  // must run before references are transformed
+  workflowTransitionParametersFilter,
   // This should happen after workflowStructureFilter and before fieldStructureFilter
   queryFilter,
   // This should run before duplicateIdsFilter

@@ -1220,6 +1220,33 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       serviceUrl: '/secure/admin/workflows/ViewWorkflowSteps.jspa?workflowMode=live&workflowName={name}',
     },
   },
+  WorkflowRuleConfiguration_parameters: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'roleIds', fieldType: 'List<string>' },
+        { fieldName: 'groupIds', fieldType: 'List<string>' },
+        { fieldName: 'fieldId', fieldType: 'List<string>' },
+        { fieldName: 'denyUserCustomFields', fieldType: 'List<string>' },
+        { fieldName: 'groupCustomFields', fieldType: 'List<string>' },
+        { fieldName: 'statusIds', fieldType: 'List<string>' },
+        { fieldName: 'previousStatusIds', fieldType: 'string' },
+        { fieldName: 'fromStatusId', fieldType: 'string' },
+        { fieldName: 'toStatusId', fieldType: 'string' },
+        { fieldName: 'screenId', fieldType: 'string' },
+        { fieldName: 'field', fieldType: 'string' },
+        { fieldName: 'sourceFieldKey', fieldType: 'string' },
+        { fieldName: 'targetFieldKey', fieldType: 'string' },
+        { fieldName: 'roleId', fieldType: 'string' },
+        { fieldName: 'issueSecurityLevelId', fieldType: 'string' },
+        { fieldName: 'webhookId', fieldType: 'string' },
+        { fieldName: 'date1FieldKey', fieldType: 'string' },
+        { fieldName: 'date2FieldKey', fieldType: 'string' },
+        { fieldName: 'fieldsRequired', fieldType: 'List<string>' },
+        { fieldName: 'groupsExemptFromValidation', fieldType: 'List<string>' },
+        { fieldName: 'fieldKey', fieldType: 'string' },
+      ],
+    },
+  },
   WorkflowSchemes: {
     request: {
       url: '/rest/api/3/workflowscheme',

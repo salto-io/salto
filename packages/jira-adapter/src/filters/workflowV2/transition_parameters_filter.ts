@@ -22,15 +22,10 @@ import { JIRA_WORKFLOW_TYPE } from '../../constants'
 const VALIDATOR_LIST_FIELDS = new Set(['statusIds', 'groupsExemptFromValidation', 'fieldsRequired'])
 const CONDITION_LIST_FIELDS = new Set(['roleIds', 'groupIds', 'statusIds'])
 
-const convertIdsStringToList = (idOrIdList: string | string[]): string[] => {
-  if (_.isArray(idOrIdList)) {
-    return idOrIdList
-  }
-  return idOrIdList.split(',')
-}
+const convertIdsStringToList = (ids: string): string[] => ids.split(',')
 
 const convertParameters = (
-  parameters: Record<string, string | string[]> | undefined,
+  parameters: Values,
   listFields: Set<string>
 ): void => {
   if (parameters === undefined) {

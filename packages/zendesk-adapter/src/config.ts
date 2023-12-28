@@ -2662,8 +2662,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   themes: {
     request: {
-      // TODO: See if we can get it by brand
-      // url: '/api/v2/guide/theming/themes?brand_id={brand_id}',
       url: '/api/v2/guide/theming/themes',
     },
     transformation: {

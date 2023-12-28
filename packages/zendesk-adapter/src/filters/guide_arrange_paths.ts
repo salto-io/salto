@@ -146,7 +146,7 @@ const pathForBrandSpecificRootElements = (
   needTypeDirectory: boolean
 ): readonly string[] => {
   if (brandName === undefined) {
-    log.error('brandName was not found for instance %s.', instance.elemID.getFullName())
+    log.warn('brandName was not found for instance %s.', instance.elemID.getFullName())
     return [
       ...GUIDE_PATH,
       UNSORTED,

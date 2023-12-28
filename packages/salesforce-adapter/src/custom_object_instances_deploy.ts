@@ -36,8 +36,8 @@ import {
 import SalesforceClient from './client/client'
 import {
   ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
-  CUSTOM_OBJECT_ID_FIELD, DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY, DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY_MULTIPLIER,
-  OWNER_ID, SBAA_APPROVAL_CONDITION,
+  CUSTOM_OBJECT_ID_FIELD, FIELD_ANNOTATIONS, DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY,
+  DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY_MULTIPLIER, OWNER_ID, SBAA_APPROVAL_CONDITION,
   SBAA_APPROVAL_RULE,
   SBAA_CONDITIONS_MET,
 } from './constants'
@@ -290,6 +290,21 @@ export const retryFlow = async (
   }
 }
 
+const removeFieldsWithNoPermission = async (
+  instance: InstanceElement,
+  permissionAnnotation: string
+): Promise<void> => {
+  const instanceType = await instance.getType()
+  instance.value = _.pickBy(
+    instance.value,
+    (value, fieldName) => (
+      fieldName === CUSTOM_OBJECT_ID_FIELD
+      || (value !== undefined
+        && (instanceType).fields[fieldName]?.annotations[permissionAnnotation])
+    )
+  )
+}
+
 const insertInstances: CrudFn = async (
   { typeName,
     instances,
@@ -298,6 +313,8 @@ const insertInstances: CrudFn = async (
   if (instances.length === 0) {
     return []
   }
+  await awu(instances)
+    .forEach(instance => removeFieldsWithNoPermission(instance, FIELD_ANNOTATIONS.CREATABLE))
   const results = await client.bulkLoadOperation(
     typeName,
     'insert',
@@ -322,6 +339,8 @@ const updateInstances: CrudFn = async (
   if (instances.length === 0) {
     return []
   }
+  await awu(instances)
+    .forEach(instance => removeFieldsWithNoPermission(instance, FIELD_ANNOTATIONS.UPDATEABLE))
   const results = await client.bulkLoadOperation(
     typeName,
     'update',

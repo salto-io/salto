@@ -288,6 +288,8 @@ describe('Custom Object Instances CRUD', () => {
           refType: idType,
           label: 'id',
           annotations: {
+            [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+            [constants.FIELD_ANNOTATIONS.UPDATEABLE]: false,
             [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
             [constants.LABEL]: 'Record ID',
@@ -302,6 +304,7 @@ describe('Custom Object Instances CRUD', () => {
             [constants.LABEL]: 'Name',
             [constants.API_NAME]: 'Name',
             [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+            [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
             [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
           },
         },
@@ -313,6 +316,7 @@ describe('Custom Object Instances CRUD', () => {
             [constants.LABEL]: 'TestField',
             [constants.API_NAME]: 'Type.TestField__c',
             [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+            [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
             [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
           },
           annotationRefsOrTypes: {

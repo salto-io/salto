@@ -35,7 +35,7 @@ type DeployChangeParam = {
     instance: InstanceElement,
     serviceIdField: string,
     response: clientUtils.ResponseValue
-    ) => void
+  ) => void
 }
 
 const invertKeysNames = (instance: Record<string, unknown>): void => {
@@ -47,7 +47,7 @@ const invertKeysNames = (instance: Record<string, unknown>): void => {
     })
 }
 
-const defaultServiceIdSetter = (
+export const defaultServiceIdSetter = (
   instance: InstanceElement,
   serviceIdField: string,
   response: clientUtils.ResponseValue

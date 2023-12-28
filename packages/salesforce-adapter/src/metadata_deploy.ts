@@ -203,7 +203,6 @@ const processDeployResponse = (
   result: SFDeployResult,
   deletionsPackageName: string,
   typeAndNameToElemId: Record<string, NameToElemIDMap>
-
 ): { successfulFullNames: ReadonlyArray<MetadataId>
   errors: ReadonlyArray<SaltoError | SaltoElementError> } => {
   const allFailureMessages = makeArray(result.details)
@@ -243,6 +242,24 @@ const processDeployResponse = (
     errors.push({ message: result.errorMessage, severity: 'Error' as SeverityLevel })
   }
 
+  const anyErrors = isDefined(result.errorMessage)
+    || componentErrors.length > 0
+    || testErrors.length > 0
+  if (result.rollbackOnError !== false
+    && anyErrors) {
+    // If we deployed with 'rollbackOnError' (the default) and any component in the group fails to deploy, then every
+    // component in the group will not deploy. Let's create an explicit error for the components that did not have
+    // errors to make it clear that they didn't deploy either.
+    makeArray(result.details)
+      .flatMap(detail => makeArray(detail.componentSuccesses))
+      .map(component => ({
+        elemID: typeAndNameToElemId[component.componentType]?.[component.fullName],
+        message: 'This metadata type did not deploy because other types in its deployment group encountered failures',
+        severity: 'Warning' as const,
+      }))
+      .filter(error => error.elemID !== undefined)
+  }
+
   // In checkOnly none of the changes are actually applied
   if (!result.checkOnly && result.rollbackOnError && !result.success) {
     // if rollbackOnError and we did not succeed, nothing was applied as well
@@ -259,7 +276,7 @@ const processDeployResponse = (
     .map(message => getUnFoundDeleteName(message, deletionsPackageName))
     .filter(isDefined)
 
-  const successfulFullNames = allSuccessMessages
+  const successfulFullNames = anyErrors ? [] : allSuccessMessages
     .map(success => ({ type: success.componentType, fullName: success.fullName }))
     .concat(unFoundDeleteNames)
 

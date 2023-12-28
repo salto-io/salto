@@ -32,7 +32,7 @@ const convertParameters = (
     return
   }
   Object.entries(parameters)
-    .filter(([key, value]) => !_.isEmpty(value) && listFields.has(key))
+    .filter(([key, value]) => !_.isEmpty(value) && _.isString(value) && listFields.has(key))
     .forEach(([key, value]) => {
       parameters[key] = convertIdsStringToList(value)
     })

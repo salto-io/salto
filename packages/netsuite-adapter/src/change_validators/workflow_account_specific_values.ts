@@ -36,8 +36,10 @@ const toValidationError = (instance: InstanceElement, probField: string): Change
 const toConditionParametersWarning = (elemID: ElemID): ChangeError => ({
   elemID,
   severity: 'Warning',
-  message: 'The condition cannot be applied',
-  detailedMessage: 'A condition builder parameter in this section contains an ACCOUNT_SPECIFIC_VALUE which cannot be deployed due to NetSuite constraints.',
+  message: 'Workflow Condition won\'t be deployed',
+  detailedMessage: 'This Workflow Condition includes an ACCOUNT_SPECIFIC_VALUE, which, due to NetSuite limitations, cannot be deployed.'
+  + ' To ensure a smooth deployment, please edit the element in Salto and replace ACCOUNT_SPECIFIC_VALUE with the real value.'
+  + ' Other non-restricted aspects of the Workflow will be deployed as usual.',
 })
 
 const getClosestInitConditionElemID = (elemID: ElemID): ElemID | undefined => {

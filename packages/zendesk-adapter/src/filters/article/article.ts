@@ -265,8 +265,7 @@ const handleArticleAttachmentsPreDeploy = async ({
   if (attachmentChanges.length === 0) {
     return []
   }
-  const rateLimit = config[CLIENT_CONFIG]?.rateLimit?.get
-    ?? RATE_LIMIT_FOR_UNASSOCIATED_ATTACHMENT
+  const rateLimit = config[CLIENT_CONFIG]?.unassociatedAttachmentChunkSize ?? RATE_LIMIT_FOR_UNASSOCIATED_ATTACHMENT
   log.debug(`there are ${attachmentChanges.length} attachment changes, going to handle them in chunks of ${rateLimit}`)
   const attachChangesChunks = _.chunk(attachmentChanges, rateLimit)
   await awu(attachChangesChunks)

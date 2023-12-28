@@ -75,10 +75,9 @@ const filter: FilterCreator = ({ config }) => ({
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === OBJECT_TYPE_TYPE)
+      .filter(instance => instance.value.parentObjectTypeId === undefined)
       .forEach(instance => {
-        if (instance.value.parentObjectTypeId === undefined) {
-          instance.value.parentObjectTypeId = instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0]
-        }
+        instance.value.parentObjectTypeId = instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0]
       })
   },
 })

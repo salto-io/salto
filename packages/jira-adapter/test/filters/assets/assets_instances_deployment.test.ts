@@ -79,6 +79,29 @@ describe('assetsInstnacesDeployment', () => {
         await filter.preDeploy([{ action: 'add', data: { after: objectTypeInstance } }])
         expect(objectTypeInstance.value.parentObjectTypeId).toBeUndefined()
       })
+      it('should delete parentObjectTypeId for root object type modification', async () => {
+        const objectTypeInstanceAfter = objectTypeInstance.clone()
+        objectTypeInstanceAfter.value.description = 'new description'
+        await filter.preDeploy([{ action: 'modify', data: { before: objectTypeInstance, after: objectTypeInstanceAfter } }])
+        expect(objectTypeInstanceAfter.value.parentObjectTypeId).toBeUndefined()
+      })
+      it('should do nothing if not parent object type Id', async () => {
+        const childObjectType = new InstanceElement(
+          'childObjectType',
+          createEmptyType(OBJECT_TYPE_TYPE),
+          {
+            name: 'childObjectType',
+            description: 'test Description',
+            category: 2,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(assetSchemaInstance.elemID, assetSchemaInstance)],
+          }
+        )
+        await filter.preDeploy([{ action: 'add', data: { after: childObjectType } }])
+        expect(childObjectType.value.parentObjectTypeId).toBeUndefined()
+      })
     })
     describe('onDeploy', () => {
       beforeEach(async () => {
@@ -123,6 +146,37 @@ describe('assetsInstnacesDeployment', () => {
         expect(objectTypeInstance.value.parentObjectTypeId).toEqual(
           new ReferenceExpression(assetSchemaInstance.elemID, assetSchemaInstance)
         )
+      })
+      it('should add parentObjectTypeId for root object type modification', async () => {
+        const objectTypeInstanceAfter = objectTypeInstance.clone()
+        objectTypeInstanceAfter.value.description = 'new description'
+        await filter.onDeploy([{ action: 'modify', data: { before: objectTypeInstance, after: objectTypeInstanceAfter } }])
+        expect(objectTypeInstanceAfter.value.parentObjectTypeId).toEqual(
+          new ReferenceExpression(assetSchemaInstance.elemID, assetSchemaInstance)
+        )
+      })
+      it('should do nothing if there is not parentObjectId', async () => {
+        const childObjectType = new InstanceElement(
+          'childObjectType',
+          createEmptyType(OBJECT_TYPE_TYPE),
+          {
+            name: 'childObjectType',
+            description: 'test Description',
+            category: 2,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(assetSchemaInstance.elemID, assetSchemaInstance)],
+          }
+        )
+        await filter.preDeploy([{ action: 'add', data: { after: childObjectType } }])
+        expect(childObjectType.value.parentObjectTypeId).toBeUndefined()
+      })
+      it('should set parentObjectTypeId to undefined if there is no parent', async () => {
+        delete objectTypeInstance.annotations[CORE_ANNOTATIONS.PARENT]
+        const objectTypeInstanceAfter = objectTypeInstance.clone()
+        await filter.onDeploy([{ action: 'modify', data: { before: objectTypeInstance, after: objectTypeInstanceAfter } }])
+        expect(objectTypeInstanceAfter.value.parentObjectTypeId).toBeUndefined()
       })
     })
 })

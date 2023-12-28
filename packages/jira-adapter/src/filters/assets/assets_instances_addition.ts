@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, getChangeData, isAdditionChange, isInstanceChange } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { getParent } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
@@ -49,10 +49,9 @@ const filter: FilterCreator = ({ config }) => ({
       .filter(isInstanceChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === OBJECT_TYPE_TYPE)
+      .filter(instance => instance.value.parentObjectTypeId?.elemID.typeName === OBJECT_SCHEMA_TYPE)
       .forEach(instance => {
-        if (instance.value.parentObjectTypeId?.elemID.typeName === OBJECT_SCHEMA_TYPE) {
-          delete instance.value.parentObjectTypeId
-        }
+        delete instance.value.parentObjectTypeId
       })
   },
   onDeploy: async changes => {
@@ -73,6 +72,7 @@ const filter: FilterCreator = ({ config }) => ({
       })
     await awu(changes)
       .filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === OBJECT_TYPE_TYPE)
       .forEach(instance => {

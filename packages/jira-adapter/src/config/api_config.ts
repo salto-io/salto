@@ -2322,7 +2322,6 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'globalId' },
         { fieldName: 'objectSchemaId' },
         { fieldName: 'workspaceId' },
-        { fieldName: 'position' },
       ],
       extendsParentId: false,
     },

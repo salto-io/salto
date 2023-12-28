@@ -267,14 +267,12 @@ export const createInstances = (
     { [CORE_ANNOTATIONS.PARENT]: [objectSchemaRef] }
   )
 
-  const objecttypeattribute = new InstanceElement(
+  const objectTypeAttribute = new InstanceElement(
     `testSchema_Hardware_Assets_us_${randomString}@uumu`,
     findType(OBJECT_TYPE_ATTRIBUTE_TYPE, fetchedElements),
     createObjectTypeAttributeValues(randomString, fetchedElements),
     undefined,
   )
-  // eslint-disable-next-line no-console
-  console.log(`name are: ${objecttypeattribute.value.name}, ${objectType.value.name}, ${objectSchemaStatus.elemID.name}`)
 
   return [
     [dashboard],
@@ -306,7 +304,7 @@ export const createInstances = (
     [objectSchema],
     [objectSchemaStatus],
     [objectType],
-    [objecttypeattribute],
+    [objectTypeAttribute],
   ]
 }
 

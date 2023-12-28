@@ -42,14 +42,14 @@ const toConditionParametersWarning = (elemID: ElemID): ChangeError => ({
   + ' Other non-restricted aspects of the Workflow will be deployed as usual.',
 })
 
-const getClosestInitConditionElemID = (elemID: ElemID): ElemID | undefined => {
+const findClosestInitConditionAncestorElemID = (elemID: ElemID): ElemID | undefined => {
   if (elemID.name === INIT_CONDITION) {
     return elemID
   }
   if (elemID.isTopLevel()) {
     return undefined
   }
-  return getClosestInitConditionElemID(elemID.createParentID())
+  return findClosestInitConditionAncestorElemID(elemID.createParentID())
 }
 
 const isNestedValueChanged = (
@@ -88,7 +88,7 @@ const changeValidator: NetsuiteChangeValidator = async changes => (
             }
           }
           if (path.name === PARAMETER) {
-            const conditionElemId = getClosestInitConditionElemID(path) ?? path
+            const conditionElemId = findClosestInitConditionAncestorElemID(path) ?? path
             if (
               !conditionsWithAccountSpecificValues.has(conditionElemId.getFullName())
               && Object.values(value).some((val: Value) => val?.value === ACCOUNT_SPECIFIC_VALUE)

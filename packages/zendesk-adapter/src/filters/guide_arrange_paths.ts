@@ -42,7 +42,7 @@ import {
   ARTICLE_ORDER_TYPE_NAME,
   CATEGORY_ORDER_TYPE_NAME,
   SECTION_ORDER_TYPE_NAME,
-  ARTICLE_ATTACHMENT_TYPE_NAME, TRANSLATION_TYPE_NAMES, ARTICLE_ATTACHMENTS_FIELD,
+  ARTICLE_ATTACHMENT_TYPE_NAME, TRANSLATION_TYPE_NAMES, ARTICLE_ATTACHMENTS_FIELD, GUIDE_THEME_TYPE_NAME,
 } from '../constants'
 
 const { RECORDS_PATH } = elementsUtils
@@ -58,6 +58,7 @@ const BRAND_SECOND_LEVEL = [
   GUIDE_SETTINGS_TYPE_NAME,
   GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
   CATEGORY_ORDER_TYPE_NAME,
+  GUIDE_THEME_TYPE_NAME,
 ]
 const PARENTS = [CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ARTICLE_TYPE_NAME]
 
@@ -88,6 +89,7 @@ export const GUIDE_ELEMENT_DIRECTORY: Record<string, string> = {
   [SECTION_ORDER_TYPE_NAME]: 'section_order',
   [ARTICLE_ORDER_TYPE_NAME]: 'article_order',
   [ARTICLE_ATTACHMENT_TYPE_NAME]: 'article_attachment',
+  [GUIDE_THEME_TYPE_NAME]: 'themes',
 }
 
 const getReferencedLocale = (localeRef: ReferenceExpression | string | undefined)
@@ -142,10 +144,9 @@ const pathForBrandSpecificRootElements = (
   instance: InstanceElement,
   brandName: string | undefined,
   needTypeDirectory: boolean
-)
-: readonly string[] => {
+): readonly string[] => {
   if (brandName === undefined) {
-    log.error('brandName was not found for instance %s.', instance.elemID.getFullName())
+    log.warn('brandName was not found for instance %s.', instance.elemID.getFullName())
     return [
       ...GUIDE_PATH,
       UNSORTED,
@@ -178,7 +179,7 @@ const pathForOtherLevels = ({
   needTypeDirectory,
   needOwnFolder,
   parent,
-} :{
+}: {
   instance: InstanceElement
   needTypeDirectory: boolean
   needOwnFolder: boolean
@@ -240,17 +241,18 @@ const filterCreator: FilterCreator = () => ({
         instance.path = pathForGlobalTypes(instance)
       })
 
-    // category, settings, language_settings, category_order
+    // category, settings, language_settings, category_order, themes
     BRAND_SECOND_LEVEL
       .flatMap(type => guideGrouped[type])
       .filter(instance => instance !== undefined)
       .forEach(instance => {
-        const brandElemId = instance.value.brand?.elemID.getFullName()
+        const brandElemId = (instance.value.brand || instance.value.brand_id)?.elemID.getFullName()
         const needTypeDirectory = [
           CATEGORY_TYPE_NAME,
           GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
           CATEGORY_ORDER_TYPE_NAME,
           GUIDE_SETTINGS_TYPE_NAME,
+          GUIDE_THEME_TYPE_NAME,
         ].includes(instance.elemID.typeName)
         instance.path = pathForBrandSpecificRootElements(instance, fullNameByNameBrand[brandElemId], needTypeDirectory)
       })

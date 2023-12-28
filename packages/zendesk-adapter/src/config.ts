@@ -22,6 +22,7 @@ import {
   ARTICLE_ORDER_TYPE_NAME,
   BRAND_TYPE_NAME,
   CATEGORY_ORDER_TYPE_NAME, EVERYONE_USER_TYPE,
+  GUIDE_THEME_TYPE_NAME,
   SECTION_ORDER_TYPE_NAME,
   ZENDESK,
 } from './constants'
@@ -77,6 +78,7 @@ export type IdLocator = {
 
 export type Guide = {
   brands: string[]
+  themes?: boolean
 }
 
 export type ZendeskClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
@@ -84,25 +86,25 @@ export type ZendeskClientConfig = clientUtils.ClientBaseConfig<clientUtils.Clien
 
 export type ZendeskFetchConfig = configUtils.UserFetchConfig
   & {
-  enableMissingReferences?: boolean
-  includeAuditDetails?: boolean
-  addAlias?: boolean
-  handleIdenticalAttachmentConflicts?: boolean
-  greedyAppReferences?: boolean
-  appReferenceLocators?: IdLocator[]
-  guide?: Guide
-  resolveOrganizationIDs?: boolean
-  resolveUserIDs?: boolean
-  extractReferencesFromFreeText?: boolean
-  convertJsonIdsToReferences?: boolean
-}
+    enableMissingReferences?: boolean
+    includeAuditDetails?: boolean
+    addAlias?: boolean
+    handleIdenticalAttachmentConflicts?: boolean
+    greedyAppReferences?: boolean
+    appReferenceLocators?: IdLocator[]
+    guide?: Guide
+    resolveOrganizationIDs?: boolean
+    resolveUserIDs?: boolean
+    extractReferencesFromFreeText?: boolean
+    convertJsonIdsToReferences?: boolean
+  }
 export type ZendeskDeployConfig = configUtils.UserDeployConfig & configUtils.DefaultMissingUserFallbackConfig & {
   createMissingOrganizations?: boolean
 }
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
   configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean },
   configUtils.TransformationDefaultConfig & { omitInactive?: boolean }
-  >
+>
 
 export type ZendeskConfig = {
   [CLIENT_CONFIG]?: ZendeskClientConfig
@@ -2658,6 +2660,26 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
     },
   },
+  themes: {
+    request: {
+      // TODO: See if we can get it by brand
+      // url: '/api/v2/guide/theming/themes?brand_id={brand_id}',
+      url: '/api/v2/guide/theming/themes',
+    },
+    transformation: {
+      dataField: 'themes',
+    },
+  },
+  theme: {
+    transformation: {
+      idFields: ['&brand_id', ...DEFAULT_ID_FIELDS],
+      sourceTypeName: 'themes__themes',
+      fieldTypeOverrides: [
+        { fieldName: 'files', fieldType: 'map<unknown>' },
+      ],
+      fieldsToHide: [{ fieldName: 'id' }],
+    },
+  },
 }
 
 export const SUPPORTED_TYPES = {
@@ -2713,6 +2735,7 @@ export const GUIDE_BRAND_SPECIFIC_TYPES = {
 export const GUIDE_GLOBAL_TYPES = {
   permission_group: ['permission_groups'],
   user_segment: ['user_segments'],
+  theme: ['themes'],
 }
 
 export const GUIDE_SUPPORTED_TYPES = {
@@ -2729,6 +2752,7 @@ export const GUIDE_TYPES_TO_HANDLE_BY_BRAND = [
   CATEGORY_ORDER_TYPE_NAME,
   SECTION_ORDER_TYPE_NAME,
   ARTICLE_ORDER_TYPE_NAME,
+  GUIDE_THEME_TYPE_NAME,
 ]
 
 export const DEFAULT_CONFIG: ZendeskConfig = {
@@ -2808,6 +2832,9 @@ const GuideType = createMatchingObjectType<Guide>({
         _required: true,
       },
     },
+    themes: {
+      refType: BuiltinTypes.BOOLEAN,
+    },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -2879,7 +2906,7 @@ export type ChangeValidatorName = (
   | 'notEnabledMissingReferences'
   | 'conditionalTicketFields'
   | 'dynamicContentDeletion'
-  )
+)
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 

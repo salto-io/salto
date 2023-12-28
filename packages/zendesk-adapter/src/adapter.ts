@@ -121,6 +121,7 @@ import deployBrandedGuideTypesFilter from './filters/deploy_branded_guide_types'
 import { Credentials } from './auth'
 import guideSectionCategoryFilter from './filters/guide_section_and_category'
 import guideTranslationFilter from './filters/guide_translation'
+import guideThemeFilter from './filters/guide_theme'
 import fetchCategorySection from './filters/guide_fetch_article_section_and_category'
 import guideParentSection, { addParentFields } from './filters/guide_parent_to_section'
 import guideGuideSettings from './filters/guide_guide_settings'
@@ -256,6 +257,7 @@ export const DEFAULT_FILTERS = [
   handleIdenticalAttachmentConflicts,
   omitCollisionFilter, // needs to be after referencedIdFieldsFilter (which is part of the common filters)
   deployBrandedGuideTypesFilter,
+  guideThemeFilter, // fetches a lot of data, so should be after omitCollisionFilter to remove theme collisions
   guideArrangePaths,
   hideAccountFeatures,
   fetchCategorySection, // need to be after arrange paths as it uses the 'name'/'title' field

@@ -1,0 +1,136 @@
+/*
+*                      Copyright 2023 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+import { ElemID, InstanceElement, ObjectType, ReferenceExpression, StaticFile } from '@salto-io/adapter-api'
+import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
+import { BRAND_TYPE_NAME, GUIDE_THEME_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { FilterCreator } from '../../src/filter'
+import filterCreator from '../../src/filters/guide_theme'
+import * as DownloadModule from '../../src/filters/guide_themes/download'
+import { createFilterCreatorParams } from '../utils'
+import { UNSORTED } from '../../src/filters/guide_arrange_paths'
+
+jest.mock('jszip', () => jest.fn().mockImplementation(() => {
+  const mockFiles = {
+    // Mocked data you expect after loading the zip file
+    'file1.txt': { async: jest.fn(() => Buffer.from('file1content')), dir: false },
+    'subfolder/file2.txt': { async: jest.fn(() => Buffer.from('file2content')), dir: false },
+  }
+  return {
+    loadAsync: jest.fn().mockResolvedValue({
+      forEach: jest.fn().mockImplementation(cb => Object.entries(mockFiles).forEach(([key, value]) => {
+        cb(key, value)
+      })),
+    }),
+  }
+}))
+
+const brandType = new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) })
+const themeType = new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_THEME_TYPE_NAME) })
+
+const brand1 = new InstanceElement('brand', brandType, { id: 1, name: 'oneTwo' })
+const theme1 = new InstanceElement('theme', themeType, { id: 'park?', name: 'SixFlags', brand_id: new ReferenceExpression(brand1.elemID) })
+
+describe('filterCreator', () => {
+  describe('fetch', () => {
+    describe('bad config', () => {
+      it('returns undefined if guide is not enabled', async () => {
+        expect(await filterCreator(createFilterCreatorParams({})).onFetch?.([brand1, theme1])).toBeUndefined()
+      })
+      describe('guide is enabled but themes is not', () => {
+        let filter: ReturnType<FilterCreator>
+
+        beforeEach(() => {
+          const config = { ...DEFAULT_CONFIG }
+          config[FETCH_CONFIG].guide = { brands: ['.*'], themes: false }
+          filter = filterCreator(createFilterCreatorParams({ config }))
+        })
+
+        it('returns undefined', async () => {
+          expect(await filter.onFetch?.([brand1, theme1])).toBeUndefined()
+        })
+        it('removes themes', async () => {
+          const elements = [brand1, theme1, theme1]
+          await filter.onFetch?.(elements)
+          expect(elements).toEqual([brand1])
+        })
+      })
+    })
+
+    describe('good config', () => {
+      let filter: ReturnType<FilterCreator>
+      let mockDownload: jest.SpyInstance
+
+      beforeEach(() => {
+        const config = { ...DEFAULT_CONFIG }
+        config[FETCH_CONFIG].guide = { brands: ['.*'], themes: true }
+        filter = filterCreator(createFilterCreatorParams({ config }))
+        mockDownload = jest.spyOn(DownloadModule, 'download')
+      })
+
+      describe('theme download unsuccessful', () => {
+        beforeEach(() => {
+          mockDownload.mockResolvedValue(undefined)
+        })
+
+        it('removes the theme from the elements', async () => {
+          const elements = [brand1, theme1]
+          await filter.onFetch?.(elements)
+          expect(elements).toEqual([brand1])
+        })
+
+        it('returns a warning for the theme', async () => {
+          const errors = [{ message: 'Error fetching theme id park?, no content returned from Zendesk API', severity: 'Warning' }]
+          expect(await filter.onFetch?.([brand1, theme1])).toEqual({ errors })
+        })
+      })
+
+      describe('theme download successful', () => {
+        beforeEach(() => {
+          mockDownload.mockResolvedValue(Buffer.from('content'))
+        })
+
+        it('adds the theme files to the theme', async () => {
+          const elements = [brand1, theme1]
+          await filter.onFetch?.(elements)
+          expect(elements).toEqual([brand1, theme1])
+          expect(Object.keys(theme1.value.files)).toHaveLength(2)
+          expect(theme1.value.files['file1.txt'].filename).toEqual('file1.txt')
+          expect(theme1.value.files['file1.txt'].content).toEqual(new StaticFile({
+            filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/file1.txt`,
+            content: Buffer.from('file1content'),
+          }))
+          expect(theme1.value.files.subfolder['file2.txt'].filename).toEqual('subfolder/file2.txt')
+          expect(theme1.value.files.subfolder['file2.txt'].content).toEqual(new StaticFile({
+            filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/subfolder/file2.txt`,
+            content: Buffer.from('file2content'),
+          }))
+        })
+
+        it('returns no errors', async () => {
+          expect(await filter.onFetch?.([brand1, theme1])).toEqual({ errors: [] })
+        })
+
+        it('fills in unsorted if brand name is not found', async () => {
+          await filter.onFetch?.([theme1])
+          expect(theme1.value.files['file1.txt'].content).toEqual(new StaticFile({
+            filepath: `${ZENDESK}/themes/brands/${UNSORTED}/SixFlags/file1.txt`,
+            content: Buffer.from('file1content'),
+          }))
+        })
+      })
+    })
+  })
+})

@@ -70,7 +70,6 @@ describe('groupPushToApplicationUniquenessValidator', () => {
       [CORE_ANNOTATIONS.ALIAS]: 'groupPushInElementSource_alias',
     },
   )
-  const elementSource = buildElementsSourceFromElements([groupPushInElementSource])
 
   it('should return empty list when elementSource is not provided', async () => {
     const changeErrors = await groupPushToApplicationUniquenessValidator(
@@ -81,6 +80,11 @@ describe('groupPushToApplicationUniquenessValidator', () => {
     expect(changeErrors).toHaveLength(0)
   })
   it('should return empty list when there are no addition changes', async () => {
+    const elementSource = buildElementsSourceFromElements([
+      groupPushInElementSource,
+      groupPush1,
+      groupPush2,
+      groupPush3])
     const changeErrors = await groupPushToApplicationUniquenessValidator(
       [
         toChange({ before: groupPush1 }),
@@ -91,6 +95,7 @@ describe('groupPushToApplicationUniquenessValidator', () => {
     expect(changeErrors).toHaveLength(0)
   })
   it('should return empty list when addition change is on existing instance', async () => {
+    const elementSource = buildElementsSourceFromElements([groupPushInElementSource])
     const changeErrors = await groupPushToApplicationUniquenessValidator(
       [
         toChange({ after: groupPushInElementSource }),
@@ -100,6 +105,11 @@ describe('groupPushToApplicationUniquenessValidator', () => {
     expect(changeErrors).toHaveLength(0)
   })
   it('should return errors only when group to application are defined in element source', async () => {
+    const elementSource = buildElementsSourceFromElements([
+      groupPushInElementSource,
+      groupPush1,
+      groupPush2,
+      groupPush3])
     const changeErrors = await groupPushToApplicationUniquenessValidator(
       [
         toChange({ after: groupPush1 }),

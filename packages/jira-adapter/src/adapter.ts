@@ -149,7 +149,7 @@ import scriptRunnerFilter from './filters/script_runner/script_runner_filter'
 import scriptRunnerListenersDeployFilter from './filters/script_runner/script_runner_listeners_deploy'
 import scriptedFragmentsDeployFilter from './filters/script_runner/scripted_fragments_deploy'
 import fetchJsmTypesFilter from './filters/jsm_types_fetch_filter'
-import assetsInstancesAdditionFilter from './filters/assets/assets_instances_addition'
+import assetsInstancesDeploymentFilter from './filters/assets/assets_instances_deployment'
 import deployAttributesFilter from './filters/assets/attribute_deploy_filter'
 import deployJsmTypesFilter from './filters/jsm_types_deploy_filter'
 import jsmPathFilter from './filters/jsm_paths'
@@ -340,7 +340,7 @@ export const DEFAULT_FILTERS = [
   portalGroupsFilter,
   requestTypeFilter,
   // Must run before asstesDeployFilter
-  assetsInstancesAdditionFilter,
+  assetsInstancesDeploymentFilter,
   // Must be done after JsmTypesFilter
   jsmPathFilter,
   ...Object.values(otherCommonFilters),

@@ -27,7 +27,7 @@ const SUPPORTED_TYPES = [OBJECT_SCHEMA_STATUS_TYPE, OBJECT_TYPE_TYPE]
 * that need it in order to be deployed.
 */
 const filter: FilterCreator = ({ config }) => ({
-  name: 'assetsInstancesAdditionFilter',
+  name: 'assetsInstancesDeploymentFilter',
   preDeploy: async changes => {
     const { jsmApiDefinitions } = config
     if (!config.fetch.enableJSM

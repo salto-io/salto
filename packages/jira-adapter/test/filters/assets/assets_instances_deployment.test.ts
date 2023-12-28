@@ -17,11 +17,11 @@ import { filterUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { InstanceElement, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { getDefaultConfig } from '../../../src/config/config'
-import assetsStatusAdditionFilter from '../../../src/filters/assets/assets_instances_addition'
+import assetsStatusAdditionFilter from '../../../src/filters/assets/assets_instances_deployment'
 import { createEmptyType, getFilterParams } from '../../utils'
 import { OBJECT_SCHEMA_TYPE, OBJECT_SCHEMA_STATUS_TYPE, OBJECT_TYPE_TYPE } from '../../../src/constants'
 
-describe('assetsStatusAddition', () => {
+describe('assetsInstnacesDeployment', () => {
     type FilterType = filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
     let filter: FilterType
     let assetsStatusInstance: InstanceElement

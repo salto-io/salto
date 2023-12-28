@@ -62,7 +62,7 @@ import {
   CUSTOM_OBJECT,
   CUSTOM_OBJECT_ID_FIELD, DefaultSoqlQueryLimits,
   FIELD_ANNOTATIONS,
-  FLOW_METADATA_TYPE,
+  FLOW_METADATA_TYPE, INSTALLED_PACKAGE_METADATA,
   INSTANCE_FULL_NAME_FIELD,
   INTERNAL_ID_ANNOTATION,
   INTERNAL_ID_FIELD,
@@ -386,11 +386,46 @@ export const addElementParentReference = (instance: InstanceElement,
 export const fullApiName = (parent: string, child: string): string =>
   ([parent, child].join(API_NAME_SEPARATOR))
 
-export const getFullName = (obj: FileProperties): string => {
-  const namePrefix = obj.namespacePrefix
-    ? `${obj.namespacePrefix}${NAMESPACE_SEPARATOR}` : ''
-  return obj.fullName.startsWith(namePrefix) ? obj.fullName : `${namePrefix}${obj.fullName}`
+export const getFullName = (obj: FileProperties, addNamespacePrefixToFullName = true): string => {
+  if (!obj.namespacePrefix) {
+    return obj.fullName
+  }
+
+  const namePrefix = `${obj.namespacePrefix}${NAMESPACE_SEPARATOR}`
+
+  if (obj.type === LAYOUT_TYPE_ID_METADATA_TYPE) {
+    // Ensure layout name starts with the namespace prefix if there is one.
+    // needed due to a SF quirk where sometimes layout metadata instances fullNames return as
+    // <namespace>__<objectName>-<layoutName> where it should be
+    // <namespace>__<objectName>-<namespace>__<layoutName>
+    const [objectName, ...layoutName] = obj.fullName.split('-')
+    if (layoutName.length !== 0 && !layoutName[0].startsWith(namePrefix)) {
+      return `${objectName}-${namePrefix}${layoutName.join('-')}`
+    }
+    return obj.fullName
+  }
+
+  if (!addNamespacePrefixToFullName) {
+    return obj.fullName
+  }
+  // Instances of type InstalledPackage fullNames should never include the namespace prefix
+  if (obj.type === INSTALLED_PACKAGE_METADATA) {
+    return obj.fullName
+  }
+
+  const fullNameParts = obj.fullName.split(API_NAME_SEPARATOR)
+  const name = fullNameParts.slice(-1)[0]
+  const parentNames = fullNameParts.slice(0, -1)
+
+  if (name.startsWith(namePrefix)) {
+    return obj.fullName
+  }
+
+  // In some cases, obj.fullName does not contain the namespace prefix even though
+  // obj.namespacePrefix is defined. In these cases, we want to add the prefix manually
+  return [...parentNames, `${namePrefix}${name}`].join(API_NAME_SEPARATOR)
 }
+
 
 export const getInternalId = (elem: Element): string => (
   (isInstanceElement(elem))

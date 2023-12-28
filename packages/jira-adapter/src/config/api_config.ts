@@ -1207,6 +1207,19 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       },
     },
   },
+  JiraWorkflow: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'name', fieldType: 'string' },
+        // JiraWorkflow fieldType exists in the swagger but not as a get response
+        // this line creates the type despite that
+        { fieldName: 'tempWorkflowType', fieldType: 'JiraWorkflow' },
+      ],
+      idFields: ['name'],
+      serviceIdField: 'id',
+      serviceUrl: '/secure/admin/workflows/ViewWorkflowSteps.jspa?workflowMode=live&workflowName={name}',
+    },
+  },
   WorkflowSchemes: {
     request: {
       url: '/rest/api/3/workflowscheme',
@@ -2177,22 +2190,22 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
     },
   },
-  AssetsSchemas: {
+  ObjectSchemas: {
     request: {
       url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/list',
       recurseInto: [
         {
-          type: 'AssetsStatuses',
-          toField: 'assetsStatuses',
+          type: 'ObjectSchemaStatuses',
+          toField: 'objectSchemaStatuses',
           context: [{ name: 'AssetsSchemaId', fromField: 'id' }],
         },
         {
-          type: 'AssetsObjectTypes',
-          toField: 'assetsObjectTypes',
+          type: 'ObjectTypes',
+          toField: 'objectTypes',
           context: [{ name: 'AssetsSchemaId', fromField: 'id' }],
         },
         {
-          type: 'AssetsObjectTypeAttribute',
+          type: 'ObjectTypeAttribute',
           toField: 'attributes',
           context: [
             { name: 'AssetsSchemaId', fromField: 'id' },
@@ -2204,9 +2217,9 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       dataField: 'values',
     },
   },
-  AssetsSchema: {
+  ObjectSchema: {
     transformation: {
-      sourceTypeName: 'AssetsSchemas__values',
+      sourceTypeName: 'ObjectSchemas__values',
       fieldsToOmit: [
         { fieldName: 'created' },
         { fieldName: 'updated' },
@@ -2223,24 +2236,24 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
       serviceIdField: 'id',
       standaloneFields: [
-        { fieldName: 'assetsStatuses' },
-        { fieldName: 'assetsObjectTypes' },
+        { fieldName: 'objectSchemaStatuses' },
+        { fieldName: 'objectTypes' },
         { fieldName: 'attributes' },
       ],
       fieldTypeOverrides: [
-        { fieldName: 'assetsStatuses', fieldType: 'List<AssetsStatus>' },
+        { fieldName: 'objectSchemaStatuses', fieldType: 'List<ObjectSchemaStatus>' },
       ],
     },
     deployRequests: {
       add: {
         url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/create',
         method: 'post',
-        fieldsToIgnore: ['assetsStatuses', 'assetsObjectTypes'],
+        fieldsToIgnore: ['objectSchemaStatuses', 'objectTypes'],
       },
       modify: {
         url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/{id}',
         method: 'put',
-        fieldsToIgnore: ['assetsStatuses', 'assetsObjectTypes'],
+        fieldsToIgnore: ['objectSchemaStatuses', 'objectTypes'],
       },
       remove: {
         url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/{id}',
@@ -2249,7 +2262,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       },
     },
   },
-  AssetsStatuses: {
+  ObjectSchemaStatuses: {
     request: {
       url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/statustype?objectSchemaId={AssetsSchemaId}',
     },
@@ -2257,9 +2270,9 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       dataField: '.',
     },
   },
-  AssetsStatus: {
+  ObjectSchemaStatus: {
     transformation: {
-      sourceTypeName: 'AssetsSchema__assetsStatuses',
+      sourceTypeName: 'ObjectSchema__objectSchemaStatuses',
       fieldsToHide: [
         { fieldName: 'id' },
         { fieldName: 'workspaceId' },
@@ -2285,7 +2298,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       },
     },
   },
-  AssetsObjectTypes: {
+  ObjectTypes: {
     request: {
       url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/{AssetsSchemaId}/objecttypes/flat',
       queryParams: {
@@ -2296,9 +2309,9 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       dataField: '.',
     },
   },
-  AssetsObjectType: {
+  ObjectType: {
     transformation: {
-      sourceTypeName: 'AssetsSchema__assetsObjectTypes',
+      sourceTypeName: 'ObjectSchema__objectTypes',
       idFields: ['&parentObjectTypeId', 'name'],
       fieldsToHide: [
         { fieldName: 'id' },
@@ -2330,7 +2343,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       },
     },
   },
-  AssetsObjectTypeAttribute: {
+  ObjectTypeAttribute: {
     request: {
       url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/{AssetsSchemaId}/attributes',
       queryParams: {
@@ -2340,7 +2353,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
     transformation: {
       dataField: '.',
       idFields: ['&objectType', 'name'],
-      sourceTypeName: 'AssetsSchema__attributes',
+      sourceTypeName: 'ObjectSchema__attributes',
       fieldsToHide: [
         { fieldName: 'id' },
         { fieldName: 'workspaceId' },
@@ -2380,11 +2393,15 @@ export const JSM_DUCKTYPE_SUPPORTED_TYPES = {
   Calendar: ['Calendar'],
   PortalSettings: ['PortalSettings'],
   SLA: ['SLA'],
-  Form: [],
+  Form: [], // being fetched by a filter.
+  ObjectSchema: [],
+  ObjectSchemaStatus: [], // being fetched by recurseInto.
+  ObjectType: [], // being fetched by recurseInto.
+  ObjectTypeAttribute: [], // being fetched by recurseInto.
 }
 
 export const JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES = {
-  AssetsSchema: ['AssetsSchemas'],
+  ObjectSchema: ['ObjectSchemas'],
 }
 
 export const SCRIPT_RUNNER_DUCKTYPE_SUPPORTED_TYPES = {
@@ -2474,6 +2491,7 @@ const SUPPORTED_TYPES = {
   Webhook: [],
   [AUTOMATION_LABEL_TYPE]: [],
   IssueLayout: [],
+  JiraWorkflow: [],
 }
 
 export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {

@@ -19,30 +19,30 @@ import { collections } from '@salto-io/lowerdash'
 import { DAG } from '@salto-io/dag'
 import { pathNaclCase } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
-import { ASSESTS_SCHEMA_TYPE, ASSETS_OBJECT_TYPE } from '../../constants'
+import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_TYPE } from '../../constants'
 
 const { awu } = collections.asynciterable
 
-const createPaths = async (assetsObjectTypes: InstanceElement[]): Promise<void> => {
+const createPaths = async (objectTypes: InstanceElement[]): Promise<void> => {
   const graph = new DAG<InstanceElement>()
-  assetsObjectTypes.forEach(assetsObjectType => {
-    const parentFullName = assetsObjectType.value.parentObjectTypeId?.elemID.typeName === ASSESTS_SCHEMA_TYPE
-      ? undefined : assetsObjectType.value.parentObjectTypeId.elemID.name
+  objectTypes.forEach(objectType => {
+    const parentFullName = objectType.value.parentObjectTypeId?.elemID.typeName === OBJECT_SCHEMA_TYPE
+      ? undefined : objectType.value.parentObjectTypeId.elemID.name
     const dependencies = parentFullName ? [parentFullName] : []
     graph.addNode(
-      assetsObjectType.elemID.name,
+      objectType.elemID.name,
       dependencies,
-      assetsObjectType,
+      objectType,
     )
   })
   await awu(graph.evaluationOrder()).forEach(
     graphNode => {
       const instance = graph.getData(graphNode.toString())
       const parentPath = instance.value.parentObjectTypeId.value.path
-      instance.path = instance.value.parentObjectTypeId.elemID.typeName === ASSESTS_SCHEMA_TYPE
+      instance.path = instance.value.parentObjectTypeId.elemID.typeName === OBJECT_SCHEMA_TYPE
         ? [
           ...parentPath.slice(0, -1),
-          'assetsObjectTypes',
+          'objectTypes',
           pathNaclCase(instance.value.name),
           pathNaclCase(instance.elemID.name),
         ] : [
@@ -61,10 +61,10 @@ const filter: FilterCreator = ({ config }) => ({
     if (!config.fetch.enableJSM || !config.fetch.enableJsmExperimental) {
       return
     }
-    const assetsObjectTypes = elements
+    const objectTypes = elements
       .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === ASSETS_OBJECT_TYPE)
-    await createPaths(assetsObjectTypes)
+      .filter(instance => instance.elemID.typeName === OBJECT_TYPE_TYPE)
+    await createPaths(objectTypes)
   },
 })
 export default filter

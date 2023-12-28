@@ -19,6 +19,7 @@ import { deployment } from '@salto-io/adapter-components'
 import { applicationValidator } from './application'
 import { groupRuleStatusValidator } from './group_rule_status'
 import { groupRuleActionsValidator } from './group_rule_actions'
+import { groupPushToApplicationUniquenessValidator } from './group_push_to_application_uniqueness'
 import { defaultPoliciesValidator } from './default_policies'
 import { groupRuleAdministratorValidator } from './group_rule_administrator'
 import { customApplicationStatusValidator } from './custom_application_status'
@@ -75,6 +76,7 @@ export default ({
     users: usersValidator(client, config),
     appUserSchemaWithInactiveApp: appUserSchemaWithInactiveAppValidator,
     appWithGroupPush: appWithGroupPushValidator,
+    groupPushToApplicationUniqueness: groupPushToApplicationUniquenessValidator,
   }
 
   return createChangeValidator({

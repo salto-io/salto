@@ -176,7 +176,7 @@ export const getDefaultConfig = ({ isDataCenter }: { isDataCenter: boolean }): J
   ...PARTIAL_DEFAULT_CONFIG,
   apiDefinitions: getProductSettings({ isDataCenter }).defaultApiDefinitions,
   [SCRIPT_RUNNER_API_DEFINITIONS]: getProductSettings({ isDataCenter }).defaultScriptRunnerApiDefinitions,
-  [JSM_DUCKTYPE_API_DEFINITIONS]: getProductSettings({ isDataCenter }).defualtDuckTypeApiDefinitions,
+  [JSM_DUCKTYPE_API_DEFINITIONS]: getProductSettings({ isDataCenter }).defaultDuckTypeApiDefinitions,
 })
 
 const createClientConfigType = (): ObjectType => {
@@ -233,10 +233,12 @@ export type ChangeValidatorName = (
   | 'workflowTransitionDuplicateName'
   | 'permissionSchemeDeployment'
   | 'projectCategory'
+  | 'unresolvedFieldConfigurationItems'
   | 'customFieldsWith10KOptions'
   | 'issueTypeHierarchy'
   | 'automationProjects'
   | 'deleteLastQueueValidator'
+  | 'defaultAdditionQueueValidator'
   | 'boardColumnConfig'
   | 'automationToAssets'
   )
@@ -285,10 +287,12 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     workflowTransitionDuplicateName: { refType: BuiltinTypes.BOOLEAN },
     permissionSchemeDeployment: { refType: BuiltinTypes.BOOLEAN },
     projectCategory: { refType: BuiltinTypes.BOOLEAN },
+    unresolvedFieldConfigurationItems: { refType: BuiltinTypes.BOOLEAN },
     customFieldsWith10KOptions: { refType: BuiltinTypes.BOOLEAN },
     issueTypeHierarchy: { refType: BuiltinTypes.BOOLEAN },
     automationProjects: { refType: BuiltinTypes.BOOLEAN },
     deleteLastQueueValidator: { refType: BuiltinTypes.BOOLEAN },
+    defaultAdditionQueueValidator: { refType: BuiltinTypes.BOOLEAN },
     automationToAssets: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {

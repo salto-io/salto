@@ -2362,6 +2362,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'globalId' },
         { fieldName: 'system' },
         { fieldName: 'referenceObjectType' }, // API returns referenceObjectTypeId as well.
+        { fieldName: 'position' },
       ],
       fieldTypeOverrides: [
         { fieldName: 'typeValue', fieldType: 'string' },

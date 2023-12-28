@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 
-import { getChangeData, isAdditionChange, isInstanceChange } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { getParent } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
-import { OBJECT_TYPE_TYPE, OBJECT_SCHEMA_STATUS_TYPE } from '../../constants'
+import { OBJECT_TYPE_TYPE, OBJECT_SCHEMA_STATUS_TYPE, OBJECT_SCHEMA_TYPE } from '../../constants'
 
 const { awu } = collections.asynciterable
 const SUPPORTED_TYPES = [OBJECT_SCHEMA_STATUS_TYPE, OBJECT_TYPE_TYPE]
@@ -27,7 +27,7 @@ const SUPPORTED_TYPES = [OBJECT_SCHEMA_STATUS_TYPE, OBJECT_TYPE_TYPE]
 * that need it in order to be deployed.
 */
 const filter: FilterCreator = ({ config }) => ({
-  name: 'assetsInstancesAdditionFilter',
+  name: 'assetsInstancesDeploymentFilter',
   preDeploy: async changes => {
     const { jsmApiDefinitions } = config
     if (!config.fetch.enableJSM
@@ -43,6 +43,15 @@ const filter: FilterCreator = ({ config }) => ({
       .filter(instance => SUPPORTED_TYPES.includes(instance.elemID.typeName))
       .forEach(instance => {
         instance.value.objectSchemaId = getParent(instance).value.id
+      })
+
+    await awu(changes)
+      .filter(isInstanceChange)
+      .map(getChangeData)
+      .filter(instance => instance.elemID.typeName === OBJECT_TYPE_TYPE)
+      .filter(instance => instance.value.parentObjectTypeId?.elemID.typeName === OBJECT_SCHEMA_TYPE)
+      .forEach(instance => {
+        delete instance.value.parentObjectTypeId
       })
   },
   onDeploy: async changes => {
@@ -60,6 +69,15 @@ const filter: FilterCreator = ({ config }) => ({
       .filter(instance => SUPPORTED_TYPES.includes(instance.elemID.typeName))
       .forEach(instance => {
         delete instance.value.objectSchemaId
+      })
+    await awu(changes)
+      .filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeData)
+      .filter(instance => instance.elemID.typeName === OBJECT_TYPE_TYPE)
+      .filter(instance => instance.value.parentObjectTypeId === undefined)
+      .forEach(instance => {
+        instance.value.parentObjectTypeId = instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0]
       })
   },
 })

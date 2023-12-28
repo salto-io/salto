@@ -1889,8 +1889,8 @@ describe('adapter', () => {
           .filter(isInstanceElement)
           .filter(e => e.elemID.typeName === 'article')
           .map(e => e.elemID.getFullName()).sort()).toEqual([
-          'zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu',
-        ])
+            'zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu',
+          ])
         const themeElements = elements.filter(isInstanceElement)
           .filter(e => e.elemID.typeName === GUIDE_THEME_TYPE_NAME)
         expect(themeElements.map(e => e.elemID.getFullName()).sort()).toEqual([
@@ -1910,8 +1910,8 @@ describe('adapter', () => {
           .filter(isInstanceElement)
           .filter(e => e.elemID.typeName === 'article')
           .map(e => e.elemID.getFullName()).sort()).toEqual([
-          'zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu',
-        ])
+            'zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu',
+          ])
         expect(fetchRes.elements.filter(isObjectType).find(e => e.elemID.typeName === 'article')).toBeDefined()
       })
 

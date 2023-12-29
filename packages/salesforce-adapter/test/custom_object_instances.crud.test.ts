@@ -91,6 +91,15 @@ describe('Custom Object Instances CRUD', () => {
           [constants.API_NAME]: 'NotCreatable',
         },
       },
+      NotUpdateable: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+          [constants.FIELD_ANNOTATIONS.UPDATEABLE]: false,
+          [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
+          [constants.API_NAME]: 'NotCreatable',
+        },
+      },
       AnotherField: {
         refType: BuiltinTypes.STRING,
         annotations: {
@@ -186,6 +195,14 @@ describe('Custom Object Instances CRUD', () => {
     SaltoName: 'anotherExistingInstanceWithThing\'',
     NumField: null,
   }
+  const existingInstanceWithNonUpdateableField = new InstanceElement(
+    anotherInstanceName,
+    customObject,
+    {
+      SaltoName: 'existingInstanceWithNonUpdateableField',
+      NotUpdatable: 'DontSendMeOnUpdate',
+    }
+  )
   const newInstanceWithRefName = 'newInstanceWithRef'
   const newInstanceWithRef = new InstanceElement(
     newInstanceWithRefName,
@@ -207,6 +224,16 @@ describe('Custom Object Instances CRUD', () => {
         city: 'Ashkelon',
         country: 'Israel',
       },
+    }
+  )
+  const newInstanceWithNonCreatableFieldName = 'newInstanceWithNonCreatableField'
+  const newInstanceWithNonCreatableField = new InstanceElement(
+    newInstanceWithNonCreatableFieldName,
+    customObject,
+    {
+      SaltoName: 'newInstanceWithNonCreatableField',
+      NumField: 4,
+      NotCreatable: 'ShouldNotBeCreated',
     }
   )
 
@@ -423,7 +450,7 @@ describe('Custom Object Instances CRUD', () => {
         expect(existingInstanceChangeData.value.Name).toBeDefined()
         expect(existingInstanceChangeData.value.Name).toBe('TestName1')
 
-        // newInstnace appliedChange
+        // newInstance appliedChange
         const newInstanceChangeData = result.appliedChanges
           .map(getChangeData)
           .find(element => element.elemID
@@ -453,6 +480,7 @@ describe('Custom Object Instances CRUD', () => {
                 changes: [
                   { action: 'add', data: { after: existingInstance } },
                   { action: 'add', data: { after: newInstanceWithRef } },
+                  { action: 'add', data: { after: newInstanceWithNonCreatableField } },
                 ],
               },
               progressReporter: nullProgressReporter,
@@ -461,7 +489,7 @@ describe('Custom Object Instances CRUD', () => {
 
           it('Should query according to instance values', () => {
             expect(mockQuery.mock.calls).toHaveLength(1)
-            expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,OwnerId,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix FROM Type WHERE SaltoName IN (\'existingInstance\',\'newInstanceWithRef\') AND NumField IN (1,2) AND City IN (\'Tel-Aviv\',null) AND Country IN (\'Israel\',null) AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (\'first\',null) AND LastName IN (\'last\',null) AND Salutation IN (\'mrs.\',null) AND MiddleName IN (null) AND Suffix IN (null)')
+            expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,OwnerId,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix FROM Type WHERE SaltoName IN (\'existingInstance\',\'newInstanceWithRef\',\'newInstanceWithNonCreatableField\') AND NumField IN (1,2,4) AND City IN (\'Tel-Aviv\',null) AND Country IN (\'Israel\',null) AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (\'first\',null) AND LastName IN (\'last\',null) AND Salutation IN (\'mrs.\',null) AND MiddleName IN (null) AND Suffix IN (null)')
           })
 
           it('Should call load operation twice - once with insert once with update', () => {
@@ -494,18 +522,23 @@ describe('Custom Object Instances CRUD', () => {
             expect(insertCall[0]).toBe('Type')
 
             // Record
-            expect(insertCall[3]).toHaveLength(1)
-            expect(insertCall[3][0].SaltoName).toBeDefined()
-            expect(insertCall[3][0].SaltoName).toEqual('newInstanceWithRef')
-            expect(insertCall[3][0].NotCreatable).toBeUndefined()
-            expect(insertCall[3][0].AnotherField).toBeDefined()
-            expect(insertCall[3][0].AnotherField).toEqual('Type')
-            expect(insertCall[3][0].FieldWithNoValue).toBeUndefined()
+            expect(insertCall[3]).toHaveLength(2)
+
+            const newInstanceWithRefRecord = insertCall[3][0]
+            expect(newInstanceWithRefRecord).toHaveProperty('SaltoName', 'newInstanceWithRef')
+            expect(newInstanceWithRefRecord).toHaveProperty('AnotherField', 'Type')
+            expect(newInstanceWithRefRecord).not.toHaveProperty('NotCreatable')
+            expect(newInstanceWithRefRecord).not.toHaveProperty('FieldWithNoValue')
+
+            const newInstanceWithNonCreatableFieldRecord = insertCall[3][1]
+            expect(newInstanceWithNonCreatableFieldRecord).toHaveProperty('SaltoName', 'newInstanceWithNonCreatableField')
+            expect(newInstanceWithNonCreatableFieldRecord).toHaveProperty('NumField', 4)
+            expect(newInstanceWithNonCreatableFieldRecord).not.toHaveProperty('NotCreatable')
           })
 
-          it('Should have result with 2 applied changes, add 2 instances with new Id', async () => {
+          it('Should have result with 2 applied changes, add 3 instances with new Id', async () => {
             expect(result.errors).toHaveLength(0)
-            expect(result.appliedChanges).toHaveLength(2)
+            expect(result.appliedChanges).toHaveLength(3)
 
             // existingInstance appliedChange
             const existingInstanceChangeData = result.appliedChanges
@@ -518,7 +551,7 @@ describe('Custom Object Instances CRUD', () => {
             expect(existingInstanceChangeData.value.Id).toBeDefined()
             expect(existingInstanceChangeData.value.Id).toEqual('queryId')
 
-            // newInstnace appliedChange
+            // newInstance appliedChange
             const newInstanceChangeData = result.appliedChanges
               .map(getChangeData)
               .find(element => element.elemID.isEqual(newInstanceWithRef.elemID)) as InstanceElement
@@ -529,9 +562,19 @@ describe('Custom Object Instances CRUD', () => {
             expect(newInstanceChangeData.value.Id).toBeDefined()
             expect(newInstanceChangeData.value.Id).toEqual('newId0')
 
-            // Reference should stay a referece
+            // Reference should stay a reference
             expect(newInstanceChangeData.value.AnotherField)
               .toEqual(new ReferenceExpression(mockElemID, 'Type'))
+
+            // newInstanceWithNonCreatableFieldChangeData has its own test case
+          })
+
+          it('Should not insert non-creatable fields', () => {
+            const newInstanceWithNonCreatableFieldChangeData = result.appliedChanges
+              .map(getChangeData)
+              .find(element => element.elemID.isEqual(newInstanceWithNonCreatableField.elemID)) as InstanceElement
+
+            expect(newInstanceWithNonCreatableFieldChangeData.value).not.toHaveProperty('NotCreatable')
           })
         })
         describe('When called with only new instances', () => {
@@ -552,6 +595,7 @@ describe('Custom Object Instances CRUD', () => {
                   changes: [
                     { action: 'add', data: { after: newInstanceWithRef } },
                     { action: 'add', data: { after: anotherNewInstance } },
+                    { action: 'add', data: { after: newInstanceWithNonCreatableField } },
                   ],
                 },
                 progressReporter: nullProgressReporter,
@@ -560,7 +604,7 @@ describe('Custom Object Instances CRUD', () => {
 
             it('Should query according to instance values', () => {
               expect(mockQuery.mock.calls).toHaveLength(1)
-              expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,OwnerId,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix FROM Type WHERE SaltoName IN (\'newInstanceWithRef\',\'anotherNewInstance\') AND NumField IN (2,3) AND City IN (null,\'Ashkelon\') AND Country IN (null,\'Israel\') AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (null) AND LastName IN (null) AND Salutation IN (null) AND MiddleName IN (null) AND Suffix IN (null)')
+              expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,OwnerId,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix FROM Type WHERE SaltoName IN (\'newInstanceWithRef\',\'anotherNewInstance\',\'newInstanceWithNonCreatableField\') AND NumField IN (2,3,4) AND City IN (null,\'Ashkelon\') AND Country IN (null,\'Israel\') AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (null) AND LastName IN (null) AND Salutation IN (null) AND MiddleName IN (null) AND Suffix IN (null)')
             })
 
             it('Should call load operation once with insert', () => {
@@ -569,10 +613,10 @@ describe('Custom Object Instances CRUD', () => {
               expect(insertCall).toBeDefined()
             })
 
-            it('Should have result with 2 applied changes, add 2 instances with insert Id', async () => {
+            it('Should have result with 3 applied changes, add 3 instances with insert Id', async () => {
               expect(result.errors).toHaveLength(0)
-              expect(result.appliedChanges).toHaveLength(2)
-              // newInstnace appliedChange
+              expect(result.appliedChanges).toHaveLength(3)
+              // newInstance appliedChange
               const newInstanceChangeData = result.appliedChanges
                 .map(getChangeData)
                 .find(element => element.elemID.isEqual(newInstanceWithRef.elemID)) as InstanceElement
@@ -597,6 +641,13 @@ describe('Custom Object Instances CRUD', () => {
               // Should add result Id
               expect(anotherNewInstanceChangeData.value.Id).toBeDefined()
               expect(anotherNewInstanceChangeData.value.Id).toEqual('newId1')
+            })
+            it('Should not insert non-creatable fields', () => {
+              const newInstanceWithNonCreatableFieldChangeData = result.appliedChanges
+                .map(getChangeData)
+                .find(element => element.elemID.isEqual(newInstanceWithNonCreatableField.elemID)) as InstanceElement
+
+              expect(newInstanceWithNonCreatableFieldChangeData.value).not.toHaveProperty('NotCreatable')
             })
           })
           describe('when group has circular dependencies', () => {
@@ -904,11 +955,14 @@ describe('Custom Object Instances CRUD', () => {
       instanceToModify.value.Id = 'modifyId'
       const anotherInstanceToModify = anotherExistingInstance.clone()
       anotherInstanceToModify.value.Id = 'anotherModifyId'
+      const instanceWithNonUpdateableFieldToModify = existingInstanceWithNonUpdateableField.clone()
+      instanceWithNonUpdateableFieldToModify.value.Id = 'yetAnotherModifyId'
       const modifyDeployGroup = {
         groupID: 'modify__Test__c',
         changes: [
           { action: 'modify', data: { before: instanceToModify, after: instanceToModify } },
           { action: 'modify', data: { before: anotherInstanceToModify, after: anotherInstanceToModify } },
+          { action: 'modify', data: { before: instanceWithNonUpdateableFieldToModify, after: instanceWithNonUpdateableFieldToModify } },
         ],
       } as ChangeGroup
       describe('when loadBulk succeeds for all', () => {
@@ -916,9 +970,9 @@ describe('Custom Object Instances CRUD', () => {
           result = await adapter.deploy({ changeGroup: modifyDeployGroup, progressReporter: nullProgressReporter })
         })
 
-        it('should return no errors and 2 fitting applied changes', async () => {
+        it('should return no errors and 3 fitting applied changes', async () => {
           expect(result.errors).toHaveLength(0)
-          expect(result.appliedChanges).toHaveLength(2)
+          expect(result.appliedChanges).toHaveLength(3)
           expect(isModificationChange(result.appliedChanges[0])).toBeTruthy()
           const changeData = getChangeData(result.appliedChanges[0])
           expect(changeData).toBeDefined()
@@ -927,6 +981,10 @@ describe('Custom Object Instances CRUD', () => {
           const secondChangeData = getChangeData(result.appliedChanges[1])
           expect(secondChangeData).toBeDefined()
           expect(isInstanceElement(secondChangeData)).toBeTruthy()
+          const thirdChangeData = getChangeData(result.appliedChanges[2])
+          expect(thirdChangeData).toBeDefined()
+          expect(isInstanceElement(thirdChangeData)).toBeTruthy()
+          expect((thirdChangeData as InstanceElement).value).not.toHaveProperty('NotUpdateable')
         })
       })
 
@@ -945,6 +1003,16 @@ describe('Custom Object Instances CRUD', () => {
             }),
             expect.objectContaining({
               elemID: existingInstance.elemID,
+              message: expect.stringContaining(errorMsgs[1]),
+              severity: 'Error',
+            }),
+            expect.objectContaining({
+              elemID: existingInstanceWithNonUpdateableField.elemID,
+              message: expect.stringContaining(errorMsgs[0]),
+              severity: 'Error',
+            }),
+            expect.objectContaining({
+              elemID: existingInstanceWithNonUpdateableField.elemID,
               message: expect.stringContaining(errorMsgs[1]),
               severity: 'Error',
             }),
@@ -983,6 +1051,16 @@ describe('Custom Object Instances CRUD', () => {
             }),
             expect.objectContaining({
               elemID: anotherExistingInstance.elemID,
+              message: expect.stringContaining(errorMsgs[1]),
+              severity: 'Error',
+            }),
+            expect.objectContaining({
+              elemID: existingInstanceWithNonUpdateableField.elemID,
+              message: expect.stringContaining(errorMsgs[0]),
+              severity: 'Error',
+            }),
+            expect.objectContaining({
+              elemID: existingInstanceWithNonUpdateableField.elemID,
               message: expect.stringContaining(errorMsgs[1]),
               severity: 'Error',
             }),

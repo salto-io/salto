@@ -276,7 +276,7 @@ const processDeployResponse = (
     .map(message => getUnFoundDeleteName(message, deletionsPackageName))
     .filter(isDefined)
 
-  const successfulFullNames = anyErrors ? [] : allSuccessMessages
+  const successfulFullNames = (result.rollbackOnError && anyErrors) ? [] : allSuccessMessages
     .map(success => ({ type: success.componentType, fullName: success.fullName }))
     .concat(unFoundDeleteNames)
 

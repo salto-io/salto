@@ -178,5 +178,11 @@ describe('portalSettings filter', () => {
         expect(res.deployResult.errors[0].message).toEqual('Error: Failed to put /rest/servicedesk/1/servicedesk-data/project1Key/name with error: Error: error')
         expect(res.deployResult.appliedChanges).toHaveLength(0)
       })
+      it('should deploy removal of a portal settings', async () => {
+        const res = await filter.deploy([{ action: 'remove', data: { before: portalSettingInstance } }])
+        expect(res.leftoverChanges).toHaveLength(0)
+        expect(res.deployResult.errors).toHaveLength(0)
+        expect(res.deployResult.appliedChanges).toHaveLength(1)
+      })
     })
 })

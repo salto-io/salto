@@ -13,30 +13,56 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, ElemID, getChangeData, ChangeError } from '@salto-io/adapter-api'
-import { collections, values } from '@salto-io/lowerdash'
-import { isInstanceOfCustomObjectChange } from '../custom_object_instances_deploy'
+import {
+  ChangeValidator,
+  ElemID,
+  getChangeData,
+  ChangeError,
+  isAdditionOrModificationChange,
+  InstanceElement,
+} from '@salto-io/adapter-api'
+import { values } from '@salto-io/lowerdash'
+import { aliasOrElemID, isInstanceOfCustomObjectChangeSync } from '../filters/utils'
 
-const { awu } = collections.asynciterable
 const { isDefined } = values
 
-const createChangeError = (instanceElemID: ElemID): ChangeError => ({
+const createDataDeploymentChangeInfo = (instanceElemID: ElemID): ChangeError => ({
   elemID: instanceElemID,
   severity: 'Info',
   message: 'Data instances will be changed in deployment.',
   detailedMessage: '',
 })
 
-/**
- * Creates a ChangeError of type Info when one of the changes is on a data instance.
- */
-const createDataChangeValidator: ChangeValidator = async changes => {
-  const dataChange = await awu(changes)
-    .find(isInstanceOfCustomObjectChange)
+const createUnknownFieldValuesChangeError = (instance: InstanceElement): ChangeError | undefined => {
+  const typeFields = new Set(Object.keys(instance.getTypeSync().fields))
+  const unknownFields = Object.keys(instance.value)
+    .filter(fieldName => !typeFields.has(fieldName))
+  return unknownFields.length > 0
+    ? {
+      elemID: instance.elemID,
+      severity: 'Error',
+      message: 'Data instance has values of unknown fields',
+      detailedMessage: `The ${aliasOrElemID(instance.getTypeSync())} "${aliasOrElemID(instance)}" has values to the following unknown fields: [${unknownFields.join(', ')}]. Please include them in your deployment or remove these values from the instance.`,
+    }
+    : undefined
+}
 
-  return isDefined(dataChange)
-    ? [createChangeError(getChangeData(dataChange).elemID)]
-    : []
+const createDataChangeValidator: ChangeValidator = async changes => {
+  const changeErrors: ChangeError[] = []
+  const dataChanges = changes.filter(isInstanceOfCustomObjectChangeSync)
+
+  if (dataChanges.length === 0) {
+    return []
+  }
+  changeErrors.push(createDataDeploymentChangeInfo(getChangeData(dataChanges[0]).elemID))
+  dataChanges
+    // Deletions are supported in this use-case
+    .filter(isAdditionOrModificationChange)
+    .map(getChangeData)
+    .map(createUnknownFieldValuesChangeError)
+    .filter(isDefined)
+    .forEach(changeError => changeErrors.push(changeError))
+  return changeErrors
 }
 
 export default createDataChangeValidator

@@ -121,6 +121,9 @@ export const isFieldOfCustomObject = async (field: Field): Promise<boolean> =>
 // for instances of Lead, but it will not be true for Lead itself when it is still an instance
 // (before the custom objects filter turns it into a type).
 // To filter for instances like the Lead definition, use isInstanceOfType(CUSTOM_OBJECT) instead
+/**
+ * @deprecated use {@link isInstanceOfCustomObjectSync} instead.
+ */
 export const isInstanceOfCustomObject = async (element: Readonly<Element>): Promise<boolean> =>
   isInstanceElement(element) && isCustomObject(await element.getType())
 

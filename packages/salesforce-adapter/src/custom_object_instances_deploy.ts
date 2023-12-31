@@ -507,18 +507,20 @@ const isModificationChangeList = <T>(
     changes.every(isModificationChange)
   )
 
-
-const customObjectInstancesDeployError = (message: string): DeployResult => ({
-  appliedChanges: [],
-  errors: [{ message, severity: 'Error' }],
-})
-
 const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
   changes: ReadonlyArray<Change<InstanceElement>>,
   client: SalesforceClient,
   groupId: string,
   dataManagement?: DataManagement,
 ): Promise<DeployResult> => {
+  const customObjectInstancesDeployError = (message: string): DeployResult => ({
+    appliedChanges: [],
+    errors: changes.map(change => ({
+      message,
+      severity: 'Error',
+      elemID: getChangeData(change).elemID,
+    })),
+  })
   try {
     const instances = changes.map(change => getChangeData(change))
     const instanceTypes = [...new Set(await awu(instances)

@@ -150,6 +150,7 @@ export const fallbackUsersHandler: FixElementsHandler = (
   if (fallbackValue === undefined) {
     log.error('Error while trying to get defaultMissingUserFallback value')
     const errors = elements.filter(isInstanceElement)
+      .filter(isRelevantElement)
       .map(getMissingUsers(userEmails))
       .filter(({ missingUsers }) => !_.isEmpty(missingUsers))
       .map(({ instance, missingUsers }) =>

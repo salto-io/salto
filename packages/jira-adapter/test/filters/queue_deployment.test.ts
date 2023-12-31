@@ -187,5 +187,12 @@ describe('queue deployment filter', () => {
         expect(res.leftoverChanges).toEqual([{ action: 'add', data: { after: queueInstance } }])
         expect(res.deployResult.appliedChanges).toHaveLength(0)
       })
+      it('should not deploy and should not reuturn error if not queue changes', async () => {
+        const res = await filter.deploy([{ action: 'add', data: { after: projectInstance } }])
+        expect(res.leftoverChanges).toHaveLength(1)
+        expect(res.leftoverChanges).toEqual([{ action: 'add', data: { after: projectInstance } }])
+        expect(res.deployResult.appliedChanges).toHaveLength(0)
+        expect(res.deployResult.errors).toHaveLength(0)
+      })
     })
 })

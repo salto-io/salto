@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { Change, InstanceElement, getChangeData, isAdditionChange, isInstanceChange, isRemovalChange, toChange } from '@salto-io/adapter-api'
+import { AdditionChange, Change, InstanceElement, ModificationChange, getChangeData, isAdditionChange, isInstanceChange, isRemovalChange, toChange } from '@salto-io/adapter-api'
 import { createSchemeGuard, getParent } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -72,14 +72,11 @@ const getExsitingQueuesNamesAndIds = async (
 }
 
 const updateDefaultQueue = async (
-  change: Change<InstanceElement>,
+  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
   client: JiraClient,
   existingQueues: Record<string, string>,
   jsmApiDefinitions: AdapterDuckTypeApiConfig
 ): Promise<void> => {
-  if (!isAdditionChange(change)) {
-    return
-  }
   change.data.after.value.id = existingQueues[change.data.after.value.name]
   const emptyQueueInstance = change.data.after.clone()
   emptyQueueInstance.value = {}
@@ -140,7 +137,8 @@ const filter: FilterCreator = ({ config, client }) => ({
       changes,
       change => {
         try {
-          const existingQueues = isAdditionChange(change)
+          const instance = getChangeData(change)
+          const existingQueues = isAdditionChange(change) && instance.elemID.typeName === QUEUE_TYPE
             ? projectToExistiningQueues[getParent(getChangeData(change)).elemID.getFullName()]
               .map(entry => entry[0]) : []
           return isInstanceChange(change)

@@ -1879,8 +1879,8 @@ describe('adapter', () => {
           .filter(isInstanceElement)
           .filter(e => e.elemID.typeName === 'article')
           .map(e => e.elemID.getFullName()).sort()).toEqual([
-            'zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu',
-          ])
+          'zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu',
+        ])
 
         config.value[FETCH_CONFIG].guide.brands = ['[^myBrand]']
         const fetchRes = await adapter.operations({
@@ -1892,8 +1892,8 @@ describe('adapter', () => {
           .filter(isInstanceElement)
           .filter(e => e.elemID.typeName === 'article')
           .map(e => e.elemID.getFullName()).sort()).toEqual([
-            'zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu',
-          ])
+          'zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu',
+        ])
         expect(fetchRes.elements.filter(isObjectType).find(e => e.elemID.typeName === 'article')).toBeDefined()
       })
 
@@ -2320,7 +2320,7 @@ describe('adapter', () => {
             { key: 2, ref: expect.any(ReferenceExpression) },
             undefined,
             { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/account/brand_management/brands' },
-          )
+          ),
         }),
         modificationChange,
         toChange({
@@ -2330,7 +2330,7 @@ describe('adapter', () => {
             { id: 1 },
             undefined,
             { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups' },
-          )
+          ),
         }),
         toChange({ after: new InstanceElement('inst4', anotherType, { key: 2 }) }),
       ])
@@ -2378,7 +2378,7 @@ describe('adapter', () => {
             undefined,
             undefined,
             { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups' },
-          )
+          ),
         }),
       ])
     })
@@ -2446,7 +2446,7 @@ describe('adapter', () => {
             undefined,
             undefined,
             { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups' },
-          )
+          ),
         }),
       ])
     })
@@ -2469,7 +2469,7 @@ describe('adapter', () => {
             undefined,
             undefined,
             { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups' },
-          )
+          ),
         }),
       ])
     })
@@ -2569,7 +2569,7 @@ describe('adapter', () => {
               // generateType function creates path
               path: [ZENDESK, elementsUtils.TYPES_PATH, 'group'],
             }),
-          )
+          ),
         }),
         client: expect.anything(),
         endpointDetails: expect.anything(),

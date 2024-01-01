@@ -27,7 +27,7 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, inspectValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
@@ -135,7 +135,15 @@ const getChangeWithoutRemovedFields = (change: ModificationChange<InstanceElemen
   const { after } = change.data
   const beforeFields: number[] = before.value.ticket_field_ids ?? []
   const afterFields = new Set(after.value.ticket_field_ids ?? [])
-  const removedFields = beforeFields.filter(field => !afterFields.has(field)).filter(field => _.isNumber(field))
+  // filtering out anything that is not a number since we can have a missing reference in the before that could have
+  // been removed in the after and we don't want it to be added to the list again
+  const removedFields = beforeFields.filter(field => !afterFields.has(field)).filter(field => {
+    if (!_.isNumber(field)) {
+      log.trace(`the field is in the before and not in the after and is not a number: ${inspectValue(field)}`)
+      return false
+    }
+    return true
+  })
   if (_.isEmpty(removedFields)) {
     return undefined
   }

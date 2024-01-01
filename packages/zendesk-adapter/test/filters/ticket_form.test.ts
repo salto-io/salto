@@ -49,6 +49,7 @@ jest.mock('@salto-io/logging', () => ({
   logger: jest.fn()
     .mockReturnValue({
       debug: jest.fn(),
+      trace: jest.fn(),
       info: jest.fn(),
       error: jest.fn((...args) => mockLogError(...args)),
     }),

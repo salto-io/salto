@@ -1266,6 +1266,7 @@ export const formatConfigSuggestionsReasons = (reasons: string[]): string => {
 /* Checks for references expression with undefined value or for unresolved references
 * during fetch and deploy. In fetch this can happen when the reference is set to be missing reference.
 * In deploy this can happen when the reference is assigned as unresolved reference.
+* If the element's source is the elementsSource then this function will return always false.
 */
 export const isResolvedReferenceExpression = (value: unknown): value is ReferenceExpression => (
   isReferenceExpression(value) && !(value.value instanceof UnresolvedReference) && value.value !== undefined

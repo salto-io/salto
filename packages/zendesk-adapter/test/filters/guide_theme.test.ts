@@ -34,13 +34,11 @@ jest.mock('jszip', () => jest.fn().mockImplementation(() => {
     loadAsync: jest.fn().mockImplementation((buffer: Buffer) => {
       if (buffer.toString() === 'corrupted') {
         return {
-          forEach: jest.fn().mockImplementation(() => { throw new Error('Bad zip file') }),
+          files: mockCorruptedFiles,
         }
       }
       return {
-        forEach: jest.fn().mockImplementation(cb => Object.entries(mockFiles).forEach(([key, value]) => {
-          cb(key, value)
-        })),
+        files: mockFiles,
       }
     }),
   }
@@ -146,12 +144,10 @@ describe('filterCreator', () => {
           expect(await filter.onFetch?.([brand1, theme1])).toEqual({ errors: [] })
         })
 
-        it('fills in unsorted if brand name is not found', async () => {
-          await filter.onFetch?.([theme1])
-          expect(theme1.value.files['file1.txt'].content).toEqual(new StaticFile({
-            filepath: `${ZENDESK}/themes/brands/${UNSORTED}/SixFlags/file1.txt`,
-            content: Buffer.from('file1content'),
-          }))
+        it('removes the theme if brand name is not found', async () => {
+          const elements = [theme1]
+          await filter.onFetch?.(elements)
+          expect(elements).toEqual([])
         })
 
         describe('theme download corrupted', () => {

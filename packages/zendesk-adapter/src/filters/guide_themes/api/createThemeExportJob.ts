@@ -36,7 +36,7 @@ export const createThemeExportJob = async (
       },
     },
   })
-  if (res.status !== 202) {
+  if (![200, 202].includes(res.status)) {
     log.warn(`Could not export a theme for themeId ${themeId}, received ${safeJsonStringify(res.data)}`)
     return { job: undefined, errors: [safeJsonStringify(res.data)] }
   }

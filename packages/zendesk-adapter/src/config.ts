@@ -22,7 +22,6 @@ import {
   ARTICLE_ORDER_TYPE_NAME,
   BRAND_TYPE_NAME,
   CATEGORY_ORDER_TYPE_NAME, EVERYONE_USER_TYPE,
-  GUIDE_THEME_TYPE_NAME,
   SECTION_ORDER_TYPE_NAME,
   ZENDESK,
 } from './constants'
@@ -2675,7 +2674,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'files', fieldType: 'map<unknown>' },
       ],
-      fieldsToHide: [{ fieldName: 'id' }],
+      fieldsToHide: [{ fieldName: 'id', fieldType: 'string' }],
     },
   },
 }
@@ -2750,7 +2749,6 @@ export const GUIDE_TYPES_TO_HANDLE_BY_BRAND = [
   CATEGORY_ORDER_TYPE_NAME,
   SECTION_ORDER_TYPE_NAME,
   ARTICLE_ORDER_TYPE_NAME,
-  GUIDE_THEME_TYPE_NAME,
 ]
 
 export const DEFAULT_CONFIG: ZendeskConfig = {

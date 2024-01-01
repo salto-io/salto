@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import axios, { AxiosRequestConfig } from 'axios'
 import MockAdapter from 'axios-mock-adapter'
+import JSZip from 'jszip'
 import {
   InstanceElement,
   isInstanceElement,
@@ -27,7 +28,7 @@ import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
   isRemovalChange,
-  getChangeData, TemplateExpression, isObjectType, ProgressReporter,
+  getChangeData, TemplateExpression, isObjectType, ProgressReporter, StaticFile,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
@@ -38,7 +39,7 @@ import { usernamePasswordCredentialsType } from '../src/auth'
 import { configType, FETCH_CONFIG, API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../src/config'
 import {
   BRAND_TYPE_NAME,
-  GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME,
+  GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, GUIDE_THEME_TYPE_NAME, TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME,
   USER_SEGMENT_TYPE_NAME,
   ZENDESK,
 } from '../src/constants'
@@ -1849,7 +1850,12 @@ describe('adapter', () => {
       })
 
       it('should generate guide elements according to brands config', async () => {
+        const zip = new JSZip()
+        zip.file('hello.txt', 'Hello World\n')
+        mockAxiosAdapter.onGet('https://download.theme.url.for.test').reply(200, await zip.generateAsync({ type: 'nodebuffer' }))
+
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+        mockAxiosAdapter.onPost().reply(callbackResponseFunc)
         const creds = new InstanceElement(
           'config',
           usernamePasswordCredentialsType,
@@ -1866,6 +1872,7 @@ describe('adapter', () => {
               exclude: [],
               guide: {
                 brands: ['.WithGuide'],
+                themes: true,
               },
             },
           }
@@ -1881,6 +1888,14 @@ describe('adapter', () => {
           .map(e => e.elemID.getFullName()).sort()).toEqual([
           'zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu',
         ])
+        const themeElements = elements.filter(isInstanceElement)
+          .filter(e => e.elemID.typeName === GUIDE_THEME_TYPE_NAME)
+        expect(themeElements.map(e => e.elemID.getFullName()).sort()).toEqual([
+          'zendesk.theme.instance.myBrand_Copenhagen',
+        ])
+        expect(themeElements[0].value.files['hello.txt'].content).toEqual(new StaticFile({
+          filepath: 'zendesk/themes/brands/myBrand/Copenhagen/hello.txt', content: Buffer.from('Hello World\n'),
+        }))
 
         config.value[FETCH_CONFIG].guide.brands = ['[^myBrand]']
         const fetchRes = await adapter.operations({

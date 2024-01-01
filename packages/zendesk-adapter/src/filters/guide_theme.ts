@@ -25,7 +25,6 @@ import {
   ZENDESK,
 } from '../constants'
 import { FilterCreator } from '../filter'
-import { UNSORTED } from './guide_arrange_paths'
 import { download } from './guide_themes/download'
 
 const log = logger(module)
@@ -61,8 +60,7 @@ const unzipFolderToElements = async (buffer: Buffer, brandName: string, name: st
   const unzippedContents = await zip.loadAsync(buffer)
 
   const elements: ThemeDirectory = {}
-
-  unzippedContents.forEach(async (relativePath, file) => {
+  await Promise.all(Object.entries(unzippedContents.files).map(async ([relativePath, file]) => {
     if (!file.dir) {
       const content = await file.async('nodebuffer')
       addFileToDirectory(elements, relativePath, {
@@ -70,7 +68,7 @@ const unzipFolderToElements = async (buffer: Buffer, brandName: string, name: st
         content: new StaticFile({ filepath: `${ZENDESK}/themes/brands/${brandName}/${name}/${relativePath}`, content }),
       })
     }
-  })
+  }))
   return elements
 }
 
@@ -111,12 +109,12 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       .filter(isInstanceElement)
       .filter(brand => brand.value.name !== undefined)
     const fullNameByNameBrand = _.mapValues(_.keyBy(brands, getFullName), 'value.name')
-    const getBrandName = (theme: InstanceElement): string => {
+    const getBrandName = (theme: InstanceElement): string | undefined => {
       const brandElemId = theme.value.brand_id?.elemID.getFullName()
       const brandName = fullNameByNameBrand[brandElemId]
       if (brandName === undefined) {
-        log.warn('brandName was not found for instance %s.', theme.elemID.getFullName())
-        return UNSORTED
+        log.info('brandName was not found for instance %s.', theme.elemID.getFullName())
+        return undefined
       }
       return brandName
     }
@@ -130,7 +128,12 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         return
       }
       try {
-        const themeElements = await unzipFolderToElements(themeZip, getBrandName(theme), theme.value.name)
+        const brandName = getBrandName(theme)
+        if (brandName === undefined) {
+          remove(elements, element => element.elemID.isEqual(theme.elemID))
+          return
+        }
+        const themeElements = await unzipFolderToElements(themeZip, brandName, theme.value.name)
         theme.value.files = themeElements
       } catch (e) {
         errors.push({

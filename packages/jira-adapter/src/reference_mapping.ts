@@ -39,8 +39,10 @@ import { gadgetValuesContextFunc, gadgetValueSerialize, gadgetDashboradValueLook
 const { awu } = collections.asynciterable
 const { neighborContextGetter, basicLookUp } = referenceUtils
 
+type jiraMissingReferenceStrategyName = referenceUtils.MissingReferenceStrategyName | 'defaultValue'
+
 export const JiraMissingReferenceStrategyLookup: Record<
-referenceUtils.MissingReferenceStrategyName, referenceUtils.MissingReferenceStrategy
+jiraMissingReferenceStrategyName, referenceUtils.MissingReferenceStrategy
 > = {
   typeAndValue: {
     create: ({ value, adapter, typeName }) => {
@@ -136,7 +138,7 @@ type JiraFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<
 ReferenceContextStrategyName
 > & {
   jiraSerializationStrategy?: JiraReferenceSerializationStrategyName
-  jiraMissingRefStrategy?: referenceUtils.MissingReferenceStrategyName
+  jiraMissingRefStrategy?: jiraMissingReferenceStrategyName
 }
 export class JiraFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<
 ReferenceContextStrategyName

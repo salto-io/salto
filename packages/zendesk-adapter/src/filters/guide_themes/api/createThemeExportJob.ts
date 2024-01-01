@@ -22,7 +22,7 @@ const log = logger(module)
 
 export const createThemeExportJob = async (
   themeId: string, client: ZendeskClient
-): Promise<PendingJob<DownloadJobData> | undefined> => {
+): Promise<{ job: PendingJob<DownloadJobData> | undefined; errors: string[] }> => {
   log.trace('Creating theme export job')
 
   const res = await client.post({
@@ -38,7 +38,7 @@ export const createThemeExportJob = async (
   })
   if (res.status !== 202) {
     log.warn(`Could not export a theme for themeId ${themeId}, received ${safeJsonStringify(res.data)}`)
-    return undefined
+    return { job: undefined, errors: [safeJsonStringify(res.data)] }
   }
-  return isPendingJobResponse<DownloadJobData>(res.data) ? res.data.job : undefined
+  return { job: isPendingJobResponse<DownloadJobData>(res.data) ? res.data.job : undefined, errors: [] }
 }

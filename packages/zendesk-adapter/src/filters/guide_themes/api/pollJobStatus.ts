@@ -47,18 +47,22 @@ const checkIfJobIsDone = async (
 
 export const pollJobStatus = async (
   jobId: string, client: ZendeskClient, interval = 5000, retries = 5
-): Promise<boolean> => {
+): Promise<{ success: boolean; errors: string[] }> => {
   log.trace('Polling job status')
   try {
-    return await withRetry(
-      () => checkIfJobIsDone(client, jobId),
-      { strategy: intervals({ maxRetries: retries, interval }) }
-    )
+    return {
+      success: await withRetry(
+        () => checkIfJobIsDone(client, jobId),
+        { strategy: intervals({ maxRetries: retries, interval }) }
+      ),
+      errors: [],
+    }
   } catch (e) {
     if (e instanceof JobError) {
       log.warn(e.message)
-      return false
+      return { success: false, errors: e.errors ? e.errors.map(err => `${err.code} - ${err.message}`) : [e.message] }
     }
-    throw e
+    log.error((e as Error).message)
+    return { success: false, errors: [(e as Error).message] }
   }
 }

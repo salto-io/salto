@@ -42,20 +42,37 @@ describe('pollJobStatus', () => {
     })
 
     it('returns false on failed job', async () => {
-      mockGet.mockResolvedValue({ status: 202, data: { job: { id: '1', status: 'failed', errors: [] } } })
-      expect(await pollJobStatus('11', client, 200, 1)).toBeFalsy()
+      mockGet.mockResolvedValue({
+        status: 202,
+        data: {
+          job: {
+            id: '1',
+            status: 'failed',
+            errors: [
+              { title: 'error1', code: 'code1', message: 'message1', meta: {} },
+            ],
+          },
+        },
+      })
+      expect(await pollJobStatus('11', client, 200, 1)).toEqual({
+        success: false, errors: ['code1 - message1'],
+      })
     })
 
     it('returns false on wrong response structure', async () => {
       mockGet.mockResolvedValue({ status: 202, data: { nope: 'yup' } })
-      expect(await pollJobStatus('11', client, 200, 1)).toBeFalsy()
+      expect(await pollJobStatus('11', client, 200, 1)).toEqual({
+        success: false, errors: ['Got an invalid response for Guide Theme job status. Job ID: 11'],
+      })
     })
   })
 
   describe('response failure', () => {
     it('throws on wrong status code after retries', async () => {
       mockGet.mockResolvedValue({ status: 400, data: jobResponse('pending') })
-      await expect(pollJobStatus('11', client, 200, 1)).rejects.toThrow(new Error('Error while waiting: max retries 1 exceeded'))
+      expect(await pollJobStatus('11', client, 200, 1)).toEqual({
+        success: false, errors: ['Error while waiting: max retries 1 exceeded'],
+      })
     })
   })
 })

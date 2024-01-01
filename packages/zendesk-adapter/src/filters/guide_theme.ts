@@ -42,11 +42,7 @@ const isGuideThemesEnabled = (
 
 const addFileToDirectory = (root: ThemeDirectory, relativeFilename: string, file: ThemeFile): void => {
   const pathSegments = relativeFilename.split('/')
-  const fileSegment = pathSegments.pop() // Remove and store the file segment
-
-  if (!fileSegment) {
-    throw new Error('Invalid path')
-  }
+  const fileSegment = pathSegments.pop() as string // Remove and store the file segment, the array is never empty
 
   // Use reduce to traverse and/or build the directory structure
   const targetDirectory = pathSegments.reduce((currentDirectory, segment) => {
@@ -79,6 +75,19 @@ const unzipFolderToElements = async (buffer: Buffer, brandName: string, name: st
 }
 
 const getFullName = (instance: InstanceElement): string => instance.elemID.getFullName()
+
+const addDownloadErrors = (
+  theme: InstanceElement,
+  downloadErrors: string[]
+): SaltoError[] => ((downloadErrors.length > 0)
+  ? downloadErrors.map(e => ({
+    message: `Error fetching theme id ${theme.value.id}, ${e}`,
+    severity: 'Warning',
+  }))
+  : [{
+    message: `Error fetching theme id ${theme.value.id}, no content returned from Zendesk API`,
+    severity: 'Warning',
+  }])
 
 /**
  * Fetches guide theme content
@@ -114,17 +123,22 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
 
     const errors: SaltoError[] = []
     await awu(guideThemes).forEach(async theme => {
-      const themeZip = await download(theme.value.id, client)
+      const { content: themeZip, errors: downloadErrors } = await download(theme.value.id, client)
       if (themeZip === undefined) {
-        errors.push({
-          message: `Error fetching theme id ${theme.value.id}, no content returned from Zendesk API`,
-          severity: 'Warning',
-        })
+        errors.push(...addDownloadErrors(theme, downloadErrors))
         remove(elements, element => element.elemID.isEqual(theme.elemID))
         return
       }
-      const themeElements = await unzipFolderToElements(themeZip, getBrandName(theme), theme.value.name)
-      theme.value.files = themeElements
+      try {
+        const themeElements = await unzipFolderToElements(themeZip, getBrandName(theme), theme.value.name)
+        theme.value.files = themeElements
+      } catch (e) {
+        errors.push({
+          message: `Error fetching theme id ${theme.value.id}, ${(e as Error).message}`,
+          severity: 'Warning',
+        })
+        remove(elements, element => element.elemID.isEqual(theme.elemID))
+      }
     })
     return { errors }
   },

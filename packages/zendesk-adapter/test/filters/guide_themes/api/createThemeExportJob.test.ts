@@ -13,8 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { createThemeExportJob } from '../../../../src/filters/guide_themes/api/createThemeExportJob'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import ZendeskClient from '../../../../src/client/client'
+import { createThemeExportJob } from '../../../../src/filters/guide_themes/api/createThemeExportJob'
 import { jobResponse } from '../utils'
 
 describe('createThemeExportJob', () => {
@@ -47,24 +48,24 @@ describe('createThemeExportJob', () => {
   describe('successful response', () => {
     it('returns a job on a correct response structure', async () => {
       mockPost.mockResolvedValue({ status: 202, data: jobResponse('pending') })
-      expect(await createThemeExportJob('11', client)).toEqual(jobResponse('pending').job)
+      expect(await createThemeExportJob('11', client)).toEqual({ job: jobResponse('pending').job, errors: [] })
     })
 
     it('returns false on non-pending job', async () => {
       mockPost.mockResolvedValue({ status: 202, data: jobResponse('completed') })
-      expect(await createThemeExportJob('11', client)).toBeFalsy()
+      expect(await createThemeExportJob('11', client)).toEqual({ job: undefined, errors: [] })
     })
 
     it('returns false on wrong response structure', async () => {
       mockPost.mockResolvedValue({ status: 202, data: { nope: 'yup' } })
-      expect(await createThemeExportJob('11', client)).toBeFalsy()
+      expect(await createThemeExportJob('11', client)).toEqual({ job: undefined, errors: [] })
     })
   })
 
   describe('response failure', () => {
-    it('returns false on wrong status code', async () => {
+    it('returns error response on wrong status code', async () => {
       mockPost.mockResolvedValue({ status: 400, data: jobResponse('pending') })
-      expect(await createThemeExportJob('11', client)).toBeFalsy()
+      expect(await createThemeExportJob('11', client)).toEqual({ job: undefined, errors: [safeJsonStringify(jobResponse('pending'))] })
     })
   })
 })

@@ -29,10 +29,17 @@ jest.mock('jszip', () => jest.fn().mockImplementation(() => {
     'subfolder/file2.txt': { async: jest.fn(() => Buffer.from('file2content')), dir: false },
   }
   return {
-    loadAsync: jest.fn().mockResolvedValue({
-      forEach: jest.fn().mockImplementation(cb => Object.entries(mockFiles).forEach(([key, value]) => {
-        cb(key, value)
-      })),
+    loadAsync: jest.fn().mockImplementation((buffer: Buffer) => {
+      if (buffer.toString() === 'corrupted') {
+        return {
+          forEach: jest.fn().mockImplementation(() => { throw new Error('Bad zip file') }),
+        }
+      }
+      return {
+        forEach: jest.fn().mockImplementation(cb => Object.entries(mockFiles).forEach(([key, value]) => {
+          cb(key, value)
+        })),
+      }
     }),
   }
 }))
@@ -81,25 +88,44 @@ describe('filterCreator', () => {
       })
 
       describe('theme download unsuccessful', () => {
-        beforeEach(() => {
-          mockDownload.mockResolvedValue(undefined)
+        describe('with custom error', () => {
+          beforeEach(() => {
+            mockDownload.mockResolvedValue({ content: undefined, errors: ['download failed specific error'] })
+          })
+
+          it('removes the theme from the elements', async () => {
+            const elements = [brand1, theme1]
+            await filter.onFetch?.(elements)
+            expect(elements).toEqual([brand1])
+          })
+
+          it('returns a warning for the theme', async () => {
+            const errors = [{ message: 'Error fetching theme id park?, download failed specific error', severity: 'Warning' }]
+            expect(await filter.onFetch?.([brand1, theme1])).toEqual({ errors })
+          })
         })
 
-        it('removes the theme from the elements', async () => {
-          const elements = [brand1, theme1]
-          await filter.onFetch?.(elements)
-          expect(elements).toEqual([brand1])
-        })
+        describe('with no custom error', () => {
+          beforeEach(() => {
+            mockDownload.mockResolvedValue({ content: undefined, errors: [] })
+          })
 
-        it('returns a warning for the theme', async () => {
-          const errors = [{ message: 'Error fetching theme id park?, no content returned from Zendesk API', severity: 'Warning' }]
-          expect(await filter.onFetch?.([brand1, theme1])).toEqual({ errors })
+          it('removes the theme from the elements', async () => {
+            const elements = [brand1, theme1]
+            await filter.onFetch?.(elements)
+            expect(elements).toEqual([brand1])
+          })
+
+          it('returns a default warning for the theme', async () => {
+            const errors = [{ message: 'Error fetching theme id park?, no content returned from Zendesk API', severity: 'Warning' }]
+            expect(await filter.onFetch?.([brand1, theme1])).toEqual({ errors })
+          })
         })
       })
 
       describe('theme download successful', () => {
         beforeEach(() => {
-          mockDownload.mockResolvedValue(Buffer.from('content'))
+          mockDownload.mockResolvedValue({ content: Buffer.from('content'), errors: [] })
         })
 
         it('adds the theme files to the theme', async () => {
@@ -129,6 +155,23 @@ describe('filterCreator', () => {
             filepath: `${ZENDESK}/themes/brands/${UNSORTED}/SixFlags/file1.txt`,
             content: Buffer.from('file1content'),
           }))
+        })
+
+        describe('theme download corrupted', () => {
+          beforeEach(() => {
+            mockDownload.mockResolvedValue({ content: Buffer.from('corrupted'), errors: [] })
+          })
+
+          it('removes the theme from the elements', async () => {
+            const elements = [brand1, theme1]
+            await filter.onFetch?.(elements)
+            expect(elements).toEqual([brand1])
+          })
+
+          it('returns a warning for the theme', async () => {
+            const errors = [{ message: 'Error fetching theme id park?, Bad zip file', severity: 'Warning' }]
+            expect(await filter.onFetch?.([brand1, theme1])).toEqual({ errors })
+          })
         })
       })
     })

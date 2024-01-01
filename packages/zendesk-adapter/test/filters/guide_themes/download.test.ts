@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import ZendeskClient from '../../../src/client/client'
 import * as exportModule from '../../../src/filters/guide_themes/api/createThemeExportJob'
 import * as pollModule from '../../../src/filters/guide_themes/api/pollJobStatus'
@@ -36,8 +37,10 @@ describe('download', () => {
 
   describe('successful flow', () => {
     beforeEach(() => {
-      mockCreateThemeExportJob.mockResolvedValue(jobResponse('pending', 'this is actually a URL').job)
-      mockPollJobStatus.mockResolvedValue(true)
+      mockCreateThemeExportJob.mockResolvedValue({
+        job: jobResponse('pending', 'this is actually a URL').job, errors: [],
+      })
+      mockPollJobStatus.mockResolvedValue({ success: true, errors: [] })
     })
 
     it('sends the correct request', async () => {
@@ -48,30 +51,30 @@ describe('download', () => {
 
     it('returns Buffer of data on string response', async () => {
       mockGetResource.mockResolvedValue({ status: 202, data: 'much data, so good' })
-      expect(await download('11', client)).toEqual(Buffer.from('much data, so good'))
+      expect(await download('11', client)).toEqual({ content: Buffer.from('much data, so good'), errors: [] })
     })
 
     it('returns response data on Buffer response', async () => {
       mockGetResource.mockResolvedValue({ status: 202, data: Buffer.from('much data, so good') })
-      expect(await download('11', client)).toEqual(Buffer.from('much data, so good'))
+      expect(await download('11', client)).toEqual({ content: Buffer.from('much data, so good'), errors: [] })
     })
 
     it('returns undefined on other response data types', async () => {
       mockGetResource.mockResolvedValue({ status: 202, data: 1234 })
-      expect(await download('11', client)).toEqual(undefined)
+      expect(await download('11', client)).toEqual({ content: undefined, errors: [safeJsonStringify(1234)] })
     })
   })
 
   describe('flow failure', () => {
     it('returns undefined when createThemeExportJob fails', async () => {
-      mockCreateThemeExportJob.mockResolvedValue(undefined)
-      expect(await download('11', client)).toEqual(undefined)
+      mockCreateThemeExportJob.mockResolvedValue({ job: undefined, errors: ['error1'] })
+      expect(await download('11', client)).toEqual({ content: undefined, errors: ['error1'] })
     })
 
     it('returns undefined when pollJobStatus returns false', async () => {
-      mockCreateThemeExportJob.mockResolvedValue(jobResponse('pending').job)
-      mockPollJobStatus.mockResolvedValue(false)
-      expect(await download('11', client)).toEqual(undefined)
+      mockCreateThemeExportJob.mockResolvedValue({ job: jobResponse('pending').job, errors: [] })
+      mockPollJobStatus.mockResolvedValue({ success: false, errors: ['error1'] })
+      expect(await download('11', client)).toEqual({ content: undefined, errors: ['error1'] })
     })
   })
 })

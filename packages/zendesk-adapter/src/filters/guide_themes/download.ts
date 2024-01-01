@@ -23,25 +23,33 @@ import { DownloadJobData } from './types'
 
 const log = logger(module)
 
-const downloadTheme = async (jobData: DownloadJobData, client: ZendeskClient): Promise<Buffer | undefined> => {
+const downloadTheme = async (
+  jobData: DownloadJobData, client: ZendeskClient
+): Promise<{ content: Buffer | undefined; errors: string[] }> => {
   const response = await client.getResource({ url: jobData.download.url, responseType: 'arraybuffer' })
   const content = _.isString(response.data) ? Buffer.from(response.data) : response.data
   if (!Buffer.isBuffer(content)) {
     log.warn(`Received invalid response from Zendesk API. Not adding theme content ${safeJsonStringify(response.data)}`)
-    return undefined
+    return { content: undefined, errors: [safeJsonStringify(response.data)] }
   }
-  return content
+  return { content, errors: [] }
 }
 
-export const download = async (themeId: string, client: ZendeskClient): Promise<Buffer | undefined> => {
-  const job = await createThemeExportJob(themeId, client)
+export const download = async (
+  themeId: string, client: ZendeskClient
+): Promise<{ content: Buffer | undefined; errors: string[] }> => {
+  const { job, errors } = await createThemeExportJob(themeId, client)
   if (job === undefined) {
     log.warn(`Received invalid response from Zendesk API. Not adding theme ${themeId}`)
-    return undefined
+    return { content: undefined, errors }
   }
-  if (!(await pollJobStatus(job.id, client))) {
+  const { success: pollSuccess, errors: pollErrors } = await pollJobStatus(job.id, client)
+  errors.push(...pollErrors)
+  if (!pollSuccess) {
     log.warn(`Failed to receive 'completed' job status from Zendesk API. Not adding theme ${themeId}`)
-    return undefined
+    return { content: undefined, errors }
   }
-  return downloadTheme(job.data, client)
+  const { content, errors: downloadErrors } = await downloadTheme(job.data, client)
+  errors.push(...downloadErrors)
+  return { content, errors }
 }

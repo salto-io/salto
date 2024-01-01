@@ -82,12 +82,11 @@ export type FailedJob = {
 
 type UploadJob = PendingJob<UploadJobData> | CompletedJob<UploadJobData> | FailedJob
 export type DownloadJob = FailedJob | PendingJob<DownloadJobData> | CompletedJob<DownloadJobData>
-
 const jobSchema = (statuses = ['pending', 'failed', 'completed']): Joi.ObjectSchema => Joi.object({
   id: Joi.string().required(),
   status: Joi.string().valid(...statuses).required(),
   data: JOB_DATA_SCHEMA.allow(null),
-  errors: JOB_ERROR_SCHEMA.allow(null),
+  errors: Joi.array().items(JOB_ERROR_SCHEMA).allow(null),
 })
 
 const EXPECTED_PENDING_JOB_RESPONSE_SCHEMA = Joi.object({

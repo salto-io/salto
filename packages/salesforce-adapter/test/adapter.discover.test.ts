@@ -70,7 +70,7 @@ import {
   SALESFORCE_ERRORS,
   SOCKET_TIMEOUT,
 } from '../src/constants'
-import { apiNameSync, isInstanceOfType } from '../src/filters/utils'
+import { apiNameSync, isInstanceOfType, isInstanceOfTypeSync } from '../src/filters/utils'
 import { NON_TRANSIENT_SALESFORCE_ERRORS } from '../src/config_change'
 import SalesforceClient from '../src/client/client'
 import createMockClient from './client'
@@ -301,7 +301,7 @@ describe('SalesforceAdapter fetch', () => {
               content: testData.apexClass.zipFileContent,
             })
           }
-          return mockRetrieveLocator({zipFiles})
+          return mockRetrieveLocator({ zipFiles })
         })
       }
 
@@ -360,10 +360,43 @@ describe('SalesforceAdapter fetch', () => {
         beforeEach(() => {
           setupMocks('relatedApexNotChanged')
         })
-        it('should only update the updated profile instance', async () => {
+        it('should only fetch the updated profile instance', async () => {
           const fetchRes = await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
           const fetchedInstances = fetchRes.elements.filter(isInstanceElement)
-          expect(fetchedInstances).not.toHaveLength(1)
+          const profileInstances = fetchedInstances.filter(isInstanceOfTypeSync(PROFILE_METADATA_TYPE))
+          // Make sure we didn't create any related props instances that were not changed
+          expect(fetchedInstances).not.toSatisfy(isInstanceOfTypeSync(APEX_CLASS_METADATA_TYPE))
+          expect(profileInstances.length).toEqual(1)
+          expect(profileInstances[0].value).toMatchObject({
+            fullName: UPDATED_PROFILE_FULL_NAME,
+            apiVersion: 58,
+          })
+        })
+      })
+
+      describe('when related instances were changed', () => {
+        beforeEach(() => {
+          setupMocks('relatedApexChanged')
+        })
+        it('should fetch the correct instances', async () => {
+          const fetchRes = await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
+          const fetchedInstances = fetchRes.elements.filter(isInstanceElement)
+          const profileInstances = fetchedInstances.filter(isInstanceOfTypeSync(PROFILE_METADATA_TYPE))
+          expect(profileInstances.length).toEqual(2)
+          const updatedProfileInstance = profileInstances
+            .find(inst => apiNameSync(inst) === UPDATED_PROFILE_FULL_NAME) as InstanceElement
+          const nonUpdatedProfileInstance = profileInstances
+            .find(inst => apiNameSync(inst) === NON_UPDATED_PROFILE_FULL_NAME) as InstanceElement
+          expect(updatedProfileInstance).toBeDefined()
+          expect(nonUpdatedProfileInstance).toBeDefined()
+          expect(updatedProfileInstance.value).toMatchObject({
+            fullName: UPDATED_PROFILE_FULL_NAME,
+            apiVersion: 58,
+          })
+          expect(nonUpdatedProfileInstance.value).toMatchObject({
+            fullName: NON_UPDATED_PROFILE_FULL_NAME,
+            apiVersion: 58,
+          })
         })
       })
     })

@@ -52,7 +52,7 @@ import {
   MetadataObjectType,
 } from './transformers/transformer'
 import { fromRetrieveResult, getManifestTypeName, toRetrieveRequest } from './transformers/xml_transformer'
-import { getFullName, listMetadataObjects } from './filters/utils'
+import { getFullName, isInstanceOfTypeSync, listMetadataObjects } from './filters/utils'
 import { buildFilePropsMetadataQuery } from './fetch_profile/metadata_query'
 
 const { isDefined } = lowerDashValues
@@ -492,7 +492,11 @@ export const retrieveMetadataInstanceForFetchWithChangesDetection: typeof retrie
       }
       return modifiedProfilesProps.concat(nonProfileProps)
     },
-  })
+  }).then(result => ({
+    ...result,
+    // We only want to handle Profile instances
+    elements: result.elements.filter(isInstanceOfTypeSync(PROFILE_METADATA_TYPE)),
+  }))
   const result = await Promise.all([retrievePartialProfileInstances, retrieveChangedProfileInstances])
   return {
     elements: result.flatMap(r => r.elements),

@@ -135,7 +135,7 @@ describe('workflow scheme migration', () => {
         name: 'instance',
         workflowScheme: new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow')),
         issueTypeScheme: new ReferenceExpression(new ElemID(JIRA, 'IssueTypeScheme', 'instance', 'issueTypeScheme')),
-      } 
+      }
     )
     workflowInstance = new InstanceElement(
       'workflow',

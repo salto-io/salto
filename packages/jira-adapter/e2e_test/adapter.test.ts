@@ -38,7 +38,7 @@ const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
 
 jest.setTimeout(600 * 1000)
 
-const excludedTypes = [BEHAVIOR_TYPE, 'Behavior__config', 'ObjectTypes', 'ObjectSchemas', 'ObjectSchemaStatuses']
+const excludedTypes = [BEHAVIOR_TYPE, 'Behavior__config', 'ObjectTypes', 'ObjectSchemas', 'ObjectSchemaStatuses', 'ObjectSchemaReferenceTypes']
 
 const nullProgressReporter: ProgressReporter = {
   // eslint-disable-next-line @typescript-eslint/no-empty-function

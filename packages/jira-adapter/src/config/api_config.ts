@@ -2308,11 +2308,10 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldsToHide: [
         { fieldName: 'id' },
         { fieldName: 'workspaceId' },
-      ],
-      serviceIdField: 'id',
-      fieldsToOmit: [
         { fieldName: 'objectSchemaId' },
       ],
+      serviceIdField: 'id',
+      serviceUrl: '/jira/servicedesk/assets/configure/object-schema/{id}',
     },
     deployRequests: {
       add: {
@@ -2347,15 +2346,16 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       idFields: ['&parentObjectTypeId', 'name'],
       fieldsToHide: [
         { fieldName: 'id' },
+        { fieldName: 'objectSchemaId' },
       ],
       fieldsToOmit: [
         { fieldName: 'created' },
         { fieldName: 'updated' },
         { fieldName: 'globalId' },
-        { fieldName: 'objectSchemaId' },
         { fieldName: 'workspaceId' },
       ],
       extendsParentId: false,
+      serviceUrl: '/jira/servicedesk/assets/object-schema/{objectSchemaId}?typeId={id}',
     },
     deployRequests: {
       add: {
@@ -2399,6 +2399,8 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'typeValue', fieldType: 'string' },
       ],
+      serviceUrl: '/jira/servicedesk/assets/object-schema/{objectSchemaId}?typeId={id}&mode=attribute',
+
     },
     deployRequests: {
       add: {

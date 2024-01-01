@@ -138,8 +138,11 @@ const getChangeWithoutRemovedFields = (change: ModificationChange<InstanceElemen
   const removedFields = beforeFields.filter(field => !afterFields.has(field))
   // filtering out anything that is a reference since we can have a missing reference in the before that could have
   // been removed in the after and we don't want it to be added to the list again
-  const [finalRemovedFields, referenceFields] = _.partition(removedFields, field => !isReferenceExpression(field))
-  log.trace(`these reference fields are in the before and not in the after. their elemIds are: ${
+  const [finalRemovedFields, referenceFields] = _.partition(
+    removedFields,
+    field => _.isString(field) || _.isNumber(field),
+  )
+  log.debug(`these reference fields are in the before and not in the after. their elemIds are: ${
     referenceFields.filter(isReferenceExpression).map(ref => ref.elemID.getFullName())}`)
   if (_.isEmpty(finalRemovedFields)) {
     return undefined

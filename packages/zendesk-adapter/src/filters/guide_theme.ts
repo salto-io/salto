@@ -31,6 +31,28 @@ const log = logger(module)
 type ThemeFile = { filename: string; content: StaticFile }
 type ThemeDirectory = { [key: string]: ThemeFile | ThemeDirectory }
 
+const isGuideThemesEnabled = (
+  fetchConfig: ZendeskFetchConfig
+): boolean => (
+  fetchConfig.guide?.themes === true
+)
+
+const addFileToDirectory = (root: ThemeDirectory, relativeFilename: string, file: ThemeFile): void => {
+  const pathSegments = relativeFilename.split('/')
+  const fileSegment = pathSegments.pop() as string // Remove and store the file segment, the array is never empty
+
+  // Use reduce to traverse and/or build the directory structure
+  const targetDirectory = pathSegments.reduce((currentDirectory, segment) => {
+    if (!currentDirectory[segment] || typeof currentDirectory[segment] !== 'object') {
+      currentDirectory[segment] = {}
+    }
+    return currentDirectory[segment] as ThemeDirectory
+  }, root)
+
+  // Add the file to the target directory
+  targetDirectory[fileSegment] = file
+}
+
 const unzipFolderToElements = async (buffer: Buffer, brandName: string, name: string): Promise<ThemeDirectory> => {
   const zip = new JSZip()
   const unzippedContents = await zip.loadAsync(buffer)
@@ -93,34 +115,45 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
 
     const errors: SaltoError[] = []
     await Promise.all(guideThemes.map(async theme => {
-      const brandName = getBrandName(theme)
+      const { content: brandName = getBrandName(theme)
       if (brandName === undefined) {
         remove(elements, element => element.elemID.isEqual(theme.elemID))
         return
       }
-      const { content: themeZip, errors: downloadErrors } = await download(theme.value.id, client)
+      const { content: themeZip, errors: downloadErrors }, errors: downloadErrors
+    } = await download(theme.value.id, client)
       if (themeZip === undefined) {
-        errors.push(...addDownloadErrors(theme, downloadErrors))
+      errors.push(...addDownloadErrors(theme, downloadErrors))
+      remove(elements, element => element.elemID.isEqual(theme.elemID))
+      return
+    }
+    try {
+      const themeElements = await unzipFolderToElements(themeZip, getBrandName(theme), theme.value.name)
+      theme.value.files = themeElements
+    } catch (e) {
+      errors.push({
+        message: `Error fetching theme id ${theme.value.id}, ${(e as Error).message}`,
+        severity: 'Warning',
+      })
+      remove(elements, element => element.elemID.isEqual(theme.elemID))
+    }
+    try {
+      const themeElements = await unzipFolderToElements(themeZip, brandName, theme.value.name)
+      theme.value.files = themeElements
+    } catch (e) {
+      if (e instanceof Error) {
+        errors.push({
+          message: `Error fetching theme id ${theme.value.id}, ${e.message}`,
+          severity: 'Warning',
+        })
         remove(elements, element => element.elemID.isEqual(theme.elemID))
-        return
+      } else {
+        log.error('Error fetching theme id %s, %o, with stack %o', theme.value.id, e, e.stack)
       }
-      try {
-        const themeElements = await unzipFolderToElements(themeZip, brandName, theme.value.name)
-        theme.value.files = themeElements
-      } catch (e) {
-        if (e instanceof Error) {
-          errors.push({
-            message: `Error fetching theme id ${theme.value.id}, ${e.message}`,
-            severity: 'Warning',
-          })
-          remove(elements, element => element.elemID.isEqual(theme.elemID))
-        } else {
-          log.error('Error fetching theme id %s, %o, with stack %o', theme.value.id, e, e.stack)
-        }
-      }
-    }))
-    return { errors }
-  },
+    }
+  }))
+  return { errors }
+},
 })
 
 export default filterCreator

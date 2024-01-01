@@ -22,12 +22,12 @@ import {
   isAdditionOrModificationChange,
   isInstanceChange,
   isInstanceElement,
-  isModificationChange, ModificationChange,
-  ReadOnlyElementsSource, toChange,
+  isModificationChange, isReferenceExpression, ModificationChange,
+  ReadOnlyElementsSource, ReferenceExpression, toChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { applyFunctionToChangeData, inspectValue } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
@@ -133,22 +133,19 @@ const returnValidInstance = (inst: InstanceElement): InstanceElement => {
 const getChangeWithoutRemovedFields = (change: ModificationChange<InstanceElement>): InstanceElement | undefined => {
   const { before } = change.data
   const { after } = change.data
-  const beforeFields: number[] = before.value.ticket_field_ids ?? []
+  const beforeFields: (number | string | ReferenceExpression)[] = before.value.ticket_field_ids ?? []
   const afterFields = new Set(after.value.ticket_field_ids ?? [])
-  // filtering out anything that is not a number since we can have a missing reference in the before that could have
+  const removedFields = beforeFields.filter(field => !afterFields.has(field))
+  // filtering out anything that is a reference since we can have a missing reference in the before that could have
   // been removed in the after and we don't want it to be added to the list again
-  const removedFields = beforeFields.filter(field => !afterFields.has(field)).filter(field => {
-    if (!_.isNumber(field)) {
-      log.trace(`the field is in the before and not in the after and is not a number: ${inspectValue(field)}`)
-      return false
-    }
-    return true
-  })
-  if (_.isEmpty(removedFields)) {
+  const [finalRemovedFields, referenceFields] = _.partition(removedFields, field => !isReferenceExpression(field))
+  log.trace(`these reference fields are in the before and not in the after. their elemIds are: ${
+    referenceFields.filter(isReferenceExpression).map(ref => ref.elemID.getFullName())}`)
+  if (_.isEmpty(finalRemovedFields)) {
     return undefined
   }
   const clonedInst = after.clone()
-  clonedInst.value.ticket_field_ids = (clonedInst.value.ticket_field_ids ?? []).concat(removedFields)
+  clonedInst.value.ticket_field_ids = (clonedInst.value.ticket_field_ids ?? []).concat(finalRemovedFields)
   return clonedInst
 }
 

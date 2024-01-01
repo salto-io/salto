@@ -135,7 +135,7 @@ const getChangeWithoutRemovedFields = (change: ModificationChange<InstanceElemen
   const { after } = change.data
   const beforeFields: number[] = before.value.ticket_field_ids ?? []
   const afterFields = new Set(after.value.ticket_field_ids ?? [])
-  const removedFields = beforeFields.filter(field => !afterFields.has(field))
+  const removedFields = beforeFields.filter(field => !afterFields.has(field)).filter(field => _.isNumber(field))
   if (_.isEmpty(removedFields)) {
     return undefined
   }

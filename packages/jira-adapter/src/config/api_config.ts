@@ -1981,6 +1981,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'columns', fieldType: 'List<Field>' },
       ],
+      serviceUrl: '/jira/servicedesk/projects/{projectKey}/queues/custom/{id}',
     },
     deployRequests: {
       add: {
@@ -2022,6 +2023,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'ticketTypeIds', fieldType: 'List<RequestType>' },
       ],
+      serviceUrl: '/jira/servicedesk/projects/{projectKey}/settings/portal-settings/portal-groups',
     },
     deployRequests: {
       add: {
@@ -2130,6 +2132,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'portalLogoUrl' },
         { fieldName: 'canAdministerJIRA' },
       ],
+      serviceUrl: '/jira/servicedesk/projects/{projectKey}/settings/portal-settings',
     },
   },
   PortalSettings__announcementSettings: {
@@ -2153,6 +2156,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'customFieldId' },
       ],
       serviceIdField: 'id',
+      serviceUrl: '/jira/servicedesk/projects/{projectKey}/settings/sla/custom/{id}',
     },
     deployRequests: {
       add: {
@@ -2270,6 +2274,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'objectSchemaStatuses', fieldType: 'List<ObjectSchemaStatus>' },
       ],
+      serviceUrl: '/jira/servicedesk/assets/configure/object-schema/{id}',
     },
     deployRequests: {
       add: {

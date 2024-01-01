@@ -22,12 +22,12 @@ import {
   isAdditionOrModificationChange,
   isInstanceChange,
   isInstanceElement,
-  isModificationChange, isReferenceExpression, ModificationChange,
+  isModificationChange, ModificationChange,
   ReadOnlyElementsSource, ReferenceExpression, toChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, inspectValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
@@ -142,8 +142,10 @@ const getChangeWithoutRemovedFields = (change: ModificationChange<InstanceElemen
     removedFields,
     field => _.isString(field) || _.isNumber(field),
   )
-  log.debug(`these reference fields are in the before and not in the after. their elemIds are: ${
-    referenceFields.filter(isReferenceExpression).map(ref => ref.elemID.getFullName())}`)
+  if (!_.isEmpty(referenceFields)) {
+    log.debug(`there are fields which are not a string or a number in the before and not in the after of the change in form: ${before.elemID.getFullName()}`)
+    log.trace(`the form ${before.elemID.getFullName()} before: ${inspectValue(before)}`)
+  }
   if (_.isEmpty(finalRemovedFields)) {
     return undefined
   }

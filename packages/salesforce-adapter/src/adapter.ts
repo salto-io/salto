@@ -116,7 +116,7 @@ import {
   retrieveMetadataInstances,
   fetchMetadataType,
   fetchMetadataInstances,
-  retrieveMetadataInstanceForFetchWithChangesDetection
+  retrieveMetadataInstanceForFetchWithChangesDetection,
 } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 import { getLookUpName, getLookupNameForDataInstances } from './transformers/reference_mapping'

@@ -471,7 +471,8 @@ export const retrieveMetadataInstanceForFetchWithChangesDetection: typeof retrie
     ...params,
     getFilesToRetrieveFunc: allProps => {
       const { profileProps, nonProfileProps } = getPartitions(allProps)
-      if (nonProfileProps.length === 0) {
+      const modifiedNonProfileProps = nonProfileProps.filter(props => metadataQuery.isInstanceMatch(props))
+      if (modifiedNonProfileProps.length === 0) {
         log.debug('No profile related props were changed')
         return []
       }

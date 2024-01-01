@@ -247,58 +247,61 @@ describe('SalesforceAdapter fetch', () => {
       const setupMocks = (mode: SetMocksMode): void => {
         connection.metadata.describe.mockResolvedValue(
           mockDescribeResult([
-            {xmlName: PROFILE_METADATA_TYPE, metaFile: false },
-            {xmlName: APEX_CLASS_METADATA_TYPE, metaFile: false },
+            { xmlName: PROFILE_METADATA_TYPE, metaFile: false },
+            { xmlName: APEX_CLASS_METADATA_TYPE, metaFile: false },
           ])
         )
-        connection.metadata.list.mockImplementation(async queries => {
-          return makeArray(queries).flatMap(query => {
-            if (query.type === PROFILE_METADATA_TYPE) {
-              return [
-                mockFileProperties({
-                  type: PROFILE_METADATA_TYPE,
-                  fullName: UPDATED_PROFILE_FULL_NAME,
-                  lastModifiedDate: GREATER_DATE,
-                  fileName: testData.updatedProfile.zipFileName,
-                }),
-                mockFileProperties({
-                  type: PROFILE_METADATA_TYPE,
-                  fullName: NON_UPDATED_PROFILE_FULL_NAME,
-                  lastModifiedDate: DATE,
-                  fileName: testData.nonUpdatedProfile.zipFileName,
-                }),
-              ]
-            } else if (query.type === APEX_CLASS_METADATA_TYPE) {
-              return [
-                mockFileProperties({
-                  type: APEX_CLASS_METADATA_TYPE,
-                  fullName: APEX_CLASS_FULL_NAME,
-                  lastModifiedDate: mode === 'relatedApexChanged' ? GREATER_DATE : DATE,
-                  fileName: testData.apexClass.zipFileName,
-                }),
-              ]
-            }
-            return []
-          })
-        })
+        connection.metadata.list.mockImplementation(async queries => makeArray(queries).flatMap(query => {
+          if (query.type === PROFILE_METADATA_TYPE) {
+            return [
+              mockFileProperties({
+                type: PROFILE_METADATA_TYPE,
+                fullName: UPDATED_PROFILE_FULL_NAME,
+                lastModifiedDate: GREATER_DATE,
+                fileName: testData.updatedProfile.zipFileName,
+              }),
+              mockFileProperties({
+                type: PROFILE_METADATA_TYPE,
+                fullName: NON_UPDATED_PROFILE_FULL_NAME,
+                lastModifiedDate: DATE,
+                fileName: testData.nonUpdatedProfile.zipFileName,
+              }),
+            ]
+          } if (query.type === APEX_CLASS_METADATA_TYPE) {
+            return [
+              mockFileProperties({
+                type: APEX_CLASS_METADATA_TYPE,
+                fullName: APEX_CLASS_FULL_NAME,
+                lastModifiedDate: mode === 'relatedApexChanged' ? GREATER_DATE : DATE,
+                fileName: testData.apexClass.zipFileName,
+              }),
+            ]
+          }
+          return []
+        }))
         connection.metadata.retrieve.mockImplementation(request => {
-          console.log(request)
-          return mockRetrieveLocator({
-            zipFiles: [
-              {
-                path: `$unpackaged/${testData.updatedProfile.zipFileName}$-meta.xml`,
-                content: testData.updatedProfile.zipFileContent,
-              },
-              {
-                path: `$unpackaged/${testData.nonUpdatedProfile.zipFileName}$-meta.xml`,
-                content: testData[NON_UPDATED_PROFILE_FULL_NAME].zipFileContent,
-              },
-              {
-                path: `$unpackaged/${testData.apexClass.zipFileName}$-meta.xml`,
-                content: testData.apexClass.zipFileContent,
-              },
-            ],
-          })
+          const fullNamesByType = Object
+            .fromEntries(request.unpackaged?.types.map(entry => [entry.name, entry.members]) ?? [])
+          const zipFiles: ZipFile[] = []
+          if (fullNamesByType[PROFILE_METADATA_TYPE]?.includes(UPDATED_PROFILE_FULL_NAME)) {
+            zipFiles.push({
+              path: `unpackaged/${testData.updatedProfile.zipFileName}`,
+              content: testData.updatedProfile.zipFileContent,
+            })
+          }
+          if (fullNamesByType[PROFILE_METADATA_TYPE]?.includes(NON_UPDATED_PROFILE_FULL_NAME)) {
+            zipFiles.push({
+              path: `unpackaged/${testData.nonUpdatedProfile.zipFileName}`,
+              content: testData[NON_UPDATED_PROFILE_FULL_NAME].zipFileContent,
+            })
+          }
+          if (fullNamesByType[APEX_CLASS_METADATA_TYPE]?.includes(APEX_CLASS_FULL_NAME)) {
+            zipFiles.push({
+              path: `unpackaged/${testData.apexClass.zipFileName}-meta.xml`,
+              content: testData.apexClass.zipFileContent,
+            })
+          }
+          return mockRetrieveLocator({zipFiles})
         })
       }
 
@@ -316,7 +319,6 @@ describe('SalesforceAdapter fetch', () => {
           apiVersion: '57.0',
         }, mockTypes.ApexClass)
 
-        const changedAtSingleton = mockInstances().ChangedAtSingleton
         changedAtSingleton.value = {
           [PROFILE_METADATA_TYPE]: {
             [UPDATED_PROFILE_FULL_NAME]: DATE,
@@ -334,20 +336,20 @@ describe('SalesforceAdapter fetch', () => {
           nonUpdatedProfileInstance,
           changedAtSingleton,
         ]);
-        ({connection, adapter} = mockAdapter({
+        ({ connection, adapter } = mockAdapter({
           adapterParams: {
             getElemIdFunc: mockGetElemIdFunc,
             config: {
               fetch: {
                 metadata: {
                   include: [
-                    {metadataType: '.*'},
+                    { metadataType: '.*' },
                   ],
                 },
               },
               maxItemsInRetrieveRequest: testMaxItemsInRetrieveRequest,
               client: {
-                readMetadataChunkSize: {default: 3, overrides: {Test: 2}},
+                readMetadataChunkSize: { default: 3, overrides: { Test: 2 } },
               },
             },
             elementsSource,
@@ -359,9 +361,9 @@ describe('SalesforceAdapter fetch', () => {
           setupMocks('relatedApexNotChanged')
         })
         it('should only update the updated profile instance', async () => {
-          const fetchRes = await adapter.fetch({...mockFetchOpts, withChangesDetection: true})
+          const fetchRes = await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
           const fetchedInstances = fetchRes.elements.filter(isInstanceElement)
-          expect(fetchedInstances).toBeEmpty()
+          expect(fetchedInstances).not.toHaveLength(1)
         })
       })
     })

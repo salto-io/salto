@@ -2245,6 +2245,13 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
             { name: 'AssetsSchemaId', fromField: 'id' },
           ],
         },
+        {
+          type: 'ObjectSchemaReferenceTypes',
+          toField: 'referenceTypes',
+          context: [
+            { name: 'AssetsSchemaId', fromField: 'id' },
+          ],
+        },
       ],
     },
     transformation: {
@@ -2273,6 +2280,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'objectSchemaStatuses' },
         { fieldName: 'objectTypes' },
         { fieldName: 'attributes' },
+        { fieldName: 'referenceTypes' },
       ],
       fieldTypeOverrides: [
         { fieldName: 'objectSchemaStatuses', fieldType: 'List<ObjectSchemaStatus>' },
@@ -2401,6 +2409,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
       fieldTypeOverrides: [
         { fieldName: 'typeValue', fieldType: 'string' },
+        { fieldName: 'additionalValue', fieldType: 'string' },
       ],
       serviceUrl: '/jira/servicedesk/assets/object-schema/{objectSchemaId}?typeId={id}&mode=attribute',
 
@@ -2416,6 +2425,44 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       },
       remove: {
         url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1//objecttypeattribute/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
+    },
+  },
+  ObjectSchemaReferenceTypes: {
+    request: {
+      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype?objectSchemaId={AssetsSchemaId}',
+    },
+    transformation: {
+      dataField: '.',
+    },
+  },
+  ObjectSchemaReferenceType: {
+    transformation: {
+      sourceTypeName: 'ObjectSchema__referenceTypes',
+      fieldsToHide: [
+        { fieldName: 'id' },
+        { fieldName: 'workspaceId' },
+        { fieldName: 'url16' },
+        { fieldName: 'globalId' },
+      ],
+      serviceIdField: 'id',
+      fieldsToOmit: [
+        { fieldName: 'objectSchemaId' },
+      ],
+    },
+    deployRequests: {
+      add: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype',
+        method: 'post',
+      },
+      modify: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype/{id}',
+        method: 'put',
+      },
+      remove: {
+        url: 'gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype/{id}',
         method: 'delete',
         omitRequestBody: true,
       },

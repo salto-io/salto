@@ -62,7 +62,7 @@ describe('dataChange ChangeValidator', () => {
         change,
       ])
     })
-    it('should create a ChangeError with severity Info', async () => {
+    it('should create a warning', async () => {
       expect(changeErrors).toEqual([
         expect.objectContaining({
           elemID: getChangeData(change).elemID,
@@ -70,7 +70,7 @@ describe('dataChange ChangeValidator', () => {
         }),
         expect.objectContaining({
           elemID: getChangeData(change).elemID,
-          severity: 'Error',
+          severity: 'Warning',
           detailedMessage: expect.stringContaining('UnknownField__c'),
         }),
       ])

@@ -40,7 +40,7 @@ const createUnknownFieldValuesChangeError = (instance: InstanceElement): ChangeE
   return unknownFields.length > 0
     ? {
       elemID: instance.elemID,
-      severity: 'Error',
+      severity: 'Warning',
       message: 'Data instance has values of unknown fields',
       detailedMessage: `The ${aliasOrElemID(instance.getTypeSync())} "${aliasOrElemID(instance)}" has values to the following unknown fields: [${unknownFields.join(', ')}]. Please include them in your deployment or remove these values from the instance.`,
     }

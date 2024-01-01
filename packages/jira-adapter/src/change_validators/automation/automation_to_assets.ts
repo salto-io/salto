@@ -33,12 +33,13 @@ type Component = {
 
 const hasRelevantComponent = (components: Component[]): boolean =>
   components.some(({ value }) =>
-    value.workspaceId !== undefined
+    value !== undefined && (
+      value.workspaceId !== undefined
     || value.schemaId !== undefined
-    || value.objectTypeId !== undefined)
+    || value.objectTypeId !== undefined))
 
 const getUniqueValues = (components: Component[], key: keyof Component['value']): string[] =>
-  [...new Set(components.map(component => component.value[key]).filter(isDefined))].sort()
+  [...new Set(components.map(component => component.value?.[key]).filter(isDefined))].sort()
 
 const isComponentChanged = (beforeComponents: Component[], afterComponents: Component[]): boolean => {
   const keys: Array<'workspaceId' | 'schemaId' | 'objectTypeId'> = ['workspaceId', 'schemaId', 'objectTypeId']

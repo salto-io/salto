@@ -179,5 +179,5 @@ export const CLOUD_SETTINGS: ProductSettings = {
   wrapConnection: _.identity,
   type: 'cloud',
   defaultScriptRunnerApiDefinitions: SCRIPT_RUNNER_DUCKTYPE_API_DEFINITIONS,
-  defualtDuckTypeApiDefinitions: JSM_DUCKTYPE_API_DEFINITIONS,
+  defaultDuckTypeApiDefinitions: JSM_DUCKTYPE_API_DEFINITIONS,
 }

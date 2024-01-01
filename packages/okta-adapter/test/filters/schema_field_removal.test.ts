@@ -31,7 +31,7 @@ describe('schemaFieldRemovalFilter', () => {
   describe('schemas with additional properties ', () => {
     const groupSchemaType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_SCHEMA_TYPE_NAME) })
     const groupSchemaBeforeInstance = new InstanceElement(
-      'defualtGroupSchema',
+      'defaultGroupSchema',
       groupSchemaType,
       {
         definitions: {
@@ -45,7 +45,7 @@ describe('schemaFieldRemovalFilter', () => {
       },
     )
     const groupSchemaAfterInstance = new InstanceElement(
-      'defualtGroupSchema',
+      'defaultGroupSchema',
       groupSchemaType,
       {
         definitions: {
@@ -68,7 +68,7 @@ describe('schemaFieldRemovalFilter', () => {
       })
       it('should add null when changing property name', async () => {
         const groupSchemaAfterModifyedInstance = new InstanceElement(
-          'defualtGroupSchema',
+          'defaultGroupSchema',
           groupSchemaType,
           {
             definitions: {
@@ -90,7 +90,7 @@ describe('schemaFieldRemovalFilter', () => {
     describe('onDeploy', () => {
       it('should delete Properties with null', async () => {
         const groupSchemaAfterInstanceTwo = new InstanceElement(
-          'defualtGroupSchema',
+          'defaultGroupSchema',
           groupSchemaType,
           {
             definitions: {
@@ -114,7 +114,7 @@ describe('schemaFieldRemovalFilter', () => {
   describe('schemas without additional properties ', () => {
     const userSchemaType = new ObjectType({ elemID: new ElemID(OKTA, USER_SCHEMA_TYPE_NAME) })
     const userSchemaBeforeInstance = new InstanceElement(
-      'defualtGroupSchema',
+      'defaultGroupSchema',
       userSchemaType,
       {
         definitions: {
@@ -128,7 +128,7 @@ describe('schemaFieldRemovalFilter', () => {
       },
     )
     const userSchemaAfterInstance = new InstanceElement(
-      'defualtGroupSchema',
+      'defaultGroupSchema',
       userSchemaType,
       {
         definitions: {
@@ -151,7 +151,7 @@ describe('schemaFieldRemovalFilter', () => {
       })
       it('should add null when changing property name', async () => {
         const userSchemaAfterModifyedInstance = new InstanceElement(
-          'defualtGroupSchema',
+          'defaultGroupSchema',
           userSchemaType,
           {
             definitions: {
@@ -173,7 +173,7 @@ describe('schemaFieldRemovalFilter', () => {
     describe('onDeploy', () => {
       it('should delete Properties with null', async () => {
         const userSchemaAfterInstanceTwo = new InstanceElement(
-          'defualtGroupSchema',
+          'defaultGroupSchema',
           userSchemaType,
           {
             definitions: {

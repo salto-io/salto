@@ -14,17 +14,50 @@
 * limitations under the License.
 */
 import {
-  Element, isObjectType, isInstanceElement, isField,
+  Element, isObjectType, isField, isInstanceElement,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { RemoteFilterCreator } from '../filter'
 import { apiName, metadataType } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
-import { getFullName, getInternalId, setInternalId, ensureSafeFilterFetch } from './utils'
+import {
+  getInternalId,
+  setInternalId,
+  ensureSafeFilterFetch,
+  isMetadataInstanceElementSync,
+  isStandardField,
+  isInstanceOfTypeSync, getFullName,
+} from './utils'
+import { GLOBAL_VALUE_SET_TRANSLATION_METADATA_TYPE, TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../constants'
 
 const log = logger(module)
 const { awu, groupByAsync } = collections.asynciterable
+
+
+const ELEMENTS_WITH_NO_INTERNAL_IDS = new Set([
+  'salesforce.RecordType.instance.Idea_InternalIdeasIdeaRecordType',
+])
+
+const TYPES_WITH_NO_INTERNAL_IDS = [
+  TOPICS_FOR_OBJECTS_METADATA_TYPE,
+  GLOBAL_VALUE_SET_TRANSLATION_METADATA_TYPE,
+]
+
+// Used for logging
+const shouldHaveInternalId = (element: Element): boolean => {
+  if (ELEMENTS_WITH_NO_INTERNAL_IDS.has(element.elemID.getFullName())) {
+    return false
+  }
+  if (isInstanceElement(element)) {
+    return isMetadataInstanceElementSync(element)
+    && !isInstanceOfTypeSync(...TYPES_WITH_NO_INTERNAL_IDS)(element)
+  } if (isField(element)) {
+    return !isStandardField(element)
+  }
+  return false
+}
 
 export const getIdsForType = async (
   client: SalesforceClient, type: string,
@@ -34,9 +67,7 @@ export const getIdsForType = async (
     log.debug(`Encountered errors while listing ${type}: ${errors}`)
   }
   return Object.fromEntries(
-    result
-      .filter(info => info.id !== undefined && info.id !== '')
-      .map(info => [getFullName(info), info.id])
+    result.map(info => [getFullName(info), info.id])
   )
 }
 
@@ -50,14 +81,18 @@ const addMissingIds = async (
   client: SalesforceClient,
   typeName: string,
   elements: Element[],
-): Promise<void> => {
+): Promise<Element[]> => {
+  const errorElements: Element[] = []
   const allIds = await getIdsForType(client, typeName)
   await awu(elements).forEach(async element => {
     const id = allIds[await apiName(element)]
-    if (id !== undefined) {
+    if (id === undefined) {
+      errorElements.push(element)
+    } else if (id !== '') {
       setInternalId(element, id)
     }
   })
+  return errorElements
 }
 
 const elementsWithMissingIds = async (elements: Element[]): Promise<Element[]> => (
@@ -86,10 +121,19 @@ const filter: RemoteFilterCreator = ({ client, config }) => ({
         metadataType,
       )
       log.debug(`Getting missing ids for the following types: ${Object.keys(groupedElements)}`)
-      await Promise.all(
+      const errorElements = (await Promise.all(
         Object.entries(groupedElements)
           .map(([typeName, typeElements]) => addMissingIds(client, typeName, typeElements))
-      )
+      ))
+        .flat()
+        .filter(shouldHaveInternalId)
+      if (errorElements.length > 0) {
+        /**
+         * If this warning shows up, please investigate the issue. Update the implementation
+         * of shouldHaveInternalId if the element should not have an internal id.
+         */
+        log.warn('Could not add internalIds on the following elements (first 100): %s', safeJsonStringify(errorElements.slice(0, 100).map(e => e.elemID.getFullName())))
+      }
     },
   }),
 })

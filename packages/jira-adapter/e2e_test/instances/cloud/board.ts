@@ -66,6 +66,5 @@ export const createScrumBoardValues = (name: string, allElements: Element[]): Va
   },
   estimation: {
     field: createReference(new ElemID(JIRA, 'Field', 'instance', 'Original_estimate__number@suu'), allElements),
-    timeTracking: createReference(new ElemID(JIRA, 'Field', 'instance', 'Remaining_Estimate__number@suu'), allElements),
   },
 })

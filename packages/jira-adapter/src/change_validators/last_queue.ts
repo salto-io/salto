@@ -21,6 +21,9 @@ import { JiraConfig } from '../config/config'
 
 const { awu } = collections.asynciterable
 
+/*
+* This validator prevents the deletion of the last queue of a project.
+*/
 export const deleteLastQueueValidator: (
     config: JiraConfig,
   ) => ChangeValidator = config => async (changes, elementsSource) => {
@@ -45,7 +48,7 @@ export const deleteLastQueueValidator: (
       .filter(isRemovalChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === QUEUE_TYPE)
-      .filter(queue => queue.annotations[CORE_ANNOTATIONS.PARENT]?.[0] !== undefined)
+      .filter(queue => getParent(queue) !== undefined)
       .filter(async instance => {
         const relatedQueues = projectToQueues[getParent(instance).elemID.getFullName()]
         return relatedQueues === undefined && projects.includes(getParent(instance).elemID.getFullName())

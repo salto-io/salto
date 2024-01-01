@@ -23,5 +23,5 @@ export type ProductSettings = {
   wrapConnection: (connection: clientUtils.APIConnection) => clientUtils.APIConnection
   type: ProductSettingsType
   defaultScriptRunnerApiDefinitions?: JiraDuckTypeConfig
-  defualtDuckTypeApiDefinitions?: JiraDuckTypeConfig
+  defaultDuckTypeApiDefinitions?: JiraDuckTypeConfig
 }

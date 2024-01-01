@@ -80,6 +80,7 @@ export type Guide = {
 }
 
 export type ZendeskClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
+  & { unassociatedAttachmentChunkSize: number }
 
 export type ZendeskFetchConfig = configUtils.UserFetchConfig
   & {

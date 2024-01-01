@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { filterUtils, client as clientUtils, deployment } from '@salto-io/adapter-components'
+import { filterUtils, client as clientUtils, deployment, elements as elementUtils } from '@salto-io/adapter-components'
 import JiraClient from '../../src/client/client'
-import { JIRA } from '../../src/constants'
+import { JIRA, PROJECT_TYPE } from '../../src/constants'
 import projectComponentFilter from '../../src/filters/project_component'
-import { getFilterParams, mockClient } from '../utils'
+import { createEmptyType, getFilterParams, mockClient } from '../utils'
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -39,6 +39,16 @@ describe('projectComponentFilter', () => {
   const deployChangeMock = deployment.deployChange as jest.MockedFunction<
     typeof deployment.deployChange
   >
+  const projectInstance = new InstanceElement(
+    'project',
+    createEmptyType(PROJECT_TYPE),
+    {
+      name: 'proj1',
+      key: 'PROJ1',
+      projectTypeKey: 'software',
+    },
+    [JIRA, elementUtils.RECORDS_PATH, 'Project', 'Software', 'proj1', 'proj1'],
+  )
 
   beforeEach(async () => {
     const { client: cli, paginator } = mockClient()
@@ -56,6 +66,11 @@ describe('projectComponentFilter', () => {
     instance = new InstanceElement(
       'instance',
       type,
+      {},
+      [JIRA, elementUtils.RECORDS_PATH, 'Project', 'proj1', 'components', 'instance'],
+      {
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(projectInstance.elemID, projectInstance)],
+      }
     )
   })
 
@@ -80,6 +95,15 @@ describe('projectComponentFilter', () => {
       expect(instance.value).toEqual({
         other: 'other',
       })
+    })
+    it('should add parent path', async () => {
+      await filter.onFetch([type, instance])
+      expect(instance.path).toEqual([JIRA, elementUtils.RECORDS_PATH, 'Project', 'Software', 'proj1', 'components', 'instance'])
+    })
+    it('should not change path if there is no parent', async () => {
+      delete instance.annotations[CORE_ANNOTATIONS.PARENT]
+      await filter.onFetch([type, instance])
+      expect(instance.path).toEqual([JIRA, elementUtils.RECORDS_PATH, 'Project', 'proj1', 'components', 'instance'])
     })
   })
 
@@ -134,6 +158,7 @@ describe('projectComponentFilter', () => {
     })
 
     it('should do nothing if there is no parent', async () => {
+      delete instance.annotations[CORE_ANNOTATIONS.PARENT]
       await filter.preDeploy([toChange({ after: instance })])
       expect(instance.value.project).toBeUndefined()
     })

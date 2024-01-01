@@ -61,7 +61,7 @@ export const createOutgoingUnresolvedReferencesValidator = (shouldIgnore: ElemID
         elemID: element.elemID,
         severity: 'Error' as SeverityLevel,
         message: 'Element has unresolved references',
-        detailedMessage: `Element ${element.elemID.getFullName()} contains unresolved references: ${unresolvedReferences.map(e => e.getFullName()).join(', ')}. Add the missing dependencies and try again.`,
+        detailedMessage: `Element ${element.elemID.getFullName()} contains unresolved references: ${unresolvedReferences.map(e => e.getFullName()).join(', ')}. Add the missing dependencies and try again. To learn more about fixing this error, go to https://help.salto.io/en/articles/6947056-element-contains-unresolved-references`,
       })
     })
     .filter(values.isDefined)

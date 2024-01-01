@@ -21,7 +21,7 @@ import { applyFunctionToChangeData, resolveValues, safeJsonStringify } from '@sa
 import _ from 'lodash'
 import { handleDeploymentError } from '../deployment/deployment_error_handling'
 import { getLookUpName } from '../reference_mapping'
-import { findObject } from '../utils'
+import { addAnnotationRecursively, findObject } from '../utils'
 import { FilterCreator } from '../filter'
 import { ISSUE_TYPE_NAME, JIRA, STATUS_TYPE_NAME } from '../constants'
 import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
@@ -298,36 +298,22 @@ const filter: FilterCreator = ({ config, client, paginator, elementsSource }) =>
       if (workflowSchemeType.fields.issueTypeMappings !== undefined) {
         delete workflowSchemeType.fields.issueTypeMappings
       }
+      const statusMappingType = findObject(elements, 'StatusMapping')
+      if (statusMappingType !== undefined) {
+        await addAnnotationRecursively(statusMappingType, CORE_ANNOTATIONS.UPDATABLE)
+        workflowSchemeType.fields.statusMigrations = new Field(
+          workflowSchemeType,
+          'statusMigrations',
+          new ListType(statusMappingType),
+          {
+            [CORE_ANNOTATIONS.UPDATABLE]: true,
+          }
+        )
+      } else {
+        log.error('StatusMapping type was not found')
+      }
 
-      const statusMigrationType = new ObjectType({
-        elemID: new ElemID(JIRA, 'StatusMigration'),
-        fields: {
-          issueTypeId: {
-            refType: BuiltinTypes.STRING,
-            annotations: { [CORE_ANNOTATIONS.UPDATABLE]: true },
-          },
-          statusId: {
-            refType: BuiltinTypes.STRING,
-            annotations: { [CORE_ANNOTATIONS.UPDATABLE]: true },
-          },
-          newStatusId: {
-            refType: BuiltinTypes.STRING,
-            annotations: { [CORE_ANNOTATIONS.UPDATABLE]: true },
-          },
-        },
-        path: [JIRA, elementUtils.TYPES_PATH, 'StatusMigration'],
-      })
-
-      workflowSchemeType.fields.statusMigrations = new Field(
-        workflowSchemeType,
-        'statusMigrations',
-        new ListType(statusMigrationType),
-        {
-          [CORE_ANNOTATIONS.UPDATABLE]: true,
-        }
-      )
-
-      elements.push(workflowSchemeItemType, statusMigrationType)
+      elements.push(workflowSchemeItemType)
     }
 
     elements
@@ -392,3 +378,4 @@ const filter: FilterCreator = ({ config, client, paginator, elementsSource }) =>
 })
 
 export default filter
+

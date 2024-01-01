@@ -1397,6 +1397,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   WorkflowScheme: {
     transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'statusMigrations', fieldType: 'List<StatusMapping>' },
+      ],
       fieldsToHide: [
         {
           fieldName: 'id',

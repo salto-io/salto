@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 
-import { AdditionChange, Change, InstanceElement, ModificationChange, getChangeData, isAdditionChange, isInstanceChange, isRemovalChange, toChange } from '@salto-io/adapter-api'
+import { AdditionChange, Change, InstanceElement, ModificationChange, getChangeData, isAdditionChange, isInstanceChange, isModificationChange, isRemovalChange, toChange } from '@salto-io/adapter-api'
 import { createSchemeGuard, getParent } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import { elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import Joi from 'joi'
 import { AdapterDuckTypeApiConfig } from '@salto-io/adapter-components/src/config'
 import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
@@ -45,6 +45,19 @@ const QUEUE_RESOPNSE_SCHEME = Joi.object({
 }).unknown(true).required()
 
 const isQueueResponse = createSchemeGuard<QueueGetResponse>(QUEUE_RESOPNSE_SCHEME)
+
+const serviceIdSetterQueue = (
+  instance: InstanceElement,
+  serviceIdField: string,
+  response: clientUtils.ResponseValue
+): void => {
+  const serviceFieldValue = response?.[serviceIdField]
+  if (instance.elemID.typeName === QUEUE_TYPE && _.isNumber(serviceFieldValue)) {
+    instance.value[serviceIdField] = serviceFieldValue.toString()
+  } else {
+    instance.value[serviceIdField] = serviceFieldValue
+  }
+}
 
 const getExsitingQueuesNamesAndIds = async (
   changes: Change<InstanceElement>[],
@@ -135,20 +148,7 @@ const filter: FilterCreator = ({ config, client }) => ({
 
     const [queueChanges, leftoverChanges] = _.partition(
       changes,
-      change => {
-        try {
-          const instance = getChangeData(change)
-          const existingQueues = isAdditionChange(change) && instance.elemID.typeName === QUEUE_TYPE
-            ? projectToExistiningQueues[getParent(getChangeData(change)).elemID.getFullName()]
-              .map(entry => entry[0]) : []
-          return isInstanceChange(change)
-      && getChangeData(change).elemID.typeName === QUEUE_TYPE
-      && (isRemovalChange(change) || existingQueues.includes(getChangeData(change).value.name))
-        } catch (e) {
-          log.error(`failed to get project name for change ${getChangeData(change).elemID.name} due to an error ${e}`)
-          return false
-        }
-      }
+      change => getChangeData(change).elemID.typeName === QUEUE_TYPE
     )
 
     const typeFixedChanges = queueChanges
@@ -167,9 +167,42 @@ const filter: FilterCreator = ({ config, client }) => ({
           return deployQueueRemovalChange(change, client)
         }
         const existingQueues = Object.fromEntries(
-          projectToExistiningQueues[getParent(getChangeData(change)).elemID.getFullName()]
+          (projectToExistiningQueues?.[getParent(getChangeData(change)).elemID.getFullName()] ?? [])
         )
-        return updateDefaultQueue(change, client, existingQueues, jsmApiDefinitions)
+        if (isAdditionChange(change) && existingQueues?.[change.data.after.value.name] !== undefined) {
+          await updateDefaultQueue(change, client, existingQueues, jsmApiDefinitions)
+        } else {
+        // deploy non default named queues (modification and addition)
+          await defaultDeployChange({
+            change,
+            client,
+            apiDefinitions: jsmApiDefinitions,
+            serviceIdSetter: serviceIdSetterQueue,
+          })
+        }
+        if (isAdditionChange(change)
+        || (isModificationChange(change) && change.data.before.value.favourite !== change.data.after.value.favourite)) {
+          const instance = getChangeData(change)
+          const favoriteValue = instance.value.favourite
+          if (favoriteValue === true) {
+            const data = {
+              entity: {
+                id: instance.value.id,
+                type: 'queues',
+              },
+              beforeEntityPosition: null,
+            }
+            await client.post({
+              url: '/rest/internal/2/favourites',
+              data,
+            })
+          } else {
+            await client.delete({
+              url: `/rest/internal/2/favourites/queues/${getChangeData(change).value.id}`,
+            })
+          }
+        }
+        return undefined
       })
 
     return {

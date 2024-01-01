@@ -159,7 +159,7 @@ import queueDeploymentFilter from './filters/queue_deployment'
 import scriptRunnerInstancesDeploy from './filters/script_runner/script_runner_instances_deploy'
 import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
 import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uuid'
-import changeQueueFieldsFilter from './filters/change_queue_fields'
+import queueFetchFilter from './filters/queue_fetch'
 import portalGroupsFilter from './filters/portal_groups'
 import assetsObjectTypePath from './filters/assets/assets_object_type_path'
 import assetsObjectTypeChangeFields from './filters/assets/assets_object_type_change_fields'
@@ -188,7 +188,7 @@ export const DEFAULT_FILTERS = [
   accountInfoFilter,
   storeUsersFilter,
   changeJSMElementsFieldFilter,
-  changeQueueFieldsFilter,
+  queueFetchFilter,
   changePortalGroupFieldsFilter,
   automationLabelFetchFilter,
   automationLabelDeployFilter,

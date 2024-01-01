@@ -40,4 +40,6 @@ export const createQueueValues = (name: string, allElements: Element[]): Values 
     createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee__user'), allElements),
     createReference(new ElemID(JIRA, 'Field', 'instance', 'Status__status'), allElements),
   ],
+  canBeHidden: false,
+  favourite: false,
 })

@@ -1983,7 +1983,7 @@ describe('Custom Object Instances filter', () => {
     describe('When enabled', () => {
       beforeEach(async () => {
         const changedAtSingleton = mockInstances()[CHANGED_AT_SINGLETON]
-        _.set(changedAtSingleton.value, [DATA_INSTANCES_CHANGED_AT_MAGIC, CUSTOM_OBJECT, testTypeName], changedAtCutoff)
+        _.set(changedAtSingleton.value, [DATA_INSTANCES_CHANGED_AT_MAGIC, testTypeName], changedAtCutoff)
 
         const elementsSource = buildElementsSourceFromElements([
           changedAtSingleton,

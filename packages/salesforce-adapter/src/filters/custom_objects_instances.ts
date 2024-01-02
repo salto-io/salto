@@ -43,7 +43,7 @@ import {
   DETECTS_PARENTS_INDICATOR,
   API_NAME_SEPARATOR,
   LAST_MODIFIED_DATE,
-  CUSTOM_OBJECT,
+  DATA_INSTANCES_CHANGED_AT_MAGIC,
 } from '../constants'
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField } from '../transformers/transformer'
@@ -64,7 +64,6 @@ import {
   SoqlQuery,
   buildElementsSourceForFetch,
   getChangedAtSingleton,
-  getTypeInstancesChangedAt,
 } from './utils'
 import { ConfigChangeSuggestion, DataManagement } from '../types'
 
@@ -502,7 +501,7 @@ export const getCustomObjectsFetchSettings = async (
     if (changedAtSingleton === undefined) {
       return undefined
     }
-    const lastChangedAt = getTypeInstancesChangedAt(changedAtSingleton, CUSTOM_OBJECT, typeName)
+    const lastChangedAt = _.get(changedAtSingleton.value, [DATA_INSTANCES_CHANGED_AT_MAGIC, typeName])
     return _.isString(lastChangedAt) ? new Date(lastChangedAt).toISOString() : undefined
   }
   const isInvalidManagedBySaltoField = (type: ObjectType): boolean => {

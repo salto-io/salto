@@ -256,6 +256,7 @@ const processDeployResponse = (
         elemID: typeAndNameToElemId[component.componentType]?.[component.fullName],
         message: 'This metadata type did not deploy because other types in its deployment group encountered failures',
         severity: 'Warning' as const,
+        type: 'dependency',
       }))
       .filter(error => error.elemID !== undefined)
   }

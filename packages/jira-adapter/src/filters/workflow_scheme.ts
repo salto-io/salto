@@ -371,4 +371,3 @@ const filter: FilterCreator = ({ config, client, paginator, elementsSource }) =>
 })
 
 export default filter
-

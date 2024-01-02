@@ -207,6 +207,30 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: STATUS_TYPE_NAME },
   },
   {
+    src: { field: 'issueTypeId', parentTypes: ['StatusMappingDTO'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: ISSUE_TYPE_NAME },
+  },
+  {
+    src: { field: 'projectId', parentTypes: ['StatusMappingDTO'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: PROJECT_TYPE },
+  },
+  {
+    src: { field: 'oldStatusReference', parentTypes: ['StatusMigration'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: STATUS_TYPE_NAME },
+  },
+  {
+    src: { field: 'newStatusReference', parentTypes: ['StatusMigration'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: STATUS_TYPE_NAME },
+  },
+  {
     src: { field: 'roleIds', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
     serializationStrategy: 'id',
     jiraMissingRefStrategy: 'typeAndValue',

@@ -19,7 +19,7 @@ import { client as clientUtils, filterUtils } from '@salto-io/adapter-components
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
 import { FilterResult } from '../../../src/filter'
 import JiraClient from '../../../src/client/client'
-import workflowFilter from '../../../src/filters/workflowV2/workflow_filter'
+import workflowFetchFilter from '../../../src/filters/workflowV2/workflow_fetch_filter'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA_WORKFLOW_TYPE } from '../../../src/constants'
@@ -43,7 +43,7 @@ describe('workflowFilter', () => {
     connection = conn
     const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     config.fetch.enableNewWorkflowAPI = true
-    filter = workflowFilter(getFilterParams({
+    filter = workflowFetchFilter(getFilterParams({
       client,
       paginator: mockPaginator,
       config,
@@ -148,7 +148,7 @@ describe('workflowFilter', () => {
     it('should not add workflow instances if new workflow api is disabled', async () => {
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableNewWorkflowAPI = false
-      filter = workflowFilter(getFilterParams({
+      filter = workflowFetchFilter(getFilterParams({
         client,
         paginator: mockFunction<clientUtils.Paginator>().mockImplementation(async function *get() {
           yield [
@@ -178,7 +178,7 @@ describe('workflowFilter', () => {
           { id: { notEntityId: '1' } },
         ]
       })
-      filter = workflowFilter(getFilterParams({
+      filter = workflowFetchFilter(getFilterParams({
         client,
         paginator: mockPaginator,
         config,

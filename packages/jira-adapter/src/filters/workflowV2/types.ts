@@ -15,8 +15,32 @@
 */
 import Joi from 'joi'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { Values } from '@salto-io/adapter-api'
 
 export const CHUNK_SIZE = 25
+
+export const WORKFLOW_FIELDS_TO_OMIT = [
+  'isEditable',
+  'scope',
+]
+export const WORKFLOW_ADDITION_FIELDS_TO_OMIT = [
+  'id',
+  'version',
+]
+
+export enum TASK_STATUS {
+  COMPLETE = 'COMPLETE',
+  FAILED = 'FAILED',
+  CANCEL_REQUESTED = 'CANCEL_REQUESTED',
+  CANCELLED = 'CANCELLED',
+  DEAD = 'DEAD',
+}
+
+export const STATUS_CATEGORY_ID_TO_KEY: Record<string, string> = {
+  4: 'IN_PROGRESS',
+  2: 'TODO',
+  3: 'DONE',
+}
 
 type WorkflowIdResponse = {
   id: {
@@ -24,7 +48,7 @@ type WorkflowIdResponse = {
   }
 }
 
-type WorkflowVersion = {
+export type WorkflowVersion = {
   versionNumber: number
   id: string
 }
@@ -41,10 +65,48 @@ export type Workflow = {
   id: string
 }
 
+export type WorkflowPayload = {
+  statuses: Values[]
+  workflows: Values[]
+  scope?: WorkflowScope
+}
+
 type WorkflowResponse = {
   workflows: Workflow[]
   taskId?: string
 }
+
+export type StatusMigration = {
+  newStatusReference: string
+  oldStatusReference: string
+}
+
+export type StatusMapping = {
+  issueTypeId: string
+  projectId: string
+  statusMigrations: StatusMigration[]
+}
+
+type TASK_RESPONSE = {
+  status: string
+  progress: number
+}
+
+const TASK_RESPONSE_SCHEMA = Joi.object({
+  status: Joi.string().required(),
+  progress: Joi.number().required(),
+}).unknown(true).required()
+
+const STATUS_MAPPING_SCHEMA = Joi.array().items(
+  Joi.object({
+    issueTypeId: Joi.string().required(),
+    projectId: Joi.string().required(),
+    statusMigrations: Joi.array().items(Joi.object({
+      newStatusReference: Joi.string().required(),
+      oldStatusReference: Joi.string().required(),
+    }).unknown(true).required()).required(),
+  }).unknown(true).required()
+).required()
 
 const WORKFLOW_IDS_RESPONSE_SCHEMA = Joi.array().items(Joi.object({
   id: Joi.object({
@@ -72,3 +134,7 @@ const WORKFLOW_RESPONSE_SCHEME = Joi.object({
 export const isWorkflowIdsResponse = createSchemeGuard<WorkflowIdResponse[]>(WORKFLOW_IDS_RESPONSE_SCHEMA, 'Received an invalid workflow ids response')
 
 export const isWorkflowResponse = createSchemeGuard<WorkflowResponse>(WORKFLOW_RESPONSE_SCHEME, 'Received an invalid workflow response')
+
+export const isStatusMappings = createSchemeGuard<StatusMapping[]>(STATUS_MAPPING_SCHEMA, 'Received an invalid statusMappings')
+
+export const isTaskResponse = createSchemeGuard<TASK_RESPONSE>(TASK_RESPONSE_SCHEMA, 'Received an invalid task response')

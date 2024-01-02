@@ -104,38 +104,39 @@ const createWorkflowInstances = async (
 /*
 * This filter uses the new workflow API to fetch workflows
 */
-const filter: FilterCreator = ({ config, client, paginator, fetchQuery }) => ({
-  name: 'jiraWorkflowFilter',
-  onFetch: async (elements: Element[]) => {
-    if (!config.fetch.enableNewWorkflowAPI || !fetchQuery.isTypeMatch(JIRA_WORKFLOW_TYPE)) {
-      return { errors: [] }
-    }
-    const jiraWorkflow = findObject(elements, JIRA_WORKFLOW_TYPE)
-    if (jiraWorkflow === undefined) {
-      log.error('JiraWorkflow type was not found')
-      return {
-        errors: [workflowFetchError()],
+const filter: FilterCreator = ({ config, client, paginator, fetchQuery }) =>
+  ({
+    name: 'jiraWorkflowFetchFilter',
+    onFetch: async (elements: Element[]) => {
+      if (!config.fetch.enableNewWorkflowAPI || !fetchQuery.isTypeMatch(JIRA_WORKFLOW_TYPE)) {
+        return { errors: [] }
       }
-    }
-    setTypeDeploymentAnnotations(jiraWorkflow)
-    await addAnnotationRecursively(jiraWorkflow, CORE_ANNOTATIONS.CREATABLE)
-    await addAnnotationRecursively(jiraWorkflow, CORE_ANNOTATIONS.UPDATABLE)
-    await addAnnotationRecursively(jiraWorkflow, CORE_ANNOTATIONS.DELETABLE)
-    const { workflowIds, errors: fetchWorkflowIdsErrors } = await fetchWorkflowIds(paginator)
-    if (!_.isEmpty(fetchWorkflowIdsErrors)) {
-      return { errors: fetchWorkflowIdsErrors }
-    }
-    const workflowChunks = _.chunk(workflowIds, CHUNK_SIZE)
-    const errors: SaltoError[] = []
-    await awu(workflowChunks).forEach(async chunk => {
-      const { workflowInstances, errors: createWorkflowInstancesErrors } = await createWorkflowInstances(
-        client, chunk, jiraWorkflow
-      )
-      errors.push(...(createWorkflowInstancesErrors ?? []))
-      elements.push(...(workflowInstances ?? []))
-    })
-    return { errors }
-  },
-})
+      const jiraWorkflow = findObject(elements, JIRA_WORKFLOW_TYPE)
+      if (jiraWorkflow === undefined) {
+        log.error('JiraWorkflow type was not found')
+        return {
+          errors: [workflowFetchError()],
+        }
+      }
+      setTypeDeploymentAnnotations(jiraWorkflow)
+      await addAnnotationRecursively(jiraWorkflow, CORE_ANNOTATIONS.CREATABLE)
+      await addAnnotationRecursively(jiraWorkflow, CORE_ANNOTATIONS.UPDATABLE)
+      await addAnnotationRecursively(jiraWorkflow, CORE_ANNOTATIONS.DELETABLE)
+      const { workflowIds, errors: fetchWorkflowIdsErrors } = await fetchWorkflowIds(paginator)
+      if (!_.isEmpty(fetchWorkflowIdsErrors)) {
+        return { errors: fetchWorkflowIdsErrors }
+      }
+      const workflowChunks = _.chunk(workflowIds, CHUNK_SIZE)
+      const errors: SaltoError[] = []
+      await awu(workflowChunks).forEach(async chunk => {
+        const { workflowInstances, errors: createWorkflowInstancesErrors } = await createWorkflowInstances(
+          client, chunk, jiraWorkflow
+        )
+        errors.push(...(createWorkflowInstancesErrors ?? []))
+        elements.push(...(workflowInstances ?? []))
+      })
+      return { errors }
+    },
+  })
 
 export default filter

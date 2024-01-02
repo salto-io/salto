@@ -113,6 +113,32 @@ const deployQueueRemovalChange = async (
   })
 }
 
+const deployFavouriteValue = async (
+  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
+  client: JiraClient,
+): Promise<void> => {
+  const instance = getChangeData(change)
+  const favoriteValue = instance.value.favourite
+  const { id } = instance.value
+  if (favoriteValue === true) {
+    const data = {
+      entity: {
+        id,
+        type: 'queues',
+      },
+      beforeEntityPosition: null,
+    }
+    await client.post({
+      url: '/rest/internal/2/favourites',
+      data,
+    })
+  } else {
+    await client.delete({
+      url: `/rest/internal/2/favourites/queues/${id}`,
+    })
+  }
+}
+
 /*
 * This filter responsible for deploying queue deletions and deploying queues with default names.
 * Modification change and addition non default named queues, will be deployed through the
@@ -167,9 +193,9 @@ const filter: FilterCreator = ({ config, client }) => ({
           return deployQueueRemovalChange(change, client)
         }
         const existingQueues = Object.fromEntries(
-          (projectToExistiningQueues?.[getParent(getChangeData(change)).elemID.getFullName()] ?? [])
+          (projectToExistiningQueues[getParent(getChangeData(change)).elemID.getFullName()] ?? [])
         )
-        if (isAdditionChange(change) && existingQueues?.[change.data.after.value.name] !== undefined) {
+        if (isAdditionChange(change) && existingQueues[change.data.after.value.name] !== undefined) {
           await updateDefaultQueue(change, client, existingQueues, jsmApiDefinitions)
         } else {
         // deploy non default named queues (modification and addition)
@@ -182,25 +208,7 @@ const filter: FilterCreator = ({ config, client }) => ({
         }
         if (isAdditionChange(change)
         || (isModificationChange(change) && change.data.before.value.favourite !== change.data.after.value.favourite)) {
-          const instance = getChangeData(change)
-          const favoriteValue = instance.value.favourite
-          if (favoriteValue === true) {
-            const data = {
-              entity: {
-                id: instance.value.id,
-                type: 'queues',
-              },
-              beforeEntityPosition: null,
-            }
-            await client.post({
-              url: '/rest/internal/2/favourites',
-              data,
-            })
-          } else {
-            await client.delete({
-              url: `/rest/internal/2/favourites/queues/${getChangeData(change).value.id}`,
-            })
-          }
+          await deployFavouriteValue(change, client)
         }
         return undefined
       })

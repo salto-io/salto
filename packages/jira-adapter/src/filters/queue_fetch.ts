@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,11 +16,14 @@
 
 import { InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import _ from 'lodash'
 import JiraClient from '../client/client'
 import { QUEUE_TYPE } from '../constants'
 import { FilterCreator } from '../filter'
+
+const { awu } = collections.asynciterable
 
 type QueueCatagoriesResponse = {
   id: number
@@ -55,18 +58,18 @@ const addQueueStarAndPriority = async (
   projectKeysToQueues: Record<string, InstanceElement[]>,
   client: JiraClient,
 ): Promise<void> => {
-  Object.entries(projectKeysToQueues).forEach(async ([projectKey, queues]) => {
+  await awu(Object.entries(projectKeysToQueues)).forEach(async ([projectKey, queues]) => {
     const response = await client.getSinglePage({
       url: `/rest/servicedesk/1/servicedesk/${projectKey}/queues/categories`,
     })
     if (!isQueuesCatagoriesResponse(response.data)) {
       return
     }
-    const queuesCatagories = Object.fromEntries(response.data.categories[0].queues.map(ququeDetails => [
-      ququeDetails.name,
+    const queuesCatagories = Object.fromEntries(response.data.categories[0].queues.map(queueDetails => [
+      queueDetails.name,
       {
-        canBeHidden: ququeDetails.canBeHidden,
-        favourite: ququeDetails.favourite,
+        canBeHidden: queueDetails.canBeHidden,
+        favourite: queueDetails.favourite,
       }]))
     queues.forEach(queue => {
       queue.value.canBeHidden = queuesCatagories[queue.value.name].canBeHidden

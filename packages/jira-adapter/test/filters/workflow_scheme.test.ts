@@ -48,7 +48,7 @@ class ServiceError {
 
 describe('workflowScheme', () => {
   let workflowSchemeType: ObjectType
-  let statusMappingType: ObjectType
+  let statusMigrationsType: ObjectType
   let filter: Filter
   let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
@@ -65,15 +65,20 @@ describe('workflowScheme', () => {
       paginator,
       elementsSource,
     }))
+    statusMigrationsType = createEmptyType('StatusMapping')
     workflowSchemeType = new ObjectType({
       elemID: new ElemID(JIRA, 'WorkflowScheme'),
+      fields: {
+        statusMigrations: {
+          refType: statusMigrationsType,
+        },
+      },
     })
-    statusMappingType = createEmptyType('StatusMapping')
   })
 
   describe('onFetch', () => {
     it('should add statusMigrations', async () => {
-      await filter.onFetch?.([workflowSchemeType, statusMappingType])
+      await filter.onFetch?.([workflowSchemeType, statusMigrationsType])
       expect(workflowSchemeType.fields.statusMigrations).toBeDefined()
       expect(workflowSchemeType.fields.statusMigrations.annotations).toEqual({
         [CORE_ANNOTATIONS.UPDATABLE]: true,
@@ -81,7 +86,7 @@ describe('workflowScheme', () => {
     })
     it('replace field issueTypeMappings with items', async () => {
       workflowSchemeType.fields.issueTypeMappings = new Field(workflowSchemeType, 'issueTypeMappings', BuiltinTypes.STRING)
-      await filter.onFetch?.([workflowSchemeType, statusMappingType])
+      await filter.onFetch?.([workflowSchemeType, statusMigrationsType])
       expect(workflowSchemeType.fields.issueTypeMappings).toBeUndefined()
       expect(workflowSchemeType.fields.items).toBeDefined()
       expect(workflowSchemeType.fields.items.annotations).toEqual({

@@ -298,17 +298,10 @@ const filter: FilterCreator = ({ config, client, paginator, elementsSource }) =>
       if (workflowSchemeType.fields.issueTypeMappings !== undefined) {
         delete workflowSchemeType.fields.issueTypeMappings
       }
-      const statusMappingType = findObject(elements, 'StatusMapping')
-      if (statusMappingType !== undefined) {
-        await addAnnotationRecursively(statusMappingType, CORE_ANNOTATIONS.UPDATABLE)
-        workflowSchemeType.fields.statusMigrations = new Field(
-          workflowSchemeType,
-          'statusMigrations',
-          new ListType(statusMappingType),
-          {
-            [CORE_ANNOTATIONS.UPDATABLE]: true,
-          }
-        )
+      const statusMigrationsType = findObject(elements, 'StatusMapping')
+      if (statusMigrationsType !== undefined) {
+        await addAnnotationRecursively(statusMigrationsType, CORE_ANNOTATIONS.UPDATABLE)
+        workflowSchemeType.fields.statusMigrations.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
       } else {
         log.error('StatusMapping type was not found')
       }

@@ -25,7 +25,6 @@ import _ from 'lodash'
 import { LocalFilterCreator } from '../filter'
 import {
   ArtificialTypes,
-  CUSTOM_OBJECT,
   DATA_INSTANCES_CHANGED_AT_MAGIC,
 } from '../constants'
 import {
@@ -99,7 +98,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
     instanceLastChangedByCustomObjectType
       .entries()
       .forEach(([typeName, dateString]) => {
-        _.set(changedAtInstance.value, [DATA_INSTANCES_CHANGED_AT_MAGIC, CUSTOM_OBJECT, typeName], dateString)
+        _.set(changedAtInstance.value, [DATA_INSTANCES_CHANGED_AT_MAGIC, typeName], dateString)
       })
   },
 })

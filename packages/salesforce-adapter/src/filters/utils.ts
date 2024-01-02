@@ -68,7 +68,6 @@ import {
   INTERNAL_ID_FIELD,
   KEY_PREFIX,
   LABEL,
-  DATA_INSTANCES_CHANGED_AT_MAGIC,
   LAYOUT_TYPE_ID_METADATA_TYPE,
   METADATA_TYPE,
   NAMESPACE_SEPARATOR,
@@ -147,10 +146,6 @@ export const isCustomObjectSync = (element: Readonly<Element>): element is Objec
     && element.annotations[API_NAME] !== undefined
   return res
 }
-
-export const isInstanceOfCustomObjectSync = (element: Readonly<Element>): element is InstanceElement => (
-  isInstanceElement(element) && isCustomObjectSync(element.getTypeSync())
-)
 
 const fullApiNameSync = (elem: Readonly<Element>): string | undefined => {
   if (isInstanceElement(elem)) {
@@ -678,22 +673,6 @@ export const getChangedAtSingleton = async (
   const element = await elementsSource.get(new ElemID(SALESFORCE, CHANGED_AT_SINGLETON, 'instance', ElemID.CONFIG_NAME))
   return isInstanceElement(element) ? element : undefined
 }
-
-export const getTypeChangedAt = (
-  changedAtSingleton: InstanceElement,
-  metadataTypeName: string,
-  typeName: string,
-): string | undefined => (
-  _.get(changedAtSingleton.value, [metadataTypeName, typeName])
-)
-
-export const getTypeInstancesChangedAt = (
-  changedAtSingleton: InstanceElement,
-  metadataTypeName: string,
-  typeName: string,
-): string | undefined => (
-  _.get(changedAtSingleton.value, [DATA_INSTANCES_CHANGED_AT_MAGIC, metadataTypeName, typeName])
-)
 
 
 export const isCustomType = (element: Element): element is ObjectType => (

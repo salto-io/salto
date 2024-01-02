@@ -125,9 +125,7 @@ describe('createChangedAtSingletonInstanceFilter', () => {
             SBQQ__Template__c: CHANGED_AT,
           },
           [DATA_INSTANCES_CHANGED_AT_MAGIC]: {
-            [CUSTOM_OBJECT]: {
-              SBQQ__Template__c: CHANGED_AT,
-            },
+            SBQQ__Template__c: CHANGED_AT,
           },
         })
       })

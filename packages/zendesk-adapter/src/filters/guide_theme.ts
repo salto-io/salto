@@ -31,12 +31,6 @@ const log = logger(module)
 type ThemeFile = { filename: string; content: StaticFile }
 type ThemeDirectory = { [key: string]: ThemeFile | ThemeDirectory }
 
-const isGuideThemesEnabled = (
-  fetchConfig: ZendeskFetchConfig
-): boolean => (
-  fetchConfig.guide?.themes === true
-)
-
 const addFileToDirectory = (root: ThemeDirectory, relativeFilename: string, file: ThemeFile): void => {
   const pathSegments = relativeFilename.split('/')
   const fileSegment = pathSegments.pop() as string // Remove and store the file segment, the array is never empty

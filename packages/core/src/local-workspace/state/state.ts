@@ -320,16 +320,26 @@ export const localState = (
       setDirty()
     },
     updateConfig: async args => {
+      const currentStateFiles = await currentContentProvider.findStateFiles(currentFilePrefix)
+      const contents = await awu(currentContentProvider.readContents(currentStateFiles))
+        .map(async ({ name, stream }): Promise<ContentAndHash> => {
+          const content = await getStream.buffer(stream)
+          return { account: path.basename(name), content, contentHash: toMD5(content.toString()) }
+        })
+        .toArray()
+
       const newProvider = getStateContentProvider(args.workspaceId, args.stateConfig)
-      const contents = await getContentAndHash()
 
-      const tempPrefix = path.join(path.dirname(currentFilePrefix), `.tmp_${path.basename(currentFilePrefix)}`)
-      await newProvider.writeContents(tempPrefix, contents)
+      if (contents.length > 0) {
+        log.debug('Migrating state contents for: %o', contents.map(({ account, contentHash }) => ({ account, contentHash })))
+        const tempPrefix = path.join(path.dirname(currentFilePrefix), `.tmp_${path.basename(currentFilePrefix)}`)
+        await newProvider.writeContents(tempPrefix, contents)
 
-      // swap the contents from the old provider to the new one
-      // note - we have to clear before we rename in case the providers use the same file names
-      await currentContentProvider.clear(currentFilePrefix)
-      await newProvider.rename(tempPrefix, path.basename(currentFilePrefix))
+        // swap the contents from the old provider to the new one
+        // note - we have to clear before we rename in case the providers use the same file names
+        await currentContentProvider.clear(currentFilePrefix)
+        await newProvider.rename(tempPrefix, path.basename(currentFilePrefix))
+      }
 
       currentContentProvider = newProvider
 

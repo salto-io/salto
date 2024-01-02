@@ -253,6 +253,15 @@ describe('localState', () => {
       afterEach(() => {
         getStateContentProviderSpy.mockRestore()
       })
+      describe('when existing content provider has no files', () => {
+        beforeEach(async () => {
+          contentProvider.findStateFiles.mockResolvedValue([])
+          await state.updateConfig({ workspaceId: 'wsId', stateConfig: undefined })
+        })
+        it('should not write anything', () => {
+          expect(newContentProvider.writeContents).not.toHaveBeenCalled()
+        })
+      })
       describe('when writing to the new provider works', () => {
         beforeEach(async () => {
           await state.updateConfig({ workspaceId: 'wsId', stateConfig: undefined })
@@ -432,12 +441,17 @@ describe('localState', () => {
     let state: wsState.State
     let contentProvider: jest.Mocked<StateContentProvider>
     let overridingStateFilesSource: staticFiles.StateStaticFilesSource
+    let getStateContentProviderSpy: jest.SpiedFunction<typeof getStateContentProvider>
     let instanceWithStaticFile: InstanceElement
     beforeEach(() => {
       instanceWithStaticFile = new InstanceElement('inst', mockElement, { content: new StaticFile({ filepath: 'path', content: Buffer.from('asd') }) })
       overridingStateFilesSource = mockStaticFilesSource([])
       contentProvider = mockContentProvider({})
+      getStateContentProviderSpy = jest.spyOn(stateFunctions, 'getStateContentProvider')
       state = localState('empty', '', inMemRemoteMapCreator(), contentProvider, overridingStateFilesSource)
+    })
+    afterEach(() => {
+      getStateContentProviderSpy.mockRestore()
     })
     it('should use the overriding files source and not the one from the content provider', async () => {
       await state.set(instanceWithStaticFile)
@@ -446,6 +460,9 @@ describe('localState', () => {
       expect(contentProvider.staticFilesSource.flush).not.toHaveBeenCalled()
     })
     it('should keep the overriding static file source after config update', async () => {
+      const newContentProvider = mockContentProvider({})
+      getStateContentProviderSpy.mockReturnValueOnce(newContentProvider)
+
       await state.updateConfig({ workspaceId: 'wsId', stateConfig: undefined })
       await state.set(instanceWithStaticFile)
       await state.flush()

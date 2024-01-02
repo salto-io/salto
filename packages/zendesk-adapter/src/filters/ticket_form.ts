@@ -23,11 +23,11 @@ import {
   isInstanceChange,
   isInstanceElement,
   isModificationChange, ModificationChange,
-  ReadOnlyElementsSource, toChange,
+  ReadOnlyElementsSource, ReferenceExpression, toChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, inspectValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
@@ -133,14 +133,24 @@ const returnValidInstance = (inst: InstanceElement): InstanceElement => {
 const getChangeWithoutRemovedFields = (change: ModificationChange<InstanceElement>): InstanceElement | undefined => {
   const { before } = change.data
   const { after } = change.data
-  const beforeFields: number[] = before.value.ticket_field_ids ?? []
+  const beforeFields: (number | string | ReferenceExpression)[] = before.value.ticket_field_ids ?? []
   const afterFields = new Set(after.value.ticket_field_ids ?? [])
   const removedFields = beforeFields.filter(field => !afterFields.has(field))
-  if (_.isEmpty(removedFields)) {
+  // filtering out anything that is a reference since we can have a missing reference in the before that could have
+  // been removed in the after and we don't want it to be added to the list again
+  const [finalRemovedFields, referenceFields] = _.partition(
+    removedFields,
+    field => _.isString(field) || _.isNumber(field),
+  )
+  if (!_.isEmpty(referenceFields)) {
+    log.debug(`there are fields which are not a string or a number in the before and not in the after of the change in form: ${before.elemID.getFullName()}`)
+    log.trace(`the form ${before.elemID.getFullName()} before: ${inspectValue(before)}`)
+  }
+  if (_.isEmpty(finalRemovedFields)) {
     return undefined
   }
   const clonedInst = after.clone()
-  clonedInst.value.ticket_field_ids = (clonedInst.value.ticket_field_ids ?? []).concat(removedFields)
+  clonedInst.value.ticket_field_ids = (clonedInst.value.ticket_field_ids ?? []).concat(finalRemovedFields)
   return clonedInst
 }
 

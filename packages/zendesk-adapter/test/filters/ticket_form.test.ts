@@ -15,7 +15,7 @@
 * limitations under the License.
 */
 
-import { filterUtils } from '@salto-io/adapter-components'
+import { filterUtils, references as referencesUtils } from '@salto-io/adapter-components'
 import {
   ElemID,
   InstanceElement,
@@ -29,6 +29,8 @@ import filterCreator from '../../src/filters/ticket_form'
 import { createFilterCreatorParams } from '../utils'
 import { ACCOUNT_FEATURES_TYPE_NAME, TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME, ZENDESK } from '../../src/constants'
 
+
+const { createMissingInstance } = referencesUtils
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -47,6 +49,7 @@ jest.mock('@salto-io/logging', () => ({
   logger: jest.fn()
     .mockReturnValue({
       debug: jest.fn(),
+      trace: jest.fn(),
       info: jest.fn(),
       error: jest.fn((...args) => mockLogError(...args)),
     }),
@@ -131,6 +134,7 @@ describe('ticket form filter', () => {
       filter = filterCreator(createFilterCreatorParams({ elementsSource: createElementSource(true) })) as FilterType
     })
     it('should deploy modification change with removal of conditions and field', async () => {
+      const missing = createMissingInstance(ZENDESK, TICKET_FIELD_TYPE_NAME, 'test')
       const beforeTicketForm = new InstanceElement(
         'test',
         ticketFormType,
@@ -140,6 +144,7 @@ describe('ticket form filter', () => {
             11,
             123,
             1234,
+            new ReferenceExpression(missing.elemID, missing),
           ],
           agent_conditions: [
             {

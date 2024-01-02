@@ -288,7 +288,7 @@ const zendeskGuideEntriesFunc = (
     args,
     typeName,
     typesConfig,
-  } : {
+  }: {
     paginator: clientUtils.Paginator
     args: clientUtils.ClientGetWithPaginationParams
     typeName?: string
@@ -358,7 +358,7 @@ const getGuideElements = async ({
   apiDefinitions,
   fetchQuery,
   getElemIdFunc,
-}:{
+}: {
   brandsList: InstanceElement[]
   brandToPaginator: Record<string, clientUtils.Paginator>
   apiDefinitions: configUtils.AdapterDuckTypeApiConfig
@@ -452,7 +452,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     filterRunnerClient,
     paginator,
     brandIdToClient,
-  } : {
+  }: {
     filterRunnerClient?: ZendeskClient
     paginator?: clientUtils.Paginator
     brandIdToClient?: BrandIdToClient
@@ -511,7 +511,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       filterRunnerClient,
       paginator,
       brandIdToClient = {},
-    } : {
+    }: {
       filterRunnerClient?: ZendeskClient
       paginator?: clientUtils.Paginator
       brandIdToClient?: BrandIdToClient
@@ -661,7 +661,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       } else {
         log.info(`Account subscription data invalid: ${inspectValue(data)}`)
       }
-    // This log is not crucial for the fetch to succeed, so we don't want to fail the fetch if it fails
+      // This log is not crucial for the fetch to succeed, so we don't want to fail the fetch if it fails
     } catch (e) {
       if (e.response?.status === 422) {
         log.info('Account subscription data unavailable because this is a sandbox environment')
@@ -788,8 +788,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
     const [instanceChanges, nonInstanceChanges] = _.partition(changeGroup.changes, isInstanceChange)
     if (nonInstanceChanges.length > 0) {
-      log.warn(`We currently can't deploy types. Therefore, the following changes will not be deployed: ${
-        nonInstanceChanges.map(elem => getChangeData(elem).elemID.getFullName()).join(', ')}`)
+      log.warn(`We currently can't deploy types. Therefore, the following changes will not be deployed: ${nonInstanceChanges.map(elem => getChangeData(elem).elemID.getFullName()).join(', ')}`)
     }
     const changesToDeploy = instanceChanges
       .map(change => ({
@@ -807,14 +806,14 @@ export default class ZendeskAdapter implements AdapterOperations {
     const runner = await this.createFiltersRunner({})
     const resolvedChanges = await awu(changesToDeploy)
       .map(async change =>
-        (SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
-          ? change
-          : resolveChangeElement(
-            change,
-            lookupFunc,
-            async (element, getLookUpName, elementsSource) =>
-              resolveValues(element, getLookUpName, elementsSource, true),
-          )))
+      (SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
+        ? change
+        : resolveChangeElement(
+          change,
+          lookupFunc,
+          async (element, getLookUpName, elementsSource) =>
+            resolveValues(element, getLookUpName, elementsSource, true),
+        )))
       .toArray()
     const [guideResolvedChanges, supportResolvedChanges] = _.partition(
       resolvedChanges,

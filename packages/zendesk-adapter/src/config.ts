@@ -2674,7 +2674,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'files', fieldType: 'map<unknown>' },
       ],
-      fieldsToHide: [{ fieldName: 'id', fieldType: 'string' }],
+      fieldsToHide: FIELDS_TO_HIDE.concat([
+        { fieldName: 'id', fieldType: 'string' },
+      ]),
     },
   },
 }
@@ -3081,4 +3083,10 @@ export const isGuideEnabled = (
   fetchConfig: ZendeskFetchConfig
 ): boolean => (
   fetchConfig.guide?.brands !== undefined
+)
+
+export const isGuideThemeEnabled = (
+  fetchConfig: ZendeskFetchConfig
+): boolean => (
+  fetchConfig.guide?.themes === true
 )

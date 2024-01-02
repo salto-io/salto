@@ -18,7 +18,7 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import JSZip from 'jszip'
 import _, { remove } from 'lodash'
-import { FETCH_CONFIG, ZendeskFetchConfig, isGuideEnabled } from '../config'
+import { FETCH_CONFIG, isGuideEnabled, isGuideThemeEnabled } from '../config'
 import {
   BRAND_TYPE_NAME,
   GUIDE_THEME_TYPE_NAME,
@@ -32,12 +32,6 @@ const { awu } = collections.asynciterable
 
 type ThemeFile = { filename: string; content: StaticFile }
 type ThemeDirectory = { [key: string]: ThemeFile | ThemeDirectory }
-
-const isGuideThemesEnabled = (
-  fetchConfig: ZendeskFetchConfig
-): boolean => (
-  fetchConfig.guide?.themes === true
-)
 
 const addFileToDirectory = (root: ThemeDirectory, relativeFilename: string, file: ThemeFile): void => {
   const pathSegments = relativeFilename.split('/')
@@ -96,7 +90,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     if (!isGuideEnabled(config[FETCH_CONFIG])) {
       return undefined
     }
-    if (!isGuideThemesEnabled(config[FETCH_CONFIG])) {
+    if (!isGuideThemeEnabled(config[FETCH_CONFIG])) {
       // The metadata is fetched before, if the flag is off - delete them
       remove(elements, element => element.elemID.typeName === GUIDE_THEME_TYPE_NAME)
       return undefined

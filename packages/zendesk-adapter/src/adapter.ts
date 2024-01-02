@@ -56,6 +56,7 @@ import {
   GUIDE_SUPPORTED_TYPES,
   GUIDE_TYPES_TO_HANDLE_BY_BRAND,
   isGuideEnabled,
+  isGuideThemeEnabled,
   ZendeskConfig,
 } from './config'
 import {
@@ -65,6 +66,7 @@ import {
   CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
   CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME,
   DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
+  GUIDE_THEME_TYPE_NAME,
   ZENDESK,
 } from './constants'
 import { getBrandsForGuide } from './filters/utils'
@@ -536,15 +538,23 @@ export default class ZendeskAdapter implements AdapterOperations {
     }))
   }
 
+  private filterSupportedTypes(): Record<string, string[]> {
+    const isGuideEnabledInConfig = isGuideEnabled(this.userConfig[FETCH_CONFIG])
+    const isGuideThemeEnabledInConfig = isGuideThemeEnabled(this.userConfig[FETCH_CONFIG])
+    const keysToOmit = isGuideEnabledInConfig
+      ? Object.keys(GUIDE_BRAND_SPECIFIC_TYPES) : Object.keys(GUIDE_SUPPORTED_TYPES)
+    if (!isGuideThemeEnabledInConfig) {
+      keysToOmit.push(GUIDE_THEME_TYPE_NAME)
+    }
+    const { supportedTypes: allSupportedTypes } = this.userConfig.apiDefinitions
+    return _.omit(allSupportedTypes, ...keysToOmit)
+  }
+
   @logDuration('generating instances and types from service')
   private async getElements(): Promise<ReturnType<typeof getAllElements>> {
     const isGuideEnabledInConfig = isGuideEnabled(this.userConfig[FETCH_CONFIG])
     const isGuideInFetch = isGuideEnabledInConfig && !_.isEmpty(this.userConfig[FETCH_CONFIG].guide?.brands)
-    const { supportedTypes: allSupportedTypes } = this.userConfig.apiDefinitions
-    const supportedTypes = isGuideEnabledInConfig
-      ? _.omit(allSupportedTypes, ...Object.keys(GUIDE_BRAND_SPECIFIC_TYPES))
-      : _.omit(allSupportedTypes, ...Object.keys(GUIDE_SUPPORTED_TYPES))
-
+    const supportedTypes = this.filterSupportedTypes()
     // Zendesk Support and (if enabled) global Zendesk Guide types
     const defaultSubdomainResult = await getAllElements({
       adapterName: ZENDESK,

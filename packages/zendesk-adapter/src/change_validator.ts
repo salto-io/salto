@@ -78,7 +78,6 @@ import {
   notEnabledMissingReferencesValidator,
   conditionalTicketFieldsValidator,
   dynamicContentDeletionValidator,
-  guideThemeReadonlyValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ChangeValidatorName, ZendeskDeployConfig, ZendeskFetchConfig, ZendeskConfig } from './config'
@@ -156,7 +155,6 @@ export default ({
     organizationExistence: organizationExistenceValidator(client, fetchConfig, deployConfig),
     badFormatWebhookAction: badFormatWebhookActionValidator,
     guideDisabled: guideDisabledValidator(fetchConfig),
-    guideThemeReadonly: guideThemeReadonlyValidator,
     additionOfTicketStatusForTicketForm: additionOfTicketStatusForTicketFormValidator,
     defaultDynamicContentItemVariant: defaultDynamicContentItemVariantValidator,
     featureActivation: featureActivationValidator,

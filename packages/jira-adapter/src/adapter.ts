@@ -91,6 +91,7 @@ import contextReferencesFilter from './filters/fields/context_references_filter'
 import contextsProjectsFilter from './filters/fields/contexts_projects_filter'
 import serviceUrlInformationFilter from './filters/service_url/service_url_information'
 import serviceUrlFilter from './filters/service_url/service_url'
+import serviceUrlJsmFilter from './filters/service_url/service_url_jsm'
 import priorityFilter from './filters/priority'
 import statusDeploymentFilter from './filters/statuses/status_deployment'
 import securitySchemeFilter from './filters/security_scheme/security_scheme'
@@ -287,6 +288,7 @@ export const DEFAULT_FILTERS = [
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,
   formsFilter,
+  serviceUrlJsmFilter, // Must run before fieldReferencesFilter
   fieldReferencesFilter,
   // Must run after fieldReferencesFilter
   addJsmTypesAsFieldsFilter,

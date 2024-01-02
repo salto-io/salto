@@ -2885,6 +2885,7 @@ export type ChangeValidatorName = (
   | 'organizationExistence'
   | 'badFormatWebhookAction'
   | 'guideDisabled'
+  | 'guideThemeReadonly'
   | 'additionOfTicketStatusForTicketForm'
   | 'defaultDynamicContentItemVariant'
   | 'featureActivation'

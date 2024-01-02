@@ -87,12 +87,7 @@ const addDownloadErrors = (
 const filterCreator: FilterCreator = ({ config, client }) => ({
   name: 'guideThemesFilter',
   onFetch: async elements => {
-    if (!isGuideEnabled(config[FETCH_CONFIG])) {
-      return undefined
-    }
-    if (!isGuideThemeEnabled(config[FETCH_CONFIG])) {
-      // The metadata is fetched before, if the flag is off - delete them
-      remove(elements, element => element.elemID.typeName === GUIDE_THEME_TYPE_NAME)
+    if (!isGuideEnabled(config[FETCH_CONFIG]) || !isGuideThemeEnabled(config[FETCH_CONFIG])) {
       return undefined
     }
 

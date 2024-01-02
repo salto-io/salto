@@ -16,24 +16,22 @@
 
 import { ChangeValidator, getChangeData, isInstanceChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { ZendeskFetchConfig } from '../config'
 import { GUIDE_THEME_TYPE_NAME } from '../constants'
 
-export const guideThemeReadonlyValidator: (fetchConfig: ZendeskFetchConfig)
-  => ChangeValidator = () => async changes => {
-    const themeInstances = changes
-      .filter(isInstanceChange)
-      .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === GUIDE_THEME_TYPE_NAME)
+export const guideThemeReadonlyValidator: ChangeValidator = async changes => {
+  const themeInstances = changes
+    .filter(isInstanceChange)
+    .map(getChangeData)
+    .filter(instance => instance.elemID.typeName === GUIDE_THEME_TYPE_NAME)
 
-    if (_.isEmpty(themeInstances)) {
-      return []
-    }
-
-    return themeInstances.map(instance => ({
-      elemID: instance.elemID,
-      severity: 'Error',
-      message: 'Cannot add this element because Guide Themes is currently under development.',
-      detailedMessage: 'Guide themes is in read only mode and not deployable at the moment.',
-    }))
+  if (_.isEmpty(themeInstances)) {
+    return []
   }
+
+  return themeInstances.map(instance => ({
+    elemID: instance.elemID,
+    severity: 'Error',
+    message: 'Cannot add this element because Guide Themes is currently under development.',
+    detailedMessage: 'Guide themes is in read only mode and not deployable at the moment.',
+  }))
+}

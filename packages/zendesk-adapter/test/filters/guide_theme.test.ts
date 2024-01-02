@@ -68,11 +68,6 @@ describe('filterCreator', () => {
         it('returns undefined', async () => {
           expect(await filter.onFetch?.([brand1, theme1])).toBeUndefined()
         })
-        it('removes themes', async () => {
-          const elements = [brand1, theme1, theme1]
-          await filter.onFetch?.(elements)
-          expect(elements).toEqual([brand1])
-        })
       })
     })
 

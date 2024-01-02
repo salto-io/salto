@@ -21,9 +21,9 @@ import { AdapterApiConfig } from '../config'
 
 
 export const addUrlToInstance = <TContext extends { apiDefinitions: AdapterApiConfig }>(
-  instance: InstanceElement, baseUrl: string, config: TContext, otherDefinitions?: AdapterApiConfig
+  instance: InstanceElement, baseUrl: string, config: TContext, otherApiDefinitions?: AdapterApiConfig
 ): void => {
-  const definitions = otherDefinitions ?? config.apiDefinitions
+  const definitions = otherApiDefinitions ?? config.apiDefinitions
   const serviceUrl = definitions
     .types[instance.elemID.typeName]?.transformation?.serviceUrl
   if (serviceUrl === undefined) {
@@ -37,18 +37,18 @@ export const serviceUrlFilterCreator: <
   TClient,
   TContext extends { apiDefinitions: AdapterApiConfig },
   TResult extends void | filter.FilterResult = void
->(baseUrl: string, otherDefinitions?: AdapterApiConfig)
-=> FilterCreator<TClient, TContext, TResult> = (baseUrl, otherDefinitions) => ({ config }) => ({
+>(baseUrl: string, otherApiDefinitions?: AdapterApiConfig)
+=> FilterCreator<TClient, TContext, TResult> = (baseUrl, otherApiDefinitions) => ({ config }) => ({
   name: 'serviceUrlFilter',
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)
-      .forEach(instance => addUrlToInstance(instance, baseUrl, config, otherDefinitions))
+      .forEach(instance => addUrlToInstance(instance, baseUrl, config, otherApiDefinitions))
   },
   onDeploy: async (changes: Change<InstanceElement>[]) => {
     const relevantChanges = changes.filter(isInstanceChange).filter(isAdditionChange)
     relevantChanges
       .map(getChangeData)
-      .forEach(instance => addUrlToInstance(instance, baseUrl, config, otherDefinitions))
+      .forEach(instance => addUrlToInstance(instance, baseUrl, config, otherApiDefinitions))
   },
 })

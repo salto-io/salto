@@ -106,26 +106,30 @@ describe('queue deployment filter', () => {
       })
     })
     describe('deploy addition changes with default name', () => {
+      // client = new JiraClient({ credentials: { baseUrl: 'http://myjira.net', user: 'me', token: 'tok' }, isDataCenter: false })
+      let mockGet: jest.SpyInstance
       beforeEach(() => {
-        const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-        config.fetch.enableJSM = true
         const { client: cli, connection: conn } = mockClient(false)
         connection = conn
         client = cli
+        mockGet = jest.spyOn(client, 'getSinglePage')
+        const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+        config.fetch.enableJSM = true
         queueInstance = new InstanceElement(
           'AllOpen',
           queueType,
           {
             name: 'All Open',
             columns: [new ReferenceExpression(fieldInstanceOne.elemID, fieldInstanceOne)],
+            favourite: true,
           },
           undefined,
           {
             [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(projectInstance.elemID, projectInstance)],
           },
         )
-        connection.get.mockImplementation(async url => {
-          if (url === '/rest/servicedeskapi/servicedesk/3/queue') {
+        mockGet.mockImplementation(async params => {
+          if (params.url === '/rest/servicedeskapi/servicedesk/3/queue') {
             return {
               status: 200,
               data: {
@@ -138,54 +142,66 @@ describe('queue deployment filter', () => {
               },
             }
           }
-          throw new Error(`Unexpected url ${url}`)
+          throw new Error(`Unexpected url ${params.url}`)
         })
         filter = queueFilter(getFilterParams({ config, client })) as typeof filter
       })
-      it('should deploy addition of a queue with default name', async () => {
+      it('should deploy addition of a queue with default name as modification change', async () => {
         const res = await filter.deploy([{ action: 'add', data: { after: queueInstance } }])
         expect(res.leftoverChanges).toHaveLength(0)
         expect(res.deployResult.errors).toHaveLength(0)
+        expect(connection.put).toHaveBeenCalledTimes(1)
+        expect(connection.post).toHaveBeenCalledTimes(1)
         expect(res.deployResult.appliedChanges).toHaveLength(1)
       })
-      it('should not deploy addition of a queue with non default name', async () => {
+      it('should deploy addition of a queue with non default name as addition change', async () => {
+        connection.post.mockResolvedValueOnce({ status: 200, data: { id: 11 } })
         queueInstance.value.name = 'queue1'
+        queueInstance.value.favourite = false
         const res = await filter.deploy([{ action: 'add', data: { after: queueInstance } }])
-        expect(res.leftoverChanges).toHaveLength(1)
-        expect(res.leftoverChanges).toEqual([{ action: 'add', data: { after: queueInstance } }])
-        expect(res.deployResult.appliedChanges).toHaveLength(0)
+        expect(res.leftoverChanges).toHaveLength(0)
+        expect(res.deployResult.appliedChanges).toHaveLength(1)
+        expect(connection.post).toHaveBeenCalledTimes(1)
+        expect(connection.delete).toHaveBeenCalledTimes(1)
       })
-      it('should not deploy modification of a queue with default name', async () => {
+      it('should deploy modification of a queue with default name favorite filed is undefined', async () => {
         const queueInstnaceAfter = queueInstance.clone()
         queueInstnaceAfter.value.columns = []
+        queueInstnaceAfter.value.favourite = undefined
         const res = await filter.deploy([{ action: 'modify', data: { before: queueInstance, after: queueInstnaceAfter } }])
-        expect(res.leftoverChanges).toHaveLength(1)
-        expect(res.leftoverChanges).toEqual([{ action: 'modify', data: { before: queueInstance, after: queueInstnaceAfter } }])
-        expect(res.deployResult.appliedChanges).toHaveLength(0)
+        expect(res.leftoverChanges).toHaveLength(0)
+        expect(res.deployResult.appliedChanges).toHaveLength(1)
+        expect(connection.put).toHaveBeenCalledTimes(1)
+        expect(connection.delete).toHaveBeenCalledTimes(1)
       })
-      it('should not deploy addition of a queue, if parent does not have serviceDeskId', async () => {
+      it('should deploy addition of a default queue, if parent does not have serviceDeskId as addition change', async () => {
         queueInstance.annotations[CORE_ANNOTATIONS.PARENT][0].value.value.serviceDeskId = undefined
         const res = await filter.deploy([{ action: 'add', data: { after: queueInstance } }])
-        expect(res.leftoverChanges).toHaveLength(1)
-        expect(res.leftoverChanges).toEqual([{ action: 'add', data: { after: queueInstance } }])
-        expect(res.deployResult.appliedChanges).toHaveLength(0)
+        expect(res.leftoverChanges).toHaveLength(0)
+        expect(res.deployResult.appliedChanges).toHaveLength(1)
+        expect(connection.post).toHaveBeenCalledTimes(2)
       })
-      it('should not deploy addition of a queue, if failed to get defualt queues', async () => {
-        connection.get.mockImplementationOnce(async () => ({
-          status: 200,
-          data: {},
-        }))
+      it('should deploy addition of a default queue as addition change, if failed to get default queues', async () => {
+        mockGet.mockImplementation(async params => {
+          if (params.url === '/rest/servicedeskapi/servicedesk/3/queue') {
+            return {
+              status: 200,
+              data: {},
+            }
+          }
+          throw new Error(`Unexpected url ${params.url}`)
+        })
         const res = await filter.deploy([{ action: 'add', data: { after: queueInstance } }])
-        expect(res.leftoverChanges).toHaveLength(1)
-        expect(res.leftoverChanges).toEqual([{ action: 'add', data: { after: queueInstance } }])
-        expect(res.deployResult.appliedChanges).toHaveLength(0)
+        expect(res.leftoverChanges).toHaveLength(0)
+        expect(res.deployResult.appliedChanges).toHaveLength(1)
+        expect(connection.post).toHaveBeenCalledTimes(2)
       })
-      it('should not deploy addition of a queue, if queue doesn\'t have a parent', async () => {
+      it('should catch error in addition of a queue, if queue doesn\'t have a parent', async () => {
         queueInstance.annotations[CORE_ANNOTATIONS.PARENT] = undefined
         const res = await filter.deploy([{ action: 'add', data: { after: queueInstance } }])
-        expect(res.leftoverChanges).toHaveLength(1)
-        expect(res.leftoverChanges).toEqual([{ action: 'add', data: { after: queueInstance } }])
+        expect(res.leftoverChanges).toHaveLength(0)
         expect(res.deployResult.appliedChanges).toHaveLength(0)
+        expect(res.deployResult.errors).toHaveLength(1)
       })
       it('should not deploy and should not reuturn error if not queue changes', async () => {
         const res = await filter.deploy([{ action: 'add', data: { after: projectInstance } }])

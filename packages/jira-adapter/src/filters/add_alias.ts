@@ -21,6 +21,7 @@ import {
 import { addAliasToElements, AliasData } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
+import { CALENDAR_TYPE, FORM_TYPE, OBJECT_SCHEMA_STATUS_TYPE, OBJECT_SCHEMA_TYPE, OBJECT_TYPE_ATTRIBUTE_TYPE, OBJECT_TYPE_TYPE, PORTAL_GROUP_TYPE, PORTAL_SETTINGS_TYPE_NAME, QUEUE_TYPE, REQUEST_TYPE_NAME, SLA_TYPE_NAME } from '../constants'
 
 const log = logger(module)
 
@@ -73,6 +74,122 @@ const aliasMap: Record<string, AliasData> = {
       {
         fieldName: '_parent.0',
         referenceFieldName: 'name',
+      },
+      {
+        fieldName: 'name',
+      }],
+    separator: ':',
+  },
+  [QUEUE_TYPE]: {
+    aliasComponents: [
+      {
+        fieldName: '_parent.0',
+        referenceFieldName: 'name',
+      },
+      {
+        fieldName: 'name',
+      }],
+    separator: ':',
+  },
+  [REQUEST_TYPE_NAME]: {
+    aliasComponents: [
+      {
+        fieldName: '_parent.0',
+        referenceFieldName: 'name',
+      },
+      {
+        fieldName: 'name',
+      }],
+    separator: ':',
+  },
+  [SLA_TYPE_NAME]: {
+    aliasComponents: [
+      {
+        fieldName: '_parent.0',
+        referenceFieldName: 'name',
+      },
+      {
+        fieldName: 'name',
+      }],
+    separator: ':',
+  },
+  [PORTAL_SETTINGS_TYPE_NAME]: {
+    aliasComponents: [
+      {
+        fieldName: '_parent.0',
+        referenceFieldName: 'name',
+      },
+      {
+        fieldName: 'name',
+      }],
+    separator: ':',
+  },
+  [PORTAL_GROUP_TYPE]: {
+    aliasComponents: [
+      {
+        fieldName: '_parent.0',
+        referenceFieldName: 'name',
+      },
+      {
+        fieldName: 'name',
+      }],
+    separator: ':',
+  },
+  [CALENDAR_TYPE]: {
+    aliasComponents: [
+      {
+        fieldName: '_parent.0',
+        referenceFieldName: 'name',
+      },
+      {
+        fieldName: 'name',
+      }],
+    separator: ':',
+  },
+  [FORM_TYPE]: {
+    aliasComponents: [
+      {
+        fieldName: '_parent.0',
+        referenceFieldName: 'name',
+      },
+      {
+        fieldName: 'name',
+      }],
+    separator: ':',
+  },
+  [OBJECT_SCHEMA_TYPE]: {
+    aliasComponents: [
+      {
+        fieldName: 'name',
+      }],
+  },
+  [OBJECT_SCHEMA_STATUS_TYPE]: {
+    aliasComponents: [
+      {
+        fieldName: '_parent.0',
+        referenceFieldName: 'name',
+      },
+      {
+        fieldName: 'name',
+      }],
+    separator: ':',
+  },
+  [OBJECT_TYPE_TYPE]: {
+    aliasComponents: [
+      {
+        fieldName: 'parentObjectTypeId',
+        referenceFieldName: '_alias',
+      },
+      {
+        fieldName: 'name',
+      }],
+    separator: ':',
+  },
+  [OBJECT_TYPE_ATTRIBUTE_TYPE]: {
+    aliasComponents: [
+      {
+        fieldName: 'objectType',
+        referenceFieldName: '_alias',
       },
       {
         fieldName: 'name',

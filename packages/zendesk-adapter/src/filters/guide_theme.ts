@@ -13,39 +13,58 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, SaltoError, StaticFile, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
+import { AdditionChange, Change, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceElement, isModificationChange, isRemovalChange, ModificationChange, SaltoElementError, SaltoError, StaticFile, isReferenceExpression } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { values } from '@salto-io/lowerdash'
 import JSZip from 'jszip'
 import _, { remove } from 'lodash'
-import { naclCase } from '@salto-io/adapter-utils'
+import ZendeskClient from '../client/client'
 import { FETCH_CONFIG, isGuideEnabled, isGuideThemesEnabled } from '../config'
 import {
   GUIDE_THEME_TYPE_NAME, ZENDESK,
 } from '../constants'
 import { FilterCreator } from '../filter'
+import { create } from './guide_themes/create'
+import { deleteTheme } from './guide_themes/delete'
 import { download } from './guide_themes/download'
+import { publish } from './guide_themes/publish'
 import { getBrandsForGuideThemes } from './utils'
 
 const log = logger(module)
 
 type ThemeFile = { filename: string; content: StaticFile }
-type ThemeDirectory = { [key: string]: ThemeFile | ThemeDirectory }
+type DeployThemeFile = { filename: string; content: Buffer }
+type ThemeDirectory<T> = { [key: string]: T | ThemeDirectory<T> }
 
-const unzipFolderToElements = async (buffer: Buffer, brandName: string, name: string): Promise<ThemeDirectory> => {
+
+const unzipFolderToElements = async (
+  buffer: Buffer, brandName: string, name: string, live: boolean
+): Promise<ThemeDirectory<ThemeFile>> => {
   const zip = new JSZip()
   const unzippedContents = await zip.loadAsync(buffer)
 
-  const elements: ThemeDirectory = {}
+  const elements: ThemeDirectory<ThemeFile> = {}
   await Promise.all(Object.entries(unzippedContents.files).map(async ([relativePath, file]): Promise<void> => {
     if (!file.dir) {
+      const filepath = `${ZENDESK}/themes/brands/${brandName}/${name}${live ? '_live' : ''}/${relativePath}`
       const content = await file.async('nodebuffer')
       _.set(elements, relativePath.split('/').map(naclCase), {
         filename: relativePath,
-        content: new StaticFile({ filepath: `${ZENDESK}/themes/brands/${brandName}/${name}/${relativePath}`, content }),
+        content: new StaticFile({ filepath, content }),
       })
     }
   }))
   return elements
+}
+
+const extractFilesFromThemeDirectory = (themeDirectory: ThemeDirectory<DeployThemeFile>): DeployThemeFile[] => {
+  const files = Object.values(themeDirectory).flatMap(fileOrDirectory => {
+    if ('content' in fileOrDirectory) {
+      return fileOrDirectory as DeployThemeFile
+    }
+    return extractFilesFromThemeDirectory(fileOrDirectory as ThemeDirectory<DeployThemeFile>)
+  })
+  return files
 }
 
 const getFullName = (instance: InstanceElement): string => instance.elemID.getFullName()
@@ -62,6 +81,36 @@ const addDownloadErrors = (
     message: `Error fetching theme id ${theme.value.id}, no content returned from Zendesk API`,
     severity: 'Warning',
   }])
+
+const createTheme = async (
+  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>, client: ZendeskClient
+): Promise<string[]> => {
+  const { brand_id: brandId, live, files } = change.data.after.value
+  const staticFiles = extractFilesFromThemeDirectory(files)
+  const { themeId, errors: elementErrors } = await create({ brandId, staticFiles }, client)
+  if (themeId === undefined) {
+    return [
+      ...elementErrors,
+      `Missing theme id from create theme response for theme ${change.data.after.elemID.getFullName()}`,
+    ]
+  }
+  change.data.after.value.id = themeId
+  if (live && elementErrors.length === 0) {
+    const publishErrors = await publish(themeId, client)
+    return publishErrors
+  }
+  return elementErrors
+}
+
+const updateTheme = async (
+  change: ModificationChange<InstanceElement>, client: ZendeskClient
+): Promise<string[]> => {
+  const elementErrors = await createTheme(change, client)
+  if (elementErrors.length > 0) {
+    return elementErrors
+  }
+  return deleteTheme(change.data.before.value.id, client)
+}
 
 /**
  * Fetches guide theme content
@@ -120,7 +169,9 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       }
     }
     try {
-      const themeElements = await unzipFolderToElements(themeZip, brandName, theme.value.name)
+      const themeElements = await unzipFolderToElements(
+        themeZip, brandName, theme.value.name, theme.value.live ?? false
+      )
       theme.value.files = themeElements
     } catch (e) {
       if (e instanceof Error) {
@@ -136,6 +187,36 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
   }))
   return { errors }
 },
+  deploy: async (changes: Change<InstanceElement>[]) => {
+    const [themeChanges, leftoverChanges] = _.partition(
+      changes,
+      change =>
+        // Removal changes are handled in the default config.
+        isAdditionOrModificationChange(change) && GUIDE_THEME_TYPE_NAME === getChangeData(change).elemID.typeName,
+    )
+    const processedChanges = await Promise.all(themeChanges
+      .map(async (change): Promise<{ appliedChange?: Change<InstanceElement>; errors: SaltoElementError[] }> => {
+        if (isRemovalChange(change)) {
+          // Shouldn't happen, cleans up Typescript
+          return { errors: [] }
+        }
+        const elementErrors = isModificationChange(change)
+          ? await updateTheme(change, client) : await createTheme(change, client)
+        if (elementErrors.length > 0) {
+          return {
+            errors: elementErrors.map(e => ({
+              elemID: change.data.after.elemID,
+              message: e,
+              severity: 'Error',
+            })),
+          }
+        }
+        return { appliedChange: change, errors: [] }
+      }))
+    const errors = processedChanges.flatMap(change => change.errors)
+    const appliedChanges = processedChanges.map(change => change.appliedChange).filter(values.isDefined)
+    return { deployResult: { appliedChanges, errors }, leftoverChanges }
+  },
 })
 
 export default filterCreator

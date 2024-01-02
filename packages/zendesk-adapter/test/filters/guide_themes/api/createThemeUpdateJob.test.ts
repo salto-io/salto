@@ -15,10 +15,10 @@
 */
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import ZendeskClient from '../../../../src/client/client'
-import { createThemeExportJob } from '../../../../src/filters/guide_themes/api/createThemeExportJob'
+import { createThemeUpdateJob } from '../../../../src/filters/guide_themes/api/createThemeUpdateJob'
 import { downloadJobResponse } from '../helpers'
 
-describe('createThemeExportJob', () => {
+describe('createThemeUpdateJob', () => {
   let client: ZendeskClient
   let mockPost: jest.SpyInstance
 
@@ -31,13 +31,14 @@ describe('createThemeExportJob', () => {
 
   it('should call the correct endpoint', async () => {
     mockPost.mockResolvedValue({ status: 202 })
-    await createThemeExportJob('11', client)
+    await createThemeUpdateJob('11', true, client)
     expect(mockPost).toHaveBeenCalledWith({
-      url: '/api/v2/guide/theming/jobs/themes/exports',
+      url: '/api/v2/guide/theming/jobs/themes/updates',
       data: {
         job: {
           attributes: {
             theme_id: '11',
+            replace_settings: true,
             format: 'zip',
           },
         },
@@ -48,24 +49,24 @@ describe('createThemeExportJob', () => {
   describe('successful response', () => {
     it('returns a job on a correct response structure', async () => {
       mockPost.mockResolvedValue({ status: 202, data: downloadJobResponse('pending') })
-      expect(await createThemeExportJob('11', client)).toEqual({ job: downloadJobResponse('pending').job, errors: [] })
+      expect(await createThemeUpdateJob('11', true, client)).toEqual({ job: downloadJobResponse('pending').job, errors: [] })
     })
 
     it('returns false on non-pending job', async () => {
       mockPost.mockResolvedValue({ status: 202, data: downloadJobResponse('completed') })
-      expect(await createThemeExportJob('11', client)).toEqual({ job: undefined, errors: [] })
+      expect(await createThemeUpdateJob('11', true, client)).toEqual({ job: undefined, errors: [] })
     })
 
     it('returns false on wrong response structure', async () => {
       mockPost.mockResolvedValue({ status: 202, data: { nope: 'yup' } })
-      expect(await createThemeExportJob('11', client)).toEqual({ job: undefined, errors: [] })
+      expect(await createThemeUpdateJob('11', true, client)).toEqual({ job: undefined, errors: [] })
     })
   })
 
   describe('response failure', () => {
     it('returns error response on wrong status code', async () => {
       mockPost.mockResolvedValue({ status: 400, data: downloadJobResponse('pending') })
-      expect(await createThemeExportJob('11', client)).toEqual({ job: undefined, errors: [safeJsonStringify(downloadJobResponse('pending'))] })
+      expect(await createThemeUpdateJob('11', true, client)).toEqual({ job: undefined, errors: [safeJsonStringify(downloadJobResponse('pending'))] })
     })
   })
 })

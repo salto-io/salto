@@ -13,25 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-import { ChangeValidator, getChangeData, isInstanceChange } from '@salto-io/adapter-api'
-import _ from 'lodash'
+import { ChangeValidator, getChangeData, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
 import { GUIDE_THEME_TYPE_NAME } from '../constants'
 
-export const guideThemeReadonlyValidator: ChangeValidator = async changes => {
-  const themeInstances = changes
+// This change validator verifies that no live themes are deleted
+const guideThemeDeleteLiveValidator: ChangeValidator = async changes => {
+  const deletedLiveThemes = changes
     .filter(isInstanceChange)
+    .filter(isRemovalChange)
     .map(getChangeData)
-    .filter(instance => instance.elemID.typeName === GUIDE_THEME_TYPE_NAME)
+    .filter(instance => instance.elemID.typeName === GUIDE_THEME_TYPE_NAME && instance.value.live)
 
-  if (_.isEmpty(themeInstances)) {
-    return []
-  }
-
-  return themeInstances.map(instance => ({
-    elemID: instance.elemID,
+  return deletedLiveThemes.map(theme => ({
+    elemID: theme.elemID,
+    message: 'Cannot delete live themes',
     severity: 'Error',
-    message: 'Cannot deploy this element because Guide Themes is currently under development.',
-    detailedMessage: 'Guide themes is in read only mode and not deployable at the moment.',
+    detailedMessage: 'Cannot delete live themes, please unpublish the theme first',
   }))
 }
+
+export default guideThemeDeleteLiveValidator

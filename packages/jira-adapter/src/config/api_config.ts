@@ -2444,12 +2444,12 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldsToHide: [
         { fieldName: 'id' },
         { fieldName: 'workspaceId' },
-        { fieldName: 'url16' },
-        { fieldName: 'globalId' },
       ],
       serviceIdField: 'id',
       fieldsToOmit: [
         { fieldName: 'objectSchemaId' },
+        { fieldName: 'url16' },
+        { fieldName: 'globalId' },
       ],
     },
     deployRequests: {
@@ -2466,6 +2466,24 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         method: 'delete',
         omitRequestBody: true,
       },
+    },
+  },
+  ObjectSchemaDefaultReferenceType: {
+    request: {
+      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype',
+    },
+    transformation: {
+      dataField: '.',
+      fieldsToHide: [
+        { fieldName: 'id' },
+        { fieldName: 'workspaceId' },
+      ],
+      serviceIdField: 'id',
+      fieldsToOmit: [
+        { fieldName: 'objectSchemaId' },
+        { fieldName: 'url16' },
+        { fieldName: 'globalId' },
+      ],
     },
   },
 }
@@ -2487,6 +2505,7 @@ export const JSM_DUCKTYPE_SUPPORTED_TYPES = {
 
 export const JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES = {
   ObjectSchema: ['ObjectSchemas'],
+  ObjectSchemaDefaultReferenceType: ['ObjectSchemaDefaultReferenceType'],
 }
 
 export const SCRIPT_RUNNER_DUCKTYPE_SUPPORTED_TYPES = {

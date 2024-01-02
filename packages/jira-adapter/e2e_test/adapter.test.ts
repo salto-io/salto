@@ -31,14 +31,14 @@ import { createInstances, createModifyInstances } from './instances'
 import { findInstance } from './utils'
 import { getLookUpName } from '../src/reference_mapping'
 import { getDefaultConfig } from '../src/config/config'
-import { BEHAVIOR_TYPE } from '../src/constants'
+import { BEHAVIOR_TYPE, OBJECT_SCHMEA_REFERENCE_TYPE_TYPE } from '../src/constants'
 
 const { awu } = collections.asynciterable
 const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
 
 jest.setTimeout(600 * 1000)
 
-const excludedTypes = [BEHAVIOR_TYPE, 'Behavior__config', 'ObjectTypes', 'ObjectSchemas', 'ObjectSchemaStatuses', 'ObjectSchemaReferenceTypes']
+const excludedTypes = [BEHAVIOR_TYPE, 'Behavior__config', 'ObjectTypes', 'ObjectSchemas', 'ObjectSchemaStatuses', OBJECT_SCHMEA_REFERENCE_TYPE_TYPE]
 
 const nullProgressReporter: ProgressReporter = {
   // eslint-disable-next-line @typescript-eslint/no-empty-function

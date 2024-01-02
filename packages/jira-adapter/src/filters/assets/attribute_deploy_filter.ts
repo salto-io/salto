@@ -16,17 +16,19 @@
 
 import { config as configUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { AdditionChange, Change, DeployResult, InstanceElement, createSaltoElementError, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isRemovalChange, toChange } from '@salto-io/adapter-api'
+import { Change, DeployResult, InstanceElement, createSaltoElementError, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isReferenceExpression, isRemovalChange, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { FilterCreator } from '../../filter'
-import { OBJECT_TYPE_ATTRIBUTE_TYPE } from '../../constants'
+import { OBJECT_TYPE_ATTRIBUTE_TYPE, OBJECT_TYPE_TYPE } from '../../constants'
 import { getWorkspaceId } from '../../workspace_id'
 import JiraClient from '../../client/client'
 
 const log = logger(module)
+const { awu } = collections.asynciterable
 
 type AttributeParams = {
   id: string
@@ -46,14 +48,13 @@ const ATTRIBUTE_RESOPNSE_SCHEME = Joi.array().items(Joi.object({
 const isAttributeResponse = createSchemeGuard<AttributeGetResponse>(ATTRIBUTE_RESOPNSE_SCHEME)
 
 const getExsitingAttributesNamesAndIds = async (
-  changes: AdditionChange<InstanceElement>[],
   client: JiraClient,
-  workspaceId: string
+  workspaceId: string,
+  objectType: InstanceElement
 ):Promise<string[][]> => {
   try {
-    const objectType = changes[0].data.after.value.objectType?.value.value
     const response = await client.getSinglePage({
-      url: `/gateway/api/jsm/assets/workspace/${workspaceId}/v1/objecttype/${objectType.id}/attributes`,
+      url: `/gateway/api/jsm/assets/workspace/${workspaceId}/v1/objecttype/${objectType.value.id}/attributes`,
     })
     if (!isAttributeResponse(response.data)) {
       return []
@@ -68,7 +69,11 @@ const getExsitingAttributesNamesAndIds = async (
   }
 }
 
-const changeSetter = (
+/*
+* This function is used to handle the case where a default attribute is added
+* and we want to deploy it as a modification change since it already exists in the service.
+*/
+const attributeAdditionOrModification = (
   change: Change<InstanceElement>,
   objectTypeToEditableExistiningAttributes: Record<string, string[][]>,
 ): Change<InstanceElement> => {
@@ -86,7 +91,6 @@ const changeSetter = (
   }
   return change
 }
-
 
 const deployAttributeChanges = async ({
   jsmApiDefinitions,
@@ -112,7 +116,7 @@ const deployAttributeChanges = async ({
         return
       }
       const instance = getChangeData(change)
-      const modifiedChange = changeSetter(change, objectTypeToEditableExistiningAttributes)
+      const modifiedChange = attributeAdditionOrModification(change, objectTypeToEditableExistiningAttributes)
       await defaultDeployChange({
         change: modifiedChange,
         client,
@@ -132,11 +136,14 @@ const deployAttributeChanges = async ({
 }
 
 /* This filter deploys JSM attribute changes using two different endpoints. */
-const filter: FilterCreator = ({ config, client }) => ({
+const filter: FilterCreator = ({ config, client, elementsSource }) => ({
   name: 'deployAttributesFilter',
   deploy: async changes => {
     const { jsmApiDefinitions } = config
-    if (!config.fetch.enableJSM || !config.fetch.enableJsmExperimental || jsmApiDefinitions === undefined) {
+    if (!elementsSource
+      || !config.fetch.enableJSM
+      || !config.fetch.enableJsmExperimental
+      || jsmApiDefinitions === undefined) {
       return {
         deployResult: { appliedChanges: [], errors: [] },
         leftoverChanges: changes,
@@ -168,21 +175,32 @@ const filter: FilterCreator = ({ config, client }) => ({
 
     const objectTypeToAttributeAdditions = _.groupBy(attributeAdditionChanges.filter(isInstanceChange),
       change => {
-        try {
-          const instance = getChangeData(change)
-          return instance.value.objectType.elemID.getFullName()
-        } catch (e) {
-          log.error(`failed to get objectType name for change ${getChangeData(change).elemID.name} due to an error ${e}`)
+        const instance = getChangeData(change)
+        if (!isReferenceExpression(instance.value.objectType)) {
           return ''
         }
+        return instance.value.objectType.elemID.getFullName()
       })
+
+    const objectTypesFullNameToInstsnce: Record<string, InstanceElement> = Object.fromEntries(
+      await awu(await elementsSource.list())
+        .filter(id => id.typeName === OBJECT_TYPE_TYPE)
+        .map(id => elementsSource.get(id))
+        .filter(isInstanceElement)
+        .map(instance => [instance.elemID.getFullName(), instance])
+        .toArray()
+    )
+
     const objectTypeToEditableExistiningAttributes: Record<string, string[][]> = Object.fromEntries(
-      await Promise.all(Object.entries(objectTypeToAttributeAdditions).map(async ([objectType, attributeChanges]) =>
-        [
-          objectType,
-          await getExsitingAttributesNamesAndIds(attributeChanges.filter(isInstanceChange),
-            client,
-            workspaceId)]))
+      await Promise.all(Object.entries(objectTypeToAttributeAdditions)
+        .map(async ([objectTypeName, _attributeChanges]) =>
+          [
+            objectTypeName,
+            await getExsitingAttributesNamesAndIds(
+              client,
+              workspaceId,
+              objectTypesFullNameToInstsnce[objectTypeName]
+            )]))
     )
     const deployResult = await deployAttributeChanges({
       jsmApiDefinitions,

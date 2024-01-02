@@ -72,12 +72,12 @@ const getQueuesAdditionByProjectGroup: deployment.ChangeIdFunction = async chang
   return `queue addition of ${parent.elemID.getFullName()}`
 }
 const getAttributeAdditionByObjectTypeGroup: deployment.ChangeIdFunction = async change => {
-  if (!isAdditionChange(change) || !isInstanceChange(change)
-    || getChangeData(change).elemID.typeName !== OBJECT_TYPE_ATTRIBUTE_TYPE) {
-    return undefined
+  if (isAdditionChange(change) && isInstanceChange(change)
+    && getChangeData(change).elemID.typeName === OBJECT_TYPE_ATTRIBUTE_TYPE) {
+    const instance = getChangeData(change)
+    return `attribute addition of ${instance.value.objectType.elemID.getFullName()}`
   }
-  const instance = getChangeData(change)
-  return `queue addition of ${instance.value.objectType.elemID.getFullName()}`
+  return undefined
 }
 
 export const getChangeGroupIds = deployment.getChangeGroupIdsFunc([

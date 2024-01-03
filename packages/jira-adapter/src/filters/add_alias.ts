@@ -26,7 +26,7 @@ import { CALENDAR_TYPE, FORM_TYPE, OBJECT_SCHEMA_STATUS_TYPE, OBJECT_SCHEMA_TYPE
 const log = logger(module)
 
 
-const SECOND_ITERATION_TYPES = ['FieldConfigurationItem', 'CustomFieldContext']
+const SECOND_ITERATION_TYPES = ['FieldConfigurationItem', 'CustomFieldContext', OBJECT_TYPE_TYPE, OBJECT_TYPE_ATTRIBUTE_TYPE]
 
 const aliasMap: Record<string, AliasData> = {
   Field: {

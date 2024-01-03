@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections, hash, strings, promises, values } from '@salto-io/lowerdash'
+import { collections, hash, strings, promises, values, retry } from '@salto-io/lowerdash'
 import {
   getChangeData, DeployResult, Change, isPrimitiveType, InstanceElement, Value, PrimitiveTypes,
   ModificationChange, Field, ObjectType, isObjectType, Values, isAdditionChange, isRemovalChange,
@@ -36,7 +36,8 @@ import {
 import SalesforceClient from './client/client'
 import {
   ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
-  CUSTOM_OBJECT_ID_FIELD, OWNER_ID, SBAA_APPROVAL_CONDITION,
+  CUSTOM_OBJECT_ID_FIELD, DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY, DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY_MULTIPLIER,
+  OWNER_ID, SBAA_APPROVAL_CONDITION,
   SBAA_APPROVAL_RULE,
   SBAA_CONDITIONS_MET,
 } from './constants'
@@ -52,6 +53,7 @@ const { partition } = promises.array
 const { sleep } = promises.timeout
 const { awu, keyByAsync } = collections.asynciterable
 const { toMD5 } = hash
+const { exponentialBackoff } = retry.retryStrategies
 const log = logger(module)
 
 type ActionResult = {
@@ -226,13 +228,21 @@ const isRetryableErr = (retryableFailures: string[]) =>
       _.some(retryableFailures, retryableFailure =>
         salesforceErr.includes(retryableFailure)))
 
+const retryDelayStrategyFromConfig = (client: SalesforceClient): retry.RetryStrategy => (
+  exponentialBackoff({
+    initial: client.dataRetry.retryDelay ?? DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY,
+    multiplier: client.dataRetry.retryDelayMultiplier ?? DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY_MULTIPLIER,
+  })()
+)
+
 export const retryFlow = async (
   crudFn: CrudFn,
   crudFnArgs: CrudFnArgs,
   retriesLeft: number,
+  retryDelayStrategy: retry.RetryStrategy = retryDelayStrategyFromConfig(crudFnArgs.client),
 ): Promise<ActionResult> => {
   const { client } = crudFnArgs
-  const { retryDelayStrategy, retryableFailures } = client.dataRetry
+  const { retryableFailures } = client.dataRetry
 
   let successes: InstanceElement[] = []
   let errors: (SaltoElementError | SaltoError)[] = []

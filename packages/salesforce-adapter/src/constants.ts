@@ -312,6 +312,19 @@ export const MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST = 500
 export const MAXIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST = 10000
 export const DEFAULT_ENUM_FIELD_PERMISSIONS = true
 
+export const DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY = 1000
+
+export const DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY_MULTIPLIER = 1.5
+
+export const DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS = {
+  maxAttempts: 5,
+  retryDelay: DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY,
+  retryDelayMultiplier: DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY_MULTIPLIER,
+  retryableFailures: [
+    'FIELD_CUSTOM_VALIDATION_EXCEPTION',
+    'UNABLE_TO_LOCK_ROW',
+  ],
+}
 export const MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD = 20
 
 // ref. https://developer.salesforce.com/docs/atlas.en-us.salesforce_app_limits_cheatsheet.meta/salesforce_app_limits_cheatsheet/salesforce_app_limits_platform_soslsoql.htm

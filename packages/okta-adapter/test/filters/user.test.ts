@@ -20,6 +20,7 @@ import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { ACCESS_POLICY_RULE_TYPE_NAME, GROUP_RULE_TYPE_NAME, OKTA } from '../../src/constants'
 import userFilter from '../../src/filters/user'
 import { getFilterParams } from '../utils'
+import { getUsers } from '../../src/user_utils'
 
 describe('user filter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
@@ -93,7 +94,9 @@ describe('user filter', () => {
           { id: '555', profile: { login: 'd@a.com' } },
         ]
       })
-      filter = userFilter(getFilterParams({ paginator: mockPaginator })) as FilterType
+      filter = userFilter(
+        getFilterParams({ paginator: mockPaginator, usersPromise: getUsers(mockPaginator) })
+      ) as FilterType
       const elements = [groupRuleType, groupRuleInstance, accessPolicyRuleType,
         accessRuleInstance, endUserSupportType, endUserInstance].map(e => e.clone())
       await filter.onFetch(elements)
@@ -138,7 +141,7 @@ describe('user filter', () => {
           { id: '222', profile: { login: 'b@a.com' } },
         ]
       })
-      filter = userFilter(getFilterParams({ paginator: mockPaginator })) as FilterType
+      filter = userFilter(getFilterParams({ paginator: mockPaginator, usersPromise: getUsers(mockPaginator) })) as FilterType
       const elements = [accessRuleInstance.clone(), accessPolicyRuleType.clone()]
       await filter.onFetch(elements)
       const instances = elements.filter(isInstanceElement)

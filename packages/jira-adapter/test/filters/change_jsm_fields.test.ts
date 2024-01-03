@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,7 +16,7 @@
 
 import { InstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { ASSETS_ATTRIBUTE_TYPE, ASSETS_OBJECT_TYPE, PROJECT_TYPE, SERVICE_DESK } from '../../src/constants'
+import { OBJECT_TYPE_ATTRIBUTE_TYPE, OBJECT_TYPE_TYPE, PROJECT_TYPE, SERVICE_DESK } from '../../src/constants'
 import { createEmptyType, getFilterParams } from '../utils'
 import changeJSMElementsFieldFilter from '../../src/filters/change_jsm_fields'
 
@@ -42,10 +42,10 @@ describe('changeJSMElementsFieldFilter', () => {
     beforeEach(() => {
       assetsObjectTypeInstance = new InstanceElement(
         'assetsObjectType',
-        createEmptyType(ASSETS_OBJECT_TYPE),
+        createEmptyType(OBJECT_TYPE_TYPE),
         {
           id: '11111',
-          name: 'AssetsObjectType',
+          name: 'ObjectType',
           icon: {
             id: '12345',
           },
@@ -53,7 +53,7 @@ describe('changeJSMElementsFieldFilter', () => {
       )
       assetsAttributeInstance = new InstanceElement(
         'assetsAttribute',
-        createEmptyType(ASSETS_ATTRIBUTE_TYPE),
+        createEmptyType(OBJECT_TYPE_ATTRIBUTE_TYPE),
         {
           id: '11111',
           name: 'AssetsAttribute',
@@ -83,17 +83,17 @@ describe('changeJSMElementsFieldFilter', () => {
       await filter.onFetch(elements)
       expect(assetsObjectTypeInstance.value).toEqual({
         id: '11111',
-        name: 'AssetsObjectType',
+        name: 'ObjectType',
         iconId: '12345',
       })
     })
     it('should not change icon Id if icon isnt an object', async () => {
       assetsObjectTypeInstance = new InstanceElement(
         'assetsObjectType',
-        createEmptyType(ASSETS_OBJECT_TYPE),
+        createEmptyType(OBJECT_TYPE_TYPE),
         {
           id: '11111',
-          name: 'AssetsObjectType',
+          name: 'ObjectType',
           icon: '12345',
         },
       )
@@ -102,7 +102,7 @@ describe('changeJSMElementsFieldFilter', () => {
       await filter.onFetch(elements)
       expect(assetsObjectTypeInstance.value).toEqual({
         id: '11111',
-        name: 'AssetsObjectType',
+        name: 'ObjectType',
         iconId: '12345',
       })
     })
@@ -117,7 +117,7 @@ describe('changeJSMElementsFieldFilter', () => {
         typeValue: '6',
       })
     })
-    it('should change defualtTypeId to -1 if defualtType isnt an object', async () => {
+    it('should change defaultTypeId to -1 if defaultType isnt an object', async () => {
       assetsAttributeInstance.value.defaultType = '1'
       elements = [projectInstance, assetsAttributeInstance]
       filter = changeJSMElementsFieldFilter(getFilterParams({})) as typeof filter

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -28,15 +28,11 @@ import {
   MetadataQuery,
 } from './types'
 import {
-  API_NAME_SEPARATOR,
   CUSTOM_OBJECT,
   DEFAULT_NAMESPACE,
   FOLDER_CONTENT_TYPE,
-  INSTALLED_PACKAGE_METADATA,
   INTERNAL_ID_FIELD,
-  LAYOUT_TYPE_ID_METADATA_TYPE,
   METADATA_CONTENT_FIELD,
-  NAMESPACE_SEPARATOR,
   PROFILE_METADATA_TYPE,
   RETRIEVE_SIZE_LIMIT_ERROR,
   UNLIMITED_INSTANCES_VALUE,
@@ -56,7 +52,7 @@ import {
   MetadataObjectType,
 } from './transformers/transformer'
 import { fromRetrieveResult, getManifestTypeName, toRetrieveRequest } from './transformers/xml_transformer'
-import { listMetadataObjects } from './filters/utils'
+import { getFullName, listMetadataObjects } from './filters/utils'
 
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
@@ -157,47 +153,6 @@ const listMetadataObjectsWithinFolders = async (
     .map(createListMetadataObjectsConfigChange)
     .concat(folders.configChanges)
   return { elements, configChanges }
-}
-
-const getFullName = (obj: FileProperties, addNamespacePrefixToFullName: boolean): string => {
-  if (!obj.namespacePrefix) {
-    return obj.fullName
-  }
-
-  const namePrefix = `${obj.namespacePrefix}${NAMESPACE_SEPARATOR}`
-
-  if (obj.type === LAYOUT_TYPE_ID_METADATA_TYPE) {
-  // Ensure layout name starts with the namespace prefix if there is one.
-  // needed due to a SF quirk where sometimes layout metadata instances fullNames return as
-  // <namespace>__<objectName>-<layoutName> where it should be
-  // <namespace>__<objectName>-<namespace>__<layoutName>
-    const [objectName, ...layoutName] = obj.fullName.split('-')
-    if (layoutName.length !== 0 && !layoutName[0].startsWith(namePrefix)) {
-      return `${objectName}-${namePrefix}${layoutName.join('-')}`
-    }
-    return obj.fullName
-  }
-
-  if (!addNamespacePrefixToFullName) {
-    log.debug('obj.fullName %s is missing namespace %s. Not adding because addNamespacePrefixToFullName is false. FileProps: %o', obj.fullName, obj.namespacePrefix, obj)
-    return obj.fullName
-  }
-  // Instances of type InstalledPackage fullNames should never include the namespace prefix
-  if (obj.type === INSTALLED_PACKAGE_METADATA) {
-    return obj.fullName
-  }
-
-  const fullNameParts = obj.fullName.split(API_NAME_SEPARATOR)
-  const name = fullNameParts.slice(-1)[0]
-  const parentNames = fullNameParts.slice(0, -1)
-
-  if (name.startsWith(namePrefix)) {
-    return obj.fullName
-  }
-
-  // In some cases, obj.fullName does not contain the namespace prefix even though
-  // obj.namespacePrefix is defined. In these cases, we want to add the prefix manually
-  return [...parentNames, `${namePrefix}${name}`].join(API_NAME_SEPARATOR)
 }
 
 const getPropsWithFullName = (

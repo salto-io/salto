@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -20,7 +20,7 @@ import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
-import { ASSETS_ATTRIBUTE_TYPE } from './constants'
+import { OBJECT_TYPE_ATTRIBUTE_TYPE } from './constants'
 import JiraClient from './client/client'
 
 const ATTRIBUTE_ENTRY_SCHEMA = Joi.object({
@@ -104,7 +104,7 @@ elementUtils.ducktype.EntriesRequester => async ({ paginator, args, typeName, ty
   typeName,
   typesConfig,
   additionalProcessing: entry => {
-    if (typeName === ASSETS_ATTRIBUTE_TYPE && isAttributeEntry(entry)) {
+    if (typeName === OBJECT_TYPE_ATTRIBUTE_TYPE && isAttributeEntry(entry)) {
       if (typeof entry.objectType !== 'string') {
         entry.objectType = entry.objectType.id
       }

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -176,7 +176,7 @@ export const getDefaultConfig = ({ isDataCenter }: { isDataCenter: boolean }): J
   ...PARTIAL_DEFAULT_CONFIG,
   apiDefinitions: getProductSettings({ isDataCenter }).defaultApiDefinitions,
   [SCRIPT_RUNNER_API_DEFINITIONS]: getProductSettings({ isDataCenter }).defaultScriptRunnerApiDefinitions,
-  [JSM_DUCKTYPE_API_DEFINITIONS]: getProductSettings({ isDataCenter }).defualtDuckTypeApiDefinitions,
+  [JSM_DUCKTYPE_API_DEFINITIONS]: getProductSettings({ isDataCenter }).defaultDuckTypeApiDefinitions,
 })
 
 const createClientConfigType = (): ObjectType => {
@@ -238,6 +238,7 @@ export type ChangeValidatorName = (
   | 'issueTypeHierarchy'
   | 'automationProjects'
   | 'deleteLastQueueValidator'
+  | 'defaultAdditionQueueValidator'
   | 'boardColumnConfig'
   | 'automationToAssets'
   )
@@ -291,6 +292,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     issueTypeHierarchy: { refType: BuiltinTypes.BOOLEAN },
     automationProjects: { refType: BuiltinTypes.BOOLEAN },
     deleteLastQueueValidator: { refType: BuiltinTypes.BOOLEAN },
+    defaultAdditionQueueValidator: { refType: BuiltinTypes.BOOLEAN },
     automationToAssets: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {

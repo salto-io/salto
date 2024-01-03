@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -20,7 +20,7 @@ import { Change, DeployResult, InstanceElement, createSaltoElementError, getChan
 import _ from 'lodash'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { FilterCreator } from '../../filter'
-import { ASSETS_ATTRIBUTE_TYPE } from '../../constants'
+import { OBJECT_TYPE_ATTRIBUTE_TYPE } from '../../constants'
 import { getWorkspaceId } from '../../workspace_id'
 import JiraClient from '../../client/client'
 
@@ -74,12 +74,12 @@ const filter: FilterCreator = ({ config, client }) => ({
     const [attributesChanges, leftoverChanges] = _.partition(
       changes.filter(isInstanceChange),
       change => isInstanceChange(change)
-      && getChangeData(change).elemID.typeName === ASSETS_ATTRIBUTE_TYPE
+      && getChangeData(change).elemID.typeName === OBJECT_TYPE_ATTRIBUTE_TYPE
     )
 
     const workspaceId = await getWorkspaceId(client)
     if (workspaceId === undefined) {
-      log.error(`Skip deployment of ${ASSETS_ATTRIBUTE_TYPE} types because workspaceId is undefined`)
+      log.error(`Skip deployment of ${OBJECT_TYPE_ATTRIBUTE_TYPE} types because workspaceId is undefined`)
       const errors = attributesChanges.map(change => createSaltoElementError({
         message: 'workspaceId could not be found.',
         severity: 'Error',

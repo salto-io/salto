@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -129,6 +129,7 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
   {
     src: { field: 'exclude', parentTypes: ['UserTypeCondition'] },
     serializationStrategy: 'id',
+    oktaMissingRefStrategy: 'typeAndValue',
     target: { type: USERTYPE_TYPE_NAME },
   },
   {
@@ -154,6 +155,7 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
   {
     src: { field: 'id', parentTypes: ['IdpPolicyRuleActionProvider'] },
     serializationStrategy: 'id',
+    oktaMissingRefStrategy: 'typeAndValue',
     target: { type: IDENTITY_PROVIDER_TYPE_NAME },
   },
   {
@@ -171,21 +173,25 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
   {
     src: { field: 'targetGroupIds', parentTypes: ['ProfileEnrollmentPolicyRuleAction'] },
     serializationStrategy: 'id',
+    oktaMissingRefStrategy: 'typeAndValue',
     target: { type: GROUP_TYPE_NAME },
   },
   {
     src: { field: 'inlineHookId', parentTypes: ['PreRegistrationInlineHook'] },
     serializationStrategy: 'id',
+    oktaMissingRefStrategy: 'typeAndValue',
     target: { type: INLINE_HOOK_TYPE_NAME },
   },
   {
     src: { field: 'key', parentTypes: ['MultifactorEnrollmentPolicyAuthenticatorSettings'] },
     oktaSerializationStrategy: 'key',
+    oktaMissingRefStrategy: 'typeAndValue',
     target: { type: AUTHENTICATOR_TYPE_NAME },
   },
   {
     src: { field: 'behaviors', parentTypes: ['RiskPolicyRuleCondition'] },
     serializationStrategy: 'id',
+    oktaMissingRefStrategy: 'typeAndValue',
     target: { type: BEHAVIOR_RULE_TYPE_NAME },
   },
   {
@@ -197,6 +203,7 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
   {
     src: { field: 'enabledGroup', parentTypes: ['BrowserPlugin'] },
     serializationStrategy: 'id',
+    oktaMissingRefStrategy: 'typeAndValue',
     target: { type: GROUP_TYPE_NAME },
   },
   {
@@ -207,44 +214,53 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
   {
     src: { field: 'id', parentTypes: ['ProfileMappingSource'] },
     serializationStrategy: 'id',
+    oktaMissingRefStrategy: 'typeAndValue',
     target: { typeContext: 'profileMappingName' },
   },
   {
     src: { field: 'appInstanceId', parentTypes: ['AuthenticatorSettings'] },
     serializationStrategy: 'id',
+    oktaMissingRefStrategy: 'typeAndValue',
     target: { type: APPLICATION_TYPE_NAME },
   },
   {
     src: { field: 'id', parentTypes: ['Group__source'] },
     serializationStrategy: 'id',
+    oktaMissingRefStrategy: 'typeAndValue',
     target: { type: APPLICATION_TYPE_NAME },
   },
   { src: { field: 'include', parentTypes: ['DeviceCondition'] },
     serializationStrategy: 'id',
+    oktaMissingRefStrategy: 'typeAndValue',
     target: { type: 'DeviceAssurance' } },
   {
     src: { field: 'emailDomainId', parentTypes: ['Brand'] },
     serializationStrategy: 'id',
+    oktaMissingRefStrategy: 'typeAndValue',
     target: { type: 'EmailDomain' },
   },
   {
     src: { field: 'appInstanceId', parentTypes: ['DefaultApp'] },
     serializationStrategy: 'id',
+    oktaMissingRefStrategy: 'typeAndValue',
     target: { type: APPLICATION_TYPE_NAME },
   },
   {
     src: { field: 'brandId', parentTypes: ['Domain'] },
     serializationStrategy: 'id',
+    oktaMissingRefStrategy: 'typeAndValue',
     target: { type: BRAND_TYPE_NAME },
   },
   {
     src: { field: 'userGroupId', parentTypes: [GROUP_PUSH_TYPE_NAME] },
     serializationStrategy: 'id',
+    oktaMissingRefStrategy: 'typeAndValue',
     target: { type: GROUP_TYPE_NAME },
   },
   {
     src: { field: 'groupPushRule', parentTypes: [GROUP_PUSH_TYPE_NAME] },
     oktaSerializationStrategy: 'mappingRuleId',
+    oktaMissingRefStrategy: 'typeAndValue',
     target: { type: GROUP_PUSH_RULE_TYPE_NAME },
   },
 ]

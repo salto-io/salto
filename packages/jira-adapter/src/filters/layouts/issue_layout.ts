@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -44,7 +44,7 @@ const getProjectToScreenMapping = async (elements: Element[]): Promise<Record<st
         const screens = Array.from(new Set(screenSchemes
           .map(screenScheme => screenScheme.value.screens.default)
           .filter(isResolvedReferenceExpression)
-          .map(defualtScreen => defualtScreen.value.value.id)))
+          .map(defaultScreen => defaultScreen.value.value.id)))
         return [project.value.id, screens]
       })))
   )

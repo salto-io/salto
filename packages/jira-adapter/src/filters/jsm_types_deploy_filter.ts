@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -20,13 +20,13 @@ import { getChangeData, isInstanceChange, Change, InstanceElement } from '@salto
 import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 import { FilterCreator } from '../filter'
 import { JSM_DUCKTYPE_SUPPORTED_TYPES } from '../config/api_config'
-import { ASSESTS_SCHEMA_TYPE, ASSETS_OBJECT_TYPE, ASSETS_STATUS_TYPE } from '../constants'
+import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_TYPE, OBJECT_SCHEMA_STATUS_TYPE } from '../constants'
 import { getWorkspaceId } from '../workspace_id'
 
 const {
   replaceInstanceTypeForDeploy,
 } = elementUtils.ducktype
-const ASSETS_SUPPORTED_TYPES = [ASSESTS_SCHEMA_TYPE, ASSETS_STATUS_TYPE, ASSETS_OBJECT_TYPE]
+const ASSETS_SUPPORTED_TYPES = [OBJECT_SCHEMA_TYPE, OBJECT_SCHEMA_STATUS_TYPE, OBJECT_TYPE_TYPE]
 const SUPPORTED_TYPES = new Set(Object.keys(JSM_DUCKTYPE_SUPPORTED_TYPES).concat(ASSETS_SUPPORTED_TYPES))
 
 const filterCreator: FilterCreator = ({ config, client }) => ({

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -60,6 +60,7 @@ import { customFieldsWith10KOptionValidator } from './field_contexts/custom_fiel
 import { issueTypeHierarchyValidator } from './issue_type_hierarchy'
 import { automationProjectsValidator } from './automation/automation_projects'
 import { deleteLastQueueValidator } from './last_queue'
+import { defaultAdditionQueueValidator } from './default_addition_queue'
 import { automationToAssetsValidator } from './automation/automation_to_assets'
 
 const {
@@ -118,6 +119,7 @@ export default (
     automationProjects: automationProjectsValidator,
     boardColumnConfig: boardColumnConfigValidator,
     deleteLastQueueValidator: deleteLastQueueValidator(config),
+    defaultAdditionQueueValidator: defaultAdditionQueueValidator(config),
     automationToAssets: automationToAssetsValidator(config),
   }
 

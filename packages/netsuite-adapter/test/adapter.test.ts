@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -1029,17 +1029,9 @@ describe('Adapter', () => {
         // eslint-disable-next-line @typescript-eslint/no-unused-expressions
         adapter.deployModifiers
 
-        expect(getChangeValidatorMock).toHaveBeenCalledWith({
-          client: expect.anything(),
-          withSuiteApp: expect.anything(),
+        expect(getChangeValidatorMock).toHaveBeenCalledWith(expect.objectContaining({
           warnStaleData: false,
-          fetchByQuery: expect.anything(),
-          deployReferencedElements: expect.anything(),
-          validate: expect.anything(),
-          filtersRunner: expect.anything(),
-          additionalDependencies: expect.anything(),
-          elementsSource,
-        })
+        }))
       })
 
       it('should call getChangeValidator with warnStaleData=false if warnOnStaleWorkspaceData=false in config', async () => {
@@ -1063,17 +1055,9 @@ describe('Adapter', () => {
         // eslint-disable-next-line @typescript-eslint/no-unused-expressions
         adapter.deployModifiers
 
-        expect(getChangeValidatorMock).toHaveBeenCalledWith({
-          client: expect.anything(),
-          withSuiteApp: expect.anything(),
+        expect(getChangeValidatorMock).toHaveBeenCalledWith(expect.objectContaining({
           warnStaleData: false,
-          fetchByQuery: expect.anything(),
-          filtersRunner: expect.anything(),
-          deployReferencedElements: expect.anything(),
-          validate: expect.anything(),
-          additionalDependencies: expect.anything(),
-          elementsSource,
-        })
+        }))
       })
 
       it('should call getChangeValidator with warnStaleData=true if warnOnStaleWorkspaceData=true in config', async () => {
@@ -1097,17 +1081,9 @@ describe('Adapter', () => {
         // eslint-disable-next-line @typescript-eslint/no-unused-expressions
         adapter.deployModifiers
 
-        expect(getChangeValidatorMock).toHaveBeenCalledWith({
-          client: expect.anything(),
-          withSuiteApp: expect.anything(),
+        expect(getChangeValidatorMock).toHaveBeenCalledWith(expect.objectContaining({
           warnStaleData: true,
-          fetchByQuery: expect.anything(),
-          filtersRunner: expect.anything(),
-          deployReferencedElements: expect.anything(),
-          validate: expect.anything(),
-          additionalDependencies: expect.anything(),
-          elementsSource,
-        })
+        }))
       })
     })
 

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,7 +16,7 @@
 import { getChangeData, isModificationChange, isAdditionChange } from '@salto-io/adapter-api'
 import { getParent, getParents, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { deployment } from '@salto-io/adapter-components'
-import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE, SECURITY_LEVEL_TYPE, WORKFLOW_TYPE_NAME } from './constants'
+import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, QUEUE_TYPE, SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE, SECURITY_LEVEL_TYPE, WORKFLOW_TYPE_NAME } from './constants'
 
 export const getWorkflowGroup: deployment.ChangeIdFunction = async change => (
   isModificationChange(change)
@@ -62,10 +62,21 @@ const getScriptedFragmentsGroup: deployment.ChangeIdFunction = async change =>
     ? 'Scripted Fragments'
     : undefined)
 
+const getQueuesAdditionByProjectGroup: deployment.ChangeIdFunction = async change => {
+  const instance = getChangeData(change)
+  if (!isAdditionChange(change)
+    || instance.elemID.typeName !== QUEUE_TYPE) {
+    return undefined
+  }
+  const parent = getParent(instance)
+  return `queue addition of ${parent.elemID.getFullName()}`
+}
+
 export const getChangeGroupIds = deployment.getChangeGroupIdsFunc([
   getWorkflowGroup,
   getSecurityLevelGroup,
   getFieldConfigItemGroup,
   getScriptListenersGroup,
   getScriptedFragmentsGroup,
+  getQueuesAdditionByProjectGroup,
 ])

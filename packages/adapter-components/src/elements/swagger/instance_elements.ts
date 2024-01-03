@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -18,7 +18,7 @@ import {
   InstanceElement, Values, ObjectType, isObjectType, ReferenceExpression, isReferenceExpression,
   isListType, isMapType, TypeElement, PrimitiveType, MapType, ElemIdGetter, SaltoError,
 } from '@salto-io/adapter-api'
-import { transformElement, TransformFunc, safeJsonStringify } from '@salto-io/adapter-utils'
+import { transformElement, TransformFunc, safeJsonStringify, transformValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { ADDITIONAL_PROPERTIES_FIELD, ARRAY_ITEMS_FIELD } from './type_elements/swagger_parser'
@@ -60,10 +60,10 @@ const extractStandaloneFields = async (
     getElemIdFunc?: ElemIdGetter
   },
 ): Promise<InstanceElement[]> => {
+  const allInstances: InstanceElement[] = [inst]
   if (_.isEmpty(transformationConfigByType[inst.refType.elemID.name]?.standaloneFields)) {
-    return [inst]
+    return allInstances
   }
-  const additionalInstances: InstanceElement[] = []
 
   const replaceWithReference = async ({
     values,
@@ -88,7 +88,7 @@ const extractStandaloneFields = async (
       nestedPath: updatedNestedPath,
       getElemIdFunc,
     })
-    additionalInstances.push(...refInstances)
+    allInstances.push(...refInstances)
     return refInstances.map(refInst => new ReferenceExpression(refInst.elemID, refInst))
   }
 
@@ -132,13 +132,13 @@ const extractStandaloneFields = async (
       updatedNestedPath: [...nestedPath, field.name],
     }))[0]
   }
-
-  const updatedInst = await transformElement({
-    element: inst,
+  inst.value = await transformValues({
     transformFunc: extractFields,
+    type: await inst.getType(),
+    values: inst.value,
     strict: false,
-  })
-  return [updatedInst, ...additionalInstances]
+  }) ?? inst.value
+  return allInstances
 }
 
 const getListDeepInnerType = async (

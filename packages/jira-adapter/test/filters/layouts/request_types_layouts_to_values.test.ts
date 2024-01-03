@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -79,10 +79,10 @@ describe('requestTypelayoutsToValuesFilter', () => {
           },
         }
       )
-      const issueViewType = createEmptyType(ISSUE_VIEW_TYPE)
+      const requestFormType = createEmptyType(REQUEST_FORM_TYPE)
       requestFormInstance = new InstanceElement(
         'requestForm1',
-        issueViewType,
+        requestFormType,
         {
           id: '1',
           extraDefinerId: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
@@ -103,10 +103,10 @@ describe('requestTypelayoutsToValuesFilter', () => {
           },
         },
       )
-      const requestFormType = createEmptyType(REQUEST_FORM_TYPE)
+      const issueViewType = createEmptyType(ISSUE_VIEW_TYPE)
       issueViewInstance = new InstanceElement(
         'issueView1',
-        requestFormType,
+        issueViewType,
         {
           id: '2',
           extraDefinerId: new ReferenceExpression(requestTypeInstance.elemID, requestTypeInstance),
@@ -154,6 +154,12 @@ describe('requestTypelayoutsToValuesFilter', () => {
       expect(issueView).toBeUndefined()
       expect(requestType.value.requestForm.issueLayoutConfig).toEqual(requestFormInstance.value.issueLayoutConfig)
       expect(requestType.value.issueView.issueLayoutConfig).toEqual(issueViewInstance.value.issueLayoutConfig)
+    })
+    it('should do nothing if requestType is not of type RequestType', async () => {
+      requestFormInstance.value.extraDefinerId = new ReferenceExpression(projectInstance.elemID, projectInstance)
+      await filter.onFetch(elements)
+      const requestType = elements.find(e => e.elemID.isEqual(requestTypeInstance.elemID)) as InstanceElement
+      expect(requestType.value.requestForm).toBeUndefined()
     })
   })
 })

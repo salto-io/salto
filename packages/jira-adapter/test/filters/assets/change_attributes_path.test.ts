@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -20,7 +20,7 @@ import { RECORDS_PATH } from '@salto-io/adapter-components/src/elements'
 import { getDefaultConfig } from '../../../src/config/config'
 import addAttributesAsFieldsFilter from '../../../src/filters/assets/change_attributes_path'
 import { createEmptyType, getFilterParams } from '../../utils'
-import { ASSESTS_SCHEMA_TYPE, ASSETS_ATTRIBUTE_TYPE, ASSETS_OBJECT_TYPE, JIRA } from '../../../src/constants'
+import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_ATTRIBUTE_TYPE, OBJECT_TYPE_TYPE, JIRA } from '../../../src/constants'
 
 describe('ChangeAttributesPath', () => {
     type FilterType = filterUtils.FilterWith<'onFetch'>
@@ -32,7 +32,7 @@ describe('ChangeAttributesPath', () => {
     let attributeInstance2: InstanceElement
     const assetSchemaInstance = new InstanceElement(
       'assetsSchema1',
-      createEmptyType(ASSESTS_SCHEMA_TYPE),
+      createEmptyType(OBJECT_SCHEMA_TYPE),
       {
         idAsInt: 5,
         name: 'assetsSchema',
@@ -46,30 +46,30 @@ describe('ChangeAttributesPath', () => {
         filter = addAttributesAsFieldsFilter(getFilterParams({ config })) as typeof filter
         parentInstance = new InstanceElement(
           'parentInstance',
-          createEmptyType(ASSETS_OBJECT_TYPE),
+          createEmptyType(OBJECT_TYPE_TYPE),
           {
             name: 'parentInstance',
           },
-          [JIRA, RECORDS_PATH, ASSESTS_SCHEMA_TYPE, assetSchemaInstance.elemID.name, 'assetsObjectTypes', 'parentInstance', 'parentInstance'],
+          [JIRA, RECORDS_PATH, OBJECT_SCHEMA_TYPE, assetSchemaInstance.elemID.name, 'objectTypes', 'parentInstance', 'parentInstance'],
           {
             [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(assetSchemaInstance.elemID, assetSchemaInstance)],
           }
         )
         sonInstance = new InstanceElement(
           'sonOneInstance',
-          createEmptyType(ASSETS_OBJECT_TYPE),
+          createEmptyType(OBJECT_TYPE_TYPE),
           {
             name: 'sonOneInstance',
             parentObjectTypeId: new ReferenceExpression(parentInstance.elemID, parentInstance),
           },
-          [JIRA, RECORDS_PATH, ASSESTS_SCHEMA_TYPE, assetSchemaInstance.elemID.name, 'assetsObjectTypes', 'parentInstance', 'sonOneInstance', 'sonOneInstance'],
+          [JIRA, RECORDS_PATH, OBJECT_SCHEMA_TYPE, assetSchemaInstance.elemID.name, 'objectTypes', 'parentInstance', 'sonOneInstance', 'sonOneInstance'],
           {
             [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(assetSchemaInstance.elemID, assetSchemaInstance)],
           },
         )
         attributeInstance = new InstanceElement(
           'attributeInstance',
-          createEmptyType(ASSETS_ATTRIBUTE_TYPE),
+          createEmptyType(OBJECT_TYPE_ATTRIBUTE_TYPE),
           {
             name: 'attributeInstance',
             objectType: new ReferenceExpression(parentInstance.elemID, parentInstance),
@@ -81,7 +81,7 @@ describe('ChangeAttributesPath', () => {
         )
         attributeInstance2 = new InstanceElement(
           'attributeInstance2',
-          createEmptyType(ASSETS_ATTRIBUTE_TYPE),
+          createEmptyType(OBJECT_TYPE_ATTRIBUTE_TYPE),
           {
             name: 'attributeInstance2',
             objectType: new ReferenceExpression(sonInstance.elemID, sonInstance),
@@ -104,9 +104,9 @@ describe('ChangeAttributesPath', () => {
         expect(attributeInstance.path).toEqual([
           JIRA,
           RECORDS_PATH,
-          ASSESTS_SCHEMA_TYPE,
+          OBJECT_SCHEMA_TYPE,
           assetSchemaInstance.elemID.name,
-          'assetsObjectTypes',
+          'objectTypes',
           'parentInstance',
           'attributes',
           'attributeInstance',
@@ -114,9 +114,9 @@ describe('ChangeAttributesPath', () => {
         expect(attributeInstance2.path).toEqual([
           JIRA,
           RECORDS_PATH,
-          ASSESTS_SCHEMA_TYPE,
+          OBJECT_SCHEMA_TYPE,
           assetSchemaInstance.elemID.name,
-          'assetsObjectTypes',
+          'objectTypes',
           'parentInstance',
           'sonOneInstance',
           'attributes',

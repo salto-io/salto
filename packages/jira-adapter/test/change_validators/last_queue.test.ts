@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -129,7 +129,7 @@ describe('lastQueueValidator', () => {
     )
     expect(changeErrors).toHaveLength(0)
   })
-  it('should not return error if not a removal change', async () => {
+  it('should not return error if is addition change', async () => {
     const validator = deleteLastQueueValidator(config)
     const changeErrors = await validator(
       [toChange({ after: queueInstance })],

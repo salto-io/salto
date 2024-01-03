@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -64,6 +64,8 @@ import projectFilter from './filters/project'
 import projectComponentFilter from './filters/project_component'
 import archivedProjectComponentsFilter from './filters/archived_project_components'
 import defaultInstancesDeployFilter from './filters/default_instances_deploy'
+import workflowFilter from './filters/workflowV2/workflow_filter'
+import workflowTransitionParametersFilter from './filters/workflowV2/transition_parameters_filter'
 import workflowStructureFilter from './filters/workflow/workflow_structure_filter'
 import workflowDiagramFilter from './filters/workflow/workflow_diagrams'
 import resolutionPropertyFilter from './filters/workflow/resolution_property_filter'
@@ -89,6 +91,7 @@ import contextReferencesFilter from './filters/fields/context_references_filter'
 import contextsProjectsFilter from './filters/fields/contexts_projects_filter'
 import serviceUrlInformationFilter from './filters/service_url/service_url_information'
 import serviceUrlFilter from './filters/service_url/service_url'
+import serviceUrlJsmFilter from './filters/service_url/service_url_jsm'
 import priorityFilter from './filters/priority'
 import statusDeploymentFilter from './filters/statuses/status_deployment'
 import securitySchemeFilter from './filters/security_scheme/security_scheme'
@@ -148,19 +151,20 @@ import scriptRunnerFilter from './filters/script_runner/script_runner_filter'
 import scriptRunnerListenersDeployFilter from './filters/script_runner/script_runner_listeners_deploy'
 import scriptedFragmentsDeployFilter from './filters/script_runner/scripted_fragments_deploy'
 import fetchJsmTypesFilter from './filters/jsm_types_fetch_filter'
-import assetsInstancesAdditionFilter from './filters/assets/assets_instances_addition'
+import assetsInstancesDeploymentFilter from './filters/assets/assets_instances_deployment'
 import deployAttributesFilter from './filters/assets/attribute_deploy_filter'
 import deployJsmTypesFilter from './filters/jsm_types_deploy_filter'
 import jsmPathFilter from './filters/jsm_paths'
 import portalSettingsFilter from './filters/portal_settings'
-import queueDeleteFilter from './filters/queue_delete'
+import queueDeploymentFilter from './filters/queue_deployment'
 import scriptRunnerInstancesDeploy from './filters/script_runner/script_runner_instances_deploy'
 import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
 import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uuid'
-import changeQueueFieldsFilter from './filters/change_queue_fields'
+import queueFetchFilter from './filters/queue_fetch'
 import portalGroupsFilter from './filters/portal_groups'
 import assetsObjectTypePath from './filters/assets/assets_object_type_path'
 import assetsObjectTypeChangeFields from './filters/assets/assets_object_type_change_fields'
+import assetsObjectTypeOrderFilter from './filters/assets/assets_object_type_order'
 import changeAttributesPathFilter from './filters/assets/change_attributes_path'
 import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
@@ -185,7 +189,7 @@ export const DEFAULT_FILTERS = [
   accountInfoFilter,
   storeUsersFilter,
   changeJSMElementsFieldFilter,
-  changeQueueFieldsFilter,
+  queueFetchFilter,
   changePortalGroupFieldsFilter,
   automationLabelFetchFilter,
   automationLabelDeployFilter,
@@ -198,6 +202,9 @@ export const DEFAULT_FILTERS = [
   // Should run before duplicateIdsFilter
   fieldNameFilter,
   workflowStructureFilter,
+  workflowFilter,
+  // must run before references are transformed
+  workflowTransitionParametersFilter,
   // This should happen after workflowStructureFilter and before fieldStructureFilter
   queryFilter,
   // This should run before duplicateIdsFilter
@@ -281,6 +288,7 @@ export const DEFAULT_FILTERS = [
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,
   formsFilter,
+  serviceUrlJsmFilter, // Must run before fieldReferencesFilter
   fieldReferencesFilter,
   // Must run after fieldReferencesFilter
   addJsmTypesAsFieldsFilter,
@@ -333,22 +341,23 @@ export const DEFAULT_FILTERS = [
   scriptedFragmentsDeployFilter,
   scriptRunnerInstancesDeploy,
   portalSettingsFilter,
-  queueDeleteFilter,
+  queueDeploymentFilter,
   portalGroupsFilter,
   requestTypeFilter,
   // Must run before asstesDeployFilter
-  assetsInstancesAdditionFilter,
-  deployAttributesFilter,
-  deployJsmTypesFilter,
+  assetsInstancesDeploymentFilter,
   // Must be done after JsmTypesFilter
   jsmPathFilter,
-  // Must be last
-  defaultInstancesDeployFilter,
   ...Object.values(otherCommonFilters),
   // Must run after otherCommonFilters and specificly after referencedInstanceNamesFilterCreator.
   assetsObjectTypePath,
   // Must run after assetsObjectTypePath
   changeAttributesPathFilter,
+  assetsObjectTypeOrderFilter,
+  deployAttributesFilter,
+  deployJsmTypesFilter,
+  // Must be last
+  defaultInstancesDeployFilter,
 ]
 
 export interface JiraAdapterParams {

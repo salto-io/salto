@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -27,7 +27,10 @@ import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_T
   PRIORITY_SCHEME_TYPE_NAME, SCRIPT_RUNNER_TYPE, POST_FUNCTION_CONFIGURATION, RESOLUTION_TYPE_NAME,
   ISSUE_EVENT_TYPE_NAME, CONDITION_CONFIGURATION, PROJECT_ROLE_TYPE, VALIDATOR_CONFIGURATION,
   BOARD_TYPE_NAME, ISSUE_LINK_TYPE_NAME, DIRECTED_LINK_TYPE, MAIL_LIST_TYPE_NAME,
-  SCRIPT_RUNNER_LISTENER_TYPE, SCRIPTED_FIELD_TYPE, BEHAVIOR_TYPE, ISSUE_LAYOUT_TYPE, SCRIPT_RUNNER_SETTINGS_TYPE, SCRIPT_FRAGMENT_TYPE, CUSTOMER_PERMISSIONS_TYPE, QUEUE_TYPE, REQUEST_TYPE_NAME, CALENDAR_TYPE, PORTAL_GROUP_TYPE, PORTAL_SETTINGS_TYPE_NAME, SLA_TYPE_NAME, ISSUE_VIEW_TYPE, REQUEST_FORM_TYPE, ASSETS_ATTRIBUTE_TYPE, ASSETS_OBJECT_TYPE } from './constants'
+  SCRIPT_RUNNER_LISTENER_TYPE, SCRIPTED_FIELD_TYPE, BEHAVIOR_TYPE, ISSUE_LAYOUT_TYPE,
+  SCRIPT_RUNNER_SETTINGS_TYPE, SCRIPT_FRAGMENT_TYPE, CUSTOMER_PERMISSIONS_TYPE, QUEUE_TYPE,
+  REQUEST_TYPE_NAME, CALENDAR_TYPE, PORTAL_GROUP_TYPE, PORTAL_SETTINGS_TYPE_NAME, SLA_TYPE_NAME,
+  ISSUE_VIEW_TYPE, REQUEST_FORM_TYPE, OBJECT_TYPE_ATTRIBUTE_TYPE, OBJECT_TYPE_TYPE, SCREEN_TYPE_NAME, WEBHOOK_TYPE } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 import { getRefType } from './references/workflow_properties'
 import { FIELD_TYPE_NAME } from './filters/fields/constants'
@@ -190,6 +193,150 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     serializationStrategy: 'id',
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: STATUS_TYPE_NAME },
+  },
+  {
+    src: { field: 'statusReference', parentTypes: ['WorkflowReferenceStatus'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: STATUS_TYPE_NAME },
+  },
+  {
+    src: { field: 'statusReference', parentTypes: ['WorkflowStatusAndPort'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: STATUS_TYPE_NAME },
+  },
+  {
+    src: { field: 'roleIds', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: PROJECT_ROLE_TYPE },
+  },
+  {
+    src: { field: 'roleId', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: PROJECT_ROLE_TYPE },
+  },
+  {
+    src: { field: 'issueSecurityLevelId', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: SECURITY_LEVEL_TYPE },
+  },
+  {
+    src: { field: 'fieldId', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'sourceFieldKey', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'targetFieldKey', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'webhookId', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: WEBHOOK_TYPE },
+  },
+  {
+    src: { field: 'field', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'denyUserCustomFields', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'groupCustomFields', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'groupIds', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    jiraSerializationStrategy: 'groupId',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: GROUP_TYPE_NAME },
+  },
+  {
+    src: { field: 'statusIds', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: STATUS_TYPE_NAME },
+  },
+  {
+    src: { field: 'previousStatusIds', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: STATUS_TYPE_NAME },
+  },
+  {
+    src: { field: 'fromStatusId', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: STATUS_TYPE_NAME },
+  },
+  {
+    src: { field: 'toStatusId', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: STATUS_TYPE_NAME },
+  },
+  {
+    src: { field: 'screenId', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: SCREEN_TYPE_NAME },
+  },
+  {
+    src: { field: 'date1FieldKey', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'date2FieldKey', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'fieldKey', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'fieldsRequired', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'groupsExemptFromValidation', parentTypes: ['WorkflowRuleConfiguration_parameters'] },
+    jiraSerializationStrategy: 'groupId',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: GROUP_TYPE_NAME },
+  },
+  {
+    src: { field: 'customIssueEventId', parentTypes: ['WorkflowTransitions'] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: ISSUE_EVENT_TYPE_NAME },
   },
   {
     src: { field: 'id', parentTypes: ['TransitionScreenDetails'] },
@@ -410,19 +557,19 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: ISSUE_TYPE_NAME },
   },
   {
-    src: { field: 'statusId', parentTypes: ['StatusMigration'] },
+    src: { field: 'statusId', parentTypes: ['StatusMapping'] },
     serializationStrategy: 'id',
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: STATUS_TYPE_NAME },
   },
   {
-    src: { field: 'newStatusId', parentTypes: ['StatusMigration'] },
+    src: { field: 'newStatusId', parentTypes: ['StatusMapping'] },
     serializationStrategy: 'id',
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: STATUS_TYPE_NAME },
   },
   {
-    src: { field: 'issueTypeId', parentTypes: ['StatusMigration'] },
+    src: { field: 'issueTypeId', parentTypes: ['StatusMapping'] },
     serializationStrategy: 'id',
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: ISSUE_TYPE_NAME },
@@ -996,22 +1143,22 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: FIELD_TYPE_NAME },
   },
   {
-    src: { field: 'parentObjectTypeId', parentTypes: [ASSETS_OBJECT_TYPE] },
+    src: { field: 'parentObjectTypeId', parentTypes: [OBJECT_TYPE_TYPE] },
     serializationStrategy: 'id',
     jiraMissingRefStrategy: 'typeAndValue',
-    target: { type: ASSETS_OBJECT_TYPE },
+    target: { type: OBJECT_TYPE_TYPE },
   },
   {
-    src: { field: 'objectType', parentTypes: [ASSETS_ATTRIBUTE_TYPE] },
+    src: { field: 'objectType', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },
     serializationStrategy: 'id',
     jiraMissingRefStrategy: 'typeAndValue',
-    target: { type: ASSETS_OBJECT_TYPE },
+    target: { type: OBJECT_TYPE_TYPE },
   },
   {
-    src: { field: 'typeValue', parentTypes: [ASSETS_ATTRIBUTE_TYPE] },
+    src: { field: 'typeValue', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },
     serializationStrategy: 'id',
     jiraMissingRefStrategy: 'typeAndValue',
-    target: { type: ASSETS_OBJECT_TYPE },
+    target: { type: OBJECT_TYPE_TYPE },
   },
 ]
 

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -66,6 +66,5 @@ export const createScrumBoardValues = (name: string, allElements: Element[]): Va
   },
   estimation: {
     field: createReference(new ElemID(JIRA, 'Field', 'instance', 'Original_estimate__number@suu'), allElements),
-    timeTracking: createReference(new ElemID(JIRA, 'Field', 'instance', 'Remaining_Estimate__number@suu'), allElements),
   },
 })

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -109,6 +109,13 @@ describe('automationsToAssetsValidator', () => {
     })
     const validator = automationToAssetsValidator(config)
     expect(await validator([toChange({ before: automationInstance, after: automationInstnaceAfter })]))
+      .toEqual([])
+  })
+  it('should not return a warning when value is undefined in addition change and enableJSM is false', async () => {
+    const automationInstnaceAfter = automationInstance.clone()
+    automationInstnaceAfter.value.components[0].value = undefined
+    const validator = automationToAssetsValidator(config)
+    expect(await validator([toChange({ after: automationInstnaceAfter })]))
       .toEqual([])
   })
 })

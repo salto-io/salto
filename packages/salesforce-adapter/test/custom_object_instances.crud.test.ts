@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -1139,12 +1139,10 @@ describe('Custom Object Instances CRUD', () => {
           })
         })
         afterEach(() => {
-          expect(result.errors).toEqual([
-            expect.objectContaining({
-              message: expect.stringContaining('Custom Object Instances change group should have a single type but got: Type,anotherType'),
-              severity: 'Error',
-            }),
-          ])
+          expect(result.errors).toSatisfyAll(error =>
+            error.severity === 'Error'
+            && error.message.includes('Custom Object Instances change group should have a single type but got: Type,anotherType')
+            && error.elemID !== undefined)
         })
       })
 
@@ -1185,12 +1183,10 @@ describe('Custom Object Instances CRUD', () => {
             },
             progressReporter: nullProgressReporter,
           })
-          expect(result.errors).toEqual(([
-            expect.objectContaining({
-              severity: 'Error',
-              message: expect.stringContaining('Custom Object Instances change group must have one action'),
-            }),
-          ]))
+          expect(result.errors).toSatisfyAll(error =>
+            error.severity === 'Error'
+            && error.message.includes('Custom Object Instances change group must have one action')
+            && error.elemID !== undefined)
         })
       })
     })

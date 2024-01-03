@@ -35,7 +35,14 @@ Salesforce data configuration includes the following information:
 * `saltoIDSettings`: Define cross environment id for data records by providing a list of object fields to construct the cross environment id from. Use `##allMasterDetailFields##` in order to include the SaltoID of referenced MasterDetail records.
 * `saltoAliasSettings`: Define the fields to create the alias for data records by providing a list of object fields to construct the alias from. Use `##allMasterDetailFields##` in order to include the Alias of referenced MasterDetail records.
 
-### Example Salto Salesforce/CPQ Configuration
+## Sample configurations
+
+There are 3 ways to configure Salto for CPQ. The difference between each way is how Salto recognises that records across 2 different orgs are the same; in other words, its about what Salto uses as an external Id.
+
+### Field concatenation/chaining
+
+In this mode, the external ID of each record is created by concatenating multiple field values under the assumption that such combination will result in a unique ID.
+
 ```
 salesforce {
   fetch = {
@@ -309,3 +316,64 @@ salesforce {
   maxItemsInRetrieveRequest = 2500
 }
 ```
+
+In the above example:
+
+- The `defaultIdFields` field specifies that for all records, by the default the external ID will be a concetanation of all master-detail fields (`##allMasterDetailFields##`) and the record name.
+- The `overrides` array specifies object-specific overrides.
+- The `regex` field is used to identify the object(s) that the override applies to
+- Inside the `idFields` array we specify the fields that combined make up the external ID. Note that the order matters i.e the same fields in a different order will result in a different ID.
+
+### Internal Salesforce Id
+
+In this configuration, everything looks the same except for the `saltoIDSettings` object, which looks like this
+
+```
+saltoIDSettings = {
+        defaultIdFields = [
+          "Id",
+        ]
+        overrides = [
+          {
+            objectsRegex = "Product2"
+            idFields = [
+              "ProductCode",
+            ]
+          }
+        ]
+      }
+
+```
+
+Here, we are saying that the `Id` field of every record is used as its external ID. This makes sense for records that are copied between sandbox refreshes, like `Product2`.
+
+For other records, you can ensure this configuration works by [treating them as metadata](https://help.salto.io/en/articles/7977211-treat-cpq-data-as-metadata-and-align-data-across-multiple-orgs).
+
+Notice that this configuration still supports `overrides`.
+
+### External Salesforce Id
+
+In this mechanism, you must create a `cpq_external_id__c` field (the name can be anything you want) on every CPQ object that you want to manage with Salto. 
+
+You are responsible for populating this field with a unique value. Salto will then use the value in this field to match records across environments.
+
+Then, you simply specify this field in the `idField` field in the configuration, like this
+
+```
+saltoIDSettings = {
+        defaultIdFields = [
+          "cpq_external_id__c",
+        ]
+        overrides = [
+          {
+            objectsRegex = "Product2"
+            idFields = [
+              "ProductCode",
+            ]
+          }
+        ]
+      }
+
+```
+
+Like in the previous section, you can still specify per-object overrides. 

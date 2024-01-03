@@ -202,7 +202,8 @@ const isUnFoundDelete = (message: DeployMessage, deletionsPackageName: string): 
 const processDeployResponse = (
   result: SFDeployResult,
   deletionsPackageName: string,
-  typeAndNameToElemId: Record<string, NameToElemIDMap>
+  typeAndNameToElemId: Record<string, NameToElemIDMap>,
+  isCheckOnly: boolean,
 ): { successfulFullNames: ReadonlyArray<MetadataId>
   errors: ReadonlyArray<SaltoError | SaltoElementError> } => {
   const allFailureMessages = makeArray(result.details)
@@ -245,7 +246,8 @@ const processDeployResponse = (
   const anyErrors = isDefined(result.errorMessage)
     || componentErrors.length > 0
     || testErrors.length > 0
-  if (result.rollbackOnError !== false
+  if (!isCheckOnly
+    && result.rollbackOnError !== false
     && anyErrors) {
     // If we deployed with 'rollbackOnError' (the default) and any component in the group fails to deploy, then every
     // component in the group will not deploy. Let's create an explicit error for the components that did not have
@@ -277,7 +279,7 @@ const processDeployResponse = (
     .map(message => getUnFoundDeleteName(message, deletionsPackageName))
     .filter(isDefined)
 
-  const successfulFullNames = (result.rollbackOnError && anyErrors) ? [] : allSuccessMessages
+  const successfulFullNames = (!isCheckOnly && result.rollbackOnError && anyErrors) ? [] : allSuccessMessages
     .map(success => ({ type: success.componentType, fullName: success.fullName }))
     .concat(unFoundDeleteNames)
 
@@ -440,7 +442,7 @@ export const deployMetadata = async (
   }, undefined, 2))
 
   const { errors, successfulFullNames } = processDeployResponse(
-    sfDeployRes, pkg.getDeletionsPackageName(), deployedComponentsElemIdsByType
+    sfDeployRes, pkg.getDeletionsPackageName(), deployedComponentsElemIdsByType, checkOnly ?? false,
   )
   const isSuccessfulChange = (change: Change<MetadataInstanceElement>): boolean => {
     const changeElem = getChangeData(change)

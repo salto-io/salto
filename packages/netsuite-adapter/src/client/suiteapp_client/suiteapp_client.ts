@@ -655,4 +655,12 @@ export default class SuiteAppClient {
   public async deleteSdfInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
     return this.soapClient.deleteSdfInstances(instances)
   }
+
+  public async getSelectValue(
+    type: string,
+    field: string,
+    filterBy: { field: string; internalId: string }[],
+  ): Promise<Record<string, string[]>> {
+    return this.soapClient.getSelectValue(type, field, filterBy)
+  }
 }

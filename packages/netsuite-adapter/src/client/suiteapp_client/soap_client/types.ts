@@ -19,7 +19,7 @@ type StatusSuccess = {
   }
 }
 
-export type StatusError = {
+type StatusError = {
   attributes: {
     isSuccess: 'false'
   }
@@ -167,3 +167,30 @@ export const SOAP_FIELDS_TYPES = {
   LONG: 'platformCore:LongCustomFieldRef',
   MULTISELECT: 'platformCore:MultiSelectCustomFieldRef',
 }
+
+type GetSelectValueErrorResponse = {
+  status: StatusError
+}
+
+type GetSelectValueSuccessResponse = {
+  status: StatusSuccess
+  totalRecords: number
+  totalPages: number
+  baseRefList?: {
+    baseRef: {
+      attributes: {
+        internalId: string
+      }
+      name: string
+    }[]
+  }
+}
+
+export type GetSelectValueResponse = {
+  getSelectValueResult: GetSelectValueErrorResponse | GetSelectValueSuccessResponse
+}
+
+export const isGetSelectValueSuccessResponse = (
+  response: GetSelectValueResponse
+): response is { getSelectValueResult: GetSelectValueSuccessResponse } =>
+  response.getSelectValueResult.status.attributes.isSuccess === 'true'

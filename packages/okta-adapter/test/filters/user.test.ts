@@ -141,7 +141,9 @@ describe('user filter', () => {
           { id: '222', profile: { login: 'b@a.com' } },
         ]
       })
-      filter = userFilter(getFilterParams({ paginator: mockPaginator, usersPromise: getUsers(mockPaginator) })) as FilterType
+      filter = userFilter(getFilterParams({
+        paginator: mockPaginator, usersPromise: getUsers(mockPaginator),
+      })) as FilterType
       const elements = [accessRuleInstance.clone(), accessPolicyRuleType.clone()]
       await filter.onFetch(elements)
       const instances = elements.filter(isInstanceElement)

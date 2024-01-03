@@ -214,6 +214,10 @@ describe('client', () => {
       { id: 'a', type: 'google', methods: [{ google: { secretKey: '123' } }, { sso: { secretKey: '122' } }] },
       { id: 'b', type: 'password', credentials: { client: '123' }, methods: ['1', '2', '3'], sharedSecret: 'a' },
     ]
+    const usersRes = [
+      { id: 'a', status: 'ACTIVE', profile: { firstName: 'test', login: 'user@example.com', mobilePhone: 123 } },
+      { id: 'b', status: 'ACTIVE', profile: { firstName: 'test2', login: 'user2@example.com', mobilePhone: 123 } },
+    ]
     beforeEach(async () => {
       jest.clearAllMocks()
       // The first replyOnce with 200 is for the client authentication
@@ -222,28 +226,37 @@ describe('client', () => {
         .onGet('/api/v1/idps').replyOnce(200, idpsResponse, { h: '123' })
         .onGet('/api/v1/authenticators')
         .replyOnce(200, autheticatorsRes, { h: '123', link: 'aaa', 'x-rate-limit': '456', 'x-rate-limit-remaining': '456' })
+        .onGet('/api/v1/users')
+        .replyOnce(200, usersRes, { h: 'abc' })
     })
     it('should return response data with no secrets and only the relevant headers', async () => {
       const firstRes = await client.getSinglePage({ url: '/api/v1/idps' })
       expect(firstRes).toEqual({ status: 200, data: idpsResponse, headers: { } })
       const secondRes = await client.getSinglePage({ url: '/api/v1/authenticators' })
       expect(secondRes).toEqual({ status: 200, data: autheticatorsRes, headers: { link: 'aaa', 'x-rate-limit': '456', 'x-rate-limit-remaining': '456' } })
-      expect(clearValuesFromResponseDataFunc).toHaveBeenCalledTimes(2)
+      const thirdRes = await client.getSinglePage({ url: '/api/v1/users' })
+      expect(thirdRes).toEqual({ status: 200, data: usersRes, headers: { } })
+      expect(clearValuesFromResponseDataFunc).toHaveBeenCalledTimes(3)
       expect(clearValuesFromResponseDataFunc).toHaveNthReturnedWith(1,
         {
           id: '123',
           protocol: {
             type: 'OIDC',
-            credentials: '<SECRET>',
+            credentials: '<OMITTED>',
           },
-          array: [{ credentials: '<SECRET>' }, { somethingElse: 'b' }],
+          array: [{ credentials: '<OMITTED>' }, { somethingElse: 'b' }],
         })
       expect(clearValuesFromResponseDataFunc).toHaveNthReturnedWith(2,
         [
-          { id: 'a', type: 'google', methods: [{ google: { secretKey: '<SECRET>' } }, { sso: { secretKey: '<SECRET>' } }] },
-          { id: 'b', type: 'password', credentials: { client: '123' }, methods: ['1', '2', '3'], sharedSecret: '<SECRET>' },
+          { id: 'a', type: 'google', methods: [{ google: { secretKey: '<OMITTED>' } }, { sso: { secretKey: '<OMITTED>' } }] },
+          { id: 'b', type: 'password', credentials: { client: '123' }, methods: ['1', '2', '3'], sharedSecret: '<OMITTED>' },
         ])
-      expect(extractHeadersFunc).toHaveBeenCalledTimes(4)
+      expect(clearValuesFromResponseDataFunc).toHaveNthReturnedWith(3,
+        [
+          { id: 'a', status: 'ACTIVE', profile: { login: 'user@example.com' } },
+          { id: 'b', status: 'ACTIVE', profile: { login: 'user2@example.com' } },
+        ])
+      expect(extractHeadersFunc).toHaveBeenCalledTimes(6)
       expect(extractHeadersFunc).toHaveNthReturnedWith(1, {})
       expect(extractHeadersFunc).toHaveNthReturnedWith(2, {})
       expect(extractHeadersFunc).toHaveNthReturnedWith(3, { link: 'aaa', 'x-rate-limit': '456', 'x-rate-limit-remaining': '456' })

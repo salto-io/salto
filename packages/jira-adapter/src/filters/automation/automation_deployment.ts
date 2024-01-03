@@ -16,8 +16,9 @@
 import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isRemovalOrModificationChange, ModificationChange, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { createSchemeGuard, resolveValues } from '@salto-io/adapter-utils'
+import { createSchemeGuard, getParent, resolveValues } from '@salto-io/adapter-utils'
 import Joi from 'joi'
+import { collections } from '@salto-io/lowerdash'
 import { getDiffIds } from '../../diff'
 import { AUTOMATION_TYPE } from '../../constants'
 import { addAnnotationRecursively, findObject, setTypeDeploymentAnnotations } from '../../utils'
@@ -26,15 +27,19 @@ import { deployChanges } from '../../deployment/standard_deployment'
 import JiraClient from '../../client/client'
 import { getLookUpName } from '../../reference_mapping'
 import { getCloudId } from './cloud_id'
-import { getAutomations } from './automation_fetch'
+import { Component, getAutomations, isAssetComponent } from './automation_fetch'
 import { JiraConfig } from '../../config/config'
 import { PROJECT_TYPE_TO_RESOURCE_TYPE } from './automation_structure'
 
 const log = logger(module)
+const { awu } = collections.asynciterable
 
 type ImportResponse = {
   id: string
 }
+
+type OperationMode = 'add' | 'remove'
+
 
 const IMPORT_RESPONSE_SCHEME = Joi.object({
   id: Joi.string().required(),
@@ -292,6 +297,35 @@ const updateAutomationLabels = async (
   }
 }
 
+const updateDetailedAssetsComponents = (instance: InstanceElement, config: JiraConfig, mode: OperationMode): void => {
+  if (!config.fetch.enableJSM || !config.fetch.enableJsmExperimental) {
+    return undefined
+  }
+  const keys: Array<'workspaceId' | 'schemaId' | 'schemaLabel' | 'objectTypeLabel'> = ['workspaceId', 'schemaId', 'schemaLabel', 'objectTypeLabel']
+  const assetsComponents: Component[] = instance.value.components
+    .filter(isAssetComponent)
+
+  assetsComponents.forEach(component => {
+    if (mode === 'remove') {
+      keys.forEach(key => {
+        delete component.value[key]
+      })
+    } else if (mode === 'add') {
+      try {
+        const objectType = component.value.objectTypeId.value
+        const schema = getParent(objectType)
+        component.value.schemaId = schema.value.id
+        component.value.schemaLabel = schema.value.name
+        component.value.objectTypeLabel = objectType.value.name
+        component.value.workspaceId = schema.value.workspaceId
+      } catch (e) {
+        log.warn(`Failed to update detailed assets components for ${instance.elemID.getFullName()}`)
+      }
+    }
+  })
+  return undefined
+}
+
 const updateAutomation = async (
   instance: InstanceElement,
   client: JiraClient,
@@ -356,7 +390,20 @@ const filter: FilterCreator = ({ client, config }) => ({
     await addAnnotationRecursively(automationType, CORE_ANNOTATIONS.UPDATABLE)
     setTypeDeploymentAnnotations(automationType)
   },
+  preDeploy: async changes => {
+    if (!config.fetch.enableJSM || !config.fetch.enableJsmExperimental) {
+      return
+    }
 
+    await awu(changes)
+      .filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeData)
+      .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
+      .forEach(instance => {
+        updateDetailedAssetsComponents(instance, config, 'add')
+      })
+  },
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
@@ -384,6 +431,20 @@ const filter: FilterCreator = ({ client, config }) => ({
       leftoverChanges,
       deployResult,
     }
+  },
+  onDeploy: async changes => {
+    if (!config.fetch.enableJSM || !config.fetch.enableJsmExperimental) {
+      return
+    }
+
+    await awu(changes)
+      .filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeData)
+      .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
+      .forEach(instance => {
+        updateDetailedAssetsComponents(instance, config, 'remove')
+      })
   },
 })
 export default filter

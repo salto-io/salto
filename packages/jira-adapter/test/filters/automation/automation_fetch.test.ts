@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, Element } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, Element, BuiltinTypes } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
@@ -23,7 +23,7 @@ import { TransformationConfig } from '@salto-io/adapter-components/src/config'
 import { getFilterParams, mockClient } from '../../utils'
 import automationFetchFilter from '../../../src/filters/automation/automation_fetch'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
-import { JIRA, PROJECT_TYPE } from '../../../src/constants'
+import { JIRA, OBJECT_TYPE_TYPE, PROJECT_TYPE } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
 import { createAutomationTypes } from '../../../src/filters/automation/types'
 import { CLOUD_RESOURCE_FIELD } from '../../../src/filters/automation/cloud_id'
@@ -541,5 +541,211 @@ describe('automationFetchFilter', () => {
 
     const automation = elements[1]
     expect(automation.elemID.getFullName()).toEqual('jira.Automation.instance.automationName')
+  })
+  describe('component with assets in automation', () => {
+    const automationResponseWithAssets = {
+      status: 200,
+      data: {
+        total: 1,
+        values: [
+          {
+            id: '1',
+            name: 'automationName',
+            projects: [],
+            ruleScope: {
+              resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8'],
+            },
+            components: [
+              {
+                component: 'ACTION',
+                schemaVersion: 1,
+                type: 'cmdb.object.create',
+                value: {
+                  objectTypeId: '35',
+                  workspaceId: '68d020c3-b88e-47dc-9231-452f7dc63521',
+                  schemaLabel: 'idoA Schema',
+                  schemaId: '5',
+                  objectTypeLabel: 'R&D',
+                  attributes: [
+                    {
+                      name: 'Name',
+                      value: 'idoA automation',
+                      isLabel: true,
+                    },
+                  ],
+                },
+                children: [
+                ],
+                conditions: [
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    }
+    const objectTypeType = new ObjectType({
+      elemID: new ElemID(JIRA, OBJECT_TYPE_TYPE),
+      fields: {
+        id: {
+          refType: BuiltinTypes.STRING,
+        },
+        name: {
+          refType: BuiltinTypes.STRING,
+        },
+      },
+    })
+    const objectTypeInstnce = new InstanceElement(
+      'objectTypeInstance',
+      objectTypeType,
+      {
+        id: '35',
+        name: 'objectTypeName',
+      }
+    )
+    beforeEach(() => {
+      const { client: cli, connection: conn } = mockClient()
+      client = cli
+      connection = conn
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      connection.post.mockImplementation(async url => {
+        if (url === '/rest/webResources/1.0/resources') {
+          return {
+            status: 200,
+            data: {
+              unparsedData: {
+                [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
+                  tenantId: 'cloudId',
+                }),
+              },
+            },
+          }
+        }
+
+        if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules') {
+          return automationResponseWithAssets
+        }
+
+        throw new Error(`Unexpected url ${url}`)
+      })
+    })
+    afterEach(() => {
+      jest.clearAllMocks()
+    })
+    it('should fetch automations without assets support from the service when enableJsm is false', async () => {
+      const { paginator } = mockClient()
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config.fetch.enableJSM = false
+      config.fetch.enableJsmExperimental = false
+      filter = automationFetchFilter(getFilterParams({
+        client,
+        paginator,
+        config,
+        fetchQuery,
+      })) as filterUtils.FilterWith<'onFetch'>
+      const elements = [objectTypeInstnce]
+      await filter.onFetch(elements)
+
+      const automationTypes = createAutomationTypes()
+      expect(elements).toHaveLength(
+        1 // original objectTypeInstnce
+        + 1 // new automation
+        + 1 // automation top level type
+        + automationTypes.subTypes.length
+      )
+
+      const automation = elements[1]
+
+      expect(automation.elemID.getFullName()).toEqual('jira.Automation.instance.automationName')
+
+      expect(automation.value).toEqual({
+        id: '1',
+        name: 'automationName',
+        projects: [],
+        ruleScope: {
+          resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8'],
+        },
+        components: [
+          {
+            component: 'ACTION',
+            schemaVersion: 1,
+            type: 'cmdb.object.create',
+            value: {
+              objectTypeId: '35',
+              workspaceId: '68d020c3-b88e-47dc-9231-452f7dc63521',
+              schemaLabel: 'idoA Schema',
+              schemaId: '5',
+              objectTypeLabel: 'R&D',
+              attributes: [
+                {
+                  name: 'Name',
+                  value: 'idoA automation',
+                  isLabel: true,
+                },
+              ],
+            },
+            children: [
+            ],
+            conditions: [
+            ],
+          },
+        ],
+      })
+    })
+    it('should fetch automations with assets support from the service when enableJsm is true', async () => {
+      const { paginator } = mockClient()
+      config.fetch.enableJSM = true
+      config.fetch.enableJsmExperimental = true
+      filter = automationFetchFilter(getFilterParams({
+        client,
+        paginator,
+        config,
+        fetchQuery,
+      })) as filterUtils.FilterWith<'onFetch'>
+      const elements = [objectTypeInstnce]
+      await filter.onFetch(elements)
+
+      const automationTypes = createAutomationTypes()
+      expect(elements).toHaveLength(
+        1 // original objectTypeInstnce
+        + 1 // new automation
+        + 1 // automation top level type
+        + automationTypes.subTypes.length
+      )
+
+      const automation = elements[1]
+
+      expect(automation.elemID.getFullName()).toEqual('jira.Automation.instance.automationName')
+
+      expect(automation.value).toEqual({
+        id: '1',
+        name: 'automationName',
+        projects: [],
+        ruleScope: {
+          resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8'],
+        },
+        components: [
+          {
+            component: 'ACTION',
+            schemaVersion: 1,
+            type: 'cmdb.object.create',
+            value: {
+              objectTypeId: '35',
+              attributes: [
+                {
+                  name: 'Name',
+                  value: 'idoA automation',
+                  isLabel: true,
+                },
+              ],
+            },
+            children: [
+            ],
+            conditions: [
+            ],
+          },
+        ],
+      })
+    })
   })
 })

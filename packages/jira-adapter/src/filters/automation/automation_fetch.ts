@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemIdGetter, InstanceElement, isInstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
+import { ElemIdGetter, InstanceElement, isInstanceElement, ObjectType, ReferenceExpression, Values } from '@salto-io/adapter-api'
 import { createSchemeGuard, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { elements as elementUtils, client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
@@ -28,6 +28,23 @@ import { JiraConfig } from '../../config/config'
 import { getCloudId } from './cloud_id'
 import { convertRuleScopeValueToProjects } from './automation_structure'
 
+export type Component = {
+  value: {
+      workspaceId?: string
+      schemaId?: string
+      objectTypeId: ReferenceExpression
+      schemaLabel?: string
+      objectTypeLabel?: string
+  }
+}
+
+const ASSET_COMPONENT_SCHEME = Joi.object({
+  value: Joi.object({
+    objectTypeId: Joi.required(),
+  }).unknown(true),
+}).unknown(true)
+
+export const isAssetComponent = createSchemeGuard<Component>(ASSET_COMPONENT_SCHEME)
 const DEFAULT_PAGE_SIZE = 1000
 const { getInstanceName } = elementUtils
 const log = logger(module)
@@ -114,6 +131,20 @@ const createInstance = (
     [JIRA, elementUtils.RECORDS_PATH, AUTOMATION_TYPE, pathNaclCase(instanceName)],
   )
 }
+const mofidyAssetsComponents = (instance: InstanceElement, config: JiraConfig): void => {
+  if (!config.fetch.enableJSM || !config.fetch.enableJsmExperimental) {
+    return undefined
+  }
+  const assetsComponents: Component[] = instance.value.components
+    .filter(isAssetComponent)
+  assetsComponents.forEach(component => {
+    delete component.value.schemaId
+    delete component.value.schemaLabel
+    delete component.value.objectTypeLabel
+    delete component.value.workspaceId
+  })
+  return undefined
+}
 
 export const getAutomations = async (
   client: JiraClient,
@@ -160,6 +191,12 @@ const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuery }) =>
       automations.forEach(automation => elements.push(
         createInstance(automation, automationType, idToProject, config, getElemIdFunc),
       ))
+
+      elements
+        .filter(isInstanceElement)
+        .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
+        .forEach(instance => mofidyAssetsComponents(instance, config))
+
       elements.push(automationType, ...subTypes)
       return undefined
     } catch (e) {

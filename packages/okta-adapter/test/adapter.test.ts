@@ -49,6 +49,13 @@ jest.mock('@salto-io/adapter-components', () => {
   }
 })
 
+
+const mockGetUsers = jest.fn()
+jest.mock('../src/user_utils', () => ({
+  ...jest.requireActual<{}>('../src/user_utils'),
+  getUsers: jest.fn(args => mockGetUsers(args)),
+}))
+
 describe('Okta adapter', () => {
   let getElemIdFunc: ElemIdGetter
   const adapterSetup = (credentials: InstanceElement): AdapterOperations => {
@@ -72,6 +79,7 @@ describe('Okta adapter', () => {
     let mockAxiosAdapter: MockAdapter
 
     beforeEach(async () => {
+      jest.clearAllMocks()
       oktaTestType = new ObjectType({
         elemID: new ElemID(OKTA, 'okta'),
       })
@@ -120,6 +128,12 @@ describe('Okta adapter', () => {
       })
       expect(result.elements).toContain(oktaTestType)
       expect(result.elements).toContain(testInstance)
+    })
+
+    it('should call getUsers if convertUserIds flag is enabled', async () => {
+      const adapter = adapterSetup(createCredentialsInstance({ baseUrl: 'http:/okta.test', token: 't' }))
+      await adapter.fetch({ progressReporter: { reportProgress: () => null } })
+      expect(mockGetUsers).toHaveBeenCalledTimes(1)
     })
   })
 })

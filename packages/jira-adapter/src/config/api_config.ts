@@ -2468,7 +2468,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       },
     },
   },
-  ObjectSchemaDefaultReferenceType: {
+  ObjectSchemaDefaultReferenceType: { // This endpoint returns only the default object reference types.
     request: {
       url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype',
     },

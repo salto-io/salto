@@ -72,6 +72,7 @@ const toTypeName: referenceUtils.ContextValueMapperFunc = val => {
 }
 
 const toReferenceTypeTypeName: referenceUtils.ContextValueMapperFunc = val => {
+  // 1,2,3,4,5,8 are the default values for the reference type field in jira.
   const defaultVals = new Set(['1', '2', '3', '4', '5', '8'])
   if (defaultVals.has(val)) {
     return OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE

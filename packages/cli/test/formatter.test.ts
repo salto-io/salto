@@ -18,10 +18,9 @@ import {
   PrimitiveTypes, BuiltinTypes, StaticFile, ListType,
 } from '@salto-io/adapter-api'
 import { EOL } from 'os'
-import { FetchChange } from '@salto-io/core'
+import { DeployError, FetchChange } from '@salto-io/core'
 import { errors as wsErrors } from '@salto-io/workspace'
 import chalk from 'chalk'
-import { DeployError } from '@salto-io/core/src/core/deploy'
 import { formatExecutionPlan, formatChange,
   formatFetchChangeForApproval, formatWorkspaceError,
   formatChangeErrors, formatConfigChangeNeeded, formatShouldChangeFetchModeToAlign, deployErrorsOutput } from '../src/formatter'

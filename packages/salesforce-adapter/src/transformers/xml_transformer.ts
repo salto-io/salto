@@ -413,6 +413,7 @@ export type DeployPackage = {
   addToManifest(type: MetadataObjectType, name: string): void
   delete(type: MetadataObjectType, name: string): void
   getZip(): Promise<Buffer>
+  getPackageXmlContent(): string
   getDeletionsPackageName(): string
 }
 
@@ -496,5 +497,6 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
       return zip.generateAsync({ type: 'nodebuffer' })
     },
     getDeletionsPackageName: () => deletionsPackageName,
+    getPackageXmlContent: () => toPackageXml(addManifest),
   }
 }

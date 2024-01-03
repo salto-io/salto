@@ -39,15 +39,20 @@ export interface FetchResult {
   partialFetchData?: PartialFetchData
 }
 
-export type Group = {
-  id?: string
+export type Artifact = {
+  name: string
+  content: Buffer
+}
+
+export type AdapterGroupProperties = {
+  url?: string
+  artifacts?: Artifact[]
   requestId?: string
   hash?: string
-  url?: string
 }
 
 export type DeployExtraProperties = {
-  groups?: Group[]
+  groups?: AdapterGroupProperties[]
 }
 
 type SaltoDeployErrors = {

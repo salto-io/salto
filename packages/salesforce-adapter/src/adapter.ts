@@ -568,7 +568,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         // eslint-disable-next-line @typescript-eslint/no-empty-function
         reportProgress: () => {},
       }
-      deployResult = await deployMetadata(resolvedChanges, this.client, changeGroup.groupID,
+      deployResult = await deployMetadata(resolvedChanges, this.client,
         this.nestedMetadataTypes, progressReporter ?? nullProgressReporter,
         this.userConfig.client?.deploy?.deleteBeforeUpdate, checkOnly,
         this.userConfig.client?.deploy?.quickDeployParams)

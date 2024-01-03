@@ -27,7 +27,7 @@ import {
 } from '@salto-io/adapter-api'
 import {
   Plan, PlanItem, EVENT_TYPES, DeployResult,
-  telemetrySender, Telemetry, Tags, TelemetryEvent, CommandConfig,
+  telemetrySender, Telemetry, Tags, TelemetryEvent, CommandConfig, deploy as coreDeploy, ItemStatus,
 } from '@salto-io/core'
 import { Workspace, errors as wsErrors, state as wsState, parser, remoteMap, elementSource, pathIndex, staticFiles } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
@@ -497,6 +497,7 @@ const toPlanItem = (
     [parent, ...subChanges].map(c => [_.uniqueId(), c])
   ),
   action: parent.action,
+  account: getChangeData(parent).elemID.adapter,
   changes: () => {
     const changes = [parent, ...subChanges]
     const detailedChangesByChange = _.groupBy(detailed, change => change.id.createBaseID().parent.getFullName())
@@ -750,11 +751,12 @@ export const preview = (): Plan => {
   return result as Plan
 }
 
-export const deploy = async (
-  _workspace: Workspace,
+export const deploy: typeof coreDeploy = async (
+  workspace: Workspace,
   actionPlan: Plan,
-  reportProgress: (action: PlanItem, step: string, details?: string) => void,
-  _accounts: string[],
+  reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
+  _accounts = workspace.accounts(),
+  _checkOnly = false,
 ): Promise<DeployResult> => {
   let numOfChangesReported = 0
   wu(actionPlan.itemsByEvalOrder()).forEach(change => {

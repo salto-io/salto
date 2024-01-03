@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 export { Plan, PlanItem } from './src/core/plan'
-export { FetchChange, FetchProgressEvents, StepEmitter, FetchChangeMetadata } from './src/core/fetch'
+export { FetchProgressEvents, StepEmitter } from './src/core/fetch'
 export * from './src/api'
 export { ItemStatus, summarizeDeployChanges, DeploySummaryResult, DetailedChangeDeploySummaryResult } from './src/core/deploy'
 export { getAdaptersCredentialsTypes, getDefaultAdapterConfig, getAdaptersConfigTypes } from './src/core/adapters/adapters'
@@ -62,3 +62,4 @@ export {
   createReadOnlyRemoteMapCreator,
 } from './src/local-workspace/remote_map'
 export { NoWorkspaceConfig } from './src/local-workspace/errors'
+export * from './src/types'

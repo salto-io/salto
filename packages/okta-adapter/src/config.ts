@@ -1753,9 +1753,6 @@ export const DEFAULT_API_DEFINITIONS: OktaSwaggerApiConfig = {
   swagger: DEFAULT_SWAGGER_CONFIG,
   typeDefaults: {
     transformation: TRANSFORMATION_DEFAULTS,
-    request: {
-      queryParams: { limit: '200' },
-    },
   },
   types: DEFAULT_TYPE_CUSTOMIZATIONS,
   supportedTypes: SUPPORTED_TYPES,

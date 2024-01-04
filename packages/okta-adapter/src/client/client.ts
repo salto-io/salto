@@ -231,17 +231,18 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
     responseData: Values,
     url: string
   ): Values {
-    const SECRET_PLACEHOLER = '<SECRET>'
-    const URL_TO_SECRET_FIELDS: Record<string, string[]> = {
-      '/api/v1/idps': ['credentials'],
-      '/api/v1/authenticators': ['sharedSecret', 'secretKey'],
+    const OMITTED_PLACEHOLER = '<OMITTED>'
+    const URL_TO_OMIT_FUNC: Record<string, (key: string, val: unknown) => unknown> = {
+      '/api/v1/idps': key => (key === 'credentials' ? OMITTED_PLACEHOLER : undefined),
+      '/api/v1/authenticators': key => (['sharedSecret', 'secretKey'].includes(key) ? OMITTED_PLACEHOLER : undefined),
+      '/api/v1/users': (key, val) => (key === 'profile' && _.isObject(val) ? _.pick(val, 'login') : undefined),
     }
-    if (!Object.keys(URL_TO_SECRET_FIELDS).includes(url)) {
+    if (!Object.keys(URL_TO_OMIT_FUNC).includes(url)) {
       return responseData
     }
-    const res = _.cloneDeepWith(responseData, (_val, key) => (
-      (_.isString(key) && URL_TO_SECRET_FIELDS[url].includes(key))
-        ? SECRET_PLACEHOLER
+    const res = _.cloneDeepWith(responseData, (val, key) => (
+      (_.isString(key) && URL_TO_OMIT_FUNC[url])
+        ? URL_TO_OMIT_FUNC[url](key, val)
         : undefined
     ))
     return res

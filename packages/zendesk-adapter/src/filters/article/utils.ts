@@ -22,13 +22,12 @@ import {
   normalizeFilePathPart,
   replaceTemplatesWithValues,
   safeJsonStringify,
-  inspectValue,
+  inspectValue, isResolvedReferenceExpression,
 } from '@salto-io/adapter-utils'
 import { collections, promises, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
   createSaltoElementError,
   InstanceElement,
-  isReferenceExpression,
   isStaticFile,
   isTemplateExpression,
   ObjectType,
@@ -245,12 +244,14 @@ export const updateArticleTranslationBody = async ({
     return
   }
   await awu(articleTranslations)
-    .filter(isReferenceExpression)
-    .filter(translationInstance => isTemplateExpression(translationInstance.value.value.body))
+    .filter(isResolvedReferenceExpression)
+    .map(translationRef => translationRef.value)
+    .filter(translationInstance => isTemplateExpression(translationInstance.value.body))
+    .map(translationInstance => translationInstance.clone())
     .forEach(async translationInstance => {
       try {
         replaceTemplatesWithValues(
-          { values: [translationInstance.value.value], fieldName: 'body' },
+          { values: [translationInstance.value], fieldName: 'body' },
           {},
           (part: ReferenceExpression) => {
             const attachmentIndex = attachmentElementsNames.findIndex(name => name === part.elemID.name)
@@ -269,8 +270,8 @@ export const updateArticleTranslationBody = async ({
         })
       }
       await client.put({
-        url: `/api/v2/help_center/articles/${articleValues?.id}/translations/${translationInstance.value.value.locale.value.value.locale}`,
-        data: { translation: { body: translationInstance.value.value.body } },
+        url: `/api/v2/help_center/articles/${articleValues?.id}/translations/${translationInstance.value.locale.value.value.locale}`,
+        data: { translation: { body: translationInstance.value.body } },
       })
     })
 }

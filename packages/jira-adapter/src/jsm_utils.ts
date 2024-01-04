@@ -112,27 +112,38 @@ elementUtils.ducktype.EntriesRequester => async ({ paginator, args, typeName, ty
   },
 })
 
-type ServerInfo = {
-  serverTitle: string
+type ProjectResponse = {
+  projectTypeKey: string
+}
+type ProjectDataResponse = {
+  values: ProjectResponse[]
 }
 
-const SERVER_INFO_SCHEMA = Joi.object({
-  serverTitle: Joi.string().required(),
+const PROJECT_DATA_RESPONSE_SCHEMA = Joi.object({
+  values: Joi.array().items(Joi.object({
+    projectTypeKey: Joi.string().required(),
+  }).unknown(true).required()).required(),
 }).unknown(true).required()
 
-const isServerInfo = createSchemeGuard<ServerInfo>(SERVER_INFO_SCHEMA)
 
-export const getServerInfoTitle = async (client: JiraClient):
-Promise<string> => {
+const isProjectDataResponse = createSchemeGuard<ProjectDataResponse>(PROJECT_DATA_RESPONSE_SCHEMA)
+
+/*
+* Checks if the Jira service has a software project. The default is to assume that it does.
+* We are going to exclude Borads if we sure that there is no software project.
+*/
+export const hasSoftwareProject = async (client: JiraClient):
+Promise<boolean> => {
   try {
     const response = await client.getSinglePage({
-      url: '/rest/api/3/serverInfo',
+      url: '/rest/api/3/project/search',
     })
-    if (isServerInfo(response.data)) {
-      return response.data.serverTitle
+    if (!isProjectDataResponse(response.data)) {
+      return true
     }
+    return response.data.values.some(project => project.projectTypeKey === 'software')
   } catch (e) {
     log.error(`Failed to get server info: ${e}`)
   }
-  return 'Jira'
+  return true
 }

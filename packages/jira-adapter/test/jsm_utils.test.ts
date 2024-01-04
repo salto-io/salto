@@ -17,42 +17,64 @@
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import JiraClient from '../src/client/client'
-import { getServerInfoTitle } from '../src/jsm_utils'
+import { hasSoftwareProject } from '../src/jsm_utils'
 import { mockClient } from './utils'
 
 describe('jsm utils', () => {
   let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
 
-  describe('getServerInfoTitle', () => {
+  describe('hasSoftwareProject', () => {
     beforeEach(() => {
       const { client: cli, connection: conn } = mockClient(false)
       client = cli
       connection = conn
       connection.get.mockImplementation(async url => {
-        if (url === '/rest/api/3/serverInfo') {
+        if (url === '/rest/api/3/project/search') {
           return {
             status: 200,
             data: {
-              serverTitle: 'test',
+              values: [
+                {
+                  projectTypeKey: 'service_desk',
+                },
+                {
+                  projectTypeKey: 'software',
+                },
+              ],
             },
           }
         }
         throw new Error(`unexpected url: ${url}`)
       })
     })
-    it('should return the server title', async () => {
-      connection.get.mockResolvedValueOnce({
-        status: 200,
-        data: {
-          serverTitle: 'test',
-        },
-      })
-      expect(await getServerInfoTitle(client)).toEqual('test')
+    it('should return true if there is software project', async () => {
+      expect(await hasSoftwareProject(client)).toEqual(true)
     })
-    it('should return \'Jira\' if api thorws an error', async () => {
+    it('should return true if api thorws an error', async () => {
       connection.get.mockRejectedValueOnce(new Error('test'))
-      expect(await getServerInfoTitle(client)).toEqual('Jira')
+      expect(await hasSoftwareProject(client)).toEqual(true)
+    })
+    it('should return false if there is no software project', async () => {
+      connection.get.mockImplementation(async url => {
+        if (url === '/rest/api/3/project/search') {
+          return {
+            status: 200,
+            data: {
+              values: [
+                {
+                  projectTypeKey: 'service_desk',
+                },
+                {
+                  projectTypeKey: 'service_desk',
+                },
+              ],
+            },
+          }
+        }
+        throw new Error(`unexpected url: ${url}`)
+      })
+      expect(await hasSoftwareProject(client)).toEqual(false)
     })
   })
 })

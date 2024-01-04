@@ -41,7 +41,7 @@ const unzipFolderToElements = async (buffer: Buffer, brandName: string, name: st
   await Promise.all(Object.entries(unzippedContents.files).map(async ([relativePath, file]): Promise<void> => {
     if (!file.dir) {
       const content = await file.async('nodebuffer')
-      _.set(elements, relativePath, {
+      _.set(elements, relativePath.split('/'), {
         filename: relativePath,
         content: new StaticFile({ filepath: `${ZENDESK}/themes/brands/${brandName}/${name}/${relativePath}`, content }),
       })

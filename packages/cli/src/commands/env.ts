@@ -115,7 +115,7 @@ export const diffAction: WorkspaceCommandAction<EnvDiffArgs> = async ({
     toEnv,
     hidden,
     state,
-    actualAccounts,
+    accounts === undefined ? undefined : actualAccounts,
     validSelectors,
   )
   outputLine(await formatEnvDiff(changes, detailedPlan, toEnv, fromEnv), output)

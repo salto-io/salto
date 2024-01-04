@@ -593,7 +593,7 @@ export async function diff(
   elementSelectors: ElementSelector[] = [],
   resultType: 'changes' | 'detailedChanges' = 'detailedChanges'
 ): Promise<LocalChange[] | ChangeWithDetails[]> {
-  const diffAccounts = accountFilters ?? workspace.accounts()
+  const accountIDFilter = accountFilters === undefined ? undefined : [shouldElementBeIncluded(accountFilters)]
   const fromElements = useState
     ? workspace.state(fromEnv)
     : await workspace.elements(includeHidden, fromEnv)
@@ -607,7 +607,7 @@ export async function diff(
       fromElements,
       await workspace.getReferenceSourcesIndex(),
       elementSelectors,
-      [shouldElementBeIncluded(diffAccounts)],
+      accountIDFilter,
       'changes'
     )
   }
@@ -617,7 +617,7 @@ export async function diff(
     fromElements,
     await workspace.getReferenceSourcesIndex(),
     elementSelectors,
-    [shouldElementBeIncluded(diffAccounts)],
+    accountIDFilter,
     'detailedChanges'
   )
   return diffChanges.map(change => ({ change, serviceChanges: [change] }))

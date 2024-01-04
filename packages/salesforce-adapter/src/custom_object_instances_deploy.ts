@@ -239,7 +239,7 @@ export const retryFlow = async (
   crudFn: CrudFn,
   crudFnArgs: CrudFnArgs,
   retriesLeft: number,
-  retryDelayStrategy: retry.RetryStrategy = retryDelayStrategyFromConfig(crudFnArgs.client),
+  retryDelayStrategy?: retry.RetryStrategy,
 ): Promise<ActionResult> => {
   const { client } = crudFnArgs
   const { retryableFailures } = client.dataRetry
@@ -266,7 +266,8 @@ export const retryFlow = async (
     }
   }
 
-  const retryDelay = retryDelayStrategy()
+  const actualRetryDelayStrategy = retryDelayStrategy ?? retryDelayStrategyFromConfig(client)
+  const retryDelay = actualRetryDelayStrategy()
   if (_.isNumber(retryDelay)) {
     await sleep(retryDelay)
   } else {
@@ -281,7 +282,7 @@ export const retryFlow = async (
     crudFn,
     { ...crudFnArgs, instances: recoverable.map(instAndRes => instAndRes.instance) },
     retriesLeft - 1,
-    retryDelayStrategy,
+    actualRetryDelayStrategy,
   )
   return {
     successInstances: successes.concat(successInstances),

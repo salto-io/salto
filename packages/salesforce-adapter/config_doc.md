@@ -303,11 +303,12 @@ For more details see the DeployOptions section in the [salesforce documentation 
 
 ### Client data retry options
 
-| Name              | Default when undefined                                  | Description                           |
-|-------------------|---------------------------------------------------------|---------------------------------------|
-| maxAttempts       | `5`                                                     | Max attempts to deploy data instances |
-| retryDelay        | `1000`                                                  | Delay (in millis) between each retry  |
-| retryableFailures | `FIELD_CUSTOM_VALIDATION_EXCEPTION, UNABLE_TO_LOCK_ROW` | Error messages for which to retry     |
+| Name                 | Default when undefined                                  | Description                                                                                                                                                      |
+|----------------------|---------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| maxAttempts          | `5`                                                     | Max attempts to deploy data instances                                                                                                                            |
+| retryDelay           | `1000`                                                  | Delay (in ms) before the first retry                                                                                                                             |
+| retryDelayMultiplier | `1.5`                                                   | The amount by which the delay is increased between consecutive retries - i.e the first retry is 1000ms, the second is 1.5*1000ms, the third is 1.5*1.5*1000ms... |
+| retryableFailures    | `FIELD_CUSTOM_VALIDATION_EXCEPTION, UNABLE_TO_LOCK_ROW` | Error messages for which to retry                                                                                                                                |
 | 
 
 ### Read metadata chunk size

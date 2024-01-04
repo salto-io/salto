@@ -176,33 +176,26 @@ describe('Custom Object Deploy', () => {
     })
 
     it('should retry on recoverable error(s), succeed second time', async () => {
+      let clientCallCount = 0
       clientBulkOpSpy.mockImplementation(
         async (_1: string,
           _2: BulkLoadOperation,
           records: SalesforceRecord[]) => {
-          if (records.length > 1) {
-            return [
-              {
-                id: '1',
-                success: true,
-              },
-              {
-                id: '2',
-                success: false,
-                errors: ['err1'],
-              },
-            ]
-          }
-          return [{
-            id: '2',
-            success: true,
-          }]
+          clientCallCount += 1
+          return records
+            .map((_record, idx) => ({
+              id: (clientCallCount + idx).toString(),
+              success: idx === 0,
+            }))
         }
-
       )
-      const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client, groupId }, retries)
-      expect(res).toEqual({ successInstances: [inst1, inst2], errorInstances: [] })
-      expect(clientBulkOpSpy).toHaveBeenCalledTimes(2)
+      const inst3 = new InstanceElement('inst3', new ObjectType({ elemID: new ElemID('', 'test') }))
+      const testInstances = instanceElements
+        .map(instance => instance.clone())
+        .concat([inst3])
+      const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: testInstances, client, groupId }, retries)
+      expect(res).toEqual({ successInstances: [inst1, inst2, inst3], errorInstances: [] })
+      expect(clientBulkOpSpy).toHaveBeenCalledTimes(3)
     })
 
     it('should retry1 on recoverable error(s), failed because of max-retries', async () => {

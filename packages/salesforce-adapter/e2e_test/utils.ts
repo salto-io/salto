@@ -18,7 +18,7 @@ import {
   Value, ObjectType, ElemID, InstanceElement, Element, isObjectType, ChangeGroup, getChangeData, DeployResult,
   ProgressReporter,
 } from '@salto-io/adapter-api'
-import { filter, findElement } from '@salto-io/adapter-utils'
+import { filter, findElement, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { MetadataInfo } from '@salto-io/jsforce'
 import { SalesforceRecord } from '../src/client/types'
@@ -191,7 +191,7 @@ export const createElement = async <T extends InstanceElement | ObjectType>(
   const result = await adapter.deploy({ changeGroup, progressReporter: nullProgressReporter })
   if (verify && result.errors.length > 0) {
     if (result.errors.length === 1) throw result.errors[0]
-    throw new Error(`Failed adding element ${element.elemID.getFullName()} with errors: ${result.errors}`)
+    throw new Error(`Failed adding element ${element.elemID.getFullName()} with errors: ${result.errors.map(error => safeJsonStringify(error))}`)
   }
   if (verify && result.appliedChanges.length === 0) {
     throw new Error(`Failed adding element ${element.elemID.getFullName()}: no applied changes`)

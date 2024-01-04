@@ -22,7 +22,7 @@ import {
   InstanceElement,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
-import { aliasOrElemID, isInstanceOfCustomObjectChangeSync } from '../filters/utils'
+import { isInstanceOfCustomObjectChangeSync } from '../filters/utils'
 
 const { isDefined } = values
 
@@ -33,16 +33,16 @@ const createDataDeploymentChangeInfo = (instanceElemID: ElemID): ChangeError => 
   detailedMessage: '',
 })
 
-const createUnknownFieldValuesChangeError = (instance: InstanceElement): ChangeError | undefined => {
+const createMissingFieldsValuesChangeError = (instance: InstanceElement): ChangeError | undefined => {
   const typeFields = new Set(Object.keys(instance.getTypeSync().fields))
-  const unknownFields = Object.keys(instance.value)
+  const missingFields = Object.keys(instance.value)
     .filter(fieldName => !typeFields.has(fieldName))
-  return unknownFields.length > 0
+  return missingFields.length > 0
     ? {
       elemID: instance.elemID,
       severity: 'Warning',
       message: 'Data instance has values of unknown fields',
-      detailedMessage: `The ${aliasOrElemID(instance.getTypeSync())} "${aliasOrElemID(instance)}" has values to the following unknown fields: [${unknownFields.join(', ')}]. Please include them in your deployment or remove these values from the instance.`,
+      detailedMessage: `Some fields do not exist in the target environment, therefore their values will be omitted from the deployment. Missing fields: [${missingFields.join(', ')}].`,
     }
     : undefined
 }
@@ -59,7 +59,7 @@ const createDataChangeValidator: ChangeValidator = async changes => {
     // Deletions are supported in this use-case
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
-    .map(createUnknownFieldValuesChangeError)
+    .map(createMissingFieldsValuesChangeError)
     .filter(isDefined)
     .forEach(changeError => changeErrors.push(changeError))
   return changeErrors

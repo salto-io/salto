@@ -3075,15 +3075,15 @@
     lodash "^4.17.21"
     moo "^0.5.2"
 
-"@salto-io/suitecloud-cli@1.8.0-salto-1":
-  version "1.8.0-salto-1"
-  resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.8.0-salto-1.tgz#9264a7d4234285aaa8bda6368f0d566b3dd4d29f"
-  integrity sha512-MzA5zWXZYHFsegeoQe+Xrq09PHj/rR9coUXmTF3Hz+B5hvs8H4NP4L9l9SpHGpsH3yMj6FHSdLudrJCKif5SCg==
+"@salto-io/suitecloud-cli@1.8.0-salto-2":
+  version "1.8.0-salto-2"
+  resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.8.0-salto-2.tgz#faba9351b15b9caf13937fd39160d4c5c9b1945c"
+  integrity sha512-yXkmRJQLWlQUBXuW+GX7PtS0qE3BTGi9XaPvFAAe+yXamlK4I/AiywEpJ8ClLErta454wxRvLFlxJYmOy+YB+w==
   dependencies:
     "@salto-io/logging" "<0.4.0"
     chalk "4.1.2"
     cli-spinner "0.2.10"
-    commander "11.0.0"
+    commander "10.0.0"
     inquirer "8.2.5"
     xml2js "0.6.0"
 
@@ -5259,12 +5259,7 @@ combined-stream@^1.0.6, combined-stream@^1.0.8, combined-stream@~1.0.6:
   dependencies:
     delayed-stream "~1.0.0"
 
-commander@11.0.0:
-  version "11.0.0"
-  resolved "https://registry.yarnpkg.com/commander/-/commander-11.0.0.tgz#43e19c25dbedc8256203538e8d7e9346877a6f67"
-  integrity sha512-9HMlXtt/BNoYr8ooyjjNRdIilOTkVJXB+GhxMTtOKwk0R4j4lS4NpjuqmRxroBfnfTSHQIHQB7wryHhXarNjmQ==
-
-commander@^10.0.0:
+commander@10.0.0, commander@^10.0.0:
   version "10.0.0"
   resolved "https://registry.yarnpkg.com/commander/-/commander-10.0.0.tgz#71797971162cd3cf65f0b9d24eb28f8d303acdf1"
   integrity sha512-zS5PnTI22FIRM6ylNW8G4Ap0IEOyk62fhLSD0+uHRT9McRCLGpkVNvao4bjimpK/GShynyQkFFxHhwMcETmduA==

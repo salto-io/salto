@@ -56,7 +56,7 @@ import {
   GUIDE_SUPPORTED_TYPES,
   GUIDE_TYPES_TO_HANDLE_BY_BRAND,
   isGuideEnabled,
-  isGuideThemeEnabled,
+  isGuideThemesEnabled,
   ZendeskConfig,
 } from './config'
 import {
@@ -540,10 +540,10 @@ export default class ZendeskAdapter implements AdapterOperations {
 
   private filterSupportedTypes(): Record<string, string[]> {
     const isGuideEnabledInConfig = isGuideEnabled(this.userConfig[FETCH_CONFIG])
-    const isGuideThemeEnabledInConfig = isGuideThemeEnabled(this.userConfig[FETCH_CONFIG])
+    const isGuideThemesEnabledInConfig = isGuideThemesEnabled(this.userConfig[FETCH_CONFIG])
     const keysToOmit = isGuideEnabledInConfig
       ? Object.keys(GUIDE_BRAND_SPECIFIC_TYPES) : Object.keys(GUIDE_SUPPORTED_TYPES)
-    if (!isGuideThemeEnabledInConfig) {
+    if (!isGuideThemesEnabledInConfig) {
       keysToOmit.push(GUIDE_THEME_TYPE_NAME)
     }
     const { supportedTypes: allSupportedTypes } = this.userConfig.apiDefinitions

@@ -3087,7 +3087,7 @@ export const isGuideEnabled = (
   fetchConfig.guide?.brands !== undefined
 )
 
-export const isGuideThemeEnabled = (
+export const isGuideThemesEnabled = (
   fetchConfig: ZendeskFetchConfig
 ): boolean => (
   fetchConfig.guide?.themes === true

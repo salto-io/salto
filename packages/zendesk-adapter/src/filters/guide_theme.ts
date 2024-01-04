@@ -18,7 +18,7 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import JSZip from 'jszip'
 import _, { remove } from 'lodash'
-import { FETCH_CONFIG, isGuideEnabled, isGuideThemeEnabled } from '../config'
+import { FETCH_CONFIG, isGuideEnabled, isGuideThemesEnabled } from '../config'
 import {
   BRAND_TYPE_NAME,
   GUIDE_THEME_TYPE_NAME,
@@ -33,31 +33,15 @@ const { awu } = collections.asynciterable
 type ThemeFile = { filename: string; content: StaticFile }
 type ThemeDirectory = { [key: string]: ThemeFile | ThemeDirectory }
 
-const addFileToDirectory = (root: ThemeDirectory, relativeFilename: string, file: ThemeFile): void => {
-  const pathSegments = relativeFilename.split('/')
-  const fileSegment = pathSegments.pop() as string // Remove and store the file segment, the array is never empty
-
-  // Use reduce to traverse and/or build the directory structure
-  const targetDirectory = pathSegments.reduce((currentDirectory, segment) => {
-    if (!currentDirectory[segment] || typeof currentDirectory[segment] !== 'object') {
-      currentDirectory[segment] = {}
-    }
-    return currentDirectory[segment] as ThemeDirectory
-  }, root)
-
-  // Add the file to the target directory
-  targetDirectory[fileSegment] = file
-}
-
 const unzipFolderToElements = async (buffer: Buffer, brandName: string, name: string): Promise<ThemeDirectory> => {
   const zip = new JSZip()
   const unzippedContents = await zip.loadAsync(buffer)
 
   const elements: ThemeDirectory = {}
-  await Promise.all(Object.entries(unzippedContents.files).map(async ([relativePath, file]) => {
+  await Promise.all(Object.entries(unzippedContents.files).map(async ([relativePath, file]): Promise<void> => {
     if (!file.dir) {
       const content = await file.async('nodebuffer')
-      addFileToDirectory(elements, relativePath, {
+      _.set(elements, relativePath, {
         filename: relativePath,
         content: new StaticFile({ filepath: `${ZENDESK}/themes/brands/${brandName}/${name}/${relativePath}`, content }),
       })
@@ -87,12 +71,12 @@ const addDownloadErrors = (
 const filterCreator: FilterCreator = ({ config, client }) => ({
   name: 'guideThemesFilter',
   onFetch: async elements => {
-    if (!isGuideEnabled(config[FETCH_CONFIG]) || !isGuideThemeEnabled(config[FETCH_CONFIG])) {
+    if (!isGuideEnabled(config[FETCH_CONFIG]) || !isGuideThemesEnabled(config[FETCH_CONFIG])) {
       return undefined
     }
 
     const instances = elements.filter(isInstanceElement)
-    const guideThemes = instances.filter(i => i.elemID.typeName === GUIDE_THEME_TYPE_NAME)
+    const guideThemes = instances.filter(instance => instance.elemID.typeName === GUIDE_THEME_TYPE_NAME)
     const brands = elements
       .filter(elem => elem.elemID.typeName === BRAND_TYPE_NAME)
       .filter(isInstanceElement)
@@ -110,6 +94,11 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
 
     const errors: SaltoError[] = []
     await awu(guideThemes).forEach(async theme => {
+      const brandName = getBrandName(theme)
+      if (brandName === undefined) {
+        remove(elements, element => element.elemID.isEqual(theme.elemID))
+        return
+      }
       const { content: themeZip, errors: downloadErrors } = await download(theme.value.id, client)
       if (themeZip === undefined) {
         errors.push(...addDownloadErrors(theme, downloadErrors))
@@ -117,11 +106,6 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         return
       }
       try {
-        const brandName = getBrandName(theme)
-        if (brandName === undefined) {
-          remove(elements, element => element.elemID.isEqual(theme.elemID))
-          return
-        }
         const themeElements = await unzipFolderToElements(themeZip, brandName, theme.value.name)
         theme.value.files = themeElements
       } catch (e) {

@@ -31,7 +31,7 @@ export const guideThemeReadonlyValidator: ChangeValidator = async changes => {
   return themeInstances.map(instance => ({
     elemID: instance.elemID,
     severity: 'Error',
-    message: 'Cannot add this element because Guide Themes is currently under development.',
+    message: 'Cannot deploy this element because Guide Themes is currently under development.',
     detailedMessage: 'Guide themes is in read only mode and not deployable at the moment.',
   }))
 }

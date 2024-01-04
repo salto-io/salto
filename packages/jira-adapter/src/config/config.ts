@@ -411,11 +411,11 @@ export const validateJiraFetchConfig = ({
 }: {
   fetchConfig: JiraFetchConfig
   apiDefinitions: JiraApiConfig
-  scriptRunnerApiDefinitions: JiraDuckTypeConfig
+  scriptRunnerApiDefinitions?: JiraDuckTypeConfig
   jsmApiDefinitions: JiraDuckTypeConfig
 }): void => {
   const jsmSupportedTypes = fetchConfig.enableJSM ? Object.keys(jsmApiDefinitions.supportedTypes) : []
-  const scriptRunnerSupportedTypes = fetchConfig.enableScriptRunnerAddon
+  const scriptRunnerSupportedTypes = fetchConfig.enableScriptRunnerAddon && scriptRunnerApiDefinitions !== undefined
     ? Object.keys(scriptRunnerApiDefinitions.supportedTypes) : []
   const supportedTypes = Object.keys(apiDefinitions.supportedTypes)
     .concat(jsmSupportedTypes)

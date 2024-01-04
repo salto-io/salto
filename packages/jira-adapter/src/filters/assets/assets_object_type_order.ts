@@ -77,7 +77,7 @@ const createAssetsObjectTypeOrder = (
     log.error(`Failed to create ${OBJECT_TYPE_ORDER_TYPE} for ${treeParent.elemID.getFullName()} because it's parent is not ${OBJECT_SCHEMA_TYPE}`)
     return undefined
   }
-  const name = naclCase(`${treeParent.value.name}_order`)
+  const name = naclCase(`${treeParent.elemID.name}_order`)
   const subFolder = treeParent.elemID.typeName === OBJECT_TYPE_TYPE ? ['childOrder'] : ['objectTypes', 'childOrder']
   return new InstanceElement(
     name,

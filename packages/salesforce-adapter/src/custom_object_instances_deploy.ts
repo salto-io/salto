@@ -271,7 +271,7 @@ export const retryFlow = async (
     await sleep(retryDelay)
   } else {
     log.warn('Invalid delay %s', retryDelay)
-    await sleep(1000)
+    await sleep(client.dataRetry.retryDelay)
   }
 
   log.debug('in custom object deploy retry-flow. retries left: %d', retriesLeft)
@@ -280,7 +280,8 @@ export const retryFlow = async (
   const { successInstances, errorInstances } = await retryFlow(
     crudFn,
     { ...crudFnArgs, instances: recoverable.map(instAndRes => instAndRes.instance) },
-    retriesLeft - 1
+    retriesLeft - 1,
+    retryDelayStrategy,
   )
   return {
     successInstances: successes.concat(successInstances),

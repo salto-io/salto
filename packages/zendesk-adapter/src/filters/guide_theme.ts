@@ -30,22 +30,6 @@ const log = logger(module)
 type ThemeFile = { filename: string; content: StaticFile }
 type ThemeDirectory = { [key: string]: ThemeFile | ThemeDirectory }
 
-const addFileToDirectory = (root: ThemeDirectory, relativeFilename: string, file: ThemeFile): void => {
-  const pathSegments = relativeFilename.split('/')
-  const fileSegment = pathSegments.pop() as string // Remove and store the file segment, the array is never empty
-
-  // Use reduce to traverse and/or build the directory structure
-  const targetDirectory = pathSegments.reduce((currentDirectory, segment) => {
-    if (!currentDirectory[segment] || typeof currentDirectory[segment] !== 'object') {
-      currentDirectory[segment] = {}
-    }
-    return currentDirectory[segment] as ThemeDirectory
-  }, root)
-
-  // Add the file to the target directory
-  targetDirectory[fileSegment] = file
-}
-
 const unzipFolderToElements = async (buffer: Buffer, brandName: string, name: string): Promise<ThemeDirectory> => {
   const zip = new JSZip()
   const unzippedContents = await zip.loadAsync(buffer)

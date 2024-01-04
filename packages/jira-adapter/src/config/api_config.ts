@@ -2245,6 +2245,13 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
             { name: 'AssetsSchemaId', fromField: 'id' },
           ],
         },
+        {
+          type: 'ObjectSchemaReferenceTypes',
+          toField: 'referenceTypes',
+          context: [
+            { name: 'AssetsSchemaId', fromField: 'id' },
+          ],
+        },
       ],
     },
     transformation: {
@@ -2273,6 +2280,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'objectSchemaStatuses' },
         { fieldName: 'objectTypes' },
         { fieldName: 'attributes' },
+        { fieldName: 'referenceTypes' },
       ],
       fieldTypeOverrides: [
         { fieldName: 'objectSchemaStatuses', fieldType: 'List<ObjectSchemaStatus>' },
@@ -2401,6 +2409,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
       fieldTypeOverrides: [
         { fieldName: 'typeValue', fieldType: 'string' },
+        { fieldName: 'additionalValue', fieldType: 'string' },
       ],
       serviceUrl: '/jira/servicedesk/assets/object-schema/{objectSchemaId}?typeId={id}&mode=attribute',
 
@@ -2419,6 +2428,62 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         method: 'delete',
         omitRequestBody: true,
       },
+    },
+  },
+  ObjectSchemaReferenceTypes: {
+    request: {
+      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype?objectSchemaId={AssetsSchemaId}',
+    },
+    transformation: {
+      dataField: '.',
+    },
+  },
+  ObjectSchemaReferenceType: {
+    transformation: {
+      sourceTypeName: 'ObjectSchema__referenceTypes',
+      fieldsToHide: [
+        { fieldName: 'id' },
+        { fieldName: 'workspaceId' },
+      ],
+      serviceIdField: 'id',
+      fieldsToOmit: [
+        { fieldName: 'objectSchemaId' },
+        { fieldName: 'url16' },
+        { fieldName: 'globalId' },
+      ],
+    },
+    deployRequests: {
+      add: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype',
+        method: 'post',
+      },
+      modify: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype/{id}',
+        method: 'put',
+      },
+      remove: {
+        url: 'gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
+    },
+  },
+  ObjectSchemaDefaultReferenceType: { // This endpoint returns only the default object reference types.
+    request: {
+      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype',
+    },
+    transformation: {
+      dataField: '.',
+      fieldsToHide: [
+        { fieldName: 'id' },
+        { fieldName: 'workspaceId' },
+      ],
+      serviceIdField: 'id',
+      fieldsToOmit: [
+        { fieldName: 'objectSchemaId' },
+        { fieldName: 'url16' },
+        { fieldName: 'globalId' },
+      ],
     },
   },
 }
@@ -2440,6 +2505,7 @@ export const JSM_DUCKTYPE_SUPPORTED_TYPES = {
 
 export const JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES = {
   ObjectSchema: ['ObjectSchemas'],
+  ObjectSchemaDefaultReferenceType: ['ObjectSchemaDefaultReferenceType'],
 }
 
 export const SCRIPT_RUNNER_DUCKTYPE_SUPPORTED_TYPES = {

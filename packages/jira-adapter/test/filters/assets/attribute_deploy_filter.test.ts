@@ -18,7 +18,6 @@ import { filterUtils, client as clientUtils } from '@salto-io/adapter-components
 import _ from 'lodash'
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { getDefaultConfig } from '../../../src/config/config'
 import deployAttributesFilter from '../../../src/filters/assets/attribute_deploy_filter'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
@@ -48,14 +47,13 @@ describe('deployAttributesFilter', () => {
   let attributesInstance: InstanceElement
   describe('deploy', () => {
     beforeEach(() => {
-      const elementsSource = buildElementsSourceFromElements([assetsObjectTypeInstance])
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
       config.fetch.enableJsmExperimental = true
       const { client: cli, connection: conn } = mockClient(false)
       client = cli
       connection = conn
-      filter = deployAttributesFilter(getFilterParams({ config, client, elementsSource })) as typeof filter
+      filter = deployAttributesFilter(getFilterParams({ config, client })) as typeof filter
       attributesInstance = new InstanceElement(
         'attributesInstance',
         attributeType,

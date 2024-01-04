@@ -15,7 +15,6 @@
 */
 import { InstanceElement, SaltoError, StaticFile, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
 import JSZip from 'jszip'
 import _, { remove } from 'lodash'
 import { FETCH_CONFIG, isGuideEnabled, isGuideThemesEnabled } from '../config'
@@ -28,7 +27,6 @@ import { FilterCreator } from '../filter'
 import { download } from './guide_themes/download'
 
 const log = logger(module)
-const { awu } = collections.asynciterable
 
 type ThemeFile = { filename: string; content: StaticFile }
 type ThemeDirectory = { [key: string]: ThemeFile | ThemeDirectory }
@@ -93,7 +91,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     }
 
     const errors: SaltoError[] = []
-    await awu(guideThemes).forEach(async theme => {
+    await Promise.all(guideThemes.map(async theme => {
       const brandName = getBrandName(theme)
       if (brandName === undefined) {
         remove(elements, element => element.elemID.isEqual(theme.elemID))
@@ -115,7 +113,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         })
         remove(elements, element => element.elemID.isEqual(theme.elemID))
       }
-    })
+    }))
     return { errors }
   },
 })

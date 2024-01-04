@@ -20,7 +20,7 @@ import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { GROUP_TYPE_NAME, GROUP_MEMBERSHIP_TYPE_NAME, OKTA } from '../constants'
-import { areUsers, User } from './user'
+import { areUsers, User } from '../user_utils'
 import { FETCH_CONFIG } from '../config'
 
 const log = logger(module)

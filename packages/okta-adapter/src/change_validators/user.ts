@@ -22,7 +22,8 @@ import { values } from '@salto-io/lowerdash'
 import { paginate } from '../client/pagination'
 import OktaClient from '../client/client'
 import { OktaConfig, FETCH_CONFIG } from '../config'
-import { USER_MAPPING, getUsers } from '../filters/user'
+import { USER_MAPPING } from '../filters/user'
+import { getUsers } from '../user_utils'
 
 const { isDefined } = values
 const { createPaginator } = clientUtils

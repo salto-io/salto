@@ -22,7 +22,7 @@ import NetsuiteClient from '../../src/client/client'
 import { NETSUITE } from '../../src/constants'
 import SdfClient from '../../src/client/sdf_client'
 import { getDataElements, getDataTypes } from '../../src/data_elements/data_elements'
-import { NetsuiteQuery } from '../../src/query'
+import { NetsuiteQuery } from '../../src/config/query'
 
 jest.mock('@salto-io/adapter-components', () => ({
   ...jest.requireActual<{}>('@salto-io/adapter-components'),

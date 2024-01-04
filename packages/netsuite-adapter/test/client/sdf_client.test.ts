@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { readFile, writeFile, mkdirp, rm, rename } from '@salto-io/file'
 import osPath from 'path'
-import { buildNetsuiteQuery, notQuery } from '../../src/query'
+import { buildNetsuiteQuery, notQuery } from '../../src/config/query'
 import mockClient, { DUMMY_CREDENTIALS } from './sdf_client'
 import { APPLICATION_ID, CONFIG_FEATURES, FILE_CABINET_PATH_SEPARATOR } from '../../src/constants'
 import SdfClient, {
@@ -25,7 +25,7 @@ import SdfClient, {
 } from '../../src/client/sdf_client'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, SdfDeployParams, SDFObjectNode, TemplateCustomTypeInfo } from '../../src/client/types'
 import { fileCabinetTopLevelFolders } from '../../src/client/constants'
-import { DEFAULT_COMMAND_TIMEOUT_IN_MINUTES } from '../../src/config'
+import { DEFAULT_COMMAND_TIMEOUT_IN_MINUTES } from '../../src/config/constants'
 import { FeaturesDeployError, ManifestValidationError, MissingManifestFeaturesError, ObjectsDeployError, SettingsDeployError } from '../../src/client/errors'
 import { Graph, GraphNode } from '../../src/client/graph_utils'
 import { ATTRIBUTES_FOLDER_NAME } from '../../src/client/sdf_parser'

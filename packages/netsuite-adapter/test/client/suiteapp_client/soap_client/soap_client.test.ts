@@ -18,7 +18,7 @@ import { ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression } fr
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { promises } from '@salto-io/lowerdash'
-import { DEFAULT_AXIOS_TIMEOUT_IN_MINUTES } from '../../../../src/config'
+import { DEFAULT_AXIOS_TIMEOUT_IN_MINUTES } from '../../../../src/config/constants'
 import { ExistingFileCabinetInstanceDetails } from '../../../../src/client/suiteapp_client/types'
 import { ReadFileError } from '../../../../src/client/suiteapp_client/errors'
 import SoapClient, * as soapClientUtils from '../../../../src/client/suiteapp_client/soap_client/soap_client'

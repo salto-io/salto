@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Change, ChangeError, ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { NetsuiteConfig } from '../config'
+import { NetsuiteConfig } from '../config/types'
 
 export type NetsuiteChangeValidator = (
     changes: ReadonlyArray<Change>,

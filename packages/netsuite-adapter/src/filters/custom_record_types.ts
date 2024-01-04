@@ -22,7 +22,7 @@ import { isCustomRecordType } from '../types'
 import { CUSTOM_RECORD_TYPE, INDEX, METADATA_TYPE, SCRIPT_ID, SOAP, SOURCE } from '../constants'
 import { CUSTOM_FIELDS, CUSTOM_FIELDS_LIST } from '../custom_records/custom_record_type'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
-import { andQuery, buildNetsuiteQuery, notQuery } from '../query'
+import { andQuery, buildNetsuiteQuery, notQuery } from '../config/query'
 
 const { makeArray } = collections.array
 

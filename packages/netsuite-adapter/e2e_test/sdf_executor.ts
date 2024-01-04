@@ -21,7 +21,7 @@ import { mkdirp, rm, writeFile } from '@salto-io/file'
 import Bottleneck from 'bottleneck'
 import { SdfCredentials, toCredentialsAccountId } from '../src/client/credentials'
 import SdfClient, { ALL_FEATURES, COMMANDS, safeQuoteArgument } from '../src/client/sdf_client'
-import { DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST } from '../src/config'
+import { DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST } from '../src/config/constants'
 import { FILE_CABINET_PATH_SEPARATOR } from '../src/constants'
 import { FILE_CABINET_DIR, OBJECTS_DIR, SRC_DIR } from '../src/client/sdf_parser'
 

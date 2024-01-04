@@ -18,7 +18,7 @@ import { getChangeData, toChange, isAdditionOrModificationChange, isFieldChange,
 import _ from 'lodash'
 import { getReferencedElements } from '../reference_dependencies'
 import { LocalFilterCreator } from '../filter'
-import { DEFAULT_DEPLOY_REFERENCED_ELEMENTS } from '../config'
+import { DEFAULT_DEPLOY_REFERENCED_ELEMENTS } from '../config/constants'
 import { isStandardInstanceOrCustomRecordType } from '../types'
 
 const getFieldParentChanges = (

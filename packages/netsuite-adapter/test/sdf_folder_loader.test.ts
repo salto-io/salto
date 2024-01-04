@@ -24,7 +24,7 @@ import { createCustomRecordTypes } from '../src/custom_records/custom_record_typ
 import { LocalFilterCreator } from '../src/filter'
 import { addApplicationIdToType } from '../src/transformer'
 import { createEmptyElementsSourceIndexes } from './utils'
-import { fullFetchConfig } from '../src/query'
+import { fullFetchConfig } from '../src/config/config_creator'
 
 const parseSdfProjectDirMock = jest.fn()
 jest.mock('../src/client/sdf_parser', () => ({

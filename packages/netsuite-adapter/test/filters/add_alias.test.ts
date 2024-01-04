@@ -26,7 +26,7 @@ import { translationcollectionType } from '../../src/autogen/types/standard_type
 import { fileType } from '../../src/types/file_cabinet_types'
 import { getConfigurationTypes } from '../../src/types/configuration_types'
 import { bundleType } from '../../src/types/bundle_type'
-import { emptyQueryParams, fullQueryParams } from '../../src/query'
+import { emptyQueryParams, fullQueryParams } from '../../src/config/config_creator'
 
 describe('add alias filter', () => {
   const { type: workflow } = workflowType()

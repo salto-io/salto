@@ -18,7 +18,7 @@ import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import NetsuiteClient from './client/client'
 import { LazyElementsSourceIndexes } from './elements_source_index/types'
 import { DeployResult } from './types'
-import { NetsuiteConfig } from './config'
+import { NetsuiteConfig } from './config/types'
 import { TimeZoneAndFormat } from './changes_detector/date_formats'
 
 

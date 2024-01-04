@@ -17,7 +17,7 @@ import { Change, InstanceElement, StaticFile, getChangeData, toChange } from '@s
 import _ from 'lodash'
 import { MockInterface } from '@salto-io/test-utils'
 import { collections } from '@salto-io/lowerdash'
-import { NetsuiteQuery } from '../../../src/query'
+import { NetsuiteQuery } from '../../../src/config/query'
 import SuiteAppClient from '../../../src/client/suiteapp_client/suiteapp_client'
 import { THROW_ON_MISSING_FEATURE_ERROR, createSuiteAppFileCabinetOperations, isChangeDeployable, SUITEBUNDLES_DISABLED_ERROR } from '../../../src/client/suiteapp_client/suiteapp_file_cabinet'
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError } from '../../../src/client/suiteapp_client/errors'

@@ -15,7 +15,7 @@
 */
 import { ElemID, Values } from '@salto-io/adapter-api'
 import Bottleneck from 'bottleneck'
-import { InstanceLimiterFunc, SuiteAppClientConfig } from '../../config'
+import { InstanceLimiterFunc, SuiteAppClientConfig } from '../../config/types'
 import { SuiteAppConfigRecordType, SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
 import { SuiteAppCredentials } from '../credentials'
 

@@ -18,7 +18,7 @@ import { isInstanceElement, isObjectType, Values, Element, isAdditionOrModificat
 import { transformElementAnnotations, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections, regex } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
-import { FieldToOmitParams } from '../query'
+import { FieldToOmitParams } from '../config/types'
 import { CURRENCY, CUSTOM_RECORD_TYPE } from '../constants'
 import { isCustomRecordType } from '../types'
 import { CUSTOM_FIELDS_LIST } from '../custom_records/custom_record_type'

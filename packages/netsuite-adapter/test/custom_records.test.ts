@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, ElemIdGetter, ObjectType } from '@salto-io/adapter-api'
-import { NetsuiteQuery, CustomRecordsQuery } from '../src/query'
+import { NetsuiteQuery, CustomRecordsQuery } from '../src/config/query'
 import NetsuiteClient from '../src/client/client'
 import { getCustomRecords } from '../src/custom_records/custom_records'
 import { NETSUITE } from '../src/constants'

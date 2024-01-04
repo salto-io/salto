@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ProgressReporter, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { NetsuiteQuery } from '../../src/query'
-import safeDeployValidator, { FetchByQueryReturnType } from '../../src/change_validators/safe_deploy'
+import { FetchByQueryReturnType, NetsuiteQuery } from '../../src/config/query'
+import safeDeployValidator from '../../src/change_validators/safe_deploy'
 import { PATH, NETSUITE, CUSTOM_RECORD_TYPE, METADATA_TYPE } from '../../src/constants'
 import { IDENTIFIER_FIELD } from '../../src/data_elements/types'
 import { customlistType } from '../../src/autogen/types/standard_types/customlist'

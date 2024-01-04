@@ -18,7 +18,7 @@ import { LocalFilterOpts } from '../../src/filter'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import filterCreator from '../../src/filters/custom_record_types'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
-import { emptyQueryParams } from '../../src/query'
+import { emptyQueryParams } from '../../src/config/config_creator'
 
 describe('custom record types filter', () => {
   let customRecordType: ObjectType

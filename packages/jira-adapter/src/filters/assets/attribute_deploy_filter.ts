@@ -16,19 +16,17 @@
 
 import { config as configUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { Change, DeployResult, InstanceElement, createSaltoElementError, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isReferenceExpression, isRemovalChange, toChange } from '@salto-io/adapter-api'
+import { AdditionChange, Change, DeployResult, InstanceElement, createSaltoElementError, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isReferenceExpression, isRemovalChange, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { FilterCreator } from '../../filter'
-import { OBJECT_TYPE_ATTRIBUTE_TYPE, OBJECT_TYPE_TYPE } from '../../constants'
+import { OBJECT_TYPE_ATTRIBUTE_TYPE } from '../../constants'
 import { getWorkspaceId } from '../../workspace_id'
 import JiraClient from '../../client/client'
 
 const log = logger(module)
-const { awu } = collections.asynciterable
 
 type AttributeParams = {
   id: string
@@ -48,11 +46,12 @@ const ATTRIBUTE_RESOPNSE_SCHEME = Joi.array().items(Joi.object({
 const isAttributeResponse = createSchemeGuard<AttributeGetResponse>(ATTRIBUTE_RESOPNSE_SCHEME)
 
 const getExsitingAttributesNamesAndIds = async (
+  changes: AdditionChange<InstanceElement>[],
   client: JiraClient,
   workspaceId: string,
-  objectType: InstanceElement
 ):Promise<string[][]> => {
   try {
+    const objectType = changes[0].data.after.value.objectType?.value
     const response = await client.getSinglePage({
       url: `/gateway/api/jsm/assets/workspace/${workspaceId}/v1/objecttype/${objectType.value.id}/attributes`,
     })
@@ -136,12 +135,11 @@ const deployAttributeChanges = async ({
 }
 
 /* This filter deploys JSM attribute changes using two different endpoints. */
-const filter: FilterCreator = ({ config, client, elementsSource }) => ({
+const filter: FilterCreator = ({ config, client }) => ({
   name: 'deployAttributesFilter',
   deploy: async changes => {
     const { jsmApiDefinitions } = config
-    if (!elementsSource
-      || !config.fetch.enableJSM
+    if (!config.fetch.enableJSM
       || !config.fetch.enableJsmExperimental
       || jsmApiDefinitions === undefined) {
       return {
@@ -182,24 +180,15 @@ const filter: FilterCreator = ({ config, client, elementsSource }) => ({
         return instance.value.objectType.elemID.getFullName()
       })
 
-    const objectTypesFullNameToInstsnce: Record<string, InstanceElement> = Object.fromEntries(
-      await awu(await elementsSource.list())
-        .filter(id => id.typeName === OBJECT_TYPE_TYPE)
-        .map(id => elementsSource.get(id))
-        .filter(isInstanceElement)
-        .map(instance => [instance.elemID.getFullName(), instance])
-        .toArray()
-    )
-
     const objectTypeToEditableExistiningAttributes: Record<string, string[][]> = Object.fromEntries(
       await Promise.all(Object.entries(objectTypeToAttributeAdditions)
-        .map(async ([objectTypeName, _attributeChanges]) =>
+        .map(async ([objectTypeName, attributeChanges]) =>
           [
             objectTypeName,
             await getExsitingAttributesNamesAndIds(
+              attributeChanges,
               client,
               workspaceId,
-              objectTypesFullNameToInstsnce[objectTypeName]
             )]))
     )
     const deployResult = await deployAttributeChanges({

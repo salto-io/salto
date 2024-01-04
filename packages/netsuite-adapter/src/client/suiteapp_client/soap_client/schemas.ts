@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -472,6 +472,115 @@ export const SEARCH_RESPONSE_SCHEMA = {
       SEARCH_ERROR_SCHEMA,
     },
   ],
+}
+
+const GET_SELECT_VALUE_ERROR_SCHEMA = {
+  type: 'object',
+  required: ['status'],
+  properties: {
+    status: {
+      type: 'object',
+      required: ['attributes', 'statusDetail'],
+      properties: {
+        attributes: {
+          type: 'object',
+          required: ['isSuccess'],
+          properties: {
+            isSuccess: {
+              enum: ['false'],
+              type: 'string',
+            },
+          },
+        },
+        statusDetail: {
+          type: 'array',
+          minItems: 1,
+          maxItems: 1,
+          items: {
+            type: 'object',
+            required: ['code', 'message'],
+            properties: {
+              code: {
+                type: 'string',
+              },
+              message: {
+                type: 'string',
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+}
+
+const GET_SELECT_VALUE_SUCCESS_SCHEMA = {
+  type: 'object',
+  required: ['status', 'totalRecords', 'totalPages'],
+  properties: {
+    status: {
+      type: 'object',
+      required: ['attributes'],
+      properties: {
+        attributes: {
+          type: 'object',
+          required: ['isSuccess'],
+          properties: {
+            isSuccess: {
+              enum: ['true'],
+              type: 'string',
+            },
+          },
+        },
+      },
+    },
+    totalRecords: {
+      type: 'number',
+    },
+    totalPages: {
+      type: 'number',
+    },
+    baseRefList: {
+      type: 'object',
+      required: ['baseRef'],
+      properties: {
+        baseRef: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['attributes', 'name'],
+            properties: {
+              attributes: {
+                type: 'object',
+                required: ['internalId'],
+                properties: {
+                  internalId: {
+                    type: 'string',
+                  },
+                },
+              },
+              name: {
+                type: 'string',
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+}
+
+export const GET_SELECT_VALUE_SCHEMA = {
+  type: 'object',
+  required: ['getSelectValueResult'],
+  properties: {
+    getSelectValueResult: {
+      anyOf: [
+        GET_SELECT_VALUE_ERROR_SCHEMA,
+        GET_SELECT_VALUE_SUCCESS_SCHEMA,
+      ],
+    },
+  },
 }
 
 export const GET_ALL_RESPONSE_SCHEMA = {

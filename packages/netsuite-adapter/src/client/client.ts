@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -585,5 +585,16 @@ export default class NetsuiteClient {
       throw new Error('Cannot call getCustomRecords when SuiteApp is not installed')
     }
     return this.suiteAppClient.getCustomRecords(customRecordTypes)
+  }
+
+  public async getSelectValue(
+    type: string,
+    field: string,
+    filterBy: { field: string; internalId: string }[] = [],
+  ): Promise<Record<string, string[]>> {
+    if (this.suiteAppClient === undefined) {
+      throw new Error('Cannot call getSelectValue when SuiteApp is not installed')
+    }
+    return this.suiteAppClient.getSelectValue(type, field, filterBy)
   }
 }

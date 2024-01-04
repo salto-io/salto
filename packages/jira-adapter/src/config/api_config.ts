@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -1397,6 +1397,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   WorkflowScheme: {
     transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'statusMigrations', fieldType: 'List<StatusMapping>' },
+      ],
       fieldsToHide: [
         {
           fieldName: 'id',
@@ -1981,6 +1984,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'columns', fieldType: 'List<Field>' },
       ],
+      serviceUrl: '/jira/servicedesk/projects/{projectKey}/queues/custom/{id}',
     },
     deployRequests: {
       add: {
@@ -2022,6 +2026,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'ticketTypeIds', fieldType: 'List<RequestType>' },
       ],
+      serviceUrl: '/jira/servicedesk/projects/{projectKey}/settings/portal-settings/portal-groups',
     },
     deployRequests: {
       add: {
@@ -2130,6 +2135,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'portalLogoUrl' },
         { fieldName: 'canAdministerJIRA' },
       ],
+      serviceUrl: '/jira/servicedesk/projects/{projectKey}/settings/portal-settings',
     },
   },
   PortalSettings__announcementSettings: {
@@ -2153,6 +2159,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'customFieldId' },
       ],
       serviceIdField: 'id',
+      serviceUrl: '/jira/servicedesk/projects/{projectKey}/settings/sla/custom/{id}',
     },
     deployRequests: {
       add: {
@@ -2270,6 +2277,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'objectSchemaStatuses', fieldType: 'List<ObjectSchemaStatus>' },
       ],
+      serviceUrl: '/jira/servicedesk/assets/configure/object-schema/{id}',
     },
     deployRequests: {
       add: {
@@ -2303,11 +2311,10 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldsToHide: [
         { fieldName: 'id' },
         { fieldName: 'workspaceId' },
-      ],
-      serviceIdField: 'id',
-      fieldsToOmit: [
         { fieldName: 'objectSchemaId' },
       ],
+      serviceIdField: 'id',
+      serviceUrl: '/jira/servicedesk/assets/configure/object-schema/{id}',
     },
     deployRequests: {
       add: {
@@ -2342,15 +2349,16 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       idFields: ['&parentObjectTypeId', 'name'],
       fieldsToHide: [
         { fieldName: 'id' },
+        { fieldName: 'objectSchemaId' },
       ],
       fieldsToOmit: [
         { fieldName: 'created' },
         { fieldName: 'updated' },
         { fieldName: 'globalId' },
-        { fieldName: 'objectSchemaId' },
         { fieldName: 'workspaceId' },
       ],
       extendsParentId: false,
+      serviceUrl: '/jira/servicedesk/assets/object-schema/{objectSchemaId}?typeId={id}',
     },
     deployRequests: {
       add: {
@@ -2394,6 +2402,8 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'typeValue', fieldType: 'string' },
       ],
+      serviceUrl: '/jira/servicedesk/assets/object-schema/{objectSchemaId}?typeId={id}&mode=attribute',
+
     },
     deployRequests: {
       add: {

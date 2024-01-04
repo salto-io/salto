@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -150,6 +150,7 @@ export const fallbackUsersHandler: FixElementsHandler = (
   if (fallbackValue === undefined) {
     log.error('Error while trying to get defaultMissingUserFallback value')
     const errors = elements.filter(isInstanceElement)
+      .filter(isRelevantElement)
       .map(getMissingUsers(userEmails))
       .filter(({ missingUsers }) => !_.isEmpty(missingUsers))
       .map(({ instance, missingUsers }) =>

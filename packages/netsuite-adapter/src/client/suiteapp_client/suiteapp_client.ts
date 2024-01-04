@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -654,5 +654,13 @@ export default class SuiteAppClient {
 
   public async deleteSdfInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
     return this.soapClient.deleteSdfInstances(instances)
+  }
+
+  public async getSelectValue(
+    type: string,
+    field: string,
+    filterBy: { field: string; internalId: string }[],
+  ): Promise<Record<string, string[]>> {
+    return this.soapClient.getSelectValue(type, field, filterBy)
   }
 }

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -91,6 +91,7 @@ import contextReferencesFilter from './filters/fields/context_references_filter'
 import contextsProjectsFilter from './filters/fields/contexts_projects_filter'
 import serviceUrlInformationFilter from './filters/service_url/service_url_information'
 import serviceUrlFilter from './filters/service_url/service_url'
+import serviceUrlJsmFilter from './filters/service_url/service_url_jsm'
 import priorityFilter from './filters/priority'
 import statusDeploymentFilter from './filters/statuses/status_deployment'
 import securitySchemeFilter from './filters/security_scheme/security_scheme'
@@ -159,7 +160,7 @@ import queueDeploymentFilter from './filters/queue_deployment'
 import scriptRunnerInstancesDeploy from './filters/script_runner/script_runner_instances_deploy'
 import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
 import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uuid'
-import changeQueueFieldsFilter from './filters/change_queue_fields'
+import queueFetchFilter from './filters/queue_fetch'
 import portalGroupsFilter from './filters/portal_groups'
 import assetsObjectTypePath from './filters/assets/assets_object_type_path'
 import assetsObjectTypeChangeFields from './filters/assets/assets_object_type_change_fields'
@@ -188,7 +189,7 @@ export const DEFAULT_FILTERS = [
   accountInfoFilter,
   storeUsersFilter,
   changeJSMElementsFieldFilter,
-  changeQueueFieldsFilter,
+  queueFetchFilter,
   changePortalGroupFieldsFilter,
   automationLabelFetchFilter,
   automationLabelDeployFilter,
@@ -287,6 +288,7 @@ export const DEFAULT_FILTERS = [
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,
   formsFilter,
+  serviceUrlJsmFilter, // Must run before fieldReferencesFilter
   fieldReferencesFilter,
   // Must run after fieldReferencesFilter
   addJsmTypesAsFieldsFilter,

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -563,7 +563,7 @@ describe('adapter', () => {
       it('should change the objectType object struct to id', async () => {
         const result = await EntriesRequesterFunc({
           paginator,
-          args: { url: '/gateway/api/jsm/assets/workspace/defualtWorkSpaceId/v1/objectschema/2/attributes' },
+          args: { url: '/gateway/api/jsm/assets/workspace/defaultWorkSpaceId/v1/objectschema/2/attributes' },
           typeName: OBJECT_TYPE_ATTRIBUTE_TYPE,
           typesConfig: { ObjectTypeAttribute: { transformation: { dataField: '.' } } },
         })
@@ -581,7 +581,7 @@ describe('adapter', () => {
           .mockResolvedValue(responseValue)
         const result = await EntriesRequesterFunc({
           paginator,
-          args: { url: '/gateway/api/jsm/assets/workspace/defualtWorkSpaceId/v1/objectschema/2/attributes' },
+          args: { url: '/gateway/api/jsm/assets/workspace/defaultWorkSpaceId/v1/objectschema/2/attributes' },
           typeName: OBJECT_TYPE_ATTRIBUTE_TYPE,
           typesConfig: { ObjectTypeAttribute: { transformation: { dataField: '.' } } },
         })

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -22,7 +22,8 @@ import { values } from '@salto-io/lowerdash'
 import { paginate } from '../client/pagination'
 import OktaClient from '../client/client'
 import { OktaConfig, FETCH_CONFIG } from '../config'
-import { USER_MAPPING, getUsers } from '../filters/user'
+import { USER_MAPPING } from '../filters/user'
+import { getUsers } from '../user_utils'
 
 const { isDefined } = values
 const { createPaginator } = clientUtils

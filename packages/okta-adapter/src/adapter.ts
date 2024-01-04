@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -21,7 +21,7 @@ import { logger } from '@salto-io/logging'
 import { collections, objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 import changeValidator from './change_validators'
-import { OktaConfig, API_DEFINITIONS_CONFIG, CLIENT_CONFIG, configType } from './config'
+import { OktaConfig, API_DEFINITIONS_CONFIG, CLIENT_CONFIG, configType, FETCH_CONFIG } from './config'
 import fetchCriteria from './fetch_criteria'
 import { paginate } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
@@ -57,6 +57,7 @@ import groupPushFilter from './filters/group_push'
 import addImportantValues from './filters/add_important_values'
 import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
+import { User, getUsers } from './user_utils'
 
 const { awu } = collections.asynciterable
 
@@ -123,7 +124,7 @@ export interface OktaAdapterParams {
 }
 
 export default class OktaAdapter implements AdapterOperations {
-  private createFiltersRunner: () => Required<Filter>
+  private createFiltersRunner: (usersPromise?: Promise<User[]>) => Required<Filter>
   private client: OktaClient
   private userConfig: OktaConfig
   private configInstance?: InstanceElement
@@ -162,7 +163,7 @@ export default class OktaAdapter implements AdapterOperations {
     this.paginator = paginator
 
     const filterContext = {}
-    this.createFiltersRunner = () => (
+    this.createFiltersRunner = usersPromise => (
       filtersRunner(
         {
           client,
@@ -173,6 +174,7 @@ export default class OktaAdapter implements AdapterOperations {
           fetchQuery: this.fetchQuery,
           adapterContext: filterContext,
           adminClient,
+          usersPromise,
         },
         filterCreators,
         objects.concatObjects
@@ -275,11 +277,12 @@ export default class OktaAdapter implements AdapterOperations {
   @logDuration('fetching account configuration')
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch okta account configuration..')
+    const usersPromise = this.userConfig[FETCH_CONFIG]?.convertUsersIds ? getUsers(this.paginator) : undefined
     const { elements, errors, configChanges } = await this.getAllElements(progressReporter)
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
-    const filterResult = await this.createFiltersRunner().onFetch(elements) || {}
+    const filterResult = await this.createFiltersRunner(usersPromise).onFetch(elements) || {}
 
     const updatedConfig = configChanges && this.configInstance
       ? configUtils.getUpdatedCofigFromConfigChanges({ configChanges, currentConfig: this.configInstance, configType })

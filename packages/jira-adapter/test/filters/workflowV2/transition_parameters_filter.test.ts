@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -63,9 +63,9 @@ describe('workflowTransitionReferenceFilter', () => {
           },
         ],
       })
-      await filter.onFetch([instance])
     })
     it('should convert the relevant string fields to list', async () => {
+      await filter.onFetch([instance])
       const { parameters: conditionParameters } = instance.value.transitions[0].conditions.conditions[0]
       const { parameters: validatorParameters } = instance.value.transitions[0].validators[0]
       expect(conditionParameters.roleIds).toEqual(
@@ -82,16 +82,42 @@ describe('workflowTransitionReferenceFilter', () => {
       )
     })
     it('should remain fields with empty string', async () => {
+      await filter.onFetch([instance])
       const { parameters: conditionParameters } = instance.value.transitions[0].conditions.conditions[0]
       const { parameters: validatorParameters } = instance.value.transitions[0].validators[0]
       expect(conditionParameters.statusIds).toEqual('')
       expect(validatorParameters.fieldsRequired).toEqual('')
     })
     it('should not convert fields that not in the relevant field list', async () => {
+      await filter.onFetch([instance])
       const { parameters: conditionParameters } = instance.value.transitions[0].conditions.conditions[0]
       const { parameters: validatorParameters } = instance.value.transitions[0].validators[0]
       expect(conditionParameters.anotherField).toEqual('4,5')
       expect(validatorParameters.anotherField).toEqual('4,5')
+    })
+    it('should do nothing if parameters is undefined', async () => {
+      instance.value.transitions[0].validators[0].parameters = undefined
+      instance.value.transitions[0].conditions.conditions[0].parameters = undefined
+      await filter.onFetch([instance])
+      const { parameters: validatorsParameters } = instance.value.transitions[0].validators[0]
+      const { parameters: conditionsParameters } = instance.value.transitions[0].conditions.conditions[0]
+      expect(validatorsParameters).toBeUndefined()
+      expect(conditionsParameters).toBeUndefined()
+    })
+    it('should do nothing if there is no condition list', async () => {
+      instance.value.transitions[0].conditions.conditions = undefined
+      await filter.onFetch([instance])
+      const { conditions } = instance.value.transitions[0].conditions
+      expect(conditions).toBeUndefined()
+    })
+    it('should do nothing if there is no conditions nor validators', async () => {
+      instance.value.transitions[0].conditions = undefined
+      instance.value.transitions[0].validators = undefined
+      await filter.onFetch([instance])
+      const { conditions } = instance.value.transitions[0]
+      const { validators } = instance.value.transitions[0]
+      expect(conditions).toBeUndefined()
+      expect(validators).toBeUndefined()
     })
   })
 })

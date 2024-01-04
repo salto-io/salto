@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -542,3 +542,9 @@ export const isSalesforceError = (error: Error): error is SalesforceError => {
   const errorCode = _.get(error, ERROR_PROPERTIES.ERROR_CODE)
   return _.isString(errorCode) && (Object.values(SALESFORCE_ERRORS) as ReadonlyArray<string>).includes(errorCode)
 }
+
+
+// Artifacts
+export const SalesforceArtifacts = {
+  DeployPackageXml: 'package.xml',
+} as const

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -568,7 +568,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         // eslint-disable-next-line @typescript-eslint/no-empty-function
         reportProgress: () => {},
       }
-      deployResult = await deployMetadata(resolvedChanges, this.client, changeGroup.groupID,
+      deployResult = await deployMetadata(resolvedChanges, this.client,
         this.nestedMetadataTypes, progressReporter ?? nullProgressReporter,
         this.userConfig.client?.deploy?.deleteBeforeUpdate, checkOnly,
         this.userConfig.client?.deploy?.quickDeployParams)

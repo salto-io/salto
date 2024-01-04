@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -557,19 +557,19 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: ISSUE_TYPE_NAME },
   },
   {
-    src: { field: 'statusId', parentTypes: ['StatusMigration'] },
+    src: { field: 'statusId', parentTypes: ['StatusMapping'] },
     serializationStrategy: 'id',
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: STATUS_TYPE_NAME },
   },
   {
-    src: { field: 'newStatusId', parentTypes: ['StatusMigration'] },
+    src: { field: 'newStatusId', parentTypes: ['StatusMapping'] },
     serializationStrategy: 'id',
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: STATUS_TYPE_NAME },
   },
   {
-    src: { field: 'issueTypeId', parentTypes: ['StatusMigration'] },
+    src: { field: 'issueTypeId', parentTypes: ['StatusMapping'] },
     serializationStrategy: 'id',
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: ISSUE_TYPE_NAME },

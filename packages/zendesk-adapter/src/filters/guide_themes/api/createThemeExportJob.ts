@@ -23,7 +23,7 @@ const log = logger(module)
 export const createThemeExportJob = async (
   themeId: string, client: ZendeskClient
 ): Promise<{ job: PendingJob<DownloadJobData> | undefined; errors: string[] }> => {
-  log.trace('Creating theme export job')
+  log.trace(`Creating theme export job for themeId ${themeId}`)
 
   const res = await client.post({
     url: '/api/v2/guide/theming/jobs/themes/exports',

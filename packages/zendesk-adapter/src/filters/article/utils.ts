@@ -247,7 +247,7 @@ export const updateArticleTranslationBody = async ({
     .filter(isResolvedReferenceExpression)
     .map(translationRef => translationRef.value)
     .filter(translationInstance => isTemplateExpression(translationInstance.value.body))
-    .map(translationInstance => translationInstance.clone())
+    .map(translationInstance => translationInstance.clone()) // we don't want to resolve the translation itself
     .forEach(async translationInstance => {
       try {
         replaceTemplatesWithValues(

@@ -537,7 +537,6 @@ describe('Custom Object Instances CRUD', () => {
           })
 
           it('Should have result with 2 applied changes, add 3 instances with new Id', async () => {
-            expect(result.errors).toHaveLength(0)
             expect(result.appliedChanges).toHaveLength(3)
 
             // existingInstance appliedChange
@@ -570,6 +569,13 @@ describe('Custom Object Instances CRUD', () => {
           })
 
           it('Should not insert non-creatable fields', () => {
+            expect(result.errors).toEqual([
+              expect.objectContaining({
+                elemID: newInstanceWithNonCreatableField.elemID,
+                message: expect.stringContaining('Creatable'),
+                severity: 'Warning',
+              }),
+            ])
             const newInstanceWithNonCreatableFieldChangeData = result.appliedChanges
               .map(getChangeData)
               .find(element => element.elemID.isEqual(newInstanceWithNonCreatableField.elemID)) as InstanceElement
@@ -614,7 +620,6 @@ describe('Custom Object Instances CRUD', () => {
             })
 
             it('Should have result with 3 applied changes, add 3 instances with insert Id', async () => {
-              expect(result.errors).toHaveLength(0)
               expect(result.appliedChanges).toHaveLength(3)
               // newInstance appliedChange
               const newInstanceChangeData = result.appliedChanges
@@ -643,6 +648,13 @@ describe('Custom Object Instances CRUD', () => {
               expect(anotherNewInstanceChangeData.value.Id).toEqual('newId1')
             })
             it('Should not insert non-creatable fields', () => {
+              expect(result.errors).toEqual([
+                expect.objectContaining({
+                  elemID: newInstanceWithNonCreatableField.elemID,
+                  message: expect.stringContaining('Creatable'),
+                  severity: 'Warning',
+                }),
+              ])
               const newInstanceWithNonCreatableFieldChangeData = result.appliedChanges
                 .map(getChangeData)
                 .find(element => element.elemID.isEqual(newInstanceWithNonCreatableField.elemID)) as InstanceElement
@@ -970,8 +982,14 @@ describe('Custom Object Instances CRUD', () => {
           result = await adapter.deploy({ changeGroup: modifyDeployGroup, progressReporter: nullProgressReporter })
         })
 
-        it('should return no errors and 3 fitting applied changes', async () => {
-          expect(result.errors).toHaveLength(0)
+        it('should return one error and 3 fitting applied changes', async () => {
+          expect(result.errors).toEqual([
+            expect.objectContaining({
+              elemID: instanceWithNonUpdateableFieldToModify.elemID,
+              message: expect.stringContaining('updateable'),
+              severity: 'Warning',
+            }),
+          ])
           expect(result.appliedChanges).toHaveLength(3)
           expect(isModificationChange(result.appliedChanges[0])).toBeTruthy()
           const changeData = getChangeData(result.appliedChanges[0])
@@ -1015,6 +1033,11 @@ describe('Custom Object Instances CRUD', () => {
               elemID: existingInstanceWithNonUpdateableField.elemID,
               message: expect.stringContaining(errorMsgs[1]),
               severity: 'Error',
+            }),
+            expect.objectContaining({
+              elemID: existingInstanceWithNonUpdateableField.elemID,
+              message: expect.stringContaining('updateable'),
+              severity: 'Warning',
             }),
           ])
 
@@ -1063,6 +1086,11 @@ describe('Custom Object Instances CRUD', () => {
               elemID: existingInstanceWithNonUpdateableField.elemID,
               message: expect.stringContaining(errorMsgs[1]),
               severity: 'Error',
+            }),
+            expect.objectContaining({
+              elemID: existingInstanceWithNonUpdateableField.elemID,
+              message: expect.stringContaining('updateable'),
+              severity: 'Warning',
             }),
           ])
 

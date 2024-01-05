@@ -1000,7 +1000,19 @@ const toRecord = async (
     [CUSTOM_OBJECT_ID_FIELD]: instance.value[CUSTOM_OBJECT_ID_FIELD],
     ..._.pickBy(
       values,
-      (v, k) => v !== undefined && (instanceType).fields[k]?.annotations[fieldAnnotationToFilterBy]
+      (v, k) => {
+        const pick = (v !== undefined && (instanceType).fields[k]?.annotations[fieldAnnotationToFilterBy])
+        if (!pick) {
+          log.info(
+            'Removing field %s from %s: %s=%s, value=%s',
+            k,
+            instance.elemID.getFullName(),
+            fieldAnnotationToFilterBy,
+            (instanceType).fields[k]?.annotations[fieldAnnotationToFilterBy],
+          )
+        }
+        return pick
+      }
     ),
   }
   return transformCompoundValues(filteredRecordValues, instance)

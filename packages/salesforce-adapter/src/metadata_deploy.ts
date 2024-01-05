@@ -256,11 +256,12 @@ const processDeployResponse = (
       .flatMap(detail => makeArray(detail.componentSuccesses))
       .map(component => ({
         elemID: typeAndNameToElemId[component.componentType]?.[component.fullName],
-        message: 'This metadata type did not deploy because other types in its deployment group encountered failures',
+        message: 'Element was not deployed because other elements had errors and the \'rollbackOnError\' option is enabled (or not set).',
         severity: 'Warning' as const,
         type: 'dependency',
       }))
       .filter(error => error.elemID !== undefined)
+      .forEach(error => errors.push(error))
   }
 
   // In checkOnly none of the changes are actually applied

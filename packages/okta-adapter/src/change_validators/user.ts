@@ -22,8 +22,7 @@ import { values } from '@salto-io/lowerdash'
 import { paginate } from '../client/pagination'
 import OktaClient from '../client/client'
 import { OktaConfig, FETCH_CONFIG } from '../config'
-import { USER_MAPPING } from '../filters/user'
-import { getUsers } from '../user_utils'
+import { getUsers, getUsersFromInstances, USER_MAPPING } from '../user_utils'
 
 const { isDefined } = values
 const { createPaginator } = clientUtils
@@ -34,7 +33,8 @@ const log = logger(module)
 */
 export const usersValidator: (client: OktaClient, config: OktaConfig) =>
     ChangeValidator = (client, config) => async changes => {
-      if (!(config[FETCH_CONFIG]?.convertUsersIds ?? true)) {
+      const { convertUsersIds, getUsersStrategy } = config[FETCH_CONFIG]
+      if (!(convertUsersIds ?? true)) {
         log.debug('Skipped usersValidator because convertUsersIds config flag is disabled')
         return []
       }
@@ -43,11 +43,10 @@ export const usersValidator: (client: OktaClient, config: OktaConfig) =>
         .filter(isInstanceChange)
         .map(getChangeData)
         .filter(instance => Object.keys(USER_MAPPING).includes(instance.elemID.typeName))
-        .filter(instance =>
-          USER_MAPPING[instance.elemID.typeName]
-            .some(path => resolvePath(instance, instance.elemID.createNestedID(...path)) !== undefined))
 
-      if (_.isEmpty(relevantInstances)) {
+      const usersToFetch = getUsersFromInstances(relevantInstances)
+
+      if (_.isEmpty(usersToFetch)) {
         return []
       }
 
@@ -56,7 +55,10 @@ export const usersValidator: (client: OktaClient, config: OktaConfig) =>
         paginationFuncCreator: paginate,
       })
 
-      const users = await getUsers(paginator)
+      const users = await getUsers(
+        paginator,
+        getUsersStrategy === 'searchQuery' ? { userIds: usersToFetch, property: 'profile.login' } : undefined
+      )
 
       const existingUsers = new Set(users.map(user => user.profile.login))
 

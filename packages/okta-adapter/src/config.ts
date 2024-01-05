@@ -40,11 +40,13 @@ export type OktaClientConfig = clientUtils.ClientBaseConfig<OktaClientRateLimitC
 }
 export type OktaStatusActionName = 'activate' | 'deactivate'
 export type OktaActionName = ActionName | OktaStatusActionName
+type GetUsersStrategy = 'searchQuery' | 'allUsers'
 export type OktaFetchConfig = configUtils.UserFetchConfig & {
   convertUsersIds?: boolean
   enableMissingReferences?: boolean
   includeGroupMemberships?: boolean
   includeProfileMappingProperties?: boolean
+  getUsersStrategy?: GetUsersStrategy
 }
 
 export type OktaSwaggerApiConfig = configUtils.AdapterSwaggerApiConfig<OktaActionName>
@@ -1766,6 +1768,7 @@ export const DEFAULT_CONFIG: OktaConfig = {
     enableMissingReferences: true,
     includeGroupMemberships: false,
     includeProfileMappingProperties: true,
+    getUsersStrategy: 'searchQuery',
   },
   [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
   [PRIVATE_API_DEFINITIONS_CONFIG]: DUCKTYPE_API_DEFINITIONS,
@@ -1846,6 +1849,7 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
           includeGroupMemberships: { refType: BuiltinTypes.BOOLEAN },
           includeProfileMappingProperties: { refType: BuiltinTypes.BOOLEAN },
+          getUsersStrategy: { refType: BuiltinTypes.STRING },
         }
       ),
     },
@@ -1873,6 +1877,7 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
       CLIENT_CONFIG,
       `${FETCH_CONFIG}.hideTypes`,
       `${FETCH_CONFIG}.enableMissingReferences`,
+      `${FETCH_CONFIG}.getUsersStrategy`
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },

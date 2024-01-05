@@ -13,15 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { createSchemeGuard, resolvePath } from '@salto-io/adapter-utils'
+import { InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { client as clientUtils } from '@salto-io/adapter-components'
+import { ACCESS_POLICY_RULE_TYPE_NAME, AUTHORIZATION_POLICY_RULE, GROUP_RULE_TYPE_NAME, MFA_RULE_TYPE_NAME, PASSWORD_RULE_TYPE_NAME, SIGN_ON_RULE_TYPE_NAME } from './constants'
 
 const log = logger(module)
 const { toArrayAsync } = collections.asynciterable
 const { makeArray } = collections.array
+
+const USER_CHUNK_SIZE = 200
 
 export type User = {
    id: string
@@ -29,6 +34,13 @@ export type User = {
      login: string
    }
  }
+
+type SearchProperty = 'id' | 'profile.login'
+
+type SearchUsersParams = {
+  userIds: string[]
+  property: SearchProperty
+}
 
 const USER_SCHEMA = Joi.object({
   id: Joi.string().required(),
@@ -43,20 +55,62 @@ export const areUsers = createSchemeGuard<User[]>(
   USERS_RESPONSE_SCHEMA, 'Received an invalid response for the users'
 )
 
-export const getUsers = async (paginator: clientUtils.Paginator): Promise<User[]> => {
+const EXCLUDE_USERS_PATH = ['conditions', 'people', 'users', 'exclude']
+const INCLUDE_USERS_PATH = ['conditions', 'people', 'users', 'include']
+
+export const USER_MAPPING: Record<string, string[][]> = {
+  [GROUP_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH],
+  [ACCESS_POLICY_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH, INCLUDE_USERS_PATH],
+  [PASSWORD_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH],
+  [SIGN_ON_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH],
+  [MFA_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH],
+  [AUTHORIZATION_POLICY_RULE]: [INCLUDE_USERS_PATH],
+  EndUserSupport: [['technicalContactId']],
+}
+
+export const getUsersFromInstances = (instances: InstanceElement[]): string[] => _.uniq(
+  instances
+    .filter(instance => Object.keys(USER_MAPPING).includes(instance.elemID.typeName))
+    .flatMap(instance => {
+      const userPaths = USER_MAPPING[instance.elemID.typeName]
+      return userPaths.flatMap(path => resolvePath(instance, instance.elemID.createNestedID(...path)))
+    })
+    .filter(_.isString)
+)
+
+const getUsersQuery = (userIds: string[], property: SearchProperty): string =>
+  (userIds.map(userId => `${property} eq "${userId}"`).join(' or '))
+
+export const getUsers = async (
+  paginator: clientUtils.Paginator,
+  searchUsersParams?: SearchUsersParams
+): Promise<User[]> => log.time(async () => {
   const paginationArgs = {
     url: '/api/v1/users',
     paginationField: 'after',
     // omit credentials and other unnecessary fields from the response
     headers: { 'Content-Type': 'application/json; okta-response=omitCredentials,omitCredentialsLinks' },
   }
-  const users = await log.time(async () => (
-    await toArrayAsync(
-      paginator(paginationArgs, page => makeArray(page) as clientUtils.ResponseValue[])
-    )).flat(),
-  'getUsers with pagination')
-  if (!areUsers(users)) {
-    return []
+
+  if (searchUsersParams) {
+    log.debug('getUsers called with searchQuery strategy')
+    const userChunks = _.chunk(searchUsersParams.userIds, USER_CHUNK_SIZE)
+    const allUsers = (await Promise.all(
+      userChunks.map(async userIdsChunk => {
+        const usersQueryParam = { search: getUsersQuery(userIdsChunk, searchUsersParams.property) }
+        _.set(paginationArgs, 'queryParams', usersQueryParam)
+        const users = (await toArrayAsync(
+          paginator(paginationArgs, page => makeArray(page) as clientUtils.ResponseValue[])
+        )).flat()
+        return users
+      })
+    )).flat()
+    return areUsers(allUsers) ? allUsers : []
   }
-  return users
-}
+
+  log.debug('getUsers called with allUsers strategy')
+  const users = (await toArrayAsync(
+    paginator(paginationArgs, page => makeArray(page) as clientUtils.ResponseValue[])
+  )).flat()
+  return areUsers(users) ? users : []
+}, 'getUsers function')

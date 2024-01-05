@@ -294,35 +294,30 @@ const removeFieldsWithNoPermission = async (
   instance: InstanceElement,
   permissionAnnotation: string
 ): Promise<SaltoElementError[]> => {
-  const shouldRemoveField = (type: ObjectType, fieldName: string, fieldValue: Value): boolean => {
-    const shouldRemove = fieldName !== CUSTOM_OBJECT_ID_FIELD
+  const shouldRemoveField = (type: ObjectType, fieldName: string, fieldValue: Value): boolean => (
+    fieldName !== CUSTOM_OBJECT_ID_FIELD
     && (fieldValue === undefined
       || !type.fields[fieldName]?.annotations[permissionAnnotation])
-
-    if (shouldRemove) {
-      log.debug('Removing field %s from %s: %s=%s, value=%s',
-        fieldName,
-        instance.elemID.getFullName(),
-        permissionAnnotation,
-        type.fields[fieldName]?.annotations[permissionAnnotation],
-        fieldValue)
-    }
-
-    return shouldRemove
-  }
-  const createRemovedFieldWarning = (fieldName: string): SaltoElementError => (
-    {
+  )
+  const createRemovedFieldWarning = (type: ObjectType, fieldValue: Value, fieldName: string): SaltoElementError => {
+    log.info('Removing field %s from %s: %s=%s, value=%s',
+      fieldName,
+      instance.elemID.getFullName(),
+      permissionAnnotation,
+      type.fields[fieldName]?.annotations[permissionAnnotation],
+      fieldValue)
+    return {
       message: `The field ${fieldName} will not be deployed because it lacks the '${permissionAnnotation}' permission`,
       severity: 'Warning',
       elemID: instance.elemID,
     }
-  )
+  }
   const instanceType = await instance.getType()
   const fieldsToRemove = Object.entries(instance.value)
     .filter(([fieldName, fieldValue]) => shouldRemoveField(instanceType, fieldName, fieldValue))
     .map(([fieldName]) => fieldName)
   const warnings = fieldsToRemove
-    .map(fieldName => createRemovedFieldWarning(fieldName))
+    .map(fieldName => createRemovedFieldWarning(instanceType, instance.value[fieldName], fieldName))
 
   instance.value = _.omit(
     instance.value,

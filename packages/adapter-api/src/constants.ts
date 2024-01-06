@@ -35,6 +35,7 @@ export const CORE_ANNOTATIONS = {
   ALIAS: '_alias',
   IMPORTANT_VALUES: '_important_values',
   SELF_IMPORTANT_VALUES: '_self_important_values',
+  DESCRIPTION: '_description',
 }
 
 export const BUILTIN_TYPE_NAMES = {

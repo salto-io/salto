@@ -26,7 +26,7 @@ import {
   SeverityLevel,
   isInstanceElement, isInstanceChange, toChange, isElement, getAllChangeData, ElemID, isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
-import { inspectValue, safeJsonStringify, getValuesChanges } from '@salto-io/adapter-utils'
+import { inspectValue, safeJsonStringify, getValuesChanges, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { BatchResultInfo } from '@salto-io/jsforce-types'
 import { EOL } from 'os'
 import {
@@ -606,6 +606,25 @@ const isModificationChangeList = <T>(
     changes.every(isModificationChange)
   )
 
+const getMissingFields = (change: Change<InstanceElement>): string[] => {
+  const typeFields = new Set(Object.keys(getChangeData(change).getTypeSync().fields))
+  return Object.keys(getChangeData(change).value).filter(instanceField => !typeFields.has(instanceField))
+}
+
+const omitMissingFieldsValues = async (change: Change<InstanceElement>): Promise<Change<InstanceElement>> => (
+  applyFunctionToChangeData(change, instance => {
+    const instanceClone = instance.clone()
+    const typeFields = new Set(Object.keys(instanceClone.getTypeSync().fields))
+    Object.keys(instanceClone.value)
+      .forEach(instanceField => {
+        if (!typeFields.has(instanceField)) {
+          delete instanceClone.value[instanceField]
+        }
+      })
+    return instanceClone
+  })
+)
+
 const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
   changes: ReadonlyArray<Change<InstanceElement>>,
   client: SalesforceClient,
@@ -620,8 +639,31 @@ const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
       elemID: getChangeData(change).elemID,
     })),
   })
+  const [changesWithMissingFields, validChanges] = _.partition(
+    changes,
+    change => getMissingFields(change).length > 0,
+  )
+  const missingFieldValuesWarnings: SaltoElementError[] = changesWithMissingFields
+    .map(change => ({ change, missingFields: getMissingFields(change) }))
+    .map(({ change, missingFields }) => ({
+      severity: 'Warning',
+      elemID: getChangeData(change).elemID,
+      message: `The values of the following fields were not deployed since they are not defined in the type: [${missingFields.join(', ')}]`,
+    }))
+  const withMissingFieldValuesErrors = (deployResult: DeployResult): DeployResult => {
+    const appliedChangesElemIds = new Set(deployResult.appliedChanges
+      .map(change => getChangeData(change).elemID.getFullName()))
+    return {
+      ...deployResult,
+      errors: deployResult.errors
+        // We should omit warnings on non applied changes
+        .concat(missingFieldValuesWarnings.filter(warning => appliedChangesElemIds.has(warning.elemID.getFullName()))),
+    }
+  }
+  const changesToDeploy = validChanges
+    .concat(await awu(changesWithMissingFields).map(omitMissingFieldsValues).toArray())
   try {
-    const instances = changes.map(change => getChangeData(change))
+    const instances = changesToDeploy.map(change => getChangeData(change))
     const instanceTypes = [...new Set(await awu(instances)
       .map(async inst => apiName(await inst.getType())).toArray())]
     if (instanceTypes.length > 1) {
@@ -639,13 +681,13 @@ const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
       if (invalidIdFields !== undefined && invalidIdFields.length > 0) {
         return customObjectInstancesDeployError(`Failed to add instances of type ${instanceTypes[0]} due to invalid SaltoIdFields - ${invalidIdFields}`)
       }
-      return await deployAddInstances(changes, idFields, client, groupId)
+      return withMissingFieldValuesErrors(await deployAddInstances(changes, idFields, client, groupId))
     }
     if (changes.every(isRemovalChange)) {
       return await deployRemoveInstances(instances, client, groupId)
     }
-    if (isModificationChangeList(changes)) {
-      return await deployModifyChanges(changes, client, groupId)
+    if (isModificationChangeList(changesToDeploy)) {
+      return withMissingFieldValuesErrors(await deployModifyChanges(changesToDeploy, client, groupId))
     }
     return customObjectInstancesDeployError('Custom Object Instances change group must have one action')
   } catch (error) {

@@ -192,7 +192,7 @@ export const createElement = async <T extends InstanceElement | ObjectType>(
   const errors = result.errors.filter(error => error.severity === 'Error')
   if (verify && errors.length > 0) {
     if (errors.length === 1) throw result.errors[0]
-    throw new Error(`Failed adding element ${element.elemID.getFullName()} with errors: ${result.errors.map(error => safeJsonStringify(error))}`)
+    throw new Error(`Failed adding element ${element.elemID.getFullName()} with errors: ${errors.map(error => safeJsonStringify(error))}`)
   }
   if (verify && result.appliedChanges.length === 0) {
     throw new Error(`Failed adding element ${element.elemID.getFullName()}: no applied changes`)

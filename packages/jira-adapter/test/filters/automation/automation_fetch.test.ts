@@ -862,5 +862,72 @@ describe('automationFetchFilter', () => {
         ],
       })
     })
+    it('should do nothing if no components', async () => {
+      connection.post.mockImplementation(async url => {
+        if (url === '/rest/webResources/1.0/resources') {
+          return {
+            status: 200,
+            data: {
+              unparsedData: {
+                [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
+                  tenantId: 'cloudId',
+                }),
+              },
+            },
+          }
+        }
+
+        if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules') {
+          return {
+            status: 200,
+            data: {
+              total: 1,
+              values: [
+                {
+                  id: '1',
+                  name: 'automationName',
+                  projects: [],
+                  ruleScope: {
+                    resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8'],
+                  },
+                },
+              ],
+            },
+          }
+        }
+        throw new Error(`Unexpected url ${url}`)
+      })
+      const { paginator } = mockClient()
+      config.fetch.enableJSM = true
+      config.fetch.enableJsmExperimental = true
+      filter = automationFetchFilter(getFilterParams({
+        client,
+        paginator,
+        config,
+        fetchQuery,
+      })) as filterUtils.FilterWith<'onFetch'>
+      const elements = [objectTypeInstnce]
+      await filter.onFetch(elements)
+      const automationTypes = createAutomationTypes()
+      expect(elements).toHaveLength(
+        1 // original objectTypeInstnce
+        + 1 // new automation
+        + 1 // automation top level type
+        + automationTypes.subTypes.length
+      )
+
+      const automation = elements[1]
+
+      expect(automation.elemID.getFullName()).toEqual('jira.Automation.instance.automationName')
+
+      expect(automation.value).toEqual({
+        id: '1',
+        name: 'automationName',
+        projects: [],
+        ruleScope: {
+          resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8'],
+        },
+      })
+    })
   })
 })

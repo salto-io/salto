@@ -825,6 +825,22 @@ describe('automationDeploymentFilter', () => {
             objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
           })
         })
+        it('should do nothing if there are no components', async () => {
+          automationInstance.value.components = undefined
+          config.fetch.enableJSM = true
+          config.fetch.enableJsmExperimental = true
+          await filter.onDeploy([toChange({ after: automationInstance })])
+          expect(automationInstance.value.components).toBeUndefined()
+        })
+        it('should not throw an error if schema objectType doesn\'t have a parent', async () => {
+          objectTypeInstance.annotations[CORE_ANNOTATIONS.PARENT] = undefined
+          config.fetch.enableJSM = true
+          config.fetch.enableJsmExperimental = true
+          await filter.preDeploy([toChange({ after: automationInstance })])
+          expect(automationInstance.value.components[0].value).toEqual({
+            objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
+          })
+        })
       })
     })
     describe('onDeploy', () => {
@@ -907,6 +923,13 @@ describe('automationDeploymentFilter', () => {
             schemaLabel: 'schemaName',
             objectTypeLabel: 'objectTypeName',
           })
+        })
+        it('should do nothing if there are no components', async () => {
+          automationInstance.value.components = undefined
+          config.fetch.enableJSM = true
+          config.fetch.enableJsmExperimental = true
+          await filter.onDeploy([toChange({ after: automationInstance })])
+          expect(automationInstance.value.components).toBeUndefined()
         })
       })
     })

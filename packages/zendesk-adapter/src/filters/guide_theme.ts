@@ -108,11 +108,15 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       const themeElements = await unzipFolderToElements(themeZip, getBrandName(theme), theme.value.name)
       theme.value.files = themeElements
     } catch (e) {
-      errors.push({
-        message: `Error fetching theme id ${theme.value.id}, ${(e as Error).message}`,
-        severity: 'Warning',
-      })
-      remove(elements, element => element.elemID.isEqual(theme.elemID))
+      if (e instanceof Error) {
+        errors.push({
+          message: `Error fetching theme id ${theme.value.id}, ${e.message}`,
+          severity: 'Warning',
+        })
+        remove(elements, element => element.elemID.isEqual(theme.elemID))
+      } else {
+        log.error('Error fetching theme id %s, %o, with stack %o', theme.value.id, e, e.stack)
+      }
     }
     try {
       const themeElements = await unzipFolderToElements(themeZip, brandName, theme.value.name)

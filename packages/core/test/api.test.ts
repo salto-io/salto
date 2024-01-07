@@ -349,6 +349,16 @@ describe('api.ts', () => {
         },
       }))
     })
+    it('should call getPlan with given topLevelFilters', async () => {
+      const topLevelFilters = [() => true]
+      await api.preview(mockWorkspace({}), ACCOUNTS, true, false, topLevelFilters)
+      expect(mockedGetPlan).toHaveBeenCalledWith(expect.objectContaining({
+        topLevelFilters,
+        changeValidators: {
+          [emptyMockService]: expect.any(Function),
+        },
+      }))
+    })
     it('should call getPlan without change validators', async () => {
       await api.preview(mockWorkspace({}), ACCOUNTS, false, true)
       expect(mockedGetPlan).toHaveBeenCalledWith(expect.objectContaining({

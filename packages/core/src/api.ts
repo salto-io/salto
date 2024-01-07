@@ -150,6 +150,7 @@ export const preview = async (
   accounts = workspace.accounts(),
   checkOnly = false,
   skipValidations = false,
+  topLevelFilters = [shouldElementBeIncluded(accounts)],
 ): Promise<Plan> => {
   const stateElements = workspace.state()
   const adapters = await getAdapters(
@@ -166,7 +167,7 @@ export const preview = async (
       ? {} : getChangeValidators(adapters, checkOnly, await workspace.errors()),
     dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers(adapters)),
     customGroupIdFunctions: getAdapterChangeGroupIdFunctions(adapters),
-    topLevelFilters: [shouldElementBeIncluded(accounts)],
+    topLevelFilters,
     compareOptions: { compareByValue: true },
   })
 }

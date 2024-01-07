@@ -209,6 +209,7 @@ export const FIELD_ANNOTATIONS = {
   // when true, the field should not be deployed to the service
   LOCAL_ONLY: 'localOnly',
   ROLLUP_SUMMARY_FILTER_OPERATION: 'rollupSummaryFilterOperation',
+  METADATA_RELATIONSHIP_CONTROLLING_FIELD: 'metadataRelationshipControllingField',
 } as const
 
 export const VALUE_SET_FIELDS = {

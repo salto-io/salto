@@ -817,6 +817,23 @@ describe('transformer', () => {
         expect(customField.referenceTo).toBeUndefined()
       })
     })
+    describe('MetadataRelationship CustomField', () => {
+      const CONTROLLING_FIELD = 'TestControllingField__c'
+      it('should have controlling field value', async () => {
+        const metadataRelationshipField = new Field(
+          new ObjectType({ elemID }),
+          'RelationshipField',
+          Types.primitiveDataTypes.MetadataRelationship,
+          {
+            [LABEL]: 'Labelo',
+            [FIELD_ANNOTATIONS.METADATA_RELATIONSHIP_CONTROLLING_FIELD]: CONTROLLING_FIELD,
+          },
+        )
+        const customField = await toCustomField(metadataRelationshipField)
+        expect(customField[FIELD_ANNOTATIONS.METADATA_RELATIONSHIP_CONTROLLING_FIELD])
+          .toEqual(CONTROLLING_FIELD)
+      })
+    })
   })
 
   describe('await toCustomProperties', () => {

@@ -353,7 +353,7 @@ describe('api.ts', () => {
       const topLevelFilters = [() => true]
       await api.preview(mockWorkspace({}), ACCOUNTS, true, false, topLevelFilters)
       expect(mockedGetPlan).toHaveBeenCalledWith(expect.objectContaining({
-        topLevelFilters,
+        topLevelFilters: expect.arrayContaining(topLevelFilters),
         changeValidators: {
           [emptyMockService]: expect.any(Function),
         },

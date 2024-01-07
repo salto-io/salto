@@ -17,9 +17,11 @@ import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType, getDeepInnerType, 
 import { logger } from '@salto-io/logging'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
-import { getParent } from '@salto-io/adapter-utils'
+import { createSchemeGuard, getParent } from '@salto-io/adapter-utils'
+import Joi from 'joi'
 import { JiraConfig, JspUrls } from './config/config'
-import { ACCOUNT_INFO_ELEM_ID, JIRA_FREE_PLAN } from './constants'
+import { ACCOUNT_INFO_ELEM_ID, JIRA_FREE_PLAN, SOFTWARE_FIELD } from './constants'
+import JiraClient from './client/client'
 
 type appInfo = {
   id: string
@@ -138,4 +140,40 @@ export const isThereValidParent = (element: Element): boolean => {
   } catch {
     return false
   }
+}
+
+type ProjectResponse = {
+  projectTypeKey: string
+}
+type ProjectDataResponse = {
+  values: ProjectResponse[]
+}
+
+const PROJECT_DATA_RESPONSE_SCHEMA = Joi.object({
+  values: Joi.array().items(Joi.object({
+    projectTypeKey: Joi.string().required(),
+  }).unknown(true).required()).required(),
+}).unknown(true).required()
+
+
+const isProjectDataResponse = createSchemeGuard<ProjectDataResponse>(PROJECT_DATA_RESPONSE_SCHEMA)
+
+/*
+* Checks if the Jira service has a software project. The default is to assume that it does.
+* We are going to exclude Borads if we sure that there is no software project.
+*/
+export const hasSoftwareProject = async (client: JiraClient):
+Promise<boolean> => {
+  try {
+    const response = await client.getSinglePage({
+      url: '/rest/api/3/project/search',
+    })
+    if (!isProjectDataResponse(response.data)) {
+      return true
+    }
+    return response.data.values.some(project => project.projectTypeKey === SOFTWARE_FIELD)
+  } catch (e) {
+    log.error(`Failed to get server info: ${e}`)
+  }
+  return true
 }

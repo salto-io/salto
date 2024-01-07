@@ -108,7 +108,7 @@ import removeEmptyValuesFilter from './filters/remove_empty_values'
 import jqlReferencesFilter from './filters/jql/jql_references'
 import userFilter from './filters/user'
 import changePortalGroupFieldsFilter from './filters/change_portal_group_fields'
-import { JIRA, JIRA_SERVICE_DESK_FIELD, PROJECT_TYPE, SERVICE_DESK } from './constants'
+import { JIRA, PROJECT_TYPE, SERVICE_DESK } from './constants'
 import { paginate, removeScopedObjects } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
@@ -168,7 +168,8 @@ import assetsObjectTypeOrderFilter from './filters/assets/assets_object_type_ord
 import changeAttributesPathFilter from './filters/assets/change_attributes_path'
 import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
-import { getServerInfoTitle, jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from './jsm_utils'
+import { jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from './jsm_utils'
+import { hasSoftwareProject } from './utils'
 import { getWorkspaceId } from './workspace_id'
 import { JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES } from './config/api_config'
 
@@ -644,8 +645,8 @@ export default class JiraAdapter implements AdapterOperations {
     progressReporter.reportProgress({ message: 'Fetching types' })
     const { allTypes: swaggerTypes, parsedConfigs } = await this.getAllTypes(swaggers)
     const userConfigSupportedTypes = this.userConfig.apiDefinitions.supportedTypes
-    const shuldModifySupportedTypes = await getServerInfoTitle(this.client) === JIRA_SERVICE_DESK_FIELD
-    const supportedTypes = shuldModifySupportedTypes ? _.omit(userConfigSupportedTypes, 'Board') : userConfigSupportedTypes
+    const shouldOmitBoardSupportedType = !(await hasSoftwareProject(this.client))
+    const supportedTypes = shouldOmitBoardSupportedType ? _.omit(userConfigSupportedTypes, 'Board') : userConfigSupportedTypes
     progressReporter.reportProgress({ message: 'Fetching instances' })
     const [swaggerResponse, scriptRunnerElements] = await Promise.all([
       this.getSwaggerInstances(swaggerTypes, parsedConfigs, supportedTypes),

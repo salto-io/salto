@@ -20,7 +20,7 @@ import { collections } from '@salto-io/lowerdash'
 import { Change, getChangeData, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { FETCH_CONFIG } from '../config'
-import { getUsers, USER_MAPPING, getUsersFromInstances } from '../user_utils'
+import { getUsers, USER_MAPPING, getUsersFromInstances, DEFAULT_CONVERT_USERS_IDS_VALUE } from '../user_utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -72,7 +72,7 @@ const filterCreator: FilterCreator = ({ paginator, config, usersPromise }) => {
   return {
     name: 'usersFilter',
     onFetch: async elements => {
-      if (config[FETCH_CONFIG].convertUsersIds === false) {
+      if (!(config[FETCH_CONFIG].convertUsersIds ?? DEFAULT_CONVERT_USERS_IDS_VALUE)) {
         log.debug('Converting user ids was disabled (onFetch)')
         return
       }
@@ -91,7 +91,7 @@ const filterCreator: FilterCreator = ({ paginator, config, usersPromise }) => {
     },
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       const { convertUsersIds, getUsersStrategy } = config[FETCH_CONFIG]
-      if (convertUsersIds === false) {
+      if (!(convertUsersIds ?? DEFAULT_CONVERT_USERS_IDS_VALUE)) {
         log.debug('Converting user ids was disabled (preDeploy)')
         return
       }
@@ -118,7 +118,7 @@ const filterCreator: FilterCreator = ({ paginator, config, usersPromise }) => {
       await replaceValuesForChanges(changes, loginToUserId)
     },
     onDeploy: async (changes: Change<InstanceElement>[]) => {
-      if (config[FETCH_CONFIG].convertUsersIds === false) {
+      if (!(config[FETCH_CONFIG].convertUsersIds ?? DEFAULT_CONVERT_USERS_IDS_VALUE)) {
         log.debug('Converting user ids was disabled (onDeploy)')
         return
       }

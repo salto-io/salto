@@ -22,7 +22,7 @@ import { values } from '@salto-io/lowerdash'
 import { paginate } from '../client/pagination'
 import OktaClient from '../client/client'
 import { OktaConfig, FETCH_CONFIG } from '../config'
-import { getUsers, getUsersFromInstances, USER_MAPPING } from '../user_utils'
+import { DEFAULT_CONVERT_USERS_IDS_VALUE, getUsers, getUsersFromInstances, USER_MAPPING } from '../user_utils'
 
 const { isDefined } = values
 const { createPaginator } = clientUtils
@@ -34,7 +34,7 @@ const log = logger(module)
 export const usersValidator: (client: OktaClient, config: OktaConfig) =>
     ChangeValidator = (client, config) => async changes => {
       const { convertUsersIds, getUsersStrategy } = config[FETCH_CONFIG]
-      if (!(convertUsersIds ?? true)) {
+      if (!(convertUsersIds ?? DEFAULT_CONVERT_USERS_IDS_VALUE)) {
         log.debug('Skipped usersValidator because convertUsersIds config flag is disabled')
         return []
       }

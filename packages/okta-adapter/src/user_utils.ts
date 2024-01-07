@@ -26,6 +26,8 @@ const log = logger(module)
 const { toArrayAsync } = collections.asynciterable
 const { makeArray } = collections.array
 
+export const DEFAULT_CONVERT_USERS_IDS_VALUE = true
+export const DEFAULT_GET_USERS_STRATEGY = 'searchQuery'
 const USER_CHUNK_SIZE = 200
 
 export type User = {
@@ -68,9 +70,11 @@ export const USER_MAPPING: Record<string, string[][]> = {
   EndUserSupport: [['technicalContactId']],
 }
 
+const TYPES_WITH_USERS = new Set(Object.keys(USER_MAPPING))
+
 export const getUsersFromInstances = (instances: InstanceElement[]): string[] => _.uniq(
   instances
-    .filter(instance => Object.keys(USER_MAPPING).includes(instance.elemID.typeName))
+    .filter(instance => TYPES_WITH_USERS.has(instance.elemID.typeName))
     .flatMap(instance => {
       const userPaths = USER_MAPPING[instance.elemID.typeName]
       return userPaths.flatMap(path => resolvePath(instance, instance.elemID.createNestedID(...path)))

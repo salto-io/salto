@@ -14,10 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, CORE_ANNOTATIONS, ActionName, BuiltinTypes, ObjectType, Field } from '@salto-io/adapter-api'
+import { ElemID, CORE_ANNOTATIONS, ActionName, BuiltinTypes, ObjectType, Field, createRestriction } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import { ACCESS_POLICY_TYPE_NAME, CUSTOM_NAME_FIELD, IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, OKTA, PASSWORD_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, SIGN_ON_POLICY_TYPE_NAME, AUTOMATION_TYPE_NAME } from './constants'
+import { DEFAULT_CONVERT_USERS_IDS_VALUE, DEFAULT_GET_USERS_STRATEGY } from './user_utils'
 
 type UserDeployConfig = configUtils.UserDeployConfig
 const {
@@ -1764,11 +1765,11 @@ export const DEFAULT_CONFIG: OktaConfig = {
   [FETCH_CONFIG]: {
     ...elements.query.INCLUDE_ALL_CONFIG,
     hideTypes: true,
-    convertUsersIds: true,
+    convertUsersIds: DEFAULT_CONVERT_USERS_IDS_VALUE,
     enableMissingReferences: true,
     includeGroupMemberships: false,
     includeProfileMappingProperties: true,
-    getUsersStrategy: 'searchQuery',
+    getUsersStrategy: DEFAULT_GET_USERS_STRATEGY,
   },
   [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
   [PRIVATE_API_DEFINITIONS_CONFIG]: DUCKTYPE_API_DEFINITIONS,
@@ -1849,7 +1850,12 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
           includeGroupMemberships: { refType: BuiltinTypes.BOOLEAN },
           includeProfileMappingProperties: { refType: BuiltinTypes.BOOLEAN },
-          getUsersStrategy: { refType: BuiltinTypes.STRING },
+          getUsersStrategy: {
+            refType: BuiltinTypes.STRING,
+            annotations: {
+              [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['searchQuery', 'allUsers'] }),
+            },
+          },
         }
       ),
     },

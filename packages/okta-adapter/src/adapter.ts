@@ -280,9 +280,13 @@ export default class OktaAdapter implements AdapterOperations {
     const { convertUsersIds, getUsersStrategy } = this.userConfig[FETCH_CONFIG]
     const { elements, errors, configChanges } = await this.getAllElements(progressReporter)
 
-    const usersToFetch = getUsersFromInstances(elements.filter(isInstanceElement))
     const usersPromise = convertUsersIds
-      ? getUsers(this.paginator, getUsersStrategy === 'searchQuery' ? { userIds: usersToFetch, property: 'id' } : undefined)
+      ? getUsers(
+        this.paginator,
+        getUsersStrategy === 'searchQuery'
+          ? { userIds: getUsersFromInstances(elements.filter(isInstanceElement)), property: 'id' }
+          : undefined
+      )
       : undefined
 
     log.debug('going to run filters on %d fetched elements', elements.length)

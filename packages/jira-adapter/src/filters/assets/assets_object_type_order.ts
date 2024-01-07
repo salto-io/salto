@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { BuiltinTypes, CORE_ANNOTATIONS, createSaltoElementError, Element, ElemID, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isInstanceElement, isModificationChange, isReferenceExpression, ListType, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { elements as adapterElements } from '@salto-io/adapter-components'
-import { getParent, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { getParent, invertNaclCase, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { deployChanges } from '../../deployment/standard_deployment'
@@ -77,7 +77,7 @@ const createAssetsObjectTypeOrder = (
     log.error(`Failed to create ${OBJECT_TYPE_ORDER_TYPE} for ${treeParent.elemID.getFullName()} because it's parent is not ${OBJECT_SCHEMA_TYPE}`)
     return undefined
   }
-  const name = naclCase(`${treeParent.elemID.name}_order`)
+  const name = naclCase(`${invertNaclCase(treeParent.elemID.name)}_order`)
   const subFolder = treeParent.elemID.typeName === OBJECT_TYPE_TYPE ? ['childOrder'] : ['objectTypes', 'childOrder']
   return new InstanceElement(
     name,

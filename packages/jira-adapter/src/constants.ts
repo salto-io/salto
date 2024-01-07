@@ -106,6 +106,7 @@ export const SCRIPT_RUNNER_TYPES = [SCRIPT_RUNNER_LISTENER_TYPE, SCRIPT_FRAGMENT
   BEHAVIOR_TYPE, ESCALATION_SERVICE_TYPE, SCRIPTED_FIELD_TYPE]
 export const ISSUE_LAYOUT_TYPE = 'IssueLayout'
 export const SERVICE_DESK = 'service_desk'
+export const SOFTWARE_FIELD = 'software'
 export const FETCH_CONFIG = 'fetch'
 export const QUEUE_TYPE = 'Queue'
 export const REQUEST_TYPE_NAME = 'RequestType'

@@ -1793,6 +1793,7 @@ export type ChangeValidatorName = (
   | 'appUserSchemaWithInactiveApp'
   | 'appWithGroupPush'
   | 'groupPushToApplicationUniqueness'
+  | 'appGroupAssignment'
   )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -1818,6 +1819,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     appUserSchemaWithInactiveApp: { refType: BuiltinTypes.BOOLEAN },
     appWithGroupPush: { refType: BuiltinTypes.BOOLEAN },
     groupPushToApplicationUniqueness: { refType: BuiltinTypes.BOOLEAN },
+    appGroupAssignment: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

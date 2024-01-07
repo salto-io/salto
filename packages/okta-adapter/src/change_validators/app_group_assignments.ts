@@ -42,7 +42,7 @@ const isGroupAssignmentChange = (
 }
 
 /**
- * Okta does not support group assignment for applicatons in status inactive.
+ * Okta does not support group assignment for applications in status inactive.
  */
 export const appGroupAssignmentValidator: ChangeValidator = async changes => (
   changes

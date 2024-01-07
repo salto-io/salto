@@ -20,8 +20,8 @@ import { OKTA, APPLICATION_TYPE_NAME, GROUP_TYPE_NAME } from '../../src/constant
 describe('appGroupAssignmentValidator', () => {
   const appType = new ObjectType({ elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME) })
   const groupType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_TYPE_NAME) })
-  const groupAInst = new InstanceElement('group', groupType, { id: '123', name: 'group' })
-  const groupBInst = new InstanceElement('group', groupType, { id: '123', name: 'group' })
+  const groupAInst = new InstanceElement('groupA', groupType, { id: '123', name: 'group' })
+  const groupBInst = new InstanceElement('groupB', groupType, { id: '123', name: 'group' })
   const inactiveApp = new InstanceElement(
     'bookmarkApp',
     appType,
@@ -77,7 +77,7 @@ describe('appGroupAssignmentValidator', () => {
       },
     ])
   })
-  it('should not return error when modifyting group assignments for active app', async () => {
+  it('should not return error when modifying group assignments for active app', async () => {
     const activeApp = new InstanceElement(
       'bookmarkApp',
       appType,

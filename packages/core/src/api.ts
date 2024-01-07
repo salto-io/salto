@@ -167,7 +167,7 @@ export const preview = async (
       ? {} : getChangeValidators(adapters, checkOnly, await workspace.errors()),
     dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers(adapters)),
     customGroupIdFunctions: getAdapterChangeGroupIdFunctions(adapters),
-    topLevelFilters: [...(topLevelFilters ?? []), shouldElementBeIncluded(accounts)],
+    topLevelFilters: [shouldElementBeIncluded(accounts), ...(topLevelFilters ?? [])],
     compareOptions: { compareByValue: true },
   })
 }

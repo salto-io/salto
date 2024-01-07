@@ -21,7 +21,6 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import { OBJECT_TYPE_ATTRIBUTE_TYPE } from './constants'
-import JiraClient from './client/client'
 
 const ATTRIBUTE_ENTRY_SCHEMA = Joi.object({
   objectType: Joi.object({
@@ -111,39 +110,3 @@ elementUtils.ducktype.EntriesRequester => async ({ paginator, args, typeName, ty
     }
   },
 })
-
-type ProjectResponse = {
-  projectTypeKey: string
-}
-type ProjectDataResponse = {
-  values: ProjectResponse[]
-}
-
-const PROJECT_DATA_RESPONSE_SCHEMA = Joi.object({
-  values: Joi.array().items(Joi.object({
-    projectTypeKey: Joi.string().required(),
-  }).unknown(true).required()).required(),
-}).unknown(true).required()
-
-
-const isProjectDataResponse = createSchemeGuard<ProjectDataResponse>(PROJECT_DATA_RESPONSE_SCHEMA)
-
-/*
-* Checks if the Jira service has a software project. The default is to assume that it does.
-* We are going to exclude Borads if we sure that there is no software project.
-*/
-export const hasSoftwareProject = async (client: JiraClient):
-Promise<boolean> => {
-  try {
-    const response = await client.getSinglePage({
-      url: '/rest/api/3/project/search',
-    })
-    if (!isProjectDataResponse(response.data)) {
-      return true
-    }
-    return response.data.values.some(project => project.projectTypeKey === 'software')
-  } catch (e) {
-    log.error(`Failed to get server info: ${e}`)
-  }
-  return true
-}

@@ -14,11 +14,14 @@
 * limitations under the License.
 */
 
+import { client as clientUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { isAllFreeLicense, isJiraSoftwareFreeLicense } from '../src/utils'
-import { createEmptyType, getAccountInfoInstance } from './utils'
+import { MockInterface } from '@salto-io/test-utils'
+import { hasSoftwareProject, isAllFreeLicense, isJiraSoftwareFreeLicense } from '../src/utils'
+import { createEmptyType, getAccountInfoInstance, mockClient } from './utils'
 import { JIRA } from '../src/constants'
+import JiraClient from '../src/client/client'
 
 describe('utils', () => {
   let accountInfo: InstanceElement
@@ -132,6 +135,61 @@ describe('utils', () => {
     it('should return true if there is no account info instance', async () => {
       elementsSource = buildElementsSourceFromElements([])
       expect(await isAllFreeLicense(elementsSource)).toBeFalsy()
+    })
+  })
+  describe('hasSoftwareProject', () => {
+    let client: JiraClient
+    let connection: MockInterface<clientUtils.APIConnection>
+    beforeEach(() => {
+      const { client: cli, connection: conn } = mockClient(false)
+      client = cli
+      connection = conn
+      connection.get.mockImplementation(async url => {
+        if (url === '/rest/api/3/project/search') {
+          return {
+            status: 200,
+            data: {
+              values: [
+                {
+                  projectTypeKey: 'service_desk',
+                },
+                {
+                  projectTypeKey: 'software',
+                },
+              ],
+            },
+          }
+        }
+        throw new Error(`unexpected url: ${url}`)
+      })
+    })
+    it('should return true if there is software project', async () => {
+      expect(await hasSoftwareProject(client)).toEqual(true)
+    })
+    it('should return true if api thorws an error', async () => {
+      connection.get.mockRejectedValueOnce(new Error('test'))
+      expect(await hasSoftwareProject(client)).toEqual(true)
+    })
+    it('should return false if there is no software project', async () => {
+      connection.get.mockImplementation(async url => {
+        if (url === '/rest/api/3/project/search') {
+          return {
+            status: 200,
+            data: {
+              values: [
+                {
+                  projectTypeKey: 'service_desk',
+                },
+                {
+                  projectTypeKey: 'service_desk',
+                },
+              ],
+            },
+          }
+        }
+        throw new Error(`unexpected url: ${url}`)
+      })
+      expect(await hasSoftwareProject(client)).toEqual(false)
     })
   })
 })

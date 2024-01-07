@@ -90,7 +90,7 @@ const filterCreator: FilterCreator = ({ paginator, config, usersPromise }) => {
       })
     },
     preDeploy: async (changes: Change<InstanceElement>[]) => {
-      const { convertUsersIds, getUsersStrategy } = config[FETCH_CONFIG]
+      const { convertUsersIds } = config[FETCH_CONFIG]
       if (!(convertUsersIds ?? DEFAULT_CONVERT_USERS_IDS_VALUE)) {
         log.debug('Converting user ids was disabled (preDeploy)')
         return
@@ -102,7 +102,7 @@ const filterCreator: FilterCreator = ({ paginator, config, usersPromise }) => {
       }
       const users = await getUsers(
         paginator,
-        getUsersStrategy === 'searchQuery' ? { userIds: usersToReplace, property: 'profile.login' } : undefined
+        { userIds: usersToReplace, property: 'profile.login' },
       )
       if (_.isEmpty(users)) {
         log.warn('Could not find any users (preDeploy)')

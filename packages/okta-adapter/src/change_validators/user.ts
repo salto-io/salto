@@ -33,7 +33,7 @@ const log = logger(module)
 */
 export const usersValidator: (client: OktaClient, config: OktaConfig) =>
     ChangeValidator = (client, config) => async changes => {
-      const { convertUsersIds, getUsersStrategy } = config[FETCH_CONFIG]
+      const { convertUsersIds } = config[FETCH_CONFIG]
       if (!(convertUsersIds ?? DEFAULT_CONVERT_USERS_IDS_VALUE)) {
         log.debug('Skipped usersValidator because convertUsersIds config flag is disabled')
         return []
@@ -57,7 +57,7 @@ export const usersValidator: (client: OktaClient, config: OktaConfig) =>
 
       const users = await getUsers(
         paginator,
-        getUsersStrategy === 'searchQuery' ? { userIds: usersToFetch, property: 'profile.login' } : undefined
+        { userIds: usersToFetch, property: 'profile.login' },
       )
 
       const existingUsers = new Set(users.map(user => user.profile.login))

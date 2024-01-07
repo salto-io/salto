@@ -209,6 +209,15 @@ describe('Custom Object Instances CRUD', () => {
       },
     }
   )
+  const instanceWithMissingFields = new InstanceElement(
+    'instanceWithMissingFields',
+    customObject,
+    {
+      SaltoName: 'instanceWithMissingFields',
+      NumField: 4,
+      UnknownField: 'unknown',
+    }
+  )
 
   describe('When adapter defined with dataManagement config', () => {
     let connection: MockInterface<Connection>
@@ -449,6 +458,7 @@ describe('Custom Object Instances CRUD', () => {
                 changes: [
                   { action: 'add', data: { after: existingInstance } },
                   { action: 'add', data: { after: newInstanceWithRef } },
+                  { action: 'add', data: { after: instanceWithMissingFields } },
                 ],
               },
               progressReporter: nullProgressReporter,
@@ -457,7 +467,7 @@ describe('Custom Object Instances CRUD', () => {
 
           it('Should query according to instance values', () => {
             expect(mockQuery.mock.calls).toHaveLength(1)
-            expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,OwnerId,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix FROM Type WHERE SaltoName IN (\'existingInstance\',\'newInstanceWithRef\') AND NumField IN (1,2) AND City IN (\'Tel-Aviv\',null) AND Country IN (\'Israel\',null) AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (\'first\',null) AND LastName IN (\'last\',null) AND Salutation IN (\'mrs.\',null) AND MiddleName IN (null) AND Suffix IN (null)')
+            expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,OwnerId,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix FROM Type WHERE SaltoName IN (\'existingInstance\',\'newInstanceWithRef\',\'instanceWithMissingFields\') AND NumField IN (1,2,4) AND City IN (\'Tel-Aviv\',null) AND Country IN (\'Israel\',null) AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (\'first\',null) AND LastName IN (\'last\',null) AND Salutation IN (\'mrs.\',null) AND MiddleName IN (null) AND Suffix IN (null)')
           })
 
           it('Should call load operation twice - once with insert once with update', () => {
@@ -484,13 +494,13 @@ describe('Custom Object Instances CRUD', () => {
             expect(updateCall[3][0].FieldWithNoValue).toBeNull()
           })
 
-          it('Should call load operation with insert for the "new" record', () => {
+          it('Should call load operation with insert for the "new" records', () => {
             const insertCall = mockBulkLoad.mock.calls.find(call => call[1] === 'insert')
             expect(insertCall.length).toBe(4)
             expect(insertCall[0]).toBe('Type')
 
             // Record
-            expect(insertCall[3]).toHaveLength(1)
+            expect(insertCall[3]).toHaveLength(2)
             expect(insertCall[3][0].SaltoName).toBeDefined()
             expect(insertCall[3][0].SaltoName).toEqual('newInstanceWithRef')
             expect(insertCall[3][0].NotCreatable).toBeUndefined()
@@ -499,9 +509,14 @@ describe('Custom Object Instances CRUD', () => {
             expect(insertCall[3][0].FieldWithNoValue).toBeUndefined()
           })
 
-          it('Should have result with 2 applied changes, add 2 instances with new Id', async () => {
-            expect(result.errors).toHaveLength(0)
-            expect(result.appliedChanges).toHaveLength(2)
+          it('Should have result with 3 applied changes, 2 instances with new Id and 1 Deploy Warning on instanceWithMissingFields', async () => {
+            expect(result.errors).toHaveLength(1)
+            expect(result.errors[0]).toSatisfy(
+              error => error.severity === 'Warning'
+                && error.elemID.isEqual(instanceWithMissingFields.elemID)
+              && error.message.includes('missing fields')
+            )
+            expect(result.appliedChanges).toHaveLength(3)
 
             // existingInstance appliedChange
             const existingInstanceChangeData = result.appliedChanges

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isRemovalOrModificationChange, ModificationChange, Values } from '@salto-io/adapter-api'
+import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isRemovalOrModificationChange, ModificationChange, ReferenceExpression, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { createSchemeGuard, getParent, resolveValues } from '@salto-io/adapter-utils'
@@ -27,7 +27,7 @@ import { deployChanges } from '../../deployment/standard_deployment'
 import JiraClient from '../../client/client'
 import { getLookUpName } from '../../reference_mapping'
 import { getCloudId } from './cloud_id'
-import { Component, getAutomations, isAssetComponent } from './automation_fetch'
+import { getAutomations } from './automation_fetch'
 import { JiraConfig } from '../../config/config'
 import { PROJECT_TYPE_TO_RESOURCE_TYPE } from './automation_structure'
 
@@ -37,9 +37,6 @@ const { awu } = collections.asynciterable
 type ImportResponse = {
   id: string
 }
-
-type OperationMode = 'add' | 'remove'
-
 
 const IMPORT_RESPONSE_SCHEME = Joi.object({
   id: Joi.string().required(),
@@ -80,6 +77,24 @@ const AUTOMATION_RESPONSE_SCHEME = Joi.array().items(
 )
 
 const isAutomationsResponse = createSchemeGuard<AutomationResponse[]>(AUTOMATION_RESPONSE_SCHEME, 'Received an invalid automation import response')
+
+export type Component = {
+  value: {
+      workspaceId?: string
+      schemaId?: string
+      objectTypeId: ReferenceExpression
+      schemaLabel?: string
+      objectTypeLabel?: string
+  }
+}
+
+const ASSET_COMPONENT_SCHEME = Joi.object({
+  value: Joi.object({
+    objectTypeId: Joi.required(),
+  }).unknown(true),
+}).unknown(true)
+
+export const isAssetComponent = createSchemeGuard<Component>(ASSET_COMPONENT_SCHEME)
 
 const generateRuleScopesResources = (
   instance: InstanceElement,
@@ -296,34 +311,38 @@ const updateAutomationLabels = async (
     await removeAutomationLabels(getChangeData(change), removedLabels, client, cloudId)
   }
 }
-
-const updateDetailedAssetsComponents = (instance: InstanceElement, config: JiraConfig, mode: OperationMode): void => {
-  if (!config.fetch.enableJSM || !config.fetch.enableJsmExperimental) {
-    return undefined
+const addDetailedAssetsComponents = (instance: InstanceElement): void => {
+  if (!instance.value.components) {
+    return
   }
-  const keys: Array<'workspaceId' | 'schemaId' | 'schemaLabel' | 'objectTypeLabel'> = ['workspaceId', 'schemaId', 'schemaLabel', 'objectTypeLabel']
   const assetsComponents: Component[] = instance.value.components
     .filter(isAssetComponent)
-
   assetsComponents.forEach(component => {
-    if (mode === 'remove') {
-      keys.forEach(key => {
-        delete component.value[key]
-      })
-    } else if (mode === 'add') {
-      try {
-        const objectType = component.value.objectTypeId.value
-        const schema = getParent(objectType)
-        component.value.schemaId = schema.value.id
-        component.value.schemaLabel = schema.value.name
-        component.value.objectTypeLabel = objectType.value.name
-        component.value.workspaceId = schema.value.workspaceId
-      } catch (e) {
-        log.warn(`Failed to update detailed assets components for ${instance.elemID.getFullName()}`)
-      }
+    try {
+      const objectType = component.value.objectTypeId.value
+      const schema = getParent(objectType)
+      component.value.schemaId = schema.value.id
+      component.value.schemaLabel = schema.value.name
+      component.value.objectTypeLabel = objectType.value.name
+      component.value.workspaceId = schema.value.workspaceId
+    } catch (e) {
+      log.warn(`Failed to update detailed assets components for ${instance.elemID.getFullName()}`)
     }
   })
-  return undefined
+}
+
+const deleteDetailedAssetsComponents = (instance: InstanceElement): void => {
+  if (!instance.value.components) {
+    return
+  }
+  const assetsComponents: Component[] = instance.value.components
+    .filter(isAssetComponent)
+  assetsComponents.forEach(component => {
+    delete component.value.schemaId
+    delete component.value.schemaLabel
+    delete component.value.objectTypeLabel
+    delete component.value.workspaceId
+  })
 }
 
 const updateAutomation = async (
@@ -401,7 +420,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
       .forEach(instance => {
-        updateDetailedAssetsComponents(instance, config, 'add')
+        addDetailedAssetsComponents(instance)
       })
   },
   deploy: async changes => {
@@ -443,7 +462,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
       .forEach(instance => {
-        updateDetailedAssetsComponents(instance, config, 'remove')
+        deleteDetailedAssetsComponents(instance)
       })
   },
 })

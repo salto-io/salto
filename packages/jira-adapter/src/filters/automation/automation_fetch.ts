@@ -41,6 +41,10 @@ export type Component = {
 const ASSET_COMPONENT_SCHEME = Joi.object({
   value: Joi.object({
     objectTypeId: Joi.required(),
+    workspaceId: Joi.string().required(),
+    schemaId: Joi.string().required(),
+    schemaLabel: Joi.string().required(),
+    objectTypeLabel: Joi.string().required(),
   }).unknown(true),
 }).unknown(true)
 
@@ -131,9 +135,9 @@ const createInstance = (
     [JIRA, elementUtils.RECORDS_PATH, AUTOMATION_TYPE, pathNaclCase(instanceName)],
   )
 }
-const mofidyAssetsComponents = (instance: InstanceElement, config: JiraConfig): void => {
-  if (!config.fetch.enableJSM || !config.fetch.enableJsmExperimental) {
-    return undefined
+const mofidyAssetsComponents = (instance: InstanceElement): void => {
+  if (!instance.value.components) {
+    return
   }
   const assetsComponents: Component[] = instance.value.components
     .filter(isAssetComponent)
@@ -143,7 +147,6 @@ const mofidyAssetsComponents = (instance: InstanceElement, config: JiraConfig): 
     delete component.value.objectTypeLabel
     delete component.value.workspaceId
   })
-  return undefined
 }
 
 export const getAutomations = async (
@@ -191,12 +194,12 @@ const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuery }) =>
       automations.forEach(automation => elements.push(
         createInstance(automation, automationType, idToProject, config, getElemIdFunc),
       ))
-
-      elements
-        .filter(isInstanceElement)
-        .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
-        .forEach(instance => mofidyAssetsComponents(instance, config))
-
+      if (config.fetch.enableJSM && config.fetch.enableJsmExperimental) {
+        elements
+          .filter(isInstanceElement)
+          .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
+          .forEach(instance => mofidyAssetsComponents(instance))
+      }
       elements.push(automationType, ...subTypes)
       return undefined
     } catch (e) {

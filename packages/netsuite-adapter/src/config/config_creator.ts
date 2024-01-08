@@ -79,7 +79,10 @@ const updatedFetchTarget = (
 }
 
 const includeFileCabinetFolders = (config: NetsuiteConfig): string[] =>
-  config.includeFileCabinetFolders?.map(folderName => `^${folderName}/.*`) ?? []
+  config.includeFileCabinetFolders?.map(
+    folderName =>
+      `^${folderName.startsWith('/') ? '' : '/'}${folderName}${folderName.endsWith('/') ? '' : '/'}.*`
+  ) ?? []
 
 const includeCustomRecords = (config: NetsuiteConfig): FetchTypeQueryParams[] => {
   if (config.includeCustomRecords === undefined || config.includeCustomRecords.length === 0) {

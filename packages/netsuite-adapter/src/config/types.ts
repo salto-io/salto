@@ -164,6 +164,11 @@ export type SuiteAppClientConfig = {
   httpTimeoutLimitInMinutes?: number
 }
 
+export const SUITEAPP_CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<SuiteAppClientConfig> = {
+  suiteAppConcurrencyLimit: 'suiteAppConcurrencyLimit',
+  httpTimeoutLimitInMinutes: 'httpTimeoutLimitInMinutes',
+}
+
 export type NetsuiteConfig = {
   // simple config
   includeAllSavedSearches?: boolean

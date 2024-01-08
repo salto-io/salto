@@ -127,6 +127,29 @@ export const isJiraSoftwareFreeLicense = async (
   return mainApplication.plan === JIRA_FREE_PLAN
 }
 
+/*
+* Cheks if the Jira service has a service desk license. The default is to assume that it doesn't.
+*/
+export const hasJiraServiceDeskLicense = async (
+  elementsSource: ReadOnlyElementsSource
+): Promise<boolean> => {
+  if (!await elementsSource.has(ACCOUNT_INFO_ELEM_ID)) {
+    return false
+  }
+  const accountInfo = await elementsSource.get(ACCOUNT_INFO_ELEM_ID)
+  if (!isInstanceElement(accountInfo)
+  || accountInfo.value.license?.applications === undefined) {
+    log.error('account info instance or its license not found in elements source, treating the account as free one')
+    return false
+  }
+  const mainApplication = accountInfo.value.license.applications.find((app: Value) => app.id === 'jira-servicedesk')
+  if (mainApplication?.plan === undefined) {
+    log.warn('could not find license of jira-software, treating the account as free one')
+    return false
+  }
+  return true
+}
+
 export const renameKey = (object: Value, { from, to }: { from: string; to: string }): void => {
   if (object[from] !== undefined) {
     object[to] = object[from]

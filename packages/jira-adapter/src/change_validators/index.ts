@@ -62,6 +62,7 @@ import { deleteLastQueueValidator } from './last_queue'
 import { defaultAdditionQueueValidator } from './default_addition_queue'
 import { defaultAttributeValidator } from './assets/default_attribute'
 import { automationToAssetsValidator } from './automation/automation_to_assets'
+import { addJsmProjectValidator } from './adding_jsm_project'
 
 const {
   deployTypesNotSupportedValidator,
@@ -121,6 +122,7 @@ export default (
     defaultAdditionQueueValidator: defaultAdditionQueueValidator(config),
     automationToAssets: automationToAssetsValidator(config),
     defaultAttributeValidator: defaultAttributeValidator(config, client),
+    addJsmProject: addJsmProjectValidator,
   }
 
   return createChangeValidator({

@@ -817,6 +817,28 @@ describe('automationDeploymentFilter', () => {
             workspaceId: 'w11',
           })
         })
+        it('should modify only assets components when enable JSM is true', async () => {
+          config.fetch.enableJSM = true
+          config.fetch.enableJsmExperimental = true
+          automationInstance.value.components.push({
+            component: 'ACTION',
+            schemaVersion: 1,
+            value: {
+              attribute: 'value',
+            },
+          })
+          await filter.preDeploy([toChange({ after: automationInstance })])
+          expect(automationInstance.value.components[0].value).toEqual({
+            objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
+            schemaId: '25',
+            schemaLabel: 'schemaName',
+            objectTypeLabel: 'objectTypeName',
+            workspaceId: 'w11',
+          })
+          expect(automationInstance.value.components[1].value).toEqual({
+            attribute: 'value',
+          })
+        })
         it('should not add missing fields to assets components when enable JSM is false', async () => {
           config.fetch.enableJSM = false
           config.fetch.enableJsmExperimental = false
@@ -839,28 +861,6 @@ describe('automationDeploymentFilter', () => {
           await filter.preDeploy([toChange({ after: automationInstance })])
           expect(automationInstance.value.components[0].value).toEqual({
             objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
-          })
-        })
-        it('should modify only assets components when enable JSM is true', async () => {
-          config.fetch.enableJSM = true
-          config.fetch.enableJsmExperimental = true
-          automationInstance.value.components.push({
-            component: 'ACTION',
-            schemaVersion: 1,
-            value: {
-              attribute: 'value',
-            },
-          })
-          await filter.preDeploy([toChange({ after: automationInstance })])
-          expect(automationInstance.value.components[0].value).toEqual({
-            objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
-            schemaId: '25',
-            schemaLabel: 'schemaName',
-            objectTypeLabel: 'objectTypeName',
-            workspaceId: 'w11',
-          })
-          expect(automationInstance.value.components[1].value).toEqual({
-            attribute: 'value',
           })
         })
       })

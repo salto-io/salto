@@ -67,7 +67,11 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     const deployResult = await deployChanges(
       typeFixedChanges,
       async change => {
-        const typeDefinition = jsmApiDefinitions.types[getChangeData(change).elemID.typeName]
+        const instance = getChangeData(change)
+        if (instance.value.typeName === OBJECT_SCHEMA_TYPE) {
+          instance.value.workspaceId = workspaceId
+        }
+        const typeDefinition = jsmApiDefinitions.types[instance.elemID.typeName]
         const deployRequest = typeDefinition.deployRequests ? typeDefinition.deployRequests[change.action] : undefined
         const fieldsToIgnore = deployRequest?.fieldsToIgnore ?? []
         await defaultDeployChange({

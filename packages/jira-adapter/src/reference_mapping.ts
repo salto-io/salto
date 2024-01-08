@@ -1178,6 +1178,12 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     jiraMissingRefStrategy: 'typeAndValue',
     target: { typeContext: 'referenceTypeTypeName' },
   },
+  {
+    src: { field: 'objectTypeId', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
+    serializationStrategy: 'id',
+    target: { type: OBJECT_TYPE_TYPE },
+  },
+
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [

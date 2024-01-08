@@ -692,10 +692,6 @@ export const configType = createMatchingObjectType<NetsuiteConfig>({
         [CORE_ANNOTATIONS.DESCRIPTION]: 'Salto fetches the Templates and Suitscripts folders.'
           + ' You can choose to include additional folders.'
           + ' [Learn more](https://help.salto.io/en/articles/customize-netsuite-config)',
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-          enforce_value: true,
-          regex: '^/.*',
-        }),
       },
     },
     fetch: {

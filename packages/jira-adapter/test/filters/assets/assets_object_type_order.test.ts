@@ -57,7 +57,7 @@ describe('assetsObjectTypeOrderFilter', () => {
     [JIRA, elementUtils.RECORDS_PATH, OBJECT_SCHEMA_TYPE, 'assetsSchema'],
   )
   const parentObjectTypeInstance = new InstanceElement(
-    'parentObjectTypeInstance',
+    'parent_Object_Type_Instance@uuu',
     createEmptyType(OBJECT_TYPE_TYPE),
     {
       id: 'p1',
@@ -93,7 +93,7 @@ describe('assetsObjectTypeOrderFilter', () => {
         .filter(isInstanceElement)
         .filter(e => e.elemID.typeName === OBJECT_TYPE_ORDER_TYPE)
       expect(orderInstances[1]).toBeDefined()
-      expect(orderInstances[1].elemID.name).toEqual('AssetsObjectTypeP1_order')
+      expect(orderInstances[1].elemID.name).toEqual('parent_Object_Type_Instance_order')
       expect(orderInstances[1].value.objectTypes).toEqual([
         new ReferenceExpression(assetsObjectTypeInstanceOne.elemID, assetsObjectTypeInstanceOne),
         new ReferenceExpression(assetsObjectTypeInstanceTwo.elemID, assetsObjectTypeInstanceTwo),

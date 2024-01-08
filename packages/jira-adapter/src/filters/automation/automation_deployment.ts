@@ -419,9 +419,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
-      .forEach(instance => {
-        addDetailedAssetsComponents(instance)
-      })
+      .forEach(addDetailedAssetsComponents)
   },
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
@@ -461,9 +459,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
-      .forEach(instance => {
-        deleteDetailedAssetsComponents(instance)
-      })
+      .forEach(deleteDetailedAssetsComponents)
   },
 })
 export default filter

@@ -19,12 +19,11 @@ import JSZip from 'jszip'
 import _, { remove } from 'lodash'
 import { FETCH_CONFIG, isGuideEnabled, isGuideThemesEnabled } from '../config'
 import {
-  BRAND_TYPE_NAME,
-  GUIDE_THEME_TYPE_NAME,
-  ZENDESK,
+  GUIDE_THEME_TYPE_NAME, ZENDESK,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import { download } from './guide_themes/download'
+import { getBrandsForGuideThemes } from './utils'
 
 const log = logger(module)
 
@@ -75,10 +74,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
 
     const instances = elements.filter(isInstanceElement)
     const guideThemes = instances.filter(instance => instance.elemID.typeName === GUIDE_THEME_TYPE_NAME)
-    const brands = elements
-      .filter(elem => elem.elemID.typeName === BRAND_TYPE_NAME)
-      .filter(isInstanceElement)
-      .filter(brand => brand.value.name !== undefined)
+    const brands = getBrandsForGuideThemes(instances, config[FETCH_CONFIG])
     const fullNameByNameBrand = _.mapValues(_.keyBy(brands, getFullName), 'value.name')
     const getBrandName = (theme: InstanceElement): string | undefined => {
       const brandElemId = theme.value.brand_id?.elemID.getFullName()

@@ -77,7 +77,7 @@ export type IdLocator = {
 
 export type Guide = {
   brands: string[]
-  themes?: boolean
+  themesForBrands?: string[]
 }
 
 export type ZendeskClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
@@ -2830,8 +2830,8 @@ const GuideType = createMatchingObjectType<Guide>({
         _required: true,
       },
     },
-    themes: {
-      refType: BuiltinTypes.BOOLEAN,
+    themesForBrands: {
+      refType: new ListType(BuiltinTypes.STRING),
     },
   },
   annotations: {
@@ -3090,5 +3090,5 @@ export const isGuideEnabled = (
 export const isGuideThemesEnabled = (
   fetchConfig: ZendeskFetchConfig
 ): boolean => (
-  fetchConfig.guide?.themes === true
+  fetchConfig.guide?.themesForBrands !== undefined && fetchConfig.guide?.themesForBrands.length > 0
 )

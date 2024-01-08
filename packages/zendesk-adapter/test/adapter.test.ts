@@ -1875,7 +1875,7 @@ describe('adapter', () => {
               exclude: [],
               guide: {
                 brands: ['.WithGuide'],
-                themes: true,
+                themesForBrands: ['my.'],
               },
             },
           }

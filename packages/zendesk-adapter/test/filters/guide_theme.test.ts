@@ -47,7 +47,7 @@ jest.mock('jszip', () => jest.fn().mockImplementation(() => {
 const brandType = new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) })
 const themeType = new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_THEME_TYPE_NAME) })
 
-const brand1 = new InstanceElement('brand', brandType, { id: 1, name: 'oneTwo' })
+const brand1 = new InstanceElement('brand', brandType, { id: 1, name: 'oneTwo', has_help_center: true })
 const theme1 = new InstanceElement('theme', themeType, { id: 'park?', name: 'SixFlags', brand_id: new ReferenceExpression(brand1.elemID) })
 
 describe('filterCreator', () => {
@@ -61,7 +61,7 @@ describe('filterCreator', () => {
 
         beforeEach(() => {
           const config = { ...DEFAULT_CONFIG }
-          config[FETCH_CONFIG].guide = { brands: ['.*'], themes: false }
+          config[FETCH_CONFIG].guide = { brands: ['.*'], themesForBrands: [] }
           filter = filterCreator(createFilterCreatorParams({ config }))
         })
 
@@ -77,7 +77,7 @@ describe('filterCreator', () => {
 
       beforeEach(() => {
         const config = { ...DEFAULT_CONFIG }
-        config[FETCH_CONFIG].guide = { brands: ['.*'], themes: true }
+        config[FETCH_CONFIG].guide = { brands: ['.*'], themesForBrands: ['.*'] }
         filter = filterCreator(createFilterCreatorParams({ config }))
         mockDownload = jest.spyOn(DownloadModule, 'download')
       })

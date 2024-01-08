@@ -19,7 +19,7 @@ import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { NETSUITE } from '../../src/constants'
 import omitFieldsValidation from '../../src/change_validators/omit_fields'
-import { fullFetchConfig } from '../../src/query'
+import { fullFetchConfig } from '../../src/config/config_creator'
 
 describe('omit fields change validator test', () => {
   let type: ObjectType

@@ -15,7 +15,7 @@
 */
 
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
-import { NetsuiteQuery } from '../../src/query'
+import { NetsuiteQuery } from '../../src/config/query'
 import * as fileCabinetDetector from '../../src/changes_detector/changes_detectors/file_cabinet'
 import customRecordTypeDetector from '../../src/changes_detector/changes_detectors/custom_record_type'
 import scriptDetector from '../../src/changes_detector/changes_detectors/script'

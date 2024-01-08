@@ -16,7 +16,7 @@
 */
 import { logger } from '@salto-io/logging'
 import NetsuiteClient from '../../client/client'
-import { NetsuiteQuery } from '../../query'
+import { NetsuiteQuery } from '../../config/query'
 import { CUSTOM_RECORD_TYPE } from '../../constants'
 import { ChangedCustomRecord, DateRange } from '../types'
 

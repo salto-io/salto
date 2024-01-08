@@ -31,7 +31,7 @@ import immutableChangesValidator from './change_validators/immutable_changes'
 import uniqueFieldsValidator from './change_validators/unique_fields'
 import subInstancesValidator from './change_validators/subinstances'
 import standardTypesInvalidValuesValidator from './change_validators/standard_types_invalid_values'
-import safeDeployValidator, { FetchByQueryFunc } from './change_validators/safe_deploy'
+import safeDeployValidator from './change_validators/safe_deploy'
 import mappedListsIndexesValidator from './change_validators/mapped_lists_indexes'
 import configChangesValidator from './change_validators/config_changes'
 import suiteAppConfigElementsValidator from './change_validators/suiteapp_config_elements'
@@ -55,9 +55,10 @@ import {
   NetsuiteValidatorName,
   NonSuiteAppValidatorName,
   OnlySuiteAppValidatorName,
-} from './config'
+} from './config/types'
 import { Filter } from './filter'
 import { NetsuiteChangeValidator } from './change_validators/types'
+import { FetchByQueryFunc } from './config/query'
 
 const { createChangeValidator } = deployment.changeValidators
 

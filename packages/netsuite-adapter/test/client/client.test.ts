@@ -23,7 +23,7 @@ import { SetConfigType } from '../../src/client/suiteapp_client/types'
 import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../src/types'
 import { featuresType } from '../../src/types/configuration_types'
 import { FeaturesDeployError, ManifestValidationError, MissingManifestFeaturesError, ObjectsDeployError, SettingsDeployError } from '../../src/client/errors'
-import { AdditionalDependencies } from '../../src/config'
+import { AdditionalDependencies } from '../../src/config/types'
 import { Graph, GraphNode } from '../../src/client/graph_utils'
 import { SDFObjectNode } from '../../src/client/types'
 

@@ -14,35 +14,14 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ProgressReporter, ChangeError, Change, isInstanceElement, isEqualElements, getChangeData, ModificationChange, isRemovalChange, isModificationChange, isAdditionChange, AdditionChange, RemovalChange, isField, InstanceElement, toChange, isFieldChange, ChangeDataType, ElemID, SaltoError } from '@salto-io/adapter-api'
+import { ChangeError, Change, isInstanceElement, isEqualElements, getChangeData, ModificationChange, isRemovalChange, isModificationChange, isAdditionChange, AdditionChange, RemovalChange, isField, InstanceElement, toChange, isFieldChange, ChangeDataType } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
-import { buildNetsuiteQuery, convertToQueryParams, NetsuiteQuery, NetsuiteQueryParameters } from '../query'
 import { isStandardInstanceOrCustomRecordType, isFileCabinetInstance } from '../types'
 import { CUSTOM_RECORD_TYPE, PATH, SCRIPT_ID } from '../constants'
 import { getTypeIdentifier } from '../data_elements/types'
-import { FailedFiles, FailedTypes } from '../client/types'
 import { getReferencedElements } from '../reference_dependencies'
-
-export type FetchByQueryFailures = {
-  failedToFetchAllAtOnce: boolean
-  failedFilePaths: FailedFiles
-  failedTypes: FailedTypes
-  failedCustomRecords: string[]
-}
-
-export type FetchByQueryReturnType = {
-  elements: ChangeDataType[]
-  deletedElements?: ElemID[]
-  deletedElementErrors?: SaltoError[]
-  failures: FetchByQueryFailures
-}
-
-export type FetchByQueryFunc = (
-  fetchQuery: NetsuiteQuery,
-  progressReporter: ProgressReporter,
-  useChangesDetection: boolean,
-  isPartial: boolean
-) => Promise<FetchByQueryReturnType>
+import { NetsuiteQueryParameters } from '../config/types'
+import { FetchByQueryFunc, buildNetsuiteQuery, convertToQueryParams } from '../config/query'
 
 export type QueryChangeValidator = (
   changes: ReadonlyArray<Change>,

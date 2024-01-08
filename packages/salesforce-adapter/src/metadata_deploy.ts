@@ -414,7 +414,8 @@ export const deployMetadata = async (
       names.forEach(name => {
         nameToElemId[name] = elemID
       })
-      deployedComponentsElemIdsByType[type] = nameToElemId
+      // doing it in a slightly more convoluted way because deployedComponentsElemIdsByType[type] may be udefined
+      deployedComponentsElemIdsByType[type] = _.assign({}, deployedComponentsElemIdsByType[type], nameToElemId)
     })
   })
 

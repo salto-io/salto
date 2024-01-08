@@ -974,6 +974,9 @@ describe('SalesforceAdapter CRUD', () => {
             }),
           ])
         })
+        it('should have no applied changes', () => {
+          expect(result.appliedChanges).toBeEmpty()
+        })
       })
     })
   })

@@ -150,6 +150,13 @@ describe('filterCreator', () => {
           expect(elements).toEqual([])
         })
 
+        it('removes the theme if brand_id is not a reference expression', async () => {
+          const theme2 = new InstanceElement('theme', themeType, { id: 'park?', name: 'SixFlags', brand_id: 3 })
+          const elements = [theme2, brand1]
+          await filter.onFetch?.(elements)
+          expect(elements).toEqual([brand1])
+        })
+
         describe('theme download corrupted', () => {
           beforeEach(() => {
             mockDownload.mockResolvedValue({ content: Buffer.from('corrupted'), errors: [] })

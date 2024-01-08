@@ -20,7 +20,7 @@ import {
 } from '@salto-io/adapter-api'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
-import { buildElementsSourceFromElements, getParents, resolveValues } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, getParents, resolveValues, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import each from 'jest-each'
 import { Credentials } from '../src/auth'
@@ -238,7 +238,6 @@ each([
         .flatMap(res => res.appliedChanges)
         .filter(isAdditionChange)
         .map(change => toChange({ before: getChangeData(change) }))
-
       removalChanges.forEach(change => {
         const instance = getChangeData(change)
         removalChanges
@@ -260,8 +259,16 @@ each([
         })))
 
       const errors = addDeployResults.flatMap(res => res.errors)
-      if (errors.length) {
-        throw new Error(`Failed to clean e2e changes: ${errors.join(', ')}`)
+      // TODO remove after SALTO-5205, IssueLayout cannot be deleted
+      if (!isDataCenter) {
+        expect(errors[0]).toEqual({
+          elemID: expect.anything(),
+          message: 'Error: Could not remove IssueLayout',
+          severity: 'Error',
+        })
+      }
+      if ((isDataCenter && errors.length) || errors.length > 1) {
+        throw new Error(`Failed to clean e2e changes: ${errors.map(e => safeJsonStringify(e)).join(', ')}`)
       }
     })
   })

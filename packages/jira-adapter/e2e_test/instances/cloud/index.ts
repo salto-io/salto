@@ -97,7 +97,7 @@ export const createInstances = (
   const fieldConfiguration = new InstanceElement(
     randomString,
     findType('FieldConfiguration', fetchedElements),
-    createFieldConfigurationValues(randomString),
+    createFieldConfigurationValues(randomString, fetchedElements),
   )
 
   const securityLevel = new InstanceElement(

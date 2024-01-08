@@ -189,7 +189,7 @@ export const createElement = async <T extends InstanceElement | ObjectType>(
     changes: [{ action: 'add', data: { after: element } }],
   }
   const result = await adapter.deploy({ changeGroup, progressReporter: nullProgressReporter })
-  const errors = result.errors.filter(error => error.severity !== 'Warning')
+  const errors = result.errors.filter(error => error.severity === 'Error')
   if (verify && errors.length > 0) {
     if (errors.length === 1) throw result.errors[0]
     throw new Error(`Failed adding element ${element.elemID.getFullName()} with errors: ${result.errors.map(error => safeJsonStringify(error))}`)

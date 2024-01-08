@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, SaltoError, StaticFile, isInstanceElement } from '@salto-io/adapter-api'
+import { InstanceElement, SaltoError, StaticFile, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import JSZip from 'jszip'
 import _, { remove } from 'lodash'
@@ -77,6 +77,10 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     const brands = getBrandsForGuideThemes(instances, config[FETCH_CONFIG])
     const fullNameByNameBrand = _.mapValues(_.keyBy(brands, getFullName), 'value.name')
     const getBrandName = (theme: InstanceElement): string | undefined => {
+      if (!isReferenceExpression(theme.value.brand_id)) {
+        log.info('brand_id is not a reference expression for instance %s.', theme.elemID.getFullName())
+        return undefined
+      }
       const brandElemId = theme.value.brand_id?.elemID.getFullName()
       const brandName = fullNameByNameBrand[brandElemId]
       if (brandName === undefined) {

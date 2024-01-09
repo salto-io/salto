@@ -44,6 +44,8 @@ import dataInstancesAttributes from './filters/data_instances_attributes'
 import dataInstancesNullFields from './filters/data_instances_null_fields'
 import dataInstancesDiff from './filters/data_instances_diff'
 import dataInstancesIdentifiers from './filters/data_instances_identifiers'
+import addReferencingWorkbooks from './filters/add_referencing_workbooks'
+import analyticsDefinitionHandle from './filters/analytics_definition_handle'
 import suiteAppInternalIds from './filters/internal_ids/suite_app_internal_ids'
 import SDFInternalIds from './filters/internal_ids/sdf_internal_ids'
 import accountSpecificValues from './filters/account_specific_values'
@@ -102,9 +104,12 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   // addParentFolder must run before replaceInstanceReferencesFilter
   { creator: addParentFolder },
   { creator: parseReportTypes },
+  // analyticsDefinitionHandle must run before translationConverter and replaceElementReferences
+  // and after parseReportTypes
+  { creator: analyticsDefinitionHandle },
   { creator: convertLists },
   { creator: consistentValues },
-  // excludeInstances should run after parseReportTypes & consistentValues,
+  // excludeInstances should run after parseReportTypes, analyticsDefinitionHandle & consistentValues,
   // so users will be able to exclude elements based on parsed values.
   { creator: excludeInstances },
   // convertListsToMaps must run after convertLists and consistentValues
@@ -142,8 +147,11 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   { creator: addBundleReferences },
   // omitFieldsFilter should be the last onFetch filter to run
   { creator: omitFieldsFilter },
-  // additionalChanges should be the first preDeploy filter to run
+  // additionalChanges should be right after addReferencingWorkbooks
+  // (adds required referenced elements to the deployent)
   { creator: additionalChanges },
+  // addReferencingWorkbooks should be the first preDeploy filter to run (adds workbooks to the deployment)
+  { creator: addReferencingWorkbooks },
 ]
 
 // By default we run all filters and provide a client

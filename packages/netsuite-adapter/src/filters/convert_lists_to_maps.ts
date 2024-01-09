@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
+import { InstanceElement, getChangeData, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import { collections, promises } from '@salto-io/lowerdash'
 import { convertAnnotationListsToMaps, convertFieldsTypesFromListToMap, convertInstanceListsToMaps, convertDataInstanceMapsToLists, createConvertStandardElementMapsToLists } from '../mapped_lists/utils'
 import { LocalFilterCreator } from '../filter'
@@ -21,6 +21,7 @@ import { isStandardType, getInnerStandardTypes, isCustomRecordType } from '../ty
 import { getStandardTypes } from '../autogen/types'
 import { dataTypesToConvert } from '../mapped_lists/mapping'
 import { isSdfCreateOrUpdateGroupId } from '../group_changes'
+import { DATASET, WORKBOOK } from '../constants'
 
 const { mapValuesAsync } = promises.object
 
@@ -63,6 +64,7 @@ const filterCreator: LocalFilterCreator = ({ changesGroupId }) => ({
 
     await awu(elements)
       .filter(isInstanceElement)
+      .filter(elem => elem.elemID.typeName !== DATASET && elem.elemID.typeName !== WORKBOOK)
       .filter(inst => isStandardType(inst.refType) || shouldTransformDataInstance(inst))
       .forEach(
         async inst => {
@@ -91,6 +93,9 @@ const filterCreator: LocalFilterCreator = ({ changesGroupId }) => ({
       : undefined
 
     await awu(changes)
+      .filter(change =>
+        getChangeData(change).elemID.typeName !== DATASET
+        && getChangeData(change).elemID.typeName !== WORKBOOK)
       .forEach(async change => {
         const transformedData = await mapValuesAsync(change.data, async changeData => {
           if (convertElementMapsToLists) {

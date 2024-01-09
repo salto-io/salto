@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
+import { collections, strings } from '@salto-io/lowerdash'
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression, TypeElement } from '@salto-io/adapter-api'
 import { naclCase, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { isStandardType, isDataObjectType, isFileCabinetType } from '../types'
@@ -25,11 +25,9 @@ import { LocalFilterCreator } from '../filter'
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-const isNumberStr = (str: string): boolean => !Number.isNaN(Number(str))
-
 const getSubInstanceName = (path: ElemID, internalId: string): string => {
   const name = _.findLast(
-    path.getFullNameParts(), part => !isNumberStr(part) && part !== RECORD_REF
+    path.getFullNameParts(), part => !strings.isNumberStr(part) && part !== RECORD_REF
   )
   return naclCase(`${path.typeName}_${name}_${internalId}`)
 }
@@ -63,7 +61,7 @@ const filterCreator: LocalFilterCreator = () => ({
 
       const originalInternalId = value[INTERNAL_ID]
       const fieldType = await field?.getType()
-      const isInsideList = path.getFullNameParts().some(part => isNumberStr(part))
+      const isInsideList = path.getFullNameParts().some(part => strings.isNumberStr(part))
 
       if (!(isObjectType(fieldType)
         && (isInsideList

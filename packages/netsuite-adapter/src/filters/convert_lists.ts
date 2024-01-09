@@ -23,7 +23,7 @@ import _ from 'lodash'
 import { LocalFilterCreator } from '../filter'
 import { datasetType } from '../autogen/types/standard_types/dataset'
 import { isCustomRecordType, isFileCabinetInstance } from '../types'
-import { typeNameToParser } from '../change_validators/report_types_move_environment'
+import { parsedTypeNames } from '../change_validators/report_types_move_environment'
 
 const { awu } = collections.asynciterable
 
@@ -61,7 +61,7 @@ const filterCreator: LocalFilterCreator = () => ({
       .filter(isInstanceElement)
       // lists in report types instances are handled in parseReportTypes filter
       // file&folder instances have no list fields so we can skip them
-      .filter(inst => !(inst.elemID.typeName in typeNameToParser) && !isFileCabinetInstance(inst))
+      .filter(inst => !(inst.elemID.typeName in parsedTypeNames) && !isFileCabinetInstance(inst))
       .forEach(async inst => {
         inst.value = await transformValues({
           values: inst.value,

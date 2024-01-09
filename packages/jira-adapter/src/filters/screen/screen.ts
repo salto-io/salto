@@ -123,7 +123,7 @@ const filter: FilterCreator = ({ config, client }) => ({
             element.value.tabs.map(
               (tab: Values, position: number) => {
                 const fieldIds = tab.fields && tab.fields.map((field: Values) => field.id)
-                log.info(`add to ScreenTab "${tab.name}" in the Screen "${element.value.name}" originalFieldsIds: ${fieldIds}`)
+                log.debug(`add to ScreenTab "${tab.name}" in the Screen "${element.value.name}" originalFieldsIds: ${fieldIds}`)
                 return {
                   ...tab,
                   fields: fieldIds,
@@ -150,7 +150,7 @@ const filter: FilterCreator = ({ config, client }) => ({
             tab.fields = tab.originalFieldsIds.ids
           } else {
             // this should not happen if there are fields in the tab
-            log.info(`ScreenTab "${tab.name}" in the Screen "${change.data.before.value.name}" has no originalFieldsIds`)
+            log.warn(`ScreenTab "${tab.name}" in the Screen "${change.data.before.value.name}" has no originalFieldsIds`)
           }
         })
       })

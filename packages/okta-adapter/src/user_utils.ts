@@ -70,7 +70,7 @@ export const USER_MAPPING: Record<string, string[][]> = {
   EndUserSupport: [['technicalContactId']],
 }
 
-const TYPES_WITH_USERS = new Set(Object.keys(USER_MAPPING))
+export const TYPES_WITH_USERS = new Set(Object.keys(USER_MAPPING))
 
 export const getUsersFromInstances = (instances: InstanceElement[]): string[] => _.uniq(
   instances

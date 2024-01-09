@@ -41,7 +41,6 @@ export const jsmProjectToJsmFieldDependencyChanger: DependencyChanger = async ch
         isInstanceChange(change.change)
     )
   const relevantChanges = instanceChanges
-    .filter(change => isAdditionChange(change.change))
     .filter(change => [PROJECT_TYPE, FIELD_TYPE_NAME]
       .includes(getChangeData(change.change).elemID.typeName))
 
@@ -53,7 +52,7 @@ export const jsmProjectToJsmFieldDependencyChanger: DependencyChanger = async ch
   const jsmProjects = projectChanges
     .filter(change => getChangeData(change.change).value.projectTypeKey === SERVICE_DESK)
   const jsmFields = fieldChanges
-    .filter(change => getChangeData(change.change).value.type.includes('service'))
+    .filter(change => getChangeData(change.change).value.type?.includes('service'))
 
 
   if (_.isEmpty(jsmProjects) || _.isEmpty(jsmFields)) {

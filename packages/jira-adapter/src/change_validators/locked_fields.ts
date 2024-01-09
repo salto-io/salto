@@ -20,15 +20,15 @@ import { FIELD_TYPE_NAME } from '../filters/fields/constants'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
-const isJsmRelatedField = (instance: InstanceElement): boolean => {
+export const isJsmRelatedField = (instance: InstanceElement): boolean => {
   if (typeof instance.value.type !== 'string') {
     return false
   }
-  const isRelated = instance.value.type.includes('service')
-  if (isRelated === true) {
+  if (instance.value.type.includes('service')) {
     log.debug(`Found a locked field that is related to a JSM project: ${instance.elemID.getFullName()}. planning to deploy it.`)
+    return true
   }
-  return isRelated
+  return false
 }
 
 export const lockedFieldsValidator: ChangeValidator = async changes => (

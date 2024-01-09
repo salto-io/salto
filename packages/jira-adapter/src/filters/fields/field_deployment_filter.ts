@@ -22,7 +22,7 @@ import JiraClient from '../../client/client'
 import { FilterCreator } from '../../filter'
 import { deployContextChange, getContexts, getContextType } from './contexts'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
-import { FIELD_TYPE_NAME } from './constants'
+import { FIELD_TYPE_NAME, IS_LOCKED } from './constants'
 import { JiraConfig } from '../../config/config'
 
 const { toArrayAsync } = collections.asynciterable
@@ -71,6 +71,13 @@ const deployField = async (
     ))
   }
 }
+const hasLockedFields = (changes: Change[]): boolean => {
+  const fields = changes
+    .filter(isInstanceChange)
+    .filter(isAdditionChange)
+    .map(getChangeData)
+  return fields.some(instance => instance.value?.[IS_LOCKED] === true)
+}
 
 const filter: FilterCreator = ({ client, config, paginator }) => ({
   name: 'fieldDeploymentFilter',
@@ -82,21 +89,22 @@ const filter: FilterCreator = ({ client, config, paginator }) => ({
         && getChangeData(change).elemID.typeName === FIELD_TYPE_NAME
     )
 
-    const allFieldsFromService = _.isEmpty(relevantChanges) ? undefined : await getAllFields(paginator)
+    const allFieldsFromService = hasLockedFields(relevantChanges) ? await getAllFields(paginator) : undefined
     const errors: SaltoElementError[] = []
 
     const deployResult = await deployChanges(
       relevantChanges.filter(isInstanceChange),
       async change => {
         const inst = getChangeData(change)
-        if (isAdditionChange(change) && inst.value.isLocked === true && allFieldsFromService !== undefined) {
+        if (isAdditionChange(change) && inst.value?.[IS_LOCKED] === true && allFieldsFromService !== undefined) {
           if (allFieldsFromService[inst.value.name] !== undefined) {
-            log.debug(`Field ${getChangeData(change).value.name} was auto-generated in Jira, skipping deployment`)
+            log.debug(`Field ${getChangeData(change).value.name} was auto-generated in Jira.`)
+            inst.value.id = allFieldsFromService[inst.value.name]
             return
           }
-          log.debug(`Field ${inst.value.name} is locked, but was not auto-generated in Jira.`)
+          log.debug(`Field ${inst.value.name} was not auto-generated in Jira.`)
           errors.push(createSaltoElementError({
-            message: `Field ${inst.value.name} is locked, but was not auto-generates in Jira.`,
+            message: `Field ${inst.value.name} was not auto-generates in Jira.`,
             severity: 'Error',
             elemID: inst.elemID,
           }))

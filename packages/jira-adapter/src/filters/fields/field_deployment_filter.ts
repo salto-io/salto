@@ -13,8 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, toChange } from '@salto-io/adapter-api'
+import { Change, createSaltoElementError, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, SaltoElementError, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
+import { client as clientUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import JiraClient from '../../client/client'
 import { FilterCreator } from '../../filter'
@@ -23,7 +25,23 @@ import { defaultDeployChange, deployChanges } from '../../deployment/standard_de
 import { FIELD_TYPE_NAME } from './constants'
 import { JiraConfig } from '../../config/config'
 
+const { toArrayAsync } = collections.asynciterable
+const { makeArray } = collections.array
 const { awu } = collections.asynciterable
+const log = logger(module)
+
+const getAllFields = async (paginator: clientUtils.Paginator): Promise<Record<string, string>> => {
+  const paginationArgs = {
+    url: '/rest/api/3/field/search',
+    paginationField: 'startAt',
+  }
+  const fieldValues = (await toArrayAsync(
+    paginator(paginationArgs, page => makeArray(page.values) as clientUtils.ResponseValue[])
+  )).flat()
+
+  const fieldNameToId = Object.fromEntries(fieldValues.map(field => [field.name, field.id]))
+  return fieldNameToId
+}
 
 const deployField = async (
   change: Change<InstanceElement>,
@@ -54,7 +72,7 @@ const deployField = async (
   }
 }
 
-const filter: FilterCreator = ({ client, config }) => ({
+const filter: FilterCreator = ({ client, config, paginator }) => ({
   name: 'fieldDeploymentFilter',
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
@@ -64,14 +82,33 @@ const filter: FilterCreator = ({ client, config }) => ({
         && getChangeData(change).elemID.typeName === FIELD_TYPE_NAME
     )
 
+    const allFieldsFromService = _.isEmpty(relevantChanges) ? undefined : await getAllFields(paginator)
+    const errors: SaltoElementError[] = []
+
     const deployResult = await deployChanges(
       relevantChanges.filter(isInstanceChange),
-      change => deployField(change, client, config),
+      async change => {
+        const inst = getChangeData(change)
+        if (isAdditionChange(change) && inst.value.isLocked === true && allFieldsFromService !== undefined) {
+          if (allFieldsFromService[inst.value.name] !== undefined) {
+            log.debug(`Field ${getChangeData(change).value.name} was auto-generated in Jira, skipping deployment`)
+            return
+          }
+          log.debug(`Field ${inst.value.name} is locked, but was not auto-generated in Jira.`)
+          errors.push(createSaltoElementError({
+            message: `Field ${inst.value.name} is locked, but was not auto-generates in Jira.`,
+            severity: 'Error',
+            elemID: inst.elemID,
+          }))
+          return
+        }
+        await deployField(change, client, config)
+      },
     )
 
     return {
       leftoverChanges,
-      deployResult,
+      deployResult: { appliedChanges: deployResult.appliedChanges, errors: [...deployResult.errors, ...errors] },
     }
   },
 })

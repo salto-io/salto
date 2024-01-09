@@ -13,11 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, InstanceElement, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { FIELD_TYPE_NAME } from '../filters/fields/constants'
 
+const log = logger(module)
 const { awu } = collections.asynciterable
+const isJsmRelatedField = (instance: InstanceElement): boolean => {
+  if (typeof instance.value.type !== 'string') {
+    return false
+  }
+  const isRelated = instance.value.type.includes('service')
+  if (isRelated === true) {
+    log.debug(`Found a locked field that is related to a JSM project: ${instance.elemID.getFullName()}. planning to deploy it.`)
+  }
+  return isRelated
+}
 
 export const lockedFieldsValidator: ChangeValidator = async changes => (
   awu(changes)
@@ -25,6 +37,7 @@ export const lockedFieldsValidator: ChangeValidator = async changes => (
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === FIELD_TYPE_NAME)
     .filter(instance => instance.value.isLocked)
+    .filter(instance => !isJsmRelatedField(instance))
     .map(async instance => ({
       elemID: instance.elemID,
       severity: 'Error' as SeverityLevel,

@@ -34,12 +34,15 @@ const { createPaginator } = clientUtils
 const omitUsersChangeWarning = (
   instance: InstanceElement,
   missingUsers: string[],
-): ChangeError => ({
-  elemID: instance.elemID,
-  severity: 'Warning',
-  message: `${missingUsers.length} users will be omitted`,
-  detailedMessage: `The following users are referenced by this instance, but do not exist in the target environment: ${missingUsers.join(', ')}.\nIf you continue, they will be omitted`,
-})
+): ChangeError => {
+  const isSingular = missingUsers.length === 1
+  return {
+    elemID: instance.elemID,
+    severity: 'Warning',
+    message: `${missingUsers.length} user${isSingular ? '' : 's'} will be omitted`,
+    detailedMessage: `The following ${isSingular ? 'user is' : 'users are'} referenced by this instance, but do not exist in the target environment: ${missingUsers.join(', ')}.\nIf you continue, they will be omitted`,
+  }
+}
 
 const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every(s => _.isString(s))

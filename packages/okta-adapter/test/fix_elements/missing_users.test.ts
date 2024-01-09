@@ -97,9 +97,9 @@ describe('missing_users', () => {
 If you continue, they will be omitted`,
         }),
         expect.objectContaining({
-          message: '1 users will be omitted',
+          message: '1 user will be omitted',
           severity: 'Warning',
-          detailedMessage: `The following users are referenced by this instance, but do not exist in the target environment: ${NOT_EXIST_USER}.
+          detailedMessage: `The following user is referenced by this instance, but do not exist in the target environment: ${NOT_EXIST_USER}.
 If you continue, they will be omitted`,
         }),
       ])

@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { customsegmentType } from '../../src/autogen/types/standard_types/customsegment'
 import extraReferenceDependenciesValidator from '../../src/change_validators/extra_reference_dependencies'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
@@ -23,6 +24,7 @@ import { entitycustomfieldType } from '../../src/autogen/types/standard_types/en
 describe('extra reference changes', () => {
   const customsegment = customsegmentType().type
   const entitycustomfield = entitycustomfieldType().type
+  const elementsSource = buildElementsSourceFromElements([])
 
   const entityFieldInstance = new InstanceElement('custentity_slt', entitycustomfield, {
     [SCRIPT_ID]: 'custentity_slt',
@@ -78,7 +80,7 @@ describe('extra reference changes', () => {
       toChange({ before: customRecordType, after: customRecordType }),
       toChange({ after: customSegmentInstance }),
       toChange({ before: entityFieldInstance, after: entityFieldInstance }),
-    ], false)
+    ], false, elementsSource)
     expect(changeErrors).toHaveLength(0)
   })
 
@@ -87,7 +89,7 @@ describe('extra reference changes', () => {
       toChange({ before: customRecordType, after: customRecordType }),
       toChange({ after: customSegmentInstance }),
       toChange({ before: entityFieldInstance, after: entityFieldInstance }),
-    ], true)
+    ], true, elementsSource)
     expect(changeErrors).toHaveLength(0)
   })
 
@@ -95,7 +97,7 @@ describe('extra reference changes', () => {
     const changeErrors = await extraReferenceDependenciesValidator([
       toChange({ after: customSegmentInstance }),
       toChange({ before: dependsOn2Instances, after: dependsOn2Instances }),
-    ], false)
+    ], false, elementsSource)
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors)
       .toEqual(expect.arrayContaining([
@@ -111,7 +113,7 @@ describe('extra reference changes', () => {
     const changeErrors = await extraReferenceDependenciesValidator([
       toChange({ after: customRecordType }),
       toChange({ before: dependsOn2Instances, after: dependsOn2Instances }),
-    ], true)
+    ], true, elementsSource)
     expect(changeErrors).toHaveLength(2)
     const customSegmentInstanceElemId = customSegmentInstance.elemID.getFullName()
     const fileInstanceElemId = entityFieldInstance.elemID.getFullName()

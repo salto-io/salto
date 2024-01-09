@@ -48,6 +48,8 @@ import rolePermissionValidator from './change_validators/role_permission_ids'
 import translationCollectionValidator from './change_validators/translation_collection_references'
 import omitFieldsValidator from './change_validators/omit_fields'
 import unreferencedFileAdditionValidator from './change_validators/unreferenced_file_addition'
+import unreferencedDatasetsValidator from './change_validators/check_referenced_datasets'
+import analyticsSilentFailureValidator from './change_validators/analytics_post_deploy_notification'
 import NetsuiteClient from './client/client'
 import {
   AdditionalDependencies,
@@ -90,6 +92,8 @@ const netsuiteChangeValidators: Record<NetsuiteValidatorName, NetsuiteChangeVali
   translationCollectionReferences: translationCollectionValidator,
   omitFields: omitFieldsValidator,
   unreferencedFileAddition: unreferencedFileAdditionValidator,
+  unreferencedDatasets: unreferencedDatasetsValidator,
+  analyticsSilentFailure: analyticsSilentFailureValidator,
 }
 
 const nonSuiteAppValidators: Record<NonSuiteAppValidatorName, NetsuiteChangeValidator> = {
@@ -174,9 +178,8 @@ const getChangeValidator: ({
         netsuiteValidators,
         validator =>
           (innerChanges: ReadonlyArray<Change>) =>
-            validator(innerChanges, deployReferencedElements, elementsSource, userConfig)
+            validator(innerChanges, deployReferencedElements, elementsSource, userConfig, client)
       )
-
       const safeDeploy = warnStaleData
         ? {
           safeDeploy: (innerChanges: ReadonlyArray<Change>) =>
@@ -192,7 +195,7 @@ const getChangeValidator: ({
 
       const dependedChangeErrors = await validateDependsOnInvalidElement(
         changeErrorsToElementIDs(validatorChangeErrors),
-        changes
+        changes,
       )
       const changeErrors = validatorChangeErrors.concat(dependedChangeErrors)
 

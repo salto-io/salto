@@ -23,12 +23,6 @@ import { getReferencedElements } from '../reference_dependencies'
 import { NetsuiteQueryParameters } from '../config/types'
 import { FetchByQueryFunc, buildNetsuiteQuery, convertToQueryParams } from '../config/query'
 
-export type QueryChangeValidator = (
-  changes: ReadonlyArray<Change>,
-  fetchByQuery: FetchByQueryFunc,
-  deployAllReferencedElements?: boolean
-) => Promise<ReadonlyArray<ChangeError>>
-
 type DependencyType = 'referenced' | 'required'
 type AdditionalElement = {
   element: ChangeDataType
@@ -95,7 +89,7 @@ const getMatchingServiceElements = async (
 
 const getAdditionalElements = async (
   elements: ChangeDataType[],
-  deployAllReferencedElements: boolean
+  deployAllReferencedElements: boolean,
 ): Promise<AdditionalElement[]> => {
   const dependency: DependencyType = deployAllReferencedElements ? 'referenced' : 'required'
   const elementsElemIdSet = new Set(elements.map(element => element.elemID.getFullName()))
@@ -103,7 +97,7 @@ const getAdditionalElements = async (
     .flatMap(async referer => {
       const additionalElements = await getReferencedElements(
         [referer],
-        deployAllReferencedElements
+        deployAllReferencedElements,
       )
       return additionalElements.map(element => {
         if (elementsElemIdSet.has(element.elemID.getFullName())) {
@@ -186,18 +180,18 @@ const toTopLevelChange = (change: Change): Change => (
     : change
 )
 
-const changeValidator: QueryChangeValidator = async (
+const changeValidator = async (
   changes: ReadonlyArray<Change>,
   fetchByQuery: FetchByQueryFunc,
-  deployAllReferencedElements = false
-) => {
+  deployAllReferencedElements = false,
+): Promise<ReadonlyArray<ChangeError>> => {
   const elements = changes
     .map(getChangeData)
     .filter(elem => isInstanceElement(elem) || isStandardInstanceOrCustomRecordType(elem))
 
   const additionalElements = await getAdditionalElements(
     elements.filter(isStandardInstanceOrCustomRecordType),
-    deployAllReferencedElements
+    deployAllReferencedElements,
   )
 
   const serviceElements = await getMatchingServiceElements(

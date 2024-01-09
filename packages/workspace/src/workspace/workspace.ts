@@ -15,9 +15,11 @@
 */
 import _ from 'lodash'
 import path from 'path'
-import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
-  Value, toChange, isRemovalChange, getChangeData,
-  ReadOnlyElementsSource, isAdditionOrModificationChange, StaticFile, isInstanceElement, AuthorInformation, ReferenceInfo, ReferenceType } from '@salto-io/adapter-api'
+import {
+  Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
+  Value, toChange, isRemovalChange, getChangeData, isField, AuthorInformation, ReferenceInfo, ReferenceType,
+  ReadOnlyElementsSource, isAdditionOrModificationChange, StaticFile, isInstanceElement, isObjectType,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
   applyDetailedChanges,
@@ -849,6 +851,32 @@ export const loadWorkspace = async (
       return [toChange({ before, after })]
     }).toArray()
   }
+
+  const fixStateOnlyChangesFieldTypes = (
+    stateOnlyChanges: Change[],
+    changes: DetailedChange[],
+  ): void => {
+    const afterFieldsByParent = _.groupBy(
+      changes
+        .filter(isAdditionOrModificationChange)
+        .map(getChangeData)
+        .filter(isField),
+      field => field.parent.elemID.getFullName()
+    )
+    stateOnlyChanges
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeData)
+      .filter(isObjectType)
+      .forEach(element => {
+        const afterFields = afterFieldsByParent[element.elemID.getFullName()] ?? []
+        afterFields
+          .filter(field => element.fields[field.name] !== undefined)
+          .forEach(field => {
+            element.fields[field.name].refType = field.refType
+          })
+      })
+  }
+
   const updateNaclFiles = async ({
     changes,
     mode,
@@ -877,6 +905,7 @@ export const loadWorkspace = async (
     await state(currentEnv()).calculateHash()
     const postChangeHash = await state(currentEnv()).getHash()
     const stateOnlyChanges = await getStateOnlyChanges(hiddenChanges)
+    fixStateOnlyChangesFieldTypes(stateOnlyChanges, changes)
     workspaceState = buildWorkspaceState({ workspaceChanges,
       stateOnlyChanges: { [currentEnv()]: {
         changes: stateOnlyChanges,

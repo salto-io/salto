@@ -21,14 +21,13 @@ import { hasJiraServiceDeskLicense } from '../utils'
 const { awu } = collections.asynciterable
 
 /*
-* This validator prevents addition of jsm project when Jsm is diable in the Service.
+* This validator prevents addition of jsm project when JSM is disabled in the service.
 */
 export const addJsmProjectValidator: ChangeValidator = async (changes, elementsSource) => {
   if (elementsSource === undefined) {
     return []
   }
-  const isJsmEnabledInService = await hasJiraServiceDeskLicense(elementsSource)
-  if (isJsmEnabledInService === true) {
+  if (await hasJiraServiceDeskLicense(elementsSource) === true) {
     return []
   }
 

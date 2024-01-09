@@ -37,7 +37,7 @@ const omitUsersChangeWarning = (
 ): ChangeError => ({
   elemID: instance.elemID,
   severity: 'Warning',
-  message: `${missingUsers.length} usernames will be omitted`,
+  message: `${missingUsers.length} users will be omitted`,
   detailedMessage: `The following users are referenced by this instance, but do not exist in the target environment: ${missingUsers.join(', ')}.\nIf you continue, they will be omitted`,
 })
 
@@ -75,7 +75,7 @@ const omitUsers = (
   const fixedInstance = instance.clone()
   missingUsersPaths
     .forEach(({ path, newValue }) =>
-      setPath(fixedInstance, path, newValue))
+      setPath(fixedInstance, path, _.isEmpty(newValue) ? undefined : newValue))
   return { fixedInstance, missingUsers: _.uniq(missingUsersPaths.flatMap(({ usersToOmit }) => usersToOmit)) }
 }
 
@@ -107,7 +107,6 @@ export const omitMissingUsersHandler: FixElementsHandler = (
 
   const usersInTarget = new Set((await getUsers(paginator, { userIds: usersFromInstances, property: 'profile.login' }))
     .map(user => user.profile.login))
-
   const fixedElementsAndOmittedUsers = instancesWithUsers
     .map(omitUsers(usersInTarget))
     .filter(values.isDefined)

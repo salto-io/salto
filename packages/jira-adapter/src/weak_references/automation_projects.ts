@@ -63,7 +63,7 @@ const getAutomationProjectsReferences: GetCustomReferencesFunc = async elements 
   awu(elements)
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
-    .flatMap(instance => getProjectReferences(instance))
+    .flatMap(getProjectReferences)
     .toArray()
 
 /**

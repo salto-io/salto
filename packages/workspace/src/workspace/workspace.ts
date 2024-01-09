@@ -19,6 +19,7 @@ import {
   Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
   Value, toChange, isRemovalChange, getChangeData, isField, AuthorInformation, ReferenceInfo, ReferenceType,
   ReadOnlyElementsSource, isAdditionOrModificationChange, StaticFile, isInstanceElement, isObjectType,
+  isModificationChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
@@ -856,20 +857,25 @@ export const loadWorkspace = async (
     stateOnlyChanges: Change[],
     changes: DetailedChange[],
   ): void => {
-    const afterFieldsByParent = _.groupBy(
+    // stateOnlyChanges should contain only the hidden parts from the state. for fields it is not
+    // possible to hide just the type of the field, so in theory the type of the field shouldn't
+    // be a part of the information (since the type is not hidden unless the whole field is hidden),
+    // but since we can't have a field without a type, we have to put something there. using the type
+    // from the original change to make sure there is no conflict is a way to "remove" the information.
+    const modifiedFieldsByParent = _.groupBy(
       changes
-        .filter(isAdditionOrModificationChange)
+        .filter(isModificationChange)
         .map(getChangeData)
         .filter(isField),
       field => field.parent.elemID.getFullName()
     )
     stateOnlyChanges
-      .filter(isAdditionOrModificationChange)
+      .filter(isModificationChange)
       .map(getChangeData)
       .filter(isObjectType)
       .forEach(element => {
-        const afterFields = afterFieldsByParent[element.elemID.getFullName()] ?? []
-        afterFields
+        const modifiedFields = modifiedFieldsByParent[element.elemID.getFullName()] ?? []
+        modifiedFields
           .filter(field => element.fields[field.name] !== undefined)
           .forEach(field => {
             element.fields[field.name].refType = field.refType

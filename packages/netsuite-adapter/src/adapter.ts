@@ -103,11 +103,11 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   { creator: dataInstancesDiff },
   // addParentFolder must run before replaceInstanceReferencesFilter
   { creator: addParentFolder },
-  { creator: parseReportTypes },
-  // analyticsDefinitionHandle must run before translationConverter and replaceElementReferences
-  // and after parseReportTypes
-  { creator: analyticsDefinitionHandle },
   { creator: convertLists },
+  { creator: parseReportTypes },
+  // analyticsDefinitionHandle must run after convertLists
+  // and before translationConverter and replaceElementReferences
+  { creator: analyticsDefinitionHandle },
   { creator: consistentValues },
   // excludeInstances should run after parseReportTypes, analyticsDefinitionHandle & consistentValues,
   // so users will be able to exclude elements based on parsed values.

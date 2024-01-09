@@ -19,7 +19,7 @@ import { getChangeData, InstanceElement,
   isInstanceChange, ChangeError, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { DATASET, FINANCIAL_LAYOUT, REPORT_DEFINITION, SAVED_SEARCH, WORKBOOK } from '../constants'
+import { FINANCIAL_LAYOUT, REPORT_DEFINITION, SAVED_SEARCH } from '../constants'
 import { parseDefinition as parseSavedSearchDefinition } from '../type_parsers/saved_search_parsing/saved_search_parser'
 import { parseDefinition as parseReportDefintionDefinition } from '../type_parsers/report_definition_parsing/report_definition_parser'
 import { parseDefinition as parseFinancialLayoutDefinition } from '../type_parsers/financial_layout_parsing/financial_layout_parser'
@@ -45,11 +45,6 @@ Record<string, (definition: string) => Promise<ReportTypes>> = {
   [REPORT_DEFINITION]: parseReportDefintionDefinition,
   [SAVED_SEARCH]: parseSavedSearchDefinition,
 }
-
-export const parsedTypeNames = Object.keys(typeNameToParser).concat([
-  DATASET,
-  WORKBOOK,
-])
 
 const typeNameToName: Record<string, string> = {
   [FINANCIAL_LAYOUT]: 'Financial Layout',

@@ -220,6 +220,8 @@ export type NetsuiteValidatorName = (
   | 'translationCollectionReferences'
   | 'omitFields'
   | 'unreferencedFileAddition'
+  | 'unreferencedDatasets'
+  | 'analyticsSilentFailure'
 )
 
 export type NonSuiteAppValidatorName = (
@@ -592,6 +594,8 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     translationCollectionReferences: { refType: BuiltinTypes.BOOLEAN },
     omitFields: { refType: BuiltinTypes.BOOLEAN },
     unreferencedFileAddition: { refType: BuiltinTypes.BOOLEAN },
+    unreferencedDatasets: { refType: BuiltinTypes.BOOLEAN },
+    analyticsSilentFailure: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

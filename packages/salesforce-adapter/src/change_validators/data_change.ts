@@ -21,10 +21,7 @@ import {
   isAdditionOrModificationChange,
   InstanceElement,
 } from '@salto-io/adapter-api'
-import { values } from '@salto-io/lowerdash'
 import { isInstanceOfCustomObjectChangeSync } from '../filters/utils'
-
-const { isDefined } = values
 
 const createDataDeploymentChangeInfo = (instanceElemID: ElemID): ChangeError => ({
   elemID: instanceElemID,
@@ -33,19 +30,21 @@ const createDataDeploymentChangeInfo = (instanceElemID: ElemID): ChangeError => 
   detailedMessage: '',
 })
 
-const createMissingFieldsValuesChangeError = (instance: InstanceElement): ChangeError | undefined => {
+const getMissingFields = (instance: InstanceElement): string[] => {
   const typeFields = new Set(Object.keys(instance.getTypeSync().fields))
-  const missingFields = Object.keys(instance.value)
+  return Object.keys(instance.value)
     .filter(fieldName => !typeFields.has(fieldName))
-  return missingFields.length > 0
-    ? {
-      elemID: instance.elemID,
-      severity: 'Warning',
-      message: 'Data instance has values of unknown fields',
-      detailedMessage: `Some fields do not exist in the target environment, therefore their values will be omitted from the deployment. Missing fields: [${missingFields.join(', ')}].`,
-    }
-    : undefined
 }
+
+const createMissingFieldsValuesChangeError = (
+  instance: InstanceElement,
+  missingFields: string[]
+): ChangeError => ({
+  elemID: instance.elemID,
+  severity: 'Warning',
+  message: 'Data instance has values of unknown fields',
+  detailedMessage: `Some fields do not exist in the target environment, therefore their values will be omitted from the deployment. Missing fields: [${missingFields.join(', ')}].`,
+})
 
 const createDataChangeValidator: ChangeValidator = async changes => {
   const changeErrors: ChangeError[] = []
@@ -56,12 +55,13 @@ const createDataChangeValidator: ChangeValidator = async changes => {
   }
   changeErrors.push(createDataDeploymentChangeInfo(getChangeData(dataChanges[0]).elemID))
   dataChanges
-    // Deletions are supported in this use-case
+    // Deletions should work even if some values are missing on the type
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
-    .map(createMissingFieldsValuesChangeError)
-    .filter(isDefined)
-    .forEach(changeError => changeErrors.push(changeError))
+    .map(instance => ({ instance, missingFields: getMissingFields(instance) }))
+    .filter(({ missingFields }) => missingFields.length > 0)
+    .forEach(({ instance, missingFields }) => changeErrors
+      .push(createMissingFieldsValuesChangeError(instance, missingFields)))
   return changeErrors
 }
 

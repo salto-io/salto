@@ -42,7 +42,13 @@ import {
   SBAA_CONDITIONS_MET,
 } from './constants'
 import { getIdFields, transformRecordToValues } from './filters/custom_objects_instances'
-import { apiNameSync, buildSelectQueries, getFieldNamesForQuery, isInstanceOfTypeChange } from './filters/utils'
+import {
+  apiNameSync,
+  buildSelectQueries,
+  getFieldNamesForQuery,
+  isInstanceOfTypeChange,
+  isStandardField,
+} from './filters/utils'
 import { isListCustomSettingsObject } from './filters/custom_settings_filter'
 import { SalesforceRecord } from './client/types'
 import { buildDataManagement } from './fetch_profile/data_management'
@@ -294,11 +300,15 @@ const removeFieldsWithNoPermission = async (
   instance: InstanceElement,
   permissionAnnotation: string
 ): Promise<SaltoElementError[]> => {
-  const shouldRemoveField = (type: ObjectType, fieldName: string, fieldValue: Value): boolean => (
-    fieldName !== CUSTOM_OBJECT_ID_FIELD
-    && (fieldValue === undefined
-      || !type.fields[fieldName]?.annotations[permissionAnnotation])
-  )
+  const shouldRemoveField = (type: ObjectType, fieldName: string, fieldValue: Value): boolean => {
+    if (fieldValue === undefined) {
+      return true
+    }
+    const field = type.fields[fieldName]
+    return field !== undefined
+      && !isStandardField(field)
+      && !field.annotations[permissionAnnotation]
+  }
   const createRemovedFieldWarning = (type: ObjectType, fieldValue: Value, fieldName: string): SaltoElementError => {
     log.info('Removing field %s from %s: %s=%s, value=%s',
       fieldName,

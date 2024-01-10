@@ -241,6 +241,7 @@ export type ChangeValidatorName = (
   | 'defaultAttributeValidator'
   | 'boardColumnConfig'
   | 'automationToAssets'
+  | 'addJsmProject'
   )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -294,6 +295,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     defaultAdditionQueueValidator: { refType: BuiltinTypes.BOOLEAN },
     defaultAttributeValidator: { refType: BuiltinTypes.BOOLEAN },
     automationToAssets: { refType: BuiltinTypes.BOOLEAN },
+    addJsmProject: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

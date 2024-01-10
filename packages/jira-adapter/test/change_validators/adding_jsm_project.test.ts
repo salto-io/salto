@@ -55,8 +55,8 @@ describe('addJsmProjectValidator', () => {
       {
         elemID: projectInstace.elemID,
         severity: 'Error' as SeverityLevel,
-        message: 'Cannot add this project because JSM is disabled in the service.',
-        detailedMessage: 'Please enable JSM through the service in order to add this element',
+        message: 'JSM Project cannot be deployed to instance without JSM',
+        detailedMessage: 'This JSM project can not be deployed, as JSM is not enabled in the target instance. Enable JSM on your target first, then try again.',
       },
     ])
   })
@@ -67,8 +67,8 @@ describe('addJsmProjectValidator', () => {
       {
         elemID: projectInstace.elemID,
         severity: 'Error' as SeverityLevel,
-        message: 'Cannot add this project because JSM is disabled in the service.',
-        detailedMessage: 'Please enable JSM through the service in order to add this element',
+        message: 'JSM Project cannot be deployed to instance without JSM',
+        detailedMessage: 'This JSM project can not be deployed, as JSM is not enabled in the target instance. Enable JSM on your target first, then try again.',
       },
     ])
   })
@@ -84,8 +84,8 @@ describe('addJsmProjectValidator', () => {
       {
         elemID: projectInstace.elemID,
         severity: 'Error' as SeverityLevel,
-        message: 'Cannot add this project because JSM is disabled in the service.',
-        detailedMessage: 'Please enable JSM through the service in order to add this element',
+        message: 'JSM Project cannot be deployed to instance without JSM',
+        detailedMessage: 'This JSM project can not be deployed, as JSM is not enabled in the target instance. Enable JSM on your target first, then try again.',
       },
     ])
   })
@@ -103,8 +103,8 @@ describe('addJsmProjectValidator', () => {
       {
         elemID: projectInstace.elemID,
         severity: 'Error' as SeverityLevel,
-        message: 'Cannot add this project because JSM is disabled in the service.',
-        detailedMessage: 'Please enable JSM through the service in order to add this element',
+        message: 'JSM Project cannot be deployed to instance without JSM',
+        detailedMessage: 'This JSM project can not be deployed, as JSM is not enabled in the target instance. Enable JSM on your target first, then try again.',
       },
     ])
   })

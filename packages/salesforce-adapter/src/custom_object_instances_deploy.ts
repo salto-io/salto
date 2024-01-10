@@ -568,10 +568,11 @@ const isModificationChangeList = <T>(
     changes.every(isModificationChange)
   )
 
-const hasMissingFieldValues = (change: Change<InstanceElement>): boolean => {
+const getMissingFields = (change: Change<InstanceElement>): string[] => {
   const typeFields = new Set(Object.keys(getChangeData(change).getTypeSync().fields))
-  return Object.keys(getChangeData(change).value).some(instanceField => !typeFields.has(instanceField))
+  return Object.keys(getChangeData(change).value).filter(instanceField => !typeFields.has(instanceField))
 }
+
 const omitMissingFieldsValues = async (change: Change<InstanceElement>): Promise<Change<InstanceElement>> => (
   applyFunctionToChangeData(change, instance => {
     const instanceClone = instance.clone()
@@ -602,21 +603,23 @@ const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
   })
   const [changesWithMissingFields, validChanges] = _.partition(
     changes,
-    hasMissingFieldValues
+    change => getMissingFields(change).length > 0,
   )
+  const missingFieldValuesWarnings: SaltoElementError[] = changesWithMissingFields
+    .map(change => ({ change, missingFields: getMissingFields(change) }))
+    .map(({ change, missingFields }) => ({
+      severity: 'Warning',
+      elemID: getChangeData(change).elemID,
+      message: `The values of the following fields were not deployed since they are not defined in the type: [${missingFields.join(', ')}]`,
+    }))
   const withMissingFieldValuesErrors = (deployResult: DeployResult): DeployResult => {
     const appliedChangesElemIds = new Set(deployResult.appliedChanges
       .map(change => getChangeData(change).elemID.getFullName()))
     return {
       ...deployResult,
-      errors: deployResult.errors.concat(changesWithMissingFields
-        // No reason to create the warning on non applied changes
-        .filter(change => appliedChangesElemIds.has(getChangeData(change).elemID.getFullName()))
-        .map(change => ({
-          severity: 'Warning',
-          elemID: getChangeData(change).elemID,
-          message: 'Instance may have been partially deployed due to missing fields',
-        }))),
+      errors: deployResult.errors
+        // We should omit warnings on non applied changes
+        .concat(missingFieldValuesWarnings.filter(warning => appliedChangesElemIds.has(warning.elemID.getFullName()))),
     }
   }
   const changesToDeploy = validChanges
@@ -645,8 +648,8 @@ const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
     if (changes.every(isRemovalChange)) {
       return await deployRemoveInstances(instances, client, groupId)
     }
-    if (isModificationChangeList(changes)) {
-      return withMissingFieldValuesErrors(await deployModifyChanges(changes, client, groupId))
+    if (isModificationChangeList(changesToDeploy)) {
+      return withMissingFieldValuesErrors(await deployModifyChanges(changesToDeploy, client, groupId))
     }
     return customObjectInstancesDeployError('Custom Object Instances change group must have one action')
   } catch (error) {

@@ -136,7 +136,6 @@ describe('createReferencesIssueLayoutFilter', () => {
         issueLayoutType,
         {
           id: '2',
-          projectId: '11111',
           extraDefinerId: '11',
           issueLayoutConfig: {
             items: [
@@ -171,7 +170,6 @@ describe('createReferencesIssueLayoutFilter', () => {
       await filter.onFetch(elements)
       expect(issueLayoutInstance.value).toEqual({
         id: '2',
-        projectId: new ReferenceExpression(projectInstance.elemID, projectInstance),
         extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
         issueLayoutConfig: {
           items: [

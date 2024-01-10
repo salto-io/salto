@@ -32,6 +32,8 @@ import { enabledAuthenticatorsValidator } from './enabled_authenticators'
 import { roleAssignmentValidator } from './role_assignment'
 import { usersValidator } from './user'
 import { appWithGroupPushValidator } from './app_with_group_push'
+import { appUserSchemaWithInactiveAppValidator } from './app_schema_with_inactive_app'
+import { appGroupAssignmentValidator } from './app_group_assignments'
 import OktaClient from '../client/client'
 import {
   API_DEFINITIONS_CONFIG,
@@ -40,7 +42,6 @@ import {
   OktaConfig,
   PRIVATE_API_DEFINITIONS_CONFIG,
 } from '../config'
-import { appUserSchemaWithInactiveAppValidator } from './app_schema_with_inactive_app'
 
 const {
   createCheckDeploymentBasedOnConfigValidator,
@@ -77,6 +78,7 @@ export default ({
     appUserSchemaWithInactiveApp: appUserSchemaWithInactiveAppValidator,
     appWithGroupPush: appWithGroupPushValidator,
     groupPushToApplicationUniqueness: groupPushToApplicationUniquenessValidator,
+    appGroupAssignment: appGroupAssignmentValidator,
   }
 
   return createChangeValidator({

@@ -33,7 +33,7 @@ import { InvalidSuiteAppCredentialsError } from '../../types'
 import { isCustomRecordType } from '../../../types'
 import { INTERNAL_ID_TO_TYPES, isItemType, ITEM_TYPE_ID, ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from '../../../data_elements/types'
 import { XSI_TYPE } from '../../constants'
-import { InstanceLimiterFunc } from '../../../config'
+import { InstanceLimiterFunc } from '../../../config/types'
 import { toError } from '../../utils'
 import { removeUneditableLockedField } from './filter_uneditable_locked_field'
 

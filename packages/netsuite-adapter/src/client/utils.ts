@@ -20,7 +20,8 @@ import { logger } from '@salto-io/logging'
 import { Change, ElemID, SaltoElementError, getChangeData, isAdditionChange } from '@salto-io/adapter-api'
 import { FILE, FOLDER } from '../constants'
 import { CustomizationInfo, CustomTypeInfo, DeployableChange, FileCustomizationInfo, FolderCustomizationInfo, SDFObjectChangeType, TemplateCustomTypeInfo } from './types'
-import { NetsuiteTypesQueryParams } from '../query'
+import { NetsuiteTypesQueryParams } from '../config/types'
+import { REQUIRED_FEATURE_SUFFIX } from '../config/constants'
 import { ConfigRecord } from './suiteapp_client/types'
 import { isFileCabinetInstance } from '../types'
 import { getServiceIdsToElemIds } from '../service_id_info'
@@ -28,6 +29,12 @@ import { getServiceIdsToElemIds } from '../service_id_info'
 const log = logger(module)
 const { matchAll } = strings
 const { isDefined } = values
+
+export const isRequiredFeature = (featureName: string): boolean =>
+  featureName.toLowerCase().endsWith(REQUIRED_FEATURE_SUFFIX)
+
+export const removeRequiredFeatureSuffix = (featureName: string): string =>
+  featureName.slice(0, featureName.length - REQUIRED_FEATURE_SUFFIX.length)
 
 export const toError = (e: unknown): Error => {
   if (e instanceof Error) {

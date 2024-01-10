@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isRemovalOrModificationChange, ModificationChange, Values } from '@salto-io/adapter-api'
+import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isRemovalOrModificationChange, ModificationChange, ReferenceExpression, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { createSchemeGuard, resolveValues } from '@salto-io/adapter-utils'
+import { createSchemeGuard, getParent, resolveValues } from '@salto-io/adapter-utils'
 import Joi from 'joi'
+import { collections } from '@salto-io/lowerdash'
 import { getDiffIds } from '../../diff'
 import { AUTOMATION_TYPE } from '../../constants'
 import { addAnnotationRecursively, findObject, setTypeDeploymentAnnotations } from '../../utils'
@@ -31,6 +32,7 @@ import { JiraConfig } from '../../config/config'
 import { PROJECT_TYPE_TO_RESOURCE_TYPE } from './automation_structure'
 
 const log = logger(module)
+const { awu } = collections.asynciterable
 
 type ImportResponse = {
   id: string
@@ -75,6 +77,24 @@ const AUTOMATION_RESPONSE_SCHEME = Joi.array().items(
 )
 
 const isAutomationsResponse = createSchemeGuard<AutomationResponse[]>(AUTOMATION_RESPONSE_SCHEME, 'Received an invalid automation import response')
+
+export type Component = {
+  value: {
+      workspaceId?: string
+      schemaId?: string
+      objectTypeId: ReferenceExpression
+      schemaLabel?: string
+      objectTypeLabel?: string
+  }
+}
+
+const ASSET_COMPONENT_SCHEME = Joi.object({
+  value: Joi.object({
+    objectTypeId: Joi.required(),
+  }).unknown(true),
+}).unknown(true)
+
+export const isAssetComponent = createSchemeGuard<Component>(ASSET_COMPONENT_SCHEME)
 
 const generateRuleScopesResources = (
   instance: InstanceElement,
@@ -291,6 +311,39 @@ const updateAutomationLabels = async (
     await removeAutomationLabels(getChangeData(change), removedLabels, client, cloudId)
   }
 }
+const addDetailedAssetsComponents = (instance: InstanceElement): void => {
+  if (!instance.value.components) {
+    return
+  }
+  const assetsComponents: Component[] = instance.value.components
+    .filter(isAssetComponent)
+  assetsComponents.forEach(component => {
+    try {
+      const objectType = component.value.objectTypeId.value
+      const schema = getParent(objectType)
+      component.value.schemaId = schema.value.id
+      component.value.schemaLabel = schema.value.name
+      component.value.objectTypeLabel = objectType.value.name
+      component.value.workspaceId = schema.value.workspaceId
+    } catch (e) {
+      log.warn(`Failed to update detailed assets components for ${instance.elemID.getFullName()}`)
+    }
+  })
+}
+
+const deleteDetailedAssetsComponents = (instance: InstanceElement): void => {
+  if (!instance.value.components) {
+    return
+  }
+  const assetsComponents: Component[] = instance.value.components
+    .filter(isAssetComponent)
+  assetsComponents.forEach(component => {
+    delete component.value.schemaId
+    delete component.value.schemaLabel
+    delete component.value.objectTypeLabel
+    delete component.value.workspaceId
+  })
+}
 
 const updateAutomation = async (
   instance: InstanceElement,
@@ -356,7 +409,18 @@ const filter: FilterCreator = ({ client, config }) => ({
     await addAnnotationRecursively(automationType, CORE_ANNOTATIONS.UPDATABLE)
     setTypeDeploymentAnnotations(automationType)
   },
+  preDeploy: async changes => {
+    if (!config.fetch.enableJSM || !config.fetch.enableJsmExperimental) {
+      return
+    }
 
+    await awu(changes)
+      .filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeData)
+      .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
+      .forEach(addDetailedAssetsComponents)
+  },
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
@@ -384,6 +448,18 @@ const filter: FilterCreator = ({ client, config }) => ({
       leftoverChanges,
       deployResult,
     }
+  },
+  onDeploy: async changes => {
+    if (!config.fetch.enableJSM || !config.fetch.enableJsmExperimental) {
+      return
+    }
+
+    await awu(changes)
+      .filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeData)
+      .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
+      .forEach(deleteDetailedAssetsComponents)
   },
 })
 export default filter

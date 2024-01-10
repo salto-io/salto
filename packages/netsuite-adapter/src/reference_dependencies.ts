@@ -15,15 +15,12 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import {
-  isInstanceElement, isPrimitiveType, ElemID, getFieldType,
-  isReferenceExpression, Value, isServiceId, isObjectType, ChangeDataType, TopLevelElement,
-} from '@salto-io/adapter-api'
+import { isInstanceElement, isPrimitiveType, ElemID, getFieldType, isReferenceExpression, Value, isServiceId, isObjectType, ChangeDataType, TopLevelElement } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import wu from 'wu'
 import os from 'os'
-import { CUSTOM_SEGMENT, DATASET, NETSUITE, SCRIPT_ID, TRANSLATION_COLLECTION, WORKBOOK } from './constants'
+import { CUSTOM_SEGMENT, NETSUITE, SCRIPT_ID, TRANSLATION_COLLECTION } from './constants'
 import { isCustomRecordType } from './types'
 
 const { awu } = collections.asynciterable
@@ -36,7 +33,7 @@ const isTopLevelElement = (value: unknown): value is TopLevelElement =>
 const elementFullName = (element: ChangeDataType): string => element.elemID.getFullName()
 
 export const findDependingElementsFromRefs = async (
-  element: ChangeDataType
+  element: ChangeDataType,
 ): Promise<TopLevelElement[]> => {
   const visitedIdToElement = new Map<string, TopLevelElement>()
   const isRefToServiceId = async (
@@ -80,7 +77,7 @@ export const findDependingElementsFromRefs = async (
  * Here we add automatically all of the referenced elements (recursively).
  */
 const getAllReferencedElements = async (
-  sourceElements: ReadonlyArray<ChangeDataType>
+  sourceElements: ReadonlyArray<ChangeDataType>,
 ): Promise<ReadonlyArray<TopLevelElement>> => {
   const visited = new Set<string>(sourceElements.map(elementFullName))
   const getNewReferencedElement = async (
@@ -106,7 +103,7 @@ const getAllReferencedElements = async (
  * Here we add manually all of the quirks we identified.
  */
 export const getRequiredReferencedElements = async (
-  sourceElements: ReadonlyArray<ChangeDataType>
+  sourceElements: ReadonlyArray<ChangeDataType>,
 ): Promise<ReadonlyArray<TopLevelElement>> => {
   const getReferencedElement = (
     value: Value,
@@ -134,11 +131,6 @@ export const getRequiredReferencedElements = async (
           return getReferencedElement(
             element.value.recordtype,
             elem => isObjectType(elem) && isCustomRecordType(elem)
-          )
-        case WORKBOOK:
-          return getReferencedElement(
-            element.value.dependencies?.dependency,
-            elem => isInstanceElement(elem) && elem.elemID.typeName === DATASET
           )
         default:
           return undefined
@@ -178,7 +170,7 @@ export const getRequiredReferencedElements = async (
 
 export const getReferencedElements = async (
   elements: ReadonlyArray<ChangeDataType>,
-  deployAllReferencedElements: boolean
+  deployAllReferencedElements: boolean,
 ): Promise<ReadonlyArray<TopLevelElement>> => (
   deployAllReferencedElements
     ? getAllReferencedElements(elements)

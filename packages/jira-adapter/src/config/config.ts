@@ -233,12 +233,12 @@ export type ChangeValidatorName = (
   | 'workflowTransitionDuplicateName'
   | 'permissionSchemeDeployment'
   | 'projectCategory'
-  | 'unresolvedFieldConfigurationItems'
   | 'customFieldsWith10KOptions'
   | 'issueTypeHierarchy'
   | 'automationProjects'
   | 'deleteLastQueueValidator'
   | 'defaultAdditionQueueValidator'
+  | 'defaultAttributeValidator'
   | 'boardColumnConfig'
   | 'automationToAssets'
   )
@@ -287,12 +287,12 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     workflowTransitionDuplicateName: { refType: BuiltinTypes.BOOLEAN },
     permissionSchemeDeployment: { refType: BuiltinTypes.BOOLEAN },
     projectCategory: { refType: BuiltinTypes.BOOLEAN },
-    unresolvedFieldConfigurationItems: { refType: BuiltinTypes.BOOLEAN },
     customFieldsWith10KOptions: { refType: BuiltinTypes.BOOLEAN },
     issueTypeHierarchy: { refType: BuiltinTypes.BOOLEAN },
     automationProjects: { refType: BuiltinTypes.BOOLEAN },
     deleteLastQueueValidator: { refType: BuiltinTypes.BOOLEAN },
     defaultAdditionQueueValidator: { refType: BuiltinTypes.BOOLEAN },
+    defaultAttributeValidator: { refType: BuiltinTypes.BOOLEAN },
     automationToAssets: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
@@ -409,11 +409,11 @@ export const validateJiraFetchConfig = ({
 }: {
   fetchConfig: JiraFetchConfig
   apiDefinitions: JiraApiConfig
-  scriptRunnerApiDefinitions: JiraDuckTypeConfig
+  scriptRunnerApiDefinitions?: JiraDuckTypeConfig
   jsmApiDefinitions: JiraDuckTypeConfig
 }): void => {
   const jsmSupportedTypes = fetchConfig.enableJSM ? Object.keys(jsmApiDefinitions.supportedTypes) : []
-  const scriptRunnerSupportedTypes = fetchConfig.enableScriptRunnerAddon
+  const scriptRunnerSupportedTypes = fetchConfig.enableScriptRunnerAddon && scriptRunnerApiDefinitions !== undefined
     ? Object.keys(scriptRunnerApiDefinitions.supportedTypes) : []
   const supportedTypes = Object.keys(apiDefinitions.supportedTypes)
     .concat(jsmSupportedTypes)

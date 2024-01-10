@@ -78,7 +78,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
         }
       }
     })
-    logsSet.forEach(message => log.error(message))
+    logsSet.forEach(message => log.warn(message))
   },
 })
 

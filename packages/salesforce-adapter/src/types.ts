@@ -362,6 +362,7 @@ export type ClientRetryConfig = Partial<{
 export type CustomObjectsDeployRetryConfig = {
   maxAttempts: number
   retryDelay: number
+  retryDelayMultiplier: number
   retryableFailures: string[]
 }
 
@@ -623,6 +624,7 @@ const clientRetryConfigType = new ObjectType({
   fields: {
     maxAttempts: { refType: BuiltinTypes.NUMBER },
     retryDelay: { refType: BuiltinTypes.NUMBER },
+    retryDelayMultiplier: { refType: BuiltinTypes.NUMBER },
     retryStrategy: {
       refType: BuiltinTypes.STRING,
       annotations: {

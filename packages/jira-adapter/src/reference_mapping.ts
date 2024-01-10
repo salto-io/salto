@@ -30,7 +30,7 @@ import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_T
   SCRIPT_RUNNER_LISTENER_TYPE, SCRIPTED_FIELD_TYPE, BEHAVIOR_TYPE, ISSUE_LAYOUT_TYPE,
   SCRIPT_RUNNER_SETTINGS_TYPE, SCRIPT_FRAGMENT_TYPE, CUSTOMER_PERMISSIONS_TYPE, QUEUE_TYPE,
   REQUEST_TYPE_NAME, CALENDAR_TYPE, PORTAL_GROUP_TYPE, PORTAL_SETTINGS_TYPE_NAME, SLA_TYPE_NAME,
-  ISSUE_VIEW_TYPE, REQUEST_FORM_TYPE, OBJECT_TYPE_ATTRIBUTE_TYPE, OBJECT_TYPE_TYPE, SCREEN_TYPE_NAME, WEBHOOK_TYPE } from './constants'
+  ISSUE_VIEW_TYPE, REQUEST_FORM_TYPE, OBJECT_TYPE_ATTRIBUTE_TYPE, OBJECT_TYPE_TYPE, SCREEN_TYPE_NAME, WEBHOOK_TYPE, OBJECT_SCHMEA_REFERENCE_TYPE_TYPE, OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 import { getRefType } from './references/workflow_properties'
 import { FIELD_TYPE_NAME } from './filters/fields/constants'
@@ -39,8 +39,10 @@ import { gadgetValuesContextFunc, gadgetValueSerialize, gadgetDashboradValueLook
 const { awu } = collections.asynciterable
 const { neighborContextGetter, basicLookUp } = referenceUtils
 
+type jiraMissingReferenceStrategyName = referenceUtils.MissingReferenceStrategyName
+
 export const JiraMissingReferenceStrategyLookup: Record<
-referenceUtils.MissingReferenceStrategyName, referenceUtils.MissingReferenceStrategy
+jiraMissingReferenceStrategyName, referenceUtils.MissingReferenceStrategy
 > = {
   typeAndValue: {
     create: ({ value, adapter, typeName }) => {
@@ -69,6 +71,15 @@ const toTypeName: referenceUtils.ContextValueMapperFunc = val => {
   return _.capitalize(val)
 }
 
+const toReferenceTypeTypeName: referenceUtils.ContextValueMapperFunc = val => {
+  // 1,2,3,4,5,8 are the default values for the reference type field in jira.
+  const defaultVals = new Set(['1', '2', '3', '4', '5', '8'])
+  if (defaultVals.has(val)) {
+    return OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE
+  }
+  return OBJECT_SCHMEA_REFERENCE_TYPE_TYPE
+}
+
 export const resolutionAndPriorityToTypeName: referenceUtils.ContextValueMapperFunc = val => {
   if (val === 'priority' || val === 'resolution') {
     return _.capitalize(val)
@@ -77,7 +88,7 @@ export const resolutionAndPriorityToTypeName: referenceUtils.ContextValueMapperF
 }
 
 export type ReferenceContextStrategyName = 'parentSelectedFieldType' | 'parentFieldType' | 'workflowStatusPropertiesContext'
-| 'parentFieldId' | 'gadgetPropertyValue'
+| 'parentFieldId' | 'gadgetPropertyValue' | 'referenceTypeTypeName'
 
 export const contextStrategyLookup: Record<
   ReferenceContextStrategyName, referenceUtils.ContextFunc
@@ -87,6 +98,7 @@ export const contextStrategyLookup: Record<
   workflowStatusPropertiesContext: neighborContextFunc({ contextFieldName: 'key', contextValueMapper: getRefType }),
   parentFieldId: neighborContextFunc({ contextFieldName: 'fieldId', contextValueMapper: resolutionAndPriorityToTypeName }),
   gadgetPropertyValue: gadgetValuesContextFunc,
+  referenceTypeTypeName: neighborContextFunc({ contextFieldName: 'additionalValue', contextValueMapper: toReferenceTypeTypeName }),
 }
 
 const groupNameSerialize: GetLookupNameFunc = ({ ref }) =>
@@ -133,7 +145,7 @@ type JiraFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<
 ReferenceContextStrategyName
 > & {
   jiraSerializationStrategy?: JiraReferenceSerializationStrategyName
-  jiraMissingRefStrategy?: referenceUtils.MissingReferenceStrategyName
+  jiraMissingRefStrategy?: jiraMissingReferenceStrategyName
 }
 export class JiraFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<
 ReferenceContextStrategyName
@@ -1047,7 +1059,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: ISSUE_TYPE_NAME },
   },
   {
-    src: { field: 'projectId', parentTypes: [ISSUE_LAYOUT_TYPE, REQUEST_FORM_TYPE, ISSUE_VIEW_TYPE] },
+    src: { field: 'projectId', parentTypes: [REQUEST_FORM_TYPE, ISSUE_VIEW_TYPE] },
     serializationStrategy: 'id',
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: PROJECT_TYPE },
@@ -1160,6 +1172,18 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: OBJECT_TYPE_TYPE },
   },
+  {
+    src: { field: 'additionalValue', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { typeContext: 'referenceTypeTypeName' },
+  },
+  {
+    src: { field: 'objectTypeId', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
+    serializationStrategy: 'id',
+    target: { type: OBJECT_TYPE_TYPE },
+  },
+
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [

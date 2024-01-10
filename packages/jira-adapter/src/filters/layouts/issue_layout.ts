@@ -13,17 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, Element, ReferenceExpression, isInstanceElement } from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { logger } from '@salto-io/logging'
+import { CORE_ANNOTATIONS, Change, Element, InstanceElement, ReferenceExpression, getChangeData, isAdditionChange, isInstanceChange, isInstanceElement, isRemovalChange } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { getParent, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { client as clientUtils } from '@salto-io/adapter-components'
 import { ISSUE_LAYOUT_TYPE, PROJECT_TYPE } from '../../constants'
 import { FilterCreator } from '../../filter'
-import { createLayoutType } from './layout_types'
+import { createLayoutType, layoutConfigItem } from './layout_types'
 import { addAnnotationRecursively, setTypeDeploymentAnnotations } from '../../utils'
-import { deployLayoutChanges, getLayout, getLayoutResponse } from './layout_service_operations'
+import { getLayout, getLayoutResponse, isIssueLayoutResponse } from './layout_service_operations'
+import { deployChanges } from '../../deployment/standard_deployment'
+import JiraClient from '../../client/client'
 
+const log = logger(module)
 const { isDefined } = lowerDashValues
-
 
 type issueTypeMappingStruct = {
     issueTypeId: string
@@ -51,6 +56,86 @@ const getProjectToScreenMapping = async (elements: Element[]): Promise<Record<st
   return projectToScreenId
 }
 
+const verifyProjectDeleted = async (
+  projectId: string,
+  client: JiraClient,
+): Promise<boolean> => {
+  try {
+    const res = await client.getSinglePage({ url: `/rest/api/3/project/${projectId}` })
+    return res.status === 404
+  } catch (error) {
+    if (error instanceof clientUtils.HTTPError && error.response?.status === 404) {
+      return true
+    }
+    throw error
+  }
+}
+
+const deployLayoutChange = async (
+  change: Change<InstanceElement>,
+  client: JiraClient,
+): Promise<void> => {
+  const layout = getChangeData(change)
+  const { typeName } = layout.elemID
+  if (typeName !== ISSUE_LAYOUT_TYPE) {
+    return
+  }
+  const parentProject = getParent(layout)
+  if (isRemovalChange(change)) {
+    // if parent project removed, IssueLayout was deleted by delete cascade in Jira
+    if (_.isString(parentProject.value.id) && await verifyProjectDeleted(parentProject.value.id, client)) {
+      log.debug(`Project ${parentProject.elemID.getFullName()} deleted, IssueLayout ${layout.elemID.getFullName()} marked as deployed`)
+      return
+    }
+    // TODO SALTO-5205 - suppress removals of IssueLayout when associated Screen is deleted from IssueTypeScreenScheme
+    throw new Error('Could not remove IssueLayout')
+  }
+  const items = layout.value.issueLayoutConfig?.items.map((item: layoutConfigItem) => {
+    if (isResolvedReferenceExpression(item.key)) {
+      const key = item.key.value.value.id
+      return {
+        type: item.type,
+        sectionType: item.sectionType.toLocaleLowerCase(),
+        key,
+        data: {
+          name: item.key.value.value.name,
+          type: item.key.value.value.type
+          ?? item.key.value.value.schema?.system
+          ?? item.key.value.value.name.toLowerCase(),
+          ...item.data,
+        },
+      }
+    }
+    return undefined
+  }).filter(isDefined)
+
+  if (isResolvedReferenceExpression(layout.value.extraDefinerId)) {
+    const data = {
+      projectId: parentProject.value.id,
+      extraDefinerId: layout.value.extraDefinerId.value.value.id,
+      issueLayoutType: 'ISSUE_VIEW',
+      owners: [],
+      issueLayoutConfig: {
+        items,
+      },
+    }
+    if (isAdditionChange(change)) {
+      const variables = {
+        projectId: parentProject.value.id,
+        extraDefinerId: layout.value.extraDefinerId.value.value.id,
+      }
+      const response = await getLayoutResponse({ variables, client, typeName })
+      if (!isIssueLayoutResponse(response.data)) {
+        throw Error('Failed to deploy issue layout changes due to bad response from jira service')
+      }
+      layout.value.id = response.data.issueLayoutConfiguration.issueLayoutResult.id
+    }
+    const url = `/rest/internal/1.0/issueLayouts/${layout.value.id}`
+    await client.put({ url, data })
+    return
+  }
+  throw Error('Failed to deploy issue layout changes due to missing references')
+}
 
 const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) => ({
   name: 'issueLayoutFilter',
@@ -84,31 +169,40 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) =>
           client,
           typeName: ISSUE_LAYOUT_TYPE,
         })
-        return getLayout({
-          variables,
+        const layoutInstance = await getLayout({
+          extraDefinerId: variables.extraDefinerId,
           response,
           instance: projectIdToProject[projectId],
           layoutType: issueLayoutType,
           getElemIdFunc,
           typeName: ISSUE_LAYOUT_TYPE,
         })
+        if (layoutInstance !== undefined) {
+          const projectKey = projectIdToProject[projectId]?.value.key
+          const url = `/plugins/servlet/project-config/${projectKey}/issuelayout?screenId=${layoutInstance.value.extraDefinerId}`
+          layoutInstance.annotations[CORE_ANNOTATIONS.SERVICE_URL] = new URL(url, client.baseUrl).href
+        }
+        return layoutInstance
       })))).filter(isDefined)
-    issueLayouts.forEach(layout => {
-      const projectKey = projectIdToProject[layout.value.projectId].value.key
-      const url = `/plugins/servlet/project-config/${projectKey}/issuelayout?screenId=${layout.value.extraDefinerId}`
-      layout.annotations[CORE_ANNOTATIONS.SERVICE_URL] = new URL(url, client.baseUrl).href
-    })
     issueLayouts.forEach(layout => { elements.push(layout) })
     setTypeDeploymentAnnotations(issueLayoutType)
     await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.CREATABLE)
     await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.UPDATABLE)
     await addAnnotationRecursively(issueLayoutType, CORE_ANNOTATIONS.DELETABLE)
   },
-  deploy: async changes => deployLayoutChanges({
-    changes,
-    client,
-    typeName: ISSUE_LAYOUT_TYPE,
-  }),
+  deploy: async changes => {
+    const [issueLayoutsChanges, leftoverChanges] = _.partition(
+      changes,
+      change => isInstanceChange(change) && getChangeData(change).elemID.typeName === ISSUE_LAYOUT_TYPE
+    )
+    const deployResult = await deployChanges(issueLayoutsChanges.filter(isInstanceChange),
+      async change => deployLayoutChange(change, client))
+
+    return {
+      leftoverChanges,
+      deployResult,
+    }
+  },
 })
 
 export default filter

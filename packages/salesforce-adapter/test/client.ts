@@ -42,7 +42,8 @@ const mockClient = (values?: Values):
       },
       dataRetry: {
         maxAttempts: 3,
-        retryDelay: 1000,
+        retryDelay: 100,
+        retryDelayMultiplier: 1.2,
         retryableFailures: ['err1', 'err2'],
       },
       ...(values ?? {}),

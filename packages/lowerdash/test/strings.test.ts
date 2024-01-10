@@ -153,4 +153,19 @@ describe('strings', () => {
       expect(strings.humanFileSize(50000000000000)).toEqual('45.47 TB')
     })
   })
+
+  describe('isNumberStr', () => {
+    it('should return true on string of number', () => {
+      expect(strings.isNumberStr('500')).toBeTruthy()
+    })
+    it('should return false on a string of nan', () => {
+      expect(strings.isNumberStr('adc')).toBeFalsy()
+    })
+    it('should return true on a string of decimal number', () => {
+      expect(strings.isNumberStr('0.95')).toBeTruthy()
+    })
+    it('should return false on an empty string', () => {
+      expect(strings.isNumberStr('')).toBeFalsy()
+    })
+  })
 })

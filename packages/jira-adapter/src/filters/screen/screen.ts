@@ -15,6 +15,7 @@
 */
 import { AdditionChange, BuiltinTypes, Change, ChangeDataType, CORE_ANNOTATIONS, Field, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isModificationChange, isReferenceExpression, ListType, MapType, ModificationChange, ReferenceExpression, Value, Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { naclCase } from '@salto-io/adapter-utils'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
@@ -25,6 +26,7 @@ import { deployTabs, SCREEN_TAB_TYPE_NAME } from './screenable_tab'
 import { findObject } from '../../utils'
 
 const { awu } = collections.asynciterable
+const log = logger(module)
 
 const SCREEN_TYPE_NAME = 'Screen'
 
@@ -121,6 +123,7 @@ const filter: FilterCreator = ({ config, client }) => ({
             element.value.tabs.map(
               (tab: Values, position: number) => {
                 const fieldIds = tab.fields && tab.fields.map((field: Values) => field.id)
+                log.debug(`add to ScreenTab "${tab.name}" in the Screen "${element.value.name}" originalFieldsIds: ${fieldIds}`)
                 return {
                   ...tab,
                   fields: fieldIds,
@@ -143,8 +146,11 @@ const filter: FilterCreator = ({ config, client }) => ({
       .filter(change => !_.isEmpty(change.data.before.value.tabs))
       .forEach(change => {
         Object.values(change.data.before.value.tabs).forEach((tab: Value): void => {
-          if (tab.originalFieldsIds.ids) {
+          if (tab.originalFieldsIds?.ids) {
             tab.fields = tab.originalFieldsIds.ids
+          } else {
+            // this should not happen if there are fields in the tab
+            log.warn(`ScreenTab "${tab.name}" in the Screen "${change.data.before.value.name}" has no originalFieldsIds`)
           }
         })
       })

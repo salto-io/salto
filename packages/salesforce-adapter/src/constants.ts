@@ -209,6 +209,7 @@ export const FIELD_ANNOTATIONS = {
   // when true, the field should not be deployed to the service
   LOCAL_ONLY: 'localOnly',
   ROLLUP_SUMMARY_FILTER_OPERATION: 'rollupSummaryFilterOperation',
+  METADATA_RELATIONSHIP_CONTROLLING_FIELD: 'metadataRelationshipControllingField',
 } as const
 
 export const VALUE_SET_FIELDS = {
@@ -311,9 +312,15 @@ export const DEFAULT_MAX_INSTANCES_PER_TYPE = 5000
 export const MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST = 500
 export const MAXIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST = 10000
 export const DEFAULT_ENUM_FIELD_PERMISSIONS = true
+
+export const DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY = 1000
+
+export const DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY_MULTIPLIER = 1.5
+
 export const DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS = {
   maxAttempts: 5,
-  retryDelay: 1000,
+  retryDelay: DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY,
+  retryDelayMultiplier: DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY_MULTIPLIER,
   retryableFailures: [
     'FIELD_CUSTOM_VALIDATION_EXCEPTION',
     'UNABLE_TO_LOCK_ROW',

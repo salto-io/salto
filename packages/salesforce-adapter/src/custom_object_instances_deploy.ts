@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections, hash, strings, promises, values } from '@salto-io/lowerdash'
+import { collections, hash, strings, promises, values, retry } from '@salto-io/lowerdash'
 import {
   getChangeData, DeployResult, Change, isPrimitiveType, InstanceElement, Value, PrimitiveTypes,
   ModificationChange, Field, ObjectType, isObjectType, Values, isAdditionChange, isRemovalChange,
@@ -36,7 +36,8 @@ import {
 import SalesforceClient from './client/client'
 import {
   ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
-  CUSTOM_OBJECT_ID_FIELD, OWNER_ID, SBAA_APPROVAL_CONDITION,
+  CUSTOM_OBJECT_ID_FIELD, FIELD_ANNOTATIONS, DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY,
+  DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY_MULTIPLIER, OWNER_ID, SBAA_APPROVAL_CONDITION,
   SBAA_APPROVAL_RULE,
   SBAA_CONDITIONS_MET,
 } from './constants'
@@ -52,6 +53,7 @@ const { partition } = promises.array
 const { sleep } = promises.timeout
 const { awu, keyByAsync } = collections.asynciterable
 const { toMD5 } = hash
+const { exponentialBackoff } = retry.retryStrategies
 const log = logger(module)
 
 type ActionResult = {
@@ -226,13 +228,21 @@ const isRetryableErr = (retryableFailures: string[]) =>
       _.some(retryableFailures, retryableFailure =>
         salesforceErr.includes(retryableFailure)))
 
+const retryDelayStrategyFromConfig = (client: SalesforceClient): retry.RetryStrategy => (
+  exponentialBackoff({
+    initial: client.dataRetry.retryDelay ?? DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY,
+    multiplier: client.dataRetry.retryDelayMultiplier ?? DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY_MULTIPLIER,
+  })()
+)
+
 export const retryFlow = async (
   crudFn: CrudFn,
   crudFnArgs: CrudFnArgs,
   retriesLeft: number,
+  retryDelayStrategy?: retry.RetryStrategy,
 ): Promise<ActionResult> => {
   const { client } = crudFnArgs
-  const { retryDelay, retryableFailures } = client.dataRetry
+  const { retryableFailures } = client.dataRetry
 
   let successes: InstanceElement[] = []
   let errors: (SaltoElementError | SaltoError)[] = []
@@ -256,7 +266,14 @@ export const retryFlow = async (
     }
   }
 
-  await sleep(retryDelay)
+  const actualRetryDelayStrategy = retryDelayStrategy ?? retryDelayStrategyFromConfig(client)
+  const retryDelay = actualRetryDelayStrategy()
+  if (_.isNumber(retryDelay)) {
+    await sleep(retryDelay)
+  } else {
+    log.warn('Invalid delay %s', retryDelay)
+    await sleep(client.dataRetry.retryDelay)
+  }
 
   log.debug('in custom object deploy retry-flow. retries left: %d', retriesLeft)
   logErroredInstances(recoverable, 'recoverable')
@@ -264,12 +281,49 @@ export const retryFlow = async (
   const { successInstances, errorInstances } = await retryFlow(
     crudFn,
     { ...crudFnArgs, instances: recoverable.map(instAndRes => instAndRes.instance) },
-    retriesLeft - 1
+    retriesLeft - 1,
+    actualRetryDelayStrategy,
   )
   return {
     successInstances: successes.concat(successInstances),
     errorInstances: errors.concat(errorInstances),
   }
+}
+
+const removeFieldsWithNoPermission = async (
+  instance: InstanceElement,
+  permissionAnnotation: string
+): Promise<SaltoElementError[]> => {
+  const shouldRemoveField = (type: ObjectType, fieldName: string, fieldValue: Value): boolean => (
+    fieldName !== CUSTOM_OBJECT_ID_FIELD
+    && (fieldValue === undefined
+      || !type.fields[fieldName]?.annotations[permissionAnnotation])
+  )
+  const createRemovedFieldWarning = (type: ObjectType, fieldValue: Value, fieldName: string): SaltoElementError => {
+    log.info('Removing field %s from %s: %s=%s, value=%s',
+      fieldName,
+      instance.elemID.getFullName(),
+      permissionAnnotation,
+      type.fields[fieldName]?.annotations[permissionAnnotation],
+      fieldValue)
+    return {
+      message: `The field ${fieldName} will not be deployed because it lacks the '${permissionAnnotation}' permission`,
+      severity: 'Warning',
+      elemID: instance.elemID,
+    }
+  }
+  const instanceType = await instance.getType()
+  const fieldsToRemove = Object.entries(instance.value)
+    .filter(([fieldName, fieldValue]) => shouldRemoveField(instanceType, fieldName, fieldValue))
+    .map(([fieldName]) => fieldName)
+  const warnings = fieldsToRemove
+    .map(fieldName => createRemovedFieldWarning(instanceType, instance.value[fieldName], fieldName))
+
+  instance.value = _.omit(
+    instance.value,
+    fieldsToRemove,
+  )
+  return warnings
 }
 
 const insertInstances: CrudFn = async (
@@ -396,6 +450,13 @@ const deployAddInstances = async (
     instance =>
       existingRecordsLookup[computeSaltoIdHash(instance.value)] !== undefined
   )
+
+  const warningsForInvalidFieldsInAddedInstances = await awu(newInstances)
+    .flatMap(instance => removeFieldsWithNoPermission(instance, FIELD_ANNOTATIONS.CREATABLE))
+    .toArray()
+  const warningsForInvalidFieldsInModifiedInstances = await awu(existingInstances)
+    .flatMap(instance => removeFieldsWithNoPermission(instance, FIELD_ANNOTATIONS.UPDATEABLE))
+    .toArray()
   const {
     successInstances: successInsertInstances,
     errorInstances: insertErrorInstances,
@@ -428,7 +489,12 @@ const deployAddInstances = async (
   const allSuccessInstances = [...successInsertInstances, ...successUpdateInstances]
   return {
     appliedChanges: allSuccessInstances.map(instance => ({ action: 'add', data: { after: instance } })),
-    errors: [...insertErrorInstances, ...errorUpdateInstances],
+    errors: [
+      ...insertErrorInstances,
+      ...errorUpdateInstances,
+      ...warningsForInvalidFieldsInAddedInstances,
+      ...warningsForInvalidFieldsInModifiedInstances,
+    ],
   }
 }
 
@@ -461,6 +527,10 @@ const deployModifyChanges = async (
     async changeData => await apiName(changeData.before) === await apiName(changeData.after)
   )
   const afters = validData.map(data => data.after)
+
+  const invalidFieldsWarnings = await awu(afters)
+    .flatMap(instance => removeFieldsWithNoPermission(instance, FIELD_ANNOTATIONS.UPDATEABLE))
+    .toArray()
   const { successInstances, errorInstances } = await retryFlow(
     updateInstances,
     { typeName: instancesType, instances: afters, client, groupId },
@@ -474,7 +544,7 @@ const deployModifyChanges = async (
     message: `Failed to update as api name prev=${await apiName(data.before)} and new=${await apiName(data.after)} are different`,
     severity: 'Error' as SeverityLevel,
   })).toArray()
-  const errors: (SaltoElementError | SaltoError)[] = [...errorInstances, ...diffApiNameErrors]
+  const errors: (SaltoElementError | SaltoError)[] = [...errorInstances, ...diffApiNameErrors, ...invalidFieldsWarnings]
   return {
     appliedChanges: successData.map(data => ({ action: 'modify', data })),
     errors,

@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ProgressReporter, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { NetsuiteQuery } from '../../src/query'
-import safeDeployValidator, { FetchByQueryReturnType } from '../../src/change_validators/safe_deploy'
+import { FetchByQueryReturnType, NetsuiteQuery } from '../../src/config/query'
+import safeDeployValidator from '../../src/change_validators/safe_deploy'
 import { PATH, NETSUITE, CUSTOM_RECORD_TYPE, METADATA_TYPE } from '../../src/constants'
 import { IDENTIFIER_FIELD } from '../../src/data_elements/types'
 import { customlistType } from '../../src/autogen/types/standard_types/customlist'
@@ -100,7 +100,7 @@ describe('safe deploy change validator', () => {
           }))
           const changeErrors = await safeDeployValidator(
             [toChange({ before: origInstance, after: afterInstance })],
-            fetchByQuery
+            fetchByQuery,
           )
           expect(changeErrors).toHaveLength(0)
         })
@@ -118,7 +118,7 @@ describe('safe deploy change validator', () => {
           }))
           const changeErrors = await safeDeployValidator(
             [toChange({ before: origInstance, after: afterInstance })],
-            fetchByQuery
+            fetchByQuery,
           )
           expect(changeErrors).toHaveLength(1)
         })
@@ -151,7 +151,7 @@ describe('safe deploy change validator', () => {
           }))
           const changeErrors = await safeDeployValidator(
             [toChange({ before: customRecordType, after: afterCustomRecordType })],
-            fetchByQuery
+            fetchByQuery,
           )
           expect(changeErrors).toHaveLength(1)
         })
@@ -187,10 +187,13 @@ describe('safe deploy change validator', () => {
             elements: [serviceCustomRecordType.clone()],
             deletedElements: [],
           }))
-          const changeErrors = await safeDeployValidator([toChange({
-            before: customRecordType.fields.custom_field,
-            after: afterCustomRecordType.fields.custom_field,
-          })], fetchByQuery)
+          const changeErrors = await safeDeployValidator(
+            [toChange({
+              before: customRecordType.fields.custom_field,
+              after: afterCustomRecordType.fields.custom_field,
+            })],
+            fetchByQuery,
+          )
           expect(changeErrors).toHaveLength(1)
         })
       })
@@ -207,7 +210,7 @@ describe('safe deploy change validator', () => {
 
           const changeErrors = await safeDeployValidator(
             [toChange({ before: origInstance, after: afterInstance })],
-            fetchByQuery
+            fetchByQuery,
           )
           expect(changeErrors).toHaveLength(1)
         })
@@ -222,7 +225,7 @@ describe('safe deploy change validator', () => {
           }))
           const changeErrors = await safeDeployValidator(
             [toChange({ before: origInstance, after: afterInstance })],
-            fetchByQuery
+            fetchByQuery,
           )
           expect(changeErrors).toHaveLength(0)
         })
@@ -238,7 +241,7 @@ describe('safe deploy change validator', () => {
 
           const changeErrors = await safeDeployValidator(
             [toChange({ before: origInstance, after: afterInstance })],
-            fetchByQuery
+            fetchByQuery,
           )
           expect(changeErrors).toHaveLength(1)
         })
@@ -257,7 +260,7 @@ describe('safe deploy change validator', () => {
         }))
         const changeErrors = await safeDeployValidator(
           [toChange({ before: origInstance })],
-          fetchByQuery
+          fetchByQuery,
         )
         expect(changeErrors).toHaveLength(1)
       })
@@ -270,7 +273,7 @@ describe('safe deploy change validator', () => {
         }))
         const changeErrors = await safeDeployValidator(
           [toChange({ before: origInstance })],
-          fetchByQuery
+          fetchByQuery,
         )
         expect(changeErrors).toHaveLength(0)
       })
@@ -285,7 +288,7 @@ describe('safe deploy change validator', () => {
         }))
         const changeErrors = await safeDeployValidator(
           [toChange({ after: newInstance })],
-          fetchByQuery
+          fetchByQuery,
         )
         expect(changeErrors).toHaveLength(0)
       })
@@ -299,7 +302,7 @@ describe('safe deploy change validator', () => {
         }))
         const changeErrors = await safeDeployValidator(
           [toChange({ after: newInstance })],
-          fetchByQuery
+          fetchByQuery,
         )
         expect(changeErrors).toHaveLength(1)
       })
@@ -312,7 +315,7 @@ describe('safe deploy change validator', () => {
         }))
         const changeErrors = await safeDeployValidator(
           [toChange({ after: newInstance })],
-          fetchByQuery
+          fetchByQuery,
         )
         expect(changeErrors).toHaveLength(0)
       })
@@ -387,7 +390,7 @@ describe('safe deploy change validator', () => {
         }))
         const changeErrors = await safeDeployValidator(
           [toChange({ before: customRecordType, after: afterCustomRecordType })],
-          fetchByQuery
+          fetchByQuery,
         )
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].elemID.getFullName()).toEqual(customRecordType.elemID.getFullName())
@@ -506,7 +509,7 @@ describe('safe deploy change validator', () => {
           }))
           const changeErrors = await safeDeployValidator(
             [toChange({ before: origInstance, after: afterInstance })],
-            fetchByQuery
+            fetchByQuery,
           )
           expect(changeErrors).toHaveLength(0)
         })
@@ -524,7 +527,7 @@ describe('safe deploy change validator', () => {
           }))
           const changeErrors = await safeDeployValidator(
             [toChange({ before: origInstance, after: afterInstance })],
-            fetchByQuery
+            fetchByQuery,
           )
           expect(changeErrors).toHaveLength(1)
         })
@@ -542,7 +545,7 @@ describe('safe deploy change validator', () => {
 
           const changeErrors = await safeDeployValidator(
             [toChange({ before: origInstance, after: afterInstance })],
-            fetchByQuery
+            fetchByQuery,
           )
           expect(changeErrors).toHaveLength(1)
         })
@@ -557,7 +560,7 @@ describe('safe deploy change validator', () => {
           }))
           const changeErrors = await safeDeployValidator(
             [toChange({ before: origInstance, after: afterInstance })],
-            fetchByQuery
+            fetchByQuery,
           )
           expect(changeErrors).toHaveLength(0)
         })
@@ -573,7 +576,7 @@ describe('safe deploy change validator', () => {
 
           const changeErrors = await safeDeployValidator(
             [toChange({ before: origInstance, after: afterInstance })],
-            fetchByQuery
+            fetchByQuery,
           )
           expect(changeErrors).toHaveLength(1)
         })
@@ -592,7 +595,7 @@ describe('safe deploy change validator', () => {
         }))
         const changeErrors = await safeDeployValidator(
           [toChange({ before: origInstance })],
-          fetchByQuery
+          fetchByQuery,
         )
         expect(changeErrors).toHaveLength(1)
       })
@@ -605,7 +608,7 @@ describe('safe deploy change validator', () => {
         }))
         const changeErrors = await safeDeployValidator(
           [toChange({ before: origInstance })],
-          fetchByQuery
+          fetchByQuery,
         )
         expect(changeErrors).toHaveLength(0)
       })
@@ -620,7 +623,7 @@ describe('safe deploy change validator', () => {
         }))
         const changeErrors = await safeDeployValidator(
           [toChange({ after: newInstance })],
-          fetchByQuery
+          fetchByQuery,
         )
         expect(changeErrors).toHaveLength(0)
       })
@@ -634,7 +637,7 @@ describe('safe deploy change validator', () => {
         }))
         const changeErrors = await safeDeployValidator(
           [toChange({ after: newInstance })],
-          fetchByQuery
+          fetchByQuery,
         )
         expect(changeErrors).toHaveLength(1)
       })
@@ -647,7 +650,7 @@ describe('safe deploy change validator', () => {
         }))
         const changeErrors = await safeDeployValidator(
           [toChange({ after: newInstance })],
-          fetchByQuery
+          fetchByQuery,
         )
         expect(changeErrors).toHaveLength(0)
       })
@@ -689,7 +692,7 @@ describe('safe deploy change validator', () => {
             }))
             const changeErrors = await safeDeployValidator(
               [toChange({ before: origInstance, after: afterInstance })],
-              fetchByQuery
+              fetchByQuery,
             )
             expect(changeErrors).toHaveLength(0)
           })
@@ -707,7 +710,7 @@ describe('safe deploy change validator', () => {
             }))
             const changeErrors = await safeDeployValidator(
               [toChange({ before: origInstance, after: afterInstance })],
-              fetchByQuery
+              fetchByQuery,
             )
             expect(changeErrors).toHaveLength(1)
           })
@@ -722,7 +725,7 @@ describe('safe deploy change validator', () => {
             }))
             const changeErrors = await safeDeployValidator(
               [toChange({ before: origInstance, after: afterInstance })],
-              fetchByQuery
+              fetchByQuery,
             )
             expect(changeErrors).toHaveLength(0)
           })
@@ -738,7 +741,7 @@ describe('safe deploy change validator', () => {
 
             const changeErrors = await safeDeployValidator(
               [toChange({ before: origInstance, after: afterInstance })],
-              fetchByQuery
+              fetchByQuery,
             )
             expect(changeErrors).toHaveLength(1)
           })
@@ -757,7 +760,7 @@ describe('safe deploy change validator', () => {
           }))
           const changeErrors = await safeDeployValidator(
             [toChange({ before: origInstance })],
-            fetchByQuery
+            fetchByQuery,
           )
           expect(changeErrors).toHaveLength(1)
         })
@@ -770,7 +773,7 @@ describe('safe deploy change validator', () => {
           }))
           const changeErrors = await safeDeployValidator(
             [toChange({ before: origInstance })],
-            fetchByQuery
+            fetchByQuery,
           )
           expect(changeErrors).toHaveLength(0)
         })
@@ -785,7 +788,7 @@ describe('safe deploy change validator', () => {
           }))
           const changeErrors = await safeDeployValidator(
             [toChange({ after: newInstance })],
-            fetchByQuery
+            fetchByQuery,
           )
           expect(changeErrors).toHaveLength(0)
         })
@@ -799,7 +802,7 @@ describe('safe deploy change validator', () => {
           }))
           const changeErrors = await safeDeployValidator(
             [toChange({ after: newInstance })],
-            fetchByQuery
+            fetchByQuery,
           )
           expect(changeErrors).toHaveLength(1)
         })
@@ -812,7 +815,7 @@ describe('safe deploy change validator', () => {
           }))
           const changeErrors = await safeDeployValidator(
             [toChange({ after: newInstance })],
-            fetchByQuery
+            fetchByQuery,
           )
           expect(changeErrors).toHaveLength(0)
         })
@@ -851,7 +854,7 @@ describe('safe deploy change validator', () => {
             }))
             const changeErrors = await safeDeployValidator(
               [toChange({ before: origInstance, after: afterInstance })],
-              fetchByQuery
+              fetchByQuery,
             )
             expect(changeErrors).toHaveLength(0)
           })
@@ -869,7 +872,7 @@ describe('safe deploy change validator', () => {
             }))
             const changeErrors = await safeDeployValidator(
               [toChange({ before: origInstance, after: afterInstance })],
-              fetchByQuery
+              fetchByQuery,
             )
             expect(changeErrors).toHaveLength(1)
           })
@@ -884,7 +887,7 @@ describe('safe deploy change validator', () => {
             }))
             const changeErrors = await safeDeployValidator(
               [toChange({ before: origInstance, after: afterInstance })],
-              fetchByQuery
+              fetchByQuery,
             )
             expect(changeErrors).toHaveLength(0)
           })
@@ -900,7 +903,7 @@ describe('safe deploy change validator', () => {
 
             const changeErrors = await safeDeployValidator(
               [toChange({ before: origInstance, after: afterInstance })],
-              fetchByQuery
+              fetchByQuery,
             )
             expect(changeErrors).toHaveLength(1)
           })
@@ -919,7 +922,7 @@ describe('safe deploy change validator', () => {
           }))
           const changeErrors = await safeDeployValidator(
             [toChange({ before: origInstance })],
-            fetchByQuery
+            fetchByQuery,
           )
           expect(changeErrors).toHaveLength(1)
         })
@@ -932,7 +935,7 @@ describe('safe deploy change validator', () => {
           }))
           const changeErrors = await safeDeployValidator(
             [toChange({ before: origInstance })],
-            fetchByQuery
+            fetchByQuery,
           )
           expect(changeErrors).toHaveLength(0)
         })
@@ -947,7 +950,7 @@ describe('safe deploy change validator', () => {
           }))
           const changeErrors = await safeDeployValidator(
             [toChange({ after: newInstance })],
-            fetchByQuery
+            fetchByQuery,
           )
           expect(changeErrors).toHaveLength(0)
         })
@@ -961,7 +964,7 @@ describe('safe deploy change validator', () => {
           }))
           const changeErrors = await safeDeployValidator(
             [toChange({ after: newInstance })],
-            fetchByQuery
+            fetchByQuery,
           )
           expect(changeErrors).toHaveLength(1)
         })
@@ -974,7 +977,7 @@ describe('safe deploy change validator', () => {
           }))
           const changeErrors = await safeDeployValidator(
             [toChange({ after: newInstance })],
-            fetchByQuery
+            fetchByQuery,
           )
           expect(changeErrors).toHaveLength(0)
         })

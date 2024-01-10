@@ -285,14 +285,19 @@ const handleArticleAttachmentsPreDeploy = async ({
   // Article bodies needs to be updated when modifying inline attachments
   // There might be another request if the article_translation 'body' fields also changed
   // (To Do: SALTO-3076)
-  const modifiedInlineAttachments = attachmentChanges
-    .filter(isModificationChange)
-    .map(getChangeData)
-    .filter(attachmentInstance => attachmentInstance.value.inline)
+  const modificationAndAdditionInlineChanges = attachmentChanges
+    .filter(isAdditionOrModificationChange)
+    .filter(attachmentChange => getChangeData(attachmentChange).value.inline)
+  const modifiedInlineAttachments = modificationAndAdditionInlineChanges.filter(isModificationChange)
   if (modifiedInlineAttachments.length > 0) {
+    const modificationAndAdditionInlineInstances = modificationAndAdditionInlineChanges.map(getChangeData)
     // All the attachments in the current change_group share the same parent article instance
-    const articleValues = getParents(modifiedInlineAttachments[0])[0]
-    await updateArticleTranslationBody({ client, articleValues, attachmentInstances: modifiedInlineAttachments })
+    const articleValues = getParents(modificationAndAdditionInlineInstances[0])[0]
+    await updateArticleTranslationBody({
+      client,
+      articleValues,
+      attachmentInstances: modificationAndAdditionInlineInstances,
+    })
   }
   return attachmentChanges.map(getChangeData)
 }

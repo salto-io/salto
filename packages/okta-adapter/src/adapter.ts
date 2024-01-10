@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, getChangeData, ProgressReporter } from '@salto-io/adapter-api'
+import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, getChangeData, ProgressReporter, isInstanceElement } from '@salto-io/adapter-api'
 import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -57,7 +57,7 @@ import groupPushFilter from './filters/group_push'
 import addImportantValues from './filters/add_important_values'
 import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
-import { User, getUsers } from './user_utils'
+import { User, getUsers, getUsersFromInstances } from './user_utils'
 
 const { awu } = collections.asynciterable
 
@@ -277,8 +277,17 @@ export default class OktaAdapter implements AdapterOperations {
   @logDuration('fetching account configuration')
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch okta account configuration..')
-    const usersPromise = this.userConfig[FETCH_CONFIG]?.convertUsersIds ? getUsers(this.paginator) : undefined
+    const { convertUsersIds, getUsersStrategy } = this.userConfig[FETCH_CONFIG]
     const { elements, errors, configChanges } = await this.getAllElements(progressReporter)
+
+    const usersPromise = convertUsersIds
+      ? getUsers(
+        this.paginator,
+        getUsersStrategy === 'searchQuery'
+          ? { userIds: getUsersFromInstances(elements.filter(isInstanceElement)), property: 'id' }
+          : undefined
+      )
+      : undefined
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })

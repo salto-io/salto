@@ -78,7 +78,7 @@ import {
   getFetchAdapterAndServicesSetup,
   MergeErrorWithElements,
 } from './core/fetch'
-import { defaultDependencyChangers } from './core/plan/plan'
+import { defaultDependencyChangers, IDFilter } from './core/plan/plan'
 import { createRestoreChanges, createRestorePathChanges } from './core/restore'
 import { getAdapterChangeGroupIdFunctions } from './core/adapters/custom_group_key'
 import { createDiffChanges } from './core/diff'
@@ -150,6 +150,7 @@ export const preview = async (
   accounts = workspace.accounts(),
   checkOnly = false,
   skipValidations = false,
+  topLevelFilters?: IDFilter[]
 ): Promise<Plan> => {
   const stateElements = workspace.state()
   const adapters = await getAdapters(
@@ -166,7 +167,7 @@ export const preview = async (
       ? {} : getChangeValidators(adapters, checkOnly, await workspace.errors()),
     dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers(adapters)),
     customGroupIdFunctions: getAdapterChangeGroupIdFunctions(adapters),
-    topLevelFilters: [shouldElementBeIncluded(accounts)],
+    topLevelFilters: [shouldElementBeIncluded(accounts), ...(topLevelFilters ?? [])],
     compareOptions: { compareByValue: true },
   })
 }
@@ -593,7 +594,7 @@ export async function diff(
   elementSelectors: ElementSelector[] = [],
   resultType: 'changes' | 'detailedChanges' = 'detailedChanges'
 ): Promise<LocalChange[] | ChangeWithDetails[]> {
-  const diffAccounts = accountFilters ?? workspace.accounts()
+  const accountIDFilter = accountFilters === undefined ? undefined : [shouldElementBeIncluded(accountFilters)]
   const fromElements = useState
     ? workspace.state(fromEnv)
     : await workspace.elements(includeHidden, fromEnv)
@@ -607,7 +608,7 @@ export async function diff(
       fromElements,
       await workspace.getReferenceSourcesIndex(),
       elementSelectors,
-      [shouldElementBeIncluded(diffAccounts)],
+      accountIDFilter,
       'changes'
     )
   }
@@ -617,7 +618,7 @@ export async function diff(
     fromElements,
     await workspace.getReferenceSourcesIndex(),
     elementSelectors,
-    [shouldElementBeIncluded(diffAccounts)],
+    accountIDFilter,
     'detailedChanges'
   )
   return diffChanges.map(change => ({ change, serviceChanges: [change] }))

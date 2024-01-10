@@ -27,7 +27,7 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
   const fieldConfiguration = new InstanceElement(
     randomString,
     findType('FieldConfiguration', fetchedElements),
-    createFieldConfigurationValues(randomString),
+    createFieldConfigurationValues(randomString, fetchedElements),
   )
 
   const automation = new InstanceElement(

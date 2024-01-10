@@ -219,4 +219,4 @@ export const netsuiteSupportedTypes = [
   ...SUPPORTED_TYPES,
   ...SUITEAPP_CONFIG_TYPE_NAMES,
   CONFIG_FEATURES,
-]
+].sort()

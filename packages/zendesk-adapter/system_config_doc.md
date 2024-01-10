@@ -1,5 +1,7 @@
 # Zendesk system configuration
+
 ## Default Configuration
+
 ```hcl
 zendesk {
   apiDefinitions = {
@@ -45,6 +47,7 @@ zendesk {
           },
         ]
         serviceIdField = "id"
+        omitInactive = true
         nestStandaloneInstances = false
       }
     }
@@ -1245,6 +1248,10 @@ zendesk {
             },
             {
               fieldName = "domain_verification_code"
+            },
+            {
+              fieldName = "username"
+              fieldType = "string"
             },
           ]
         }
@@ -3384,7 +3391,7 @@ zendesk {
             },
             {
               fieldName = "author_id"
-              fieldType = "string"
+              fieldType = "unknown"
             },
             {
               fieldName = "translations"
@@ -4775,6 +4782,47 @@ zendesk {
             {
               fieldName = "id"
               fieldType = "number"
+            },
+          ]
+        }
+      }
+      themes = {
+        request = {
+          url = "/api/v2/guide/theming/themes"
+        }
+        transformation = {
+          dataField = "themes"
+        }
+      }
+      theme = {
+        transformation = {
+          idFields = [
+            "&brand_id",
+            "name",
+          ]
+          sourceTypeName = "themes__themes"
+          fieldTypeOverrides = [
+            {
+              fieldName = "files"
+              fieldType = "map<unknown>"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+            },
+            {
+              fieldName = "updated_at"
+            },
+            {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
+              fieldName = "id"
+              fieldType = "string"
             },
           ]
         }

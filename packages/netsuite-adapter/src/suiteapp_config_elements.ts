@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { BuiltinTypes, ElemID, getChangeData, InstanceElement, isInstanceElement, ModificationChange, ObjectType, TopLevelElement } from '@salto-io/adapter-api'
 import { NETSUITE, SELECT_OPTION, SETTINGS_PATH, TYPES_PATH } from './constants'
 import { SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES, DeployResult } from './types'
-import { NetsuiteQuery } from './query'
+import { NetsuiteQuery } from './config/query'
 import { ConfigRecord, isSuccessSetConfig, SetConfigRecordsValuesResult, SetConfigType } from './client/suiteapp_client/types'
 
 export const getConfigTypes = (): ObjectType[] => ([new ObjectType({

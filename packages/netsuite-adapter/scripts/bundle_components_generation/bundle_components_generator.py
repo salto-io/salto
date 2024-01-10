@@ -63,7 +63,7 @@ def parse_bundle_components(account_id, username, password, secret_key_2fa, webp
     for bundle_info in BUNDLES_INFO:
       bundle_id, installed_from, publisher_id = bundle_info
       if (not (installed_from and publisher_id)):
-        unfetched_bundles.append(bundle_id)
+        unfetched_bundles.append((bundle_id, installed_from, publisher_id))
         continue
       webpage.get(bundles_link_template.format(account_id = account_id, publisher_id = publisher_id, installed_from = installed_from, bundle_id = bundle_id))
       try:
@@ -78,7 +78,7 @@ def parse_bundle_components(account_id, username, password, secret_key_2fa, webp
         try:
           parse_components_table(bundle_id_to_components, bundle_id, components_table, webpage, driverWait)
         except TimeoutException:
-          unfetched_bundles.append(bundle_id)
+          unfetched_bundles.append((bundle_id, installed_from, publisher_id))
   finally:
     webpage.quit()
   logging.info(f'The following bundles were not fetched due to missing required fields: {" ".join(map(str, unfetched_bundles))}')
@@ -106,7 +106,7 @@ def generate_bundle_map_file(bundle_id_to_components):
 
 def create_merged_map(bundle_id_to_components):
   file_path = 'bundle_component.json'
-
+  logging.info('Creating merged map')
   if not os.path.exists(file_path):
     json_data = json.dumps(bundle_id_to_components)
     with open('bundle_component.json', 'w') as file:
@@ -142,6 +142,7 @@ def merge_dictionaries(existing_data, new_bundle_dict):
   return merged_dict
 
 def main():
+# Running headless chrome speeds the script, but it's not required. To view the browser, remove the headless option.
   op = webdriver.ChromeOptions()
   op.add_argument('headless')
   webpage = webdriver.Chrome(options=op)

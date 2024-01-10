@@ -54,6 +54,8 @@ const QUEUES_CATAGORIES_RESPONSE_SCHEME = Joi.object({
 
 const isQueuesCatagoriesResponse = createSchemeGuard<QueuesCatagoriesResponse>(QUEUES_CATAGORIES_RESPONSE_SCHEME)
 
+const replaceTypeWithIssueType = (input: string): string => input.replace(/\btype\b/g, 'issuetype')
+
 const addQueueStarAndPriority = async (
   projectKeysToQueues: Record<string, InstanceElement[]>,
   client: JiraClient,
@@ -90,6 +92,9 @@ const filter: FilterCreator = ({ config, client }) => ({
       .forEach(instance => {
         instance.value.columns = instance.value.fields
         delete instance.value.fields
+        if (instance.value.jql) {
+          instance.value.jql = replaceTypeWithIssueType(instance.value.jql)
+        }
       })
 
     const projectKeysToQueues = _.groupBy(

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, Element, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isEqualValues, isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
+import { AdditionChange, Change, Element, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isEqualValues, isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
 import { createSchemeGuard, resolveValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import Joi from 'joi'
@@ -116,18 +116,51 @@ const deployCustomerPermissions = async (
   }
 }
 
+type ServiceDeskValue = {
+  id: number
+  projectId: number
+}
+
+type ServiceDeskResponse = {
+  values: ServiceDeskValue[]
+}
+
+const SERVICE_DESK_RESPONSE_SCHEME = Joi.object({
+  values: Joi.array().items(Joi.object({
+    id: Joi.number().required(),
+    projectId: Joi.number().required(),
+  }).unknown(true)),
+}).unknown(true).required()
+
+const isServiceDeskResponse = createSchemeGuard<ServiceDeskResponse>(SERVICE_DESK_RESPONSE_SCHEME)
+
 const getServiceDeskId = async (
-  change: Change<InstanceElement>,
+  change: AdditionChange<InstanceElement>,
   client: JiraClient,
 ): Promise<number> => {
-  const instance = getChangeData(change)
-  const response = await client.getSinglePage({
-    url: `/rest/servicedeskapi/servicedesk/projectId:${instance.value.id}`,
-  })
-  if (!isObjectWithId(response.data)) {
-    throw new Error('Received an invalid serviceDesk id response')
+  try {
+    const instance = getChangeData(change)
+    const response = await client.getSinglePage({
+      url: `/rest/servicedeskapi/servicedesk/projectId:${instance.value.id}`,
+    })
+    if (!isObjectWithId(response.data)) {
+      throw new Error('Received an invalid serviceDesk id response')
+    }
+    return response.data.id
+  } catch (error) {
+    // Call for all serviceDesk in the account to find the serviceDesk id of the project
+    const response = await client.getSinglePage({
+      url: '/rest/servicedeskapi/servicedesk',
+    })
+    if (!isServiceDeskResponse(response.data)) {
+      throw new Error('Received an invalid serviceDesk response')
+    }
+    const serviceDesk = response.data.values.find(sd => sd.projectId === change.data.after.value.id)
+    if (serviceDesk === undefined || !isObjectWithId(serviceDesk)) {
+      throw new Error(`Failed to find service desk for project ${change.data.after.value.id}`)
+    }
+    return serviceDesk.id
   }
-  return response.data.id
 }
 
 type ComponentsResponse = {
@@ -348,7 +381,11 @@ const filter: FilterCreator = ({ config, client, elementsSource }) => ({
 
         const instance = await resolveValues(getChangeData(change), getLookUpName)
         if (isAdditionChange(change) && config.fetch.enableJSM && instance.value.projectTypeKey === SERVICE_DESK) {
-          change.data.after.value.serviceDeskId = await getServiceDeskId(change, client)
+          try {
+            change.data.after.value.serviceDeskId = await getServiceDeskId(change, client)
+          } catch (error) {
+            log.warn(`Failed to get service desk id for project ${instance.elemID.getFullName()}: ${error}`)
+          }
         }
 
         if (shouldSeparateSchemeDeployment(change, client.isDataCenter)) {

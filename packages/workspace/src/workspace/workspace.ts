@@ -15,9 +15,12 @@
 */
 import _ from 'lodash'
 import path from 'path'
-import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
-  Value, toChange, isRemovalChange, getChangeData,
-  ReadOnlyElementsSource, isAdditionOrModificationChange, StaticFile, isInstanceElement, AuthorInformation, ReferenceInfo, ReferenceType } from '@salto-io/adapter-api'
+import {
+  Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
+  Value, toChange, isRemovalChange, getChangeData, isField, AuthorInformation, ReferenceInfo, ReferenceType,
+  ReadOnlyElementsSource, isAdditionOrModificationChange, StaticFile, isInstanceElement, isObjectType,
+  isModificationChange, TypeReference,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
   applyDetailedChanges,
@@ -849,6 +852,37 @@ export const loadWorkspace = async (
       return [toChange({ before, after })]
     }).toArray()
   }
+
+  const fixStateOnlyChangesFieldTypes = (
+    stateOnlyChanges: Change[],
+    changes: DetailedChange[],
+  ): void => {
+    // stateOnlyChanges should contain only the hidden parts from the state. for fields it is not
+    // possible to hide just the type of the field, so in theory the type of the field shouldn't
+    // be a part of the information (since the type is not hidden unless the whole field is hidden),
+    // but since we can't have a field without a type, we have to put something there. using the type
+    // from the original change to make sure there is no conflict is a way to "remove" the information.
+    const modifiedFieldsByParent = _.groupBy(
+      changes
+        .filter(isModificationChange)
+        .map(getChangeData)
+        .filter(isField),
+      field => field.parent.elemID.getFullName()
+    )
+    stateOnlyChanges
+      .filter(isModificationChange)
+      .map(getChangeData)
+      .filter(isObjectType)
+      .forEach(element => {
+        const modifiedFields = modifiedFieldsByParent[element.elemID.getFullName()] ?? []
+        modifiedFields
+          .filter(field => element.fields[field.name] !== undefined)
+          .forEach(field => {
+            element.fields[field.name].refType = new TypeReference(field.refType.elemID)
+          })
+      })
+  }
+
   const updateNaclFiles = async ({
     changes,
     mode,
@@ -877,6 +911,7 @@ export const loadWorkspace = async (
     await state(currentEnv()).calculateHash()
     const postChangeHash = await state(currentEnv()).getHash()
     const stateOnlyChanges = await getStateOnlyChanges(hiddenChanges)
+    fixStateOnlyChangesFieldTypes(stateOnlyChanges, changes)
     workspaceState = buildWorkspaceState({ workspaceChanges,
       stateOnlyChanges: { [currentEnv()]: {
         changes: stateOnlyChanges,

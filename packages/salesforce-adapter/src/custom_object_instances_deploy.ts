@@ -317,7 +317,7 @@ const removeFieldsWithNoPermission = async (
       type.fields[fieldName]?.annotations[permissionAnnotation],
       fieldValue)
     return {
-      message: `The field ${fieldName} will not be deployed because it lacks the '${permissionAnnotation}' permission`,
+      message: `The field ${fieldName} was not deployed because it lacks the '${permissionAnnotation}' permission`,
       severity: 'Warning',
       elemID: instance.elemID,
     }

@@ -16,7 +16,7 @@
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { types } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
+import { ActionName, CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
 
 export const { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
 
@@ -428,9 +428,6 @@ export const KEY_PREFIX_LENGTH = 3
 // Magics
 export const DETECTS_PARENTS_INDICATOR = '##allMasterDetailFields##'
 
-// Change Groups
-export const ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP = 'add_Custom_ApprovalRule_and_ApprovalCondition_instances'
-
 // CPQ CustomObjects
 export const CPQ_NAMESPACE = 'SBQQ'
 export const CPQ_PRODUCT_RULE = 'SBQQ__ProductRule__c'
@@ -506,6 +503,28 @@ export const SBAA_APPROVAL_RULE = 'sbaa__ApprovalRule__c'
 // sbaa Fields
 export const SBAA_CONDITIONS_MET = 'sbaa__ConditionsMet__c'
 
+
+// Change Groups
+export const groupIdForInstanceChangeGroup = (action: ActionName, typeName: string): string => {
+  const toVerbalNoun = (actionName: ActionName): string => {
+    switch (actionName) {
+      case 'add':
+        return 'addition'
+      case 'modify':
+        return 'modification'
+      case 'remove':
+        return 'removal'
+      default:
+        // should not happen
+        return actionName
+    }
+  }
+  return `${_.capitalize(toVerbalNoun(action))} of data instances of type '${typeName}'`
+}
+export const ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup('add', 'Custom ApprovalRule and ApprovalCondition')
+export const METADATA_CHANGE_GROUP = 'Salesforce Metadata'
+
+
 export const UNLIMITED_INSTANCES_VALUE = -1
 
 // Errors
@@ -549,7 +568,6 @@ export const isSalesforceError = (error: Error): error is SalesforceError => {
   const errorCode = _.get(error, ERROR_PROPERTIES.ERROR_CODE)
   return _.isString(errorCode) && (Object.values(SALESFORCE_ERRORS) as ReadonlyArray<string>).includes(errorCode)
 }
-
 
 // Artifacts
 export const SalesforceArtifacts = {

@@ -151,12 +151,12 @@ describe('Group changes function', () => {
         expect(changeGroupIds.get(addInstance.elemID.getFullName()))
           .toEqual(changeGroupIds.get(anotherAddInstance.elemID.getFullName()))
         expect(changeGroupIds.get(addInstance.elemID.getFullName()))
-          .toEqual(`Add data instances of type '${customObjectName}'`)
+          .toEqual(`Addition of data instances of type '${customObjectName}'`)
       })
 
       it('should have a separate group for diff type', () => {
         expect(changeGroupIds.get(differentAddInstance.elemID.getFullName()))
-          .toEqual(`Add data instances of type '${differentCustomObjectName}'`)
+          .toEqual(`Addition of data instances of type '${differentCustomObjectName}'`)
       })
     })
 
@@ -165,12 +165,12 @@ describe('Group changes function', () => {
         expect(changeGroupIds.get(removeInstance.elemID.getFullName()))
           .toEqual(changeGroupIds.get(anotherRemoveInstance.elemID.getFullName()))
         expect(changeGroupIds.get(removeInstance.elemID.getFullName()))
-          .toEqual(`Remove data instances of type '${customObjectName}'`)
+          .toEqual(`Removal of data instances of type '${customObjectName}'`)
       })
 
       it('should have a separate group for diff type', () => {
         expect(changeGroupIds.get(differentRemoveInstance.elemID.getFullName()))
-          .toEqual(`Remove data instances of type '${differentCustomObjectName}'`)
+          .toEqual(`Removal of data instances of type '${differentCustomObjectName}'`)
       })
     })
 
@@ -179,12 +179,12 @@ describe('Group changes function', () => {
         expect(changeGroupIds.get(modifyInstance.elemID.getFullName()))
           .toEqual(changeGroupIds.get(anotherModifyInstance.elemID.getFullName()))
         expect(changeGroupIds.get(modifyInstance.elemID.getFullName()))
-          .toEqual(`Modify data instances of type '${customObjectName}'`)
+          .toEqual(`Modification of data instances of type '${customObjectName}'`)
       })
 
       it('should have a separate group for diff type', () => {
         expect(changeGroupIds.get(differentModifyInstance.elemID.getFullName()))
-          .toEqual(`Modify data instances of type '${differentCustomObjectName}'`)
+          .toEqual(`Modification of data instances of type '${differentCustomObjectName}'`)
       })
     })
   })
@@ -234,8 +234,8 @@ describe('Group changes function', () => {
     it('should create correct groups', () => {
       expect(result.changeGroupIdMap.get('CustomApprovalRule')).toEqual(ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP)
       expect(result.changeGroupIdMap.get('CustomApprovalCondition')).toEqual(ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP)
-      expect(result.changeGroupIdMap.get('ApprovalRule')).toEqual('Add data instances of type \'sbaa__ApprovalRule__c\'')
-      expect(result.changeGroupIdMap.get('ApprovalCondition')).toEqual('Add data instances of type \'sbaa__ApprovalCondition__c\'')
+      expect(result.changeGroupIdMap.get('ApprovalRule')).toEqual('Addition of data instances of type \'sbaa__ApprovalRule__c\'')
+      expect(result.changeGroupIdMap.get('ApprovalCondition')).toEqual('Addition of data instances of type \'sbaa__ApprovalCondition__c\'')
     })
   })
 })

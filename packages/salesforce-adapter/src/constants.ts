@@ -505,9 +505,22 @@ export const SBAA_CONDITIONS_MET = 'sbaa__ConditionsMet__c'
 
 
 // Change Groups
-export const groupIdForInstanceChangeGroup = (action: ActionName, typeName: string): string => (
-  `${_.capitalize(action)} data instances of type '${typeName}'`
-)
+export const groupIdForInstanceChangeGroup = (action: ActionName, typeName: string): string => {
+  const toVerbalNoun = (actionName: ActionName): string => {
+    switch (actionName) {
+      case 'add':
+        return 'addition'
+      case 'modify':
+        return 'modification'
+      case 'remove':
+        return 'removal'
+      default:
+        // should not happen
+        return actionName
+    }
+  }
+  return `${_.capitalize(toVerbalNoun(action))} of data instances of type '${typeName}'`
+}
 export const ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup('add', 'Custom ApprovalRule and ApprovalCondition')
 export const METADATA_CHANGE_GROUP = 'Salesforce Metadata'
 

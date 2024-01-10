@@ -801,3 +801,20 @@ export const isValueSetReference = (field: Field): boolean =>
 
 export const hasValueSetNameAnnotation = (field: Field): boolean =>
   !_.isUndefined(field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME])
+
+// This function checks whether an element is an instance of any custom object type.
+// Note that this does not apply to custom object definitions themselves, e.g, this will be true
+// for instances of Lead, but it will not be true for Lead itself when it is still an instance
+// (before the custom objects filter turns it into a type).
+// To filter for instances like the Lead definition, use isInstanceOfType(CUSTOM_OBJECT) instead
+export const isInstanceOfCustomObjectSync = (element: Element): element is InstanceElement => (
+  isInstanceElement(element) && isCustomObjectSync(element.getTypeSync())
+)
+
+export const isInstanceOfCustomObjectChangeSync = (change: Change): change is Change<InstanceElement> => (
+  isInstanceOfCustomObjectSync(getChangeData(change))
+)
+
+export const aliasOrElemID = (element: Element): string => (
+  element.annotations[CORE_ANNOTATIONS.ALIAS] ?? element.elemID.getFullName()
+)

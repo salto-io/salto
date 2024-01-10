@@ -13,30 +13,56 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, ElemID, getChangeData, ChangeError } from '@salto-io/adapter-api'
-import { collections, values } from '@salto-io/lowerdash'
-import { isInstanceOfCustomObjectChange } from '../custom_object_instances_deploy'
+import {
+  ChangeValidator,
+  ElemID,
+  getChangeData,
+  ChangeError,
+  isAdditionOrModificationChange,
+  InstanceElement,
+} from '@salto-io/adapter-api'
+import { isInstanceOfCustomObjectChangeSync } from '../filters/utils'
 
-const { awu } = collections.asynciterable
-const { isDefined } = values
-
-const createChangeError = (instanceElemID: ElemID): ChangeError => ({
+const createDataDeploymentChangeInfo = (instanceElemID: ElemID): ChangeError => ({
   elemID: instanceElemID,
   severity: 'Info',
   message: 'Data instances will be changed in deployment.',
   detailedMessage: '',
 })
 
-/**
- * Creates a ChangeError of type Info when one of the changes is on a data instance.
- */
-const createDataChangeValidator: ChangeValidator = async changes => {
-  const dataChange = await awu(changes)
-    .find(isInstanceOfCustomObjectChange)
+const getMissingFields = (instance: InstanceElement): string[] => {
+  const typeFields = new Set(Object.keys(instance.getTypeSync().fields))
+  return Object.keys(instance.value)
+    .filter(fieldName => !typeFields.has(fieldName))
+}
 
-  return isDefined(dataChange)
-    ? [createChangeError(getChangeData(dataChange).elemID)]
-    : []
+const createMissingFieldsValuesChangeError = (
+  instance: InstanceElement,
+  missingFields: string[]
+): ChangeError => ({
+  elemID: instance.elemID,
+  severity: 'Warning',
+  message: 'Data instance has values of unknown fields',
+  detailedMessage: `Some fields do not exist in the target environment, therefore their values will be omitted from the deployment. Missing fields: [${missingFields.join(', ')}].`,
+})
+
+const createDataChangeValidator: ChangeValidator = async changes => {
+  const changeErrors: ChangeError[] = []
+  const dataChanges = changes.filter(isInstanceOfCustomObjectChangeSync)
+
+  if (dataChanges.length === 0) {
+    return []
+  }
+  changeErrors.push(createDataDeploymentChangeInfo(getChangeData(dataChanges[0]).elemID))
+  dataChanges
+    // Deletions should work even if some values are missing on the type
+    .filter(isAdditionOrModificationChange)
+    .map(getChangeData)
+    .map(instance => ({ instance, missingFields: getMissingFields(instance) }))
+    .filter(({ missingFields }) => missingFields.length > 0)
+    .forEach(({ instance, missingFields }) => changeErrors
+      .push(createMissingFieldsValuesChangeError(instance, missingFields)))
+  return changeErrors
 }
 
 export default createDataChangeValidator

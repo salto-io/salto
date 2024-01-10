@@ -561,6 +561,9 @@ const deployModifyChanges = async (
   }
 }
 
+/**
+ * @deprecated use {@link isInstanceOfCustomObjectChangeSync} instead.
+ */
 export const isInstanceOfCustomObjectChange = async (
   change: Change
 ): Promise<boolean> => (

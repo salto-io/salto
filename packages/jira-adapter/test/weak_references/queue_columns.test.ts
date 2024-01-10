@@ -99,8 +99,8 @@ describe('queue_colmns', () => {
         {
           elemID: queueInstance.elemID.createNestedID('columns'),
           severity: 'Info',
-          message: 'Deploying queue without all attached columns',
-          detailedMessage: 'This queue is attached to some fields that do not exist in the target environment. It will be deployed without referencing these fields.',
+          message: 'Queue will be deployed without columns defined on non-existing fields',
+          detailedMessage: 'This queue has columns which use fields which no longer exist. It will be deployed without them.',
         },
       ])
 

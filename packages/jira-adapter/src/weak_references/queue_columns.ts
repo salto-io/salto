@@ -49,7 +49,7 @@ const getQueueFieldsReferences: GetCustomReferencesFunc = async elements =>
   awu(elements)
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === QUEUE_TYPE)
-    .flatMap(instance => getFieldReferences(instance))
+    .flatMap(getFieldReferences)
     .toArray()
 
 /**
@@ -88,8 +88,8 @@ const removeMissingColumnsQueues: WeakReferencesHandler['removeWeakReferences'] 
   const errors = fixedElements.map(instance => ({
     elemID: instance.elemID.createNestedID('columns'),
     severity: 'Info' as const,
-    message: 'Deploying queue without all attached columns',
-    detailedMessage: 'This queue is attached to some fields that do not exist in the target environment. It will be deployed without referencing these fields.',
+    message: 'Queue will be deployed without columns defined on non-existing fields',
+    detailedMessage: 'This queue has columns which use fields which no longer exist. It will be deployed without them.',
   }))
   return { fixedElements, errors }
 }

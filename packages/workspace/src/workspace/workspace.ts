@@ -20,6 +20,7 @@ import {
   Value, toChange, isRemovalChange, getChangeData, isField, AuthorInformation, ReferenceInfo, ReferenceType,
   ReadOnlyElementsSource, isAdditionOrModificationChange, StaticFile, isInstanceElement, isObjectType,
   isModificationChange,
+  TypeReference,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
@@ -878,7 +879,7 @@ export const loadWorkspace = async (
         modifiedFields
           .filter(field => element.fields[field.name] !== undefined)
           .forEach(field => {
-            element.fields[field.name].refType = field.refType
+            element.fields[field.name].refType = new TypeReference(field.refType.elemID)
           })
       })
   }

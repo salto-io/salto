@@ -1962,6 +1962,89 @@ describe('workspace', () => {
           .toContainEqual(change.id)
       })
     })
+
+    describe('SALTO-5261 field type merge error', () => {
+      beforeEach(async () => {
+        const typeElemId = new ElemID('salesforce', 'type')
+
+        const stateType = new ObjectType({
+          elemID: typeElemId,
+          annotationRefsOrTypes: {
+            hiddenAnno: BuiltinTypes.HIDDEN_STRING,
+          },
+          fields: {
+            field: { refType: BuiltinTypes.NUMBER },
+          },
+          annotations: {
+            hiddenAnno: 'hidden',
+            anno: true,
+          },
+        })
+
+        const workspaceType = stateType.clone()
+        delete workspaceType.annotations.hiddenAnno
+
+        const workspaceChanges: DetailedChange[] = [
+          {
+            id: typeElemId.createNestedID('field', 'field'),
+            action: 'modify',
+            data: {
+              before: workspaceType.fields.field,
+              after: new Field(workspaceType, 'field', BuiltinTypes.STRING),
+            },
+          },
+          {
+            id: typeElemId.createNestedID('attr', 'anno'),
+            action: 'remove',
+            data: {
+              before: true,
+            },
+          },
+        ]
+
+        const modifiedWorkspaceType = workspaceType.clone()
+        applyDetailedChanges(modifiedWorkspaceType, workspaceChanges)
+
+        workspace = await createWorkspace(
+          undefined,
+          undefined,
+          mockWorkspaceConfigSource(),
+          undefined,
+          undefined,
+          undefined,
+          {
+            [COMMON_ENV_PREFIX]: {
+              naclFiles: createMockNaclFileSource([]),
+            },
+            default: {
+              naclFiles: createMockNaclFileSource(
+                [workspaceType],
+                undefined,
+                undefined,
+                undefined,
+                {
+                  changes: [
+                    {
+                      action: 'modify',
+                      data: {
+                        before: workspaceType,
+                        after: modifiedWorkspaceType,
+                      },
+                    },
+                  ],
+                  cacheValid: true,
+                },
+              ),
+              state: createState([stateType]),
+            },
+          },
+        )
+        await workspace.updateNaclFiles(workspaceChanges)
+      })
+      it('should not have merge errors', async () => {
+        expect((await workspace.errors()).merge).toHaveLength(0)
+      })
+    })
   })
 
   describe('init', () => {

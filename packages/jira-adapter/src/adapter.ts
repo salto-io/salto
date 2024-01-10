@@ -541,7 +541,7 @@ export default class JiraAdapter implements AdapterOperations {
       return { elements: [] }
     }
 
-    const workspaceId = await getWorkspaceId(this.client)
+    const workspaceId = await getWorkspaceId(this.client, this.userConfig)
     if (workspaceId === undefined) {
       return { elements: [] }
     }

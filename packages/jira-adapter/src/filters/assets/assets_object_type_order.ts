@@ -150,7 +150,7 @@ const filterCreator: FilterCreator = ({ config, client, fetchQuery }) => ({
       changes,
       change => getChangeData(change).elemID.typeName === OBJECT_TYPE_ORDER_TYPE
     )
-    const workspaceId = await getWorkspaceId(client)
+    const workspaceId = await getWorkspaceId(client, config)
     if (workspaceId === undefined) {
       log.error(`Skip deployment of ${OBJECT_TYPE_ORDER_TYPE} types because workspaceId is undefined`)
       const errors = relevantChanges.map(change => createSaltoElementError({

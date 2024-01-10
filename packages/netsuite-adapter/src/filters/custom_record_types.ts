@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { getChangeData, isAdditionChange, isObjectType, ObjectType } from '@salto-io/adapter-api'
+import { getChangeData, isAdditionChange, isObjectType, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
 import { getCustomField } from './data_types_custom_fields'
@@ -22,8 +22,9 @@ import { isCustomRecordType } from '../types'
 import { CUSTOM_RECORD_TYPE, INDEX, METADATA_TYPE, SCRIPT_ID, SOAP, SOURCE } from '../constants'
 import { CUSTOM_FIELDS, CUSTOM_FIELDS_LIST } from '../custom_records/custom_record_type'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
-import { andQuery, buildNetsuiteQuery, notQuery } from '../query'
+import { andQuery, buildNetsuiteQuery, notQuery } from '../config/query'
 
+const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 
 const toCustomRecordTypeReference = (type: ObjectType): string => `[${SCRIPT_ID}=${type.annotations[SCRIPT_ID]}]`
@@ -57,11 +58,18 @@ const removeInstancesAnnotation = (type: ObjectType): void => {
 
 const getElementsSourceCustomRecordTypes = async (
   elementsSourceIndex: LazyElementsSourceIndexes,
-  isPartial: boolean
+  isPartial: boolean,
+  existingTypeNames: Set<string>,
 ): Promise<ObjectType[]> => (
   isPartial ? Object.values((await elementsSourceIndex.getIndexes()).serviceIdRecordsIndex)
     .map(({ elemID, serviceID }) => ({ ...elemID.createTopLevelParentID(), serviceID }))
-    .filter(({ parent, path }) => parent.idType === 'type' && path.length === 1 && path[0] === SCRIPT_ID)
+    .filter(
+      ({ parent, path }) =>
+        parent.idType === 'type'
+        && !existingTypeNames.has(parent.getFullName())
+        && path.length === 1
+        && path[0] === SCRIPT_ID
+    )
     .map(({ serviceID, parent }) => new ObjectType({
       elemID: parent,
       annotations: {
@@ -71,18 +79,44 @@ const getElementsSourceCustomRecordTypes = async (
     })) : []
 )
 
+const getElementsSourceTypes = async (
+  elementsSource: ReadOnlyElementsSource,
+  isPartial: boolean,
+  existingTypeNames: Set<string>,
+): Promise<ObjectType[]> => (
+  isPartial ? awu(await elementsSource.list())
+    .filter(elemID => elemID.idType === 'type' && !existingTypeNames.has(elemID.getFullName()))
+    .map(elemID => new ObjectType({ elemID }))
+    .toArray() : []
+)
+
 const filterCreator: LocalFilterCreator = ({
   elementsSourceIndex,
+  elementsSource,
   isPartial,
   config,
 }) => ({
   name: 'customRecordTypesType',
   onFetch: async elements => {
     const types = elements.filter(isObjectType)
-    const customRecordTypeObjects = types.filter(isCustomRecordType)
-    const nameToType = _.keyBy(types, type => type.elemID.name)
+    const existingTypeNames = new Set(types.map(type => type.elemID.getFullName()))
+    const customRecordTypes = types.filter(isCustomRecordType)
+    const elementSourceTypes = await getElementsSourceTypes(
+      elementsSource,
+      isPartial,
+      existingTypeNames,
+    )
+    const elementSourceCustomRecordTypes = await getElementsSourceCustomRecordTypes(
+      elementsSourceIndex,
+      isPartial,
+      existingTypeNames,
+    )
+    const nameToType = _.keyBy(
+      types.concat(elementSourceTypes),
+      type => type.elemID.name,
+    )
     const customRecordTypesMap = _.keyBy(
-      customRecordTypeObjects.concat(await getElementsSourceCustomRecordTypes(elementsSourceIndex, isPartial)),
+      customRecordTypes.concat(elementSourceCustomRecordTypes),
       toCustomRecordTypeReference,
     )
     const fetchQuery = andQuery(
@@ -90,7 +124,7 @@ const filterCreator: LocalFilterCreator = ({
       notQuery(buildNetsuiteQuery(config.fetch.exclude))
     )
 
-    customRecordTypeObjects.forEach(type => {
+    customRecordTypes.forEach(type => {
       addFieldsToType(type, nameToType, customRecordTypesMap)
       removeCustomFieldsAnnotation(type)
       if (fetchQuery.isCustomRecordTypeMatch(type.elemID.name)) {

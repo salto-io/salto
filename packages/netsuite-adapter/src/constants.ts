@@ -101,6 +101,7 @@ export const IS_ATTRIBUTE = 'isAttribute'
 export const ADDITIONAL_FILE_SUFFIX = 'additionalFileSuffix'
 export const LIST_MAPPED_BY_FIELD = 'map_key_field'
 export const INDEX = 'index'
+export const REAL_VALUE_KEY = '#text'
 
 // SDF FileCabinet top level folders
 export const FILE_CABINET_PATH_SEPARATOR = '/'

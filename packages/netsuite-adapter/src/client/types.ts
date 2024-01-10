@@ -15,7 +15,7 @@
 */
 import { Change, ChangeData, ElemID, getChangeData, InstanceElement, isInstanceChange, isObjectType, isObjectTypeChange, ObjectType, TopLevelElement, Values } from '@salto-io/adapter-api'
 import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type'
-import { NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, ObjectID } from '../query'
+import { NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, ObjectID } from '../config/types'
 
 export interface CustomizationInfo {
   typeName: string

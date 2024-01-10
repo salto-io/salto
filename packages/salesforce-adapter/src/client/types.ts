@@ -165,6 +165,9 @@ export class CustomField implements MetadataInfo {
   securityClassification?: string
   complianceGroup?: string
 
+  // CustomMetadata types
+  metadataRelationshipControllingField?: string
+
   constructor(
     public fullName: string,
     type: string,
@@ -182,8 +185,12 @@ export class CustomField implements MetadataInfo {
     relatedTo?: string[],
     relationshipName?: string,
     length?: number,
+    metadataRelationshipControllingField?: string,
   ) {
     this.type = type
+    if (metadataRelationshipControllingField !== undefined) {
+      this.metadataRelationshipControllingField = metadataRelationshipControllingField
+    }
     if (formula) {
       this.formula = formula
     } else {

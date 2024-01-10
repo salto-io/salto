@@ -93,7 +93,10 @@ describe('parse_report_types filter', () => {
   })
   describe('onFetch', () => {
     it('should removes old object type and adds new type', async () => {
-      const savedSearchObject = new ObjectType({ elemID: new ElemID('netsuite', SAVED_SEARCH) })
+      const savedSearchObject = new ObjectType({
+        elemID: new ElemID('netsuite', SAVED_SEARCH),
+        path: [NETSUITE, 'Types', SAVED_SEARCH],
+      })
       const elements = [savedSearchObject]
       await filterCreator(fetchOpts).onFetch?.(elements)
       expect(elements.filter(isObjectType)

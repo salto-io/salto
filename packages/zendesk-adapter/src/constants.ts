@@ -34,6 +34,7 @@ export const TRANSLATION_TYPE_NAMES = [
 export const USER_SEGMENT_TYPE_NAME = 'user_segment'
 export const GUIDE_SETTINGS_TYPE_NAME = 'guide_settings'
 export const GUIDE_LANGUAGE_SETTINGS_TYPE_NAME = 'guide_language_settings'
+export const GUIDE_THEME_TYPE_NAME = 'theme'
 export const PERMISSION_GROUP_TYPE_NAME = 'permission_group'
 export const TICKET_FIELD_TYPE_NAME = 'ticket_field'
 export const ORG_FIELD_TYPE_NAME = 'organization_field'

@@ -77,6 +77,7 @@ export type IdLocator = {
 
 export type Guide = {
   brands: string[]
+  themesForBrands?: string[]
 }
 
 export type ZendeskClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
@@ -84,25 +85,25 @@ export type ZendeskClientConfig = clientUtils.ClientBaseConfig<clientUtils.Clien
 
 export type ZendeskFetchConfig = configUtils.UserFetchConfig
   & {
-  enableMissingReferences?: boolean
-  includeAuditDetails?: boolean
-  addAlias?: boolean
-  handleIdenticalAttachmentConflicts?: boolean
-  greedyAppReferences?: boolean
-  appReferenceLocators?: IdLocator[]
-  guide?: Guide
-  resolveOrganizationIDs?: boolean
-  resolveUserIDs?: boolean
-  extractReferencesFromFreeText?: boolean
-  convertJsonIdsToReferences?: boolean
-}
+    enableMissingReferences?: boolean
+    includeAuditDetails?: boolean
+    addAlias?: boolean
+    handleIdenticalAttachmentConflicts?: boolean
+    greedyAppReferences?: boolean
+    appReferenceLocators?: IdLocator[]
+    guide?: Guide
+    resolveOrganizationIDs?: boolean
+    resolveUserIDs?: boolean
+    extractReferencesFromFreeText?: boolean
+    convertJsonIdsToReferences?: boolean
+  }
 export type ZendeskDeployConfig = configUtils.UserDeployConfig & configUtils.DefaultMissingUserFallbackConfig & {
   createMissingOrganizations?: boolean
 }
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
   configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean },
   configUtils.TransformationDefaultConfig & { omitInactive?: boolean }
-  >
+>
 
 export type ZendeskConfig = {
   [CLIENT_CONFIG]?: ZendeskClientConfig
@@ -2658,6 +2659,26 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
     },
   },
+  themes: {
+    request: {
+      url: '/api/v2/guide/theming/themes',
+    },
+    transformation: {
+      dataField: 'themes',
+    },
+  },
+  theme: {
+    transformation: {
+      idFields: ['&brand_id', ...DEFAULT_ID_FIELDS],
+      sourceTypeName: 'themes__themes',
+      fieldTypeOverrides: [
+        { fieldName: 'files', fieldType: 'map<unknown>' },
+      ],
+      fieldsToHide: FIELDS_TO_HIDE.concat([
+        { fieldName: 'id', fieldType: 'string' },
+      ]),
+    },
+  },
 }
 
 export const SUPPORTED_TYPES = {
@@ -2713,6 +2734,7 @@ export const GUIDE_BRAND_SPECIFIC_TYPES = {
 export const GUIDE_GLOBAL_TYPES = {
   permission_group: ['permission_groups'],
   user_segment: ['user_segments'],
+  theme: ['themes'],
 }
 
 export const GUIDE_SUPPORTED_TYPES = {
@@ -2808,6 +2830,9 @@ const GuideType = createMatchingObjectType<Guide>({
         _required: true,
       },
     },
+    themesForBrands: {
+      refType: new ListType(BuiltinTypes.STRING),
+    },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -2860,6 +2885,7 @@ export type ChangeValidatorName = (
   | 'organizationExistence'
   | 'badFormatWebhookAction'
   | 'guideDisabled'
+  | 'guideThemeReadonly'
   | 'additionOfTicketStatusForTicketForm'
   | 'defaultDynamicContentItemVariant'
   | 'featureActivation'
@@ -2879,7 +2905,7 @@ export type ChangeValidatorName = (
   | 'notEnabledMissingReferences'
   | 'conditionalTicketFields'
   | 'dynamicContentDeletion'
-  )
+)
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -2931,6 +2957,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     organizationExistence: { refType: BuiltinTypes.BOOLEAN },
     badFormatWebhookAction: { refType: BuiltinTypes.BOOLEAN },
     guideDisabled: { refType: BuiltinTypes.BOOLEAN },
+    guideThemeReadonly: { refType: BuiltinTypes.BOOLEAN },
     additionOfTicketStatusForTicketForm: { refType: BuiltinTypes.BOOLEAN },
     defaultDynamicContentItemVariant: { refType: BuiltinTypes.BOOLEAN },
     featureActivation: { refType: BuiltinTypes.BOOLEAN },
@@ -3058,4 +3085,10 @@ export const isGuideEnabled = (
   fetchConfig: ZendeskFetchConfig
 ): boolean => (
   fetchConfig.guide?.brands !== undefined
+)
+
+export const isGuideThemesEnabled = (
+  fetchConfig: ZendeskFetchConfig
+): boolean => (
+  fetchConfig.guide?.themesForBrands !== undefined && fetchConfig.guide?.themesForBrands.length > 0
 )

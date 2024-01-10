@@ -1059,7 +1059,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: ISSUE_TYPE_NAME },
   },
   {
-    src: { field: 'projectId', parentTypes: [ISSUE_LAYOUT_TYPE, REQUEST_FORM_TYPE, ISSUE_VIEW_TYPE] },
+    src: { field: 'projectId', parentTypes: [REQUEST_FORM_TYPE, ISSUE_VIEW_TYPE] },
     serializationStrategy: 'id',
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: PROJECT_TYPE },
@@ -1178,6 +1178,12 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     jiraMissingRefStrategy: 'typeAndValue',
     target: { typeContext: 'referenceTypeTypeName' },
   },
+  {
+    src: { field: 'objectTypeId', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
+    serializationStrategy: 'id',
+    target: { type: OBJECT_TYPE_TYPE },
+  },
+
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [

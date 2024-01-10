@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { filterUtils, client as clientUtils, elements as elementUtils, elements as adapterElements } from '@salto-io/adapter-components'
-import { ObjectType, ElemID, InstanceElement, BuiltinTypes, ListType, ReferenceExpression, Element, isInstanceElement, isObjectType, getChangeData, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, BuiltinTypes, ListType, ReferenceExpression, Element, isInstanceElement, isObjectType, getChangeData, CORE_ANNOTATIONS, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { MockInterface } from '@salto-io/test-utils'
 import { getDefaultConfig } from '../../../src/config/config'
@@ -126,7 +126,7 @@ describe('issue layout filter', () => {
         'project1',
         projectType,
         {
-          id: 11111,
+          id: '11111',
           key: 'projKey',
           name: 'project1',
           simplified: false,
@@ -411,7 +411,6 @@ describe('issue layout filter', () => {
         issueLayoutType,
         {
           id: '2',
-          projectId: new ReferenceExpression(projectInstance.elemID, projectInstance),
           extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
           issueLayoutConfig: {
             items: [
@@ -427,7 +426,9 @@ describe('issue layout filter', () => {
               },
             ],
           },
-        }
+        },
+        undefined,
+        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(projectInstance.elemID, projectInstance)] },
       )
       afterIssueLayoutInstance = issueLayoutInstance.clone()
     })
@@ -439,7 +440,6 @@ describe('issue layout filter', () => {
         'issueLayout',
         issueLayoutType,
         {
-          projectId: new ReferenceExpression(projectInstance.elemID, projectInstance),
           extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
           issueLayoutConfig: {
             items: [
@@ -455,7 +455,9 @@ describe('issue layout filter', () => {
               },
             ],
           },
-        }
+        },
+        undefined,
+        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(projectInstance.elemID, projectInstance)] },
       )
       const res = await filter.deploy([
         { action: 'add', data: { after: issueLayoutInstanceWithoutId } },
@@ -498,7 +500,7 @@ describe('issue layout filter', () => {
       expect(connection.put).toHaveBeenCalledWith(
         '/rest/internal/1.0/issueLayouts/2',
         { extraDefinerId: 11,
-          projectId: 11111,
+          projectId: '11111',
           owners: [],
           issueLayoutType: 'ISSUE_VIEW',
           issueLayoutConfig: {
@@ -546,7 +548,7 @@ describe('issue layout filter', () => {
       expect(connection.put).toHaveBeenCalledWith(
         '/rest/internal/1.0/issueLayouts/2',
         { extraDefinerId: 11,
-          projectId: 11111,
+          projectId: '11111',
           owners: [],
           issueLayoutType: 'ISSUE_VIEW',
           issueLayoutConfig: {
@@ -569,12 +571,11 @@ describe('issue layout filter', () => {
         undefined
       )
     })
-    it('should return error if project is not reference expression', async () => {
+    it('should return error if parent was not found', async () => {
       const issueLayoutInstanceWithoutProj = new InstanceElement(
         'issueLayoutInstanceWithoutProj',
         issueLayoutType,
         {
-          projectId: 11111,
           extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
           issueLayoutConfig: {
             items: [
@@ -597,10 +598,54 @@ describe('issue layout filter', () => {
       ])
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.errors[0].message).toEqual(
-        'Error: Failed to deploy issue layout changes due to missing references'
+        'Error: Expected jira.IssueLayout.instance.issueLayoutInstanceWithoutProj to have exactly one parent, found 0'
       )
       expect(res.deployResult.appliedChanges).toHaveLength(0)
       expect(res.leftoverChanges).toHaveLength(0)
+    })
+    it('should mark issue layout as removed if parent project was removed', async () => {
+      const change = toChange({ before: issueLayoutInstance })
+      connection.get.mockImplementation(async url => {
+        if (url === '/rest/api/3/project/11111') {
+          return {
+            status: 404,
+            data: {},
+          }
+        }
+        throw new Error(`Unexpected url ${url}`)
+      })
+      const { deployResult } = await filter.deploy([change])
+      expect(deployResult.errors).toHaveLength(0)
+      expect(deployResult.appliedChanges).toHaveLength(1)
+    })
+    it('should mark issue layout as removed if project was removed and API throws 404', async () => {
+      const change = toChange({ before: issueLayoutInstance })
+      const error = new clientUtils.HTTPError('message', {
+        status: 404,
+        data: { errorMessages: ['project does not exist.'] },
+      })
+      connection.get.mockRejectedValueOnce(error)
+      const { deployResult } = await filter.deploy([change])
+      expect(deployResult.errors).toHaveLength(0)
+      expect(deployResult.appliedChanges).toHaveLength(1)
+    })
+    it('should return error if issue layout as removed but parent project still exits', async () => {
+      const change = toChange({ before: issueLayoutInstance })
+      connection.get.mockImplementation(async url => {
+        if (url === '/rest/api/3/project/11111') {
+          return {
+            status: 200,
+            data: {
+              id: '11111',
+            },
+          }
+        }
+        throw new Error(`Unexpected url ${url}`)
+      })
+      const { deployResult } = await filter.deploy([change])
+      expect(deployResult.errors).toHaveLength(1)
+      expect(deployResult.errors[0].message).toEqual('Error: Could not remove IssueLayout')
+      expect(deployResult.appliedChanges).toHaveLength(0)
     })
   })
 })

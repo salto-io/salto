@@ -202,8 +202,8 @@ const isUnFoundDelete = (message: DeployMessage, deletionsPackageName: string): 
 const processDeployResponse = (
   result: SFDeployResult,
   deletionsPackageName: string,
-  typeAndNameToElemId: Record<string, NameToElemIDMap>
-
+  typeAndNameToElemId: Record<string, NameToElemIDMap>,
+  isCheckOnly: boolean,
 ): { successfulFullNames: ReadonlyArray<MetadataId>
   errors: ReadonlyArray<SaltoError | SaltoElementError> } => {
   const allFailureMessages = makeArray(result.details)
@@ -241,6 +241,27 @@ const processDeployResponse = (
 
   if (isDefined(result.errorMessage)) {
     errors.push({ message: result.errorMessage, severity: 'Error' as SeverityLevel })
+  }
+
+  const anyErrors = isDefined(result.errorMessage)
+    || componentErrors.length > 0
+    || testErrors.length > 0
+  if (!isCheckOnly
+    && result.rollbackOnError !== false
+    && anyErrors) {
+    // If we deployed with 'rollbackOnError' (the default) and any component in the group fails to deploy, then every
+    // component in the group will not deploy. Let's create an explicit error for the components that did not have
+    // errors to make it clear that they didn't deploy either.
+    makeArray(result.details)
+      .flatMap(detail => makeArray(detail.componentSuccesses))
+      .map(component => ({
+        elemID: typeAndNameToElemId[component.componentType]?.[component.fullName],
+        message: 'Element was not deployed because other elements had errors and the \'rollbackOnError\' option is enabled (or not set).',
+        severity: 'Warning' as const,
+        type: 'dependency',
+      }))
+      .filter(error => error.elemID !== undefined)
+      .forEach(error => errors.push(error))
   }
 
   // In checkOnly none of the changes are actually applied
@@ -393,7 +414,8 @@ export const deployMetadata = async (
       names.forEach(name => {
         nameToElemId[name] = elemID
       })
-      deployedComponentsElemIdsByType[type] = nameToElemId
+      // doing it in a slightly more convoluted way because deployedComponentsElemIdsByType[type] may be udefined
+      deployedComponentsElemIdsByType[type] = _.assign({}, deployedComponentsElemIdsByType[type], nameToElemId)
     })
   })
 
@@ -422,7 +444,7 @@ export const deployMetadata = async (
   }, undefined, 2))
 
   const { errors, successfulFullNames } = processDeployResponse(
-    sfDeployRes, pkg.getDeletionsPackageName(), deployedComponentsElemIdsByType
+    sfDeployRes, pkg.getDeletionsPackageName(), deployedComponentsElemIdsByType, checkOnly ?? false,
   )
   const isSuccessfulChange = (change: Change<MetadataInstanceElement>): boolean => {
     const changeElem = getChangeData(change)

@@ -72,7 +72,7 @@ export const workbookType = (): TypeAndInnerTypes => {
     },
     fields: {
       dependency: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+        refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
@@ -185,7 +185,7 @@ export const workbookType = (): TypeAndInnerTypes => {
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      },
+      }, /* Original description:   */
       charts: {
         refType: createRefToElmWithValue(workbook_charts),
         annotations: {

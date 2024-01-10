@@ -63,3 +63,5 @@ export function *matchAll(str: string, matcher: RegExp): Iterable<RegExpExecArra
     yield match
   }
 }
+
+export const isNumberStr = (str: string): boolean => !Number.isNaN(Number(str)) && str !== ''

@@ -20,7 +20,7 @@ import { getDefaultAdapterConfig } from '../utils'
 import { NETSUITE, WORKFLOW } from '../../src/constants'
 import filterCreator from '../../src/filters/omit_sdf_untyped_values'
 import { LocalFilterOpts } from '../../src/filter'
-import { emptyQueryParams, fullQueryParams } from '../../src/query'
+import { emptyQueryParams, fullQueryParams } from '../../src/config/config_creator'
 
 describe('omit sdf untyped values filter', () => {
   let instance: InstanceElement

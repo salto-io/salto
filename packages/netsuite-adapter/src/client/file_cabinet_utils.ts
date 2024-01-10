@@ -18,7 +18,7 @@ import { posix } from 'path'
 import { strings } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FILE_CABINET_PATH_SEPARATOR as sep } from '../constants'
-import { WARNING_MAX_FILE_CABINET_SIZE_IN_GB } from '../config'
+import { WARNING_MAX_FILE_CABINET_SIZE_IN_GB } from '../config/constants'
 
 const log = logger(module)
 

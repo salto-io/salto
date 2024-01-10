@@ -37,7 +37,7 @@ import { mockDeployResult, mockRunTestFailure, mockDeployResultComplete } from '
 import { MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE, MappableSalesforceProblem } from '../src/client/user_facing_errors'
 import { GLOBAL_VALUE_SET } from '../src/filters/global_value_sets'
 import { apiNameSync, metadataTypeSync } from '../src/filters/utils'
-import { SalesforceArtifacts } from '../src/constants'
+import { SalesforceArtifacts, INSTANCE_FULL_NAME_FIELD } from '../src/constants'
 
 const { makeArray } = collections.array
 
@@ -890,8 +890,16 @@ describe('SalesforceAdapter CRUD', () => {
           expect(result.appliedChanges).toHaveLength(0)
         })
         it('should return the test errors', () => {
-          expect(result.errors).toHaveLength(1)
-          expect(result.errors[0].message).toMatch(/.*Test failed.*/)
+          expect(result.errors).toEqual([
+            expect.objectContaining({
+              message: expect.stringContaining('Test failed'),
+            }),
+            expect.objectContaining({
+              elemID: instance.elemID,
+              message: expect.stringContaining('rollbackOnError'),
+              severity: 'Warning',
+            }),
+          ])
         })
       })
       describe('without rollback on error', () => {
@@ -909,6 +917,65 @@ describe('SalesforceAdapter CRUD', () => {
         it('should return the test errors', () => {
           expect(result.errors).toHaveLength(1)
           expect(result.errors[0].message).toMatch(/.*Test failed.*/)
+        })
+      })
+    })
+
+    describe('when one component fails and others succeed', () => {
+      let deployResultParams: Parameters<typeof mockDeployResult>[0]
+      let successElement: InstanceElement
+      let failureElement: InstanceElement
+      let deployChangeGroup: ChangeGroup
+      beforeEach(() => {
+        successElement = createInstanceElement({
+          [INSTANCE_FULL_NAME_FIELD]: 'SuccessElement',
+        },
+        mockTypes.ApexClass)
+        failureElement = createInstanceElement({
+          [INSTANCE_FULL_NAME_FIELD]: 'FailureElement',
+        },
+        mockTypes.ApexClass)
+
+        deployResultParams = {
+          success: false,
+          componentSuccess: [
+            { fullName: apiNameSync(successElement), componentType: metadataTypeSync(successElement) },
+          ],
+          componentFailure: [
+            { fullName: apiNameSync(failureElement), componentType: metadataTypeSync(failureElement), problem: 'Failed to deploy' },
+          ],
+        }
+
+        deployChangeGroup = {
+          groupID: 'ChangeGroup',
+          changes: [toChange({ after: failureElement }), toChange({ after: successElement })],
+        }
+      })
+      describe('with rollback on error', () => {
+        let result: DeployResult
+        beforeEach(async () => {
+          connection.metadata.deploy.mockReturnValue(mockDeployResult({
+            ...deployResultParams,
+            rollbackOnError: true,
+          }))
+          result = await adapter.deploy({ changeGroup: deployChangeGroup, progressReporter: nullProgressReporter })
+        })
+        it('should return the test errors', () => {
+          expect(result.errors).toEqual([
+            expect.objectContaining({
+              elemID: failureElement.elemID,
+              message: expect.stringContaining('Failed to deploy'),
+              severity: 'Error',
+            }),
+            expect.objectContaining({
+              elemID: successElement.elemID,
+              message: expect.stringContaining('rollbackOnError'),
+              severity: 'Warning',
+            }),
+          ])
+        })
+        it('should have no applied changes', () => {
+          expect(result.appliedChanges).toBeEmpty()
         })
       })
     })
@@ -1166,7 +1233,15 @@ describe('SalesforceAdapter CRUD', () => {
           })
         })
         it('should produce a deploy error', () => {
-          expect(result.errors).toHaveLength(1)
+          expect(result.errors).toEqual([
+            expect.objectContaining({
+              message: expect.stringContaining('UNKNOWN_EXCEPTION'),
+            }),
+            expect.objectContaining({
+              elemID: afterInstance.elemID,
+              message: expect.stringContaining('rollbackOnError'),
+            }),
+          ])
         })
       })
 

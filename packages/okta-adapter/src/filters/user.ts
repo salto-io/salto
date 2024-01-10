@@ -19,26 +19,12 @@ import { applyFunctionToChangeData, resolvePath, setPath } from '@salto-io/adapt
 import { collections } from '@salto-io/lowerdash'
 import { Change, getChangeData, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { ACCESS_POLICY_RULE_TYPE_NAME, AUTHORIZATION_POLICY_RULE, GROUP_RULE_TYPE_NAME, MFA_RULE_TYPE_NAME, PASSWORD_RULE_TYPE_NAME, SIGN_ON_RULE_TYPE_NAME } from '../constants'
 import { FETCH_CONFIG } from '../config'
-import { getUsers } from '../user_utils'
+import { getUsers, USER_MAPPING, getUsersFromInstances, DEFAULT_CONVERT_USERS_IDS_VALUE } from '../user_utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
-
-const EXCLUDE_USERS_PATH = ['conditions', 'people', 'users', 'exclude']
-const INCLUDE_USERS_PATH = ['conditions', 'people', 'users', 'include']
-
-export const USER_MAPPING: Record<string, string[][]> = {
-  [GROUP_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH],
-  [ACCESS_POLICY_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH, INCLUDE_USERS_PATH],
-  [PASSWORD_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH],
-  [SIGN_ON_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH],
-  [MFA_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH],
-  [AUTHORIZATION_POLICY_RULE]: [INCLUDE_USERS_PATH],
-  EndUserSupport: [['technicalContactId']],
-}
 
 const isRelevantInstance = (instance: InstanceElement): boolean => (
   Object.keys(USER_MAPPING).includes(instance.elemID.typeName)
@@ -86,7 +72,7 @@ const filterCreator: FilterCreator = ({ paginator, config, usersPromise }) => {
   return {
     name: 'usersFilter',
     onFetch: async elements => {
-      if (config[FETCH_CONFIG].convertUsersIds === false) {
+      if (!(config[FETCH_CONFIG].convertUsersIds ?? DEFAULT_CONVERT_USERS_IDS_VALUE)) {
         log.debug('Converting user ids was disabled (onFetch)')
         return
       }
@@ -104,16 +90,20 @@ const filterCreator: FilterCreator = ({ paginator, config, usersPromise }) => {
       })
     },
     preDeploy: async (changes: Change<InstanceElement>[]) => {
-      if (config[FETCH_CONFIG].convertUsersIds === false) {
+      const { convertUsersIds } = config[FETCH_CONFIG]
+      if (!(convertUsersIds ?? DEFAULT_CONVERT_USERS_IDS_VALUE)) {
         log.debug('Converting user ids was disabled (preDeploy)')
         return
       }
-      const relevantChanges = changes
-        .filter(change => isRelevantInstance(getChangeData(change)))
-      if (_.isEmpty(relevantChanges)) {
+      const usersToReplace = getUsersFromInstances(changes.map(getChangeData))
+
+      if (_.isEmpty(usersToReplace)) {
         return
       }
-      const users = await getUsers(paginator)
+      const users = await getUsers(
+        paginator,
+        { userIds: usersToReplace, property: 'profile.login' },
+      )
       if (_.isEmpty(users)) {
         log.warn('Could not find any users (preDeploy)')
         return
@@ -128,7 +118,7 @@ const filterCreator: FilterCreator = ({ paginator, config, usersPromise }) => {
       await replaceValuesForChanges(changes, loginToUserId)
     },
     onDeploy: async (changes: Change<InstanceElement>[]) => {
-      if (config[FETCH_CONFIG].convertUsersIds === false) {
+      if (!(config[FETCH_CONFIG].convertUsersIds ?? DEFAULT_CONVERT_USERS_IDS_VALUE)) {
         log.debug('Converting user ids was disabled (onDeploy)')
         return
       }

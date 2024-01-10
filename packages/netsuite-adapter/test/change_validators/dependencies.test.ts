@@ -86,12 +86,15 @@ describe('Required Dependencies Validator', () => {
   it('should return no change errors if no other change depends on an invalid element', async () => {
     expect(await validateDependsOnInvalidElement(
       [dependsOn2Instances.elemID.getFullName(), fileInstance.elemID.getFullName()],
-      changes
+      changes,
     )).toEqual([])
   })
 
   it('should return change errors for all changes that have dependency on an invalid element that was added', async () => {
-    const changeErrors = await validateDependsOnInvalidElement([fileInstance.elemID.getFullName()], changes)
+    const changeErrors = await validateDependsOnInvalidElement(
+      [fileInstance.elemID.getFullName()],
+      changes,
+    )
     expect(changeErrors)
       .toEqual(expect.arrayContaining([
         expect.objectContaining({
@@ -102,7 +105,10 @@ describe('Required Dependencies Validator', () => {
   })
 
   it('should return change errors for all changes that have required dependency on an invalid element (either added or required references), including deep dependency', async () => {
-    const changeErrors = await validateDependsOnInvalidElement([customRecordType.elemID.getFullName()], changes)
+    const changeErrors = await validateDependsOnInvalidElement(
+      [customRecordType.elemID.getFullName()],
+      changes,
+    )
     expect(changeErrors)
       .toEqual(expect.arrayContaining([
         expect.objectContaining({

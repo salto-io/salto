@@ -154,6 +154,11 @@ export const createAutomationTypes = (): {
       project: { refType: projectType },
       role: { refType: roleType },
       compareFieldValue: { refType: compareFieldValueType },
+      workspaceId: { refType: BuiltinTypes.STRING },
+      schemaLabel: { refType: BuiltinTypes.STRING },
+      schemaId: { refType: BuiltinTypes.STRING },
+      objectTypeLabel: { refType: BuiltinTypes.STRING },
+      objectTypeId: { refType: BuiltinTypes.STRING },
     },
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_COMPONENT_VALUE_TYPE],
   })

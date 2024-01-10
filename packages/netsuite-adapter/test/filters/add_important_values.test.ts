@@ -24,7 +24,7 @@ import { customrecordtypeType } from '../../src/autogen/types/standard_types/cus
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 import { entryFormType } from '../../src/autogen/types/standard_types/entryForm'
 import { customlistType } from '../../src/autogen/types/standard_types/customlist'
-import { emptyQueryParams, fullQueryParams } from '../../src/query'
+import { emptyQueryParams, fullQueryParams } from '../../src/config/config_creator'
 
 describe('add important values filter', () => {
   let workflow: ObjectType

@@ -19,8 +19,7 @@ import {
   Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
   Value, toChange, isRemovalChange, getChangeData, isField, AuthorInformation, ReferenceInfo, ReferenceType,
   ReadOnlyElementsSource, isAdditionOrModificationChange, StaticFile, isInstanceElement, isObjectType,
-  isModificationChange,
-  TypeReference,
+  isModificationChange, TypeReference,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {

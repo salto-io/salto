@@ -254,7 +254,6 @@ describe('Custom Object Instances CRUD', () => {
     {
       SaltoName: 'newInstanceWithNonCreatableField',
       NumField: 4,
-      Id: '13212',
       NotCreatable__c: 'ShouldNotBeCreated',
     }
   )

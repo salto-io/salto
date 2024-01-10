@@ -521,7 +521,6 @@ describe('projectFilter', () => {
         elementsSource,
         config,
       })) as typeof filter
-      instance.value.serviceDeskId = '100'
       instance.value.projectTypeKey = 'service_desk'
       change = toChange({ after: instance })
       await filter.deploy([change])
@@ -542,7 +541,6 @@ describe('projectFilter', () => {
         elementsSource,
         config,
       })) as typeof filter
-      instance.value.serviceDeskId = '100'
       instance.value.projectTypeKey = 'service_desk'
       change = toChange({ after: instance })
       await filter.deploy([change])
@@ -563,7 +561,6 @@ describe('projectFilter', () => {
         elementsSource,
         config,
       })) as typeof filter
-      instance.value.serviceDeskId = '100'
       instance.value.projectTypeKey = 'software'
       change = toChange({ after: instance })
       await filter.deploy([change])
@@ -572,6 +569,71 @@ describe('projectFilter', () => {
         '/rest/servicedeskapi/servicedesk/projectId:3',
         undefined,
       )
+    })
+    it('should call the second serviceDeskId endpoint when the first one fails', async () => {
+      const { paginator } = mockClient()
+      const elementsSource = getLicenseElementSource(true)
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config.fetch.enableJSM = true
+      filter = projectFilter(getFilterParams({
+        client,
+        paginator,
+        elementsSource,
+        config,
+      })) as typeof filter
+      instance.value.projectTypeKey = 'service_desk'
+      change = toChange({ after: instance })
+      connection.get.mockRejectedValueOnce({
+        response: {
+          status: 404,
+        },
+      })
+      await filter.deploy([change])
+
+      expect(connection.get).toHaveBeenCalledWith(
+        '/rest/servicedeskapi/servicedesk/projectId:3',
+        undefined,
+      )
+      expect(connection.get).toHaveBeenCalledWith(
+        '/rest/servicedeskapi/servicedesk',
+        undefined,
+      )
+    })
+    it('should not fail if both serviceDeskId endpoints fails', async () => {
+      const { paginator } = mockClient()
+      const elementsSource = getLicenseElementSource(true)
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config.fetch.enableJSM = true
+      filter = projectFilter(getFilterParams({
+        client,
+        paginator,
+        elementsSource,
+        config,
+      })) as typeof filter
+      instance.value.projectTypeKey = 'service_desk'
+      change = toChange({ after: instance })
+      connection.get.mockImplementation(async url => {
+        if (url.includes('servicedesk')) {
+          throw new Error('failed to get serviceDeskId')
+        }
+        return {
+          status: 200,
+          data: {
+          },
+        }
+      })
+      const res = await filter.deploy([change])
+
+      expect(connection.get).toHaveBeenCalledWith(
+        '/rest/servicedeskapi/servicedesk/projectId:3',
+        undefined,
+      )
+      expect(connection.get).toHaveBeenCalledWith(
+        '/rest/servicedeskapi/servicedesk',
+        undefined,
+      )
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
     })
   })
 

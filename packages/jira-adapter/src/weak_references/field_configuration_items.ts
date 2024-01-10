@@ -73,7 +73,7 @@ const getFieldReferences = async (
 const getFieldConfigurationItemsReferences: GetCustomReferencesFunc = async elements => log.time(() => awu(elements)
   .filter(isInstanceElement)
   .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
-  .flatMap(instance => getFieldReferences(instance))
+  .flatMap(getFieldReferences)
   .toArray(), 'getFieldConfigurationItemsReferences')
 
 /**

@@ -71,6 +71,7 @@ import {
 import SalesforceClient from '../client/client'
 import { allMissingSubTypes } from './salesforce_types'
 import { defaultMissingFields } from './missing_fields'
+import { FetchProfile } from '../types'
 
 
 const log = logger(module)
@@ -1258,6 +1259,10 @@ export const isSubfieldOfCompound = (field: SalesforceField): boolean => (
   field.compoundFieldName !== undefined && field.compoundFieldName !== field.name
 )
 
+const EXTRA_INFORMATION_FIELD_ANNOTATIONS = [
+  FIELD_ANNOTATIONS.DEFAULTED_ON_CREATE,
+]
+
 // The following method is used during the fetchy process and is used in building the objects
 // and their fields described in the Nacl file
 export const getSObjectFieldElement = (
@@ -1265,7 +1270,8 @@ export const getSObjectFieldElement = (
   field: SalesforceField,
   parentServiceIds: ServiceIds,
   objCompoundFieldNames: Record<string, string> = {},
-  systemFields: string[] = []
+  fetchProfile: FetchProfile,
+  systemFields: string[] = [],
 ): Field => {
   const fieldApiName = [parentServiceIds[API_NAME], field.name].join(API_NAME_SEPARATOR)
   const serviceIds = {
@@ -1281,6 +1287,12 @@ export const getSObjectFieldElement = (
     [API_NAME]: fieldApiName,
     [LABEL]: field.label,
   }
+  if (fetchProfile.isFeatureEnabled('extendedCustomFieldInformation')) {
+    EXTRA_INFORMATION_FIELD_ANNOTATIONS.forEach(annotation => {
+      annotations[annotation] = field[annotation]
+    })
+  }
+
   if (field.type !== 'boolean' && field.nillable === false) {
     // nillable is the closest thing we could find to infer if a field is required,
     // it might not be perfect

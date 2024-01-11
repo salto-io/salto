@@ -16,16 +16,16 @@
 import { ChangeValidator, getChangeData, InstanceElement, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { FIELD_TYPE_NAME } from '../filters/fields/constants'
+import { FIELD_TYPE_NAME, SERVICE } from '../filters/fields/constants'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
-export const isJsmRelatedField = (instance: InstanceElement): boolean => {
-  if (typeof instance.value.type !== 'string') {
-    return false
-  }
-  if (instance.value.type.includes('service')) {
-    log.debug(`Found a locked field that is related to a JSM project: ${instance.elemID.getFullName()}. planning to deploy it.`)
+export const isRelatedToSpecifiedTerms = (instance: InstanceElement, terms: string[]): boolean => {
+  const includesTerm = (term: string): boolean =>
+  instance.value.name?.includes(term) || instance.value.description?.includes(term)
+
+  if (terms.some(includesTerm)) {
+    log.debug(`Found a field related to specified term in ${instance.elemID.getFullName()}. Planning to deploy it.`)
     return true
   }
   return false
@@ -37,7 +37,7 @@ export const lockedFieldsValidator: ChangeValidator = async changes => (
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === FIELD_TYPE_NAME)
     .filter(instance => instance.value.isLocked)
-    .filter(instance => !isJsmRelatedField(instance))
+    .filter(instance => !isRelatedToSpecifiedTerms(instance, [SERVICE]))
     .map(async instance => ({
       elemID: instance.elemID,
       severity: 'Error' as SeverityLevel,

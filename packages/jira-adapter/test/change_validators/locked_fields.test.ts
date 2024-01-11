@@ -49,4 +49,12 @@ describe('lockedFieldsValidator', () => {
       }),
     ])).toEqual([])
   })
+  it('should not return an error if field is locked but related to JSM project', async () => {
+    instance.value.name = 'service'
+    expect(await lockedFieldsValidator([
+      toChange({
+        after: instance,
+      }),
+    ])).toEqual([])
+  })
 })

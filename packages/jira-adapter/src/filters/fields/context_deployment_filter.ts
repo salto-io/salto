@@ -21,9 +21,9 @@ import Joi from 'joi'
 import { FilterCreator } from '../../filter'
 import { deployContextChange, setContextDeploymentAnnotations } from './contexts'
 import { deployChanges } from '../../deployment/standard_deployment'
-import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME, IS_LOCKED } from './constants'
+import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME, IS_LOCKED, SERVICE } from './constants'
 import { findObject, isThereValidParent, setFieldDeploymentAnnotations } from '../../utils'
-import { isJsmRelatedField } from '../../change_validators/locked_fields'
+import { isRelatedToSpecifiedTerms } from '../../change_validators/locked_fields'
 import JiraClient from '../../client/client'
 
 const log = logger(module)
@@ -110,7 +110,7 @@ const filter: FilterCreator = ({ client, config, paginator, elementsSource }) =>
           if (isAdditionChange(change) && isThereValidParent(instance)) {
             const parent = getParent(instance)
             // checking if the field is jsm locked, and if so, we need to check that the context is auto-created.
-            if (isJsmRelatedField(parent) && parent.value?.[IS_LOCKED] === true) {
+            if (isRelatedToSpecifiedTerms(parent, [SERVICE]) && parent.value?.[IS_LOCKED] === true) {
               errors.push(...await deployJsmContextField(change, parent, client))
               return
             }

@@ -233,6 +233,8 @@ describe('fieldContextDeployment', () => {
         'field',
         fieldType,
         {
+          name: 'field_1',
+          description: 'auto-created by jira service',
           type: 'com.atlassian.servicedesk:vp-origin',
           isLocked: true,
         },

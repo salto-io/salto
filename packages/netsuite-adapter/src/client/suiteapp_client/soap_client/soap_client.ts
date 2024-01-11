@@ -27,7 +27,7 @@ import { SuiteAppSoapCredentials, toUrlAccountId } from '../../credentials'
 import { CONSUMER_KEY, CONSUMER_SECRET, ECONN_ERROR, INSUFFICIENT_PERMISSION_ERROR, REQUEST_ABORTED_ERROR, UNEXPECTED_ERROR, VALIDATION_ERROR } from '../constants'
 import { ReadFileError } from '../errors'
 import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails, FileDetails, FolderDetails, HasElemIDFunc } from '../types'
-import { CustomRecordResponse, DeployListResults, GetAllResponse, GetResult, GetSelectValueResponse, isDeployListSuccess, isGetSelectValueSuccessResponse, isGetSuccess, isSearchErrorResponse, isWriteResponseSuccess, RecordResponse, RecordValue, SearchErrorResponse, SearchPageResponse, SearchResponse, SoapSearchType, WriteResponse } from './types'
+import { CustomRecordResponse, DeployListResults, GetAllResponse, GetResult, GetSelectValueResponse, isDeployListSuccess, isGetAllErrorResponse, isGetSelectValueSuccessResponse, isGetSuccess, isSearchErrorResponse, isWriteResponseSuccess, RecordResponse, RecordValue, SearchErrorResponse, SearchPageResponse, SearchResponse, SoapSearchType, WriteResponse } from './types'
 import { DEPLOY_LIST_SCHEMA, GET_ALL_RESPONSE_SCHEMA, GET_RESULTS_SCHEMA, GET_SELECT_VALUE_SCHEMA, SEARCH_RESPONSE_SCHEMA } from './schemas'
 import { InvalidSuiteAppCredentialsError } from '../../types'
 import { isCustomRecordType } from '../../../types'
@@ -749,6 +749,12 @@ export default class SoapClient {
     )) {
       log.error(`Got invalid response from get all request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
       throw new Error(`VALIDATION_ERROR - Got invalid response from get all request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+    }
+
+    if (isGetAllErrorResponse(response)) {
+      const { code, message } = response.getAllResult.status.statusDetail[0]
+      log.error('Failed to run getAll request: %o', response)
+      throw new Error(`Failed to run getAll request: error code: ${code}, error message: ${message}`)
     }
 
     return response.getAllResult.recordList.record

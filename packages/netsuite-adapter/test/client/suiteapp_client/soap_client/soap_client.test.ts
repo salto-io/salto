@@ -898,6 +898,21 @@ describe('soap_client', () => {
       getAllAsyncMock.mockResolvedValue([{}])
       await expect(client.getAllRecords(['subsidiary'])).rejects.toThrow()
     })
+
+    it('Should throw a better error if got error getAll results', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (wsdl as any).definitions.schemas.someNamespace.complexTypes.SubsidiarySearch
+
+      getAllAsyncMock.mockResolvedValue([{
+        getAllResult: {
+          status: {
+            attributes: { isSuccess: 'false' },
+            statusDetail: [{ code: 'SOME_ERROR', message: 'Some Error' }],
+          },
+        },
+      }])
+      await expect(client.getAllRecords(['subsidiary'])).rejects.toThrow('Failed to run getAll request: error code: SOME_ERROR, error message: Some Error')
+    })
   })
 
   describe('getCustomRecords', () => {

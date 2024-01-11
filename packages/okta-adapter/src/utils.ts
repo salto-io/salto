@@ -13,10 +13,35 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
+import _ from 'lodash'
 import { logger } from '@salto-io/logging'
+import OktaClient from './client/client'
 
 const log = logger(module)
+
+type OktaOrgResponse = {
+  pipeline: string
+}
+
+const isOktaOrgResponse = (value: unknown): value is OktaOrgResponse => _.isObject(value) && 'pipeline' in value
+
+/**
+ * Determine if an account is Classic Engine Org or Okta Identity Engine Org
+ */
+export const isClassicEngineOrg = async (oktaClient: OktaClient): Promise<boolean> => {
+  try {
+    const { data } = await oktaClient.getSinglePage({ url: '/.well-known/okta-organization' })
+    if (!isOktaOrgResponse(data)) {
+      log.debug('Recived invalid response when trying to determine org type')
+      return false
+    }
+    // pipeline is idx for Okta Identity Engine, and v1 for Classic Engine
+    return data.pipeline === 'v1'
+  } catch (err) {
+    log.debug('Failed to determine org type, defaults to Identity Engine Account')
+    return false
+  }
+}
 
 /**
  * Extract id from okta's _links object urls

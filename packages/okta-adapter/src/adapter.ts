@@ -21,7 +21,7 @@ import { logger } from '@salto-io/logging'
 import { collections, objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 import changeValidator from './change_validators'
-import { OktaConfig, API_DEFINITIONS_CONFIG, CLIENT_CONFIG, configType, FETCH_CONFIG } from './config'
+import { OktaConfig, API_DEFINITIONS_CONFIG, CLIENT_CONFIG, configType, FETCH_CONFIG, getSupportedTypes } from './config'
 import fetchCriteria from './fetch_criteria'
 import { paginate } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
@@ -58,6 +58,7 @@ import addImportantValues from './filters/add_important_values'
 import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
 import { User, getUsers, getUsersFromInstances } from './user_utils'
+import { isClassicEngineOrg } from './utils'
 
 const { awu } = collections.asynciterable
 
@@ -168,7 +169,7 @@ export default class OktaAdapter implements AdapterOperations {
         {
           client,
           paginator,
-          config,
+          config: this.userConfig,
           getElemIdFunc,
           elementsSource,
           fetchQuery: this.fetchQuery,
@@ -274,11 +275,30 @@ export default class OktaAdapter implements AdapterOperations {
     }
   }
 
+  private async handleClassicEngineOrg(): Promise<configUtils.ConfigChangeSuggestion | undefined> {
+    const { isClassicOrg: isClassicOrgByConfig } = this.userConfig[FETCH_CONFIG]
+    const isClassicOrg = isClassicOrgByConfig ?? await isClassicEngineOrg(this.client)
+    if (isClassicOrg) {
+      // update supported types to exclude types that are not supported in classic orgs
+      this.userConfig[API_DEFINITIONS_CONFIG].supportedTypes = getSupportedTypes({
+        isClassicOrg,
+        supportedTypes: this.userConfig[API_DEFINITIONS_CONFIG].supportedTypes,
+      })
+      return {
+        type: 'enableFetchFlag',
+        value: 'isClassicOrg',
+        reason: 'We detected that your Okta organization is using the Classic Engine, therefore, certain types of data that are only compatible with newer versions were not fetched.',
+      }
+    }
+    return undefined
+  }
+
   @logDuration('fetching account configuration')
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch okta account configuration..')
     const { convertUsersIds, getUsersStrategy } = this.userConfig[FETCH_CONFIG]
-    const { elements, errors, configChanges } = await this.getAllElements(progressReporter)
+    const classicOrgConfigSuggestion = await this.handleClassicEngineOrg()
+    const { elements, errors, configChanges: getElementsConfigChanges } = await this.getAllElements(progressReporter)
 
     const usersPromise = convertUsersIds
       ? getUsers(
@@ -293,8 +313,13 @@ export default class OktaAdapter implements AdapterOperations {
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
     const filterResult = await this.createFiltersRunner(usersPromise).onFetch(elements) || {}
 
-    const updatedConfig = configChanges && this.configInstance
-      ? configUtils.getUpdatedCofigFromConfigChanges({ configChanges, currentConfig: this.configInstance, configType })
+    const configChanges = (getElementsConfigChanges ?? []).concat(classicOrgConfigSuggestion ?? [])
+    const updatedConfig = !_.isEmpty(configChanges) && this.configInstance
+      ? configUtils.getUpdatedCofigFromConfigChanges({
+        configChanges,
+        currentConfig: this.configInstance,
+        configType,
+      })
       : undefined
     return {
       elements,

@@ -49,6 +49,15 @@ jest.mock('@salto-io/adapter-components', () => {
   }
 })
 
+const mockIsClassicOrg = jest.fn().mockImplementation(() => false)
+jest.mock('../src/utils', () => {
+  const actual = jest.requireActual('../src/utils')
+  return {
+    ...actual,
+    isClassicEngineOrg: jest.fn(args => mockIsClassicOrg(args)),
+  }
+})
+
 
 const mockGetUsers = jest.fn()
 jest.mock('../src/user_utils', () => ({
@@ -134,6 +143,18 @@ describe('Okta adapter', () => {
       const adapter = adapterSetup(createCredentialsInstance({ baseUrl: 'http:/okta.test', token: 't' }))
       await adapter.fetch({ progressReporter: { reportProgress: () => null } })
       expect(mockGetUsers).toHaveBeenCalledTimes(1)
+    })
+
+    it('should create updated config for classic orgs when isClassicOrg config flag is undefined', async () => {
+      mockIsClassicOrg.mockImplementationOnce(() => true)
+      const adapter = adapterSetup(createCredentialsInstance({ baseUrl: 'http:/okta.test', token: 't' }))
+      const result = await adapter.fetch({ progressReporter: { reportProgress: () => null } })
+      expect(mockIsClassicOrg).toHaveBeenCalledTimes(1)
+      expect(result.updatedConfig).toBeDefined()
+      expect(result.updatedConfig?.config[0].value.fetch).toEqual({
+        ...DEFAULT_CONFIG.fetch,
+        isClassicOrg: true,
+      })
     })
   })
 })

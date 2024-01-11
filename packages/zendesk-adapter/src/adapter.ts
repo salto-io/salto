@@ -806,14 +806,14 @@ export default class ZendeskAdapter implements AdapterOperations {
     const runner = await this.createFiltersRunner({})
     const resolvedChanges = await awu(changesToDeploy)
       .map(async change =>
-      (SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
-        ? change
-        : resolveChangeElement(
-          change,
-          lookupFunc,
-          async (element, getLookUpName, elementsSource) =>
-            resolveValues(element, getLookUpName, elementsSource, true),
-        )))
+        (SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
+          ? change
+          : resolveChangeElement(
+            change,
+            lookupFunc,
+            async (element, getLookUpName, elementsSource) =>
+              resolveValues(element, getLookUpName, elementsSource, true),
+          )))
       .toArray()
     const [guideResolvedChanges, supportResolvedChanges] = _.partition(
       resolvedChanges,

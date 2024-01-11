@@ -1789,7 +1789,7 @@ export const getSupportedTypes = ({
   isClassicOrg: boolean
   supportedTypes: Record<string, string[]>
 }): Record<string, string[]> =>
-  (isClassicOrg ? _.omit(supportedTypes, CLASSIC_ENGINE_UNSUPPORTED_TYPES) : SUPPORTED_TYPES)
+  (isClassicOrg ? _.omit(supportedTypes, CLASSIC_ENGINE_UNSUPPORTED_TYPES) : supportedTypes)
 
 export type ChangeValidatorName = (
   | 'createCheckDeploymentBasedOnConfig'

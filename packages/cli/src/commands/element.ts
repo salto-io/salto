@@ -545,7 +545,7 @@ const elementOpenDef = createWorkspaceCommand({
 })
 
 type ElementListArgs = {
-  elementSelector: string[]
+  elementSelector?: string[]
   mode: FromSource
 } & EnvArg
 
@@ -556,7 +556,9 @@ const listElements = async (
   elmSelectors: ElementSelector[]
 ): Promise<CliExitCode> => {
   const elemIds = await awu(
-    await workspace.getElementIdsBySelectors(elmSelectors, { source: mode }, true)
+    elmSelectors.length === 0
+      ? await (await workspace.elements()).list()
+      : await workspace.getElementIdsBySelectors(elmSelectors, { source: mode }, true)
   ).toArray()
 
   output.stdout.write(Prompts.LIST_MESSAGE(elemIds.map(id => id.getFullName())))
@@ -571,7 +573,7 @@ export const listAction: WorkspaceCommandAction<ElementListArgs> = async ({
 }) => {
   try {
     const { elementSelector, mode } = input
-    const { validSelectors, invalidSelectors } = createElementSelectors(elementSelector)
+    const { validSelectors, invalidSelectors } = createElementSelectors(elementSelector ?? [])
     if (!_.isEmpty(invalidSelectors)) {
       errorOutputLine(formatInvalidFilters(invalidSelectors), output)
       return CliExitCode.UserInputError
@@ -601,7 +603,7 @@ const listElementsDef = createWorkspaceCommand({
         name: 'elementSelector',
         description: 'Array of config element patterns',
         type: 'stringsList',
-        required: true,
+        required: false,
       },
     ],
     keyedOptions: [

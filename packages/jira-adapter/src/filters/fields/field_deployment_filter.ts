@@ -32,7 +32,7 @@ const log = logger(module)
 
 const getAllFields = async (paginator: clientUtils.Paginator): Promise<Record<string, string>> => {
   const paginationArgs = {
-    url: '/rest/api/3/field/search',
+    url: '/rest/api/3/field/search?query=service',
     paginationField: 'startAt',
   }
   const fieldValues = (await toArrayAsync(

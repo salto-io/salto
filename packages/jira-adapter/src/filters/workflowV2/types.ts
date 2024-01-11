@@ -34,9 +34,11 @@ export enum TASK_STATUS {
   CANCEL_REQUESTED = 'CANCEL_REQUESTED',
   CANCELLED = 'CANCELLED',
   DEAD = 'DEAD',
+  RUNNING = 'RUNNING',
+  ENQUEUED = 'ENQUEUED',
 }
 
-export const STATUS_CATEGORY_ID_TO_KEY: Record<string, string> = {
+export const STATUS_CATEGORY_ID_TO_KEY: Record<number, string> = {
   4: 'IN_PROGRESS',
   2: 'TODO',
   3: 'DONE',
@@ -76,18 +78,7 @@ type WorkflowResponse = {
   taskId?: string
 }
 
-export type StatusMigration = {
-  newStatusReference: string
-  oldStatusReference: string
-}
-
-export type StatusMapping = {
-  issueTypeId: string
-  projectId: string
-  statusMigrations: StatusMigration[]
-}
-
-type TASK_RESPONSE = {
+type TaskResponse = {
   status: string
   progress: number
 }
@@ -96,17 +87,6 @@ const TASK_RESPONSE_SCHEMA = Joi.object({
   status: Joi.string().required(),
   progress: Joi.number().required(),
 }).unknown(true).required()
-
-const STATUS_MAPPING_SCHEMA = Joi.array().items(
-  Joi.object({
-    issueTypeId: Joi.string().required(),
-    projectId: Joi.string().required(),
-    statusMigrations: Joi.array().items(Joi.object({
-      newStatusReference: Joi.string().required(),
-      oldStatusReference: Joi.string().required(),
-    }).unknown(true).required()).required(),
-  }).unknown(true).required()
-).required()
 
 const WORKFLOW_IDS_RESPONSE_SCHEMA = Joi.array().items(Joi.object({
   id: Joi.object({
@@ -127,7 +107,7 @@ const WORKFLOW_RESPONSE_SCHEME = Joi.object({
       project: Joi.string(),
       type: Joi.string().required(),
     }).unknown(true).required(),
-  }).unknown(true)),
+  }).unknown(true)).required(),
   taskId: Joi.string(),
 }).unknown(true).required()
 
@@ -135,6 +115,4 @@ export const isWorkflowIdsResponse = createSchemeGuard<WorkflowIdResponse[]>(WOR
 
 export const isWorkflowResponse = createSchemeGuard<WorkflowResponse>(WORKFLOW_RESPONSE_SCHEME, 'Received an invalid workflow response')
 
-export const isStatusMappings = createSchemeGuard<StatusMapping[]>(STATUS_MAPPING_SCHEMA, 'Received an invalid statusMappings')
-
-export const isTaskResponse = createSchemeGuard<TASK_RESPONSE>(TASK_RESPONSE_SCHEMA, 'Received an invalid task response')
+export const isTaskResponse = createSchemeGuard<TaskResponse>(TASK_RESPONSE_SCHEMA, 'Received an invalid task response')

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Change, ChangeDataType, Element, Values, getChangeData, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
+import { Element, Values, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
 import { JIRA_WORKFLOW_TYPE } from '../../constants'
 
@@ -38,37 +38,16 @@ const convertParametersFieldsToList = (
     })
 }
 
-const convertParametersFieldsToString = (
-  parameters: Values,
-  listFields: Set<string>
+export const convertTransitionParametersFields = (
+  transitions: Values[],
+  convertFunc: (parameters: Values, fieldSet: Set<string>) => void
 ): void => {
-  if (parameters === undefined) {
-    return
-  }
-  Object.entries(parameters)
-    .filter(([key, value]) => !_.isEmpty(value) && _.isArray(value) && listFields.has(key))
-    .forEach(([key, value]) => {
-      parameters[key] = value.join(',')
-    })
-}
-
-const convertTransitionParametersFieldsToList = (transitions: Values[]): void => {
   transitions.forEach((transition: Values) => {
     transition.conditions?.conditions?.forEach((condition: Values) => {
-      convertParametersFieldsToList(condition?.parameters, CONDITION_LIST_FIELDS)
+      convertFunc(condition?.parameters, CONDITION_LIST_FIELDS)
     })
     transition.validators?.forEach((validator:Values) => {
-      convertParametersFieldsToList(validator?.parameters, VALIDATOR_LIST_FIELDS)
-    })
-  })
-}
-const convertTransitionParametersFieldsToString = (transitions: Values[]): void => {
-  transitions.forEach((transition: Values) => {
-    transition.conditions?.conditions?.forEach((condition: Values) => {
-      convertParametersFieldsToString(condition?.parameters, CONDITION_LIST_FIELDS)
-    })
-    transition.validators?.forEach((validator:Values) => {
-      convertParametersFieldsToString(validator?.parameters, VALIDATOR_LIST_FIELDS)
+      convertFunc(validator?.parameters, VALIDATOR_LIST_FIELDS)
     })
   })
 }
@@ -87,37 +66,10 @@ const filter: FilterCreator = ({ config }) => ({
       .filter(element => element.elemID.typeName === JIRA_WORKFLOW_TYPE)
       .filter(isInstanceElement)
       .forEach(instance => {
-        convertTransitionParametersFieldsToList(instance.value.transitions)
+        convertTransitionParametersFields(instance.value.transitions, convertParametersFieldsToList)
       })
   },
-  preDeploy: async (changes: Change<ChangeDataType>[]) => {
-    if (!config.fetch.enableNewWorkflowAPI) {
-      return
-    }
-    changes
-      .filter(isInstanceChange)
-      .filter(isAdditionOrModificationChange)
-      .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === JIRA_WORKFLOW_TYPE)
-      .forEach(instance => {
-        const workflow = instance.value.workflows[0]
-        convertTransitionParametersFieldsToString(workflow.transitions)
-      })
-  },
-  onDeploy: async (changes: Change<ChangeDataType>[]) => {
-    if (!config.fetch.enableNewWorkflowAPI) {
-      return
-    }
-    changes
-      .filter(isInstanceChange)
-      .filter(isAdditionOrModificationChange)
-      .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === JIRA_WORKFLOW_TYPE)
-      .forEach(instance => {
-        const workflow = instance.value.workflows[0]
-        convertTransitionParametersFieldsToList(workflow.transitions)
-      })
-  },
+
 })
 
 export default filter

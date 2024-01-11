@@ -1214,7 +1214,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         // JiraWorkflow fieldType exists in the swagger but not as a get response
         // this line creates the type despite that
         { fieldName: 'tempWorkflowType', fieldType: 'JiraWorkflow' },
-        { fieldName: 'statusMappings', fieldType: 'StatusMappingDTO' },
+        { fieldName: 'statusMappings', fieldType: 'List<StatusMappingDTO>' },
+      ],
+      fieldsToHide: [
+        { fieldName: 'id' },
+        { fieldName: 'version' },
       ],
       idFields: ['name'],
       serviceIdField: 'id',

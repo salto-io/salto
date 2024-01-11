@@ -64,8 +64,7 @@ import projectFilter from './filters/project'
 import projectComponentFilter from './filters/project_component'
 import archivedProjectComponentsFilter from './filters/archived_project_components'
 import defaultInstancesDeployFilter from './filters/default_instances_deploy'
-import jiraWorkflowFetchFilter from './filters/workflowV2/workflow_fetch_filter'
-import jiraWorkflowDeployFilter from './filters/workflowV2/workflow_deploy_filter'
+import workflowFilter from './filters/workflowV2/workflow_filter'
 import jiraWorkflowTransitionParametersFilter from './filters/workflowV2/transition_parameters_filter'
 import workflowStructureFilter from './filters/workflow/workflow_structure_filter'
 import workflowDiagramFilter from './filters/workflow/workflow_diagrams'
@@ -203,11 +202,9 @@ export const DEFAULT_FILTERS = [
   // Should run before duplicateIdsFilter
   fieldNameFilter,
   workflowStructureFilter,
-  jiraWorkflowFetchFilter,
-  // must run before references are transformed and after jiraWorkflowFetchFilter
+  workflowFilter,
+  // must run before references are transformed and after workflowFilter
   jiraWorkflowTransitionParametersFilter,
-  // This should run after jiraWorkflowTransitionParametersFilter
-  jiraWorkflowDeployFilter,
   // This should happen after workflowStructureFilter and before fieldStructureFilter
   queryFilter,
   // This should run before duplicateIdsFilter

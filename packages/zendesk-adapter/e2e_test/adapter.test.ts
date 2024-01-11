@@ -248,7 +248,7 @@ describe('Zendesk adapter E2E', () => {
       adapterAttr = realAdapter(
         {
           credentials: credLease.value,
-          elementsSource: buildElementsSourceFromElements(elements)
+          elementsSource: buildElementsSourceFromElements(elements),
         },
         usedConfig
       )
@@ -309,7 +309,7 @@ describe('Zendesk adapter E2E', () => {
       adapterAttr = realAdapter(
         {
           credentials: credLease.value,
-          elementsSource: buildElementsSourceFromElements([])
+          elementsSource: buildElementsSourceFromElements([]),
         },
         usedConfig
       )
@@ -1019,7 +1019,7 @@ describe('Zendesk adapter E2E', () => {
             everyoneUserSegment,
             articleAttachment,
             articleInlineAttachment,
-          ])
+          ]),
         },
         {
           ...DEFAULT_CONFIG,

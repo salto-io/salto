@@ -142,51 +142,36 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
 
     const errors: SaltoError[] = []
     await Promise.all(guideThemes.map(async theme => {
-      const { content: brandName = getBrandName(theme)
+      const brandName = getBrandName(theme)
       if (brandName === undefined) {
         remove(elements, element => element.elemID.isEqual(theme.elemID))
         return
       }
-      const { content: themeZip, errors: downloadErrors }, errors: downloadErrors
-    } = await download(theme.value.id, client)
+      const { content: themeZip, errors: downloadErrors } = await download(theme.value.id, client)
       if (themeZip === undefined) {
-      errors.push(...addDownloadErrors(theme, downloadErrors))
-      remove(elements, element => element.elemID.isEqual(theme.elemID))
-      return
-    }
-    try {
-      const themeElements = await unzipFolderToElements(themeZip, getBrandName(theme), theme.value.name)
-      theme.value.files = themeElements
-    } catch (e) {
-      if (e instanceof Error) {
-        errors.push({
-          message: `Error fetching theme id ${theme.value.id}, ${e.message}`,
-          severity: 'Warning',
-        })
+        errors.push(...addDownloadErrors(theme, downloadErrors))
         remove(elements, element => element.elemID.isEqual(theme.elemID))
-      } else {
-        log.error('Error fetching theme id %s, %o, with stack %o', theme.value.id, e, e.stack)
+        return
       }
-    }
-    try {
-      const themeElements = await unzipFolderToElements(
-        themeZip, brandName, theme.value.name, theme.value.live ?? false
-      )
-      theme.value.files = themeElements
-    } catch (e) {
-      if (e instanceof Error) {
-        errors.push({
-          message: `Error fetching theme id ${theme.value.id}, ${e.message}`,
-          severity: 'Warning',
-        })
-        remove(elements, element => element.elemID.isEqual(theme.elemID))
-      } else {
-        log.error('Error fetching theme id %s, %o, with stack %o', theme.value.id, e, e.stack)
+      try {
+        const themeElements = await unzipFolderToElements(
+          themeZip, brandName, theme.value.name, theme.value.live ?? false
+        )
+        theme.value.files = themeElements
+      } catch (e) {
+        if (e instanceof Error) {
+          errors.push({
+            message: `Error fetching theme id ${theme.value.id}, ${e.message}`,
+            severity: 'Warning',
+          })
+          remove(elements, element => element.elemID.isEqual(theme.elemID))
+        } else {
+          log.error('Error fetching theme id %s, %o, with stack %o', theme.value.id, e, e.stack)
+        }
       }
-    }
-  }))
-  return { errors }
-},
+    }))
+    return { errors }
+  },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [themeChanges, leftoverChanges] = _.partition(
       changes,

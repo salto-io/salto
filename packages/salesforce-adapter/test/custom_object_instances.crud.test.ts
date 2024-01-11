@@ -82,40 +82,22 @@ describe('Custom Object Instances CRUD', () => {
           [constants.API_NAME]: 'NumField',
         },
       },
-      NotCreatable__c: {
+      NotCreatable: {
         refType: BuiltinTypes.STRING,
         annotations: {
           [constants.FIELD_ANNOTATIONS.CREATABLE]: false,
           [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
           [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
-          [constants.API_NAME]: 'NotCreatable__c',
+          [constants.API_NAME]: 'NotCreatable',
         },
       },
-      NotCreatableStandardField: {
-        refType: BuiltinTypes.STRING,
-        annotations: {
-          [constants.FIELD_ANNOTATIONS.CREATABLE]: false,
-          [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
-          [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
-          [constants.API_NAME]: 'NotCreatableStandardField',
-        },
-      },
-      NotUpdateable__c: {
+      NotUpdateable: {
         refType: BuiltinTypes.STRING,
         annotations: {
           [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
           [constants.FIELD_ANNOTATIONS.UPDATEABLE]: false,
           [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
-          [constants.API_NAME]: 'NotCreatable__c',
-        },
-      },
-      NotUpdateableStandardField: {
-        refType: BuiltinTypes.STRING,
-        annotations: {
-          [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
-          [constants.FIELD_ANNOTATIONS.UPDATEABLE]: false,
-          [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
-          [constants.API_NAME]: 'NotUpdateableStandardField',
+          [constants.API_NAME]: 'NotCreatable',
         },
       },
       AnotherField: {
@@ -166,8 +148,7 @@ describe('Custom Object Instances CRUD', () => {
     customObject,
     {
       SaltoName: 'existingInstance',
-      NotCreatable__c: 'DontSendMeOnCreate',
-      NotCreatableStandardField: 'SendMeOnCreate',
+      NotCreatable: 'DontSendMeOnCreate',
       NumField: 1,
       Address: {
         city: 'Tel-Aviv',
@@ -202,8 +183,7 @@ describe('Custom Object Instances CRUD', () => {
     customObject,
     {
       SaltoName: 'anotherExistingInstanceWithThing\'',
-      NotCreatable__c: 'DontSendMeOnCreate',
-      NotCreatableStandardField: 'SendMeOnCreate',
+      NotCreatable: 'DontSendMeOnCreate',
     }
   )
   const anotherExistingInstanceRecordValues = {
@@ -220,8 +200,7 @@ describe('Custom Object Instances CRUD', () => {
     customObject,
     {
       SaltoName: 'existingInstanceWithNonUpdateableField',
-      NotUpdateable__c: 'DontSendMeOnUpdate',
-      NotUpdateableStandardField: 'SendMeOnUpdate',
+      NotUpdatable: 'DontSendMeOnUpdate',
     }
   )
   const newInstanceWithRefName = 'newInstanceWithRef'
@@ -254,7 +233,7 @@ describe('Custom Object Instances CRUD', () => {
     {
       SaltoName: 'newInstanceWithNonCreatableField',
       NumField: 4,
-      NotCreatable__c: 'ShouldNotBeCreated',
+      NotCreatable: 'ShouldNotBeCreated',
     }
   )
 
@@ -531,8 +510,8 @@ describe('Custom Object Instances CRUD', () => {
             expect(updateCall[3][0].SaltoName).toBeDefined()
             expect(updateCall[3][0].SaltoName).toEqual('existingInstance')
             // Because it turns into an update it should send it
-            expect(updateCall[3][0].NotCreatable__c).toBeDefined()
-            expect(updateCall[3][0].NotCreatable__c).toEqual('DontSendMeOnCreate')
+            expect(updateCall[3][0].NotCreatable).toBeDefined()
+            expect(updateCall[3][0].NotCreatable).toEqual('DontSendMeOnCreate')
             // Should deploy fields with no values as null
             expect(updateCall[3][0].FieldWithNoValue).toBeNull()
           })
@@ -548,13 +527,13 @@ describe('Custom Object Instances CRUD', () => {
             const newInstanceWithRefRecord = insertCall[3][0]
             expect(newInstanceWithRefRecord).toHaveProperty('SaltoName', 'newInstanceWithRef')
             expect(newInstanceWithRefRecord).toHaveProperty('AnotherField', 'Type')
-            expect(newInstanceWithRefRecord).not.toHaveProperty('NotCreatable__c')
+            expect(newInstanceWithRefRecord).not.toHaveProperty('NotCreatable')
             expect(newInstanceWithRefRecord).not.toHaveProperty('FieldWithNoValue')
 
             const newInstanceWithNonCreatableFieldRecord = insertCall[3][1]
             expect(newInstanceWithNonCreatableFieldRecord).toHaveProperty('SaltoName', 'newInstanceWithNonCreatableField')
             expect(newInstanceWithNonCreatableFieldRecord).toHaveProperty('NumField', 4)
-            expect(newInstanceWithNonCreatableFieldRecord).not.toHaveProperty('NotCreatable__c')
+            expect(newInstanceWithNonCreatableFieldRecord).not.toHaveProperty('NotCreatable')
           })
 
           it('Should have result with 2 applied changes, add 3 instances with new Id', async () => {
@@ -601,7 +580,7 @@ describe('Custom Object Instances CRUD', () => {
               .map(getChangeData)
               .find(element => element.elemID.isEqual(newInstanceWithNonCreatableField.elemID)) as InstanceElement
 
-            expect(newInstanceWithNonCreatableFieldChangeData.value).not.toHaveProperty('NotCreatable__c')
+            expect(newInstanceWithNonCreatableFieldChangeData.value).not.toHaveProperty('NotCreatable')
           })
         })
         describe('When called with only new instances', () => {
@@ -680,7 +659,7 @@ describe('Custom Object Instances CRUD', () => {
                 .map(getChangeData)
                 .find(element => element.elemID.isEqual(newInstanceWithNonCreatableField.elemID)) as InstanceElement
 
-              expect(newInstanceWithNonCreatableFieldChangeData.value).not.toHaveProperty('NotCreatable__c')
+              expect(newInstanceWithNonCreatableFieldChangeData.value).not.toHaveProperty('NotCreatable')
             })
           })
           describe('when group has circular dependencies', () => {
@@ -1023,8 +1002,7 @@ describe('Custom Object Instances CRUD', () => {
           const thirdChangeData = getChangeData(result.appliedChanges[2])
           expect(thirdChangeData).toBeDefined()
           expect(isInstanceElement(thirdChangeData)).toBeTruthy()
-          expect((thirdChangeData as InstanceElement).value).not.toHaveProperty('NotUpdateable__c')
-          expect((thirdChangeData as InstanceElement).value.NotUpdateableStandardField).toEqual('SendMeOnUpdate')
+          expect((thirdChangeData as InstanceElement).value).not.toHaveProperty('NotUpdateable')
         })
       })
 

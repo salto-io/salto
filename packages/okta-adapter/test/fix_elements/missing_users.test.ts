@@ -18,7 +18,7 @@ import OktaClient from '../../src/client/client'
 import * as userUtilsModule from '../../src/user_utils'
 import { ACCESS_POLICY_RULE_TYPE_NAME, GROUP_PUSH_TYPE_NAME, GROUP_RULE_TYPE_NAME, OKTA } from '../../src/constants'
 import { DEPLOY_CONFIG, OktaConfig } from '../../src/config'
-import { omitMissingUsersHandler } from '../../src/fix_elements'
+import { omitMissingUsersHandler } from '../../src/fix_elements/missing_users'
 
 const createUsersValue = (includeUsers: string[] | undefined, excludeUsers: string[] | undefined): Values => ({
   conditions: {
@@ -32,7 +32,7 @@ const createUsersValue = (includeUsers: string[] | undefined, excludeUsers: stri
 })
 
 const createMockUser = (login: string): userUtilsModule.User => ({
-  id: 'bar',
+  id: 'mockId',
   profile: {
     login,
   },
@@ -43,7 +43,9 @@ describe('missing_users', () => {
   const EXIST_USER2 = 'exist.user+2@salto.io'
   const NOT_EXIST_USER = 'not.exist.user@salto.io'
   const NOT_EXIST_USER2 = 'not.exist.user+2@salto.io'
-  const ALL_MOCK_USERS = [EXIST_USER, EXIST_USER2, NOT_EXIST_USER, NOT_EXIST_USER2]
+  // Verify that logic works for ids as well
+  const EXIST_USER_ID = 'mockId'
+  const ALL_MOCK_USERS = [EXIST_USER, EXIST_USER2, NOT_EXIST_USER, NOT_EXIST_USER2, EXIST_USER_ID]
   const mockClient = {} as OktaClient
   const mockGetUsers = jest.spyOn(userUtilsModule, 'getUsers').mockResolvedValue([createMockUser(EXIST_USER), createMockUser(EXIST_USER2)])
   const accessPolicyType = new ObjectType({ elemID: new ElemID(OKTA, ACCESS_POLICY_RULE_TYPE_NAME) })
@@ -105,7 +107,7 @@ If you continue, they will be omitted`,
       ])
       expect(result.fixedElements).toEqual([
         expect.objectContaining({
-          value: createUsersValue([EXIST_USER, EXIST_USER2], undefined),
+          value: createUsersValue([EXIST_USER, EXIST_USER2, EXIST_USER_ID], undefined),
         }),
         expect.objectContaining({
           value: createUsersValue(undefined, [EXIST_USER]),

@@ -59,7 +59,7 @@ import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } fr
 import { getLookUpName } from './reference_mapping'
 import { User, getUsers, getUsersFromInstances } from './user_utils'
 import { isClassicEngineOrg } from './utils'
-import { omitMissingUsersHandler } from './fix_elements'
+import { createFixElementFunctions } from './fix_elements'
 
 const { awu } = collections.asynciterable
 
@@ -183,7 +183,7 @@ export default class OktaAdapter implements AdapterOperations {
         objects.concatObjects
       )
     )
-    this.fixElementsFunc = combineElementFixers([omitMissingUsersHandler({ client, config })])
+    this.fixElementsFunc = combineElementFixers(createFixElementFunctions({ client, config }))
   }
 
   @logDuration('generating types from swagger')

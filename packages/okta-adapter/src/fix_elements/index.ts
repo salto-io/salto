@@ -13,4 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { omitMissingUsersHandler } from './missing_users'
+import { FixElementsFunc } from '@salto-io/adapter-api'
+import { omitMissingUsersHandler } from './missing_users'
+import { FixElementsArgs } from './types'
+
+
+export const createFixElementFunctions = (
+  args: FixElementsArgs
+): FixElementsFunc[] => ([
+  omitMissingUsersHandler(args),
+])

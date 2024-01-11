@@ -24,10 +24,13 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { resolvePath, setPath } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { paginate } from '../client/pagination'
 import { DEPLOY_CONFIG } from '../config'
 import { TYPES_WITH_USERS, getUsers, getUsersFromInstances, USER_MAPPING } from '../user_utils'
 import { FixElementsHandler } from './types'
+
+const log = logger(module)
 
 const { createPaginator } = clientUtils
 
@@ -60,6 +63,7 @@ const getUsersToOmitAndNewValue = (instance: InstanceElement, users: Set<string>
       return []
     }
     const [newValue, usersToOmit] = _.partition(usersArray, user => users.has(user))
+    log.debug('Found on instance %s users to omit %o', instance.elemID.getFullName(), usersToOmit)
     if (_.isEmpty(usersToOmit)) {
       return []
     }
@@ -67,7 +71,7 @@ const getUsersToOmitAndNewValue = (instance: InstanceElement, users: Set<string>
   })
 }
 
-const omitUsers = (
+const cloneAndOmitUsers = (
   users: Set<string>,
 ) => (instance: InstanceElement): undefined |
 { fixedInstance: InstanceElement; missingUsers: string[] } => {
@@ -86,15 +90,13 @@ const isInstanceWithUsers = (element: unknown): element is InstanceElement =>
   isInstanceElement(element) && TYPES_WITH_USERS.has(element.elemID.typeName)
 
 /**
- * Change missing users (emails) to fallback user.
- * If fallback user is not provided, do nothing
- * The errors returned will vary:
- * 1. If provided fallback user is valid, return warning severity errors
- * 2. If provided fallback user is not valid, return error severity errors
+ * Omit missing users (emails) in all instances that have users array.
+ * An error with severity "Warning" will be returned for each fixed instance
  */
 export const omitMissingUsersHandler: FixElementsHandler = (
   { config, client }
 ) => async elements => {
+  log.debug('start omitMissingUsersHandler function')
   const { omitMissingUsers } = config[DEPLOY_CONFIG] || {}
   if (!omitMissingUsers) {
     return { fixedElements: [], errors: [] }
@@ -108,10 +110,15 @@ export const omitMissingUsersHandler: FixElementsHandler = (
 
   const usersFromInstances = getUsersFromInstances(instancesWithUsers)
 
+  if (_.isEmpty(usersFromInstances)) {
+    log.debug('found no users, skipping omitMissingUsersHandler')
+    return { fixedElements: [], errors: [] }
+  }
+
   const usersInTarget = new Set((await getUsers(paginator, { userIds: usersFromInstances, property: 'profile.login' }))
-    .map(user => user.profile.login))
+    .flatMap(user => [user.profile.login, user.id]))
   const fixedElementsAndOmittedUsers = instancesWithUsers
-    .map(omitUsers(usersInTarget))
+    .map(cloneAndOmitUsers(usersInTarget))
     .filter(values.isDefined)
   const errors = fixedElementsAndOmittedUsers.map(({ fixedInstance, missingUsers }) =>
     omitUsersChangeWarning(fixedInstance, missingUsers))

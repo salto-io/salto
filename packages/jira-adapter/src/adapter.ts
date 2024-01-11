@@ -165,6 +165,7 @@ import portalGroupsFilter from './filters/portal_groups'
 import assetsObjectTypePath from './filters/assets/assets_object_type_path'
 import assetsObjectTypeChangeFields from './filters/assets/assets_object_type_change_fields'
 import assetsObjectTypeOrderFilter from './filters/assets/assets_object_type_order'
+import defaultAttributesFilter from './filters/assets/label_object_type_attribute'
 import changeAttributesPathFilter from './filters/assets/change_attributes_path'
 import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
@@ -354,6 +355,7 @@ export const DEFAULT_FILTERS = [
   assetsObjectTypePath,
   // Must run after assetsObjectTypePath
   changeAttributesPathFilter,
+  defaultAttributesFilter,
   assetsObjectTypeOrderFilter,
   deployAttributesFilter,
   deployJsmTypesFilter,

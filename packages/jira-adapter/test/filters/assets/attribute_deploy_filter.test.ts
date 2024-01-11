@@ -16,14 +16,14 @@
 
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
-import { getDefaultConfig } from '../../../src/config/config'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { JiraConfig, getDefaultConfig } from '../../../src/config/config'
 import deployAttributesFilter from '../../../src/filters/assets/attribute_deploy_filter'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 import { OBJECT_TYPE_ATTRIBUTE_TYPE, OBJECT_TYPE_TYPE, JIRA } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
-
 
 describe('deployAttributesFilter', () => {
   type FilterType = filterUtils.FilterWith<'deploy'>
@@ -45,15 +45,18 @@ describe('deployAttributesFilter', () => {
     },
   })
   let attributesInstance: InstanceElement
+  let elementsSource: ReadOnlyElementsSource
   describe('deploy', () => {
+    let config: JiraConfig
     beforeEach(() => {
-      const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
       config.fetch.enableJsmExperimental = true
       const { client: cli, connection: conn } = mockClient(false)
       client = cli
       connection = conn
-      filter = deployAttributesFilter(getFilterParams({ config, client })) as typeof filter
+      elementsSource = buildElementsSourceFromElements([assetsObjectTypeInstance])
+      filter = deployAttributesFilter(getFilterParams({ config, client, elementsSource })) as typeof filter
       attributesInstance = new InstanceElement(
         'attributesInstance',
         attributeType,
@@ -140,6 +143,8 @@ describe('deployAttributesFilter', () => {
     })
     it('should remove attribute', async () => {
       const changes = [toChange({ before: attributesInstance })]
+      elementsSource = buildElementsSourceFromElements([assetsObjectTypeInstance])
+      filter = deployAttributesFilter(getFilterParams({ config, client, elementsSource })) as typeof filter
       const res = await filter.deploy(changes)
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)

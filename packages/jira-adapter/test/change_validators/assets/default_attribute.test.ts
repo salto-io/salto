@@ -141,22 +141,4 @@ describe('attributeValidator', () => {
     )
     expect(changeErrors).toHaveLength(0)
   })
-  it('should return error if trying to remove \'Name\' attribute', async () => {
-    attributeInstance = new InstanceElement(
-      'attribute1',
-      createEmptyType(OBJECT_TYPE_ATTRIBUTE_TYPE),
-      {
-        id: 22,
-        name: 'Name',
-        editable: true,
-        objectType: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
-      },
-    )
-    const validator = defaultAttributeValidator(config, client)
-    const changeErrors = await validator(
-      [toChange({ before: attributeInstance })],
-      elementsSource
-    )
-    expect(changeErrors).toHaveLength(1)
-  })
 })

@@ -119,17 +119,7 @@ export type SearchPageResponse = {
 
 export type SearchErrorResponse = {
   searchResult: {
-    status: {
-      attributes: {
-        isSuccess: 'false'
-      }
-      statusDetail: [
-        {
-          code: string
-          message: string
-        }
-      ]
-    }
+    status: StatusError
   }
 }
 
@@ -138,13 +128,26 @@ export const isSearchErrorResponse = (
 ): response is SearchErrorResponse => 'status' in response.searchResult
   && response.searchResult.status.attributes.isSuccess === 'false'
 
-export type GetAllResponse = {
+type GetAllSuccessResponse = {
   getAllResult: {
     recordList: {
       record: RecordValue[]
     }
   }
 }
+
+type GetAllErrorResponse = {
+  getAllResult: {
+    status: StatusError
+  }
+}
+
+export type GetAllResponse = GetAllSuccessResponse | GetAllErrorResponse
+
+export const isGetAllErrorResponse = (
+  response: GetAllResponse
+): response is GetAllErrorResponse => 'status' in response.getAllResult
+  && response.getAllResult.status.attributes.isSuccess === 'false'
 
 type CustomRecordTypeRecords = {
   type: string

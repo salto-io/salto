@@ -27,6 +27,7 @@ import {
   SALESFORCE, SETTINGS_PATH,
 } from '../constants'
 import SalesforceClient from '../client/client'
+import { FetchProfile } from '../types'
 
 const log = logger(module)
 
@@ -60,7 +61,8 @@ const FIELDS_TO_IGNORE = [
 const enrichTypeWithFields = async (
   client: SalesforceClient,
   type: ObjectType,
-  fieldsToIgnore: Set<string>
+  fieldsToIgnore: Set<string>,
+  fetchProfile: FetchProfile,
 ): Promise<void> => {
   const typeApiName = await apiName(type)
   const describeSObjectsResult = await client.describeSObjects([typeApiName])
@@ -83,7 +85,7 @@ const enrichTypeWithFields = async (
   )
 
   const fields = topLevelFields
-    .map(field => getSObjectFieldElement(type, field, { [API_NAME]: typeApiName }, objCompoundFieldNames))
+    .map(field => getSObjectFieldElement(type, field, { [API_NAME]: typeApiName }, objCompoundFieldNames, fetchProfile))
 
   type.fields = {
     ...type.fields,
@@ -136,7 +138,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       }
       const objectType = createOrganizationType()
       const fieldsToIgnore = new Set(FIELDS_TO_IGNORE.concat(config.systemFields ?? []))
-      await enrichTypeWithFields(client, objectType, fieldsToIgnore)
+      await enrichTypeWithFields(client, objectType, fieldsToIgnore, config.fetchProfile)
 
       const queryResult = await queryClient(client, ['SELECT FIELDS(ALL) FROM Organization LIMIT 200'])
       if (queryResult.length !== 1) {

@@ -36,19 +36,13 @@ import {
 import SalesforceClient from './client/client'
 import {
   ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
-  CUSTOM_OBJECT_ID_FIELD, FIELD_ANNOTATIONS, DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY,
-  DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY_MULTIPLIER, OWNER_ID, SBAA_APPROVAL_CONDITION,
+  CUSTOM_OBJECT_ID_FIELD, DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY, DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY_MULTIPLIER,
+  OWNER_ID, SBAA_APPROVAL_CONDITION,
   SBAA_APPROVAL_RULE,
   SBAA_CONDITIONS_MET,
 } from './constants'
 import { getIdFields, transformRecordToValues } from './filters/custom_objects_instances'
-import {
-  apiNameSync,
-  buildSelectQueries,
-  getFieldNamesForQuery,
-  isInstanceOfTypeChange,
-  isStandardField,
-} from './filters/utils'
+import { apiNameSync, buildSelectQueries, getFieldNamesForQuery, isInstanceOfTypeChange } from './filters/utils'
 import { isListCustomSettingsObject } from './filters/custom_settings_filter'
 import { SalesforceRecord } from './client/types'
 import { buildDataManagement } from './fetch_profile/data_management'
@@ -296,46 +290,6 @@ export const retryFlow = async (
   }
 }
 
-const removeFieldsWithNoPermission = async (
-  instance: InstanceElement,
-  permissionAnnotation: string
-): Promise<SaltoElementError[]> => {
-  const shouldRemoveField = (type: ObjectType, fieldName: string, fieldValue: Value): boolean => {
-    if (fieldValue === undefined) {
-      return true
-    }
-    const field = type.fields[fieldName]
-    return field !== undefined
-      && !isStandardField(field)
-      && !field.annotations[permissionAnnotation]
-  }
-  const createRemovedFieldWarning = (type: ObjectType, fieldValue: Value, fieldName: string): SaltoElementError => {
-    log.info('Removing field %s from %s: %s=%s, value=%s',
-      fieldName,
-      instance.elemID.getFullName(),
-      permissionAnnotation,
-      type.fields[fieldName]?.annotations[permissionAnnotation],
-      fieldValue)
-    return {
-      message: `The field ${fieldName} was not deployed because it lacks the '${permissionAnnotation}' permission`,
-      severity: 'Warning',
-      elemID: instance.elemID,
-    }
-  }
-  const instanceType = await instance.getType()
-  const fieldsToRemove = Object.entries(instance.value)
-    .filter(([fieldName, fieldValue]) => shouldRemoveField(instanceType, fieldName, fieldValue))
-    .map(([fieldName]) => fieldName)
-  const warnings = fieldsToRemove
-    .map(fieldName => createRemovedFieldWarning(instanceType, instance.value[fieldName], fieldName))
-
-  instance.value = _.omit(
-    instance.value,
-    fieldsToRemove,
-  )
-  return warnings
-}
-
 const insertInstances: CrudFn = async (
   { typeName,
     instances,
@@ -460,13 +414,6 @@ const deployAddInstances = async (
     instance =>
       existingRecordsLookup[computeSaltoIdHash(instance.value)] !== undefined
   )
-
-  const warningsForInvalidFieldsInAddedInstances = await awu(newInstances)
-    .flatMap(instance => removeFieldsWithNoPermission(instance, FIELD_ANNOTATIONS.CREATABLE))
-    .toArray()
-  const warningsForInvalidFieldsInModifiedInstances = await awu(existingInstances)
-    .flatMap(instance => removeFieldsWithNoPermission(instance, FIELD_ANNOTATIONS.UPDATEABLE))
-    .toArray()
   const {
     successInstances: successInsertInstances,
     errorInstances: insertErrorInstances,
@@ -499,12 +446,7 @@ const deployAddInstances = async (
   const allSuccessInstances = [...successInsertInstances, ...successUpdateInstances]
   return {
     appliedChanges: allSuccessInstances.map(instance => ({ action: 'add', data: { after: instance } })),
-    errors: [
-      ...insertErrorInstances,
-      ...errorUpdateInstances,
-      ...warningsForInvalidFieldsInAddedInstances,
-      ...warningsForInvalidFieldsInModifiedInstances,
-    ],
+    errors: [...insertErrorInstances, ...errorUpdateInstances],
   }
 }
 
@@ -537,10 +479,6 @@ const deployModifyChanges = async (
     async changeData => await apiName(changeData.before) === await apiName(changeData.after)
   )
   const afters = validData.map(data => data.after)
-
-  const invalidFieldsWarnings = await awu(afters)
-    .flatMap(instance => removeFieldsWithNoPermission(instance, FIELD_ANNOTATIONS.UPDATEABLE))
-    .toArray()
   const { successInstances, errorInstances } = await retryFlow(
     updateInstances,
     { typeName: instancesType, instances: afters, client, groupId },
@@ -554,7 +492,7 @@ const deployModifyChanges = async (
     message: `Failed to update as api name prev=${await apiName(data.before)} and new=${await apiName(data.after)} are different`,
     severity: 'Error' as SeverityLevel,
   })).toArray()
-  const errors: (SaltoElementError | SaltoError)[] = [...errorInstances, ...diffApiNameErrors, ...invalidFieldsWarnings]
+  const errors: (SaltoElementError | SaltoError)[] = [...errorInstances, ...diffApiNameErrors]
   return {
     appliedChanges: successData.map(data => ({ action: 'modify', data })),
     errors,

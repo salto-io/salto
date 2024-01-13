@@ -198,7 +198,7 @@ describe('Custom Object Deploy', () => {
       expect(clientBulkOpSpy).toHaveBeenCalledTimes(3)
     })
 
-    it('should retry on recoverable error(s), failed because of max-retries', async () => {
+    it('should retry1 on recoverable error(s), failed because of max-retries', async () => {
       clientBulkOpSpy.mockImplementation(
         async (_1: string,
           _2: BulkLoadOperation,

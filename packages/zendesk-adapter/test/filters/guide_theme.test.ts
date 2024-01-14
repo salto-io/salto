@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, Change, ElemID, InstanceElement, ModificationChange, ObjectType, ReferenceExpression, StaticFile, toChange } from '@salto-io/adapter-api'
+import { AdditionChange, BuiltinTypes, Change, ElemID, InstanceElement, ModificationChange, ObjectType, ReferenceExpression, StaticFile, toChange } from '@salto-io/adapter-api'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
-import { BRAND_TYPE_NAME, GUIDE_THEME_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { BRAND_TYPE_NAME, GUIDE_THEME_TYPE_NAME, THEME_SETTINGS_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { FilterCreator } from '../../src/filter'
 import filterCreator from '../../src/filters/guide_theme'
 import * as DownloadModule from '../../src/filters/guide_themes/download'
@@ -49,15 +49,33 @@ jest.mock('jszip', () => jest.fn().mockImplementation(() => {
 
 const brandType = new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) })
 const themeType = new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_THEME_TYPE_NAME) })
+const themeSettingsType = new ObjectType({
+  elemID: new ElemID(ZENDESK, THEME_SETTINGS_TYPE_NAME),
+  fields: {
+    brand: { refType: BuiltinTypes.NUMBER },
+    liveTheme: { refType: BuiltinTypes.STRING },
+  },
+  path: [ZENDESK, 'Types', THEME_SETTINGS_TYPE_NAME],
+})
 
 const brand1 = new InstanceElement('brand', brandType, { id: 1, name: 'oneTwo', has_help_center: true })
-const themeWithId = new InstanceElement('theme', themeType, { id: 'park?', name: 'SixFlags', brand_id: new ReferenceExpression(brand1.elemID) })
+const themeWithId = new InstanceElement('theme', themeType,
+  { id: 'park?', name: 'SixFlags', brand_id: new ReferenceExpression(brand1.elemID, brand1) })
 const newThemeWithFiles = new InstanceElement('theme', themeType,
   {
     name: 'SevenFlags',
-    brand_id: new ReferenceExpression(brand1.elemID),
+    brand_id: new ReferenceExpression(brand1.elemID, brand1),
     files: { 'file1.txt': { filename: 'file1.txt', content: new StaticFile({ filepath: 'file1.txt', content: Buffer.from('file1content') }) } },
   })
+
+const themeSettingsInstance = new InstanceElement(
+  `${brand1.value.name}_settings`,
+  themeSettingsType,
+  {
+    brand: new ReferenceExpression(brand1.elemID),
+    liveTheme: new ReferenceExpression(themeWithId.elemID),
+  }
+)
 
 describe('filterCreator', () => {
   describe('fetch', () => {
@@ -132,18 +150,34 @@ describe('filterCreator', () => {
           mockDownload.mockResolvedValue({ content: Buffer.from('content'), errors: [] })
         })
 
-        it('adds the theme files to the theme', async () => {
-          const elements = [brand1, themeWithId]
+        it('adds the theme files to the themes', async () => {
+          const liveThemeWithId = themeWithId.clone()
+          liveThemeWithId.value.live = true
+          const nonLiveThemeWithId = themeWithId.clone()
+          nonLiveThemeWithId.value.live = false
+          const elements = [brand1, liveThemeWithId, nonLiveThemeWithId]
           await filter.onFetch?.(elements)
-          expect(elements).toEqual([brand1, themeWithId])
-          expect(Object.keys(themeWithId.value.files)).toHaveLength(2)
-          expect(themeWithId.value.files['file1.txt'].filename).toEqual('file1.txt')
-          expect(themeWithId.value.files['file1.txt'].content).toEqual(new StaticFile({
+          expect(elements).toEqual([
+            brand1, liveThemeWithId, nonLiveThemeWithId, themeSettingsType, themeSettingsInstance,
+          ])
+          expect(Object.keys(liveThemeWithId.value.files)).toHaveLength(2)
+          expect(liveThemeWithId.value.files['file1.txt'].filename).toEqual('file1.txt')
+          expect(liveThemeWithId.value.files['file1.txt'].content).toEqual(new StaticFile({
+            filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags_live/file1.txt`,
+            content: Buffer.from('file1content'),
+          }))
+          expect(liveThemeWithId.value.files.subfolder['file2.txt'].filename).toEqual('subfolder/file2.txt')
+          expect(liveThemeWithId.value.files.subfolder['file2.txt'].content).toEqual(new StaticFile({
+            filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags_live/subfolder/file2.txt`,
+            content: Buffer.from('file2content'),
+          }))
+
+          expect(Object.keys(nonLiveThemeWithId.value.files)).toHaveLength(2)
+          expect(nonLiveThemeWithId.value.files['file1.txt'].content).toEqual(new StaticFile({
             filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/file1.txt`,
             content: Buffer.from('file1content'),
           }))
-          expect(themeWithId.value.files.subfolder['file2.txt'].filename).toEqual('subfolder/file2.txt')
-          expect(themeWithId.value.files.subfolder['file2.txt'].content).toEqual(new StaticFile({
+          expect(nonLiveThemeWithId.value.files.subfolder['file2.txt'].content).toEqual(new StaticFile({
             filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/subfolder/file2.txt`,
             content: Buffer.from('file2content'),
           }))

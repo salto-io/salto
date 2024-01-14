@@ -14,15 +14,29 @@
 * limitations under the License.
 */
 import { ChangeValidator, getChangeData, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
-import { GUIDE_THEME_TYPE_NAME } from '../constants'
+import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
+import { GUIDE_THEME_TYPE_NAME, THEME_SETTINGS_TYPE_NAME } from '../constants'
+
+const log = logger(module)
 
 // This change validator verifies that no live themes are deleted
-const guideThemeDeleteLiveValidator: ChangeValidator = async changes => {
+export const guideThemeDeleteLiveValidator: ChangeValidator = async (changes, elementSource) => {
+  if (elementSource === undefined) {
+    log.error('Failed to run guideDisabledValidator because no element source was provided')
+    return []
+  }
+
+  const liveThemes = Object.fromEntries(
+    (await getInstancesFromElementSource(elementSource, [THEME_SETTINGS_TYPE_NAME]))
+      .map(instance => [instance.value.brand.elemID.getFullName(), instance.value.liveTheme.elemID.getFullName()])
+  )
   const deletedLiveThemes = changes
     .filter(isInstanceChange)
     .filter(isRemovalChange)
     .map(getChangeData)
-    .filter(instance => instance.elemID.typeName === GUIDE_THEME_TYPE_NAME && instance.value.live)
+    .filter(instance => instance.elemID.typeName === GUIDE_THEME_TYPE_NAME
+      && liveThemes[instance.value.brand_id.elemID.getFullName()] === instance.elemID.getFullName())
 
   return deletedLiveThemes.map(theme => ({
     elemID: theme.elemID,
@@ -31,5 +45,3 @@ const guideThemeDeleteLiveValidator: ChangeValidator = async changes => {
     detailedMessage: 'Cannot delete live themes, please unpublish the theme first',
   }))
 }
-
-export default guideThemeDeleteLiveValidator

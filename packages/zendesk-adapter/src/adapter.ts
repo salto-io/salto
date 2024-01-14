@@ -67,6 +67,7 @@ import {
   CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME,
   DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
   GUIDE_THEME_TYPE_NAME,
+  THEME_SETTINGS_TYPE_NAME,
   ZENDESK,
 } from './constants'
 import { getBrandsForGuide } from './filters/utils'
@@ -875,7 +876,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         deployConfig: this.userConfig[DEPLOY_CONFIG],
         typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment', BRAND_LOGO_TYPE_NAME, CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME],
         // article_attachment and guide themes additions supported in a filter
-        typesWithNoDeploy: ['tag', ARTICLE_ATTACHMENT_TYPE_NAME, GUIDE_THEME_TYPE_NAME, ...GUIDE_ORDER_TYPES, DEFAULT_CUSTOM_STATUSES_TYPE_NAME, CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME],
+        typesWithNoDeploy: ['tag', ARTICLE_ATTACHMENT_TYPE_NAME, GUIDE_THEME_TYPE_NAME, THEME_SETTINGS_TYPE_NAME, ...GUIDE_ORDER_TYPES, DEFAULT_CUSTOM_STATUSES_TYPE_NAME, CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME],
       }),
       dependencyChanger,
       getChangeGroupIds,

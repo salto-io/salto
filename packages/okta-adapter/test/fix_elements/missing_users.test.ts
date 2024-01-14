@@ -17,7 +17,7 @@ import { ElemID, InstanceElement, ObjectType, Values } from '@salto-io/adapter-a
 import OktaClient from '../../src/client/client'
 import * as userUtilsModule from '../../src/user_utils'
 import { ACCESS_POLICY_RULE_TYPE_NAME, GROUP_PUSH_TYPE_NAME, GROUP_RULE_TYPE_NAME, OKTA } from '../../src/constants'
-import { DEPLOY_CONFIG, OktaConfig } from '../../src/config'
+import { DEPLOY_CONFIG, FETCH_CONFIG, OktaConfig } from '../../src/config'
 import { omitMissingUsersHandler } from '../../src/fix_elements/missing_users'
 
 const createUsersValue = (includeUsers: string[] | undefined, excludeUsers: string[] | undefined): Values => ({
@@ -61,6 +61,7 @@ describe('missing_users', () => {
   describe('when config does not contain "omitMissingUsers" flag', () => {
     const mockConfig = {
       [DEPLOY_CONFIG]: {},
+      [FETCH_CONFIG]: {},
     } as OktaConfig
     it('should return empty fixElements list and empty errors list', async () => {
       const result = await omitMissingUsersHandler({ config: mockConfig, client: mockClient })(missingUsersHandlerInput)
@@ -74,6 +75,7 @@ describe('missing_users', () => {
       [DEPLOY_CONFIG]: {
         omitMissingUsers: false,
       },
+      [FETCH_CONFIG]: {},
     } as OktaConfig
     it('should return empty fixElements list and empty errors list', async () => {
       const result = await omitMissingUsersHandler({ config: mockConfig, client: mockClient })(missingUsersHandlerInput)
@@ -87,6 +89,7 @@ describe('missing_users', () => {
       [DEPLOY_CONFIG]: {
         omitMissingUsers: true,
       },
+      [FETCH_CONFIG]: {},
     } as OktaConfig
     it('should return fixElements list and errors list correctly', async () => {
       const result = await omitMissingUsersHandler({ config: mockConfig, client: mockClient })(missingUsersHandlerInput)
@@ -96,13 +99,13 @@ describe('missing_users', () => {
           message: '2 users will be omitted',
           severity: 'Warning',
           detailedMessage: `The following users are referenced by this instance, but do not exist in the target environment: ${NOT_EXIST_USER}, ${NOT_EXIST_USER2}.
-If you continue, they will be omitted`,
+If you continue, they will be omitted. Learn more: ${userUtilsModule.OMIT_MISSING_USERS_CONFIGURATION_LINK}`,
         }),
         expect.objectContaining({
           message: '1 user will be omitted',
           severity: 'Warning',
           detailedMessage: `The following user is referenced by this instance, but do not exist in the target environment: ${NOT_EXIST_USER}.
-If you continue, they will be omitted`,
+If you continue, they will be omitted. Learn more: ${userUtilsModule.OMIT_MISSING_USERS_CONFIGURATION_LINK}`,
         }),
       ])
       expect(result.fixedElements).toEqual([
@@ -114,6 +117,16 @@ If you continue, they will be omitted`,
         }),
       ])
       expect(mockGetUsers.mock.calls[0][1]).toEqual({ userIds: expect.arrayContaining(ALL_MOCK_USERS), property: 'profile.login' })
+    })
+    describe('when convertUsersId is false', () => {
+      it('should call getUsers with the correct parameters', async () => {
+        await omitMissingUsersHandler({ config: { ...mockConfig,
+          [FETCH_CONFIG]: {
+            convertUsersIds: false,
+          } } as OktaConfig,
+        client: mockClient })(missingUsersHandlerInput)
+        expect(mockGetUsers.mock.calls[0][1]).toEqual({ userIds: expect.arrayContaining(ALL_MOCK_USERS), property: 'id' })
+      })
     })
   })
 })

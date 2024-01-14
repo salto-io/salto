@@ -28,6 +28,7 @@ const { makeArray } = collections.array
 
 export const DEFAULT_CONVERT_USERS_IDS_VALUE = true
 export const DEFAULT_GET_USERS_STRATEGY = 'searchQuery'
+export const OMIT_MISSING_USERS_CONFIGURATION_LINK = 'https://help.salto.io/en/articles/8817969-element-references-users-which-don-t-exist-in-target-environment-okta'
 const USER_CHUNK_SIZE = 200
 
 export type User = {

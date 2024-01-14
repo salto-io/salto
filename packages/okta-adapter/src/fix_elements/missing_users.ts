@@ -26,8 +26,8 @@ import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { paginate } from '../client/pagination'
-import { DEPLOY_CONFIG } from '../config'
-import { TYPES_WITH_USERS, getUsers, getUsersFromInstances, USER_MAPPING } from '../user_utils'
+import { DEPLOY_CONFIG, FETCH_CONFIG } from '../config'
+import { TYPES_WITH_USERS, getUsers, getUsersFromInstances, USER_MAPPING, OMIT_MISSING_USERS_CONFIGURATION_LINK } from '../user_utils'
 import { FixElementsHandler } from './types'
 
 const log = logger(module)
@@ -43,7 +43,7 @@ const omitUsersChangeWarning = (
     elemID: instance.elemID,
     severity: 'Warning',
     message: `${missingUsers.length} user${isSingular ? '' : 's'} will be omitted`,
-    detailedMessage: `The following ${isSingular ? 'user is' : 'users are'} referenced by this instance, but do not exist in the target environment: ${missingUsers.join(', ')}.\nIf you continue, they will be omitted`,
+    detailedMessage: `The following ${isSingular ? 'user is' : 'users are'} referenced by this instance, but do not exist in the target environment: ${missingUsers.join(', ')}.\nIf you continue, they will be omitted. Learn more: ${OMIT_MISSING_USERS_CONFIGURATION_LINK}`,
   }
 }
 
@@ -114,8 +114,11 @@ export const omitMissingUsersHandler: FixElementsHandler = (
     log.debug('found no users, skipping omitMissingUsersHandler')
     return { fixedElements: [], errors: [] }
   }
-
-  const usersInTarget = new Set((await getUsers(paginator, { userIds: usersFromInstances, property: 'profile.login' }))
+  const { convertUsersIds } = config[FETCH_CONFIG]
+  const usersInTarget = new Set((await getUsers(paginator, {
+    userIds: usersFromInstances,
+    property: convertUsersIds === false ? 'id' : 'profile.login',
+  }))
     .flatMap(user => [user.profile.login, user.id]))
   const fixedElementsAndOmittedUsers = instancesWithUsers
     .map(cloneAndOmitUsers(usersInTarget))

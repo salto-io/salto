@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, BuiltinTypes, Change, ElemID, InstanceElement, ModificationChange, ObjectType, ReferenceExpression, StaticFile, toChange } from '@salto-io/adapter-api'
+import { AdditionChange, BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ModificationChange, ObjectType, ReferenceExpression, StaticFile, toChange } from '@salto-io/adapter-api'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { BRAND_TYPE_NAME, GUIDE_THEME_TYPE_NAME, THEME_SETTINGS_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { FilterCreator } from '../../src/filter'
@@ -56,6 +56,9 @@ const themeSettingsType = new ObjectType({
     liveTheme: { refType: BuiltinTypes.STRING },
   },
   path: [ZENDESK, 'Types', THEME_SETTINGS_TYPE_NAME],
+  annotations: {
+    [CORE_ANNOTATIONS.HIDDEN]: true,
+  },
 })
 
 const brand1 = new InstanceElement('brand', brandType, { id: 1, name: 'oneTwo', has_help_center: true })

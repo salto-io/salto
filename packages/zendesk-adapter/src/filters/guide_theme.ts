@@ -13,14 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, BuiltinTypes, Change, Element, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceElement, isModificationChange, isReferenceExpression, isRemovalChange, ModificationChange, ObjectType, ReferenceExpression, SaltoElementError, SaltoError, StaticFile } from '@salto-io/adapter-api'
+import { AdditionChange, BuiltinTypes, Change, CORE_ANNOTATIONS, Element, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceElement, isModificationChange, isReferenceExpression, isRemovalChange, ModificationChange, ObjectType, ReferenceExpression, SaltoElementError, SaltoError, StaticFile } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import JSZip from 'jszip'
 import _, { remove } from 'lodash'
 import ZendeskClient from '../client/client'
-import { FETCH_CONFIG, isGuideEnabled, isGuideThemesEnabled } from '../config'
+import { FETCH_CONFIG, isGuideEnabled, isGuideThemesEnabled, ZendeskConfig } from '../config'
 import {
   GUIDE_THEME_TYPE_NAME, THEME_SETTINGS_TYPE_NAME, ZENDESK,
 } from '../constants'
@@ -113,7 +113,7 @@ const updateTheme = async (
   return deleteTheme(change.data.before.value.id, client)
 }
 
-const createThemeSettingsInstances = (guideThemes: InstanceElement[]): Element[] => {
+const createThemeSettingsInstances = (guideThemes: InstanceElement[], config: ZendeskConfig): Element[] => {
   const themeSettingsType = new ObjectType(
     {
       elemID: new ElemID(ZENDESK, THEME_SETTINGS_TYPE_NAME),
@@ -122,6 +122,9 @@ const createThemeSettingsInstances = (guideThemes: InstanceElement[]): Element[]
         liveTheme: { refType: BuiltinTypes.STRING },
       },
       path: [ZENDESK, elementsUtils.TYPES_PATH, THEME_SETTINGS_TYPE_NAME],
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: config[FETCH_CONFIG].hideTypes ?? false,
+      },
     },
   )
 
@@ -221,7 +224,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       }))
     const successfulThemes = processedThemes.map(theme => theme.successfulTheme).filter(values.isDefined)
     const errors = processedThemes.flatMap(theme => theme.errors)
-    elements.push(...createThemeSettingsInstances(successfulThemes))
+    elements.push(...createThemeSettingsInstances(successfulThemes, config))
 
     return { errors }
   },

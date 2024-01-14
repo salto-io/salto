@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import guideThemeUpdateMetadataValidator from '../../src/change_validators/guide_theme_update_metadata'
+import { guideThemeUpdateMetadataValidator } from '../../src/change_validators/guide_theme_update_metadata'
 import { GUIDE_THEME_TYPE_NAME, ZENDESK } from '../../src/constants'
 
 describe('guideThemeUpdateMetadataValidator', () => {

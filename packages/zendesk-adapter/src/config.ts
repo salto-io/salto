@@ -2897,6 +2897,7 @@ export type ChangeValidatorName = (
   | 'badFormatWebhookAction'
   | 'guideDisabled'
   | 'guideThemeDeleteLive'
+  | 'guideThemeUpdateMetadata'
   | 'additionOfTicketStatusForTicketForm'
   | 'defaultDynamicContentItemVariant'
   | 'featureActivation'
@@ -2969,6 +2970,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     badFormatWebhookAction: { refType: BuiltinTypes.BOOLEAN },
     guideDisabled: { refType: BuiltinTypes.BOOLEAN },
     guideThemeDeleteLive: { refType: BuiltinTypes.BOOLEAN },
+    guideThemeUpdateMetadata: { refType: BuiltinTypes.BOOLEAN },
     additionOfTicketStatusForTicketForm: { refType: BuiltinTypes.BOOLEAN },
     defaultDynamicContentItemVariant: { refType: BuiltinTypes.BOOLEAN },
     featureActivation: { refType: BuiltinTypes.BOOLEAN },

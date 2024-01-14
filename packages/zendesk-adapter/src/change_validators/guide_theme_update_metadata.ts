@@ -18,7 +18,7 @@ import { GUIDE_THEME_TYPE_NAME } from '../constants'
 
 const MANIFEST_FIELDS = ['author', 'name', 'version']
 
-const guideThemeUpdateMetadataValidator: ChangeValidator = async changes => {
+export const guideThemeUpdateMetadataValidator: ChangeValidator = async changes => {
   const updatedThemes = changes
     .filter(isInstanceChange)
     .filter(isModificationChange)
@@ -48,5 +48,3 @@ const guideThemeUpdateMetadataValidator: ChangeValidator = async changes => {
 
   return [...manifestChanges, ...unsupportedChanges]
 }
-
-export default guideThemeUpdateMetadataValidator

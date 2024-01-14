@@ -18,19 +18,17 @@ import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { WALK_NEXT_STEP, WalkOnFunc, isResolvedReferenceExpression, resolveValues, walkOnElement } from '@salto-io/adapter-utils'
 import { elements as adapterElements, config as configUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { CORE_ANNOTATIONS, Element, InstanceElement, ObjectType, SaltoError, AdditionChange, Change, ChangeDataType, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isModificationChange, ModificationChange, ReadOnlyElementsSource, ReferenceExpression, Values, ElemID } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Element, InstanceElement, ObjectType, SaltoError, AdditionChange, Change, ChangeDataType, getChangeData, isAdditionChange, isInstanceElement, isModificationChange, ModificationChange, ReadOnlyElementsSource, ReferenceExpression, Values, ElemID } from '@salto-io/adapter-api'
 import { v4 as uuidv4 } from 'uuid'
 import { FilterCreator } from '../../filter'
 import { addAnnotationRecursively, findObject, setTypeDeploymentAnnotations } from '../../utils'
-import { CHUNK_SIZE, isWorkflowIdsResponse, isWorkflowResponse, isTaskResponse, STATUS_CATEGORY_ID_TO_KEY, TASK_STATUS, WorkflowPayload, WorkflowVersion } from './types'
+import { CHUNK_SIZE, isWorkflowIdsResponse, isWorkflowResponse, isTaskResponse, STATUS_CATEGORY_ID_TO_KEY, TASK_STATUS, WorkflowPayload, WorkflowVersion, CONDITION_LIST_FIELDS, VALIDATOR_LIST_FIELDS, PATH_NAME_TO_RECURSE, isAdditionOrModificationWorkflowChange } from './types'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
 import { JIRA_WORKFLOW_TYPE } from '../../constants'
 import JiraClient from '../../client/client'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { getLookUpName } from '../../reference_mapping'
 import { JiraConfig } from '../../config/config'
-import { convertTransitionParametersFields } from './transition_parameters_filter'
-
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -72,6 +70,36 @@ const fetchWorkflowIds = async (paginator: clientUtils.Paginator): Promise<Workf
   return { workflowIds: workflowValues.map(value => value.id.entityId) }
 }
 
+const convertIdsStringToList = (ids: string): string[] => ids.split(',')
+
+const convertTransitionParametersFields = (
+  transitions: Values[],
+  convertFunc: (parameters: Values, fieldSet: Set<string>) => void
+): void => {
+  transitions.forEach((transition: Values) => {
+    transition.conditions?.conditions?.forEach((condition: Values) => {
+      convertFunc(condition?.parameters, CONDITION_LIST_FIELDS)
+    })
+    transition.validators?.forEach((validator:Values) => {
+      convertFunc(validator?.parameters, VALIDATOR_LIST_FIELDS)
+    })
+  })
+}
+
+export const convertParametersFieldsToList = (
+  parameters: Values,
+  listFields: Set<string>
+): void => {
+  if (parameters === undefined) {
+    return
+  }
+  Object.entries(parameters)
+    .filter(([key, value]) => !_.isEmpty(value) && _.isString(value) && listFields.has(key))
+    .forEach(([key, value]) => {
+      parameters[key] = convertIdsStringToList(value)
+    })
+}
+
 const createWorkflowInstances = async (
   client: JiraClient,
   workflowIds: string[],
@@ -90,15 +118,17 @@ const createWorkflowInstances = async (
         errors: [workflowFetchError()],
       }
     }
-    const workflowInstances = await Promise.all(response.data.workflows.map(workflow => (
-      toBasicInstance({
+    const workflowInstances = await Promise.all(response.data.workflows.map(async workflow => {
+      const instance = await toBasicInstance({
         entry: workflow,
         type: jiraWorkflowType,
         transformationConfigByType: getTransformationConfigByType(DEFAULT_API_DEFINITIONS.types),
         transformationDefaultConfig: DEFAULT_API_DEFINITIONS.typeDefaults.transformation,
         defaultName: workflow.name,
       })
-    )))
+      convertTransitionParametersFields(instance.value.transitions, convertParametersFieldsToList)
+      return instance
+    }))
     return { workflowInstances }
   } catch (error) {
     return {
@@ -112,46 +142,50 @@ const awaitSuccessfulMigration = async ({
   taskId,
   retries,
   delay,
+  workflowName,
 } : {
   client: JiraClient
   taskId: string
   retries: number
   delay: number
-}): Promise<boolean> => {
+  workflowName: string
+}): Promise<void> => {
   const taskResponse = (await client.getPrivate({
     url: `/rest/api/3/task/${taskId}`,
   })).data
   if (!isTaskResponse(taskResponse)) {
-    return false
+    return
   }
   switch (taskResponse.status) {
     case TASK_STATUS.COMPLETE:
-      return true
+      log.debug(`Status migration completed for workflow: ${workflowName}`)
+      return
     case TASK_STATUS.CANCELLED:
     case TASK_STATUS.FAILED:
     case TASK_STATUS.CANCEL_REQUESTED:
     case TASK_STATUS.DEAD:
-      log.error(`Status migration failed with status ${taskResponse.status}`)
-      return false
+      log.error(`Status migration failed for workflow: ${workflowName}, with status ${taskResponse.status}`)
+      return
     case TASK_STATUS.RUNNING:
     case TASK_STATUS.ENQUEUED:
       if (retries === 0) {
-        log.error('Failed to run status migration - did not receive success response after await timeout')
-        return false
+        log.error(`Failed to run status migration for workflow: ${workflowName} - did not receive success response after await timeout`)
+        return
       }
-      log.debug('Status migration did not complete, retrying')
+      log.debug(`Status migration did not complete for workflow: ${workflowName}, retrying`)
       // delay because we need to wait for the migration to complete
       // jira task documentation: https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-tasks/#api-rest-api-3-task-taskid-get
       await new Promise(resolve => setTimeout(resolve, delay))
-      return awaitSuccessfulMigration({
+      await awaitSuccessfulMigration({
         client,
         taskId,
         retries: retries - 1,
         delay,
+        workflowName,
       })
+      return
     default:
-      log.error(`Status migration failed with unknown status ${taskResponse.status}`)
-      return false
+      log.error(`Status migration failed for workflow: ${workflowName}, with unknown status ${taskResponse.status}`)
   }
 }
 
@@ -160,7 +194,9 @@ const getStatusesPayload = (
   statusIdToUuid: Record<string, string>
 ): Values[] => statuses
   .filter(instance => isResolvedReferenceExpression(instance.value?.statusCategory))
-  .map((statusInstance: InstanceElement) => {
+  .filter(isInstanceElement)
+  .filter(instance => instance.value.statusCategory.value.value.id !== undefined)
+  .map(statusInstance => {
     const statusCategoryId = statusInstance.value.statusCategory.value.value.id
     return {
       ...statusInstance.value,
@@ -169,13 +205,16 @@ const getStatusesPayload = (
     }
   })
 
-const getStatusReferenceInstances = (instance: InstanceElement): InstanceElement[] => (
-  instance.value.statuses
-    ?.map((status: Values) => status?.statusReference)
+const getStatusReferenceInstances = (instance: InstanceElement): InstanceElement[] => {
+  if (!instance.value.statuses) {
+    return []
+  }
+  return instance.value.statuses
+    .map((status: Values) => status?.statusReference)
     .filter(isResolvedReferenceExpression)
     .map((statusReference: ReferenceExpression) => statusReference.value)
     .filter(isInstanceElement)
-)
+}
 
 
 const getStatusInstances = (
@@ -195,34 +234,21 @@ const getStatusInstances = (
   return afterStatusInstances
 }
 
-const insertUuidMap = (statusesValues: InstanceElement[], statusIdToUuid: Record<string, string>): void => {
+const getUuidMap = (statusesValues: InstanceElement[]): Record<string, string> => {
+  const statusIdToUuid: Record<string, string> = {}
   statusesValues.forEach(status => {
     if (statusIdToUuid[status.value.id] === undefined) {
       const uuid = uuidv4()
       statusIdToUuid[status.value.id] = uuid
-      status.value.statusReference = uuid
     }
   })
+  return statusIdToUuid
 }
 
-const insertUuidsToStatusMappings = (
-  workflowInstance: InstanceElement,
-  statusIdToUuid: Record<string, string>,
-): void => {
-  if (workflowInstance.value.statusMappings) {
-    // TODO: validate statusMappings in a change validator
-    workflowInstance.value.statusMappings.forEach((statusMapping: Values) => {
-      statusMapping.statusMigrations.forEach((statusMigration: Values) => {
-        const { newStatusReference, oldStatusReference } = statusMigration
-        statusMigration.newStatusReference = statusIdToUuid[newStatusReference]
-        statusMigration.oldStatusReference = statusIdToUuid[oldStatusReference]
-      })
-    })
-  }
-}
-
-const getNewVersionFromService = async (workflowName: string, client: JiraClient)
-: Promise<WorkflowVersion | undefined> => {
+const getNewVersionFromService = async (
+  workflowName: string,
+  client: JiraClient
+): Promise<WorkflowVersion | undefined> => {
   const response = await client.post({
     url: '/rest/api/3/workflows',
     data: {
@@ -240,7 +266,7 @@ const getWorkflowPayload = (
   isAddition: boolean,
   resolvedWorkflowInstance: InstanceElement,
   statusesPayload: Values[],
-):WorkflowPayload => {
+): WorkflowPayload => {
   const basicPayload = {
     statuses: statusesPayload,
     workflows: [resolvedWorkflowInstance.value],
@@ -249,7 +275,8 @@ const getWorkflowPayload = (
     ? {
       scope: resolvedWorkflowInstance.value.scope,
       ...basicPayload,
-    } : basicPayload
+    }
+    : basicPayload
   return workflowPayload
 }
 
@@ -266,9 +293,7 @@ const deployWorkflow = async ({
 }): Promise<void> => {
   const isAddition = isAdditionChange(change)
   const fieldsToIgnoreFunc = (path: ElemID): boolean => {
-    const fullNameParts = path.getFullNameParts()
-    const pathLength = path.getFullNameParts().length
-    if (fullNameParts[pathLength - 3] === 'workflows') {
+    if (path.nestingLevel === 3 && path.createParentID(2).name === 'workflows') {
       if (isAddition && (path.name === 'id' || path.name === 'version')) {
         return true
       }
@@ -298,15 +323,13 @@ const deployWorkflow = async ({
     scope: responseWorkflow.scope,
   }
   if (response.taskId) {
-    const migrationResult = await awaitSuccessfulMigration({
+    await awaitSuccessfulMigration({
       client,
       retries: config.deploy.taskMaxRetries,
       delay: config.deploy.taskRetryDelay,
       taskId: response.taskId,
+      workflowName: instance.elemID.name,
     })
-    if (!migrationResult) {
-      log.error(`Failed to run status migration for workflow ${instance.elemID.name}`)
-    }
   }
 }
 
@@ -324,7 +347,31 @@ const convertParametersFieldsToString = (
     })
 }
 
-const PATH_NAME_TO_RECURSE = new Set(['statuses', 'transitions', 'statusMappings', 'statusMigrations'])
+const replaceStatusIdWithUuid = (statusIdToUuid: Record<string, string>): WalkOnFunc => (
+  ({ value, path }): WALK_NEXT_STEP => {
+    const isValueToRecurse = (_.isPlainObject(value)
+      && (value.to || value.from || value.statusMigrations))
+      || _.isArray(value)
+    if (isInstanceElement(value)
+      || PATH_NAME_TO_RECURSE.has(path.name)
+      || isValueToRecurse) {
+      return WALK_NEXT_STEP.RECURSE
+    }
+    if (!_.isPlainObject(value)) {
+      return WALK_NEXT_STEP.SKIP
+    }
+    if (value.statusReference) {
+      value.statusReference = statusIdToUuid[value.statusReference]
+    }
+    if (value.oldStatusReference) {
+      value.oldStatusReference = statusIdToUuid[value.oldStatusReference]
+    }
+    if (value.newStatusReference) {
+      value.newStatusReference = statusIdToUuid[value.newStatusReference]
+    }
+    return WALK_NEXT_STEP.SKIP
+  }
+)
 
 /*
 * This filter uses the new workflow API to fetch and deploy workflows
@@ -338,26 +385,8 @@ const PATH_NAME_TO_RECURSE = new Set(['statuses', 'transitions', 'statusMappings
 * if there is a modification that removes a status from an active workflow we need status mappings to migrate the issues
 */
 const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elementsSource }) => {
-  const statusIdToUuid: Record<string, string> = {}
-  const originalChanges: Record<string, AdditionChange<InstanceElement> | ModificationChange<InstanceElement>> = {}
-  const replaceStatusIdWithUuid: WalkOnFunc = ({ value, path }) => {
-    const isValueToRecurse = value.to || value.from || _.isArray(value)
-    if (isInstanceElement(value)
-      || PATH_NAME_TO_RECURSE.has(path.name)
-      || isValueToRecurse) {
-      return WALK_NEXT_STEP.RECURSE
-    }
-    if (value.statusReference) {
-      value.statusReference = statusIdToUuid[value.statusReference]
-    }
-    if (value.oldStatusReference) {
-      value.oldStatusReference = statusIdToUuid[value.oldStatusReference]
-    }
-    if (value.newStatusReference) {
-      value.newStatusReference = statusIdToUuid[value.newStatusReference]
-    }
-    return WALK_NEXT_STEP.SKIP
-  }
+  let statusIdToUuid: Record<string, string>
+  const originalChanges: Record<string, InstanceElement> = {}
   return {
     name: 'workflowFilter',
     onFetch: async (elements: Element[]) => {
@@ -392,19 +421,16 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
     },
     preDeploy: async changes => {
       await awu(changes)
-        .filter(isInstanceChange)
-        .filter(isAdditionOrModificationChange)
-        .filter(change => getChangeData(change).elemID.typeName === JIRA_WORKFLOW_TYPE)
+        .filter(isAdditionOrModificationWorkflowChange)
         .forEach(async change => {
           const workflowInstance = getChangeData(change)
-          originalChanges[workflowInstance.elemID.getFullName()] = _.cloneDeep(change)
+          originalChanges[workflowInstance.elemID.getFullName()] = workflowInstance.clone()
           const statusInstances = getStatusInstances(change)
-          insertUuidMap(statusInstances, statusIdToUuid)
+          statusIdToUuid = getUuidMap(statusInstances)
           const resolvedWorkflowInstance = await resolveValues(workflowInstance, getLookUpName)
           convertTransitionParametersFields(resolvedWorkflowInstance.value.transitions, convertParametersFieldsToString)
-          walkOnElement({ element: resolvedWorkflowInstance, func: replaceStatusIdWithUuid })
+          walkOnElement({ element: resolvedWorkflowInstance, func: replaceStatusIdWithUuid(statusIdToUuid) })
           const statusesPayload = getStatusesPayload(statusInstances, statusIdToUuid)
-          insertUuidsToStatusMappings(resolvedWorkflowInstance, statusIdToUuid)
           workflowInstance.value = getWorkflowPayload(
             isAdditionChange(change),
             resolvedWorkflowInstance,
@@ -415,14 +441,11 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
     deploy: async changes => {
       const [relevantChanges, leftoverChanges] = _.partition(
         changes,
-        change => isInstanceChange(change)
-          && isAdditionOrModificationChange(change)
-          && getChangeData(change).elemID.typeName === JIRA_WORKFLOW_TYPE
+        change => isAdditionOrModificationWorkflowChange(change)
       )
       const deployResult = await deployChanges(
         relevantChanges
-          .filter(isInstanceChange)
-          .filter(isAdditionOrModificationChange),
+          .filter(isAdditionOrModificationWorkflowChange),
         async change => deployWorkflow({
           change,
           client,
@@ -437,12 +460,10 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
     },
     onDeploy: async (changes: Change<ChangeDataType>[]) => {
       await awu(changes)
-        .filter(isInstanceChange)
-        .filter(isAdditionOrModificationChange)
-        .filter(change => getChangeData(change).elemID.typeName === JIRA_WORKFLOW_TYPE)
+        .filter(isAdditionOrModificationWorkflowChange)
         .forEach(async change => {
           const instance = getChangeData(change)
-          const originalInstance = getChangeData(originalChanges[instance.elemID.getFullName()])
+          const originalInstance = originalChanges[instance.elemID.getFullName()]
           const workflow = getChangeData(change).value.workflows[0]
           const isMigrationDone = workflow.statusMappings !== undefined
           const version = isMigrationDone

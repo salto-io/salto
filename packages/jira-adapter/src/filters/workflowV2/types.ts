@@ -15,18 +15,13 @@
 */
 import Joi from 'joi'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
-import { Values } from '@salto-io/adapter-api'
+import { AdditionChange, Change, Element, InstanceElement, ModificationChange, Values, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
+import { JIRA_WORKFLOW_TYPE } from '../../constants'
 
 export const CHUNK_SIZE = 25
-
-export const WORKFLOW_FIELDS_TO_OMIT = [
-  'isEditable',
-  'scope',
-]
-export const WORKFLOW_ADDITION_FIELDS_TO_OMIT = [
-  'id',
-  'version',
-]
+export const VALIDATOR_LIST_FIELDS = new Set(['statusIds', 'groupsExemptFromValidation', 'fieldsRequired'])
+export const CONDITION_LIST_FIELDS = new Set(['roleIds', 'groupIds', 'statusIds'])
+export const PATH_NAME_TO_RECURSE = new Set(['statuses', 'transitions', 'statusMappings', 'statusMigrations'])
 
 export enum TASK_STATUS {
   COMPLETE = 'COMPLETE',
@@ -82,6 +77,12 @@ type TaskResponse = {
   status: string
   progress: number
 }
+
+export const isAdditionOrModificationWorkflowChange = (change: Change<Element>)
+: change is AdditionChange<InstanceElement> | ModificationChange<InstanceElement> =>
+  isInstanceChange(change)
+  && isAdditionOrModificationChange(change)
+  && change.data.after.elemID.typeName === JIRA_WORKFLOW_TYPE
 
 const TASK_RESPONSE_SCHEMA = Joi.object({
   status: Joi.string().required(),

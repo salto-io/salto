@@ -94,6 +94,7 @@ describe('jiraWorkflowFilter', () => {
               scope: {
                 type: 'global',
               },
+              transitions: [{ type: 'INITIAL' }],
             },
             {
               id: '2',
@@ -105,6 +106,7 @@ describe('jiraWorkflowFilter', () => {
               scope: {
                 type: 'global',
               },
+              transitions: [{ type: 'INITIAL' }],
             },
           ],
         },
@@ -126,6 +128,7 @@ describe('jiraWorkflowFilter', () => {
         scope: {
           type: 'global',
         },
+        transitions: [{ type: 'INITIAL' }],
       })
       const secondWorkflow = elements[2] as unknown as InstanceElement
       expect(secondWorkflow.elemID.name).toEqual('secondWorkflow')
@@ -139,6 +142,7 @@ describe('jiraWorkflowFilter', () => {
         scope: {
           type: 'global',
         },
+        transitions: [{ type: 'INITIAL' }],
       })
     })
     it('should add workflows deployment annotations to JiraWorkflow type', async () => {
@@ -244,6 +248,123 @@ describe('jiraWorkflowFilter', () => {
       expect(errors).toHaveLength(1)
       expect(errors[0].message).toEqual('Failed to fetch Workflows.')
       expect(errors[0].severity).toEqual('Error')
+    })
+
+    describe('transition parameters', () => {
+      beforeEach(() => {
+        connection.post.mockResolvedValue({
+          status: 200,
+          data: {
+            workflows: [
+              {
+                id: '1',
+                name: 'workflow',
+                version: {
+                  versionNumber: 1,
+                  id: '1',
+                },
+                scope: {
+                  type: 'global',
+                },
+                transitions: [
+                  {
+                    id: '1',
+                    name: 'Create',
+                    to: {
+                      statusReference: 'uuid1',
+                    },
+                    type: 'INITIAL',
+                    conditions: {
+                      conditions: [
+                        {
+                          parameters: {
+                            groupIds: '1,2',
+                          },
+                        },
+                        {
+                          parameters: {
+                            fromStatusId: '1',
+                          },
+                        },
+                        {
+                          parameters: undefined,
+                          ruleKey: 'ruleKey',
+                        },
+                        {
+                          parameters: {
+                            groupIds: '',
+                          },
+                        },
+                      ],
+                    },
+                    validators: [
+                      {
+                        parameters: {
+                          statusIds: '1,2',
+                        },
+                      },
+                      {
+                        parameters: {
+                          fieldKey: 'fieldKey',
+                        },
+                      },
+                      {
+                        parameters: undefined,
+                        ruleKey: 'ruleKey',
+                      },
+                      {
+                        parameters: {
+                          fieldsRequired: '',
+                        },
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        })
+      })
+      it('should convert transition parameters to list', async () => {
+        const elements = [workflowType]
+        await filter.onFetch(elements)
+        expect(elements).toHaveLength(2)
+        const workflow = elements[1] as unknown as InstanceElement
+        expect(workflow.value.transitions[0].conditions.conditions[0].parameters)
+          .toEqual({ groupIds: ['1', '2']})
+        expect(workflow.value.transitions[0].validators[0].parameters)
+          .toEqual({ statusIds: ['1', '2']})
+      })
+      it('should do nothing if parameters field not in the relevant list', async () => {
+        const elements = [workflowType]
+        await filter.onFetch(elements)
+        expect(elements).toHaveLength(2)
+        const workflow = elements[1] as unknown as InstanceElement
+        expect(workflow.value.transitions[0].conditions.conditions[1].parameters)
+          .toEqual({ fromStatusId: '1' })
+        expect(workflow.value.transitions[0].validators[1].parameters)
+          .toEqual({ fieldKey: 'fieldKey'})
+      })
+      it('should do nothing if parameters is undefined', async () => {
+        const elements = [workflowType]
+        await filter.onFetch(elements)
+        expect(elements).toHaveLength(2)
+        const workflow = elements[1] as unknown as InstanceElement
+        expect(workflow.value.transitions[0].conditions.conditions[2].parameters)
+          .toBeUndefined()
+        expect(workflow.value.transitions[0].validators[2].parameters)
+          .toBeUndefined()
+      })
+      it('should not convert parameters if it is an empty string', async () => {
+        const elements = [workflowType]
+        await filter.onFetch(elements)
+        expect(elements).toHaveLength(2)
+        const workflow = elements[1] as unknown as InstanceElement
+        expect(workflow.value.transitions[0].conditions.conditions[3].parameters)
+          .toEqual({ groupIds: '' })
+        expect(workflow.value.transitions[0].validators[3].parameters)
+          .toEqual({ fieldsRequired: '' })
+      })
     })
   })
   describe('Deploy', () => {
@@ -541,7 +662,7 @@ describe('jiraWorkflowFilter', () => {
         groupType = createEmptyType('Group')
         group1 = new InstanceElement('group1', groupType, { groupId: '1' })
         group2 = new InstanceElement('group2', groupType, { groupId: '2' })
-        preDeployWorkflowInstance = _.cloneDeep(workflowInstance)
+        preDeployWorkflowInstance = workflowInstance.clone()
         uuidMock.mockReturnValueOnce('uuid1').mockReturnValueOnce('uuid2')
         deployChangeMock.mockResolvedValue(
           {
@@ -566,6 +687,20 @@ describe('jiraWorkflowFilter', () => {
           await filter.preDeploy([toChange({ after: workflowInstance })])
           expect(workflowInstance.value).toEqual(WORKFLOW_PAYLOAD)
         })
+        it('should create workflow payload correctly when statuses and transition are empty', async () => {
+          workflowInstance.value.statuses = []
+          workflowInstance.value.transitions = []
+          await filter.preDeploy([toChange({ after: workflowInstance })])
+          expect(workflowInstance.value).toEqual({
+            ...WORKFLOW_PAYLOAD,
+            workflows: [{
+              ...WORKFLOW_PAYLOAD.workflows[0],
+              transitions: [],
+              statuses: [],
+            }],
+            statuses: [],
+          })
+        })
         describe('transition parameters', () => {
           beforeEach(() => {
             const conditions = {
@@ -588,7 +723,9 @@ describe('jiraWorkflowFilter', () => {
                   ruleKey: 'ruleKey',
                 },
                 {
-                  parameters: [],
+                  parameters: {
+                    groupIds: [],
+                  },
                 },
               ],
             }
@@ -608,6 +745,11 @@ describe('jiraWorkflowFilter', () => {
             await filter.preDeploy([toChange({ after: workflowInstance })])
             expect(workflowInstance.value.workflows[0].transitions[1].conditions.conditions[2].parameters)
               .toBeUndefined()
+          })
+          it('should convert parameters to empty string if it is an empty array', async () => {
+            await filter.preDeploy([toChange({ after: workflowInstance })])
+            expect(workflowInstance.value.workflows[0].transitions[1].conditions.conditions[3].parameters)
+              .toEqual({ groupIds: '' })
           })
         })
       })
@@ -706,8 +848,7 @@ describe('jiraWorkflowFilter', () => {
             '/rest/api/3/task/1',
             expect.anything(),
           )
-          expect(logErrorSpy).toHaveBeenCalledWith('Status migration failed with status CANCELLED')
-          expect(logErrorSpy).toHaveBeenCalledWith('Failed to run status migration for workflow workflow')
+          expect(logErrorSpy).toHaveBeenCalledWith('Status migration failed for workflow: workflow, with status CANCELLED')
         })
         it('should not fail the deployment when the migration timeout pass', async () => {
           connection.get.mockResolvedValue({
@@ -724,8 +865,7 @@ describe('jiraWorkflowFilter', () => {
             '/rest/api/3/task/1',
             expect.anything(),
           )
-          expect(logErrorSpy).toHaveBeenCalledWith('Failed to run status migration - did not receive success response after await timeout')
-          expect(logErrorSpy).toHaveBeenCalledWith('Failed to run status migration for workflow workflow')
+          expect(logErrorSpy).toHaveBeenCalledWith('Failed to run status migration for workflow: workflow - did not receive success response after await timeout')
         })
         it('should not fail the deployment statusMigration task response have unknown status', async () => {
           connection.get.mockResolvedValue({
@@ -742,8 +882,7 @@ describe('jiraWorkflowFilter', () => {
             '/rest/api/3/task/1',
             expect.anything(),
           )
-          expect(logErrorSpy).toHaveBeenCalledWith('Status migration failed with unknown status UNKNOWN')
-          expect(logErrorSpy).toHaveBeenCalledWith('Failed to run status migration for workflow workflow')
+          expect(logErrorSpy).toHaveBeenCalledWith('Status migration failed for workflow: workflow, with unknown status UNKNOWN')
         })
         it('should not fail the deployment if task response is invalid', async () => {
           connection.get.mockResolvedValueOnce({

@@ -331,9 +331,9 @@ describe('jiraWorkflowFilter', () => {
         expect(elements).toHaveLength(2)
         const workflow = elements[1] as unknown as InstanceElement
         expect(workflow.value.transitions[0].conditions.conditions[0].parameters)
-          .toEqual({ groupIds: ['1', '2']})
+          .toEqual({ groupIds: ['1', '2'] })
         expect(workflow.value.transitions[0].validators[0].parameters)
-          .toEqual({ statusIds: ['1', '2']})
+          .toEqual({ statusIds: ['1', '2'] })
       })
       it('should do nothing if parameters field not in the relevant list', async () => {
         const elements = [workflowType]
@@ -343,7 +343,7 @@ describe('jiraWorkflowFilter', () => {
         expect(workflow.value.transitions[0].conditions.conditions[1].parameters)
           .toEqual({ fromStatusId: '1' })
         expect(workflow.value.transitions[0].validators[1].parameters)
-          .toEqual({ fieldKey: 'fieldKey'})
+          .toEqual({ fieldKey: 'fieldKey' })
       })
       it('should do nothing if parameters is undefined', async () => {
         const elements = [workflowType]
@@ -687,16 +687,16 @@ describe('jiraWorkflowFilter', () => {
           await filter.preDeploy([toChange({ after: workflowInstance })])
           expect(workflowInstance.value).toEqual(WORKFLOW_PAYLOAD)
         })
-        it('should create workflow payload correctly when statuses and transition are empty', async () => {
-          workflowInstance.value.statuses = []
-          workflowInstance.value.transitions = []
+        it('should create workflow payload correctly when statuses and transition are undefined', async () => {
+          workflowInstance.value.statuses = undefined
+          workflowInstance.value.transitions = undefined
           await filter.preDeploy([toChange({ after: workflowInstance })])
           expect(workflowInstance.value).toEqual({
             ...WORKFLOW_PAYLOAD,
             workflows: [{
               ...WORKFLOW_PAYLOAD.workflows[0],
-              transitions: [],
-              statuses: [],
+              transitions: undefined,
+              statuses: undefined,
             }],
             statuses: [],
           })

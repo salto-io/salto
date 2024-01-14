@@ -76,7 +76,7 @@ const convertTransitionParametersFields = (
   transitions: Values[],
   convertFunc: (parameters: Values, fieldSet: Set<string>) => void
 ): void => {
-  transitions.forEach((transition: Values) => {
+  transitions?.forEach((transition: Values) => {
     transition.conditions?.conditions?.forEach((condition: Values) => {
       convertFunc(condition?.parameters, CONDITION_LIST_FIELDS)
     })

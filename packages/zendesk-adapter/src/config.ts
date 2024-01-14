@@ -2676,6 +2676,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ],
       fieldsToHide: FIELDS_TO_HIDE.concat([
         { fieldName: 'id', fieldType: 'string' },
+        { fieldName: 'live', fieldType: 'boolean' },
       ]),
     },
     deployRequests: {
@@ -2895,6 +2896,7 @@ export type ChangeValidatorName = (
   | 'organizationExistence'
   | 'badFormatWebhookAction'
   | 'guideDisabled'
+  | 'guideThemeDeleteLive'
   | 'additionOfTicketStatusForTicketForm'
   | 'defaultDynamicContentItemVariant'
   | 'featureActivation'
@@ -2966,6 +2968,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     organizationExistence: { refType: BuiltinTypes.BOOLEAN },
     badFormatWebhookAction: { refType: BuiltinTypes.BOOLEAN },
     guideDisabled: { refType: BuiltinTypes.BOOLEAN },
+    guideThemeDeleteLive: { refType: BuiltinTypes.BOOLEAN },
     additionOfTicketStatusForTicketForm: { refType: BuiltinTypes.BOOLEAN },
     defaultDynamicContentItemVariant: { refType: BuiltinTypes.BOOLEAN },
     featureActivation: { refType: BuiltinTypes.BOOLEAN },

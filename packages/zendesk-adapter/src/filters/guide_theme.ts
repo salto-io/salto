@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, Change, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceElement, isModificationChange, isRemovalChange, ModificationChange, SaltoElementError, SaltoError, StaticFile, isReferenceExpression } from '@salto-io/adapter-api'
+import { AdditionChange, BuiltinTypes, Change, Element, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceElement, isModificationChange, isReferenceExpression, isRemovalChange, ModificationChange, ObjectType, ReferenceExpression, SaltoElementError, SaltoError, StaticFile } from '@salto-io/adapter-api'
+import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import JSZip from 'jszip'
@@ -21,7 +22,7 @@ import _, { remove } from 'lodash'
 import ZendeskClient from '../client/client'
 import { FETCH_CONFIG, isGuideEnabled, isGuideThemesEnabled } from '../config'
 import {
-  GUIDE_THEME_TYPE_NAME, ZENDESK,
+  GUIDE_THEME_TYPE_NAME, THEME_SETTINGS_TYPE_NAME, ZENDESK,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import { create } from './guide_themes/create'
@@ -112,6 +113,47 @@ const updateTheme = async (
   return deleteTheme(change.data.before.value.id, client)
 }
 
+const createThemeSettingsInstances = (guideThemes: InstanceElement[]): Element[] => {
+  const themeSettingsType = new ObjectType(
+    {
+      elemID: new ElemID(ZENDESK, THEME_SETTINGS_TYPE_NAME),
+      fields: {
+        brand: { refType: BuiltinTypes.NUMBER },
+        liveTheme: { refType: BuiltinTypes.STRING },
+      },
+      path: [ZENDESK, elementsUtils.TYPES_PATH, THEME_SETTINGS_TYPE_NAME],
+    },
+  )
+
+  const guideThemeSettingsInstances = Object.values(
+    _.groupBy(guideThemes, theme => theme.value.brand_id.elemID.getFullName())
+  ).map(themes => {
+    const brand = themes[0].value.brand_id
+    const brandName = brand.value.value.name
+    const liveThemes = themes.filter(theme => theme.value.live)
+    if (liveThemes.length > 1) {
+      log.warn(`Found ${liveThemes.length} live themes for brand ${brandName}, using the first one`)
+    }
+    if (liveThemes.length === 0) {
+      log.warn(`Found no live themes for brand ${brandName}`)
+      return undefined
+    }
+    const liveTheme = liveThemes[0]
+    return new InstanceElement(
+      `${brandName}_settings`,
+      themeSettingsType,
+      {
+        brand: new ReferenceExpression(brand.elemID),
+        liveTheme: new ReferenceExpression(liveTheme.elemID),
+      },
+    )
+  }).filter(values.isDefined)
+  if (guideThemeSettingsInstances.length === 0) {
+    return []
+  }
+  return [themeSettingsType, ...guideThemeSettingsInstances]
+}
+
 /**
  * Fetches guide theme content
  */
@@ -140,36 +182,47 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       return brandName
     }
 
-    const errors: SaltoError[] = []
-    await Promise.all(guideThemes.map(async theme => {
-      const brandName = getBrandName(theme)
-      if (brandName === undefined) {
-        remove(elements, element => element.elemID.isEqual(theme.elemID))
-        return
-      }
-      const { content: themeZip, errors: downloadErrors } = await download(theme.value.id, client)
-      if (themeZip === undefined) {
-        errors.push(...addDownloadErrors(theme, downloadErrors))
-        remove(elements, element => element.elemID.isEqual(theme.elemID))
-        return
-      }
-      try {
-        const themeElements = await unzipFolderToElements(
-          themeZip, brandName, theme.value.name, theme.value.live ?? false
-        )
-        theme.value.files = themeElements
-      } catch (e) {
-        if (e instanceof Error) {
-          errors.push({
-            message: `Error fetching theme id ${theme.value.id}, ${e.message}`,
-            severity: 'Warning',
-          })
+    const processedThemes = await Promise.all(guideThemes
+      .map(async (theme): Promise<{ successfulTheme?: InstanceElement; errors: SaltoError[] }> => {
+        const brandName = getBrandName(theme)
+        if (brandName === undefined) {
           remove(elements, element => element.elemID.isEqual(theme.elemID))
-        } else {
-          log.error('Error fetching theme id %s, %o, with stack %o', theme.value.id, e, e.stack)
+          return { errors: [] }
         }
-      }
-    }))
+        const { content: themeZip, errors: downloadErrors } = await download(theme.value.id, client)
+        if (themeZip === undefined) {
+          remove(elements, element => element.elemID.isEqual(theme.elemID))
+          return { errors: addDownloadErrors(theme, downloadErrors) }
+        }
+        try {
+          const themeElements = await unzipFolderToElements(
+            themeZip, brandName, theme.value.name, theme.value.live ?? false
+          )
+          theme.value.files = themeElements
+        } catch (e) {
+          if (!(e instanceof Error)) {
+            log.error('Error fetching theme id %s, %o', theme.value.id, e)
+            return {
+              errors: [
+                { message: `Error fetching theme id ${theme.value.id}, ${e}`, severity: 'Warning' },
+              ],
+            }
+          }
+
+          remove(elements, element => element.elemID.isEqual(theme.elemID))
+          return {
+            errors: [{
+              message: `Error fetching theme id ${theme.value.id}, ${e.message}`,
+              severity: 'Warning',
+            }],
+          }
+        }
+        return { successfulTheme: theme, errors: [] }
+      }))
+    const successfulThemes = processedThemes.map(theme => theme.successfulTheme).filter(values.isDefined)
+    const errors = processedThemes.flatMap(theme => theme.errors)
+    elements.push(...createThemeSettingsInstances(successfulThemes))
+
     return { errors }
   },
   deploy: async (changes: Change<InstanceElement>[]) => {

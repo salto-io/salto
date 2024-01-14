@@ -91,3 +91,9 @@ okta {
 | Name                                        | Default when undefined            | Description
 |---------------------------------------------|-----------------------------------|------------
 | name                                        | .*                                | A regex used to filter instances by matching the regex to their name value
+
+### Deploy configuration options
+
+| Name                         | Default when undefined | Description
+|------------------------------|------------------------|------------
+| [omitMissingUsers]           | false                  | Configure if to omit users during deploy on types that allow it

@@ -18,6 +18,7 @@ import { DEFAULT_CONFIG } from '../../src/config'
 import { usersValidator } from '../../src/change_validators/user'
 import { OKTA, GROUP_RULE_TYPE_NAME, ACCESS_POLICY_RULE_TYPE_NAME } from '../../src/constants'
 import OktaClient from '../../src/client/client'
+import { OMIT_MISSING_USERS_CONFIGURATION_LINK } from '../../src/user_utils'
 
 describe('usersValidator', () => {
   const client = new OktaClient({
@@ -65,13 +66,13 @@ describe('usersValidator', () => {
         elemID: policyInstance.elemID,
         severity: 'Error',
         message,
-        detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: e@e, z@z.\nIn order to deploy this instance, add these users to your target environment or edit this instance to use valid usernames.',
+        detailedMessage: `The following users are referenced by this instance, but do not exist in the target environment: e@e, z@z.\nIn order to deploy this instance, add these users to your target environment, edit this instance to use valid usernames or configure omitMissingUsers: ${OMIT_MISSING_USERS_CONFIGURATION_LINK}`,
       },
       {
         elemID: ruleInstance.elemID,
         severity: 'Error',
         message,
-        detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: e@e.\nIn order to deploy this instance, add these users to your target environment or edit this instance to use valid usernames.',
+        detailedMessage: `The following users are referenced by this instance, but do not exist in the target environment: e@e.\nIn order to deploy this instance, add these users to your target environment, edit this instance to use valid usernames or configure omitMissingUsers: ${OMIT_MISSING_USERS_CONFIGURATION_LINK}`,
       },
     ])
   })

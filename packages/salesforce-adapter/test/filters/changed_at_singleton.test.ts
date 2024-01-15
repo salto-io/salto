@@ -23,7 +23,12 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { mockInstances, mockTypes } from '../mock_elements'
 import filterCreator from '../../src/filters/changed_at_singleton'
-import { CHANGED_AT_SINGLETON, CUSTOM_OBJECT, FLOW_METADATA_TYPE } from '../../src/constants'
+import {
+  CHANGED_AT_SINGLETON,
+  CUSTOM_OBJECT,
+  FLOW_METADATA_TYPE,
+  DATA_INSTANCES_CHANGED_AT_MAGIC,
+} from '../../src/constants'
 import { apiName } from '../../src/transformers/transformer'
 import { defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
@@ -96,7 +101,6 @@ describe('createChangedAtSingletonInstanceFilter', () => {
         const customObject = mockTypes.SBQQ__Template__c
         customObject.annotations[CORE_ANNOTATIONS.CHANGED_AT] = CHANGED_AT
 
-        // Should not exist in the singleton
         const dataInstance = new InstanceElement('dataInstance', customObject, {
           Name: 'TestDataInstance',
           Id: '13560',
@@ -118,6 +122,9 @@ describe('createChangedAtSingletonInstanceFilter', () => {
             [updatedInstanceName]: CHANGED_AT,
           },
           [CUSTOM_OBJECT]: {
+            SBQQ__Template__c: CHANGED_AT,
+          },
+          [DATA_INSTANCES_CHANGED_AT_MAGIC]: {
             SBQQ__Template__c: CHANGED_AT,
           },
         })

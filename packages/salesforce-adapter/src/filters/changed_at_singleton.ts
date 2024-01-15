@@ -23,12 +23,16 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { LocalFilterCreator } from '../filter'
-import { ArtificialTypes } from '../constants'
+import {
+  ArtificialTypes,
+  DATA_INSTANCES_CHANGED_AT_MAGIC,
+} from '../constants'
 import {
   apiNameSync,
   getChangedAtSingleton,
   isCustomObjectSync,
   isMetadataInstanceElementSync,
+  isInstanceOfCustomObjectSync,
   metadataTypeSync,
 } from './utils'
 
@@ -59,6 +63,13 @@ const getChangedAtSingletonInstance = async (
   return changedAtSingleton ?? createEmptyChangedAtSingletonInstance()
 }
 
+const dateStringOfMostRecentlyChangedInstance = (instances: InstanceElement[]): string | undefined => (
+  _(instances)
+    .map(instance => instance.annotations[CORE_ANNOTATIONS.CHANGED_AT])
+    .filter(_.isString)
+    .maxBy(changedAt => new Date(changedAt).getTime())
+)
+
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'changedAtSingletonFilter',
   onFetch: async (elements: Element[]) => {
@@ -78,6 +89,18 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
       createChangedAtSingletonInstanceValues(elementsByType),
       changedAtInstance.value,
     )
+
+    const instanceLastChangedByCustomObjectType = _(elements)
+      .filter(isInstanceOfCustomObjectSync)
+      .groupBy(instance => apiNameSync(instance.getTypeSync()))
+      .mapValues(dateStringOfMostRecentlyChangedInstance)
+
+    instanceLastChangedByCustomObjectType
+      .entries()
+      .filter(([, mostRecentChangedAt]) => mostRecentChangedAt !== undefined)
+      .forEach(([typeName, mostRecentChangedAt]) => {
+        _.set(changedAtInstance.value, [DATA_INSTANCES_CHANGED_AT_MAGIC, typeName], mostRecentChangedAt)
+      })
   },
 })
 

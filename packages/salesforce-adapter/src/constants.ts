@@ -428,6 +428,7 @@ export const KEY_PREFIX_LENGTH = 3
 
 // Magics
 export const DETECTS_PARENTS_INDICATOR = '##allMasterDetailFields##'
+export const DATA_INSTANCES_CHANGED_AT_MAGIC = '__DataInstances__'
 
 // CPQ CustomObjects
 export const CPQ_NAMESPACE = 'SBQQ'

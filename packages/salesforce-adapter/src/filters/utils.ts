@@ -147,7 +147,6 @@ export const isCustomObjectSync = (element: Readonly<Element>): element is Objec
   return res
 }
 
-
 const fullApiNameSync = (elem: Readonly<Element>): string | undefined => {
   if (isInstanceElement(elem)) {
     return (isCustomObjectSync(elem.getTypeSync()))
@@ -674,6 +673,7 @@ export const getChangedAtSingleton = async (
   const element = await elementsSource.get(new ElemID(SALESFORCE, CHANGED_AT_SINGLETON, 'instance', ElemID.CONFIG_NAME))
   return isInstanceElement(element) ? element : undefined
 }
+
 
 export const isCustomType = (element: Element): element is ObjectType => (
   isObjectType(element) && ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(apiNameSync(element) ?? '')

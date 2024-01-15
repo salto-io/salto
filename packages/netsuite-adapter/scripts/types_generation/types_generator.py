@@ -382,8 +382,8 @@ def login(username, password, secret_key_2fa, webpage):
     webpage.find_element(By.XPATH, '//*[@id="login-submit"]').click()
 
     # generate 2FA token and submit
-    WebDriverWait(webpage, timeout=3).until(lambda w: w.find_element(By.XPATH, '//*[@id="uif49"]')).send_keys(secret_key_2fa)
-    webpage.find_element(By.XPATH, '//*[@id="uif70"]').click()
+    WebDriverWait(webpage, timeout=3).until(lambda w: w.find_element(By.XPATH, '//*[@id="uif51"]')).send_keys(secret_key_2fa)
+    webpage.find_element(By.XPATH, '//*[@id="uif71"]').click()
     time.sleep(1)
 
 

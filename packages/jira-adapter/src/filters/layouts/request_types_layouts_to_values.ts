@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, Field, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Field, InstanceElement, Values, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
@@ -22,6 +22,15 @@ import { ISSUE_VIEW_TYPE, REQUEST_FORM_TYPE, REQUEST_TYPE_NAME } from '../../con
 
 const log = logger(module)
 const LAYOUT_TYPES_TO_ADJUST = [REQUEST_FORM_TYPE, ISSUE_VIEW_TYPE]
+
+const convertPropertiesToList = (instance: InstanceElement): void => {
+  instance.value.issueLayoutConfig.items.forEach((item: Values) => {
+    if (item.data?.properties !== undefined) {
+      item.data.properties = Object.entries(item.data.properties)
+        .map(([key, value]) => ({ key, value }))
+    }
+  })
+}
 
 /*
 * This filter is responsible for adding the requestForm and issueView fields to the requestType
@@ -62,6 +71,10 @@ const filter: FilterCreator = ({ config }) => ({
       delete layout.value.extraDefinerId
       delete layout.value.projectId
       if (layout.elemID.typeName === REQUEST_FORM_TYPE) {
+        if (layout.value.issueLayoutConfig?.items !== undefined
+          && _.isArray(layout.value.issueLayoutConfig.items)) {
+          convertPropertiesToList(layout)
+        }
         requestType.value.requestForm = layout.value
       } else {
         requestType.value.issueView = layout.value

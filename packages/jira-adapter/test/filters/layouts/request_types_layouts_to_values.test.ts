@@ -100,6 +100,12 @@ describe('requestTypelayoutsToValuesFilter', () => {
                 type: 'FIELD',
                 sectionType: 'PRIMARY',
                 key: new ReferenceExpression(fieldInstance1.elemID, fieldInstance1),
+                data: {
+                  properties: {
+                    'jsd.field.displayName': 'Quack',
+                    'jsd.field.helpText': 'Quack Quack',
+                  },
+                },
               },
               {
                 type: 'FIELD',
@@ -177,6 +183,35 @@ describe('requestTypelayoutsToValuesFilter', () => {
       expect(requestTypeType.fields.issueView.annotations).toEqual({
         [CORE_ANNOTATIONS.UPDATABLE]: true,
         [CORE_ANNOTATIONS.CREATABLE]: true,
+      })
+    })
+    describe('requestForm properties', () => {
+      it('should convert requestForm properties to a list', async () => {
+        await filter.onFetch(elements)
+        const requestType = elements.find(e => e.elemID.isEqual(requestTypeInstance.elemID)) as InstanceElement
+        expect(requestType.value.requestForm.issueLayoutConfig.items[0].data.properties).toEqual([
+          {
+            key: 'jsd.field.displayName',
+            value: 'Quack',
+          },
+          {
+            key: 'jsd.field.helpText',
+            value: 'Quack Quack',
+          },
+        ])
+      })
+      it('should do nothing when requestForm data or properties are undefined', async () => {
+        requestFormInstance.value.issueLayoutConfig.items[0].data.properties = undefined
+        await filter.onFetch(elements)
+        const requestType = elements.find(e => e.elemID.isEqual(requestTypeInstance.elemID)) as InstanceElement
+        expect(requestType.value.requestForm.issueLayoutConfig.items[1].data).toBeUndefined()
+        expect(requestType.value.requestForm.issueLayoutConfig.items[0].data.properties).toBeUndefined()
+      })
+      it('should do nothing when issueLayoutConfig is undefined', async () => {
+        requestFormInstance.value.issueLayoutConfig = undefined
+        await filter.onFetch(elements)
+        const requestType = elements.find(e => e.elemID.isEqual(requestTypeInstance.elemID)) as InstanceElement
+        expect(requestType.value.requestForm.issueLayoutConfig).toBeUndefined()
       })
     })
   })

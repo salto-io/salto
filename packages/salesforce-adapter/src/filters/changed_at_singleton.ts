@@ -63,11 +63,11 @@ const getChangedAtSingletonInstance = async (
   return changedAtSingleton ?? createEmptyChangedAtSingletonInstance()
 }
 
-const dateStringOfMostRecentlyChangedInstance = (instances: InstanceElement[]): string => (
+const dateStringOfMostRecentlyChangedInstance = (instances: InstanceElement[]): string | undefined => (
   _(instances)
     .map(instance => instance.annotations[CORE_ANNOTATIONS.CHANGED_AT])
-    .filter(changedAt => changedAt !== undefined)
-    .maxBy((changedAt: string) => new Date(changedAt).getTime())
+    .filter(_.isString)
+    .maxBy(changedAt => new Date(changedAt).getTime())
 )
 
 const filterCreator: LocalFilterCreator = ({ config }) => ({
@@ -97,8 +97,9 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
 
     instanceLastChangedByCustomObjectType
       .entries()
-      .forEach(([typeName, dateString]) => {
-        _.set(changedAtInstance.value, [DATA_INSTANCES_CHANGED_AT_MAGIC, typeName], dateString)
+      .filter(([, mostRecentChangedAt]) => mostRecentChangedAt !== undefined)
+      .forEach(([typeName, mostRecentChangedAt]) => {
+        _.set(changedAtInstance.value, [DATA_INSTANCES_CHANGED_AT_MAGIC, typeName], mostRecentChangedAt)
       })
   },
 })

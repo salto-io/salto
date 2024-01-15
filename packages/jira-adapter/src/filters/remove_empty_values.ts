@@ -15,11 +15,8 @@
 */
 import { isInstanceElement } from '@salto-io/adapter-api'
 import { transformValues } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
 import { DASHBOARD_GADGET_TYPE, NOTIFICATION_SCHEME_TYPE_NAME, WEBHOOK_TYPE, WORKFLOW_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
-
-const { awu } = collections.asynciterable
 
 const RELEVANT_TYPES: string[] = [
   WORKFLOW_TYPE_NAME,
@@ -31,10 +28,10 @@ const RELEVANT_TYPES: string[] = [
 const filter: FilterCreator = () => ({
   name: 'removeEmptyValuesFilter',
   onFetch: async elements => {
-    await awu(elements)
+    await Promise.all(elements
       .filter(isInstanceElement)
       .filter(instance => RELEVANT_TYPES.includes(instance.elemID.typeName))
-      .forEach(async instance => {
+      .map(async instance => {
         instance.value = await transformValues({
           values: instance.value,
           type: await instance.getType(),
@@ -42,7 +39,7 @@ const filter: FilterCreator = () => ({
           strict: false,
           allowEmpty: false,
         }) ?? {}
-      })
+      }))
   },
 })
 

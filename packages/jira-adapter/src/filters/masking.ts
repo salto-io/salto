@@ -16,13 +16,11 @@
 import { ElemID, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { createSchemeGuard, transformValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections, regex as lowerdashRegex } from '@salto-io/lowerdash'
+import { regex as lowerdashRegex } from '@salto-io/lowerdash'
 import Joi, { string } from 'joi'
 import _ from 'lodash'
 import { MaskingConfig } from '../config/config'
 import { FilterCreator } from '../filter'
-
-const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -92,11 +90,11 @@ const filter: FilterCreator = ({ config }) => ({
       return
     }
 
-    await awu(elements)
+    await Promise.all(elements
       .filter(isInstanceElement)
-      .forEach(async instance => {
+      .map(async instance => {
         await maskValues(instance, config.masking)
-      })
+      }))
   },
 })
 

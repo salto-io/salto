@@ -345,11 +345,11 @@ const filter: FilterCreator = ({ client }) => {
   let originalAutomationChanges: Record<string, Change<InstanceElement>>
   return {
     name: 'automationStructureFilter',
-    onFetch: async elements =>
-      awu(elements)
+    onFetch: async elements => {
+      await Promise.all(elements
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
-        .forEach(async instance => {
+        .map(async instance => {
           instance.value = await elementUtils.removeNullValues(
             instance.value,
             await instance.getType(),
@@ -373,7 +373,8 @@ const filter: FilterCreator = ({ client }) => {
                   ? { projectId }
                   : { projectTypeKey })
             )
-        }),
+        }))
+    },
 
     preDeploy: async changes => {
       originalAutomationChanges = Object.fromEntries(changes

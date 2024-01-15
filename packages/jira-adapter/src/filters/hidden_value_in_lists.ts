@@ -15,10 +15,7 @@
 */
 import { CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
 import { transformValues } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
-
-const { awu } = collections.asynciterable
 
 const isStringNumber = (value: string): boolean => !Number.isNaN(Number(value))
 
@@ -28,9 +25,9 @@ const isStringNumber = (value: string): boolean => !Number.isNaN(Number(value))
 const filter: FilterCreator = () => ({
   name: 'hiddenValuesInListsFilter',
   onFetch: async elements => {
-    await awu(elements)
+    await Promise.all(elements
       .filter(isInstanceElement)
-      .forEach(async instance => {
+      .map(async instance => {
         instance.value = await transformValues({
           values: instance.value,
           type: await instance.getType(),
@@ -45,7 +42,7 @@ const filter: FilterCreator = () => ({
             return value
           },
         }) ?? {}
-      })
+      }))
   },
 })
 

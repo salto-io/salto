@@ -15,12 +15,9 @@
 */
 import { Field, isInstanceElement, isListType, isObjectType, ListType } from '@salto-io/adapter-api'
 import { walkOnElement } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { walkOnUsers, WalkOnUsersCallback } from './account_id/account_id_filter'
 import { accountIdInfoType } from './account_id/types'
-
-const { awu } = collections.asynciterable
 
 const USER_TYPE_NAMES = ['User', 'UserBean', 'Board_admins_users']
 
@@ -36,17 +33,17 @@ const simplifyUsers: WalkOnUsersCallback = ({ value, fieldName }): void => {
 const filter: FilterCreator = ({ config }) => ({
   name: 'userFilter',
   onFetch: async elements => {
-    await awu(elements)
+    await Promise.all(elements
       .filter(isInstanceElement)
-      .forEach(async element => {
+      .map(async element => {
         walkOnElement({ element, func: walkOnUsers(simplifyUsers, config) })
-      })
+      }))
 
-    await awu(elements)
+    await Promise.all(elements
       .filter(isObjectType)
-      .forEach(async type => {
+      .map(async type => {
         type.fields = Object.fromEntries(
-          await awu(Object.entries(type.fields))
+          await Promise.all(Object.entries(type.fields)
             .map(async ([fieldName, field]) => {
               const fieldType = await field.getType()
               const innerType = isListType(fieldType) ? await fieldType.getInnerType() : fieldType
@@ -59,10 +56,9 @@ const filter: FilterCreator = ({ config }) => ({
                   field.annotations
                 )]
                 : [fieldName, field])
-            })
-            .toArray()
+            }))
         )
-      })
+      }))
     elements.push(accountIdInfoType)
   },
 })

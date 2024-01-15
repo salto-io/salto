@@ -31,11 +31,10 @@ const fetchSchemeValues = async (paginator: clientUtils.Paginator): Promise<Valu
     url: '/rest/api/2/priorityschemes',
     paginationField: 'startAt',
   }
-  const schemeValues = await awu(paginator(
+  return awu(paginator(
     paginationArgs,
     page => makeArray(page.schemes) as clientUtils.ResponseValue[]
   )).flat().toArray()
-  return schemeValues
 }
 
 const createInstance = (values: Values, type: ObjectType, getElemIdFunc: ElemIdGetter | undefined): InstanceElement => {

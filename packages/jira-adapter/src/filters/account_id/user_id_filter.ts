@@ -16,14 +16,11 @@
 */
 import { getChangeData, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { walkOnElement } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { walkOnUsers, WalkOnUsersCallback } from './account_id_filter'
 import { UserMap, getUsersMap } from '../../users'
 import { PROJECT_TYPE } from '../../constants'
-
-const { awu } = collections.asynciterable
 
 const addDisplayName = (userMap: UserMap): WalkOnUsersCallback => (
   { value, fieldName }
@@ -63,15 +60,15 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc, elementsSource 
     if (userMap === undefined) {
       return
     }
-    await awu(elements)
+    await Promise.all(elements
       .filter(isInstanceElement)
-      .forEach(async element => {
+      .map(async element => {
         if (client.isDataCenter) {
           walkOnElement({ element, func: walkOnUsers(convertIdToUsername(userMap), config) })
         } else {
           walkOnElement({ element, func: walkOnUsers(addDisplayName(userMap), config) })
         }
-      })
+      }))
   },
   preDeploy: async changes => {
     if (!(config.fetch.convertUsersIds ?? true) || !client.isDataCenter) {

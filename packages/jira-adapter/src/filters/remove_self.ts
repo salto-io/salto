@@ -15,10 +15,7 @@
 */
 import { Element, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import { transformValues } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
-
-const { awu } = collections.asynciterable
 
 /**
  * Removes 'self' values from types and instances
@@ -26,9 +23,9 @@ const { awu } = collections.asynciterable
 const filter: FilterCreator = () => ({
   name: 'removeSelfFilter',
   onFetch: async (elements: Element[]) => {
-    await awu(elements)
+    await Promise.all(elements
       .filter(isInstanceElement)
-      .forEach(async instance => {
+      .map(async instance => {
         instance.value = await transformValues({
           values: instance.value,
           type: await instance.getType(),
@@ -42,7 +39,7 @@ const filter: FilterCreator = () => ({
             return value
           },
         }) ?? {}
-      })
+      }))
 
     elements
       .filter(isObjectType)

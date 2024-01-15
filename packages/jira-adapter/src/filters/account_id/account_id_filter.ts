@@ -24,7 +24,6 @@ import { ACCOUNT_ID_STRING, ACCOUNT_IDS_FIELDS_NAMES, AUTOMATION_TYPE, BOARD_TYP
 import { FilterCreator } from '../../filter'
 import { accountIdInfoType, accountIdInfoListType } from './types'
 
-const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 
 export const OWNER_STYLE_TYPES = ['Filter', 'Dashboard']
@@ -258,13 +257,13 @@ const filter: FilterCreator = ({ config }) => {
         .forEach(element => {
           walkOnElement({ element, func: walkOnUsers(objectifyAccountId, config) })
         })
-      await awu(elements)
+      await Promise.all(elements
         .filter(isObjectType)
         .filter(object => ACCOUNT_ID_TYPES.includes(object.elemID.typeName)
           || ['ScheduledJob__atlassianUser', 'EscalationService__atlassianUser'].includes(object.elemID.typeName))
-        .forEach(async objectType => {
+        .map(async objectType => {
           await convertType(objectType)
-        })
+        }))
     },
     preDeploy: async changes => {
       changes

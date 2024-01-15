@@ -18,14 +18,11 @@ import { logger } from '@salto-io/logging'
 import { createSchemeGuard, resolveChangeElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import Joi from 'joi'
-import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
 import { BOARD_COLUMN_CONFIG_TYPE, BOARD_TYPE_NAME } from '../../constants'
 import { addAnnotationRecursively, findObject, setFieldDeploymentAnnotations } from '../../utils'
 import JiraClient from '../../client/client'
 import { getLookUpName } from '../../reference_mapping'
-
-const { awu } = collections.asynciterable
 
 const KANBAN_TYPE = 'kanban'
 export const COLUMNS_CONFIG_FIELD = 'columnConfig'
@@ -162,11 +159,11 @@ const removeRedundantColumns = async (
 const filter: FilterCreator = ({ config, client }) => ({
   name: 'boardColumnsFilter',
   onFetch: async (elements: Element[]) => {
-    await awu(elements)
+    await Promise.all(elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === BOARD_TYPE_NAME)
       .filter(instance => instance.value.config?.[COLUMNS_CONFIG_FIELD] !== undefined)
-      .forEach(async instance => {
+      .map(async instance => {
         instance.value[COLUMNS_CONFIG_FIELD] = instance.value.config[COLUMNS_CONFIG_FIELD]
         delete instance.value.config[COLUMNS_CONFIG_FIELD]
 
@@ -177,7 +174,7 @@ const filter: FilterCreator = ({ config, client }) => ({
         })
 
         await removeRedundantColumns(instance, client)
-      })
+      }))
 
     if (!config.client.usePrivateAPI) {
       log.debug('Skipping board columns filter because private API is not enabled')

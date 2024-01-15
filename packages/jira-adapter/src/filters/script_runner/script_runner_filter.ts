@@ -15,14 +15,11 @@
 */
 import { getChangeData, isInstanceChange, isObjectType, isAdditionChange,
   isModificationChange, CORE_ANNOTATIONS, Value, isInstanceElement } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
 import { v4 as uuidv4 } from 'uuid'
 import { FilterCreator } from '../../filter'
 import { SCRIPT_FRAGMENT_TYPE, SCRIPT_RUNNER_LISTENER_TYPE, SCRIPT_RUNNER_SETTINGS_TYPE, SCRIPT_RUNNER_TYPES } from '../../constants'
 import { addAnnotationRecursively, setTypeDeploymentAnnotations } from '../../utils'
 import { UserInfo, getCurrentUserInfo } from '../../users'
-
-const { awu } = collections.asynciterable
 
 const getTimeNowAsSeconds = (): number => Math.floor(Date.now() / 1000)
 
@@ -57,22 +54,27 @@ const filter: FilterCreator = ({ client, config }) => ({
     }
     const objectTypes = elements.filter(isObjectType)
 
-    await awu(objectTypes)
+    const scriptRunnerTypes = Promise.all(objectTypes
       .filter(type => SCRIPT_RUNNER_TYPES.includes(type.elemID.typeName))
-      .forEach(async type => {
+      .map(async type => {
         setTypeDeploymentAnnotations(type)
-        await addAnnotationRecursively(type, CORE_ANNOTATIONS.CREATABLE)
-        await addAnnotationRecursively(type, CORE_ANNOTATIONS.UPDATABLE)
-        await addAnnotationRecursively(type, CORE_ANNOTATIONS.DELETABLE)
-      })
-    await awu(objectTypes)
-      .filter(type => type.elemID.typeName === SCRIPT_RUNNER_SETTINGS_TYPE)
-      .forEach(async type => {
+        const addCreatableAnnotation = addAnnotationRecursively(type, CORE_ANNOTATIONS.CREATABLE)
+        const addUpdatableAnnotation = addAnnotationRecursively(type, CORE_ANNOTATIONS.UPDATABLE)
+        const addDeletableAnnotation = addAnnotationRecursively(type, CORE_ANNOTATIONS.DELETABLE)
+        await addCreatableAnnotation
+        await addUpdatableAnnotation
+        await addDeletableAnnotation
+      }))
+    const scriptRunnerSettings = Promise.all(objectTypes
+      .filter(type => SCRIPT_RUNNER_SETTINGS_TYPE === type.elemID.typeName)
+      .map(async type => {
         type.annotations[CORE_ANNOTATIONS.CREATABLE] = false
         type.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
         type.annotations[CORE_ANNOTATIONS.DELETABLE] = false
         await addAnnotationRecursively(type, CORE_ANNOTATIONS.UPDATABLE)
-      })
+      }))
+    await scriptRunnerTypes
+    await scriptRunnerSettings
 
     // If there are non listeners in the service we will get a single instance with spaceRemaining
     const listeners = elements

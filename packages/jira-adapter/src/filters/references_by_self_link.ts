@@ -91,16 +91,17 @@ const filter: FilterCreator = () => ({
       filter: isInstanceElementWithSelfLink,
       key: inst => [getRelativeSelfLink(inst.value)],
     })
-    await awu(instances).forEach(async inst => {
-      inst.value = await transformValues({
-        values: inst.value,
-        type: await inst.getType(),
-        pathID: inst.elemID,
-        transformFunc: transformSelfLinkToReference(elementsBySelfLink),
-        strict: false,
-        allowEmpty: true,
-      }) ?? inst.value
-    })
+    await Promise.all(instances
+      .map(async inst => {
+        inst.value = await transformValues({
+          values: inst.value,
+          type: await inst.getType(),
+          pathID: inst.elemID,
+          transformFunc: transformSelfLinkToReference(elementsBySelfLink),
+          strict: false,
+          allowEmpty: true,
+        }) ?? inst.value
+      }))
   },
 })
 

@@ -15,12 +15,9 @@
 */
 import { InstanceElement, isInstanceElement, Value } from '@salto-io/adapter-api'
 import { isResolvedReferenceExpression, transformValues } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { AUTOMATION_TYPE, DASHBOARD_TYPE, NOTIFICATION_EVENT_TYPE_NAME, NOTIFICATION_SCHEME_TYPE_NAME, PROJECT_ROLE_TYPE, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_STATUS_TYPE_NAME, WORKFLOW_TRANSITION_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
-
-const { awu } = collections.asynciterable
 
 
 const WORKFLOW_CONDITION_SORT_BY = ['type', 'nodeType', 'operator', 'configuration.fieldId', 'configuration.comparator',
@@ -117,9 +114,9 @@ const sortLists = async (instance: InstanceElement): Promise<void> => {
 const filter: FilterCreator = () => ({
   name: 'sortListsFilter',
   onFetch: async elements => {
-    await awu(elements)
+    await Promise.all(elements
       .filter(isInstanceElement)
-      .forEach(sortLists)
+      .map(sortLists))
   },
 })
 

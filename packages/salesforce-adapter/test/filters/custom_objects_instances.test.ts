@@ -1975,7 +1975,7 @@ describe('Custom Object Instances filter', () => {
       })
     })
   })
-  describe('Quickfetch', () => {
+  describe('Fetch with changes detection', () => {
     let fetchProfile: FetchProfile
     const testTypeName = 'TestType'
     const changedAtCutoff = new Date(2023, 12, 21).toISOString()
@@ -2038,7 +2038,7 @@ describe('Custom Object Instances filter', () => {
         ) as FilterType
         await filter.onFetch([createCustomObject(testTypeName)])
       })
-      it('Should query using the changed-at value', () => {
+      it('Should not query using the changed-at value', () => {
         expect(basicQueryImplementation).toHaveBeenLastCalledWith(expect.not.stringContaining(`LastModifiedDate > ${changedAtCutoff}`))
       })
     })

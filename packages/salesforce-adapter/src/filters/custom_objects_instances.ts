@@ -46,7 +46,7 @@ import {
   DATA_INSTANCES_CHANGED_AT_MAGIC,
 } from '../constants'
 import { FilterResult, RemoteFilterCreator } from '../filter'
-import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField } from '../transformers/transformer'
+import { apiName, Types, createInstanceServiceIds, isNameField } from '../transformers/transformer'
 import {
   getNamespace,
   isMasterDetailField,
@@ -627,18 +627,16 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     if (dataManagement === undefined) {
       return {}
     }
-    let changedAtSingleton: InstanceElement | undefined
-    let inputElements = awu(elements)
-    if (config.fetchProfile.metadataQuery.isFetchWithChangesDetection()) {
-      // Only data types that changed will be present in the `elements` parameter in this case, but there may be
-      // instances that changed even though their types remained the same. So we must iterate over all the object types
-      // in the elements source.
-      const elementsSource = buildElementsSourceForFetch(elements, config)
-      changedAtSingleton = await getChangedAtSingleton(elementsSource)
-      inputElements = awu(await elementsSource.getAll())
-    }
 
-    const customObjects = await inputElements.filter(isCustomObject).toArray() as ObjectType[]
+    // In the fetch-with-changes-detection case, only data types that changed will be present in the `elements`
+    // parameter but there may be instances that changed even though their types remained the same. So we must iterate
+    // over all the object types in the elements source.
+    const elementsSource = buildElementsSourceForFetch(elements, config)
+    const changedAtSingleton = await getChangedAtSingleton(elementsSource)
+
+    const customObjects = await awu(await elementsSource.getAll())
+      .filter(isCustomObjectSync)
+      .toArray()
     const customObjectFetchSetting = await getCustomObjectsFetchSettings(
       customObjects,
       dataManagement,

@@ -73,7 +73,6 @@ import { isInvalidStaticFile } from '../static_files/common'
 
 const { awu } = collections.asynciterable
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
-type AwuIterable<T> = collections.asynciterable.AwuIterable<T>
 const { withLimitedConcurrency } = promises.array
 
 const log = logger(module)
@@ -346,16 +345,15 @@ const createNaclFilesState = async (
   }),
 })
 
-const buildNaclFilesState = async ({
-  newNaclFiles, currentState,
-}: {
-  newNaclFiles: ParsedNaclFile[]
+type NaclFilesStateBuilder = {
+  processNaclFile: (naclFile: ParsedNaclFile) => Promise<void>
+  build: () => Promise<buildNaclFilesStateResult>
+}
+
+const naclFilesStateBuilder = (
   currentState: NaclFilesState
-}): Promise<buildNaclFilesStateResult> => {
-  const preChangeHash = await currentState.metadata.get(HASH_KEY)
-  const cacheValid = (preChangeHash === await currentState.parsedNaclFiles.getHash())
-  log.debug('building elements indices for %d NaCl files', newNaclFiles.length)
-  const newParsed = _.keyBy(newNaclFiles, parsed => parsed.filename)
+): NaclFilesStateBuilder => {
+  const newParsedFilenames = new Set()
   const elementsIndexAdditions: Record<string, Set<string>> = {}
   const referencedIndexAdditions: Record<string, Set<string>> = {}
   const staticFilesIndexAdditions: Record<string, Set<string>> = {}
@@ -365,6 +363,7 @@ const buildNaclFilesState = async ({
   // We need to iterate over this twice - so no point in making this iterable :/
   const relevantElementIDs: ElemID[] = []
   const newElementsToMerge: AsyncIterable<Element>[] = []
+  const naclFilesToDelete: string[] = []
 
   const updateIndex = async <T>(
     index: RemoteMap<T[]>,
@@ -438,143 +437,147 @@ const buildNaclFilesState = async ({
   const getNaclFile = async (file: ParsedNaclFile):
     Promise<ParsedNaclFile | undefined> => currentState.parsedNaclFiles.get(file.filename)
 
-  const handleAdditionsOrModifications = (
-    naclFiles: AwuIterable<ParsedNaclFile>
-  ): Promise<void> => log.time(
-    async () => {
-      await naclFiles.forEach(async naclFile => {
-        const parsedFile = (await getNaclFile(naclFile))
-        log.trace('Updating indexes of %s nacl file: %s', !parsedFile ? 'added' : 'modified', naclFile.filename)
-        updateIndexOfFile(
-          referencedIndexAdditions,
-          referencedIndexDeletions,
-          naclFile.filename,
-          await parsedFile?.data.referenced(),
-          await naclFile.data.referenced(),
-        )
-
-        updateIndexOfFile(
-          staticFilesIndexAdditions,
-          staticFilesIndexDeletions,
-          naclFile.filename,
-          await parsedFile?.data.staticFiles(),
-          await naclFile.data.staticFiles(),
-        )
-
-        const currentNaclFileElements = (await naclFile.elements()) ?? []
-        const oldNaclFileElements = await parsedFile?.elements() ?? []
-        updateIndexOfFile(
-          elementsIndexAdditions,
-          elementsIndexDeletions,
-          naclFile.filename,
-          oldNaclFileElements.map(e => e.elemID.getFullName()),
-          currentNaclFileElements.map(e => e.elemID.getFullName()),
-        )
-        relevantElementIDs.push(
-          ...currentNaclFileElements.map(e => e.elemID),
-          ...oldNaclFileElements.map(e => e.elemID),
-        )
-        if (!_.isEmpty(currentNaclFileElements)) {
-          newElementsToMerge.push(awu(currentNaclFileElements as Element[]))
-        }
-        // This is temp and should be removed when we change the init flow
-        // This happens now cause we get here with ParsedNaclFiles that originate from the cache
-        if (values.isDefined(naclFile.buffer)) {
-          await currentState.parsedNaclFiles.put(naclFile.filename, naclFile)
-        }
-        log.trace('Finished updating indexes of %s', naclFile.filename)
-      })
-    },
-    'handle additions/modifications of nacl files',
-  )
-
-  const handleDeletions = (naclFiles: AwuIterable<ParsedNaclFile>): Promise<void> => log.time(
-    async () => {
-      const toDelete: string[] = []
-      await naclFiles.forEach(async naclFile => {
-        const oldNaclFile = await getNaclFile(naclFile)
-        if (oldNaclFile === undefined) {
-          return
-        }
-        log.trace('Updating indexes of deleted nacl file: %s', naclFile.filename)
-        const oldNaclFileReferenced = await oldNaclFile.data.referenced()
-        oldNaclFileReferenced.forEach((elementFullName: string) => {
-          referencedIndexDeletions[elementFullName] = referencedIndexDeletions[elementFullName]
-            ?? new Set<string>()
-          referencedIndexDeletions[elementFullName].add(oldNaclFile.filename)
-        })
-        const oldNaclFileElements = await oldNaclFile.elements() ?? []
-        oldNaclFileElements.forEach(element => {
-          const elementFullName = element.elemID.getFullName()
-          elementsIndexDeletions[elementFullName] = elementsIndexDeletions[elementFullName]
-            ?? new Set<string>()
-          elementsIndexDeletions[elementFullName].add(oldNaclFile.filename)
-        })
-        relevantElementIDs.push(...oldNaclFileElements.map(e => e.elemID))
-        toDelete.push(naclFile.filename)
-        log.trace('Finished updating indexes of %s', naclFile.filename)
-      })
-      await currentState.parsedNaclFiles.deleteAll(toDelete)
-    },
-    'handle deletions of nacl files',
-  )
-
-  await handleDeletions(
-    awu(Object.values(newParsed)).filter(isEmptyNaclFile)
-  )
-  await handleAdditionsOrModifications(
-    awu(Object.values(newParsed)).filter(async naclFile => !(await isEmptyNaclFile(naclFile)))
-  )
-
-  const unmodifiedFragments = awu(_.uniqBy(relevantElementIDs, e => e.getFullName()))
-    .flatMap(async elemID => {
-      const unmodifiedFilesWithElem = (
-        await currentState.elementsIndex.get(elemID.getFullName()) ?? []
-      ).filter((filename: string) => newParsed[filename] === undefined)
-
-      return awu(unmodifiedFilesWithElem)
-        .map(async filename =>
-          ((await (await currentState.parsedNaclFiles.get(filename)).elements()) ?? []).find(
-            e => e.elemID.isEqual(elemID)
-          ))
-    }).filter(values.isDefined) as AsyncIterable<Element>
-  const changes = await buildNewMergedElementsAndErrors({
-    afterElements: awu(newElementsToMerge).flat().concat(unmodifiedFragments),
-    relevantElementIDs: awu(relevantElementIDs),
-    currentElements: currentState.mergedElements,
-    currentErrors: currentState.mergeErrors,
-    mergeFunc: elements => mergeElements(elements),
-  }) as Change[]
-  const postChangeHash = await currentState.parsedNaclFiles.getHash()
-  await Promise.all([
-    updateIndex(
-      currentState.elementsIndex,
-      elementsIndexAdditions,
-      elementsIndexDeletions
-    ),
-    updateIndex(
-      currentState.referencedIndex,
+  const handleAdditionOrModification = async (naclFile: ParsedNaclFile): Promise<void> => {
+    const parsedFile = await getNaclFile(naclFile)
+    log.trace('Updating indexes of %s nacl file: %s', !parsedFile ? 'added' : 'modified', naclFile.filename)
+    updateIndexOfFile(
       referencedIndexAdditions,
-      referencedIndexDeletions
-    ),
-    updateIndex(
-      currentState.staticFilesIndex,
+      referencedIndexDeletions,
+      naclFile.filename,
+      await parsedFile?.data.referenced(),
+      await naclFile.data.referenced(),
+    )
+    updateIndexOfFile(
       staticFilesIndexAdditions,
-      staticFilesIndexDeletions
-    ),
-    updateSearchableNamesIndex(changes),
-  ])
-  if (postChangeHash !== preChangeHash) {
-    if (postChangeHash === undefined) {
-      await currentState.metadata.delete(HASH_KEY)
-    } else {
-      await currentState.metadata.set(HASH_KEY, postChangeHash)
+      staticFilesIndexDeletions,
+      naclFile.filename,
+      await parsedFile?.data.staticFiles(),
+      await naclFile.data.staticFiles(),
+    )
+    const currentNaclFileElements = (await naclFile.elements()) ?? []
+    const oldNaclFileElements = await parsedFile?.elements() ?? []
+    updateIndexOfFile(
+      elementsIndexAdditions,
+      elementsIndexDeletions,
+      naclFile.filename,
+      oldNaclFileElements.map(e => e.elemID.getFullName()),
+      currentNaclFileElements.map(e => e.elemID.getFullName()),
+    )
+    relevantElementIDs.push(
+      ...currentNaclFileElements.map(e => e.elemID),
+      ...oldNaclFileElements.map(e => e.elemID),
+    )
+    if (!_.isEmpty(currentNaclFileElements)) {
+      newElementsToMerge.push(awu(currentNaclFileElements as Element[]))
     }
+    // This is temp and should be removed when we change the init flow
+    // This happens now cause we get here with ParsedNaclFiles that originate from the cache
+    if (values.isDefined(naclFile.buffer)) {
+      await currentState.parsedNaclFiles.put(naclFile.filename, naclFile)
+    }
+    log.trace('Finished updating indexes of %s', naclFile.filename)
   }
+
+  const handleDeletion = async (naclFile: ParsedNaclFile): Promise<void> => {
+    const oldNaclFile = await getNaclFile(naclFile)
+    if (oldNaclFile === undefined) {
+      return
+    }
+    log.trace('Updating indexes of deleted nacl file: %s', naclFile.filename)
+    const oldNaclFileReferenced = await oldNaclFile.data.referenced()
+    oldNaclFileReferenced.forEach(elementFullName => {
+      referencedIndexDeletions[elementFullName] = referencedIndexDeletions[elementFullName]
+        ?? new Set<string>()
+      referencedIndexDeletions[elementFullName].add(oldNaclFile.filename)
+    })
+    const oldNaclFileElements = await oldNaclFile.elements() ?? []
+    oldNaclFileElements.forEach(element => {
+      const elementFullName = element.elemID.getFullName()
+      elementsIndexDeletions[elementFullName] = elementsIndexDeletions[elementFullName]
+        ?? new Set<string>()
+      elementsIndexDeletions[elementFullName].add(oldNaclFile.filename)
+    })
+    relevantElementIDs.push(...oldNaclFileElements.map(e => e.elemID))
+    naclFilesToDelete.push(naclFile.filename)
+    log.trace('Finished updating indexes of %s', naclFile.filename)
+  }
+
   return {
-    state: currentState,
-    changes: { changes, cacheValid, preChangeHash, postChangeHash },
+    processNaclFile: async naclFile => {
+      newParsedFilenames.add(naclFile.filename)
+      if (await isEmptyNaclFile(naclFile)) {
+        await handleDeletion(naclFile)
+      } else {
+        await handleAdditionOrModification(naclFile)
+      }
+    },
+    build: async () => {
+      const preChangeHash = await currentState.metadata.get(HASH_KEY)
+      const cacheValid = (preChangeHash === await currentState.parsedNaclFiles.getHash())
+
+      await currentState.parsedNaclFiles.deleteAll(naclFilesToDelete)
+      const unmodifiedFragments = awu(_.uniqBy(relevantElementIDs, e => e.getFullName()))
+        .flatMap(async elemID => {
+          const unmodifiedFilesWithElem = (
+            await currentState.elementsIndex.get(elemID.getFullName()) ?? []
+          ).filter(filename => !newParsedFilenames.has(filename))
+
+          return awu(unmodifiedFilesWithElem)
+            .map(async filename =>
+              ((await (await currentState.parsedNaclFiles.get(filename)).elements()) ?? []).find(
+                e => e.elemID.isEqual(elemID)
+              ))
+        }).filter(values.isDefined) as AsyncIterable<Element>
+      const changes = await buildNewMergedElementsAndErrors({
+        afterElements: awu(newElementsToMerge).flat().concat(unmodifiedFragments),
+        relevantElementIDs: awu(relevantElementIDs),
+        currentElements: currentState.mergedElements,
+        currentErrors: currentState.mergeErrors,
+        mergeFunc: elements => mergeElements(elements),
+      }) as Change[]
+      const postChangeHash = await currentState.parsedNaclFiles.getHash()
+      await Promise.all([
+        updateIndex(
+          currentState.elementsIndex,
+          elementsIndexAdditions,
+          elementsIndexDeletions
+        ),
+        updateIndex(
+          currentState.referencedIndex,
+          referencedIndexAdditions,
+          referencedIndexDeletions
+        ),
+        updateIndex(
+          currentState.staticFilesIndex,
+          staticFilesIndexAdditions,
+          staticFilesIndexDeletions
+        ),
+        updateSearchableNamesIndex(changes),
+      ])
+      if (postChangeHash !== preChangeHash) {
+        if (postChangeHash === undefined) {
+          await currentState.metadata.delete(HASH_KEY)
+        } else {
+          await currentState.metadata.set(HASH_KEY, postChangeHash)
+        }
+      }
+      return {
+        state: currentState,
+        changes: { changes, cacheValid, preChangeHash, postChangeHash },
+      }
+    },
   }
+}
+
+const buildNaclFilesState = async (
+  { newNaclFiles, currentState }: {
+    newNaclFiles: ParsedNaclFile[]
+    currentState: NaclFilesState
+  }
+): Promise<buildNaclFilesStateResult> => {
+  const builder = naclFilesStateBuilder(currentState)
+  await awu(newNaclFiles).forEach(builder.processNaclFile)
+  return builder.build()
 }
 
 const logNaclFileUpdateErrorContext = (
@@ -645,12 +648,12 @@ const buildNaclFilesSource = (
       persistent
     )
     if (!ignoreFileChanges) {
+      const builder = naclFilesStateBuilder(currentState)
       const preChangeHash = await currentState.parsedNaclFiles.getHash()
       const cacheFilenames = await currentState.parsedNaclFiles.list()
       const modifiedStaticFiles = await staticFilesSource.load?.() ?? []
       const naclFilenames = new Set(await naclFilesStore.list())
       const fileNames = new Set()
-      const parsedModifiedFiles: ParsedNaclFile[] = []
       const naclReferencingModifiedStaticFiles = new Set(
         (await currentState.staticFilesIndex.getMany(modifiedStaticFiles))
           .filter(values.isDefined)
@@ -663,7 +666,7 @@ const buildNaclFilesSource = (
           const validCache = await currentState.parsedNaclFiles.hasValid(naclFile)
           if (!validCache || naclReferencingModifiedStaticFiles.has(filename)) {
             const parsed = await toParsedNaclFile(naclFile, await parseNaclFile({ naclFile, functions }))
-            parsedModifiedFiles.push(parsed)
+            await builder.processNaclFile(parsed)
           }
           fileNames.add(filename)
         }),
@@ -674,16 +677,13 @@ const buildNaclFilesSource = (
           if (!fileNames.has(filename)) {
             const naclFile = await naclFilesStore.get(filename) ?? { filename, buffer: '' }
             const parsed = await toParsedNaclFile(naclFile, await parseNaclFile({ naclFile, functions }))
-            parsedModifiedFiles.push(parsed)
+            await builder.processNaclFile(parsed)
           }
           fileNames.add(filename)
         }),
         CACHE_READ_CONCURRENCY,
       )
-      const result = await buildNaclFilesState({
-        newNaclFiles: parsedModifiedFiles,
-        currentState,
-      })
+      const result = await builder.build()
       result.changes.preChangeHash = preChangeHash
       return result
     }

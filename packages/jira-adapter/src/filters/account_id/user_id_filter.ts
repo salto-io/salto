@@ -60,7 +60,7 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc, elementsSource 
     if (userMap === undefined) {
       return
     }
-    await Promise.all(elements
+    elements
       .filter(isInstanceElement)
       .map(async element => {
         if (client.isDataCenter) {
@@ -68,7 +68,7 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc, elementsSource 
         } else {
           walkOnElement({ element, func: walkOnUsers(addDisplayName(userMap), config) })
         }
-      }))
+      })
   },
   preDeploy: async changes => {
     if (!(config.fetch.convertUsersIds ?? true) || !client.isDataCenter) {

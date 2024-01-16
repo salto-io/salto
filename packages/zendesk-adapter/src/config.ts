@@ -2669,14 +2669,25 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   theme: {
     transformation: {
-      idFields: ['&brand_id', ...DEFAULT_ID_FIELDS],
+      idFields: ['&brand_id', ...DEFAULT_ID_FIELDS, 'live'],
       sourceTypeName: 'themes__themes',
       fieldTypeOverrides: [
         { fieldName: 'files', fieldType: 'map<unknown>' },
       ],
       fieldsToHide: FIELDS_TO_HIDE.concat([
         { fieldName: 'id', fieldType: 'string' },
+        { fieldName: 'live', fieldType: 'boolean' },
       ]),
+    },
+    deployRequests: {
+      remove: {
+        url: '/api/v2/guide/theming/themes/{themeId}',
+        method: 'delete',
+        urlParamsToFields: {
+          themeId: 'id',
+        },
+        omitRequestBody: true,
+      },
     },
   },
 }
@@ -2885,7 +2896,8 @@ export type ChangeValidatorName = (
   | 'organizationExistence'
   | 'badFormatWebhookAction'
   | 'guideDisabled'
-  | 'guideThemeReadonly'
+  | 'guideThemeDeleteLive'
+  | 'guideThemeUpdateMetadata'
   | 'additionOfTicketStatusForTicketForm'
   | 'defaultDynamicContentItemVariant'
   | 'featureActivation'
@@ -2957,7 +2969,8 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     organizationExistence: { refType: BuiltinTypes.BOOLEAN },
     badFormatWebhookAction: { refType: BuiltinTypes.BOOLEAN },
     guideDisabled: { refType: BuiltinTypes.BOOLEAN },
-    guideThemeReadonly: { refType: BuiltinTypes.BOOLEAN },
+    guideThemeDeleteLive: { refType: BuiltinTypes.BOOLEAN },
+    guideThemeUpdateMetadata: { refType: BuiltinTypes.BOOLEAN },
     additionOfTicketStatusForTicketForm: { refType: BuiltinTypes.BOOLEAN },
     defaultDynamicContentItemVariant: { refType: BuiltinTypes.BOOLEAN },
     featureActivation: { refType: BuiltinTypes.BOOLEAN },

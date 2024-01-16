@@ -67,6 +67,7 @@ import {
   CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME,
   DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
   GUIDE_THEME_TYPE_NAME,
+  THEME_SETTINGS_TYPE_NAME,
   ZENDESK,
 } from './constants'
 import { getBrandsForGuide } from './filters/utils'
@@ -288,7 +289,7 @@ const zendeskGuideEntriesFunc = (
     args,
     typeName,
     typesConfig,
-  } : {
+  }: {
     paginator: clientUtils.Paginator
     args: clientUtils.ClientGetWithPaginationParams
     typeName?: string
@@ -358,7 +359,7 @@ const getGuideElements = async ({
   apiDefinitions,
   fetchQuery,
   getElemIdFunc,
-}:{
+}: {
   brandsList: InstanceElement[]
   brandToPaginator: Record<string, clientUtils.Paginator>
   apiDefinitions: configUtils.AdapterDuckTypeApiConfig
@@ -452,7 +453,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     filterRunnerClient,
     paginator,
     brandIdToClient,
-  } : {
+  }: {
     filterRunnerClient?: ZendeskClient
     paginator?: clientUtils.Paginator
     brandIdToClient?: BrandIdToClient
@@ -511,7 +512,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       filterRunnerClient,
       paginator,
       brandIdToClient = {},
-    } : {
+    }: {
       filterRunnerClient?: ZendeskClient
       paginator?: clientUtils.Paginator
       brandIdToClient?: BrandIdToClient
@@ -661,7 +662,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       } else {
         log.info(`Account subscription data invalid: ${inspectValue(data)}`)
       }
-    // This log is not crucial for the fetch to succeed, so we don't want to fail the fetch if it fails
+      // This log is not crucial for the fetch to succeed, so we don't want to fail the fetch if it fails
     } catch (e) {
       if (e.response?.status === 422) {
         log.info('Account subscription data unavailable because this is a sandbox environment')
@@ -788,8 +789,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
     const [instanceChanges, nonInstanceChanges] = _.partition(changeGroup.changes, isInstanceChange)
     if (nonInstanceChanges.length > 0) {
-      log.warn(`We currently can't deploy types. Therefore, the following changes will not be deployed: ${
-        nonInstanceChanges.map(elem => getChangeData(elem).elemID.getFullName()).join(', ')}`)
+      log.warn(`We currently can't deploy types. Therefore, the following changes will not be deployed: ${nonInstanceChanges.map(elem => getChangeData(elem).elemID.getFullName()).join(', ')}`)
     }
     const changesToDeploy = instanceChanges
       .map(change => ({
@@ -875,8 +875,8 @@ export default class ZendeskAdapter implements AdapterOperations {
         fetchConfig: this.userConfig[FETCH_CONFIG],
         deployConfig: this.userConfig[DEPLOY_CONFIG],
         typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment', BRAND_LOGO_TYPE_NAME, CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME],
-        // article_attachment additions supported in a filter
-        typesWithNoDeploy: ['tag', ARTICLE_ATTACHMENT_TYPE_NAME, ...GUIDE_ORDER_TYPES, DEFAULT_CUSTOM_STATUSES_TYPE_NAME, CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME],
+        // article_attachment and guide themes additions supported in a filter
+        typesWithNoDeploy: ['tag', ARTICLE_ATTACHMENT_TYPE_NAME, GUIDE_THEME_TYPE_NAME, THEME_SETTINGS_TYPE_NAME, ...GUIDE_ORDER_TYPES, DEFAULT_CUSTOM_STATUSES_TYPE_NAME, CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME],
       }),
       dependencyChanger,
       getChangeGroupIds,

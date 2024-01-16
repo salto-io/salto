@@ -17,35 +17,35 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from '../../../client/client'
-import { DownloadJobData, isPendingJobResponse, PendingJob } from '../types'
+import { isPendingJobResponse, PendingJob, UploadJobData } from '../types'
 
 const log = logger(module)
 
-export const createThemeExportJob = async (
-  themeId: string, client: ZendeskClient
-): Promise<{ job: PendingJob<DownloadJobData> | undefined; errors: string[] }> => {
-  log.trace(`Creating theme export job for themeId ${themeId}`)
+export const createThemeImportJob = async (
+  brandId: string, client: ZendeskClient
+): Promise<{ job: PendingJob<UploadJobData> | undefined; errors: string[] }> => {
+  log.trace('Creating theme import job')
 
   try {
     const res = await client.post({
-      url: '/api/v2/guide/theming/jobs/themes/exports',
+      url: '/api/v2/guide/theming/jobs/themes/imports',
       data: {
         job: {
           attributes: {
-            theme_id: themeId,
+            brand_id: brandId.toString(),
             format: 'zip',
           },
         },
       },
     })
     if (![200, 202].includes(res.status)) {
-      log.warn(`Could not export a theme for themeId ${themeId}, received ${safeJsonStringify(res.data)}`)
+      log.warn(`Could not create a theme for brandId ${brandId}, received ${safeJsonStringify(res.data)}`)
       return { job: undefined, errors: [safeJsonStringify(res.data)] }
     }
-    return { job: isPendingJobResponse<DownloadJobData>(res.data) ? res.data.job : undefined, errors: [] }
+    return { job: isPendingJobResponse<UploadJobData>(res.data) ? res.data.job : undefined, errors: [] }
   } catch (e) {
     if (e instanceof clientUtils.HTTPError) {
-      log.warn(`Could not update a theme for themeId ${themeId}. Received ${e.response.data}`)
+      log.warn(`Could not update a theme for brandId ${brandId}. Received ${e.response.data}`)
       if (e.response.data?.errors && Array.isArray(e.response.data.errors)) {
         return { job: undefined, errors: e.response.data.errors.map(err => `${err.code} - ${err.message ?? err.title}`) }
       }

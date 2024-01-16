@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { filterUtils, elements as adapterElements } from '@salto-io/adapter-components'
-import { InstanceElement, ReferenceExpression, Element, isObjectType, ObjectType, ElemID, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { InstanceElement, ReferenceExpression, Element, ObjectType, ElemID, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { getDefaultConfig } from '../../../src/config/config'
 import requestTypelayoutsToValuesFilter from '../../../src/filters/layouts/request_types_layouts_to_values'

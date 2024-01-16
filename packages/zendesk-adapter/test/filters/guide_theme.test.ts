@@ -25,7 +25,7 @@ jest.mock('jszip', () => jest.fn().mockImplementation(() => {
   const mockFiles = {
     // Mocked data you expect after loading the zip file
     'file1.txt': { async: jest.fn(() => Buffer.from('file1content')), dir: false },
-    'subfolder/file2.txt': { async: jest.fn(() => Buffer.from('file2content')), dir: false },
+    'subfolder.dot/file2.txt': { async: jest.fn(() => Buffer.from('file2content')), dir: false },
   }
   const mockCorruptedFiles = {
     'file1.txt': { async: jest.fn(() => { throw new Error('Bad zip file') }) },
@@ -133,9 +133,9 @@ describe('filterCreator', () => {
             filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/file1.txt`,
             content: Buffer.from('file1content'),
           }))
-          expect(theme1.value.files.subfolder['file2_txt@v'].filename).toEqual('subfolder/file2.txt')
-          expect(theme1.value.files.subfolder['file2_txt@v'].content).toEqual(new StaticFile({
-            filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/subfolder/file2.txt`,
+          expect(theme1.value.files['subfolder_dot@v']['file2_txt@v'].filename).toEqual('subfolder.dot/file2.txt')
+          expect(theme1.value.files['subfolder_dot@v']['file2_txt@v'].content).toEqual(new StaticFile({
+            filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/subfolder.dot/file2.txt`,
             content: Buffer.from('file2content'),
           }))
         })

@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { InstanceElement, ElemID } from '@salto-io/adapter-api'
 import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import { fullFetchConfig, fullQueryParams } from '../../src/config/config_creator'
-import { LARGE_FOLDERS_EXCLUDED_MESSAGE, LARGE_TYPES_EXCLUDED_MESSAGE, STOP_MANAGING_ITEMS_MSG, getConfigFromConfigChanges } from '../../src/config/suggestions'
+import { toLargeFoldersExcludedMessage, toLargeTypesExcludedMessage, STOP_MANAGING_ITEMS_MSG, getConfigFromConfigChanges } from '../../src/config/suggestions'
 import { NetsuiteQueryParameters, fetchDefault, configType } from '../../src/config/types'
 
 describe('netsuite config suggestions', () => {
@@ -162,7 +162,7 @@ describe('netsuite config suggestions', () => {
       ))).toBe(true)
 
     expect(configChange?.message).toBe(formatConfigSuggestionsReasons([
-      STOP_MANAGING_ITEMS_MSG, LARGE_FOLDERS_EXCLUDED_MESSAGE, LARGE_TYPES_EXCLUDED_MESSAGE,
+      STOP_MANAGING_ITEMS_MSG, toLargeFoldersExcludedMessage([newLargeFolderPath]), toLargeTypesExcludedMessage(['excludedTypeTest']),
     ]))
   })
 
@@ -190,7 +190,8 @@ describe('netsuite config suggestions', () => {
       config,
     )
 
-    expect(configChange?.message)
-      .toBe(formatConfigSuggestionsReasons([STOP_MANAGING_ITEMS_MSG, LARGE_FOLDERS_EXCLUDED_MESSAGE]))
+    expect(configChange?.message).toBe(
+      formatConfigSuggestionsReasons([STOP_MANAGING_ITEMS_MSG, toLargeFoldersExcludedMessage([newLargeFolderPath])])
+    )
   })
 })

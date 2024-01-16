@@ -1896,7 +1896,7 @@ describe('adapter', () => {
         expect(themeElements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'zendesk.theme.instance.myBrand_Copenhagen',
         ])
-        expect(themeElements[0].value.files['hello.txt'].content).toEqual(new StaticFile({
+        expect(themeElements[0].value.files['hello_txt@v'].content).toEqual(new StaticFile({
           filepath: 'zendesk/themes/brands/myBrand/Copenhagen/hello.txt', content: Buffer.from('Hello World\n'),
         }))
 

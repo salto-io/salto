@@ -637,9 +637,9 @@ describe('soap_client', () => {
         (_type: string, count: number) => count > 1,
         defaultSoapTimeOut
       )
-      await expect(client.getAllRecords(['subsidiary'])).resolves.toMatchObject({
+      await expect(client.getAllRecords(['subsidiary', 'assemblyItem', 'descriptionItem'])).resolves.toMatchObject({
         records: [],
-        largeTypesError: ['subsidiary'],
+        largeTypesError: ['subsidiary', 'assemblyItem', 'descriptionItem'],
       })
     })
 

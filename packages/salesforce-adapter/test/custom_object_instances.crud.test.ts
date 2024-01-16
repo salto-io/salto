@@ -42,6 +42,7 @@ describe('Custom Object Instances CRUD', () => {
   const mockElemID = new ElemID(constants.SALESFORCE, 'Test')
   const instanceName = 'Instance'
   const anotherInstanceName = 'AnotherInstance'
+  const nameOfInstanceWithNonUpdateableField = 'NotUpdatable'
 
   const customObject = new ObjectType({
     elemID: mockElemID,
@@ -97,7 +98,7 @@ describe('Custom Object Instances CRUD', () => {
           [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
           [constants.FIELD_ANNOTATIONS.UPDATEABLE]: false,
           [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
-          [constants.API_NAME]: 'NotCreatable',
+          [constants.API_NAME]: 'NotUpdateable',
         },
       },
       AnotherField: {
@@ -196,11 +197,11 @@ describe('Custom Object Instances CRUD', () => {
     NumField: null,
   }
   const existingInstanceWithNonUpdateableField = new InstanceElement(
-    anotherInstanceName,
+    nameOfInstanceWithNonUpdateableField,
     customObject,
     {
       SaltoName: 'existingInstanceWithNonUpdateableField',
-      NotUpdatable: 'DontSendMeOnUpdate',
+      NotUpdateable: 'DontSendMeOnUpdate',
     }
   )
   const newInstanceWithRefName = 'newInstanceWithRef'
@@ -967,14 +968,16 @@ describe('Custom Object Instances CRUD', () => {
       instanceToModify.value.Id = 'modifyId'
       const anotherInstanceToModify = anotherExistingInstance.clone()
       anotherInstanceToModify.value.Id = 'anotherModifyId'
-      const instanceWithNonUpdateableFieldToModify = existingInstanceWithNonUpdateableField.clone()
-      instanceWithNonUpdateableFieldToModify.value.Id = 'yetAnotherModifyId'
+      const instanceWithNonUpdateableFieldBefore = existingInstanceWithNonUpdateableField.clone()
+      instanceWithNonUpdateableFieldBefore.value.Id = 'yetAnotherModifyId'
+      const instanceWithNonUpdateableFieldAfter = instanceWithNonUpdateableFieldBefore.clone()
+      instanceWithNonUpdateableFieldAfter.value.NotUpdateable = 'PleaseDontUpdate'
       const modifyDeployGroup = {
         groupID: 'modify__Test__c',
         changes: [
           { action: 'modify', data: { before: instanceToModify, after: instanceToModify } },
           { action: 'modify', data: { before: anotherInstanceToModify, after: anotherInstanceToModify } },
-          { action: 'modify', data: { before: instanceWithNonUpdateableFieldToModify, after: instanceWithNonUpdateableFieldToModify } },
+          { action: 'modify', data: { before: instanceWithNonUpdateableFieldBefore, after: instanceWithNonUpdateableFieldAfter } },
         ],
       } as ChangeGroup
       describe('when loadBulk succeeds for all', () => {
@@ -985,7 +988,7 @@ describe('Custom Object Instances CRUD', () => {
         it('should return one error and 3 fitting applied changes', async () => {
           expect(result.errors).toEqual([
             expect.objectContaining({
-              elemID: instanceWithNonUpdateableFieldToModify.elemID,
+              elemID: instanceWithNonUpdateableFieldAfter.elemID,
               message: expect.stringContaining('updateable'),
               severity: 'Warning',
             }),

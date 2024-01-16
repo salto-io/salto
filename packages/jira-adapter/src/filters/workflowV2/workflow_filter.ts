@@ -80,7 +80,7 @@ const convertTransitionParametersFields = (
     transition.conditions?.conditions?.forEach((condition: Values) => {
       convertFunc(condition?.parameters, CONDITION_LIST_FIELDS)
     })
-    transition.validators?.forEach((validator:Values) => {
+    transition.validators?.forEach((validator: Values) => {
       convertFunc(validator?.parameters, VALIDATOR_LIST_FIELDS)
     })
   })
@@ -194,7 +194,7 @@ const getStatusesPayload = (
   statusIdToUuid: Record<string, string>
 ): Values[] => statuses
   .filter(instance => isResolvedReferenceExpression(instance.value?.statusCategory))
-  .filter(isInstanceElement)
+  .filter(instance => isInstanceElement(instance.value.statusCategory.value))
   .filter(instance => instance.value.statusCategory.value.value.id !== undefined)
   .map(statusInstance => {
     const statusCategoryId = statusInstance.value.statusCategory.value.value.id
@@ -237,10 +237,7 @@ const getStatusInstances = (
 const getUuidMap = (statusesValues: InstanceElement[]): Record<string, string> => {
   const statusIdToUuid: Record<string, string> = {}
   statusesValues.forEach(status => {
-    if (statusIdToUuid[status.value.id] === undefined) {
-      const uuid = uuidv4()
-      statusIdToUuid[status.value.id] = uuid
-    }
+    statusIdToUuid[status.value.id] = uuidv4()
   })
   return statusIdToUuid
 }
@@ -385,8 +382,7 @@ const replaceStatusIdWithUuid = (statusIdToUuid: Record<string, string>): WalkOn
 * if there is a modification that removes a status from an active workflow we need status mappings to migrate the issues
 */
 const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elementsSource }) => {
-  let statusIdToUuid: Record<string, string>
-  const originalChanges: Record<string, InstanceElement> = {}
+  const originalInstances: Record<string, InstanceElement> = {}
   return {
     name: 'workflowFilter',
     onFetch: async (elements: Element[]) => {
@@ -424,9 +420,9 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
         .filter(isAdditionOrModificationWorkflowChange)
         .forEach(async change => {
           const workflowInstance = getChangeData(change)
-          originalChanges[workflowInstance.elemID.getFullName()] = workflowInstance.clone()
+          originalInstances[workflowInstance.elemID.getFullName()] = workflowInstance.clone()
           const statusInstances = getStatusInstances(change)
-          statusIdToUuid = getUuidMap(statusInstances)
+          const statusIdToUuid = getUuidMap(statusInstances)
           const resolvedWorkflowInstance = await resolveValues(workflowInstance, getLookUpName)
           convertTransitionParametersFields(resolvedWorkflowInstance.value.transitions, convertParametersFieldsToString)
           walkOnElement({ element: resolvedWorkflowInstance, func: replaceStatusIdWithUuid(statusIdToUuid) })
@@ -441,11 +437,10 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
     deploy: async changes => {
       const [relevantChanges, leftoverChanges] = _.partition(
         changes,
-        change => isAdditionOrModificationWorkflowChange(change)
+        isAdditionOrModificationWorkflowChange
       )
       const deployResult = await deployChanges(
-        relevantChanges
-          .filter(isAdditionOrModificationWorkflowChange),
+        relevantChanges,
         async change => deployWorkflow({
           change,
           client,
@@ -463,7 +458,7 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
         .filter(isAdditionOrModificationWorkflowChange)
         .forEach(async change => {
           const instance = getChangeData(change)
-          const originalInstance = originalChanges[instance.elemID.getFullName()]
+          const originalInstance = originalInstances[instance.elemID.getFullName()]
           const workflow = getChangeData(change).value.workflows[0]
           const isMigrationDone = workflow.statusMappings !== undefined
           const version = isMigrationDone

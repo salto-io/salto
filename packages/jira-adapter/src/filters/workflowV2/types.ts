@@ -15,7 +15,7 @@
 */
 import Joi from 'joi'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
-import { AdditionChange, Change, Element, InstanceElement, ModificationChange, Values, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
+import { AdditionChange, Change, InstanceElement, ModificationChange, Values, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import { JIRA_WORKFLOW_TYPE } from '../../constants'
 
 export const CHUNK_SIZE = 25
@@ -78,8 +78,9 @@ type TaskResponse = {
   progress: number
 }
 
-export const isAdditionOrModificationWorkflowChange = (change: Change<Element>)
-: change is AdditionChange<InstanceElement> | ModificationChange<InstanceElement> =>
+export const isAdditionOrModificationWorkflowChange = (
+  change: Change
+): change is AdditionChange<InstanceElement> | ModificationChange<InstanceElement> =>
   isInstanceChange(change)
   && isAdditionOrModificationChange(change)
   && change.data.after.elemID.typeName === JIRA_WORKFLOW_TYPE

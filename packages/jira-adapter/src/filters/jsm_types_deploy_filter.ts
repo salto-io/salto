@@ -51,7 +51,9 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         SUPPORTED_TYPES.has(getChangeData(change).elemID.typeName)
         && isInstanceChange(change)
     )
-    const workspaceId = await getWorkspaceId(client)
+    const hasAssetsChanges = jsmTypesChanges.some(change =>
+      ASSETS_SUPPORTED_TYPES.includes(getChangeData(change).elemID.typeName))
+    const workspaceId = hasAssetsChanges ? await getWorkspaceId(client, config) : undefined
     const additionalUrlVars = workspaceId ? { workspaceId } : undefined
 
     const typeFixedChanges = jsmTypesChanges

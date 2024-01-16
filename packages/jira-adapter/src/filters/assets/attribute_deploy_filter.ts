@@ -154,7 +154,7 @@ const filter: FilterCreator = ({ config, client }) => ({
       && getChangeData(change).elemID.typeName === OBJECT_TYPE_ATTRIBUTE_TYPE
     )
 
-    const workspaceId = await getWorkspaceId(client)
+    const workspaceId = await getWorkspaceId(client, config)
     if (workspaceId === undefined) {
       log.error(`Skip deployment of ${OBJECT_TYPE_ATTRIBUTE_TYPE} types because workspaceId is undefined`)
       const errors = attributesChanges.map(change => createSaltoElementError({

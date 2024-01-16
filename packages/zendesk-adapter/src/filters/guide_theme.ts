@@ -17,6 +17,7 @@ import { InstanceElement, SaltoError, StaticFile, isInstanceElement, isReference
 import { logger } from '@salto-io/logging'
 import JSZip from 'jszip'
 import _, { remove } from 'lodash'
+import { naclCase } from '@salto-io/adapter-utils'
 import { FETCH_CONFIG, isGuideEnabled, isGuideThemesEnabled } from '../config'
 import {
   GUIDE_THEME_TYPE_NAME, ZENDESK,
@@ -38,7 +39,7 @@ const unzipFolderToElements = async (buffer: Buffer, brandName: string, name: st
   await Promise.all(Object.entries(unzippedContents.files).map(async ([relativePath, file]): Promise<void> => {
     if (!file.dir) {
       const content = await file.async('nodebuffer')
-      _.set(elements, relativePath.split('/'), {
+      _.set(elements, relativePath.split('/').map(naclCase), {
         filename: relativePath,
         content: new StaticFile({ filepath: `${ZENDESK}/themes/brands/${brandName}/${name}/${relativePath}`, content }),
       })

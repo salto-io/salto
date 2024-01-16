@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { filterUtils, elements as adapterElements } from '@salto-io/adapter-components'
-import { InstanceElement, ReferenceExpression, Element } from '@salto-io/adapter-api'
+import { InstanceElement, ReferenceExpression, Element, isObjectType, ObjectType, ElemID, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { getDefaultConfig } from '../../../src/config/config'
 import requestTypelayoutsToValuesFilter from '../../../src/filters/layouts/request_types_layouts_to_values'
@@ -33,6 +33,7 @@ describe('requestTypelayoutsToValuesFilter', () => {
   let issueViewInstance: InstanceElement
 
   describe('on fetch', () => {
+    let requestTypeType: ObjectType
     beforeEach(async () => {
       projectInstance = new InstanceElement(
         'project1',
@@ -45,7 +46,13 @@ describe('requestTypelayoutsToValuesFilter', () => {
         },
         [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1']
       )
-      const requestTypeType = createEmptyType(REQUEST_TYPE_NAME)
+      requestTypeType = new ObjectType({
+        elemID: new ElemID(JIRA, REQUEST_TYPE_NAME),
+        fields: {
+          requestForm: { refType: createEmptyType(REQUEST_FORM_TYPE) },
+          issueView: { refType: createEmptyType(ISSUE_VIEW_TYPE) },
+        },
+      })
       requestTypeInstance = new InstanceElement(
         'issueType1',
         requestTypeType,
@@ -160,6 +167,17 @@ describe('requestTypelayoutsToValuesFilter', () => {
       await filter.onFetch(elements)
       const requestType = elements.find(e => e.elemID.isEqual(requestTypeInstance.elemID)) as InstanceElement
       expect(requestType.value.requestForm).toBeUndefined()
+    })
+    it('should add deploy annotation to requestForm and issueView', async () => {
+      await filter.onFetch(elements)
+      expect(requestTypeType.fields.requestForm.annotations).toEqual({
+        [CORE_ANNOTATIONS.UPDATABLE]: true,
+        [CORE_ANNOTATIONS.CREATABLE]: true,
+      })
+      expect(requestTypeType.fields.issueView.annotations).toEqual({
+        [CORE_ANNOTATIONS.UPDATABLE]: true,
+        [CORE_ANNOTATIONS.CREATABLE]: true,
+      })
     })
   })
 })

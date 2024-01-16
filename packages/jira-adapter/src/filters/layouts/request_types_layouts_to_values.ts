@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, Field, InstanceElement, Values, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
+import { AdditionChange, Change, CORE_ANNOTATIONS, Field, InstanceElement, ModificationChange, Values, getChangeData, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
@@ -23,14 +23,36 @@ import { ISSUE_VIEW_TYPE, REQUEST_FORM_TYPE, REQUEST_TYPE_NAME } from '../../con
 const log = logger(module)
 const LAYOUT_TYPES_TO_ADJUST = [REQUEST_FORM_TYPE, ISSUE_VIEW_TYPE]
 
-const convertPropertiesToList = (instance: InstanceElement): void => {
-  instance.value.issueLayoutConfig.items.forEach((item: Values) => {
+const convertPropertiesToList = (item: Values): void => {
+  item.data.properties = Object.entries(item.data.properties)
+    .map(([key, value]) => ({ key, value }))
+}
+
+const convertPropertiesToMap = (item: Values): void => {
+  item.data.properties = Object.fromEntries(
+    item.data.properties.map(({ key, value }: Values) => [key, value])
+  )
+}
+
+const convertProperties = (
+  issueLayoutConfig: Values,
+  convertFunc: (issueLayoutConfig: Values) => void
+): void => {
+  issueLayoutConfig.items.forEach((item: Values) => {
     if (item.data?.properties !== undefined) {
-      item.data.properties = Object.entries(item.data.properties)
-        .map(([key, value]) => ({ key, value }))
+      convertFunc(item)
     }
   })
 }
+
+const isAdditionOrModificationRequestFormChange = (
+  change: Change
+): change is AdditionChange<InstanceElement> | ModificationChange<InstanceElement> =>
+  isInstanceChange(change)
+  && isAdditionOrModificationChange(change)
+  && change.data.after.elemID.typeName === REQUEST_TYPE_NAME
+  && change.data.after.value.requestForm?.issueLayoutConfig?.items !== undefined
+  && _.isArray(change.data.after.value.requestForm.issueLayoutConfig.items)
 
 /*
 * This filter is responsible for adding the requestForm and issueView fields to the requestType
@@ -73,7 +95,7 @@ const filter: FilterCreator = ({ config }) => ({
       if (layout.elemID.typeName === REQUEST_FORM_TYPE) {
         if (layout.value.issueLayoutConfig?.items !== undefined
           && _.isArray(layout.value.issueLayoutConfig.items)) {
-          convertPropertiesToList(layout)
+          convertProperties(layout.value.issueLayoutConfig, convertPropertiesToList)
         }
         requestType.value.requestForm = layout.value
       } else {
@@ -81,6 +103,22 @@ const filter: FilterCreator = ({ config }) => ({
       }
       requestType.value.avatarId = requestType.value.icon.id
     })
+  },
+  preDeploy: async changes => {
+    changes
+      .filter(isAdditionOrModificationRequestFormChange)
+      .map(getChangeData)
+      .forEach(instance => {
+        convertProperties(instance.value.requestForm.issueLayoutConfig, convertPropertiesToMap)
+      })
+  },
+  onDeploy: async changes => {
+    changes
+      .filter(isAdditionOrModificationRequestFormChange)
+      .map(getChangeData)
+      .forEach(instance => {
+        convertProperties(instance.value.requestForm.issueLayoutConfig, convertPropertiesToList)
+      })
   },
 })
 export default filter

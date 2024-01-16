@@ -68,7 +68,7 @@ describe('labelAttributeValidator', () => {
       elemID: attributeInstance.elemID,
       severity: 'Error',
       message: 'Cannot delete an objectType label attribute',
-      detailedMessage: 'Cannot delete this attribute, as it is the label attribute of it\'s objectType.',
+      detailedMessage: 'Cannot delete this attribute, as it is the label attribute of its objectType.',
     })
   })
   it('should not return error on addition change', async () => {

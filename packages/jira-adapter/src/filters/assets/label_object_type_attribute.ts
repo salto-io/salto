@@ -102,7 +102,7 @@ const filterCreator: FilterCreator = ({ config, fetchQuery, client }) => ({
       }
       elements.push(labelAttributeInstance)
     })
-    // Remove label field field from attributes
+    // Remove label value from attributes
     objectTypeAttributeInstances.forEach(attribute => {
       delete attribute.value.label
     })
@@ -136,6 +136,8 @@ const filterCreator: FilterCreator = ({ config, fetchQuery, client }) => ({
     const deployResult = await deployChanges(
       relevantChanges.filter(isInstanceChange),
       async change => {
+        // We cover this case in a CV. Meaning that if we got here than the label attribute will be deleted
+        // With it's parent object type.
         if (isRemovalChange(change)) {
           return
         }

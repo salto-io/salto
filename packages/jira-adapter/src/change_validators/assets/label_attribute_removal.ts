@@ -29,6 +29,17 @@ export const deleteLabelAtttributeValidator: (
     if (elementsSource === undefined || !config.fetch.enableJsmExperimental) {
       return []
     }
+    const objectTypeAttributeRemovalChanges = await awu(changes)
+      .filter(isInstanceChange)
+      .filter(isRemovalChange)
+      .map(getChangeData)
+      .filter(instance => instance.elemID.typeName === OBJECT_TYPE_ATTRIBUTE_TYPE)
+      .toArray()
+
+    if (objectTypeAttributeRemovalChanges.length === 0) {
+      return []
+    }
+
     const labelAttributesFullNames = await awu(await elementsSource.list())
       .filter(id => id.typeName === OBJECT_TYPE_LABEL_ATTRIBUTE_TYPE)
       .map(id => elementsSource.get(id))
@@ -37,17 +48,12 @@ export const deleteLabelAtttributeValidator: (
       .map(instance => instance.value.labelAttribute.elemID.getFullName())
       .toArray()
 
-    return awu(changes)
-      .filter(isInstanceChange)
-      .filter(isRemovalChange)
-      .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === OBJECT_TYPE_ATTRIBUTE_TYPE)
-      .filter(async instance => labelAttributesFullNames.includes(instance.elemID.getFullName()))
+    return objectTypeAttributeRemovalChanges
+      .filter(instance => labelAttributesFullNames.includes(instance.elemID.getFullName()))
       .map(instance => ({
         elemID: instance.elemID,
         severity: 'Error' as SeverityLevel,
         message: 'Cannot delete an objectType label attribute',
-        detailedMessage: 'Cannot delete this attribute, as it is the label attribute of it\'s objectType.',
+        detailedMessage: 'Cannot delete this attribute, as it is the label attribute of its objectType.',
       }))
-      .toArray()
   }

@@ -109,7 +109,8 @@ const deployAttributeChanges = async ({
   elementsSource: ReadOnlyElementsSource
 }): Promise<Omit<DeployResult, 'extraProperties'>> => {
   const additionalUrlVars = { workspaceId }
-  const objectTypeFullNames = await awu(await elementsSource.list())
+  const remvoalChanges = changes.filter(isRemovalChange)
+  const objectTypeFullNames = remvoalChanges.length === 0 ? [] : await awu(await elementsSource.list())
     .filter(id => id.typeName === OBJECT_TYPE_TYPE)
     .map(id => elementsSource.get(id))
     .filter(isInstanceElement)

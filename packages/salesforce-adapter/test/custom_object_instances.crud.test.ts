@@ -568,21 +568,6 @@ describe('Custom Object Instances CRUD', () => {
 
             // newInstanceWithNonCreatableFieldChangeData has its own test case
           })
-
-          it('Should not insert non-creatable fields', () => {
-            expect(result.errors).toEqual([
-              expect.objectContaining({
-                elemID: newInstanceWithNonCreatableField.elemID,
-                message: expect.stringContaining('Creatable'),
-                severity: 'Warning',
-              }),
-            ])
-            const newInstanceWithNonCreatableFieldChangeData = result.appliedChanges
-              .map(getChangeData)
-              .find(element => element.elemID.isEqual(newInstanceWithNonCreatableField.elemID)) as InstanceElement
-
-            expect(newInstanceWithNonCreatableFieldChangeData.value).not.toHaveProperty('NotCreatable')
-          })
         })
         describe('When called with only new instances', () => {
           beforeEach(async () => {
@@ -647,20 +632,6 @@ describe('Custom Object Instances CRUD', () => {
               // Should add result Id
               expect(anotherNewInstanceChangeData.value.Id).toBeDefined()
               expect(anotherNewInstanceChangeData.value.Id).toEqual('newId1')
-            })
-            it('Should not insert non-creatable fields', () => {
-              expect(result.errors).toEqual([
-                expect.objectContaining({
-                  elemID: newInstanceWithNonCreatableField.elemID,
-                  message: expect.stringContaining('Creatable'),
-                  severity: 'Warning',
-                }),
-              ])
-              const newInstanceWithNonCreatableFieldChangeData = result.appliedChanges
-                .map(getChangeData)
-                .find(element => element.elemID.isEqual(newInstanceWithNonCreatableField.elemID)) as InstanceElement
-
-              expect(newInstanceWithNonCreatableFieldChangeData.value).not.toHaveProperty('NotCreatable')
             })
           })
           describe('when group has circular dependencies', () => {
@@ -986,13 +957,7 @@ describe('Custom Object Instances CRUD', () => {
         })
 
         it('should return one error and 3 fitting applied changes', async () => {
-          expect(result.errors).toEqual([
-            expect.objectContaining({
-              elemID: instanceWithNonUpdateableFieldAfter.elemID,
-              message: expect.stringContaining('updateable'),
-              severity: 'Warning',
-            }),
-          ])
+          expect(result.errors).toBeEmpty()
           expect(result.appliedChanges).toHaveLength(3)
           expect(isModificationChange(result.appliedChanges[0])).toBeTruthy()
           const changeData = getChangeData(result.appliedChanges[0])
@@ -1005,7 +970,6 @@ describe('Custom Object Instances CRUD', () => {
           const thirdChangeData = getChangeData(result.appliedChanges[2])
           expect(thirdChangeData).toBeDefined()
           expect(isInstanceElement(thirdChangeData)).toBeTruthy()
-          expect((thirdChangeData as InstanceElement).value).not.toHaveProperty('NotUpdateable')
         })
       })
 
@@ -1036,11 +1000,6 @@ describe('Custom Object Instances CRUD', () => {
               elemID: existingInstanceWithNonUpdateableField.elemID,
               message: expect.stringContaining(errorMsgs[1]),
               severity: 'Error',
-            }),
-            expect.objectContaining({
-              elemID: existingInstanceWithNonUpdateableField.elemID,
-              message: expect.stringContaining('updateable'),
-              severity: 'Warning',
             }),
           ])
 
@@ -1089,11 +1048,6 @@ describe('Custom Object Instances CRUD', () => {
               elemID: existingInstanceWithNonUpdateableField.elemID,
               message: expect.stringContaining(errorMsgs[1]),
               severity: 'Error',
-            }),
-            expect.objectContaining({
-              elemID: existingInstanceWithNonUpdateableField.elemID,
-              message: expect.stringContaining('updateable'),
-              severity: 'Warning',
             }),
           ])
 

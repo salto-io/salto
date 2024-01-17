@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { Field, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Field, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
@@ -42,7 +42,15 @@ const filter: FilterCreator = ({ config }) => ({
       return
     }
     requestTypeType.fields.requestForm = new Field(requestTypeType, 'requestForm', requestFormType)
+    requestTypeType.fields.requestForm.annotations = {
+      [CORE_ANNOTATIONS.UPDATABLE]: true,
+      [CORE_ANNOTATIONS.CREATABLE]: true,
+    }
     requestTypeType.fields.issueView = new Field(requestTypeType, 'issueView', issueViewType)
+    requestTypeType.fields.issueView.annotations = {
+      [CORE_ANNOTATIONS.UPDATABLE]: true,
+      [CORE_ANNOTATIONS.CREATABLE]: true,
+    }
 
     const layouts = _.remove(elements, e => LAYOUT_TYPES_TO_ADJUST.includes(e.elemID.typeName) && isInstanceElement(e))
     layouts.filter(isInstanceElement).forEach(layout => {

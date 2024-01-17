@@ -84,6 +84,7 @@ export type FetchParams = {
   addAlias?: boolean
   addBundles?: boolean
   addImportantValues?: boolean
+  addSuiteQLTables?: boolean
 } & LockedElementsConfig['fetch']
 
 export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
@@ -96,6 +97,7 @@ export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
   addAlias: 'addAlias',
   addBundles: 'addBundles',
   addImportantValues: 'addImportantValues',
+  addSuiteQLTables: 'addSuiteQLTables',
 }
 
 export type AdditionalSdfDeployDependencies = {
@@ -530,6 +532,7 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
     addAlias: { refType: BuiltinTypes.BOOLEAN },
     addBundles: { refType: BuiltinTypes.BOOLEAN },
     addImportantValues: { refType: BuiltinTypes.BOOLEAN },
+    addSuiteQLTables: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

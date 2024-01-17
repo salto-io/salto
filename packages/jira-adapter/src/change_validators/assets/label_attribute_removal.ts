@@ -53,7 +53,7 @@ export const deleteLabelAtttributeValidator: (
       .map(instance => ({
         elemID: instance.elemID,
         severity: 'Error' as SeverityLevel,
-        message: 'Cannot delete an objectType label attribute',
+        message: 'Cannot delete this attribute, as it is the label attribute of its Object Type.',
         detailedMessage: 'Cannot delete this attribute, as it is the label attribute of its objectType.',
       }))
   }

@@ -67,7 +67,7 @@ describe('labelAttributeValidator', () => {
     expect(changeErrors[0]).toEqual({
       elemID: attributeInstance.elemID,
       severity: 'Error',
-      message: 'Cannot delete an objectType label attribute',
+      message: 'Cannot delete this attribute, as it is the label attribute of its Object Type.',
       detailedMessage: 'Cannot delete this attribute, as it is the label attribute of its objectType.',
     })
   })

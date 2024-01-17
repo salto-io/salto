@@ -122,7 +122,7 @@ const filterCreator: FilterCreator = ({ config, fetchQuery, client }) => ({
     )
     const workspaceId = await getWorkspaceId(client)
     if (workspaceId === undefined) {
-      log.error(`Skip deployment of ${OBJECT_TYPE_LABEL_ATTRIBUTE_TYPE} types because workspaceId is undefined`)
+      log.error(`Skipped deployment of ${OBJECT_TYPE_LABEL_ATTRIBUTE_TYPE} type because its workspaceId is undefined`)
       const errors = relevantChanges.map(change => createSaltoElementError({
         message: `The following changes were not deployed, due to error with the workspaceId: ${relevantChanges.map(c => getChangeData(c).elemID.getFullName()).join(', ')}`,
         severity: 'Error',

@@ -418,18 +418,25 @@ export default class SoapClient {
 
     const [itemTypes, otherTypes] = _.partition(types, isItemType)
 
-    const typesToSearch: SoapSearchType[] = otherTypes
-      .map(type => ({ type }))
+    const typesToSearch: SoapSearchType[] = otherTypes.map(type => ({ type }))
+
     if (itemTypes.length !== 0) {
-      typesToSearch.push({ type: 'Item', subtypes: _.uniq(itemTypes.map(type => ITEM_TYPE_TO_SEARCH_STRING[type])) })
+      typesToSearch.push({
+        type: 'Item',
+        originalTypes: itemTypes,
+        subtypes: _.uniq(itemTypes.map(type => ITEM_TYPE_TO_SEARCH_STRING[type])),
+      })
     }
 
-    const responses = await Promise.all(typesToSearch.map(async ({ type, subtypes }) => {
+    const responses = await Promise.all(typesToSearch.map(async params => {
+      const { type, subtypes, originalTypes } = params
       const namespace = await this.getTypeNamespace(SoapClient.getSearchType(type))
 
       if (namespace !== undefined) {
         const response = await this.search(type, namespace, subtypes)
-        return response.excludedFromSearch ? { largeTypesError: subtypes ?? [type] } : { records: response.records }
+        return response.excludedFromSearch
+          ? { largeTypesError: originalTypes ?? [type] }
+          : { records: response.records }
       }
       log.debug(`type ${type} does not support 'search' operation. Fallback to 'getAll' request`)
       // This type of query cannot be limited, so there are no cases of largeTypesError

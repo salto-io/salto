@@ -193,7 +193,7 @@ const updateConfigFromLargeTypes = (
       ...config.fetch,
       exclude: combineQueryParams(config.fetch.exclude, typesExcludeQuery),
     }
-    return excludedTypes
+    return excludedTypes.concat(failedCustomRecords)
   }
   return []
 }

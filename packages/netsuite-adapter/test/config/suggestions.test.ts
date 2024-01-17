@@ -162,7 +162,7 @@ describe('netsuite config suggestions', () => {
       ))).toBe(true)
 
     expect(configChange?.message).toBe(formatConfigSuggestionsReasons([
-      STOP_MANAGING_ITEMS_MSG, toLargeFoldersExcludedMessage([newLargeFolderPath]), toLargeTypesExcludedMessage(['excludedTypeTest']),
+      STOP_MANAGING_ITEMS_MSG, toLargeFoldersExcludedMessage([newLargeFolderPath]), toLargeTypesExcludedMessage(['excludedTypeTest', 'excludedCustomRecord']),
     ]))
   })
 

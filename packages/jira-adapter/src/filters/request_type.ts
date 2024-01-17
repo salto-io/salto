@@ -24,7 +24,7 @@ import { FilterCreator } from '../filter'
 import { ISSUE_VIEW_TYPE, REQUEST_FORM_TYPE, REQUEST_TYPE_NAME } from '../constants'
 import { deployChanges, defaultDeployChange } from '../deployment/standard_deployment'
 import JiraClient from '../client/client'
-import { layoutConfigItem } from './layouts/layout_types'
+import { LayoutConfigItem } from './layouts/layout_types'
 import { LayoutTypeName, getLayoutResponse, isIssueLayoutResponse, LAYOUT_TYPE_NAME_TO_DETAILS } from './layouts/layout_service_operations'
 
 const { isDefined } = lowerDashValues
@@ -100,7 +100,7 @@ const deployRequestTypeLayout = async (
     return undefined
   }
   const layout = requestType.value[fieldName]
-  const items = layout.issueLayoutConfig.items.map((item: layoutConfigItem) => {
+  const items = layout.issueLayoutConfig.items.map((item: LayoutConfigItem) => {
     if (!isResolvedReferenceExpression(item.key)) {
       log.error(`Failed to deploy request type: ${requestType.elemID.getFullName()}'s ${fieldName} due to bad reference expression`)
       throw new Error(`Failed to deploy requestType ${fieldName} due to a bad item key: ${item.key}`)

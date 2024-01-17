@@ -25,7 +25,7 @@ import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../../ut
 import { JiraConfig } from '../../config/config'
 import JiraClient, { graphQLResponseType } from '../../client/client'
 import { QUERY, QUERY_JSM } from './layout_queries'
-import { ISSUE_LAYOUT_CONFIG_ITEM_SCHEME, ISSUE_LAYOUT_RESPONSE_SCHEME, issueLayoutConfig, layoutConfigItem, IssueLayoutResponse, createLayoutType, IssueLayoutConfiguration } from './layout_types'
+import { ISSUE_LAYOUT_CONFIG_ITEM_SCHEME, ISSUE_LAYOUT_RESPONSE_SCHEME, LayoutConfigItem, IssueLayoutResponse, createLayoutType, IssueLayoutConfiguration, IssueLayoutConfig } from './layout_types'
 import { ISSUE_LAYOUT_TYPE, ISSUE_VIEW_TYPE, JIRA, REQUEST_FORM_TYPE, REQUEST_TYPE_NAME } from '../../constants'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
 
@@ -69,7 +69,7 @@ export const LAYOUT_TYPE_NAME_TO_DETAILS: Record<LayoutTypeName, LayoutTypeDetai
 }
 
 export const isIssueLayoutResponse = createSchemeGuard<IssueLayoutResponse>(ISSUE_LAYOUT_RESPONSE_SCHEME)
-const isLayoutConfigItem = createSchemeGuard<layoutConfigItem>(ISSUE_LAYOUT_CONFIG_ITEM_SCHEME)
+const isLayoutConfigItem = createSchemeGuard<LayoutConfigItem>(ISSUE_LAYOUT_CONFIG_ITEM_SCHEME)
 
 export const getLayoutResponse = async ({
   variables,
@@ -100,7 +100,7 @@ export const getLayoutResponse = async ({
 
 const fromLayoutConfigRespToLayoutConfig = (
   layoutConfig: IssueLayoutConfiguration
-): issueLayoutConfig => {
+): IssueLayoutConfig => {
   const { containers } = layoutConfig.issueLayoutResult
   const fieldItemIdToMetaData = Object.fromEntries((layoutConfig.metadata?.configuration.items.nodes ?? [])
     .filter(node => !_.isEmpty(node))
@@ -114,7 +114,7 @@ const fromLayoutConfigRespToLayoutConfig = (
         key: node.fieldItemId,
         data: fieldItemIdToMetaData[node.fieldItemId],
       })))
-    .filter(isLayoutConfigItem)
+    .filter(isLayoutConfigItem) as LayoutConfigItem[]
 
   return { items }
 }

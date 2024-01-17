@@ -47,10 +47,10 @@ const enrichFieldItem = async (
 ): Promise<EnrichedFieldItem | undefined> => {
   const elemId = new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', fieldName)
   const fieldInstance = await elementSource.get(elemId)
-  // if (fieldInstance === undefined) {
-  //   log.debug(`Omitting element id ${elemId.getFullName()} since it does not exist in the account`)
-  //   return undefined
-  // } // TODO: is this needed ?
+  if (fieldInstance === undefined) {
+    log.debug(`Omitting element id ${elemId.getFullName()} since it does not exist in the account`)
+    return undefined
+  }
   return {
     id: new ReferenceExpression(elemId, fieldInstance),
     ...fieldItem,

@@ -78,11 +78,10 @@ const getFieldConfigurationItemsReferences: GetCustomReferencesFunc = async elem
   .flatMap(getFieldReferences)
   .toArray(), 'getFieldConfigurationItemsReferences')
 
-const fieldExistsInTarget = async (
+const fieldExists = async (
   fieldName: string,
   elementSource: ReadOnlyElementsSource,
 ): Promise<boolean> => {
-  // TODO: check also isReferenceExpression ?
   const elemId = new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', fieldName)
   return elementSource.has(elemId)
 }
@@ -104,7 +103,7 @@ const removeMissingFields: WeakReferencesHandler['removeWeakReferences'] = ({ el
       const fixedInstance = instance.clone()
       fixedInstance.value.fields = Object.fromEntries(await awu(Object.entries(fieldConfigurationItems))
         .filter(async ([fieldName, _field]) =>
-          fieldExistsInTarget(fieldName, elementsSource)).toArray())
+          fieldExists(fieldName, elementsSource)).toArray())
       if (Object.keys(fixedInstance.value.fields).length === Object.keys(instance.value.fields).length) {
         return undefined
       }

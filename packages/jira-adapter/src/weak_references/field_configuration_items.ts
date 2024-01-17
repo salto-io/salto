@@ -39,8 +39,8 @@ type FieldConfigurationItems = {
 
 const FIELD_CONFIGURATION_ITEM_SCHEME = Joi.object({
   description: Joi.optional(),
-  isHidden: Joi.boolean().required(),
-  isRequired: Joi.boolean().required(),
+  isHidden: Joi.boolean().optional(),
+  isRequired: Joi.boolean().optional(),
   renderer: Joi.optional(),
 })
 

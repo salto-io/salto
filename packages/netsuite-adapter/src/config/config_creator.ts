@@ -21,7 +21,7 @@ import { CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT, INACTIVE_FIELDS } from '../constant
 import { removeCustomRecordTypePrefix } from '../types'
 import { fileCabinetTypesNames } from '../types/file_cabinet_types'
 import { ClientConfig, CriteriaQuery, FETCH_PARAMS, FetchParams, FetchTypeQueryParams, InstanceLimiterFunc, NetsuiteConfig, NetsuiteQueryParameters, QueryParams } from './types'
-import { ALL_TYPES_REGEX, DATA_FILE_TYPES, DEFAULT_MAX_INSTANCES_PER_TYPE, DEFAULT_MAX_INSTANCES_VALUE, FILE_CABINET, INCLUDE_ALL, UNLIMITED_INSTANCES_VALUE } from './constants'
+import { ALL_TYPES_REGEX, DATA_FILE_TYPES, DEFAULT_MAX_INSTANCES_PER_TYPE, DEFAULT_MAX_INSTANCES_VALUE, FILE_CABINET, GROUPS_TO_DATA_FILE_TYPES, INCLUDE_ALL, UNLIMITED_INSTANCES_VALUE } from './constants'
 import { validateConfig } from './validations'
 
 const log = logger(module)
@@ -119,9 +119,11 @@ const excludeDataFileTypes = (config: NetsuiteConfig): string[] => {
   if (config.includeDataFileTypes === undefined) {
     return []
   }
-  const dataFileTypesToInclude = config.includeDataFileTypes.join('|')
+  const dataFileTypesToInclude = new Set(
+    config.includeDataFileTypes.flatMap(group => GROUPS_TO_DATA_FILE_TYPES[group] ?? [])
+  )
   const dataFileTypesToExclude = Object.values(DATA_FILE_TYPES)
-    .filter(fileType => !(new RegExp(`\\b${fileType}\\b`, 'i')).test(dataFileTypesToInclude))
+    .filter(fileType => !dataFileTypesToInclude.has(fileType))
   if (dataFileTypesToExclude.length === 0) {
     return []
   }

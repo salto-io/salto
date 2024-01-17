@@ -59,13 +59,18 @@ export const DATA_FILE_TYPES = {
   XLS: 'XLS',
   XLSX: 'XLSX',
   CSV: 'CSV',
-}
+} as const
 
-export const DATA_FILE_TYPES_GROUPS = [
+const DATA_FILE_TYPES_GROUPS = [
   { name: 'Text Documents', fileTypes: [DATA_FILE_TYPES.DOC, DATA_FILE_TYPES.DOCX] },
   { name: 'Emails', fileTypes: [DATA_FILE_TYPES.EML] },
   { name: 'Images', fileTypes: [DATA_FILE_TYPES.PNG, DATA_FILE_TYPES.GIF, DATA_FILE_TYPES.JPEG] },
   { name: 'PDFs', fileTypes: [DATA_FILE_TYPES.PDF] },
   { name: 'Presentations', fileTypes: [DATA_FILE_TYPES.PPT, DATA_FILE_TYPES.PPTX] },
   { name: 'Spreadsheets', fileTypes: [DATA_FILE_TYPES.XLS, DATA_FILE_TYPES.XLSX, DATA_FILE_TYPES.CSV] },
-].map(group => `${group.name} (${group.fileTypes.join(', ')})`)
+]
+
+export const GROUPS_TO_DATA_FILE_TYPES = Object.fromEntries(
+  DATA_FILE_TYPES_GROUPS.map(group =>
+    [`${group.name} (${group.fileTypes.join(', ')})`, group.fileTypes])
+)

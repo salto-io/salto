@@ -18,7 +18,7 @@ import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import { InstanceLimiterFunc, configType } from '../../src/config/types'
 import { instanceLimiterCreator, netsuiteConfigFromConfig, fullFetchConfig } from '../../src/config/config_creator'
-import { DATA_FILE_TYPES_GROUPS, DEFAULT_MAX_INSTANCES_VALUE, UNLIMITED_INSTANCES_VALUE } from '../../src/config/constants'
+import { GROUPS_TO_DATA_FILE_TYPES, DEFAULT_MAX_INSTANCES_VALUE, UNLIMITED_INSTANCES_VALUE } from '../../src/config/constants'
 
 describe('netsuite config creator', () => {
   let config: InstanceElement
@@ -180,7 +180,7 @@ describe('netsuite config creator', () => {
       )
     })
     it('should return same fetch.exclude.fileCabinet when has all data file types', () => {
-      config.value.includeDataFileTypes = DATA_FILE_TYPES_GROUPS
+      config.value.includeDataFileTypes = Object.keys(GROUPS_TO_DATA_FILE_TYPES)
       expect(netsuiteConfigFromConfig(config).fetch.exclude.fileCabinet).toEqual(
         config.value.fetch.exclude.fileCabinet
       )
@@ -194,11 +194,11 @@ describe('netsuite config creator', () => {
       ])
     })
     it('should return all but given data file types in fetch.exclude.fileCabinet', () => {
-      config.value.includeDataFileTypes = ['Text Documents (DOC, DOCX)', 'pdf']
+      config.value.includeDataFileTypes = ['Text Documents (DOC, DOCX)']
       expect(netsuiteConfigFromConfig(config).fetch.exclude.fileCabinet).toEqual([
         ...config.value.fetch.exclude.fileCabinet,
-        '.*\\.(eml|png|gif|jpeg|ppt|pptx|xls|xlsx|csv)',
-        '.*\\.(EML|PNG|GIF|JPEG|PPT|PPTX|XLS|XLSX|CSV)',
+        '.*\\.(eml|png|gif|jpeg|pdf|ppt|pptx|xls|xlsx|csv)',
+        '.*\\.(EML|PNG|GIF|JPEG|PDF|PPT|PPTX|XLS|XLSX|CSV)',
       ])
     })
   })

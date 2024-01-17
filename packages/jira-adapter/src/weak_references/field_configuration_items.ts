@@ -13,31 +13,31 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-import { GetCustomReferencesFunc, InstanceElement, isInstanceElement, isReferenceExpression, ReferenceInfo } from '@salto-io/adapter-api'
+import { ElemID, GetCustomReferencesFunc, InstanceElement, isInstanceElement, ReadOnlyElementsSource, ReferenceInfo } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
-import { FIELD_CONFIGURATION_TYPE_NAME } from '../constants'
+import { FIELD_CONFIGURATION_TYPE_NAME, JIRA } from '../constants'
 import { WeakReferencesHandler } from './weak_references_handler'
+import { FIELD_TYPE_NAME } from '../filters/fields/constants'
 
 const { awu } = collections.asynciterable
 
 const log = logger(module)
 
+export type FieldItem = {
+  description: string
+  isHidden: boolean
+  isRequired: boolean
+  render: string
+}
+
 type FieldConfigurationItems = {
-  [key: string]: {
-    id: unknown
-    description: string
-    isHidden: boolean
-    isRequired: boolean
-    render: string
-  }
+  [key: string]: FieldItem
 }
 
 const FIELD_CONFIGURATION_ITEM_SCHEME = Joi.object({
-  id: Joi.required(),
   description: Joi.optional(),
   isHidden: Joi.boolean().required(),
   isRequired: Joi.boolean().required(),
@@ -46,7 +46,7 @@ const FIELD_CONFIGURATION_ITEM_SCHEME = Joi.object({
 
 const FIELD_CONFIGURATION_ITEMS_SCHEME = Joi.object().pattern(/.*/, FIELD_CONFIGURATION_ITEM_SCHEME)
 
-const isFieldConfigurationItems = createSchemeGuard<FieldConfigurationItems>(FIELD_CONFIGURATION_ITEMS_SCHEME, 'Received an invalid field configuration items value')
+export const isFieldConfigurationItems = createSchemeGuard<FieldConfigurationItems>(FIELD_CONFIGURATION_ITEMS_SCHEME, 'Received an invalid field configuration items value')
 
 const getFieldReferences = async (
   instance: InstanceElement,
@@ -57,12 +57,14 @@ const getFieldReferences = async (
     return []
   }
   return awu(Object.entries(fieldConfigurationItems))
-    .map(async ([id, config]) => (
-      isReferenceExpression(config.id)
-        ? { source: instance.elemID.createNestedID('fields', id, 'id'),
-          target: config.id.elemID,
-          type: 'weak' as const }
-        : undefined))
+    .map(([fieldName, _field]) => {
+      const elemId = new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', fieldName)
+      return {
+        source: instance.elemID.createNestedID('fields', fieldName, 'id'),
+        target: elemId,
+        type: 'weak' as const,
+      }
+    })
     .filter(values.isDefined)
     .toArray()
 }
@@ -75,6 +77,15 @@ const getFieldConfigurationItemsReferences: GetCustomReferencesFunc = async elem
   .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
   .flatMap(getFieldReferences)
   .toArray(), 'getFieldConfigurationItemsReferences')
+
+const fieldExistsInTarget = async (
+  fieldName: string,
+  elementSource: ReadOnlyElementsSource,
+): Promise<boolean> => {
+  // TODO: check also isReferenceExpression ?
+  const elemId = new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', fieldName)
+  return elementSource.has(elemId)
+}
 
 /**
  * Remove invalid fields (not references or missing references) from field configuration.
@@ -92,11 +103,8 @@ const removeMissingFields: WeakReferencesHandler['removeWeakReferences'] = ({ el
 
       const fixedInstance = instance.clone()
       fixedInstance.value.fields = Object.fromEntries(await awu(Object.entries(fieldConfigurationItems))
-        .filter(async ([_id, field]) =>
-          (isReferenceExpression(field.id)
-            // eslint-disable-next-line no-return-await
-            && await elementsSource.has(field.id.elemID)
-          )).toArray())
+        .filter(async ([fieldName, _field]) =>
+          fieldExistsInTarget(fieldName, elementsSource)).toArray())
       if (Object.keys(fixedInstance.value.fields).length === Object.keys(instance.value.fields).length) {
         return undefined
       }

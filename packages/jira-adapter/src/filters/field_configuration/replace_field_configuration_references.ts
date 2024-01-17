@@ -13,37 +13,86 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
 import _ from 'lodash'
-import { CORE_ANNOTATIONS, Field, getChangeData, InstanceElement, isInstanceElement, MapType, Values } from '@salto-io/adapter-api'
+import {
+  CORE_ANNOTATIONS,
+  ElemID,
+  Field,
+  getChangeData,
+  InstanceElement,
+  isInstanceElement,
+  MapType,
+  Values,
+  ReadOnlyElementsSource, ReferenceExpression,
+} from '@salto-io/adapter-api'
 import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { collections, values } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
-import { FIELD_CONFIGURATION_TYPE_NAME } from '../../constants'
+import { FIELD_CONFIGURATION_TYPE_NAME, JIRA } from '../../constants'
+import { FIELD_TYPE_NAME } from '../fields/constants'
+import { FieldItem, isFieldConfigurationItems } from '../../weak_references/field_configuration_items'
+
+const log = logger(module)
+
+const { awu } = collections.asynciterable
+
+type EnrichedFieldItem = FieldItem & {id: ReferenceExpression}
+
+const enrichFieldItem = async (
+  fieldName: string,
+  fieldItem: FieldItem,
+  elementSource: ReadOnlyElementsSource,
+): Promise<EnrichedFieldItem | undefined> => {
+  const elemId = new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', fieldName)
+  const fieldInstance = await elementSource.get(elemId)
+  // if (fieldInstance === undefined) {
+  //   log.debug(`Omitting element id ${elemId.getFullName()} since it does not exist in the account`)
+  //   return undefined
+  // } // TODO: is this needed ?
+  return {
+    id: new ReferenceExpression(elemId, fieldInstance),
+    ...fieldItem,
+  }
+}
 
 const replaceToMap = (instance: InstanceElement): void => {
-  instance.value.fields = _.keyBy(
-    instance.value.fields.filter((field: Values) => isResolvedReferenceExpression(field.id)),
-    field => field.id.elemID.name,
-  )
+  instance.value.fields = Object.fromEntries(instance.value.fields
+    .filter((field: Values) => isResolvedReferenceExpression(field.id))
+    .map((field: Values) => [
+      field.id.elemID.name,
+      _.omit(field, 'id'),
+    ]))
 }
 
-const replaceFromMap = (
+const replaceFromMap = async (
   instance: InstanceElement,
-): void => {
-  instance.value.fields = Object.values(instance.value.fields)
+  elementSource: ReadOnlyElementsSource,
+): Promise<void> => {
+  const fieldConfigurationItems = instance.value.fields
+  if (fieldConfigurationItems === undefined || !isFieldConfigurationItems(fieldConfigurationItems)) {
+    log.warn(`fields value is corrupted in instance ${instance.elemID.getFullName()}, hence not calculating fields weak references`)
+    return
+  }
+  instance.value.fields = await awu(Object.entries(fieldConfigurationItems))
+    .map(async ([fieldName, fieldItem]: [string, FieldItem]) => enrichFieldItem(fieldName, fieldItem, elementSource))
+    .filter(values.isDefined)
+    .toArray()
 }
 
-const filter: FilterCreator = ({ config }) => ({
+const filter: FilterCreator = ({ config, elementsSource }) => ({
   name: 'replaceFieldConfigurationReferences',
   onFetch: async elements => {
     if (config.fetch.splitFieldConfiguration) {
       return
     }
+
     const fieldConfigType = findObject(elements, FIELD_CONFIGURATION_TYPE_NAME)
     if (fieldConfigType === undefined) {
       return
     }
+
     fieldConfigType.fields.fields = new Field(
       fieldConfigType,
       'fields',
@@ -53,29 +102,32 @@ const filter: FilterCreator = ({ config }) => ({
         [CORE_ANNOTATIONS.UPDATABLE]: true,
       }
     )
+
     elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
       .filter(instance => Array.isArray(instance.value.fields))
       .forEach(replaceToMap)
   },
+
   preDeploy: async changes => {
     if (config.fetch.splitFieldConfiguration) {
       return
     }
 
-    changes
+    await awu(changes)
       .map(getChangeData)
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
       .filter(instance => instance.value.fields !== undefined)
-      .forEach(replaceFromMap)
+      .forEach(async instance => replaceFromMap(instance, elementsSource))
   },
 
   onDeploy: async changes => {
     if (config.fetch.splitFieldConfiguration) {
       return
     }
+
     changes
       .map(getChangeData)
       .filter(isInstanceElement)
@@ -84,4 +136,5 @@ const filter: FilterCreator = ({ config }) => ({
       .forEach(replaceToMap)
   },
 })
+
 export default filter

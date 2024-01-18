@@ -14,14 +14,47 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, Field, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Field, InstanceElement, Values, getChangeData, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { ISSUE_VIEW_TYPE, REQUEST_FORM_TYPE, REQUEST_TYPE_NAME } from '../../constants'
+import { IssueLayoutConfig, LayoutConfigItem, RequestTypeWithIssueLayoutConfigInstance } from './layout_types'
 
 const log = logger(module)
 const LAYOUT_TYPES_TO_ADJUST = [REQUEST_FORM_TYPE, ISSUE_VIEW_TYPE]
+
+const convertPropertiesToList = (item: LayoutConfigItem): void => {
+  if (item.data?.properties != null) {
+    item.data.properties = Object.entries(item.data.properties)
+      .map(([key, value]) => ({ key, value }))
+  }
+}
+
+const convertPropertiesToMap = (item: LayoutConfigItem): void => {
+  if (item.data?.properties != null) {
+    item.data.properties = Object.fromEntries(
+      item.data.properties.map(({ key, value }: Values) => [key, value])
+    )
+  }
+}
+
+const convertProperties = (
+  issueLayoutConfig: IssueLayoutConfig,
+  convertFunc: (item: LayoutConfigItem) => void
+): void => {
+  issueLayoutConfig.items.forEach((item: LayoutConfigItem) => {
+    convertFunc(item)
+  })
+}
+
+const isRequestTypeWithIssueLayoutConfigInstance = (
+  instance: InstanceElement
+): instance is RequestTypeWithIssueLayoutConfigInstance => (
+  instance.elemID.typeName === REQUEST_TYPE_NAME
+  && instance.value.requestForm?.issueLayoutConfig?.items !== undefined
+  && _.isArray(instance.value.requestForm.issueLayoutConfig.items)
+)
 
 /*
 * This filter is responsible for adding the requestForm and issueView fields to the requestType
@@ -62,12 +95,36 @@ const filter: FilterCreator = ({ config }) => ({
       delete layout.value.extraDefinerId
       delete layout.value.projectId
       if (layout.elemID.typeName === REQUEST_FORM_TYPE) {
+        if (layout.value.issueLayoutConfig?.items !== undefined
+          && _.isArray(layout.value.issueLayoutConfig.items)) {
+          convertProperties(layout.value.issueLayoutConfig, convertPropertiesToList)
+        }
         requestType.value.requestForm = layout.value
       } else {
         requestType.value.issueView = layout.value
       }
       requestType.value.avatarId = requestType.value.icon.id
     })
+  },
+  preDeploy: async changes => {
+    changes
+      .filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeData)
+      .filter(isRequestTypeWithIssueLayoutConfigInstance)
+      .forEach(instance => {
+        convertProperties(instance.value.requestForm.issueLayoutConfig, convertPropertiesToMap)
+      })
+  },
+  onDeploy: async changes => {
+    changes
+      .filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeData)
+      .filter(isRequestTypeWithIssueLayoutConfigInstance)
+      .forEach(instance => {
+        convertProperties(instance.value.requestForm.issueLayoutConfig, convertPropertiesToList)
+      })
   },
 })
 export default filter

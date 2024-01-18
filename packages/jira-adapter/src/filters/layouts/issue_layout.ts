@@ -21,7 +21,7 @@ import { getParent, isResolvedReferenceExpression } from '@salto-io/adapter-util
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { ISSUE_LAYOUT_TYPE, PROJECT_TYPE } from '../../constants'
 import { FilterCreator } from '../../filter'
-import { createLayoutType, layoutConfigItem } from './layout_types'
+import { createLayoutType, LayoutConfigItem } from './layout_types'
 import { addAnnotationRecursively, setTypeDeploymentAnnotations } from '../../utils'
 import { getLayout, getLayoutResponse, isIssueLayoutResponse } from './layout_service_operations'
 import { deployChanges } from '../../deployment/standard_deployment'
@@ -90,7 +90,7 @@ const deployLayoutChange = async (
     // TODO SALTO-5205 - suppress removals of IssueLayout when associated Screen is deleted from IssueTypeScreenScheme
     throw new Error('Could not remove IssueLayout')
   }
-  const items = layout.value.issueLayoutConfig?.items.map((item: layoutConfigItem) => {
+  const items = layout.value.issueLayoutConfig?.items.map((item: LayoutConfigItem) => {
     if (isResolvedReferenceExpression(item.key)) {
       const key = item.key.value.value.id
       return {

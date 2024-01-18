@@ -15,7 +15,7 @@
 */
 
 import { logger } from '@salto-io/logging'
-import { ElemIdGetter, InstanceElement, ObjectType, Element, isInstanceElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ElemIdGetter, InstanceElement, ObjectType, Element, isInstanceElement, CORE_ANNOTATIONS, Value } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { createSchemeGuard, getParent, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { elements as adapterElements, config as configUtils } from '@salto-io/adapter-components'
@@ -25,7 +25,7 @@ import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../../ut
 import { JiraConfig } from '../../config/config'
 import JiraClient, { graphQLResponseType } from '../../client/client'
 import { QUERY, QUERY_JSM } from './layout_queries'
-import { ISSUE_LAYOUT_CONFIG_ITEM_SCHEME, ISSUE_LAYOUT_RESPONSE_SCHEME, issueLayoutConfig, layoutConfigItem, IssueLayoutResponse, createLayoutType, IssueLayoutConfiguration } from './layout_types'
+import { ISSUE_LAYOUT_CONFIG_ITEM_SCHEME, ISSUE_LAYOUT_RESPONSE_SCHEME, LayoutConfigItem, IssueLayoutResponse, createLayoutType, IssueLayoutConfiguration, IssueLayoutConfig } from './layout_types'
 import { ISSUE_LAYOUT_TYPE, ISSUE_VIEW_TYPE, JIRA, REQUEST_FORM_TYPE, REQUEST_TYPE_NAME } from '../../constants'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
 
@@ -69,7 +69,7 @@ export const LAYOUT_TYPE_NAME_TO_DETAILS: Record<LayoutTypeName, LayoutTypeDetai
 }
 
 export const isIssueLayoutResponse = createSchemeGuard<IssueLayoutResponse>(ISSUE_LAYOUT_RESPONSE_SCHEME)
-const isLayoutConfigItem = createSchemeGuard<layoutConfigItem>(ISSUE_LAYOUT_CONFIG_ITEM_SCHEME)
+const isLayoutConfigItem = createSchemeGuard<LayoutConfigItem>(ISSUE_LAYOUT_CONFIG_ITEM_SCHEME)
 
 export const getLayoutResponse = async ({
   variables,
@@ -100,12 +100,13 @@ export const getLayoutResponse = async ({
 
 const fromLayoutConfigRespToLayoutConfig = (
   layoutConfig: IssueLayoutConfiguration
-): issueLayoutConfig => {
+): IssueLayoutConfig => {
   const { containers } = layoutConfig.issueLayoutResult
-  const fieldItemIdToMetaData = Object.fromEntries((layoutConfig.metadata?.configuration.items.nodes ?? [])
-    .filter(node => !_.isEmpty(node))
-    .map(node => [node.fieldItemId, _.omit(node, 'fieldItemId')]))
-
+  const fieldItemIdToMetaData: Record<string, Value> = Object.fromEntries(
+    (layoutConfig.metadata?.configuration.items.nodes ?? [])
+      .filter(node => !_.isEmpty(node))
+      .map(node => [node.fieldItemId, _.omit(node, 'fieldItemId')])
+  )
   const items = containers
     .flatMap(container => container.items.nodes
       .map(node => ({

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { filterUtils, elements as adapterElements } from '@salto-io/adapter-components'
-import { InstanceElement, ReferenceExpression, Element, ObjectType, ElemID, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { InstanceElement, ReferenceExpression, Element, ObjectType, ElemID, CORE_ANNOTATIONS, Value, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { getDefaultConfig } from '../../../src/config/config'
 import requestTypelayoutsToValuesFilter from '../../../src/filters/layouts/request_types_layouts_to_values'
@@ -22,7 +22,7 @@ import { createEmptyType, getFilterParams } from '../../utils'
 import { ISSUE_VIEW_TYPE, JIRA, PROJECT_TYPE, REQUEST_FORM_TYPE, REQUEST_TYPE_NAME } from '../../../src/constants'
 
 describe('requestTypelayoutsToValuesFilter', () => {
-  type FilterType = filterUtils.FilterWith<'onFetch'>
+  type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let filter: FilterType
   let elements: Element[]
   let projectInstance: InstanceElement
@@ -31,6 +31,7 @@ describe('requestTypelayoutsToValuesFilter', () => {
   let fieldInstance2: InstanceElement
   let requestFormInstance: InstanceElement
   let issueViewInstance: InstanceElement
+  let requestFormValue: Value
 
   describe('on fetch', () => {
     let requestTypeType: ObjectType
@@ -100,6 +101,12 @@ describe('requestTypelayoutsToValuesFilter', () => {
                 type: 'FIELD',
                 sectionType: 'PRIMARY',
                 key: new ReferenceExpression(fieldInstance1.elemID, fieldInstance1),
+                data: {
+                  properties: {
+                    'jsd.field.displayName': 'Quack',
+                    'jsd.field.helpText': 'Quack Quack',
+                  },
+                },
               },
               {
                 type: 'FIELD',
@@ -178,6 +185,142 @@ describe('requestTypelayoutsToValuesFilter', () => {
         [CORE_ANNOTATIONS.UPDATABLE]: true,
         [CORE_ANNOTATIONS.CREATABLE]: true,
       })
+    })
+    describe('requestForm properties', () => {
+      it('should convert requestForm properties to a list', async () => {
+        await filter.onFetch(elements)
+        const requestType = elements.find(e => e.elemID.isEqual(requestTypeInstance.elemID)) as InstanceElement
+        expect(requestType.value.requestForm.issueLayoutConfig.items[0].data.properties).toEqual([
+          {
+            key: 'jsd.field.displayName',
+            value: 'Quack',
+          },
+          {
+            key: 'jsd.field.helpText',
+            value: 'Quack Quack',
+          },
+        ])
+      })
+      it('should do nothing when requestForm data or properties are undefined', async () => {
+        requestFormInstance.value.issueLayoutConfig.items[0].data.properties = undefined
+        await filter.onFetch(elements)
+        const requestType = elements.find(e => e.elemID.isEqual(requestTypeInstance.elemID)) as InstanceElement
+        expect(requestType.value.requestForm.issueLayoutConfig.items[1].data).toBeUndefined()
+        expect(requestType.value.requestForm.issueLayoutConfig.items[0].data.properties).toBeUndefined()
+      })
+      it('should do nothing when issueLayoutConfig is undefined', async () => {
+        requestFormInstance.value.issueLayoutConfig = undefined
+        await filter.onFetch(elements)
+        const requestType = elements.find(e => e.elemID.isEqual(requestTypeInstance.elemID)) as InstanceElement
+        expect(requestType.value.requestForm.issueLayoutConfig).toBeUndefined()
+      })
+    })
+  })
+
+  describe('preDeploy', () => {
+    beforeEach(async () => {
+      requestFormValue = {
+        issueLayoutConfig: {
+          items: [{
+            type: 'FIELD',
+            data: {
+              properties: [
+                {
+                  key: 'jsd.field.displayName',
+                  value: 'Quack',
+                },
+                {
+                  key: 'jsd.field.helpText',
+                  value: 'Quack Quack',
+                },
+              ],
+            },
+          },
+          {
+            type: 'FIELD',
+          },
+          ],
+        },
+      }
+      requestTypeInstance = new InstanceElement(
+        'requestType',
+        createEmptyType(REQUEST_TYPE_NAME),
+        {
+          requestForm: requestFormValue,
+        },
+        [JIRA, adapterElements.RECORDS_PATH, REQUEST_TYPE_NAME, 'requestTypeTest']
+      )
+    })
+    it('should convert requestForm properties to a map', async () => {
+      await filter.preDeploy([toChange({ after: requestTypeInstance })])
+      expect(requestTypeInstance.value.requestForm.issueLayoutConfig.items[0].data.properties).toEqual({
+        'jsd.field.displayName': 'Quack',
+        'jsd.field.helpText': 'Quack Quack',
+      })
+    })
+    it('should do nothing when requestForm data or properties are undefined', async () => {
+      requestFormValue.issueLayoutConfig.items[0].data.properties = undefined
+      await filter.preDeploy([toChange({ after: requestTypeInstance })])
+      expect(requestTypeInstance.value.requestForm.issueLayoutConfig.items[0].data.properties).toBeUndefined()
+      expect(requestTypeInstance.value.requestForm.issueLayoutConfig.items[1].data).toBeUndefined()
+    })
+    it('should do nothing when issueLayoutConfig is undefined', async () => {
+      requestFormValue.issueLayoutConfig = undefined
+      await filter.preDeploy([toChange({ after: requestTypeInstance })])
+      expect(requestTypeInstance.value.requestForm.issueLayoutConfig).toBeUndefined()
+    })
+  })
+  describe('onDeploy', () => {
+    beforeEach(async () => {
+      requestFormValue = {
+        issueLayoutConfig: {
+          items: [{
+            type: 'FIELD',
+            data: {
+              properties: {
+                'jsd.field.displayName': 'Quack',
+                'jsd.field.helpText': 'Quack Quack',
+              },
+            },
+          },
+          {
+            type: 'FIELD',
+          },
+          ],
+        },
+      }
+      requestTypeInstance = new InstanceElement(
+        'requestType',
+        createEmptyType(REQUEST_TYPE_NAME),
+        {
+          requestForm: requestFormValue,
+        },
+        [JIRA, adapterElements.RECORDS_PATH, REQUEST_TYPE_NAME, 'requestTypeTest']
+      )
+    })
+    it('should convert requestForm properties to a list', async () => {
+      await filter.onDeploy([toChange({ after: requestTypeInstance })])
+      expect(requestTypeInstance.value.requestForm.issueLayoutConfig.items[0].data.properties).toEqual([
+        {
+          key: 'jsd.field.displayName',
+          value: 'Quack',
+        },
+        {
+          key: 'jsd.field.helpText',
+          value: 'Quack Quack',
+        },
+      ])
+    })
+    it('should do nothing when requestForm data or properties are undefined', async () => {
+      requestFormValue.issueLayoutConfig.items[0].data.properties = undefined
+      await filter.onDeploy([toChange({ after: requestTypeInstance })])
+      expect(requestTypeInstance.value.requestForm.issueLayoutConfig.items[0].data.properties).toBeUndefined()
+      expect(requestTypeInstance.value.requestForm.issueLayoutConfig.items[1].data).toBeUndefined()
+    })
+    it('should do nothing when issueLayoutConfig is undefined', async () => {
+      requestFormValue.issueLayoutConfig = undefined
+      await filter.onDeploy([toChange({ after: requestTypeInstance })])
+      expect(requestTypeInstance.value.requestForm.issueLayoutConfig).toBeUndefined()
     })
   })
 })

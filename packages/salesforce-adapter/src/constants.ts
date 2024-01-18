@@ -529,6 +529,32 @@ export const METADATA_CHANGE_GROUP = 'Salesforce Metadata'
 
 export const UNLIMITED_INSTANCES_VALUE = -1
 
+
+// See: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_custom_object__c.htm
+export const SYSTEM_FIELDS = [
+  'ConnectionReceivedId',
+  'ConnectionSentId',
+  'CreatedById',
+  'CreatedDate',
+  'Id',
+  'IsDeleted',
+  'LastActivityDate',
+  'LastModifiedDate',
+  'LastModifiedById',
+  'LastReferencedDate',
+  'LastViewedDate',
+  'Name',
+  'RecordTypeId',
+  'SystemModstamp',
+  OWNER_ID,
+  'SetupOwnerId',
+]
+
+export const UNSUPPORTED_SYSTEM_FIELDS = [
+  'LastReferencedDate',
+  'LastViewedDate',
+]
+
 // Errors
 export const SOCKET_TIMEOUT = 'ESOCKETTIMEDOUT'
 export const INVALID_GRANT = 'invalid_grant'

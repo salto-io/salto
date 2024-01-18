@@ -18,6 +18,8 @@ import { regex, strings } from '@salto-io/lowerdash'
 import { ChangeDataType, ElemID, ProgressReporter, SaltoError } from '@salto-io/adapter-api'
 import { FailedFiles, FailedTypes } from '../client/types'
 import { TYPES_TO_INTERNAL_ID } from '../data_elements/types'
+import { CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT } from '../constants'
+import { addCustomRecordTypePrefix } from '../types'
 import { CriteriaQuery, FetchTypeQueryParams, IdsQuery, NetsuiteQueryParameters, ObjectID, QueryParams } from './types'
 import { ALL_TYPES_REGEX } from './constants'
 
@@ -149,9 +151,17 @@ export const buildNetsuiteQuery = (
   } = buildTypesQuery(customRecords)
 
   return {
-    isTypeMatch,
+    isTypeMatch: typeName => isTypeMatch(typeName)
+      // some custom record types are fetched through their custom segment (customrecord_cseg*)
+      || (typeName === CUSTOM_SEGMENT && isTypeMatch(CUSTOM_RECORD_TYPE)),
     areAllObjectsMatch,
-    isObjectMatch,
+    isObjectMatch: obj => isObjectMatch(obj)
+      // in order to fetch a customrecord_cseg* custom record type
+      // we need to fetch its cseg* custom segment
+      || (obj.type === CUSTOM_SEGMENT && isObjectMatch({
+        type: CUSTOM_RECORD_TYPE,
+        instanceId: addCustomRecordTypePrefix(obj.instanceId),
+      })),
     isFileMatch,
     isParentFolderMatch,
     areSomeFilesMatch,

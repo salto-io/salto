@@ -13,11 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { guideThemeUpdateMetadataValidator } from '../../src/change_validators/guide_theme_update_metadata'
 import { GUIDE_THEME_TYPE_NAME, ZENDESK } from '../../src/constants'
 
 describe('guideThemeUpdateMetadataValidator', () => {
+  const brandType = new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_THEME_TYPE_NAME) })
+  const brandInstance = new InstanceElement(
+    'brandInstance',
+    brandType,
+    {}
+  )
   const guideThemeType = new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_THEME_TYPE_NAME) })
   const guideThemeInstance = new InstanceElement(
     'guideThemeInstance',
@@ -25,6 +31,7 @@ describe('guideThemeUpdateMetadataValidator', () => {
     {
       name: 'guideThemeInstance',
       live: true,
+      brand_id: new ReferenceExpression(brandInstance.elemID, brandInstance),
     }
   )
   it('returns an error when updating theme metadata', async () => {
@@ -42,9 +49,54 @@ describe('guideThemeUpdateMetadataValidator', () => {
     )
   })
 
-  it('returns an error when updating theme brand', async () => {
+  it('returns an error when updating theme brand both are references', async () => {
+    const brandInstance2 = new InstanceElement(
+      'brandInstance2',
+      brandType,
+      {}
+    )
     const after = guideThemeInstance.clone()
-    after.value.brand_id = '911'
+    after.value.brand_id = new ReferenceExpression(brandInstance2.elemID, brandInstance2)
+    const changeErrors = await guideThemeUpdateMetadataValidator([
+      toChange({ before: guideThemeInstance.clone(), after }),
+    ])
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0].elemID).toEqual(guideThemeInstance.elemID)
+    expect(changeErrors[0].message).toEqual('Changing the brand on a theme is not supported')
+    expect(changeErrors[0].severity).toEqual('Error')
+    expect(changeErrors[0].detailedMessage).toEqual('Changing the brand on a theme is not supported')
+  })
+  it('should not return an error when updating theme brand both are references', async () => {
+    const changeErrors = await guideThemeUpdateMetadataValidator([
+      toChange({ before: guideThemeInstance, after: guideThemeInstance }),
+    ])
+    expect(changeErrors).toHaveLength(0)
+  })
+  it('returns an error when updating theme brand both are numbers', async () => {
+    const before = guideThemeInstance.clone()
+    const after = guideThemeInstance.clone()
+    before.value.brand_id = 1
+    after.value.brand_id = 2
+    const changeErrors = await guideThemeUpdateMetadataValidator([
+      toChange({ before, after }),
+    ])
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0].elemID).toEqual(guideThemeInstance.elemID)
+    expect(changeErrors[0].message).toEqual('Changing the brand on a theme is not supported')
+    expect(changeErrors[0].severity).toEqual('Error')
+    expect(changeErrors[0].detailedMessage).toEqual('Changing the brand on a theme is not supported')
+  })
+  it('should not return an error when updating theme brand both are numbers', async () => {
+    const before = guideThemeInstance.clone()
+    before.value.brand_id = 1
+    const changeErrors = await guideThemeUpdateMetadataValidator([
+      toChange({ before, after: before }),
+    ])
+    expect(changeErrors).toHaveLength(0)
+  })
+  it('returns an error when updating theme brand and are both not the same type', async () => {
+    const after = guideThemeInstance.clone()
+    delete after.value.brand_id
     const changeErrors = await guideThemeUpdateMetadataValidator([
       toChange({ before: guideThemeInstance.clone(), after }),
     ])

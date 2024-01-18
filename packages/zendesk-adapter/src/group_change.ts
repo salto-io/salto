@@ -71,9 +71,16 @@ const sectionChangeGroupId: deployment.ChangeIdFunction = async change =>
     ? getChangeData(change).elemID.getFullName()
     : undefined)
 
+// // themes and theme_settings need to be in the same group
+// const themeChangeGroupId: deployment.ChangeIdFunction = async change =>
+//   (([GUIDE_THEME_TYPE_NAME, THEME_SETTINGS_TYPE_NAME].includes(getChangeData(change).elemID.typeName))
+//     ? GUIDE_THEME_TYPE_NAME
+//     : undefined)
+
 
 export const getChangeGroupIds = deployment.getChangeGroupIdsFunc([
   recurseIntoInstanceChangeToGroupId,
   sectionChangeGroupId,
+  // themeChangeGroupId,
   typeNameChangeGroupId,
 ])

@@ -22,7 +22,7 @@ import { isPendingJobResponse, PendingJob, UploadJobData } from '../types'
 const log = logger(module)
 
 export const createThemeImportJob = async (
-  brandId: string, client: ZendeskClient
+  brandId: number, client: ZendeskClient
 ): Promise<{ job: PendingJob<UploadJobData> | undefined; errors: string[] }> => {
   log.trace('Creating theme import job for brand %s', brandId)
 
@@ -32,7 +32,7 @@ export const createThemeImportJob = async (
       data: {
         job: {
           attributes: {
-            brand_id: brandId,
+            brand_id: brandId.toString(),
             format: 'zip',
           },
         },

@@ -51,7 +51,7 @@ describe('create', () => {
       })
 
       it('returns the created themeId', async () => {
-        expect(await create({ staticFiles, brandId: '11' }, client)).toEqual({ themeId: 'abc', errors: [] })
+        expect(await create({ staticFiles, brandId: 11 }, client)).toEqual({ themeId: 'abc', errors: [] })
         expect(mockCreateThemeImportJob).toHaveBeenCalledTimes(1)
         expect(mockCreateAndUploadThemePackage).toHaveBeenCalledTimes(1)
         expect(mockPollJobStatus).toHaveBeenCalledTimes(1)
@@ -68,7 +68,7 @@ describe('create', () => {
       })
 
       it('returns the aggregated errors', async () => {
-        expect(await create({ staticFiles, brandId: '11' }, client)).toEqual({ themeId: 'abc', errors: ['error1', 'error2', 'error3'] })
+        expect(await create({ staticFiles, brandId: 11 }, client)).toEqual({ themeId: 'abc', errors: ['error1', 'error2', 'error3'] })
       })
     })
   })
@@ -76,7 +76,7 @@ describe('create', () => {
   describe('flow failure', () => {
     it('returns undefined when createThemeImportJob fails', async () => {
       mockCreateThemeImportJob.mockResolvedValue({ job: undefined, errors: ['error1'] })
-      expect(await create({ staticFiles, brandId: '11' }, client))
+      expect(await create({ staticFiles, brandId: 11 }, client))
         .toEqual({ content: undefined, errors: ['error1'] })
     })
   })

@@ -195,6 +195,10 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
         && GUIDE_THEME_TYPE_NAME === getChangeData(change).elemID.typeName,
     )
 
+    if (_.isEmpty(themeChanges)) {
+      return { deployResult: { appliedChanges: [], errors: [] }, leftoverChanges }
+    }
+
     // to make sure that if there are multiple settings there is only one live per brand
     const liveThemesByBrand = Object.fromEntries(
       (await getInstancesFromElementSource(elementsSource, [THEME_SETTINGS_TYPE_NAME]))

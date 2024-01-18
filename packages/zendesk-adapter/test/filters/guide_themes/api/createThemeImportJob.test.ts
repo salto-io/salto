@@ -31,7 +31,7 @@ describe('createThemeImportJob', () => {
 
   it('should call the correct endpoint', async () => {
     mockPost.mockResolvedValue({ status: 202 })
-    await createThemeImportJob('11', client)
+    await createThemeImportJob(11, client)
     expect(mockPost).toHaveBeenCalledWith({
       url: '/api/v2/guide/theming/jobs/themes/imports',
       data: {
@@ -49,24 +49,24 @@ describe('createThemeImportJob', () => {
   describe('successful response', () => {
     it('returns a job on a correct response structure', async () => {
       mockPost.mockResolvedValue({ status: 202, data: downloadJobResponse('pending') })
-      expect(await createThemeImportJob('11', client)).toEqual({ job: downloadJobResponse('pending').job, errors: [] })
+      expect(await createThemeImportJob(11, client)).toEqual({ job: downloadJobResponse('pending').job, errors: [] })
     })
 
     it('returns undefined job on non-pending job', async () => {
       mockPost.mockResolvedValue({ status: 202, data: downloadJobResponse('completed') })
-      expect(await createThemeImportJob('11', client)).toEqual({ job: undefined, errors: [] })
+      expect(await createThemeImportJob(11, client)).toEqual({ job: undefined, errors: [] })
     })
 
     it('returns undefined job on wrong response structure', async () => {
       mockPost.mockResolvedValue({ status: 202, data: { nope: 'yup' } })
-      expect(await createThemeImportJob('11', client)).toEqual({ job: undefined, errors: [] })
+      expect(await createThemeImportJob(11, client)).toEqual({ job: undefined, errors: [] })
     })
   })
 
   describe('response failure', () => {
     it('returns error response on wrong status code', async () => {
       mockPost.mockResolvedValue({ status: 400, data: downloadJobResponse('pending') })
-      expect(await createThemeImportJob('11', client)).toEqual({ job: undefined, errors: [safeJsonStringify(downloadJobResponse('pending'))] })
+      expect(await createThemeImportJob(11, client)).toEqual({ job: undefined, errors: [safeJsonStringify(downloadJobResponse('pending'))] })
     })
   })
 })

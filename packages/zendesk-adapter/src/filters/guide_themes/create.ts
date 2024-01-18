@@ -22,7 +22,7 @@ import { createAndUploadThemePackage } from './utils'
 const log = logger(module)
 
 type UploadConfig = {
-  brandId: string
+  brandId: number
   staticFiles: { filename: string; content: Buffer }[]
 }
 

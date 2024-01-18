@@ -17,9 +17,10 @@ import {
   ChangeValidator,
   getChangeData,
   isInstanceChange,
-  isModificationChange,
+  isModificationChange, isReferenceExpression,
   SeverityLevel,
 } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { GUIDE_THEME_TYPE_NAME } from '../constants'
 
 const MANIFEST_FIELDS = ['author', 'name', 'version']
@@ -44,7 +45,13 @@ export const guideThemeUpdateMetadataValidator: ChangeValidator = async changes 
 
   const unsupportedChanges = updatedThemes.filter(theme => {
     const { before, after } = theme.data
-    return before.value.brand_id !== after.value.brand_id
+    if (isReferenceExpression(before.value.brand_id) && isReferenceExpression(after.value.brand_id)) {
+      return !before.value.brand_id.elemID.isEqual(after.value.brand_id.elemID)
+    }
+    if (_.isNumber(before.value.brand_id) && _.isNumber(after.value.brand_id)) {
+      return before.value.brand_id !== after.value.brand_id
+    }
+    return true
   }).map(theme => ({
     elemID: getChangeData(theme).elemID,
     message: 'Changing the brand on a theme is not supported',

@@ -281,6 +281,7 @@ export type NetsuiteValidatorName =
   | 'unreferencedDatasets'
   | 'analyticsSilentFailure'
   | 'undeployableBundleChanges'
+  | 'removeListItemWithoutScriptID'
 
 export type NonSuiteAppValidatorName = 'removeFileCabinet' | 'removeStandardTypes'
 
@@ -643,6 +644,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     unreferencedDatasets: { refType: BuiltinTypes.BOOLEAN },
     analyticsSilentFailure: { refType: BuiltinTypes.BOOLEAN },
     undeployableBundleChanges: { refType: BuiltinTypes.BOOLEAN },
+    removeListItemWithoutScriptID: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

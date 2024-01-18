@@ -171,24 +171,24 @@ describe('filterCreator', () => {
           const elements = [brand1, liveThemeWithId, nonLiveThemeWithId]
           await filter.onFetch?.(elements)
           expect(Object.keys(liveThemeWithId.value.files)).toHaveLength(2)
-          expect(liveThemeWithId.value.files['file1.txt'].filename).toEqual('file1.txt')
-          expect(liveThemeWithId.value.files['file1.txt'].content).toEqual(new StaticFile({
+          expect(liveThemeWithId.value.files['file1_txt@v'].filename).toEqual('file1.txt')
+          expect(liveThemeWithId.value.files['file1_txt@v'].content).toEqual(new StaticFile({
             filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags_live/file1.txt`,
             content: Buffer.from('file1content'),
           }))
-          expect(liveThemeWithId.value.files.subfolder['file2.txt'].filename).toEqual('subfolder/file2.txt')
-          expect(liveThemeWithId.value.files.subfolder['file2.txt'].content).toEqual(new StaticFile({
-            filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags_live/subfolder/file2.txt`,
+          expect(liveThemeWithId.value.files['subfolder_dot@v']['file2_txt@v'].filename).toEqual('subfolder.dot/file2.txt')
+          expect(liveThemeWithId.value.files['subfolder_dot@v']['file2_txt@v'].content).toEqual(new StaticFile({
+            filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags_live/subfolder.dot/file2.txt`,
             content: Buffer.from('file2content'),
           }))
 
           expect(Object.keys(nonLiveThemeWithId.value.files)).toHaveLength(2)
-          expect(nonLiveThemeWithId.value.files['file1.txt'].content).toEqual(new StaticFile({
+          expect(nonLiveThemeWithId.value.files['file1_txt@v'].content).toEqual(new StaticFile({
             filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/file1.txt`,
             content: Buffer.from('file1content'),
           }))
-          expect(nonLiveThemeWithId.value.files.subfolder['file2.txt'].content).toEqual(new StaticFile({
-            filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/subfolder/file2.txt`,
+          expect(nonLiveThemeWithId.value.files['subfolder_dot@v']['file2_txt@v'].content).toEqual(new StaticFile({
+            filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/subfolder.dot/file2.txt`,
             content: Buffer.from('file2content'),
           }))
         })

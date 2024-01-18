@@ -121,9 +121,9 @@ export type LayoutConfigItem = {
   type: string
   sectionType: 'PRIMARY' | 'SECONDARY' | 'CONTENT' | 'REQUEST'
   key: string
-  data?: {
+  data: {
     properties?: Value
-  }
+  } | undefined
 }
 
 export const ISSUE_LAYOUT_CONFIG_ITEM_SCHEME = Joi.object({

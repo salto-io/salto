@@ -15,7 +15,7 @@
 */
 
 import { logger } from '@salto-io/logging'
-import { ElemIdGetter, InstanceElement, ObjectType, Element, isInstanceElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ElemIdGetter, InstanceElement, ObjectType, Element, isInstanceElement, CORE_ANNOTATIONS, Value } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { createSchemeGuard, getParent, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { elements as adapterElements, config as configUtils } from '@salto-io/adapter-components'
@@ -102,10 +102,14 @@ const fromLayoutConfigRespToLayoutConfig = (
   layoutConfig: IssueLayoutConfiguration
 ): IssueLayoutConfig => {
   const { containers } = layoutConfig.issueLayoutResult
-  const fieldItemIdToMetaData = Object.fromEntries((layoutConfig.metadata?.configuration.items.nodes ?? [])
-    .filter(node => !_.isEmpty(node))
-    .map(node => [node.fieldItemId, _.omit(node, 'fieldItemId')]))
-
+  const fieldItemIdToMetaData: Record<string, Value> = Object.fromEntries(
+    (layoutConfig.metadata?.configuration.items.nodes ?? [])
+      .filter(node => !_.isEmpty(node))
+      .map(node => {
+        const { fieldItemId, ...nodeWithoutItemId } = node
+        return [fieldItemId, nodeWithoutItemId]
+      })
+  )
   const items = containers
     .flatMap(container => container.items.nodes
       .map(node => ({
@@ -114,7 +118,7 @@ const fromLayoutConfigRespToLayoutConfig = (
         key: node.fieldItemId,
         data: fieldItemIdToMetaData[node.fieldItemId],
       })))
-    .filter(isLayoutConfigItem) as LayoutConfigItem[]
+    .filter(isLayoutConfigItem)
 
   return { items }
 }

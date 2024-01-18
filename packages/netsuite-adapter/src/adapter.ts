@@ -378,7 +378,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     ] = await Promise.all([
       getStandardAndCustomElements(),
       getDataElements(this.client, fetchQuery, this.getElemIdFunc),
-      this.userConfig.fetch.addSuiteQLTables
+      this.userConfig.fetch.resolveAccountSpecificValues
         ? getSuiteQLTableElements(this.client, this.elementsSource, isPartial) : [],
     ])
 

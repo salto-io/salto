@@ -122,7 +122,7 @@ export type LayoutConfigItem = {
   sectionType: 'PRIMARY' | 'SECONDARY' | 'CONTENT' | 'REQUEST'
   key: string
   data: {
-    properties?: Value
+    properties?: Value | null
   } | undefined
 }
 
@@ -131,7 +131,7 @@ export const ISSUE_LAYOUT_CONFIG_ITEM_SCHEME = Joi.object({
   sectionType: Joi.string().valid('PRIMARY', 'SECONDARY', 'CONTENT', 'REQUEST').required(),
   key: Joi.string().required(),
   data: Joi.object({
-    properties: Joi.object().unknown(true),
+    properties: Joi.object().unknown(true).allow(null),
   }).unknown(true),
 }).unknown(true).required()
 

@@ -105,10 +105,7 @@ const fromLayoutConfigRespToLayoutConfig = (
   const fieldItemIdToMetaData: Record<string, Value> = Object.fromEntries(
     (layoutConfig.metadata?.configuration.items.nodes ?? [])
       .filter(node => !_.isEmpty(node))
-      .map(node => {
-        const { fieldItemId, ...nodeWithoutItemId } = node
-        return [fieldItemId, nodeWithoutItemId]
-      })
+      .map(node => [node.fieldItemId, _.omit(node, 'fieldItemId')])
   )
   const items = containers
     .flatMap(container => container.items.nodes

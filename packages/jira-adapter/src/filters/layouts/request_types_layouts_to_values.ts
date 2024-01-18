@@ -25,14 +25,14 @@ const log = logger(module)
 const LAYOUT_TYPES_TO_ADJUST = [REQUEST_FORM_TYPE, ISSUE_VIEW_TYPE]
 
 const convertPropertiesToList = (item: LayoutConfigItem): void => {
-  if (item.data?.properties !== undefined) {
+  if (item.data?.properties != null) {
     item.data.properties = Object.entries(item.data.properties)
       .map(([key, value]) => ({ key, value }))
   }
 }
 
 const convertPropertiesToMap = (item: LayoutConfigItem): void => {
-  if (item.data?.properties !== undefined) {
+  if (item.data?.properties != null) {
     item.data.properties = Object.fromEntries(
       item.data.properties.map(({ key, value }: Values) => [key, value])
     )

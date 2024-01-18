@@ -14,8 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, GetCustomReferencesFunc, InstanceElement, isInstanceElement, ReadOnlyElementsSource, ReferenceInfo } from '@salto-io/adapter-api'
-import { collections, values } from '@salto-io/lowerdash'
-import { pickAsync } from '@salto-io/lowerdash/src/promises/object'
+import { collections, promises, values } from '@salto-io/lowerdash'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
@@ -24,6 +23,7 @@ import { WeakReferencesHandler } from './weak_references_handler'
 import { FIELD_TYPE_NAME } from '../filters/fields/constants'
 
 const { awu } = collections.asynciterable
+const { pickAsync } = promises.object
 
 const log = logger(module)
 

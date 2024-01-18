@@ -18,7 +18,7 @@ import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import JSZip from 'jszip'
 import _, { remove } from 'lodash'
-import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
+import { getInstancesFromElementSource, naclCase } from '@salto-io/adapter-utils'
 import ZendeskClient from '../client/client'
 import { FETCH_CONFIG, isGuideEnabled, isGuideThemesEnabled } from '../config'
 import {

@@ -41,7 +41,7 @@ export const create = async (
   if (!pollSuccess) {
     log.warn(`Failed to receive 'completed' job status from Zendesk API. Could not verify upload of new theme to brand ${brandId}`)
   } else {
-    log.trace('Theme updated successfully')
+    log.trace('Theme created successfully, id: %s', job.data.theme_id)
   }
 
   return { themeId: job.data.theme_id, errors }

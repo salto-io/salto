@@ -95,7 +95,7 @@ export const GUIDE_ELEMENT_DIRECTORY: Record<string, string> = {
   [ARTICLE_ORDER_TYPE_NAME]: 'article_order',
   [ARTICLE_ATTACHMENT_TYPE_NAME]: 'article_attachment',
   [GUIDE_THEME_TYPE_NAME]: 'themes',
-  [THEME_SETTINGS_TYPE_NAME]: 'themes',
+  [THEME_SETTINGS_TYPE_NAME]: 'settings',
 }
 
 const getReferencedLocale = (localeRef: ReferenceExpression | string | undefined)
@@ -116,6 +116,7 @@ const GUIDE_ELEMENT_NAME: Record<string, (instance?: InstanceElement) => string>
   [SECTION_ORDER_TYPE_NAME]: () => 'section_order',
   [ARTICLE_ORDER_TYPE_NAME]: () => 'article_order',
   [GUIDE_SETTINGS_TYPE_NAME]: () => 'brand_settings',
+  [THEME_SETTINGS_TYPE_NAME]: () => 'theme_settings',
   [GUIDE_LANGUAGE_SETTINGS_TYPE_NAME]: (instance?: InstanceElement) => instance?.value.locale ?? NO_VALUE_DEFAULT,
   [ARTICLE_TRANSLATION_TYPE_NAME]: getTranslationLocale,
   [SECTION_TRANSLATION_TYPE_NAME]: getTranslationLocale,

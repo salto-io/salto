@@ -33,7 +33,7 @@ export const createThemePackage = async (
       return
     }
     if (file.content === undefined) {
-      log.debug('Skipping file %s with undefined content', file)
+      log.debug('Skipping file %s with undefined content', file.filename)
       return
     }
     zip.file(file.filename, file.content)
@@ -45,8 +45,6 @@ export const uploadThemePackage = async (
   job: PendingJob<UploadJobData>, readStream: NodeJS.ReadableStream, client: ZendeskClient
 ): Promise<{ errors: string[] }> => {
   log.trace('Uploading theme package for job %s', job.id)
-
-  const errors: string[] = []
 
   const formData = new FormData()
   Object.entries(job.data.upload.parameters).forEach(([key, value]) => {
@@ -61,9 +59,9 @@ export const uploadThemePackage = async (
   })
   if (![200, 201].includes(response.status)) {
     log.warn(`Could not upload theme package for job ${job.id}, received ${response.data}`)
-    errors.push(safeJsonStringify(response.data))
+    return { errors: [safeJsonStringify(response.data)] }
   }
-  return { errors }
+  return { errors: [] }
 }
 
 export const createAndUploadThemePackage = async (

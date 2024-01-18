@@ -159,6 +159,7 @@ import customObjectFieldFilter from './filters/custom_objects/custom_object_fiel
 import customObjectFieldsOrderFilter from './filters/custom_objects/custom_object_fields_order'
 import customObjectFieldOptionsFilter from './filters/custom_field_options/custom_object_field_options'
 import { createFixElementFunctions } from './fix_elements'
+import guideThemeSettingFilter from './filters/guide_theme_settings'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -261,6 +262,7 @@ export const DEFAULT_FILTERS = [
   omitCollisionFilter, // needs to be after referencedIdFieldsFilter (which is part of the common filters)
   deployBrandedGuideTypesFilter,
   guideThemeFilter, // fetches a lot of data, so should be after omitCollisionFilter to remove theme collisions
+  guideThemeSettingFilter, // needs to be after guideThemeFilter as it depends on successful theme fetches
   guideArrangePaths,
   hideAccountFeatures,
   fetchCategorySection, // need to be after arrange paths as it uses the 'name'/'title' field

@@ -24,7 +24,7 @@ const log = logger(module)
 export const createThemeImportJob = async (
   brandId: string, client: ZendeskClient
 ): Promise<{ job: PendingJob<UploadJobData> | undefined; errors: string[] }> => {
-  log.trace('Creating theme import job')
+  log.trace('Creating theme import job for brand %s', brandId)
 
   try {
     const res = await client.post({
@@ -32,7 +32,7 @@ export const createThemeImportJob = async (
       data: {
         job: {
           attributes: {
-            brand_id: brandId.toString(),
+            brand_id: brandId,
             format: 'zip',
           },
         },

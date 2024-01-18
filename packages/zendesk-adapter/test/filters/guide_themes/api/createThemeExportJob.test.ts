@@ -43,6 +43,7 @@ describe('createThemeExportJob', () => {
         },
       },
     })
+    expect(mockPost).toHaveBeenCalledTimes(1)
   })
 
   describe('successful response', () => {
@@ -51,12 +52,12 @@ describe('createThemeExportJob', () => {
       expect(await createThemeExportJob('11', client)).toEqual({ job: downloadJobResponse('pending').job, errors: [] })
     })
 
-    it('returns false on non-pending job', async () => {
+    it('returns undefined job on non-pending job', async () => {
       mockPost.mockResolvedValue({ status: 202, data: downloadJobResponse('completed') })
       expect(await createThemeExportJob('11', client)).toEqual({ job: undefined, errors: [] })
     })
 
-    it('returns false on wrong response structure', async () => {
+    it('returns undefined job on wrong response structure', async () => {
       mockPost.mockResolvedValue({ status: 202, data: { nope: 'yup' } })
       expect(await createThemeExportJob('11', client)).toEqual({ job: undefined, errors: [] })
     })

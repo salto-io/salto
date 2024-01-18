@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { AdditionChange, BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ModificationChange, ObjectType, ReferenceExpression, StaticFile, toChange } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { BRAND_TYPE_NAME, GUIDE_THEME_TYPE_NAME, THEME_SETTINGS_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { FilterCreator } from '../../src/filter'
@@ -62,9 +63,9 @@ const themeSettingsType = new ObjectType({
 })
 
 const brand1 = new InstanceElement('brand', brandType, { id: 1, name: 'oneTwo', has_help_center: true })
-const themeWithId = new InstanceElement('theme', themeType,
+const themeWithId = new InstanceElement('themeWithId', themeType,
   { id: 'park?', name: 'SixFlags', brand_id: new ReferenceExpression(brand1.elemID, brand1) })
-const newThemeWithFiles = new InstanceElement('theme', themeType,
+const newThemeWithFiles = new InstanceElement('newThemeWithFiles', themeType,
   {
     name: 'SevenFlags',
     brand_id: new ReferenceExpression(brand1.elemID, brand1),
@@ -77,6 +78,15 @@ const themeSettingsInstance = new InstanceElement(
   {
     brand: new ReferenceExpression(brand1.elemID),
     liveTheme: new ReferenceExpression(themeWithId.elemID),
+  }
+)
+
+const themeSettingsInstance2 = new InstanceElement(
+  `${brand1.value.name}_settings`,
+  themeSettingsType,
+  {
+    brand: new ReferenceExpression(brand1.elemID),
+    liveTheme: new ReferenceExpression(newThemeWithFiles.elemID),
   }
 )
 
@@ -160,9 +170,6 @@ describe('filterCreator', () => {
           nonLiveThemeWithId.value.live = false
           const elements = [brand1, liveThemeWithId, nonLiveThemeWithId]
           await filter.onFetch?.(elements)
-          expect(elements).toEqual([
-            brand1, liveThemeWithId, nonLiveThemeWithId, themeSettingsType, themeSettingsInstance,
-          ])
           expect(Object.keys(liveThemeWithId.value.files)).toHaveLength(2)
           expect(liveThemeWithId.value.files['file1.txt'].filename).toEqual('file1.txt')
           expect(liveThemeWithId.value.files['file1.txt'].content).toEqual(new StaticFile({
@@ -232,7 +239,10 @@ describe('filterCreator', () => {
       jest.resetAllMocks()
       const config = { ...DEFAULT_CONFIG }
       config[FETCH_CONFIG].guide = { brands: ['.*'], themesForBrands: ['.*'] }
-      filter = filterCreator(createFilterCreatorParams({ config }))
+      filter = filterCreator(createFilterCreatorParams({ config,
+        elementsSource: buildElementsSourceFromElements([
+          themeSettingsInstance,
+        ]) }))
       mockCreate = jest.spyOn(CreateModule, 'create')
       mockDelete = jest.spyOn(DeleteModule, 'deleteTheme')
       mockPublish = jest.spyOn(PublishModule, 'publish')
@@ -255,7 +265,7 @@ describe('filterCreator', () => {
       describe('with no errors', () => {
         beforeEach(() => {
           mockCreate.mockResolvedValue({ themeId: 'newId', errors: [] })
-          mockPublish.mockResolvedValue({ errors: [] })
+          mockPublish.mockResolvedValue([])
         })
 
         it('should apply the change and return no errors', async () => {
@@ -267,7 +277,11 @@ describe('filterCreator', () => {
         })
 
         it('should publish the theme if live is true', async () => {
-          (changes[0] as AdditionChange<InstanceElement>).data.after.value.live = true
+          const config = { ...DEFAULT_CONFIG }
+          config[FETCH_CONFIG].guide = { brands: ['.*'], themesForBrands: ['.*'] }
+          filter = filterCreator(createFilterCreatorParams({ config,
+            elementsSource: buildElementsSourceFromElements([themeSettingsInstance2]) }))
+
           await filter.deploy?.(changes)
           expect(mockPublish).toHaveBeenCalledWith('newId', expect.anything())
         })
@@ -283,7 +297,7 @@ describe('filterCreator', () => {
             expect(await filter.deploy?.(changes))
               .toEqual({
                 deployResult: {
-                  appliedChanges: [], errors: [{ elemID: themeWithId.elemID, message: 'create error', severity: 'Error' }],
+                  appliedChanges: [], errors: [{ elemID: newThemeWithFiles.elemID, message: 'create error', severity: 'Error' }],
                 },
                 leftoverChanges: [],
               })
@@ -306,7 +320,7 @@ describe('filterCreator', () => {
                   appliedChanges: [],
                   errors: [{
                     elemID: newThemeWithFiles.elemID,
-                    message: 'Missing theme id from create theme response for theme zendesk.theme.instance.theme',
+                    message: 'Missing theme id from create theme response for theme zendesk.theme.instance.newThemeWithFiles',
                     severity: 'Error',
                   }],
                 },
@@ -332,8 +346,8 @@ describe('filterCreator', () => {
       describe('with no errors', () => {
         beforeEach(() => {
           mockCreate.mockResolvedValue({ themeId: 'newId', errors: [] })
-          mockDelete.mockResolvedValue({ errors: [] })
-          mockPublish.mockResolvedValue({ errors: [] })
+          mockDelete.mockResolvedValue([])
+          mockPublish.mockResolvedValue([])
         })
 
         it('should apply the change and return no errors', async () => {
@@ -346,7 +360,10 @@ describe('filterCreator', () => {
         })
 
         it('should publish the theme if live is true', async () => {
-          (changes[0] as ModificationChange<InstanceElement>).data.after.value.live = true
+          const config = { ...DEFAULT_CONFIG }
+          config[FETCH_CONFIG].guide = { brands: ['.*'], themesForBrands: ['.*'] }
+          filter = filterCreator(createFilterCreatorParams({ config,
+            elementsSource: buildElementsSourceFromElements([themeSettingsInstance2]) }))
           await filter.deploy?.(changes)
           expect(mockPublish).toHaveBeenCalledWith('newId', expect.anything())
         })
@@ -362,7 +379,7 @@ describe('filterCreator', () => {
             expect(await filter.deploy?.(changes))
               .toEqual({
                 deployResult: {
-                  appliedChanges: [], errors: [{ elemID: themeWithId.elemID, message: 'create error', severity: 'Error' }],
+                  appliedChanges: [], errors: [{ elemID: newThemeWithFiles.elemID, message: 'create error', severity: 'Error' }],
                 },
                 leftoverChanges: [],
               })
@@ -387,7 +404,7 @@ describe('filterCreator', () => {
                     [],
                   errors: [{
                     elemID: newThemeWithFiles.elemID,
-                    message: 'Missing theme id from create theme response for theme zendesk.theme.instance.theme',
+                    message: 'Missing theme id from create theme response for theme zendesk.theme.instance.newThemeWithFiles',
                     severity: 'Error',
                   }],
                 },

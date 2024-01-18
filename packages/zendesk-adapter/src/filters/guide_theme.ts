@@ -13,14 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, BuiltinTypes, Change, CORE_ANNOTATIONS, Element, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceElement, isModificationChange, isReferenceExpression, isRemovalChange, ModificationChange, ObjectType, ReferenceExpression, SaltoElementError, SaltoError, StaticFile } from '@salto-io/adapter-api'
-import { elements as elementsUtils } from '@salto-io/adapter-components'
+import { AdditionChange, Change, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceElement, isModificationChange, isReferenceExpression, isRemovalChange, ModificationChange, SaltoElementError, SaltoError, StaticFile } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import JSZip from 'jszip'
 import _, { remove } from 'lodash'
+import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import ZendeskClient from '../client/client'
-import { FETCH_CONFIG, isGuideEnabled, isGuideThemesEnabled, ZendeskConfig } from '../config'
+import { FETCH_CONFIG, isGuideEnabled, isGuideThemesEnabled } from '../config'
 import {
   GUIDE_THEME_TYPE_NAME, THEME_SETTINGS_TYPE_NAME, ZENDESK,
 } from '../constants'
@@ -84,9 +84,12 @@ const addDownloadErrors = (
   }])
 
 const createTheme = async (
-  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>, client: ZendeskClient
+  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
+  client: ZendeskClient,
+  isLiveTheme: boolean
 ): Promise<string[]> => {
-  const { brand_id: brandId, live, files } = change.data.after.value
+  const live = isLiveTheme
+  const { brand_id: brandId, files } = change.data.after.value
   const staticFiles = extractFilesFromThemeDirectory(files)
   const { themeId, errors: elementErrors } = await create({ brandId, staticFiles }, client)
   if (themeId === undefined) {
@@ -95,7 +98,7 @@ const createTheme = async (
       `Missing theme id from create theme response for theme ${change.data.after.elemID.getFullName()}`,
     ]
   }
-  change.data.after.value.id = themeId
+  getChangeData(change).value.id = themeId
   if (live && elementErrors.length === 0) {
     const publishErrors = await publish(themeId, client)
     return publishErrors
@@ -104,63 +107,19 @@ const createTheme = async (
 }
 
 const updateTheme = async (
-  change: ModificationChange<InstanceElement>, client: ZendeskClient
+  change: ModificationChange<InstanceElement>, client: ZendeskClient, isLiveTheme: boolean
 ): Promise<string[]> => {
-  const elementErrors = await createTheme(change, client)
+  const elementErrors = await createTheme(change, client, isLiveTheme)
   if (elementErrors.length > 0) {
     return elementErrors
   }
   return deleteTheme(change.data.before.value.id, client)
 }
 
-const createThemeSettingsInstances = (guideThemes: InstanceElement[], config: ZendeskConfig): Element[] => {
-  const themeSettingsType = new ObjectType(
-    {
-      elemID: new ElemID(ZENDESK, THEME_SETTINGS_TYPE_NAME),
-      fields: {
-        brand: { refType: BuiltinTypes.NUMBER },
-        liveTheme: { refType: BuiltinTypes.STRING },
-      },
-      path: [ZENDESK, elementsUtils.TYPES_PATH, THEME_SETTINGS_TYPE_NAME],
-      annotations: {
-        [CORE_ANNOTATIONS.HIDDEN]: config[FETCH_CONFIG].hideTypes ?? false,
-      },
-    },
-  )
-
-  const guideThemeSettingsInstances = Object.values(
-    _.groupBy(guideThemes, theme => theme.value.brand_id.elemID.getFullName())
-  ).map(themes => {
-    const brand = themes[0].value.brand_id
-    const brandName = brand.value.value.name
-    const liveThemes = themes.filter(theme => theme.value.live)
-    if (liveThemes.length > 1) {
-      log.warn(`Found ${liveThemes.length} live themes for brand ${brandName}, using the first one`)
-    }
-    if (liveThemes.length === 0) {
-      log.warn(`Found no live themes for brand ${brandName}`)
-      return undefined
-    }
-    const liveTheme = liveThemes[0]
-    return new InstanceElement(
-      `${brandName}_settings`,
-      themeSettingsType,
-      {
-        brand: new ReferenceExpression(brand.elemID),
-        liveTheme: new ReferenceExpression(liveTheme.elemID),
-      },
-    )
-  }).filter(values.isDefined)
-  if (guideThemeSettingsInstances.length === 0) {
-    return []
-  }
-  return [themeSettingsType, ...guideThemeSettingsInstances]
-}
-
 /**
  * Fetches guide theme content
  */
-const filterCreator: FilterCreator = ({ config, client }) => ({
+const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
   name: 'guideThemesFilter',
   onFetch: async elements => {
     if (!isGuideEnabled(config[FETCH_CONFIG]) || !isGuideThemesEnabled(config[FETCH_CONFIG])) {
@@ -189,6 +148,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       .map(async (theme): Promise<{ successfulTheme?: InstanceElement; errors: SaltoError[] }> => {
         const brandName = getBrandName(theme)
         if (brandName === undefined) {
+          // a log is written in the getBrandName func
           remove(elements, element => element.elemID.isEqual(theme.elemID))
           return { errors: [] }
         }
@@ -204,6 +164,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           theme.value.files = themeElements
         } catch (e) {
           if (!(e instanceof Error)) {
+            remove(elements, element => element.elemID.isEqual(theme.elemID))
             log.error('Error fetching theme id %s, %o', theme.value.id, e)
             return {
               errors: [
@@ -222,10 +183,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         }
         return { successfulTheme: theme, errors: [] }
       }))
-    const successfulThemes = processedThemes.map(theme => theme.successfulTheme).filter(values.isDefined)
     const errors = processedThemes.flatMap(theme => theme.errors)
-    elements.push(...createThemeSettingsInstances(successfulThemes, config))
-
     return { errors }
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
@@ -233,16 +191,28 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       changes,
       change =>
         // Removal changes are handled in the default config.
-        isAdditionOrModificationChange(change) && GUIDE_THEME_TYPE_NAME === getChangeData(change).elemID.typeName,
+        isAdditionOrModificationChange(change)
+        && GUIDE_THEME_TYPE_NAME === getChangeData(change).elemID.typeName,
     )
+
+    // to make sure that if there are multiple settings there is only one live per brand
+    const liveThemesByBrand = Object.fromEntries(
+      (await getInstancesFromElementSource(elementsSource, [THEME_SETTINGS_TYPE_NAME]))
+        .filter(instance => isReferenceExpression(instance.value.liveTheme)
+          && isReferenceExpression(instance.value.brand))
+        .map(instance => [instance.value.brand.elemID.getFullName(), instance.value.liveTheme.elemID.getFullName()])
+    )
+    const liveThemesNames = new Set(Object.values(liveThemesByBrand))
+
     const processedChanges = await Promise.all(themeChanges
       .map(async (change): Promise<{ appliedChange?: Change<InstanceElement>; errors: SaltoElementError[] }> => {
         if (isRemovalChange(change)) {
           // Shouldn't happen, cleans up Typescript
           return { errors: [] }
         }
+        const isLiveTheme = liveThemesNames.has(getChangeData(change).elemID.getFullName())
         const elementErrors = isModificationChange(change)
-          ? await updateTheme(change, client) : await createTheme(change, client)
+          ? await updateTheme(change, client, isLiveTheme) : await createTheme(change, client, isLiveTheme)
         if (elementErrors.length > 0) {
           return {
             errors: elementErrors.map(e => ({

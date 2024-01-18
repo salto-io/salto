@@ -13,7 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
+import {
+  ChangeValidator,
+  getChangeData,
+  isInstanceChange,
+  isModificationChange,
+  SeverityLevel,
+} from '@salto-io/adapter-api'
 import { GUIDE_THEME_TYPE_NAME } from '../constants'
 
 const MANIFEST_FIELDS = ['author', 'name', 'version']
@@ -32,8 +38,8 @@ export const guideThemeUpdateMetadataValidator: ChangeValidator = async changes 
     .map(theme => ({
       elemID: getChangeData(theme).elemID,
       message: 'Updating theme fields has no effect',
-      severity: 'Error' as const,
-      detailedMessage: `Updating the theme fields ${MANIFEST_FIELDS.join(', ')} has no effect. To update them, please edit editing the manifest.json file`,
+      severity: 'Error' as SeverityLevel,
+      detailedMessage: `Updating the theme fields ${MANIFEST_FIELDS.join(', ')} has no effect. To update them, please edit the manifest.json file`,
     }))
 
   const unsupportedChanges = updatedThemes.filter(theme => {
@@ -42,7 +48,7 @@ export const guideThemeUpdateMetadataValidator: ChangeValidator = async changes 
   }).map(theme => ({
     elemID: getChangeData(theme).elemID,
     message: 'Changing the brand on a theme is not supported',
-    severity: 'Error' as const,
+    severity: 'Error' as SeverityLevel,
     detailedMessage: 'Changing the brand on a theme is not supported',
   }))
 

@@ -52,6 +52,9 @@ describe('create', () => {
 
       it('returns the created themeId', async () => {
         expect(await create({ staticFiles, brandId: '11' }, client)).toEqual({ themeId: 'abc', errors: [] })
+        expect(mockCreateThemeImportJob).toHaveBeenCalledTimes(1)
+        expect(mockCreateAndUploadThemePackage).toHaveBeenCalledTimes(1)
+        expect(mockPollJobStatus).toHaveBeenCalledTimes(1)
       })
     })
 

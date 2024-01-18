@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { FIELD_CONFIGURATION_TYPE_NAME, JIRA } from '../../src/constants'
 import { fieldConfigurationsHandler } from '../../src/weak_references/field_configuration_items'
@@ -43,9 +43,8 @@ describe('field_configuration_items', () => {
       new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONFIGURATION_TYPE_NAME) }),
       {
         fields: {
-          field1ConfigurationItem1: { id: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field1ConfigurationItem1')), description: '', isHidden: false, isRequired: false },
-          field1ConfigurationItem2: { id: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field1ConfigurationItem2')), description: '', isHidden: false, isRequired: false },
-          field1ConfigurationItem3: { id: 'field1ConfigurationItem3', description: '', isHidden: false, isRequired: false },
+          field1ConfigurationItem1: { description: '', isHidden: false, isRequired: false },
+          field1ConfigurationItem2: { description: '', isHidden: false, isRequired: false },
         },
       }
     )
@@ -55,8 +54,8 @@ describe('field_configuration_items', () => {
       const references = await fieldConfigurationsHandler.findWeakReferences([instance], adapterConfig)
 
       expect(references).toEqual([
-        { source: instance.elemID.createNestedID('fields', 'field1ConfigurationItem1', 'id'), target: fieldConfigurationItemInstance.elemID, type: 'weak' },
-        { source: instance.elemID.createNestedID('fields', 'field1ConfigurationItem2', 'id'), target: new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field1ConfigurationItem2'), type: 'weak' },
+        { source: instance.elemID.createNestedID('fields', 'field1ConfigurationItem1'), target: fieldConfigurationItemInstance.elemID, type: 'weak' },
+        { source: instance.elemID.createNestedID('fields', 'field1ConfigurationItem2'), target: new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field1ConfigurationItem2'), type: 'weak' },
       ])
     })
 
@@ -91,7 +90,6 @@ describe('field_configuration_items', () => {
       expect(fixes.fixedElements).toHaveLength(1)
       expect((fixes.fixedElements[0] as InstanceElement).value.fields).toEqual({
         field1ConfigurationItem1: {
-          id: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field1ConfigurationItem1')),
           description: '',
           isHidden: false,
           isRequired: false,
@@ -117,7 +115,7 @@ describe('field_configuration_items', () => {
 
     it('should do nothing if all field configuration items are valid', async () => {
       instance.value.fields = [
-        { id: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field1ConfigurationItem1')), description: '', isHidden: false, isRequired: false },
+        { description: '', isHidden: false, isRequired: false },
       ]
       const fixes = await fieldConfigurationsHandler.removeWeakReferences({ elementsSource })([instance])
 

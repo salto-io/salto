@@ -87,10 +87,6 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
       await filter.onFetch?.([instance, fieldConfigType])
       expect(instance.value.fields).toEqual({
         fieldInstance: {
-          id: new ReferenceExpression(
-            new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'fieldInstance'),
-            {}
-          ),
           isRequired: true,
         },
       })
@@ -116,10 +112,6 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
         {
           fields: {
             fieldInstance: {
-              id: new ReferenceExpression(
-                new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'fieldInstance'),
-                {}
-              ),
               isRequired: true,
             },
           },
@@ -132,10 +124,6 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
       await filter.onDeploy?.([toChange({ after: instance })])
       expect(instance.value.fields).toEqual({
         fieldInstance: {
-          id: new ReferenceExpression(
-            new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'fieldInstance'),
-            {}
-          ),
           isRequired: true,
         },
       })
@@ -146,10 +134,6 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
       await filter.preDeploy?.([toChange({ after: instance })])
       expect(instance.value.fields).toEqual({
         fieldInstance: {
-          id: new ReferenceExpression(
-            new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'fieldInstance'),
-            {}
-          ),
           isRequired: true,
         },
       })
@@ -157,10 +141,6 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
       await filter.onDeploy?.([toChange({ after: instance })])
       expect(instance.value.fields).toEqual({
         fieldInstance: {
-          id: new ReferenceExpression(
-            new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'fieldInstance'),
-            {}
-          ),
           isRequired: true,
         },
       })

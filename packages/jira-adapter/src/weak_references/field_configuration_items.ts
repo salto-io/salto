@@ -28,10 +28,10 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 export type FieldItem = {
-  description: string
-  isHidden: boolean
-  isRequired: boolean
-  renderer: string
+  description?: string
+  isHidden?: boolean
+  isRequired?: boolean
+  renderer?: string
 }
 
 type FieldConfigurationItems = {

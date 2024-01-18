@@ -124,7 +124,7 @@ const filter: FilterCreator = ({ config, elementsSource }) => ({
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
       .filter(instance => instance.value.fields !== undefined)
-      .forEach(async instance => replaceFromMap(instance, elementsSource))
+      .forEach(instance => replaceFromMap(instance, elementsSource))
   },
 
   onDeploy: async changes => {

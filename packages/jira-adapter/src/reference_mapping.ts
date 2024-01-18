@@ -735,6 +735,11 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: ISSUE_LINK_TYPE_NAME },
   },
   {
+    src: { field: 'id', parentTypes: ['DeleteLinkTypes'] },
+    serializationStrategy: 'id',
+    target: { type: ISSUE_LINK_TYPE_NAME },
+  },
+  {
     src: { field: 'linkType', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
     serializationStrategy: 'id',
     target: { type: ISSUE_LINK_TYPE_NAME },

@@ -129,10 +129,20 @@ export const createAutomationTypes = (): {
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_COMPARE_VALUE],
   })
 
+  const deleteLinkTypes = new ObjectType({
+    elemID: new ElemID(JIRA, 'DeleteLinkTypes'),
+    fields: {
+      id: { refType: BuiltinTypes.STRING },
+      direction: { refType: BuiltinTypes.STRING },
+      name: { refType: BuiltinTypes.STRING },
+    },
+  })
+
   const componentValueType = new ObjectType({
     elemID: new ElemID(JIRA, AUTOMATION_COMPONENT_VALUE_TYPE),
     fields: {
       boardId: { refType: BuiltinTypes.NUMBER },
+      deleteLinkTypes: { refType: new ListType(deleteLinkTypes) },
       linkTypes: { refType: new ListType(BuiltinTypes.STRING) },
       linkType: { refType: BuiltinTypes.STRING },
       sourceProject: { refType: BuiltinTypes.STRING },

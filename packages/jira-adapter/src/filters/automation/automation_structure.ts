@@ -341,6 +341,31 @@ const removeProjectsForGlobalDCAutomation = (instance: InstanceElement): void =>
   }
 }
 
+const transformDeleteLinkTypes = async (instance: InstanceElement, reverse?: boolean): Promise<void> => {
+  instance.value = (await transformElement({
+    element: instance,
+    allowEmpty: true,
+    strict: false,
+    transformFunc: ({ value, field }) => {
+      if (field?.name === 'components' && Array.isArray(value)) {
+        const deleteIssuesComponent = value.filter(
+          (component: Values) => component?.type === 'jira.issue.delete.link'
+        )
+        deleteIssuesComponent.forEach((component: Values) => {
+          if (reverse) {
+            component.value.linkTypes = component.value?.deleteLinkTypes
+            delete component.value.deleteLinkTypes
+          } else {
+            component.value.deleteLinkTypes = component.value?.linkTypes
+            delete component.value.linkTypes
+          }
+        })
+      }
+      return value
+    },
+  })).value
+}
+
 const filter: FilterCreator = ({ client }) => {
   let originalAutomationChanges: Record<string, Change<InstanceElement>>
   return {
@@ -365,6 +390,7 @@ const filter: FilterCreator = ({ client }) => {
           await replaceStringValuesFieldName(instance)
           await separateLinkTypeField(instance)
           await convertToCompareFieldValue(instance)
+          await transformDeleteLinkTypes(instance)
 
           instance.value.projects = instance.value.projects
             ?.map(
@@ -392,6 +418,7 @@ const filter: FilterCreator = ({ client }) => {
               await consolidateLinkTypeFields(resolvedInstance)
               await changeRawValueFieldsToValue(resolvedInstance)
               await revertCompareFieldValueStructure(resolvedInstance)
+              await transformDeleteLinkTypes(instance, true)
               instance.value = resolvedInstance.value
               return instance
             }

@@ -15,6 +15,7 @@
 */
 import { ElemID, GetCustomReferencesFunc, InstanceElement, isInstanceElement, ReadOnlyElementsSource, ReferenceInfo } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
+import { pickAsync } from '@salto-io/lowerdash/src/promises/object'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
@@ -30,7 +31,7 @@ export type FieldItem = {
   description: string
   isHidden: boolean
   isRequired: boolean
-  render: string
+  renderer: string
 }
 
 type FieldConfigurationItems = {
@@ -46,37 +47,35 @@ const FIELD_CONFIGURATION_ITEM_SCHEME = Joi.object({
 
 const FIELD_CONFIGURATION_ITEMS_SCHEME = Joi.object().pattern(/.*/, FIELD_CONFIGURATION_ITEM_SCHEME)
 
-export const isFieldConfigurationItems = createSchemeGuard<FieldConfigurationItems>(FIELD_CONFIGURATION_ITEMS_SCHEME, 'Received an invalid field configuration items value')
+export const isFieldConfigurationItems = createSchemeGuard<FieldConfigurationItems>(FIELD_CONFIGURATION_ITEMS_SCHEME)
 
-const getFieldReferences = async (
+const getFieldReferences = (
   instance: InstanceElement,
-): Promise<ReferenceInfo[]> => {
+): ReferenceInfo[] => {
   const fieldConfigurationItems = instance.value.fields
   if (fieldConfigurationItems === undefined || !isFieldConfigurationItems(fieldConfigurationItems)) {
     log.warn(`fields value is corrupted in instance ${instance.elemID.getFullName()}, hence not calculating fields weak references`)
     return []
   }
-  return awu(Object.entries(fieldConfigurationItems))
-    .map(([fieldName, _field]) => {
+  return Object.keys(fieldConfigurationItems)
+    .map(fieldName => {
       const elemId = new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', fieldName)
       return {
-        source: instance.elemID.createNestedID('fields', fieldName, 'id'),
+        source: instance.elemID.createNestedID('fields', fieldName),
         target: elemId,
         type: 'weak' as const,
       }
     })
     .filter(values.isDefined)
-    .toArray()
 }
 
 /**
  * Marks each field reference in field configuration as a weak reference.
  */
-const getFieldConfigurationItemsReferences: GetCustomReferencesFunc = async elements => log.time(() => awu(elements)
+const getFieldConfigurationItemsReferences: GetCustomReferencesFunc = async elements => log.time(() => elements
   .filter(isInstanceElement)
   .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
-  .flatMap(getFieldReferences)
-  .toArray(), 'getFieldConfigurationItemsReferences')
+  .flatMap(getFieldReferences), 'getFieldConfigurationItemsReferences')
 
 const fieldExists = async (
   fieldName: string,
@@ -101,9 +100,10 @@ const removeMissingFields: WeakReferencesHandler['removeWeakReferences'] = ({ el
       }
 
       const fixedInstance = instance.clone()
-      fixedInstance.value.fields = Object.fromEntries(await awu(Object.entries(fieldConfigurationItems))
-        .filter(async ([fieldName, _field]) =>
-          fieldExists(fieldName, elementsSource)).toArray())
+      fixedInstance.value.fields = await pickAsync(
+        fieldConfigurationItems,
+        (_field, fieldName) => fieldExists(fieldName, elementsSource)
+      )
       if (Object.keys(fixedInstance.value.fields).length === Object.keys(instance.value.fields).length) {
         return undefined
       }

@@ -44,11 +44,13 @@ const enrichFieldItem = async (
   fieldName: string,
   fieldItem: FieldItem,
   elementSource: ReadOnlyElementsSource,
+  instanceName: string,
 ): Promise<EnrichedFieldItem | undefined> => {
   const elemId = new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', fieldName)
   const fieldInstance = await elementSource.get(elemId)
   if (fieldInstance === undefined) {
-    log.debug(`Omitting element id ${elemId.getFullName()} since it does not exist in the account`)
+    // not supposed to get here, since we run field-configuration fix-element
+    log.debug(`Omitting element id ${elemId.getFullName()} from instance ${instanceName}, since it does not exist in the account`)
     return undefined
   }
   return {
@@ -72,11 +74,13 @@ const replaceFromMap = async (
 ): Promise<void> => {
   const fieldConfigurationItems = instance.value.fields
   if (fieldConfigurationItems === undefined || !isFieldConfigurationItems(fieldConfigurationItems)) {
-    log.warn(`fields value is corrupted in instance ${instance.elemID.getFullName()}, hence not calculating fields weak references`)
+    log.warn(`fields value is corrupted in instance ${instance.elemID.getFullName()}, hence not changing fields format`)
     return
   }
   instance.value.fields = await awu(Object.entries(fieldConfigurationItems))
-    .map(async ([fieldName, fieldItem]: [string, FieldItem]) => enrichFieldItem(fieldName, fieldItem, elementSource))
+    .map(async ([fieldName, fieldItem]) => enrichFieldItem(
+      fieldName, fieldItem, elementSource, instance.elemID.getFullName()
+    ))
     .filter(values.isDefined)
     .toArray()
 }

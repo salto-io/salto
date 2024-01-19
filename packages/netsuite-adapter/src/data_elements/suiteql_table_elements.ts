@@ -327,6 +327,34 @@ const getInternalIdsMap = async (
   )
 }
 
+const createOrGetExistingInstance = (
+  suiteQLTableType: ObjectType,
+  tableName: string,
+  existingInstance: InstanceElement | undefined,
+): InstanceElement => (
+  existingInstance?.value[VERSION_FIELD] === LATEST_VERSION
+    ? existingInstance
+    : new InstanceElement(
+      tableName,
+      suiteQLTableType,
+      { [INTERNAL_IDS_MAP]: {} },
+      undefined,
+      { [CORE_ANNOTATIONS.HIDDEN]: true }
+    )
+)
+
+const fixExistingInstance = (
+  suiteQLTableType: ObjectType,
+  existingInstance: InstanceElement | undefined,
+): void => {
+  if (existingInstance !== undefined) {
+    existingInstance.refType = createRefToElmWithValue(suiteQLTableType)
+    if (existingInstance.value[INTERNAL_IDS_MAP] === undefined) {
+      existingInstance.value[INTERNAL_IDS_MAP] = {}
+    }
+  }
+}
+
 const getSuiteQLTableInstance = async (
   client: NetsuiteClient,
   suiteQLTableType: ObjectType,
@@ -336,17 +364,11 @@ const getSuiteQLTableInstance = async (
   lastFetchTime: Date | undefined,
   isPartial: boolean,
 ): Promise<InstanceElement | undefined> => {
-  if (existingInstance !== undefined) {
-    existingInstance.refType = createRefToElmWithValue(suiteQLTableType)
-  }
+  fixExistingInstance(suiteQLTableType, existingInstance)
   if (isPartial) {
     return existingInstance
   }
-  const instance = existingInstance ?? new InstanceElement(tableName, suiteQLTableType)
-  instance.annotate({ [CORE_ANNOTATIONS.HIDDEN]: true })
-  if (instance.value[INTERNAL_IDS_MAP] === undefined) {
-    instance.value[INTERNAL_IDS_MAP] = {}
-  }
+  const instance = createOrGetExistingInstance(suiteQLTableType, tableName, existingInstance)
   Object.assign(
     instance.value[INTERNAL_IDS_MAP],
     await getInternalIdsMap(

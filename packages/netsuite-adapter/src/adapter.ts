@@ -16,7 +16,7 @@
 import {
   FetchResult, AdapterOperations, DeployOptions, ElemIdGetter, ReadOnlyElementsSource, ProgressReporter,
   FetchOptions, DeployModifiers, getChangeData, isObjectType, isInstanceElement, ElemID, isSaltoElementError,
-  setPartialFetchData, InstanceElement, ObjectType, TypeElement,
+  setPartialFetchData, InstanceElement, ObjectType, TypeElement, ChangeDataType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -80,6 +80,7 @@ import { cloneChange } from './change_validators/utils'
 import { getChangeGroupIdsFunc } from './group_changes'
 import { getCustomRecords } from './custom_records/custom_records'
 import { getDataElements } from './data_elements/data_elements'
+import { getSuiteQLTableElements } from './data_elements/suiteql_table_elements'
 import { getStandardTypesNames } from './autogen/types'
 import { getConfigTypes, toConfigElements } from './suiteapp_config_elements'
 import { ImportFileCabinetResult } from './client/types'
@@ -373,9 +374,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
         failures,
       },
       { elements: dataElements, requestedTypes: requestedDataTypes, largeTypesError: dataTypeError },
+      suiteQLTableElements,
     ] = await Promise.all([
       getStandardAndCustomElements(),
       getDataElements(this.client, fetchQuery, this.getElemIdFunc),
+      this.userConfig.fetch.resolveAccountSpecificValues
+        ? getSuiteQLTableElements(this.client, this.elementsSource, isPartial) : [],
     ])
 
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
@@ -402,15 +406,15 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ? await getOrCreateServerTimeElements(serverTime, this.elementsSource, isPartial)
       : []
 
-    const elements = [
-      ...standardInstances,
-      ...standardTypes,
-      ...customRecordTypes,
-      ...customRecords,
-      ...dataElements,
-      ...suiteAppConfigElements,
-      ...serverTimeElements,
-    ]
+    const elements = ([] as ChangeDataType[])
+      .concat(standardInstances)
+      .concat(standardTypes)
+      .concat(customRecordTypes)
+      .concat(customRecords)
+      .concat(dataElements)
+      .concat(suiteQLTableElements)
+      .concat(suiteAppConfigElements)
+      .concat(serverTimeElements)
 
     await this.createFiltersRunner({
       operation: 'fetch',

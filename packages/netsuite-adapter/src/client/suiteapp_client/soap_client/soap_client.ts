@@ -31,7 +31,7 @@ import { CustomRecordResponse, DeployListResults, GetAllResponse, GetResult, Get
 import { DEPLOY_LIST_SCHEMA, GET_ALL_RESPONSE_SCHEMA, GET_RESULTS_SCHEMA, GET_SELECT_VALUE_SCHEMA, SEARCH_RESPONSE_SCHEMA } from './schemas'
 import { InvalidSuiteAppCredentialsError } from '../../types'
 import { isCustomRecordType } from '../../../types'
-import { INTERNAL_ID_TO_TYPES, isItemType, ITEM_TYPE_ID, ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from '../../../data_elements/types'
+import { isItemType, ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from '../../../data_elements/types'
 import { XSI_TYPE } from '../../constants'
 import { InstanceLimiterFunc } from '../../../config/types'
 import { toError } from '../../utils'
@@ -44,7 +44,6 @@ export const { createClientAsync } = elementUtils.soap
 
 const log = logger(module)
 
-export const ITEMS_TYPES = INTERNAL_ID_TO_TYPES[ITEM_TYPE_ID]
 export const WSDL_PATH = `${__dirname}/client/suiteapp_client/soap_client/wsdl/netsuite_1.wsdl`
 const REQUEST_MAX_RETRIES = 5
 const REQUEST_RETRY_DELAY = 5000

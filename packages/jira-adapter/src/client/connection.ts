@@ -19,6 +19,7 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { Credentials } from '../auth'
 import { EXPERIMENTAL_API_HEADERS, FORCE_ACCEPT_LANGUAGE_HEADERS } from './headers'
+import { getProductSettings } from '../product_settings'
 
 const log = logger(module)
 
@@ -55,8 +56,10 @@ account, but in some cases we can know that it's not a production account.
 export const validateCredentials = async (
   { connection, credentials }: { connection: clientUtils.APIConnection; credentials: Credentials },
 ): Promise<AccountInfo> => {
-  if (await isAuthorized(connection)) {
-    const accountId = await getBaseUrl(connection)
+  const productSettings = getProductSettings({ isDataCenter: Boolean(credentials.isDataCenter) })
+  const wrappedConnection = productSettings.wrapConnection(connection)
+  if (await isAuthorized(wrappedConnection)) {
+    const accountId = await getBaseUrl(wrappedConnection)
     if (accountId.includes('-sandbox-')) {
       return { accountId, isProduction: false, accountType: 'Sandbox' }
     }
@@ -64,7 +67,7 @@ export const validateCredentials = async (
     if (credentials.isDataCenter) {
       return { accountId }
     }
-    const response = await connection.get('/rest/api/3/instance/license')
+    const response = await wrappedConnection.get('/rest/api/3/instance/license')
     log.info(`Jira application's info: ${safeJsonStringify(response.data.applications)}`)
     const hasPaidApp = response.data.applications.some((app: appInfo) => app.plan === 'PAID')
     const isProduction = hasPaidApp ? undefined : false

@@ -106,9 +106,9 @@ describe('connection', () => {
     let credentials: Credentials
     beforeEach(async () => {
       mockAxios = new MockAdapter(axios)
-      mockAxios.onGet('/rest/api/3/configuration').reply(200)
-      mockAxios.onGet('/rest/api/3/serverInfo').reply(200, { baseUrl: 'http://my.jira.net' })
-      mockAxios.onGet('/rest/api/3/instance/license').reply(200, { applications: [{ plan: 'FREE' }] })
+      mockAxios.onGet('/rest/api/2/configuration').reply(200)
+      mockAxios.onGet('/rest/api/2/serverInfo').reply(200, { baseUrl: 'http://my.jira.net' })
+      mockAxios.onGet('/rest/api/2/instance/license').reply(200, { applications: [{ plan: 'FREE' }] })
       credentials = { baseUrl: 'http://myJira.net', user: 'me', token: 'tok', isDataCenter: true }
       connection = await createConnection({ retries: 1 }).login(credentials)
       await validateCredentials({
@@ -121,8 +121,8 @@ describe('connection', () => {
     })
 
     it('should not have force accept language headers when calling Jira DC', async () => {
-      mockAxios.onGet('/rest/api/3/serverInfo').reply(200, { baseUrl: 'http://my.jira.net' })
-      mockAxios.onGet('/rest/api/3/instance/license').reply(200, { applications: [{ plan: 'FREE' }] })
+      mockAxios.onGet('/rest/api/2/serverInfo').reply(200, { baseUrl: 'http://my.jira.net' })
+      mockAxios.onGet('/rest/api/2/instance/license').reply(200, { applications: [{ plan: 'FREE' }] })
       expect(mockAxios.history.get).toContainEqual(expect.objectContaining({
         headers: expect.not.objectContaining(FORCE_ACCEPT_LANGUAGE_HEADERS),
       }))
@@ -134,10 +134,14 @@ describe('connection', () => {
     beforeEach(async () => {
       jest.clearAllMocks()
       mockAxios = new MockAdapter(axios)
-      // initial calls as part of login func
+      // initial calls as part of login func, for regular Jira
       mockAxios.onGet('/rest/api/3/configuration').reply(200)
       mockAxios.onGet('/rest/api/3/serverInfo').replyOnce(200, { baseUrl: 'http://my.jira.net' })
       mockAxios.onGet('/rest/api/3/instance/license').replyOnce(200, { applications: [] })
+      // initial calls as part of login func, for DC
+      mockAxios.onGet('/rest/api/2/configuration').reply(200)
+      mockAxios.onGet('/rest/api/2/serverInfo').replyOnce(200, { baseUrl: 'http://my.jira.net' })
+      mockAxios.onGet('/rest/api/2/instance/license').replyOnce(200, { applications: [] })
     })
     afterEach(() => {
       mockAxios.restore()
@@ -145,8 +149,8 @@ describe('connection', () => {
     it('should return isProduction undefined and accountType = undefined when account id does not include -sandbox- and has paid app', async () => {
       const credentials = { baseUrl: 'http://myJira.net', user: 'me', token: 'tok', isDataCenter: true }
       connection = await createConnection({ retries: 1 }).login(credentials)
-      mockAxios.onGet('/rest/api/3/serverInfo').reply(200, { baseUrl: 'http://my.jira.net' })
-      mockAxios.onGet('/rest/api/3/instance/license').reply(200, { applications: [{ id: 'software', plan: 'PAID' }, { id: 'serviceDesk', plan: 'FREE' }] })
+      mockAxios.onGet('/rest/api/2/serverInfo').reply(200, { baseUrl: 'http://my.jira.net' })
+      mockAxios.onGet('/rest/api/2/instance/license').reply(200, { applications: [{ id: 'software', plan: 'PAID' }, { id: 'serviceDesk', plan: 'FREE' }] })
       const { isProduction, accountType } = await validateCredentials({
         connection,
         credentials,
@@ -184,8 +188,8 @@ describe('connection', () => {
     it('should return isProduction undefined and accountType = undefined', async () => {
       const credentials = { baseUrl: 'https://test-sandbox-999.atlassian.net', user: 'me', token: 'tok', isDataCenter: true }
       connection = await createConnection({ retries: 1 }).login(credentials)
-      mockAxios.onGet('/rest/api/3/serverInfo').reply(200, { baseUrl: 'https://test.atlassian.net' })
-      mockAxios.onGet('/rest/api/3/instance/license').reply(200, { applications: [{ plan: 'FREE' }] })
+      mockAxios.onGet('/rest/api/2/serverInfo').reply(200, { baseUrl: 'https://test.atlassian.net' })
+      mockAxios.onGet('/rest/api/2/instance/license').reply(200, { applications: [{ plan: 'FREE' }] })
       const { isProduction, accountType } = await validateCredentials({
         connection,
         credentials,

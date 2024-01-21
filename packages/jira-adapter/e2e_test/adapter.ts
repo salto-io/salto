@@ -43,7 +43,7 @@ export const realAdapter = (
   jiraConfig?: JiraConfig
 ): Reals => {
   const client = (adapterParams && adapterParams.client)
-    || new JiraClient({ credentials, isDataCenter })
+    || new JiraClient({ credentials: { ...credentials, isDataCenter }, isDataCenter })
   const scriptRunnerClient = new ScriptRunnerClient(
     {
       jiraClient: client,

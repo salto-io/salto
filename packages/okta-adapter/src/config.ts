@@ -19,6 +19,7 @@ import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import { ACCESS_POLICY_TYPE_NAME, CUSTOM_NAME_FIELD, IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, OKTA, PASSWORD_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, SIGN_ON_POLICY_TYPE_NAME, AUTOMATION_TYPE_NAME, AUTHENTICATOR_TYPE_NAME, DEVICE_ASSURANCE } from './constants'
 import { DEFAULT_CONVERT_USERS_IDS_VALUE, DEFAULT_GET_USERS_STRATEGY } from './user_utils'
+import { DEFAULT_APP_URLS_VALIDATOR_VALUE } from './change_validators/app_urls'
 
 type UserDeployConfig = configUtils.UserDeployConfig
 const {
@@ -1778,6 +1779,11 @@ export const DEFAULT_CONFIG: OktaConfig = {
   [CLIENT_CONFIG]: {
     usePrivateAPI: true,
   },
+  [DEPLOY_CONFIG]: {
+    changeValidators: {
+      appUrls: DEFAULT_APP_URLS_VALIDATOR_VALUE,
+    },
+  },
 }
 
 const CLASSIC_ENGINE_UNSUPPORTED_TYPES = [DEVICE_ASSURANCE, AUTHENTICATOR_TYPE_NAME, ACCESS_POLICY_TYPE_NAME,
@@ -1812,6 +1818,7 @@ export type ChangeValidatorName = (
   | 'appWithGroupPush'
   | 'groupPushToApplicationUniqueness'
   | 'appGroupAssignment'
+  | 'appUrls'
   )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -1838,6 +1845,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     appWithGroupPush: { refType: BuiltinTypes.BOOLEAN },
     groupPushToApplicationUniqueness: { refType: BuiltinTypes.BOOLEAN },
     appGroupAssignment: { refType: BuiltinTypes.BOOLEAN },
+    appUrls: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

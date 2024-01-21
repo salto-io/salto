@@ -240,6 +240,6 @@ export const createAutomationTypes = (): {
     automationType,
     subTypes: [actorType, componentType, tagType, projectType, componentValueType, fieldType,
       recipientType, statusType, operationType, conditionCriteriaType, conditionType,
-      groupType, roleType, subtaskType, compareFieldValueType],
+      groupType, roleType, subtaskType, compareFieldValueType, deleteLinkTypes],
   }
 }

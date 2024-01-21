@@ -157,12 +157,12 @@ describe('filterCreator', () => {
       expect(deployResults?.deployResult.errors).toEqual([
         {
           elemID: themeSettingsInstance.elemID,
-          message: 'Non modification changes are not supported',
+          message: 'Non modification changes are not supported in theme_settings instance',
           severity: 'Error',
         },
         {
           elemID: themeSettingsInstance2.elemID,
-          message: 'Non modification changes are not supported',
+          message: 'Non modification changes are not supported in theme_settings instance',
           severity: 'Error',
         },
       ])

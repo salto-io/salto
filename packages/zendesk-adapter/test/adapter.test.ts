@@ -476,6 +476,9 @@ describe('adapter', () => {
           'zendesk.target.instance.Slack_integration_Endpoint_url_target_v2@ssuuu',
           'zendesk.targets',
           'zendesk.theme',
+          'zendesk.theme_file',
+          'zendesk.theme_folder',
+          'zendesk.theme_settings',
           'zendesk.themes',
           'zendesk.ticket_field',
           'zendesk.ticket_field.instance.Assignee_assignee',
@@ -1022,6 +1025,9 @@ describe('adapter', () => {
           'zendesk.target.instance.Slack_integration_Endpoint_url_target_v2@ssuuu',
           'zendesk.targets',
           'zendesk.theme',
+          'zendesk.theme_file',
+          'zendesk.theme_folder',
+          'zendesk.theme_settings',
           'zendesk.themes',
           'zendesk.ticket_field',
           'zendesk.ticket_field.instance.Assignee_assignee',
@@ -1561,6 +1567,9 @@ describe('adapter', () => {
           'zendesk.target.instance.Slack_integration_Endpoint_url_target_v2@ssuuu',
           'zendesk.targets',
           'zendesk.theme',
+          'zendesk.theme_file',
+          'zendesk.theme_folder',
+          'zendesk.theme_settings',
           'zendesk.themes',
           'zendesk.ticket_field',
           'zendesk.ticket_field.instance.Assignee_assignee',
@@ -1894,9 +1903,9 @@ describe('adapter', () => {
         const themeElements = elements.filter(isInstanceElement)
           .filter(e => e.elemID.typeName === GUIDE_THEME_TYPE_NAME)
         expect(themeElements.map(e => e.elemID.getFullName()).sort()).toEqual([
-          'zendesk.theme.instance.myBrand_Copenhagen_false',
+          'zendesk.theme.instance.myBrand_Copenhagen',
         ])
-        expect(themeElements[0].value.files['hello_txt@v'].content).toEqual(new StaticFile({
+        expect(themeElements[0].value.root.files['hello_txt@v'].content).toEqual(new StaticFile({
           filepath: 'zendesk/themes/brands/myBrand/Copenhagen/hello.txt', content: Buffer.from('Hello World\n'),
         }))
 

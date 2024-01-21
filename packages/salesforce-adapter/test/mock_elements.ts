@@ -77,10 +77,6 @@ export const mockTypes = {
       suffix: 'cls',
       hasMetaFile: true,
     },
-    fields: {
-      content: { refType: BuiltinTypes.STRING },
-      apiVersion: { refType: BuiltinTypes.NUMBER },
-    },
   }),
   ApexPage: createMetadataObjectType({
     annotations: {
@@ -96,6 +92,10 @@ export const mockTypes = {
       hasMetaFile: true,
       dirName: 'triggers',
       suffix: 'trigger',
+    },
+    fields: {
+      content: { refType: BuiltinTypes.STRING },
+      apiVersion: { refType: BuiltinTypes.NUMBER },
     },
   }),
   ApexComponent: createMetadataObjectType({

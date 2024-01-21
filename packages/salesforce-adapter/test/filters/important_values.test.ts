@@ -44,7 +44,7 @@ describe('important values filter', () => {
           fullName: { refType: BuiltinTypes.STRING },
         },
       })
-      metadataType = mockTypes.ApexClass.clone()
+      metadataType = mockTypes.ApexTrigger.clone()
       metadataTypeWithNoImportantValues = new ObjectType({
         elemID: new ElemID('salesforce', 'metadataTypeWithNoImportantValues'),
         fields: {

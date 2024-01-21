@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import {
   DATA_CONFIGURATION,
   FetchProfile,
@@ -59,6 +60,7 @@ export const buildFetchProfile = ({
     preferActiveFlowVersions,
     addNamespacePrefixToFullName,
     warningSettings,
+    additionalImportantValues,
   } = fetchParams
   return {
     dataManagement: data && buildDataManagement(data),
@@ -72,6 +74,7 @@ export const buildFetchProfile = ({
     ),
     metadataQuery,
     maxItemsInRetrieveRequest,
+    additionalImportantValues,
   }
 }
 
@@ -83,5 +86,15 @@ export const validateFetchParameters = (
 
   if (params.data !== undefined) {
     validateDataManagementConfig(params.data, [...fieldPath, DATA_CONFIGURATION])
+  }
+  if (params.additionalImportantValues !== undefined) {
+    const duplicateDefs = _(params.additionalImportantValues)
+      .groupBy(def => def.value)
+      .filter((defs, _value) => defs.length > 1)
+      .keys()
+      .value()
+    if (duplicateDefs.length > 0) {
+      throw new Error(`Duplicate definitions for additionalImportantValues: [${duplicateDefs.join(', ')}]`)
+    }
   }
 }

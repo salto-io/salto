@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { createMatchingObjectType } from '@salto-io/adapter-utils'
+import { createMatchingObjectType, ImportantValues } from '@salto-io/adapter-utils'
 import {
   BuiltinTypes,
+  CoreAnnotationTypes,
   CORE_ANNOTATIONS,
   createRestriction,
   ElemID,
@@ -317,6 +318,7 @@ export type FetchParameters = {
   preferActiveFlowVersions?: boolean
   addNamespacePrefixToFullName?: boolean
   warningSettings?: WarningSettings
+  additionalImportantValues?: ImportantValues
 }
 
 export type DeprecatedMetadataParams = {
@@ -800,6 +802,10 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
     preferActiveFlowVersions: { refType: BuiltinTypes.BOOLEAN },
     addNamespacePrefixToFullName: { refType: BuiltinTypes.BOOLEAN },
     warningSettings: { refType: warningSettingsType },
+    additionalImportantValues: {
+      // Exported type is downcasted to TypeElement
+      refType: CoreAnnotationTypes[CORE_ANNOTATIONS.IMPORTANT_VALUES] as ListType<ObjectType>,
+    },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -918,4 +924,5 @@ export type FetchProfile = {
   readonly addNamespacePrefixToFullName: boolean
   isWarningEnabled: (name: keyof WarningSettings) => boolean
   readonly maxItemsInRetrieveRequest: number
+  readonly additionalImportantValues?: ImportantValues
 }

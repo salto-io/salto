@@ -14,9 +14,12 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { ImportantValue } from '@salto-io/adapter-utils'
+import { ImportantValues, ImportantValue } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { isMetadataObjectType, MetadataObjectType } from '../transformers/transformer'
 import { LocalFilterCreator } from '../filter'
+
+const { makeArray } = collections.array
 
 
 const highligheted = (value: string): ImportantValue => ({
@@ -33,7 +36,7 @@ const highlightedAndIndexed = (value: string): ImportantValue => (
   }
 )
 
-const importantValues: ImportantValue[] = [
+const DEFAULT_IMPORTANT_VALUES: ImportantValues = [
   highligheted('fullName'),
   highligheted('label'),
   highligheted('masterLabel'),
@@ -49,22 +52,34 @@ const importantValues: ImportantValue[] = [
   highlightedAndIndexed('active'),
 ]
 
-const addImportantValues = (type: MetadataObjectType): void => {
-  const typeFields = new Set(Object.keys(type.fields))
-  const typeImportantValues = importantValues
-    .filter(importantValue => typeFields.has(importantValue.value))
-  if (typeImportantValues.length > 0) {
-    type.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] = importantValues
-      .filter(importantValue => typeFields.has(importantValue.value))
-  }
-}
-
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'salesforceImportantValuesFilter',
   onFetch: async elements => {
     if (!config.fetchProfile.isFeatureEnabled('importantValues')) {
       return
     }
+    const getImportantValues = (): ImportantValues => {
+      const additionalImportantValues = makeArray(config.fetchProfile.additionalImportantValues)
+      if (additionalImportantValues.length === 0) {
+        return DEFAULT_IMPORTANT_VALUES
+      }
+      // The additional important values should override the default ones
+      const additionalImportantValuesValues = new Set(additionalImportantValues.map(value => value.value))
+      return DEFAULT_IMPORTANT_VALUES
+        .filter(importantValue => !additionalImportantValuesValues.has(importantValue.value))
+        .concat(additionalImportantValues)
+    }
+    const importantValues = getImportantValues()
+    const addImportantValues = (type: MetadataObjectType): void => {
+      const typeFields = new Set(Object.keys(type.fields))
+      const typeImportantValues = importantValues
+        .filter(importantValue => typeFields.has(importantValue.value))
+      if (typeImportantValues.length > 0) {
+        type.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] = importantValues
+          .filter(importantValue => typeFields.has(importantValue.value))
+      }
+    }
+
     elements
       .filter(isMetadataObjectType)
       .forEach(addImportantValues)

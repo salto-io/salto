@@ -49,6 +49,7 @@ describe('important values filter', () => {
         elemID: new ElemID('salesforce', 'metadataTypeWithNoImportantValues'),
         fields: {
           someField: { refType: BuiltinTypes.STRING },
+          someOtherField: { refType: BuiltinTypes.STRING },
         },
         annotations: {
           [METADATA_TYPE]: 'Test',
@@ -84,6 +85,54 @@ describe('important values filter', () => {
         await filter.onFetch([nonMetadataType, metadataType, metadataTypeWithNoImportantValues])
         expect(nonMetadataType).not.toSatisfy(hasImportantValues())
         expect(metadataTypeWithNoImportantValues).not.toSatisfy(hasImportantValues())
+        expect(metadataType).toSatisfy(hasImportantValues('fullName', 'apiVersion', 'content'))
+      })
+    })
+    describe('when additional important values override default ones', () => {
+      beforeEach(() => {
+        filter = filterCreator({
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: {
+              ...defaultFilterContext.fetchProfile,
+              isFeatureEnabled: () => true,
+              additionalImportantValues: [
+                { value: 'fullName', indexed: false, highlighted: false },
+              ],
+            },
+          },
+        }) as typeof filter
+      })
+      it('should add correct important values', async () => {
+        await filter.onFetch([nonMetadataType, metadataType, metadataTypeWithNoImportantValues])
+        expect(nonMetadataType).not.toSatisfy(hasImportantValues())
+        expect(metadataTypeWithNoImportantValues).not.toSatisfy(hasImportantValues())
+        expect(metadataType).toSatisfy(hasImportantValues('fullName', 'apiVersion', 'content'))
+        expect(metadataType.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES]).toIncludeAnyMembers([
+          { value: 'fullName', indexed: false, highlighted: false },
+        ])
+      })
+    })
+    describe('when additional important values are configured', () => {
+      beforeEach(() => {
+        filter = filterCreator({
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: {
+              ...defaultFilterContext.fetchProfile,
+              isFeatureEnabled: () => true,
+              additionalImportantValues: [
+                { value: 'someField', indexed: false, highlighted: true },
+                { value: 'someOtherField', indexed: true, highlighted: true },
+              ],
+            },
+          },
+        }) as typeof filter
+      })
+      it('should add correct important values', async () => {
+        await filter.onFetch([nonMetadataType, metadataType, metadataTypeWithNoImportantValues])
+        expect(nonMetadataType).not.toSatisfy(hasImportantValues())
+        expect(metadataTypeWithNoImportantValues).toSatisfy(hasImportantValues('someField', 'someOtherField'))
         expect(metadataType).toSatisfy(hasImportantValues('fullName', 'apiVersion', 'content'))
       })
     })

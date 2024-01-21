@@ -18,7 +18,7 @@ import { Element, InstanceElement, isInstanceElement, isReferenceExpression, Ref
 import { setPath, resolvePath } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import { GROUP_RULE_TYPE_NAME } from '../constants'
+import { GROUP_RULE_TYPE_NAME, PASSWORD_RULE_TYPE_NAME } from '../constants'
 
 const log = logger(module)
 
@@ -34,6 +34,15 @@ const orderTargetGroupsInRule = (instance: InstanceElement): void => {
   setPath(instance, targetGroupsPath, _.sortBy(targetGroups, group => group.elemID.getFullName()))
 }
 
+const orderPasswordPolicyRuleMethods = (instance: InstanceElement): void => {
+  const methodsPath = instance.elemID
+    .createNestedID('actions', 'selfServicePasswordReset', 'additionalProperties', 'requirement', 'primary', 'methods')
+  const methods = resolvePath(instance, methodsPath)
+  if (_.isArray(methods)) {
+    setPath(instance, methodsPath, methods.sort())
+  }
+}
+
 /**
  * Sort lists whose order changes between fetches, to avoid unneeded noise.
  */
@@ -45,6 +54,10 @@ const filterCreator: FilterCreator = () => ({
     instances
       .filter(instance => instance.elemID.typeName === GROUP_RULE_TYPE_NAME)
       .forEach(instance => orderTargetGroupsInRule(instance))
+
+    instances
+      .filter(instance => instance.elemID.typeName === PASSWORD_RULE_TYPE_NAME)
+      .forEach(instance => orderPasswordPolicyRuleMethods(instance))
   },
 })
 

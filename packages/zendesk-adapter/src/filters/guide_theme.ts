@@ -13,16 +13,32 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, Change, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceElement, isModificationChange, isReferenceExpression, isRemovalChange, ModificationChange, SaltoElementError, SaltoError, StaticFile } from '@salto-io/adapter-api'
+import {
+  AdditionChange,
+  Change,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isInstanceElement,
+  isModificationChange,
+  isReferenceExpression,
+  isRemovalChange,
+  ModificationChange,
+  SaltoElementError,
+  SaltoError,
+  StaticFile,
+  Element,
+  isObjectType, Field, MapType,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import JSZip from 'jszip'
 import _, { remove } from 'lodash'
 import { getInstancesFromElementSource, naclCase } from '@salto-io/adapter-utils'
 import ZendeskClient from '../client/client'
-import { FETCH_CONFIG, isGuideEnabled, isGuideThemesEnabled } from '../config'
+import { FETCH_CONFIG, isGuideThemesEnabled } from '../config'
 import {
-  GUIDE_THEME_TYPE_NAME, THEME_SETTINGS_TYPE_NAME, ZENDESK,
+  GUIDE_THEME_TYPE_NAME, THEME_FILE_TYPE_NAME, THEME_FOLDER_TYPE_NAME, THEME_SETTINGS_TYPE_NAME, ZENDESK,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import { create } from './guide_themes/create'
@@ -35,35 +51,64 @@ const log = logger(module)
 
 type ThemeFile = { filename: string; content: StaticFile }
 type DeployThemeFile = { filename: string; content: Buffer }
-type ThemeDirectory<T> = { [key: string]: T | ThemeDirectory<T> }
 
+
+type ThemeDirectory = {
+  files: Record<string, ThemeFile | DeployThemeFile>
+  folders: Record<string, ThemeDirectory>
+}
 
 const unzipFolderToElements = async (
   buffer: Buffer, brandName: string, name: string, live: boolean
-): Promise<ThemeDirectory<ThemeFile>> => {
+): Promise<ThemeDirectory> => {
   const zip = new JSZip()
   const unzippedContents = await zip.loadAsync(buffer)
 
-  const elements: ThemeDirectory<ThemeFile> = {}
+  const elements: ThemeDirectory = { files: {}, folders: {} }
+  const addFile = async (
+    fullPath: string,
+    pathParts: string[],
+    file: JSZip.JSZipObject,
+    currentDir: ThemeDirectory
+  ): Promise<void> => {
+    const [firstPart, ...rest] = pathParts
+
+    if (pathParts.length === 1) {
+      // It's a file
+      const filepath = `${ZENDESK}/themes/brands/${brandName}/${name}${live ? '_live' : ''}/${fullPath}`
+      const content = await file.async('nodebuffer')
+      currentDir.files[naclCase(firstPart)] = {
+        filename: fullPath,
+        content: new StaticFile({ filepath, content }),
+      }
+    } else {
+      // It's a folder
+      if (!currentDir.folders[naclCase(firstPart)]) {
+        currentDir.folders[naclCase(firstPart)] = { files: {}, folders: {} }
+      }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      await addFile(fullPath, rest, file, currentDir.folders[naclCase(firstPart)])
+    }
+  }
   await Promise.all(Object.entries(unzippedContents.files).map(async ([relativePath, file]): Promise<void> => {
     if (!file.dir) {
-      const filepath = `${ZENDESK}/themes/brands/${brandName}/${name}${live ? '_live' : ''}/${relativePath}`
-      const content = await file.async('nodebuffer')
-      _.set(elements, relativePath.split('/').map(naclCase), {
-        filename: relativePath,
-        content: new StaticFile({ filepath, content }),
-      })
+      const pathParts = relativePath.split('/')
+      await addFile(relativePath, pathParts, file, elements)
     }
   }))
   return elements
 }
 
-const extractFilesFromThemeDirectory = (themeDirectory: ThemeDirectory<DeployThemeFile>): DeployThemeFile[] => {
-  const files = Object.values(themeDirectory).flatMap(fileOrDirectory => {
-    if ('content' in fileOrDirectory) {
-      return fileOrDirectory as DeployThemeFile
-    }
-    return extractFilesFromThemeDirectory(fileOrDirectory as ThemeDirectory<DeployThemeFile>)
+const extractFilesFromThemeDirectory = (themeDirectory: ThemeDirectory): DeployThemeFile[] => {
+  let files: DeployThemeFile[] = []
+  // Add all files in the current directory
+  Object.values(themeDirectory.files).forEach(fileRecord => {
+    files.push(fileRecord as DeployThemeFile)
+  })
+
+  // Recursively add files from subdirectories
+  Object.values(themeDirectory.folders).forEach(subdirectory => {
+    files = files.concat(extractFilesFromThemeDirectory(subdirectory))
   })
   return files
 }
@@ -89,8 +134,8 @@ const createTheme = async (
   isLiveTheme: boolean
 ): Promise<string[]> => {
   const live = isLiveTheme
-  const { brand_id: brandId, files } = change.data.after.value
-  const staticFiles = extractFilesFromThemeDirectory(files)
+  const { brand_id: brandId, root } = change.data.after.value
+  const staticFiles = extractFilesFromThemeDirectory(root)
   const { themeId, errors: elementErrors } = await create({ brandId, staticFiles }, client)
   if (themeId === undefined) {
     return [
@@ -116,15 +161,33 @@ const updateTheme = async (
   return deleteTheme(change.data.before.value.id, client)
 }
 
+const fixThemeTypes = (elements: Element[]): void => {
+  const relevantTypes = elements
+    .filter(isObjectType)
+    .filter(type => [GUIDE_THEME_TYPE_NAME, THEME_FOLDER_TYPE_NAME, THEME_FILE_TYPE_NAME]
+      .includes(type.elemID.typeName))
+  const themeType = relevantTypes.find(type => GUIDE_THEME_TYPE_NAME === type.elemID.typeName)
+  const themeFolderType = relevantTypes.find(type => THEME_FOLDER_TYPE_NAME === type.elemID.typeName)
+  const themeFileType = relevantTypes.find(type => THEME_FILE_TYPE_NAME === type.elemID.typeName)
+  if (themeType === undefined || themeFolderType === undefined || themeFileType === undefined) {
+    log.error('could not fix types for themes')
+    return
+  }
+  themeFolderType.fields.files = new Field(themeFolderType, 'files', new MapType(themeFileType))
+  themeType.fields.root = new Field(themeType, 'root', themeFolderType)
+}
+
 /**
  * Fetches guide theme content
  */
 const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
   name: 'guideThemesFilter',
   onFetch: async elements => {
-    if (!isGuideEnabled(config[FETCH_CONFIG]) || !isGuideThemesEnabled(config[FETCH_CONFIG])) {
+    if (!isGuideThemesEnabled(config[FETCH_CONFIG])) {
       return undefined
     }
+
+    fixThemeTypes(elements)
 
     const instances = elements.filter(isInstanceElement)
     const guideThemes = instances.filter(instance => instance.elemID.typeName === GUIDE_THEME_TYPE_NAME)
@@ -161,7 +224,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
           const themeElements = await unzipFolderToElements(
             themeZip, brandName, theme.value.name, theme.value.live ?? false
           )
-          theme.value.files = themeElements
+          theme.value.root = themeElements
         } catch (e) {
           if (!(e instanceof Error)) {
             remove(elements, element => element.elemID.isEqual(theme.elemID))

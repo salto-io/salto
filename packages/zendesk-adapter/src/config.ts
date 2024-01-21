@@ -2672,7 +2672,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['&brand_id', ...DEFAULT_ID_FIELDS, 'live'],
       sourceTypeName: 'themes__themes',
       fieldTypeOverrides: [
-        { fieldName: 'files', fieldType: 'map<unknown>' },
+        { fieldName: 'root', fieldType: 'theme_folder' },
       ],
       fieldsToHide: FIELDS_TO_HIDE.concat([
         { fieldName: 'id', fieldType: 'string' },
@@ -2690,6 +2690,23 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
+  theme_file: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'filename', fieldType: 'string' },
+        { fieldName: 'content', fieldType: 'unknown' },
+      ],
+    },
+  },
+  theme_folder: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'files', fieldType: 'map<theme_file>' },
+        { fieldName: 'folders', fieldType: 'map<theme_folder>' },
+      ],
+    },
+  },
+
 }
 
 export const SUPPORTED_TYPES = {

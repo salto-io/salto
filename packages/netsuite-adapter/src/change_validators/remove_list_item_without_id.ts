@@ -21,6 +21,7 @@ import {
   ModificationChange,
   ElemID,
   ChangeError,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { NetsuiteChangeValidator } from './types'
@@ -29,30 +30,46 @@ import { ROLE } from '../constants'
 
 const { awu } = collections.asynciterable
 
-type GetItemList = (instance: InstanceElement) => Value[]
-type GetItemString = (item: Value) => string
 
-type PermissionObject = {
+type RolePermissionObject = {
   permkey: string | ReferenceExpression
   permlevel: string
+  restriction?: string
 }
 
-type ItemListGetters = {
+export type ItemInList = RolePermissionObject
+
+type GetItemList = (instance: InstanceElement) => ItemInList[]
+type GetItemString = (item: ItemInList) => string
+type getItemByID = (instance: InstanceElement, id: string) => ItemInList | undefined
+
+const isRolePermissionObject = (obj: Value): obj is RolePermissionObject =>
+  'permkey' in obj && (typeof obj.permkey === 'string' || isReferenceExpression(obj.permkey))
+  && 'permlevel' in obj && typeof obj.permlevel === 'string'
+  && (('restriction' in obj && typeof obj.restriction === 'string') || !('restriction' in obj))
+
+export const isItemInList = (obj: Value): obj is ItemInList => (
+  isRolePermissionObject(obj)
+)
+
+export type ItemListGetters = {
   getItemList: GetItemList
   getItemString: GetItemString
+  getItemByID: getItemByID
 }
 
 const getRolePermissionList:GetItemList = (
   instance: InstanceElement,
-): Value[] => {
+): RolePermissionObject[] => {
   if (_.isPlainObject(instance.value.permissions?.permission)) {
     return Object.values(instance.value.permissions?.permission)
+      .filter(isRolePermissionObject)
   }
   return []
 }
 
 const getRolePermkey: GetItemString = (
-  permission: PermissionObject
+  permission: RolePermissionObject
 ): string => {
   if (_.isString(permission.permkey)) {
     return permission.permkey
@@ -60,12 +77,25 @@ const getRolePermkey: GetItemString = (
   return permission.permkey.value
 }
 
-const roleGetters: ItemListGetters = {
+const getRolePermissionByName = (
+  role: InstanceElement,
+  id: string,
+): RolePermissionObject | undefined => (
+  _.isPlainObject(role.value.permissions?.permission)
+    ? Object.values(role.value.permissions?.permission)
+      .filter(isRolePermissionObject)
+      .find(permObj => getRolePermkey(permObj) === id)
+    : undefined
+)
+
+
+export const roleGetters: ItemListGetters = {
   getItemList: getRolePermissionList,
   getItemString: getRolePermkey,
+  getItemByID: getRolePermissionByName,
 }
 
-const getGettersByType = (
+export const getGettersByType = (
   typename: string,
 ): ItemListGetters | undefined => {
   if (typename === ROLE) {
@@ -83,7 +113,7 @@ const getIdentifierList = (
   return getters.getItemList(instance).map(getters.getItemString)
 }
 
-const getRemovedListItems = (
+export const getRemovedListItemStrings = (
   instanceChange: ModificationChange<InstanceElement>,
 ): { removedListItems: string[]; elemID: ElemID} => {
   const { before, after } = instanceChange.data
@@ -103,7 +133,7 @@ const changeValidator: NetsuiteChangeValidator = async changes => {
     .toArray() as ModificationChange<InstanceElement>[]
 
   return instanceChanges
-    .map(getRemovedListItems)
+    .map(getRemovedListItemStrings)
     .filter(({ removedListItems }) => !_.isEmpty(removedListItems))
     .map(({ removedListItems, elemID }) => ({
       elemID,

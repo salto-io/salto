@@ -22,7 +22,6 @@ import {
   isInstanceElement,
   isModificationChange,
   isReferenceExpression,
-  isRemovalChange,
   ModificationChange,
   SaltoElementError,
   SaltoError,
@@ -272,14 +271,12 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
     const liveThemesNames = new Set(Object.values(liveThemesByBrand))
 
     const processedChanges = await Promise.all(themeChanges
+      .filter(isAdditionOrModificationChange)
       .map(async (change): Promise<{ appliedChange?: Change<InstanceElement>; errors: SaltoElementError[] }> => {
-        if (isRemovalChange(change)) {
-          // Shouldn't happen, cleans up Typescript
-          return { errors: [] }
-        }
         const isLiveTheme = liveThemesNames.has(getChangeData(change).elemID.getFullName())
         const elementErrors = isModificationChange(change)
-          ? await updateTheme(change, client, isLiveTheme) : await createTheme(change, client, isLiveTheme)
+          ? await updateTheme(change, client, isLiveTheme)
+          : await createTheme(change, client, isLiveTheme)
         if (elementErrors.length > 0) {
           return {
             errors: elementErrors.map(e => ({

@@ -235,7 +235,6 @@ export const DEFAULT_FILTERS = [
   // fieldReferencesFilter should be after:
   // usersFilter, macroAttachmentsFilter, tagsFilter, guideLocalesFilter, customObjectFilter, customObjectFieldFilter
   fieldReferencesFilter,
-  addAliasFilter, // should run after fieldReferencesFilter
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,
   appInstallationsFilter,
@@ -263,6 +262,7 @@ export const DEFAULT_FILTERS = [
   deployBrandedGuideTypesFilter,
   guideThemeFilter, // fetches a lot of data, so should be after omitCollisionFilter to remove theme collisions
   guideThemeSettingFilter, // needs to be after guideThemeFilter as it depends on successful theme fetches
+  addAliasFilter, // should run after fieldReferencesFilter and guideThemeSettingFilter
   guideArrangePaths,
   hideAccountFeatures,
   fetchCategorySection, // need to be after arrange paths as it uses the 'name'/'title' field

@@ -15,9 +15,10 @@
 */
 import { logger } from '@salto-io/logging'
 import ZendeskClient from '../../client/client'
-import { createThemeImportJob } from './api/createThemeImportJob'
 import { pollJobStatus } from './api/pollJobStatus'
 import { createAndUploadThemePackage } from './utils'
+import { createThemeJob, JobType } from './api/createThemeJob'
+import { PendingJob, UploadJobData } from './types'
 
 const log = logger(module)
 
@@ -29,11 +30,13 @@ type UploadConfig = {
 export const create = async (
   { staticFiles, brandId }: UploadConfig, client: ZendeskClient
 ): Promise<{ themeId: string | undefined; errors: string[] }> => {
-  const { job, errors } = await createThemeImportJob(brandId, client)
+  const { job, errors } = await createThemeJob(brandId.toString(), client, JobType.IMPORTS)
   if (job === undefined) {
     return { themeId: undefined, errors }
   }
-  const { errors: uploadErrors } = await createAndUploadThemePackage(staticFiles, job, client)
+  const { errors: uploadErrors } = await createAndUploadThemePackage(
+    staticFiles, job as PendingJob<UploadJobData>, client
+  )
   errors.push(...uploadErrors)
 
   const { success: pollSuccess, errors: pollErrors } = await pollJobStatus(job.id, client)
@@ -41,8 +44,8 @@ export const create = async (
   if (!pollSuccess) {
     log.warn(`Failed to receive 'completed' job status from Zendesk API. Could not verify upload of new theme to brand ${brandId}`)
   } else {
-    log.trace('Theme created successfully, id: %s', job.data.theme_id)
+    log.trace('Theme created successfully, id: %s', (job as PendingJob<UploadJobData>).data.theme_id)
   }
 
-  return { themeId: job.data.theme_id, errors }
+  return { themeId: (job as PendingJob<UploadJobData>).data.theme_id, errors }
 }

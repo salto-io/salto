@@ -17,36 +17,46 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from '../../../client/client'
-import { DownloadJobData, isPendingJobResponse, PendingJob } from '../types'
+import { DownloadJobData, isPendingJobResponse, PendingJob, UploadJobData } from '../types'
 
 const log = logger(module)
+export enum JobType {
+  EXPORTS = 'exports',
+  IMPORTS = 'imports',
+}
 
-export const createThemeExportJob = async (
-  themeId: string, client: ZendeskClient
-): Promise<{ job: PendingJob<DownloadJobData> | undefined; errors: string[] }> => {
-  log.trace(`Creating theme export job for themeId ${themeId}`)
-
+export const createThemeJob = async (
+  id: string, client: ZendeskClient, jobType: JobType
+): Promise<{ job: PendingJob<DownloadJobData | UploadJobData> | undefined; errors: string[] }> => {
+  const idType = jobType === JobType.EXPORTS ? 'theme_id' : 'brand_id'
+  log.trace(`Creating theme ${jobType} job for ${idType} ${id}`)
   try {
     const res = await client.post({
-      url: '/api/v2/guide/theming/jobs/themes/exports',
+      url: `/api/v2/guide/theming/jobs/themes/${jobType}`,
       data: {
         job: {
           attributes: {
-            theme_id: themeId,
+            [idType]: id,
             format: 'zip',
           },
         },
       },
     })
     if (![200, 202].includes(res.status)) {
-      log.warn(`Could not export a theme for themeId ${themeId}, received ${safeJsonStringify(res.data)}`)
+      log.warn(`Could not ${jobType} a theme for ${idType} ${id}, received ${safeJsonStringify(res.data)}`)
       return { job: undefined, errors: [safeJsonStringify(res.data)] }
     }
-    return { job: isPendingJobResponse<DownloadJobData>(res.data) ? res.data.job : undefined, errors: [] }
+    const isPendingJob = jobType === JobType.EXPORTS
+      ? isPendingJobResponse<DownloadJobData>(res.data)
+      : isPendingJobResponse<UploadJobData>(res.data)
+    return {
+      job: isPendingJob ? (res.data as unknown as { job: PendingJob<DownloadJobData | UploadJobData> }).job : undefined,
+      errors: [],
+    }
   } catch (e) {
     if (e instanceof clientUtils.HTTPError) {
-      log.warn(`Could not update a theme for themeId ${themeId}. Received ${e.response.data}`)
-      if (e.response.data?.errors && Array.isArray(e.response.data.errors)) {
+      log.warn(`Could not update a theme for ${idType} ${id}. Received ${e.response.data}`)
+      if (Array.isArray(e.response.data?.errors)) {
         return { job: undefined, errors: e.response.data.errors.map(err => `${err.code} - ${err.message ?? err.title}`) }
       }
       return { job: undefined, errors: [e.message] }

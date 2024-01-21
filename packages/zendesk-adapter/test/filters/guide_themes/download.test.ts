@@ -15,7 +15,7 @@
 */
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import ZendeskClient from '../../../src/client/client'
-import * as exportModule from '../../../src/filters/guide_themes/api/createThemeExportJob'
+import * as exportModule from '../../../src/filters/guide_themes/api/createThemeJob'
 import * as pollModule from '../../../src/filters/guide_themes/api/pollJobStatus'
 import { download } from '../../../src/filters/guide_themes/download'
 import { downloadJobResponse } from './helpers'
@@ -31,7 +31,7 @@ describe('download', () => {
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
     mockPollJobStatus = jest.spyOn(pollModule, 'pollJobStatus')
-    mockCreateThemeExportJob = jest.spyOn(exportModule, 'createThemeExportJob')
+    mockCreateThemeExportJob = jest.spyOn(exportModule, 'createThemeJob')
     mockGetResource = jest.spyOn(client, 'getResource')
   })
 

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import ZendeskClient from '../../../src/client/client'
-import * as importModule from '../../../src/filters/guide_themes/api/createThemeImportJob'
+import * as importModule from '../../../src/filters/guide_themes/api/createThemeJob'
 import * as pollModule from '../../../src/filters/guide_themes/api/pollJobStatus'
 import { create } from '../../../src/filters/guide_themes/create'
 import * as createModule from '../../../src/filters/guide_themes/utils'
@@ -36,7 +36,7 @@ describe('create', () => {
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
     mockPollJobStatus = jest.spyOn(pollModule, 'pollJobStatus')
-    mockCreateThemeImportJob = jest.spyOn(importModule, 'createThemeImportJob')
+    mockCreateThemeImportJob = jest.spyOn(importModule, 'createThemeJob')
     mockCreateAndUploadThemePackage = jest.spyOn(createModule, 'createAndUploadThemePackage')
   })
 

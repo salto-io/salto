@@ -69,7 +69,13 @@ const newThemeWithFiles = new InstanceElement('newThemeWithFiles', themeType,
   {
     name: 'SevenFlags',
     brand_id: new ReferenceExpression(brand1.elemID, brand1),
-    files: { 'file1.txt': { filename: 'file1.txt', content: new StaticFile({ filepath: 'file1.txt', content: Buffer.from('file1content') }) } },
+    root: {
+      files: {
+        'file1_txt@v': { filename: 'file1.txt',
+          content: new StaticFile({ filepath: 'file1.txt', content: Buffer.from('file1content') }) },
+      },
+      folders: {},
+    },
   })
 
 const themeSettingsInstance = new InstanceElement(
@@ -173,12 +179,12 @@ describe('filterCreator', () => {
           expect(Object.keys(liveThemeWithId.value.root)).toHaveLength(2)
           expect(liveThemeWithId.value.root.files['file1_txt@v'].filename).toEqual('file1.txt')
           expect(liveThemeWithId.value.root.files['file1_txt@v'].content).toEqual(new StaticFile({
-            filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags_live/file1.txt`,
+            filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/file1.txt`,
             content: Buffer.from('file1content'),
           }))
           expect(liveThemeWithId.value.root.folders['subfolder_dot@v'].files['file2_txt@v'].filename).toEqual('subfolder.dot/file2.txt')
           expect(liveThemeWithId.value.root.folders['subfolder_dot@v'].files['file2_txt@v'].content).toEqual(new StaticFile({
-            filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags_live/subfolder.dot/file2.txt`,
+            filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/subfolder.dot/file2.txt`,
             content: Buffer.from('file2content'),
           }))
 
@@ -339,7 +345,7 @@ describe('filterCreator', () => {
         const before = newThemeWithFiles.clone()
         before.value.id = 'oldId'
         const after = newThemeWithFiles.clone()
-        after.value.files['file1.txt'] = { filename: 'file1.txt', content: new StaticFile({ filepath: 'file1.txt', content: Buffer.from('newContent') }) }
+        after.value.root.files['file1_txt@v'] = { filename: 'file1.txt', content: new StaticFile({ filepath: 'file1.txt', content: Buffer.from('newContent') }) }
         changes = [toChange({ before, after })]
       })
 

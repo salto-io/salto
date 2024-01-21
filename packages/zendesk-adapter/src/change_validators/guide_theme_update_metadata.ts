@@ -24,7 +24,10 @@ import _ from 'lodash'
 import { GUIDE_THEME_TYPE_NAME } from '../constants'
 
 const MANIFEST_FIELDS = ['author', 'name', 'version']
-
+/**
+ * this filters check that there has been no change to the theme metadata. to change the theme metadata the user needs
+ * to update the manifest file and not the nacl
+ */
 export const guideThemeUpdateMetadataValidator: ChangeValidator = async changes => {
   const updatedThemes = changes
     .filter(isInstanceChange)
@@ -54,9 +57,9 @@ export const guideThemeUpdateMetadataValidator: ChangeValidator = async changes 
     return true
   }).map(theme => ({
     elemID: getChangeData(theme).elemID,
-    message: 'Changing the brand on a theme is not supported',
+    message: 'Moving a theme to a different brand is not supported',
     severity: 'Error' as SeverityLevel,
-    detailedMessage: 'Changing the brand on a theme is not supported',
+    detailedMessage: 'Moving a theme to a different brand is not supported',
   }))
 
   return [...manifestChanges, ...unsupportedChanges]

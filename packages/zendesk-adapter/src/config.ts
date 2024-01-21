@@ -22,7 +22,7 @@ import {
   ARTICLE_ORDER_TYPE_NAME,
   BRAND_TYPE_NAME,
   CATEGORY_ORDER_TYPE_NAME, EVERYONE_USER_TYPE,
-  SECTION_ORDER_TYPE_NAME,
+  SECTION_ORDER_TYPE_NAME, THEME_SETTINGS_TYPE_NAME,
   ZENDESK,
 } from './constants'
 
@@ -2669,7 +2669,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   theme: {
     transformation: {
-      idFields: ['&brand_id', ...DEFAULT_ID_FIELDS, 'live'],
+      idFields: ['&brand_id', ...DEFAULT_ID_FIELDS],
       sourceTypeName: 'themes__themes',
       fieldTypeOverrides: [
         { fieldName: 'root', fieldType: 'theme_folder' },
@@ -2703,6 +2703,14 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'files', fieldType: 'map<theme_file>' },
         { fieldName: 'folders', fieldType: 'map<theme_folder>' },
+      ],
+    },
+  },
+  [THEME_SETTINGS_TYPE_NAME]: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'brand', fieldType: 'number' },
+        { fieldName: 'liveTheme', fieldType: 'string' },
       ],
     },
   },

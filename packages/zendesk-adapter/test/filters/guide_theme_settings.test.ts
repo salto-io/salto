@@ -99,7 +99,7 @@ describe('filterCreator', () => {
       })
 
       it('should creates setting instance and type correctly', async () => {
-        const elements = [brand1, liveTheme, nonLiveTheme, brand2, liveTheme2]
+        const elements = [brand1, liveTheme, nonLiveTheme, brand2, liveTheme2, themeSettingsType]
         await filter.onFetch?.(elements)
         expect(elements).toEqual(
           [

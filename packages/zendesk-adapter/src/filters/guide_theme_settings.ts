@@ -14,28 +14,24 @@
 * limitations under the License.
 */
 import {
-  BuiltinTypes,
   Change,
-  CORE_ANNOTATIONS,
   Element,
-  ElemID,
   getChangeData,
   InstanceElement,
   isInstanceElement,
-  isModificationChange,
+  isModificationChange, isObjectType,
   isReferenceExpression,
   ObjectType,
   ReferenceExpression,
   SeverityLevel,
 } from '@salto-io/adapter-api'
-import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { naclCase } from '@salto-io/adapter-utils'
-import { FETCH_CONFIG, isGuideEnabled, isGuideThemesEnabled, ZendeskConfig } from '../config'
+import { FETCH_CONFIG, isGuideThemesEnabled } from '../config'
 import {
-  GUIDE_THEME_TYPE_NAME, THEME_SETTINGS_TYPE_NAME, ZENDESK,
+  GUIDE_THEME_TYPE_NAME, THEME_SETTINGS_TYPE_NAME,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import { publish } from './guide_themes/publish'
@@ -43,21 +39,7 @@ import { publish } from './guide_themes/publish'
 const log = logger(module)
 
 
-const createThemeSettingsInstances = (guideThemes: InstanceElement[], config: ZendeskConfig): Element[] => {
-  const themeSettingsType = new ObjectType(
-    {
-      elemID: new ElemID(ZENDESK, THEME_SETTINGS_TYPE_NAME),
-      fields: {
-        brand: { refType: BuiltinTypes.NUMBER },
-        liveTheme: { refType: BuiltinTypes.STRING },
-      },
-      path: [ZENDESK, elementsUtils.TYPES_PATH, THEME_SETTINGS_TYPE_NAME],
-      annotations: {
-        [CORE_ANNOTATIONS.HIDDEN]: config[FETCH_CONFIG].hideTypes ?? true,
-      },
-    },
-  )
-
+const createThemeSettingsInstances = (guideThemes: InstanceElement[], themeSettingsType: ObjectType): Element[] => {
   const guideThemeSettingsInstances = Object.values(
     _.groupBy(
       guideThemes.filter(theme => isReferenceExpression(theme.value.brand_id)),
@@ -87,7 +69,7 @@ const createThemeSettingsInstances = (guideThemes: InstanceElement[], config: Ze
   if (guideThemeSettingsInstances.length === 0) {
     return []
   }
-  return [themeSettingsType, ...guideThemeSettingsInstances]
+  return guideThemeSettingsInstances
 }
 
 /**
@@ -96,14 +78,20 @@ const createThemeSettingsInstances = (guideThemes: InstanceElement[], config: Ze
 const filterCreator: FilterCreator = ({ config, client }) => ({
   name: 'guideThemesSettingsFilter',
   onFetch: async elements => {
-    if (!isGuideEnabled(config[FETCH_CONFIG]) || !isGuideThemesEnabled(config[FETCH_CONFIG])) {
-      return undefined
+    if (!isGuideThemesEnabled(config[FETCH_CONFIG])) {
+      return
     }
 
     const instances = elements.filter(isInstanceElement)
     const guideThemes = instances.filter(instance => instance.elemID.typeName === GUIDE_THEME_TYPE_NAME)
-    elements.push(...createThemeSettingsInstances(guideThemes, config))
-    return undefined
+    const themeSettingsType = elements
+      .filter(isObjectType)
+      .find(obj => obj.elemID.typeName === THEME_SETTINGS_TYPE_NAME)
+    if (themeSettingsType === undefined) {
+      log.error('could not find theme setting type')
+      return
+    }
+    elements.push(...createThemeSettingsInstances(guideThemes, themeSettingsType))
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [themeSettingsChanges, leftoverChanges] = _.partition(
@@ -127,7 +115,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     }))
     const errorsOtherChanges = otherChanges.map(change => ({
       elemID: getChangeData(change).elemID,
-      message: 'Non modification changes are not supported',
+      message: 'Non modification changes are not supported in theme_settings instance',
       severity: 'Error' as SeverityLevel,
     }))
     const errors = processedModificationChanges.flatMap(change => change.errors)

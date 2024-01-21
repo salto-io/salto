@@ -59,7 +59,7 @@ type ThemeDirectory = {
 }
 
 const unzipFolderToElements = async (
-  buffer: Buffer, brandName: string, name: string, live: boolean
+  buffer: Buffer, brandName: string, name: string,
 ): Promise<ThemeDirectory> => {
   const zip = new JSZip()
   const unzippedContents = await zip.loadAsync(buffer)
@@ -75,7 +75,7 @@ const unzipFolderToElements = async (
 
     if (pathParts.length === 1) {
       // It's a file
-      const filepath = `${ZENDESK}/themes/brands/${brandName}/${name}${live ? '_live' : ''}/${fullPath}`
+      const filepath = `${ZENDESK}/themes/brands/${brandName}/${name}/${fullPath}`
       const content = await file.async('nodebuffer')
       currentDir.files[naclCase(firstPart)] = {
         filename: fullPath,
@@ -222,7 +222,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
         }
         try {
           const themeElements = await unzipFolderToElements(
-            themeZip, brandName, theme.value.name, theme.value.live ?? false
+            themeZip, brandName, theme.value.name
           )
           theme.value.root = themeElements
         } catch (e) {

@@ -95,6 +95,7 @@ export type OptionalFeatures = {
   fixRetrieveFilePaths?: boolean
   organizationWideSharingDefaults?: boolean
   extendedCustomFieldInformation?: boolean
+  importantValues?: boolean
 }
 
 export type ChangeValidatorName = (
@@ -735,6 +736,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     fixRetrieveFilePaths: { refType: BuiltinTypes.BOOLEAN },
     organizationWideSharingDefaults: { refType: BuiltinTypes.BOOLEAN },
     extendedCustomFieldInformation: { refType: BuiltinTypes.BOOLEAN },
+    importantValues: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

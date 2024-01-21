@@ -418,7 +418,7 @@ const filter: FilterCreator = ({ client }) => {
               await consolidateLinkTypeFields(resolvedInstance)
               await changeRawValueFieldsToValue(resolvedInstance)
               await revertCompareFieldValueStructure(resolvedInstance)
-              await transformDeleteLinkTypes(instance, true)
+              await transformDeleteLinkTypes(resolvedInstance, true)
               instance.value = resolvedInstance.value
               return instance
             }

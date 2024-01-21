@@ -19,7 +19,7 @@ import { elements } from '@salto-io/adapter-components'
 import { AUTOMATION_PROJECT_TYPE, AUTOMATION_TYPE, AUTOMATION_COMPONENT_TYPE,
   AUTOMATION_FIELD, AUTOMATION_STATUS, AUTOMATION_CONDITION, AUTOMATION_CONDITION_CRITERIA,
   AUTOMATION_SUBTASK, AUTOMATION_ROLE, AUTOMATION_GROUP, AUTOMATION_EMAIL_RECIPENT,
-  AUTOMATION_COMPARE_VALUE, AUTOMATION_OPERATION, AUTOMATION_COMPONENT_VALUE_TYPE, JIRA } from '../../constants'
+  AUTOMATION_COMPARE_VALUE, AUTOMATION_OPERATION, AUTOMATION_COMPONENT_VALUE_TYPE, JIRA, DELETE_LINK_TYPES } from '../../constants'
 
 export const createAutomationTypes = (): {
   automationType: ObjectType
@@ -130,7 +130,7 @@ export const createAutomationTypes = (): {
   })
 
   const deleteLinkTypes = new ObjectType({
-    elemID: new ElemID(JIRA, 'DeleteLinkTypes'),
+    elemID: new ElemID(JIRA, DELETE_LINK_TYPES),
     fields: {
       id: { refType: BuiltinTypes.STRING },
       direction: { refType: BuiltinTypes.STRING },

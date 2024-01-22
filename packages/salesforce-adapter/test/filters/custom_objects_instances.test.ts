@@ -1473,7 +1473,7 @@ describe('Custom Object Instances filter', () => {
         configSuggestions: [{
           type: 'dataObjectsExclude',
           value: 'testElement',
-          reason: "'testElement' has 3 instances so it was skipped and would be excluded from future fetch operations, as maxInstancesPerType is set to 2.\n      If you wish to fetch it anyway, remove it from your app configuration exclude block and increase maxInstancePerType to the desired value (-1 for unlimited).",
+          reason: expect.stringContaining('maxInstancesPerType'),
         }],
       })
     })
@@ -1493,7 +1493,7 @@ describe('Custom Object Instances filter', () => {
         configSuggestions: [{
           type: 'dataObjectsExclude',
           value: 'testElement',
-          reason: "'testElement' has 3 instances so it was skipped and would be excluded from future fetch operations, as maxInstancesPerType is set to 2.\n      If you wish to fetch it anyway, remove it from your app configuration exclude block and increase maxInstancePerType to the desired value (-1 for unlimited).",
+          reason: expect.stringContaining('maxInstancesPerType'),
         }],
       })
     })

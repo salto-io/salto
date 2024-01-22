@@ -356,8 +356,8 @@ export const DEFAULT_FILTERS = [
   assetsObjectTypeOrderFilter,
   deployAttributesFilter,
   deployJsmTypesFilter,
+  hideTypesFilter, // Must run after defaultAttributesFilter and assetsObjectTypeOrderFilter, which also create types.
   // Must be last
-  hideTypesFilter,
   defaultInstancesDeployFilter,
 ]
 

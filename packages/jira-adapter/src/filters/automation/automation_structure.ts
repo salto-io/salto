@@ -277,7 +277,9 @@ const transformHasAttachmentValue = (instance: InstanceElement, reverse?: boolea
     values: instance.value,
     type: instance.getTypeSync(),
     transformFunc: ({ value }) => {
-      if (value?.type === 'jira.issue.hasAttachments' && value?.component === 'CONDITION') {
+      if (value?.type === 'jira.issue.hasAttachments'
+        && value?.component
+        && _.isBoolean(reverse ? value.hasAttachmentsValue : value.value)) {
         if (reverse) {
           value.value = value.hasAttachmentsValue
           delete value.hasAttachmentsValue
@@ -376,7 +378,7 @@ const transformDeleteLinkTypes = (instance: InstanceElement, reverse?: boolean):
     allowEmpty: true,
     strict: false,
     transformFunc: ({ value }) => {
-      if (value?.type === 'jira.issue.delete.link' && value?.component === 'ACTION') {
+      if (value?.type === 'jira.issue.delete.link' && value?.component) {
         if (reverse) {
           value.value.linkTypes = value.value?.deleteLinkTypes
           delete value.value.deleteLinkTypes

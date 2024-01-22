@@ -348,7 +348,7 @@ export type QuickDeployParams = {
   hash: string
 }
 
-type ClientDeployConfig = Partial<{
+export type ClientDeployConfig = Partial<{
   rollbackOnError: boolean
   ignoreWarnings: boolean
   purgeOnDelete: boolean
@@ -357,6 +357,7 @@ type ClientDeployConfig = Partial<{
   runTests: string[]
   deleteBeforeUpdate: boolean
   quickDeployParams: QuickDeployParams
+  performRetrieve: boolean
 }>
 
 export enum RetryStrategyName {
@@ -612,6 +613,7 @@ const clientDeployConfigType = new ObjectType({
     runTests: { refType: new ListType(BuiltinTypes.STRING) },
     deleteBeforeUpdate: { refType: BuiltinTypes.BOOLEAN },
     quickDeployParams: { refType: QuickDeployParamsType },
+    performRetrieve: { refType: BuiltinTypes.BOOLEAN },
   } as Record<keyof ClientDeployConfig, FieldDefinition>,
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

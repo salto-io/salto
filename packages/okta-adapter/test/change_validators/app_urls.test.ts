@@ -46,14 +46,14 @@ describe('appUrlsValidator', () => {
       {
         elemID: instance.elemID,
         severity: 'Warning',
-        message: 'Remember to update environment-specific fields when moving applications between Okta tenants',
-        detailedMessage: 'Ensure a smooth deployment by updating environment-specific fields, such as URLs and subdomains, when moving applications between Okta tenants. Easily adjust these fields by editing the relevant elements in Salto.',
+        message: 'Update environment-specific values when deploying application elements between Okta tenants',
+        detailedMessage: 'Update environment-specific values, such as URLs and subdomains, when deploying application elements between Okta tenants. Adjust these values by editing the relevant element in Salto.',
       },
       {
         elemID: instance.elemID,
         severity: 'Warning',
-        message: 'Remember to update environment-specific fields when moving applications between Okta tenants',
-        detailedMessage: 'Ensure a smooth deployment by updating environment-specific fields, such as URLs and subdomains, when moving applications between Okta tenants. Easily adjust these fields by editing the relevant elements in Salto.',
+        message: 'Update environment-specific values when deploying application elements between Okta tenants',
+        detailedMessage: 'Update environment-specific values, such as URLs and subdomains, when deploying application elements between Okta tenants. Adjust these values by editing the relevant element in Salto.',
       },
     ])
   })

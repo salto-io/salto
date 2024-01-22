@@ -397,6 +397,34 @@ describe('filterCreator', () => {
             expect((changes[0] as ModificationChange<InstanceElement>).data.after.value.id).toEqual('idWithError')
           })
         })
+        describe('error only in publish', () => {
+          beforeEach(() => {
+            const config = { ...DEFAULT_CONFIG }
+            config[FETCH_CONFIG].guide = { brands: ['.*'], themesForBrands: ['.*'] }
+            filter = filterCreator(createFilterCreatorParams({ config,
+              elementsSource: buildElementsSourceFromElements([themeSettingsInstance2]) }))
+            mockPublish.mockResolvedValue(['Failed to publish'])
+            mockCreate.mockResolvedValue({ themeId: 'idWithError', errors: [] })
+          })
+
+          it('should return an addition to the publish error in case of failure', async () => {
+            expect(await filter.deploy?.(changes))
+              .toEqual({
+                deployResult: {
+                  appliedChanges: [],
+                  errors: [
+                    {
+                      elemID: newThemeWithFiles.elemID,
+                      message: 'Failed to publish. The theme has been created but not published; you can manually publish it in the Zendesk UI.',
+                      severity: 'Error',
+                    },
+                  ],
+                },
+                leftoverChanges: [],
+              })
+            expect(mockDelete).not.toHaveBeenCalled()
+          })
+        })
 
         describe('theme id not returned', () => {
           beforeEach(() => {

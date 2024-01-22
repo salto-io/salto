@@ -155,6 +155,10 @@ const updateTheme = async (
 ): Promise<string[]> => {
   const elementErrors = await createTheme(change, client, isLiveTheme)
   if (elementErrors.length > 0) {
+    const lastError = elementErrors[elementErrors.length - 1]
+    if (lastError.includes('Failed to publish')) {
+      elementErrors[elementErrors.length - 1] = `${lastError}. The theme has been created but not published; you can manually publish it in the Zendesk UI.`
+    }
     return elementErrors
   }
   return deleteTheme(change.data.before.value.id, client)
@@ -261,7 +265,8 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
       return { deployResult: { appliedChanges: [], errors: [] }, leftoverChanges }
     }
 
-    // to make sure that if there are multiple settings there is only one live per brand
+    // If multiple theme settings exist for a single brand, we will randomly select and examine only one setting to
+    // ensure there is just one live theme per brand.
     const liveThemesByBrand = Object.fromEntries(
       (await getInstancesFromElementSource(elementsSource, [THEME_SETTINGS_TYPE_NAME]))
         .filter(instance => isReferenceExpression(instance.value.liveTheme)

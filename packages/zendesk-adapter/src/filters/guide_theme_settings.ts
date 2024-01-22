@@ -115,7 +115,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     }))
     const errorsOtherChanges = otherChanges.map(change => ({
       elemID: getChangeData(change).elemID,
-      message: 'Non modification changes are not supported in theme_settings instance',
+      message: 'Theme_settings instances cannot be added or removed',
       severity: 'Error' as SeverityLevel,
     }))
     const errors = processedModificationChanges.flatMap(change => change.errors)

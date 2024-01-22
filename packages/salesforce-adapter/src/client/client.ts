@@ -51,6 +51,7 @@ import {
 } from '../constants'
 import { CompleteSaveResult, SalesforceRecord, SfError } from './types'
 import {
+  ClientDeployConfig,
   ClientPollingConfig,
   ClientRateLimitConfig,
   ClientRetryConfig,
@@ -849,7 +850,7 @@ export default class SalesforceClient {
     this.setDeployPollingTimeout()
     const defaultDeployOptions = { rollbackOnError: true, ignoreWarnings: true }
     const { checkOnly = false } = deployOptions ?? {}
-    const optionsToSend = ['rollbackOnError', 'ignoreWarnings', 'purgeOnDelete', 'testLevel', 'runTests']
+    const optionsToSend: (keyof ClientDeployConfig)[] = ['rollbackOnError', 'ignoreWarnings', 'purgeOnDelete', 'testLevel', 'runTests', 'performRetrieve']
     const deployStatus = this.conn.metadata.deploy(
       zip,
       {

@@ -166,6 +166,7 @@ type GetDeployResultParams = {
   testCompleted?: number
   testErrors?: number
   errorMessage?: string
+  retrieveResult?: RetrieveResult
 }
 
 type MockDeployResultParams = GetDeployResultParams & Required<Pick<GetDeployResultParams, 'id'>>
@@ -182,6 +183,7 @@ export const mockDeployResultComplete = ({
   checkOnly = false,
   testCompleted = 0,
   testErrors = 0,
+  retrieveResult,
 }: MockDeployResultParams): DeployResult => ({
   id,
   checkOnly,
@@ -192,6 +194,7 @@ export const mockDeployResultComplete = ({
     componentFailures: componentFailure.map(mockDeployMessage),
     componentSuccesses: componentSuccess.map(mockDeployMessage),
     runTestResult: mockRunTestResult(runTestResult),
+    retrieveResult,
   }],
   ignoreWarnings,
   lastModifiedDate: '2020-05-01T14:31:36.000Z',

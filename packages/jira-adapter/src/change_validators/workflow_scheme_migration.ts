@@ -29,12 +29,12 @@ const { addUrlToInstance } = filters
 const { awu } = collections.asynciterable
 const { isDefined } = values
 
-type WorkflowSchemeItem = {
+export type WorkflowSchemeItem = {
     workflow: ReferenceExpression
     issueType: ReferenceExpression
 }
 
-const isWorkflowSchemeItem = (item: WorkflowSchemeItem): item is WorkflowSchemeItem =>
+export const isWorkflowSchemeItem = (item: WorkflowSchemeItem): item is WorkflowSchemeItem =>
   _.isPlainObject(item) && item.workflow instanceof ReferenceExpression && item.issueType instanceof ReferenceExpression
 
 type ChangedItem = {
@@ -49,7 +49,7 @@ export type StatusMigration = {
   newStatusId?: ReferenceExpression
 }
 
-const projectHasWorkflowSchemeReference = (project: InstanceElement): boolean =>
+export const projectHasWorkflowSchemeReference = (project: InstanceElement): boolean =>
   project.value.workflowScheme instanceof ReferenceExpression
 
 const workflowLinkedToProjectWithIssues = async (

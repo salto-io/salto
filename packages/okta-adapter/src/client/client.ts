@@ -121,13 +121,14 @@ const shouldRunRequest = (rateLimits: OktaRateLimits, rateLimitBuffer: number): 
 }
 export const updateRateLimits = (
   rateLimits: OktaRateLimits,
-  headers: Record<string, string>
+  headers: Record<string, string>,
+  url: string
 ): void => {
   const updatedRateLimitRemaining = Number(headers['x-rate-limit-remaining'])
   const updatedRateLimitReset = Number(headers['x-rate-limit-reset'])
   const updateMaxPerMinute = Number(headers['x-rate-limit-limit'])
   if (!_.isFinite(updatedRateLimitRemaining) || !_.isFinite(updatedRateLimitReset) || !_.isFinite(updateMaxPerMinute)) {
-    log.error(`Invalid getSinglePage response headers, remaining: ${updatedRateLimitRemaining}, reset: ${updatedRateLimitReset}`)
+    log.warn(`Invalid getSinglePage response headers for url: ${url}, remaining: ${updatedRateLimitRemaining}, reset: ${updatedRateLimitReset}`)
     return
   }
   // If this is a new limitation, reset the remaining count
@@ -198,12 +199,12 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
       rateLimits.currentlyRunning += 1
       const res = await super.getSinglePage(args)
       if (res.headers && this.shouldUseDynamicRateLimit()) {
-        updateRateLimits(rateLimits, res.headers)
+        updateRateLimits(rateLimits, res.headers, args.url)
       }
       return res
     } catch (e) {
       if (e.response?.headers && this.shouldUseDynamicRateLimit()) {
-        updateRateLimits(rateLimits, e.response?.headers)
+        updateRateLimits(rateLimits, e.response?.headers, args.url)
       }
       const status = e.response?.status
       // Okta returns 404 when trying fetch AppUserSchema for built-in apps

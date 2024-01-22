@@ -266,6 +266,33 @@ const changeRawValueFieldsToValue = async (instance: InstanceElement): Promise<v
   })).value
 }
 
+
+// For components with type = "jira.issue.hasAttachments"
+// Value is a boolean, but component.value is an object in the objectType
+// So we transform the value to hasAttachmentsValue and vice versa
+const transformHasAttachmentValue = (instance: InstanceElement, reverse?: boolean): void => {
+  instance.value = transformValuesSync({
+    strict: false,
+    allowEmpty: true,
+    values: instance.value,
+    type: instance.getTypeSync(),
+    transformFunc: ({ value }) => {
+      if (value?.type === 'jira.issue.hasAttachments'
+        && value?.component
+        && _.isBoolean(reverse ? value.hasAttachmentsValue : value.value)) {
+        if (reverse) {
+          value.value = value.hasAttachmentsValue
+          delete value.hasAttachmentsValue
+        } else {
+          value.hasAttachmentsValue = value.value
+          delete value.value
+        }
+      }
+      return value
+    },
+  })
+}
+
 const revertCompareFieldValueStructure = async (instance: InstanceElement): Promise<void> => {
   instance.value = (await transformElement({
     element: instance,
@@ -351,7 +378,7 @@ const transformDeleteLinkTypes = (instance: InstanceElement, reverse?: boolean):
     allowEmpty: true,
     strict: false,
     transformFunc: ({ value }) => {
-      if (value?.type === 'jira.issue.delete.link' && value?.component === 'ACTION') {
+      if (value?.type === 'jira.issue.delete.link' && value?.component) {
         if (reverse) {
           value.value.linkTypes = value.value?.deleteLinkTypes
           delete value.value.deleteLinkTypes
@@ -390,6 +417,7 @@ const filter: FilterCreator = ({ client }) => {
           await separateLinkTypeField(instance)
           await convertToCompareFieldValue(instance)
           transformDeleteLinkTypes(instance)
+          transformHasAttachmentValue(instance)
 
           instance.value.projects = instance.value.projects
             ?.map(
@@ -418,6 +446,7 @@ const filter: FilterCreator = ({ client }) => {
               await changeRawValueFieldsToValue(resolvedInstance)
               await revertCompareFieldValueStructure(resolvedInstance)
               transformDeleteLinkTypes(resolvedInstance, true)
+              transformHasAttachmentValue(resolvedInstance, true)
               instance.value = resolvedInstance.value
               return instance
             }
@@ -436,6 +465,7 @@ const filter: FilterCreator = ({ client }) => {
               await separateLinkTypeField(instance)
               await convertToCompareFieldValue(instance)
               transformDeleteLinkTypes(instance)
+              transformHasAttachmentValue(instance)
               return instance
             }
           )

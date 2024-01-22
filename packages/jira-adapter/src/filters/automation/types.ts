@@ -180,6 +180,7 @@ export const createAutomationTypes = (): {
       schemeVersion: { refType: BuiltinTypes.NUMBER },
       type: { refType: BuiltinTypes.STRING },
       value: { refType: componentValueType },
+      hasAttachmentsValue: { refType: BuiltinTypes.BOOLEAN },
     },
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_COMPONENT_TYPE],
   })

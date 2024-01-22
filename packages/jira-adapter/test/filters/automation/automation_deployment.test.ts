@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { createEmptyType, getFilterParams, mockClient } from '../../utils'
+import { getFilterParams, mockClient } from '../../utils'
 import automationDeploymentFilter from '../../../src/filters/automation/automation_deployment'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { AUTOMATION_TYPE, JIRA, OBJECT_SCHEMA_TYPE, OBJECT_TYPE_TYPE } from '../../../src/constants'
@@ -760,9 +760,23 @@ describe('automationDeploymentFilter', () => {
           },
         },
       })
+      const objectSchemaType = new ObjectType({
+        elemID: new ElemID(JIRA, OBJECT_SCHEMA_TYPE),
+        fields: {
+          name: {
+            refType: BuiltinTypes.STRING,
+          },
+          id: {
+            refType: BuiltinTypes.STRING,
+          },
+          workspaceId: {
+            refType: BuiltinTypes.STRING,
+          },
+        },
+      })
       const objectSchemaInstance = new InstanceElement(
         'instance',
-        createEmptyType(OBJECT_SCHEMA_TYPE),
+        objectSchemaType,
         {
           name: 'schemaName',
           id: '25',
@@ -799,6 +813,7 @@ describe('automationDeploymentFilter', () => {
                   schemaVersion: 1,
                   value: {
                     objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
+                    schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
                   },
                 },
               ],
@@ -811,7 +826,7 @@ describe('automationDeploymentFilter', () => {
           await filter.preDeploy([toChange({ after: automationInstance })])
           expect(automationInstance.value.components[0].value).toEqual({
             objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
-            schemaId: '25',
+            schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
             schemaLabel: 'schemaName',
             objectTypeLabel: 'objectTypeName',
             workspaceId: 'w11',
@@ -830,7 +845,7 @@ describe('automationDeploymentFilter', () => {
           await filter.preDeploy([toChange({ after: automationInstance })])
           expect(automationInstance.value.components[0].value).toEqual({
             objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
-            schemaId: '25',
+            schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
             schemaLabel: 'schemaName',
             objectTypeLabel: 'objectTypeName',
             workspaceId: 'w11',
@@ -845,6 +860,7 @@ describe('automationDeploymentFilter', () => {
           await filter.preDeploy([toChange({ after: automationInstance })])
           expect(automationInstance.value.components[0].value).toEqual({
             objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
+            schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
           })
         })
         it('should do nothing if there are no components', async () => {
@@ -853,15 +869,6 @@ describe('automationDeploymentFilter', () => {
           config.fetch.enableJsmExperimental = true
           await filter.onDeploy([toChange({ after: automationInstance })])
           expect(automationInstance.value.components).toBeUndefined()
-        })
-        it('should not throw an error if schema objectType doesn\'t have a parent', async () => {
-          objectTypeInstance.annotations[CORE_ANNOTATIONS.PARENT] = undefined
-          config.fetch.enableJSM = true
-          config.fetch.enableJsmExperimental = true
-          await filter.preDeploy([toChange({ after: automationInstance })])
-          expect(automationInstance.value.components[0].value).toEqual({
-            objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
-          })
         })
       })
     })
@@ -877,9 +884,23 @@ describe('automationDeploymentFilter', () => {
           },
         },
       })
+      const objectSchemaType = new ObjectType({
+        elemID: new ElemID(JIRA, OBJECT_SCHEMA_TYPE),
+        fields: {
+          name: {
+            refType: BuiltinTypes.STRING,
+          },
+          id: {
+            refType: BuiltinTypes.STRING,
+          },
+          workspaceId: {
+            refType: BuiltinTypes.STRING,
+          },
+        },
+      })
       const objectSchemaInstance = new InstanceElement(
         'instance',
-        createEmptyType(OBJECT_SCHEMA_TYPE),
+        objectSchemaType,
         {
           name: 'schemaName',
           id: '25',
@@ -917,7 +938,7 @@ describe('automationDeploymentFilter', () => {
                   value: {
                     objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
                     workspaceId: 'w11',
-                    schemaId: '25',
+                    schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
                     schemaLabel: 'schemaName',
                     objectTypeLabel: 'objectTypeName',
                   },
@@ -932,6 +953,7 @@ describe('automationDeploymentFilter', () => {
           await filter.onDeploy([toChange({ after: automationInstance })])
           expect(automationInstance.value.components[0].value).toEqual({
             objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
+            schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
           })
         })
         it('should not remove missing fields to assets components when enable JSM is false', async () => {
@@ -941,7 +963,7 @@ describe('automationDeploymentFilter', () => {
           expect(automationInstance.value.components[0].value).toEqual({
             objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
             workspaceId: 'w11',
-            schemaId: '25',
+            schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
             schemaLabel: 'schemaName',
             objectTypeLabel: 'objectTypeName',
           })
@@ -966,6 +988,7 @@ describe('automationDeploymentFilter', () => {
           await filter.onDeploy([toChange({ after: automationInstance })])
           expect(automationInstance.value.components[0].value).toEqual({
             objectTypeId: new ReferenceExpression(objectTypeInstance.elemID, objectTypeInstance),
+            schemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
           })
           expect(automationInstance.value.components[1].value).toEqual({
             attribute: 'value',

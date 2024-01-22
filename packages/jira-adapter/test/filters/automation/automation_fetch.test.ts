@@ -731,6 +731,7 @@ describe('automationFetchFilter', () => {
             type: 'cmdb.object.create',
             value: {
               objectTypeId: '35',
+              schemaId: '5',
               attributes: [
                 {
                   name: 'Name',
@@ -783,7 +784,6 @@ describe('automationFetchFilter', () => {
                       value: {
                         objectTypeId: '35',
                         schemaLabel: 'idoA Schema',
-                        schemaId: '5',
                         objectTypeLabel: 'R&D',
                         attributes: [
                           {
@@ -844,7 +844,6 @@ describe('automationFetchFilter', () => {
             value: {
               objectTypeId: '35',
               schemaLabel: 'idoA Schema',
-              schemaId: '5',
               objectTypeLabel: 'R&D',
               attributes: [
                 {

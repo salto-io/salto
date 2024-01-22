@@ -318,9 +318,6 @@ const createTransformDeleteLinkTypesFunc = (reverse?: boolean): TransformFuncSyn
   return value
 }
 
-const isAutomationInstance = (elem: unknown): elem is InstanceElement =>
-  isInstanceElement(elem) && elem.elemID.typeName === AUTOMATION_TYPE
-
 const createAutomationTransformFunc = (transformFuncs: TransformFuncSync[]):
 TransformFuncSync => (({ value, ...args }) => {
   const newValue = transformFuncs.reduce((currentVal, func) => {
@@ -336,7 +333,8 @@ const filter: FilterCreator = ({ client }) => {
     name: 'automationStructureFilter',
     onFetch: async elements =>
       awu(elements)
-        .filter(isAutomationInstance)
+        .filter(isInstanceElement)
+        .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
         .forEach(async instance => {
           if (client.isDataCenter) {
             removeProjectsForGlobalDCAutomation(instance)

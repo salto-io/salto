@@ -27,7 +27,7 @@ import {
   SaltoError,
   StaticFile,
   Element,
-  isObjectType, Field, MapType,
+  isObjectType, Field, MapType, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
@@ -115,8 +115,19 @@ const isDeployThemeFile = (file: ThemeFile | DeployThemeFile): file is DeployThe
   return isContentBuffer
 }
 
+const isThemeDirectory = (dir: unknown): dir is ThemeDirectory => {
+  if (!_.isObject(dir)) {
+    return false
+  }
+  const dirAsObj = dir as Record<string, unknown>
+  return _.isObject(dirAsObj.files) && _.isObject(dirAsObj.folders)
+}
+
 const extractFilesFromThemeDirectory = (themeDirectory: ThemeDirectory): DeployThemeFile[] => {
   let files: DeployThemeFile[] = []
+  if (!isThemeDirectory(themeDirectory)) {
+    return files
+  }
   // Add all files in the current directory
   Object.values(themeDirectory.files).forEach(fileRecord => {
     if (isDeployThemeFile(fileRecord)) {
@@ -197,6 +208,8 @@ const fixThemeTypes = (elements: Element[]): void => {
     log.error('could not fix types for themes')
     return
   }
+  themeFolderType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] = false
+  themeFileType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] = false
   themeFolderType.fields.files = new Field(themeFolderType, 'files', new MapType(themeFileType))
   themeType.fields.root = new Field(themeType, 'root', themeFolderType)
 }

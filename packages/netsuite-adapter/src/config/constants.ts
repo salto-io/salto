@@ -33,6 +33,8 @@ export const DEFAULT_MAX_INSTANCES_PER_TYPE = [
 export const UNLIMITED_INSTANCES_VALUE = -1
 export const DEFAULT_AXIOS_TIMEOUT_IN_MINUTES = 20
 
+export const INCLUDE_ALL = 'All'
+export const FILE_CABINET = 'FileCabinet'
 export const ALL_TYPES_REGEX = '.*'
 
 export const FILE_TYPES_TO_EXCLUDE_REGEX = '.*\\.(csv|pdf|eml|png|gif|jpeg|xls|xlsx|doc|docx|ppt|pptx)'
@@ -43,3 +45,32 @@ export const SUITEAPP_ID_FORMAT_REGEX = /^[a-z0-9]+(\.[a-z0-9]+){2}$/
 export const REQUIRED_FEATURE_SUFFIX = ':required'
 
 export const ERROR_MESSAGE_PREFIX = 'Received invalid adapter config input.'
+
+export const DATA_FILE_TYPES = {
+  DOC: 'DOC',
+  DOCX: 'DOCX',
+  EML: 'EML',
+  PNG: 'PNG',
+  GIF: 'GIF',
+  JPEG: 'JPEG',
+  PDF: 'PDF',
+  PPT: 'PPT',
+  PPTX: 'PPTX',
+  XLS: 'XLS',
+  XLSX: 'XLSX',
+  CSV: 'CSV',
+} as const
+
+const DATA_FILE_TYPES_GROUPS = [
+  { name: 'Text Documents', fileTypes: [DATA_FILE_TYPES.DOC, DATA_FILE_TYPES.DOCX] },
+  { name: 'Emails', fileTypes: [DATA_FILE_TYPES.EML] },
+  { name: 'Images', fileTypes: [DATA_FILE_TYPES.PNG, DATA_FILE_TYPES.GIF, DATA_FILE_TYPES.JPEG] },
+  { name: 'PDFs', fileTypes: [DATA_FILE_TYPES.PDF] },
+  { name: 'Presentations', fileTypes: [DATA_FILE_TYPES.PPT, DATA_FILE_TYPES.PPTX] },
+  { name: 'Spreadsheets', fileTypes: [DATA_FILE_TYPES.XLS, DATA_FILE_TYPES.XLSX, DATA_FILE_TYPES.CSV] },
+]
+
+export const GROUPS_TO_DATA_FILE_TYPES = Object.fromEntries(
+  DATA_FILE_TYPES_GROUPS.map(group =>
+    [`${group.name} (${group.fileTypes.join(', ')})`, group.fileTypes])
+)

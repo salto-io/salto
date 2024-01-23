@@ -139,7 +139,7 @@ const referencesToFields: RefTargetsGetter = (sectionEntry, sectionEntryKey) => 
 }
 
 const layoutReferences: RefTargetsGetter = sectionEntry => {
-  if (!_.isString(sectionEntry[0].layout)) {
+  if (!_.isString(sectionEntry[0]?.layout)) {
     return []
   }
   const layoutElemIdName = getMetadataElementName(sectionEntry[0].layout)

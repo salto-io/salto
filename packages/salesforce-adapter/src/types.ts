@@ -16,7 +16,6 @@
 import { createMatchingObjectType, ImportantValues } from '@salto-io/adapter-utils'
 import {
   BuiltinTypes,
-  CoreAnnotationTypes,
   CORE_ANNOTATIONS,
   createRestriction,
   ElemID,
@@ -25,6 +24,7 @@ import {
   ListType,
   MapType,
   ObjectType,
+  importantValueType,
 } from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { types } from '@salto-io/lowerdash'
@@ -806,7 +806,7 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
     warningSettings: { refType: warningSettingsType },
     additionalImportantValues: {
       // Exported type is downcasted to TypeElement
-      refType: CoreAnnotationTypes[CORE_ANNOTATIONS.IMPORTANT_VALUES] as ListType<ObjectType>,
+      refType: new ListType(importantValueType),
     },
   },
   annotations: {

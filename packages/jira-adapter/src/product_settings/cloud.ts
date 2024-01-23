@@ -112,16 +112,6 @@ const CLOUD_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
             context: [{ name: 'projectId', fromField: 'id' }],
             isSingle: true,
           },
-          {
-            type: 'ServiceDeskId',
-            toField: 'serviceDeskId',
-            context: [{ name: 'projectId', fromField: 'id' }],
-            isSingle: true,
-            conditions: [{
-              fromField: 'projectTypeKey',
-              match: ['service_desk'],
-            }],
-          },
         ],
       },
     },
@@ -146,14 +136,6 @@ const CLOUD_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
         add: '/secure/admin/AddNotification.jspa',
         remove: '/secure/admin/DeleteNotification.jspa',
         query: '/rest/api/3/notificationscheme/{id}?expand=all',
-      },
-    },
-    ServiceDeskId: {
-      request: {
-        url: '/rest/servicedeskapi/servicedesk/projectId:{projectId}',
-      },
-      transformation: {
-        dataField: '.',
       },
     },
   },

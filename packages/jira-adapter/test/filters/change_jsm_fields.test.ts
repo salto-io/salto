@@ -33,9 +33,6 @@ describe('changeJSMElementsFieldFilter', () => {
         id: '11111',
         name: 'project1',
         projectTypeKey: SERVICE_DESK,
-        serviceDeskId: {
-          id: '12345',
-        },
       },
     )
 
@@ -75,7 +72,6 @@ describe('changeJSMElementsFieldFilter', () => {
         id: '11111',
         name: 'project1',
         projectTypeKey: SERVICE_DESK,
-        serviceDeskId: '12345',
       })
     })
     it('should change icon Id from object to string', async () => {

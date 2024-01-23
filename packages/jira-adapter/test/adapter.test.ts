@@ -400,9 +400,6 @@ describe('adapter', () => {
           key: 'SD',
           name: 'Service Desk',
           projectTypeKey: SERVICE_DESK,
-          serviceDeskId: {
-            id: '1',
-          },
         },
       )
     })

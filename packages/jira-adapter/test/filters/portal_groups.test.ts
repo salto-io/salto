@@ -38,7 +38,6 @@ describe('queue filter', () => {
       name: 'project1',
       projectTypeKey: 'service_desk',
       key: 'project1Key',
-      serviceDeskId: 100,
     },
   )
   const RequestTypeInstanceOne = new InstanceElement(

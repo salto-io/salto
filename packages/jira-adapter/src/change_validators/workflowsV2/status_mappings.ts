@@ -241,7 +241,7 @@ export const workflowStatusMappingsValidator: ChangeValidator = async (changes, 
       elemID: change.data.after.elemID,
       severity: 'Error' as SeverityLevel,
       message: 'Workflow change requires status migration',
-      detailedMessage: `This workflow change requires a status migration, as some statuses do not exist in the new workflow. In order to resume you can add the following NACL code to this workflow’s code. Make sure to specific, for each project, issue type and status, what should its new status be. Learn more at https://help.salto.io/en/articles/6948228-migrating-issues-when-modifying-workflow-schemes .\n${statusMappingsFormat}`,
+      detailedMessage: `This workflow change requires a status migration, as some statuses do not exist in the new workflow. In order to resume you can add the following NACL code to this workflow’s code. Make sure to specific, for each project, issue type and status, what should its new status be. Learn more at https://help.salto.io/en/articles/8851200-migrating-issues-when-modifying-workflows .\n${statusMappingsFormat}`,
     }]
   }).toArray()
 }

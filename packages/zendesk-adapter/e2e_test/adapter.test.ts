@@ -104,10 +104,10 @@ const createInstanceElement = ({
   fields,
   parent,
   name,
-} :{
+}: {
   type: string
   valuesOverride: Values
-  fields?: Record < string, FieldDefinition >
+  fields?: Record<string, FieldDefinition>
   parent?: InstanceElement
   name?: string
 }): InstanceElement => {
@@ -142,7 +142,7 @@ const deployChanges = async (
       planElementById = _.keyBy(group.map(getChangeData), data => data.elemID.getFullName())
       const nullProgressReporter: ProgressReporter = {
         // eslint-disable-next-line @typescript-eslint/no-empty-function
-        reportProgress: () => {},
+        reportProgress: () => { },
       }
       const deployResult = await adapterAttr.adapter.deploy({
         changeGroup: { groupID: id, changes: group },
@@ -216,7 +216,7 @@ describe('Zendesk adapter E2E', () => {
     const testOptionValue = uuidv4().slice(0, 8)
     let elements: Element[] = []
     let customObjectInstances: InstanceElement[]
-    let guideInstances : InstanceElement[]
+    let guideInstances: InstanceElement[]
     const createName = (type: string): string => `Test${type}${testSuffix}`
     const createSubdomainName = (): string => `test${testSuffix}`
 
@@ -246,8 +246,10 @@ describe('Zendesk adapter E2E', () => {
       elements = fetchResult.elements
       expect(fetchResult.errors).toHaveLength(0)
       adapterAttr = realAdapter(
-        { credentials: credLease.value,
-          elementsSource: buildElementsSourceFromElements(elements) },
+        {
+          credentials: credLease.value,
+          elementsSource: buildElementsSourceFromElements(elements),
+        },
         usedConfig
       )
     }
@@ -305,8 +307,10 @@ describe('Zendesk adapter E2E', () => {
       // get e2eHelpCenter brand
       credLease = await credsLease()
       adapterAttr = realAdapter(
-        { credentials: credLease.value,
-          elementsSource: buildElementsSourceFromElements([]) },
+        {
+          credentials: credLease.value,
+          elementsSource: buildElementsSourceFromElements([]),
+        },
         usedConfig
       )
       const firstFetchResult = await adapterAttr.adapter.fetch({
@@ -1005,7 +1009,8 @@ describe('Zendesk adapter E2E', () => {
         articleOrder,
       ]
       adapterAttr = realAdapter(
-        { credentials: credLease.value,
+        {
+          credentials: credLease.value,
           elementsSource: buildElementsSourceFromElements([
             // brand and locale are added since other types depend on them
             brandInstanceE2eHelpCenter,
@@ -1014,7 +1019,8 @@ describe('Zendesk adapter E2E', () => {
             everyoneUserSegment,
             articleAttachment,
             articleInlineAttachment,
-          ]) },
+          ]),
+        },
         {
           ...DEFAULT_CONFIG,
           [FETCH_CONFIG]: {

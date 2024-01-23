@@ -17,9 +17,9 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import ZendeskClient from '../../client/client'
-import { createThemeExportJob } from './api/createThemeExportJob'
+import { createThemeJob, JobType } from './api/createThemeJob'
 import { pollJobStatus } from './api/pollJobStatus'
-import { DownloadJobData } from './types'
+import { DownloadJobData, PendingJob } from './types'
 
 const log = logger(module)
 
@@ -38,7 +38,7 @@ const downloadTheme = async (
 export const download = async (
   themeId: string, client: ZendeskClient
 ): Promise<{ content: Buffer | undefined; errors: string[] }> => {
-  const { job, errors } = await createThemeExportJob(themeId, client)
+  const { job, errors } = await createThemeJob(themeId, client, JobType.EXPORTS)
   if (job === undefined) {
     log.warn(`Received invalid response from Zendesk API. Not adding theme ${themeId}`)
     return { content: undefined, errors }
@@ -49,7 +49,7 @@ export const download = async (
     log.warn(`Failed to receive 'completed' job status from Zendesk API. Not adding theme ${themeId}`)
     return { content: undefined, errors }
   }
-  const { content, errors: downloadErrors } = await downloadTheme(job.data, client)
+  const { content, errors: downloadErrors } = await downloadTheme((job as PendingJob<DownloadJobData>).data, client)
   errors.push(...downloadErrors)
   return { content, errors }
 }

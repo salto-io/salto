@@ -1,4 +1,3 @@
-
 /*
 *                      Copyright 2024 Salto Labs Ltd.
 *
@@ -14,8 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { DownloadJob } from '../../../src/filters/guide_themes/types'
+import { logger } from '@salto-io/logging'
+import ZendeskClient from '../../client/client'
 
-export const jobResponse = (status: 'pending' | 'completed', url = 'clickMe!'): { job: DownloadJob } => ({
-  job: { id: '1', status, data: { download: { url } } },
-})
+const log = logger(module)
+
+export const deleteTheme = async (themeId: string, client: ZendeskClient): Promise<string[]> => {
+  const response = await client.delete({ url: `/api/v2/guide/theming/themes/${themeId}` })
+  if (response.status !== 204) {
+    log.error(`Failed to delete theme ${themeId}. Received status code ${response.status}`)
+    return [`Failed to delete theme ${themeId}. Received status code ${response.status}`]
+  }
+  return []
+}

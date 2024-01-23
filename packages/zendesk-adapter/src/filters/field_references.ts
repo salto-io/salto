@@ -39,7 +39,7 @@ import {
   AUTOMATION_ORDER_TYPE_NAME,
   SLA_POLICY_ORDER_TYPE_NAME,
   VIEW_ORDER_TYPE_NAME,
-  WORKSPACE_ORDER_TYPE_NAME,
+  WORKSPACE_ORDER_TYPE_NAME, THEME_SETTINGS_TYPE_NAME, GUIDE_THEME_TYPE_NAME,
 } from '../constants'
 import { FETCH_CONFIG, ZendeskConfig } from '../config'
 import { ZendeskMissingReferenceStrategyLookup, ZendeskMissingReferenceStrategyName } from './references/missing_references'
@@ -392,6 +392,11 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     src: { field: 'macro_ids' },
     serializationStrategy: 'id',
     target: { type: 'macro' },
+  },
+  {
+    src: { field: 'liveTheme', parentTypes: [THEME_SETTINGS_TYPE_NAME] },
+    serializationStrategy: 'id',
+    target: { type: GUIDE_THEME_TYPE_NAME },
   },
   {
     src: { field: 'active', parentTypes: [TICKET_FORM_ORDER_TYPE_NAME] },

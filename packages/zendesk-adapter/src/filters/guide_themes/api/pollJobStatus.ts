@@ -60,7 +60,7 @@ export const pollJobStatus = async (
   } catch (e) {
     if (e instanceof JobError) {
       log.warn(e.message)
-      return { success: false, errors: e.errors ? e.errors.map(err => `${err.code} - ${err.message}`) : [e.message] }
+      return { success: false, errors: e.errors ? e.errors.map(err => `${err.code} - ${err.message ?? err.title}`) : [e.message] }
     }
     log.error((e as Error).message)
     return { success: false, errors: [(e as Error).message] }

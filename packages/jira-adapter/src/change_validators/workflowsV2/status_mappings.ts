@@ -34,31 +34,23 @@ type StatusMapping = {
   statusMigrations: StatusMigration[]
 }
 
-const ISSUE_MAPPINGS_SCHEMA = Joi.array().items(Joi.object({
-  issueTypeId: Joi.object().required(),
-  projectId: Joi.object().required(),
+const validateReferenceExpression = (fieldName: string): Joi.CustomValidator => (value, helpers) => {
+  if (!isReferenceExpression(value)) {
+    return helpers.error(`${fieldName} is not ReferenceExpression`)
+  }
+  return true
+}
+
+const STATUS_MAPPINGS_SCHEMA = Joi.array().items(Joi.object({
+  issueTypeId: Joi.custom(validateReferenceExpression('issueTypeId')).required(),
+  projectId: Joi.custom(validateReferenceExpression('projectId')).required(),
   statusMigrations: Joi.array().items(Joi.object({
-    oldStatusReference: Joi.object().required(),
-    newStatusReference: Joi.object().required(),
+    oldStatusReference: Joi.custom(validateReferenceExpression('oldStatusReference')).required(),
+    newStatusReference: Joi.custom(validateReferenceExpression('newStatusReference')).required(),
   })).required(),
 })).required()
 
-const isStatusMappingsSchemeGuard = createSchemeGuard<StatusMapping[]>(ISSUE_MAPPINGS_SCHEMA, 'received invalid statusMappings')
-
-const isStatusMappings = (statusMappings: unknown): statusMappings is StatusMapping[] =>
-  isStatusMappingsSchemeGuard(statusMappings)
-  && statusMappings.every(statusMapping =>
-    isReferenceExpression(statusMapping.issueTypeId)
-    && isReferenceExpression(statusMapping.projectId)
-    && statusMapping.statusMigrations.every(
-      statusMigration =>
-        isReferenceExpression(statusMigration.oldStatusReference)
-        && isReferenceExpression(statusMigration.newStatusReference)
-    ))
-
-
-const isSameOldStatusReference = (statusMigration1: StatusMigration, statusMigration2: StatusMigration): boolean =>
-  statusMigration1.oldStatusReference.elemID.isEqual(statusMigration2.oldStatusReference.elemID)
+const isStatusMappings = createSchemeGuard<StatusMapping[]>(STATUS_MAPPINGS_SCHEMA, 'received invalid statusMappings')
 
 const isSameStatusMappings = (
   statusMapping1: StatusMapping,
@@ -66,10 +58,10 @@ const isSameStatusMappings = (
 ): boolean =>
   statusMapping1.issueTypeId.elemID.isEqual(statusMapping2.issueTypeId.elemID)
     && statusMapping1.projectId.elemID.isEqual(statusMapping2.projectId.elemID)
-    && _.isEmpty(_.differenceWith(
+    && _.isEmpty(_.differenceBy(
       statusMapping1.statusMigrations,
       statusMapping2.statusMigrations,
-      isSameOldStatusReference
+      migration => migration.oldStatusReference.elemID.getFullName()
     ))
 
 const getRelevantChanges = (
@@ -87,15 +79,12 @@ const getRemovedStatuses = (change: ModificationChange<InstanceElement>): Refere
   const afterStatuses = (change.data.after.value.statuses ?? [])
     .map((status: Value) => status.statusReference)
     .filter(isReferenceExpression)
-  return _.differenceWith(
+  return _.differenceBy(
     beforeStatuses,
     afterStatuses,
-    (status1: Value, status2: Value) => status1.elemID.isEqual(status2.elemID)
+    (status:ReferenceExpression) => status.elemID.getFullName()
   )
 }
-
-const isInstanceWithName = (instance: InstanceElement): instance is InstanceElement & { name: string } =>
-  typeof instance.value?.name === 'string'
 
 const getWorkflowSchemeMigrationIssueType = async ({
   workflowSchemeInstance,
@@ -107,20 +96,24 @@ const getWorkflowSchemeMigrationIssueType = async ({
   elementsSource: ReadOnlyElementsSource
 }): Promise<ReferenceExpression[]> => {
   const workflowSchemeDefaultWorkflow = workflowSchemeInstance.value.defaultWorkflow
-  if (workflowSchemeDefaultWorkflow.elemID.name === workflowName) {
+  if (isReferenceExpression(workflowSchemeDefaultWorkflow)
+    && workflowSchemeDefaultWorkflow.elemID.name === workflowName) {
     // all the issueTypes
     const issueTypes = (await getInstancesFromElementSource(elementsSource, [ISSUE_TYPE_NAME]))
-      .filter(isInstanceWithName)
       .map(instance => new ReferenceExpression(instance.elemID, instance))
     // issueTypes that not using the default workflow
-    const notUsingDefaultIssueTypes = workflowSchemeInstance.value.items
+    const notUsingDefaultIssueTypes = (workflowSchemeInstance.value.items ?? [])
       .filter(isWorkflowSchemeItem)
       .map((item: WorkflowSchemeItem) => item.issueType)
       .filter(isReferenceExpression)
-    return _.difference(issueTypes, notUsingDefaultIssueTypes)
+    return _.differenceBy(
+      issueTypes,
+      notUsingDefaultIssueTypes,
+      (issueType: ReferenceExpression) => issueType.elemID.getFullName()
+    )
   }
-  const issueTypes = workflowSchemeInstance.value.items
-    .filter(isWorkflowSchemeItem)
+  const issueTypes = (workflowSchemeInstance.value.items ?? [])
+    ?.filter(isWorkflowSchemeItem)
     .filter((item: WorkflowSchemeItem) => item.workflow.elemID.name === workflowName)
     .map((item: WorkflowSchemeItem) => item.issueType)
   return issueTypes
@@ -146,16 +139,15 @@ const createStatusMapping = ({
 
 const createStatusMigrationStructure = (statusMigration: StatusMigration): string =>
   `{
-      oldStatusReference = ${statusMigration.oldStatusReference.elemID.getFullName()}
-      newStatusReference = jira.Status.instance.<statusName>
-    }`
+          oldStatusReference = ${statusMigration.oldStatusReference.elemID.getFullName()}
+          newStatusReference = jira.Status.instance.<statusName>\n        },`
 
 
 const createStatusMappingStructure = (statusMappings: StatusMapping): string => `{
       issueTypeId = ${statusMappings.issueTypeId.elemID.getFullName()}
       projectId = ${statusMappings.projectId.elemID.getFullName()}
       statusMigrations = [
-        ${statusMappings.statusMigrations.map(createStatusMigrationStructure).join(',\n')}]\n},`
+        ${statusMappings.statusMigrations.map(createStatusMigrationStructure).join(',\n')}\n      ]\n    },`
 
 const getNewStatusMappings = async ({
   workflowSchemeInstance,
@@ -187,12 +179,15 @@ const getNewStatusMappings = async ({
         issueType,
         statusesToMigrate: removedStatuses,
       })))
-  const newStatusMappings = _.differenceWith(statusMappings, existingStatusMappings, isSameStatusMappings)
-  if (_.isEmpty(newStatusMappings)) {
+  const missingStatusMappings = _.differenceWith(statusMappings, existingStatusMappings, isSameStatusMappings)
+  if (_.isEmpty(missingStatusMappings)) {
     return []
   }
   return statusMappings
 }
+
+const getStatusMappingsFormat = (statusMappings: StatusMapping[]): string =>
+  `statusMappings = [\n    ${statusMappings.map(statusMapping => createStatusMappingStructure(statusMapping)).join('\n    ')}\n]`
 
 export const workflowStatusMappingsValidator: ChangeValidator = async (changes, elementsSource) => {
   const relevantChanges = getRelevantChanges(changes)
@@ -202,9 +197,8 @@ export const workflowStatusMappingsValidator: ChangeValidator = async (changes, 
   const projects = await getInstancesFromElementSource(elementsSource, [PROJECT_TYPE])
   // all the active workflowSchemes
   const workflowSchemeNameToInstance = await awu(projects)
-    .map(project => project.value.workflowScheme)
-    .filter(isReferenceExpression)
-    .map(async ref => ref.getResolvedValue(elementsSource))
+    .filter(projectHasWorkflowSchemeReference)
+    .map(project => project.value.workflowScheme.getResolvedValue(elementsSource))
     .filter(isInstanceElement)
     .keyBy(instance => instance.elemID.getFullName())
 
@@ -236,12 +230,11 @@ export const workflowStatusMappingsValidator: ChangeValidator = async (changes, 
     if (_.isEmpty(newStatusMappings)) {
       return []
     }
-    const statusMappingsFormat = `statusMappings = [\n${newStatusMappings.map(statusMapping => createStatusMappingStructure(statusMapping)).join('\n')}\n]`
     return [{
       elemID: change.data.after.elemID,
       severity: 'Error' as SeverityLevel,
       message: 'Workflow change requires status migration',
-      detailedMessage: `This workflow change requires a status migration, as some statuses do not exist in the new workflow. In order to resume you can add the following NACL code to this workflow’s code. Make sure to specific, for each project, issue type and status, what should its new status be. Learn more at https://help.salto.io/en/articles/8851200-migrating-issues-when-modifying-workflows .\n${statusMappingsFormat}`,
+      detailedMessage: `This workflow change requires a status migration, as some statuses do not exist in the new workflow. In order to resume you can add the following NACL code to this workflow’s code. Make sure to specific, for each project, issue type and status, what should its new status be. Learn more at https://help.salto.io/en/articles/8851200-migrating-issues-when-modifying-workflows.\n${getStatusMappingsFormat(newStatusMappings)}`,
     }]
   }).toArray()
 }

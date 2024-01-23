@@ -53,7 +53,7 @@ const getImportantValues = (type: ObjectType): ImportantValues => [
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'addImportantValues',
   onFetch: async elements => {
-    if (config.fetch.addImportantValues !== true) {
+    if (config.fetch.addImportantValues === false) {
       log.info('addImportantValues is disabled')
       return
     }

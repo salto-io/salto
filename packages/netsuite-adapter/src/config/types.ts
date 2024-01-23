@@ -20,7 +20,7 @@ import { config as configUtils } from '@salto-io/adapter-components'
 import { BIN, CURRENCY, CUSTOM_RECORD_TYPE, DATASET, EXCHANGE_RATE, INACTIVE_FIELDS, NETSUITE, PERMISSIONS, SAVED_SEARCH, WORKBOOK } from '../constants'
 import { netsuiteSupportedTypes } from '../types'
 import { ITEM_TYPE_TO_SEARCH_STRING } from '../data_elements/types'
-import { ALL_TYPES_REGEX, DEFAULT_AXIOS_TIMEOUT_IN_MINUTES, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES, DEFAULT_CONCURRENCY, DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB, DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FILE_TYPES_TO_EXCLUDE_REGEX } from './constants'
+import { ALL_TYPES_REGEX, GROUPS_TO_DATA_FILE_TYPES, DEFAULT_AXIOS_TIMEOUT_IN_MINUTES, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES, DEFAULT_CONCURRENCY, DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB, DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FILE_CABINET, FILE_TYPES_TO_EXCLUDE_REGEX, INCLUDE_ALL } from './constants'
 
 export type InstanceLimiterFunc = (type: string, instanceCount: number) => boolean
 export interface ObjectID {
@@ -166,7 +166,20 @@ export type SuiteAppClientConfig = {
   httpTimeoutLimitInMinutes?: number
 }
 
+export const SUITEAPP_CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<SuiteAppClientConfig> = {
+  suiteAppConcurrencyLimit: 'suiteAppConcurrencyLimit',
+  httpTimeoutLimitInMinutes: 'httpTimeoutLimitInMinutes',
+}
+
 export type NetsuiteConfig = {
+  // simple config
+  includeAllSavedSearches?: boolean
+  includeCustomRecords?: string[]
+  includeInactiveRecords?: string[]
+  includeDataFileTypes?: string[]
+  includeFileCabinetFolders?: string[]
+
+  // complex config
   typesToSkip?: string[]
   filePathRegexSkipList?: string[]
   deploy?: DeployParams
@@ -182,6 +195,11 @@ export type NetsuiteConfig = {
 }
 
 export const CONFIG: lowerdashTypes.TypeKeysEnum<NetsuiteConfig> = {
+  includeAllSavedSearches: 'includeAllSavedSearches',
+  includeCustomRecords: 'includeCustomRecords',
+  includeInactiveRecords: 'includeInactiveRecords',
+  includeDataFileTypes: 'includeDataFileTypes',
+  includeFileCabinetFolders: 'includeFileCabinetFolders',
   typesToSkip: 'typesToSkip',
   filePathRegexSkipList: 'filePathRegexSkipList',
   deploy: 'deploy',
@@ -625,6 +643,60 @@ const deployConfigType = configUtils.createUserDeployConfigType(
 export const configType = createMatchingObjectType<NetsuiteConfig>({
   elemID: new ElemID(NETSUITE),
   fields: {
+    includeAllSavedSearches: {
+      refType: BuiltinTypes.BOOLEAN,
+      annotations: {
+        [CORE_ANNOTATIONS.ALIAS]: 'Include All Public Saved Searches',
+        [CORE_ANNOTATIONS.DESCRIPTION]: 'Salto only includes referenced searches by default.'
+         + ' Turning this option on will make Salto fetch all public records.'
+         + ' [Learn more](https://help.salto.io/en/articles/customize-netsuite-config)',
+      },
+    },
+    includeCustomRecords: {
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.ALIAS]: 'Include custom records',
+        [CORE_ANNOTATIONS.DESCRIPTION]: 'Salto will only fetch the custom records that are included in this list.'
+          + ' [Learn more](https://help.salto.io/en/articles/customize-netsuite-config)',
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          enforce_value: false,
+          values: [INCLUDE_ALL],
+        }),
+      },
+    },
+    includeInactiveRecords: {
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.ALIAS]: 'Include inactive records',
+        [CORE_ANNOTATIONS.DESCRIPTION]: 'Salto will only fetch the inactive records that are included in this list.'
+          + ' [Learn more](https://help.salto.io/en/articles/customize-netsuite-config)',
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          enforce_value: true,
+          values: [INCLUDE_ALL, FILE_CABINET].concat(netsuiteSupportedTypes),
+        }),
+      },
+    },
+    includeDataFileTypes: {
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.ALIAS]: 'Re-introduce File Cabinet types',
+        [CORE_ANNOTATIONS.DESCRIPTION]: 'Salto excludes certain rare and large file types. You can include these back.'
+          + ' [Learn more](https://help.salto.io/en/articles/customize-netsuite-config)',
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          enforce_value: true,
+          values: Object.keys(GROUPS_TO_DATA_FILE_TYPES),
+        }),
+      },
+    },
+    includeFileCabinetFolders: {
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.ALIAS]: 'Include additional File Cabinet folders',
+        [CORE_ANNOTATIONS.DESCRIPTION]: 'Salto fetches the Templates and Suitscripts folders.'
+          + ' You can choose to include additional folders.'
+          + ' [Learn more](https://help.salto.io/en/articles/customize-netsuite-config)',
+      },
+    },
     fetch: {
       refType: fetchConfigType,
       annotations: {
@@ -674,5 +746,12 @@ export const configType = createMatchingObjectType<NetsuiteConfig>({
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+    [CORE_ANNOTATIONS.IMPORTANT_VALUES]: [
+      { value: CONFIG.includeAllSavedSearches, highlighted: true, indexed: false },
+      { value: CONFIG.includeCustomRecords, highlighted: true, indexed: false },
+      { value: CONFIG.includeInactiveRecords, highlighted: true, indexed: false },
+      { value: CONFIG.includeDataFileTypes, highlighted: true, indexed: false },
+      { value: CONFIG.includeFileCabinetFolders, highlighted: true, indexed: false },
+    ],
   },
 })

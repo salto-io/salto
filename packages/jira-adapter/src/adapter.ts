@@ -184,7 +184,7 @@ const {
 const { createPaginator } = clientUtils
 const log = logger(module)
 
-const { query: queryFilter, ...otherCommonFilters } = commonFilters
+const { query: queryFilter, hideTypes: hideTypesFilter, ...otherCommonFilters } = commonFilters
 
 export const DEFAULT_FILTERS = [
   accountInfoFilter,
@@ -356,6 +356,7 @@ export const DEFAULT_FILTERS = [
   assetsObjectTypeOrderFilter,
   deployAttributesFilter,
   deployJsmTypesFilter,
+  hideTypesFilter, // Must run after defaultAttributesFilter and assetsObjectTypeOrderFilter, which also create types.
   // Must be last
   defaultInstancesDeployFilter,
 ]

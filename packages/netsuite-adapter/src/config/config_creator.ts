@@ -17,10 +17,11 @@ import _ from 'lodash'
 import { regex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { InstanceElement } from '@salto-io/adapter-api'
-import { CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT } from '../constants'
+import { CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT, INACTIVE_FIELDS } from '../constants'
 import { removeCustomRecordTypePrefix } from '../types'
-import { ClientConfig, FETCH_PARAMS, FetchParams, InstanceLimiterFunc, NetsuiteConfig, NetsuiteQueryParameters, QueryParams } from './types'
-import { ALL_TYPES_REGEX, DEFAULT_MAX_INSTANCES_PER_TYPE, DEFAULT_MAX_INSTANCES_VALUE, UNLIMITED_INSTANCES_VALUE } from './constants'
+import { fileCabinetTypesNames } from '../types/file_cabinet_types'
+import { ClientConfig, CriteriaQuery, FETCH_PARAMS, FetchParams, FetchTypeQueryParams, InstanceLimiterFunc, NetsuiteConfig, NetsuiteQueryParameters, QueryParams } from './types'
+import { ALL_TYPES_REGEX, DATA_FILE_TYPES, DEFAULT_MAX_INSTANCES_PER_TYPE, DEFAULT_MAX_INSTANCES_VALUE, FILE_CABINET, GROUPS_TO_DATA_FILE_TYPES, INCLUDE_ALL, UNLIMITED_INSTANCES_VALUE } from './constants'
 import { validateConfig } from './validations'
 
 const log = logger(module)
@@ -77,11 +78,86 @@ const updatedFetchTarget = (
   }
 }
 
+const includeFileCabinetFolders = (config: NetsuiteConfig): string[] =>
+  config.includeFileCabinetFolders?.map(
+    folderName =>
+      `^${folderName.startsWith('/') ? '' : '/'}${folderName}${folderName.endsWith('/') ? '' : '/'}.*`
+  ) ?? []
+
+const includeCustomRecords = (config: NetsuiteConfig): FetchTypeQueryParams[] => {
+  if (config.includeCustomRecords === undefined || config.includeCustomRecords.length === 0) {
+    return []
+  }
+  if (config.includeCustomRecords.includes(INCLUDE_ALL)) {
+    return [{ name: ALL_TYPES_REGEX }]
+  }
+  return [{ name: config.includeCustomRecords.join('|') }]
+}
+
+const excludeInactiveRecords = (config: NetsuiteConfig): CriteriaQuery[] => {
+  if (config.includeInactiveRecords === undefined || config.includeInactiveRecords.includes(INCLUDE_ALL)) {
+    return []
+  }
+
+  const typesToInclude = config.includeInactiveRecords
+    .flatMap(typeName => (typeName === FILE_CABINET ? fileCabinetTypesNames : typeName))
+
+  const inactiveRecordsToExcludeRegex = typesToInclude.length === 0
+    ? ALL_TYPES_REGEX
+    // match all except for the exact strings in typesToInclude
+    : `(?!(${typesToInclude.join('|')})$).*`
+
+  return Object.values(INACTIVE_FIELDS).map(fieldName => ({
+    name: inactiveRecordsToExcludeRegex,
+    criteria: {
+      [fieldName]: true,
+    },
+  }))
+}
+
+const excludeDataFileTypes = (config: NetsuiteConfig): string[] => {
+  if (config.includeDataFileTypes === undefined) {
+    return []
+  }
+  const dataFileTypesToInclude = new Set(
+    config.includeDataFileTypes.flatMap(group => GROUPS_TO_DATA_FILE_TYPES[group] ?? [])
+  )
+  const dataFileTypesToExclude = Object.values(DATA_FILE_TYPES)
+    .filter(fileType => !dataFileTypesToInclude.has(fileType))
+  if (dataFileTypesToExclude.length === 0) {
+    return []
+  }
+  const dataFileTypesToExcludeRegex = `.*\\.(${dataFileTypesToExclude.join('|')})`
+  return [
+    dataFileTypesToExcludeRegex.toLowerCase(),
+    dataFileTypesToExcludeRegex.toUpperCase(),
+  ]
+}
+
+const updatedFetchInclude = (config: NetsuiteConfig): QueryParams => ({
+  ...config.fetch.include,
+  fileCabinet: config.fetch.include.fileCabinet.concat(includeFileCabinetFolders(config)),
+  customRecords: (config.fetch.include.customRecords ?? []).concat(includeCustomRecords(config)),
+})
+
+const updatedFetchExclude = (config: NetsuiteConfig): QueryParams => ({
+  ...config.fetch.exclude,
+  types: config.fetch.exclude.types.concat(excludeInactiveRecords(config)),
+  fileCabinet: config.fetch.exclude.fileCabinet.concat(excludeDataFileTypes(config)),
+})
+
+const updatedFetchConfig = (config: NetsuiteConfig): FetchParams => ({
+  ...config.fetch,
+  include: updatedFetchInclude(config),
+  exclude: updatedFetchExclude(config),
+})
+
 const updatedConfig = (config: NetsuiteConfig): NetsuiteConfig => {
   log.debug('user netsuite adapter config: %o', loggableConfig(config))
   const updated: NetsuiteConfig = {
     ...config,
     fetchTarget: updatedFetchTarget(config),
+    fetch: updatedFetchConfig(config),
   }
   log.debug('updated netsuite adapter config: %o', loggableConfig(updated))
   return updated

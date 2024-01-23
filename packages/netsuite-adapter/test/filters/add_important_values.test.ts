@@ -93,10 +93,10 @@ describe('add important values filter', () => {
     expect(types.some(elem => elem.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] !== undefined)).toBeFalsy()
     expect(types.some(elem => elem.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] !== undefined)).toBeFalsy()
   })
-  it('should not add important values by default', async () => {
+  it('should add important values by default', async () => {
     await filterCreator(defaultOpts).onFetch?.(types)
-    expect(types.some(elem => elem.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] !== undefined)).toBeFalsy()
-    expect(types.some(elem => elem.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] !== undefined)).toBeFalsy()
+    expect(types.some(elem => elem.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] !== undefined)).toBeTruthy()
+    expect(types.some(elem => elem.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] !== undefined)).toBeTruthy()
   })
   it('should add important values', async () => {
     await filterCreator(optsWithImportantValues).onFetch?.(types)

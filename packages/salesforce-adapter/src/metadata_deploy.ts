@@ -436,6 +436,7 @@ export const deployMetadata = async (
     ...sfDeployRes,
     details: sfDeployRes.details?.map(detail => ({
       ...detail,
+      retrieveResult: _.omit(detail.retrieveResult ?? {}, 'zipFile'),
       // The test result can be VERY long
       runTestResult: detail.runTestResult
         ? safeJsonStringify(detail.runTestResult, undefined, 2).slice(100)
@@ -456,10 +457,15 @@ export const deployMetadata = async (
     )
   }
 
+  const postDeployRetrieveZipContent = sfDeployRes.details?.[0]?.retrieveResult?.zipFile
+
   const deploymentUrl = await getDeployStatusUrl(sfDeployRes, client)
   const artifacts: Artifact[] = [
     { name: SalesforceArtifacts.DeployPackageXml, content: Buffer.from(pkg.getPackageXmlContent()) },
-  ]
+    postDeployRetrieveZipContent
+      ? { name: SalesforceArtifacts.PostDeployRetrieveZip, content: Buffer.from(postDeployRetrieveZipContent, 'base64') }
+      : undefined,
+  ].filter(isDefined)
   return {
     appliedChanges: validChanges.filter(isSuccessfulChange),
     errors: [...validationErrors, ...errors],

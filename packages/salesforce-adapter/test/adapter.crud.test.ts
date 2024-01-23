@@ -33,7 +33,7 @@ import mockAdapter from './adapter'
 import { createValueSetEntry, createCustomObjectType, nullProgressReporter } from './utils'
 import { createElement, removeElement } from '../e2e_test/utils'
 import { mockTypes, mockDefaultValues } from './mock_elements'
-import { mockDeployResult, mockRunTestFailure, mockDeployResultComplete } from './connection'
+import { mockDeployResult, mockRunTestFailure, mockDeployResultComplete, mockRetrieveResult } from './connection'
 import { MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE, MappableSalesforceProblem } from '../src/client/user_facing_errors'
 import { GLOBAL_VALUE_SET } from '../src/filters/global_value_sets'
 import { apiNameSync, metadataTypeSync } from '../src/filters/utils'
@@ -1149,6 +1149,7 @@ describe('SalesforceAdapter CRUD', () => {
               fullName: mockDefaultValues.Profile.fullName,
               componentType: constants.PROFILE_METADATA_TYPE,
             }],
+            retrieveResult: await mockRetrieveResult({}),
           }))
           result = await adapter.deploy({
             changeGroup: {
@@ -1178,9 +1179,9 @@ describe('SalesforceAdapter CRUD', () => {
         it('should return correct artifacts', () => {
           const groups = result.extraProperties?.groups ?? []
           expect(groups).toHaveLength(1)
-          const artifacts = groups[0].artifacts ?? []
-          expect(artifacts).toHaveLength(1)
-          expect(artifacts[0]).toSatisfy(artifact => artifact.name === SalesforceArtifacts.DeployPackageXml)
+          const artifactNames = makeArray(groups[0].artifacts).map(artifact => artifact.name)
+          expect(artifactNames)
+            .toIncludeSameMembers([SalesforceArtifacts.DeployPackageXml, SalesforceArtifacts.PostDeployRetrieveZip])
         })
       })
 

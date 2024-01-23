@@ -30,7 +30,7 @@ import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_T
   SCRIPT_RUNNER_LISTENER_TYPE, SCRIPTED_FIELD_TYPE, BEHAVIOR_TYPE, ISSUE_LAYOUT_TYPE,
   SCRIPT_RUNNER_SETTINGS_TYPE, SCRIPT_FRAGMENT_TYPE, CUSTOMER_PERMISSIONS_TYPE, QUEUE_TYPE,
   REQUEST_TYPE_NAME, CALENDAR_TYPE, PORTAL_GROUP_TYPE, PORTAL_SETTINGS_TYPE_NAME, SLA_TYPE_NAME,
-  ISSUE_VIEW_TYPE, REQUEST_FORM_TYPE, OBJECT_TYPE_ATTRIBUTE_TYPE, OBJECT_TYPE_TYPE, SCREEN_TYPE_NAME, WEBHOOK_TYPE, OBJECT_SCHMEA_REFERENCE_TYPE_TYPE, OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE } from './constants'
+  ISSUE_VIEW_TYPE, REQUEST_FORM_TYPE, OBJECT_TYPE_ATTRIBUTE_TYPE, OBJECT_TYPE_TYPE, SCREEN_TYPE_NAME, WEBHOOK_TYPE, OBJECT_SCHMEA_REFERENCE_TYPE_TYPE, OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE, JIRA_WORKFLOW_TYPE, DELETE_LINK_TYPES } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 import { getRefType } from './references/workflow_properties'
 import { FIELD_TYPE_NAME } from './filters/fields/constants'
@@ -588,6 +588,16 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: WORKFLOW_TYPE_NAME },
   },
   {
+    src: { field: 'workflow', parentTypes: ['WorkflowSchemeItem'] },
+    serializationStrategy: 'name',
+    target: { type: JIRA_WORKFLOW_TYPE },
+  },
+  {
+    src: { field: 'defaultWorkflow', parentTypes: ['WorkflowScheme'] },
+    serializationStrategy: 'name',
+    target: { type: JIRA_WORKFLOW_TYPE },
+  },
+  {
     src: { field: 'issueType', parentTypes: ['WorkflowSchemeItem'] },
     serializationStrategy: 'id',
     target: { type: ISSUE_TYPE_NAME },
@@ -732,6 +742,11 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'linkTypes', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
     serializationStrategy: 'nameWithPath',
+    target: { type: ISSUE_LINK_TYPE_NAME },
+  },
+  {
+    src: { field: 'id', parentTypes: [DELETE_LINK_TYPES] },
+    serializationStrategy: 'id',
     target: { type: ISSUE_LINK_TYPE_NAME },
   },
   {

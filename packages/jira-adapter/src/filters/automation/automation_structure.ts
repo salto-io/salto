@@ -18,7 +18,7 @@ import Joi from 'joi'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, isInstanceElement, Values, getChangeData,
   Change, isInstanceChange } from '@salto-io/adapter-api'
-import { transformElement, applyFunctionToChangeData, resolveValues, restoreChangeElement, safeJsonStringify, restoreValues, createSchemeGuard } from '@salto-io/adapter-utils'
+import { transformElement, applyFunctionToChangeData, resolveValues, restoreChangeElement, safeJsonStringify, restoreValues, createSchemeGuard, transformValuesSync } from '@salto-io/adapter-utils'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { AUTOMATION_TYPE, AUTOMATION_COMPONENT_TYPE, AUTOMATION_COMPONENT_VALUE_TYPE, AUTOMATION_OPERATION } from '../../constants'
@@ -266,6 +266,33 @@ const changeRawValueFieldsToValue = async (instance: InstanceElement): Promise<v
   })).value
 }
 
+
+// For components with type = "jira.issue.hasAttachments"
+// Value is a boolean, but component.value is an object in the objectType
+// So we transform the value to hasAttachmentsValue and vice versa
+const transformHasAttachmentValue = (instance: InstanceElement, reverse?: boolean): void => {
+  instance.value = transformValuesSync({
+    strict: false,
+    allowEmpty: true,
+    values: instance.value,
+    type: instance.getTypeSync(),
+    transformFunc: ({ value }) => {
+      if (value?.type === 'jira.issue.hasAttachments'
+        && value?.component
+        && _.isBoolean(reverse ? value.hasAttachmentsValue : value.value)) {
+        if (reverse) {
+          value.value = value.hasAttachmentsValue
+          delete value.hasAttachmentsValue
+        } else {
+          value.hasAttachmentsValue = value.value
+          delete value.value
+        }
+      }
+      return value
+    },
+  })
+}
+
 const revertCompareFieldValueStructure = async (instance: InstanceElement): Promise<void> => {
   instance.value = (await transformElement({
     element: instance,
@@ -341,6 +368,30 @@ const removeProjectsForGlobalDCAutomation = (instance: InstanceElement): void =>
   }
 }
 
+// When component type is "jira.issue.delete.link"
+// linkTypes field is returned from the service as a list of objects,
+// Since linkTypes is a string array in component objectType, we change the field name to deleteLinkTypes
+const transformDeleteLinkTypes = (instance: InstanceElement, reverse?: boolean): void => {
+  instance.value = (transformValuesSync({
+    type: instance.getTypeSync(),
+    values: instance.value,
+    allowEmpty: true,
+    strict: false,
+    transformFunc: ({ value }) => {
+      if (value?.type === 'jira.issue.delete.link' && value?.component) {
+        if (reverse) {
+          value.value.linkTypes = value.value?.deleteLinkTypes
+          delete value.value.deleteLinkTypes
+        } else {
+          value.value.deleteLinkTypes = value.value?.linkTypes
+          delete value.value.linkTypes
+        }
+      }
+      return value
+    },
+  }))
+}
+
 const filter: FilterCreator = ({ client }) => {
   let originalAutomationChanges: Record<string, Change<InstanceElement>>
   return {
@@ -365,6 +416,8 @@ const filter: FilterCreator = ({ client }) => {
           await replaceStringValuesFieldName(instance)
           await separateLinkTypeField(instance)
           await convertToCompareFieldValue(instance)
+          transformDeleteLinkTypes(instance)
+          transformHasAttachmentValue(instance)
 
           instance.value.projects = instance.value.projects
             ?.map(
@@ -392,6 +445,8 @@ const filter: FilterCreator = ({ client }) => {
               await consolidateLinkTypeFields(resolvedInstance)
               await changeRawValueFieldsToValue(resolvedInstance)
               await revertCompareFieldValueStructure(resolvedInstance)
+              transformDeleteLinkTypes(resolvedInstance, true)
+              transformHasAttachmentValue(resolvedInstance, true)
               instance.value = resolvedInstance.value
               return instance
             }
@@ -409,6 +464,8 @@ const filter: FilterCreator = ({ client }) => {
               await replaceStringValuesFieldName(instance)
               await separateLinkTypeField(instance)
               await convertToCompareFieldValue(instance)
+              transformDeleteLinkTypes(instance)
+              transformHasAttachmentValue(instance)
               return instance
             }
           )

@@ -25,6 +25,51 @@ describe('netsuite config validations', () => {
     config = await getDefaultAdapterConfig()
   })
 
+  describe('simple config', () => {
+    it('should not throw on a valid config', () => {
+      config.includeAllSavedSearches = true
+      config.includeCustomRecords = ['customrecord1', 'customrecord2']
+      config.includeInactiveRecords = ['All']
+      config.includeDataFileTypes = ['Documents (DOC, DOCX)', 'pdf']
+      config.includeFileCabinetFolders = ['/test1', '/test2/', 'test3/', 'test4']
+      expect(() => validateConfig(config)).not.toThrow()
+    })
+
+    it('should not throw on empty lists', () => {
+      config.includeAllSavedSearches = true
+      config.includeCustomRecords = []
+      config.includeInactiveRecords = []
+      config.includeDataFileTypes = []
+      config.includeFileCabinetFolders = []
+      expect(() => validateConfig(config)).not.toThrow()
+    })
+
+    it('should throw an error if includeAllSavedSearches is not boolean', () => {
+      config.includeAllSavedSearches = 'true'
+      expect(() => validateConfig(config)).toThrow('Expected "includeAllSavedSearches" to be a boolean')
+    })
+
+    it('should throw an error if includeCustomRecords', () => {
+      config.includeCustomRecords = 'customrecord1'
+      expect(() => validateConfig(config)).toThrow('includeCustomRecords should be a list of strings')
+    })
+
+    it('should throw an error if includeInactiveRecords', () => {
+      config.includeInactiveRecords = [true]
+      expect(() => validateConfig(config)).toThrow('includeInactiveRecords should be a list of strings')
+    })
+
+    it('should throw an error if includeDataFileTypes', () => {
+      config.includeDataFileTypes = ['Documents (DOC, DOCX)', 1]
+      expect(() => validateConfig(config)).toThrow('includeDataFileTypes should be a list of strings')
+    })
+
+    it('should throw an error if includeFileCabinetFolders', () => {
+      config.includeFileCabinetFolders = null
+      expect(() => validateConfig(config)).toThrow('includeFileCabinetFolders should be a list of strings')
+    })
+  })
+
   describe('fetch config', () => {
     it('should not throw on a valid fetch config', () => {
       expect(() => validateConfig(config)).not.toThrow()
@@ -297,7 +342,7 @@ describe('netsuite config validations', () => {
     })
   })
 
-  describe('cllient config', () => {
+  describe('client config', () => {
     describe('validate maxInstancesPerType', () => {
       it('should validate maxInstancesPerType is the correct object with valid NS types', () => {
         config.client = {

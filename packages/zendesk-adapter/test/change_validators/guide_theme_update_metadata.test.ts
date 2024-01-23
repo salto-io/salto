@@ -43,9 +43,9 @@ describe('guideThemeUpdateMetadataValidator', () => {
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].elemID).toEqual(guideThemeInstance.elemID)
     expect(changeErrors[0].message).toEqual('Updating theme fields has no effect')
-    expect(changeErrors[0].severity).toEqual('Error')
+    expect(changeErrors[0].severity).toEqual('Warning')
     expect(changeErrors[0].detailedMessage).toEqual(
-      'Updating the theme fields author, name, version has no effect. To update them, please edit the manifest.json file'
+      'Updating the theme fields name has no effect. To update them, please edit the manifest.json file'
     )
   })
 

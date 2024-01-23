@@ -20,13 +20,18 @@ import {
   isModificationChange, isReferenceExpression,
   SeverityLevel,
 } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { GUIDE_THEME_TYPE_NAME } from '../constants'
 
-const MANIFEST_FIELDS = ['author', 'name', 'version']
+const log = logger(module)
+
+const MANIFEST_FIELDS = ['name']
 /**
- * this filters check that there has been no change to the theme metadata. to change the theme metadata the user needs
- * to update the manifest file and not the nacl
+ * this change validator checks:
+ * 1. that there has been no change to the theme name. to change the theme metadata the user
+ * needs to update the manifest file and not the nacl
+ * 2. that the brand_id didn't change as it is not possible to move themes between brands
  */
 export const guideThemeUpdateMetadataValidator: ChangeValidator = async changes => {
   const updatedThemes = changes
@@ -42,7 +47,7 @@ export const guideThemeUpdateMetadataValidator: ChangeValidator = async changes 
     .map(theme => ({
       elemID: getChangeData(theme).elemID,
       message: 'Updating theme fields has no effect',
-      severity: 'Error' as SeverityLevel,
+      severity: 'Warning' as SeverityLevel,
       detailedMessage: `Updating the theme fields ${MANIFEST_FIELDS.join(', ')} has no effect. To update them, please edit the manifest.json file`,
     }))
 
@@ -54,6 +59,7 @@ export const guideThemeUpdateMetadataValidator: ChangeValidator = async changes 
     if (_.isNumber(before.value.brand_id) && _.isNumber(after.value.brand_id)) {
       return before.value.brand_id !== after.value.brand_id
     }
+    log.warn('brand_id does not have the same type in the before and the after')
     return true
   }).map(theme => ({
     elemID: getChangeData(theme).elemID,

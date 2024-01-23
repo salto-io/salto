@@ -27,6 +27,7 @@ describe('guideThemeReadonlyValidator', () => {
       live: true,
     }
   )
+  const message = 'Guide Themes deploy support is currently under development. Please note that Theme code referencing other elements might not transfer correctly between environments'
   it('should return a warning on modification theme changes', async () => {
     const changeErrors = await guideThemeReadonlyValidator([
       toChange({ before: guideThemeInstance, after: guideThemeInstance }),
@@ -35,9 +36,7 @@ describe('guideThemeReadonlyValidator', () => {
     expect(changeErrors[0].elemID).toEqual(guideThemeInstance.elemID)
     expect(changeErrors[0].message).toEqual('Guide Themes is currently under development.')
     expect(changeErrors[0].severity).toEqual('Warning')
-    expect(changeErrors[0].detailedMessage).toEqual(
-      'The Guide Themes feature is currently under development. Please note that references to other elements will not function correctly upon deployment'
-    )
+    expect(changeErrors[0].detailedMessage).toEqual(message)
   })
   it('should return a warning on addition theme changes', async () => {
     const changeErrors = await guideThemeReadonlyValidator([
@@ -47,9 +46,7 @@ describe('guideThemeReadonlyValidator', () => {
     expect(changeErrors[0].elemID).toEqual(guideThemeInstance.elemID)
     expect(changeErrors[0].message).toEqual('Guide Themes is currently under development.')
     expect(changeErrors[0].severity).toEqual('Warning')
-    expect(changeErrors[0].detailedMessage).toEqual(
-      'The Guide Themes feature is currently under development. Please note that references to other elements will not function correctly upon deployment'
-    )
+    expect(changeErrors[0].detailedMessage).toEqual(message)
   })
   it('should return a warning on deletion theme changes', async () => {
     const changeErrors = await guideThemeReadonlyValidator([
@@ -59,8 +56,6 @@ describe('guideThemeReadonlyValidator', () => {
     expect(changeErrors[0].elemID).toEqual(guideThemeInstance.elemID)
     expect(changeErrors[0].message).toEqual('Guide Themes is currently under development.')
     expect(changeErrors[0].severity).toEqual('Warning')
-    expect(changeErrors[0].detailedMessage).toEqual(
-      'The Guide Themes feature is currently under development. Please note that references to other elements will not function correctly upon deployment'
-    )
+    expect(changeErrors[0].detailedMessage).toEqual(message)
   })
 })

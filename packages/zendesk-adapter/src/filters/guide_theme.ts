@@ -64,12 +64,17 @@ const unzipFolderToElements = async (
   const unzippedContents = await zip.loadAsync(buffer)
 
   const elements: ThemeDirectory = { files: {}, folders: {} }
-  const addFile = async (
-    fullPath: string,
-    pathParts: string[],
-    file: JSZip.JSZipObject,
+  const addFile = async ({
+    fullPath,
+    pathParts,
+    file,
+    currentDir,
+  }: {
+    fullPath: string
+    pathParts: string[]
+    file: JSZip.JSZipObject
     currentDir: ThemeDirectory
-  ): Promise<void> => {
+  }): Promise<void> => {
     const [firstPart, ...rest] = pathParts
 
     if (pathParts.length === 1) {
@@ -80,31 +85,44 @@ const unzipFolderToElements = async (
         filename: fullPath,
         content: new StaticFile({ filepath, content }),
       }
-    } else {
-      // It's a folder
-      if (!currentDir.folders[naclCase(firstPart)]) {
-        currentDir.folders[naclCase(firstPart)] = { files: {}, folders: {} }
-      }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      await addFile(fullPath, rest, file, currentDir.folders[naclCase(firstPart)])
+      return
     }
+    // It's a folder
+    if (!currentDir.folders[naclCase(firstPart)]) {
+      currentDir.folders[naclCase(firstPart)] = { files: {}, folders: {} }
+    }
+    await addFile({
+      fullPath,
+      pathParts: rest,
+      file,
+      currentDir: currentDir.folders[naclCase(firstPart)],
+    })
   }
-  await Promise.all(Object.entries(unzippedContents.files).map(async ([relativePath, file]): Promise<void> => {
+  await Promise.all(Object.entries(unzippedContents.files).map(async ([fullPath, file]): Promise<void> => {
     if (!file.dir) {
-      const pathParts = relativePath.split('/')
-      await addFile(relativePath, pathParts, file, elements)
+      const pathParts = fullPath.split('/')
+      await addFile({ fullPath, pathParts, file, currentDir: elements })
     }
   }))
   return elements
+}
+
+const isDeployThemeFile = (file: ThemeFile | DeployThemeFile): file is DeployThemeFile => {
+  const isContentBuffer = Buffer.isBuffer(file.content)
+  if (isContentBuffer === false) {
+    log.error(`content for file ${file.filename} is not a buffer, will not add it to the deploy`)
+  }
+  return isContentBuffer
 }
 
 const extractFilesFromThemeDirectory = (themeDirectory: ThemeDirectory): DeployThemeFile[] => {
   let files: DeployThemeFile[] = []
   // Add all files in the current directory
   Object.values(themeDirectory.files).forEach(fileRecord => {
-    files.push(fileRecord as DeployThemeFile)
+    if (isDeployThemeFile(fileRecord)) {
+      files.push(fileRecord)
+    }
   })
-
   // Recursively add files from subdirectories
   Object.values(themeDirectory.folders).forEach(subdirectory => {
     files = files.concat(extractFilesFromThemeDirectory(subdirectory))
@@ -139,6 +157,7 @@ const createTheme = async (
   if (themeId === undefined) {
     return [
       ...elementErrors,
+      // TODO check if we need this error
       `Missing theme id from create theme response for theme ${change.data.after.elemID.getFullName()}`,
     ]
   }
@@ -157,13 +176,15 @@ const updateTheme = async (
   if (elementErrors.length > 0) {
     const lastError = elementErrors[elementErrors.length - 1]
     if (lastError.includes('Failed to publish')) {
-      elementErrors[elementErrors.length - 1] = `${lastError}. The theme has been created but not published; you can manually publish it in the Zendesk UI.`
+      elementErrors.pop()
+      elementErrors.push(`${lastError}. The theme has been created but not published; you can manually publish it in the Zendesk UI.`)
     }
     return elementErrors
   }
   return deleteTheme(change.data.before.value.id, client)
 }
 
+// we should replace it once the fix is available
 const fixThemeTypes = (elements: Element[]): void => {
   const relevantTypes = elements
     .filter(isObjectType)

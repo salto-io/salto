@@ -32,6 +32,6 @@ export const guideThemeReadonlyValidator: ChangeValidator = async changes => {
     elemID: instance.elemID,
     severity: 'Warning',
     message: 'Guide Themes is currently under development.',
-    detailedMessage: 'The Guide Themes feature is currently under development. Please note that references to other elements will not function correctly upon deployment',
+    detailedMessage: 'Guide Themes deploy support is currently under development. Please note that Theme code referencing other elements might not transfer correctly between environments',
   }))
 }

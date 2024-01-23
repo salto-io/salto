@@ -2677,6 +2677,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToHide: FIELDS_TO_HIDE.concat([
         { fieldName: 'id', fieldType: 'string' },
         { fieldName: 'live', fieldType: 'boolean' },
+        { fieldName: 'author', fieldType: 'string' },
+        { fieldName: 'version', fieldType: 'string' },
       ]),
     },
     deployRequests: {

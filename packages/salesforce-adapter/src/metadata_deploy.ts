@@ -79,16 +79,10 @@ const getTypeOfNestedElement = (changeElem: MetadataInstanceElement, fieldName: 
   return fieldType
 }
 
-const getNamesOfNestedElements = (element: MetadataInstanceElement, fieldName: string): string[] => {
-  if (_.isArray(element.value[fieldName])) {
-    return element.value[fieldName]
-      .map((fieldValue: Value) => [apiNameSync(element), fieldValue[INSTANCE_FULL_NAME_FIELD]].join(API_NAME_SEPARATOR))
-  }
-  if (_.isPlainObject(element.value[fieldName])) {
-    return makeArray(element.value[fieldName][INSTANCE_FULL_NAME_FIELD])
-  }
-  return []
-}
+const getNamesOfNestedElements = (element: MetadataInstanceElement, fieldName: string): string[] => (
+  makeArray(element.value[fieldName])
+    .map((fieldValue: Value) => [apiNameSync(element), fieldValue[INSTANCE_FULL_NAME_FIELD]].join(API_NAME_SEPARATOR))
+)
 
 const addNestedInstancesToPackageManifest = async (
   pkg: DeployPackage,

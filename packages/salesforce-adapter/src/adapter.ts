@@ -117,9 +117,9 @@ import {
   CUSTOM_OBJECT,
   FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
+  LAST_MODIFIED_DATE,
+  OWNER_ID,
   PROFILE_METADATA_TYPE,
-  SYSTEM_FIELDS,
-  UNSUPPORTED_SYSTEM_FIELDS,
 } from './constants'
 import { buildMetadataQuery, buildMetadataQueryForFetchWithChangesDetection } from './fetch_profile/metadata_query'
 
@@ -298,6 +298,30 @@ const METADATA_TO_RETRIEVE = [
   'Workflow',
 ]
 
+// See: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_custom_object__c.htm
+export const SYSTEM_FIELDS = [
+  'ConnectionReceivedId',
+  'ConnectionSentId',
+  'CreatedById',
+  'CreatedDate',
+  'Id',
+  'IsDeleted',
+  'LastActivityDate',
+  LAST_MODIFIED_DATE,
+  'LastModifiedById',
+  'LastReferencedDate',
+  'LastViewedDate',
+  'Name',
+  'RecordTypeId',
+  'SystemModstamp',
+  OWNER_ID,
+  'SetupOwnerId',
+]
+
+export const UNSUPPORTED_SYSTEM_FIELDS = [
+  'LastReferencedDate',
+  'LastViewedDate',
+]
 
 const getMetadataTypesFromElementsSource = async (
   elementsSource: ReadOnlyElementsSource

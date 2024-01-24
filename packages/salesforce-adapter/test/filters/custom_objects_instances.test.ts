@@ -26,10 +26,11 @@ import {
   isInstanceElement,
   ObjectType,
   PrimitiveType,
-  PrimitiveTypes,
+  PrimitiveTypes, ReadOnlyElementsSource,
   SaltoError,
   ServiceIds,
 } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import {
   ConfigChangeSuggestion,
@@ -44,9 +45,9 @@ import Connection from '../../src/client/jsforce'
 import filterCreator from '../../src/filters/custom_objects_instances'
 import mockAdapter from '../adapter'
 import {
-  API_NAME,
+  API_NAME, CHANGED_AT_SINGLETON,
   CUSTOM_OBJECT,
-  CUSTOM_OBJECT_ID_FIELD,
+  CUSTOM_OBJECT_ID_FIELD, DATA_INSTANCES_CHANGED_AT_MAGIC,
   DETECTS_PARENTS_INDICATOR,
   FIELD_ANNOTATIONS,
   INSTALLED_PACKAGES_PATH,
@@ -63,9 +64,12 @@ import {
 import {
   defaultFilterContext,
 } from '../utils'
-import { mockTypes } from '../mock_elements'
+import { mockInstances, mockTypes } from '../mock_elements'
 import { FilterWith } from './mocks'
 import { SalesforceRecord } from '../../src/client/types'
+import {
+  buildMetadataQuery, buildMetadataQueryForFetchWithChangesDetection,
+} from '../../src/fetch_profile/metadata_query'
 
 const { awu } = collections.asynciterable
 
@@ -241,10 +245,17 @@ describe('Custom Object Instances filter', () => {
     excluded: boolean
     allowRef: boolean
   }
-  const buildTestFetchProfile = (
-    types: TestFetchProfileParams[],
-    omittedFields: string[] = [],
-  ): FetchProfile => {
+  const buildTestFetchProfile = async (
+    {
+      types,
+      omittedFields = [],
+      elementsSourceForQuickFetch,
+    } : {
+      types: TestFetchProfileParams[]
+      omittedFields?: string[]
+      elementsSourceForQuickFetch?: ReadOnlyElementsSource
+    },
+  ): Promise<FetchProfile> => {
     const fetchProfileParams: FetchParameters = {
       data: {
         includeObjects: types
@@ -267,10 +278,23 @@ describe('Custom Object Instances filter', () => {
         ...(omittedFields ? { omittedFields } : {}),
       },
     }
+    const metadataQuery = elementsSourceForQuickFetch
+      ? await buildMetadataQueryForFetchWithChangesDetection({
+        fetchParams: fetchProfileParams,
+        elementsSource: elementsSourceForQuickFetch,
+      })
+      : buildMetadataQuery({
+        fetchParams: fetchProfileParams,
+      })
     return buildFetchProfile({
       fetchParams: fetchProfileParams,
+      metadataQuery,
     })
   }
+
+  const getInstancesOfObjectType = (elementsToCheck: Element[], type: ObjectType): InstanceElement[] => (
+    elementsToCheck.filter(e => isInstanceElement(e) && e.getTypeSync().isEqual(type)) as InstanceElement[]
+  )
 
   describe('config interactions', () => {
     // ref: https://salto-io.atlassian.net/browse/SALTO-4579?focusedCommentId=97852
@@ -383,7 +407,9 @@ describe('Custom Object Instances filter', () => {
             client,
             config: {
               ...defaultFilterContext,
-              fetchProfile: buildTestFetchProfile([{ typeName: testTypeName, included, excluded, allowRef }]),
+              fetchProfile: await buildTestFetchProfile({
+                types: [{ typeName: testTypeName, included, excluded, allowRef }],
+              }),
             },
           }
         ) as FilterType
@@ -433,7 +459,9 @@ describe('Custom Object Instances filter', () => {
             client,
             config: {
               ...defaultFilterContext,
-              fetchProfile: buildTestFetchProfile(([{ typeName: testTypeName, included, excluded, allowRef }])),
+              fetchProfile: await buildTestFetchProfile({
+                types: [{ typeName: testTypeName, included, excluded, allowRef }],
+              }),
             },
           }
         ) as FilterType
@@ -466,10 +494,12 @@ describe('Custom Object Instances filter', () => {
             client,
             config: {
               ...defaultFilterContext,
-              fetchProfile: buildTestFetchProfile([
-                { typeName: testTypeName, included: false, excluded, allowRef: true },
-                { typeName: refererTypeName, included: true, excluded: false, allowRef: false },
-              ]),
+              fetchProfile: await buildTestFetchProfile({
+                types: [
+                  { typeName: testTypeName, included: false, excluded, allowRef: true },
+                  { typeName: refererTypeName, included: true, excluded: false, allowRef: false },
+                ],
+              }),
             },
           }
         ) as FilterType
@@ -673,38 +703,29 @@ describe('Custom Object Instances filter', () => {
         beforeEach(async () => {
           fetchResult = await filter.onFetch(elements) as FetchResult
         })
+
         it('should not fetch for non-configured objects', async () => {
-          const notConfiguredObjInstances = await awu(elements).filter(
-            async e => isInstanceElement(e) && await e.getType() === notConfiguredObj
-          ).toArray() as InstanceElement[]
+          const notConfiguredObjInstances = getInstancesOfObjectType(elements, notConfiguredObj)
           expect(notConfiguredObjInstances.length).toEqual(0)
         })
 
-        it('should fetch for regex configured objects', async () => {
-          const includedNameSpaceObjInstances = await awu(elements).filter(
-            async e => isInstanceElement(e) && await e.getType() === includedNameSpaceObj
-          ).toArray() as InstanceElement[]
+        it('should fetch for regex configured objects', () => {
+          const includedNameSpaceObjInstances = getInstancesOfObjectType(elements, includedNameSpaceObj)
           expect(includedNameSpaceObjInstances.length).toEqual(2)
         })
 
         it('should fetch for object included specifically configured', async () => {
-          const includedObjectInstances = await awu(elements).filter(
-            async e => isInstanceElement(e) && await e.getType() === includedObject
-          ).toArray() as InstanceElement[]
+          const includedObjectInstances = getInstancesOfObjectType(elements, includedObject)
           expect(includedObjectInstances.length).toEqual(2)
         })
 
         it('should not fetch for object from a configured regex whose excluded specifically', async () => {
-          const excludedObjectInstances = await awu(elements).filter(
-            async e => isInstanceElement(e) && await e.getType() === excludedObject
-          ).toArray() as InstanceElement[]
+          const excludedObjectInstances = getInstancesOfObjectType(elements, excludedObject)
           expect(excludedObjectInstances.length).toEqual(0)
         })
 
         it('should not fetch for object from a configured as excluded even if it was included by object', async () => {
-          const excludeOverrideObjectInstances = await awu(elements).filter(
-            async e => isInstanceElement(e) && await e.getType() === excludeOverrideObject
-          ).toArray() as InstanceElement[]
+          const excludeOverrideObjectInstances = getInstancesOfObjectType(elements, excludeOverrideObject)
           expect(excludeOverrideObjectInstances.length).toEqual(0)
         })
       })
@@ -804,9 +825,7 @@ describe('Custom Object Instances filter', () => {
       describe('simple object', () => {
         let instances: InstanceElement[]
         beforeEach(async () => {
-          instances = await awu(elements).filter(
-            async e => isInstanceElement(e) && await e.getType() === simpleObject
-          ).toArray() as InstanceElement[]
+          instances = getInstancesOfObjectType(elements, simpleObject)
         })
 
 
@@ -843,9 +862,7 @@ describe('Custom Object Instances filter', () => {
       describe('object with no queryable fields', () => {
         let instances: InstanceElement[]
         beforeEach(async () => {
-          instances = await awu(elements).filter(
-            async e => isInstanceElement(e) && await e.getType() === objWithNoFields
-          ).toArray() as InstanceElement[]
+          instances = getInstancesOfObjectType(elements, objWithNoFields)
         })
 
         it('should not try to query for object', () => {
@@ -860,9 +877,7 @@ describe('Custom Object Instances filter', () => {
       describe('not in namespace object', () => {
         let instances: InstanceElement[]
         beforeEach(async () => {
-          instances = await awu(elements).filter(
-            async e => isInstanceElement(e) && await e.getType() === objNotInNamespace
-          ).toArray() as InstanceElement[]
+          instances = getInstancesOfObjectType(elements, objNotInNamespace)
         })
         it('should create instances according to results', () => {
           expect(instances.length).toEqual(2)
@@ -877,9 +892,7 @@ describe('Custom Object Instances filter', () => {
       describe('object with compound Name', () => {
         let instances: InstanceElement[]
         beforeEach(async () => {
-          instances = await awu(elements).filter(
-            async e => isInstanceElement(e) && await e.getType() === objWithNameField
-          ).toArray() as InstanceElement[]
+          instances = getInstancesOfObjectType(elements, objWithNameField)
         })
 
         it('should call query with the object fields', () => {
@@ -921,9 +934,7 @@ describe('Custom Object Instances filter', () => {
       describe('object with compound Address', () => {
         let instances: InstanceElement[]
         beforeEach(async () => {
-          instances = await awu(elements).filter(
-            async e => isInstanceElement(e) && await e.getType() === objWithAddressField
-          ).toArray() as InstanceElement[]
+          instances = getInstancesOfObjectType(elements, objWithAddressField)
         })
 
         it('should call query with the object fields', () => {
@@ -1258,9 +1269,7 @@ describe('Custom Object Instances filter', () => {
     describe('grandparent object (no master)', () => {
       let instances: InstanceElement[]
       beforeEach(async () => {
-        instances = await awu(elements).filter(
-          async e => isInstanceElement(e) && await e.getType() === grandparentObject
-        ).toArray() as InstanceElement[]
+        instances = getInstancesOfObjectType(elements, grandparentObject)
       })
 
       it('should base elemID on record name only', () => {
@@ -1271,9 +1280,7 @@ describe('Custom Object Instances filter', () => {
     describe('parent object (master is grandparent)', () => {
       let instances: InstanceElement[]
       beforeEach(async () => {
-        instances = await awu(elements).filter(
-          async e => isInstanceElement(e) && await e.getType() === parentObject
-        ).toArray() as InstanceElement[]
+        instances = getInstancesOfObjectType(elements, parentObject)
       })
 
       it('should base elemID on grandparentName + parent', () => {
@@ -1286,9 +1293,7 @@ describe('Custom Object Instances filter', () => {
     describe('grandson object (master is parent who has grandparent as master)', () => {
       let instances: InstanceElement[]
       beforeEach(async () => {
-        instances = await awu(elements).filter(
-          async e => isInstanceElement(e) && await e.getType() === grandsonObject
-        ).toArray() as InstanceElement[]
+        instances = getInstancesOfObjectType(elements, grandsonObject)
       })
 
       it('should base elemID on grandparentName + parent + grandson if all exist', () => {
@@ -1302,9 +1307,7 @@ describe('Custom Object Instances filter', () => {
     describe('orphan object (master non-existance)', () => {
       let instances: InstanceElement[]
       beforeEach(async () => {
-        instances = await awu(elements).filter(
-          async e => isInstanceElement(e) && await e.getType() === orphanObject
-        ).toArray() as InstanceElement[]
+        instances = getInstancesOfObjectType(elements, orphanObject)
       })
       it('should not create instances and suggest to add to include list', () => {
         expect(instances).toHaveLength(0)
@@ -1320,9 +1323,7 @@ describe('Custom Object Instances filter', () => {
     describe('badIdFields object', () => {
       let instances: InstanceElement[]
       beforeEach(async () => {
-        instances = await awu(elements).filter(
-          async e => isInstanceElement(e) && await e.getType() === badIdFieldsObject
-        ).toArray() as InstanceElement[]
+        instances = getInstancesOfObjectType(elements, badIdFieldsObject)
       })
 
       it('should not create instances and suggest to add to include list', () => {
@@ -1339,9 +1340,7 @@ describe('Custom Object Instances filter', () => {
     describe('notQueryableIdFields object', () => {
       let instances: InstanceElement[]
       beforeEach(async () => {
-        instances = await awu(elements).filter(
-          async e => isInstanceElement(e) && await e.getType() === notQueryableIdFieldsObject
-        ).toArray() as InstanceElement[]
+        instances = getInstancesOfObjectType(elements, notQueryableIdFieldsObject)
       })
 
       it('should not create instances and suggest to add to include list', () => {
@@ -1358,9 +1357,7 @@ describe('Custom Object Instances filter', () => {
     describe('ref from object (with master that is defined as ref to and not "base" object)', () => {
       let instances: InstanceElement[]
       beforeEach(async () => {
-        instances = await awu(elements).filter(
-          async e => isInstanceElement(e) && await e.getType() === refFromObject
-        ).toArray() as InstanceElement[]
+        instances = getInstancesOfObjectType(elements, refFromObject)
       })
 
       it('should base elemID on refTo name as "parent" and refFrom as "child"', () => {
@@ -1373,9 +1370,7 @@ describe('Custom Object Instances filter', () => {
     describe('ref to object (not base object, only fetched cause of ref to it)', () => {
       let instances: InstanceElement[]
       beforeEach(async () => {
-        instances = await awu(elements).filter(
-          async e => isInstanceElement(e) && await e.getType() === refToObject
-        ).toArray() as InstanceElement[]
+        instances = getInstancesOfObjectType(elements, refToObject)
       })
 
       it('should base elemID on record name', () => {
@@ -1386,9 +1381,7 @@ describe('Custom Object Instances filter', () => {
     describe('PricebookEntry object (special case - Lookup)', () => {
       let instances: InstanceElement[]
       beforeEach(async () => {
-        instances = await awu(elements).filter(
-          async e => isInstanceElement(e) && await e.getType() === pricebookEntryObject
-        ).toArray() as InstanceElement[]
+        instances = getInstancesOfObjectType(elements, pricebookEntryObject)
       })
 
       it('should base elemID on Pricebook2Id lookup name + the entry', () => {
@@ -1401,9 +1394,7 @@ describe('Custom Object Instances filter', () => {
     describe('Product2 object - checking case of non-existing values', () => {
       let instances: InstanceElement[]
       beforeEach(async () => {
-        instances = await awu(elements).filter(
-          async e => isInstanceElement(e) && await e.getType() === productObject
-        ).toArray() as InstanceElement[]
+        instances = getInstancesOfObjectType(elements, productObject)
       })
 
       it('should base elemID on name only because value of other field is null', () => {
@@ -1422,9 +1413,7 @@ describe('Custom Object Instances filter', () => {
     describe('SBQQ__CustomAction__c object (special case - base on record values besides name)', () => {
       let instances: InstanceElement[]
       beforeEach(async () => {
-        instances = await awu(elements).filter(
-          async e => isInstanceElement(e) && await e.getType() === SBQQCustomActionObject
-        ).toArray() as InstanceElement[]
+        instances = getInstancesOfObjectType(elements, SBQQCustomActionObject)
       })
 
       it('should base elemID on Name + displayOrder + location', () => {
@@ -1674,26 +1663,28 @@ describe('Custom Object Instances filter', () => {
             client,
             config: {
               ...defaultFilterContext,
-              fetchProfile: buildTestFetchProfile([
-                {
-                  typeName: testTypeName,
-                  included: true,
-                  excluded: false,
-                  allowRef: false,
-                },
-                {
-                  typeName: 'unmanagedType',
-                  included: true,
-                  excluded: false,
-                  allowRef: false,
-                },
-                {
-                  typeName: 'IrrelevantType',
-                  included: true,
-                  excluded: false,
-                  allowRef: false,
-                },
-              ]),
+              fetchProfile: await buildTestFetchProfile({
+                types: [
+                  {
+                    typeName: testTypeName,
+                    included: true,
+                    excluded: false,
+                    allowRef: false,
+                  },
+                  {
+                    typeName: 'unmanagedType',
+                    included: true,
+                    excluded: false,
+                    allowRef: false,
+                  },
+                  {
+                    typeName: 'IrrelevantType',
+                    included: true,
+                    excluded: false,
+                    allowRef: false,
+                  },
+                ],
+              }),
             },
           }
         ) as FilterType
@@ -1758,20 +1749,22 @@ describe('Custom Object Instances filter', () => {
             client,
             config: {
               ...defaultFilterContext,
-              fetchProfile: buildTestFetchProfile([
-                {
-                  typeName: testTypeName,
-                  included: true,
-                  excluded: false,
-                  allowRef: false,
-                },
-                {
-                  typeName: otherTestTypeName,
-                  included: true,
-                  excluded: false,
-                  allowRef: false,
-                },
-              ]),
+              fetchProfile: await buildTestFetchProfile({
+                types: [
+                  {
+                    typeName: testTypeName,
+                    included: true,
+                    excluded: false,
+                    allowRef: false,
+                  },
+                  {
+                    typeName: otherTestTypeName,
+                    included: true,
+                    excluded: false,
+                    allowRef: false,
+                  },
+                ],
+              }),
             },
           }
         ) as FilterType
@@ -1815,8 +1808,8 @@ describe('Custom Object Instances filter', () => {
           client,
           config: {
             ...defaultFilterContext,
-            fetchProfile: buildTestFetchProfile(
-              [
+            fetchProfile: await buildTestFetchProfile({
+              types: [
                 {
                   typeName: testTypeName,
                   included: true,
@@ -1824,10 +1817,10 @@ describe('Custom Object Instances filter', () => {
                   allowRef: false,
                 },
               ],
-              [
+              omittedFields: [
                 `${testTypeName}.TestField`,
               ],
-            ),
+            }),
           },
         }
       ) as FilterType
@@ -1909,20 +1902,22 @@ describe('Custom Object Instances filter', () => {
             client,
             config: {
               ...defaultFilterContext,
-              fetchProfile: buildTestFetchProfile([
-                {
-                  typeName: testTypeName,
-                  included: false,
-                  excluded: false,
-                  allowRef: true,
-                },
-                {
-                  typeName: refFromTypeName,
-                  included: true,
-                  excluded: false,
-                  allowRef: false,
-                },
-              ]),
+              fetchProfile: await buildTestFetchProfile({
+                types: [
+                  {
+                    typeName: testTypeName,
+                    included: false,
+                    excluded: false,
+                    allowRef: true,
+                  },
+                  {
+                    typeName: refFromTypeName,
+                    included: true,
+                    excluded: false,
+                    allowRef: false,
+                  },
+                ],
+              }),
             },
           }
         ) as FilterType
@@ -1940,6 +1935,74 @@ describe('Custom Object Instances filter', () => {
           { elemID: new ElemID(SALESFORCE, testTypeName, 'instance', `${NAME_FROM_GET_ELEM_ID}${testInstanceId1}`) },
           { elemID: new ElemID(SALESFORCE, testTypeName, 'instance', `${NAME_FROM_GET_ELEM_ID}${testInstanceId2}`) },
         ])
+      })
+    })
+  })
+  describe('Fetch with changes detection', () => {
+    let fetchProfile: FetchProfile
+    const testTypeName = 'TestType'
+    const changedAtCutoff = new Date(2023, 12, 21).toISOString()
+
+    describe('When enabled', () => {
+      beforeEach(async () => {
+        const changedAtSingleton = mockInstances()[CHANGED_AT_SINGLETON]
+        _.set(changedAtSingleton.value, [DATA_INSTANCES_CHANGED_AT_MAGIC, testTypeName], changedAtCutoff)
+
+        const elementsSource = buildElementsSourceFromElements([
+          changedAtSingleton,
+        ])
+        fetchProfile = await buildTestFetchProfile({
+          types: [
+            {
+              typeName: testTypeName,
+              included: true,
+              excluded: false,
+              allowRef: false,
+            },
+          ],
+          elementsSourceForQuickFetch: elementsSource,
+        })
+        filter = filterCreator(
+          {
+            client,
+            config: {
+              ...defaultFilterContext,
+              fetchProfile,
+            },
+          }
+        ) as FilterType
+        await filter.onFetch([createCustomObject(testTypeName), changedAtSingleton])
+      })
+      it('Should query using the changed-at value', () => {
+        expect(basicQueryImplementation).toHaveBeenLastCalledWith(expect.stringContaining(`LastModifiedDate > ${changedAtCutoff}`))
+      })
+    })
+
+    describe('When disabled', () => {
+      beforeEach(async () => {
+        fetchProfile = await buildTestFetchProfile({
+          types: [
+            {
+              typeName: testTypeName,
+              included: true,
+              excluded: false,
+              allowRef: false,
+            },
+          ],
+        })
+        filter = filterCreator(
+          {
+            client,
+            config: {
+              ...defaultFilterContext,
+              fetchProfile,
+            },
+          }
+        ) as FilterType
+        await filter.onFetch([createCustomObject(testTypeName)])
+      })
+      it('Should not query using the changed-at value', () => {
+        expect(basicQueryImplementation).toHaveBeenLastCalledWith(expect.not.stringContaining(`LastModifiedDate > ${changedAtCutoff}`))
       })
     })
   })

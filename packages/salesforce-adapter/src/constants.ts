@@ -136,6 +136,7 @@ export enum ANNOTATION_TYPE_NAMES {
 
 // Salesforce System Fields
 export const OWNER_ID = 'OwnerId'
+export const LAST_MODIFIED_DATE = 'LastModifiedDate'
 
 // Salto annotations
 export const API_NAME = 'apiName'

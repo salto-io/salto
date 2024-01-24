@@ -1278,3 +1278,10 @@ export const getInstancesFromElementSource = async (elementSource: ReadOnlyEleme
     .filter(isInstanceElement)
     .filter(instance => typeNames.includes(instance.elemID.typeName))
     .toArray()
+
+export const validateReferenceExpression = (fieldName: string): Joi.CustomValidator => (value, helpers) => {
+  if (!isReferenceExpression(value)) {
+    return helpers.error(`${fieldName} is not ReferenceExpression`)
+  }
+  return true
+}

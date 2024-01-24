@@ -124,7 +124,7 @@ describe('status mappings', () => {
       createEmptyType(JIRA_WORKFLOW_TYPE),
       {
         name: 'workflowSchemeInstance',
-        defaultWorkflow: new ReferenceExpression(defaultWorkflowInstance.elemID, defaultWorkflowInstance), 
+        defaultWorkflow: new ReferenceExpression(defaultWorkflowInstance.elemID, defaultWorkflowInstance),
         items: [
           {
             workflow: new ReferenceExpression(workflowInstance.elemID, workflowInstance),
@@ -177,6 +177,29 @@ describe('status mappings', () => {
       severity: 'Error',
       message: 'Workflow change requires status migration',
       detailedMessage: ERROR_MESSAGE_PREFIX + getStatusMappingsErrorMessageBody(['issueType1', 'issueType2']),
+    }])
+  })
+  it('should return an error when the statusMappings is in an invalid format', async () => {
+    const before = workflowInstance.clone()
+    workflowInstance.value.statuses.pop()
+    workflowInstance.value.statusMappings = [{
+      issueTypeId: 'not a reference expression',
+      projectId: new ReferenceExpression(projectInstance.elemID, projectInstance),
+      statusMigrations: [
+        {
+          oldStatusReference: new ReferenceExpression(status3.elemID, status3),
+          newStatusReference: new ReferenceExpression(status2.elemID, status1),
+        },
+      ],
+    }]
+    expect(await workflowStatusMappingsValidator(
+      [toChange({ before, after: workflowInstance })],
+      elementsSource
+    )).toEqual([{
+      elemID: workflowInstance.elemID,
+      severity: 'Error',
+      message: 'Workflow status mappings has invalid format',
+      detailedMessage: 'The status mapping validation failed because of the following error: issueTypeId is not ReferenceExpression. Learn more at https://help.salto.io/en/articles/8851200-migrating-issues-when-modifying-workflows.',
     }])
   })
   it('should not return an error when there is a removed status from an inactive workflow', async () => {

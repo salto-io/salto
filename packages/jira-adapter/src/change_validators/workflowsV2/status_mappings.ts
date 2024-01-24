@@ -16,12 +16,13 @@
 import _ from 'lodash'
 import Joi from 'joi'
 import { collections } from '@salto-io/lowerdash'
-import { Change, ChangeDataType, ChangeValidator, InstanceElement, ModificationChange, ReadOnlyElementsSource, ReferenceExpression, SeverityLevel, Value, getChangeData, isInstanceChange, isInstanceElement, isModificationChange, isReferenceExpression } from '@salto-io/adapter-api'
-import { createSchemeGuard, getInstancesFromElementSource } from '@salto-io/adapter-utils'
-import { WorkflowSchemeItem, isWorkflowSchemeItem, projectHasWorkflowSchemeReference } from '../workflow_scheme_migration'
+import { Change, ChangeDataType, ChangeValidator, InstanceElement, ModificationChange, ReadOnlyElementsSource, ReferenceExpression, SeverityLevel, getChangeData, isInstanceChange, isInstanceElement, isModificationChange, isReferenceExpression } from '@salto-io/adapter-api'
+import { createSchemeGuard, getInstancesFromElementSource, validateReferenceExpression } from '@salto-io/adapter-utils'
+import { isWorkflowSchemeItem, projectHasWorkflowSchemeReference } from '../workflow_scheme_migration'
 import { ISSUE_TYPE_NAME, JIRA_WORKFLOW_TYPE, PROJECT_TYPE } from '../../constants'
 
 const { awu } = collections.asynciterable
+const { makeArray } = collections.array
 
 type StatusMigration = {
   oldStatusReference: ReferenceExpression
@@ -34,21 +35,22 @@ type StatusMapping = {
   statusMigrations: StatusMigration[]
 }
 
-const validateReferenceExpression = (fieldName: string): Joi.CustomValidator => (value, helpers) => {
-  if (!isReferenceExpression(value)) {
-    return helpers.error(`${fieldName} is not ReferenceExpression`)
-  }
-  return true
-}
-
 const STATUS_MAPPINGS_SCHEMA = Joi.array().items(Joi.object({
-  issueTypeId: Joi.custom(validateReferenceExpression('issueTypeId')).required(),
-  projectId: Joi.custom(validateReferenceExpression('projectId')).required(),
+  issueTypeId: Joi.custom(validateReferenceExpression('issueTypeId'))
+    .message('issueTypeId is not ReferenceExpression')
+    .required(),
+  projectId: Joi.custom(validateReferenceExpression('projectId'))
+    .message('projectId is not ReferenceExpression')
+    .required(),
   statusMigrations: Joi.array().items(Joi.object({
-    oldStatusReference: Joi.custom(validateReferenceExpression('oldStatusReference')).required(),
-    newStatusReference: Joi.custom(validateReferenceExpression('newStatusReference')).required(),
+    oldStatusReference: Joi.custom(validateReferenceExpression('oldStatusReference'))
+      .message('oldStatusReference is not ReferenceExpression')
+      .required(),
+    newStatusReference: Joi.custom(validateReferenceExpression('newStatusReference'))
+      .message('newStatusReference is not ReferenceExpression')
+      .required(),
   })).required(),
-})).required()
+}))
 
 const isStatusMappings = createSchemeGuard<StatusMapping[]>(STATUS_MAPPINGS_SCHEMA, 'received invalid statusMappings')
 
@@ -73,11 +75,11 @@ const getRelevantChanges = (
     .filter(change => getChangeData(change).elemID.typeName === JIRA_WORKFLOW_TYPE)
 
 const getRemovedStatuses = (change: ModificationChange<InstanceElement>): ReferenceExpression[] => {
-  const beforeStatuses = (change.data.before.value.statuses ?? [])
-    .map((status: Value) => status.statusReference)
+  const beforeStatuses = makeArray(change.data.before.value.statuses)
+    .map(status => status.statusReference)
     .filter(isReferenceExpression)
-  const afterStatuses = (change.data.after.value.statuses ?? [])
-    .map((status: Value) => status.statusReference)
+  const afterStatuses = makeArray(change.data.after.value.statuses)
+    .map(status => status.statusReference)
     .filter(isReferenceExpression)
   return _.differenceBy(
     beforeStatuses,
@@ -97,25 +99,29 @@ const getWorkflowSchemeMigrationIssueType = async ({
 }): Promise<ReferenceExpression[]> => {
   const workflowSchemeDefaultWorkflow = workflowSchemeInstance.value.defaultWorkflow
   if (isReferenceExpression(workflowSchemeDefaultWorkflow)
+    // when the workflow that has changed is the default workflow of a workflowScheme
+    // we need to include the issue types that use the default workflow in this scheme in the status mappings
     && workflowSchemeDefaultWorkflow.elemID.name === workflowName) {
     // all the issueTypes
     const issueTypes = (await getInstancesFromElementSource(elementsSource, [ISSUE_TYPE_NAME]))
       .map(instance => new ReferenceExpression(instance.elemID, instance))
     // issueTypes that not using the default workflow
-    const notUsingDefaultIssueTypes = (workflowSchemeInstance.value.items ?? [])
+    const notUsingDefaultIssueTypes = makeArray(workflowSchemeInstance.value.items)
       .filter(isWorkflowSchemeItem)
-      .map((item: WorkflowSchemeItem) => item.issueType)
-      .filter(isReferenceExpression)
+      .map(item => item.issueType)
+    // the issueTypes that are specified in the workflowScheme items are not using the default workflow,
+    // all the rest issueTypes are using the default workflow
     return _.differenceBy(
       issueTypes,
       notUsingDefaultIssueTypes,
       (issueType: ReferenceExpression) => issueType.elemID.getFullName()
     )
   }
-  const issueTypes = (workflowSchemeInstance.value.items ?? [])
-    ?.filter(isWorkflowSchemeItem)
-    .filter((item: WorkflowSchemeItem) => item.workflow.elemID.name === workflowName)
-    .map((item: WorkflowSchemeItem) => item.issueType)
+  const issueTypes = makeArray(workflowSchemeInstance.value.items)
+    .filter(isWorkflowSchemeItem)
+    // the issueTypes that using this workflow in the scheme are the ones that we need to migrate
+    .filter(item => item.workflow.elemID.name === workflowName)
+    .map(item => item.issueType)
   return issueTypes
 }
 
@@ -140,14 +146,18 @@ const createStatusMapping = ({
 const createStatusMigrationStructure = (statusMigration: StatusMigration): string =>
   `{
           oldStatusReference = ${statusMigration.oldStatusReference.elemID.getFullName()}
-          newStatusReference = jira.Status.instance.<statusName>\n        },`
+          newStatusReference = jira.Status.instance.<statusName>
+        },`
 
 
-const createStatusMappingStructure = (statusMappings: StatusMapping): string => `{
+const createStatusMappingStructure = (statusMappings: StatusMapping): string =>
+  `{
       issueTypeId = ${statusMappings.issueTypeId.elemID.getFullName()}
       projectId = ${statusMappings.projectId.elemID.getFullName()}
       statusMigrations = [
-        ${statusMappings.statusMigrations.map(createStatusMigrationStructure).join(',\n')}\n      ]\n    },`
+        ${statusMappings.statusMigrations.map(createStatusMigrationStructure).join(',\n')}
+      ]
+    },`
 
 const getNewStatusMappings = async ({
   workflowSchemeInstance,
@@ -187,7 +197,9 @@ const getNewStatusMappings = async ({
 }
 
 const getStatusMappingsFormat = (statusMappings: StatusMapping[]): string =>
-  `statusMappings = [\n    ${statusMappings.map(statusMapping => createStatusMappingStructure(statusMapping)).join('\n    ')}\n]`
+  `statusMappings = [
+    ${statusMappings.map(statusMapping => createStatusMappingStructure(statusMapping)).join('\n    ')}
+]`
 
 export const workflowStatusMappingsValidator: ChangeValidator = async (changes, elementsSource) => {
   const relevantChanges = getRelevantChanges(changes)
@@ -209,6 +221,15 @@ export const workflowStatusMappingsValidator: ChangeValidator = async (changes, 
   )
   return awu(relevantChanges).flatMap(async change => {
     const workflowInstance = getChangeData(change)
+    if (!isStatusMappings(workflowInstance.value.statusMappings)) {
+      const { error } = STATUS_MAPPINGS_SCHEMA.validate(workflowInstance.value.statusMappings)
+      return [{
+        elemID: change.data.after.elemID,
+        severity: 'Error' as SeverityLevel,
+        message: 'Workflow status mappings has invalid format',
+        detailedMessage: `The status mapping validation failed because of the following error: ${error?.message}. Learn more at https://help.salto.io/en/articles/8851200-migrating-issues-when-modifying-workflows.`,
+      }]
+    }
     const existingStatusMappings = isStatusMappings(workflowInstance.value.statusMappings)
       ? workflowInstance.value.statusMappings
       : []

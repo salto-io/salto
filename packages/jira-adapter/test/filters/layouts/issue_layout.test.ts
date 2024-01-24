@@ -23,6 +23,7 @@ import issueLayoutFilter from '../../../src/filters/layouts/issue_layout'
 import { getFilterParams, mockClient } from '../../utils'
 import { ISSUE_LAYOUT_TYPE, JIRA, PROJECT_TYPE, SCREEN_SCHEME_TYPE } from '../../../src/constants'
 import { createLayoutType } from '../../../src/filters/layouts/layout_types'
+import { generateLayoutId } from '../../../src/filters/layouts/layout_service_operations'
 
 describe('issue layout filter', () => {
   let connection: MockInterface<clientUtils.APIConnection>
@@ -407,7 +408,7 @@ describe('issue layout filter', () => {
         'issueLayout',
         issueLayoutType,
         {
-          id: '2',
+          id: generateLayoutId(projectInstance.value.id, screenInstance.value.id),
           extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
           issueLayoutConfig: {
             items: [

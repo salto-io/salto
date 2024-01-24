@@ -1240,6 +1240,20 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       },
     },
   },
+  WorkflowRuleConfiguration: {
+    transformation: {
+      fieldsToHide: [
+        { fieldName: 'id' },
+      ],
+    },
+  },
+  WorkflowTrigger: {
+    transformation: {
+      fieldsToHide: [
+        { fieldName: 'id' },
+      ],
+    },
+  },
   WorkflowRuleConfiguration_parameters: {
     transformation: {
       fieldTypeOverrides: [

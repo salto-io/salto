@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { CORE_ANNOTATIONS, Change, Element, InstanceElement, ReferenceExpression, getChangeData, isAdditionChange, isInstanceChange, isInstanceElement, isRemovalChange } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Change, Element, InstanceElement, ReferenceExpression, getChangeData, isInstanceChange, isInstanceElement, isRemovalChange } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { getParent, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
@@ -119,18 +119,16 @@ const deployLayoutChange = async (
         items,
       },
     }
-    if (isAdditionChange(change)) {
-      const variables = {
-        projectId: parentProject.value.id,
-        extraDefinerId: layout.value.extraDefinerId.value.value.id,
-      }
-      const response = await getLayoutResponse({ variables, client, typeName })
-      if (!isIssueLayoutResponse(response.data)) {
-        throw Error('Failed to deploy issue layout changes due to bad response from jira service')
-      }
-      layout.value.id = response.data.issueLayoutConfiguration.issueLayoutResult.id
+    const variables = {
+      projectId: parentProject.value.id,
+      extraDefinerId: layout.value.extraDefinerId.value.value.id,
     }
-    const url = `/rest/internal/1.0/issueLayouts/${layout.value.id}`
+    const response = await getLayoutResponse({ variables, client, typeName })
+    if (!isIssueLayoutResponse(response.data)) {
+      throw Error('Failed to deploy issue layout changes due to bad response from jira service')
+    }
+    const issueLayoutId = response.data.issueLayoutConfiguration.issueLayoutResult.id
+    const url = `/rest/internal/1.0/issueLayouts/${issueLayoutId}`
     await client.put({ url, data })
     return
   }

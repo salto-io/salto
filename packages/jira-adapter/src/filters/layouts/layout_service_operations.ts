@@ -45,7 +45,7 @@ type QueryVariables = {
     projectId: string | number
     extraDefinerId: string | number
     layoutType?: string
-  }
+}
 
 export type LayoutTypeName = 'RequestForm' | 'IssueView' | 'IssueLayout'
 export const LAYOUT_TYPE_NAME_TO_DETAILS: Record<LayoutTypeName, LayoutTypeDetails> = {
@@ -86,12 +86,11 @@ export const getLayoutResponse = async ({
     if (query === undefined) {
       log.error(`Failed to get issue layout for project ${variables.projectId} and screen ${variables.extraDefinerId}: query is undefined`)
     }
-    const response = await client.gqlPost({
+    return await client.gqlPost({
       url: baseUrl,
       query,
       variables,
     })
-    return response
   } catch (e) {
     log.error(`Failed to get issue layout for project ${variables.projectId} and screen ${variables.extraDefinerId}: ${e}`)
   }
@@ -120,6 +119,10 @@ const fromLayoutConfigRespToLayoutConfig = (
   return { items }
 }
 
+const generateLayoutId = (
+  projectId: string, extraDefinerId: string | number
+): string => projectId.concat(extraDefinerId.toString())
+
 export const getLayout = async ({
   extraDefinerId,
   response,
@@ -138,7 +141,7 @@ export const getLayout = async ({
   if (!Array.isArray(response.data) && isIssueLayoutResponse(response.data) && instance.path !== undefined) {
     const { issueLayoutResult } = response.data.issueLayoutConfiguration
     const value = {
-      id: issueLayoutResult.id,
+      id: generateLayoutId(instance.value.id, extraDefinerId),
       extraDefinerId,
       issueLayoutConfig: fromLayoutConfigRespToLayoutConfig(response.data.issueLayoutConfiguration),
     }

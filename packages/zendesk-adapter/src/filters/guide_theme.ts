@@ -27,13 +27,13 @@ import {
   SaltoError,
   StaticFile,
   Element,
-  isObjectType, Field, MapType,
+  isObjectType, Field, MapType, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { values } from '@salto-io/lowerdash'
+import { values, values as lowerdashValues } from '@salto-io/lowerdash'
 import JSZip from 'jszip'
 import _, { remove } from 'lodash'
-import { getInstancesFromElementSource, naclCase } from '@salto-io/adapter-utils'
+import { getInstancesFromElementSource, naclCase, inspectValue } from '@salto-io/adapter-utils'
 import ZendeskClient from '../client/client'
 import { FETCH_CONFIG, isGuideThemesEnabled } from '../config'
 import {
@@ -46,7 +46,9 @@ import { download } from './guide_themes/download'
 import { publish } from './guide_themes/publish'
 import { getBrandsForGuideThemes } from './utils'
 
+
 const log = logger(module)
+const { isPlainRecord } = lowerdashValues
 
 type ThemeFile = { filename: string; content: StaticFile }
 type DeployThemeFile = { filename: string; content: Buffer }
@@ -115,8 +117,20 @@ const isDeployThemeFile = (file: ThemeFile | DeployThemeFile): file is DeployThe
   return isContentBuffer
 }
 
+const isThemeDirectory = (dir: unknown): dir is ThemeDirectory => {
+  if (!isPlainRecord(dir)) {
+    return false
+  }
+  return isPlainRecord(dir.files) && isPlainRecord(dir.folders)
+}
+
 const extractFilesFromThemeDirectory = (themeDirectory: ThemeDirectory): DeployThemeFile[] => {
   let files: DeployThemeFile[] = []
+  if (!isThemeDirectory(themeDirectory)) {
+    // TODO should be tested in SALTO-5320
+    log.error('current theme directory is not valid: %o', inspectValue(themeDirectory))
+    return files
+  }
   // Add all files in the current directory
   Object.values(themeDirectory.files).forEach(fileRecord => {
     if (isDeployThemeFile(fileRecord)) {
@@ -197,6 +211,8 @@ const fixThemeTypes = (elements: Element[]): void => {
     log.error('could not fix types for themes')
     return
   }
+  themeFolderType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] = false
+  themeFileType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] = false
   themeFolderType.fields.files = new Field(themeFolderType, 'files', new MapType(themeFileType))
   themeType.fields.root = new Field(themeType, 'root', themeFolderType)
 }

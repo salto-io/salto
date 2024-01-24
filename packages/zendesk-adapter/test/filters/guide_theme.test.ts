@@ -260,6 +260,26 @@ describe('filterCreator', () => {
         expect(mockCreate).not.toHaveBeenCalled()
       })
     })
+    describe('with invalid elements', () => {
+      beforeEach(() => {
+        mockCreate.mockResolvedValue({ themeId: 'newId', errors: [] })
+        mockPublish.mockResolvedValue([])
+      })
+      it('should not fail', async () => {
+        const invalidTheme = new InstanceElement('invalidTheme', themeType,
+          {
+            name: 'SevenFlags',
+            brand_id: new ReferenceExpression(brand1.elemID, brand1),
+            root: {},
+          })
+        const changes = [toChange({ after: invalidTheme })]
+        expect(await filter.deploy?.(changes))
+          .toEqual({ deployResult: { appliedChanges: changes, errors: [] }, leftoverChanges: [] })
+        expect((changes[0] as AdditionChange<InstanceElement>).data.after.value.id).toEqual('newId')
+        expect(mockCreate).toHaveBeenCalled()
+        expect(mockPublish).not.toHaveBeenCalled()
+      })
+    })
 
     describe('create theme', () => {
       let changes: Change<InstanceElement>[]

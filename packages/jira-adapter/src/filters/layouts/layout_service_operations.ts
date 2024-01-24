@@ -119,7 +119,7 @@ const fromLayoutConfigRespToLayoutConfig = (
   return { items }
 }
 
-const generateLayoutId = (
+export const generateLayoutId = (
   projectId: string, extraDefinerId: string | number
 ): string => projectId.concat('_').concat(extraDefinerId.toString())
 

@@ -121,7 +121,7 @@ const fromLayoutConfigRespToLayoutConfig = (
 
 const generateLayoutId = (
   projectId: string, extraDefinerId: string | number
-): string => projectId.concat(extraDefinerId.toString())
+): string => projectId.concat('_').concat(extraDefinerId.toString())
 
 export const getLayout = async ({
   extraDefinerId,

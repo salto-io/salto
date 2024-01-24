@@ -17,16 +17,16 @@ import { createSchemeGuard } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 
 type JobError = {
-  title: string
+  title?: string
   code: string
-  message: string
+  message?: string
   meta: object
 }
 
 const JOB_ERROR_SCHEMA = Joi.object({
-  title: Joi.string().required(),
+  title: Joi.string(),
   code: Joi.string().required(),
-  message: Joi.string().required(),
+  message: Joi.string(),
   meta: Joi.object().required(),
 })
 
@@ -68,7 +68,7 @@ export type PendingJob<JobData> = {
   data: JobData
 }
 
-type CompletedJob<JobData> = {
+export type CompletedJob<JobData> = {
   id: string
   status: 'completed'
   data: JobData
@@ -80,7 +80,7 @@ export type FailedJob = {
   errors: JobError[]
 }
 
-type UploadJob = PendingJob<UploadJobData> | CompletedJob<UploadJobData> | FailedJob
+export type UploadJob = PendingJob<UploadJobData> | CompletedJob<UploadJobData> | FailedJob
 export type DownloadJob = FailedJob | PendingJob<DownloadJobData> | CompletedJob<DownloadJobData>
 const jobSchema = (statuses = ['pending', 'failed', 'completed']): Joi.ObjectSchema => Joi.object({
   id: Joi.string().required(),

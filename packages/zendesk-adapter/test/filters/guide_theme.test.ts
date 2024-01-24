@@ -13,12 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, ReferenceExpression, StaticFile } from '@salto-io/adapter-api'
+import { AdditionChange, BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ModificationChange, ObjectType, ReferenceExpression, StaticFile, toChange } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
-import { BRAND_TYPE_NAME, GUIDE_THEME_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { BRAND_TYPE_NAME, GUIDE_THEME_TYPE_NAME, THEME_SETTINGS_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { FilterCreator } from '../../src/filter'
 import filterCreator from '../../src/filters/guide_theme'
 import * as DownloadModule from '../../src/filters/guide_themes/download'
+import * as CreateModule from '../../src/filters/guide_themes/create'
+import * as DeleteModule from '../../src/filters/guide_themes/delete'
+import * as PublishModule from '../../src/filters/guide_themes/publish'
 import { createFilterCreatorParams } from '../utils'
 
 jest.mock('jszip', () => jest.fn().mockImplementation(() => {
@@ -46,15 +50,57 @@ jest.mock('jszip', () => jest.fn().mockImplementation(() => {
 
 const brandType = new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) })
 const themeType = new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_THEME_TYPE_NAME) })
+const themeSettingsType = new ObjectType({
+  elemID: new ElemID(ZENDESK, THEME_SETTINGS_TYPE_NAME),
+  fields: {
+    brand: { refType: BuiltinTypes.NUMBER },
+    liveTheme: { refType: BuiltinTypes.STRING },
+  },
+  path: [ZENDESK, 'Types', THEME_SETTINGS_TYPE_NAME],
+  annotations: {
+    [CORE_ANNOTATIONS.HIDDEN]: true,
+  },
+})
 
 const brand1 = new InstanceElement('brand', brandType, { id: 1, name: 'oneTwo', has_help_center: true })
-const theme1 = new InstanceElement('theme', themeType, { id: 'park?', name: 'SixFlags', brand_id: new ReferenceExpression(brand1.elemID) })
+const themeWithId = new InstanceElement('themeWithId', themeType,
+  { id: 'park?', name: 'SixFlags', brand_id: new ReferenceExpression(brand1.elemID, brand1) })
+const newThemeWithFiles = new InstanceElement('newThemeWithFiles', themeType,
+  {
+    name: 'SevenFlags',
+    brand_id: new ReferenceExpression(brand1.elemID, brand1),
+    root: {
+      files: {
+        'file1_txt@v': { filename: 'file1.txt',
+          content: new StaticFile({ filepath: 'file1.txt', content: Buffer.from('file1content') }) },
+      },
+      folders: {},
+    },
+  })
+
+const themeSettingsInstance = new InstanceElement(
+  `${brand1.value.name}_settings`,
+  themeSettingsType,
+  {
+    brand: new ReferenceExpression(brand1.elemID),
+    liveTheme: new ReferenceExpression(themeWithId.elemID),
+  }
+)
+
+const themeSettingsInstance2 = new InstanceElement(
+  `${brand1.value.name}_settings`,
+  themeSettingsType,
+  {
+    brand: new ReferenceExpression(brand1.elemID),
+    liveTheme: new ReferenceExpression(newThemeWithFiles.elemID),
+  }
+)
 
 describe('filterCreator', () => {
   describe('fetch', () => {
     describe('bad config', () => {
       it('returns undefined if guide is not enabled', async () => {
-        expect(await filterCreator(createFilterCreatorParams({})).onFetch?.([brand1, theme1])).toBeUndefined()
+        expect(await filterCreator(createFilterCreatorParams({})).onFetch?.([brand1, themeWithId])).toBeUndefined()
       })
       describe('guide is enabled but themes is not', () => {
         let filter: ReturnType<FilterCreator>
@@ -66,7 +112,7 @@ describe('filterCreator', () => {
         })
 
         it('returns undefined', async () => {
-          expect(await filter.onFetch?.([brand1, theme1])).toBeUndefined()
+          expect(await filter.onFetch?.([brand1, themeWithId])).toBeUndefined()
         })
       })
     })
@@ -89,14 +135,14 @@ describe('filterCreator', () => {
           })
 
           it('removes the theme from the elements', async () => {
-            const elements = [brand1, theme1]
+            const elements = [brand1, themeWithId]
             await filter.onFetch?.(elements)
             expect(elements).toEqual([brand1])
           })
 
           it('returns a warning for the theme', async () => {
             const errors = [{ message: 'Error fetching theme id park?, download failed specific error', severity: 'Warning' }]
-            expect(await filter.onFetch?.([brand1, theme1])).toEqual({ errors })
+            expect(await filter.onFetch?.([brand1, themeWithId])).toEqual({ errors })
           })
         })
 
@@ -106,14 +152,14 @@ describe('filterCreator', () => {
           })
 
           it('removes the theme from the elements', async () => {
-            const elements = [brand1, theme1]
+            const elements = [brand1, themeWithId]
             await filter.onFetch?.(elements)
             expect(elements).toEqual([brand1])
           })
 
           it('returns a default warning for the theme', async () => {
             const errors = [{ message: 'Error fetching theme id park?, no content returned from Zendesk API', severity: 'Warning' }]
-            expect(await filter.onFetch?.([brand1, theme1])).toEqual({ errors })
+            expect(await filter.onFetch?.([brand1, themeWithId])).toEqual({ errors })
           })
         })
       })
@@ -123,29 +169,42 @@ describe('filterCreator', () => {
           mockDownload.mockResolvedValue({ content: Buffer.from('content'), errors: [] })
         })
 
-        it('adds the theme files to the theme', async () => {
-          const elements = [brand1, theme1]
+        it('adds the theme files to the themes', async () => {
+          const liveThemeWithId = themeWithId.clone()
+          liveThemeWithId.value.live = true
+          const nonLiveThemeWithId = themeWithId.clone()
+          nonLiveThemeWithId.value.live = false
+          const elements = [brand1, liveThemeWithId, nonLiveThemeWithId]
           await filter.onFetch?.(elements)
-          expect(elements).toEqual([brand1, theme1])
-          expect(Object.keys(theme1.value.files)).toHaveLength(2)
-          expect(theme1.value.files['file1_txt@v'].filename).toEqual('file1.txt')
-          expect(theme1.value.files['file1_txt@v'].content).toEqual(new StaticFile({
+          expect(Object.keys(liveThemeWithId.value.root)).toHaveLength(2)
+          expect(liveThemeWithId.value.root.files['file1_txt@v'].filename).toEqual('file1.txt')
+          expect(liveThemeWithId.value.root.files['file1_txt@v'].content).toEqual(new StaticFile({
             filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/file1.txt`,
             content: Buffer.from('file1content'),
           }))
-          expect(theme1.value.files['subfolder_dot@v']['file2_txt@v'].filename).toEqual('subfolder.dot/file2.txt')
-          expect(theme1.value.files['subfolder_dot@v']['file2_txt@v'].content).toEqual(new StaticFile({
+          expect(liveThemeWithId.value.root.folders['subfolder_dot@v'].files['file2_txt@v'].filename).toEqual('subfolder.dot/file2.txt')
+          expect(liveThemeWithId.value.root.folders['subfolder_dot@v'].files['file2_txt@v'].content).toEqual(new StaticFile({
+            filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/subfolder.dot/file2.txt`,
+            content: Buffer.from('file2content'),
+          }))
+
+          expect(Object.keys(nonLiveThemeWithId.value.root)).toHaveLength(2)
+          expect(nonLiveThemeWithId.value.root.files['file1_txt@v'].content).toEqual(new StaticFile({
+            filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/file1.txt`,
+            content: Buffer.from('file1content'),
+          }))
+          expect(nonLiveThemeWithId.value.root.folders['subfolder_dot@v'].files['file2_txt@v'].content).toEqual(new StaticFile({
             filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/subfolder.dot/file2.txt`,
             content: Buffer.from('file2content'),
           }))
         })
 
         it('returns no errors', async () => {
-          expect(await filter.onFetch?.([brand1, theme1])).toEqual({ errors: [] })
+          expect(await filter.onFetch?.([brand1, themeWithId])).toEqual({ errors: [] })
         })
 
         it('removes the theme if brand name is not found', async () => {
-          const elements = [theme1]
+          const elements = [themeWithId]
           await filter.onFetch?.(elements)
           expect(elements).toEqual([])
         })
@@ -163,14 +222,266 @@ describe('filterCreator', () => {
           })
 
           it('removes the theme from the elements', async () => {
-            const elements = [brand1, theme1]
+            const elements = [brand1, themeWithId]
             await filter.onFetch?.(elements)
             expect(elements).toEqual([brand1])
           })
 
           it('returns a warning for the theme', async () => {
             const errors = [{ message: 'Error fetching theme id park?, Bad zip file', severity: 'Warning' }]
-            expect(await filter.onFetch?.([brand1, theme1])).toEqual({ errors })
+            expect(await filter.onFetch?.([brand1, themeWithId])).toEqual({ errors })
+          })
+        })
+      })
+    })
+  })
+  describe('deploy', () => {
+    let filter: ReturnType<FilterCreator>
+    let mockCreate: jest.SpyInstance
+    let mockDelete: jest.SpyInstance
+    let mockPublish: jest.SpyInstance
+
+    beforeEach(() => {
+      jest.resetAllMocks()
+      const config = { ...DEFAULT_CONFIG }
+      config[FETCH_CONFIG].guide = { brands: ['.*'], themesForBrands: ['.*'] }
+      filter = filterCreator(createFilterCreatorParams({ config,
+        elementsSource: buildElementsSourceFromElements([
+          themeSettingsInstance,
+        ]) }))
+      mockCreate = jest.spyOn(CreateModule, 'create')
+      mockDelete = jest.spyOn(DeleteModule, 'deleteTheme')
+      mockPublish = jest.spyOn(PublishModule, 'publish')
+    })
+
+    describe('with no elements', () => {
+      it('should not call create, update or delete', async () => {
+        await filter.deploy?.([])
+        expect(mockCreate).not.toHaveBeenCalled()
+      })
+    })
+    describe('with invalid elements', () => {
+      beforeEach(() => {
+        mockCreate.mockResolvedValue({ themeId: 'newId', errors: [] })
+        mockPublish.mockResolvedValue([])
+      })
+      it('should not fail', async () => {
+        const invalidTheme = new InstanceElement('invalidTheme', themeType,
+          {
+            name: 'SevenFlags',
+            brand_id: new ReferenceExpression(brand1.elemID, brand1),
+            root: {},
+          })
+        const changes = [toChange({ after: invalidTheme })]
+        expect(await filter.deploy?.(changes))
+          .toEqual({ deployResult: { appliedChanges: changes, errors: [] }, leftoverChanges: [] })
+        expect((changes[0] as AdditionChange<InstanceElement>).data.after.value.id).toEqual('newId')
+        expect(mockCreate).toHaveBeenCalled()
+        expect(mockPublish).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('create theme', () => {
+      let changes: Change<InstanceElement>[]
+
+      beforeEach(() => {
+        changes = [toChange({ after: newThemeWithFiles.clone() })]
+      })
+
+      describe('with no errors', () => {
+        beforeEach(() => {
+          mockCreate.mockResolvedValue({ themeId: 'newId', errors: [] })
+          mockPublish.mockResolvedValue([])
+        })
+
+        it('should apply the change and return no errors', async () => {
+          expect(await filter.deploy?.(changes))
+            .toEqual({ deployResult: { appliedChanges: changes, errors: [] }, leftoverChanges: [] })
+          expect((changes[0] as AdditionChange<InstanceElement>).data.after.value.id).toEqual('newId')
+          expect(mockCreate).toHaveBeenCalled()
+          expect(mockPublish).not.toHaveBeenCalled()
+        })
+
+        it('should publish the theme if live is true', async () => {
+          const config = { ...DEFAULT_CONFIG }
+          config[FETCH_CONFIG].guide = { brands: ['.*'], themesForBrands: ['.*'] }
+          filter = filterCreator(createFilterCreatorParams({ config,
+            elementsSource: buildElementsSourceFromElements([themeSettingsInstance2]) }))
+
+          await filter.deploy?.(changes)
+          expect(mockPublish).toHaveBeenCalledWith('newId', expect.anything())
+        })
+      })
+
+      describe('with errors', () => {
+        describe('theme id returned', () => {
+          beforeEach(() => {
+            mockCreate.mockResolvedValue({ themeId: 'idWithError', errors: ['create error'] })
+          })
+
+          it('should return the aggregated errors', async () => {
+            expect(await filter.deploy?.(changes))
+              .toEqual({
+                deployResult: {
+                  appliedChanges: [], errors: [{ elemID: newThemeWithFiles.elemID, message: 'create error', severity: 'Error' }],
+                },
+                leftoverChanges: [],
+              })
+          })
+
+          it('should apply the new id', async () => {
+            await filter.deploy?.(changes)
+            expect((changes[0] as AdditionChange<InstanceElement>).data.after.value.id).toEqual('idWithError')
+          })
+        })
+
+        describe('theme id not returned', () => {
+          beforeEach(() => {
+            mockCreate.mockResolvedValue({ themeId: undefined, errors: [] })
+          })
+          it('should not apply the change', async () => {
+            expect(await filter.deploy?.(changes))
+              .toEqual({
+                deployResult: {
+                  appliedChanges: [],
+                  errors: [{
+                    elemID: newThemeWithFiles.elemID,
+                    message: 'Missing theme id from create theme response for theme zendesk.theme.instance.newThemeWithFiles',
+                    severity: 'Error',
+                  }],
+                },
+                leftoverChanges: [],
+              })
+            expect((changes[0] as AdditionChange<InstanceElement>).data.after.value.id).toBeUndefined()
+          })
+        })
+      })
+    })
+
+    describe('update theme', () => {
+      let changes: Change<InstanceElement>[]
+
+      beforeEach(() => {
+        const before = newThemeWithFiles.clone()
+        before.value.id = 'oldId'
+        const after = newThemeWithFiles.clone()
+        after.value.root.files['file1_txt@v'] = { filename: 'file1.txt', content: new StaticFile({ filepath: 'file1.txt', content: Buffer.from('newContent') }) }
+        changes = [toChange({ before, after })]
+      })
+
+      describe('with no errors', () => {
+        beforeEach(() => {
+          mockCreate.mockResolvedValue({ themeId: 'newId', errors: [] })
+          mockDelete.mockResolvedValue([])
+          mockPublish.mockResolvedValue([])
+        })
+
+        it('should apply the change and return no errors', async () => {
+          expect(await filter.deploy?.(changes))
+            .toEqual({ deployResult: { appliedChanges: changes, errors: [] }, leftoverChanges: [] })
+          expect((changes[0] as ModificationChange<InstanceElement>).data.after.value.id).toEqual('newId')
+          expect(mockCreate).toHaveBeenCalled()
+          expect(mockDelete).toHaveBeenCalledWith('oldId', expect.anything())
+          expect(mockPublish).not.toHaveBeenCalled()
+        })
+
+        it('should publish the theme if live is true', async () => {
+          const config = { ...DEFAULT_CONFIG }
+          config[FETCH_CONFIG].guide = { brands: ['.*'], themesForBrands: ['.*'] }
+          filter = filterCreator(createFilterCreatorParams({ config,
+            elementsSource: buildElementsSourceFromElements([themeSettingsInstance2]) }))
+          await filter.deploy?.(changes)
+          expect(mockPublish).toHaveBeenCalledWith('newId', expect.anything())
+        })
+      })
+
+      describe('with errors', () => {
+        describe('theme id returned', () => {
+          beforeEach(() => {
+            mockCreate.mockResolvedValue({ themeId: 'idWithError', errors: ['create error'] })
+          })
+
+          it('should return the aggregated errors', async () => {
+            expect(await filter.deploy?.(changes))
+              .toEqual({
+                deployResult: {
+                  appliedChanges: [], errors: [{ elemID: newThemeWithFiles.elemID, message: 'create error', severity: 'Error' }],
+                },
+                leftoverChanges: [],
+              })
+            expect(mockDelete).not.toHaveBeenCalled()
+          })
+
+          it('should apply the new id', async () => {
+            await filter.deploy?.(changes)
+            expect((changes[0] as ModificationChange<InstanceElement>).data.after.value.id).toEqual('idWithError')
+          })
+        })
+        describe('error only in publish', () => {
+          beforeEach(() => {
+            const config = { ...DEFAULT_CONFIG }
+            config[FETCH_CONFIG].guide = { brands: ['.*'], themesForBrands: ['.*'] }
+            filter = filterCreator(createFilterCreatorParams({ config,
+              elementsSource: buildElementsSourceFromElements([themeSettingsInstance2]) }))
+            mockPublish.mockResolvedValue(['Failed to publish'])
+            mockCreate.mockResolvedValue({ themeId: 'idWithError', errors: [] })
+          })
+
+          it('should return an addition to the publish error in case of failure', async () => {
+            expect(await filter.deploy?.(changes))
+              .toEqual({
+                deployResult: {
+                  appliedChanges: [],
+                  errors: [
+                    {
+                      elemID: newThemeWithFiles.elemID,
+                      message: 'Failed to publish. The theme has been created but not published; you can manually publish it in the Zendesk UI.',
+                      severity: 'Error',
+                    },
+                  ],
+                },
+                leftoverChanges: [],
+              })
+            expect(mockDelete).not.toHaveBeenCalled()
+          })
+        })
+
+        describe('theme id not returned', () => {
+          beforeEach(() => {
+            mockCreate.mockResolvedValue({ themeId: undefined, errors: [] })
+          })
+          it('should not apply the change', async () => {
+            expect(await filter.deploy?.(changes))
+              .toEqual({
+                deployResult: {
+                  appliedChanges:
+                    [],
+                  errors: [{
+                    elemID: newThemeWithFiles.elemID,
+                    message: 'Missing theme id from create theme response for theme zendesk.theme.instance.newThemeWithFiles',
+                    severity: 'Error',
+                  }],
+                },
+                leftoverChanges: [],
+              })
+            expect((changes[0] as ModificationChange<InstanceElement>).data.after.value.id).toBeUndefined()
+          })
+        })
+
+        describe('delete theme fails', () => {
+          beforeEach(() => {
+            mockCreate.mockResolvedValue({ themeId: 'idWithError', errors: [] })
+            mockDelete.mockResolvedValue(['delete error'])
+          })
+
+          it('should return the aggregated errors', async () => {
+            expect(await filter.deploy?.(changes))
+              .toEqual({
+                deployResult: {
+                  appliedChanges: [], errors: [{ elemID: newThemeWithFiles.elemID, message: 'delete error', severity: 'Error' }],
+                },
+                leftoverChanges: [],
+              })
           })
         })
       })

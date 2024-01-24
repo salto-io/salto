@@ -139,6 +139,7 @@ const deployLayoutChange = async (
     }
     const response = await getLayoutResponse({ variables, client, typeName })
     if (!isIssueLayoutResponse(response.data)) {
+      log.error('received invalid response from jira', response)
       throw Error('Failed to deploy issue layout changes due to bad response from jira service')
     }
     const issueLayoutId = response.data.issueLayoutConfiguration.issueLayoutResult.id

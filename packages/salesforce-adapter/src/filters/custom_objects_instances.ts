@@ -139,11 +139,8 @@ const getRecords = async (
 
   const queryableFields = getQueryableFields(objectType)
     .filter(field => !omittedFields.includes(apiNameSync(field) ?? ''))
-  if (_.isEmpty(queryableFields)) {
-    const queryableFieldNames = queryableFields.map(field => apiNameSync(field))
-    log.debug('Type %s had no queryable fields or they were all omitted. %o', typeName, { omittedFields, queryableFieldNames })
-    return {}
-  }
+  // queryableFields can't be empty - at least the ID fields are queryable and not omitted or we'll consider the config
+  // for the object to be invalid and won't get here.
 
   log.debug(
     'Fetching records for type %s%s%s',

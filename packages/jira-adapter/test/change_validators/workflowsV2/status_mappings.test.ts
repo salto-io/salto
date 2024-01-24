@@ -199,7 +199,7 @@ describe('status mappings', () => {
       elemID: workflowInstance.elemID,
       severity: 'Error',
       message: 'Workflow status mappings has invalid format',
-      detailedMessage: 'The status mapping validation failed because of the following error: issueTypeId is not ReferenceExpression. Learn more at https://help.salto.io/en/articles/8851200-migrating-issues-when-modifying-workflows.',
+      detailedMessage: 'The status mapping validation failed because of the following error: Expected issueTypeId to be ReferenceExpression. Learn more at https://help.salto.io/en/articles/8851200-migrating-issues-when-modifying-workflows.',
     }])
   })
   it('should not return an error when there is a removed status from an inactive workflow', async () => {

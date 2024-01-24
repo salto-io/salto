@@ -36,19 +36,11 @@ type StatusMapping = {
 }
 
 const STATUS_MAPPINGS_SCHEMA = Joi.array().items(Joi.object({
-  issueTypeId: Joi.custom(validateReferenceExpression('issueTypeId'))
-    .message('issueTypeId is not ReferenceExpression')
-    .required(),
-  projectId: Joi.custom(validateReferenceExpression('projectId'))
-    .message('projectId is not ReferenceExpression')
-    .required(),
+  issueTypeId: Joi.custom(validateReferenceExpression('issueTypeId')).required(),
+  projectId: Joi.custom(validateReferenceExpression('projectId')).required(),
   statusMigrations: Joi.array().items(Joi.object({
-    oldStatusReference: Joi.custom(validateReferenceExpression('oldStatusReference'))
-      .message('oldStatusReference is not ReferenceExpression')
-      .required(),
-    newStatusReference: Joi.custom(validateReferenceExpression('newStatusReference'))
-      .message('newStatusReference is not ReferenceExpression')
-      .required(),
+    oldStatusReference: Joi.custom(validateReferenceExpression('oldStatusReference')).required(),
+    newStatusReference: Joi.custom(validateReferenceExpression('newStatusReference')).required(),
   })).required(),
 }))
 
@@ -84,7 +76,7 @@ const getRemovedStatuses = (change: ModificationChange<InstanceElement>): Refere
   return _.differenceBy(
     beforeStatuses,
     afterStatuses,
-    (status:ReferenceExpression) => status.elemID.getFullName()
+    status => status.elemID.getFullName()
   )
 }
 
@@ -114,7 +106,7 @@ const getWorkflowSchemeMigrationIssueType = async ({
     return _.differenceBy(
       issueTypes,
       notUsingDefaultIssueTypes,
-      (issueType: ReferenceExpression) => issueType.elemID.getFullName()
+      issueType => issueType.elemID.getFullName()
     )
   }
   const issueTypes = makeArray(workflowSchemeInstance.value.items)
@@ -230,9 +222,7 @@ export const workflowStatusMappingsValidator: ChangeValidator = async (changes, 
         detailedMessage: `The status mapping validation failed because of the following error: ${error?.message}. Learn more at https://help.salto.io/en/articles/8851200-migrating-issues-when-modifying-workflows.`,
       }]
     }
-    const existingStatusMappings = isStatusMappings(workflowInstance.value.statusMappings)
-      ? workflowInstance.value.statusMappings
-      : []
+    const existingStatusMappings = workflowInstance.value.statusMappings ?? []
     const removedStatuses = getRemovedStatuses(change)
     if (_.isEmpty(removedStatuses)) {
       return []

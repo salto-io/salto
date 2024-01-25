@@ -399,16 +399,6 @@ const quickDeployOrDeploy = async (
 const isQuickDeployable = (deployRes: SFDeployResult): boolean =>
   deployRes.id !== undefined && deployRes.checkOnly && deployRes.success && deployRes.numberTestsCompleted >= 1
 
-const isEmptyValue = (value: Value): boolean => {
-  if (_.isArray(value)) {
-    return value.length === 0
-  }
-  if (_.isPlainObject(value)) {
-    return Object.keys(value).length === 0
-  }
-  return value === undefined
-}
-
 const mapNestedNamesToElemIds = (nestedType: TypeElement, nestedNames: string[]): NameToElemIDMap => (
   Object.fromEntries(
     nestedNames
@@ -427,11 +417,11 @@ const getExistingNestedFields = (
   nestedNames: string[]
 }[] => (
   nestedTypeInfo.nestedInstanceFields
-    .filter(field => !isEmptyValue(instance.value[field]))
     .map(field => ({
       nestedType: getTypeOfNestedElement(instance, field),
       nestedNames: getNamesOfNestedElements(instance, field),
     }))
+    .filter(({ nestedNames }) => nestedNames.length > 0)
 )
 
 export const deployMetadata = async (

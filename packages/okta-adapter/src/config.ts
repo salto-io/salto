@@ -131,6 +131,7 @@ const POLICY_TYPE_NAME_TO_PARAMS: Record<PolicyTypeNames, PolicyParams> = {
 const getPolicyItemsName = (policyName: string): string => (policyName === AUTOMATION_TYPE_NAME ? 'Automations' : `${(policyName).slice(0, -1)}ies`)
 const getPolicyRuleItemsName = (policyRuleName: string): string => (`${policyRuleName}s`)
 const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
+  const policiesToOmitPriorities = [ACCESS_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, IDP_POLICY_TYPE_NAME]
   const policiesConfig = Object.entries(POLICY_TYPE_NAME_TO_PARAMS).map(([typeName, details]) => {
     const policyRuleConfig = {
       transformation: {
@@ -261,7 +262,11 @@ const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
         transformation: {
           serviceIdField: 'id',
           fieldsToHide: [{ fieldName: 'id' }],
-          fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+          fieldsToOmit: [
+            ...DEFAULT_FIELDS_TO_OMIT,
+            { fieldName: '_links' },
+            ...(policiesToOmitPriorities.includes(typeName) ? [{ fieldName: 'priority', fieldType: 'number' }] : []),
+          ],
           fieldTypeOverrides: [{ fieldName: 'policyRules', fieldType: `list<${details.ruleName}>` }],
           standaloneFields: [{ fieldName: 'policyRules' }],
           serviceUrl: details.policyServiceUrl,

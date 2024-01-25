@@ -21,14 +21,6 @@ import { JIRA } from '../../../../src/constants'
 export const createQueueValues = (name: string, allElements: Element[]): Values => ({
   name,
   jql: new TemplateExpression({ parts: [
-    createReference(new ElemID(JIRA, 'Field', 'instance', 'Project__project'), allElements),
-    ' = ',
-    createReference(new ElemID(JIRA, 'Project', 'instance', 'Support'), allElements, ['key']),
-    ' AND ',
-    createReference(new ElemID(JIRA, 'Field', 'instance', 'Project__project'), allElements),
-    ' = ',
-    createReference(new ElemID(JIRA, 'Project', 'instance', 'Support'), allElements, ['key']),
-    ' AND ',
     createReference(new ElemID(JIRA, 'Field', 'instance', 'Resolution__resolution'), allElements),
     ' = UNRESOLVED',
   ] }),

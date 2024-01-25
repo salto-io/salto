@@ -319,7 +319,7 @@ salesforce {
 
 In the above example:
 
-- The `defaultIdFields` field specifies that for all records, by the default the external ID will be a concetanation of all master-detail fields (`##allMasterDetailFields##`) and the record name.
+- The `defaultIdFields` field specifies that for all records, by the default the salto ID will be a concatenation of all master-detail fields (`##allMasterDetailFields##`) and the record name.
 - The `overrides` array specifies object-specific overrides.
 - The `regex` field is used to identify the object(s) that the override applies to
 - Inside the `idFields` array we specify the fields that combined make up the salto id. Note that the order matters i.e the same fields in a different order will result in a different ID.

@@ -70,8 +70,8 @@ const fetchWorkflowIds = async (paginator: clientUtils.Paginator): Promise<Workf
   return { workflowIds: workflowValues.map(value => value.id.entityId) }
 }
 
-// jira has a bug that causes conditionGroups to be required in the deployment requests
-// will should remove this once the bug is fixed - https://jira.atlassian.com/browse/JRACLOUD-82794
+// Jira has a bug that causes conditionGroups to be required in the deployment requests
+// We should remove this once the bug is fixed - https://jira.atlassian.com/browse/JRACLOUD-82794
 const addConditionGroups = (transitions: Values[]): void => {
   transitions.forEach(transition => {
     makeArray(transition?.conditions).forEach(condition => {

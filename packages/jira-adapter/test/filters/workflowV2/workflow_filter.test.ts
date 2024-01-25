@@ -94,7 +94,14 @@ describe('jiraWorkflowFilter', () => {
               scope: {
                 type: 'global',
               },
-              transitions: [{ type: 'INITIAL' }],
+              transitions: [
+                {
+                  type: 'INITIAL',
+                  conditions: {
+                    operation: 'ALL',
+                  },
+                },
+              ],
             },
             {
               id: '2',
@@ -128,7 +135,14 @@ describe('jiraWorkflowFilter', () => {
         scope: {
           type: 'global',
         },
-        transitions: [{ type: 'INITIAL' }],
+        transitions: [
+          {
+            type: 'INITIAL',
+            conditions: {
+              operation: 'ALL',
+              conditionGroups: [],
+            },
+          }],
       })
       const secondWorkflow = elements[2] as unknown as InstanceElement
       expect(secondWorkflow.elemID.name).toEqual('secondWorkflow')

@@ -37,7 +37,7 @@ Salesforce data configuration includes the following information:
 
 ## Sample configurations
 
-There are 3 ways to configure Salto for CPQ. The difference between each way is how Salto recognises that records across 2 different orgs are the same; in other words, its about what Salto uses as an external Id.
+There are 3 ways to configure Salto for CPQ. The difference between each way is how Salto recognises that record and attaches an ID to it. The salto ID is used to identify the element which will affect flows that compare two orgs and also how salto will preview the element.
 
 ### Field concatenation/chaining
 

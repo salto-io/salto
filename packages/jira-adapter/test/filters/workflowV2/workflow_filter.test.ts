@@ -94,14 +94,7 @@ describe('jiraWorkflowFilter', () => {
               scope: {
                 type: 'global',
               },
-              transitions: [
-                {
-                  type: 'INITIAL',
-                  conditions: {
-                    operation: 'ALL',
-                  },
-                },
-              ],
+              transitions: [{ type: 'INITIAL' }],
             },
             {
               id: '2',
@@ -135,14 +128,7 @@ describe('jiraWorkflowFilter', () => {
         scope: {
           type: 'global',
         },
-        transitions: [
-          {
-            type: 'INITIAL',
-            conditions: {
-              operation: 'ALL',
-              conditionGroups: [],
-            },
-          }],
+        transitions: [{ type: 'INITIAL' }],
       })
       const secondWorkflow = elements[2] as unknown as InstanceElement
       expect(secondWorkflow.elemID.name).toEqual('secondWorkflow')
@@ -437,6 +423,10 @@ describe('jiraWorkflowFilter', () => {
                 statusReference: 'uuid1',
               },
               type: 'INITIAL',
+              conditions: {
+                operation: 'ALL',
+                conditionGroups: [],
+              },
             },
             {
               id: '2',
@@ -638,6 +628,9 @@ describe('jiraWorkflowFilter', () => {
             name: 'Create',
             to: {
               statusReference: new ReferenceExpression(status1.elemID, status1),
+            },
+            conditions: {
+              operation: 'ALL',
             },
           },
           {

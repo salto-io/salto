@@ -70,18 +70,6 @@ const fetchWorkflowIds = async (paginator: clientUtils.Paginator): Promise<Workf
   return { workflowIds: workflowValues.map(value => value.id.entityId) }
 }
 
-// Jira has a bug that causes conditionGroups to be required in the deployment requests
-// We should remove this once the bug is fixed - https://jira.atlassian.com/browse/JRACLOUD-82794
-const addConditionGroups = (transitions: Values[]): void => {
-  transitions.forEach(transition => {
-    makeArray(transition?.conditions).forEach(condition => {
-      if (condition.conditionGroups === undefined) {
-        condition.conditionGroups = []
-      }
-    })
-  })
-}
-
 const convertIdsStringToList = (ids: string): string[] => ids.split(',')
 
 const convertTransitionParametersFields = (
@@ -139,7 +127,6 @@ const createWorkflowInstances = async (
         defaultName: workflow.name,
       })
       convertTransitionParametersFields(instance.value.transitions, convertParametersFieldsToList)
-      addConditionGroups(instance.value.transitions)
       return instance
     }))
     return { workflowInstances }
@@ -357,6 +344,21 @@ const convertParametersFieldsToString = (
     })
 }
 
+// Jira has a bug that causes conditionGroups to be required in the deployment requests
+// We should remove this once the bug is fixed - https://jira.atlassian.com/browse/JRACLOUD-82794
+const insertConditionGroups:WalkOnFunc = ({ value, path }): WALK_NEXT_STEP => {
+  if (_.isPlainObject(value) && value.operation && value.conditionGroups === undefined) {
+    value.conditionGroups = []
+  }
+  if (isInstanceElement(value)
+  || path.name === 'transitions'
+  || path.name === 'conditions'
+  || (_.isPlainObject(value) && value.conditions)) {
+    return WALK_NEXT_STEP.RECURSE
+  }
+  return WALK_NEXT_STEP.SKIP
+}
+
 const replaceStatusIdWithUuid = (statusIdToUuid: Record<string, string>): WalkOnFunc => (
   ({ value, path }): WALK_NEXT_STEP => {
     const isValueToRecurse = (_.isPlainObject(value)
@@ -439,6 +441,7 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
           const resolvedWorkflowInstance = await resolveValues(workflowInstance, getLookUpName)
           convertTransitionParametersFields(resolvedWorkflowInstance.value.transitions, convertParametersFieldsToString)
           walkOnElement({ element: resolvedWorkflowInstance, func: replaceStatusIdWithUuid(statusIdToUuid) })
+          walkOnElement({ element: resolvedWorkflowInstance, func: insertConditionGroups })
           const statusesPayload = getStatusesPayload(statusInstances, statusIdToUuid)
           workflowInstance.value = getWorkflowPayload(
             isAdditionChange(change),

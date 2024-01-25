@@ -24,7 +24,7 @@ import userSchemaFilter from '../../src/filters/user_schema'
 import { getFilterParams, mockClient } from '../utils'
 
 describe('userSchemaFilter', () => {
-  let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'deploy' | 'onDeploy'>
+  let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let client: OktaClient
   let mockConnection: MockInterface<clientUtils.APIConnection>
   const userSchemaType = new ObjectType({ elemID: new ElemID(OKTA, USER_SCHEMA_TYPE_NAME) })
@@ -224,51 +224,6 @@ describe('userSchemaFilter', () => {
       const changes = [toChange({ after: userSchemaInstace })]
       await filter.preDeploy(changes)
       expect(getChangeData(changes[0]).value.id).toBeUndefined()
-    })
-  })
-
-  describe('deploy', () => {
-    const error = new clientUtils.HTTPError(
-      'error',
-      {
-        status: 404,
-        data: {
-          errorSummary: 'Not found: Resource not found: 123 (something)',
-          errorCauses: [],
-        },
-      }
-    )
-    it('should mark removals of UserSchema as deployed successfully if the instance no longer exists', async () => {
-      mockConnection.get.mockRejectedValue(error)
-      const userSchemaToRemove = new InstanceElement(
-        'schema',
-        userSchemaType,
-        {
-          id: '555',
-          definitions: { value: 'something' },
-        },
-      )
-      const changes = [toChange({ before: userSchemaToRemove })]
-      const res = await filter.deploy(changes)
-      expect(res.deployResult.errors).toHaveLength(0)
-      expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/meta/schemas/user/555', undefined)
-    })
-    it('return an error if UserSchema instance still exists', async () => {
-      mockConnection.get.mockResolvedValue(userSchemaResponse)
-      const userSchemaToRemove = new InstanceElement(
-        'schema',
-        userSchemaType,
-        {
-          id: '555',
-          definitions: { value: 'something' },
-        },
-      )
-      const changes = [toChange({ before: userSchemaToRemove })]
-      const res = await filter.deploy(changes)
-      expect(res.deployResult.errors).toHaveLength(1)
-      expect(res.deployResult.errors[0].message).toEqual('Could not remove instance schema of type UserSchema')
-      expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/meta/schemas/user/555', undefined)
     })
   })
   describe('onDeploy', () => {

@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { InstanceElement, isObjectType, isInstanceElement, Values, CORE_ANNOTATIONS, ReferenceExpression, isInstanceChange, getChangeData, Change, isRemovalChange, isAdditionChange, AdditionChange } from '@salto-io/adapter-api'
-import { elements as elementUtils, config as configUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { InstanceElement, isObjectType, isInstanceElement, Values, CORE_ANNOTATIONS, ReferenceExpression, isInstanceChange, getChangeData, Change, isAdditionChange, AdditionChange } from '@salto-io/adapter-api'
+import { elements as elementUtils, config as configUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, getParents } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -24,7 +24,6 @@ import { USERTYPE_TYPE_NAME, USER_SCHEMA_TYPE_NAME, LINKS_FIELD } from '../const
 import OktaClient from '../client/client'
 import { API_DEFINITIONS_CONFIG } from '../config'
 import { extractIdFromUrl } from '../utils'
-import { deployChanges } from '../deployment'
 import { isUserType } from './user_type'
 
 const log = logger(module)
@@ -51,24 +50,6 @@ const getUserSchema = async (
 ): Promise<Values> => (await client.getSinglePage({
   url: `/api/v1/meta/schemas/user/${userSchemaId}`,
 })).data as Values[]
-
-const deployUserSchemaRemoval = async (
-  change: Change<InstanceElement>,
-  client: OktaClient,
-): Promise<void> => {
-  const instance = getChangeData(change)
-  try {
-    await getUserSchema(instance.value.id, client)
-    log.error(`UserSchema ${instance.elemID.getFullName()} was not removed`)
-    throw new Error(`Could not remove instance ${instance.elemID.name} of type ${instance.elemID.typeName}`)
-  } catch (error) {
-    if (error instanceof clientUtils.HTTPError && error.response?.status === 404) {
-      log.debug(`The parent UserType was deleted and therefore ${getChangeData(change).elemID.getFullName()} marked as deployed`)
-      return
-    }
-    throw error
-  }
-}
 
 /**
  * 1. onFetch: Fetch UserSchema instances and add UserType as parent to its UserSchema instance
@@ -148,21 +129,6 @@ const filter: FilterCreator = ({ client, config }) => ({
           }
         )
       })
-  },
-  deploy: async changes => {
-    const [relevantChanges, leftoverChanges] = _.partition(
-      changes,
-      change => isInstanceChange(change)
-        && isRemovalChange(change)
-        && getChangeData(change).elemID.typeName === USER_SCHEMA_TYPE_NAME
-    )
-
-    const deployResult = await deployChanges(
-      relevantChanges.filter(isInstanceChange),
-      async change => deployUserSchemaRemoval(change, client)
-    )
-
-    return { leftoverChanges, deployResult }
   },
   onDeploy: async (changes: Change<InstanceElement>[]) => {
     changes

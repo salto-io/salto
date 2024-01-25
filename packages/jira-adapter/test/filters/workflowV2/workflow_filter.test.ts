@@ -442,6 +442,15 @@ describe('jiraWorkflowFilter', () => {
                 statusReference: 'uuid2',
               },
               type: 'DIRECTED',
+              conditions: {
+                operation: 'ALL',
+                conditionGroups: [
+                  {
+                    operation: 'ALL',
+                    conditionGroups: [],
+                  },
+                ],
+              },
             },
           ],
         },
@@ -646,6 +655,14 @@ describe('jiraWorkflowFilter', () => {
             to: {
               statusReference: new ReferenceExpression(status2.elemID, status2),
               port: 7,
+            },
+            conditions: {
+              operation: 'ALL',
+              conditionGroups: [
+                {
+                  operation: 'ALL',
+                },
+              ],
             },
           },
         ],

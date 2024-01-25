@@ -22,7 +22,7 @@ import { CORE_ANNOTATIONS, Element, InstanceElement, ObjectType, SaltoError, Add
 import { v4 as uuidv4 } from 'uuid'
 import { FilterCreator } from '../../filter'
 import { addAnnotationRecursively, findObject, setTypeDeploymentAnnotations } from '../../utils'
-import { CHUNK_SIZE, isWorkflowIdsResponse, isWorkflowResponse, isTaskResponse, STATUS_CATEGORY_ID_TO_KEY, TASK_STATUS, WorkflowPayload, WorkflowVersion, CONDITION_LIST_FIELDS, VALIDATOR_LIST_FIELDS, PATH_NAME_TO_RECURSE, isAdditionOrModificationWorkflowChange } from './types'
+import { CHUNK_SIZE, isWorkflowIdsResponse, isWorkflowResponse, isTaskResponse, STATUS_CATEGORY_ID_TO_KEY, TASK_STATUS, WorkflowPayload, WorkflowVersion, CONDITION_LIST_FIELDS, VALIDATOR_LIST_FIELDS, ID_TO_UUID_PATH_NAME_TO_RECURSE, isAdditionOrModificationWorkflowChange, CONDITION_GROUPS_PATH_NAME_TO_RECURSE } from './types'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
 import { JIRA_WORKFLOW_TYPE } from '../../constants'
 import JiraClient from '../../client/client'
@@ -351,8 +351,7 @@ const insertConditionGroups:WalkOnFunc = ({ value, path }): WALK_NEXT_STEP => {
     value.conditionGroups = []
   }
   if (isInstanceElement(value)
-  || path.name === 'transitions'
-  || path.name === 'conditions'
+  || CONDITION_GROUPS_PATH_NAME_TO_RECURSE.has(path.name)
   || (_.isPlainObject(value) && value.conditions)) {
     return WALK_NEXT_STEP.RECURSE
   }
@@ -365,7 +364,7 @@ const replaceStatusIdWithUuid = (statusIdToUuid: Record<string, string>): WalkOn
       && (value.to || value.from || value.statusMigrations))
       || _.isArray(value)
     if (isInstanceElement(value)
-      || PATH_NAME_TO_RECURSE.has(path.name)
+      || ID_TO_UUID_PATH_NAME_TO_RECURSE.has(path.name)
       || isValueToRecurse) {
       return WALK_NEXT_STEP.RECURSE
     }

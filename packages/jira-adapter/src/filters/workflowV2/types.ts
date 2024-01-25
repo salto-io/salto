@@ -21,7 +21,8 @@ import { JIRA_WORKFLOW_TYPE } from '../../constants'
 export const CHUNK_SIZE = 25
 export const VALIDATOR_LIST_FIELDS = new Set(['statusIds', 'groupsExemptFromValidation', 'fieldsRequired'])
 export const CONDITION_LIST_FIELDS = new Set(['roleIds', 'groupIds', 'statusIds'])
-export const PATH_NAME_TO_RECURSE = new Set(['statuses', 'transitions', 'statusMappings', 'statusMigrations'])
+export const ID_TO_UUID_PATH_NAME_TO_RECURSE = new Set(['statuses', 'transitions', 'statusMappings', 'statusMigrations'])
+export const CONDITION_GROUPS_PATH_NAME_TO_RECURSE = new Set(['transitions', 'conditions', 'conditionGroups'])
 
 export enum TASK_STATUS {
   COMPLETE = 'COMPLETE',

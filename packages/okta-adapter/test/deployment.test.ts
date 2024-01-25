@@ -157,6 +157,22 @@ describe('deployment.ts', () => {
           { data: undefined },
         )
       })
+      it('should mark removal as success if request returned with 404', async () => {
+        mockConnection.delete.mockRejectedValueOnce(new clientUtils.HTTPError('message', {
+          status: 404,
+          data: {},
+        }))
+        const result = await defaultDeployChange(
+          toChange({ before: instance }),
+          client,
+          DEFAULT_API_DEFINITIONS,
+        )
+        expect(result).toEqual(undefined)
+        expect(mockConnection.delete).toHaveBeenCalledWith(
+          '/api/v1/groups/rules/1',
+          { data: undefined },
+        )
+      })
     })
   })
 

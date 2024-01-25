@@ -566,6 +566,15 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         },
         fieldsToIgnore: ['id', 'name'],
       },
+      remove: {
+        // we verify UserSchema is deleted by trying to delete the parent UserType
+        url: '/api/v1/meta/types/user/{typeId}',
+        method: 'delete',
+        urlParamsToFields: {
+          typeId: '_parent.0.id',
+        },
+        omitRequestBody: true,
+      },
     },
   },
   OrgContactTypeObj: {

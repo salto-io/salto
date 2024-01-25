@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ActionName, Change, ElemID, getChangeData, InstanceElement, ReadOnlyElementsSource, isAdditionOrModificationChange } from '@salto-io/adapter-api'
+import { ActionName, Change, ElemID, getChangeData, InstanceElement, ReadOnlyElementsSource, isAdditionOrModificationChange, isRemovalChange } from '@salto-io/adapter-api'
 import { transformElement, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { createUrl } from '../elements/request_parameters'
-import { HTTPWriteClientInterface } from '../client/http_client'
+import { HTTPError, HTTPWriteClientInterface } from '../client/http_client'
 import { DeploymentRequestsByAction } from '../config/request'
 import { ResponseValue } from '../client'
 import { OPERATION_TO_ANNOTATION } from './annotations'
@@ -96,6 +96,7 @@ export const deployChange = async ({
   additionalUrlVars,
   queryParams,
   elementsSource,
+  allowedStatusCodesOnRemoval = [],
 }:{
   change: Change<InstanceElement>
   client: HTTPWriteClientInterface
@@ -104,6 +105,7 @@ export const deployChange = async ({
   additionalUrlVars?: Record<string, string>
   queryParams?: Record<string, string>
   elementsSource?: ReadOnlyElementsSource
+  allowedStatusCodesOnRemoval?: number[]
 }): Promise<ResponseResult> => {
   const instance = getChangeData(change)
   log.debug(`Starting deploying instance ${instance.elemID.getFullName()} with action '${change.action}'`)
@@ -132,10 +134,21 @@ export const deployChange = async ({
     return undefined
   }
   log.trace(`deploying instance ${instance.elemID.getFullName()} with params ${inspectValue({ method: endpoint.method, url, queryParams, data }, { compact: true, depth: 6 })}`)
-  const response = await client[endpoint.method]({
-    url,
-    data: endpoint.omitRequestBody ? undefined : data,
-    queryParams,
-  })
-  return response.data
+  try {
+    const response = await client[endpoint.method]({
+      url,
+      data: endpoint.omitRequestBody ? undefined : data,
+      queryParams,
+    })
+    return response.data
+  } catch (error) {
+    if (isRemovalChange(change)
+      && error instanceof HTTPError
+      && allowedStatusCodesOnRemoval.includes(error.response.status)
+    ) {
+      log.debug('%s was deleted and therefore marked as deployed', getChangeData(change).elemID.getFullName())
+      return undefined
+    }
+    throw error
+  }
 }

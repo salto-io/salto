@@ -37,7 +37,6 @@ import userTypeFilter from './filters/user_type'
 import userSchemaFilter from './filters/user_schema'
 import oktaExpressionLanguageFilter from './filters/expression_language'
 import defaultPolicyRuleDeployment from './filters/default_rule_deployment'
-import policyRuleRemoval from './filters/policy_rule_removal'
 import authorizationRuleFilter from './filters/authorization_server_rule'
 import privateApiDeployFilter from './filters/private_api_deploy'
 import profileEnrollmentAttributesFilter from './filters/profile_enrollment_attributes'
@@ -88,7 +87,6 @@ export const DEFAULT_FILTERS = [
   profileEnrollmentAttributesFilter,
   addImportantValues,
   defaultPolicyRuleDeployment,
-  policyRuleRemoval,
   schemaFieldsRemovalFilter,
   appLogoFilter,
   brandThemeFilesFilter,

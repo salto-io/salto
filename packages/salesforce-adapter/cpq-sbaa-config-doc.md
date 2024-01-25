@@ -345,7 +345,7 @@ saltoIDSettings = {
 
 ```
 
-Here, we are saying that the `Id` field of every record is used as its external ID. This makes sense for records that are copied between sandbox refreshes, like `Product2`.
+Here, we are saying that the `Id` field of every record is used as its salto ID. This makes sense for records that are copied between sandbox refreshes, like `Product2`.
 
 For other records, you can ensure this configuration works by [treating them as metadata](https://help.salto.io/en/articles/7977211-treat-cpq-data-as-metadata-and-align-data-across-multiple-orgs).
 

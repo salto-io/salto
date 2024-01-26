@@ -25,7 +25,13 @@ import { ISSUE_VIEW_TYPE, REQUEST_FORM_TYPE, REQUEST_TYPE_NAME } from '../consta
 import { deployChanges, defaultDeployChange } from '../deployment/standard_deployment'
 import JiraClient from '../client/client'
 import { LayoutConfigItem } from './layouts/layout_types'
-import { LayoutTypeName, getLayoutResponse, isIssueLayoutResponse, LAYOUT_TYPE_NAME_TO_DETAILS } from './layouts/layout_service_operations'
+import {
+  LayoutTypeName,
+  getLayoutResponse,
+  isIssueLayoutResponse,
+  LAYOUT_TYPE_NAME_TO_DETAILS,
+  generateLayoutId,
+} from './layouts/layout_service_operations'
 
 const { isDefined } = lowerDashValues
 const log = logger(module)
@@ -140,20 +146,21 @@ const deployRequestTypeLayout = async (
       items,
     },
   }
-  if (isAdditionChange(change)) {
-    const variables = {
-      projectId: getParent(requestType).value.id,
-      extraDefinerId: requestType.value.id,
-      layoutType: LAYOUT_TYPE_NAME_TO_DETAILS[typeName].layoutType,
-    }
-    const response = await getLayoutResponse({ variables, client, typeName })
-    if (!isIssueLayoutResponse(response.data)) {
-      log.error(`Failed to deploy requestType's ${LAYOUT_TYPE_NAME_TO_DETAILS[typeName].fieldName} due to bad response from jira service`)
-      throw new Error(`Failed to deploy requestType's ${LAYOUT_TYPE_NAME_TO_DETAILS[typeName].fieldName} due to bad response from jira service`)
-    }
-    layout.id = response.data.issueLayoutConfiguration.issueLayoutResult.id
+  const variables = {
+    projectId: getParent(requestType).value.id,
+    extraDefinerId: requestType.value.id,
+    layoutType: LAYOUT_TYPE_NAME_TO_DETAILS[typeName].layoutType,
   }
-  const url = `/rest/internal/1.0/issueLayouts/${layout.id}`
+  if (isAdditionChange(change)) {
+    layout.id = generateLayoutId(variables.projectId, variables.extraDefinerId)
+  }
+  const response = await getLayoutResponse({ variables, client, typeName })
+  if (!isIssueLayoutResponse(response.data)) {
+    log.error(`Failed to deploy requestType's ${LAYOUT_TYPE_NAME_TO_DETAILS[typeName].fieldName} due to bad response from jira service`, response)
+    throw new Error(`Failed to deploy requestType's ${LAYOUT_TYPE_NAME_TO_DETAILS[typeName].fieldName} due to bad response from jira service`)
+  }
+  const issueLayoutId = response.data.issueLayoutConfiguration.issueLayoutResult.id
+  const url = `/rest/internal/1.0/issueLayouts/${issueLayoutId}`
   await client.put({ url, data })
   return undefined
 }

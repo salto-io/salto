@@ -731,6 +731,118 @@ describe('automationFetchFilter', () => {
             type: 'cmdb.object.create',
             value: {
               objectTypeId: '35',
+              schemaId: '5',
+              attributes: [
+                {
+                  name: 'Name',
+                  value: 'idoA automation',
+                  isLabel: true,
+                },
+              ],
+            },
+            children: [
+            ],
+            conditions: [
+            ],
+          },
+        ],
+      })
+    })
+    it('should fetch automations with assets support from the service when enableJsm is true and only schemaId', async () => {
+      connection.post.mockImplementation(async url => {
+        if (url === '/rest/webResources/1.0/resources') {
+          return {
+            status: 200,
+            data: {
+              unparsedData: {
+                [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
+                  tenantId: 'cloudId',
+                }),
+              },
+            },
+          }
+        }
+
+        if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules') {
+          return {
+            status: 200,
+            data: {
+              total: 1,
+              values: [
+                {
+                  id: '1',
+                  name: 'automationName',
+                  projects: [],
+                  ruleScope: {
+                    resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8'],
+                  },
+                  components: [
+                    {
+                      component: 'ACTION',
+                      schemaVersion: 1,
+                      type: 'cmdb.object.create',
+                      value: {
+                        workspaceId: '68d020c3-b88e-47dc-9231-452f7dc63521',
+                        schemaLabel: 'idoA Schema',
+                        schemaId: '5',
+                        attributes: [
+                          {
+                            name: 'Name',
+                            value: 'idoA automation',
+                            isLabel: true,
+                          },
+                        ],
+                      },
+                      children: [
+                      ],
+                      conditions: [
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          }
+        }
+        throw new Error(`Unexpected url ${url}`)
+      })
+      const { paginator } = mockClient()
+      config.fetch.enableJSM = true
+      config.fetch.enableJsmExperimental = true
+      filter = automationFetchFilter(getFilterParams({
+        client,
+        paginator,
+        config,
+        fetchQuery,
+      })) as filterUtils.FilterWith<'onFetch'>
+      const elements = [objectTypeInstnce]
+      await filter.onFetch(elements)
+      const automationTypes = createAutomationTypes()
+      expect(elements).toHaveLength(
+        1 // original objectTypeInstnce
+        + 1 // new automation
+        + 1 // automation top level type
+        + automationTypes.subTypes.length
+      )
+
+      const automation = elements[1]
+
+      expect(automation.elemID.getFullName()).toEqual('jira.Automation.instance.automationName')
+
+      expect(automation.value).toEqual({
+        id: '1',
+        name: 'automationName',
+        projects: [],
+        ruleScope: {
+          resources: ['ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8'],
+        },
+        components: [
+          {
+            component: 'ACTION',
+            schemaVersion: 1,
+            type: 'cmdb.object.create',
+            value: {
+              schemaId: '5',
               attributes: [
                 {
                   name: 'Name',
@@ -783,7 +895,6 @@ describe('automationFetchFilter', () => {
                       value: {
                         objectTypeId: '35',
                         schemaLabel: 'idoA Schema',
-                        schemaId: '5',
                         objectTypeLabel: 'R&D',
                         attributes: [
                           {
@@ -844,7 +955,6 @@ describe('automationFetchFilter', () => {
             value: {
               objectTypeId: '35',
               schemaLabel: 'idoA Schema',
-              schemaId: '5',
               objectTypeLabel: 'R&D',
               attributes: [
                 {

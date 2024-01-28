@@ -17,7 +17,7 @@
 import { logger } from '@salto-io/logging'
 import { ElemIdGetter, InstanceElement, ObjectType, Element, isInstanceElement, CORE_ANNOTATIONS, Value } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { createSchemeGuard, getParent, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { createSchemeGuard, getParent, isThereValidParent, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { elements as adapterElements, config as configUtils } from '@salto-io/adapter-components'
 import { FilterResult } from '@salto-io/adapter-utils/src/filter'
 import _ from 'lodash'
@@ -197,6 +197,7 @@ export const fetchRequestTypeDetails = async ({
   const requestTypeIdToRequestType: Record<string, InstanceElement> = Object.fromEntries(
     (await Promise.all(elements.filter(e => e.elemID.typeName === REQUEST_TYPE_NAME)
       .filter(isInstanceElement)
+      .filter(requestType => isThereValidParent(requestType))
       .map(async requestType => {
         if (requestType.value.id === undefined) {
           return undefined

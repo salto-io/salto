@@ -14,10 +14,9 @@
 * limitations under the License.
 */
 import { Change, dependencyChange, DependencyChanger, getChangeData, InstanceElement, isAdditionChange, isAdditionOrRemovalChange, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
-import { getParent } from '@salto-io/adapter-utils'
+import { getParent, isThereValidParent } from '@salto-io/adapter-utils'
 import { deployment } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { isThereValidParent } from '../utils'
 import { FIELD_CONTEXT_TYPE_NAME } from '../filters/fields/constants'
 
 

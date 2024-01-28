@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, Change, Element, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isEqualValues, isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
+import { Change, Element, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isEqualValues, isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
 import { createSchemeGuard, resolveValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import Joi from 'joi'
@@ -25,7 +25,6 @@ import { FilterCreator } from '../filter'
 import { findObject, isAllFreeLicense, setFieldDeploymentAnnotations } from '../utils'
 import { PROJECT_CONTEXTS_FIELD } from './fields/contexts_projects_filter'
 import { JiraConfig } from '../config/config'
-import { isObjectWithId } from './change_jsm_fields'
 import { PROJECT_TYPE_TYPE_NAME, SERVICE_DESK } from '../constants'
 
 const PROJECT_TYPE_NAME = 'Project'
@@ -113,53 +112,6 @@ const deployCustomerPermissions = async (
       url: `/rest/servicedesk/1/servicedesk/${instance.value.key}/settings/requestsecurity`,
       data: instance.value.customerPermissions,
     })
-  }
-}
-
-type ServiceDeskValue = {
-  id: number
-  projectId: number
-}
-
-type ServiceDeskResponse = {
-  values: ServiceDeskValue[]
-}
-
-const SERVICE_DESK_RESPONSE_SCHEME = Joi.object({
-  values: Joi.array().items(Joi.object({
-    id: Joi.number().required(),
-    projectId: Joi.number().required(),
-  }).unknown(true)),
-}).unknown(true).required()
-
-const isServiceDeskResponse = createSchemeGuard<ServiceDeskResponse>(SERVICE_DESK_RESPONSE_SCHEME)
-
-const getServiceDeskId = async (
-  change: AdditionChange<InstanceElement>,
-  client: JiraClient,
-): Promise<number> => {
-  try {
-    const instance = getChangeData(change)
-    const response = await client.getSinglePage({
-      url: `/rest/servicedeskapi/servicedesk/projectId:${instance.value.id}`,
-    })
-    if (!isObjectWithId(response.data)) {
-      throw new Error('Received an invalid serviceDesk id response')
-    }
-    return response.data.id
-  } catch (error) {
-    // Call for all serviceDesk in the account to find the serviceDesk id of the project
-    const response = await client.getSinglePage({
-      url: '/rest/servicedeskapi/servicedesk',
-    })
-    if (!isServiceDeskResponse(response.data)) {
-      throw new Error('Received an invalid serviceDesk response')
-    }
-    const serviceDesk = response.data.values.find(sd => sd.projectId === change.data.after.value.id)
-    if (serviceDesk === undefined || !isObjectWithId(serviceDesk)) {
-      throw new Error(`Failed to find service desk for project ${change.data.after.value.id}`)
-    }
-    return serviceDesk.id
   }
 }
 
@@ -380,14 +332,6 @@ const filter: FilterCreator = ({ config, client, elementsSource }) => ({
         }
 
         const instance = await resolveValues(getChangeData(change), getLookUpName)
-        if (isAdditionChange(change) && config.fetch.enableJSM && instance.value.projectTypeKey === SERVICE_DESK) {
-          try {
-            change.data.after.value.serviceDeskId = await getServiceDeskId(change, client)
-          } catch (error) {
-            log.warn(`Failed to get service desk id for project ${instance.elemID.getFullName()}: ${error}`)
-          }
-        }
-
         if (shouldSeparateSchemeDeployment(change, client.isDataCenter)) {
           await deployProjectSchemes(instance, client)
         }

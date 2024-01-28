@@ -244,6 +244,7 @@ export type ChangeValidatorName = (
   | 'automationToAssets'
   | 'addJsmProject'
   | 'deleteLabelAtttribute'
+  | 'jsmPermissions'
   )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -300,6 +301,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     automationToAssets: { refType: BuiltinTypes.BOOLEAN },
     addJsmProject: { refType: BuiltinTypes.BOOLEAN },
     deleteLabelAtttribute: { refType: BuiltinTypes.BOOLEAN },
+    jsmPermissions: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

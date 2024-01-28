@@ -47,7 +47,6 @@ describe('portalSettings filter', () => {
             name: 'project1',
             projectTypeKey: 'service_desk',
             key: 'project1Key',
-            serviceDeskId: 'serviceDeskId',
           },
         )
         portalSettingInstance = new InstanceElement(

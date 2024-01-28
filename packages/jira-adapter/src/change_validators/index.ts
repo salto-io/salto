@@ -65,6 +65,7 @@ import { defaultAdditionQueueValidator } from './default_addition_queue'
 import { defaultAttributeValidator } from './assets/default_attribute'
 import { automationToAssetsValidator } from './automation/automation_to_assets'
 import { addJsmProjectValidator } from './adding_jsm_project'
+import { jsmPermissionsValidator } from './jsm/jsm_permissions'
 
 const {
   deployTypesNotSupportedValidator,
@@ -127,6 +128,7 @@ export default (
     defaultAttributeValidator: defaultAttributeValidator(config, client),
     addJsmProject: addJsmProjectValidator,
     deleteLabelAtttribute: deleteLabelAtttributeValidator(config),
+    jsmPermissions: jsmPermissionsValidator(config, client),
   }
 
   return createChangeValidator({

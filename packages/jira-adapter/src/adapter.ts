@@ -18,7 +18,7 @@ import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement,
 import { config as configUtils, elements as elementUtils, client as clientUtils, combineElementFixers } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, getElemIdFuncWrapper, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { objects } from '@salto-io/lowerdash'
+import { objects, collections } from '@salto-io/lowerdash'
 import JiraClient from './client/client'
 import changeValidator from './change_validators'
 import { JiraConfig, configType, getApiDefinitions } from './config/config'
@@ -181,10 +181,12 @@ const {
   loadSwagger,
   addDeploymentAnnotations,
 } = elementUtils.swagger
-const { createPaginator } = clientUtils
+const { createPaginator, getWithCursorPagination } = clientUtils
 const log = logger(module)
 
 const { query: queryFilter, hideTypes: hideTypesFilter, ...otherCommonFilters } = commonFilters
+const { toArrayAsync } = collections.asynciterable
+const { makeArray } = collections.array
 
 export const DEFAULT_FILTERS = [
   accountInfoFilter,
@@ -572,11 +574,24 @@ export default class JiraAdapter implements AdapterOperations {
       || !this.userConfig.fetch.enableJSM) {
       return { elements: [] }
     }
+    const paginator = createPaginator({
+      client: this.client,
+      // Pagination method is different from the rest of jira's API
+      paginationFuncCreator: () => getWithCursorPagination(),
+    })
+    const paginationArgs = {
+      url: '/rest/servicedeskapi/servicedesk',
+      paginationField: '_links.next',
+    }
+    const serviceDeskProjectIds = (await toArrayAsync(
+      paginator(paginationArgs, page => makeArray(page.values) as clientUtils.ResponseValue[])
+    )).flat().map(project => project.projectId)
 
-    const serviceDeskProjects = swaggerResponseElements
+    const serviceDeskProjects = await Promise.all(swaggerResponseElements
       .filter(project => project.elemID.typeName === PROJECT_TYPE)
       .filter(isInstanceElement)
       .filter(project => project.value.projectTypeKey === SERVICE_DESK)
+      .filter(project => serviceDeskProjectIds.includes(project.value.id)))
 
     const fetchResultWithDuplicateTypes = await Promise.all(serviceDeskProjects.map(async projectInstance => {
       const serviceDeskProjRecord: Record<string, string> = {

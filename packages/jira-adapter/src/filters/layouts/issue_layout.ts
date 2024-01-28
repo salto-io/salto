@@ -135,7 +135,7 @@ const deployLayoutChange = async (
       extraDefinerId: layout.value.extraDefinerId.value.value.id,
     }
     if (isAdditionChange(change)) {
-      layout.value.id = generateLayoutId(variables.projectId, variables.extraDefinerId)
+      layout.value.id = generateLayoutId(variables)
     }
     const response = await getLayoutResponse({ variables, client, typeName })
     if (!isIssueLayoutResponse(response.data)) {

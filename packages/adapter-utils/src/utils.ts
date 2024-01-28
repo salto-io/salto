@@ -1152,6 +1152,14 @@ export const getParent = (instance: Element): InstanceElement => {
   return parents[0].value
 }
 
+export const isThereValidParent = (element: Element): boolean => {
+  try {
+    return getParent(element) !== undefined
+  } catch {
+    return false
+  }
+}
+
 // In the current use-cases for resolveTypeShallow it makes sense
 // to use the value on the ref over the elementsSource, unlike the
 // current Reference.getResolvedValue implementation

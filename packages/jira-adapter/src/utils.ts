@@ -17,7 +17,7 @@ import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType, getDeepInnerType, 
 import { logger } from '@salto-io/logging'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
-import { createSchemeGuard, getParent } from '@salto-io/adapter-utils'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { JiraConfig, JspUrls } from './config/config'
 import { ACCOUNT_INFO_ELEM_ID, JIRA_FREE_PLAN, SOFTWARE_FIELD } from './constants'
@@ -151,14 +151,6 @@ export const renameKey = (object: Value, { from, to }: { from: string; to: strin
   if (object[from] !== undefined) {
     object[to] = object[from]
     delete object[from]
-  }
-}
-
-export const isThereValidParent = (element: Element): boolean => {
-  try {
-    return getParent(element) !== undefined
-  } catch {
-    return false
   }
 }
 

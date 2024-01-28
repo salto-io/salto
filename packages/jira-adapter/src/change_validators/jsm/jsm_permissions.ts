@@ -15,7 +15,7 @@
 */
 import { ChangeValidator, getChangeData, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { getParent } from '@salto-io/adapter-utils'
+import { getParent, isThereValidParent } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config/config'
@@ -55,14 +55,8 @@ export const jsmPermissionsValidator: (
       .filter(isInstanceChange)
       .map(getChangeData)
       .filter(instance => SUPPORTED_TYPES.has(instance.elemID.typeName))
-      .filter(instance => {
-        try {
-          const projectParent = getParent(instance)
-          return !serviceDeskProjectIds.includes(projectParent.value.id)
-        } catch (e) {
-          return false
-        }
-      })
+      .filter(instnce => isThereValidParent(instnce))
+      .filter(instance => !serviceDeskProjectIds.includes(getParent(instance).value.id))
       .map(instance => ({
         elemID: instance.elemID,
         severity: 'Error' as SeverityLevel,

@@ -129,6 +129,18 @@ describe('lastQueueValidator', () => {
     )
     expect(changeErrors).toHaveLength(0)
   })
+  it('should not return error if queue does not have valid parent', async () => {
+    queueInstance.annotations[CORE_ANNOTATIONS.PARENT] = [
+      'unvalidParent',
+    ]
+    config.fetch.enableJSM = false
+    const validator = deleteLastQueueValidator(config)
+    const changeErrors = await validator(
+      [toChange({ before: queueInstance })],
+      elementsSource
+    )
+    expect(changeErrors).toHaveLength(0)
+  })
   it('should not return error if is addition change', async () => {
     const validator = deleteLastQueueValidator(config)
     const changeErrors = await validator(

@@ -15,7 +15,7 @@
 */
 
 import { isInstanceElement } from '@salto-io/adapter-api'
-import { getParent, pathNaclCase } from '@salto-io/adapter-utils'
+import { getParent, isThereValidParent, pathNaclCase } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { CALENDAR_TYPE, QUEUE_TYPE, PORTAL_GROUP_TYPE, REQUEST_TYPE_NAME, PORTAL_SETTINGS_TYPE_NAME, SLA_TYPE_NAME, FORM_TYPE } from '../constants'
 
@@ -37,6 +37,7 @@ const filter: FilterCreator = ({ config }) => ({
     elements
       .filter(isInstanceElement)
       .filter(instance => Object.keys(JSM_ELEMENT_DIRECTORY).includes(instance.elemID.typeName))
+      .filter(instance => isThereValidParent(instance))
       .forEach(instance => {
         const parent = getParent(instance)
         const parentPath = parent.path

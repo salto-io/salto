@@ -147,7 +147,9 @@ export const getLayout = async ({
   if (!Array.isArray(response.data) && isIssueLayoutResponse(response.data) && instance.path !== undefined) {
     const { issueLayoutResult } = response.data.issueLayoutConfiguration
     const value = {
-      id: typeName !== 'IssueLayout' ? issueLayoutResult.id : generateLayoutId({ projectId: instance.value.id, extraDefinerId }),
+      id: typeName !== ISSUE_LAYOUT_TYPE ? issueLayoutResult.id : generateLayoutId(
+        { projectId: instance.value.id, extraDefinerId }
+      ),
       extraDefinerId,
       issueLayoutConfig: fromLayoutConfigRespToLayoutConfig(response.data.issueLayoutConfiguration),
     }

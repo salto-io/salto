@@ -479,9 +479,21 @@ const deployAddInstances = async (
     { typeName, instances: newInstances.map(getChangeData), client, groupId },
     client.dataRetry.maxAttempts
   )
-  existingInstances.forEach(change => {
-    const instance = getChangeData(change)
+  if (instancesReferencingToBeDeployedInstances.length > 0) {
+    log.debug('Updating existingRecordsLookup of instances referencing to be deployed instances')
+    const lookups = await keyByAsync(
+      await getRecordsBySaltoIds(type, instancesReferencingToBeDeployedInstances, idFields, client),
+      computeRecordSaltoIdHash,
+    )
+    Object.entries(lookups).forEach(([idHash, record]) => { existingRecordsLookup[idHash] = record })
+  }
+  const instancesToUpdate = existingInstances.map(getChangeData).concat(instancesReferencingToBeDeployedInstances)
+  instancesToUpdate.forEach(instance => {
     const existingRecordLookup = existingRecordsLookup[computeSaltoIdHash(instance.value)]
+    if (existingRecordLookup === undefined) {
+      log.warn('Failed to find existing record for instance %s', instance.elemID.getFullName())
+      return
+    }
     MANDATORY_FIELDS_FOR_UPDATE.forEach(mandatoryField => {
       if (instance.value[mandatoryField] === undefined && existingRecordLookup[mandatoryField] !== undefined) {
         instance.value[mandatoryField] = existingRecordLookup[mandatoryField]
@@ -495,7 +507,7 @@ const deployAddInstances = async (
     updateInstances,
     {
       typeName: await apiName(type),
-      instances: existingInstances.map(getChangeData).concat(instancesReferencingToBeDeployedInstances),
+      instances: instancesToUpdate,
       client,
       groupId,
     },

@@ -33,7 +33,10 @@ import { CallsLimiter, ConfigRecord, ConfigRecordData, GetConfigResult, CONFIG_R
   FILES_READ_SCHEMA, HttpMethod, isError, ReadResults, RestletOperation, RestletResults,
   RESTLET_RESULTS_SCHEMA, SavedSearchQuery, SavedSearchResults, SAVED_SEARCH_RESULTS_SCHEMA,
   SuiteAppClientParameters, SuiteQLResults, SUITE_QL_RESULTS_SCHEMA, SystemInformation,
-  SYSTEM_INFORMATION_SCHEME, FileCabinetInstanceDetails, ConfigFieldDefinition, CONFIG_FIELD_DEFINITION_SCHEMA, SetConfigType, SET_CONFIG_RESULT_SCHEMA, SetConfigRecordsValuesResult, SetConfigResult, HasElemIDFunc, GET_BUNDLES_RESULT_SCHEMA, GET_SUITEAPPS_RESULT_SCHEMA } from './types'
+  SYSTEM_INFORMATION_SCHEME, FileCabinetInstanceDetails, ConfigFieldDefinition, CONFIG_FIELD_DEFINITION_SCHEMA,
+  SetConfigType, SET_CONFIG_RESULT_SCHEMA, SetConfigRecordsValuesResult, SetConfigResult, HasElemIDFunc,
+  GET_BUNDLES_RESULT_SCHEMA, GET_SUITEAPPS_RESULT_SCHEMA, QueryRecordSchema, QueryRecordResponse, SuiteAppType,
+  QUERY_RECORDS_RESPONSE_SCHEMA } from './types'
 import { SuiteAppCredentials, toUrlAccountId } from '../credentials'
 import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
 import { DEFAULT_AXIOS_TIMEOUT_IN_MINUTES, DEFAULT_CONCURRENCY } from '../../config/constants'
@@ -77,30 +80,14 @@ const RETRYABLE_ERROR_CODES = ['SSS_REQUEST_LIMIT_EXCEEDED']
 const ACTIVATION_KEY_APP_VERSION = '0.1.3'
 const CONFIG_TYPES_APP_VERSION = '0.1.4'
 const LIST_BUNDLES_APP_VERSION = '0.1.7'
-const LIST_SUITEAPPS_APP_VERSION = '0.1.7'
+const RECORD_OPERATION_APP_VERSION = '0.2.0'
 
 type VersionFeatures = {
   activationKey: boolean
   configTypes: boolean
   listBundles: boolean
-  listSuiteApps: boolean
+  recordOperation: boolean
 }
-
-export type SuiteAppType = {
-  appId: string
-  name: string
-  version: string
-  description: string
-  dateInstalled: Date
-  dateLastUpdated: Date
-  publisherId: string
-  installedBy: {
-    id: number
-    name: string
-  }
-}
-
-type SuiteAppInfoOperation = 'listBundles' | 'listSuiteApps'
 
 const getAxiosErrorDetailedMessage = (error: AxiosError): string | undefined => {
   const errorDetails = error.response?.data?.['o:errorDetails']
@@ -222,6 +209,39 @@ export default class SuiteAppClient {
       }
     }
     return items
+  }
+
+  private isValidRecordsQueryResponse(results: unknown): results is QueryRecordResponse[] {
+    if (!this.ajv.validate<QueryRecordResponse[]>(QUERY_RECORDS_RESPONSE_SCHEMA, results)) {
+      log.error(
+        'Got invalid results from records query - %s: %o',
+        this.ajv.errorsText(),
+        results
+      )
+      return false
+    }
+    const errors = results.flatMap(res => res.errors ?? [])
+    if (errors.length > 0) {
+      log.warn('runRecordsQuery had errors: %s', errors.join(', '))
+    }
+    return results.every(res => this.isValidRecordsQueryResponse(res.sublists))
+  }
+
+  public async runRecordsQuery(
+    ids: string[],
+    schema: QueryRecordSchema
+  ): Promise<QueryRecordResponse[] | undefined> {
+    if (!(await this.isFeatureSupported('recordOperation'))) {
+      log.warn('SuiteApp version doesn\'t support recordOperation')
+      return undefined
+    }
+    try {
+      const results = await this.sendRestletRequest('record', { ids, schema })
+      return this.isValidRecordsQueryResponse(results) ? results : undefined
+    } catch (error) {
+      log.error('runRecordsQuery failed with error: %o', error)
+      return undefined
+    }
   }
 
   private parseSystemInformation(results: unknown): SystemInformation | undefined {
@@ -387,11 +407,11 @@ export default class SuiteAppClient {
   }
 
   public async getInstalledBundlesOrSuiteApps<T>(
-    operation: SuiteAppInfoOperation,
+    operation: Extract<RestletOperation, 'listBundles' | 'listSuiteApps'>,
     schema: Schema
   ): Promise<T[]> {
     try {
-      if (!(await this.isFeatureSupported(operation))) {
+      if (!(await this.isFeatureSupported('listBundles'))) {
         log.warn(`SuiteApp version doesn't support ${operation}`)
         return []
       }
@@ -510,7 +530,7 @@ export default class SuiteAppClient {
         activationKey: compareVersions(currentVersion, ACTIVATION_KEY_APP_VERSION) !== -1,
         configTypes: compareVersions(currentVersion, CONFIG_TYPES_APP_VERSION) !== -1,
         listBundles: compareVersions(currentVersion, LIST_BUNDLES_APP_VERSION) !== -1,
-        listSuiteApps: compareVersions(currentVersion, LIST_SUITEAPPS_APP_VERSION) !== -1,
+        recordOperation: compareVersions(currentVersion, RECORD_OPERATION_APP_VERSION) !== -1,
       }
       log.debug('set SuiteApp version features successfully', { versionFeatures: this.versionFeatures })
     })

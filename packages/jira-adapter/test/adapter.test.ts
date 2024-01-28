@@ -444,8 +444,12 @@ describe('adapter', () => {
         (loadSwagger as jest.MockedFunction<typeof loadSwagger>)
           .mockResolvedValue({ document: {}, parser: {} } as elements.swagger.LoadedSwagger)
         mockAxiosAdapter = new MockAdapter(axios)
-        // mock as there are gets of license during fetch
-        mockAxiosAdapter.onGet().reply(200, { })
+        mockAxiosAdapter
+          // first three requests are for login assertion
+          .onGet('/rest/api/3/configuration').replyOnce(200)
+          .onGet('/rest/api/3/serverInfo').replyOnce(200, { baseUrl: 'a' })
+          .onGet('/rest/api/3/instance/license')
+          .replyOnce(200, { applications: [{ plan: 'FREE' }] })
         // mock as we call getCloudId in the forms filter.
         mockAxiosAdapter.onPost().reply(200, {
           unparsedData: {

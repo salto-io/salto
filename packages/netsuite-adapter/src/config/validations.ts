@@ -20,7 +20,7 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { isCustomRecordTypeName, netsuiteSupportedTypes } from '../types'
 import { isRequiredFeature, removeRequiredFeatureSuffix } from '../client/utils'
 import { ALL_TYPES_REGEX, ERROR_MESSAGE_PREFIX, SUITEAPP_ID_FORMAT_REGEX } from './constants'
-import { AdditionalDependencies, AdditionalSdfDeployDependencies, CLIENT_CONFIG, CONFIG, ClientConfig, DEPLOY_PARAMS, DeployParams, FETCH_PARAMS, FetchParams, MaxInstancesPerType, NetsuiteConfig, NetsuiteQueryParameters, QUERY_PARAMS, QueryParams, SuiteAppClientConfig } from './types'
+import { AdditionalDependencies, AdditionalSdfDeployDependencies, CLIENT_CONFIG, CONFIG, ClientConfig, DEPLOY_PARAMS, DeployParams, FETCH_PARAMS, FetchParams, MaxInstancesPerType, NetsuiteConfig, NetsuiteQueryParameters, QUERY_PARAMS, QueryParams, SUITEAPP_CLIENT_CONFIG, SuiteAppClientConfig } from './types'
 import { convertToQueryParams, isCriteriaQuery } from './query'
 
 const log = logger(module)
@@ -50,6 +50,24 @@ function validateDefined(
 ): asserts value is NonNullable<unknown> | null {
   if (value === undefined) {
     throw new Error(`${makeArray(configPath).join('.')} should be defined`)
+  }
+}
+
+function validateBoolean(
+  value: unknown,
+  configPath: string | string[]
+): asserts value is boolean {
+  if (value !== undefined && typeof value !== 'boolean') {
+    throw new Error(`Expected "${makeArray(configPath).join('.')}" to be a boolean, but received:\n ${JSON.stringify(value, undefined, 4)}`)
+  }
+}
+
+function validateNumber(
+  value: unknown,
+  configPath: string | string[]
+): asserts value is boolean | undefined {
+  if (value !== undefined && typeof value !== 'number') {
+    throw new Error(`Expected "${makeArray(configPath).join('.')}" to be a number, but received:\n ${JSON.stringify(value, undefined, 4)}`)
   }
 }
 
@@ -312,17 +330,23 @@ const validateDeployParams = (
     fieldsToOmit,
   }: Record<keyof DeployParams, unknown>
 ): void => {
-  if (deployReferencedElements !== undefined
-    && typeof deployReferencedElements !== 'boolean') {
-    throw new Error(`Expected "deployReferencedElements" to be a boolean or to be undefined, but received:\n ${deployReferencedElements}`)
+  if (deployReferencedElements !== undefined) {
+    validateBoolean(
+      deployReferencedElements,
+      [CONFIG.deploy, DEPLOY_PARAMS.deployReferencedElements],
+    )
   }
-  if (warnOnStaleWorkspaceData !== undefined
-    && typeof warnOnStaleWorkspaceData !== 'boolean') {
-    throw new Error(`Expected "warnOnStaleWorkspaceData" to be a boolean or to be undefined, but received:\n ${warnOnStaleWorkspaceData}`)
+  if (warnOnStaleWorkspaceData !== undefined) {
+    validateBoolean(
+      warnOnStaleWorkspaceData,
+      [CONFIG.deploy, DEPLOY_PARAMS.warnOnStaleWorkspaceData],
+    )
   }
-  if (validate !== undefined
-    && typeof validate !== 'boolean') {
-    throw new Error(`Expected "validate" to be a boolean or to be undefined, but received:\n ${validate}`)
+  if (validate !== undefined) {
+    validateBoolean(
+      validate,
+      [CONFIG.deploy, DEPLOY_PARAMS.validate],
+    )
   }
   if (additionalDependencies !== undefined) {
     validatePlainObject(additionalDependencies, [CONFIG.deploy, DEPLOY_PARAMS.additionalDependencies])
@@ -339,13 +363,17 @@ const validateSuiteAppClientParams = (
     httpTimeoutLimitInMinutes,
   }: Record<keyof SuiteAppClientConfig, unknown>
 ): void => {
-  if (suiteAppConcurrencyLimit !== undefined
-    && typeof suiteAppConcurrencyLimit !== 'number') {
-    throw new Error(`Expected "suiteAppConcurrencyLimit" to be a number or to be undefined, but received:\n ${suiteAppConcurrencyLimit}`)
+  if (suiteAppConcurrencyLimit !== undefined) {
+    validateNumber(
+      suiteAppConcurrencyLimit,
+      [CONFIG.suiteAppClient, SUITEAPP_CLIENT_CONFIG.suiteAppConcurrencyLimit],
+    )
   }
-  if (httpTimeoutLimitInMinutes !== undefined
-    && typeof httpTimeoutLimitInMinutes !== 'number') {
-    throw new Error(`Expected "httpTimeoutLimitInMinutes" to be a boolean or to be undefined, but received:\n ${httpTimeoutLimitInMinutes}`)
+  if (httpTimeoutLimitInMinutes !== undefined) {
+    validateNumber(
+      httpTimeoutLimitInMinutes,
+      [CONFIG.suiteAppClient, SUITEAPP_CLIENT_CONFIG.httpTimeoutLimitInMinutes],
+    )
   }
 }
 
@@ -364,6 +392,21 @@ export function validateConfig(input: Record<string, unknown>): asserts input is
     validateDefined(config.fetch, CONFIG.fetch)
     validatePlainObject(config.fetch, CONFIG.fetch)
     validateFetchConfig(config.fetch)
+    if (config.includeAllSavedSearches !== undefined) {
+      validateBoolean(config.includeAllSavedSearches, CONFIG.includeAllSavedSearches)
+    }
+    if (config.includeCustomRecords !== undefined) {
+      validateArrayOfStrings(config.includeCustomRecords, CONFIG.includeCustomRecords)
+    }
+    if (config.includeInactiveRecords !== undefined) {
+      validateArrayOfStrings(config.includeInactiveRecords, CONFIG.includeInactiveRecords)
+    }
+    if (config.includeDataFileTypes !== undefined) {
+      validateArrayOfStrings(config.includeDataFileTypes, CONFIG.includeDataFileTypes)
+    }
+    if (config.includeFileCabinetFolders !== undefined) {
+      validateArrayOfStrings(config.includeFileCabinetFolders, CONFIG.includeFileCabinetFolders)
+    }
     if (config.filePathRegexSkipList !== undefined) {
       validateArrayOfStrings(config.filePathRegexSkipList, CONFIG.filePathRegexSkipList)
       validateRegularExpressions(config.filePathRegexSkipList)

@@ -44,6 +44,12 @@ describe('scriptRunnerClient', () => {
         jiraClient,
         isDataCenter: false }
     )
+    mockAxios
+      // first three requests are for login assertion
+      .onGet('/rest/api/3/configuration').replyOnce(200)
+      .onGet('/rest/api/3/serverInfo').replyOnce(200, { baseUrl: 'a' })
+      .onGet('/rest/api/3/instance/license')
+      .replyOnce(200, { applications: [{ plan: 'FREE' }] })
   })
   afterEach(() => {
     mockAxios.restore()
@@ -136,32 +142,32 @@ describe('scriptRunnerClient', () => {
       result = await scriptRunnerClient.getSinglePage({ url: '/myPath' })
     })
     it('should request the correct path with auth headers', () => {
-      expect(mockAxios.history.get).toHaveLength(3)
-      const jiraAddress = mockAxios.history.get[0]
-      expect(jiraAddress.baseURL).toEqual('http://myjira.net')
-      expect(jiraAddress.url).toEqual(JWT_ACCESS_URL)
-      const srRequest = mockAxios.history.get[1]
-      expect(srRequest.auth).toBeUndefined()
-      expect(srRequest.baseURL).toEqual('https://my.scriptrunner.net')
-      expect(srRequest.url).toEqual('/myUrlPath')
-      const request = mockAxios.history.get[2]
-      expect(request.auth).toBeUndefined()
-      expect(request.baseURL).toEqual('https://my.scriptrunner.net')
-      expect(request.url).toEqual('/myPath')
-      expect(request.headers?.Authorization).toEqual('JWT validSR')
+      expect(mockAxios.history.get).toHaveLength(6)
+      const jiraAddress = mockAxios.history.get.find(r => r.url === JWT_ACCESS_URL)
+      expect(jiraAddress?.baseURL).toEqual('http://myjira.net')
+      expect(jiraAddress?.url).toEqual(JWT_ACCESS_URL)
+      const srRequest = mockAxios.history.get.find(r => r.url === '/myUrlPath')
+      expect(srRequest?.auth).toBeUndefined()
+      expect(srRequest?.baseURL).toEqual('https://my.scriptrunner.net')
+      expect(srRequest?.url).toEqual('/myUrlPath')
+      const request = mockAxios.history.get.find(r => r.url === '/myPath')
+      expect(request?.auth).toBeUndefined()
+      expect(request?.baseURL).toEqual('https://my.scriptrunner.net')
+      expect(request?.url).toEqual('/myPath')
+      expect(request?.headers?.Authorization).toEqual('JWT validSR')
     })
     it('should return the response', () => {
       expect(result).toEqual({ status: 200, data: { response: 'asd' } })
     })
     it('should not call the login endpoint again', async () => {
       await scriptRunnerClient.getSinglePage({ url: '/myPath2' })
-      expect(mockAxios.history.get).toHaveLength(4)
+      expect(mockAxios.history.get).toHaveLength(7)
     })
     it('should pass on headers', async () => {
       await scriptRunnerClient.getSinglePage({ url: '/myPath2', headers: { 'X-Atlassian-Token': 'no-check' } })
-      expect(mockAxios.history.get).toHaveLength(4)
-      const request = mockAxios.history.get[3]
-      expect(request.headers?.['X-Atlassian-Token']).toEqual('no-check')
+      expect(mockAxios.history.get).toHaveLength(7)
+      const request = mockAxios.history.get.find(r => r.url === '/myPath2')
+      expect(request?.headers?.['X-Atlassian-Token']).toEqual('no-check')
     })
   })
   it('should not throw on license error', async () => {

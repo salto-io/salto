@@ -23,7 +23,6 @@ import { combineCustomReferenceGetters } from '@salto-io/adapter-components'
 import {
   APEX_CLASS_METADATA_TYPE, APEX_PAGE_METADATA_TYPE, API_NAME_SEPARATOR, CUSTOM_APPLICATION_METADATA_TYPE, SALESFORCE,
   FIELD_PERMISSIONS, FLOW_METADATA_TYPE, LAYOUT_TYPE_ID_METADATA_TYPE, PROFILE_METADATA_TYPE, RECORD_TYPE_METADATA_TYPE,
-  PERMISSION_SET_METADATA_TYPE,
 } from './constants'
 import { Types } from './transformers/transformer'
 import { CUSTOM_REFS_CONFIG, DATA_CONFIGURATION, FETCH_CONFIG } from './types'
@@ -108,6 +107,9 @@ const isAnyAccessEnabledForField = (fieldPermissionsSectionEntry: Values): boole
 
 const referenceToInstance = (fieldName: string, targetType: string): RefTargetsGetter => (
   sectionEntry => {
+    if (!_.isString(sectionEntry[fieldName])) {
+      return []
+    }
     const elemIdName = getMetadataElementName(sectionEntry[fieldName])
     return [{
       target: Types.getElemId(targetType, false).createNestedID('instance', elemIdName),
@@ -116,9 +118,14 @@ const referenceToInstance = (fieldName: string, targetType: string): RefTargetsG
 )
 
 const referenceToType = (fieldName: string): RefTargetsGetter => (
-  sectionEntry => [{
-    target: Types.getElemId(sectionEntry[fieldName], true),
-  }]
+  sectionEntry => {
+    if (!_.isString(sectionEntry[fieldName])) {
+      return []
+    }
+    return [{
+      target: Types.getElemId(sectionEntry[fieldName], true),
+    }]
+  }
 )
 
 const referencesToFields: RefTargetsGetter = (sectionEntry, sectionEntryKey) => {
@@ -132,6 +139,9 @@ const referencesToFields: RefTargetsGetter = (sectionEntry, sectionEntryKey) => 
 }
 
 const layoutReferences: RefTargetsGetter = sectionEntry => {
+  if (!_.isString(sectionEntry[0]?.layout)) {
+    return []
+  }
   const layoutElemIdName = getMetadataElementName(sectionEntry[0].layout)
   const layoutRef = {
     target: new ElemID(SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, 'instance', layoutElemIdName),
@@ -151,6 +161,7 @@ const recordTypeReferences: RefTargetsGetter = sectionEntry => (
     .filter(([, recordTypeVisibility]) => (
       recordTypeVisibility.default === true || recordTypeVisibility.visible === true
     ))
+    .filter(([, recordTypeVisibility]) => _.isString(recordTypeVisibility.recordType))
     .map(([recordTypeVisibilityKey, recordTypeVisibility]) => ({
       target: new ElemID(SALESFORCE, RECORD_TYPE_METADATA_TYPE, 'instance', getMetadataElementName(recordTypeVisibility.recordType)),
       sourceField: recordTypeVisibilityKey,
@@ -220,12 +231,14 @@ const referencesFromProfile = (profile: InstanceElement): ReferenceInfo[] => {
     .concat(recordTypeRefs)
 }
 
-const getProfilesCustomReferences = async (elements: Element[]): Promise<ReferenceInfo[]> => {
+const getProfilesCustomReferences = async (
+  elements: Element[]
+): Promise<ReferenceInfo[]> => {
   // At this point the TypeRefs of instance elements are not resolved yet, so isInstanceOfTypeSync() won't work - we
   // have to figure out the type name the hard way.
   const profilesAndPermissionSets = elements
     .filter(isInstanceElement)
-    .filter(instance => [PROFILE_METADATA_TYPE, PERMISSION_SET_METADATA_TYPE].includes(instance.elemID.typeName))
+    .filter(instance => instance.elemID.typeName === PROFILE_METADATA_TYPE)
   const refs = log.time(
     () => (profilesAndPermissionSets.flatMap(referencesFromProfile)),
     `Generating references from ${profilesAndPermissionSets.length} profiles/permission sets`
@@ -249,7 +262,13 @@ const customReferencesHandlers: Record<string, CustomRefsHandlersConfig> = {
 const getCustomReferencesConfig = (adapterConfig: InstanceElement): Record<string, boolean> => {
   const actualConfig = adapterConfig.value[FETCH_CONFIG]?.[DATA_CONFIGURATION]?.[CUSTOM_REFS_CONFIG] ?? {}
   const defaultConfig = _.mapValues(customReferencesHandlers, ({ isEnabledByDefault }) => isEnabledByDefault)
-  return _.defaults(actualConfig, defaultConfig)
+  const configWithAppliedDefaults = _.defaults(actualConfig, defaultConfig)
+
+  if (adapterConfig.value[FETCH_CONFIG]?.optionalFeatures?.generateRefsInProfiles
+    && configWithAppliedDefaults.profiles) {
+    log.warn('Both custom references and normal reference mapping are enabled for profiles. This may lead to unexpected behavior')
+  }
+  return configWithAppliedDefaults
 }
 
 export const getCustomReferences: GetCustomReferencesFunc = combineCustomReferenceGetters(

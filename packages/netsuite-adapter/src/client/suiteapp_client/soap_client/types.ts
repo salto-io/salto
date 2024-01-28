@@ -109,8 +109,13 @@ export type SearchResponse = {
 
 export type SoapSearchType = {
   type: string
-  subtypes?: string[]
-}
+} & ({
+  subtypes: string[]
+  originalTypes: string[]
+} | {
+  subtypes?: never
+  originalTypes?: never
+})
 
 export type SearchPageResponse = {
   records: RecordValue[]

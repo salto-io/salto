@@ -18,6 +18,7 @@ import Joi from 'joi'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import JiraClient from './client/client'
+import { JiraConfig } from './config/config'
 
 const log = logger(module)
 type WorkspaceResponse = {
@@ -34,13 +35,21 @@ const WORKSPACE_RESPONSE_SCHEME = Joi.object({
 
 const isWorkspaceResponse = createSchemeGuard<WorkspaceResponse>(WORKSPACE_RESPONSE_SCHEME, 'Received invalid workspace response')
 
-export const getWorkspaceId = async (client: JiraClient): Promise<string | undefined> => {
-  const response = await client.getSinglePage({
-    url: '/rest/servicedeskapi/assets/workspace',
-  })
-  if (!isWorkspaceResponse(response.data)) {
-    log.trace('Received invalid workspace response %o', response.data)
+export const getWorkspaceId = async (client: JiraClient, config: JiraConfig): Promise<string | undefined> => {
+  try {
+    if (!config.fetch.enableJsmExperimental) {
+      return undefined
+    }
+    const response = await client.getSinglePage({
+      url: '/rest/servicedeskapi/assets/workspace',
+    })
+    if (!isWorkspaceResponse(response.data)) {
+      log.debug('Received invalid workspace response %o', response.data)
+      return undefined
+    }
+    return response.data.values[0].workspaceId
+  } catch (e) {
+    log.debug(`Failed to get workspace id: ${e}`)
     return undefined
   }
-  return response.data.values[0].workspaceId
 }

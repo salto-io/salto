@@ -22,7 +22,7 @@ import {
   ARTICLE_ORDER_TYPE_NAME,
   BRAND_TYPE_NAME,
   CATEGORY_ORDER_TYPE_NAME, EVERYONE_USER_TYPE,
-  SECTION_ORDER_TYPE_NAME,
+  SECTION_ORDER_TYPE_NAME, THEME_SETTINGS_TYPE_NAME,
   ZENDESK,
 } from './constants'
 
@@ -2672,13 +2672,51 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['&brand_id', ...DEFAULT_ID_FIELDS],
       sourceTypeName: 'themes__themes',
       fieldTypeOverrides: [
-        { fieldName: 'files', fieldType: 'map<unknown>' },
+        { fieldName: 'root', fieldType: 'theme_folder' },
       ],
       fieldsToHide: FIELDS_TO_HIDE.concat([
         { fieldName: 'id', fieldType: 'string' },
+        { fieldName: 'live', fieldType: 'boolean' },
+        { fieldName: 'author', fieldType: 'string' },
+        { fieldName: 'version', fieldType: 'string' },
       ]),
     },
+    deployRequests: {
+      remove: {
+        url: '/api/v2/guide/theming/themes/{themeId}',
+        method: 'delete',
+        urlParamsToFields: {
+          themeId: 'id',
+        },
+        omitRequestBody: true,
+      },
+    },
   },
+  theme_file: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'filename', fieldType: 'string' },
+        { fieldName: 'content', fieldType: 'unknown' },
+      ],
+    },
+  },
+  theme_folder: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'files', fieldType: 'map<theme_file>' },
+        { fieldName: 'folders', fieldType: 'map<theme_folder>' },
+      ],
+    },
+  },
+  [THEME_SETTINGS_TYPE_NAME]: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'brand', fieldType: 'number' },
+        { fieldName: 'liveTheme', fieldType: 'string' },
+      ],
+    },
+  },
+
 }
 
 export const SUPPORTED_TYPES = {
@@ -2885,6 +2923,8 @@ export type ChangeValidatorName = (
   | 'organizationExistence'
   | 'badFormatWebhookAction'
   | 'guideDisabled'
+  | 'guideThemeDeleteLive'
+  | 'guideThemeUpdateMetadata'
   | 'guideThemeReadonly'
   | 'additionOfTicketStatusForTicketForm'
   | 'defaultDynamicContentItemVariant'
@@ -2958,6 +2998,8 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     badFormatWebhookAction: { refType: BuiltinTypes.BOOLEAN },
     guideDisabled: { refType: BuiltinTypes.BOOLEAN },
     guideThemeReadonly: { refType: BuiltinTypes.BOOLEAN },
+    guideThemeDeleteLive: { refType: BuiltinTypes.BOOLEAN },
+    guideThemeUpdateMetadata: { refType: BuiltinTypes.BOOLEAN },
     additionOfTicketStatusForTicketForm: { refType: BuiltinTypes.BOOLEAN },
     defaultDynamicContentItemVariant: { refType: BuiltinTypes.BOOLEAN },
     featureActivation: { refType: BuiltinTypes.BOOLEAN },

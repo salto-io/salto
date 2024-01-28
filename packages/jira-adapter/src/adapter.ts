@@ -65,7 +65,6 @@ import projectComponentFilter from './filters/project_component'
 import archivedProjectComponentsFilter from './filters/archived_project_components'
 import defaultInstancesDeployFilter from './filters/default_instances_deploy'
 import workflowFilter from './filters/workflowV2/workflow_filter'
-import workflowTransitionParametersFilter from './filters/workflowV2/transition_parameters_filter'
 import workflowStructureFilter from './filters/workflow/workflow_structure_filter'
 import workflowDiagramFilter from './filters/workflow/workflow_diagrams'
 import resolutionPropertyFilter from './filters/workflow/resolution_property_filter'
@@ -165,6 +164,7 @@ import portalGroupsFilter from './filters/portal_groups'
 import assetsObjectTypePath from './filters/assets/assets_object_type_path'
 import assetsObjectTypeChangeFields from './filters/assets/assets_object_type_change_fields'
 import assetsObjectTypeOrderFilter from './filters/assets/assets_object_type_order'
+import defaultAttributesFilter from './filters/assets/label_object_type_attribute'
 import changeAttributesPathFilter from './filters/assets/change_attributes_path'
 import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
@@ -184,7 +184,7 @@ const {
 const { createPaginator } = clientUtils
 const log = logger(module)
 
-const { query: queryFilter, ...otherCommonFilters } = commonFilters
+const { query: queryFilter, hideTypes: hideTypesFilter, ...otherCommonFilters } = commonFilters
 
 export const DEFAULT_FILTERS = [
   accountInfoFilter,
@@ -204,9 +204,7 @@ export const DEFAULT_FILTERS = [
   fieldNameFilter,
   workflowStructureFilter,
   workflowFilter,
-  // must run before references are transformed
-  workflowTransitionParametersFilter,
-  // This should happen after workflowStructureFilter and before fieldStructureFilter
+  // must run before references are transformed and after workflowFilter
   queryFilter,
   // This should run before duplicateIdsFilter
   projectRoleRemoveTeamManagedDuplicatesFilter,
@@ -354,9 +352,11 @@ export const DEFAULT_FILTERS = [
   assetsObjectTypePath,
   // Must run after assetsObjectTypePath
   changeAttributesPathFilter,
+  defaultAttributesFilter,
   assetsObjectTypeOrderFilter,
   deployAttributesFilter,
   deployJsmTypesFilter,
+  hideTypesFilter, // Must run after defaultAttributesFilter and assetsObjectTypeOrderFilter, which also create types.
   // Must be last
   defaultInstancesDeployFilter,
 ]
@@ -541,7 +541,7 @@ export default class JiraAdapter implements AdapterOperations {
       return { elements: [] }
     }
 
-    const workspaceId = await getWorkspaceId(this.client)
+    const workspaceId = await getWorkspaceId(this.client, this.userConfig)
     if (workspaceId === undefined) {
       return { elements: [] }
     }

@@ -17,14 +17,14 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections, hash, strings, promises, values, retry } from '@salto-io/lowerdash'
 import {
-  getChangeData, DeployResult, Change, isPrimitiveType, InstanceElement, Value, PrimitiveTypes,
+  AdditionChange, getChangeData, DeployResult, Change, isPrimitiveType, InstanceElement, Value, PrimitiveTypes,
   ModificationChange, Field, ObjectType, isObjectType, Values, isAdditionChange, isRemovalChange,
   isModificationChange,
   TypeElement,
   SaltoElementError,
   SaltoError,
   SeverityLevel,
-  isInstanceElement, isInstanceChange, toChange, isElement,
+  isInstanceElement, isInstanceChange, toChange, isElement, getAllChangeData,
 } from '@salto-io/adapter-api'
 import { inspectValue, safeJsonStringify } from '@salto-io/adapter-utils'
 import { BatchResultInfo } from '@salto-io/jsforce-types'
@@ -36,13 +36,15 @@ import {
 import SalesforceClient from './client/client'
 import {
   ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
-  CUSTOM_OBJECT_ID_FIELD, DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY, DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY_MULTIPLIER,
-  OWNER_ID, SBAA_APPROVAL_CONDITION,
+  CUSTOM_OBJECT_ID_FIELD, FIELD_ANNOTATIONS, DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY,
+  DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY_MULTIPLIER, OWNER_ID, SBAA_APPROVAL_CONDITION,
   SBAA_APPROVAL_RULE,
-  SBAA_CONDITIONS_MET,
+  SBAA_CONDITIONS_MET, SYSTEM_FIELDS,
 } from './constants'
 import { getIdFields, transformRecordToValues } from './filters/custom_objects_instances'
-import { apiNameSync, buildSelectQueries, getFieldNamesForQuery, isInstanceOfTypeChange } from './filters/utils'
+import {
+  apiNameSync, buildSelectQueries, getFieldNamesForQuery, isHiddenField, isInstanceOfTypeChange,
+} from './filters/utils'
 import { isListCustomSettingsObject } from './filters/custom_settings_filter'
 import { SalesforceRecord } from './client/types'
 import { buildDataManagement } from './fetch_profile/data_management'
@@ -290,6 +292,53 @@ export const retryFlow = async (
   }
 }
 
+const removeFieldsWithNoPermission = async (
+  instanceChange: Change<InstanceElement>,
+  permissionAnnotation: string
+): Promise<SaltoElementError[]> => {
+  const shouldRemoveField = (type: ObjectType, fieldName: string, fieldValue: Value): boolean => {
+    const fieldDef = type.fields[fieldName]
+    if (fieldDef === undefined) {
+      return false
+    }
+    if (isHiddenField(fieldDef) || SYSTEM_FIELDS.includes(fieldName)) {
+      return false
+    }
+    if (fieldValue === undefined
+      || !fieldDef.annotations[permissionAnnotation]) {
+      log.debug(
+        'Would have removed field %s because %s=%s. Field def: %o',
+        fieldDef.elemID.getFullName(),
+        permissionAnnotation,
+        fieldDef.annotations[permissionAnnotation],
+        _.omit(fieldDef, 'parent'),
+      )
+      return true
+    }
+    return false
+  }
+  let namesOfFieldsThatChanged = Object.keys(getChangeData(instanceChange).value)
+  if (isModificationChange(instanceChange)) {
+    const [instanceBefore, instanceAfter] = getAllChangeData(instanceChange)
+    namesOfFieldsThatChanged = namesOfFieldsThatChanged
+      .filter(fieldName => instanceBefore.value[fieldName] !== instanceAfter.value[fieldName])
+  }
+  const instanceAfter = getChangeData(instanceChange)
+  const instanceType = instanceAfter.getTypeSync()
+  const fieldsToRemove = namesOfFieldsThatChanged
+    .filter(fieldName => shouldRemoveField(instanceType, fieldName, instanceAfter.value[fieldName]))
+
+  if (fieldsToRemove.length > 0) {
+    log.debug(
+      'Would have removed fields %s from %s change of %s',
+      fieldsToRemove.join(', '),
+      instanceChange.action,
+      instanceAfter.elemID.getFullName()
+    )
+  }
+  return []
+}
+
 const insertInstances: CrudFn = async (
   { typeName,
     instances,
@@ -367,11 +416,12 @@ const cloneWithoutNulls = (val: Values): Values =>
   })))
 
 const deployAddInstances = async (
-  instances: InstanceElement[],
+  changes: ReadonlyArray<AdditionChange<InstanceElement>>,
   idFields: Field[],
   client: SalesforceClient,
   groupId: string
 ): Promise<DeployResult> => {
+  const instances = changes.map(getChangeData)
   // Instances with internalIds have been already deployed previously, unless they are in the current
   // deployed group of instances This is relevant to the ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP group for example.
   const instancesReferencingToBeDeployedInstances = instances
@@ -410,19 +460,27 @@ const deployAddInstances = async (
     computeRecordSaltoIdHash,
   )
   const [existingInstances, newInstances] = _.partition(
-    instances,
-    instance =>
-      existingRecordsLookup[computeSaltoIdHash(instance.value)] !== undefined
+    changes,
+    change =>
+      existingRecordsLookup[computeSaltoIdHash(getChangeData(change).value)] !== undefined
   )
+
+  const warningsForInvalidFieldsInAddedInstances = await awu(newInstances)
+    .flatMap(change => removeFieldsWithNoPermission(change, FIELD_ANNOTATIONS.CREATABLE))
+    .toArray()
+  const warningsForInvalidFieldsInModifiedInstances = await awu(existingInstances)
+    .flatMap(change => removeFieldsWithNoPermission(change, FIELD_ANNOTATIONS.UPDATEABLE))
+    .toArray()
   const {
     successInstances: successInsertInstances,
     errorInstances: insertErrorInstances,
   } = await retryFlow(
     insertInstances,
-    { typeName, instances: newInstances, client, groupId },
+    { typeName, instances: newInstances.map(getChangeData), client, groupId },
     client.dataRetry.maxAttempts
   )
-  existingInstances.forEach(instance => {
+  existingInstances.forEach(change => {
+    const instance = getChangeData(change)
     const existingRecordLookup = existingRecordsLookup[computeSaltoIdHash(instance.value)]
     MANDATORY_FIELDS_FOR_UPDATE.forEach(mandatoryField => {
       if (instance.value[mandatoryField] === undefined && existingRecordLookup[mandatoryField] !== undefined) {
@@ -437,7 +495,7 @@ const deployAddInstances = async (
     updateInstances,
     {
       typeName: await apiName(type),
-      instances: existingInstances.concat(instancesReferencingToBeDeployedInstances),
+      instances: existingInstances.map(getChangeData).concat(instancesReferencingToBeDeployedInstances),
       client,
       groupId,
     },
@@ -446,7 +504,12 @@ const deployAddInstances = async (
   const allSuccessInstances = [...successInsertInstances, ...successUpdateInstances]
   return {
     appliedChanges: allSuccessInstances.map(instance => ({ action: 'add', data: { after: instance } })),
-    errors: [...insertErrorInstances, ...errorUpdateInstances],
+    errors: [
+      ...insertErrorInstances,
+      ...errorUpdateInstances,
+      ...warningsForInvalidFieldsInAddedInstances,
+      ...warningsForInvalidFieldsInModifiedInstances,
+    ],
   }
 }
 
@@ -467,7 +530,7 @@ const deployRemoveInstances = async (
 }
 
 const deployModifyChanges = async (
-  changes: Readonly<ModificationChange<InstanceElement>[]>,
+  changes: ReadonlyArray<ModificationChange<InstanceElement>>,
   client: SalesforceClient,
   groupId: string
 ): Promise<DeployResult> => {
@@ -479,6 +542,10 @@ const deployModifyChanges = async (
     async changeData => await apiName(changeData.before) === await apiName(changeData.after)
   )
   const afters = validData.map(data => data.after)
+
+  const invalidFieldsWarnings = await awu(changes)
+    .flatMap(change => removeFieldsWithNoPermission(change, FIELD_ANNOTATIONS.UPDATEABLE))
+    .toArray()
   const { successInstances, errorInstances } = await retryFlow(
     updateInstances,
     { typeName: instancesType, instances: afters, client, groupId },
@@ -492,7 +559,7 @@ const deployModifyChanges = async (
     message: `Failed to update as api name prev=${await apiName(data.before)} and new=${await apiName(data.after)} are different`,
     severity: 'Error' as SeverityLevel,
   })).toArray()
-  const errors: (SaltoElementError | SaltoError)[] = [...errorInstances, ...diffApiNameErrors]
+  const errors: (SaltoElementError | SaltoError)[] = [...errorInstances, ...diffApiNameErrors, ...invalidFieldsWarnings]
   return {
     appliedChanges: successData.map(data => ({ action: 'modify', data })),
     errors,
@@ -552,7 +619,7 @@ const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
       if (invalidIdFields !== undefined && invalidIdFields.length > 0) {
         return customObjectInstancesDeployError(`Failed to add instances of type ${instanceTypes[0]} due to invalid SaltoIdFields - ${invalidIdFields}`)
       }
-      return await deployAddInstances(instances, idFields, client, groupId)
+      return await deployAddInstances(changes, idFields, client, groupId)
     }
     if (changes.every(isRemovalChange)) {
       return await deployRemoveInstances(instances, client, groupId)

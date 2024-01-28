@@ -24,6 +24,7 @@ describe('netsuite config query', () => {
           { name: 'advancedpdftemplate', ids: ['ccc.*', 'ddd.*'] },
           { name: 'account', ids: ['.*'] },
           { name: 'account', ids: ['.*'] },
+          { name: 'customrecordtype', ids: ['customrecord_cseg123'] },
         ],
         fileCabinet: ['eee.*', 'fff.*'],
         customRecords: [
@@ -40,6 +41,11 @@ describe('netsuite config query', () => {
 
         it('should not match types the were not received', () => {
           expect(query.isTypeMatch('wrongType')).toBeFalsy()
+        })
+
+        it('should match customsegment when customrecordtype match', () => {
+          expect(query.isTypeMatch('customrecordtype')).toBeTruthy()
+          expect(query.isTypeMatch('customsegment')).toBeTruthy()
         })
       })
 
@@ -74,6 +80,13 @@ describe('netsuite config query', () => {
         it('should not match objects that do not match the received regexes', () => {
           expect(query.isObjectMatch({ instanceId: 'aaaaaa', type: 'notExists' })).toBeFalsy()
           expect(query.isObjectMatch({ instanceId: 'cccccc', type: 'addressForm' })).toBeFalsy()
+        })
+
+        it('should match custom segment object with its custom record type object', () => {
+          expect(query.isObjectMatch({ instanceId: 'customrecord_cseg123', type: 'customrecordtype' })).toBeTruthy()
+          expect(query.isObjectMatch({ instanceId: 'cseg123', type: 'customsegment' })).toBeTruthy()
+
+          expect(query.isObjectMatch({ instanceId: 'cseg124', type: 'customsegment' })).toBeFalsy()
         })
       })
 

@@ -33,12 +33,11 @@ import {
   OktaDuckTypeApiConfig,
   validateOktaFetchConfig,
   DEPLOY_CONFIG,
+  OktaDeployConfig,
 } from './config'
 import { createConnection } from './client/connection'
 import { OKTA } from './constants'
 import { getAdminUrl } from './client/admin'
-
-type UserDeployConfig = configUtils.UserDeployConfig
 
 const log = logger(module)
 const { validateClientConfig, validateCredentials } = clientUtils
@@ -93,7 +92,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   const deploy = configUtils.mergeWithDefaultConfig(
     DEFAULT_CONFIG[DEPLOY_CONFIG] ?? {},
     config?.value?.deploy
-  ) as UserDeployConfig
+  ) as OktaDeployConfig
 
   validateClientConfig(CLIENT_CONFIG, client)
   validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
@@ -157,6 +156,7 @@ export const adapter: Adapter = {
       deploy: adapterOperations.deploy.bind(adapterOperations),
       fetch: async args => adapterOperations.fetch(args),
       deployModifiers: adapterOperations.deployModifiers,
+      fixElements: adapterOperations.fixElements.bind(adapterOperations),
     }
   },
   validateCredentials: async config => validateCredentials(

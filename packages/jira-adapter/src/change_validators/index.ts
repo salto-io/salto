@@ -25,6 +25,7 @@ import { projectDeletionValidator } from './project_deletion'
 import { statusValidator } from './status'
 import { privateApiValidator } from './private_api'
 import { readOnlyWorkflowValidator } from './workflows/read_only_workflow'
+import { workflowStatusMappingsValidator } from './workflowsV2/status_mappings'
 import { dashboardGadgetsValidator } from './dashboard_gadgets'
 import { dashboardLayoutValidator } from './dashboard_layout'
 import { permissionTypeValidator } from './permission_type'
@@ -59,6 +60,7 @@ import { customFieldsWith10KOptionValidator } from './field_contexts/custom_fiel
 import { issueTypeHierarchyValidator } from './issue_type_hierarchy'
 import { automationProjectsValidator } from './automation/automation_projects'
 import { deleteLastQueueValidator } from './last_queue'
+import { deleteLabelAtttributeValidator } from './assets/label_attribute_removal'
 import { defaultAdditionQueueValidator } from './default_addition_queue'
 import { defaultAttributeValidator } from './assets/default_attribute'
 import { automationToAssetsValidator } from './automation/automation_to_assets'
@@ -97,6 +99,7 @@ export default (
     statusMigrationChange: statusMigrationChangeValidator,
     // Must run after statusMigrationChangeValidator
     workflowSchemeMigration: workflowSchemeMigrationValidator(client, config, paginator),
+    workflowStatusMappings: workflowStatusMappingsValidator,
     issueTypeSchemeMigration: issueTypeSchemeMigrationValidator(client),
     activeSchemeChange: activeSchemeChangeValidator(client),
     masking: maskingValidator(client),
@@ -123,6 +126,7 @@ export default (
     automationToAssets: automationToAssetsValidator(config),
     defaultAttributeValidator: defaultAttributeValidator(config, client),
     addJsmProject: addJsmProjectValidator,
+    deleteLabelAtttribute: deleteLabelAtttributeValidator(config),
   }
 
   return createChangeValidator({

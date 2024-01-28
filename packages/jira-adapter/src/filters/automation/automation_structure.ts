@@ -18,9 +18,9 @@ import Joi from 'joi'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, isInstanceElement, Values, getChangeData,
   Change, isInstanceChange } from '@salto-io/adapter-api'
-import { transformElement, applyFunctionToChangeData, resolveValues, restoreChangeElement, safeJsonStringify, restoreValues, createSchemeGuard } from '@salto-io/adapter-utils'
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import { transformElement, applyFunctionToChangeData, resolveValues, restoreChangeElement, safeJsonStringify, restoreValues, createSchemeGuard, TransformFuncSync } from '@salto-io/adapter-utils'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import { AUTOMATION_TYPE, AUTOMATION_COMPONENT_TYPE, AUTOMATION_COMPONENT_VALUE_TYPE, AUTOMATION_OPERATION } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { getLookUpName } from '../../reference_mapping'
@@ -122,171 +122,132 @@ export const PROJECT_TYPE_TO_RESOURCE_TYPE: Record<string, string> = {
 const findKeyInRecordObject = (obj: Record<string, string>, value: string): string | undefined =>
   Object.entries(obj).find(([_key, val]) => val === value)?.[0]
 
-const removeRedundantKeys = async (instance: InstanceElement): Promise<void> => {
-  instance.value = (await transformElement({
-    element: instance,
-    strict: false,
-    allowEmpty: true,
-    transformFunc: async ({ value, path }) => (
-      KEYS_TO_REMOVE.includes(path !== undefined ? path.name : '')
-        ? undefined
-        : value
-    ),
-  })).value
-}
+const removeRedundantKeys: TransformFuncSync = ({ value, path }) =>
+  (KEYS_TO_REMOVE.includes(path !== undefined ? path.name : '')
+    ? undefined
+    : value)
 
-const removeInnerIds = async (instance: InstanceElement): Promise<void> => {
-  instance.value = (await transformElement({
-    element: instance,
-    strict: false,
-    allowEmpty: true,
-    transformFunc: async ({ value, path }) => (
-      // We want to remove all the ids besides the id in the of the automation itself
-      // and ids inside component values
-      path !== undefined
-        && path.name === 'id'
-        && !path.getFullNameParts().includes('value')
-        && !path.createParentID().isTopLevel()
-        ? undefined
-        : value
-    ),
-  })).value
-}
+const removeInnerIds: TransformFuncSync = ({ value, path }) =>
+  // We want to remove all the ids besides the id in the of the automation itself
+  // and ids inside component values
+  (path !== undefined
+    && path.name === 'id'
+    && !path.getFullNameParts().includes('value')
+    && !path.createParentID().isTopLevel()
+    ? undefined
+    : value)
 
-const replaceStringValuesFieldName = async (instance: InstanceElement): Promise<void> => {
-  instance.value = (await transformElement({
-    element: instance,
-    strict: false,
-    allowEmpty: true,
-    transformFunc: async ({ value, field }) => {
-      const typeName = (await field?.getType())?.elemID.typeName
-      if (
-        _.isPlainObject(value)
-        && (typeName === AUTOMATION_COMPONENT_TYPE || typeName === AUTOMATION_OPERATION)
-        && _.isString(value.value)
-      ) {
-        value.rawValue = value.value
-        delete value.value
-      }
-      return value
-    },
-  })).value
+const replaceStringValuesFieldName: TransformFuncSync = ({ value, field }) => {
+  const typeName = field?.getTypeSync()?.elemID.typeName
+  if (
+    _.isPlainObject(value)
+    && (typeName === AUTOMATION_COMPONENT_TYPE || typeName === AUTOMATION_OPERATION)
+    && _.isString(value.value)
+  ) {
+    value.rawValue = value.value
+    delete value.value
+  }
+  return value
 }
 
 // linkType field is a string containing a reference to IssueLinkType and the link direction
 // for example: linkType = 'inward:10025'
 // we separate the field in order to resolve the reference
-const separateLinkTypeField = async (instance: InstanceElement): Promise<void> => {
-  instance.value = (await transformElement({
-    element: instance,
-    strict: false,
-    allowEmpty: true,
-    transformFunc: async ({ value, path }) => {
-      if (
-        _.isPlainObject(value)
-        && path?.name === 'value'
-        && _.isString(value.linkType)
-      ) {
-        const [linkTypeDirection, linkTypeId] = _.split(value.linkType, ':')
-        if (linkTypeDirection !== undefined && linkTypeId !== undefined) {
-          value.linkType = linkTypeId
-          value.linkTypeDirection = linkTypeDirection
-        }
-      }
-      return value
-    },
-  })).value
+const separateLinkTypeField: TransformFuncSync = ({ value, path }) => {
+  if (
+    _.isPlainObject(value)
+    && path?.name === 'value'
+    && _.isString(value.linkType)
+  ) {
+    const [linkTypeDirection, linkTypeId] = _.split(value.linkType, ':')
+    if (linkTypeDirection !== undefined && linkTypeId !== undefined) {
+      value.linkType = linkTypeId
+      value.linkTypeDirection = linkTypeDirection
+    }
+  }
+  return value
 }
 
-const convertToCompareFieldValue = async (instance: InstanceElement): Promise<void> => {
-  instance.value = (await transformElement({
-    element: instance,
-    strict: false,
-    allowEmpty: true,
-    transformFunc: async ({ value, path, field }) => {
-      if (
-        path?.name === 'value'
-        && (await field?.getType())?.elemID.typeName === AUTOMATION_COMPONENT_VALUE_TYPE
-        && _.isPlainObject(value?.compareValue)
-      ) {
-        // compareValue can be either an object or a primitive type
-        // we change the field name to compareFieldValue to distinguish between the cases
-        value.compareFieldValue = value.compareValue
-        delete value.compareValue
-        if (value.compareFieldValue.multiValue) {
-          // compareFieldValue.value contains multiple references
-          try {
-            value.compareFieldValue.values = JSON.parse(value.compareFieldValue.value)
-            delete value.compareFieldValue.value
-          } catch (err) {
-            log.error(`Failed to parse JSON string in path: ${path.createNestedID('compareFieldValue', 'value').getFullName()}`)
-          }
-        }
+const convertToCompareFieldValue: TransformFuncSync = ({ value, path, field }) => {
+  if (
+    path?.name === 'value'
+    && field?.getTypeSync()?.elemID.typeName === AUTOMATION_COMPONENT_VALUE_TYPE
+    && _.isPlainObject(value?.compareValue)
+  ) {
+    // compareValue can be either an object or a primitive type
+    // we change the field name to compareFieldValue to distinguish between the cases
+    value.compareFieldValue = value.compareValue
+    delete value.compareValue
+    if (value.compareFieldValue.multiValue) {
+      // compareFieldValue.value contains multiple references
+      try {
+        value.compareFieldValue.values = JSON.parse(value.compareFieldValue.value)
+        delete value.compareFieldValue.value
+      } catch (err) {
+        log.error(`Failed to parse JSON string in path: ${path.createNestedID('compareFieldValue', 'value').getFullName()}`)
       }
-      return value
-    },
-  })).value
+    }
+  }
+  return value
 }
 
-const consolidateLinkTypeFields = async (instance: InstanceElement): Promise<void> => {
-  instance.value = (await transformElement({
-    element: instance,
-    strict: false,
-    allowEmpty: true,
-    transformFunc: async ({ value, path }) => {
-      if (
-        path?.name === 'value'
-        && isLinkTypeObject(value)
-      ) {
-        value.linkType = value.linkTypeDirection.concat(':', value.linkType)
-        return _.omit(value, 'linkTypeDirection')
-      }
-      return value
-    },
-  })).value
+const consolidateLinkTypeFields: TransformFuncSync = ({ value, path }) => {
+  if (
+    path?.name === 'value'
+    && isLinkTypeObject(value)
+  ) {
+    value.linkType = value.linkTypeDirection.concat(':', value.linkType)
+    return _.omit(value, 'linkTypeDirection')
+  }
+  return value
 }
 
-const changeRawValueFieldsToValue = async (instance: InstanceElement): Promise<void> => {
-  instance.value = (await transformElement({
-    element: instance,
-    strict: false,
-    allowEmpty: true,
-    transformFunc: async ({ value, field }) => {
-      const typeName = (await field?.getType())?.elemID.typeName
-      if (
-        isRawValueObject(value)
-        && (typeName === AUTOMATION_COMPONENT_TYPE || typeName === AUTOMATION_OPERATION)
-      ) {
-        const { rawValue } = value
-        const deployableObject: DeployableValueObject = _.omit({ ...value, value: rawValue }, 'rawValue')
-        return deployableObject
-      }
-      return value
-    },
-  })).value
+const changeRawValueFieldsToValue: TransformFuncSync = ({ value, field }) => {
+  const typeName = field?.getTypeSync()?.elemID.typeName
+  if (
+    isRawValueObject(value)
+    && (typeName === AUTOMATION_COMPONENT_TYPE || typeName === AUTOMATION_OPERATION)
+  ) {
+    const { rawValue } = value
+    const deployableObject: DeployableValueObject = _.omit({ ...value, value: rawValue }, 'rawValue')
+    return deployableObject
+  }
+  return value
 }
 
-const revertCompareFieldValueStructure = async (instance: InstanceElement): Promise<void> => {
-  instance.value = (await transformElement({
-    element: instance,
-    strict: false,
-    allowEmpty: true,
-    transformFunc: async ({ value, field }) => {
-      if (
-        isCompareFieldValueObject(value)
-        && (await field?.getType())?.elemID.typeName === AUTOMATION_COMPONENT_VALUE_TYPE
-      ) {
-        const { compareFieldValue } = value
-        if (compareFieldValue.multiValue) {
-          compareFieldValue.value = safeJsonStringify(compareFieldValue.values)
-          delete compareFieldValue.values
-        }
-        const deployableObject: CompareValueObject = _.omit({ ...value, compareValue: compareFieldValue }, 'compareFieldValue')
-        return deployableObject
-      }
-      return value
-    },
-  })).value
+
+// For components with type = "jira.issue.hasAttachments"
+// Value is a boolean, but component.value is an object in the objectType
+// So we transform the value to hasAttachmentsValue and vice versa
+const createTransformHasAttachmentValueFunc = (reverse?: boolean): TransformFuncSync => ({ value }) => {
+  if (value?.type === 'jira.issue.hasAttachments'
+    && value?.component
+    && _.isBoolean(reverse ? value.hasAttachmentsValue : value.value)) {
+    if (reverse) {
+      value.value = value.hasAttachmentsValue
+      delete value.hasAttachmentsValue
+    } else {
+      value.hasAttachmentsValue = value.value
+      delete value.value
+    }
+  }
+  return value
+}
+
+const revertCompareFieldValueStructure: TransformFuncSync = ({ value, field }) => {
+  if (
+    isCompareFieldValueObject(value)
+    && field?.getTypeSync()?.elemID.typeName === AUTOMATION_COMPONENT_VALUE_TYPE
+  ) {
+    const { compareFieldValue } = value
+    if (compareFieldValue.multiValue) {
+      compareFieldValue.value = safeJsonStringify(compareFieldValue.values)
+      delete compareFieldValue.values
+    }
+    const deployableObject: CompareValueObject = _.omit({ ...value, compareValue: compareFieldValue }, 'compareFieldValue')
+    return deployableObject
+  }
+  return value
 }
 
 const getScope = (resource: string): { projectId?: string; projectTypeKey?: string } | 'GLOBAL' | undefined => {
@@ -341,6 +302,31 @@ const removeProjectsForGlobalDCAutomation = (instance: InstanceElement): void =>
   }
 }
 
+// When component type is "jira.issue.delete.link"
+// linkTypes field is returned from the service as a list of objects,
+// Since linkTypes is a string array in component objectType, we change the field name to deleteLinkTypes
+const createTransformDeleteLinkTypesFunc = (reverse?: boolean): TransformFuncSync => ({ value }) => {
+  if (value?.type === 'jira.issue.delete.link' && value?.component) {
+    if (reverse) {
+      value.value.linkTypes = value.value?.deleteLinkTypes
+      delete value.value.deleteLinkTypes
+    } else {
+      value.value.deleteLinkTypes = value.value?.linkTypes
+      delete value.value.linkTypes
+    }
+  }
+  return value
+}
+
+const createAutomationTransformFunc = (transformFuncs: TransformFuncSync[]):
+TransformFuncSync => (({ value, ...args }) => {
+  const newValue = transformFuncs.reduce((currentVal, func) => {
+    const updatedValue = func({ value: currentVal, ...args })
+    return updatedValue
+  }, value)
+  return newValue
+})
+
 const filter: FilterCreator = ({ client }) => {
   let originalAutomationChanges: Record<string, Change<InstanceElement>>
   return {
@@ -350,21 +336,27 @@ const filter: FilterCreator = ({ client }) => {
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
         .forEach(async instance => {
-          instance.value = await elementUtils.removeNullValues(
-            instance.value,
-            await instance.getType(),
-            true,
-          )
           if (client.isDataCenter) {
             removeProjectsForGlobalDCAutomation(instance)
           } else {
             convertRuleScopeToProjects(instance)
           }
-          await removeRedundantKeys(instance)
-          await removeInnerIds(instance)
-          await replaceStringValuesFieldName(instance)
-          await separateLinkTypeField(instance)
-          await convertToCompareFieldValue(instance)
+          const automationTransformFunc = createAutomationTransformFunc([
+            elementUtils.removeNullValuesTransformFunc,
+            removeRedundantKeys,
+            removeInnerIds,
+            separateLinkTypeField,
+            replaceStringValuesFieldName,
+            convertToCompareFieldValue,
+            createTransformDeleteLinkTypesFunc(),
+            createTransformHasAttachmentValueFunc(),
+          ])
+          instance.value = (await transformElement({
+            element: instance,
+            strict: false,
+            allowEmpty: true,
+            transformFunc: automationTransformFunc,
+          })).value
 
           instance.value.projects = instance.value.projects
             ?.map(
@@ -389,10 +381,19 @@ const filter: FilterCreator = ({ client }) => {
             change,
             async instance => {
               const resolvedInstance = await resolveValues(instance, getLookUpName, undefined, true)
-              await consolidateLinkTypeFields(resolvedInstance)
-              await changeRawValueFieldsToValue(resolvedInstance)
-              await revertCompareFieldValueStructure(resolvedInstance)
-              instance.value = resolvedInstance.value
+              const automationTransformFunc = createAutomationTransformFunc([
+                consolidateLinkTypeFields,
+                changeRawValueFieldsToValue,
+                revertCompareFieldValueStructure,
+                createTransformDeleteLinkTypesFunc(true),
+                createTransformHasAttachmentValueFunc(true),
+              ])
+              instance.value = (await transformElement({
+                element: resolvedInstance,
+                strict: false,
+                allowEmpty: true,
+                transformFunc: automationTransformFunc,
+              })).value
               return instance
             }
           ))
@@ -406,9 +407,19 @@ const filter: FilterCreator = ({ client }) => {
           await applyFunctionToChangeData<Change<InstanceElement>>(
             change,
             async instance => {
-              await replaceStringValuesFieldName(instance)
-              await separateLinkTypeField(instance)
-              await convertToCompareFieldValue(instance)
+              const automationTransformFunc = createAutomationTransformFunc([
+                replaceStringValuesFieldName,
+                separateLinkTypeField,
+                convertToCompareFieldValue,
+                createTransformDeleteLinkTypesFunc(),
+                createTransformHasAttachmentValueFunc(),
+              ])
+              instance.value = (await transformElement({
+                element: instance,
+                strict: false,
+                allowEmpty: true,
+                transformFunc: automationTransformFunc,
+              })).value
               return instance
             }
           )

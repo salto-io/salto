@@ -216,6 +216,7 @@ export type ChangeValidatorName = (
   | 'sameIssueTypeNameChange'
   | 'statusMigrationChange'
   | 'workflowSchemeMigration'
+  | 'workflowStatusMappings'
   | 'issueTypeSchemeMigration'
   | 'activeSchemeChange'
   | 'masking'
@@ -242,6 +243,7 @@ export type ChangeValidatorName = (
   | 'boardColumnConfig'
   | 'automationToAssets'
   | 'addJsmProject'
+  | 'deleteLabelAtttribute'
   )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -271,6 +273,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     sameIssueTypeNameChange: { refType: BuiltinTypes.BOOLEAN },
     statusMigrationChange: { refType: BuiltinTypes.BOOLEAN },
     workflowSchemeMigration: { refType: BuiltinTypes.BOOLEAN },
+    workflowStatusMappings: { refType: BuiltinTypes.BOOLEAN },
     issueTypeSchemeMigration: { refType: BuiltinTypes.BOOLEAN },
     activeSchemeChange: { refType: BuiltinTypes.BOOLEAN },
     masking: { refType: BuiltinTypes.BOOLEAN },
@@ -296,6 +299,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     defaultAttributeValidator: { refType: BuiltinTypes.BOOLEAN },
     automationToAssets: { refType: BuiltinTypes.BOOLEAN },
     addJsmProject: { refType: BuiltinTypes.BOOLEAN },
+    deleteLabelAtttribute: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

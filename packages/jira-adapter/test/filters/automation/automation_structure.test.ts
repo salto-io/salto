@@ -123,6 +123,27 @@ describe('automationStructureFilter', () => {
             value: '',
             updated: 1111,
           },
+          {
+            id: '7',
+            component: 'ACTION',
+            type: 'jira.issue.delete.link',
+            value: {
+              linkTypes: [
+                {
+                  id: '10003',
+                  direction: 'inward',
+                  name: 'Jira is fun',
+                },
+              ],
+            },
+          },
+          {
+            id: '8',
+            component: 'CONDITION',
+            type: 'jira.issue.hasAttachments',
+            value: true,
+            updated: 1111,
+          },
         ],
         projects: [
           {
@@ -188,6 +209,14 @@ describe('automationStructureFilter', () => {
     instanceAfterFetch.value.components[6].rawValue = instanceAfterFetch.value.components[6].value
     delete instanceAfterFetch.value.components[6].value
 
+    instanceAfterFetch.value.components[7].value.deleteLinkTypes = instanceAfterFetch.value
+      .components[7].value.linkTypes
+    delete instanceAfterFetch.value.components[7].value.linkTypes
+
+    instanceAfterFetch.value.components[8].hasAttachmentsValue = instanceAfterFetch.value
+      .components[8].value
+    delete instanceAfterFetch.value.components[8].value
+
     changedInstance = instanceAfterFetch.clone()
     changedInstance.value.components[0].component = 'BRANCH'
   })
@@ -234,7 +263,7 @@ describe('automationStructureFilter', () => {
       expect(instance.value.components[6].rawValue).toEqual('')
     })
 
-    it('should should split linkType field', async () => {
+    it('should split linkType field', async () => {
       await filter.onFetch([instance])
       expect(instance.value.components[2].value.linkType).toEqual('10003')
       expect(instance.value.components[2].value.linkTypeDirection).toEqual('inward')
@@ -252,6 +281,23 @@ describe('automationStructureFilter', () => {
       expect(instance.value.components[4].value.compareFieldValue.value).toEqual('Done')
     })
 
+    it('should rename linkTypes to deleteLinkTypes if in delete component', async () => {
+      await filter.onFetch([instance])
+      expect(instance.value.components[7].value.deleteLinkTypes).toEqual([
+        {
+          id: '10003',
+          direction: 'inward',
+          name: 'Jira is fun',
+        },
+      ])
+      expect(instance.value.components[7].value.linkTypes).toBeUndefined()
+    })
+
+    it('should transform value to hasAttachmentsValue for components with type "jira.issue.hasAttachments"', async () => {
+      await filter.onFetch([instance])
+      expect(instance.value.components[8].value).toBeUndefined()
+      expect(instance.value.components[8].hasAttachmentsValue).toBeTrue()
+    })
     it('should not throw if wrong structure', async () => {
       const exceptionInstance = new InstanceElement(
         'instance',
@@ -354,7 +400,7 @@ describe('automationStructureFilter', () => {
   })
 
   describe('preDeploy', () => {
-    it('should combine linkType fields and change rawValue to value', async () => {
+    it('should combine linkType fields, change rawValue to value and rename deleteLinkTypes to linkTypes', async () => {
       const changes = [toChange({ before: instanceAfterFetch, after: changedInstance })]
       await filter.preDeploy(changes)
       const [before, after] = getAllChangeData(changes[0])
@@ -370,8 +416,18 @@ describe('automationStructureFilter', () => {
       expect(after.value.components[5].value.operations[1].rawValue).toBeUndefined()
       expect(after.value.components[6].value).toEqual('')
       expect(after.value.components[6].rawValue).toBeUndefined()
+      expect(after.value.components[7].value.deleteLinkTypes).toBeUndefined()
+      expect(after.value.components[7].value.linkTypes).toEqual([
+        {
+          id: '10003',
+          direction: 'inward',
+          name: 'Jira is fun',
+        },
+      ])
+      expect(after.value.components[8].value).toBeTrue()
+      expect(after.value.components[8].hasAttachmentsValue).toBeUndefined()
     })
-    it('should revert compare value structure to be depolyable', async () => {
+    it('should revert compare value structure to be deployable', async () => {
       const changes = [toChange({ before: instanceAfterFetch, after: changedInstance })]
       await filter.preDeploy(changes)
       const [before, after] = getAllChangeData(changes[0])
@@ -386,7 +442,7 @@ describe('automationStructureFilter', () => {
     })
   })
 
-  describe('onDeplopy', () => {
+  describe('onDeploy', () => {
     it('should split linkType fields and change value to rawValue', async () => {
       const changes = [toChange({ before: instanceAfterFetch, after: changedInstance })]
       await filter.preDeploy(changes)
@@ -402,6 +458,16 @@ describe('automationStructureFilter', () => {
       expect(after.value.components[2].value.linkTypeDirection).toEqual('inward')
       expect(after.value.components[5].value.operations[1].value).toBeUndefined()
       expect(after.value.components[5].value.operations[1].rawValue).toEqual('rawVal')
+      expect(after.value.components[7].value.deleteLinkTypes).toEqual([
+        {
+          id: '10003',
+          direction: 'inward',
+          name: 'Jira is fun',
+        },
+      ])
+      expect(after.value.components[7].value.linkTypes).toBeUndefined()
+      expect(after.value.components[8].value).toBeUndefined()
+      expect(after.value.components[8].hasAttachmentsValue).toBeTrue()
     })
     it('should change back compareFieldValue', async () => {
       const changes = [toChange({ before: instanceAfterFetch, after: changedInstance })]

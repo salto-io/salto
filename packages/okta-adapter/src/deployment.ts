@@ -165,6 +165,7 @@ export const defaultDeployChange = async (
       endpointDetails: deployRequests,
       fieldsToIgnore,
       queryParams,
+      allowedStatusCodesOnRemoval: [404],
     })
 
     if (isAdditionChange(change)) {

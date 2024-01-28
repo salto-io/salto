@@ -33,7 +33,7 @@ import mockAdapter from './adapter'
 import { createValueSetEntry, createCustomObjectType, nullProgressReporter } from './utils'
 import { createElement, removeElement } from '../e2e_test/utils'
 import { mockTypes, mockDefaultValues } from './mock_elements'
-import { mockDeployResult, mockRunTestFailure, mockDeployResultComplete } from './connection'
+import { mockDeployResult, mockRunTestFailure, mockDeployResultComplete, mockRetrieveResult } from './connection'
 import { MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE, MappableSalesforceProblem } from '../src/client/user_facing_errors'
 import { GLOBAL_VALUE_SET } from '../src/filters/global_value_sets'
 import { apiNameSync, metadataTypeSync } from '../src/filters/utils'
@@ -167,7 +167,13 @@ describe('SalesforceAdapter CRUD', () => {
             { [CORE_ANNOTATIONS.PARENT]:
               new ReferenceExpression(mockTypes.TestCustomObject__c.elemID, mockTypes.TestCustomObject__c) }
           )
-          workflowFieldUpdate = createInstanceElement(mockDefaultValues.WorkflowFieldUpdate, mockTypes.Workflow)
+          workflowFieldUpdate = createInstanceElement(
+            {
+              ...mockDefaultValues.WorkflowFieldUpdate,
+              [INSTANCE_FULL_NAME_FIELD]: 'TestCustomObject__c.TestWorkflowFieldUpdate',
+            },
+            mockTypes.WorkflowFieldUpdate
+          )
 
           connection.metadata.deploy.mockReturnValueOnce(mockDeployResult({
             success: false,
@@ -189,8 +195,8 @@ describe('SalesforceAdapter CRUD', () => {
               // WorkflowFieldUpdate failure
               {
                 componentType: 'WorkflowFieldUpdate',
-                fullName: 'ChangeRequest.Update_Status_to_Authorised',
-                problem: 'Some workflow task error',
+                fullName: 'TestCustomObject__c.TestWorkflowFieldUpdate',
+                problem: 'Some workflow field update error',
               },
             ],
           }))
@@ -225,11 +231,11 @@ describe('SalesforceAdapter CRUD', () => {
 
           expect(result.errors[1].severity).toEqual('Error' as SeverityLevel)
 
-          // WorkflowTask will not have an ElemID because on failure
-          //  we only return the sub-instance and not the wrapped instance
-          expect(result.errors[2].message).toContain('Some workflow task error')
-          expect(isSaltoElementError(result.errors[2])).toBeFalse()
-          expect(result.errors[2].severity).toEqual('Error' as SeverityLevel)
+          expect(result.errors[2]).toEqual({
+            message: expect.stringContaining('Some workflow field update error'),
+            severity: 'Error',
+            elemID: workflowFieldUpdate.elemID,
+          })
         })
       })
 
@@ -1149,6 +1155,7 @@ describe('SalesforceAdapter CRUD', () => {
               fullName: mockDefaultValues.Profile.fullName,
               componentType: constants.PROFILE_METADATA_TYPE,
             }],
+            retrieveResult: await mockRetrieveResult({}),
           }))
           result = await adapter.deploy({
             changeGroup: {
@@ -1178,9 +1185,9 @@ describe('SalesforceAdapter CRUD', () => {
         it('should return correct artifacts', () => {
           const groups = result.extraProperties?.groups ?? []
           expect(groups).toHaveLength(1)
-          const artifacts = groups[0].artifacts ?? []
-          expect(artifacts).toHaveLength(1)
-          expect(artifacts[0]).toSatisfy(artifact => artifact.name === SalesforceArtifacts.DeployPackageXml)
+          const artifactNames = makeArray(groups[0].artifacts).map(artifact => artifact.name)
+          expect(artifactNames)
+            .toIncludeSameMembers([SalesforceArtifacts.DeployPackageXml, SalesforceArtifacts.PostDeployRetrieveZip])
         })
       })
 

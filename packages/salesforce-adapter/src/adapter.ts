@@ -117,6 +117,7 @@ import {
   CUSTOM_OBJECT,
   FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
+  LAST_MODIFIED_DATE,
   OWNER_ID,
   PROFILE_METADATA_TYPE,
 } from './constants'
@@ -306,7 +307,7 @@ export const SYSTEM_FIELDS = [
   'Id',
   'IsDeleted',
   'LastActivityDate',
-  'LastModifiedDate',
+  LAST_MODIFIED_DATE,
   'LastModifiedById',
   'LastReferencedDate',
   'LastViewedDate',

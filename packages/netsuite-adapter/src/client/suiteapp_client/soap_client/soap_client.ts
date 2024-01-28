@@ -31,7 +31,7 @@ import { CustomRecordResponse, DeployListResults, GetAllResponse, GetResult, Get
 import { DEPLOY_LIST_SCHEMA, GET_ALL_RESPONSE_SCHEMA, GET_RESULTS_SCHEMA, GET_SELECT_VALUE_SCHEMA, SEARCH_RESPONSE_SCHEMA } from './schemas'
 import { InvalidSuiteAppCredentialsError } from '../../types'
 import { isCustomRecordType } from '../../../types'
-import { INTERNAL_ID_TO_TYPES, isItemType, ITEM_TYPE_ID, ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from '../../../data_elements/types'
+import { isItemType, ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from '../../../data_elements/types'
 import { XSI_TYPE } from '../../constants'
 import { InstanceLimiterFunc } from '../../../config/types'
 import { toError } from '../../utils'
@@ -44,7 +44,6 @@ export const { createClientAsync } = elementUtils.soap
 
 const log = logger(module)
 
-export const ITEMS_TYPES = INTERNAL_ID_TO_TYPES[ITEM_TYPE_ID]
 export const WSDL_PATH = `${__dirname}/client/suiteapp_client/soap_client/wsdl/netsuite_1.wsdl`
 const REQUEST_MAX_RETRIES = 5
 const REQUEST_RETRY_DELAY = 5000
@@ -418,18 +417,25 @@ export default class SoapClient {
 
     const [itemTypes, otherTypes] = _.partition(types, isItemType)
 
-    const typesToSearch: SoapSearchType[] = otherTypes
-      .map(type => ({ type }))
+    const typesToSearch: SoapSearchType[] = otherTypes.map(type => ({ type }))
+
     if (itemTypes.length !== 0) {
-      typesToSearch.push({ type: 'Item', subtypes: _.uniq(itemTypes.map(type => ITEM_TYPE_TO_SEARCH_STRING[type])) })
+      typesToSearch.push({
+        type: 'Item',
+        originalTypes: itemTypes,
+        subtypes: _.uniq(itemTypes.map(type => ITEM_TYPE_TO_SEARCH_STRING[type])),
+      })
     }
 
-    const responses = await Promise.all(typesToSearch.map(async ({ type, subtypes }) => {
+    const responses = await Promise.all(typesToSearch.map(async params => {
+      const { type, subtypes, originalTypes } = params
       const namespace = await this.getTypeNamespace(SoapClient.getSearchType(type))
 
       if (namespace !== undefined) {
         const response = await this.search(type, namespace, subtypes)
-        return response.excludedFromSearch ? { largeTypesError: subtypes ?? [type] } : { records: response.records }
+        return response.excludedFromSearch
+          ? { largeTypesError: originalTypes ?? [type] }
+          : { records: response.records }
       }
       log.debug(`type ${type} does not support 'search' operation. Fallback to 'getAll' request`)
       // This type of query cannot be limited, so there are no cases of largeTypesError

@@ -15,7 +15,7 @@
 */
 import ZendeskClient from '../../../../src/client/client'
 import { pollJobStatus } from '../../../../src/filters/guide_themes/api/pollJobStatus'
-import { jobResponse } from '../utils'
+import { downloadJobResponse } from '../helpers'
 
 describe('pollJobStatus', () => {
   let client: ZendeskClient
@@ -30,13 +30,13 @@ describe('pollJobStatus', () => {
 
   describe('successful response', () => {
     it('returns true on a correct response structure', async () => {
-      mockGet.mockResolvedValue({ status: 202, data: jobResponse('completed') })
+      mockGet.mockResolvedValue({ status: 202, data: downloadJobResponse('completed') })
       expect(await pollJobStatus('11', client, 200, 1)).toBeTruthy()
     })
 
     it('returns true and retries on pending job', async () => {
-      mockGet.mockResolvedValueOnce({ status: 202, data: jobResponse('pending') })
-      mockGet.mockResolvedValueOnce({ status: 202, data: jobResponse('completed') })
+      mockGet.mockResolvedValueOnce({ status: 202, data: downloadJobResponse('pending') })
+      mockGet.mockResolvedValueOnce({ status: 202, data: downloadJobResponse('completed') })
       expect(await pollJobStatus('11', client, 200, 2)).toBeTruthy()
       expect(mockGet).toHaveBeenCalledTimes(2)
     })
@@ -69,7 +69,7 @@ describe('pollJobStatus', () => {
 
   describe('response failure', () => {
     it('throws on wrong status code after retries', async () => {
-      mockGet.mockResolvedValue({ status: 400, data: jobResponse('pending') })
+      mockGet.mockResolvedValue({ status: 400, data: downloadJobResponse('pending') })
       expect(await pollJobStatus('11', client, 200, 1)).toEqual({
         success: false, errors: ['Error while waiting: max retries 1 exceeded'],
       })

@@ -54,7 +54,10 @@ const QUEUES_CATAGORIES_RESPONSE_SCHEME = Joi.object({
 
 const isQueuesCatagoriesResponse = createSchemeGuard<QueuesCatagoriesResponse>(QUEUES_CATAGORIES_RESPONSE_SCHEME)
 
-const replaceTypeWithIssueType = (input: string): string => input.replace(/\btype\b/g, 'issuetype')
+const fixJql = (input: string): string => {
+  const firstProjectKeyPattern = /^project\s*=\s*\w+\s*AND\s*/i
+  return input.replace(firstProjectKeyPattern, '').replace(/\btype\b/g, 'issuetype')
+}
 
 const addQueueStarAndPriority = async (
   projectKeysToQueues: Record<string, InstanceElement[]>,
@@ -93,7 +96,7 @@ const filter: FilterCreator = ({ config, client }) => ({
         instance.value.columns = instance.value.fields
         delete instance.value.fields
         if (instance.value.jql) {
-          instance.value.jql = replaceTypeWithIssueType(instance.value.jql)
+          instance.value.jql = fixJql(instance.value.jql)
         }
       })
 

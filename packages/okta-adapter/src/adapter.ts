@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, getChangeData, ProgressReporter, isInstanceElement } from '@salto-io/adapter-api'
-import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, getChangeData, ProgressReporter, isInstanceElement, FixElementsFunc } from '@salto-io/adapter-api'
+import { config as configUtils, elements as elementUtils, client as clientUtils, combineElementFixers } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, objects } from '@salto-io/lowerdash'
@@ -37,7 +37,6 @@ import userTypeFilter from './filters/user_type'
 import userSchemaFilter from './filters/user_schema'
 import oktaExpressionLanguageFilter from './filters/expression_language'
 import defaultPolicyRuleDeployment from './filters/default_rule_deployment'
-import policyRuleRemoval from './filters/policy_rule_removal'
 import authorizationRuleFilter from './filters/authorization_server_rule'
 import privateApiDeployFilter from './filters/private_api_deploy'
 import profileEnrollmentAttributesFilter from './filters/profile_enrollment_attributes'
@@ -59,6 +58,7 @@ import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } fr
 import { getLookUpName } from './reference_mapping'
 import { User, getUsers, getUsersFromInstances } from './user_utils'
 import { isClassicEngineOrg } from './utils'
+import { createFixElementFunctions } from './fix_elements'
 
 const { awu } = collections.asynciterable
 
@@ -87,7 +87,6 @@ export const DEFAULT_FILTERS = [
   profileEnrollmentAttributesFilter,
   addImportantValues,
   defaultPolicyRuleDeployment,
-  policyRuleRemoval,
   schemaFieldsRemovalFilter,
   appLogoFilter,
   brandThemeFilesFilter,
@@ -134,6 +133,7 @@ export default class OktaAdapter implements AdapterOperations {
   private fetchQuery: elementUtils.query.ElementQuery
   private isOAuthLogin: boolean
   private adminClient?: OktaClient
+  private fixElementsFunc: FixElementsFunc
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -181,6 +181,7 @@ export default class OktaAdapter implements AdapterOperations {
         objects.concatObjects
       )
     )
+    this.fixElementsFunc = combineElementFixers(createFixElementFunctions({ client, config }))
   }
 
   @logDuration('generating types from swagger')
@@ -381,4 +382,6 @@ export default class OktaAdapter implements AdapterOperations {
       dependencyChanger,
     }
   }
+
+  fixElements: FixElementsFunc = elements => this.fixElementsFunc(elements)
 }

@@ -15,15 +15,26 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { CORE_ANNOTATIONS, Change, Element, InstanceElement, ReferenceExpression, getChangeData, isAdditionChange, isInstanceChange, isInstanceElement, isRemovalChange } from '@salto-io/adapter-api'
+import {
+  CORE_ANNOTATIONS,
+  Change,
+  Element,
+  InstanceElement,
+  ReferenceExpression,
+  getChangeData,
+  isInstanceChange,
+  isInstanceElement,
+  isRemovalChange,
+  isAdditionChange,
+} from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { getParent, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { ISSUE_LAYOUT_TYPE, PROJECT_TYPE } from '../../constants'
 import { FilterCreator } from '../../filter'
-import { createLayoutType, layoutConfigItem } from './layout_types'
+import { createLayoutType, LayoutConfigItem } from './layout_types'
 import { addAnnotationRecursively, setTypeDeploymentAnnotations } from '../../utils'
-import { getLayout, getLayoutResponse, isIssueLayoutResponse } from './layout_service_operations'
+import { generateLayoutId, getLayout, getLayoutResponse, isIssueLayoutResponse } from './layout_service_operations'
 import { deployChanges } from '../../deployment/standard_deployment'
 import JiraClient from '../../client/client'
 
@@ -90,7 +101,7 @@ const deployLayoutChange = async (
     // TODO SALTO-5205 - suppress removals of IssueLayout when associated Screen is deleted from IssueTypeScreenScheme
     throw new Error('Could not remove IssueLayout')
   }
-  const items = layout.value.issueLayoutConfig?.items.map((item: layoutConfigItem) => {
+  const items = layout.value.issueLayoutConfig?.items.map((item: LayoutConfigItem) => {
     if (isResolvedReferenceExpression(item.key)) {
       const key = item.key.value.value.id
       return {
@@ -119,18 +130,20 @@ const deployLayoutChange = async (
         items,
       },
     }
-    if (isAdditionChange(change)) {
-      const variables = {
-        projectId: parentProject.value.id,
-        extraDefinerId: layout.value.extraDefinerId.value.value.id,
-      }
-      const response = await getLayoutResponse({ variables, client, typeName })
-      if (!isIssueLayoutResponse(response.data)) {
-        throw Error('Failed to deploy issue layout changes due to bad response from jira service')
-      }
-      layout.value.id = response.data.issueLayoutConfiguration.issueLayoutResult.id
+    const variables = {
+      projectId: parentProject.value.id,
+      extraDefinerId: layout.value.extraDefinerId.value.value.id,
     }
-    const url = `/rest/internal/1.0/issueLayouts/${layout.value.id}`
+    if (isAdditionChange(change)) {
+      layout.value.id = generateLayoutId(variables)
+    }
+    const response = await getLayoutResponse({ variables, client, typeName })
+    if (!isIssueLayoutResponse(response.data)) {
+      log.error('received invalid response from jira', response)
+      throw Error('Failed to deploy issue layout changes due to bad response from jira service')
+    }
+    const issueLayoutId = response.data.issueLayoutConfiguration.issueLayoutResult.id
+    const url = `/rest/internal/1.0/issueLayouts/${issueLayoutId}`
     await client.put({ url, data })
     return
   }

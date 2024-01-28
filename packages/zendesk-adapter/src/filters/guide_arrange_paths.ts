@@ -42,7 +42,11 @@ import {
   ARTICLE_ORDER_TYPE_NAME,
   CATEGORY_ORDER_TYPE_NAME,
   SECTION_ORDER_TYPE_NAME,
-  ARTICLE_ATTACHMENT_TYPE_NAME, TRANSLATION_TYPE_NAMES, ARTICLE_ATTACHMENTS_FIELD, GUIDE_THEME_TYPE_NAME,
+  ARTICLE_ATTACHMENT_TYPE_NAME,
+  TRANSLATION_TYPE_NAMES,
+  ARTICLE_ATTACHMENTS_FIELD,
+  GUIDE_THEME_TYPE_NAME,
+  THEME_SETTINGS_TYPE_NAME,
 } from '../constants'
 
 const { RECORDS_PATH } = elementsUtils
@@ -59,6 +63,7 @@ const BRAND_SECOND_LEVEL = [
   GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
   CATEGORY_ORDER_TYPE_NAME,
   GUIDE_THEME_TYPE_NAME,
+  THEME_SETTINGS_TYPE_NAME,
 ]
 const PARENTS = [CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ARTICLE_TYPE_NAME]
 
@@ -90,6 +95,7 @@ export const GUIDE_ELEMENT_DIRECTORY: Record<string, string> = {
   [ARTICLE_ORDER_TYPE_NAME]: 'article_order',
   [ARTICLE_ATTACHMENT_TYPE_NAME]: 'article_attachment',
   [GUIDE_THEME_TYPE_NAME]: 'themes',
+  [THEME_SETTINGS_TYPE_NAME]: 'settings',
 }
 
 const getReferencedLocale = (localeRef: ReferenceExpression | string | undefined)
@@ -110,6 +116,7 @@ const GUIDE_ELEMENT_NAME: Record<string, (instance?: InstanceElement) => string>
   [SECTION_ORDER_TYPE_NAME]: () => 'section_order',
   [ARTICLE_ORDER_TYPE_NAME]: () => 'article_order',
   [GUIDE_SETTINGS_TYPE_NAME]: () => 'brand_settings',
+  [THEME_SETTINGS_TYPE_NAME]: () => 'theme_settings',
   [GUIDE_LANGUAGE_SETTINGS_TYPE_NAME]: (instance?: InstanceElement) => instance?.value.locale ?? NO_VALUE_DEFAULT,
   [ARTICLE_TRANSLATION_TYPE_NAME]: getTranslationLocale,
   [SECTION_TRANSLATION_TYPE_NAME]: getTranslationLocale,
@@ -253,6 +260,7 @@ const filterCreator: FilterCreator = () => ({
           CATEGORY_ORDER_TYPE_NAME,
           GUIDE_SETTINGS_TYPE_NAME,
           GUIDE_THEME_TYPE_NAME,
+          THEME_SETTINGS_TYPE_NAME,
         ].includes(instance.elemID.typeName)
         instance.path = pathForBrandSpecificRootElements(instance, fullNameByNameBrand[brandElemId], needTypeDirectory)
       })

@@ -25,10 +25,10 @@ import { emptyQueryParams, fullFetchConfig } from './config_creator'
 export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from NetSuite.'
   + ' Failed items must be excluded from the fetch.'
 
-export const LARGE_FOLDERS_EXCLUDED_MESSAGE = 'Some File Cabinet folders exceed File Cabinet\'s size limitation.'
+export const toLargeFoldersExcludedMessage = (updatedLargeFolders: NetsuiteFilePathsQueryParams): string => `The following File Cabinet folders exceed File Cabinet's size limitation: ${updatedLargeFolders.join(', ')}.`
  + ' To include them, increase the File Cabinet\'s size limitation and remove their exclusion rules from the configuration file.'
 
-export const LARGE_TYPES_EXCLUDED_MESSAGE = 'Some types were excluded from the fetch as the elements of that type were too numerous.'
+export const toLargeTypesExcludedMessage = (updatedLargeTypes: string[]): string => `The following types were excluded from the fetch as the elements of that type were too numerous: ${updatedLargeTypes.join(', ')}.`
  + ' To include them, increase the types elements\' size limitations and remove their exclusion rules.'
 
 const createFolderExclude = (folderPaths: NetsuiteFilePathsQueryParams): string[] =>
@@ -162,22 +162,25 @@ const updateConfigFromFailedFetch = (config: NetsuiteConfig, failures: FetchByQu
   return true
 }
 
-const updateConfigFromLargeFolders = (config: NetsuiteConfig, { largeFolderError }: FailedFiles): boolean => {
+const updateConfigFromLargeFolders = (
+  config: NetsuiteConfig,
+  { largeFolderError }: FailedFiles,
+): NetsuiteFilePathsQueryParams => {
   if (largeFolderError && !_.isEmpty(largeFolderError)) {
     const largeFoldersToExclude = convertToQueryParams({ filePaths: createFolderExclude(largeFolderError) })
     config.fetch = {
       ...config.fetch,
       exclude: combineQueryParams(config.fetch.exclude, largeFoldersToExclude),
     }
-    return true
+    return largeFolderError
   }
-  return false
+  return []
 }
 
 const updateConfigFromLargeTypes = (
   config: NetsuiteConfig,
   { failedTypes, failedCustomRecords }: FetchByQueryFailures
-): boolean => {
+): string[] => {
   const { excludedTypes } = failedTypes
   if (!_.isEmpty(excludedTypes) || !_.isEmpty(failedCustomRecords)) {
     const customRecords = failedCustomRecords.map(type => ({ name: type }))
@@ -190,9 +193,9 @@ const updateConfigFromLargeTypes = (
       ...config.fetch,
       exclude: combineQueryParams(config.fetch.exclude, typesExcludeQuery),
     }
-    return true
+    return excludedTypes.concat(failedCustomRecords)
   }
-  return false
+  return []
 }
 
 const toConfigInstance = (config: NetsuiteConfig): InstanceElement =>
@@ -229,18 +232,18 @@ export const getConfigFromConfigChanges = (
 ): { config: InstanceElement[]; message: string } | undefined => {
   const config = _.cloneDeep(currentConfig)
   const didUpdateFromFailures = updateConfigFromFailedFetch(config, failures)
-  const didUpdateLargeFolders = updateConfigFromLargeFolders(config, failures.failedFilePaths)
-  const didUpdateLargeTypes = updateConfigFromLargeTypes(config, failures)
+  const updatedLargeFolders = updateConfigFromLargeFolders(config, failures.failedFilePaths)
+  const updatedLargeTypes = updateConfigFromLargeTypes(config, failures)
 
   const messages = [
     didUpdateFromFailures
       ? STOP_MANAGING_ITEMS_MSG
       : undefined,
-    didUpdateLargeFolders
-      ? LARGE_FOLDERS_EXCLUDED_MESSAGE
+    updatedLargeFolders.length > 0
+      ? toLargeFoldersExcludedMessage(updatedLargeFolders)
       : undefined,
-    didUpdateLargeTypes
-      ? LARGE_TYPES_EXCLUDED_MESSAGE
+    updatedLargeTypes.length > 0
+      ? toLargeTypesExcludedMessage(updatedLargeTypes)
       : undefined,
   ].filter(values.isDefined)
 

@@ -15,10 +15,10 @@
 */
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import ZendeskClient from '../../../src/client/client'
-import * as exportModule from '../../../src/filters/guide_themes/api/createThemeExportJob'
+import * as exportModule from '../../../src/filters/guide_themes/api/createThemeJob'
 import * as pollModule from '../../../src/filters/guide_themes/api/pollJobStatus'
 import { download } from '../../../src/filters/guide_themes/download'
-import { jobResponse } from './utils'
+import { downloadJobResponse } from './helpers'
 
 describe('download', () => {
   let client: ZendeskClient
@@ -31,14 +31,14 @@ describe('download', () => {
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
     mockPollJobStatus = jest.spyOn(pollModule, 'pollJobStatus')
-    mockCreateThemeExportJob = jest.spyOn(exportModule, 'createThemeExportJob')
+    mockCreateThemeExportJob = jest.spyOn(exportModule, 'createThemeJob')
     mockGetResource = jest.spyOn(client, 'getResource')
   })
 
   describe('successful flow', () => {
     beforeEach(() => {
       mockCreateThemeExportJob.mockResolvedValue({
-        job: jobResponse('pending', 'this is actually a URL').job, errors: [],
+        job: downloadJobResponse('pending', 'this is actually a URL').job, errors: [],
       })
       mockPollJobStatus.mockResolvedValue({ success: true, errors: [] })
     })
@@ -72,7 +72,7 @@ describe('download', () => {
     })
 
     it('returns undefined when pollJobStatus returns false', async () => {
-      mockCreateThemeExportJob.mockResolvedValue({ job: jobResponse('pending').job, errors: [] })
+      mockCreateThemeExportJob.mockResolvedValue({ job: downloadJobResponse('pending').job, errors: [] })
       mockPollJobStatus.mockResolvedValue({ success: false, errors: ['error1'] })
       expect(await download('11', client)).toEqual({ content: undefined, errors: ['error1'] })
     })

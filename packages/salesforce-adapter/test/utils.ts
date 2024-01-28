@@ -31,10 +31,9 @@ import {
 import { buildElementsSourceFromElements, findElements as findElementsByID } from '@salto-io/adapter-utils'
 import JSZip from 'jszip'
 import * as constants from '../src/constants'
-import { FIELD_ANNOTATIONS } from '../src/constants'
+import { FIELD_ANNOTATIONS, SYSTEM_FIELDS } from '../src/constants'
 import { annotationsFileName, customFieldsFileName, standardFieldsFileName } from '../src/filters/custom_type_split'
 import { FilterContext } from '../src/filter'
-import { SYSTEM_FIELDS } from '../src/adapter'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 
 export const findElements = (

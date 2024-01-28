@@ -37,7 +37,7 @@ import { RemoteMap, RemoteMapEntry } from './remote_map'
 
 const log = logger(module)
 
-export const REFERENCE_INDEXES_VERSION = 5
+export const REFERENCE_INDEXES_VERSION = 6
 export const REFERENCE_INDEXES_KEY = 'reference_indexes'
 
 

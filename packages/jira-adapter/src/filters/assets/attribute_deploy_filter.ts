@@ -16,17 +16,19 @@
 
 import { config as configUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { AdditionChange, Change, DeployResult, InstanceElement, createSaltoElementError, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isReferenceExpression, isRemovalChange, toChange } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
+import { AdditionChange, Change, DeployResult, InstanceElement, ReadOnlyElementsSource, createSaltoElementError, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isReferenceExpression, isRemovalChange, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { FilterCreator } from '../../filter'
-import { OBJECT_TYPE_ATTRIBUTE_TYPE } from '../../constants'
+import { OBJECT_TYPE_ATTRIBUTE_TYPE, OBJECT_TYPE_TYPE } from '../../constants'
 import { getWorkspaceId } from '../../workspace_id'
 import JiraClient from '../../client/client'
 
 const log = logger(module)
+const { awu } = collections.asynciterable
 
 type AttributeParams = {
   id: string
@@ -97,21 +99,33 @@ const deployAttributeChanges = async ({
   client,
   workspaceId,
   objectTypeToEditableExistiningAttributes,
+  elementsSource,
 }: {
   jsmApiDefinitions: configUtils.AdapterDuckTypeApiConfig
   changes: Change<InstanceElement>[]
   client: JiraClient
   workspaceId: string
   objectTypeToEditableExistiningAttributes: Record<string, string[][]>
+  elementsSource: ReadOnlyElementsSource
 }): Promise<Omit<DeployResult, 'extraProperties'>> => {
   const additionalUrlVars = { workspaceId }
+  const remvoalChanges = changes.filter(isRemovalChange)
+  const objectTypeFullNames = remvoalChanges.length === 0 ? [] : await awu(await elementsSource.list())
+    .filter(id => id.typeName === OBJECT_TYPE_TYPE)
+    .map(id => elementsSource.get(id))
+    .filter(isInstanceElement)
+    .map(objectType => objectType.elemID.getFullName())
+    .toArray()
+
   return deployChanges(
     changes,
     async change => {
       if (DEFAULT_ATTRIBUTES.includes(getChangeData(change).value.name)) {
         return
       }
-      if (isRemovalChange(change) && getChangeData(change).value.name === 'Name') {
+      // The attribute is being deleted toghther with the object type
+      if (isRemovalChange(change)
+      && !objectTypeFullNames.includes(getChangeData(change).value.objectType.elemID.getFullName())) {
         return
       }
       const instance = getChangeData(change)
@@ -135,7 +149,7 @@ const deployAttributeChanges = async ({
 }
 
 /* This filter deploys JSM attribute changes using two different endpoints. */
-const filter: FilterCreator = ({ config, client }) => ({
+const filter: FilterCreator = ({ config, client, elementsSource }) => ({
   name: 'deployAttributesFilter',
   deploy: async changes => {
     const { jsmApiDefinitions } = config
@@ -154,7 +168,7 @@ const filter: FilterCreator = ({ config, client }) => ({
       && getChangeData(change).elemID.typeName === OBJECT_TYPE_ATTRIBUTE_TYPE
     )
 
-    const workspaceId = await getWorkspaceId(client)
+    const workspaceId = await getWorkspaceId(client, config)
     if (workspaceId === undefined) {
       log.error(`Skip deployment of ${OBJECT_TYPE_ATTRIBUTE_TYPE} types because workspaceId is undefined`)
       const errors = attributesChanges.map(change => createSaltoElementError({
@@ -197,6 +211,7 @@ const filter: FilterCreator = ({ config, client }) => ({
       client,
       workspaceId,
       objectTypeToEditableExistiningAttributes,
+      elementsSource,
     })
 
     return {

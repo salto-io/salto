@@ -136,6 +136,7 @@ export enum ANNOTATION_TYPE_NAMES {
 
 // Salesforce System Fields
 export const OWNER_ID = 'OwnerId'
+export const LAST_MODIFIED_DATE = 'LastModifiedDate'
 
 // Salto annotations
 export const API_NAME = 'apiName'
@@ -428,6 +429,7 @@ export const KEY_PREFIX_LENGTH = 3
 
 // Magics
 export const DETECTS_PARENTS_INDICATOR = '##allMasterDetailFields##'
+export const DATA_INSTANCES_CHANGED_AT_MAGIC = '__DataInstances__'
 
 // CPQ CustomObjects
 export const CPQ_NAMESPACE = 'SBQQ'
@@ -528,6 +530,32 @@ export const METADATA_CHANGE_GROUP = 'Salesforce Metadata'
 
 export const UNLIMITED_INSTANCES_VALUE = -1
 
+
+// See: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_custom_object__c.htm
+export const SYSTEM_FIELDS = [
+  'ConnectionReceivedId',
+  'ConnectionSentId',
+  'CreatedById',
+  'CreatedDate',
+  'Id',
+  'IsDeleted',
+  'LastActivityDate',
+  'LastModifiedDate',
+  'LastModifiedById',
+  'LastReferencedDate',
+  'LastViewedDate',
+  'Name',
+  'RecordTypeId',
+  'SystemModstamp',
+  OWNER_ID,
+  'SetupOwnerId',
+]
+
+export const UNSUPPORTED_SYSTEM_FIELDS = [
+  'LastReferencedDate',
+  'LastViewedDate',
+]
+
 // Errors
 export const SOCKET_TIMEOUT = 'ESOCKETTIMEDOUT'
 export const INVALID_GRANT = 'invalid_grant'
@@ -573,4 +601,5 @@ export const isSalesforceError = (error: Error): error is SalesforceError => {
 // Artifacts
 export const SalesforceArtifacts = {
   DeployPackageXml: 'package.xml',
+  PostDeployRetrieveZip: 'post-deploy-retrieve.zip',
 } as const

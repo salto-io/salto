@@ -17,7 +17,7 @@ import _ from 'lodash'
 import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
 import { strings, collections } from '@salto-io/lowerdash'
-import { Element, ElemID, InstanceElement, ReadOnlyElementsSource, Value, Values, getChangeData, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
+import { Element, ElemID, InstanceElement, ReadOnlyElementsSource, Value, Values, getChangeData, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isReferenceExpression, ReferenceExpression, ChangeError } from '@salto-io/adapter-api'
 import { WALK_NEXT_STEP, resolvePath, walkOnElement, walkOnValue } from '@salto-io/adapter-utils'
 import NetsuiteClient from '../client/client'
 import { RemoteFilterCreator } from '../filter'
@@ -74,19 +74,6 @@ type GetFieldTypeIDFunc = (
     selectRecordTypeMap: Record<string, unknown>
   }
 ) => string | string[] | undefined
-
-type AccountSpecificValueHandlerParams = {
-  path: ElemID
-  value: Values
-  field: string
-  name: string
-}
-
-type AccountSpecificValueHandlers = {
-  onMissingInternalId: (params: AccountSpecificValueHandlerParams) => void
-  onSingleInternalId: (params: AccountSpecificValueHandlerParams & { internalId: string }) => void
-  onMultipleInternalIds: (params: AccountSpecificValueHandlerParams & { internalIds: string[] }) => void
-}
 
 const STANDARD_FIELDS_TO_RECORD_TYPE: Record<string, string> = {
   STDITEMTAXSCHEDULE: TAX_SCHEDULE,
@@ -199,6 +186,11 @@ const WORKFLOW_INTERNAL_IDS_SCHEMA = {
 const getFieldsToQuery = (records: QueryRecord[]): string[] =>
   _.uniq([SCRIPT_ID, ...records.flatMap(row => row.fields).map(field => field.name)])
 
+const getQueryFilter = (records: QueryRecord[]): QueryRecordSchema['filter'] => ({
+  fieldId: SCRIPT_ID,
+  in: _.uniq(records.map(row => row.serviceId)),
+})
+
 const createQuerySchema = (records: QueryRecord[]): QueryRecordSchema => {
   const {
     [QUERY_RECORD_TYPES.workflow]: workflows = [],
@@ -215,10 +207,7 @@ const createQuerySchema = (records: QueryRecord[]): QueryRecordSchema => {
       sublistId: 'transitions',
       idAlias: 'transitionid',
       fields: getFieldsToQuery(workflowtransitions),
-      filter: {
-        fieldId: SCRIPT_ID,
-        in: _.uniq(workflowtransitions.map(row => row.serviceId)),
-      },
+      filter: getQueryFilter(workflowtransitions),
     }
     : undefined
 
@@ -229,10 +218,7 @@ const createQuerySchema = (records: QueryRecord[]): QueryRecordSchema => {
       idAlias: 'actionid',
       typeSuffix: 'action',
       fields: getFieldsToQuery(workflowactions),
-      filter: {
-        fieldId: SCRIPT_ID,
-        in: _.uniq(workflowactions.map(row => row.serviceId)),
-      },
+      filter: getQueryFilter(workflowactions),
       customTypes: {
         customactionaction: 'customaction',
       },
@@ -245,10 +231,7 @@ const createQuerySchema = (records: QueryRecord[]): QueryRecordSchema => {
       sublistId: 'fields',
       idAlias: 'id',
       fields: getFieldsToQuery(workflowstatecustomfields),
-      filter: {
-        fieldId: SCRIPT_ID,
-        in: _.uniq(workflowstatecustomfields.map(row => row.serviceId)),
-      },
+      filter: getQueryFilter(workflowstatecustomfields),
     }
     : undefined
 
@@ -258,10 +241,7 @@ const createQuerySchema = (records: QueryRecord[]): QueryRecordSchema => {
       sublistId: 'states',
       idAlias: 'stateid',
       fields: getFieldsToQuery(workflowstates),
-      filter: {
-        fieldId: SCRIPT_ID,
-        in: _.uniq(workflowstates.map(row => row.serviceId)),
-      },
+      filter: getQueryFilter(workflowstates),
       sublists: [
         workflowTransitionSchema ?? [],
         workflowActionSchema ?? [],
@@ -276,20 +256,14 @@ const createQuerySchema = (records: QueryRecord[]): QueryRecordSchema => {
       sublistId: 'fields',
       idAlias: 'id',
       fields: getFieldsToQuery(workflowcustomfields),
-      filter: {
-        fieldId: SCRIPT_ID,
-        in: _.uniq(workflowcustomfields.map(row => row.serviceId)),
-      },
+      filter: getQueryFilter(workflowcustomfields),
     }
     : undefined
 
   return {
     type: 'workflow',
     fields: getFieldsToQuery(workflows),
-    filter: {
-      fieldId: SCRIPT_ID,
-      in: _.uniq(workflows.map(row => row.serviceId)),
-    },
+    filter: getQueryFilter(workflows),
     sublists: [
       workflowStateSchema ?? [],
       workflowCustomFieldSchema ?? [],
@@ -635,11 +609,33 @@ const getSuiteQLNameToInternalIdsMap = async (
     .value()
 }
 
+const toMissingInternalIdWarning = (
+  elemID: ElemID,
+  name: string,
+  field: string
+): ChangeError => ({
+  elemID,
+  severity: 'Warning',
+  message: 'Could not identify value in workflow',
+  detailedMessage: `Could not find object "${name}" for field "${field}". Setting ACCOUNT_SPECIFIC_VALUE instead.`,
+})
+
+const toMultipleInternalIdsWarning = (
+  elemID: ElemID,
+  name: string,
+  internalId: string
+): ChangeError => ({
+  elemID,
+  severity: 'Warning',
+  message: 'Multiple objects with the same name',
+  detailedMessage: `There are multiple objects with the name "${name}". Using the first one (internal id: ${internalId}).`,
+})
+
 const resolveAccountSpecificValues = (
   instance: InstanceElement,
   suiteQLTablesMap: Record<string, Record<string, string[]>>,
-  handlers: AccountSpecificValueHandlers
-): void => {
+): ChangeError[] => {
+  const resolveWarnings: ChangeError[] = []
   const resolveAccountSpecificValueForField = (
     path: ElemID,
     value: Values,
@@ -652,12 +648,20 @@ const resolveAccountSpecificValues = (
     const name = getResolvedAccountSpecificValue(fieldValue)
     const fieldType = getQueryRecordFieldType(instance, value, field, suiteQLTablesMap, {})
     const internalIds = _.uniq(makeArray(fieldType).flatMap(type => suiteQLTablesMap[type][name] ?? []))
+    const internalId = internalIds[0]
     if (internalIds.length === 0) {
-      handlers.onMissingInternalId({ path, value, field, name })
-    } else if (internalIds.length > 1) {
-      handlers.onMultipleInternalIds({ path, value, field, name, internalIds })
+      log.warn(
+        'could not find internal id of "%s" in field %s from value: %o',
+        name, path.createNestedID(field).getFullName(), value,
+      )
+      resolveWarnings.push(toMissingInternalIdWarning(path, name, field))
+      value[field] = ACCOUNT_SPECIFIC_VALUE
     } else {
-      handlers.onSingleInternalId({ path, value, field, name, internalId: internalIds[0] })
+      if (internalIds.length > 1) {
+        log.warn('there are several internal ids for name %s - using the first: %d', name, internalId)
+        resolveWarnings.push(toMultipleInternalIdsWarning(path, name, internalId))
+      }
+      value[field] = internalId
     }
   }
 
@@ -673,38 +677,19 @@ const resolveAccountSpecificValues = (
       return WALK_NEXT_STEP.RECURSE
     },
   })
+
+  return resolveWarnings
 }
 
 export const handleWorkflowAccountSpecificValuesOnDeploy = async (
   instances: InstanceElement[],
   elementsSource: ReadOnlyElementsSource,
-  handlers: AccountSpecificValueHandlers
-): Promise<void> => {
+): Promise<ChangeError[]> => {
   const suiteQLNameToInternalIdsMap = await getSuiteQLNameToInternalIdsMap(elementsSource)
-  instances.forEach(instance => resolveAccountSpecificValues(
+  return instances.flatMap(instance => resolveAccountSpecificValues(
     instance,
     suiteQLNameToInternalIdsMap,
-    handlers,
   ))
-}
-
-const accountSpecificValueHandlers: AccountSpecificValueHandlers = {
-  onMissingInternalId: ({ path, value, field, name }) => {
-    log.warn(
-      'could not find internal id of "%s" in field %s from value: %o',
-      name,
-      path.createNestedID(field).getFullName(),
-      value,
-    )
-    value[field] = ACCOUNT_SPECIFIC_VALUE
-  },
-  onSingleInternalId: ({ value, field, internalId }) => {
-    value[field] = internalId
-  },
-  onMultipleInternalIds: ({ value, field, name, internalIds: [internalId] }) => {
-    log.warn('there are several internal ids for name %s - using the first: %d', name, internalId)
-    value[field] = internalId
-  },
 }
 
 const getSelectRecordTypeMap = async (
@@ -776,7 +761,6 @@ const filterCreator: RemoteFilterCreator = ({ client, elementsSource, elementsSo
     await handleWorkflowAccountSpecificValuesOnDeploy(
       workflowInstances,
       elementsSource,
-      accountSpecificValueHandlers,
     )
   },
 })

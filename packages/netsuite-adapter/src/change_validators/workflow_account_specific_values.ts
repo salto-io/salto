@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, ChangeError, ElemID, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isEqualValues, isInstanceChange, ModificationChange, ReadOnlyElementsSource, toChange, Value } from '@salto-io/adapter-api'
+import { AdditionChange, ChangeError, ElemID, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isEqualValues, isInstanceChange, ModificationChange, toChange, Value } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP, resolvePath } from '@salto-io/adapter-utils'
 import { ACCOUNT_SPECIFIC_VALUE, INIT_CONDITION, WORKFLOW } from '../constants'
 import { handleWorkflowAccountSpecificValuesOnDeploy } from '../filters/workflow_account_specific_values'
@@ -105,41 +105,6 @@ const getChangeErrorsOnAccountSpecificValues = (
   return sendEmailActionErrors.concat(conditionWarnings)
 }
 
-const resolveAcountSpecificValues = async (
-  instances: InstanceElement[],
-  elementsSource: ReadOnlyElementsSource
-): Promise<ChangeError[]> => {
-  const warnings: ChangeError[] = []
-  await handleWorkflowAccountSpecificValuesOnDeploy(
-    instances,
-    elementsSource,
-    {
-      onMissingInternalId: ({ path, value, field, name }) => {
-        warnings.push({
-          elemID: path,
-          severity: 'Warning',
-          message: 'Could not identify value in workflow',
-          detailedMessage: `Could not find object "${name}" for field "${field}". Setting ACCOUNT_SPECIFIC_VALUE instead.`,
-        })
-        value[field] = ACCOUNT_SPECIFIC_VALUE
-      },
-      onSingleInternalId: ({ value, field, internalId }) => {
-        value[field] = internalId
-      },
-      onMultipleInternalIds: ({ path, value, field, name, internalIds: [internalId] }) => {
-        warnings.push({
-          elemID: path,
-          severity: 'Warning',
-          message: 'Multiple objects with the same name',
-          detailedMessage: `There are multiple objects with the name "${name}". Using the first one (internal id: ${internalId}).`,
-        })
-        value[field] = internalId
-      },
-    }
-  )
-  return warnings
-}
-
 const changeValidator: NetsuiteChangeValidator = async (
   changes,
   _deployReferencedElements,
@@ -158,7 +123,7 @@ const changeValidator: NetsuiteChangeValidator = async (
     after: change.data.after.clone(),
   }) as AdditionChange<InstanceElement> | ModificationChange<InstanceElement>)
 
-  const resolveWarnings = await resolveAcountSpecificValues(
+  const resolveWarnings = await handleWorkflowAccountSpecificValuesOnDeploy(
     clonedWorkflowChanges.map(getChangeData),
     elementsSource
   )

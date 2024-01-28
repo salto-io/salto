@@ -216,6 +216,7 @@ export type ChangeValidatorName = (
   | 'sameIssueTypeNameChange'
   | 'statusMigrationChange'
   | 'workflowSchemeMigration'
+  | 'workflowStatusMappings'
   | 'issueTypeSchemeMigration'
   | 'activeSchemeChange'
   | 'masking'
@@ -272,6 +273,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     sameIssueTypeNameChange: { refType: BuiltinTypes.BOOLEAN },
     statusMigrationChange: { refType: BuiltinTypes.BOOLEAN },
     workflowSchemeMigration: { refType: BuiltinTypes.BOOLEAN },
+    workflowStatusMappings: { refType: BuiltinTypes.BOOLEAN },
     issueTypeSchemeMigration: { refType: BuiltinTypes.BOOLEAN },
     activeSchemeChange: { refType: BuiltinTypes.BOOLEAN },
     masking: { refType: BuiltinTypes.BOOLEAN },

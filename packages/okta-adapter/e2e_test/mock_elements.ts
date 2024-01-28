@@ -20,7 +20,6 @@ export const mockDefaultValues: Record<string, Values> = {
   [ACCESS_POLICY_TYPE_NAME]: {
     status: 'ACTIVE',
     name: 'authentication policy',
-    priority: 1,
     system: false,
     type: 'ACCESS_POLICY',
   },
@@ -134,7 +133,6 @@ export const mockDefaultValues: Record<string, Values> = {
   [PROFILE_ENROLLMENT_POLICY_TYPE_NAME]: {
     status: 'ACTIVE',
     name: 'profile',
-    priority: 1,
     system: false,
     type: 'PROFILE_ENROLLMENT',
   },

@@ -43,6 +43,7 @@ describe('queueFetch filter', () => {
             name: 'queue1',
             fields: ['Summary'],
             projectKey: 'PROJ1',
+            jql: 'project = ICP56 AND type = Bug',
           },
         )
         mockGet.mockImplementation(async params => {
@@ -117,6 +118,20 @@ describe('queueFetch filter', () => {
         expect(queueInstance.value.columns).toEqual(['Summary'])
         expect(queueInstance.value.canBeHidden).toBeUndefined()
         expect(queueInstance.value.favourite).toBeUndefined()
+      })
+      it('should fix jql', async () => {
+        await filter.onFetch([queueInstance])
+        expect(queueInstance.value.jql).toEqual('issuetype = Bug')
+      })
+      it('should remove only the first project key', async () => {
+        queueInstance.value.jql = 'project = ICP56 AND project = ICP56 AND type = Bug'
+        await filter.onFetch([queueInstance])
+        expect(queueInstance.value.jql).toEqual('project = ICP56 AND issuetype = Bug')
+      })
+      it('should do nothing if regex is not match', async () => {
+        queueInstance.value.jql = 'assignee = currentUser() AND resolution = Unresolved'
+        await filter.onFetch([queueInstance])
+        expect(queueInstance.value.jql).toEqual('assignee = currentUser() AND resolution = Unresolved')
       })
     })
 })

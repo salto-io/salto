@@ -1240,6 +1240,20 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       },
     },
   },
+  WorkflowRuleConfiguration: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'id' },
+      ],
+    },
+  },
+  WorkflowTrigger: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'id' },
+      ],
+    },
+  },
   WorkflowRuleConfiguration_parameters: {
     transformation: {
       fieldTypeOverrides: [

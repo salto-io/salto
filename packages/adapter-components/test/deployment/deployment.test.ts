@@ -15,7 +15,7 @@
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
-import { HTTPWriteClientInterface } from '../../src/client/http_client'
+import { HTTPError, HTTPWriteClientInterface } from '../../src/client/http_client'
 import { deployChange, filterUndeployableValues } from '../../src/deployment/deployment'
 import { DeploymentRequestsByAction } from '../../src/config/request'
 
@@ -162,6 +162,51 @@ describe('deployChange', () => {
       data: { id: '1', creatableField: 'creatableValue', ignored: 'ignored' },
       queryParams: undefined,
     })
+  })
+  it('should mark removal change as deployed succesfully if request throw with allowedStatusCodesOnRemoval', async () => {
+    httpClient.delete.mockRejectedValueOnce(new HTTPError('message', {
+      status: 404,
+      data: {},
+    }))
+    instance.value.id = '1'
+    const result = await deployChange({
+      change: toChange({ before: instance }),
+      client: httpClient,
+      endpointDetails: {
+        remove: {
+          url: '/test/endpoint/{instanceId}',
+          method: 'delete',
+          urlParamsToFields: {
+            instanceId: 'id',
+          },
+          omitRequestBody: false,
+        },
+      },
+      allowedStatusCodesOnRemoval: [404],
+    })
+    expect(result).toEqual(undefined)
+  })
+  it('should throw if removal change failed with status code no in allowedStatusCodesOnRemoval', async () => {
+    httpClient.delete.mockRejectedValueOnce(new HTTPError('message', {
+      status: 404,
+      data: {},
+    }))
+    instance.value.id = '1'
+    await expect(() => deployChange({
+      change: toChange({ before: instance }),
+      client: httpClient,
+      endpointDetails: {
+        remove: {
+          url: '/test/endpoint/{instanceId}',
+          method: 'delete',
+          urlParamsToFields: {
+            instanceId: 'id',
+          },
+          omitRequestBody: false,
+        },
+      },
+      allowedStatusCodesOnRemoval: [405],
+    })).rejects.toThrow()
   })
 })
 

@@ -16,9 +16,10 @@
 
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { ImportantValues } from '@salto-io/adapter-utils'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { METADATA_TYPE } from '../../src/constants'
 import { mockTypes } from '../mock_elements'
-import filterCreator from '../../src/filters/important_values'
+import filterCreator from '../../src/filters/important_values_filter'
 import { defaultFilterContext } from '../utils'
 
 describe('important values filter', () => {
@@ -61,7 +62,7 @@ describe('important values filter', () => {
         filter = filterCreator({
           config: {
             ...defaultFilterContext,
-            fetchProfile: { ...defaultFilterContext.fetchProfile, isFeatureEnabled: () => false },
+            fetchProfile: buildFetchProfile({ fetchParams: { optionalFeatures: { importantValues: false } } }),
           },
         }) as typeof filter
       })
@@ -77,7 +78,13 @@ describe('important values filter', () => {
         filter = filterCreator({
           config: {
             ...defaultFilterContext,
-            fetchProfile: { ...defaultFilterContext.fetchProfile, isFeatureEnabled: () => true },
+            fetchProfile: buildFetchProfile({
+              fetchParams: {
+                optionalFeatures: {
+                  importantValues: true,
+                },
+              },
+            }),
           },
         }) as typeof filter
       })
@@ -93,13 +100,17 @@ describe('important values filter', () => {
         filter = filterCreator({
           config: {
             ...defaultFilterContext,
-            fetchProfile: {
-              ...defaultFilterContext.fetchProfile,
-              isFeatureEnabled: () => true,
-              additionalImportantValues: [
-                { value: 'fullName', indexed: false, highlighted: false },
-              ],
-            },
+            fetchProfile: buildFetchProfile({
+              fetchParams: {
+                additionalImportantValues: [
+                  { value: 'fullName', indexed: false, highlighted: false },
+                  { value: 'apiVersion', indexed: true, highlighted: false },
+                ],
+                optionalFeatures: {
+                  importantValues: true,
+                },
+              },
+            }),
           },
         }) as typeof filter
       })
@@ -118,14 +129,17 @@ describe('important values filter', () => {
         filter = filterCreator({
           config: {
             ...defaultFilterContext,
-            fetchProfile: {
-              ...defaultFilterContext.fetchProfile,
-              isFeatureEnabled: () => true,
-              additionalImportantValues: [
-                { value: 'someField', indexed: false, highlighted: true },
-                { value: 'someOtherField', indexed: true, highlighted: true },
-              ],
-            },
+            fetchProfile: buildFetchProfile({
+              fetchParams: {
+                additionalImportantValues: [
+                  { value: 'someField', indexed: false, highlighted: false },
+                  { value: 'someOtherField', indexed: true, highlighted: false },
+                ],
+                optionalFeatures: {
+                  importantValues: true,
+                },
+              },
+            }),
           },
         }) as typeof filter
       })

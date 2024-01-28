@@ -926,5 +926,5 @@ export type FetchProfile = {
   readonly addNamespacePrefixToFullName: boolean
   isWarningEnabled: (name: keyof WarningSettings) => boolean
   readonly maxItemsInRetrieveRequest: number
-  readonly additionalImportantValues?: ImportantValues
+  readonly importantValues: ImportantValues
 }

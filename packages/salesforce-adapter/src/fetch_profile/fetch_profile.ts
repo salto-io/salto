@@ -25,6 +25,7 @@ import {
 import { buildDataManagement, validateDataManagementConfig } from './data_management'
 import { buildMetadataQuery, validateMetadataParams } from './metadata_query'
 import { DEFAULT_MAX_INSTANCES_PER_TYPE, DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../constants'
+import { mergeWithDefaultImportantValues } from './important_values'
 
 type OptionalFeaturesDefaultValues = {
   [FeatureName in keyof OptionalFeatures]?: boolean
@@ -74,7 +75,7 @@ export const buildFetchProfile = ({
     ),
     metadataQuery,
     maxItemsInRetrieveRequest,
-    additionalImportantValues,
+    importantValues: mergeWithDefaultImportantValues(additionalImportantValues),
   }
 }
 

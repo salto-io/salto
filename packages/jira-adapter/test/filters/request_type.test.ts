@@ -133,7 +133,7 @@ describe('requestType filter', () => {
               data: {
                 issueLayoutConfiguration: {
                   issueLayoutResult: {
-                    id: '6',
+                    id: '2',
                     name: 'Default Issue Layout',
                     containers: [
                       {
@@ -210,7 +210,7 @@ describe('requestType filter', () => {
         // one for requestForm and one for issueView
         expect(connection.put).toHaveBeenCalledTimes(2)
         expect(connection.put).toHaveBeenCalledWith(
-          '/rest/internal/1.0/issueLayouts/6',
+          '/rest/internal/1.0/issueLayouts/2',
           { extraDefinerId: 10,
             projectId: 1,
             owners: [{
@@ -238,7 +238,7 @@ describe('requestType filter', () => {
           undefined
         )
         expect(connection.put).toHaveBeenCalledWith(
-          '/rest/internal/1.0/issueLayouts/6',
+          '/rest/internal/1.0/issueLayouts/2',
           { extraDefinerId: 10,
             projectId: 1,
             owners: [{
@@ -277,7 +277,7 @@ describe('requestType filter', () => {
         // one call to deploy requestForm
         expect(connection.put).toHaveBeenCalledTimes(1)
         expect(connection.put).toHaveBeenCalledWith(
-          '/rest/internal/1.0/issueLayouts/6',
+          '/rest/internal/1.0/issueLayouts/4',
           { extraDefinerId: 10,
             projectId: 1,
             owners: [{
@@ -350,7 +350,7 @@ describe('requestType filter', () => {
         // one call to deploy requestForm
         expect(connection.put).toHaveBeenCalledTimes(1)
         expect(connection.put).toHaveBeenCalledWith(
-          '/rest/internal/1.0/issueLayouts/6',
+          '/rest/internal/1.0/issueLayouts/4',
           { extraDefinerId: 10,
             projectId: 1,
             owners: [{

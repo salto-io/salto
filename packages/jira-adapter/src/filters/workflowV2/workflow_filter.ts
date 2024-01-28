@@ -22,7 +22,7 @@ import { CORE_ANNOTATIONS, Element, InstanceElement, ObjectType, SaltoError, Add
 import { v4 as uuidv4 } from 'uuid'
 import { FilterCreator } from '../../filter'
 import { addAnnotationRecursively, findObject, setTypeDeploymentAnnotations } from '../../utils'
-import { CHUNK_SIZE, isWorkflowIdsResponse, isWorkflowResponse, isTaskResponse, STATUS_CATEGORY_ID_TO_KEY, TASK_STATUS, WorkflowPayload, WorkflowVersion, CONDITION_LIST_FIELDS, VALIDATOR_LIST_FIELDS, PATH_NAME_TO_RECURSE, isAdditionOrModificationWorkflowChange } from './types'
+import { CHUNK_SIZE, isWorkflowIdsResponse, isWorkflowResponse, isTaskResponse, STATUS_CATEGORY_ID_TO_KEY, TASK_STATUS, WorkflowPayload, WorkflowVersion, CONDITION_LIST_FIELDS, VALIDATOR_LIST_FIELDS, ID_TO_UUID_PATH_NAME_TO_RECURSE, isAdditionOrModificationWorkflowChange, CONDITION_GROUPS_PATH_NAME_TO_RECURSE } from './types'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
 import { JIRA_WORKFLOW_TYPE } from '../../constants'
 import JiraClient from '../../client/client'
@@ -344,13 +344,27 @@ const convertParametersFieldsToString = (
     })
 }
 
+// Jira has a bug that causes conditionGroups to be required in the deployment requests
+// We should remove this once the bug is fixed - https://jira.atlassian.com/browse/JRACLOUD-82794
+const insertConditionGroups:WalkOnFunc = ({ value, path }): WALK_NEXT_STEP => {
+  if (_.isPlainObject(value) && value.operation && value.conditionGroups === undefined) {
+    value.conditionGroups = []
+  }
+  if (isInstanceElement(value)
+  || CONDITION_GROUPS_PATH_NAME_TO_RECURSE.has(path.name)
+  || (_.isPlainObject(value) && value.conditions)) {
+    return WALK_NEXT_STEP.RECURSE
+  }
+  return WALK_NEXT_STEP.SKIP
+}
+
 const replaceStatusIdWithUuid = (statusIdToUuid: Record<string, string>): WalkOnFunc => (
   ({ value, path }): WALK_NEXT_STEP => {
     const isValueToRecurse = (_.isPlainObject(value)
       && (value.to || value.from || value.statusMigrations))
       || _.isArray(value)
     if (isInstanceElement(value)
-      || PATH_NAME_TO_RECURSE.has(path.name)
+      || ID_TO_UUID_PATH_NAME_TO_RECURSE.has(path.name)
       || isValueToRecurse) {
       return WALK_NEXT_STEP.RECURSE
     }
@@ -426,6 +440,7 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
           const resolvedWorkflowInstance = await resolveValues(workflowInstance, getLookUpName)
           convertTransitionParametersFields(resolvedWorkflowInstance.value.transitions, convertParametersFieldsToString)
           walkOnElement({ element: resolvedWorkflowInstance, func: replaceStatusIdWithUuid(statusIdToUuid) })
+          walkOnElement({ element: resolvedWorkflowInstance, func: insertConditionGroups })
           const statusesPayload = getStatusesPayload(statusInstances, statusIdToUuid)
           workflowInstance.value = getWorkflowPayload(
             isAdditionChange(change),

@@ -119,9 +119,15 @@ const fromLayoutConfigRespToLayoutConfig = (
   return { items }
 }
 
+interface LayoutIdParts {
+  projectId: string | number
+  extraDefinerId: string | number
+}
+
+// IssueLayout external ids are changed frequently, so we want to fix it internally
 export const generateLayoutId = (
-  projectId: string, extraDefinerId: string | number
-): string => projectId.concat('_').concat(extraDefinerId.toString())
+  { projectId, extraDefinerId }: LayoutIdParts
+): string => projectId.toString().concat('_', extraDefinerId.toString())
 
 export const getLayout = async ({
   extraDefinerId,
@@ -141,7 +147,9 @@ export const getLayout = async ({
   if (!Array.isArray(response.data) && isIssueLayoutResponse(response.data) && instance.path !== undefined) {
     const { issueLayoutResult } = response.data.issueLayoutConfiguration
     const value = {
-      id: generateLayoutId(instance.value.id, extraDefinerId),
+      id: typeName !== ISSUE_LAYOUT_TYPE ? issueLayoutResult.id : generateLayoutId(
+        { projectId: instance.value.id, extraDefinerId }
+      ),
       extraDefinerId,
       issueLayoutConfig: fromLayoutConfigRespToLayoutConfig(response.data.issueLayoutConfiguration),
     }

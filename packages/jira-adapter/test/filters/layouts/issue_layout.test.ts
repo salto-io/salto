@@ -408,7 +408,7 @@ describe('issue layout filter', () => {
         'issueLayout',
         issueLayoutType,
         {
-          id: generateLayoutId(projectInstance.value.id, screenInstance.value.id),
+          id: generateLayoutId({ projectId: projectInstance.value.id, extraDefinerId: screenInstance.value.id }),
           extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
           issueLayoutConfig: {
             items: [

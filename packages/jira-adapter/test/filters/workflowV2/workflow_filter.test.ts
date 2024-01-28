@@ -423,6 +423,10 @@ describe('jiraWorkflowFilter', () => {
                 statusReference: 'uuid1',
               },
               type: 'INITIAL',
+              conditions: {
+                operation: 'ALL',
+                conditionGroups: [],
+              },
             },
             {
               id: '2',
@@ -438,6 +442,15 @@ describe('jiraWorkflowFilter', () => {
                 statusReference: 'uuid2',
               },
               type: 'DIRECTED',
+              conditions: {
+                operation: 'ALL',
+                conditionGroups: [
+                  {
+                    operation: 'ALL',
+                    conditionGroups: [],
+                  },
+                ],
+              },
             },
           ],
         },
@@ -625,6 +638,9 @@ describe('jiraWorkflowFilter', () => {
             to: {
               statusReference: new ReferenceExpression(status1.elemID, status1),
             },
+            conditions: {
+              operation: 'ALL',
+            },
           },
           {
             id: '2',
@@ -639,6 +655,14 @@ describe('jiraWorkflowFilter', () => {
             to: {
               statusReference: new ReferenceExpression(status2.elemID, status2),
               port: 7,
+            },
+            conditions: {
+              operation: 'ALL',
+              conditionGroups: [
+                {
+                  operation: 'ALL',
+                },
+              ],
             },
           },
         ],

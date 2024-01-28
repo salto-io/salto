@@ -94,8 +94,8 @@ describe('jsmPermissionsValidator', () => {
     expect(changeErrors[0]).toEqual({
       elemID: queueInstance.elemID,
       severity: 'Error' as SeverityLevel,
-      message: 'Cannot deploy a JSM type without JSM permissions',
-      detailedMessage: 'Cannot deploy queue1 without JSM permissions',
+      message: 'Cannot deploy athis instance since it is associated to a project without JSM permissions',
+      detailedMessage: 'Cannot deploy queue1 since its associated project doesn\'t have JSM permissions',
     })
   })
   it('should not return error if trying to deploy Jsm type without valid parent', async () => {

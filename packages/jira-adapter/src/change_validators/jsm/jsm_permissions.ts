@@ -66,8 +66,8 @@ export const jsmPermissionsValidator: (
       .map(instance => ({
         elemID: instance.elemID,
         severity: 'Error' as SeverityLevel,
-        message: 'Cannot deploy a JSM type without JSM permissions',
-        detailedMessage: `Cannot deploy ${instance.elemID.name} without JSM permissions`,
+        message: 'Cannot deploy athis instance since it is associated to a project without JSM permissions',
+        detailedMessage: `Cannot deploy ${instance.elemID.name} since its associated project doesn't have JSM permissions`,
       }))
       .toArray()
   }

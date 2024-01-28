@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -27,9 +27,9 @@ import { buildElementsSourceFromElements, findElement, naclCase } from '@salto-i
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
 import each from 'jest-each'
-import { emptyQueryParams, fullFetchConfig, fullQueryParams } from '../src/query'
+import { emptyQueryParams, fullFetchConfig, fullQueryParams } from '../src/config/config_creator'
 import NetsuiteAdapter from '../src/adapter'
-import { configType } from '../src/config'
+import { configType } from '../src/config/types'
 import { credsLease, realAdapter } from './adapter'
 import { getElementValueOrAnnotations, getMetadataTypes, isCustomRecordType, isSDFConfigTypeName, metadataTypesToList, netsuiteSupportedTypes } from '../src/types'
 import { adapter as adapterCreator } from '../src/adapter_creator'
@@ -48,6 +48,8 @@ import { reportdefinitionType } from '../src/type_parsers/report_definition_pars
 import { financiallayoutType } from '../src/type_parsers/financial_layout_parsing/parsed_financial_layout'
 import { SERVER_TIME_TYPE_NAME } from '../src/server_time'
 import { ProjectInfo, createAdditionalFiles, createSdfExecutor } from './sdf_executor'
+import { parsedDatasetType } from '../src/type_parsers/analytics_parsers/parsed_dataset'
+import { parsedWorkbookType } from '../src/type_parsers/analytics_parsers/parsed_workbook'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -973,17 +975,30 @@ describe('Netsuite adapter E2E with real account', () => {
       })
 
       it('should load all elements successfully', () => {
+        const analyticsTypes = [
+          parsedDatasetType(),
+          parsedWorkbookType(),
+          savedsearchType(),
+          reportdefinitionType(),
+          financiallayoutType(),
+        ]
+        analyticsTypes
+          .forEach(({ type, innerTypes }) => {
+            _.remove(metadataTypes, e => _.isEqual(e.path, type.path))
+            metadataTypes.push(type)
+            metadataTypes.push(...Object.values(innerTypes))
+          })
+
+        const allTypes = (metadataTypes as { elemID: ElemID}[])
+          .concat(createCustomRecordTypes([], standardTypes.customrecordtype.type))
+          .concat([featuresInstance])
+          .concat(objectsToImport)
+          .concat(filesToImport)
+          .concat(existingFileCabinetInstances)
+          .concat(newFileCabinetInstancesElemIds)
+
         const expectedElements = _.uniq(
-          (metadataTypes as { elemID: ElemID }[])
-            .concat(createCustomRecordTypes([], standardTypes.customrecordtype.type))
-            .concat(Object.values(savedsearchType().innerTypes))
-            .concat(Object.values(reportdefinitionType().innerTypes))
-            .concat(Object.values(financiallayoutType().innerTypes))
-            .concat([featuresInstance])
-            .concat(objectsToImport)
-            .concat(filesToImport)
-            .concat(existingFileCabinetInstances)
-            .concat(newFileCabinetInstancesElemIds)
+          allTypes
             .map(type => type.elemID.getFullName())
         ).sort()
 

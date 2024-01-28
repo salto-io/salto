@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -17,7 +17,7 @@
 
 import { isObjectType, CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_ATTRIBUTE_TYPE, OBJECT_TYPE_TYPE, OBJECT_SCHEMA_STATUS_TYPE, CALENDAR_TYPE, CUSTOMER_PERMISSIONS_TYPE, PORTAL_GROUP_TYPE, PORTAL_SETTINGS_TYPE_NAME, QUEUE_TYPE, REQUEST_TYPE_NAME, SLA_TYPE_NAME } from '../constants'
+import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_ATTRIBUTE_TYPE, OBJECT_TYPE_TYPE, OBJECT_SCHEMA_STATUS_TYPE, CALENDAR_TYPE, CUSTOMER_PERMISSIONS_TYPE, PORTAL_GROUP_TYPE, PORTAL_SETTINGS_TYPE_NAME, QUEUE_TYPE, REQUEST_TYPE_NAME, SLA_TYPE_NAME, OBJECT_SCHMEA_REFERENCE_TYPE_TYPE } from '../constants'
 import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../utils'
 
 
@@ -36,6 +36,7 @@ const assetsSupportedTypes = [
   OBJECT_SCHEMA_STATUS_TYPE,
   OBJECT_TYPE_TYPE,
   OBJECT_TYPE_ATTRIBUTE_TYPE,
+  OBJECT_SCHMEA_REFERENCE_TYPE_TYPE,
 ]
 
 const filterCreator: FilterCreator = ({ config }) => ({

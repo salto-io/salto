@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -121,13 +121,14 @@ const shouldRunRequest = (rateLimits: OktaRateLimits, rateLimitBuffer: number): 
 }
 export const updateRateLimits = (
   rateLimits: OktaRateLimits,
-  headers: Record<string, string>
+  headers: Record<string, string>,
+  url: string
 ): void => {
   const updatedRateLimitRemaining = Number(headers['x-rate-limit-remaining'])
   const updatedRateLimitReset = Number(headers['x-rate-limit-reset'])
   const updateMaxPerMinute = Number(headers['x-rate-limit-limit'])
   if (!_.isFinite(updatedRateLimitRemaining) || !_.isFinite(updatedRateLimitReset) || !_.isFinite(updateMaxPerMinute)) {
-    log.error(`Invalid getSinglePage response headers, remaining: ${updatedRateLimitRemaining}, reset: ${updatedRateLimitReset}`)
+    log.warn(`Invalid getSinglePage response headers for url: ${url}, remaining: ${updatedRateLimitRemaining}, reset: ${updatedRateLimitReset}`)
     return
   }
   // If this is a new limitation, reset the remaining count
@@ -198,12 +199,12 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
       rateLimits.currentlyRunning += 1
       const res = await super.getSinglePage(args)
       if (res.headers && this.shouldUseDynamicRateLimit()) {
-        updateRateLimits(rateLimits, res.headers)
+        updateRateLimits(rateLimits, res.headers, args.url)
       }
       return res
     } catch (e) {
       if (e.response?.headers && this.shouldUseDynamicRateLimit()) {
-        updateRateLimits(rateLimits, e.response?.headers)
+        updateRateLimits(rateLimits, e.response?.headers, args.url)
       }
       const status = e.response?.status
       // Okta returns 404 when trying fetch AppUserSchema for built-in apps
@@ -231,17 +232,18 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
     responseData: Values,
     url: string
   ): Values {
-    const SECRET_PLACEHOLER = '<SECRET>'
-    const URL_TO_SECRET_FIELDS: Record<string, string[]> = {
-      '/api/v1/idps': ['credentials'],
-      '/api/v1/authenticators': ['sharedSecret', 'secretKey'],
+    const OMITTED_PLACEHOLER = '<OMITTED>'
+    const URL_TO_OMIT_FUNC: Record<string, (key: string, val: unknown) => unknown> = {
+      '/api/v1/idps': key => (key === 'credentials' ? OMITTED_PLACEHOLER : undefined),
+      '/api/v1/authenticators': key => (['sharedSecret', 'secretKey'].includes(key) ? OMITTED_PLACEHOLER : undefined),
+      '/api/v1/users': (key, val) => (key === 'profile' && _.isObject(val) ? _.pick(val, 'login') : undefined),
     }
-    if (!Object.keys(URL_TO_SECRET_FIELDS).includes(url)) {
+    if (!Object.keys(URL_TO_OMIT_FUNC).includes(url)) {
       return responseData
     }
-    const res = _.cloneDeepWith(responseData, (_val, key) => (
-      (_.isString(key) && URL_TO_SECRET_FIELDS[url].includes(key))
-        ? SECRET_PLACEHOLER
+    const res = _.cloneDeepWith(responseData, (val, key) => (
+      (_.isString(key) && URL_TO_OMIT_FUNC[url])
+        ? URL_TO_OMIT_FUNC[url](key, val)
         : undefined
     ))
     return res

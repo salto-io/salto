@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -19,8 +19,8 @@ import { Filter } from '../src/filter'
 import { fileType } from '../src/types/file_cabinet_types'
 import getChangeValidator from '../src/change_validator'
 import netsuiteClientValidation from '../src/change_validators/client_validation'
-import { FetchByQueryFunc, FetchByQueryReturnType } from '../src/change_validators/safe_deploy'
-import { NetsuiteQuery, fullFetchConfig } from '../src/query'
+import { FetchByQueryFunc, FetchByQueryReturnType, NetsuiteQuery } from '../src/config/query'
+import { fullFetchConfig } from '../src/config/config_creator'
 import NetsuiteClient from '../src/client/client'
 import * as dependencies from '../src/change_validators/dependencies'
 import { INTERNAL_ID } from '../src/constants'

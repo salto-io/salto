@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -18,10 +18,10 @@ import { CORE_ANNOTATIONS, getChangeData, isAdditionChange, isAdditionOrModifica
 import { collections } from '@salto-io/lowerdash'
 import { getParent } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
-import { OBJECT_TYPE_TYPE, OBJECT_SCHEMA_STATUS_TYPE, OBJECT_SCHEMA_TYPE } from '../../constants'
+import { OBJECT_TYPE_TYPE, OBJECT_SCHEMA_STATUS_TYPE, OBJECT_SCHEMA_TYPE, OBJECT_SCHMEA_REFERENCE_TYPE_TYPE } from '../../constants'
 
 const { awu } = collections.asynciterable
-const SUPPORTED_TYPES = [OBJECT_SCHEMA_STATUS_TYPE, OBJECT_TYPE_TYPE]
+const SUPPORTED_TYPES = [OBJECT_SCHEMA_STATUS_TYPE, OBJECT_TYPE_TYPE, OBJECT_SCHMEA_REFERENCE_TYPE_TYPE]
 
 /* This filter adds objectSchemaId to some assets instances
 * that need it in order to be deployed.

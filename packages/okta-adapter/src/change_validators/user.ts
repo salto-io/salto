@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -22,7 +22,7 @@ import { values } from '@salto-io/lowerdash'
 import { paginate } from '../client/pagination'
 import OktaClient from '../client/client'
 import { OktaConfig, FETCH_CONFIG } from '../config'
-import { USER_MAPPING, getUsers } from '../filters/user'
+import { DEFAULT_CONVERT_USERS_IDS_VALUE, getUsers, getUsersFromInstances, OMIT_MISSING_USERS_CONFIGURATION_LINK, USER_MAPPING } from '../user_utils'
 
 const { isDefined } = values
 const { createPaginator } = clientUtils
@@ -33,7 +33,8 @@ const log = logger(module)
 */
 export const usersValidator: (client: OktaClient, config: OktaConfig) =>
     ChangeValidator = (client, config) => async changes => {
-      if (!(config[FETCH_CONFIG]?.convertUsersIds ?? true)) {
+      const { convertUsersIds } = config[FETCH_CONFIG]
+      if (!(convertUsersIds ?? DEFAULT_CONVERT_USERS_IDS_VALUE)) {
         log.debug('Skipped usersValidator because convertUsersIds config flag is disabled')
         return []
       }
@@ -42,11 +43,10 @@ export const usersValidator: (client: OktaClient, config: OktaConfig) =>
         .filter(isInstanceChange)
         .map(getChangeData)
         .filter(instance => Object.keys(USER_MAPPING).includes(instance.elemID.typeName))
-        .filter(instance =>
-          USER_MAPPING[instance.elemID.typeName]
-            .some(path => resolvePath(instance, instance.elemID.createNestedID(...path)) !== undefined))
 
-      if (_.isEmpty(relevantInstances)) {
+      const usersToFetch = getUsersFromInstances(relevantInstances)
+
+      if (_.isEmpty(usersToFetch)) {
         return []
       }
 
@@ -55,7 +55,10 @@ export const usersValidator: (client: OktaClient, config: OktaConfig) =>
         paginationFuncCreator: paginate,
       })
 
-      const users = await getUsers(paginator)
+      const users = await getUsers(
+        paginator,
+        { userIds: usersToFetch, property: 'profile.login' },
+      )
 
       const existingUsers = new Set(users.map(user => user.profile.login))
 
@@ -77,6 +80,6 @@ export const usersValidator: (client: OktaClient, config: OktaConfig) =>
           elemID: instance.elemID,
           severity: 'Error',
           message: 'Instance references users which don\'t exist in target environment',
-          detailedMessage: `The following users are referenced by this instance, but do not exist in the target environment: ${missingUsersByInstanceId[instance.elemID.getFullName()].join(', ')}.\nIn order to deploy this instance, add these users to your target environment or edit this instance to use valid usernames.`,
+          detailedMessage: `The following users are referenced by this instance, but do not exist in the target environment: ${missingUsersByInstanceId[instance.elemID.getFullName()].join(', ')}.\nIn order to deploy this instance, add these users to your target environment, edit this instance to use valid usernames or configure omitMissingUsers: ${OMIT_MISSING_USERS_CONFIGURATION_LINK}`,
         }))
     }

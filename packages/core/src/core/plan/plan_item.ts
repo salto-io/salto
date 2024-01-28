@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -25,6 +25,7 @@ export type ChangeWithDetails = Change & {
 }
 export type PlanItem = Group<Change> & {
   action: ActionName
+  account: string
   changes: () => Iterable<ChangeWithDetails>
   detailedChanges: () => Iterable<DetailedChange>
 }
@@ -42,11 +43,16 @@ const getGroupAction = (group: Group<Change>): ActionName => {
     : 'modify'
 }
 
+const getGroupAccount = (group: Group<Change>): string => (
+  getChangeData(wu(group.items.values()).toArray()[0]).elemID.adapter
+)
+
 export const addPlanItemAccessors = (
   group: Group<Change>,
   compareOptions?: CompareOptions,
 ): PlanItem => Object.assign(group, {
   action: getGroupAction(group),
+  account: getGroupAccount(group),
   changes() {
     return wu(group.items.values())
       .map(change => ({

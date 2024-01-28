@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -24,6 +24,7 @@ import { removalsDependencyChanger } from './removals'
 import { workflowDependencyChanger } from './workflow'
 import { fieldContextDependencyChanger } from './field_contexts'
 import { fieldConfigurationDependencyChanger } from './field_configuration'
+import { jsmProjectToJsmFieldDependencyChanger } from './jsm_project_to_jsm_field'
 
 const { awu } = collections.asynciterable
 
@@ -37,6 +38,7 @@ const DEPENDENCY_CHANGERS: DependencyChanger[] = [
   projectContextsDependencyChanger,
   fieldContextDependencyChanger,
   fieldConfigurationDependencyChanger,
+  jsmProjectToJsmFieldDependencyChanger,
 ]
 
 export const dependencyChanger: DependencyChanger = async (

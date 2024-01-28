@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,7 +15,7 @@
 */
 
 import Joi from 'joi'
-import { ObjectType, ElemID, BuiltinTypes, ListType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, ListType, CORE_ANNOTATIONS, Value, InstanceElement } from '@salto-io/adapter-api'
 import { elements as adapterElements } from '@salto-io/adapter-components'
 import { JIRA } from '../../constants'
 
@@ -68,7 +68,7 @@ export const createLayoutType = (typeName: string): {
   }
 }
 
-export type screenScheme = {
+export type ScreenScheme = {
   id: string
   name: string
   description: string
@@ -76,7 +76,7 @@ export type screenScheme = {
   }
 }
 
-export type containerIssueLayoutResponse = {
+export type ContainerIssueLayoutResponse = {
   containerType: string
   items: {
     nodes: {
@@ -100,7 +100,7 @@ export type IssueLayoutConfiguration = {
   issueLayoutResult: {
     id: string
     name: string
-    containers: containerIssueLayoutResponse[]
+    containers: ContainerIssueLayoutResponse[]
   }
   metadata?: {
     configuration: {
@@ -115,23 +115,28 @@ export type IssueLayoutConfiguration = {
 
 export type IssueLayoutResponse = {
   issueLayoutConfiguration: IssueLayoutConfiguration
-  }
+}
 
-export type layoutConfigItem = {
+export type LayoutConfigItem = {
   type: string
   sectionType: 'PRIMARY' | 'SECONDARY' | 'CONTENT' | 'REQUEST'
   key: string
-  data: {}
+  data: {
+    properties?: Value | null
+  } | undefined
 }
 
 export const ISSUE_LAYOUT_CONFIG_ITEM_SCHEME = Joi.object({
   type: Joi.string().required(),
   sectionType: Joi.string().valid('PRIMARY', 'SECONDARY', 'CONTENT', 'REQUEST').required(),
   key: Joi.string().required(),
+  data: Joi.object({
+    properties: Joi.object().unknown(true).allow(null),
+  }).unknown(true),
 }).unknown(true).required()
 
-export type issueLayoutConfig = {
-    items: layoutConfigItem[]
+export type IssueLayoutConfig = {
+    items: LayoutConfigItem[]
 }
 
 export const ISSUE_LAYOUT_RESPONSE_SCHEME = Joi.object({
@@ -148,3 +153,13 @@ export const ISSUE_LAYOUT_RESPONSE_SCHEME = Joi.object({
     }).unknown(true).allow(null).required(),
   }).unknown(true).required(),
 }).unknown(true).required()
+
+type RequestType = {
+  requestForm: {
+    issueLayoutConfig: IssueLayoutConfig
+  }
+}
+
+export type RequestTypeWithIssueLayoutConfigInstance = InstanceElement & {
+  value: InstanceElement['value'] & RequestType
+}

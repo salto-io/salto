@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { regex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { isInstanceElement, isObjectType } from '@salto-io/adapter-api'
-import { isCriteriaQuery } from '../../query'
+import { isCriteriaQuery } from '../../config/query'
 import { LocalFilterCreator } from '../../filter'
 import { isCustomRecordType } from '../../types'
 import { CUSTOM_RECORD_TYPE } from '../../constants'

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isObjectType, ObjectType } from '@salto-io/adapter-api'
+import { getChangeData, InstanceElement, isInstanceChange, isInstanceElement, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { resolvePath, setPath } from '@salto-io/adapter-utils'
@@ -83,8 +83,7 @@ const filterCreator: LocalFilterCreator = ({ elementsSource }) => ({
     }
     await awu([reportdefinitionType, savedsearchType, financiallayoutType]).forEach(async parsedType => {
       const { type, innerTypes } = parsedType()
-      _.remove(elements, e => isObjectType(e) && e.elemID.name === type.elemID.name)
-      _.remove(elements, e => isObjectType(e) && e.elemID.name.startsWith(type.elemID.name))
+      _.remove(elements, e => _.isEqual(e.path, type.path))
       const instances = _.remove(elements, e => isInstanceElement(e)
           && e.elemID.typeName === type.elemID.name)
       elements.push(type)

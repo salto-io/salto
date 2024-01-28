@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -182,6 +182,21 @@ describe('article utility functions', () => {
         attachmentInstances: [clonedAttachment],
       })
       expect(mockPut).toHaveBeenCalledTimes(1)
+    })
+    it('should update the article translation\'s body without changing the actual translation', async () => {
+      const clondedArticle = articleWithAttachmentInstance.clone()
+      const clonedTranslation = articleTranslationInstance.clone()
+      const clonedAttachment = articleAttachmentInstance.clone()
+      clonedAttachment.value.id = 250595
+      clonedAttachment.annotate({ [CORE_ANNOTATIONS.PARENT]: [clondedArticle.value] })
+      await articleUtils.updateArticleTranslationBody({
+        client,
+        articleValues: clondedArticle.value,
+        attachmentInstances: [clonedAttachment],
+      })
+      expect(clonedTranslation.value.body).toEqual(
+        clondedArticle.value.translations[0].value.value.body
+      )
     })
   })
 })

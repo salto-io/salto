@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -21,7 +21,7 @@ import { computeGetArgs, simpleGetArgs, createUrl, replaceUrlParams } from './re
 import { RECORDS_PATH, TYPES_PATH, SUBTYPES_PATH, SETTINGS_NESTED_PATH } from './constants'
 import { findDataField, returnFullEntry, FindNestedFieldFunc } from './field_finder'
 import { filterTypes } from './type_elements'
-import { getInstanceName, generateInstanceNameFromConfig, createServiceIds, removeNullValues, toBasicInstance } from './instance_elements'
+import { getInstanceName, generateInstanceNameFromConfig, createServiceIds, removeNullValues, toBasicInstance, removeNullValuesTransformFunc } from './instance_elements'
 import { FetchElements } from './element_getter'
 
 export {
@@ -38,6 +38,7 @@ export {
   createUrl,
   replaceUrlParams,
   removeNullValues,
+  removeNullValuesTransformFunc,
   query,
   FetchElements,
   toBasicInstance,

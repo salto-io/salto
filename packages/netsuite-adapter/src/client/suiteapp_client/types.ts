@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,7 +15,7 @@
 */
 import { ElemID, Values } from '@salto-io/adapter-api'
 import Bottleneck from 'bottleneck'
-import { InstanceLimiterFunc, SuiteAppClientConfig } from '../../config'
+import { InstanceLimiterFunc, SuiteAppClientConfig } from '../../config/types'
 import { SuiteAppConfigRecordType, SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
 import { SuiteAppCredentials } from '../credentials'
 

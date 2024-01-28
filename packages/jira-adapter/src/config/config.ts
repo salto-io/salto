@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -216,6 +216,7 @@ export type ChangeValidatorName = (
   | 'sameIssueTypeNameChange'
   | 'statusMigrationChange'
   | 'workflowSchemeMigration'
+  | 'workflowStatusMappings'
   | 'issueTypeSchemeMigration'
   | 'activeSchemeChange'
   | 'masking'
@@ -233,14 +234,16 @@ export type ChangeValidatorName = (
   | 'workflowTransitionDuplicateName'
   | 'permissionSchemeDeployment'
   | 'projectCategory'
-  | 'unresolvedFieldConfigurationItems'
   | 'customFieldsWith10KOptions'
   | 'issueTypeHierarchy'
   | 'automationProjects'
   | 'deleteLastQueueValidator'
   | 'defaultAdditionQueueValidator'
+  | 'defaultAttributeValidator'
   | 'boardColumnConfig'
   | 'automationToAssets'
+  | 'addJsmProject'
+  | 'deleteLabelAtttribute'
   )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -270,6 +273,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     sameIssueTypeNameChange: { refType: BuiltinTypes.BOOLEAN },
     statusMigrationChange: { refType: BuiltinTypes.BOOLEAN },
     workflowSchemeMigration: { refType: BuiltinTypes.BOOLEAN },
+    workflowStatusMappings: { refType: BuiltinTypes.BOOLEAN },
     issueTypeSchemeMigration: { refType: BuiltinTypes.BOOLEAN },
     activeSchemeChange: { refType: BuiltinTypes.BOOLEAN },
     masking: { refType: BuiltinTypes.BOOLEAN },
@@ -287,13 +291,15 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     workflowTransitionDuplicateName: { refType: BuiltinTypes.BOOLEAN },
     permissionSchemeDeployment: { refType: BuiltinTypes.BOOLEAN },
     projectCategory: { refType: BuiltinTypes.BOOLEAN },
-    unresolvedFieldConfigurationItems: { refType: BuiltinTypes.BOOLEAN },
     customFieldsWith10KOptions: { refType: BuiltinTypes.BOOLEAN },
     issueTypeHierarchy: { refType: BuiltinTypes.BOOLEAN },
     automationProjects: { refType: BuiltinTypes.BOOLEAN },
     deleteLastQueueValidator: { refType: BuiltinTypes.BOOLEAN },
     defaultAdditionQueueValidator: { refType: BuiltinTypes.BOOLEAN },
+    defaultAttributeValidator: { refType: BuiltinTypes.BOOLEAN },
     automationToAssets: { refType: BuiltinTypes.BOOLEAN },
+    addJsmProject: { refType: BuiltinTypes.BOOLEAN },
+    deleteLabelAtttribute: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -409,11 +415,11 @@ export const validateJiraFetchConfig = ({
 }: {
   fetchConfig: JiraFetchConfig
   apiDefinitions: JiraApiConfig
-  scriptRunnerApiDefinitions: JiraDuckTypeConfig
+  scriptRunnerApiDefinitions?: JiraDuckTypeConfig
   jsmApiDefinitions: JiraDuckTypeConfig
 }): void => {
   const jsmSupportedTypes = fetchConfig.enableJSM ? Object.keys(jsmApiDefinitions.supportedTypes) : []
-  const scriptRunnerSupportedTypes = fetchConfig.enableScriptRunnerAddon
+  const scriptRunnerSupportedTypes = fetchConfig.enableScriptRunnerAddon && scriptRunnerApiDefinitions !== undefined
     ? Object.keys(scriptRunnerApiDefinitions.supportedTypes) : []
   const supportedTypes = Object.keys(apiDefinitions.supportedTypes)
     .concat(jsmSupportedTypes)

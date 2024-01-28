@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -84,7 +84,7 @@ describe('diff command', () => {
       expect(result).toBe(CliExitCode.Success)
     })
     it('should invoke the diff api command', async () => {
-      expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive', false, false, workspace.accounts(), [])
+      expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive', false, false, undefined, [])
     })
   })
 
@@ -110,7 +110,7 @@ describe('diff command', () => {
       expect(result).toBe(CliExitCode.Success)
     })
     it('should invoke the diff api command', async () => {
-      expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive', true, false, workspace.accounts(), [])
+      expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive', true, false, undefined, [])
     })
   })
 
@@ -136,7 +136,7 @@ describe('diff command', () => {
       expect(result).toBe(CliExitCode.Success)
     })
     it('should invoke the diff api command', async () => {
-      expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive', false, true, workspace.accounts(), [])
+      expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive', false, true, undefined, [])
     })
   })
 
@@ -165,7 +165,7 @@ describe('diff command', () => {
     })
     it('should invoke the diff api command', async () => {
       expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive',
-        false, true, workspace.accounts(), expectElementSelector(regex))
+        false, true, undefined, expectElementSelector(regex))
     })
   })
 

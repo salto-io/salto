@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -20,7 +20,7 @@ import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { ISSUE_TYPE_NAME, JIRA, STATUS_TYPE_NAME } from '../../src/constants'
-import { getFilterParams, mockClient } from '../utils'
+import { createEmptyType, getFilterParams, mockClient } from '../utils'
 import workflowSchemeFilter from '../../src/filters/workflow_scheme'
 import { Filter } from '../../src/filter'
 import { getDefaultConfig } from '../../src/config/config'
@@ -48,6 +48,7 @@ class ServiceError {
 
 describe('workflowScheme', () => {
   let workflowSchemeType: ObjectType
+  let statusMigrationsType: ObjectType
   let filter: Filter
   let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
@@ -64,14 +65,20 @@ describe('workflowScheme', () => {
       paginator,
       elementsSource,
     }))
+    statusMigrationsType = createEmptyType('StatusMapping')
     workflowSchemeType = new ObjectType({
       elemID: new ElemID(JIRA, 'WorkflowScheme'),
+      fields: {
+        statusMigrations: {
+          refType: statusMigrationsType,
+        },
+      },
     })
   })
 
   describe('onFetch', () => {
     it('should add statusMigrations', async () => {
-      await filter.onFetch?.([workflowSchemeType])
+      await filter.onFetch?.([workflowSchemeType, statusMigrationsType])
       expect(workflowSchemeType.fields.statusMigrations).toBeDefined()
       expect(workflowSchemeType.fields.statusMigrations.annotations).toEqual({
         [CORE_ANNOTATIONS.UPDATABLE]: true,
@@ -79,7 +86,7 @@ describe('workflowScheme', () => {
     })
     it('replace field issueTypeMappings with items', async () => {
       workflowSchemeType.fields.issueTypeMappings = new Field(workflowSchemeType, 'issueTypeMappings', BuiltinTypes.STRING)
-      await filter.onFetch?.([workflowSchemeType])
+      await filter.onFetch?.([workflowSchemeType, statusMigrationsType])
       expect(workflowSchemeType.fields.issueTypeMappings).toBeUndefined()
       expect(workflowSchemeType.fields.items).toBeDefined()
       expect(workflowSchemeType.fields.items.annotations).toEqual({

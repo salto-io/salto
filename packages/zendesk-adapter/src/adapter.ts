@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -56,6 +56,7 @@ import {
   GUIDE_SUPPORTED_TYPES,
   GUIDE_TYPES_TO_HANDLE_BY_BRAND,
   isGuideEnabled,
+  isGuideThemesEnabled,
   ZendeskConfig,
 } from './config'
 import {
@@ -65,6 +66,8 @@ import {
   CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
   CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME,
   DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
+  GUIDE_THEME_TYPE_NAME,
+  THEME_SETTINGS_TYPE_NAME,
   ZENDESK,
 } from './constants'
 import { getBrandsForGuide } from './filters/utils'
@@ -121,6 +124,7 @@ import deployBrandedGuideTypesFilter from './filters/deploy_branded_guide_types'
 import { Credentials } from './auth'
 import guideSectionCategoryFilter from './filters/guide_section_and_category'
 import guideTranslationFilter from './filters/guide_translation'
+import guideThemeFilter from './filters/guide_theme'
 import fetchCategorySection from './filters/guide_fetch_article_section_and_category'
 import guideParentSection, { addParentFields } from './filters/guide_parent_to_section'
 import guideGuideSettings from './filters/guide_guide_settings'
@@ -155,6 +159,7 @@ import customObjectFieldFilter from './filters/custom_objects/custom_object_fiel
 import customObjectFieldsOrderFilter from './filters/custom_objects/custom_object_fields_order'
 import customObjectFieldOptionsFilter from './filters/custom_field_options/custom_object_field_options'
 import { createFixElementFunctions } from './fix_elements'
+import guideThemeSettingFilter from './filters/guide_theme_settings'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -230,7 +235,6 @@ export const DEFAULT_FILTERS = [
   // fieldReferencesFilter should be after:
   // usersFilter, macroAttachmentsFilter, tagsFilter, guideLocalesFilter, customObjectFilter, customObjectFieldFilter
   fieldReferencesFilter,
-  addAliasFilter, // should run after fieldReferencesFilter
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,
   appInstallationsFilter,
@@ -256,6 +260,9 @@ export const DEFAULT_FILTERS = [
   handleIdenticalAttachmentConflicts,
   omitCollisionFilter, // needs to be after referencedIdFieldsFilter (which is part of the common filters)
   deployBrandedGuideTypesFilter,
+  guideThemeFilter, // fetches a lot of data, so should be after omitCollisionFilter to remove theme collisions
+  guideThemeSettingFilter, // needs to be after guideThemeFilter as it depends on successful theme fetches
+  addAliasFilter, // should run after fieldReferencesFilter and guideThemeSettingFilter
   guideArrangePaths,
   hideAccountFeatures,
   fetchCategorySection, // need to be after arrange paths as it uses the 'name'/'title' field
@@ -284,7 +291,7 @@ const zendeskGuideEntriesFunc = (
     args,
     typeName,
     typesConfig,
-  } : {
+  }: {
     paginator: clientUtils.Paginator
     args: clientUtils.ClientGetWithPaginationParams
     typeName?: string
@@ -354,7 +361,7 @@ const getGuideElements = async ({
   apiDefinitions,
   fetchQuery,
   getElemIdFunc,
-}:{
+}: {
   brandsList: InstanceElement[]
   brandToPaginator: Record<string, clientUtils.Paginator>
   apiDefinitions: configUtils.AdapterDuckTypeApiConfig
@@ -448,7 +455,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     filterRunnerClient,
     paginator,
     brandIdToClient,
-  } : {
+  }: {
     filterRunnerClient?: ZendeskClient
     paginator?: clientUtils.Paginator
     brandIdToClient?: BrandIdToClient
@@ -507,7 +514,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       filterRunnerClient,
       paginator,
       brandIdToClient = {},
-    } : {
+    }: {
       filterRunnerClient?: ZendeskClient
       paginator?: clientUtils.Paginator
       brandIdToClient?: BrandIdToClient
@@ -534,15 +541,23 @@ export default class ZendeskAdapter implements AdapterOperations {
     }))
   }
 
+  private filterSupportedTypes(): Record<string, string[]> {
+    const isGuideEnabledInConfig = isGuideEnabled(this.userConfig[FETCH_CONFIG])
+    const isGuideThemesEnabledInConfig = isGuideThemesEnabled(this.userConfig[FETCH_CONFIG])
+    const keysToOmit = isGuideEnabledInConfig
+      ? Object.keys(GUIDE_BRAND_SPECIFIC_TYPES) : Object.keys(GUIDE_SUPPORTED_TYPES)
+    if (!isGuideThemesEnabledInConfig) {
+      keysToOmit.push(GUIDE_THEME_TYPE_NAME)
+    }
+    const { supportedTypes: allSupportedTypes } = this.userConfig.apiDefinitions
+    return _.omit(allSupportedTypes, ...keysToOmit)
+  }
+
   @logDuration('generating instances and types from service')
   private async getElements(): Promise<ReturnType<typeof getAllElements>> {
     const isGuideEnabledInConfig = isGuideEnabled(this.userConfig[FETCH_CONFIG])
     const isGuideInFetch = isGuideEnabledInConfig && !_.isEmpty(this.userConfig[FETCH_CONFIG].guide?.brands)
-    const { supportedTypes: allSupportedTypes } = this.userConfig.apiDefinitions
-    const supportedTypes = isGuideEnabledInConfig
-      ? _.omit(allSupportedTypes, ...Object.keys(GUIDE_BRAND_SPECIFIC_TYPES))
-      : _.omit(allSupportedTypes, ...Object.keys(GUIDE_SUPPORTED_TYPES))
-
+    const supportedTypes = this.filterSupportedTypes()
     // Zendesk Support and (if enabled) global Zendesk Guide types
     const defaultSubdomainResult = await getAllElements({
       adapterName: ZENDESK,
@@ -649,7 +664,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       } else {
         log.info(`Account subscription data invalid: ${inspectValue(data)}`)
       }
-    // This log is not crucial for the fetch to succeed, so we don't want to fail the fetch if it fails
+      // This log is not crucial for the fetch to succeed, so we don't want to fail the fetch if it fails
     } catch (e) {
       if (e.response?.status === 422) {
         log.info('Account subscription data unavailable because this is a sandbox environment')
@@ -776,8 +791,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
     const [instanceChanges, nonInstanceChanges] = _.partition(changeGroup.changes, isInstanceChange)
     if (nonInstanceChanges.length > 0) {
-      log.warn(`We currently can't deploy types. Therefore, the following changes will not be deployed: ${
-        nonInstanceChanges.map(elem => getChangeData(elem).elemID.getFullName()).join(', ')}`)
+      log.warn(`We currently can't deploy types. Therefore, the following changes will not be deployed: ${nonInstanceChanges.map(elem => getChangeData(elem).elemID.getFullName()).join(', ')}`)
     }
     const changesToDeploy = instanceChanges
       .map(change => ({
@@ -863,8 +877,8 @@ export default class ZendeskAdapter implements AdapterOperations {
         fetchConfig: this.userConfig[FETCH_CONFIG],
         deployConfig: this.userConfig[DEPLOY_CONFIG],
         typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment', BRAND_LOGO_TYPE_NAME, CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME],
-        // article_attachment additions supported in a filter
-        typesWithNoDeploy: ['tag', ARTICLE_ATTACHMENT_TYPE_NAME, ...GUIDE_ORDER_TYPES, DEFAULT_CUSTOM_STATUSES_TYPE_NAME, CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME],
+        // article_attachment and guide themes additions supported in a filter
+        typesWithNoDeploy: ['tag', ARTICLE_ATTACHMENT_TYPE_NAME, GUIDE_THEME_TYPE_NAME, THEME_SETTINGS_TYPE_NAME, ...GUIDE_ORDER_TYPES, DEFAULT_CUSTOM_STATUSES_TYPE_NAME, CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME],
       }),
       dependencyChanger,
       getChangeGroupIds,

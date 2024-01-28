@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -27,14 +27,14 @@ import {
   SalesforceConfig,
   DataManagementConfig,
   isRetrieveSizeConfigSuggstion,
-  MAX_INSTANCES_PER_TYPE, MetadataConfigSuggestion, MetadataQueryParams,
+  MetadataConfigSuggestion,
+  MetadataQueryParams,
 } from './types'
 import * as constants from './constants'
 import {
   SALESFORCE_ERRORS,
   SalesforceErrorName,
   SOCKET_TIMEOUT,
-  UNLIMITED_INSTANCES_VALUE,
 } from './constants'
 
 const { isDefined } = values
@@ -65,8 +65,7 @@ export const createManyInstancesExcludeConfigChange = (
   { typeName: string; instancesCount: number; maxInstancesPerType: number }
 ) : ConfigChangeSuggestion => {
   // Return a config suggestion to exclude that type from the dataObjects
-  const reason = `'${typeName}' has ${instancesCount} instances so it was skipped and would be excluded from future fetch operations, as ${MAX_INSTANCES_PER_TYPE} is set to ${maxInstancesPerType}.
-      If you wish to fetch it anyway, remove it from your app configuration exclude block and increase maxInstancePerType to the desired value (${UNLIMITED_INSTANCES_VALUE} for unlimited).`
+  const reason = `Your application configuration has been updated to exclude instances of ${typeName} due to their count of ${instancesCount} exceeding the allowed maximum ${maxInstancesPerType}. To include these instances, remove ${typeName} from the application's fetch exclude block and increase the maxInstancesPerType limit. Learn more here: https://help.salto.io/en/articles/8843243-limiting-the-number-of-data-records-fetched-by-salto`
   return {
     type: 'dataObjectsExclude',
     value: typeName,

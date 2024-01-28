@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -37,7 +37,8 @@ export const getReferencedElementsForReferrers = async (
   return awu(elements)
     .map(async element => {
       const referencedElements = await getReferencedElements(
-        [element], deployAllReferencedElements
+        [element],
+        deployAllReferencedElements,
       )
       const references = referencedElements
         .filter(referencedElement => !sourceElemIdSet.has(referencedElement.elemID.getFullName()))
@@ -62,7 +63,8 @@ const changeValidator: NetsuiteChangeValidator = async (changes, deployReference
     .filter(isStandardInstanceOrCustomRecordType)
 
   const refererToReferenceElements = await getReferencedElementsForReferrers(
-    sdfChangesData, deployReferencedElements
+    sdfChangesData,
+    deployReferencedElements,
   )
 
   return refererToReferenceElements.map(refererToReferenceElement => {

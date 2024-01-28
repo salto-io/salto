@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,7 +16,9 @@
 import { Adapter, BuiltinTypes, ElemID, InstanceElement, ObjectType, AdapterInstallResult, AdapterOperationsContext, AdapterOperations } from '@salto-io/adapter-api'
 import { SdkDownloadService } from '@salto-io/suitecloud-cli'
 import Bottleneck from 'bottleneck'
-import { configType, DEFAULT_CONCURRENCY, instanceLimiterCreator, netsuiteConfigFromConfig } from './config'
+import { DEFAULT_CONCURRENCY } from './config/constants'
+import { configType } from './config/types'
+import { netsuiteConfigFromConfig, instanceLimiterCreator } from './config/config_creator'
 import { NETSUITE } from './constants'
 import { Credentials, isSdfCredentialsOnly, isSuiteAppCredentials, toCredentialsAccountId } from './client/credentials'
 import SuiteAppClient from './client/suiteapp_client/suiteapp_client'

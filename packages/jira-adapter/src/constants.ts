@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -106,6 +106,7 @@ export const SCRIPT_RUNNER_TYPES = [SCRIPT_RUNNER_LISTENER_TYPE, SCRIPT_FRAGMENT
   BEHAVIOR_TYPE, ESCALATION_SERVICE_TYPE, SCRIPTED_FIELD_TYPE]
 export const ISSUE_LAYOUT_TYPE = 'IssueLayout'
 export const SERVICE_DESK = 'service_desk'
+export const SOFTWARE_FIELD = 'software'
 export const FETCH_CONFIG = 'fetch'
 export const QUEUE_TYPE = 'Queue'
 export const REQUEST_TYPE_NAME = 'RequestType'
@@ -122,5 +123,9 @@ export const OBJECT_SCHEMA_STATUS_TYPE = 'ObjectSchemaStatus'
 export const OBJECT_TYPE_TYPE = 'ObjectType'
 export const OBJECT_TYPE_ATTRIBUTE_TYPE = 'ObjectTypeAttribute'
 export const OBJECT_TYPE_ORDER_TYPE = 'ObjectTypeOrder'
+export const OBJECT_SCHMEA_REFERENCE_TYPE_TYPE = 'ObjectSchemaReferenceType'
+export const OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE = 'ObjectSchemaDefaultReferenceType'
+export const OBJECT_TYPE_LABEL_ATTRIBUTE_TYPE = 'ObjectTypeLabelAttribute'
+export const DELETE_LINK_TYPES = 'DeleteLinkTypes'
 // almost constant functions
 export const fetchFailedWarnings = (name :string):string => `Salto could not access the ${name} resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource`

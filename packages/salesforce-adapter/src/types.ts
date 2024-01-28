@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -41,6 +41,7 @@ export const CUSTOM_OBJECTS_DEPLOY_RETRY_OPTIONS = 'customObjectsDeployRetryOpti
 export const FETCH_CONFIG = 'fetch'
 export const DEPLOY_CONFIG = 'deploy'
 export const METADATA_CONFIG = 'metadata'
+export const CUSTOM_REFS_CONFIG = 'customReferences'
 export const METADATA_INCLUDE_LIST = 'include'
 export const METADATA_EXCLUDE_LIST = 'exclude'
 const METADATA_TYPE = 'metadataType'
@@ -93,6 +94,7 @@ export type OptionalFeatures = {
   useLabelAsAlias?: boolean
   fixRetrieveFilePaths?: boolean
   organizationWideSharingDefaults?: boolean
+  extendedCustomFieldInformation?: boolean
 }
 
 export type ChangeValidatorName = (
@@ -159,6 +161,11 @@ export type BrokenOutgoingReferencesSettings = {
   defaultBehavior: OutgoingReferenceBehavior
   perTargetTypeOverrides?: Record<string, OutgoingReferenceBehavior>
 }
+
+const customReferencesTypeNames = ['profiles'] as const
+type customReferencesTypes = typeof customReferencesTypeNames[number]
+
+export type CustomReferencesSettings = Partial<Record<customReferencesTypes, boolean>>
 
 const objectIdSettings = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'objectIdSettings'),
@@ -268,6 +275,11 @@ const brokenOutgoingReferencesSettingsType = new ObjectType({
   },
 })
 
+const customReferencesSettingsType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'saltoCustomReferencesSettings'),
+  fields: Object.fromEntries(customReferencesTypeNames.map(name => [name, { refType: BuiltinTypes.BOOLEAN }])),
+})
+
 const warningSettingsType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'saltoWarningSettings'),
   fields: {
@@ -291,6 +303,7 @@ export type DataManagementConfig = {
   saltoManagementFieldSettings?: SaltoManagementFieldSettings
   brokenOutgoingReferencesSettings?: BrokenOutgoingReferencesSettings
   omittedFields?: string[]
+  [CUSTOM_REFS_CONFIG]?: CustomReferencesSettings
 }
 
 export type FetchParameters = {
@@ -335,7 +348,7 @@ export type QuickDeployParams = {
   hash: string
 }
 
-type ClientDeployConfig = Partial<{
+export type ClientDeployConfig = Partial<{
   rollbackOnError: boolean
   ignoreWarnings: boolean
   purgeOnDelete: boolean
@@ -344,6 +357,7 @@ type ClientDeployConfig = Partial<{
   runTests: string[]
   deleteBeforeUpdate: boolean
   quickDeployParams: QuickDeployParams
+  performRetrieve: boolean
 }>
 
 export enum RetryStrategyName {
@@ -362,6 +376,7 @@ export type ClientRetryConfig = Partial<{
 export type CustomObjectsDeployRetryConfig = {
   maxAttempts: number
   retryDelay: number
+  retryDelayMultiplier: number
   retryableFailures: string[]
 }
 
@@ -548,6 +563,9 @@ const dataManagementType = new ObjectType({
     omittedFields: {
       refType: new ListType(BuiltinTypes.STRING),
     },
+    [CUSTOM_REFS_CONFIG]: {
+      refType: customReferencesSettingsType,
+    },
   } as Record<keyof DataManagementConfig, FieldDefinition>,
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -595,6 +613,7 @@ const clientDeployConfigType = new ObjectType({
     runTests: { refType: new ListType(BuiltinTypes.STRING) },
     deleteBeforeUpdate: { refType: BuiltinTypes.BOOLEAN },
     quickDeployParams: { refType: QuickDeployParamsType },
+    performRetrieve: { refType: BuiltinTypes.BOOLEAN },
   } as Record<keyof ClientDeployConfig, FieldDefinition>,
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -623,6 +642,7 @@ const clientRetryConfigType = new ObjectType({
   fields: {
     maxAttempts: { refType: BuiltinTypes.NUMBER },
     retryDelay: { refType: BuiltinTypes.NUMBER },
+    retryDelayMultiplier: { refType: BuiltinTypes.NUMBER },
     retryStrategy: {
       refType: BuiltinTypes.STRING,
       annotations: {
@@ -716,6 +736,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     useLabelAsAlias: { refType: BuiltinTypes.BOOLEAN },
     fixRetrieveFilePaths: { refType: BuiltinTypes.BOOLEAN },
     organizationWideSharingDefaults: { refType: BuiltinTypes.BOOLEAN },
+    extendedCustomFieldInformation: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

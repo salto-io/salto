@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -24,7 +24,7 @@ import { customrecordtypeType } from '../../src/autogen/types/standard_types/cus
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 import { entryFormType } from '../../src/autogen/types/standard_types/entryForm'
 import { customlistType } from '../../src/autogen/types/standard_types/customlist'
-import { emptyQueryParams, fullQueryParams } from '../../src/query'
+import { emptyQueryParams, fullQueryParams } from '../../src/config/config_creator'
 
 describe('add important values filter', () => {
   let workflow: ObjectType
@@ -93,10 +93,10 @@ describe('add important values filter', () => {
     expect(types.some(elem => elem.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] !== undefined)).toBeFalsy()
     expect(types.some(elem => elem.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] !== undefined)).toBeFalsy()
   })
-  it('should not add important values by default', async () => {
+  it('should add important values by default', async () => {
     await filterCreator(defaultOpts).onFetch?.(types)
-    expect(types.some(elem => elem.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] !== undefined)).toBeFalsy()
-    expect(types.some(elem => elem.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] !== undefined)).toBeFalsy()
+    expect(types.some(elem => elem.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] !== undefined)).toBeTruthy()
+    expect(types.some(elem => elem.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] !== undefined)).toBeTruthy()
   })
   it('should add important values', async () => {
     await filterCreator(optsWithImportantValues).onFetch?.(types)

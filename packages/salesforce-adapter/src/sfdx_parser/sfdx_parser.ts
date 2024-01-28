@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -21,11 +21,11 @@ import { collections, promises } from '@salto-io/lowerdash'
 import { filter } from '@salto-io/adapter-utils'
 import { ObjectType, StaticFile, isObjectType, ReadOnlyElementsSource, ElemID, Element, FetchResult, LoadElementsFromFolderArgs } from '@salto-io/adapter-api'
 import { readTextFile, readFile } from '@salto-io/file'
-import { SYSTEM_FIELDS, allFilters, UNSUPPORTED_SYSTEM_FIELDS } from '../adapter'
+import { allFilters } from '../adapter'
 import { xmlToValues, isComplexType, complexTypesMap, PACKAGE } from '../transformers/xml_transformer'
 import { METADATA_TYPES_TO_RENAME, createInstanceElement, createMetadataObjectType, MetadataValues } from '../transformers/transformer'
 import { buildFetchProfile } from '../fetch_profile/fetch_profile'
-import { CUSTOM_OBJECT, METADATA_CONTENT_FIELD, SALESFORCE, RECORDS_PATH } from '../constants'
+import { CUSTOM_OBJECT, METADATA_CONTENT_FIELD, SALESFORCE, RECORDS_PATH, SYSTEM_FIELDS, UNSUPPORTED_SYSTEM_FIELDS } from '../constants'
 import { sfdxFilters } from './filters'
 
 

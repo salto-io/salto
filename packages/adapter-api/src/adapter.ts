@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -39,15 +39,20 @@ export interface FetchResult {
   partialFetchData?: PartialFetchData
 }
 
-export type Group = {
-  id?: string
+export type Artifact = {
+  name: string
+  content: Buffer
+}
+
+export type AdapterGroupProperties = {
+  url?: string
+  artifacts?: Artifact[]
   requestId?: string
   hash?: string
-  url?: string
 }
 
 export type DeployExtraProperties = {
-  groups?: Group[]
+  groups?: AdapterGroupProperties[]
 }
 
 type SaltoDeployErrors = {

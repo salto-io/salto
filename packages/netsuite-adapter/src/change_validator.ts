@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -31,7 +31,7 @@ import immutableChangesValidator from './change_validators/immutable_changes'
 import uniqueFieldsValidator from './change_validators/unique_fields'
 import subInstancesValidator from './change_validators/subinstances'
 import standardTypesInvalidValuesValidator from './change_validators/standard_types_invalid_values'
-import safeDeployValidator, { FetchByQueryFunc } from './change_validators/safe_deploy'
+import safeDeployValidator from './change_validators/safe_deploy'
 import mappedListsIndexesValidator from './change_validators/mapped_lists_indexes'
 import configChangesValidator from './change_validators/config_changes'
 import suiteAppConfigElementsValidator from './change_validators/suiteapp_config_elements'
@@ -48,6 +48,8 @@ import rolePermissionValidator from './change_validators/role_permission_ids'
 import translationCollectionValidator from './change_validators/translation_collection_references'
 import omitFieldsValidator from './change_validators/omit_fields'
 import unreferencedFileAdditionValidator from './change_validators/unreferenced_file_addition'
+import unreferencedDatasetsValidator from './change_validators/check_referenced_datasets'
+import analyticsSilentFailureValidator from './change_validators/analytics_post_deploy_notification'
 import NetsuiteClient from './client/client'
 import {
   AdditionalDependencies,
@@ -55,9 +57,10 @@ import {
   NetsuiteValidatorName,
   NonSuiteAppValidatorName,
   OnlySuiteAppValidatorName,
-} from './config'
+} from './config/types'
 import { Filter } from './filter'
 import { NetsuiteChangeValidator } from './change_validators/types'
+import { FetchByQueryFunc } from './config/query'
 
 const { createChangeValidator } = deployment.changeValidators
 
@@ -89,6 +92,8 @@ const netsuiteChangeValidators: Record<NetsuiteValidatorName, NetsuiteChangeVali
   translationCollectionReferences: translationCollectionValidator,
   omitFields: omitFieldsValidator,
   unreferencedFileAddition: unreferencedFileAdditionValidator,
+  unreferencedDatasets: unreferencedDatasetsValidator,
+  analyticsSilentFailure: analyticsSilentFailureValidator,
 }
 
 const nonSuiteAppValidators: Record<NonSuiteAppValidatorName, NetsuiteChangeValidator> = {
@@ -173,9 +178,8 @@ const getChangeValidator: ({
         netsuiteValidators,
         validator =>
           (innerChanges: ReadonlyArray<Change>) =>
-            validator(innerChanges, deployReferencedElements, elementsSource, userConfig)
+            validator(innerChanges, deployReferencedElements, elementsSource, userConfig, client)
       )
-
       const safeDeploy = warnStaleData
         ? {
           safeDeploy: (innerChanges: ReadonlyArray<Change>) =>
@@ -191,7 +195,7 @@ const getChangeValidator: ({
 
       const dependedChangeErrors = await validateDependsOnInvalidElement(
         changeErrorsToElementIDs(validatorChangeErrors),
-        changes
+        changes,
       )
       const changeErrors = validatorChangeErrors.concat(dependedChangeErrors)
 

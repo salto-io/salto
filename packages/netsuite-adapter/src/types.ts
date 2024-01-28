@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -19,7 +19,7 @@ import { fieldTypes } from './types/field_types'
 import { enums } from './autogen/types/enums'
 import { StandardType, getStandardTypes, isStandardTypeName, getStandardTypesNames } from './autogen/types'
 import { TypesMap } from './types/object_types'
-import { fileCabinetTypesNames, getFileCabinetTypes } from './types/file_cabinet_types'
+import { getFileCabinetTypes, isFileCabinetTypeName } from './types/file_cabinet_types'
 import { getConfigurationTypes } from './types/configuration_types'
 import { CONFIG_FEATURES, CUSTOM_FIELD_PREFIX, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_PREFIX, METADATA_TYPE, SOAP, INTERNAL_ID, SCRIPT_ID, PATH, CUSTOM_RECORD_TYPE_NAME_PREFIX, BUNDLE, INTEGRATION } from './constants'
 import { SUPPORTED_TYPES } from './data_elements/types'
@@ -48,7 +48,7 @@ export const isStandardInstanceOrCustomRecordType = (element: Element): boolean 
 export const isCustomRecordTypeName = (name: string): boolean => name.startsWith(CUSTOM_RECORD_TYPE_NAME_PREFIX)
 
 export const isFileCabinetType = (type: ObjectType | TypeReference): boolean =>
-  fileCabinetTypesNames.has(type.elemID.name)
+  isFileCabinetTypeName(type.elemID.name)
 
 export const isFileCabinetInstance = (element: Element): element is InstanceElement =>
   isInstanceElement(element) && isFileCabinetType(element.refType)
@@ -214,9 +214,9 @@ export const isBundleType = (type: ObjectType | TypeReference): boolean =>
 export const isBundleInstance = (element: Element): element is InstanceElement =>
   isInstanceElement(element) && isBundleType(element.refType)
 
-export const netsuiteSupportedTypes = [
+export const netsuiteSupportedTypes: ReadonlyArray<string> = [
   ...getStandardTypesNames(),
   ...SUPPORTED_TYPES,
   ...SUITEAPP_CONFIG_TYPE_NAMES,
   CONFIG_FEATURES,
-]
+].sort()

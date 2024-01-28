@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import axios, { AxiosRequestConfig } from 'axios'
 import MockAdapter from 'axios-mock-adapter'
+import JSZip from 'jszip'
 import {
   InstanceElement,
   isInstanceElement,
@@ -27,7 +28,7 @@ import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
   isRemovalChange,
-  getChangeData, TemplateExpression, isObjectType, ProgressReporter,
+  getChangeData, TemplateExpression, isObjectType, ProgressReporter, StaticFile,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
@@ -38,7 +39,7 @@ import { usernamePasswordCredentialsType } from '../src/auth'
 import { configType, FETCH_CONFIG, API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../src/config'
 import {
   BRAND_TYPE_NAME,
-  GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME,
+  GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, GUIDE_THEME_TYPE_NAME, TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME,
   USER_SEGMENT_TYPE_NAME,
   ZENDESK,
 } from '../src/constants'
@@ -79,7 +80,7 @@ const callbackResponseFunc = (config: AxiosRequestConfig): any => {
     return [
       200,
       (brandWithGuideMockReplies as MockReply[]).find(reply => reply.url === url, [])?.response
-        || [],
+      || [],
     ]
   }
   return [404]
@@ -96,7 +97,7 @@ const callbackResponseFuncWith403 = (config: AxiosRequestConfig): any => {
 
 const nullProgressReporter: ProgressReporter = {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  reportProgress: () => {},
+  reportProgress: () => { },
 }
 
 describe('adapter', () => {
@@ -474,6 +475,11 @@ describe('adapter', () => {
           'zendesk.target',
           'zendesk.target.instance.Slack_integration_Endpoint_url_target_v2@ssuuu',
           'zendesk.targets',
+          'zendesk.theme',
+          'zendesk.theme_file',
+          'zendesk.theme_folder',
+          'zendesk.theme_settings',
+          'zendesk.themes',
           'zendesk.ticket_field',
           'zendesk.ticket_field.instance.Assignee_assignee',
           'zendesk.ticket_field.instance.Customer_Tier_multiselect@su',
@@ -1018,6 +1024,11 @@ describe('adapter', () => {
           'zendesk.target',
           'zendesk.target.instance.Slack_integration_Endpoint_url_target_v2@ssuuu',
           'zendesk.targets',
+          'zendesk.theme',
+          'zendesk.theme_file',
+          'zendesk.theme_folder',
+          'zendesk.theme_settings',
+          'zendesk.themes',
           'zendesk.ticket_field',
           'zendesk.ticket_field.instance.Assignee_assignee',
           'zendesk.ticket_field.instance.Customer_Tier_multiselect@su',
@@ -1555,6 +1566,11 @@ describe('adapter', () => {
           'zendesk.target',
           'zendesk.target.instance.Slack_integration_Endpoint_url_target_v2@ssuuu',
           'zendesk.targets',
+          'zendesk.theme',
+          'zendesk.theme_file',
+          'zendesk.theme_folder',
+          'zendesk.theme_settings',
+          'zendesk.themes',
           'zendesk.ticket_field',
           'zendesk.ticket_field.instance.Assignee_assignee',
           'zendesk.ticket_field.instance.Customer_Tier_multiselect@su',
@@ -1846,7 +1862,12 @@ describe('adapter', () => {
       })
 
       it('should generate guide elements according to brands config', async () => {
+        const zip = new JSZip()
+        zip.file('hello.txt', 'Hello World\n')
+        mockAxiosAdapter.onGet('https://download.theme.url.for.test').reply(200, await zip.generateAsync({ type: 'nodebuffer' }))
+
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+        mockAxiosAdapter.onPost().reply(callbackResponseFunc)
         const creds = new InstanceElement(
           'config',
           usernamePasswordCredentialsType,
@@ -1863,6 +1884,7 @@ describe('adapter', () => {
               exclude: [],
               guide: {
                 brands: ['.WithGuide'],
+                themesForBrands: ['my.'],
               },
             },
           }
@@ -1878,6 +1900,14 @@ describe('adapter', () => {
           .map(e => e.elemID.getFullName()).sort()).toEqual([
           'zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu',
         ])
+        const themeElements = elements.filter(isInstanceElement)
+          .filter(e => e.elemID.typeName === GUIDE_THEME_TYPE_NAME)
+        expect(themeElements.map(e => e.elemID.getFullName()).sort()).toEqual([
+          'zendesk.theme.instance.myBrand_Copenhagen',
+        ])
+        expect(themeElements[0].value.root.files['hello_txt@v'].content).toEqual(new StaticFile({
+          filepath: 'zendesk/themes/brands/myBrand/Copenhagen/hello.txt', content: Buffer.from('Hello World\n'),
+        }))
 
         config.value[FETCH_CONFIG].guide.brands = ['[^myBrand]']
         const fetchRes = await adapter.operations({
@@ -2310,21 +2340,25 @@ describe('adapter', () => {
 
       // Mind that brands have filter that deploys them before the default instances
       expect(deployRes.appliedChanges).toEqual([
-        toChange({ after: new InstanceElement(
-          'inst3',
-          brandType,
-          { key: 2, ref: expect.any(ReferenceExpression) },
-          undefined,
-          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/account/brand_management/brands' },
-        ) }),
+        toChange({
+          after: new InstanceElement(
+            'inst3',
+            brandType,
+            { key: 2, ref: expect.any(ReferenceExpression) },
+            undefined,
+            { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/account/brand_management/brands' },
+          ),
+        }),
         modificationChange,
-        toChange({ after: new InstanceElement(
-          'inst',
-          groupType,
-          { id: 1 },
-          undefined,
-          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups' },
-        ) }),
+        toChange({
+          after: new InstanceElement(
+            'inst',
+            groupType,
+            { id: 1 },
+            undefined,
+            { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups' },
+          ),
+        }),
         toChange({ after: new InstanceElement('inst4', anotherType, { key: 2 }) }),
       ])
     })
@@ -2364,13 +2398,15 @@ describe('adapter', () => {
         progressReporter: nullProgressReporter,
       })
       expect(deployRes.appliedChanges).toEqual([
-        toChange({ after: new InstanceElement(
-          'inst',
-          groupType,
-          undefined,
-          undefined,
-          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups' },
-        ) }),
+        toChange({
+          after: new InstanceElement(
+            'inst',
+            groupType,
+            undefined,
+            undefined,
+            { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups' },
+          ),
+        }),
       ])
     })
     it('should omit reference in array if the reference does not have an id', async () => {
@@ -2430,13 +2466,15 @@ describe('adapter', () => {
         progressReporter: nullProgressReporter,
       })
       expect(deployRes.appliedChanges).toEqual([
-        toChange({ after: new InstanceElement(
-          'inst',
-          groupType,
-          undefined,
-          undefined,
-          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups' },
-        ) }),
+        toChange({
+          after: new InstanceElement(
+            'inst',
+            groupType,
+            undefined,
+            undefined,
+            { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups' },
+          ),
+        }),
       ])
     })
     it('should not update id field if it does not exist in the response', async () => {
@@ -2451,13 +2489,15 @@ describe('adapter', () => {
         progressReporter: nullProgressReporter,
       })
       expect(deployRes.appliedChanges).toEqual([
-        toChange({ after: new InstanceElement(
-          'inst',
-          groupType,
-          undefined,
-          undefined,
-          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups' },
-        ) }),
+        toChange({
+          after: new InstanceElement(
+            'inst',
+            groupType,
+            undefined,
+            undefined,
+            { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups' },
+          ),
+        }),
       ])
     })
     it('should call deploy with the fixed type', async () => {
@@ -2526,36 +2566,38 @@ describe('adapter', () => {
       })
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
       expect(mockDeployChange).toHaveBeenCalledWith({
-        change: toChange({ before: new InstanceElement(
-          'inst',
-          new ObjectType({
-            elemID: groupType.elemID,
-            fields: {
-              id: {
-                refType: BuiltinTypes.SERVICE_ID_NUMBER,
-                annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+        change: toChange({
+          before: new InstanceElement(
+            'inst',
+            new ObjectType({
+              elemID: groupType.elemID,
+              fields: {
+                id: {
+                  refType: BuiltinTypes.SERVICE_ID_NUMBER,
+                  annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+                },
+                created_at: {
+                  refType: BuiltinTypes.UNKNOWN,
+                  annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+                },
+                updated_at: {
+                  refType: BuiltinTypes.UNKNOWN,
+                  annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+                },
+                created_by_id: {
+                  refType: BuiltinTypes.UNKNOWN,
+                  annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+                },
+                updated_by_id: {
+                  refType: BuiltinTypes.UNKNOWN,
+                  annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+                },
               },
-              created_at: {
-                refType: BuiltinTypes.UNKNOWN,
-                annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
-              },
-              updated_at: {
-                refType: BuiltinTypes.UNKNOWN,
-                annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
-              },
-              created_by_id: {
-                refType: BuiltinTypes.UNKNOWN,
-                annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
-              },
-              updated_by_id: {
-                refType: BuiltinTypes.UNKNOWN,
-                annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
-              },
-            },
-            // generateType function creates path
-            path: [ZENDESK, elementsUtils.TYPES_PATH, 'group'],
-          }),
-        ) }),
+              // generateType function creates path
+              path: [ZENDESK, elementsUtils.TYPES_PATH, 'group'],
+            }),
+          ),
+        }),
         client: expect.anything(),
         endpointDetails: expect.anything(),
         fieldsToIgnore: undefined,

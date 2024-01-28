@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -20,7 +20,7 @@ import { collections } from '@salto-io/lowerdash'
 import { InstanceElement, ObjectType, ElemIdGetter, OBJECT_SERVICE_ID, toServiceIdsString, OBJECT_NAME } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { CUSTOM_RECORDS_PATH, NETSUITE, SCRIPT_ID, SOAP_SCRIPT_ID } from '../constants'
-import { NetsuiteQuery } from '../query'
+import { NetsuiteQuery } from '../config/query'
 import NetsuiteClient from '../client/client'
 import { RecordValue } from '../client/suiteapp_client/soap_client/types'
 import { CustomRecordResult } from '../client/types'

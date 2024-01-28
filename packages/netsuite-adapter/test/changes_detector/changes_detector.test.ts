@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,7 +15,7 @@
 */
 
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
-import { NetsuiteQuery } from '../../src/query'
+import { NetsuiteQuery } from '../../src/config/query'
 import * as fileCabinetDetector from '../../src/changes_detector/changes_detectors/file_cabinet'
 import customRecordTypeDetector from '../../src/changes_detector/changes_detectors/custom_record_type'
 import scriptDetector from '../../src/changes_detector/changes_detectors/script'

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -72,7 +72,7 @@ export const workbookType = (): TypeAndInnerTypes => {
     },
     fields: {
       dependency: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+        refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
@@ -185,7 +185,7 @@ export const workbookType = (): TypeAndInnerTypes => {
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
-      },
+      }, /* Original description:   */
       charts: {
         refType: createRefToElmWithValue(workbook_charts),
         annotations: {

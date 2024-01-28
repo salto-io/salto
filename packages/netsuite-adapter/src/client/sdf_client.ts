@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -34,11 +34,9 @@ import {
   APPLICATION_ID,
   FILE_CABINET_PATH_SEPARATOR,
 } from '../constants'
-import {
-  DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES,
-  DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, ClientConfig, InstanceLimiterFunc,
-} from '../config'
-import { NetsuiteFetchQueries, NetsuiteQuery, NetsuiteTypesQueryParams, ObjectID } from '../query'
+import { DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES, DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY } from '../config/constants'
+import { ClientConfig, InstanceLimiterFunc, NetsuiteTypesQueryParams, ObjectID } from '../config/types'
+import { NetsuiteFetchQueries, NetsuiteQuery } from '../config/query'
 import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError, MissingManifestFeaturesError, getFailedObjectsMap, getFailedObjects } from './errors'
 import { SdfCredentials } from './credentials'
 import {

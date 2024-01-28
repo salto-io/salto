@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -119,11 +119,11 @@ describe('workflow scheme migration', () => {
       issueTypeSchemeType,
       {
         issueTypeIds: [
-          new ReferenceExpression(issueType1Id, {}),
-          new ReferenceExpression(issueType2Id, {}),
-          new ReferenceExpression(issueType3Id, {}),
-          new ReferenceExpression(issueType4Id, {}),
-          new ReferenceExpression(issueType5Id, {}),
+          new ReferenceExpression(issueType1Id),
+          new ReferenceExpression(issueType2Id),
+          new ReferenceExpression(issueType3Id),
+          new ReferenceExpression(issueType4Id),
+          new ReferenceExpression(issueType5Id),
         ],
       }
     )
@@ -133,8 +133,8 @@ describe('workflow scheme migration', () => {
       projectType,
       {
         name: 'instance',
-        workflowScheme: new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow'), {}),
-        issueTypeScheme: new ReferenceExpression(new ElemID(JIRA, 'IssueTypeScheme', 'instance', 'issueTypeScheme'), {}),
+        workflowScheme: new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow')),
+        issueTypeScheme: new ReferenceExpression(new ElemID(JIRA, 'IssueTypeScheme', 'instance', 'issueTypeScheme')),
       }
     )
     workflowInstance = new InstanceElement(
@@ -147,15 +147,15 @@ describe('workflow scheme migration', () => {
         items: [
           {
             workflow: workflow2,
-            issueType: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType1'), {}),
+            issueType: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType1')),
           },
           {
             workflow: workflow3,
-            issueType: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType2'), {}),
+            issueType: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType2')),
           },
           {
             workflow: workflow4,
-            issueType: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType3'), {}),
+            issueType: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType3')),
           },
         ],
       }

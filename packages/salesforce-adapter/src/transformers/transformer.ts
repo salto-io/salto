@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -71,6 +71,7 @@ import {
 import SalesforceClient from '../client/client'
 import { allMissingSubTypes } from './salesforce_types'
 import { defaultMissingFields } from './missing_fields'
+import { FetchProfile } from '../types'
 
 
 const log = logger(module)
@@ -106,10 +107,10 @@ export const metadataType = async (element: Readonly<Element>): Promise<string> 
 
 export const isCustomObject = async (element: Readonly<Element>): Promise<boolean> => {
   const res = isObjectType(element)
-  && await metadataType(element) === CUSTOM_OBJECT
-  // The last part is so we can tell the difference between a custom object
-  // and the original "CustomObject" type from salesforce (the latter will not have an API_NAME)
-  && element.annotations[API_NAME] !== undefined
+    && await metadataType(element) === CUSTOM_OBJECT
+    // The last part is so we can tell the difference between a custom object
+    // and the original "CustomObject" type from salesforce (the latter will not have an API_NAME)
+    && element.annotations[API_NAME] !== undefined
   return res
 }
 
@@ -121,6 +122,9 @@ export const isFieldOfCustomObject = async (field: Field): Promise<boolean> =>
 // for instances of Lead, but it will not be true for Lead itself when it is still an instance
 // (before the custom objects filter turns it into a type).
 // To filter for instances like the Lead definition, use isInstanceOfType(CUSTOM_OBJECT) instead
+/**
+ * @deprecated use {@link isInstanceOfCustomObjectSync}
+*/
 export const isInstanceOfCustomObject = async (element: Readonly<Element>): Promise<boolean> =>
   isInstanceElement(element) && isCustomObject(await element.getType())
 
@@ -936,7 +940,7 @@ export const isFormulaField = (element: Element): element is Field => {
 export const isNameField = async (field: Field): Promise<boolean> =>
   (isObjectType(await field.getType())
     && (field.refType.elemID.isEqual(Types.compoundDataTypes.Name.elemID)
-    || field.refType.elemID.isEqual(Types.compoundDataTypes.Name2.elemID)))
+      || field.refType.elemID.isEqual(Types.compoundDataTypes.Name2.elemID)))
 
 const transformCompoundValues = async (
   record: SalesforceRecord,
@@ -945,7 +949,7 @@ const transformCompoundValues = async (
   const compoundFieldsElemIDs = Object.values(Types.compoundDataTypes).map(o => o.elemID)
   const relevantCompoundFields = _.pickBy((await instance.getType()).fields,
     (field, fieldKey) => Object.keys(record).includes(fieldKey)
-    && !_.isUndefined(_.find(compoundFieldsElemIDs, e => field.refType.elemID.isEqual(e))))
+      && !_.isUndefined(_.find(compoundFieldsElemIDs, e => field.refType.elemID.isEqual(e))))
   if (_.isEmpty(relevantCompoundFields)) {
     return record
   }
@@ -1044,6 +1048,7 @@ export const toCustomField = async (
     field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO],
     field.annotations[FIELD_ANNOTATIONS.RELATIONSHIP_NAME],
     field.annotations[FIELD_ANNOTATIONS.LENGTH],
+    field.annotations[FIELD_ANNOTATIONS.METADATA_RELATIONSHIP_CONTROLLING_FIELD],
   )
 
   // Skip the assignment of the following annotations that are defined as annotationType
@@ -1254,6 +1259,10 @@ export const isSubfieldOfCompound = (field: SalesforceField): boolean => (
   field.compoundFieldName !== undefined && field.compoundFieldName !== field.name
 )
 
+const EXTRA_INFORMATION_FIELD_ANNOTATIONS = [
+  FIELD_ANNOTATIONS.DEFAULTED_ON_CREATE,
+]
+
 // The following method is used during the fetchy process and is used in building the objects
 // and their fields described in the Nacl file
 export const getSObjectFieldElement = (
@@ -1261,7 +1270,8 @@ export const getSObjectFieldElement = (
   field: SalesforceField,
   parentServiceIds: ServiceIds,
   objCompoundFieldNames: Record<string, string> = {},
-  systemFields: string[] = []
+  fetchProfile: FetchProfile,
+  systemFields: string[] = [],
 ): Field => {
   const fieldApiName = [parentServiceIds[API_NAME], field.name].join(API_NAME_SEPARATOR)
   const serviceIds = {
@@ -1277,6 +1287,12 @@ export const getSObjectFieldElement = (
     [API_NAME]: fieldApiName,
     [LABEL]: field.label,
   }
+  if (fetchProfile.isFeatureEnabled('extendedCustomFieldInformation')) {
+    EXTRA_INFORMATION_FIELD_ANNOTATIONS.forEach(annotation => {
+      annotations[annotation] = field[annotation]
+    })
+  }
+
   if (field.type !== 'boolean' && field.nillable === false) {
     // nillable is the closest thing we could find to infer if a field is required,
     // it might not be perfect
@@ -1356,12 +1372,12 @@ export const getSObjectFieldElement = (
       // e.g. salesforce.user_app_menu_item.ApplicationId, salesforce.login_event.LoginHistoryId
       annotations[FIELD_ANNOTATIONS.REFERENCE_TO] = field.referenceTo
     }
-  // Compound Fields
+    // Compound Fields
   } else if (!_.isUndefined(COMPOUND_FIELDS_SOAP_TYPE_NAMES[field.type]) || field.nameField) {
     // Only fields that are compound in this object get compound type
     if (objCompoundFieldNames[field.name] !== undefined) {
       naclFieldType = field.nameField
-      // objCompoundFieldNames[field.name] is either 'Name' or 'Name2'
+        // objCompoundFieldNames[field.name] is either 'Name' or 'Name2'
         ? Types.compoundDataTypes[objCompoundFieldNames[field.name] as COMPOUND_FIELD_TYPE_NAMES]
         : Types.compoundDataTypes[COMPOUND_FIELDS_SOAP_TYPE_NAMES[field.type]]
     }

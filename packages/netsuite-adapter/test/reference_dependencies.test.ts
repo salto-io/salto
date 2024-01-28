@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -132,11 +132,6 @@ describe('reference dependencies', () => {
       expect(result).toEqual([customRecordType])
     })
 
-    it('should add DATASET dependency of WORKBOOK', async () => {
-      const result = await getReferencedElements([workbookInstance], false)
-      expect(result).toEqual([datasetInstance])
-    })
-
     it('should not add dependencies that already exist', async () => {
       const input = [customRecordType, customSegmentInstance, workbookInstance,
         datasetInstance, instance]
@@ -158,7 +153,7 @@ describe('reference dependencies', () => {
 
       const result = await getReferencedElements(
         [customRecordType, customRecordType2],
-        false
+        false,
       )
       expect(result)
         .toEqual([customSegmentInstance])

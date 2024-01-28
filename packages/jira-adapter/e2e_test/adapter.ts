@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -43,7 +43,7 @@ export const realAdapter = (
   jiraConfig?: JiraConfig
 ): Reals => {
   const client = (adapterParams && adapterParams.client)
-    || new JiraClient({ credentials, isDataCenter })
+    || new JiraClient({ credentials: { ...credentials, isDataCenter }, isDataCenter })
   const scriptRunnerClient = new ScriptRunnerClient(
     {
       jiraClient: client,

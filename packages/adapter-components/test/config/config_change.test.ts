@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -33,6 +33,8 @@ describe('config_change', () => {
           exclude: [
             { type: 'Type1' },
           ],
+          fetchFlag1: false,
+          someFlag: false,
         },
       }
     )
@@ -57,5 +59,58 @@ describe('config_change', () => {
     expect(configChange?.message).toContain('r1')
     expect(configChange?.message).toContain('r2')
     expect(configChange?.message).toContain('can not fetch private api')
+  })
+  describe('enableFetchFlag config suggestions', () => {
+    it('should enable fetch flags when there are enableFetchFlag config suggestions', () => {
+      const updatedConfig = getUpdatedCofigFromConfigChanges({
+        configChanges: [
+          { type: 'enableFetchFlag', value: 'fetchFlag1', reason: 'r1' },
+          { type: 'enableFetchFlag', value: 'fetchFlag2', reason: 'r2' },
+        ],
+        currentConfig: config,
+        configType,
+      })
+      expect(updatedConfig?.config).toBeDefined()
+      expect(updatedConfig?.config[0].value).toEqual(
+        {
+          fetch: {
+            include: [
+              { type: 'aType' },
+            ],
+            exclude: [
+              { type: 'Type1' },
+            ],
+            fetchFlag1: true,
+            fetchFlag2: true,
+            someFlag: false,
+          },
+        }
+      )
+    })
+    it('should not change fetch flags when there are no enbaleFetchFlag config suggestions', () => {
+      const updatedConfig = getUpdatedCofigFromConfigChanges({
+        configChanges: [
+          { type: 'typeToExclude', value: 'bType', reason: 'r1' },
+        ],
+        currentConfig: config,
+        configType,
+      })
+      expect(updatedConfig?.config).toBeDefined()
+      expect(updatedConfig?.config[0].value).toEqual(
+        {
+          fetch: {
+            include: [
+              { type: 'aType' },
+            ],
+            exclude: [
+              { type: 'Type1' },
+              { type: 'bType' },
+            ],
+            fetchFlag1: false,
+            someFlag: false,
+          },
+        }
+      )
+    })
   })
 })

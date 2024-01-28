@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -19,7 +19,7 @@ import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { NETSUITE } from '../../src/constants'
 import omitFieldsValidation from '../../src/change_validators/omit_fields'
-import { fullFetchConfig } from '../../src/query'
+import { fullFetchConfig } from '../../src/config/config_creator'
 
 describe('omit fields change validator test', () => {
   let type: ObjectType

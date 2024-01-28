@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,46 +16,106 @@
 
 import { ObjectType, ElemID, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, OKTA } from '../../src/constants'
+import { GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, OKTA, PASSWORD_RULE_TYPE_NAME } from '../../src/constants'
 import unorderedListsFilter from '../../src/filters/unordered_lists'
 import { getFilterParams } from '../utils'
 
 describe('unorderedListsFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
-  const groupType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_TYPE_NAME) })
-  const groupRuleType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_RULE_TYPE_NAME) })
-
   beforeEach(() => {
     filter = unorderedListsFilter(getFilterParams()) as typeof filter
   })
 
-  it('should order group rule target group list', async () => {
-    const groupA = new InstanceElement('A', groupType, { id: 'A1', profile: { name: 'A' } })
-    const groupB = new InstanceElement('B', groupType, { id: 'B2', profile: { name: 'B' } })
-    const groupC = new InstanceElement('C', groupType, { id: 'C3', profile: { name: 'C' } })
-    const groupRule = new InstanceElement(
-      'rulez',
-      groupRuleType,
-      {
+  describe('GroupRule instances', () => {
+    const groupType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_TYPE_NAME) })
+    const groupRuleType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_RULE_TYPE_NAME) })
+
+    it('should order group rule target group list', async () => {
+      const groupA = new InstanceElement('A', groupType, { id: 'A1', profile: { name: 'A' } })
+      const groupB = new InstanceElement('B', groupType, { id: 'B2', profile: { name: 'B' } })
+      const groupC = new InstanceElement('C', groupType, { id: 'C3', profile: { name: 'C' } })
+      const groupRule = new InstanceElement(
+        'rulez',
+        groupRuleType,
+        {
+          name: 'rule',
+          status: 'ACTIVE',
+          conditions: {},
+          actions: {
+            assignUserToGroups: {
+              groupIds: [
+                new ReferenceExpression(groupB.elemID, groupB),
+                new ReferenceExpression(groupC.elemID, groupC),
+                new ReferenceExpression(groupA.elemID, groupA),
+              ],
+            },
+          },
+        },
+      )
+      await filter.onFetch([groupType, groupRuleType, groupA, groupB, groupC, groupRule])
+      expect(groupRule.value.actions.assignUserToGroups.groupIds).toEqual([
+        new ReferenceExpression(groupA.elemID, groupA),
+        new ReferenceExpression(groupB.elemID, groupB),
+        new ReferenceExpression(groupC.elemID, groupC),
+      ])
+    })
+  })
+
+  describe('PasswordPolicyRule instances', () => {
+    const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, PASSWORD_RULE_TYPE_NAME) })
+
+    it('should order password policy rule methods list', async () => {
+      const policyRuleInstance = new InstanceElement(
+        'rulesA',
+        policyRuleType,
+        {
+          name: 'rule',
+          status: 'ACTIVE',
+          conditions: {},
+          actions: {
+            selfServicePasswordReset: {
+              access: 'ALLOW',
+              additionalProperties: {
+                requirement: {
+                  primary: {
+                    methods: ['push', 'email', 'voice', 'sms'],
+                  },
+                },
+              },
+            },
+          },
+        },
+      )
+      await filter.onFetch([policyRuleType, policyRuleInstance])
+      expect(policyRuleInstance.value
+        .actions.selfServicePasswordReset.additionalProperties.requirement.primary.methods)
+        .toEqual(['email', 'push', 'sms', 'voice'])
+    })
+
+    it('should do nothing if there are no methods defined', async () => {
+      const policyRuleInstance = new InstanceElement(
+        'rulesA',
+        policyRuleType,
+        {
+          name: 'rule',
+          status: 'ACTIVE',
+          conditions: {},
+          actions: {
+            selfServicePasswordReset: { access: 'ALLOW' },
+            selfServiceUnlock: { access: 'DENY' },
+          },
+        },
+      )
+      await filter.onFetch([policyRuleType, policyRuleInstance])
+      expect(policyRuleInstance.value).toEqual({
         name: 'rule',
         status: 'ACTIVE',
         conditions: {},
         actions: {
-          assignUserToGroups: {
-            groupIds: [
-              new ReferenceExpression(groupB.elemID, groupB),
-              new ReferenceExpression(groupC.elemID, groupC),
-              new ReferenceExpression(groupA.elemID, groupA),
-            ],
-          },
+          selfServicePasswordReset: { access: 'ALLOW' },
+          selfServiceUnlock: { access: 'DENY' },
         },
-      },
-    )
-    await filter.onFetch([groupType, groupRuleType, groupA, groupB, groupC, groupRule])
-    expect(groupRule.value.actions.assignUserToGroups.groupIds).toEqual([
-      new ReferenceExpression(groupA.elemID, groupA),
-      new ReferenceExpression(groupB.elemID, groupB),
-      new ReferenceExpression(groupC.elemID, groupC),
-    ])
+      })
+    })
   })
 })

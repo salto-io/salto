@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -17,17 +17,69 @@ import wu from 'wu'
 import _ from 'lodash'
 import { EventEmitter } from 'pietile-eventemitter'
 import {
-  Element, ElemID, AdapterOperations, Values, ServiceIds, ObjectType,
-  toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
-  FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
-  isSaltoElementError, ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId,
-  AdapterOperationsContext, FetchResult, isAdditionChange, isStaticFile,
-  isAdditionOrModificationChange, Value, StaticFile, isElement, AuthorInformation, getAuthorInformation,
-  isModificationChange, toChange, ModificationChange, AdditionChange, CORE_ANNOTATIONS,
+  AdapterOperations,
+  AdapterOperationsContext,
+  AdditionChange,
+  CORE_ANNOTATIONS,
+  DetailedChange,
+  Element,
+  ElemID,
+  ElemIdGetter,
+  FetchResult,
+  Field,
+  FIELD_NAME,
+  getAuthorInformation,
+  INSTANCE_NAME,
+  InstanceElement,
+  isAdditionChange,
+  isAdditionOrModificationChange,
+  isElement,
+  isInstanceElement,
+  isModificationChange,
+  isObjectType,
+  isSaltoElementError,
+  isServiceId,
+  isStaticFile,
+  ModificationChange,
+  OBJECT_NAME,
+  OBJECT_SERVICE_ID,
+  ObjectType,
+  ProgressReporter,
+  ReadOnlyElementsSource,
+  SaltoError,
+  ServiceIds,
+  StaticFile,
+  toChange,
+  toServiceIdsString,
+  TypeMap,
+  Value,
+  Values,
 } from '@salto-io/adapter-api'
-import { applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements, safeJsonStringify, walkOnElement, WalkOnFunc, WALK_NEXT_STEP, setPath, walkOnValue } from '@salto-io/adapter-utils'
+import {
+  applyInstancesDefaults,
+  buildElementsSourceFromElements,
+  flattenElementStr,
+  resolvePath,
+  safeJsonStringify,
+  setPath,
+  WALK_NEXT_STEP,
+  walkOnElement,
+  WalkOnFunc,
+  walkOnValue,
+} from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { merger, elementSource, expressions, Workspace, pathIndex, updateElementsWithAlternativeAccount, createAdapterReplacedID, remoteMap, adaptersConfigSource as acs, createPathIndexForElement } from '@salto-io/workspace'
+import {
+  adaptersConfigSource as acs,
+  createAdapterReplacedID,
+  createPathIndexForElement,
+  elementSource,
+  expressions,
+  merger,
+  pathIndex,
+  remoteMap,
+  updateElementsWithAlternativeAccount,
+  Workspace,
+} from '@salto-io/workspace'
 import { collections, promises, types, values } from '@salto-io/lowerdash'
 import { CORE_FLAGS, getCoreFlagBool } from './flags'
 import { StepEvents } from './deploy'
@@ -36,6 +88,7 @@ import { AdapterEvents, createAdapterProgressReporter } from './adapters/progres
 import { IDFilter } from './plan/plan'
 import { getAdaptersCreatorConfigs } from './adapters'
 import { mergeStaticFiles, mergeStrings } from './merge_content'
+import { FetchChange, FetchChangeMetadata } from '../types'
 
 const { awu, groupByAsync } = collections.asynciterable
 const { mapValuesAsync } = promises.object
@@ -53,19 +106,6 @@ const NO_CONFLICT_CORE_ANNOTATIONS = [
   CORE_ANNOTATIONS.ALIAS,
   CORE_ANNOTATIONS.PARENT,
 ]
-
-export type FetchChangeMetadata = AuthorInformation
-
-export type FetchChange = {
-  // The actual change to apply to the workspace
-  change: DetailedChange
-  // The change that happened in the service
-  serviceChanges: DetailedChange[]
-  // The change between the working copy and the state
-  pendingChanges?: DetailedChange[]
-  // Metadata information about the change.
-  metadata?: FetchChangeMetadata
-}
 
 const getFetchChangeMetadata = (changedElement: Element | undefined): FetchChangeMetadata =>
   getAuthorInformation(changedElement)

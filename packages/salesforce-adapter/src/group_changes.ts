@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -33,16 +33,18 @@ import {
   ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP, SBAA_APPROVAL_CONDITION,
   SBAA_APPROVAL_RULE,
   SBAA_CONDITIONS_MET,
+  METADATA_CHANGE_GROUP,
+  groupIdForInstanceChangeGroup,
 } from './constants'
 
 const { awu } = collections.asynciterable
 
 const getGroupId = async (change: Change): Promise<string> => {
   if (!isInstanceChange(change) || !(await isInstanceOfCustomObjectChange(change))) {
-    return 'salesforce_metadata'
+    return METADATA_CHANGE_GROUP
   }
   const typeName = await safeApiName(await getChangeData(change).getType()) ?? 'UNKNOWN'
-  return `${change.action}_${typeName}_instances`
+  return groupIdForInstanceChangeGroup(change.action, typeName)
 }
 
 /**

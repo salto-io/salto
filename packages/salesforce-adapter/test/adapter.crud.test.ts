@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -33,10 +33,11 @@ import mockAdapter from './adapter'
 import { createValueSetEntry, createCustomObjectType, nullProgressReporter } from './utils'
 import { createElement, removeElement } from '../e2e_test/utils'
 import { mockTypes, mockDefaultValues } from './mock_elements'
-import { mockDeployResult, mockRunTestFailure, mockDeployResultComplete } from './connection'
+import { mockDeployResult, mockRunTestFailure, mockDeployResultComplete, mockRetrieveResult } from './connection'
 import { MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE, MappableSalesforceProblem } from '../src/client/user_facing_errors'
 import { GLOBAL_VALUE_SET } from '../src/filters/global_value_sets'
 import { apiNameSync, metadataTypeSync } from '../src/filters/utils'
+import { SalesforceArtifacts, INSTANCE_FULL_NAME_FIELD } from '../src/constants'
 
 const { makeArray } = collections.array
 
@@ -166,7 +167,13 @@ describe('SalesforceAdapter CRUD', () => {
             { [CORE_ANNOTATIONS.PARENT]:
               new ReferenceExpression(mockTypes.TestCustomObject__c.elemID, mockTypes.TestCustomObject__c) }
           )
-          workflowFieldUpdate = createInstanceElement(mockDefaultValues.WorkflowFieldUpdate, mockTypes.Workflow)
+          workflowFieldUpdate = createInstanceElement(
+            {
+              ...mockDefaultValues.WorkflowFieldUpdate,
+              [INSTANCE_FULL_NAME_FIELD]: 'TestCustomObject__c.TestWorkflowFieldUpdate',
+            },
+            mockTypes.WorkflowFieldUpdate
+          )
 
           connection.metadata.deploy.mockReturnValueOnce(mockDeployResult({
             success: false,
@@ -188,8 +195,8 @@ describe('SalesforceAdapter CRUD', () => {
               // WorkflowFieldUpdate failure
               {
                 componentType: 'WorkflowFieldUpdate',
-                fullName: 'ChangeRequest.Update_Status_to_Authorised',
-                problem: 'Some workflow task error',
+                fullName: 'TestCustomObject__c.TestWorkflowFieldUpdate',
+                problem: 'Some workflow field update error',
               },
             ],
           }))
@@ -224,11 +231,11 @@ describe('SalesforceAdapter CRUD', () => {
 
           expect(result.errors[1].severity).toEqual('Error' as SeverityLevel)
 
-          // WorkflowTask will not have an ElemID because on failure
-          //  we only return the sub-instance and not the wrapped instance
-          expect(result.errors[2].message).toContain('Some workflow task error')
-          expect(isSaltoElementError(result.errors[2])).toBeFalse()
-          expect(result.errors[2].severity).toEqual('Error' as SeverityLevel)
+          expect(result.errors[2]).toEqual({
+            message: expect.stringContaining('Some workflow field update error'),
+            severity: 'Error',
+            elemID: workflowFieldUpdate.elemID,
+          })
         })
       })
 
@@ -889,8 +896,16 @@ describe('SalesforceAdapter CRUD', () => {
           expect(result.appliedChanges).toHaveLength(0)
         })
         it('should return the test errors', () => {
-          expect(result.errors).toHaveLength(1)
-          expect(result.errors[0].message).toMatch(/.*Test failed.*/)
+          expect(result.errors).toEqual([
+            expect.objectContaining({
+              message: expect.stringContaining('Test failed'),
+            }),
+            expect.objectContaining({
+              elemID: instance.elemID,
+              message: expect.stringContaining('rollbackOnError'),
+              severity: 'Warning',
+            }),
+          ])
         })
       })
       describe('without rollback on error', () => {
@@ -908,6 +923,65 @@ describe('SalesforceAdapter CRUD', () => {
         it('should return the test errors', () => {
           expect(result.errors).toHaveLength(1)
           expect(result.errors[0].message).toMatch(/.*Test failed.*/)
+        })
+      })
+    })
+
+    describe('when one component fails and others succeed', () => {
+      let deployResultParams: Parameters<typeof mockDeployResult>[0]
+      let successElement: InstanceElement
+      let failureElement: InstanceElement
+      let deployChangeGroup: ChangeGroup
+      beforeEach(() => {
+        successElement = createInstanceElement({
+          [INSTANCE_FULL_NAME_FIELD]: 'SuccessElement',
+        },
+        mockTypes.ApexClass)
+        failureElement = createInstanceElement({
+          [INSTANCE_FULL_NAME_FIELD]: 'FailureElement',
+        },
+        mockTypes.ApexClass)
+
+        deployResultParams = {
+          success: false,
+          componentSuccess: [
+            { fullName: apiNameSync(successElement), componentType: metadataTypeSync(successElement) },
+          ],
+          componentFailure: [
+            { fullName: apiNameSync(failureElement), componentType: metadataTypeSync(failureElement), problem: 'Failed to deploy' },
+          ],
+        }
+
+        deployChangeGroup = {
+          groupID: 'ChangeGroup',
+          changes: [toChange({ after: failureElement }), toChange({ after: successElement })],
+        }
+      })
+      describe('with rollback on error', () => {
+        let result: DeployResult
+        beforeEach(async () => {
+          connection.metadata.deploy.mockReturnValue(mockDeployResult({
+            ...deployResultParams,
+            rollbackOnError: true,
+          }))
+          result = await adapter.deploy({ changeGroup: deployChangeGroup, progressReporter: nullProgressReporter })
+        })
+        it('should return the test errors', () => {
+          expect(result.errors).toEqual([
+            expect.objectContaining({
+              elemID: failureElement.elemID,
+              message: expect.stringContaining('Failed to deploy'),
+              severity: 'Error',
+            }),
+            expect.objectContaining({
+              elemID: successElement.elemID,
+              message: expect.stringContaining('rollbackOnError'),
+              severity: 'Warning',
+            }),
+          ])
+        })
+        it('should have no applied changes', () => {
+          expect(result.appliedChanges).toBeEmpty()
         })
       })
     })
@@ -1081,6 +1155,7 @@ describe('SalesforceAdapter CRUD', () => {
               fullName: mockDefaultValues.Profile.fullName,
               componentType: constants.PROFILE_METADATA_TYPE,
             }],
+            retrieveResult: await mockRetrieveResult({}),
           }))
           result = await adapter.deploy({
             changeGroup: {
@@ -1106,6 +1181,13 @@ describe('SalesforceAdapter CRUD', () => {
         it('should return deployment URL containing the deployment ID in the extra properties', async () => {
           const receivedUrl = (result.extraProperties?.groups ?? [])[0].url
           expect(receivedUrl).toContain(DEPLOYMENT_ID)
+        })
+        it('should return correct artifacts', () => {
+          const groups = result.extraProperties?.groups ?? []
+          expect(groups).toHaveLength(1)
+          const artifactNames = makeArray(groups[0].artifacts).map(artifact => artifact.name)
+          expect(artifactNames)
+            .toIncludeSameMembers([SalesforceArtifacts.DeployPackageXml, SalesforceArtifacts.PostDeployRetrieveZip])
         })
       })
 
@@ -1158,7 +1240,15 @@ describe('SalesforceAdapter CRUD', () => {
           })
         })
         it('should produce a deploy error', () => {
-          expect(result.errors).toHaveLength(1)
+          expect(result.errors).toEqual([
+            expect.objectContaining({
+              message: expect.stringContaining('UNKNOWN_EXCEPTION'),
+            }),
+            expect.objectContaining({
+              elemID: afterInstance.elemID,
+              message: expect.stringContaining('rollbackOnError'),
+            }),
+          ])
         })
       })
 

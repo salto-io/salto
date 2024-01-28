@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,10 +15,12 @@
 */
 import _ from 'lodash'
 import { EOL } from 'os'
-import { promises } from '@salto-io/lowerdash'
-import { PlanItem, Plan, preview, DeployResult, ItemStatus, deploy, summarizeDeployChanges } from '@salto-io/core'
+import { collections, promises } from '@salto-io/lowerdash'
+import { PlanItem, Plan, preview, DeployResult, ItemStatus, deploy, summarizeDeployChanges, GroupProperties } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
+import { mkdirp, writeFile } from '@salto-io/file'
+import path from 'path'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts, getTagsForAccounts } from './common/accounts'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
@@ -45,6 +47,7 @@ import { updateWorkspace, isValidWorkspaceForCommand, shouldRecommendFetch } fro
 import { ENVIRONMENT_OPTION, EnvArg, validateAndSetEnv } from './common/env'
 
 const log = logger(module)
+const { makeArray } = collections.array
 
 const ACTION_INPROGRESS_INTERVAL = 5000
 
@@ -92,6 +95,7 @@ type DeployArgs = {
   dryRun: boolean
   detailedPlan: boolean
   checkOnly: boolean
+  artifactsDir?: string
 } & AccountsArg & EnvArg
 
 const deployPlan = async (
@@ -191,6 +195,39 @@ const deployPlan = async (
   return result
 }
 
+
+type GroupWithArtifacts = GroupProperties & Required<Pick<GroupProperties, 'artifacts'>>
+const isGroupWithArtifacts = (group: GroupProperties): group is GroupWithArtifacts => (
+  group.artifacts !== undefined && group.artifacts.length > 0
+)
+
+const writeArtifacts = async (
+  { extraProperties }: DeployResult,
+  artifactsDir?: string,
+): Promise<void> => {
+  try {
+    const groupsWithArtifacts = makeArray(extraProperties?.groups).filter(isGroupWithArtifacts)
+    if (artifactsDir === undefined || groupsWithArtifacts.length === 0) {
+      return
+    }
+    const artifactsByAccountName = _(groupsWithArtifacts)
+      .groupBy(group => group.accountName)
+      .mapValues(groups => groups.flatMap(group => group.artifacts))
+      .value()
+    await Promise.all((Object.entries(artifactsByAccountName)).map(async ([accountName, artifacts]) => {
+      const accountArtifactsDir = path.join(artifactsDir, accountName)
+      await mkdirp(accountArtifactsDir)
+      await Promise.all(artifacts.map(async artifact => {
+        const artifactPath = path.join(accountArtifactsDir, artifact.name)
+        await writeFile(artifactPath, artifact.content)
+        log.debug('Successfully wrote artifact %s', artifactPath)
+      }))
+    }))
+  } catch (e: unknown) {
+    log.error('Error occurred while writing artifacts: %o', e)
+  }
+}
+
 export const action: WorkspaceCommandAction<DeployArgs> = async ({
   input,
   cliTelemetry,
@@ -233,6 +270,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
     checkOnly,
     actualAccounts,
   )
+  await writeArtifacts(result, input.artifactsDir)
   let cliExitCode = result.success ? CliExitCode.Success : CliExitCode.AppError
   // We don't flush the workspace for check-only deployments
   if (!_.isUndefined(result.changes) && !checkOnly) {
@@ -292,6 +330,13 @@ const deployDef = createWorkspaceCommand({
         required: false,
         description: 'Run check-only deployment against the service',
         type: 'boolean',
+      },
+      {
+        name: 'artifactsDir',
+        alias: 'a',
+        required: false,
+        description: 'The directory to write the deploy artifacts to',
+        type: 'string',
       },
       ACCOUNTS_OPTION,
       ENVIRONMENT_OPTION,

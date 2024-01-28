@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -19,6 +19,7 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { Credentials } from '../auth'
 import { EXPERIMENTAL_API_HEADERS, FORCE_ACCEPT_LANGUAGE_HEADERS } from './headers'
+import { getProductSettings } from '../product_settings'
 
 const log = logger(module)
 
@@ -53,18 +54,20 @@ Based on the current implementation of the Jira API, we can't know if the accoun
 account, but in some cases we can know that it's not a production account.
 */
 export const validateCredentials = async (
-  { connection, isDataCenter }: { connection: clientUtils.APIConnection; isDataCenter: boolean },
+  { connection, credentials }: { connection: clientUtils.APIConnection; credentials: Credentials },
 ): Promise<AccountInfo> => {
-  if (await isAuthorized(connection)) {
-    const accountId = await getBaseUrl(connection)
+  const productSettings = getProductSettings({ isDataCenter: Boolean(credentials.isDataCenter) })
+  const wrappedConnection = productSettings.wrapConnection(connection)
+  if (await isAuthorized(wrappedConnection)) {
+    const accountId = await getBaseUrl(wrappedConnection)
     if (accountId.includes('-sandbox-')) {
       return { accountId, isProduction: false, accountType: 'Sandbox' }
     }
 
-    if (isDataCenter) {
+    if (credentials.isDataCenter) {
       return { accountId }
     }
-    const response = await connection.get('/rest/api/3/instance/license')
+    const response = await wrappedConnection.get('/rest/api/3/instance/license')
     log.info(`Jira application's info: ${safeJsonStringify(response.data.applications)}`)
     const hasPaidApp = response.data.applications.some((app: appInfo) => app.plan === 'PAID')
     const isProduction = hasPaidApp ? undefined : false
@@ -86,7 +89,7 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = (ret
       }
     ),
     baseURLFunc: async ({ baseUrl }) => baseUrl,
-    credValidateFunc: async () => ({ accountId: '' }), // There is no login endpoint to call
+    credValidateFunc: validateCredentials,
     timeout,
   })
 )

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -24,7 +24,7 @@ import { createCustomRecordTypes } from '../src/custom_records/custom_record_typ
 import { LocalFilterCreator } from '../src/filter'
 import { addApplicationIdToType } from '../src/transformer'
 import { createEmptyElementsSourceIndexes } from './utils'
-import { fullFetchConfig } from '../src/query'
+import { fullFetchConfig } from '../src/config/config_creator'
 
 const parseSdfProjectDirMock = jest.fn()
 jest.mock('../src/client/sdf_parser', () => ({

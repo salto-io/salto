@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,7 +16,7 @@
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { types } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
+import { ActionName, CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
 
 export const { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
 
@@ -136,6 +136,7 @@ export enum ANNOTATION_TYPE_NAMES {
 
 // Salesforce System Fields
 export const OWNER_ID = 'OwnerId'
+export const LAST_MODIFIED_DATE = 'LastModifiedDate'
 
 // Salto annotations
 export const API_NAME = 'apiName'
@@ -209,6 +210,8 @@ export const FIELD_ANNOTATIONS = {
   // when true, the field should not be deployed to the service
   LOCAL_ONLY: 'localOnly',
   ROLLUP_SUMMARY_FILTER_OPERATION: 'rollupSummaryFilterOperation',
+  METADATA_RELATIONSHIP_CONTROLLING_FIELD: 'metadataRelationshipControllingField',
+  DEFAULTED_ON_CREATE: 'defaultedOnCreate',
 } as const
 
 export const VALUE_SET_FIELDS = {
@@ -311,9 +314,15 @@ export const DEFAULT_MAX_INSTANCES_PER_TYPE = 5000
 export const MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST = 500
 export const MAXIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST = 10000
 export const DEFAULT_ENUM_FIELD_PERMISSIONS = true
+
+export const DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY = 1000
+
+export const DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY_MULTIPLIER = 1.5
+
 export const DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS = {
   maxAttempts: 5,
-  retryDelay: 1000,
+  retryDelay: DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY,
+  retryDelayMultiplier: DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY_MULTIPLIER,
   retryableFailures: [
     'FIELD_CUSTOM_VALIDATION_EXCEPTION',
     'UNABLE_TO_LOCK_ROW',
@@ -420,9 +429,7 @@ export const KEY_PREFIX_LENGTH = 3
 
 // Magics
 export const DETECTS_PARENTS_INDICATOR = '##allMasterDetailFields##'
-
-// Change Groups
-export const ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP = 'add_Custom_ApprovalRule_and_ApprovalCondition_instances'
+export const DATA_INSTANCES_CHANGED_AT_MAGIC = '__DataInstances__'
 
 // CPQ CustomObjects
 export const CPQ_NAMESPACE = 'SBQQ'
@@ -499,7 +506,55 @@ export const SBAA_APPROVAL_RULE = 'sbaa__ApprovalRule__c'
 // sbaa Fields
 export const SBAA_CONDITIONS_MET = 'sbaa__ConditionsMet__c'
 
+
+// Change Groups
+export const groupIdForInstanceChangeGroup = (action: ActionName, typeName: string): string => {
+  const toVerbalNoun = (actionName: ActionName): string => {
+    switch (actionName) {
+      case 'add':
+        return 'addition'
+      case 'modify':
+        return 'modification'
+      case 'remove':
+        return 'removal'
+      default:
+        // should not happen
+        return actionName
+    }
+  }
+  return `${_.capitalize(toVerbalNoun(action))} of data instances of type '${typeName}'`
+}
+export const ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup('add', 'Custom ApprovalRule and ApprovalCondition')
+export const METADATA_CHANGE_GROUP = 'Salesforce Metadata'
+
+
 export const UNLIMITED_INSTANCES_VALUE = -1
+
+
+// See: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_custom_object__c.htm
+export const SYSTEM_FIELDS = [
+  'ConnectionReceivedId',
+  'ConnectionSentId',
+  'CreatedById',
+  'CreatedDate',
+  'Id',
+  'IsDeleted',
+  'LastActivityDate',
+  'LastModifiedDate',
+  'LastModifiedById',
+  'LastReferencedDate',
+  'LastViewedDate',
+  'Name',
+  'RecordTypeId',
+  'SystemModstamp',
+  OWNER_ID,
+  'SetupOwnerId',
+]
+
+export const UNSUPPORTED_SYSTEM_FIELDS = [
+  'LastReferencedDate',
+  'LastViewedDate',
+]
 
 // Errors
 export const SOCKET_TIMEOUT = 'ESOCKETTIMEDOUT'
@@ -542,3 +597,9 @@ export const isSalesforceError = (error: Error): error is SalesforceError => {
   const errorCode = _.get(error, ERROR_PROPERTIES.ERROR_CODE)
   return _.isString(errorCode) && (Object.values(SALESFORCE_ERRORS) as ReadonlyArray<string>).includes(errorCode)
 }
+
+// Artifacts
+export const SalesforceArtifacts = {
+  DeployPackageXml: 'package.xml',
+  PostDeployRetrieveZip: 'post-deploy-retrieve.zip',
+} as const

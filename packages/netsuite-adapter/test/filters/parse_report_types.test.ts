@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -93,7 +93,10 @@ describe('parse_report_types filter', () => {
   })
   describe('onFetch', () => {
     it('should removes old object type and adds new type', async () => {
-      const savedSearchObject = new ObjectType({ elemID: new ElemID('netsuite', SAVED_SEARCH) })
+      const savedSearchObject = new ObjectType({
+        elemID: new ElemID('netsuite', SAVED_SEARCH),
+        path: [NETSUITE, 'Types', SAVED_SEARCH],
+      })
       const elements = [savedSearchObject]
       await filterCreator(fetchOpts).onFetch?.(elements)
       expect(elements.filter(isObjectType)

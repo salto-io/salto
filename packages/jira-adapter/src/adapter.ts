@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -65,7 +65,6 @@ import projectComponentFilter from './filters/project_component'
 import archivedProjectComponentsFilter from './filters/archived_project_components'
 import defaultInstancesDeployFilter from './filters/default_instances_deploy'
 import workflowFilter from './filters/workflowV2/workflow_filter'
-import workflowTransitionParametersFilter from './filters/workflowV2/transition_parameters_filter'
 import workflowStructureFilter from './filters/workflow/workflow_structure_filter'
 import workflowDiagramFilter from './filters/workflow/workflow_diagrams'
 import resolutionPropertyFilter from './filters/workflow/resolution_property_filter'
@@ -91,6 +90,7 @@ import contextReferencesFilter from './filters/fields/context_references_filter'
 import contextsProjectsFilter from './filters/fields/contexts_projects_filter'
 import serviceUrlInformationFilter from './filters/service_url/service_url_information'
 import serviceUrlFilter from './filters/service_url/service_url'
+import serviceUrlJsmFilter from './filters/service_url/service_url_jsm'
 import priorityFilter from './filters/priority'
 import statusDeploymentFilter from './filters/statuses/status_deployment'
 import securitySchemeFilter from './filters/security_scheme/security_scheme'
@@ -107,7 +107,7 @@ import removeEmptyValuesFilter from './filters/remove_empty_values'
 import jqlReferencesFilter from './filters/jql/jql_references'
 import userFilter from './filters/user'
 import changePortalGroupFieldsFilter from './filters/change_portal_group_fields'
-import { JIRA, JIRA_SERVICE_DESK_FIELD, PROJECT_TYPE, SERVICE_DESK } from './constants'
+import { JIRA, PROJECT_TYPE, SERVICE_DESK } from './constants'
 import { paginate, removeScopedObjects } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
@@ -159,15 +159,17 @@ import queueDeploymentFilter from './filters/queue_deployment'
 import scriptRunnerInstancesDeploy from './filters/script_runner/script_runner_instances_deploy'
 import behaviorsMappingsFilter from './filters/script_runner/behaviors_mappings'
 import behaviorsFieldUuidFilter from './filters/script_runner/behaviors_field_uuid'
-import changeQueueFieldsFilter from './filters/change_queue_fields'
+import queueFetchFilter from './filters/queue_fetch'
 import portalGroupsFilter from './filters/portal_groups'
 import assetsObjectTypePath from './filters/assets/assets_object_type_path'
 import assetsObjectTypeChangeFields from './filters/assets/assets_object_type_change_fields'
 import assetsObjectTypeOrderFilter from './filters/assets/assets_object_type_order'
+import defaultAttributesFilter from './filters/assets/label_object_type_attribute'
 import changeAttributesPathFilter from './filters/assets/change_attributes_path'
 import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
-import { getServerInfoTitle, jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from './jsm_utils'
+import { jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from './jsm_utils'
+import { hasSoftwareProject } from './utils'
 import { getWorkspaceId } from './workspace_id'
 import { JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES } from './config/api_config'
 
@@ -182,13 +184,13 @@ const {
 const { createPaginator } = clientUtils
 const log = logger(module)
 
-const { query: queryFilter, ...otherCommonFilters } = commonFilters
+const { query: queryFilter, hideTypes: hideTypesFilter, ...otherCommonFilters } = commonFilters
 
 export const DEFAULT_FILTERS = [
   accountInfoFilter,
   storeUsersFilter,
   changeJSMElementsFieldFilter,
-  changeQueueFieldsFilter,
+  queueFetchFilter,
   changePortalGroupFieldsFilter,
   automationLabelFetchFilter,
   automationLabelDeployFilter,
@@ -202,9 +204,7 @@ export const DEFAULT_FILTERS = [
   fieldNameFilter,
   workflowStructureFilter,
   workflowFilter,
-  // must run before references are transformed
-  workflowTransitionParametersFilter,
-  // This should happen after workflowStructureFilter and before fieldStructureFilter
+  // must run before references are transformed and after workflowFilter
   queryFilter,
   // This should run before duplicateIdsFilter
   projectRoleRemoveTeamManagedDuplicatesFilter,
@@ -287,6 +287,7 @@ export const DEFAULT_FILTERS = [
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,
   formsFilter,
+  serviceUrlJsmFilter, // Must run before fieldReferencesFilter
   fieldReferencesFilter,
   // Must run after fieldReferencesFilter
   addJsmTypesAsFieldsFilter,
@@ -351,9 +352,11 @@ export const DEFAULT_FILTERS = [
   assetsObjectTypePath,
   // Must run after assetsObjectTypePath
   changeAttributesPathFilter,
+  defaultAttributesFilter,
   assetsObjectTypeOrderFilter,
   deployAttributesFilter,
   deployJsmTypesFilter,
+  hideTypesFilter, // Must run after defaultAttributesFilter and assetsObjectTypeOrderFilter, which also create types.
   // Must be last
   defaultInstancesDeployFilter,
 ]
@@ -538,7 +541,7 @@ export default class JiraAdapter implements AdapterOperations {
       return { elements: [] }
     }
 
-    const workspaceId = await getWorkspaceId(this.client)
+    const workspaceId = await getWorkspaceId(this.client, this.userConfig)
     if (workspaceId === undefined) {
       return { elements: [] }
     }
@@ -642,8 +645,8 @@ export default class JiraAdapter implements AdapterOperations {
     progressReporter.reportProgress({ message: 'Fetching types' })
     const { allTypes: swaggerTypes, parsedConfigs } = await this.getAllTypes(swaggers)
     const userConfigSupportedTypes = this.userConfig.apiDefinitions.supportedTypes
-    const shuldModifySupportedTypes = await getServerInfoTitle(this.client) === JIRA_SERVICE_DESK_FIELD
-    const supportedTypes = shuldModifySupportedTypes ? _.omit(userConfigSupportedTypes, 'Board') : userConfigSupportedTypes
+    const shouldOmitBoardSupportedType = !(await hasSoftwareProject(this.client))
+    const supportedTypes = shouldOmitBoardSupportedType ? _.omit(userConfigSupportedTypes, 'Board') : userConfigSupportedTypes
     progressReporter.reportProgress({ message: 'Fetching instances' })
     const [swaggerResponse, scriptRunnerElements] = await Promise.all([
       this.getSwaggerInstances(swaggerTypes, parsedConfigs, supportedTypes),

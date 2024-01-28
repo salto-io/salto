@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -34,6 +34,8 @@ export const TRANSLATION_TYPE_NAMES = [
 export const USER_SEGMENT_TYPE_NAME = 'user_segment'
 export const GUIDE_SETTINGS_TYPE_NAME = 'guide_settings'
 export const GUIDE_LANGUAGE_SETTINGS_TYPE_NAME = 'guide_language_settings'
+export const GUIDE_THEME_TYPE_NAME = 'theme'
+export const THEME_SETTINGS_TYPE_NAME = 'theme_settings'
 export const PERMISSION_GROUP_TYPE_NAME = 'permission_group'
 export const TICKET_FIELD_TYPE_NAME = 'ticket_field'
 export const ORG_FIELD_TYPE_NAME = 'organization_field'
@@ -96,6 +98,8 @@ export const TRIGGER_ORDER_TYPE_NAME = 'trigger_order'
 export const USER_FIELD_ORDER_TYPE_NAME = 'user_field_order'
 export const VIEW_ORDER_TYPE_NAME = 'view_order'
 export const WORKSPACE_ORDER_TYPE_NAME = 'workspace_order'
+export const THEME_FOLDER_TYPE_NAME = 'theme_folder'
+export const THEME_FILE_TYPE_NAME = 'theme_file'
 export const ORDER_TYPE_NAMES = [
   CATEGORY_ORDER_TYPE_NAME,
   SECTION_ORDER_TYPE_NAME,

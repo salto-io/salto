@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -20,7 +20,7 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { LocalFilterCreator } from '../filter'
 import { ATTRIBUTE_PREFIX } from '../client/constants'
-import { CENTER_CATEGORY, CENTER_TAB, DATASET, NETSUITE, SUBTAB, TRANSLATION_COLLECTION, WORKBOOK } from '../constants'
+import { CENTER_CATEGORY, CENTER_TAB, DATASET, NETSUITE, REAL_VALUE_KEY, SUBTAB, TRANSLATION_COLLECTION, WORKBOOK } from '../constants'
 import { isCustomRecordType } from '../types'
 
 const { awu } = collections.asynciterable
@@ -36,7 +36,7 @@ const FIELDS_TO_CONVERT = [
   new ElemID(NETSUITE, CENTER_TAB, 'field', 'label'),
   new ElemID(NETSUITE, SUBTAB, 'field', 'title'),
 ]
-const REAL_VALUE_KEY = '#text'
+
 const TRANSLATE_KEY = 'translate'
 
 const getTranslateFieldName = (key: string): string => `${key}Translate`

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -18,7 +18,7 @@ import { Filter } from '../../src/filter'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import clientValidation from '../../src/change_validators/client_validation'
 import NetsuiteClient from '../../src/client/client'
-import { AdditionalDependencies } from '../../src/config'
+import { AdditionalDependencies } from '../../src/config/types'
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 import { fileType } from '../../src/types/file_cabinet_types'
 import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../../src/group_changes'

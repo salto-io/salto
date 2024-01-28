@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -44,7 +44,7 @@ import {
   SBAA_APPROVAL_RULE,
   SBAA_CONDITIONS_MET,
   SETTINGS_METADATA_TYPE,
-  STATUS,
+  STATUS, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
   WORKFLOW_METADATA_TYPE,
   WORKFLOW_TASK_METADATA_TYPE,
 } from '../src/constants'
@@ -189,7 +189,7 @@ export const mockTypes = {
   }),
   WorkflowFieldUpdate: createMetadataObjectType({
     annotations: {
-      metadataType: WORKFLOW_TASK_METADATA_TYPE,
+      metadataType: WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
       dirName: 'workflows',
       suffix: 'workflow',
     },

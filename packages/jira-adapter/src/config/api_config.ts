@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -1214,10 +1214,44 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         // JiraWorkflow fieldType exists in the swagger but not as a get response
         // this line creates the type despite that
         { fieldName: 'tempWorkflowType', fieldType: 'JiraWorkflow' },
+        { fieldName: 'statusMappings', fieldType: 'List<StatusMappingDTO>' },
+      ],
+      fieldsToHide: [
+        { fieldName: 'id' },
+        { fieldName: 'version' },
       ],
       idFields: ['name'],
       serviceIdField: 'id',
       serviceUrl: '/secure/admin/workflows/ViewWorkflowSteps.jspa?workflowMode=live&workflowName={name}',
+    },
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/workflows/create',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/workflows/update',
+        method: 'post',
+      },
+      remove: {
+        url: '/rest/api/3/workflow/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
+    },
+  },
+  WorkflowRuleConfiguration: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'id' },
+      ],
+    },
+  },
+  WorkflowTrigger: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'id' },
+      ],
     },
   },
   WorkflowRuleConfiguration_parameters: {
@@ -1397,6 +1431,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   WorkflowScheme: {
     transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'statusMigrations', fieldType: 'List<StatusMapping>' },
+      ],
       fieldsToHide: [
         {
           fieldName: 'id',
@@ -1981,6 +2018,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'columns', fieldType: 'List<Field>' },
       ],
+      serviceUrl: '/jira/servicedesk/projects/{projectKey}/queues/custom/{id}',
     },
     deployRequests: {
       add: {
@@ -2022,6 +2060,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'ticketTypeIds', fieldType: 'List<RequestType>' },
       ],
+      serviceUrl: '/jira/servicedesk/projects/{projectKey}/settings/portal-settings/portal-groups',
     },
     deployRequests: {
       add: {
@@ -2130,6 +2169,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'portalLogoUrl' },
         { fieldName: 'canAdministerJIRA' },
       ],
+      serviceUrl: '/jira/servicedesk/projects/{projectKey}/settings/portal-settings',
     },
   },
   PortalSettings__announcementSettings: {
@@ -2153,6 +2193,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'customFieldId' },
       ],
       serviceIdField: 'id',
+      serviceUrl: '/jira/servicedesk/projects/{projectKey}/settings/sla/custom/{id}',
     },
     deployRequests: {
       add: {
@@ -2238,6 +2279,13 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
             { name: 'AssetsSchemaId', fromField: 'id' },
           ],
         },
+        {
+          type: 'ObjectSchemaReferenceTypes',
+          toField: 'referenceTypes',
+          context: [
+            { name: 'AssetsSchemaId', fromField: 'id' },
+          ],
+        },
       ],
     },
     transformation: {
@@ -2266,10 +2314,12 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         { fieldName: 'objectSchemaStatuses' },
         { fieldName: 'objectTypes' },
         { fieldName: 'attributes' },
+        { fieldName: 'referenceTypes' },
       ],
       fieldTypeOverrides: [
         { fieldName: 'objectSchemaStatuses', fieldType: 'List<ObjectSchemaStatus>' },
       ],
+      serviceUrl: '/jira/servicedesk/assets/configure/object-schema/{id}',
     },
     deployRequests: {
       add: {
@@ -2303,11 +2353,10 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       fieldsToHide: [
         { fieldName: 'id' },
         { fieldName: 'workspaceId' },
-      ],
-      serviceIdField: 'id',
-      fieldsToOmit: [
         { fieldName: 'objectSchemaId' },
       ],
+      serviceIdField: 'id',
+      serviceUrl: '/jira/servicedesk/assets/configure/object-schema/{id}',
     },
     deployRequests: {
       add: {
@@ -2342,15 +2391,16 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       idFields: ['&parentObjectTypeId', 'name'],
       fieldsToHide: [
         { fieldName: 'id' },
+        { fieldName: 'objectSchemaId' },
       ],
       fieldsToOmit: [
         { fieldName: 'created' },
         { fieldName: 'updated' },
         { fieldName: 'globalId' },
-        { fieldName: 'objectSchemaId' },
         { fieldName: 'workspaceId' },
       ],
       extendsParentId: false,
+      serviceUrl: '/jira/servicedesk/assets/object-schema/{objectSchemaId}?typeId={id}',
     },
     deployRequests: {
       add: {
@@ -2393,7 +2443,10 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       ],
       fieldTypeOverrides: [
         { fieldName: 'typeValue', fieldType: 'string' },
+        { fieldName: 'additionalValue', fieldType: 'string' },
       ],
+      serviceUrl: '/jira/servicedesk/assets/object-schema/{objectSchemaId}?typeId={id}&mode=attribute',
+
     },
     deployRequests: {
       add: {
@@ -2409,6 +2462,62 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         method: 'delete',
         omitRequestBody: true,
       },
+    },
+  },
+  ObjectSchemaReferenceTypes: {
+    request: {
+      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype?objectSchemaId={AssetsSchemaId}',
+    },
+    transformation: {
+      dataField: '.',
+    },
+  },
+  ObjectSchemaReferenceType: {
+    transformation: {
+      sourceTypeName: 'ObjectSchema__referenceTypes',
+      fieldsToHide: [
+        { fieldName: 'id' },
+        { fieldName: 'workspaceId' },
+      ],
+      serviceIdField: 'id',
+      fieldsToOmit: [
+        { fieldName: 'objectSchemaId' },
+        { fieldName: 'url16' },
+        { fieldName: 'globalId' },
+      ],
+    },
+    deployRequests: {
+      add: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype',
+        method: 'post',
+      },
+      modify: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype/{id}',
+        method: 'put',
+      },
+      remove: {
+        url: 'gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
+    },
+  },
+  ObjectSchemaDefaultReferenceType: { // This endpoint returns only the default object reference types.
+    request: {
+      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/referencetype',
+    },
+    transformation: {
+      dataField: '.',
+      fieldsToHide: [
+        { fieldName: 'id' },
+        { fieldName: 'workspaceId' },
+      ],
+      serviceIdField: 'id',
+      fieldsToOmit: [
+        { fieldName: 'objectSchemaId' },
+        { fieldName: 'url16' },
+        { fieldName: 'globalId' },
+      ],
     },
   },
 }
@@ -2430,6 +2539,7 @@ export const JSM_DUCKTYPE_SUPPORTED_TYPES = {
 
 export const JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES = {
   ObjectSchema: ['ObjectSchemas'],
+  ObjectSchemaDefaultReferenceType: ['ObjectSchemaDefaultReferenceType'],
 }
 
 export const SCRIPT_RUNNER_DUCKTYPE_SUPPORTED_TYPES = {

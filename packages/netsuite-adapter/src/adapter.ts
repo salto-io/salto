@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,7 +16,7 @@
 import {
   FetchResult, AdapterOperations, DeployOptions, ElemIdGetter, ReadOnlyElementsSource, ProgressReporter,
   FetchOptions, DeployModifiers, getChangeData, isObjectType, isInstanceElement, ElemID, isSaltoElementError,
-  setPartialFetchData, InstanceElement, ObjectType, TypeElement,
+  setPartialFetchData, InstanceElement, ObjectType, TypeElement, ChangeDataType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -24,7 +24,7 @@ import { logger } from '@salto-io/logging'
 import { filter, logDuration } from '@salto-io/adapter-utils'
 import { createElements } from './transformer'
 import { DeployResult, TYPES_TO_SKIP, isCustomRecordType } from './types'
-import { BIN, BUNDLE } from './constants'
+import { BUNDLE } from './constants'
 import convertListsToMaps from './filters/convert_lists_to_maps'
 import replaceElementReferences from './filters/element_references'
 import parseReportTypes from './filters/parse_report_types'
@@ -44,6 +44,8 @@ import dataInstancesAttributes from './filters/data_instances_attributes'
 import dataInstancesNullFields from './filters/data_instances_null_fields'
 import dataInstancesDiff from './filters/data_instances_diff'
 import dataInstancesIdentifiers from './filters/data_instances_identifiers'
+import addReferencingWorkbooks from './filters/add_referencing_workbooks'
+import analyticsDefinitionHandle from './filters/analytics_definition_handle'
 import suiteAppInternalIds from './filters/internal_ids/suite_app_internal_ids'
 import SDFInternalIds from './filters/internal_ids/sdf_internal_ids'
 import accountSpecificValues from './filters/account_specific_values'
@@ -66,8 +68,6 @@ import addBundleReferences from './filters/bundle_ids'
 import excludeCustomRecordTypes from './filters/exclude_by_criteria/exclude_custom_record_types'
 import excludeInstances from './filters/exclude_by_criteria/exclude_instances'
 import { Filter, LocalFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreator, RemoteFilterCreatorDefinition, RemoteFilterOpts } from './filter'
-import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_VALIDATE, AdditionalDependencies, DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB, shouldExcludeBins } from './config'
-import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams, getFixedTargetFetch, ObjectID } from './query'
 import { getLastServerTime, getOrCreateServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
 import { FetchDeletionResult, getDeletedElements } from './deletion_calculator'
@@ -77,13 +77,17 @@ import { createElementsSourceIndex } from './elements_source_index/elements_sour
 import getChangeValidator from './change_validator'
 import dependencyChanger from './dependency_changer'
 import { cloneChange } from './change_validators/utils'
-import { FetchByQueryFailures, FetchByQueryFunc, FetchByQueryReturnType } from './change_validators/safe_deploy'
 import { getChangeGroupIdsFunc } from './group_changes'
 import { getCustomRecords } from './custom_records/custom_records'
 import { getDataElements } from './data_elements/data_elements'
+import { getSuiteQLTableElements } from './data_elements/suiteql_table_elements'
 import { getStandardTypesNames } from './autogen/types'
 import { getConfigTypes, toConfigElements } from './suiteapp_config_elements'
 import { ImportFileCabinetResult } from './client/types'
+import { DEFAULT_VALIDATE, DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB, ALL_TYPES_REGEX, DEFAULT_WARN_STALE_DATA, DEFAULT_DEPLOY_REFERENCED_ELEMENTS } from './config/constants'
+import { FetchByQueryFunc, NetsuiteQuery, FetchByQueryReturnType, andQuery, FetchByQueryFailures, buildNetsuiteQuery, convertToQueryParams, notQuery } from './config/query'
+import { getConfigFromConfigChanges } from './config/suggestions'
+import { NetsuiteConfig, AdditionalDependencies, QueryParams, NetsuiteQueryParameters, ObjectID } from './config/types'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -100,10 +104,13 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   { creator: dataInstancesDiff },
   // addParentFolder must run before replaceInstanceReferencesFilter
   { creator: addParentFolder },
-  { creator: parseReportTypes },
   { creator: convertLists },
+  { creator: parseReportTypes },
+  // analyticsDefinitionHandle must run after convertLists
+  // and before translationConverter and replaceElementReferences
+  { creator: analyticsDefinitionHandle },
   { creator: consistentValues },
-  // excludeInstances should run after parseReportTypes & consistentValues,
+  // excludeInstances should run after parseReportTypes, analyticsDefinitionHandle & consistentValues,
   // so users will be able to exclude elements based on parsed values.
   { creator: excludeInstances },
   // convertListsToMaps must run after convertLists and consistentValues
@@ -141,8 +148,11 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   { creator: addBundleReferences },
   // omitFieldsFilter should be the last onFetch filter to run
   { creator: omitFieldsFilter },
-  // additionalChanges should be the first preDeploy filter to run
+  // additionalChanges should be right after addReferencingWorkbooks
+  // (adds required referenced elements to the deployent)
   { creator: additionalChanges },
+  // addReferencingWorkbooks should be the first preDeploy filter to run (adds workbooks to the deployment)
+  { creator: addReferencingWorkbooks },
 ]
 
 // By default we run all filters and provide a client
@@ -214,7 +224,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     this.fetchInclude = config.fetch.include
     this.fetchExclude = config.fetch.exclude
     this.lockedElements = config.fetch.lockedElementsToExclude
-    this.fetchTarget = getFixedTargetFetch(config.fetchTarget)
+    this.fetchTarget = config.fetchTarget
     this.withPartialDeletion = config.withPartialDeletion
     this.skipList = config.skipList // old version
     this.useChangesDetection = config.useChangesDetection
@@ -364,9 +374,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
         failures,
       },
       { elements: dataElements, requestedTypes: requestedDataTypes, largeTypesError: dataTypeError },
+      suiteQLTableElements,
     ] = await Promise.all([
       getStandardAndCustomElements(),
       getDataElements(this.client, fetchQuery, this.getElemIdFunc),
+      this.userConfig.fetch.resolveAccountSpecificValues
+        ? getSuiteQLTableElements(this.client, this.elementsSource, isPartial) : [],
     ])
 
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
@@ -393,15 +406,15 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ? await getOrCreateServerTimeElements(serverTime, this.elementsSource, isPartial)
       : []
 
-    const elements = [
-      ...standardInstances,
-      ...standardTypes,
-      ...customRecordTypes,
-      ...customRecords,
-      ...dataElements,
-      ...suiteAppConfigElements,
-      ...serverTimeElements,
-    ]
+    const elements = ([] as ChangeDataType[])
+      .concat(standardInstances)
+      .concat(standardTypes)
+      .concat(customRecordTypes)
+      .concat(customRecords)
+      .concat(dataElements)
+      .concat(suiteQLTableElements)
+      .concat(suiteAppConfigElements)
+      .concat(serverTimeElements)
 
     await this.createFiltersRunner({
       operation: 'fetch',
@@ -443,11 +456,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
     if (hasFetchTarget && isFirstFetch) {
       throw new Error('Can\'t define fetchTarget for the first fetch. Remove fetchTarget from adapter config file')
     }
-    const excludeBins = await shouldExcludeBins(this.userConfig, this.elementsSource)
 
-    const typesToSkip = this.typesToSkip.concat(excludeBins ? BIN : [])
     const deprecatedSkipList = buildNetsuiteQuery(convertToQueryParams({
-      types: Object.fromEntries(typesToSkip.map(typeName => [typeName, ['.*']])),
+      types: Object.fromEntries(this.typesToSkip.map(typeName => [typeName, [ALL_TYPES_REGEX]])),
       filePaths: this.filePathRegexSkipList.map(reg => `.*${reg}.*`),
     }))
     const fetchQuery = [
@@ -471,7 +482,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       isPartial,
     )
 
-    const updatedConfig = getConfigFromConfigChanges(failures, this.userConfig, { excludeBins })
+    const updatedConfig = getConfigFromConfigChanges(failures, this.userConfig)
 
     const partialFetchData = setPartialFetchData(isPartial, deletedElements)
 

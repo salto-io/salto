@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,12 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeDataType, ChangeError, ChangeValidator, CORE_ANNOTATIONS, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange, ModificationChange, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
+import { Change, ChangeDataType, ChangeError, ChangeValidator, CORE_ANNOTATIONS, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange, isReferenceExpression, ModificationChange, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import Joi from 'joi'
 import { filters, client as clientUtils } from '@salto-io/adapter-components'
 import os from 'os'
-import { getInstancesFromElementSource, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { createSchemeGuard, getInstancesFromElementSource, validateReferenceExpression } from '@salto-io/adapter-utils'
 import { updateSchemeId } from '../filters/workflow_scheme'
 import JiraClient from '../client/client'
 import { JiraConfig } from '../config/config'
@@ -29,13 +30,17 @@ const { addUrlToInstance } = filters
 const { awu } = collections.asynciterable
 const { isDefined } = values
 
-type WorkflowSchemeItem = {
+export type WorkflowSchemeItem = {
     workflow: ReferenceExpression
     issueType: ReferenceExpression
 }
 
-const isWorkflowSchemeItem = (item: WorkflowSchemeItem): item is WorkflowSchemeItem =>
-  _.isPlainObject(item) && item.workflow instanceof ReferenceExpression && item.issueType instanceof ReferenceExpression
+const WORKFLOW_SCHEME_ITEM_SCHEMA = Joi.object({
+  workflow: Joi.custom(validateReferenceExpression('workflow')).required(),
+  issueType: Joi.custom(validateReferenceExpression('issueType')).required(),
+}).required()
+
+export const isWorkflowSchemeItem = createSchemeGuard<WorkflowSchemeItem>(WORKFLOW_SCHEME_ITEM_SCHEMA)
 
 type ChangedItem = {
   before: ReferenceExpression
@@ -49,7 +54,7 @@ export type StatusMigration = {
   newStatusId?: ReferenceExpression
 }
 
-const projectHasWorkflowSchemeReference = (project: InstanceElement): boolean =>
+export const projectHasWorkflowSchemeReference = (project: InstanceElement): boolean =>
   project.value.workflowScheme instanceof ReferenceExpression
 
 const workflowLinkedToProjectWithIssues = async (
@@ -78,14 +83,15 @@ const getAllIssueTypesForWorkflowScheme = async (
 ): Promise<ReferenceExpression[]> => {
   const issueTypeSchemes: InstanceElement[] = await awu(assignedProjects)
     .map(instance => instance.value.issueTypeScheme)
-    .filter(isResolvedReferenceExpression)
-    .map(ref => elementSource.get(ref.elemID))
+    .filter(isReferenceExpression)
+    .map(ref => ref.getResolvedValue(elementSource))
+    .filter(isDefined)
     .filter(isInstanceElement)
     .toArray()
   const issueTypes: ReferenceExpression[] = issueTypeSchemes
     .filter(issueTypeScheme => Array.isArray(issueTypeScheme.value.issueTypeIds))
     .flatMap(issueTypeScheme => issueTypeScheme.value.issueTypeIds)
-    .filter(isResolvedReferenceExpression)
+    .filter(isReferenceExpression)
   return _.uniqBy(
     issueTypes,
     issueType => issueType.elemID.getFullName()

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -63,6 +63,8 @@ import {
   organizationExistenceValidator,
   badFormatWebhookActionValidator,
   guideDisabledValidator,
+  guideThemeDeleteLiveValidator,
+  guideThemeUpdateMetadataValidator,
   additionOfTicketStatusForTicketFormValidator,
   defaultDynamicContentItemVariantValidator,
   featureActivationValidator,
@@ -78,6 +80,7 @@ import {
   notEnabledMissingReferencesValidator,
   conditionalTicketFieldsValidator,
   dynamicContentDeletionValidator,
+  guideThemeReadonlyValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ChangeValidatorName, ZendeskDeployConfig, ZendeskFetchConfig, ZendeskConfig } from './config'
@@ -155,6 +158,9 @@ export default ({
     organizationExistence: organizationExistenceValidator(client, fetchConfig, deployConfig),
     badFormatWebhookAction: badFormatWebhookActionValidator,
     guideDisabled: guideDisabledValidator(fetchConfig),
+    guideThemeReadonly: guideThemeReadonlyValidator,
+    guideThemeDeleteLive: guideThemeDeleteLiveValidator,
+    guideThemeUpdateMetadata: guideThemeUpdateMetadataValidator,
     additionOfTicketStatusForTicketForm: additionOfTicketStatusForTicketFormValidator,
     defaultDynamicContentItemVariant: defaultDynamicContentItemVariantValidator,
     featureActivation: featureActivationValidator,

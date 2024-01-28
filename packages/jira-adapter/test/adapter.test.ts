@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -444,8 +444,12 @@ describe('adapter', () => {
         (loadSwagger as jest.MockedFunction<typeof loadSwagger>)
           .mockResolvedValue({ document: {}, parser: {} } as elements.swagger.LoadedSwagger)
         mockAxiosAdapter = new MockAdapter(axios)
-        // mock as there are gets of license during fetch
-        mockAxiosAdapter.onGet().reply(200, { })
+        mockAxiosAdapter
+          // first three requests are for login assertion
+          .onGet('/rest/api/3/configuration').replyOnce(200)
+          .onGet('/rest/api/3/serverInfo').replyOnce(200, { baseUrl: 'a' })
+          .onGet('/rest/api/3/instance/license')
+          .replyOnce(200, { applications: [{ plan: 'FREE' }] })
         // mock as we call getCloudId in the forms filter.
         mockAxiosAdapter.onPost().reply(200, {
           unparsedData: {
@@ -563,7 +567,7 @@ describe('adapter', () => {
       it('should change the objectType object struct to id', async () => {
         const result = await EntriesRequesterFunc({
           paginator,
-          args: { url: '/gateway/api/jsm/assets/workspace/defualtWorkSpaceId/v1/objectschema/2/attributes' },
+          args: { url: '/gateway/api/jsm/assets/workspace/defaultWorkSpaceId/v1/objectschema/2/attributes' },
           typeName: OBJECT_TYPE_ATTRIBUTE_TYPE,
           typesConfig: { ObjectTypeAttribute: { transformation: { dataField: '.' } } },
         })
@@ -581,7 +585,7 @@ describe('adapter', () => {
           .mockResolvedValue(responseValue)
         const result = await EntriesRequesterFunc({
           paginator,
-          args: { url: '/gateway/api/jsm/assets/workspace/defualtWorkSpaceId/v1/objectschema/2/attributes' },
+          args: { url: '/gateway/api/jsm/assets/workspace/defaultWorkSpaceId/v1/objectschema/2/attributes' },
           typeName: OBJECT_TYPE_ATTRIBUTE_TYPE,
           typesConfig: { ObjectTypeAttribute: { transformation: { dataField: '.' } } },
         })

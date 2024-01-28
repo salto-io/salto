@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -36,7 +36,7 @@ import { CallsLimiter, ConfigRecord, ConfigRecordData, GetConfigResult, CONFIG_R
   SYSTEM_INFORMATION_SCHEME, FileCabinetInstanceDetails, ConfigFieldDefinition, CONFIG_FIELD_DEFINITION_SCHEMA, SetConfigType, SET_CONFIG_RESULT_SCHEMA, SetConfigRecordsValuesResult, SetConfigResult, HasElemIDFunc, GET_BUNDLES_RESULT_SCHEMA, GET_SUITEAPPS_RESULT_SCHEMA } from './types'
 import { SuiteAppCredentials, toUrlAccountId } from '../credentials'
 import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
-import { DEFAULT_AXIOS_TIMEOUT_IN_MINUTES, DEFAULT_CONCURRENCY } from '../../config'
+import { DEFAULT_AXIOS_TIMEOUT_IN_MINUTES, DEFAULT_CONCURRENCY } from '../../config/constants'
 import { CONSUMER_KEY, CONSUMER_SECRET, INSUFFICIENT_PERMISSION_ERROR } from './constants'
 import SoapClient from './soap_client/soap_client'
 import { CustomRecordResponse, RecordResponse } from './soap_client/types'
@@ -654,5 +654,13 @@ export default class SuiteAppClient {
 
   public async deleteSdfInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
     return this.soapClient.deleteSdfInstances(instances)
+  }
+
+  public async getSelectValue(
+    type: string,
+    field: string,
+    filterBy: { field: string; internalId: string }[],
+  ): Promise<Record<string, string[]>> {
+    return this.soapClient.getSelectValue(type, field, filterBy)
   }
 }

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -121,16 +121,27 @@ value is (Condition | SubjectCondition)[] => (
     : isConditions(value)
 )
 
-export const getBrandsForGuide = (
+const getBrandsForFilter = (
   elements: InstanceElement[],
   fetchConfig: ZendeskFetchConfig,
+  filter: 'brands' | 'themesForBrands',
 ): InstanceElement[] => {
-  const brandsRegexList = fetchConfig.guide?.brands ?? []
+  const brandsRegexList = fetchConfig.guide?.[filter] ?? []
   return elements
     .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
     .filter(brandInstance => brandInstance.value.has_help_center)
     .filter(brandInstance => brandsRegexList.some(regex => new RegExp(regex).test(brandInstance.value.name)))
 }
+
+export const getBrandsForGuide = (
+  elements: InstanceElement[],
+  fetchConfig: ZendeskFetchConfig,
+): InstanceElement[] => getBrandsForFilter(elements, fetchConfig, 'brands')
+
+export const getBrandsForGuideThemes = (
+  elements: InstanceElement[],
+  fetchConfig: ZendeskFetchConfig,
+): InstanceElement[] => getBrandsForFilter(elements, fetchConfig, 'themesForBrands')
 
 type CustomFieldOption = {
   // eslint-disable-next-line camelcase

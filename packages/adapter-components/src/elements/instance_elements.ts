@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -125,6 +125,8 @@ export const generateInstanceNameFromConfig = (
     ? getNameMapping(instanceName, nameMapping) : instanceName
 }
 
+export const removeNullValuesTransformFunc: TransformFunc = ({ value }) => (value === null ? undefined : value)
+
 export const removeNullValues = async (
   values: Values,
   type: ObjectType,
@@ -133,7 +135,7 @@ export const removeNullValues = async (
   await transformValues({
     values,
     type,
-    transformFunc: ({ value }) => (value === null ? undefined : value),
+    transformFunc: removeNullValuesTransformFunc,
     strict: false,
     allowEmpty,
   }) ?? {}

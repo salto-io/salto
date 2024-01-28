@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { filterUtils, client as clientUtils, elements as elementUtils, elements as adapterElements } from '@salto-io/adapter-components'
-import { ObjectType, ElemID, InstanceElement, BuiltinTypes, ListType, ReferenceExpression, Element, isInstanceElement, isObjectType, getChangeData, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, BuiltinTypes, ListType, ReferenceExpression, Element, isInstanceElement, isObjectType, getChangeData, CORE_ANNOTATIONS, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { MockInterface } from '@salto-io/test-utils'
 import { getDefaultConfig } from '../../../src/config/config'
@@ -23,6 +23,7 @@ import issueLayoutFilter from '../../../src/filters/layouts/issue_layout'
 import { getFilterParams, mockClient } from '../../utils'
 import { ISSUE_LAYOUT_TYPE, JIRA, PROJECT_TYPE, SCREEN_SCHEME_TYPE } from '../../../src/constants'
 import { createLayoutType } from '../../../src/filters/layouts/layout_types'
+import { generateLayoutId } from '../../../src/filters/layouts/layout_service_operations'
 
 describe('issue layout filter', () => {
   let connection: MockInterface<clientUtils.APIConnection>
@@ -54,88 +55,107 @@ describe('issue layout filter', () => {
     const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     config.fetch.enableIssueLayouts = true
     filter = issueLayoutFilter(getFilterParams({ client, config })) as typeof filter
+    screenType = new ObjectType({ elemID: new ElemID(JIRA, 'Screen'),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER },
+      } })
+    screenInstance = new InstanceElement(
+      'screen1',
+      screenType,
+      {
+        id: 11,
+      }
+    )
+    fieldType = new ObjectType({ elemID: new ElemID(JIRA, 'Field') })
+    fieldInstance1 = new InstanceElement(
+      'testField1',
+      fieldType,
+      {
+        id: 'testField1',
+        name: 'TestField1',
+        type: 'testField1',
+      }
+    )
+    fieldInstance2 = new InstanceElement(
+      'testField2',
+      fieldType,
+      {
+        id: 'testField2',
+        name: 'TestField2',
+        schema: {
+          system: 'testField2',
+        },
+      }
+    )
+    screenSchemeType = new ObjectType({
+      elemID: new ElemID(JIRA, SCREEN_SCHEME_TYPE),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER },
+        screens: { refType: screenType },
+      },
+    })
+    issueTypeScreenSchemeItemType = new ObjectType({
+      elemID: new ElemID(JIRA, 'IssueTypeScreenSchemeItem'),
+      fields: {
+        issueTypeId: { refType: BuiltinTypes.STRING },
+        screenSchemeId: { refType: screenSchemeType },
+      },
+    })
+    issueTypeScreenSchemeType = new ObjectType({
+      elemID: new ElemID(JIRA, 'IssueTypeScreenScheme'),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER },
+        issueTypeMappings: { refType: new ListType(issueTypeScreenSchemeItemType) },
+      },
+    })
+    projectType = new ObjectType({
+      elemID: new ElemID(JIRA, PROJECT_TYPE),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER },
+        simplified: { refType: BuiltinTypes.BOOLEAN },
+        issueTypeScreenScheme: { refType: issueTypeScreenSchemeType },
+        key: { refType: BuiltinTypes.STRING },
+      },
+    })
+    screenSchemeInstance = new InstanceElement(
+      'screenScheme1',
+      screenSchemeType,
+      {
+        id: 111,
+        screens: { default: new ReferenceExpression(screenInstance.elemID, screenInstance) },
+      }
+    )
+    issueTypeScreenSchemeInstance = new InstanceElement(
+      'issueTypeScreenScheme1',
+      issueTypeScreenSchemeType,
+      {
+        id: 1111,
+        issueTypeMappings: [
+          {
+            issueTypeId: 1,
+            screenSchemeId: new ReferenceExpression(screenSchemeInstance.elemID, screenSchemeInstance),
+          },
+        ],
+      }
+    )
+    projectInstance = new InstanceElement(
+      'project1',
+      projectType,
+      {
+        id: '11111',
+        key: 'projKey',
+        name: 'project1',
+        simplified: false,
+        projectTypeKey: 'software',
+        issueTypeScreenScheme:
+          new ReferenceExpression(issueTypeScreenSchemeInstance.elemID, issueTypeScreenSchemeInstance),
+      },
+      [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1']
+    )
   })
   describe('on fetch', () => {
     beforeEach(async () => {
       client = mockCli.client
-      screenType = new ObjectType({ elemID: new ElemID(JIRA, 'Screen'),
-        fields: {
-          id: { refType: BuiltinTypes.NUMBER },
-        } })
-      screenInstance = new InstanceElement(
-        'screen1',
-        screenType,
-        {
-          id: 11,
-        }
-      )
-
-      screenSchemeType = new ObjectType({
-        elemID: new ElemID(JIRA, SCREEN_SCHEME_TYPE),
-        fields: {
-          id: { refType: BuiltinTypes.NUMBER },
-          screens: { refType: screenType },
-        },
-      })
-      screenSchemeInstance = new InstanceElement(
-        'screenScheme1',
-        screenSchemeType,
-        {
-          id: 111,
-          screens: { default: new ReferenceExpression(screenInstance.elemID, screenInstance) },
-        }
-      )
-
-      issueTypeScreenSchemeItemType = new ObjectType({
-        elemID: new ElemID(JIRA, 'IssueTypeScreenSchemeItem'),
-        fields: {
-          issueTypeId: { refType: BuiltinTypes.STRING },
-          screenSchemeId: { refType: screenSchemeType },
-        },
-      })
-      issueTypeScreenSchemeType = new ObjectType({
-        elemID: new ElemID(JIRA, 'IssueTypeScreenScheme'),
-        fields: {
-          id: { refType: BuiltinTypes.NUMBER },
-          issueTypeMappings: { refType: new ListType(issueTypeScreenSchemeItemType) },
-        },
-      })
-      issueTypeScreenSchemeInstance = new InstanceElement(
-        'issueTypeScreenScheme1',
-        issueTypeScreenSchemeType,
-        {
-          id: 1111,
-          issueTypeMappings: [
-            {
-              issueTypeId: 1,
-              screenSchemeId: new ReferenceExpression(screenSchemeInstance.elemID, screenSchemeInstance),
-            },
-          ],
-        }
-      )
-      projectType = new ObjectType({
-        elemID: new ElemID(JIRA, PROJECT_TYPE),
-        fields: {
-          id: { refType: BuiltinTypes.NUMBER },
-          simplified: { refType: BuiltinTypes.BOOLEAN },
-          issueTypeScreenScheme: { refType: issueTypeScreenSchemeType },
-          key: { refType: BuiltinTypes.STRING },
-        },
-      })
-      projectInstance = new InstanceElement(
-        'project1',
-        projectType,
-        {
-          id: 11111,
-          key: 'projKey',
-          name: 'project1',
-          simplified: false,
-          projectTypeKey: 'software',
-          issueTypeScreenScheme:
-          new ReferenceExpression(issueTypeScreenSchemeInstance.elemID, issueTypeScreenSchemeInstance),
-        },
-        [JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1']
-      )
       issueTypeType = new ObjectType({ elemID: new ElemID(JIRA, 'IssueType') })
       issueTypeInstance = new InstanceElement(
         'issueType1',
@@ -145,28 +165,6 @@ describe('issue layout filter', () => {
           name: 'OwnerTest',
         }
       )
-      fieldType = new ObjectType({ elemID: new ElemID(JIRA, 'Field') })
-      fieldInstance1 = new InstanceElement(
-        'testField1',
-        fieldType,
-        {
-          id: 'testField1',
-          name: 'TestField1',
-          type: 'testField1',
-        }
-      )
-      fieldInstance2 = new InstanceElement(
-        'testField2',
-        fieldType,
-        {
-          id: 'testField2',
-          name: 'TestField2',
-          schema: {
-            system: 'testField2',
-          },
-        }
-      )
-
       mockGet = jest.spyOn(client, 'gqlPost')
       mockGet.mockImplementation(params => {
         if (params.url === '/rest/gira/1') {
@@ -410,8 +408,7 @@ describe('issue layout filter', () => {
         'issueLayout',
         issueLayoutType,
         {
-          id: '2',
-          projectId: new ReferenceExpression(projectInstance.elemID, projectInstance),
+          id: generateLayoutId({ projectId: projectInstance.value.id, extraDefinerId: screenInstance.value.id }),
           extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
           issueLayoutConfig: {
             items: [
@@ -427,7 +424,9 @@ describe('issue layout filter', () => {
               },
             ],
           },
-        }
+        },
+        undefined,
+        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(projectInstance.elemID, projectInstance)] },
       )
       afterIssueLayoutInstance = issueLayoutInstance.clone()
     })
@@ -439,7 +438,6 @@ describe('issue layout filter', () => {
         'issueLayout',
         issueLayoutType,
         {
-          projectId: new ReferenceExpression(projectInstance.elemID, projectInstance),
           extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
           issueLayoutConfig: {
             items: [
@@ -455,7 +453,9 @@ describe('issue layout filter', () => {
               },
             ],
           },
-        }
+        },
+        undefined,
+        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(projectInstance.elemID, projectInstance)] },
       )
       const res = await filter.deploy([
         { action: 'add', data: { after: issueLayoutInstanceWithoutId } },
@@ -498,7 +498,7 @@ describe('issue layout filter', () => {
       expect(connection.put).toHaveBeenCalledWith(
         '/rest/internal/1.0/issueLayouts/2',
         { extraDefinerId: 11,
-          projectId: 11111,
+          projectId: '11111',
           owners: [],
           issueLayoutType: 'ISSUE_VIEW',
           issueLayoutConfig: {
@@ -546,7 +546,7 @@ describe('issue layout filter', () => {
       expect(connection.put).toHaveBeenCalledWith(
         '/rest/internal/1.0/issueLayouts/2',
         { extraDefinerId: 11,
-          projectId: 11111,
+          projectId: '11111',
           owners: [],
           issueLayoutType: 'ISSUE_VIEW',
           issueLayoutConfig: {
@@ -569,12 +569,11 @@ describe('issue layout filter', () => {
         undefined
       )
     })
-    it('should return error if project is not reference expression', async () => {
+    it('should return error if parent was not found', async () => {
       const issueLayoutInstanceWithoutProj = new InstanceElement(
         'issueLayoutInstanceWithoutProj',
         issueLayoutType,
         {
-          projectId: 11111,
           extraDefinerId: new ReferenceExpression(screenInstance.elemID, screenInstance),
           issueLayoutConfig: {
             items: [
@@ -597,10 +596,54 @@ describe('issue layout filter', () => {
       ])
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.errors[0].message).toEqual(
-        'Error: Failed to deploy issue layout changes due to missing references'
+        'Error: Expected jira.IssueLayout.instance.issueLayoutInstanceWithoutProj to have exactly one parent, found 0'
       )
       expect(res.deployResult.appliedChanges).toHaveLength(0)
       expect(res.leftoverChanges).toHaveLength(0)
+    })
+    it('should mark issue layout as removed if parent project was removed', async () => {
+      const change = toChange({ before: issueLayoutInstance })
+      connection.get.mockImplementation(async url => {
+        if (url === '/rest/api/3/project/11111') {
+          return {
+            status: 404,
+            data: {},
+          }
+        }
+        throw new Error(`Unexpected url ${url}`)
+      })
+      const { deployResult } = await filter.deploy([change])
+      expect(deployResult.errors).toHaveLength(0)
+      expect(deployResult.appliedChanges).toHaveLength(1)
+    })
+    it('should mark issue layout as removed if project was removed and API throws 404', async () => {
+      const change = toChange({ before: issueLayoutInstance })
+      const error = new clientUtils.HTTPError('message', {
+        status: 404,
+        data: { errorMessages: ['project does not exist.'] },
+      })
+      connection.get.mockRejectedValueOnce(error)
+      const { deployResult } = await filter.deploy([change])
+      expect(deployResult.errors).toHaveLength(0)
+      expect(deployResult.appliedChanges).toHaveLength(1)
+    })
+    it('should return error if issue layout as removed but parent project still exits', async () => {
+      const change = toChange({ before: issueLayoutInstance })
+      connection.get.mockImplementation(async url => {
+        if (url === '/rest/api/3/project/11111') {
+          return {
+            status: 200,
+            data: {
+              id: '11111',
+            },
+          }
+        }
+        throw new Error(`Unexpected url ${url}`)
+      })
+      const { deployResult } = await filter.deploy([change])
+      expect(deployResult.errors).toHaveLength(1)
+      expect(deployResult.errors[0].message).toEqual('Error: Could not remove IssueLayout')
+      expect(deployResult.appliedChanges).toHaveLength(0)
     })
   })
 })

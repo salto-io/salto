@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -21,7 +21,6 @@ import { JIRA } from '../../../../src/constants'
 export const createObjectTypeAttributeValues = (name: string, allElements: Element[]): Values => ({
   name,
   objectType: createReference(new ElemID(JIRA, 'ObjectType', 'instance', 'testSchema_Hardware_Assets@us'), allElements),
-  label: false,
   type: 0,
   editable: true,
   sortable: true,

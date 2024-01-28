@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -42,9 +42,11 @@ import {
   UNLIMITED_INSTANCES_VALUE,
   DETECTS_PARENTS_INDICATOR,
   API_NAME_SEPARATOR,
+  LAST_MODIFIED_DATE,
+  DATA_INSTANCES_CHANGED_AT_MAGIC,
 } from '../constants'
 import { FilterResult, RemoteFilterCreator } from '../filter'
-import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField } from '../transformers/transformer'
+import { apiName, Types, createInstanceServiceIds, isNameField } from '../transformers/transformer'
 import {
   getNamespace,
   isMasterDetailField,
@@ -60,6 +62,8 @@ import {
   isReadOnlyField,
   isCustomObjectSync,
   SoqlQuery,
+  buildElementsSourceForFetch,
+  getChangedAtSingleton,
 } from './utils'
 import { ConfigChangeSuggestion, DataManagement } from '../types'
 
@@ -85,6 +89,7 @@ export type CustomObjectFetchSetting = {
   invalidManagedBySaltoField?: Field
   managedBySaltoField?: string
   omittedFields: string[]
+  changedSince?: string
 }
 
 const defaultRecordKeysToOmit = ['attributes']
@@ -100,6 +105,7 @@ const buildQueryStrings = async (
   fields: Field[],
   ids?: string[],
   managedBySaltoField?: string,
+  changedSince?: string
 ): Promise<string[]> => {
   const fieldNames = await awu(fields)
     .flatMap(getFieldNamesForQuery)
@@ -107,6 +113,7 @@ const buildQueryStrings = async (
   const queryConditions: SoqlQuery[][] = [
     ...makeArray(ids).map(id => [{ fieldName: 'Id', operator: 'IN' as const, value: `'${id}'` }]),
     ...(managedBySaltoField !== undefined ? [[{ fieldName: managedBySaltoField, operator: '=' as const, value: 'TRUE' }]] : []),
+    ...(changedSince ? [[{ fieldName: LAST_MODIFIED_DATE, operator: '>' as const, value: changedSince }]] : []),
   ]
   return buildSelectQueries(typeName, fieldNames, queryConditions)
 }
@@ -120,7 +127,7 @@ type GetRecordsParams = {
 const getRecords = async (
   {
     client,
-    customObjectFetchSettings: { objectType, managedBySaltoField, omittedFields },
+    customObjectFetchSettings: { objectType, managedBySaltoField, omittedFields, changedSince },
     ids,
   } : GetRecordsParams,
 ): Promise<RecordById> => {
@@ -132,14 +139,16 @@ const getRecords = async (
 
   const queryableFields = getQueryableFields(objectType)
     .filter(field => !omittedFields.includes(apiNameSync(field) ?? ''))
-  if (_.isEmpty(queryableFields)) {
-    const queryableFieldNames = queryableFields.map(field => apiNameSync(field))
-    log.debug('Type %s had no queryable fields or they were all omitted. %o', typeName, { omittedFields, queryableFieldNames })
-    return {}
-  }
+  // queryableFields can't be empty - at least the ID fields are queryable and not omitted or we'll consider the config
+  // for the object to be invalid and won't get here.
 
-  log.debug('Fetching records for type %s%s', typeName, managedBySaltoField ? `, filtering by ${managedBySaltoField}` : '')
-  const queries = await buildQueryStrings(typeName, queryableFields, ids, managedBySaltoField)
+  log.debug(
+    'Fetching records for type %s%s%s',
+    typeName,
+    managedBySaltoField ? `, filtering by ${managedBySaltoField}` : '',
+    changedSince ? `, changed since ${changedSince}` : '',
+  )
+  const queries = await buildQueryStrings(typeName, queryableFields, ids, managedBySaltoField, changedSince)
   log.debug('Queries: %o', queries)
   const records = await queryClient(client, queries)
   log.debug(`Fetched ${records.length} records of type ${typeName}`)
@@ -483,7 +492,15 @@ export const getIdFields = async (
 export const getCustomObjectsFetchSettings = async (
   types: ObjectType[],
   dataManagement: DataManagement,
+  changedAtSingleton?: InstanceElement,
 ): Promise<CustomObjectFetchSetting[]> => {
+  const lastChangedInstanceForType = (typeName: string): string | undefined => {
+    if (changedAtSingleton === undefined) {
+      return undefined
+    }
+    const lastChangedAt = _.get(changedAtSingleton.value, [DATA_INSTANCES_CHANGED_AT_MAGIC, typeName])
+    return _.isString(lastChangedAt) ? new Date(lastChangedAt).toISOString() : undefined
+  }
   const isInvalidManagedBySaltoField = (type: ObjectType): boolean => {
     const isBooleanField = (field: Field): boolean => {
       const fieldType = field.getTypeSync()
@@ -500,6 +517,9 @@ export const getCustomObjectsFetchSettings = async (
     const managedBySaltoFieldName = dataManagement.managedBySaltoFieldForType(type)
     const managedBySaltoField = managedBySaltoFieldName ? type.fields[managedBySaltoFieldName] : undefined
     const typeApiName = apiNameSync(type)
+    if (typeApiName === undefined) {
+      log.warn('Type %s has no API name', type.elemID.getFullName())
+    }
     return {
       objectType: type,
       isBase: await dataManagement.shouldFetchObjectType(type) === 'Always',
@@ -507,6 +527,7 @@ export const getCustomObjectsFetchSettings = async (
       managedBySaltoField: managedBySaltoFieldName,
       invalidManagedBySaltoField: isInvalidManagedBySaltoField(type) ? managedBySaltoField : undefined,
       omittedFields: typeApiName ? dataManagement.omittedFieldsForType(typeApiName) : [],
+      changedSince: typeApiName ? lastChangedInstanceForType(typeApiName) : undefined,
     }
   }
 
@@ -603,10 +624,20 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     if (dataManagement === undefined) {
       return {}
     }
-    const customObjects = await awu(elements).filter(isCustomObject).toArray() as ObjectType[]
+
+    // In the fetch-with-changes-detection case, only data types that changed will be present in the `elements`
+    // parameter but there may be instances that changed even though their types remained the same. So we must iterate
+    // over all the object types in the elements source.
+    const elementsSource = buildElementsSourceForFetch(elements, config)
+    const changedAtSingleton = await getChangedAtSingleton(elementsSource)
+
+    const customObjects = await awu(await elementsSource.getAll())
+      .filter(isCustomObjectSync)
+      .toArray()
     const customObjectFetchSetting = await getCustomObjectsFetchSettings(
       customObjects,
-      dataManagement
+      dataManagement,
+      changedAtSingleton,
     )
     const [validFetchSettings, invalidFetchSettings] = _.partition(
       customObjectFetchSetting,

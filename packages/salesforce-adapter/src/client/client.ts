@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -51,6 +51,7 @@ import {
 } from '../constants'
 import { CompleteSaveResult, SalesforceRecord, SfError } from './types'
 import {
+  ClientDeployConfig,
   ClientPollingConfig,
   ClientRateLimitConfig,
   ClientRetryConfig,
@@ -849,7 +850,7 @@ export default class SalesforceClient {
     this.setDeployPollingTimeout()
     const defaultDeployOptions = { rollbackOnError: true, ignoreWarnings: true }
     const { checkOnly = false } = deployOptions ?? {}
-    const optionsToSend = ['rollbackOnError', 'ignoreWarnings', 'purgeOnDelete', 'testLevel', 'runTests']
+    const optionsToSend: (keyof ClientDeployConfig)[] = ['rollbackOnError', 'ignoreWarnings', 'purgeOnDelete', 'testLevel', 'runTests', 'performRetrieve']
     const deployStatus = this.conn.metadata.deploy(
       zip,
       {

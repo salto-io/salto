@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -61,6 +61,8 @@ export { defaultGroupChangeValidator } from './default_group_change'
 export { organizationExistenceValidator } from './organization_existence'
 export { badFormatWebhookActionValidator } from './bad_format_webhook_action'
 export { guideDisabledValidator } from './guide_disabled'
+export { guideThemeDeleteLiveValidator } from './guide_theme_delete_live'
+export { guideThemeUpdateMetadataValidator } from './guide_theme_update_metadata'
 export { additionOfTicketStatusForTicketFormValidator } from './ticket_status_in_ticket_form'
 export { defaultDynamicContentItemVariantValidator } from './default_dynamic_content_item_variant'
 export { featureActivationValidator } from './feature_activation'
@@ -76,3 +78,4 @@ export { duplicateIdFieldValuesValidator } from './duplicate_id_field_values'
 export { notEnabledMissingReferencesValidator } from './not_enabled_missing_references'
 export { conditionalTicketFieldsValidator } from './conditional_ticket_fields'
 export { dynamicContentDeletionValidator } from './dynamic_content_deletion'
+export { guideThemeReadonlyValidator } from './guide_theme_readonly'

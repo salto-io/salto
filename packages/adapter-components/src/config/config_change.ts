@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -23,7 +23,7 @@ const CLIENT_CONFIG = 'client'
 
 export const TYPE_TO_EXCLUDE = 'typeToExclude'
 export const DISABLE_PRIVATE_API = 'disablePrivateAPI'
-type ConfigSuggestionType = 'typeToExclude' | 'disablePrivateAPI'
+type ConfigSuggestionType = 'typeToExclude' | 'disablePrivateAPI' | 'enableFetchFlag'
 
 export type ConfigChangeSuggestion = {
   type: ConfigSuggestionType
@@ -54,15 +54,19 @@ export const getUpdatedCofigFromConfigChanges = ({
 
   const shouldDisablePrivateApi = configChanges.find(configChange => configChange.type === DISABLE_PRIVATE_API)
 
-  const updatedFetchConfig = typesToExclude.length > 0
-    ? {
-      ...currentConfig.value[FETCH_CONFIG],
-      exclude: [
-        ...currentConfig.value[FETCH_CONFIG].exclude,
-        ...typesToExclude.map(typeName => ({ type: typeName })),
-      ],
-    }
-    : currentConfig.value[FETCH_CONFIG]
+  const fetchFlagsToEnable = configChanges
+    .filter(configChange => configChange.type === 'enableFetchFlag')
+    .map(configChange => configChange.value)
+    .filter(isDefined)
+
+  const updatedFetchConfig = {
+    ...currentConfig.value[FETCH_CONFIG],
+    exclude: [
+      ...currentConfig.value[FETCH_CONFIG].exclude,
+      ...Object.values(typesToExclude.map(typeName => ({ type: typeName }))),
+    ],
+    ...Object.fromEntries(fetchFlagsToEnable.map(flagName => ([[flagName], true]))),
+  }
 
   const updatedClientconfig = shouldDisablePrivateApi
     ? { ...currentConfig.value[CLIENT_CONFIG], usePrivateAPI: false }

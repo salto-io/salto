@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -19,7 +19,7 @@ import { elements } from '@salto-io/adapter-components'
 import { AUTOMATION_PROJECT_TYPE, AUTOMATION_TYPE, AUTOMATION_COMPONENT_TYPE,
   AUTOMATION_FIELD, AUTOMATION_STATUS, AUTOMATION_CONDITION, AUTOMATION_CONDITION_CRITERIA,
   AUTOMATION_SUBTASK, AUTOMATION_ROLE, AUTOMATION_GROUP, AUTOMATION_EMAIL_RECIPENT,
-  AUTOMATION_COMPARE_VALUE, AUTOMATION_OPERATION, AUTOMATION_COMPONENT_VALUE_TYPE, JIRA } from '../../constants'
+  AUTOMATION_COMPARE_VALUE, AUTOMATION_OPERATION, AUTOMATION_COMPONENT_VALUE_TYPE, JIRA, DELETE_LINK_TYPES } from '../../constants'
 
 export const createAutomationTypes = (): {
   automationType: ObjectType
@@ -129,10 +129,20 @@ export const createAutomationTypes = (): {
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_COMPARE_VALUE],
   })
 
+  const deleteLinkTypes = new ObjectType({
+    elemID: new ElemID(JIRA, DELETE_LINK_TYPES),
+    fields: {
+      id: { refType: BuiltinTypes.STRING },
+      direction: { refType: BuiltinTypes.STRING },
+      name: { refType: BuiltinTypes.STRING },
+    },
+  })
+
   const componentValueType = new ObjectType({
     elemID: new ElemID(JIRA, AUTOMATION_COMPONENT_VALUE_TYPE),
     fields: {
       boardId: { refType: BuiltinTypes.NUMBER },
+      deleteLinkTypes: { refType: new ListType(deleteLinkTypes) },
       linkTypes: { refType: new ListType(BuiltinTypes.STRING) },
       linkType: { refType: BuiltinTypes.STRING },
       sourceProject: { refType: BuiltinTypes.STRING },
@@ -154,6 +164,11 @@ export const createAutomationTypes = (): {
       project: { refType: projectType },
       role: { refType: roleType },
       compareFieldValue: { refType: compareFieldValueType },
+      workspaceId: { refType: BuiltinTypes.STRING },
+      schemaLabel: { refType: BuiltinTypes.STRING },
+      schemaId: { refType: BuiltinTypes.STRING },
+      objectTypeLabel: { refType: BuiltinTypes.STRING },
+      objectTypeId: { refType: BuiltinTypes.STRING },
     },
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_COMPONENT_VALUE_TYPE],
   })
@@ -165,6 +180,7 @@ export const createAutomationTypes = (): {
       schemeVersion: { refType: BuiltinTypes.NUMBER },
       type: { refType: BuiltinTypes.STRING },
       value: { refType: componentValueType },
+      hasAttachmentsValue: { refType: BuiltinTypes.BOOLEAN },
     },
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_COMPONENT_TYPE],
   })
@@ -225,6 +241,6 @@ export const createAutomationTypes = (): {
     automationType,
     subTypes: [actorType, componentType, tagType, projectType, componentValueType, fieldType,
       recipientType, statusType, operationType, conditionCriteriaType, conditionType,
-      groupType, roleType, subtaskType, compareFieldValueType],
+      groupType, roleType, subtaskType, compareFieldValueType, deleteLinkTypes],
   }
 }

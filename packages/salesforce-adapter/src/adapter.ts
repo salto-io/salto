@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -128,6 +128,7 @@ import {
   CUSTOM_OBJECT,
   FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
+  LAST_MODIFIED_DATE,
   OWNER_ID,
   PROFILE_METADATA_TYPE,
 } from './constants'
@@ -322,7 +323,7 @@ export const SYSTEM_FIELDS = [
   'Id',
   'IsDeleted',
   'LastActivityDate',
-  'LastModifiedDate',
+  LAST_MODIFIED_DATE,
   'LastModifiedById',
   'LastReferencedDate',
   'LastViewedDate',
@@ -584,7 +585,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         // eslint-disable-next-line @typescript-eslint/no-empty-function
         reportProgress: () => {},
       }
-      deployResult = await deployMetadata(resolvedChanges, this.client, changeGroup.groupID,
+      deployResult = await deployMetadata(resolvedChanges, this.client,
         this.nestedMetadataTypes, progressReporter ?? nullProgressReporter,
         this.userConfig.client?.deploy?.deleteBeforeUpdate, checkOnly,
         this.userConfig.client?.deploy?.quickDeployParams)

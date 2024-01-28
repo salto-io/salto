@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -21,13 +21,20 @@ import {
   Element, isInstanceElement, Values, Change, Value, getChangeData, ElemID,
   isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes, ReferenceExpression,
   ActionName, ChangeError, SaltoError, isElement, TypeMap, DetailedChange, ChangeDataType,
-  isStaticFile, Group, isSaltoElementError,
+  isStaticFile, isSaltoElementError,
 } from '@salto-io/adapter-api'
-import { Plan, PlanItem, FetchChange, FetchResult, LocalChange, getSupportedServiceAdapterNames } from '@salto-io/core'
+import {
+  Plan,
+  PlanItem,
+  FetchChange,
+  FetchResult,
+  LocalChange,
+  getSupportedServiceAdapterNames,
+  DeployError, GroupProperties,
+} from '@salto-io/core'
 import { errors, SourceLocation, WorkspaceComponents, StateRecency } from '@salto-io/workspace'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
-import { DeployError } from '@salto-io/core/src/core/deploy'
 import Prompts from './prompts'
 
 const { awu } = collections.asynciterable
@@ -805,16 +812,16 @@ export const formatAdapterProgress = (adapterName: string, progressMessage: stri
   subHeader(indent(Prompts.FETCH_PROGRESSING_MESSAGES(adapterName, progressMessage), 4))
 )
 
-type QuickDeployableGroup = Group & {
+type QuickDeployableGroup = GroupProperties & {
   requestId: string
   hash: string
 }
 
-const isQuickDeployableGroup = (group: Group): group is QuickDeployableGroup => (
+const isQuickDeployableGroup = (group: GroupProperties): group is QuickDeployableGroup => (
   group.requestId !== undefined && group.hash !== undefined
 )
 
-export const formatGroups = (groups: Group[], checkOnly: boolean): string => {
+export const formatGroups = (groups: GroupProperties[], checkOnly: boolean): string => {
   const quickDeployableGroups = groups.filter(isQuickDeployableGroup)
   const deploymentUrls = groups
     .map(group => group.url)

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,11 +14,13 @@
 * limitations under the License.
 */
 import { Change, ChangeError, ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { NetsuiteConfig } from '../config'
+import { NetsuiteConfig } from '../config/types'
+import NetsuiteClient from '../client/client'
 
 export type NetsuiteChangeValidator = (
     changes: ReadonlyArray<Change>,
     deployReferencedElements?: boolean,
     elementsSource?: ReadOnlyElementsSource,
-    config?: NetsuiteConfig
+    config?: NetsuiteConfig,
+    client?: NetsuiteClient,
   ) => Promise<ReadonlyArray<ChangeError>>

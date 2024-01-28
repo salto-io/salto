@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -24,6 +24,7 @@ import { getSObjectFieldElement, apiName, toCustomField, isSubfieldOfCompound } 
 import { isInstanceOfType, ensureSafeFilterFetch } from './utils'
 import { CustomField } from '../client/types'
 import { createSkippedListConfigChangeFromError } from '../config_change'
+import { FetchProfile } from '../types'
 
 const log = logger(module)
 const { awu, keyByAsync } = collections.asynciterable
@@ -34,6 +35,7 @@ const createFieldValue = async (
   field: SObjField,
   objectName: string,
   objCompoundFieldNames: Record<string, string>,
+  fetchProfile: FetchProfile,
   systemFields?: string[],
 ): Promise<CustomField> => {
   // temporary hack to maintain the current implementation of the code in transformer.ts
@@ -45,6 +47,7 @@ const createFieldValue = async (
     field,
     { apiName: objectName },
     objCompoundFieldNames,
+    fetchProfile,
     systemFields,
   )
   const customField = await toCustomField(dummyField, false)
@@ -65,6 +68,7 @@ const createFieldValue = async (
 const addSObjectInformationToInstance = async (
   instance: InstanceElement,
   sobject: DescribeSObjectResult,
+  fetchProfile: FetchProfile,
   systemFields?: string[],
 ): Promise<void> => {
   // Add information to the object type
@@ -103,7 +107,7 @@ const addSObjectInformationToInstance = async (
   const sobjectFields = await Promise.all(
     sobject.fields
       .filter(field => !isSubfieldOfCompound(field)) // Filter out nested fields of compound fields
-      .map(field => createFieldValue(field, sobject.name, objCompoundFieldNames, systemFields))
+      .map(field => createFieldValue(field, sobject.name, objCompoundFieldNames, fetchProfile, systemFields))
   )
 
   const addedFieldNames: string[] = []
@@ -159,6 +163,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
           description => addSObjectInformationToInstance(
             customObjectInstances[description.name],
             description,
+            config.fetchProfile,
             config.systemFields,
           )
         )

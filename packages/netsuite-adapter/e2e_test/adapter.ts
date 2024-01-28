@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -22,12 +22,12 @@ import Bottleneck from 'bottleneck'
 import { Credentials, toCredentialsAccountId } from '../src/client/credentials'
 import SdfClient from '../src/client/sdf_client'
 import NetsuiteAdapter, { NetsuiteAdapterParams } from '../src/adapter'
-import { instanceLimiterCreator, NetsuiteConfig } from '../src/config'
+import { NetsuiteConfig } from '../src/config/types'
 import { mockGetElemIdFunc } from '../test/utils'
 import { credsSpec } from './jest_environment'
 import NetsuiteClient from '../src/client/client'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
-import { fullFetchConfig } from '../src/query'
+import { instanceLimiterCreator, fullFetchConfig } from '../src/config/config_creator'
 
 const log = logger(module)
 

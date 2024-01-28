@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -30,7 +30,8 @@ import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import { LocalFilterCreator } from '../src/filter'
 import SdfClient from '../src/client/sdf_client'
 import resolveValuesFilter from '../src/filters/element_references'
-import { configType, getConfigFromConfigChanges, NetsuiteConfig } from '../src/config'
+import { configType, NetsuiteConfig } from '../src/config/types'
+import { getConfigFromConfigChanges } from '../src/config/suggestions'
 import { mockGetElemIdFunc } from './utils'
 import NetsuiteClient from '../src/client/client'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, SDFObjectNode } from '../src/client/types'
@@ -42,13 +43,13 @@ import * as suiteAppFileCabinet from '../src/client/suiteapp_client/suiteapp_fil
 import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../src/group_changes'
 import { SuiteAppFileCabinetOperations } from '../src/client/suiteapp_client/suiteapp_file_cabinet'
 import getChangeValidator from '../src/change_validator'
-import { FetchByQueryFunc } from '../src/change_validators/safe_deploy'
 import { getStandardTypesNames } from '../src/autogen/types'
 import { createCustomRecordTypes } from '../src/custom_records/custom_record_type'
 import { Graph, GraphNode } from '../src/client/graph_utils'
 import { getDataElements } from '../src/data_elements/data_elements'
 import * as elementsSourceIndexModule from '../src/elements_source_index/elements_source_index'
-import { fullQueryParams, fullFetchConfig } from '../src/query'
+import { fullQueryParams, fullFetchConfig } from '../src/config/config_creator'
+import { FetchByQueryFunc } from '../src/config/query'
 
 const DEFAULT_SDF_DEPLOY_PARAMS = {
   manifestDependencies: {
@@ -63,8 +64,8 @@ const DEFAULT_SDF_DEPLOY_PARAMS = {
   validateOnly: false,
 }
 
-jest.mock('../src/config', () => ({
-  ...jest.requireActual<{}>('../src/config'),
+jest.mock('../src/config/suggestions', () => ({
+  ...jest.requireActual<{}>('../src/config/suggestions'),
   getConfigFromConfigChanges: jest.fn(),
 }))
 
@@ -440,7 +441,6 @@ describe('Adapter', () => {
           failedCustomRecords: expect.anything(),
         },
         config,
-        { excludeBins: false },
       )
     })
 
@@ -463,7 +463,6 @@ describe('Adapter', () => {
           failedCustomRecords: [],
         },
         config,
-        { excludeBins: false },
       )
     })
 
@@ -525,7 +524,6 @@ describe('Adapter', () => {
           failedCustomRecords: [],
         },
         config,
-        { excludeBins: false },
       )
       expect(fetchResult.updatedConfig).toBeUndefined()
     })
@@ -548,7 +546,6 @@ describe('Adapter', () => {
           failedCustomRecords: [],
         },
         config,
-        { excludeBins: false },
       )
       expect(fetchResult.updatedConfig?.config[0].isEqual(updatedConfig)).toBe(true)
     })
@@ -574,7 +571,6 @@ describe('Adapter', () => {
           failedCustomRecords: [],
         },
         config,
-        { excludeBins: false },
       )
       expect(fetchResult.updatedConfig?.config[0].isEqual(updatedConfig)).toBe(true)
     })
@@ -599,7 +595,6 @@ describe('Adapter', () => {
           failedCustomRecords: [],
         },
         config,
-        { excludeBins: false },
       )
       expect(fetchResult.updatedConfig?.config[0].isEqual(updatedConfig)).toBe(true)
     })
@@ -1410,7 +1405,6 @@ describe('Adapter', () => {
             failedCustomRecords: ['excludedTypeCustomRecord'],
           },
           config,
-          { excludeBins: false },
         )
       })
     })

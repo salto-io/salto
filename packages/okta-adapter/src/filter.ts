@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -17,6 +17,7 @@ import { ReadOnlyElementsSource, SaltoError, Values } from '@salto-io/adapter-ap
 import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import OktaClient from './client/client'
 import { OktaConfig } from './config'
+import { User } from './user_utils'
 
 export const { filtersRunner } = filterUtils
 
@@ -34,6 +35,7 @@ export type FilterAdditionalParams = {
   // and only when needed.
   adapterContext: Values
   adminClient?: OktaClient
+  usersPromise?: Promise<User[]>
 }
 
 export type FilterCreator = filterUtils.FilterCreator<

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -25,6 +25,12 @@ describe('client', () => {
   beforeEach(() => {
     mockAxios = new MockAdapter(axios)
     client = new JiraClient({ credentials: { baseUrl: 'http://myjira.net', user: 'me', token: 'tok' }, isDataCenter: false })
+    mockAxios
+      // first three requests are for login assertion
+      .onGet('/rest/api/3/configuration').replyOnce(200)
+      .onGet('/rest/api/3/serverInfo').replyOnce(200, { baseUrl: 'a' })
+      .onGet('/rest/api/3/instance/license')
+      .replyOnce(200, { applications: [{ plan: 'FREE' }] })
   })
   afterEach(() => {
     mockAxios.restore()
@@ -41,17 +47,15 @@ describe('client', () => {
 
   describe('getSinglePage', () => {
     beforeEach(async () => {
-      mockAxios.onGet().reply(200, { response: 'asd' })
+      mockAxios.onGet('/myPath').reply(200, { response: 'asd' })
       result = await client.getSinglePage({ url: '/myPath' })
     })
-    it('should not try to call a login endpoint', () => {
-      expect(mockAxios.history.get).toHaveLength(1)
-    })
     it('should request the correct path with auth headers', () => {
-      const request = mockAxios.history.get[0]
-      expect(request.auth).toEqual({ username: 'me', password: 'tok' })
-      expect(request.baseURL).toEqual('http://myjira.net')
-      expect(request.url).toEqual('/myPath')
+      const request = mockAxios.history.get.find(r => r.url === '/myPath')
+      expect(request).toBeDefined()
+      expect(request?.auth).toEqual({ username: 'me', password: 'tok' })
+      expect(request?.baseURL).toEqual('http://myjira.net')
+      expect(request?.url).toEqual('/myPath')
     })
     it('should return the response', () => {
       expect(result).toEqual({ status: 200, data: { response: 'asd' } })
@@ -60,7 +64,7 @@ describe('client', () => {
   it('should preserve headers', async () => {
     mockAxios.onPatch().reply(200, { response: 'asd' })
     mockAxios.onPost().reply(200, { response: 'asd' })
-    mockAxios.onGet().reply(200, { response: 'asd' })
+    mockAxios.onGet('/myPath').reply(200, { response: 'asd' })
     mockAxios.onPut().reply(200, { response: 'asd' })
     mockAxios.onDelete().reply(200, { response: 'asd' })
     await client.patchPrivate({ url: '/myPath', headers: { 'x-atlassian-force-account-id': '1234' }, data: { a: 'b' } })
@@ -70,7 +74,7 @@ describe('client', () => {
     await client.getPrivate({ url: '/myPath', headers: { 'x-atlassian-force-account-id': '1234' } })
     await client.deletePrivate({ url: '/myPath', headers: { 'x-atlassian-force-account-id': '1234' } })
     expect(mockAxios.history.patch[0].headers?.['x-atlassian-force-account-id']).toEqual('1234')
-    expect(mockAxios.history.get[0].headers?.['x-atlassian-force-account-id']).toEqual('1234')
+    expect(mockAxios.history.get.find(r => r.url === '/myPath')?.headers?.['x-atlassian-force-account-id']).toEqual('1234')
     expect(mockAxios.history.post[0].headers?.['x-atlassian-force-account-id']).toEqual('1234')
     expect(mockAxios.history.post[1].headers?.['x-atlassian-force-account-id']).toEqual('1234')
     expect(mockAxios.history.delete[0].headers?.['x-atlassian-force-account-id']).toEqual('1234')

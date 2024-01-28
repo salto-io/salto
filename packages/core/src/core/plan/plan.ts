@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -314,12 +314,16 @@ const addDifferentElements = (
     }
     return elementPair
   }
-  const getFilteredElements = async (source: ReadOnlyElementsSource):
-    Promise<AsyncIterable<ChangeDataType>> =>
-    (awu(await source.getAll()).filter(async elem =>
-      _.every(await Promise.all(
-        topLevelFilters.map(filter => filter(elem.elemID))
-      )))) as AsyncIterable<ChangeDataType>
+  const getFilteredElements = async (
+    source: ReadOnlyElementsSource
+  ): Promise<AsyncIterable<ChangeDataType>> => (
+    topLevelFilters.length === 0
+      ? await source.getAll()
+      : awu(await source.list())
+        .filter(async id => _.every(await Promise.all(topLevelFilters.map(filter => filter(id)))))
+        .map(id => source.get(id))
+  ) as AsyncIterable<ChangeDataType>
+
   const cmp = (e1: ChangeDataType, e2: ChangeDataType): number => {
     if (e1.elemID.getFullName() < e2.elemID.getFullName()) {
       return -1

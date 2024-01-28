@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,14 +16,14 @@
 
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
-import { getDefaultConfig } from '../../../src/config/config'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { JiraConfig, getDefaultConfig } from '../../../src/config/config'
 import deployAttributesFilter from '../../../src/filters/assets/attribute_deploy_filter'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 import { OBJECT_TYPE_ATTRIBUTE_TYPE, OBJECT_TYPE_TYPE, JIRA } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
-
 
 describe('deployAttributesFilter', () => {
   type FilterType = filterUtils.FilterWith<'deploy'>
@@ -45,15 +45,18 @@ describe('deployAttributesFilter', () => {
     },
   })
   let attributesInstance: InstanceElement
+  let elementsSource: ReadOnlyElementsSource
   describe('deploy', () => {
+    let config: JiraConfig
     beforeEach(() => {
-      const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
       config.fetch.enableJsmExperimental = true
       const { client: cli, connection: conn } = mockClient(false)
       client = cli
       connection = conn
-      filter = deployAttributesFilter(getFilterParams({ config, client })) as typeof filter
+      elementsSource = buildElementsSourceFromElements([assetsObjectTypeInstance])
+      filter = deployAttributesFilter(getFilterParams({ config, client, elementsSource })) as typeof filter
       attributesInstance = new InstanceElement(
         'attributesInstance',
         attributeType,
@@ -78,6 +81,23 @@ describe('deployAttributesFilter', () => {
                 },
               ],
             },
+          }
+        }
+        if (url === '/gateway/api/jsm/assets/workspace/workspaceId/v1/objecttype/11111/attributes') {
+          return {
+            status: 200,
+            data: [
+              {
+                name: 'Key',
+                id: '1',
+                editable: false,
+              },
+              {
+                name: 'Name',
+                id: '2',
+                editable: true,
+              },
+            ],
           }
         }
         throw new Error('Unexpected url')
@@ -123,6 +143,8 @@ describe('deployAttributesFilter', () => {
     })
     it('should remove attribute', async () => {
       const changes = [toChange({ before: attributesInstance })]
+      elementsSource = buildElementsSourceFromElements([assetsObjectTypeInstance])
+      filter = deployAttributesFilter(getFilterParams({ config, client, elementsSource })) as typeof filter
       const res = await filter.deploy(changes)
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
@@ -138,6 +160,28 @@ describe('deployAttributesFilter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)
+      expect(connection.post).toHaveBeenCalledTimes(0)
+      expect(connection.put).toHaveBeenCalledTimes(0)
+    })
+    it('should add an editable default attribute', async () => {
+      const defaultAttributeInstance = attributesInstance.clone()
+      defaultAttributeInstance.value.name = 'Name'
+      const changes = [toChange({ after: defaultAttributeInstance })]
+      const res = await filter.deploy(changes)
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(connection.post).toHaveBeenCalledTimes(0)
+      expect(connection.put).toHaveBeenCalledTimes(2)
+    })
+    it('should not call deploy request on a non editable default attribute', async () => {
+      const defaultAttributeInstance = attributesInstance.clone()
+      defaultAttributeInstance.value.name = 'Key'
+      const changes = [toChange({ after: defaultAttributeInstance })]
+      const res = await filter.deploy(changes)
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
       expect(connection.post).toHaveBeenCalledTimes(0)
       expect(connection.put).toHaveBeenCalledTimes(0)
     })

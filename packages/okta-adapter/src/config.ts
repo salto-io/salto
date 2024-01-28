@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,10 +14,12 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, CORE_ANNOTATIONS, ActionName, BuiltinTypes, ObjectType, Field } from '@salto-io/adapter-api'
+import { ElemID, CORE_ANNOTATIONS, ActionName, ObjectType, Field, createRestriction, BuiltinTypes } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
-import { ACCESS_POLICY_TYPE_NAME, CUSTOM_NAME_FIELD, IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, OKTA, PASSWORD_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, SIGN_ON_POLICY_TYPE_NAME, AUTOMATION_TYPE_NAME } from './constants'
+import { ACCESS_POLICY_TYPE_NAME, CUSTOM_NAME_FIELD, IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, OKTA, PASSWORD_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, SIGN_ON_POLICY_TYPE_NAME, AUTOMATION_TYPE_NAME, AUTHENTICATOR_TYPE_NAME, DEVICE_ASSURANCE } from './constants'
+import { DEFAULT_CONVERT_USERS_IDS_VALUE, DEFAULT_GET_USERS_STRATEGY } from './user_utils'
+import { DEFAULT_APP_URLS_VALIDATOR_VALUE } from './change_validators/app_urls'
 
 type UserDeployConfig = configUtils.UserDeployConfig
 const {
@@ -40,22 +42,26 @@ export type OktaClientConfig = clientUtils.ClientBaseConfig<OktaClientRateLimitC
 }
 export type OktaStatusActionName = 'activate' | 'deactivate'
 export type OktaActionName = ActionName | OktaStatusActionName
+type GetUsersStrategy = 'searchQuery' | 'allUsers'
 export type OktaFetchConfig = configUtils.UserFetchConfig & {
+  isClassicOrg?: boolean
   convertUsersIds?: boolean
   enableMissingReferences?: boolean
   includeGroupMemberships?: boolean
   includeProfileMappingProperties?: boolean
+  getUsersStrategy?: GetUsersStrategy
 }
 
 export type OktaSwaggerApiConfig = configUtils.AdapterSwaggerApiConfig<OktaActionName>
 export type OktaDuckTypeApiConfig = configUtils.AdapterDuckTypeApiConfig
+export type OktaDeployConfig = UserDeployConfig & { omitMissingUsers?: boolean }
 
 export type OktaConfig = {
   [CLIENT_CONFIG]?: OktaClientConfig
   [FETCH_CONFIG]: OktaFetchConfig
   [API_DEFINITIONS_CONFIG]: OktaSwaggerApiConfig
   [PRIVATE_API_DEFINITIONS_CONFIG]: OktaDuckTypeApiConfig
-  [DEPLOY_CONFIG]?: UserDeployConfig
+  [DEPLOY_CONFIG]?: OktaDeployConfig
 }
 
 const DEFAULT_ID_FIELDS = ['name']
@@ -125,6 +131,7 @@ const POLICY_TYPE_NAME_TO_PARAMS: Record<PolicyTypeNames, PolicyParams> = {
 const getPolicyItemsName = (policyName: string): string => (policyName === AUTOMATION_TYPE_NAME ? 'Automations' : `${(policyName).slice(0, -1)}ies`)
 const getPolicyRuleItemsName = (policyRuleName: string): string => (`${policyRuleName}s`)
 const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
+  const policiesToOmitPriorities = [ACCESS_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, IDP_POLICY_TYPE_NAME]
   const policiesConfig = Object.entries(POLICY_TYPE_NAME_TO_PARAMS).map(([typeName, details]) => {
     const policyRuleConfig = {
       transformation: {
@@ -255,7 +262,11 @@ const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
         transformation: {
           serviceIdField: 'id',
           fieldsToHide: [{ fieldName: 'id' }],
-          fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+          fieldsToOmit: [
+            ...DEFAULT_FIELDS_TO_OMIT,
+            { fieldName: '_links' },
+            ...(policiesToOmitPriorities.includes(typeName) ? [{ fieldName: 'priority', fieldType: 'number' }] : []),
+          ],
           fieldTypeOverrides: [{ fieldName: 'policyRules', fieldType: `list<${details.ruleName}>` }],
           standaloneFields: [{ fieldName: 'policyRules' }],
           serviceUrl: details.policyServiceUrl,
@@ -554,6 +565,15 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           schemaId: 'id',
         },
         fieldsToIgnore: ['id', 'name'],
+      },
+      remove: {
+        // we verify UserSchema is deleted by trying to delete the parent UserType
+        url: '/api/v1/meta/types/user/{typeId}',
+        method: 'delete',
+        urlParamsToFields: {
+          typeId: '_parent.0.id',
+        },
+        omitRequestBody: true,
       },
     },
   },
@@ -1762,17 +1782,35 @@ export const DEFAULT_CONFIG: OktaConfig = {
   [FETCH_CONFIG]: {
     ...elements.query.INCLUDE_ALL_CONFIG,
     hideTypes: true,
-    convertUsersIds: true,
+    convertUsersIds: DEFAULT_CONVERT_USERS_IDS_VALUE,
     enableMissingReferences: true,
     includeGroupMemberships: false,
     includeProfileMappingProperties: true,
+    getUsersStrategy: DEFAULT_GET_USERS_STRATEGY,
   },
   [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
   [PRIVATE_API_DEFINITIONS_CONFIG]: DUCKTYPE_API_DEFINITIONS,
   [CLIENT_CONFIG]: {
     usePrivateAPI: true,
   },
+  [DEPLOY_CONFIG]: {
+    changeValidators: {
+      appUrls: DEFAULT_APP_URLS_VALIDATOR_VALUE,
+    },
+  },
 }
+
+const CLASSIC_ENGINE_UNSUPPORTED_TYPES = [DEVICE_ASSURANCE, AUTHENTICATOR_TYPE_NAME, ACCESS_POLICY_TYPE_NAME,
+  PROFILE_ENROLLMENT_POLICY_TYPE_NAME]
+
+export const getSupportedTypes = ({
+  isClassicOrg,
+  supportedTypes,
+}: {
+  isClassicOrg: boolean
+  supportedTypes: Record<string, string[]>
+}): Record<string, string[]> =>
+  (isClassicOrg ? _.omit(supportedTypes, CLASSIC_ENGINE_UNSUPPORTED_TYPES) : supportedTypes)
 
 export type ChangeValidatorName = (
   | 'createCheckDeploymentBasedOnConfig'
@@ -1793,6 +1831,8 @@ export type ChangeValidatorName = (
   | 'appUserSchemaWithInactiveApp'
   | 'appWithGroupPush'
   | 'groupPushToApplicationUniqueness'
+  | 'appGroupAssignment'
+  | 'appUrls'
   )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -1818,6 +1858,8 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     appUserSchemaWithInactiveApp: { refType: BuiltinTypes.BOOLEAN },
     appWithGroupPush: { refType: BuiltinTypes.BOOLEAN },
     groupPushToApplicationUniqueness: { refType: BuiltinTypes.BOOLEAN },
+    appGroupAssignment: { refType: BuiltinTypes.BOOLEAN },
+    appUrls: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -1846,11 +1888,22 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
           includeGroupMemberships: { refType: BuiltinTypes.BOOLEAN },
           includeProfileMappingProperties: { refType: BuiltinTypes.BOOLEAN },
+          getUsersStrategy: {
+            refType: BuiltinTypes.STRING,
+            annotations: {
+              [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['searchQuery', 'allUsers'] }),
+            },
+          },
+          isClassicOrg: { refType: BuiltinTypes.BOOLEAN },
         }
       ),
     },
     [DEPLOY_CONFIG]: {
-      refType: createUserDeployConfigType(OKTA, changeValidatorConfigType),
+      refType: createUserDeployConfigType(
+        OKTA,
+        changeValidatorConfigType,
+        { omitMissingUsers: { refType: BuiltinTypes.BOOLEAN } }
+      ),
     },
     [API_DEFINITIONS_CONFIG]: {
       refType: createSwaggerAdapterApiConfigType({
@@ -1873,6 +1926,7 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
       CLIENT_CONFIG,
       `${FETCH_CONFIG}.hideTypes`,
       `${FETCH_CONFIG}.enableMissingReferences`,
+      `${FETCH_CONFIG}.getUsersStrategy`
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },

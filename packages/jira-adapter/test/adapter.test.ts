@@ -462,7 +462,6 @@ describe('adapter', () => {
                   projectId: '10000',
                   projectKey: 'SD',
                   projectName: 'Service Desk',
-                  projectTypeKey: SERVICE_DESK,
                 },
               ],
             })

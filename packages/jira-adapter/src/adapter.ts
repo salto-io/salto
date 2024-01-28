@@ -591,7 +591,13 @@ export default class JiraAdapter implements AdapterOperations {
       .filter(project => project.elemID.typeName === PROJECT_TYPE)
       .filter(isInstanceElement)
       .filter(project => project.value.projectTypeKey === SERVICE_DESK)
-      .filter(project => serviceDeskProjectIds.includes(project.value.id)))
+      .filter(project => {
+        if (!serviceDeskProjectIds.includes(project.value.id)) {
+          log.debug(`Skipping project ${project.value.name} since it has no JSM permissions`)
+          return false
+        }
+        return true
+      }))
 
     const fetchResultWithDuplicateTypes = await Promise.all(serviceDeskProjects.map(async projectInstance => {
       const serviceDeskProjRecord: Record<string, string> = {

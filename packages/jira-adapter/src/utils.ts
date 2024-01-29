@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType, getDeepInnerType, InstanceElement, ReadOnlyElementsSource, isInstanceElement, Value } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType, getDeepInnerType, InstanceElement, ReadOnlyElementsSource, isInstanceElement, Value, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
@@ -196,4 +196,22 @@ Promise<boolean> => {
     log.error(`Failed to get server info: ${e}`)
   }
   return true
+}
+
+export const convertPropertiesToList = (fields: Values[]): void => {
+  fields.forEach(field => {
+    if (field.properties != null) {
+      field.properties = Object.entries(field.properties)
+        .map(([key, value]) => ({ key, value }))
+    }
+  })
+}
+export const convertPropertiesToMap = (fields: Values[]): void => {
+  fields.forEach(field => {
+    if (field.properties != null) {
+      field.properties = Object.fromEntries(
+        field.properties.map(({ key, value }: Values) => [key, value])
+      )
+    }
+  })
 }

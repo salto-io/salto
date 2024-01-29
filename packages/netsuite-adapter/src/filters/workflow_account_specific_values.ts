@@ -243,10 +243,10 @@ const createQuerySchema = (records: QueryRecord[]): QueryRecordSchema => {
       fields: getFieldsToQuery(workflowstates),
       filter: getQueryFilter(workflowstates),
       sublists: [
-        workflowTransitionSchema ?? [],
-        workflowActionSchema ?? [],
-        workflowStateCustomFieldSchema ?? [],
-      ].flat(),
+        workflowTransitionSchema,
+        workflowActionSchema,
+        workflowStateCustomFieldSchema,
+      ].flatMap(schema => schema ?? []),
     }
     : undefined
 
@@ -265,9 +265,9 @@ const createQuerySchema = (records: QueryRecord[]): QueryRecordSchema => {
     fields: getFieldsToQuery(workflows),
     filter: getQueryFilter(workflows),
     sublists: [
-      workflowStateSchema ?? [],
-      workflowCustomFieldSchema ?? [],
-    ].flat(),
+      workflowStateSchema,
+      workflowCustomFieldSchema,
+    ].flatMap(schema => schema ?? []),
   }
 }
 
@@ -469,6 +469,10 @@ const query = async (
 ): Promise<QueryRecordResponse[] | undefined> => {
   const schema = createQuerySchema(queryRecords)
   const ids = await getWorkflowIdsToQuery(client, instances, queryRecords)
+  if (ids.length === 0) {
+    log.warn('received an empty list workflow internal ids - skipping records query')
+    return []
+  }
   return client.runRecordsQuery(ids, schema)
 }
 

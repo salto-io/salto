@@ -1,6 +1,10 @@
 {
   "name": "@salto-io/parser",
+<<<<<<< HEAD
   "version": "0.3.53",
+=======
+  "version": "0.3.52",
+>>>>>>> b0fa22bf9 (SALTO-5319: support templated static file)
   "license": "Apache-2.0",
   "description": "Salto parser",
   "repository": {

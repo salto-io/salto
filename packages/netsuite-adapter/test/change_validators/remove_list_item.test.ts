@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { InstanceElement, toChange } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, InstanceElement, toChange } from '@salto-io/adapter-api'
 import { clientscriptType } from '../../src/autogen/types/standard_types/clientscript'
 import { customlistType } from '../../src/autogen/types/standard_types/customlist'
 import removeListItemValidator from '../../src/change_validators/remove_list_item'
@@ -58,11 +58,13 @@ describe('remove item from customlist change validator', () => {
       delete after.value.customvalues.customvalue.val1
       const changeErrors = await removeListItemValidator([toChange({ before: instance, after })])
       expect(changeErrors).toHaveLength(1)
-      expect(changeErrors[0].severity).toEqual('Error')
+      expect(changeErrors[0].severity).toEqual('Warning')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
       expect(changeErrors[0].detailedMessage).toEqual(
         "Can't remove the inner element val_1. NetSuite supports the removal of inner elements only from their UI.",
       )
+      expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner element val_1. NetSuite supports the removal of inner elements only from their UI.')
+      expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner element val_1. NetSuite supports the removal of inner elements only from its UI.')
     })
 
     it('should not have change errors when modifiying a customvalue', async () => {
@@ -91,8 +93,12 @@ describe('removing inner items from customtypes', () => {
           status: 'Test',
         },
       },
+    }},
+    undefined,
+    {
+      [CORE_ANNOTATIONS.CREATED_BY]: 'hello',
     },
-  })
+  )
   let instance: InstanceElement
   beforeEach(() => {
     instance = origInstance.clone()
@@ -104,11 +110,13 @@ describe('removing inner items from customtypes', () => {
 
     const changeErrors = await removeListItemValidator([toChange({ before: instance, after })])
     expect(changeErrors).toHaveLength(1)
-    expect(changeErrors[0].severity).toEqual('Error')
+    expect(changeErrors[0].severity).toEqual('Warning')
     expect(changeErrors[0].elemID).toEqual(instance.elemID)
     expect(changeErrors[0].detailedMessage).toEqual(
       "Can't remove the inner element customdeploy_2. NetSuite supports the removal of inner elements only from their UI.",
     )
+    expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner element customdeploy_2. NetSuite supports the removal of inner elements only from their UI.')
+    expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner element customdeploy_2. NetSuite supports the removal of inner elements only from its UI.')
   })
 
   it('should have an Error when removing few customdeploys', async () => {
@@ -118,11 +126,13 @@ describe('removing inner items from customtypes', () => {
 
     const changeErrors = await removeListItemValidator([toChange({ before: instance, after })])
     expect(changeErrors).toHaveLength(1)
-    expect(changeErrors[0].severity).toEqual('Error')
+    expect(changeErrors[0].severity).toEqual('Warning')
     expect(changeErrors[0].elemID).toEqual(instance.elemID)
     expect(changeErrors[0].detailedMessage).toEqual(
       "Can't remove the inner elements customdeploy_2, customdeploy_3. NetSuite supports the removal of inner elements only from their UI.",
     )
+    expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner elements customdeploy_2, customdeploy_3. NetSuite supports the removal of inner elements only from their UI.')
+    expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner elements customdeploy_2, customdeploy_3. NetSuite supports the removal of inner elements only from its UI.')
   })
 
   it('sohuld have an Error when removing scriptid from a customdeploy', async () => {
@@ -131,10 +141,12 @@ describe('removing inner items from customtypes', () => {
 
     const changeErrors = await removeListItemValidator([toChange({ before: instance, after })])
     expect(changeErrors).toHaveLength(1)
-    expect(changeErrors[0].severity).toEqual('Error')
+    expect(changeErrors[0].severity).toEqual('Warning')
     expect(changeErrors[0].elemID).toEqual(instance.elemID)
     expect(changeErrors[0].detailedMessage).toEqual(
       "Can't remove the inner element customdeploy_2. NetSuite supports the removal of inner elements only from their UI.",
     )
+    expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner element customdeploy_2. NetSuite supports the removal of inner elements only from their UI.')
+    expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner element customdeploy_2. NetSuite supports the removal of inner elements only from its UI.')
   })
 })

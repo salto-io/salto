@@ -30,69 +30,88 @@ import { ROLE } from '../constants'
 
 const { awu } = collections.asynciterable
 
+const PERMISSIONS = 'permissions'
+const PERMISSION = 'permission'
+const PERMKEY = 'permkey'
+const PERMLEVEL = 'permlevel'
+const RESTRICTION = 'restriction'
 
 type RolePermissionObject = {
-  permkey: string | ReferenceExpression
-  permlevel: string
-  restriction?: string
+  [PERMKEY]: string | ReferenceExpression
+  [PERMLEVEL]: string
+  [RESTRICTION]?: string
 }
 
 export type ItemInList = RolePermissionObject
 
 type GetItemList = (instance: InstanceElement) => ItemInList[]
 type GetItemString = (item: ItemInList) => string
-type getItemByID = (instance: InstanceElement, id: string) => ItemInList | undefined
+type GetItemByID = (instance: InstanceElement, id: string) => ItemInList | undefined
+type GetListPath = () => string[]
+type GetMessage = (removedListItems: string[]) => string
 
-const isRolePermissionObject = (obj: Value): obj is RolePermissionObject =>
-  'permkey' in obj && (typeof obj.permkey === 'string' || isReferenceExpression(obj.permkey))
-  && 'permlevel' in obj && typeof obj.permlevel === 'string'
-  && (('restriction' in obj && typeof obj.restriction === 'string') || !('restriction' in obj))
-
-export const isItemInList = (obj: Value): obj is ItemInList => (
-  isRolePermissionObject(obj)
-)
+const getMessageByElementNameAndListItems = (elemName: string, removedListItems: string[]): string =>
+  `Can't remove the inner ${elemName}${removedListItems.length > 1 ? 's' : ''} ${removedListItems.join(', ')}. NetSuite supports the removal of inner elements only from its UI.`
 
 export type ItemListGetters = {
   getItemList: GetItemList
   getItemString: GetItemString
-  getItemByID: getItemByID
+  getItemByID: GetItemByID
+  getListPath: GetListPath
+  getDetailedMessage: GetMessage
 }
+
+const isRolePermissionObject = (obj: Value): obj is RolePermissionObject =>
+  (typeof obj[PERMKEY] === 'string' || isReferenceExpression(obj[PERMKEY]))
+  && typeof obj[PERMLEVEL] === 'string'
+  && ((typeof obj[RESTRICTION] === 'string') || !(RESTRICTION in obj))
+
+const getRoleListPath: GetListPath = () => [
+  PERMISSIONS,
+  PERMISSION,
+]
 
 const getRolePermissionList:GetItemList = (
   instance: InstanceElement,
 ): RolePermissionObject[] => {
-  if (_.isPlainObject(instance.value.permissions?.permission)) {
-    return Object.values(instance.value.permissions?.permission)
+  const listPathValue = _.get(instance.value, getRoleListPath())
+  if (_.isPlainObject(listPathValue)) {
+    return Object.values(listPathValue)
       .filter(isRolePermissionObject)
   }
-  return []
+  return [] as RolePermissionObject[]
 }
 
 const getRolePermkey: GetItemString = (
   permission: RolePermissionObject
 ): string => {
-  if (_.isString(permission.permkey)) {
-    return permission.permkey
+  const permkey = permission[PERMKEY]
+  if (_.isString(permkey)) {
+    return permkey
   }
-  return permission.permkey.value
+  return permkey.value
 }
 
 const getRolePermissionByName = (
   role: InstanceElement,
   id: string,
 ): RolePermissionObject | undefined => (
-  _.isPlainObject(role.value.permissions?.permission)
-    ? Object.values(role.value.permissions?.permission)
+  _.isPlainObject(role.value[PERMISSIONS]?.[PERMISSION])
+    ? Object.values(role.value[PERMISSIONS]?.[PERMISSION])
       .filter(isRolePermissionObject)
       .find(permObj => getRolePermkey(permObj) === id)
     : undefined
 )
 
+const getRoleMessage = (removedListItems: string[]): string =>
+  getMessageByElementNameAndListItems(PERMISSION, removedListItems)
 
 export const roleGetters: ItemListGetters = {
   getItemList: getRolePermissionList,
   getItemString: getRolePermkey,
   getItemByID: getRolePermissionByName,
+  getListPath: getRoleListPath,
+  getDetailedMessage: getRoleMessage,
 }
 
 export const getGettersByType = (
@@ -105,24 +124,29 @@ export const getGettersByType = (
 }
 const getIdentifierList = (
   instance: InstanceElement,
-): string[] => {
-  const getters = getGettersByType(instance.elemID.typeName)
-  if (getters === undefined) {
-    return []
-  }
-  return getters.getItemList(instance).map(getters.getItemString)
-}
+  getters: ItemListGetters,
+): string[] =>
+  getters.getItemList(instance).map(getters.getItemString)
 
-export const getRemovedListItemStrings = (
+export const getRemovedListItemDetails = (
   instanceChange: ModificationChange<InstanceElement>,
-): { removedListItems: string[]; elemID: ElemID} => {
+): {
+  removedListItems: string[]
+  elemID: ElemID
+  detailedMessage: string
+} => {
+  const getters = getGettersByType(instanceChange.data.before.elemID.typeName)
+  if (getters === undefined) {
+    return { removedListItems: [], elemID: instanceChange.data.before.elemID, detailedMessage: '' }
+  }
   const { before, after } = instanceChange.data
-  const beforeItemList = getIdentifierList(before)
-  const afterItemSet = new Set<string>(getIdentifierList(after))
+  const beforeItemList = getIdentifierList(before, getters)
+  const afterItemSet = new Set<string>(getIdentifierList(after, getters))
+  const removedListItems = beforeItemList.filter(id => !afterItemSet.has(id))
   return {
-    removedListItems: beforeItemList
-      .filter(id => !afterItemSet.has(id)),
+    removedListItems,
     elemID: before.elemID,
+    detailedMessage: getters.getDetailedMessage(removedListItems),
   }
 }
 
@@ -133,13 +157,13 @@ const changeValidator: NetsuiteChangeValidator = async changes => {
     .toArray() as ModificationChange<InstanceElement>[]
 
   return instanceChanges
-    .map(getRemovedListItemStrings)
+    .map(getRemovedListItemDetails)
     .filter(({ removedListItems }) => !_.isEmpty(removedListItems))
-    .map(({ removedListItems, elemID }) => ({
+    .map(({ detailedMessage, elemID }) => ({
       elemID,
       severity: 'Warning',
       message: 'Can\'t remove inner elements',
-      detailedMessage: `Can't remove the inner element${removedListItems.length > 1 ? 's' : ''} ${removedListItems.join(', ')}. NetSuite supports the removal of inner elements only from their UI.`,
+      detailedMessage,
     })) as ChangeError[]
 }
 

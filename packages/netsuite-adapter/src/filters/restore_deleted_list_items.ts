@@ -13,49 +13,68 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ModificationChange, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
+import { InstanceElement, Value, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { WALK_NEXT_STEP, walkOnElement } from '@salto-io/adapter-utils'
+import _ from 'lodash'
 import { LocalFilterCreator } from '../filter'
-import { ItemInList, ItemListGetters, getGettersByType, getRemovedListItemStrings } from '../change_validators/remove_list_item_without_id'
+import { SCRIPT_ID } from '../constants'
+
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
-const getRemovedListItems = (
-  instanceChange: ModificationChange<InstanceElement>,
-  getters: ItemListGetters,
-): { [id: string]: ItemInList }[] => {
-  const idsList = getRemovedListItemStrings(instanceChange)
-  return idsList.removedListItems
-    .map(id => {
-      const item = getters.getItemByID(instanceChange.data.before, id)
-      if (item === undefined) {
-        return undefined
+const getRelativePathAndScriptId = (path: string): {
+  relativePath: string
+  scriptId: string
+} | undefined => {
+  const fullNameRegex = /\.instance\.(?<instance_name>\w+)\.(?<relative_path>[\w.]+(?=\.\w+$))\.(?<scriptid>\w+)$/
+  const match = path.match(fullNameRegex)
+  if (match && match.groups) {
+    return { relativePath: match.groups.relative_path, scriptId: match.groups.scriptid }
+  }
+  return undefined
+}
+
+const getScriptIdsUnderLists = async (instance: InstanceElement):
+  Promise<Map<string, { relativePath: string; id:string; val: Value}>> => {
+  const pathToScriptIds = new Map<string, { relativePath: string; id:string; val: Value}>()
+  walkOnElement({
+    element: instance,
+    func: ({ value, path }) => {
+      if (path.isAttrID()) {
+        return WALK_NEXT_STEP.SKIP
       }
-      return { [id]: item }
-    })
-    .filter((val): val is { [id: string]: ItemInList } => val !== undefined)
+      if (_.isPlainObject(value) && SCRIPT_ID in value) {
+        const fullNameSplit = getRelativePathAndScriptId(path.getFullName())
+        if (fullNameSplit !== undefined) {
+          const { relativePath, scriptId } = fullNameSplit
+          pathToScriptIds.set(path.getFullName(), { relativePath, id: scriptId, val: value })
+        }
+      }
+      return WALK_NEXT_STEP.RECURSE
+    },
+  })
+  return pathToScriptIds
 }
 
 const filterCreator: LocalFilterCreator = () => ({
   name: 'restorDeletedListItems',
-  /**
-   * This assigns the service URLs for new instances created through Salto
-   */
   onDeploy: async changes => {
     log.debug('')
-    changes
+    await awu(changes)
       .filter(isModificationChange)
       .filter(isInstanceChange)
-      .forEach(instanceChange => {
-        const getters = getGettersByType(instanceChange.data.before.elemID.typeName)
-        if (getters === undefined) {
-          return
-        }
-        const removedItems = getRemovedListItems(instanceChange, getters)
-        Object.assign(
-          getters.getItemList(instanceChange.data.after),
-          ...removedItems
-        )
+      .forEach(async instanceChange => {
+        const before = await getScriptIdsUnderLists(instanceChange.data.before)
+        const after = await getScriptIdsUnderLists(instanceChange.data.after)
+        before.forEach((value, key) => {
+          if (!after.has(key)) {
+            _.get(instanceChange.data.after.value, value.relativePath)[value.id] = value.val
+            log.debug('')
+          }
+        })
       })
   },
 })

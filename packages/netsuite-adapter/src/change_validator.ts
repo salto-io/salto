@@ -32,7 +32,7 @@ import dataAccountSpecificValuesValidator from './change_validators/data_account
 import removeStandardTypesValidator from './change_validators/remove_standard_types'
 import removeFileCabinetValidator from './change_validators/remove_file_cabinet'
 import removeListItemValidator from './change_validators/remove_list_item'
-import removeListItemWithoutScriptIDValidator from './change_validators/remove_list_item_without_id'
+import removeListItemWithoutScriptIDValidator from './change_validators/remove_list_item_without_scriptid'
 import instanceChangesValidator from './change_validators/instance_changes'
 import removeSdfElementsValidator from './change_validators/remove_sdf_elements'
 import reportTypesMoveEnvironment from './change_validators/report_types_move_environment'

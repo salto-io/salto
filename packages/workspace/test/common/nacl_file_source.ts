@@ -18,13 +18,12 @@ import _ from 'lodash'
 import { resolvePath } from '@salto-io/adapter-utils'
 import { collections, hash } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
+import { parser } from '@salto-io/parser'
 import { NaclFilesSource, ChangeSet } from '../../src/workspace/nacl_files'
 import { Errors } from '../../src/workspace/errors'
-import { SourceRange } from '../../src/parser/internal/types'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
 import { createAddChange } from '../../src/workspace/nacl_files/multi_env/projections'
 import { mockStaticFilesSource } from '../utils'
-import { SourceMap, dumpElements } from '../../src/parser'
 
 const { awu } = collections.asynciterable
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
@@ -33,7 +32,7 @@ export const createMockNaclFileSource = (
   elements: Element[],
   naclFiles: Record<string, Element[]> = {},
   errors: Errors = new Errors({ merge: [], parse: [], validation: [] }),
-  sourceRanges?: SourceRange[],
+  sourceRanges?: parser.SourceRange[],
   changes: ChangeSet<Change> = { changes: [], cacheValid: true },
   staticFileSource = mockStaticFilesSource()
 ): MockInterface<NaclFilesSource> => {
@@ -41,7 +40,7 @@ export const createMockNaclFileSource = (
   let lastReturnedHash = ''
   const returnChanges = (changeSet: ChangeSet<Change>) => async (): Promise<ChangeSet<Change>> => {
     const preChangeHash = lastReturnedHash
-    lastReturnedHash = hash.toMD5(await dumpElements(currentElements))
+    lastReturnedHash = hash.toMD5(await parser.dumpElements(currentElements))
     return {
       preChangeHash,
       postChangeHash: lastReturnedHash,
@@ -95,7 +94,7 @@ export const createMockNaclFileSource = (
     ),
     setNaclFiles: mockFunction<NaclFilesSource['setNaclFiles']>().mockImplementation(returnChanges(changes)),
     removeNaclFiles: mockFunction<NaclFilesSource['removeNaclFiles']>().mockImplementation(returnChanges(changes)),
-    getSourceMap: mockFunction<NaclFilesSource['getSourceMap']>().mockResolvedValue(new SourceMap()),
+    getSourceMap: mockFunction<NaclFilesSource['getSourceMap']>().mockResolvedValue(new parser.SourceMap()),
     getSourceRanges: mockFunction<NaclFilesSource['getSourceRanges']>().mockImplementation(
       async elemID => (
         sourceRanges ?? getElementNaclFiles(elemID).map(filename => ({

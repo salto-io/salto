@@ -101,6 +101,7 @@
         "@salto-io/lang-server": "0.3.53",
         "@salto-io/lowerdash": "0.3.53",
         "@salto-io/workspace": "0.3.53",
+        "@salto-io/parser": "0.3.53",
         "clipboardy": "^2.3.0",
         "lodash": "^4.17.21",
         "open": "^7.2.0",

@@ -16,7 +16,7 @@
 import os from 'os'
 import wu from 'wu'
 import _ from 'lodash'
-import { parser } from '@salto-io/workspace'
+import { parser } from '@salto-io/parser'
 import { EditorPosition } from './context'
 
 export type Token = Pick<parser.Token, 'value' | 'type'>

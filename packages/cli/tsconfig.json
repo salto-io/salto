@@ -33,5 +33,6 @@
       { "path": "../salesforce-adapter" },
       { "path": "../test-utils" },
       { "path": "../workspace" },
+      { "path": "../parser" }
     ]
 }

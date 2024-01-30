@@ -35,7 +35,7 @@
     "@salto-io/adapter-components": "0.3.53",
     "@salto-io/adapter-utils": "0.3.53",
     "@salto-io/file": "0.3.53",
-    "@salto-io/jsforce": "^1.9.3",
+    "@salto-io/jsforce": "^1.9.4",
     "@salto-io/logging": "0.3.53",
     "@salto-io/lowerdash": "0.3.53",
     "@salto-io/salesforce-formula-parser": "0.1.5",

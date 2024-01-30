@@ -30,7 +30,7 @@ export const defaultAttributeValidator: (
   config: JiraConfig,
   client: JiraClient,
 ) => ChangeValidator = config => async changes => {
-  if (!config.fetch.enableJSM || !config.fetch.enableJsmExperimental) {
+  if (!config.fetch.enableJSM) {
     return []
   }
 

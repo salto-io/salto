@@ -28,7 +28,7 @@ import {
   InstanceElement,
   isAdditionOrModificationChange,
   isInstanceElement,
-  isObjectType, isReferenceExpression, isTemplateExpression,
+  isObjectType, isReferenceExpression, isStaticFile, isTemplateExpression,
   ListType,
   ObjectType, ProgressReporter,
   ReferenceExpression,
@@ -83,7 +83,7 @@ import {
 import { Credentials } from '../src/auth'
 import { getChangeGroupIds } from '../src/group_change'
 import { credsLease, realAdapter, Reals } from './adapter'
-import { mockDefaultValues, mockThemeManifest } from './mock_elements'
+import { mockDefaultValues } from './mock_elements'
 import { ThemeDirectory, unzipFolderToElements } from '../src/filters/guide_theme'
 
 const { awu } = collections.asynciterable
@@ -309,9 +309,20 @@ describe('Zendesk adapter E2E', () => {
     const createRootForTheme = async (buffer: Buffer, brandName: string, name: string)
       : Promise<ThemeDirectory> => {
       const root = await unzipFolderToElements(buffer, brandName, name)
+      const { content } = root.files['manifest_json@v']
+      expect(isStaticFile(content)).toBeTruthy()
+      if (!isStaticFile(content)) {
+        return root
+      }
+      const manifestBuffer = await content.getContent()
+      expect(manifestBuffer).toBeDefined()
+      if (manifestBuffer === undefined) {
+        return root
+      }
+      const stringManifest = manifestBuffer.toString()
       root.files['manifest_json@v'].content = new StaticFile({
         filepath: `${ZENDESK}/themes/brands/${brandName}/${name}/manifest.json`,
-        content: Buffer.from(mockThemeManifest(name)),
+        content: Buffer.from(stringManifest.replace('Copenhagen', name)),
       })
       return root
     }
@@ -1283,14 +1294,14 @@ describe('Zendesk adapter E2E', () => {
         expect(instance).toBeDefined()
       })
     })
-    it('should handel guide elements correctly ', async () => {
+    it('should handle guide elements correctly ', async () => {
       const fetchedElements = getElementsAfterFetch(guideInstances)
       guideInstances
         .forEach(
           elem => verifyInstanceValues(fetchedElements[elem.elemID.getFullName()], elem, Object.keys(elem.value))
         )
     })
-    it('should handel guide theme elements correctly ', async () => {
+    it('should handle guide theme elements correctly ', async () => {
       const fetchedElements = getElementsAfterFetch([guideThemeInstance])
       verifyInstanceValues(
         fetchedElements[guideThemeInstance.elemID.getFullName()],

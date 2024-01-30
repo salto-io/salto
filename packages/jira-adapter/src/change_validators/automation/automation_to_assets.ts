@@ -48,7 +48,7 @@ const isComponentChanged = (beforeComponents: Component[], afterComponents: Comp
 }
 
 export const automationToAssetsValidator: (config: JiraConfig) => ChangeValidator = config => async changes => {
-  if (config.fetch.enableJSM) {
+  if (config.fetch.enableJSM && config.fetch.enableJsmExperimental) {
     return []
   }
   return changes
@@ -66,7 +66,7 @@ export const automationToAssetsValidator: (config: JiraConfig) => ChangeValidato
     .map(instance => ({
       elemID: instance.elemID,
       severity: 'Warning' as SeverityLevel,
-      message: 'Missing JSM Add-On for Automation Linked to Assets Elements.',
-      detailedMessage: `The automation '${instance.annotations[CORE_ANNOTATIONS.ALIAS]}', linked to the Assets object, requires the JSM Add-On in Salto. This automation currently uses internal IDs but does not have the JSM Add-On. If you have modified internal IDs, ensure they are accurate in the target environment. Incorrect IDs, without the JSM Add-On, could lead to deployment issues.`,
+      message: 'Missing Assets support for Automation Linked to Assets Elements.',
+      detailedMessage: `The automation '${instance.annotations[CORE_ANNOTATIONS.ALIAS]}', linked to the Assets object, requires the Assets support in Salto. This automation currently uses internal IDs but does not have the Assets support. If you have modified internal IDs, ensure they are accurate in the target environment. Incorrect IDs, without the Assets support, could lead to deployment issues.`,
     }))
 }

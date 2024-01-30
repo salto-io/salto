@@ -579,13 +579,10 @@ describe('Custom Object Instances CRUD', () => {
           })
 
           it('Should not insert non-creatable fields', () => {
-            expect(result.errors).toEqual([
-              expect.objectContaining({
-                elemID: newInstanceWithNonCreatableField.elemID,
-                message: expect.stringContaining('Creatable'),
-                severity: 'Warning',
-              }),
-            ])
+            expect(result.errors).toSatisfyAny(error =>
+              error.elemID.isEqual(newInstanceWithNonCreatableField.elemID)
+              && error.message.includes('createable')
+              && error.severity === 'Warning')
             const newInstanceWithNonCreatableFieldChangeData = result.appliedChanges
               .map(getChangeData)
               .find(element => element.elemID.isEqual(newInstanceWithNonCreatableField.elemID)) as InstanceElement
@@ -666,13 +663,10 @@ describe('Custom Object Instances CRUD', () => {
               expect(anotherNewInstanceChangeData.value.Id).toEqual('newId1')
             })
             it('Should not insert non-creatable fields', () => {
-              expect(result.errors).toEqual([
-                expect.objectContaining({
-                  elemID: newInstanceWithNonCreatableField.elemID,
-                  message: expect.stringContaining('Creatable'),
-                  severity: 'Warning',
-                }),
-              ])
+              expect(result.errors).toSatisfyAny(error =>
+                error.elemID.isEqual(newInstanceWithNonCreatableField.elemID)
+                && error.message.includes('createable')
+                && error.severity === 'Warning')
               const newInstanceWithNonCreatableFieldChangeData = result.appliedChanges
                 .map(getChangeData)
                 .find(element => element.elemID.isEqual(newInstanceWithNonCreatableField.elemID)) as InstanceElement

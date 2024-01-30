@@ -18,12 +18,14 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import NetsuiteClient from '../../src/client/client'
 import { INTERNAL_IDS_MAP, QUERIES_BY_TABLE_NAME, SUITEQL_TABLE, getSuiteQLTableElements } from '../../src/data_elements/suiteql_table_elements'
 import { SuiteQLTableName } from '../../src/data_elements/types'
-import { NETSUITE } from '../../src/constants'
+import { NETSUITE, TAX_SCHEDULE } from '../../src/constants'
 import { SERVER_TIME_TYPE_NAME } from '../../src/server_time'
 
 const runSuiteQLMock = jest.fn()
+const runSavedSearchQueryMock = jest.fn()
 const client = {
   runSuiteQL: runSuiteQLMock,
+  runSavedSearchQuery: runSavedSearchQueryMock,
 } as unknown as NetsuiteClient
 
 describe('SuiteQL table elements', () => {
@@ -86,12 +88,18 @@ describe('SuiteQL table elements', () => {
         { id: '2', name: 'Some name 2' },
         { id: '3', name: 'Some name 3' },
       ])
+      runSavedSearchQueryMock.mockResolvedValue([
+        { internalid: [{ value: '1' }], name: 'Tax Schedule 1' },
+        { internalid: [{ value: '2' }], name: 'Tax Schedule 2' },
+        { internalid: [{ value: '3' }], name: 'Tax Schedule 3' },
+      ])
       const elementsSource = buildElementsSourceFromElements([])
       elements = await getSuiteQLTableElements(client, elementsSource, false)
     })
 
     it('should return all elements', () => {
-      expect(elements).toHaveLength(numOfInstances + 1)
+      // additional elements are the type and taxSchedule instance that is fetched with runSavedSearchQuery
+      expect(elements).toHaveLength(numOfInstances + 2)
       expect(elements.every(element => element.annotations[CORE_ANNOTATIONS.HIDDEN] === true)).toBeTruthy()
     })
 
@@ -103,6 +111,19 @@ describe('SuiteQL table elements', () => {
           1: { name: 'Some name' },
           2: { name: 'Some name 2' },
           3: { name: 'Some name 3' },
+        },
+        version: 1,
+      })
+    })
+
+    it('should set tax schedule instance values correctly', () => {
+      const taxScheduleInstance = elements.filter(isInstanceElement)
+        .find(element => element.elemID.name === TAX_SCHEDULE)
+      expect(taxScheduleInstance?.value).toEqual({
+        [INTERNAL_IDS_MAP]: {
+          1: { name: 'Tax Schedule 1' },
+          2: { name: 'Tax Schedule 2' },
+          3: { name: 'Tax Schedule 3' },
         },
         version: 1,
       })

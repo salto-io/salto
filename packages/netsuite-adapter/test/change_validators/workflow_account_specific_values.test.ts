@@ -212,7 +212,7 @@ describe('workflow account specific values', () => {
           elemID: ElemID.fromFullName('netsuite.workflow.instance.instance.workflowstates.workflowstate.workflowstate1.workflowactions.sendemailaction.workflowaction'),
           severity: 'Warning',
           message: 'Could not identify value in workflow',
-          detailedMessage: 'Could not find object "Unknown Salto user" for field "recipient". Setting ACCOUNT_SPECIFIC_VALUE instead.',
+          detailedMessage: 'Could not find object "Unknown Salto user" for field "recipient". Setting it to ACCOUNT_SPECIFIC_VALUE instead.',
         },
         {
           elemID: instance.elemID,
@@ -224,7 +224,7 @@ describe('workflow account specific values', () => {
           elemID: ElemID.fromFullName('netsuite.workflow.instance.instance.workflowstates.workflowstate.workflowstate1.workflowactions.sendemailaction.workflowaction'),
           severity: 'Warning',
           message: 'Could not identify value in workflow',
-          detailedMessage: 'Could not find object "Unknown Salto user" for field "sender". Setting ACCOUNT_SPECIFIC_VALUE instead.',
+          detailedMessage: 'Could not find object "Unknown Salto user" for field "sender". Setting it to ACCOUNT_SPECIFIC_VALUE instead.',
         },
         {
           elemID: instance.elemID,
@@ -354,7 +354,7 @@ describe('workflow account specific values', () => {
           elemID: instance.elemID.createNestedID('initcondition', 'parameters', 'parameter', 'Account1'),
           severity: 'Warning',
           message: 'Could not identify value in workflow',
-          detailedMessage: 'Could not find object "Unknown Salto user" for field "value". Setting ACCOUNT_SPECIFIC_VALUE instead.',
+          detailedMessage: 'Could not find object "Unknown Salto user" for field "value". Setting it to ACCOUNT_SPECIFIC_VALUE instead.',
         },
         {
           elemID: instance.elemID.createNestedID('initcondition'),

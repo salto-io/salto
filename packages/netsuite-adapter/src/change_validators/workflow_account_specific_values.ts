@@ -16,7 +16,7 @@
 import { AdditionChange, ChangeError, ElemID, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isEqualValues, isInstanceChange, ModificationChange, toChange, Value } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP, resolvePath } from '@salto-io/adapter-utils'
 import { ACCOUNT_SPECIFIC_VALUE, INIT_CONDITION, WORKFLOW } from '../constants'
-import { handleWorkflowAccountSpecificValuesOnDeploy } from '../filters/workflow_account_specific_values'
+import { resolveWorkflowsAccountSpecificValues } from '../filters/workflow_account_specific_values'
 import { NetsuiteChangeValidator } from './types'
 
 const SEND_EMAIL_ACTION = 'sendemailaction'
@@ -123,7 +123,7 @@ const changeValidator: NetsuiteChangeValidator = async (
     after: change.data.after.clone(),
   }) as AdditionChange<InstanceElement> | ModificationChange<InstanceElement>)
 
-  const resolveWarnings = await handleWorkflowAccountSpecificValuesOnDeploy(
+  const resolveWarnings = await resolveWorkflowsAccountSpecificValues(
     clonedWorkflowChanges.map(getChangeData),
     elementsSource
   )

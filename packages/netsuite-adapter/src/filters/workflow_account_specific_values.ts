@@ -606,8 +606,8 @@ const getSuiteQLNameToInternalIdsMap = async (
     .mapValues(
       internalIdsMap => _(internalIdsMap)
         .entries()
-        .groupBy(row => row[1].name)
-        .mapValues(rows => rows.map(row => row[0]))
+        .groupBy(([_key, value]) => value.name)
+        .mapValues(rows => rows.map(([key, _value]) => key))
         .value()
     )
     .value()
@@ -621,7 +621,8 @@ const toMissingInternalIdWarning = (
   elemID,
   severity: 'Warning',
   message: 'Could not identify value in workflow',
-  detailedMessage: `Could not find object "${name}" for field "${field}". Setting ACCOUNT_SPECIFIC_VALUE instead.`,
+  // TODO: add help article link
+  detailedMessage: `Could not find object "${name}" for field "${field}". Setting it to ACCOUNT_SPECIFIC_VALUE instead.`,
 })
 
 const toMultipleInternalIdsWarning = (
@@ -685,12 +686,12 @@ const resolveAccountSpecificValues = (
   return resolveWarnings
 }
 
-export const handleWorkflowAccountSpecificValuesOnDeploy = async (
-  instances: InstanceElement[],
+export const resolveWorkflowsAccountSpecificValues = async (
+  workflowInstances: InstanceElement[],
   elementsSource: ReadOnlyElementsSource,
 ): Promise<ChangeError[]> => {
   const suiteQLNameToInternalIdsMap = await getSuiteQLNameToInternalIdsMap(elementsSource)
-  return instances.flatMap(instance => resolveAccountSpecificValues(
+  return workflowInstances.flatMap(instance => resolveAccountSpecificValues(
     instance,
     suiteQLNameToInternalIdsMap,
   ))
@@ -762,7 +763,7 @@ const filterCreator: RemoteFilterCreator = ({ client, elementsSource, elementsSo
     if (workflowInstances.length === 0) {
       return
     }
-    await handleWorkflowAccountSpecificValuesOnDeploy(
+    await resolveWorkflowsAccountSpecificValues(
       workflowInstances,
       elementsSource,
     )

@@ -154,7 +154,7 @@ export default ({
     helpCenterActivation: helpCenterActivationValidator,
     helpCenterCreationOrRemoval: helpCenterCreationOrRemovalValidator(client, apiConfig),
     externalSourceWebhook: externalSourceWebhookValidator,
-    defaultGroupChange: defaultGroupChangeValidator,
+    defaultGroupChange: defaultGroupChangeValidator(client),
     organizationExistence: organizationExistenceValidator(client, fetchConfig, deployConfig),
     badFormatWebhookAction: badFormatWebhookActionValidator,
     guideDisabled: guideDisabledValidator(fetchConfig),

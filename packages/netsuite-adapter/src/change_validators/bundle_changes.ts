@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { values, collections } from '@salto-io/lowerdash'
-import { Change, ChangeError, getChangeData, isAdditionChange, isAdditionOrModificationChange } from '@salto-io/adapter-api'
+import { Change, ChangeError, getChangeData, isAdditionChange } from '@salto-io/adapter-api'
 import { NetsuiteChangeValidator } from './types'
 import { getElementValueOrAnnotations, isBundleInstance } from '../types'
 
@@ -32,10 +32,10 @@ const getBundlesChangeError = (change: Change): ChangeError | undefined => {
     }
   } if (isBundleInstance(changeData)) {
     return {
-      message: 'Can\'t deploy bundle',
+      message: 'Cannot add, modify, or remove bundles',
       severity: 'Error',
       elemID: changeData.elemID,
-      detailedMessage: 'This bundle doesn\'t exist in the target account, and cannot be automatically deployed.\nIt may be required by some elements in your deployment.\nYou can manually install this bundle in the target account by following these steps: Customization > SuiteBundler > Search & Install Bundles',
+      detailedMessage: 'Cannot create, modify or remove bundles.To manage bundles, please manually install or update them in the target account. Follow these steps: Customization > SuiteBundler > Search & Install Bundles.',
     }
   }
   return undefined
@@ -43,7 +43,6 @@ const getBundlesChangeError = (change: Change): ChangeError | undefined => {
 
 const changeValidator: NetsuiteChangeValidator = async changes => (
   awu(changes)
-    .filter(isAdditionOrModificationChange)
     .map(getBundlesChangeError)
     .filter(isDefined)
     .toArray()

@@ -41,7 +41,7 @@ describe('bundle changes', () => {
       })
   })
 
-  it('should have changeError when trying to deploy a bundle instance', async () => {
+  it('should have changeError when trying to deploy a bundle instance change', async () => {
     bundleInstanceAfter.value.name = 'newName'
     const changeError = await bundleChangesValidation([
       toChange({ after: bundleInstanceAfter, before: bundleInstanceBefore }),
@@ -49,10 +49,10 @@ describe('bundle changes', () => {
     expect(changeError).toHaveLength(1)
     expect(changeError[0]).toEqual(
       {
-        message: 'Can\'t deploy bundle',
+        message: 'Cannot add, modify, or remove bundles',
         severity: 'Error',
         elemID: bundleInstanceAfter.elemID,
-        detailedMessage: 'This bundle doesn\'t exist in the target account, and cannot be automatically deployed.\nIt may be required by some elements in your deployment.\nYou can manually install this bundle in the target account by following these steps: Customization > SuiteBundler > Search & Install Bundles',
+        detailedMessage: 'Cannot create, modify or remove bundles.To manage bundles, please manually install or update them in the target account. Follow these steps: Customization > SuiteBundler > Search & Install Bundles.',
       }
     )
   })

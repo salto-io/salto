@@ -122,6 +122,7 @@ const TICKET_FIELD_OPTION_TYPE_NAME = 'ticket_field__custom_field_options'
 const ORG_FIELD_OPTION_TYPE_NAME = 'organization_field__custom_field_options'
 const USER_FIELD_OPTION_TYPE_NAME = 'user_field__custom_field_options'
 const CUSTOM_OBJECT_PREFIX = 'zen:custom_object:'
+const CUSTOM_STATUS_FIELD_PREFIX = 'custom_status_'
 
 const customFieldOptionSerialization: GetLookupNameFunc = ({ ref }) => {
   const fieldName = ref.elemID.typeName === TICKET_FIELD_OPTION_TYPE_NAME ? 'value' : 'id'
@@ -199,6 +200,7 @@ type ZendeskReferenceSerializationStrategyName = 'ticketField'
   | 'locale'
   | 'idString'
   | 'customObjectKey'
+  | 'customStatusField'
 const ZendeskReferenceSerializationStrategyLookup: Record<
   ZendeskReferenceSerializationStrategyName
   | referenceUtils.ReferenceSerializationStrategyName,
@@ -250,6 +252,13 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
     lookup: val =>
       ((_.isString(val) && val.startsWith(CUSTOM_OBJECT_PREFIX)) ? val.slice(CUSTOM_OBJECT_PREFIX.length) : val),
     lookupIndexName: 'key',
+  },
+  customStatusField: {
+    serialize: ({ ref }) => (isInstanceElement(ref.value) ? `${CUSTOM_STATUS_FIELD_PREFIX}${ref.value.value.id}` : ref.value),
+    lookup: val => ((_.isString(val) && val.match(`${CUSTOM_STATUS_FIELD_PREFIX}\\d+`) !== null)
+      ? val.slice(CUSTOM_STATUS_FIELD_PREFIX.length)
+      : val),
+    lookupIndexName: 'id',
   },
 }
 
@@ -640,6 +649,14 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     },
     zendeskSerializationStrategy: 'userFieldAlternative',
     target: { type: USER_FIELD_TYPE_NAME },
+  },
+  {
+    src: {
+      field: 'field',
+    },
+    zendeskSerializationStrategy: 'customStatusField',
+    zendeskMissingRefStrategy: 'prefixAndNumber',
+    target: { type: CUSTOM_STATUS_TYPE_NAME },
   },
   {
     src: {

@@ -16,13 +16,13 @@
 import { AdditionChange, Element, InstanceElement, SaltoElementError, createSaltoElementError, getChangeData, isAdditionChange, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { createSchemeGuard, getParent } from '@salto-io/adapter-utils'
+import { createSchemeGuard, getParent, hasValidParent } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { FilterCreator } from '../../filter'
 import { deployContextChange, setContextDeploymentAnnotations } from './contexts'
 import { deployChanges } from '../../deployment/standard_deployment'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME, IS_LOCKED, SERVICE } from './constants'
-import { findObject, isThereValidParent, setFieldDeploymentAnnotations } from '../../utils'
+import { findObject, setFieldDeploymentAnnotations } from '../../utils'
 import { isRelatedToSpecifiedTerms } from '../../change_validators/locked_fields'
 import JiraClient from '../../client/client'
 
@@ -106,8 +106,8 @@ const filter: FilterCreator = ({ client, config, paginator, elementsSource }) =>
         const instance = getChangeData(change)
         // field contexts without fields cant be removed because they don't exist,
         // modification changes are also not allowed but will not crash.
-        if (isThereValidParent(instance) || !isRemovalChange(change)) {
-          if (isAdditionChange(change) && isThereValidParent(instance)) {
+        if (hasValidParent(instance) || !isRemovalChange(change)) {
+          if (isAdditionChange(change) && hasValidParent(instance)) {
             const parent = getParent(instance)
             // checking if the field is jsm locked, and if so, we need to check that the context is auto-created.
             if (isRelatedToSpecifiedTerms(parent, [SERVICE]) && parent.value?.[IS_LOCKED] === true) {

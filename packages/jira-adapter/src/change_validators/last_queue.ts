@@ -15,7 +15,7 @@
 */
 import { ChangeValidator, getChangeData, isInstanceChange, SeverityLevel, isRemovalChange, CORE_ANNOTATIONS, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { getParent, isThereValidParent } from '@salto-io/adapter-utils'
+import { getParent, hasValidParent } from '@salto-io/adapter-utils'
 import { PROJECT_TYPE, QUEUE_TYPE } from '../constants'
 import { JiraConfig } from '../config/config'
 
@@ -48,7 +48,7 @@ export const deleteLastQueueValidator: (
       .filter(isRemovalChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === QUEUE_TYPE)
-      .filter(queue => isThereValidParent(queue))
+      .filter(queue => hasValidParent(queue))
       .filter(async instance => {
         const relatedQueues = projectToQueues[getParent(instance).elemID.getFullName()]
         return relatedQueues === undefined && projects.includes(getParent(instance).elemID.getFullName())

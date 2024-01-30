@@ -1152,7 +1152,7 @@ export const getParent = (instance: Element): InstanceElement => {
   return parents[0].value
 }
 
-export const isThereValidParent = (element: Element): boolean => {
+export const hasValidParent = (element: Element): boolean => {
   try {
     return getParent(element) !== undefined
   } catch {

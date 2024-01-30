@@ -16,7 +16,7 @@
 import { AdditionChange, Element, InstanceElement, SaltoElementError, createSaltoElementError, getChangeData, isAdditionChange, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { createSchemeGuard, getParent, isThereValidParent } from '@salto-io/adapter-utils'
+import { createSchemeGuard, getParent, hasValidParent } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { FilterCreator } from '../../filter'
 import { deployContextChange, setContextDeploymentAnnotations } from './contexts'
@@ -106,8 +106,8 @@ const filter: FilterCreator = ({ client, config, paginator, elementsSource }) =>
         const instance = getChangeData(change)
         // field contexts without fields cant be removed because they don't exist,
         // modification changes are also not allowed but will not crash.
-        if (isThereValidParent(instance) || !isRemovalChange(change)) {
-          if (isAdditionChange(change) && isThereValidParent(instance)) {
+        if (hasValidParent(instance) || !isRemovalChange(change)) {
+          if (isAdditionChange(change) && hasValidParent(instance)) {
             const parent = getParent(instance)
             // checking if the field is jsm locked, and if so, we need to check that the context is auto-created.
             if (isRelatedToSpecifiedTerms(parent, [SERVICE]) && parent.value?.[IS_LOCKED] === true) {

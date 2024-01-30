@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Change, dependencyChange, DependencyChanger, getChangeData, InstanceElement, isAdditionChange, isAdditionOrRemovalChange, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
-import { getParent, isThereValidParent } from '@salto-io/adapter-utils'
+import { getParent, hasValidParent } from '@salto-io/adapter-utils'
 import { deployment } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { FIELD_CONTEXT_TYPE_NAME } from '../filters/fields/constants'
@@ -33,7 +33,7 @@ export const globalFieldContextsDependencyChanger: DependencyChanger = async cha
       || _.isEmpty(getChangeData(change).value.issueTypeIds))
 
   const filteredGlobalContextChanges = globalContextChanges
-    .filter(({ change }) => isThereValidParent(getChangeData(change)))
+    .filter(({ change }) => hasValidParent(getChangeData(change)))
 
   const fieldToContexts = _.groupBy(
     filteredGlobalContextChanges,

@@ -52,25 +52,23 @@ const defaultGroupModificationError = (group: InstanceElement): ChangeError => (
 })
 
 const EXPECTED_GROUP_MEMBERSHIP_RESPONSE_SCHEMA = Joi.object({
-  group_memberships: Joi.array().items(Joi.object({
-    created_at: Joi.string(),
-    default: Joi.boolean().required(),
-    group_id: Joi.number(),
-    id: Joi.number(),
-    updated_at: Joi.string(),
-    url: Joi.string(),
-    user_id: Joi.number().required(),
-  })).required(),
-  next_page: Joi.string().allow(null),
-  previous_page: Joi.string().allow(null),
-  count: Joi.number(),
-})
+  group_memberships: Joi.array().items(
+    Joi.object({
+      default: Joi.boolean().required(),
+      user_id: Joi.number().required(),
+    }).unknown()
+  ).required(),
+}).unknown()
 
 // eslint-disable-next-line camelcase
 const groupMembershipSchema = createSchemeGuard<{ group_memberships: { user_id: string; default: boolean }[] }>(
   EXPECTED_GROUP_MEMBERSHIP_RESPONSE_SCHEMA, 'Invalid group membership response'
 )
 
+/**
+ * Fetches the group membership of the given groups,
+ * and returns an error for each group that is a default group for a user.
+ */
 const fetchDefaultGroupMembershipRemovals = async (
   client: ZendeskClient, groups: InstanceElement[]
 ): Promise<ChangeError[]> => {
@@ -97,7 +95,7 @@ const fetchDefaultGroupMembershipRemovals = async (
 
 /**
  * Validates that the default group was not changed, and tell the user what to do.
- * Also validates if the group is a default group for a user, and if so, tell the user what to do.
+ * Also validates if the group is a default group for a user and it was removed, and if so, returns an error.
  */
 export const defaultGroupChangeValidator: (client: ZendeskClient) => ChangeValidator = client => async changes => {
   const groupChanges = changes.filter(isInstanceChange)

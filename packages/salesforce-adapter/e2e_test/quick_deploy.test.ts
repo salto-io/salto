@@ -35,6 +35,7 @@ describe('validation and quick deploy e2e', () => {
   let credLease: CredsLease<UsernamePasswordCredentials>
   let changeGroup: ChangeGroup
   let quickDeploySpy: jest.SpyInstance
+  let deploySpy: jest.SpyInstance
   let apexClassInstance: MetadataInstanceElement
   let apexTestInstance: MetadataInstanceElement
 
@@ -98,12 +99,15 @@ describe('validation and quick deploy e2e', () => {
     adapter = adapterQuickDeploy.adapter
 
     const { client } = adapterQuickDeploy
+    deploySpy = jest.spyOn(client, 'deploy')
     quickDeploySpy = jest.spyOn(client, 'quickDeploy')
   })
 
   it('should perform quick deploy', async () => {
     const deployResult = await adapter.deploy({ changeGroup, progressReporter: nullProgressReporter })
     expect(deployResult.appliedChanges).toHaveLength(changeGroup.changes.length)
+    // Make sure we don't fallback to deploy, and the only deploy call was the validation
+    expect(deploySpy).not.toHaveBeenCalled()
     expect(quickDeploySpy).toHaveBeenCalledOnce()
   })
 

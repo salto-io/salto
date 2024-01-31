@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { collections } from '@salto-io/lowerdash'
 import {
   Change,
   ChangeGroupIdFunction,
@@ -27,8 +26,9 @@ import {
   AdditionChange,
 } from '@salto-io/adapter-api'
 import wu from 'wu'
-import { isInstanceOfCustomObjectChange } from './custom_object_instances_deploy'
-import { isInstanceOfTypeChange, safeApiName } from './filters/utils'
+import {
+  apiNameSync, isInstanceOfCustomObjectChangeSync, isInstanceOfTypeChangeSync,
+} from './filters/utils'
 import {
   ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP, SBAA_APPROVAL_CONDITION,
   SBAA_APPROVAL_RULE,
@@ -37,52 +37,70 @@ import {
   groupIdForInstanceChangeGroup,
 } from './constants'
 
-const { awu } = collections.asynciterable
-
-const getGroupId = async (change: Change): Promise<string> => {
-  if (!isInstanceChange(change) || !(await isInstanceOfCustomObjectChange(change))) {
+const getGroupId = (change: Change): string => {
+  if (!isInstanceChange(change) || !(isInstanceOfCustomObjectChangeSync(change))) {
     return METADATA_CHANGE_GROUP
   }
-  const typeName = await safeApiName(await getChangeData(change).getType()) ?? 'UNKNOWN'
+  const typeName = apiNameSync(getChangeData(change).getTypeSync()) ?? 'UNKNOWN'
   return groupIdForInstanceChangeGroup(change.action, typeName)
+}
+
+
+/**
+ * Returns the changes that should be part of the special deploy group for adding Rule and Condition instances that
+ * contain a circular dependency.
+ *
+ * @ref deployRulesAndConditionsGroup
+ */
+const getAddCustomRuleAndConditionGroupChangeIds = (
+  changes: Map<ChangeId, Change>,
+  ruleTypeName: string,
+  ruleConditionFieldName: string,
+  conditionTypeName: string,
+): Set<ChangeId> => {
+  const addedInstancesChanges = wu(changes.entries())
+    .filter(([_changeId, change]) => isAdditionChange(change))
+    .filter(([_changeId, change]) => isInstanceChange(change))
+    .toArray() as [ChangeId, AdditionChange<InstanceElement>][]
+  const customApprovalRuleAdditions = addedInstancesChanges
+    .filter(([_changeId, change]) => isInstanceOfTypeChangeSync(ruleTypeName)(change))
+    .filter(([_changeId, change]) => getChangeData(change).value[ruleConditionFieldName] === 'Custom')
+  const customApprovalRuleElemIds = new Set(customApprovalRuleAdditions
+    .map(([_changeId, change]) => getChangeData(change).elemID.getFullName()))
+  const customApprovalConditionAdditions = addedInstancesChanges
+    .filter(([_changeId, change]) => isInstanceOfTypeChangeSync(conditionTypeName)(change))
+    .filter(([_changeId, change]) => {
+      const approvalRule = getChangeData(change).value[ruleTypeName]
+      return isReferenceExpression(approvalRule) && customApprovalRuleElemIds.has(approvalRule.elemID.getFullName())
+    })
+  return new Set(customApprovalRuleAdditions
+    .concat(customApprovalConditionAdditions)
+    .map(([changeId]) => changeId))
 }
 
 /**
  * Returns the changes that should be part of the special deploy group for adding sbaa__ApprovalRule
  * instances with sbaa__ConditionsMet = 'Custom' and their corresponding sbaa__ApprovalCondition instances.
  */
-const getAddCustomRuleAndConditionGroupChangeIds = async (
+const getAddSbaaCustomRuleAndConditionGroupChangeIds = (
   changes: Map<ChangeId, Change>
-): Promise<Set<ChangeId>> => {
-  const addedInstancesChanges = wu(changes.entries())
-    .filter(([_changeId, change]) => isAdditionChange(change))
-    .filter(([_changeId, change]) => isInstanceChange(change))
-    .toArray() as [ChangeId, AdditionChange<InstanceElement>][]
-  const customApprovalRuleAdditions = addedInstancesChanges
-    .filter(([_changeId, change]) => isInstanceOfTypeChange(SBAA_APPROVAL_RULE)(change))
-    .filter(([_changeId, change]) => getChangeData(change).value[SBAA_CONDITIONS_MET] === 'Custom')
-  const customApprovalRuleElemIds = new Set(customApprovalRuleAdditions
-    .map(([_changeId, change]) => getChangeData(change).elemID.getFullName()))
-  const customApprovalConditionAdditions = await awu(addedInstancesChanges)
-    .filter(([_changeId, change]) => isInstanceOfTypeChange(SBAA_APPROVAL_CONDITION)(change))
-    .filter(([_changeId, change]) => {
-      const approvalRule = getChangeData(change).value[SBAA_APPROVAL_RULE]
-      return isReferenceExpression(approvalRule) && customApprovalRuleElemIds.has(approvalRule.elemID.getFullName())
-    })
-    .toArray()
-  return new Set(customApprovalRuleAdditions
-    .concat(customApprovalConditionAdditions)
-    .map(([changeId]) => changeId))
-}
+): Set<ChangeId> => (
+  getAddCustomRuleAndConditionGroupChangeIds(
+    changes,
+    SBAA_APPROVAL_RULE,
+    SBAA_CONDITIONS_MET,
+    SBAA_APPROVAL_CONDITION,
+  )
+)
 
 export const getChangeGroupIds: ChangeGroupIdFunction = async changes => {
   const changeGroupIdMap = new Map<ChangeId, ChangeGroupId>()
-  const customApprovalRuleAndConditionChangeIds = await getAddCustomRuleAndConditionGroupChangeIds(changes)
-  await awu(changes.entries())
-    .forEach(async ([changeId, change]) => {
+  const customApprovalRuleAndConditionChangeIds = getAddSbaaCustomRuleAndConditionGroupChangeIds(changes)
+  wu(changes.entries())
+    .forEach(([changeId, change]) => {
       const groupId = customApprovalRuleAndConditionChangeIds.has(changeId)
         ? ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP
-        : await getGroupId(change)
+        : getGroupId(change)
       changeGroupIdMap.set(changeId, groupId)
     })
 

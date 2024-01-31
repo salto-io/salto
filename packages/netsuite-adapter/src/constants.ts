@@ -65,6 +65,8 @@ export const FINANCIAL_LAYOUT = 'financiallayout'
 export const BUNDLE = 'bundle'
 export const BIN = 'bin'
 export const TAX_SCHEDULE = 'taxSchedule'
+export const PROJECT_EXPENSE_TYPE = 'projectExpenseType'
+export const ALLOCATION_TYPE = 'allocationType'
 
 // Type Annotations
 export const SOURCE = 'source'

@@ -21,7 +21,7 @@ import { Element, ElemID, InstanceElement, ReadOnlyElementsSource, Value, Values
 import { WALK_NEXT_STEP, resolvePath, walkOnElement, walkOnValue } from '@salto-io/adapter-utils'
 import NetsuiteClient from '../client/client'
 import { RemoteFilterCreator } from '../filter'
-import { ACCOUNT_SPECIFIC_VALUE, INIT_CONDITION, NAME_FIELD, SCRIPT_ID, SELECT_RECORD_TYPE, TAX_SCHEDULE, WORKFLOW } from '../constants'
+import { ACCOUNT_SPECIFIC_VALUE, ALLOCATION_TYPE, INIT_CONDITION, NAME_FIELD, PROJECT_EXPENSE_TYPE, SCRIPT_ID, SELECT_RECORD_TYPE, TAX_SCHEDULE, WORKFLOW } from '../constants'
 import { QUERY_RECORD_TYPES, QueryRecordType, QueryRecordResponse, QueryRecordSchema } from '../client/suiteapp_client/types'
 import { INTERNAL_IDS_MAP, InternalIdsMap, SUITEQL_TABLE } from '../data_elements/suiteql_table_elements'
 import { INTERNAL_ID_TO_TYPES } from '../data_elements/types'
@@ -78,6 +78,9 @@ type GetFieldTypeIDFunc = (
 const STANDARD_FIELDS_TO_RECORD_TYPE: Record<string, string> = {
   STDITEMTAXSCHEDULE: TAX_SCHEDULE,
   STDBODYACCOUNT: 'account',
+  STDEVENTALLOCATIONTYPE: ALLOCATION_TYPE,
+  STDENTITYPROJECTEXPENSETYPE: PROJECT_EXPENSE_TYPE,
+  STDENTITYSTATUS: 'entityStatus',
 }
 
 const getSelectRecordTypeFromReference = (
@@ -127,6 +130,9 @@ const GET_FIELD_TYPE_FUNCTIONS: Record<string, GetFieldTypeIDFunc> = {
     // there is no intersection between the internal ids of those types,
     // and no indication in the element which type should be used.
     isFieldWithAccountSpecificValue ? ['employee', 'contact', 'customer', 'partner', 'vendor'] : undefined
+  ),
+  campaignevent: ({ isFieldWithAccountSpecificValue }) => (
+    isFieldWithAccountSpecificValue ? 'campaignEvent' : undefined
   ),
   selectrecordtype: getSelectRecordType,
   resultfield: params => {

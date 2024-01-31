@@ -71,7 +71,7 @@ describe('netsuite saved searches author information tests', () => {
       type: 'savedsearch',
       columns: ['modifiedby', 'id', 'datemodified'],
       filters: [],
-    })
+    }, undefined)
     expect(runSavedSearchQueryMock).toHaveBeenCalledTimes(1)
   })
 

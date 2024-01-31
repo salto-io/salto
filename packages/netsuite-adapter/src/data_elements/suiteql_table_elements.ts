@@ -17,7 +17,7 @@ import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, TopLevelElement, createRefToElmWithValue } from '@salto-io/adapter-api'
 import NetsuiteClient from '../client/client'
-import { NETSUITE, TAX_SCHEDULE } from '../constants'
+import { ALLOCATION_TYPE, NETSUITE, PROJECT_EXPENSE_TYPE, TAX_SCHEDULE } from '../constants'
 import { getLastServerTime } from '../server_time'
 import { toSuiteQLWhereDateString } from '../changes_detector/date_formats'
 import { SuiteQLTableName } from './types'
@@ -33,19 +33,26 @@ const LATEST_VERSION = 1
 export type InternalIdsMap = Record<string, { name: string }>
 
 type QueryParams = {
-  internalIdField: 'id'
+  internalIdField: 'id' | 'key'
   nameField: string
   lastModifiedDateField?: 'lastmodifieddate'
 }
 
-type TaxScheduleSearchResult = {
+type SavedSearchInternalIdsResult = {
   internalid: [{
     value: string
   }]
   name: string
 }
 
-const TAX_SCHEDULE_SEARCH_RESULT_SCHEMA = {
+type AllocationTypeSearchResult = {
+  [ALLOCATION_TYPE]: [{
+    value: string
+    text: string
+  }]
+}
+
+const SAVED_SEARCH_INTERNAL_IDS_RESULT_SCHEMA = {
   type: 'array',
   items: {
     type: 'object',
@@ -63,6 +70,33 @@ const TAX_SCHEDULE_SEARCH_RESULT_SCHEMA = {
           required: ['value'],
           properties: {
             value: {
+              type: 'string',
+            },
+          },
+        },
+      },
+    },
+  },
+}
+
+const ALLOCATION_TYPE_SEARCH_RESULT_SCHEMA = {
+  type: 'array',
+  items: {
+    type: 'object',
+    required: [ALLOCATION_TYPE],
+    properties: {
+      [ALLOCATION_TYPE]: {
+        type: 'array',
+        maxItems: 1,
+        minItems: 1,
+        items: {
+          type: 'object',
+          required: ['value', 'text'],
+          properties: {
+            value: {
+              type: 'string',
+            },
+            text: {
               type: 'string',
             },
           },
@@ -349,6 +383,14 @@ export const QUERIES_BY_TABLE_NAME: Record<SuiteQLTableName, QueryParams | undef
     internalIdField: 'id',
     nameField: 'name',
   },
+  entityStatus: {
+    internalIdField: 'key',
+    nameField: 'name',
+  },
+  campaignEvent: {
+    internalIdField: 'id',
+    nameField: 'description',
+  },
 
   // could not find table
   address: undefined,
@@ -364,7 +406,6 @@ export const QUERIES_BY_TABLE_NAME: Record<SuiteQLTableName, QueryParams | undef
   noteType: undefined,
   opportunity: undefined,
   partnerCategory: undefined,
-  resourceAllocation: undefined,
   supportCaseIssue: undefined,
   supportCaseOrigin: undefined,
   supportCaseType: undefined,
@@ -389,6 +430,7 @@ export const QUERIES_BY_TABLE_NAME: Record<SuiteQLTableName, QueryParams | undef
   fairValuePrice: undefined,
   itemDemandPlan: undefined,
   itemSupplyPlan: undefined,
+  resourceAllocation: undefined,
 
   // referenced by scriptid
   customList: undefined,
@@ -461,10 +503,12 @@ const getSuiteQLTableInstance = async (
   suiteQLTableType: ObjectType,
   tableName: string,
   queryParams: QueryParams,
-  existingInstance: InstanceElement | undefined,
+  elementsSource: ReadOnlyElementsSource,
   lastFetchTime: Date | undefined,
   isPartial: boolean,
 ): Promise<InstanceElement | undefined> => {
+  const instanceElemId = suiteQLTableType.elemID.createNestedID('instance', tableName)
+  const existingInstance = await elementsSource.get(instanceElemId)
   fixExistingInstance(suiteQLTableType, existingInstance)
   if (isPartial) {
     return existingInstance
@@ -483,24 +527,27 @@ const getSuiteQLTableInstance = async (
   return instance
 }
 
-const getTaxScheduleInstance = async (
+const getSavedSearchQueryInstance = async (
   client: NetsuiteClient,
   suiteQLTableType: ObjectType,
-  existingInstance: InstanceElement | undefined,
+  searchType: string,
+  elementsSource: ReadOnlyElementsSource,
   isPartial: boolean,
 ): Promise<InstanceElement | undefined> => {
+  const instanceElemId = suiteQLTableType.elemID.createNestedID('instance', searchType)
+  const existingInstance = await elementsSource.get(instanceElemId)
   fixExistingInstance(suiteQLTableType, existingInstance)
   if (isPartial) {
     return existingInstance
   }
-  const instance = createOrGetExistingInstance(suiteQLTableType, TAX_SCHEDULE, existingInstance)
+  const instance = createOrGetExistingInstance(suiteQLTableType, searchType, existingInstance)
   const result = await client.runSavedSearchQuery({
-    type: TAX_SCHEDULE,
+    type: searchType,
     columns: ['internalid', 'name'],
     filters: [],
   })
   const ajv = new Ajv({ allErrors: true, strict: false })
-  if (!ajv.validate<TaxScheduleSearchResult[]>(TAX_SCHEDULE_SEARCH_RESULT_SCHEMA, result)) {
+  if (!ajv.validate<SavedSearchInternalIdsResult[]>(SAVED_SEARCH_INTERNAL_IDS_RESULT_SCHEMA, result)) {
     log.error('Got invalid results from taxSchedule internal ids search: %s', ajv.errorsText())
   } else {
     instance.value[INTERNAL_IDS_MAP] = Object.fromEntries(
@@ -510,6 +557,60 @@ const getTaxScheduleInstance = async (
   instance.value[VERSION_FIELD] = LATEST_VERSION
   return instance
 }
+
+const getAllocationTypeInstance = async (
+  client: NetsuiteClient,
+  suiteQLTableType: ObjectType,
+  elementsSource: ReadOnlyElementsSource,
+  isPartial: boolean,
+): Promise<InstanceElement | undefined> => {
+  const instanceElemId = suiteQLTableType.elemID.createNestedID('instance', ALLOCATION_TYPE)
+  const existingInstance = await elementsSource.get(instanceElemId)
+  fixExistingInstance(suiteQLTableType, existingInstance)
+  if (isPartial) {
+    return existingInstance
+  }
+  const instance = createOrGetExistingInstance(suiteQLTableType, ALLOCATION_TYPE, existingInstance)
+  const ajv = new Ajv({ allErrors: true, strict: false })
+  const getAllocationTypes = async (exclude: string[] = []): Promise<Record<string, { name: string }>> => {
+    const result = await client.runSavedSearchQuery(
+      {
+        type: 'resourceAllocation',
+        columns: [ALLOCATION_TYPE],
+        filters: exclude.length > 0 ? [[ALLOCATION_TYPE, 'noneof', ...exclude]] : [],
+      },
+      50
+    )
+    if (!ajv.validate<AllocationTypeSearchResult[]>(ALLOCATION_TYPE_SEARCH_RESULT_SCHEMA, result)) {
+      log.error('Got invalid results from allocationType internal ids search: %s', ajv.errorsText())
+      return {}
+    }
+    if (result.length === 0) {
+      return {}
+    }
+    const internalIdToName = Object.fromEntries(
+      result.map(row => [row[ALLOCATION_TYPE][0].value, { name: row[ALLOCATION_TYPE][0].text }])
+    )
+    return {
+      ...internalIdToName,
+      ...await getAllocationTypes(Object.keys(internalIdToName).concat(exclude)),
+    }
+  }
+  instance.value[INTERNAL_IDS_MAP] = await getAllocationTypes()
+  instance.value[VERSION_FIELD] = LATEST_VERSION
+  return instance
+}
+
+const getAdditionalInstances = (
+  client: NetsuiteClient,
+  suiteQLTableType: ObjectType,
+  elementsSource: ReadOnlyElementsSource,
+  isPartial: boolean
+): Promise<InstanceElement | undefined>[] => [
+  getSavedSearchQueryInstance(client, suiteQLTableType, TAX_SCHEDULE, elementsSource, isPartial),
+  getSavedSearchQueryInstance(client, suiteQLTableType, PROJECT_EXPENSE_TYPE, elementsSource, isPartial),
+  getAllocationTypeInstance(client, suiteQLTableType, elementsSource, isPartial),
+]
 
 export const getSuiteQLTableElements = async (
   client: NetsuiteClient,
@@ -523,7 +624,7 @@ export const getSuiteQLTableElements = async (
 
   const lastFetchTime = await getLastServerTime(elementsSource)
   const instances = await Promise.all(
-    Object.entries(QUERIES_BY_TABLE_NAME).map(async ([tableName, queryParams]) => {
+    Object.entries(QUERIES_BY_TABLE_NAME).map(([tableName, queryParams]) => {
       if (queryParams === undefined) {
         return undefined
       }
@@ -532,17 +633,12 @@ export const getSuiteQLTableElements = async (
         suiteQLTableType,
         tableName,
         queryParams,
-        await elementsSource.get(suiteQLTableType.elemID.createNestedID('instance', tableName)),
+        elementsSource,
         lastFetchTime,
         isPartial
       )
     }).concat(
-      getTaxScheduleInstance(
-        client,
-        suiteQLTableType,
-        await elementsSource.get(suiteQLTableType.elemID.createNestedID('instance', TAX_SCHEDULE)),
-        isPartial
-      )
+      getAdditionalInstances(client, suiteQLTableType, elementsSource, isPartial)
     )
   ).then(res => res.flatMap(instance => instance ?? []))
 

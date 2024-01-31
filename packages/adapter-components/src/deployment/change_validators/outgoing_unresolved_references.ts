@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, Element, ElemID, SeverityLevel, isReferenceExpression, isTemplateExpression, isAdditionOrModificationChange, UnresolvedReference, UnresolvedReferenceError } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, Element, ElemID, SeverityLevel, isReferenceExpression, isTemplateExpression, isAdditionOrModificationChange, UnresolvedReference, UnresolvedReferenceError, SaltoErrorType } from '@salto-io/adapter-api'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { values, collections } from '@salto-io/lowerdash'
 
@@ -63,6 +63,7 @@ export const createOutgoingUnresolvedReferencesValidator = (shouldIgnore: ElemID
         message: 'Element has unresolved references',
         detailedMessage: `Element ${element.elemID.getFullName()} contains unresolved references: ${unresolvedReferences.map(e => e.getFullName()).join(', ')}. Add the missing dependencies and try again. To learn more about fixing this error, go to https://help.salto.io/en/articles/6947056-element-contains-unresolved-references`,
         unresolvedElemIds: unresolvedReferences,
+        type: 'unresolvedReferences' as SaltoErrorType,
       })
     })
     .filter(values.isDefined)

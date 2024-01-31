@@ -392,7 +392,6 @@ export type SalesforceClientConfig = Partial<{
   retry: ClientRetryConfig
   dataRetry: CustomObjectsDeployRetryConfig
   readMetadataChunkSize: ReadMetadataChunkSizeConfig
-  additionalDebugging: boolean
 }>
 
 export type SalesforceConfig = {
@@ -681,7 +680,6 @@ const clientConfigType = new ObjectType({
     retry: { refType: clientRetryConfigType },
     maxConcurrentApiRequests: { refType: clientRateLimitConfigType },
     readMetadataChunkSize: { refType: readMetadataChunkSizeConfigType },
-    additionalDebugging: { refType: BuiltinTypes.BOOLEAN },
   } as Record<keyof SalesforceClientConfig, FieldDefinition>,
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

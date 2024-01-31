@@ -969,9 +969,7 @@ export default class SalesforceClient {
     operation: BulkLoadOperation,
     records: SalesforceRecord[]
   ): Promise<BatchResultInfo[]> {
-    if (this.config?.additionalDebugging) {
-      log.trace('client.bulkLoadOperation: %s %d records of type %s: %o', operation, records.length, type, records)
-    }
+    log.trace('client.bulkLoadOperation: %s %d records of type %s: %o', operation, records.length, type, records)
     const batch = this.conn.bulk.load(
       type,
       operation,

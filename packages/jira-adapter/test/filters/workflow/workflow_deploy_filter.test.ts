@@ -480,7 +480,7 @@ describe('workflowDeployFilter', () => {
         }
         walkOnValue({ elemId: new ElemID(JIRA, 'none'),
           value: result,
-          func: encodeCloudFields })
+          func: encodeCloudFields() })
         return result
       }
 

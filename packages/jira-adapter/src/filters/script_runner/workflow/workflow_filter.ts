@@ -19,7 +19,7 @@ import { isInstanceElement, Element, isInstanceChange, isAdditionOrModificationC
 import { collections } from '@salto-io/lowerdash'
 import { elements as componentElements } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../../filter'
-import { CONDITION_CONFIGURATION, DIRECTED_LINK_TYPE, JIRA, MAIL_LIST_TYPE_NAME, POST_FUNCTION_CONFIGURATION, WORKFLOW_TYPE_NAME } from '../../../constants'
+import { CONDITION_CONFIGURATION, DIRECTED_LINK_TYPE, JIRA, JIRA_WORKFLOW_TYPE, MAIL_LIST_TYPE_NAME, POST_FUNCTION_CONFIGURATION, WORKFLOW_TYPE_NAME } from '../../../constants'
 import { decodeDcFields, encodeDcFields } from './workflow_dc'
 import { decodeCloudFields, encodeCloudFields } from './workflow_cloud'
 
@@ -96,13 +96,14 @@ const filter: FilterCreator = ({ client, config }) => ({
     }
     elements
       .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
+      .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME
+        || instance.elemID.typeName === JIRA_WORKFLOW_TYPE)
       .forEach(instance => {
         walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
           value: instance.value.transitions,
           func: client.isDataCenter
             ? decodeDcFields
-            : decodeCloudFields })
+            : decodeCloudFields(config.fetch.enableNewWorkflowAPI) })
       })
 
     addObjectTypes(elements)
@@ -115,13 +116,14 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(isAdditionOrModificationChange)
       .filter(isInstanceChange)
       .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
+      .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME
+        || instance.elemID.typeName === JIRA_WORKFLOW_TYPE)
       .forEach(instance => {
         walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
           value: instance.value.transitions,
           func: client.isDataCenter
             ? encodeDcFields
-            : encodeCloudFields })
+            : encodeCloudFields(config.fetch.enableNewWorkflowAPI) })
       })
   },
   onDeploy: async changes => {
@@ -132,13 +134,14 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(isAdditionOrModificationChange)
       .filter(isInstanceChange)
       .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
+      .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME
+        || instance.elemID.typeName === JIRA_WORKFLOW_TYPE)
       .forEach(instance => {
         walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
           value: instance.value.transitions,
           func: client.isDataCenter
             ? decodeDcFields
-            : decodeCloudFields })
+            : decodeCloudFields(config.fetch.enableNewWorkflowAPI) })
       })
   },
 })

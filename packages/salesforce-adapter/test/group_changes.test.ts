@@ -34,7 +34,7 @@ import {
   OBJECTS_PATH,
   SBAA_APPROVAL_RULE,
   SBAA_CONDITIONS_MET,
-  ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+  ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
 } from '../src/constants'
 import { getChangeGroupIds } from '../src/group_changes'
 import { createInstanceElement } from '../src/transformers/transformer'
@@ -232,8 +232,8 @@ describe('Group changes function', () => {
       result = await getChangeGroupIds(changeMap)
     })
     it('should create correct groups', () => {
-      expect(result.changeGroupIdMap.get('CustomApprovalRule')).toEqual(ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP)
-      expect(result.changeGroupIdMap.get('CustomApprovalCondition')).toEqual(ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP)
+      expect(result.changeGroupIdMap.get('CustomApprovalRule')).toEqual(ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP)
+      expect(result.changeGroupIdMap.get('CustomApprovalCondition')).toEqual(ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP)
       expect(result.changeGroupIdMap.get('ApprovalRule')).toEqual('Addition of data instances of type \'sbaa__ApprovalRule__c\'')
       expect(result.changeGroupIdMap.get('ApprovalCondition')).toEqual('Addition of data instances of type \'sbaa__ApprovalCondition__c\'')
     })

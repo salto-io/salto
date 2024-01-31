@@ -35,11 +35,12 @@ import {
 } from './transformers/transformer'
 import SalesforceClient from './client/client'
 import {
-  ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+  ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
   CUSTOM_OBJECT_ID_FIELD, FIELD_ANNOTATIONS, DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY,
   DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY_MULTIPLIER, OWNER_ID, SBAA_APPROVAL_CONDITION,
   SBAA_APPROVAL_RULE,
-  SBAA_CONDITIONS_MET, SYSTEM_FIELDS,
+  SBAA_CONDITIONS_MET, SYSTEM_FIELDS, ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP, CPQ_PRICE_RULE,
+  CPQ_PRICE_CONDITION, CPQ_CONDITIONS_MET,
 } from './constants'
 import { getIdFields, transformRecordToValues } from './filters/custom_objects_instances'
 import {
@@ -396,7 +397,7 @@ const updateInstances: CrudFn = async (
     'update',
     // For this special group, we know it's safe to update without adding nulls, since the Record
     // was previously added by us, and no Data could be deleted by the user during this process.
-    await instancesToUpdateRecords(instances, groupId !== ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP)
+    await instancesToUpdateRecords(instances, groupId !== ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP)
   )
   return groupInstancesAndResultsByIndex(results, instances)
 }
@@ -785,7 +786,7 @@ const deployRulesAndConditionsGroup = async (
     changeGroupId,
     dataManagement,
   )
-  log.debug('Deploying ApprovalCondition instances')
+  log.debug(`Deploying ${conditionTypeName} instances`)
   const [deployableConditionChanges, nonDeployableConditionChanges] = _.partition(
     conditionChanges,
     change => {
@@ -847,19 +848,40 @@ const deployAddCustomApprovalRulesAndConditions = async (
   SBAA_CONDITIONS_MET,
   SBAA_APPROVAL_CONDITION,
   changes,
-  ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+  ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
   client,
   dataManagement
 )
 
+const deployAddCustomPriceRulesAndConditions = async (
+  changes: ReadonlyArray<Change<InstanceElement>>,
+  client: SalesforceClient,
+  dataManagement: DataManagement | undefined
+): Promise<DeployResult> => deployRulesAndConditionsGroup(
+  CPQ_PRICE_RULE,
+  CPQ_CONDITIONS_MET,
+  CPQ_PRICE_CONDITION,
+  changes,
+  ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP,
+  client,
+  dataManagement
+)
 
 export const deployCustomObjectInstancesGroup = async (
   changes: ReadonlyArray<Change<InstanceElement>>,
   client: SalesforceClient,
   groupId: string,
   dataManagement?: DataManagement,
-): Promise<DeployResult> => (
-  groupId === ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP
-    ? deployAddCustomApprovalRulesAndConditions(changes, client, dataManagement)
-    : deploySingleTypeAndActionCustomObjectInstancesGroup(changes, client, groupId, dataManagement)
-)
+): Promise<DeployResult> => {
+  switch (groupId) {
+    case ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP: {
+      return deployAddCustomApprovalRulesAndConditions(changes, client, dataManagement)
+    }
+    case ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP: {
+      return deployAddCustomPriceRulesAndConditions(changes, client, dataManagement)
+    }
+    default: {
+      return deploySingleTypeAndActionCustomObjectInstancesGroup(changes, client, groupId, dataManagement)
+    }
+  }
+}

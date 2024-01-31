@@ -29,7 +29,7 @@ import Connection from '../src/client/jsforce'
 import mockAdapter from './adapter'
 import { createCustomObjectType, nullProgressReporter } from './utils'
 import {
-  ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP, CUSTOM_OBJECT_ID_FIELD,
+  ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP, CUSTOM_OBJECT_ID_FIELD,
   FIELD_ANNOTATIONS, OWNER_ID, SBAA_APPROVAL_CONDITION,
   SBAA_APPROVAL_RULE, SBAA_CONDITIONS_MET, DefaultSoqlQueryLimits,
 } from '../src/constants'
@@ -1353,7 +1353,7 @@ describe('Custom Object Instances CRUD', () => {
             }
           )
           const changeGroup = {
-            groupID: ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+            groupID: ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
             changes: [approvalRule, approvalCondition].map(instance => toChange({ after: instance })),
           }
           result = await adapter.deploy({
@@ -1428,7 +1428,7 @@ describe('Custom Object Instances CRUD', () => {
             }
           )
           const changeGroup = {
-            groupID: ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+            groupID: ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
             changes: [
               approvalRule,
               failApprovalRule,
@@ -1494,7 +1494,7 @@ describe('Custom Object Instances CRUD', () => {
             }
           )
           changeGroup = {
-            groupID: ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+            groupID: ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
             changes: [approvalRule, approvalCondition].map(instance => toChange({ after: instance })),
           }
         })

@@ -30,11 +30,12 @@ import {
   apiNameSync, isInstanceOfCustomObjectChangeSync, isInstanceOfTypeChangeSync,
 } from './filters/utils'
 import {
-  ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP, SBAA_APPROVAL_CONDITION,
+  ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP, SBAA_APPROVAL_CONDITION,
   SBAA_APPROVAL_RULE,
   SBAA_CONDITIONS_MET,
   METADATA_CHANGE_GROUP,
-  groupIdForInstanceChangeGroup,
+  groupIdForInstanceChangeGroup, CPQ_PRICE_RULE, CPQ_CONDITIONS_MET, CPQ_PRICE_CONDITION,
+  ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP,
 } from './constants'
 
 const getGroupId = (change: Change): string => {
@@ -62,19 +63,19 @@ const getAddCustomRuleAndConditionGroupChangeIds = (
     .filter(([_changeId, change]) => isAdditionChange(change))
     .filter(([_changeId, change]) => isInstanceChange(change))
     .toArray() as [ChangeId, AdditionChange<InstanceElement>][]
-  const customApprovalRuleAdditions = addedInstancesChanges
+  const customRuleAdditions = addedInstancesChanges
     .filter(([_changeId, change]) => isInstanceOfTypeChangeSync(ruleTypeName)(change))
     .filter(([_changeId, change]) => getChangeData(change).value[ruleConditionFieldName] === 'Custom')
-  const customApprovalRuleElemIds = new Set(customApprovalRuleAdditions
+  const customRuleElemIds = new Set(customRuleAdditions
     .map(([_changeId, change]) => getChangeData(change).elemID.getFullName()))
-  const customApprovalConditionAdditions = addedInstancesChanges
+  const customConditionAdditions = addedInstancesChanges
     .filter(([_changeId, change]) => isInstanceOfTypeChangeSync(conditionTypeName)(change))
     .filter(([_changeId, change]) => {
-      const approvalRule = getChangeData(change).value[ruleTypeName]
-      return isReferenceExpression(approvalRule) && customApprovalRuleElemIds.has(approvalRule.elemID.getFullName())
+      const rule = getChangeData(change).value[ruleTypeName]
+      return isReferenceExpression(rule) && customRuleElemIds.has(rule.elemID.getFullName())
     })
-  return new Set(customApprovalRuleAdditions
-    .concat(customApprovalConditionAdditions)
+  return new Set(customRuleAdditions
+    .concat(customConditionAdditions)
     .map(([changeId]) => changeId))
 }
 
@@ -82,7 +83,7 @@ const getAddCustomRuleAndConditionGroupChangeIds = (
  * Returns the changes that should be part of the special deploy group for adding sbaa__ApprovalRule
  * instances with sbaa__ConditionsMet = 'Custom' and their corresponding sbaa__ApprovalCondition instances.
  */
-const getAddSbaaCustomRuleAndConditionGroupChangeIds = (
+const getAddSbaaCustomApprovalRuleAndConditionGroupChangeIds = (
   changes: Map<ChangeId, Change>
 ): Set<ChangeId> => (
   getAddCustomRuleAndConditionGroupChangeIds(
@@ -93,14 +94,35 @@ const getAddSbaaCustomRuleAndConditionGroupChangeIds = (
   )
 )
 
+/**
+ * Returns the changes that should be part of the special deploy group for adding SBQQ__PriceRule
+ * instances with SBQQ__ConditionsMet = 'Custom' and their corresponding SBQQ__PriceCondition instances.
+ */
+const getAddCpqCustomPriceRuleAndConditionGroupChangeIds = (
+  changes: Map<ChangeId, Change>
+): Set<ChangeId> => (
+  getAddCustomRuleAndConditionGroupChangeIds(
+    changes,
+    CPQ_PRICE_RULE,
+    CPQ_CONDITIONS_MET,
+    CPQ_PRICE_CONDITION,
+  )
+)
+
 export const getChangeGroupIds: ChangeGroupIdFunction = async changes => {
   const changeGroupIdMap = new Map<ChangeId, ChangeGroupId>()
-  const customApprovalRuleAndConditionChangeIds = getAddSbaaCustomRuleAndConditionGroupChangeIds(changes)
+  const customApprovalRuleAndConditionChangeIds = getAddSbaaCustomApprovalRuleAndConditionGroupChangeIds(changes)
+  const customPriceRuleAndConditionChangeIds = getAddCpqCustomPriceRuleAndConditionGroupChangeIds(changes)
   wu(changes.entries())
     .forEach(([changeId, change]) => {
-      const groupId = customApprovalRuleAndConditionChangeIds.has(changeId)
-        ? ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP
-        : getGroupId(change)
+      let groupId: string
+      if (customApprovalRuleAndConditionChangeIds.has(changeId)) {
+        groupId = ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP
+      } else if (customPriceRuleAndConditionChangeIds.has(changeId)) {
+        groupId = ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP
+      } else {
+        groupId = getGroupId(change)
+      }
       changeGroupIdMap.set(changeId, groupId)
     })
 

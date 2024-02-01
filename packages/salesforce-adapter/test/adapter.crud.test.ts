@@ -1764,6 +1764,67 @@ describe('SalesforceAdapter CRUD', () => {
           expect(connection.metadata.deploy).not.toHaveBeenCalled()
         })
       })
+
+      describe('when there is a failure in a CustomObject or CustomField', () => {
+        let elementUnderTest: ObjectType
+        beforeEach(async () => {
+          connection.metadata.deploy.mockReturnValue(mockDeployResult({
+            componentFailure: [
+              {
+                changed: false,
+                columnNumber: 15684,
+                componentType: 'CustomField',
+                created: false,
+                createdDate: '2024-02-01T15:34:58.000Z',
+                deleted: false,
+                fileName: 'unpackaged/objects/Account.object',
+                fullName: 'Account.GVSField__c',
+                lineNumber: 1,
+                problem: 'The global picklist cannot be resolved',
+                problemType: 'Error',
+                success: false,
+              },
+              {
+                changed: false,
+                componentType: 'CustomObject',
+                created: false,
+                createdDate: '2024-02-01T15:35:00.000Z',
+                deleted: false,
+                fileName: 'unpackaged/objects/Account.object',
+                fullName: 'Account',
+                problem: 'AccountRecordPage does not exist or is not a valid override for action View.',
+                problemType: 'Error',
+                success: false,
+              },
+            ],
+          }))
+          elementUnderTest = createCustomObjectType('Account', {
+            fields: {
+              GVSField__c: {
+                refType: stringType,
+                annotations: {
+                  [constants.API_NAME]: 'Account.GVSField__c',
+                },
+              },
+            },
+          })
+          result = await adapter.deploy({
+            changeGroup: {
+              groupID: elementUnderTest.elemID.getFullName(),
+              changes: [
+                toChange({ after: elementUnderTest }),
+              ],
+            },
+            progressReporter: nullProgressReporter,
+          })
+        })
+        it('should map errors to the deployed element (SALTO-5375)', () => {
+          expect(result.errors).toHaveLength(2)
+          expect(result.errors).toSatisfyAll(error => error.elemID !== undefined)
+          expect(result.errors[0]).toSatisfy(error => error.elemID.isEqual(elementUnderTest.fields.GVSField__c.elemID))
+          expect(result.errors[1]).toSatisfy(error => error.elemID.isEqual(elementUnderTest.elemID))
+        })
+      })
     })
 
     describe('when the request fails', () => {

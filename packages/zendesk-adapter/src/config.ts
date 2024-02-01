@@ -1492,7 +1492,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       standaloneFields: [{ fieldName: 'variants' }],
       fieldsToHide: FIELDS_TO_HIDE.concat([
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'outdated' },
+        { fieldName: 'outdated', fieldType: 'boolean' },
       ]),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       serviceUrl: '/admin/workspaces/agent-workspace/dynamic_content',
@@ -1526,7 +1526,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['&locale_id'],
       fieldsToHide: FIELDS_TO_HIDE.concat([
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'outdated' },
+        { fieldName: 'outdated', fieldType: 'boolean' },
       ]),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       extendsParentId: true,

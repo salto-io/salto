@@ -32,7 +32,7 @@ const LATEST_VERSION = 1
 
 const ALLOCATION_TYPE_QUERY_LIMIT = 50
 
-export type InternalIdsMap = Record<string, { name: string }>
+type InternalIdsMap = Record<string, { name: string }>
 
 type QueryParams = {
   internalIdField: 'id' | 'key'
@@ -443,6 +443,10 @@ export const QUERIES_BY_TABLE_NAME: Record<SuiteQLTableName, QueryParams | undef
   workflow: undefined,
   customrecordtype: undefined,
 }
+
+export const getSuiteQLTableInternalIdsMap = (instance: InstanceElement): InternalIdsMap =>
+  // value[INTERNAL_IDS_MAP] can be undefined because transformElement transform empty objects to undefined
+  instance.value[INTERNAL_IDS_MAP] ?? {}
 
 const getInternalIdsMap = async (
   client: NetsuiteClient,

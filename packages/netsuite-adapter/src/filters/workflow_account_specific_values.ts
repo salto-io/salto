@@ -23,7 +23,7 @@ import NetsuiteClient from '../client/client'
 import { RemoteFilterCreator } from '../filter'
 import { ACCOUNT_SPECIFIC_VALUE, ALLOCATION_TYPE, INIT_CONDITION, NAME_FIELD, PROJECT_EXPENSE_TYPE, SCRIPT_ID, SELECT_RECORD_TYPE, TAX_SCHEDULE, WORKFLOW } from '../constants'
 import { QUERY_RECORD_TYPES, QueryRecordType, QueryRecordResponse, QueryRecordSchema } from '../client/suiteapp_client/types'
-import { INTERNAL_IDS_MAP, InternalIdsMap, SUITEQL_TABLE } from '../data_elements/suiteql_table_elements'
+import { SUITEQL_TABLE, getSuiteQLTableInternalIdsMap } from '../data_elements/suiteql_table_elements'
 import { INTERNAL_ID_TO_TYPES } from '../data_elements/types'
 import { captureServiceIdInfo } from '../service_id_info'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
@@ -514,7 +514,7 @@ const setFieldValue = (
   suiteQLTablesMap: Record<string, InstanceElement>
 ): void => {
   const { name } = makeArray(field.type)
-    .map(typeName => suiteQLTablesMap[typeName].value[INTERNAL_IDS_MAP][internalId])
+    .map(typeName => getSuiteQLTableInternalIdsMap(suiteQLTablesMap[typeName])[internalId])
     .find(res => res !== undefined) ?? {}
   if (name === undefined) {
     log.warn('could not find internal id %s of type %s', internalId, field.type)
@@ -608,7 +608,7 @@ const getSuiteQLNameToInternalIdsMap = async (
 
   return _(suiteQLTableInstances)
     .keyBy(instance => instance.elemID.name)
-    .mapValues(instance => instance.value[INTERNAL_IDS_MAP] as InternalIdsMap)
+    .mapValues(getSuiteQLTableInternalIdsMap)
     .mapValues(
       internalIdsMap => _(internalIdsMap)
         .entries()

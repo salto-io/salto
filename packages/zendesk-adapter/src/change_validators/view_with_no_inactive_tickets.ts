@@ -16,13 +16,14 @@
 import _ from 'lodash'
 import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { ChangeValidator, ReferenceExpression, getChangeData,
-  isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
+  isAdditionOrModificationChange,
+  isInstanceChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { VIEW_TYPE_NAME, TICKET_FORM_TYPE_NAME } from '../constants'
 
 const log = logger(module)
 
-export const viewValidator: ChangeValidator = async (changes, elementSource) => {
+export const viewWithNoInactiveTicketsValidator: ChangeValidator = async (changes, elementSource) => {
   if (elementSource === undefined) {
     log.error('Failed to run dynamicContentDeletionValidator because element source is undefined')
     return []
@@ -30,7 +31,7 @@ export const viewValidator: ChangeValidator = async (changes, elementSource) => 
 
   const changedViews = changes
     .filter(isInstanceChange)
-    .filter(isModificationChange)
+    .filter(isAdditionOrModificationChange)
     .filter(change => getChangeData(change).elemID.typeName === VIEW_TYPE_NAME)
 
   if (changedViews.length === 0) {
@@ -41,16 +42,17 @@ export const viewValidator: ChangeValidator = async (changes, elementSource) => 
   const deactivatedTicketFormIDs = existingTicketFormInstances
     .filter(ticketForm => ticketForm.value.active === false).map(form => form.elemID)
 
+
   return changedViews
     .flatMap(change => {
-      const conditions = (change.data.after.value.conditions.all || [])
-        .concat((change.data.after.value.conditions.any || []))
+      const conditions = (change.data.after.value?.conditions?.all || [])
+        .concat((change.data.after.value?.conditions?.any || []))
 
       // cross-reference deactivated ticket forms with conditions in the view
       const deactivatedTicketsReferenced: string[] = conditions
         .filter((condition: { field: string }) => condition.field === 'ticket_form_id')
         .filter(
-          (condition: { value: ReferenceExpression }) =>
+          (condition: { value: ReferenceExpression }) => 
             deactivatedTicketFormIDs
               .find(inactiveElemID => inactiveElemID.isEqual(condition.value.elemID)) !== undefined
         )

@@ -34,6 +34,7 @@
     "@apidevtools/swagger-parser": "^10.0.3",
     "@salto-io/adapter-api": "0.3.53",
     "@salto-io/adapter-utils": "0.3.53",
+    "@salto-io/parser": "0.3.53",
     "@salto-io/dag": "0.3.53",
     "@salto-io/logging": "0.3.53",
     "@salto-io/lowerdash": "0.3.53",

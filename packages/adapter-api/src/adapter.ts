@@ -116,11 +116,17 @@ export type DependencyError = ChangeError & {
   causeID: ElemID
 }
 
+export type UnresolvedReferenceError = ChangeError & {
+  unresolvedElemIds: ElemID[]
+}
+
 export const isDependencyError = (err: ChangeError): err is DependencyError => 'causeID' in err
 
-export type ChangeValidator = (
+export const isUnresolvedReferenceError = (err: ChangeError): err is UnresolvedReferenceError => err.type === 'unresolvedReferences' && 'unresolvedElemIds' in err
+
+export type ChangeValidator<T extends ChangeError = ChangeError> = (
   changes: ReadonlyArray<Change>, elementsSource?: ReadOnlyElementsSource
-) => Promise<ReadonlyArray<ChangeError>>
+) => Promise<ReadonlyArray<T>>
 
 export type DeployModifiers = {
   changeValidator?: ChangeValidator

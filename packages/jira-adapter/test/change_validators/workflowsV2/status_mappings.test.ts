@@ -16,7 +16,7 @@
 
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { InstanceElement, ReadOnlyElementsSource, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { ISSUE_TYPE_NAME, JIRA_WORKFLOW_TYPE, PROJECT_TYPE, STATUS_TYPE_NAME } from '../../../src/constants'
+import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA_WORKFLOW_TYPE, PROJECT_TYPE, STATUS_TYPE_NAME } from '../../../src/constants'
 import { createEmptyType } from '../../utils'
 import { workflowStatusMappingsValidator } from '../../../src/change_validators/workflowsV2/status_mappings'
 
@@ -25,9 +25,11 @@ describe('status mappings', () => {
   let defaultWorkflowInstance: InstanceElement
   let workflowSchemeInstance: InstanceElement
   let projectInstance: InstanceElement
+  let issueTypeSchemeInstance: InstanceElement
   let issueType1: InstanceElement
   let issueType2: InstanceElement
   let issueType3: InstanceElement
+  let issueType4: InstanceElement
   let status1: InstanceElement
   let status2: InstanceElement
   let status3: InstanceElement
@@ -86,6 +88,10 @@ describe('status mappings', () => {
       'issueType3',
       createEmptyType(ISSUE_TYPE_NAME),
     )
+    issueType4 = new InstanceElement(
+      'issueType4',
+      createEmptyType(ISSUE_TYPE_NAME),
+    )
     workflowInstance = new InstanceElement(
       'workflowInstance',
       createEmptyType(JIRA_WORKFLOW_TYPE),
@@ -134,8 +140,23 @@ describe('status mappings', () => {
             workflow: new ReferenceExpression(workflowInstance.elemID, workflowInstance),
             issueType: new ReferenceExpression(issueType2.elemID, issueType2),
           },
+          {
+            workflow: new ReferenceExpression(workflowInstance.elemID, workflowInstance),
+            issueType: new ReferenceExpression(issueType4.elemID, issueType4),
+          },
         ],
       }
+    )
+    issueTypeSchemeInstance = new InstanceElement(
+      'issueTypeSchemeInstance',
+      createEmptyType(ISSUE_TYPE_SCHEMA_NAME),
+      {
+        issueTypeIds: [
+          new ReferenceExpression(issueType1.elemID, issueType1),
+          new ReferenceExpression(issueType2.elemID, issueType2),
+          new ReferenceExpression(issueType3.elemID, issueType3),
+        ],
+      },
     )
     projectInstance = new InstanceElement(
       'projectInstance',
@@ -143,6 +164,7 @@ describe('status mappings', () => {
       {
         name: 'projectInstance',
         workflowScheme: new ReferenceExpression(workflowSchemeInstance.elemID, workflowSchemeInstance),
+        issueTypeScheme: new ReferenceExpression(issueTypeSchemeInstance.elemID, issueTypeSchemeInstance),
       }
     )
     elementsSource = buildElementsSourceFromElements([
@@ -152,6 +174,7 @@ describe('status mappings', () => {
       issueType1,
       issueType2,
       issueType3,
+      issueTypeSchemeInstance,
       workflowInstance,
       defaultWorkflowInstance,
       workflowSchemeInstance,

@@ -30,6 +30,8 @@ export const INTERNAL_IDS_MAP = 'internalIdsMap'
 const VERSION_FIELD = 'version'
 const LATEST_VERSION = 1
 
+const ALLOCATION_TYPE_QUERY_LIMIT = 50
+
 export type InternalIdsMap = Record<string, { name: string }>
 
 type QueryParams = {
@@ -547,8 +549,10 @@ const getSavedSearchQueryInstance = async (
     filters: [],
   })
   const ajv = new Ajv({ allErrors: true, strict: false })
-  if (!ajv.validate<SavedSearchInternalIdsResult[]>(SAVED_SEARCH_INTERNAL_IDS_RESULT_SCHEMA, result)) {
-    log.error('Got invalid results from taxSchedule internal ids search: %s', ajv.errorsText())
+  if (result === undefined) {
+    log.warn('failed to search %s using saved search query', searchType)
+  } else if (!ajv.validate<SavedSearchInternalIdsResult[]>(SAVED_SEARCH_INTERNAL_IDS_RESULT_SCHEMA, result)) {
+    log.error('Got invalid results from %s saved search query: %s', searchType, ajv.errorsText())
   } else {
     instance.value[INTERNAL_IDS_MAP] = Object.fromEntries(
       result.map(res => [res.internalid[0].value, { name: res.name }])
@@ -579,18 +583,22 @@ const getAllocationTypeInstance = async (
         columns: [ALLOCATION_TYPE],
         filters: exclude.length > 0 ? [[ALLOCATION_TYPE, 'noneof', ...exclude]] : [],
       },
-      50
+      ALLOCATION_TYPE_QUERY_LIMIT
     )
-    if (!ajv.validate<AllocationTypeSearchResult[]>(ALLOCATION_TYPE_SEARCH_RESULT_SCHEMA, result)) {
-      log.error('Got invalid results from allocationType internal ids search: %s', ajv.errorsText())
+    if (result === undefined) {
+      log.warn('failed to search %s using saved search query', ALLOCATION_TYPE)
       return {}
     }
-    if (result.length === 0) {
+    if (!ajv.validate<AllocationTypeSearchResult[]>(ALLOCATION_TYPE_SEARCH_RESULT_SCHEMA, result)) {
+      log.error('Got invalid results from %s saved search query: %s', ALLOCATION_TYPE, ajv.errorsText())
       return {}
     }
     const internalIdToName = Object.fromEntries(
       result.map(row => [row[ALLOCATION_TYPE][0].value, { name: row[ALLOCATION_TYPE][0].text }])
     )
+    if (result.length < ALLOCATION_TYPE_QUERY_LIMIT) {
+      return internalIdToName
+    }
     return {
       ...internalIdToName,
       ...await getAllocationTypes(Object.keys(internalIdToName).concat(exclude)),

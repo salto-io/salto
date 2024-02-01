@@ -13,12 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, TopLevelElement, isInstanceElement } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import NetsuiteClient from '../../src/client/client'
 import { INTERNAL_IDS_MAP, QUERIES_BY_TABLE_NAME, SUITEQL_TABLE, getSuiteQLTableElements } from '../../src/data_elements/suiteql_table_elements'
 import { SuiteQLTableName } from '../../src/data_elements/types'
-import { NETSUITE, TAX_SCHEDULE } from '../../src/constants'
+import { ALLOCATION_TYPE, NETSUITE, PROJECT_EXPENSE_TYPE, TAX_SCHEDULE } from '../../src/constants'
 import { SERVER_TIME_TYPE_NAME } from '../../src/server_time'
 
 const runSuiteQLMock = jest.fn()
@@ -88,11 +89,29 @@ describe('SuiteQL table elements', () => {
         { id: '2', name: 'Some name 2' },
         { id: '3', name: 'Some name 3' },
       ])
-      runSavedSearchQueryMock.mockResolvedValue([
-        { internalid: [{ value: '1' }], name: 'Tax Schedule 1' },
-        { internalid: [{ value: '2' }], name: 'Tax Schedule 2' },
-        { internalid: [{ value: '3' }], name: 'Tax Schedule 3' },
-      ])
+      runSavedSearchQueryMock.mockImplementation(({ type, filters }) => {
+        if (type !== 'resourceAllocation') {
+          return [
+            { internalid: [{ value: '1' }], name: 'Tax Schedule 1' },
+            { internalid: [{ value: '2' }], name: 'Tax Schedule 2' },
+            { internalid: [{ value: '3' }], name: 'Tax Schedule 3' },
+          ]
+        }
+        if (filters.length === 0) {
+          return _.range(50).map(_i => ({
+            allocationType: [{
+              value: '1',
+              text: 'Allocation Type 1',
+            }],
+          }))
+        }
+        return [{
+          allocationType: [{
+            value: '2',
+            text: 'Allocation Type 2',
+          }],
+        }]
+      })
       const elementsSource = buildElementsSourceFromElements([])
       elements = await getSuiteQLTableElements(client, elementsSource, false)
     })
@@ -127,6 +146,52 @@ describe('SuiteQL table elements', () => {
         },
         version: 1,
       })
+    })
+
+    it('should set allocation type instance values correctly', () => {
+      const allocationTypeInstance = elements.filter(isInstanceElement)
+        .find(element => element.elemID.name === ALLOCATION_TYPE)
+      expect(allocationTypeInstance?.value).toEqual({
+        [INTERNAL_IDS_MAP]: {
+          1: { name: 'Allocation Type 1' },
+          2: { name: 'Allocation Type 2' },
+        },
+        version: 1,
+      })
+    })
+
+    it('should call runSavedSearch with right params', () => {
+      expect(runSavedSearchQueryMock).toHaveBeenCalledTimes(4)
+      expect(runSavedSearchQueryMock).toHaveBeenCalledWith(
+        {
+          type: TAX_SCHEDULE,
+          columns: ['internalid', 'name'],
+          filters: [],
+        },
+      )
+      expect(runSavedSearchQueryMock).toHaveBeenCalledWith(
+        {
+          type: PROJECT_EXPENSE_TYPE,
+          columns: ['internalid', 'name'],
+          filters: [],
+        },
+      )
+      expect(runSavedSearchQueryMock).toHaveBeenCalledWith(
+        {
+          type: 'resourceAllocation',
+          columns: [ALLOCATION_TYPE],
+          filters: [],
+        },
+        50
+      )
+      expect(runSavedSearchQueryMock).toHaveBeenCalledWith(
+        {
+          type: 'resourceAllocation',
+          columns: [ALLOCATION_TYPE],
+          filters: [[ALLOCATION_TYPE, 'noneof', '1']],
+        },
+        50
+      )
     })
 
     it('should not set values when name field do not match', () => {

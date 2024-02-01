@@ -531,9 +531,9 @@ export default class NetsuiteClient {
     return this.suiteAppClient?.runSuiteQL(query)
   }
 
-  public async runSavedSearchQuery(query: SavedSearchQuery):
+  public async runSavedSearchQuery(query: SavedSearchQuery, limit?: number):
     Promise<Record<string, unknown>[] | undefined> {
-    return this.suiteAppClient?.runSavedSearchQuery(query)
+    return this.suiteAppClient?.runSavedSearchQuery(query, limit)
   }
 
   public async runRecordsQuery(

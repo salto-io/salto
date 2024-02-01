@@ -109,7 +109,7 @@ describe('role', () => {
         type: 'role',
         columns: ['internalid', 'permchangedate'],
         filters: [['permchangedate', 'within', '2021-01-11 6:55 pm', '2021-02-22 6:56 pm']],
-      })
+      }, undefined)
     })
   })
 

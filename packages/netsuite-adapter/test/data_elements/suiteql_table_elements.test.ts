@@ -98,8 +98,8 @@ describe('SuiteQL table elements', () => {
     })
 
     it('should return all elements', () => {
-      // additional elements are the type and taxSchedule instance that is fetched with runSavedSearchQuery
-      expect(elements).toHaveLength(numOfInstances + 2)
+      // additional elements are the type, and instances from getAdditionalInstances
+      expect(elements).toHaveLength(numOfInstances + 4)
       expect(elements.every(element => element.annotations[CORE_ANNOTATIONS.HIDDEN] === true)).toBeTruthy()
     })
 

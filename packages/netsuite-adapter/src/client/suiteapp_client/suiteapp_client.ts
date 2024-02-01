@@ -193,16 +193,19 @@ export default class SuiteAppClient {
     return items
   }
 
-  public async runSavedSearchQuery(query: SavedSearchQuery):
-    Promise<Record<string, unknown>[] | undefined> {
+  public async runSavedSearchQuery(
+    query: SavedSearchQuery,
+    limit = Infinity
+  ): Promise<Record<string, unknown>[] | undefined> {
     let hasMore = true
     const items: Record<string, unknown>[] = []
-    for (let offset = 0; hasMore; offset += PAGE_SIZE) {
+    const pageSize = Math.min(limit, PAGE_SIZE)
+    for (let offset = 0; hasMore; offset += pageSize) {
       try {
         // eslint-disable-next-line no-await-in-loop
-        const results = await this.sendSavedSearchRequest(query, offset, PAGE_SIZE)
+        const results = await this.sendSavedSearchRequest(query, offset, pageSize)
         items.push(...results)
-        hasMore = results.length === PAGE_SIZE
+        hasMore = results.length === pageSize && items.length < limit
       } catch (error) {
         log.error('Saved search query error', { error })
         return undefined

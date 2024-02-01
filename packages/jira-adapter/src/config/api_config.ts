@@ -2123,7 +2123,6 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       remove: {
         url: '/rest/workinghours/1/api/calendar/{id}',
         method: 'delete',
-        omitRequestBody: true,
       },
     },
   },

@@ -2952,6 +2952,7 @@ export type ChangeValidatorName = (
   | 'conditionalTicketFields'
   | 'dynamicContentDeletion'
   | 'dynamicContentPlaceholderModification'
+  | 'view'
 )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -3027,6 +3028,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     conditionalTicketFields: { refType: BuiltinTypes.BOOLEAN },
     dynamicContentDeletion: { refType: BuiltinTypes.BOOLEAN },
     dynamicContentPlaceholderModification: { refType: BuiltinTypes.BOOLEAN },
+    view: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

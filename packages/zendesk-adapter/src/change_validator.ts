@@ -82,6 +82,7 @@ import {
   dynamicContentDeletionValidator,
   guideThemeReadonlyValidator,
   dynamicContentPlaceholderModificationValidator,
+  viewValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ChangeValidatorName, ZendeskDeployConfig, ZendeskFetchConfig, ZendeskConfig } from './config'
@@ -177,6 +178,7 @@ export default ({
     notEnabledMissingReferences: notEnabledMissingReferencesValidator(config),
     conditionalTicketFields: conditionalTicketFieldsValidator,
     dynamicContentDeletion: dynamicContentDeletionValidator,
+    view: viewValidator,
     // *** Guide Order Validators ***
     childInOrder: childInOrderValidator,
     childrenReferences: childrenReferencesValidator,

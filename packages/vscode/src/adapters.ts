@@ -16,7 +16,7 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import _ from 'lodash'
-import { parser } from '@salto-io/workspace'
+import { parser } from '@salto-io/parser'
 import { context as ctx, provider, symbols, diagnostics } from '@salto-io/lang-server'
 
 type ReadonlyDiagsItem = [vscode.Uri, ReadonlyArray<vscode.Diagnostic>]

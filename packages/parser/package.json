@@ -1,8 +1,8 @@
 {
-  "name": "@salto-io/lang-server",
+  "name": "@salto-io/parser",
   "version": "0.3.53",
   "license": "Apache-2.0",
-  "description": "Salto lang server",
+  "description": "Salto parser",
   "repository": {
     "type": "git",
     "url": "https://github.com/salto-io/salto"
@@ -19,7 +19,7 @@
   "scripts": {
     "build": "yarn concurrently \"yarn lint\" \"yarn build-ts\"",
     "test": "jest",
-    "clean": "rm -rf ./dist .eslintcache",
+    "clean": "rm -rf ./dist .eslintcache ./src/generated",
     "clean-ts": "../../build_utils/clean-old-ts.sh",
     "clean-ts-test": "yarn clean-ts && yarn test",
     "watch-test": "yarn tsc-watch --onSuccess 'yarn clean-ts-test'",
@@ -31,17 +31,18 @@
   "dependencies": {
     "@salto-io/adapter-api": "0.3.53",
     "@salto-io/adapter-utils": "0.3.53",
+    "@salto-io/logging": "0.3.53",
     "@salto-io/lowerdash": "0.3.53",
-    "@salto-io/workspace": "0.3.53",
-    "@salto-io/parser": "0.3.53",
-    "fuse.js": "^6.4.1",
+    "is-promise": "4.0.0",
+    "moo": "^0.5.1",
     "lodash": "^4.17.21",
     "wu": "^2.1.0"
   },
   "devDependencies": {
+    "@salto-io/dag": "0.3.53",
     "@salto-io/test-utils": "0.3.53",
     "@types/jest": "^27.4.0",
-    "@types/node": "^12.7.1",
+    "@types/lodash": "^4.14.168",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",
     "eslint": "^6.2.2",
@@ -55,7 +56,9 @@
     "jest": "^27.4.5",
     "jest-circus": "^27.4.5",
     "jest-each": "^26.6.2",
+    "jest-junit": "^12.0.0",
     "ts-jest": "^27.1.2",
+    "tsc-watch": "^2.2.1",
     "typescript": "4.1.3"
   }
 }

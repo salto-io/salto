@@ -16,6 +16,7 @@
 /* eslint-disable camelcase */
 import { ObjectType, ElemID, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, PrimitiveType, PrimitiveTypes, MapType, ListType, getRestriction, createRestriction, VariableExpression, Variable, StaticFile, createRefToElmWithValue, TypeReference, TemplateExpression } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { parser } from '@salto-io/parser'
 import {
   validateElements,
   InvalidValueValidationError,
@@ -30,7 +31,6 @@ import {
   InvalidValueMaxListLengthValidationError,
 } from '../src/validator'
 import { MissingStaticFile, AccessDeniedStaticFile } from '../src/workspace/static_files/common'
-import { IllegalReference } from '../src/parser/parse'
 import { createInMemoryElementSource } from '../src/workspace/elements_source'
 import { getFieldsAndAnnoTypes } from './utils'
 
@@ -592,7 +592,7 @@ describe('Elements validation', () => {
       'illegalRef',
       simpleType,
       {
-        bool: new IllegalReference('foo.bla.bar', 'illegal elem id type "bar"'),
+        bool: new parser.IllegalReference('foo.bla.bar', 'illegal elem id type "bar"'),
       }
     )
 

@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import { ModificationChange, InstanceElement, RemovalChange, ObjectType,
   ElemID, AdditionChange, DetailedChange, BuiltinTypes, getChangeData, TypeReference } from '@salto-io/adapter-api'
+import { parser } from '@salto-io/parser'
 import { collections } from '@salto-io/lowerdash'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
@@ -23,7 +24,6 @@ import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_fi
 import { StaticFilesSource } from '../../../src/workspace/static_files'
 
 import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../../utils'
-import * as parser from '../../../src/parser'
 import { toParsedNaclFile } from '../../../src/workspace/nacl_files/nacl_files_source'
 
 const { awu } = collections.asynciterable

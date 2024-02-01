@@ -45,6 +45,7 @@
     "@salto-io/lowerdash": "0.3.53",
     "@salto-io/salesforce-adapter": "0.3.53",
     "@salto-io/workspace": "0.3.53",
+    "@salto-io/parser": "0.3.53",
     "chalk": "^2.4.2",
     "commander": "^10.0.0",
     "express": "^4.17.1",

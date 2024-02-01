@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Workspace, parser } from '@salto-io/workspace'
+import { Workspace } from '@salto-io/workspace'
+import { parser } from '@salto-io/parser'
 import { mockFunction } from '@salto-io/test-utils'
 import { EditorWorkspace } from '../src/workspace'
 import { getDiagnostics } from '../src/diagnostics'

@@ -4,6 +4,8 @@
         "outDir": "dist",
         "baseUrl": ".",
         "declaration": true,
+        "declarationMap": true,
+        "allowJs": true,
     },
     "include": [
         "src/**/*",
@@ -13,10 +15,9 @@
     "references": [
         { "path": "../adapter-api" },
         { "path": "../adapter-utils" },
-        { "path": "../lowerdash" },
-        { "path": "../workspace" },
-        { "path": "../adapter-components" },
+        { "path": "../dag" },
         { "path": "../logging" },
-        { "path": "../parser" }
+        { "path": "../lowerdash" },
+        { "path": "../test-utils" },
     ]
 }

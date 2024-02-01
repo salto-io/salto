@@ -13,19 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element } from '@salto-io/adapter-api'
-import { parser } from '@salto-io/parser'
-
-export type ParsedNaclFileData = {
-  errors: () => Promise<parser.ParseError[] | undefined>
-  referenced: () => Promise<string[]>
-  staticFiles: () => Promise<string[]>
-}
-
-export type ParsedNaclFile = {
-  filename: string
-  elements: () => Promise<Element[] | undefined>
-  data: ParsedNaclFileData
-  buffer?: string
-  sourceMap?: () => Promise<parser.SourceMap | undefined>
-}
+export { parse, SourceRange, parseTopLevelID, tokenizeContent, Token } from './parse'
+export { ParseResult, ParseError } from './types'
+export { dumpElements, dumpElemID, dumpValues, dumpSingleAnnotationType, dumpAnnotationTypes } from './dump'
+export { SourceMap } from './source_map'
+export { Functions, FunctionExpression } from './functions'
+export { IllegalReference } from './internal/types'

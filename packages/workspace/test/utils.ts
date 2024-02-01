@@ -17,12 +17,16 @@ import _ from 'lodash'
 import { StaticFile, calculateStaticFileHash, isObjectType, TypeElement } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
+import { parser } from '@salto-io/parser'
 import { StaticFilesSource, MissingStaticFile } from '../src/workspace/static_files/common'
 import { File } from '../src/workspace/dir_store'
 import { RemoteMap, RemoteMapEntry, CreateRemoteMapParams, RemoteMapCreator } from '../src/workspace/remote_map'
 
 const { awu, toAsyncIterable } = collections.asynciterable
 const { isDefined } = values
+
+
+export class TestFuncImpl extends parser.FunctionExpression {}
 
 
 export const mockStaticFilesSource = (staticFiles: StaticFile[] = []): StaticFilesSource => ({

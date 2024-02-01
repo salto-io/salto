@@ -167,13 +167,7 @@ describe('SalesforceAdapter CRUD', () => {
             { [CORE_ANNOTATIONS.PARENT]:
               new ReferenceExpression(mockTypes.TestCustomObject__c.elemID, mockTypes.TestCustomObject__c) }
           )
-          workflowFieldUpdate = createInstanceElement(
-            {
-              ...mockDefaultValues.WorkflowFieldUpdate,
-              [INSTANCE_FULL_NAME_FIELD]: 'TestCustomObject__c.TestWorkflowFieldUpdate',
-            },
-            mockTypes.WorkflowFieldUpdate
-          )
+          workflowFieldUpdate = createInstanceElement(mockDefaultValues.WorkflowFieldUpdate, mockTypes.Workflow)
 
           connection.metadata.deploy.mockReturnValueOnce(mockDeployResult({
             success: false,
@@ -195,8 +189,8 @@ describe('SalesforceAdapter CRUD', () => {
               // WorkflowFieldUpdate failure
               {
                 componentType: 'WorkflowFieldUpdate',
-                fullName: 'TestCustomObject__c.TestWorkflowFieldUpdate',
-                problem: 'Some workflow field update error',
+                fullName: 'ChangeRequest.Update_Status_to_Authorised',
+                problem: 'Some workflow task error',
               },
             ],
           }))
@@ -231,11 +225,11 @@ describe('SalesforceAdapter CRUD', () => {
 
           expect(result.errors[1].severity).toEqual('Error' as SeverityLevel)
 
-          expect(result.errors[2]).toEqual({
-            message: expect.stringContaining('Some workflow field update error'),
-            severity: 'Error',
-            elemID: workflowFieldUpdate.elemID,
-          })
+          // WorkflowTask will not have an ElemID because on failure
+          //  we only return the sub-instance and not the wrapped instance
+          expect(result.errors[2].message).toContain('Some workflow task error')
+          expect(isSaltoElementError(result.errors[2])).toBeFalse()
+          expect(result.errors[2].severity).toEqual('Error' as SeverityLevel)
         })
       })
 

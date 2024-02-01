@@ -15,6 +15,7 @@
 */
 import {
   DependencyChanger, isInstanceChange, getChangeData, ElemID, Change, InstanceElement, DependencyChange, ChangeId,
+  isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { isInstanceOfCustomObjectSync } from './filters/utils'
@@ -43,8 +44,11 @@ const generateInstanceToTypeDep = (
 }
 
 const dataRecordToAssociatedType: DependencyChanger = async changes => {
+  // Note that we don't handle removal yet. We should probably create a reverse dependency to ensure we delete all
+  // records before we delete their type.
   const instanceChanges: [ChangeId, Change<InstanceElement>][] = Array.from(changes.entries())
     .filter(([, change]) => isInstanceChange(change))
+    .filter(([, change]) => isAdditionOrModificationChange((change)))
     .filter(([, change]) => (
       isInstanceOfCustomObjectSync(getChangeData(change))
     )) as [ChangeId, Change<InstanceElement>][]

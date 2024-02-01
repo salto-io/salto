@@ -63,16 +63,8 @@ describe('Dependency Changer', () => {
       changes = createChangeMapFromChanges([typeChange, instanceChange])
       deps = Array.from(await dependencyChanger(changes, new Map()))
     })
-    it('should create a dep', () => {
-      expect(deps).toEqual([
-        {
-          action: 'add',
-          dependency: {
-            source: createChangeId(instanceChange),
-            target: createChangeId(typeChange),
-          },
-        },
-      ])
+    it('should not create a dep', () => {
+      expect(deps).toBeEmpty()
     })
   })
   describe('if the change is instance addition', () => {

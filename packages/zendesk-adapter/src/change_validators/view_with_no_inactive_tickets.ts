@@ -52,7 +52,7 @@ export const viewWithNoInactiveTicketsValidator: ChangeValidator = async (change
       const deactivatedTicketsReferenced: string[] = conditions
         .filter((condition: { field: string }) => condition.field === 'ticket_form_id')
         .filter(
-          (condition: { value: ReferenceExpression }) => 
+          (condition: { value: ReferenceExpression }) =>
             deactivatedTicketFormIDs
               .find(inactiveElemID => inactiveElemID.isEqual(condition.value.elemID)) !== undefined
         )

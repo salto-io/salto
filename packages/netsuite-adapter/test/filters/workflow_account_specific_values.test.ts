@@ -80,6 +80,10 @@ describe('workflow account specific values filter', () => {
           },
         }
       ),
+      new InstanceElement(
+        'partner',
+        suiteQLTableType,
+      ),
     ]
     customRecordType = new ObjectType({
       elemID: new ElemID(NETSUITE, 'customrecord123'),

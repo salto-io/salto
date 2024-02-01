@@ -18,8 +18,7 @@ import {
   isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
-import { isInstanceOfCustomObjectSync } from './filters/utils'
-import { isCustomObject } from './transformers/transformer'
+import { isInstanceOfCustomObjectSync, isCustomObjectSync } from './filters/utils'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
@@ -46,22 +45,22 @@ const generateInstanceToTypeDep = (
 const dataRecordToAssociatedType: DependencyChanger = async changes => {
   // Note that we don't handle removal yet. We should probably create a reverse dependency to ensure we delete all
   // records before we delete their type.
-  const instanceChanges: [ChangeId, Change<InstanceElement>][] = Array.from(changes.entries())
+  const customObjectInstanceChanges: [ChangeId, Change<InstanceElement>][] = Array.from(changes.entries())
     .filter(([, change]) => isInstanceChange(change))
     .filter(([, change]) => isAdditionOrModificationChange((change)))
     .filter(([, change]) => (
       isInstanceOfCustomObjectSync(getChangeData(change))
     )) as [ChangeId, Change<InstanceElement>][]
   const typeChanges = Array.from(changes.entries())
-    .filter(([, change]) => isCustomObject(getChangeData(change)))
-  const typeToChangeIdMap = new Map<ElemID, ChangeId>(typeChanges
+    .filter(([, change]) => isCustomObjectSync(getChangeData(change)))
+  const typeElemIdToChangeIdMap = new Map<ElemID, ChangeId>(typeChanges
     .map(([changeId, change]) => [getChangeData(change).elemID, changeId]))
 
-  return instanceChanges
+  return customObjectInstanceChanges
     .map(instanceChange => generateInstanceToTypeDep(
       instanceChange[0],
       getChangeData(instanceChange[1]),
-      typeToChangeIdMap
+      typeElemIdToChangeIdMap
     ))
     .filter(isDefined)
 }

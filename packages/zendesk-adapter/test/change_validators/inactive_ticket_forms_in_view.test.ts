@@ -20,8 +20,10 @@ import {
   toChange, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+// eslint-disable-next-line no-restricted-imports
+import { Condition } from 'src/filters/utils'
 import { TICKET_FORM_TYPE_NAME, VIEW_TYPE_NAME, ZENDESK } from '../../src/constants'
-import { viewWithNoInactiveTicketsValidator } from '../../src/change_validators'
+import { inactiveTicketFormInViewValidator } from '../../src/change_validators'
 
 const createTicketForm = (name: string, active: boolean): InstanceElement => new InstanceElement(
   name,
@@ -29,22 +31,26 @@ const createTicketForm = (name: string, active: boolean): InstanceElement => new
   { active },
 )
 
-const createViewWithTicketFormCondition = (name: string, ticketForms: ElemID[]): InstanceElement => new InstanceElement(
+const createViewWithConditions = (name: string, conditions: Condition[]): InstanceElement => new InstanceElement(
   name,
   new ObjectType({ elemID: new ElemID(ZENDESK, VIEW_TYPE_NAME) }),
   {
-    conditions:
-    {
-      all: ticketForms
-        .map(form =>
-          ({
-            field: 'ticket_form_id',
-            operator: 'is',
-            value: new ReferenceExpression(form),
-          })),
+    conditions: {
+      all: conditions,
     },
   }
 )
+
+const createViewWithTicketFormCondition = (name: string, ticketForms: ElemID[]): InstanceElement => {
+  const ticketConditions = ticketForms
+    .map(form =>
+      ({
+        field: 'ticket_form_id',
+        operator: 'is',
+        value: new ReferenceExpression(form),
+      }))
+  return createViewWithConditions(name, ticketConditions)
+}
 
 describe('viewWithNoInactiveTicketsValidator', () => {
   let deactivatedTicketForm: InstanceElement
@@ -61,32 +67,53 @@ describe('viewWithNoInactiveTicketsValidator', () => {
     const changes = [
       toChange({ after: viewWithDeactivatedTicket }),
     ]
-    const errors = await viewWithNoInactiveTicketsValidator(changes, elementsSource)
+    const errors = await inactiveTicketFormInViewValidator(changes, elementsSource)
 
-    expect(errors[0]).toEqual({
+    expect(errors).toEqual([{
       elemID: viewWithDeactivatedTicket.elemID,
       severity: 'Error',
-      message: 'Deactivated Ticket Forms linked to a view',
+      message: 'View uses deactivated ticket forms',
       detailedMessage: `Deactivated ticket forms cannot be used in the conditions of a view. The Deactivated forms used are: ${deactivatedTicketForm.elemID.name}`,
-    })
+    }])
   })
-  it('should return an error when  view is changed and a ticket form referenced in a condition is changed to be deactivated', async () => {
-    const activeTicketFormDeactivated = activeTicketForm.clone()
-    activeTicketFormDeactivated.value.active = false
 
-    const elementsSource = buildElementsSourceFromElements([deactivatedTicketForm, activeTicketFormDeactivated])
+  it('should have no errors when all ticket forms are active', async () => {
+    const deactivatedTicketFormActivated = deactivatedTicketForm.clone()
+    deactivatedTicketFormActivated.value.active = true
 
+    const elementsSource = buildElementsSourceFromElements([activeTicketForm, deactivatedTicketFormActivated])
     const changes = [
       toChange({ after: viewWithDeactivatedTicket }),
-      toChange({ before: activeTicketForm, after: activeTicketFormDeactivated }),
     ]
-    const errors = await viewWithNoInactiveTicketsValidator(changes, elementsSource)
+    const errors = await inactiveTicketFormInViewValidator(changes, elementsSource)
 
-    expect(errors[0]).toEqual({
-      elemID: viewWithDeactivatedTicket.elemID,
-      severity: 'Error',
-      message: 'Deactivated Ticket Forms linked to a view',
-      detailedMessage: `Deactivated ticket forms cannot be used in the conditions of a view. The Deactivated forms used are: ${[deactivatedTicketForm.elemID.name, activeTicketFormDeactivated.elemID.name].join(', ')}`,
-    })
+    expect(errors).toEqual([])
+  })
+  it('should have no errors when there are no ticket forms in the conditions field', async () => {
+    const dummyConditions = [
+      {
+        field: 'requester_id',
+        operator: 'is',
+        value: 'current_user',
+      },
+      {
+        field: 'assignee_id',
+        operator: 'is_not',
+        value: 'requester_id',
+      },
+
+    ]
+    const viewWithNonTicketConditions = createViewWithConditions('viewWithNoTickets', dummyConditions)
+
+    const elementsSource = buildElementsSourceFromElements(
+      [deactivatedTicketForm, activeTicketForm, viewWithNonTicketConditions]
+    )
+
+    const changes = [
+      toChange({ after: viewWithNonTicketConditions }),
+    ]
+    const errors = await inactiveTicketFormInViewValidator(changes, elementsSource)
+
+    expect(errors).toEqual([])
   })
 })

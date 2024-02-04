@@ -15,17 +15,33 @@
 */
 import _ from 'lodash'
 import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
-import { ChangeValidator, ReferenceExpression, getChangeData,
+
+import { ChangeValidator, ReferenceExpression, Value, getChangeData,
   isAdditionOrModificationChange,
-  isInstanceChange } from '@salto-io/adapter-api'
+  isInstanceChange,
+  isReferenceExpression } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+
 import { VIEW_TYPE_NAME, TICKET_FORM_TYPE_NAME } from '../constants'
 
 const log = logger(module)
 
-export const viewWithNoInactiveTicketsValidator: ChangeValidator = async (changes, elementSource) => {
+type ConditionWithReferenceValue = {
+  field: string
+  value: ReferenceExpression
+}
+
+const isConditionWithReference = (instance: Value): instance is ConditionWithReferenceValue =>
+  _.isString(instance.field)
+  && isReferenceExpression(instance.value)
+
+/*
+ * This change validator checks that a user does not reference deactivated
+ * Ticket Forms from within a View's conditions
+ */
+export const inactiveTicketFormInViewValidator: ChangeValidator = async (changes, elementSource) => {
   if (elementSource === undefined) {
-    log.error('Failed to run dynamicContentDeletionValidator because element source is undefined')
+    log.error('Failed to run inactiveTicketFormInViewValidator because element source is undefined')
     return []
   }
 
@@ -33,39 +49,41 @@ export const viewWithNoInactiveTicketsValidator: ChangeValidator = async (change
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
     .filter(change => getChangeData(change).elemID.typeName === VIEW_TYPE_NAME)
+    .filter(change => getChangeData(change).value?.conditions !== undefined)
+    .map(getChangeData)
 
   if (changedViews.length === 0) {
     return []
   }
 
   const existingTicketFormInstances = await getInstancesFromElementSource(elementSource, [TICKET_FORM_TYPE_NAME])
-  const deactivatedTicketFormIDs = existingTicketFormInstances
-    .filter(ticketForm => ticketForm.value.active === false).map(form => form.elemID)
-
+  const deactivatedTicketFormIDs = new Set(existingTicketFormInstances
+    .filter(ticketForm => ticketForm.value.active === false)
+    .map(form => form.elemID.getFullName()))
 
   return changedViews
-    .flatMap(change => {
-      const conditions = (change.data.after.value?.conditions?.all || [])
-        .concat((change.data.after.value?.conditions?.any || []))
+    .flatMap(instance => {
+      const conditions = (
+        (instance.value.conditions.all ?? []).concat((instance.value.conditions.any ?? []))
+      )
 
       // cross-reference deactivated ticket forms with conditions in the view
       const deactivatedTicketsReferenced: string[] = conditions
-        .filter((condition: { field: string }) => condition.field === 'ticket_form_id')
+        .filter(isConditionWithReference)
+        .filter((condition: ConditionWithReferenceValue) => condition.field === 'ticket_form_id')
         .filter(
-          (condition: { value: ReferenceExpression }) =>
-            deactivatedTicketFormIDs
-              .find(inactiveElemID => inactiveElemID.isEqual(condition.value.elemID)) !== undefined
+          (condition: ConditionWithReferenceValue) => deactivatedTicketFormIDs.has(condition.value.elemID.getFullName())
         )
-        .map((condition: { value: ReferenceExpression }) => condition.value.elemID.name)
+        .map((condition: ConditionWithReferenceValue) => condition.value.elemID.name)
 
       if (deactivatedTicketsReferenced.length === 0) {
         return []
       }
 
       return {
-        elemID: change.data.after.elemID,
+        elemID: instance.elemID,
         severity: 'Error',
-        message: 'Deactivated Ticket Forms linked to a view',
+        message: 'View uses deactivated ticket forms',
         detailedMessage: `Deactivated ticket forms cannot be used in the conditions of a view. The Deactivated forms used are: ${_.uniq(deactivatedTicketsReferenced).join(', ')}`,
       }
     })

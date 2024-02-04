@@ -66,7 +66,7 @@ describe('organizations filter', () => {
     let filter: FilterType
     beforeEach(async () => {
       jest.clearAllMocks()
-      mockGet = jest.spyOn(client, 'getSinglePage')
+      mockGet = jest.spyOn(client, 'get')
       const config = { ...DEFAULT_CONFIG }
       config[FETCH_CONFIG].resolveOrganizationIDs = true
       filter = filterCreator(
@@ -203,7 +203,7 @@ describe('organizations filter', () => {
     let filter: FilterType
     beforeEach(async () => {
       jest.clearAllMocks()
-      mockGet = jest.spyOn(client, 'getSinglePage')
+      mockGet = jest.spyOn(client, 'get')
       const config = { ...DEFAULT_CONFIG }
       config[FETCH_CONFIG].resolveOrganizationIDs = false
       filter = filterCreator(
@@ -283,7 +283,7 @@ describe('organizations filter', () => {
 
     beforeEach(() => {
       jest.clearAllMocks()
-      mockGet = jest.spyOn(client, 'getSinglePage')
+      mockGet = jest.spyOn(client, 'get')
       mockPost = jest.spyOn(client, 'post')
     })
     describe('getOrCreateOrganizationsByNames', () => {

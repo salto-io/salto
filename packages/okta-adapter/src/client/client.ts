@@ -128,7 +128,7 @@ export const updateRateLimits = (
   const updatedRateLimitReset = Number(headers['x-rate-limit-reset'])
   const updateMaxPerMinute = Number(headers['x-rate-limit-limit'])
   if (!_.isFinite(updatedRateLimitRemaining) || !_.isFinite(updatedRateLimitReset) || !_.isFinite(updateMaxPerMinute)) {
-    log.warn(`Invalid getSinglePage response headers for url: ${url}, remaining: ${updatedRateLimitRemaining}, reset: ${updatedRateLimitReset}`)
+    log.warn(`Invalid get response headers for url: ${url}, remaining: ${updatedRateLimitRemaining}, reset: ${updatedRateLimitReset}`)
     return
   }
   // If this is a new limitation, reset the remaining count
@@ -180,11 +180,11 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
 
   private shouldUseDynamicRateLimit = (): boolean => this.rateLimitBuffer !== UNLIMITED_MAX_REQUESTS_PER_MINUTE
 
-  // This getSinglePage tracks the number of running requests per endpoint, with their rate limits and reset times
+  // This get tracks the number of running requests per endpoint, with their rate limits and reset times
   // It Pauses new requests when running requests approach the rate limit, factoring in a buffer
   // Then it resumes when the rate limit resets.
   // For more information: SALTO-4350
-  public async getSinglePage(
+  public async get(
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
     const rateLimits = this.rateLimits.find(({ url }) => args.url.match(url))?.limits ?? this.defaultRateLimits
@@ -197,7 +197,7 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
     }
     try {
       rateLimits.currentlyRunning += 1
-      const res = await super.getSinglePage(args)
+      const res = await super.get(args)
       if (res.headers && this.shouldUseDynamicRateLimit()) {
         updateRateLimits(rateLimits, res.headers, args.url)
       }

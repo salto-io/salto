@@ -65,7 +65,7 @@ const getExsitingQueuesNamesAndIds = async (
 ):Promise<string[][]> => {
   try {
     const parent = getParent(getChangeData(changes[0]))
-    const response = await client.getSinglePage({
+    const response = await client.get({
       url: `/rest/servicedeskapi/servicedesk/projectId:${parent.value.id}/queue`,
     })
     if (!isQueueResponse(response.data)) {

@@ -30,7 +30,7 @@ const isOktaOrgResponse = (value: unknown): value is OktaOrgResponse => _.isObje
  */
 export const isClassicEngineOrg = async (oktaClient: OktaClient): Promise<boolean> => {
   try {
-    const { data } = await oktaClient.getSinglePage({ url: '/.well-known/okta-organization' })
+    const { data } = await oktaClient.get({ url: '/.well-known/okta-organization' })
     if (!isOktaOrgResponse(data)) {
       log.debug('Recived invalid response when trying to determine org type')
       return false

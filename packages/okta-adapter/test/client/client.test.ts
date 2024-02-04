@@ -39,13 +39,13 @@ describe('client', () => {
     mockAxios.restore()
   })
 
-  describe('getSinglePage', () => {
+  describe('get', () => {
     let result: clientUtils.ResponseValue
     beforeEach(async () => {
       // The first replyOnce with 200 is for the client authentication
       mockAxios.onGet('/api/v1/org').replyOnce(200, { id: 1 })
         .onGet('/myPath').replyOnce(200, { response: 'asd' })
-      result = await client.getSinglePage({ url: '/myPath' })
+      result = await client.get({ url: '/myPath' })
     })
     it('should return the response', () => {
       expect(result).toEqual({ status: 200, data: { response: 'asd' } })
@@ -60,14 +60,14 @@ describe('client', () => {
       mockAxios
         .onGet('/api/v1/meta/schemas/apps/0oa6e1b1916fcAiWq5d7/default')
         .replyOnce(404)
-      result = await client.getSinglePage({ url: '/api/v1/meta/schemas/apps/0oa6e1b1916fcAiWq5d7/default' })
+      result = await client.get({ url: '/api/v1/meta/schemas/apps/0oa6e1b1916fcAiWq5d7/default' })
       expect(result.data).toEqual([])
     })
     it('should return empty array for 410 errors', async () => {
       mockAxios
         .onGet('/api/v1/deprecated')
         .replyOnce(410)
-      result = await client.getSinglePage({ url: '/api/v1/deprecated' })
+      result = await client.get({ url: '/api/v1/deprecated' })
       expect(result.data).toEqual([])
     })
   })
@@ -78,8 +78,8 @@ describe('client', () => {
     let updateRateLimitsSpy: jest.SpyInstance
     beforeEach(() => {
       jest.restoreAllMocks()
-      oktaGetSinglePageSpy = jest.spyOn(client, 'getSinglePage')
-      clientGetSinglePageSpy = jest.spyOn(clientUtils.AdapterHTTPClient.prototype, 'getSinglePage')
+      oktaGetSinglePageSpy = jest.spyOn(client, 'get')
+      clientGetSinglePageSpy = jest.spyOn(clientUtils.AdapterHTTPClient.prototype, 'get')
       waitSpy = jest.spyOn(clientModule, 'waitForRateLimit')
       updateRateLimitsSpy = jest.spyOn(clientModule, 'updateRateLimits')
     })
@@ -100,7 +100,7 @@ describe('client', () => {
 
       const requests = Array(6).fill(0).map((_, i) => `/api/v1/org${i}`)
 
-      const promise = requests.map(async request => client.getSinglePage({ url: request }))
+      const promise = requests.map(async request => client.get({ url: request }))
       await Promise.all(promise)
 
       // all enter, 5 wait and 1 continue, 1 wait and 4 continue, 1 continue
@@ -133,11 +133,11 @@ describe('client', () => {
           'x-rate-limit-limit': 100,
         },
       }))
-      const firstRequest = client.getSinglePage({ url: '/api/v1/org1' })
-      const secondRequest = client.getSinglePage({ url: '/api/v1/org2' })
-      const thirdRequest = client.getSinglePage({ url: '/api/v1/org3' })
+      const firstRequest = client.get({ url: '/api/v1/org1' })
+      const secondRequest = client.get({ url: '/api/v1/org2' })
+      const thirdRequest = client.get({ url: '/api/v1/org3' })
       await firstRequest
-      const forthRequest = client.getSinglePage({ url: '/api/v1/org4' })
+      const forthRequest = client.get({ url: '/api/v1/org4' })
       await Promise.all([secondRequest, thirdRequest, forthRequest])
 
       // The first request should enter immediately while the second and third wait for the first to finish
@@ -166,7 +166,7 @@ describe('client', () => {
         })
       })
 
-      const promise = requests.map(async request => unlimitedClient.getSinglePage({ url: request }))
+      const promise = requests.map(async request => unlimitedClient.get({ url: request }))
       await Promise.all(promise)
 
       expect(waitSpy).toHaveBeenCalledTimes(0)
@@ -188,7 +188,7 @@ describe('client', () => {
         })
       })
 
-      const promise = requests.map(async request => unlimitedClient.getSinglePage({ url: request }))
+      const promise = requests.map(async request => unlimitedClient.get({ url: request }))
       await Promise.all(promise)
 
       // 1 enter and 4 wait, then 3 enter and 1 wait
@@ -230,11 +230,11 @@ describe('client', () => {
         .replyOnce(200, usersRes, { h: 'abc' })
     })
     it('should return response data with no secrets and only the relevant headers', async () => {
-      const firstRes = await client.getSinglePage({ url: '/api/v1/idps' })
+      const firstRes = await client.get({ url: '/api/v1/idps' })
       expect(firstRes).toEqual({ status: 200, data: idpsResponse, headers: { } })
-      const secondRes = await client.getSinglePage({ url: '/api/v1/authenticators' })
+      const secondRes = await client.get({ url: '/api/v1/authenticators' })
       expect(secondRes).toEqual({ status: 200, data: autheticatorsRes, headers: { link: 'aaa', 'x-rate-limit': '456', 'x-rate-limit-remaining': '456' } })
-      const thirdRes = await client.getSinglePage({ url: '/api/v1/users' })
+      const thirdRes = await client.get({ url: '/api/v1/users' })
       expect(thirdRes).toEqual({ status: 200, data: usersRes, headers: { } })
       expect(clearValuesFromResponseDataFunc).toHaveBeenCalledTimes(3)
       expect(clearValuesFromResponseDataFunc).toHaveNthReturnedWith(1,

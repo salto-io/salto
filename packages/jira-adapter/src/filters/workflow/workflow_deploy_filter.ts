@@ -58,7 +58,7 @@ const getTransitionsFromService = async (
   client: JiraClient,
   workflowName: string,
 ): Promise<Transition[]> => {
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url: '/rest/api/3/workflow/search',
     queryParams: {
       expand: 'transitions',
@@ -172,7 +172,7 @@ const getWorkflowIdFromService = async (
   client: JiraClient,
   workflowName: string,
 ): Promise<string | undefined> => {
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url: '/rest/api/3/workflow/search',
     queryParams: {
       workflowName,

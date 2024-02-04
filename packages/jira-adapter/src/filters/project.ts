@@ -134,7 +134,7 @@ const COMPONENTS_RESPONSE_SCHEME = Joi.object({
 const isComponentsResponse = createSchemeGuard<ComponentsResponse>(COMPONENTS_RESPONSE_SCHEME, 'Received an invalid project component response')
 
 const getProjectComponentIds = async (projectId: number, client: JiraClient): Promise<string[]> => {
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url: `/rest/api/3/project/${projectId}`,
   })
 
@@ -158,7 +158,7 @@ const isIdResponse = createSchemeGuard<{ id: string }>(Joi.object({
 }).unknown(true).required(), 'Received an invalid project id response')
 
 const getProjectId = async (projectKey: string, client: JiraClient): Promise<string> => {
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url: `/rest/api/3/project/${projectKey}`,
   })
 
@@ -188,7 +188,7 @@ const deleteFieldConfigurationScheme = async (
   client: JiraClient,
 ): Promise<void> => {
   const instance = await resolveValues(getChangeData(change), getLookUpName)
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url: `/rest/api/3/fieldconfigurationscheme/project?projectId=${instance.value.id}`,
   })
 

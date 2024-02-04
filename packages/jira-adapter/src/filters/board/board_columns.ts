@@ -51,7 +51,7 @@ const BOARD_CONFIG_RESPONSE_SCHEME = Joi.object({
 const isBoardConfigResponse = createSchemeGuard<BoardConfigResponse>(BOARD_CONFIG_RESPONSE_SCHEME, 'Received an invalid board config response')
 
 const getColumnsName = async (id: string, client: JiraClient): Promise<string[] | undefined> => {
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url: `/rest/agile/1.0/board/${id}/configuration`,
   })
 

@@ -45,7 +45,7 @@ const getTimeTracking = async (
   instance: InstanceElement,
   client: JiraClient,
 ): Promise<string | undefined> => {
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url: `/rest/greenhopper/1.0/rapidviewconfig/estimation?rapidViewId=${instance.value.id}`,
   })
 

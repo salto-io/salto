@@ -58,7 +58,7 @@ const isJobStatus = (value: unknown): value is JobStatus => {
 const checkIfJobIsDone = async (
   client: ZendeskClient, jobId: string, change: Change
 ): Promise<boolean> => {
-  const res = (await client.getSinglePage({ url: `/api/v2/apps/job_statuses/${jobId}` })).data
+  const res = (await client.get({ url: `/api/v2/apps/job_statuses/${jobId}` })).data
   if (!isJobStatus(res)) {
     throw createSaltoElementError({ // caught by deployChanges
       message: `Got an invalid response for job status. Job ID: ${jobId}`,

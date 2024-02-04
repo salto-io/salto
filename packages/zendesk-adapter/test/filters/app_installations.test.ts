@@ -92,7 +92,7 @@ describe('app installation filter', () => {
       const id = 2
       const clonedApp = app.clone()
       mockDeployChange.mockImplementation(async () => ({ id, pending_job_id: '123' }))
-      mockGet = jest.spyOn(client, 'getSinglePage')
+      mockGet = jest.spyOn(client, 'get')
       mockGet.mockResolvedValue({ status: 200, data: { status: 'completed' } })
       const res = await filter.deploy([{ action: 'add', data: { after: clonedApp } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
@@ -159,7 +159,7 @@ describe('app installation filter', () => {
       const id = 2
       const clonedApp = app.clone()
       mockDeployChange.mockImplementation(async () => ({ id, pending_job_id: '123' }))
-      mockGet = jest.spyOn(client, 'getSinglePage')
+      mockGet = jest.spyOn(client, 'get')
       mockGet.mockImplementation(async () => {
         throw createSaltoElementError({
           message: 'err',
@@ -187,7 +187,7 @@ describe('app installation filter', () => {
       const id = 2
       const clonedApp = app.clone()
       mockDeployChange.mockImplementation(async () => ({ id, pending_job_id: '123' }))
-      mockGet = jest.spyOn(client, 'getSinglePage')
+      mockGet = jest.spyOn(client, 'get')
       mockGet.mockResolvedValue({ status: 200, data: { status: 'failed' } })
       const res = await filter.deploy([{ action: 'add', data: { after: clonedApp } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
@@ -209,7 +209,7 @@ describe('app installation filter', () => {
       const id = 2
       const clonedApp = app.clone()
       mockDeployChange.mockImplementation(async () => ({ id }))
-      mockGet = jest.spyOn(client, 'getSinglePage')
+      mockGet = jest.spyOn(client, 'get')
       mockGet.mockResolvedValue({ status: 200, data: { status: 'failed' } })
       const res = await filter.deploy([{ action: 'add', data: { after: clonedApp } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)

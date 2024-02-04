@@ -108,7 +108,7 @@ const isValidAuditResWithCount = (res: unknown): res is ValidAuditResWithCount =
 
 const getLastAuditTime = async (client: ZendeskClient): Promise<string | undefined> => {
   try {
-    const res = (await client.getSinglePage({
+    const res = (await client.get({
       url: '/api/v2/audit_logs',
       queryParams: {
         'page[size]': '1',
@@ -120,9 +120,9 @@ const getLastAuditTime = async (client: ZendeskClient): Promise<string | undefin
       return res.audit_logs[0].created_at
     }
   } catch (e) {
-    log.error(`could not get the last audit_log, getSinglePage returned an error'. error: ${e}`)
+    log.error(`could not get the last audit_log, get returned an error'. error: ${e}`)
   }
-  log.error('could not get the last audit_log, the result of getSinglePage was not valid.')
+  log.error('could not get the last audit_log, the result of get was not valid.')
   return undefined
 }
 
@@ -181,7 +181,7 @@ const getChangedByName = async ({
         'filter[source_id]': id,
         'filter[created_at]': [start, end],
       }
-    const res = (await client.getSinglePage({
+    const res = (await client.get({
       url: '/api/v2/audit_logs',
       queryParams,
     })).data
@@ -192,9 +192,9 @@ const getChangedByName = async ({
       }
       return res.audit_logs[0].actor_name
     }
-    log.error(`could not get the audit_log for instance ${instance.elemID.getFullName()} with id ${id}, the result of getSinglePage was not valid.`)
+    log.error(`could not get the audit_log for instance ${instance.elemID.getFullName()} with id ${id}, the result of get was not valid.`)
   } catch (e) {
-    log.error(`could not get the audit_log for instance ${instance.elemID.getFullName()} with id ${id}, getSinglePage returned an error'. error: ${e}`)
+    log.error(`could not get the audit_log for instance ${instance.elemID.getFullName()} with id ${id}, get returned an error'. error: ${e}`)
   }
   return undefined
 }
@@ -265,7 +265,7 @@ const addChangedByUsingUpdatedById = (instances: InstanceElement[], idToName: Re
 const calculateLogNumber = async (client: ZendeskClient): Promise<string> => {
   // we do not use cursor base pagination as the field 'count' would not exist
   try {
-    const res = (await client.getSinglePage({
+    const res = (await client.get({
       url: '/api/v2/audit_logs',
     })).data
     if (isValidAuditResWithCount(res)) {

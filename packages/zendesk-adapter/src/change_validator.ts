@@ -81,6 +81,7 @@ import {
   conditionalTicketFieldsValidator,
   dynamicContentDeletionValidator,
   guideThemeReadonlyValidator,
+  dynamicContentPlaceholderModificationValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ChangeValidatorName, ZendeskDeployConfig, ZendeskFetchConfig, ZendeskConfig } from './config'
@@ -163,6 +164,7 @@ export default ({
     guideThemeUpdateMetadata: guideThemeUpdateMetadataValidator,
     additionOfTicketStatusForTicketForm: additionOfTicketStatusForTicketFormValidator,
     defaultDynamicContentItemVariant: defaultDynamicContentItemVariantValidator,
+    dynamicContentPlaceholderModification: dynamicContentPlaceholderModificationValidator,
     featureActivation: featureActivationValidator,
     deflectionAction: activeActionFeaturesValidator,
     standardFields: standardFieldsValidator,

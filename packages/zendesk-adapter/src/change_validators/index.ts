@@ -79,3 +79,4 @@ export { notEnabledMissingReferencesValidator } from './not_enabled_missing_refe
 export { conditionalTicketFieldsValidator } from './conditional_ticket_fields'
 export { dynamicContentDeletionValidator } from './dynamic_content_deletion'
 export { guideThemeReadonlyValidator } from './guide_theme_readonly'
+export { dynamicContentPlaceholderModificationValidator } from './dynamic_content_placeholder_modification'

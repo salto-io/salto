@@ -20,6 +20,7 @@ import { DependencyDirection } from '@salto-io/adapter-utils'
 import { addReferencesForService, FormulaReferenceFinder, MappedReference, ReferenceFinder, createMatcher, Matcher, getBlockDependencyDirection } from '../reference_finders'
 import { JiraIndex } from './element_index'
 import { isJiraBlock, JiraBlock } from './recipe_block_types'
+import { defaultAddMatchReferences, dependencyFinder, isConditionsFullBlock } from '../recipe_conditions'
 
 const { isDefined } = lowerdashValues
 
@@ -120,11 +121,37 @@ export const addJiraRecipeReferences = async (
     }).filter(isDefined)
   }
 
+  const getItemsOfMatchingField = (
+    items: Readonly<InstanceElement>[], regexExp: RegExp, lhs: string
+  ) : { key: string; elem: ElemID }[] => {
+    const itemMatcher = createMatcher(
+      [regexExp],
+      isJiraFieldMatchGroup,
+    )
+    const itemMatch = itemMatcher(lhs)
+
+    return itemMatch.length === 1
+      ? items.map(item => ({ key: item.value[itemMatch[0]?.field], elem: item.elemID }))
+      : []
+  }
+
+  const lhsToDependencies: dependencyFinder = lhs => {
+    const matchProjects = getItemsOfMatchingField(indexedElements.conditionOptionalDependencies.projects,
+      new RegExp(`\\('data\\.${appName}\\.[^\\)]*?\\.fields\\.project\\.(?<field>\\w+)[^\\)]*?'\\)`, 'g'),
+      lhs)
+    const matchIssueTypes = getItemsOfMatchingField(indexedElements.conditionOptionalDependencies.issueTypes,
+      new RegExp(`\\('data\\.${appName}\\.[^\\)]*?\\.fields\\.issuetype\\.(?<field>\\w+)[^\\)]*?'\\)`, 'g'),
+      lhs)
+    return [...matchProjects, ...matchIssueTypes]
+  }
+
   return addReferencesForService<JiraBlock>(
     inst,
     appName,
     isJiraBlock,
     referenceFinder,
     formulaReferenceFinder,
+    isConditionsFullBlock,
+    defaultAddMatchReferences(lhsToDependencies),
   )
 }

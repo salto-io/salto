@@ -20,6 +20,7 @@ export type JiraIndex = {
   projectByKey: Record<string, Readonly<InstanceElement>>
   issueTypeByName: Record<string, Readonly<InstanceElement>>
   fieldById: Record<string, ElemID>
+  conditionOptionalDependencies: Record<string, Readonly<InstanceElement>[]>
 }
 
 const toKey = (element: Readonly<Element>): string | undefined => (
@@ -40,13 +41,16 @@ const toId = (element: Readonly<Element>): string | undefined => (
 export const indexJira = (
   elements: ReadonlyArray<Readonly<Element>>
 ): JiraIndex => {
+  const projects = elements.filter(isInstanceElement).filter(inst => inst.elemID.typeName === 'Project')
+  const issueTypes = elements.filter(isInstanceElement).filter(inst => inst.elemID.typeName === 'IssueType')
+
   const indexProjectsByKey = _.keyBy(
-    elements.filter(isInstanceElement).filter(inst => inst.elemID.typeName === 'Project').filter(inst => toKey(inst) !== undefined),
+    projects.filter(inst => toKey(inst) !== undefined),
     inst => toKey(inst) as string,
   )
 
   const indexIssueTypesByName = _.keyBy(
-    elements.filter(isInstanceElement).filter(inst => inst.elemID.typeName === 'IssueType').filter(inst => issueTypeToName(inst) !== undefined),
+    issueTypes.filter(inst => issueTypeToName(inst) !== undefined),
     inst => issueTypeToName(inst) as string,
   )
 
@@ -63,5 +67,9 @@ export const indexJira = (
     issueTypeByName: indexIssueTypesByName,
     projectByKey: indexProjectsByKey,
     fieldById: indexFieldsById,
+    conditionOptionalDependencies: {
+      projects,
+      issueTypes,
+    },
   }
 }

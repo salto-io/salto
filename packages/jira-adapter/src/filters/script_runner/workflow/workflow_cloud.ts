@@ -175,12 +175,12 @@ const transformConfigValueV2 = (typeMap: TypeToCodeFuncMap): WalkOnFunc => (
   })
 
 
-export const decodeCloudFields = (enableNewWorkflowAPI?: boolean): WalkOnFunc =>
+export const decodeCloudFields = (enableNewWorkflowAPI: boolean): WalkOnFunc =>
   (enableNewWorkflowAPI
     ? transformConfigValueV2(typeToDecodeFuncMap)
     : transformConfigValue(typeToDecodeFuncMap))
 
-export const encodeCloudFields = (enableNewWorkflowAPI?: boolean): WalkOnFunc =>
+export const encodeCloudFields = (enableNewWorkflowAPI: boolean): WalkOnFunc =>
   (enableNewWorkflowAPI
     ? transformConfigValueV2(typeToEncodeFuncMap)
     : transformConfigValue(typeToEncodeFuncMap))

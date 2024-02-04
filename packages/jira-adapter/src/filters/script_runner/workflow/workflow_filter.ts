@@ -103,7 +103,7 @@ const filter: FilterCreator = ({ client, config }) => ({
           value: instance.value.transitions,
           func: client.isDataCenter
             ? decodeDcFields
-            : decodeCloudFields(config.fetch.enableNewWorkflowAPI) })
+            : decodeCloudFields(config.fetch.enableNewWorkflowAPI ?? false) })
       })
 
     addObjectTypes(elements)
@@ -123,7 +123,7 @@ const filter: FilterCreator = ({ client, config }) => ({
           value: instance.value.transitions,
           func: client.isDataCenter
             ? encodeDcFields
-            : encodeCloudFields(config.fetch.enableNewWorkflowAPI) })
+            : encodeCloudFields(config.fetch.enableNewWorkflowAPI ?? false) })
       })
   },
   onDeploy: async changes => {
@@ -141,7 +141,7 @@ const filter: FilterCreator = ({ client, config }) => ({
           value: instance.value.transitions,
           func: client.isDataCenter
             ? decodeDcFields
-            : decodeCloudFields(config.fetch.enableNewWorkflowAPI) })
+            : decodeCloudFields(config.fetch.enableNewWorkflowAPI ?? false) })
       })
   },
 })

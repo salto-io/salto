@@ -184,64 +184,67 @@ describe('ScriptRunner cloud Workflow', () => {
           expect(workflowV2Instance.value.transitions[0].actions[0].parameters.scriptRunner).toBeUndefined()
         })
       })
-      it('should change field name to scriptRunner', async () => {
-        await filter.onFetch([workflowInstance])
-        expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner).toBeDefined()
-        expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value).toBeUndefined()
-      })
-      it('should make array of accountIds and groups', async () => {
-        workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value = accountAndGroupB64
-        await filter.onFetch([workflowInstance])
-        expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner.accountIds).toEqual(['1', '2', '3'])
-        expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner.groupName).toEqual(['4', '5', '6'])
-      })
-      it('should not make an array of groups if wrong class', async () => {
-        const noGroup = {
-          className: 'other',
-          groupName: '4,5,6',
-        }
-        const base64OfNoGroup = encode(noGroup)
-        workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value = base64OfNoGroup
-        await filter.onFetch([workflowInstance])
-        expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner.groupName).toEqual('4,5,6')
-      })
-      it('should decode properly', async () => {
-        await filter.onFetch([workflowInstance])
-        expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner)
-          .toEqual({ a: 1 })
-      })
-      it('should not decode if not compressed', async () => {
-        workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value = notZippedBuffer
-        await filter.onFetch([workflowInstance])
-        expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner)
-          .toEqual(notZippedBuffer)
-      })
-      it('should not decode if not base64', async () => {
-        workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value = 'not base64'
-        await filter.onFetch([workflowInstance])
-        expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner).toEqual('not base64')
-      })
-      it('should not decode if not valid json', async () => {
-        workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value = wrongInnerStructure
-        await filter.onFetch([workflowInstance])
-        expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner)
-          .toEqual(wrongInnerStructure)
-      })
-      it('should not fail if no value', async () => {
-        workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value = undefined
-        await filter.onFetch([workflowInstance])
-        expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner)
-          .toBeUndefined()
-      })
-      it('should not decode if script runner not supported', async () => {
-        await filterOff.onFetch([workflowInstance])
-        compareScripts(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value, goodBase64)
+      describe('workflowV1', () => {
+        it('should change field name to scriptRunner', async () => {
+          await filter.onFetch([workflowInstance])
+          expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner)
+            .toBeDefined()
+          expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value).toBeUndefined()
+        })
+        it('should make array of accountIds and groups', async () => {
+          workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value = accountAndGroupB64
+          await filter.onFetch([workflowInstance])
+          expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner.accountIds).toEqual(['1', '2', '3'])
+          expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner.groupName).toEqual(['4', '5', '6'])
+        })
+        it('should not make an array of groups if wrong class', async () => {
+          const noGroup = {
+            className: 'other',
+            groupName: '4,5,6',
+          }
+          const base64OfNoGroup = encode(noGroup)
+          workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value = base64OfNoGroup
+          await filter.onFetch([workflowInstance])
+          expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner.groupName).toEqual('4,5,6')
+        })
+        it('should decode properly', async () => {
+          await filter.onFetch([workflowInstance])
+          expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner)
+            .toEqual({ a: 1 })
+        })
+        it('should not decode if not compressed', async () => {
+          workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value = notZippedBuffer
+          await filter.onFetch([workflowInstance])
+          expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner)
+            .toEqual(notZippedBuffer)
+        })
+        it('should not decode if not base64', async () => {
+          workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value = 'not base64'
+          await filter.onFetch([workflowInstance])
+          expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner).toEqual('not base64')
+        })
+        it('should not decode if not valid json', async () => {
+          workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value = wrongInnerStructure
+          await filter.onFetch([workflowInstance])
+          expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner)
+            .toEqual(wrongInnerStructure)
+        })
+        it('should not fail if no value', async () => {
+          workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value = undefined
+          await filter.onFetch([workflowInstance])
+          expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner)
+            .toBeUndefined()
+        })
+        it('should not decode if script runner not supported', async () => {
+          await filterOff.onFetch([workflowInstance])
+          compareScripts(
+            workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value,
+            goodBase64,
+          )
+        })
       })
     })
     describe('pre deploy', () => {
-      beforeEach(() => {
-        renameKey(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration, { from: 'value', to: 'scriptRunner' })
-      })
       describe('workflowV2', () => {
         beforeEach(() => {
           renameKey(workflowV2Instance.value.transitions[0].actions[0].parameters, { from: 'config', to: 'scriptRunner' })
@@ -269,34 +272,42 @@ describe('ScriptRunner cloud Workflow', () => {
           expect(workflowV2Instance.value.transitions[0].actions[0].parameters.config).toBeUndefined()
         })
       })
-      it('should change field name to value', async () => {
-        await filter.preDeploy([toChange({ after: workflowInstance })])
-        expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner)
-          .toBeUndefined()
-        expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value).toBeDefined()
-      })
-      it('should return an array of accountIds and groups to strings', async () => {
-        workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration
-          .scriptRunner = accountAndGroupArrayed
-        await filter.preDeploy([toChange({ after: workflowInstance })])
-        expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value)
-          .toEqual(accountAndGroupB64)
-      })
-      it('should encode properly', async () => {
-        workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner = { a: 1 }
-        await filter.preDeploy([toChange({ after: workflowInstance })])
-        compareScripts(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value, goodBase64)
-      })
-      it('should not decode if undefined', async () => {
-        workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner = undefined
-        await filter.preDeploy([toChange({ after: workflowInstance })])
-        expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value).toBeUndefined()
-      })
-      it('should not encode if script runner not supported', async () => {
-        renameKey(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration, { from: 'scriptRunner', to: 'value' })
-        workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value = { a: 1 }
-        await filterOff.preDeploy([toChange({ after: workflowInstance })])
-        expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value).toEqual({ a: 1 })
+      describe('workflowV1', () => {
+        beforeEach(() => {
+          renameKey(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration, { from: 'value', to: 'scriptRunner' })
+        })
+        it('should change field name to value', async () => {
+          await filter.preDeploy([toChange({ after: workflowInstance })])
+          expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner)
+            .toBeUndefined()
+          expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value).toBeDefined()
+        })
+        it('should return an array of accountIds and groups to strings', async () => {
+          workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration
+            .scriptRunner = accountAndGroupArrayed
+          await filter.preDeploy([toChange({ after: workflowInstance })])
+          expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value)
+            .toEqual(accountAndGroupB64)
+        })
+        it('should encode properly', async () => {
+          workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner = { a: 1 }
+          await filter.preDeploy([toChange({ after: workflowInstance })])
+          compareScripts(
+            workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value,
+            goodBase64
+          )
+        })
+        it('should not decode if undefined', async () => {
+          workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner = undefined
+          await filter.preDeploy([toChange({ after: workflowInstance })])
+          expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value).toBeUndefined()
+        })
+        it('should not encode if script runner not supported', async () => {
+          renameKey(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration, { from: 'scriptRunner', to: 'value' })
+          workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value = { a: 1 }
+          await filterOff.preDeploy([toChange({ after: workflowInstance })])
+          expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value).toEqual({ a: 1 })
+        })
       })
     })
     describe('on deploy', () => {
@@ -317,25 +328,31 @@ describe('ScriptRunner cloud Workflow', () => {
           expect(workflowV2Instance.value.transitions[0].actions[0].parameters.scriptRunner).toEqual({ a: 1 })
         })
       })
-      it('should change field name to scriptRunner', async () => {
-        await filter.onDeploy([toChange({ after: workflowInstance })])
-        expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner).toBeDefined()
-        expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value).toBeUndefined()
-      })
-      it('should make array of accountIds and groups', async () => {
-        workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value = accountAndGroup
-        await filter.onDeploy([toChange({ after: workflowInstance })])
-        expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner.accountIds).toEqual(['1', '2', '3'])
-        expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner.groupName).toEqual(['4', '5', '6'])
-      })
-      it('should decode properly', async () => {
-        await filter.onDeploy([toChange({ after: workflowInstance })])
-        expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner)
-          .toEqual({ a: 1 })
-      })
-      it('should not decode if script runner not supported', async () => {
-        await filterOff.onDeploy([toChange({ after: workflowInstance })])
-        compareScripts(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value, goodBase64)
+      describe('workflowV1', () => {
+        it('should change field name to scriptRunner', async () => {
+          await filter.onDeploy([toChange({ after: workflowInstance })])
+          expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner)
+            .toBeDefined()
+          expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value).toBeUndefined()
+        })
+        it('should make array of accountIds and groups', async () => {
+          workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value = accountAndGroup
+          await filter.onDeploy([toChange({ after: workflowInstance })])
+          expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner.accountIds).toEqual(['1', '2', '3'])
+          expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner.groupName).toEqual(['4', '5', '6'])
+        })
+        it('should decode properly', async () => {
+          await filter.onDeploy([toChange({ after: workflowInstance })])
+          expect(workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner)
+            .toEqual({ a: 1 })
+        })
+        it('should not decode if script runner not supported', async () => {
+          await filterOff.onDeploy([toChange({ after: workflowInstance })])
+          compareScripts(
+            workflowInstance.value.transitions.tran1.rules.postFunctions[0].configuration.value,
+            goodBase64
+          )
+        })
       })
     })
   })
@@ -404,32 +421,32 @@ describe('ScriptRunner cloud Workflow', () => {
           expect(workflowV2Instance.value.transitions[0].validators[0].parameters.scriptRunner).toBeUndefined()
         })
       })
-      it('should rename field name to scriptRunner', async () => {
-        await filter.onFetch([workflowInstance])
-        expect(workflowInstance.value.transitions.tran1.rules.validators[0].configuration.scriptRunner).toBeDefined()
-        expect(workflowInstance.value.transitions.tran1.rules.validators[0].configuration.value).toBeUndefined()
-      })
-      it('should objectify properly', async () => {
-        await filter.onFetch([workflowInstance])
-        expect(workflowInstance.value.transitions.tran1.rules.validators[0].configuration.scriptRunner)
-          .toEqual({ a: 1 })
-      })
-      it('should not objectify if not json object', async () => {
-        workflowInstance.value.transitions.tran1.rules.validators[0].configuration.value = wrongJsonObject
-        await filter.onFetch([workflowInstance])
-        expect(workflowInstance.value.transitions.tran1.rules.validators[0].configuration.scriptRunner)
-          .toEqual(wrongJsonObject)
-      })
-      it('should not fail if no value', async () => {
-        workflowInstance.value.transitions.tran1.rules.validators[0].configuration.value = undefined
-        await filter.onFetch([workflowInstance])
-        expect(workflowInstance.value.transitions.tran1.rules.validators[0].configuration.scriptRunner).toBeUndefined()
+      describe('workflowV1', () => {
+        it('should rename field name to scriptRunner', async () => {
+          await filter.onFetch([workflowInstance])
+          expect(workflowInstance.value.transitions.tran1.rules.validators[0].configuration.scriptRunner).toBeDefined()
+          expect(workflowInstance.value.transitions.tran1.rules.validators[0].configuration.value).toBeUndefined()
+        })
+        it('should objectify properly', async () => {
+          await filter.onFetch([workflowInstance])
+          expect(workflowInstance.value.transitions.tran1.rules.validators[0].configuration.scriptRunner)
+            .toEqual({ a: 1 })
+        })
+        it('should not objectify if not json object', async () => {
+          workflowInstance.value.transitions.tran1.rules.validators[0].configuration.value = wrongJsonObject
+          await filter.onFetch([workflowInstance])
+          expect(workflowInstance.value.transitions.tran1.rules.validators[0].configuration.scriptRunner)
+            .toEqual(wrongJsonObject)
+        })
+        it('should not fail if no value', async () => {
+          workflowInstance.value.transitions.tran1.rules.validators[0].configuration.value = undefined
+          await filter.onFetch([workflowInstance])
+          expect(workflowInstance.value.transitions.tran1.rules.validators[0].configuration.scriptRunner)
+            .toBeUndefined()
+        })
       })
     })
     describe('pre deploy', () => {
-      beforeEach(() => {
-        renameKey(workflowInstance.value.transitions.tran1.rules.validators[0].configuration, { from: 'value', to: 'scriptRunner' })
-      })
       describe('workflowV2', () => {
         beforeEach(() => {
           renameKey(workflowV2Instance.value.transitions[0].validators[0].parameters, { from: 'config', to: 'scriptRunner' })
@@ -450,20 +467,27 @@ describe('ScriptRunner cloud Workflow', () => {
           expect(workflowV2Instance.value.transitions[0].validators[0].parameters.config).toBeUndefined()
         })
       })
-      it('should rename field name to value', async () => {
-        await filter.preDeploy([toChange({ after: workflowInstance })])
-        expect(workflowInstance.value.transitions.tran1.rules.validators[0].configuration.value).toBeDefined()
-        expect(workflowInstance.value.transitions.tran1.rules.validators[0].configuration.scriptRunner).toBeUndefined()
-      })
-      it('should stringify properly', async () => {
-        workflowInstance.value.transitions.tran1.rules.validators[0].configuration.scriptRunner = { a: 1 }
-        await filter.preDeploy([toChange({ after: workflowInstance })])
-        expect(workflowInstance.value.transitions.tran1.rules.validators[0].configuration.value).toEqual(goodJsonObject)
-      })
-      it('should not fail if undefined', async () => {
-        workflowInstance.value.transitions.tran1.rules.validators[0].configuration.scriptRunner = undefined
-        await filter.preDeploy([toChange({ after: workflowInstance })])
-        expect(workflowInstance.value.transitions.tran1.rules.validators[0].configuration.value).toBeUndefined()
+      describe('workflowV1', () => {
+        beforeEach(() => {
+          renameKey(workflowInstance.value.transitions.tran1.rules.validators[0].configuration, { from: 'value', to: 'scriptRunner' })
+        })
+        it('should rename field name to value', async () => {
+          await filter.preDeploy([toChange({ after: workflowInstance })])
+          expect(workflowInstance.value.transitions.tran1.rules.validators[0].configuration.value).toBeDefined()
+          expect(workflowInstance.value.transitions.tran1.rules.validators[0].configuration.scriptRunner)
+            .toBeUndefined()
+        })
+        it('should stringify properly', async () => {
+          workflowInstance.value.transitions.tran1.rules.validators[0].configuration.scriptRunner = { a: 1 }
+          await filter.preDeploy([toChange({ after: workflowInstance })])
+          expect(workflowInstance.value.transitions.tran1.rules.validators[0].configuration.value)
+            .toEqual(goodJsonObject)
+        })
+        it('should not fail if undefined', async () => {
+          workflowInstance.value.transitions.tran1.rules.validators[0].configuration.scriptRunner = undefined
+          await filter.preDeploy([toChange({ after: workflowInstance })])
+          expect(workflowInstance.value.transitions.tran1.rules.validators[0].configuration.value).toBeUndefined()
+        })
       })
     })
     describe('on deploy', () => {
@@ -478,15 +502,17 @@ describe('ScriptRunner cloud Workflow', () => {
           expect(workflowV2Instance.value.transitions[0].validators[0].parameters.scriptRunner).toEqual({ a: 1 })
         })
       })
-      it('should rename field name to scriptRunner', async () => {
-        await filter.onDeploy([toChange({ after: workflowInstance })])
-        expect(workflowInstance.value.transitions.tran1.rules.validators[0].configuration.scriptRunner).toBeDefined()
-        expect(workflowInstance.value.transitions.tran1.rules.validators[0].configuration.value).toBeUndefined()
-      })
-      it('should objectify properly', async () => {
-        await filter.onDeploy([toChange({ after: workflowInstance })])
-        expect(workflowInstance.value.transitions.tran1.rules.validators[0].configuration.scriptRunner)
-          .toEqual({ a: 1 })
+      describe('workflowV1', () => {
+        it('should rename field name to scriptRunner', async () => {
+          await filter.onDeploy([toChange({ after: workflowInstance })])
+          expect(workflowInstance.value.transitions.tran1.rules.validators[0].configuration.scriptRunner).toBeDefined()
+          expect(workflowInstance.value.transitions.tran1.rules.validators[0].configuration.value).toBeUndefined()
+        })
+        it('should objectify properly', async () => {
+          await filter.onDeploy([toChange({ after: workflowInstance })])
+          expect(workflowInstance.value.transitions.tran1.rules.validators[0].configuration.scriptRunner)
+            .toEqual({ a: 1 })
+        })
       })
     })
   })
@@ -555,32 +581,32 @@ describe('ScriptRunner cloud Workflow', () => {
           expect(workflowV2Instance.value.transitions[0].conditions[0].parameters.scriptRunner).toBeUndefined()
         })
       })
-      it('should rename field name to scriptRunner', async () => {
-        await filter.onFetch([workflowInstance])
-        expect(workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.scriptRunner).toBeDefined()
-        expect(workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.value).toBeUndefined()
-      })
-      it('should objectify properly', async () => {
-        await filter.onFetch([workflowInstance])
-        expect(workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.scriptRunner)
-          .toEqual({ b: 1 })
-      })
-      it('should not objectify if not json object', async () => {
-        workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.value = wrongJsonObject
-        await filter.onFetch([workflowInstance])
-        expect(workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.scriptRunner)
-          .toEqual(wrongJsonObject)
-      })
-      it('should not fail if no value', async () => {
-        workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.value = undefined
-        await filter.onFetch([workflowInstance])
-        expect(workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.scriptRunner).toBeUndefined()
+      describe('workflowV1', () => {
+        it('should rename field name to scriptRunner', async () => {
+          await filter.onFetch([workflowInstance])
+          expect(workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.scriptRunner).toBeDefined()
+          expect(workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.value).toBeUndefined()
+        })
+        it('should objectify properly', async () => {
+          await filter.onFetch([workflowInstance])
+          expect(workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.scriptRunner)
+            .toEqual({ b: 1 })
+        })
+        it('should not objectify if not json object', async () => {
+          workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.value = wrongJsonObject
+          await filter.onFetch([workflowInstance])
+          expect(workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.scriptRunner)
+            .toEqual(wrongJsonObject)
+        })
+        it('should not fail if no value', async () => {
+          workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.value = undefined
+          await filter.onFetch([workflowInstance])
+          expect(workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.scriptRunner)
+            .toBeUndefined()
+        })
       })
     })
     describe('pre deploy', () => {
-      beforeEach(() => {
-        renameKey(workflowInstance.value.transitions.tran1.rules.conditions[0].configuration, { from: 'value', to: 'scriptRunner' })
-      })
       describe('workflowV2', () => {
         beforeEach(() => {
           renameKey(workflowV2Instance.value.transitions[0].conditions[0].parameters, { from: 'config', to: 'scriptRunner' })
@@ -601,15 +627,22 @@ describe('ScriptRunner cloud Workflow', () => {
           expect(workflowV2Instance.value.transitions[0].conditions[0].parameters.config).toBeUndefined()
         })
       })
-      it('should rename field name to value', async () => {
-        await filter.preDeploy([toChange({ after: workflowInstance })])
-        expect(workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.value).toBeDefined()
-        expect(workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.scriptRunner).toBeUndefined()
-      })
-      it('should stringify properly', async () => {
-        workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.scriptRunner = { b: 1 }
-        await filter.preDeploy([toChange({ after: workflowInstance })])
-        expect(workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.value).toEqual(goodJsonObject)
+      describe('workflowV1', () => {
+        beforeEach(() => {
+          renameKey(workflowInstance.value.transitions.tran1.rules.conditions[0].configuration, { from: 'value', to: 'scriptRunner' })
+        })
+        it('should rename field name to value', async () => {
+          await filter.preDeploy([toChange({ after: workflowInstance })])
+          expect(workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.value).toBeDefined()
+          expect(workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.scriptRunner)
+            .toBeUndefined()
+        })
+        it('should stringify properly', async () => {
+          workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.scriptRunner = { b: 1 }
+          await filter.preDeploy([toChange({ after: workflowInstance })])
+          expect(workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.value)
+            .toEqual(goodJsonObject)
+        })
       })
     })
     describe('on deploy', () => {
@@ -624,15 +657,17 @@ describe('ScriptRunner cloud Workflow', () => {
           expect(workflowV2Instance.value.transitions[0].conditions[0].parameters.scriptRunner).toEqual({ b: 1 })
         })
       })
-      it('should rename field name to scriptRunner', async () => {
-        await filter.onDeploy([toChange({ after: workflowInstance })])
-        expect(workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.scriptRunner).toBeDefined()
-        expect(workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.value).toBeUndefined()
-      })
-      it('should objectify properly', async () => {
-        await filter.onDeploy([toChange({ after: workflowInstance })])
-        expect(workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.scriptRunner)
-          .toEqual({ b: 1 })
+      describe('workflowV1', () => {
+        it('should rename field name to scriptRunner', async () => {
+          await filter.onDeploy([toChange({ after: workflowInstance })])
+          expect(workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.scriptRunner).toBeDefined()
+          expect(workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.value).toBeUndefined()
+        })
+        it('should objectify properly', async () => {
+          await filter.onDeploy([toChange({ after: workflowInstance })])
+          expect(workflowInstance.value.transitions.tran1.rules.conditions[0].configuration.scriptRunner)
+            .toEqual({ b: 1 })
+        })
       })
     })
   })

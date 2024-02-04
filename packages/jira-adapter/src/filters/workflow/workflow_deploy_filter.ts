@@ -277,7 +277,7 @@ const verifyAndFixTransitionReferences = async ({
   await deployWithClone(toChange({ before: originalInstance }), client, config)
   walkOnValue({ elemId: originalInstance.elemID.createNestedID('transitions'),
     value: originalInstance.value.transitions,
-    func: decodeCloudFields() })
+    func: decodeCloudFields(false) })
 
   // a function as the transitions changed type to an array
   const updateTransitionReferenceIds = (
@@ -293,7 +293,7 @@ const verifyAndFixTransitionReferences = async ({
   updateTransitionReferenceIds(originalInstance.value.transitions)
   walkOnValue({ elemId: originalInstance.elemID.createNestedID('transitions'),
     value: originalInstance.value.transitions,
-    func: encodeCloudFields() })
+    func: encodeCloudFields(false) })
 
   await deployWithClone(resolvedChange, client, config)
 

@@ -1003,6 +1003,7 @@ Moving the specified elements to common.
           input: {
             completeFrom: 'inactive',
             env: 'active',
+            force: false,
           },
           workspace,
         })

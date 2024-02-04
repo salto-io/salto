@@ -428,6 +428,7 @@ const cloneDef = createWorkspaceCommand({
 // List unresolved
 type ElementListUnresolvedArgs = {
   completeFrom?: string
+  force?: boolean
 } & EnvArg
 
 export const listUnresolvedAction: WorkspaceCommandAction<ElementListUnresolvedArgs> = async ({
@@ -436,16 +437,12 @@ export const listUnresolvedAction: WorkspaceCommandAction<ElementListUnresolvedA
   spinnerCreator,
   workspace,
 }): Promise<CliExitCode> => {
-  const { completeFrom } = input
+  const { completeFrom, force } = input
   await validateAndSetEnv(workspace, input, output)
 
-  const validWorkspace = await isValidWorkspaceForCommand({
-    workspace,
-    cliOutput: output,
-    spinnerCreator,
-    force: false,
-    ignoreUnresolvedRefs: true,
-  })
+  const validWorkspace = await isValidWorkspaceForCommand(
+    { workspace, cliOutput: output, spinnerCreator, force: force ?? false, ignoreUnresolvedRefs: true }
+  )
   if (!validWorkspace) {
     return CliExitCode.AppError
   }
@@ -489,6 +486,13 @@ const listUnresolvedDef = createWorkspaceCommand({
         alias: 'c',
         description: 'environment for completing missing references from (recursively)',
         type: 'string',
+        required: false,
+      },
+      {
+        name: 'force',
+        alias: 'f',
+        description: 'Do not ask for approval before listing unresolved references',
+        type: 'boolean',
         required: false,
       },
       ENVIRONMENT_OPTION,

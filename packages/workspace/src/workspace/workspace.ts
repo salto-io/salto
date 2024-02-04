@@ -366,6 +366,82 @@ export const deserializeReferenceTree = async (data: string): Promise<ReferenceT
   return new collections.treeMap.TreeMap(elemIdsEntries)
 }
 
+/*
+* Get reference dependecies for a given list of elemIds within a workspace
+* filters out weak references and any elemIds in elemIdsToSkip
+*/
+export const getReferenceTargetDependecies = async ({
+  ws,
+  elemIds,
+  elementSourceToSkip,
+  envName,
+}:{
+  ws: Workspace
+  elemIds: ElemID[]
+  elementSourceToSkip?: ReadOnlyElementsSource
+  envName?: string
+}): Promise<{ completed: Record<string, ElemID[]>; missing: ElemID[] }> => {
+  const isElemIdExist = async (elemId: ElemID, elementSource?: ReadOnlyElementsSource): Promise<boolean> => {
+    if (elementSource === undefined) {
+      return false
+    }
+    const { parent } = elemId.createBaseID()
+    // TODOS only get element when baseID is differenct from elemId
+    const rootElem = await elementSource.get(parent)
+    if (rootElem === undefined) {
+      return false
+    }
+    const resolvedPath = resolvePath(rootElem, elemId)
+    // TODOS - should probably verify we got value / instance / type
+    return resolvedPath !== undefined
+  }
+
+  const wsElementSource = await ws.elements(false, envName)
+  // const wsElementList = await awu(await (wsElementSource).list()).toArray()
+  // const wsElemIds = new Set(wsElementList.map(elemId => elemId.getFullName()))
+
+  const [resolvedIds, missingIds] = await awu(elemIds)
+    .partition(async ref => isElemIdExist(ref, wsElementSource))
+
+  // DFS setup
+  const result: Record<string, ElemID[]> = {}
+  const stack = [...resolvedIds]
+  const visited: Set<string> = new Set()
+  // iterative DFS
+  while (stack.length > 0) {
+    const currentId = stack.pop() as ElemID
+    if (!visited.has(currentId.getFullName())) {
+      visited.add(currentId.getFullName())
+      // eslint-disable-next-line no-await-in-loop
+      const references = await ws.getElementOutgoingReferences(currentId, envName ?? ws.currentEnv())
+      // eslint-disable-next-line no-await-in-loop
+      const relevantElemIds = await awu(references)
+        .filter(ref => ref.type !== 'weak')
+        .map(ref => ref.id)
+        .filter(async elemId => {
+          // filters out elemIds that included in elementSourceToSkip
+          if (await isElemIdExist(elemId, elementSourceToSkip)) {
+            return false
+          }
+          return true
+        })
+        .toArray()
+
+      // eslint-disable-next-line no-await-in-loop
+      const [resolvedRelevantIds, missingElemIds] = await awu(relevantElemIds)
+        .partition(async ref => isElemIdExist(ref, wsElementSource))
+      missingElemIds.forEach(id => missingIds.push(id))
+      result[currentId.getFullName()] = resolvedRelevantIds
+      stack.push(...resolvedRelevantIds)
+    }
+  }
+
+  return { completed: result, missing: missingIds }
+}
+
+// ws.getElementOutgoingReferences().bind(ws)
+// const bla = (getRefs: Workspace['getElementOutgoingReferences'])
+
 type GetCustomReferencesFunc = (
   elements: Element[],
   accountToServiceName: Record<string, string>,
@@ -1119,7 +1195,26 @@ export const loadWorkspace = async (
     return currentWorkspaceState.states[env].changedBy.isEmpty()
   }
 
-  return {
+  const getElementOutgoingReferences = async (
+    id: ElemID, envName: string = currentEnv()
+  ): Promise<{ id: ElemID; type: ReferenceType }[]> => {
+    const baseId = id.createBaseID().parent.getFullName()
+    const referencesTree = await (await getWorkspaceState()).states[envName].referenceTargets.get(baseId)
+
+    if (referencesTree === undefined) {
+      return []
+    }
+
+    const idPath = id.createBaseID().path.join(ElemID.NAMESPACE_SEPARATOR)
+    const references = idPath === ''
+    // Empty idPath means we are requesting the base level element, which includes all references
+      ? referencesTree.values()
+      : referencesTree.valuesWithPrefix(idPath)
+
+    return _.uniqBy(Array.from(references).flat(), ref => ref.id.getFullName())
+  }
+
+  const ws: Workspace = {
     uid: workspaceConfig.uid,
     name: workspaceConfig.name,
     elements: elementsImpl,
@@ -1190,27 +1285,12 @@ export const loadWorkspace = async (
         compacted,
       )
     },
-    getElementReferencedFiles: async id =>
-      (await getLoadedNaclFilesSource()).getElementReferencedFiles(currentEnv(), id),
-    getReferenceSourcesIndex: async (envName = currentEnv()) =>
-      (await getWorkspaceState()).states[envName].referenceSources,
-    getElementOutgoingReferences: async (id, envName = currentEnv()) => {
-      const baseId = id.createBaseID().parent.getFullName()
-      const referencesTree = await (await getWorkspaceState()).states[envName].referenceTargets.get(baseId)
-
-      if (referencesTree === undefined) {
-        return []
-      }
-
-      const idPath = id.createBaseID().path.join(ElemID.NAMESPACE_SEPARATOR)
-      const references =
-        idPath === ''
-          ? // Empty idPath means we are requesting the base level element, which includes all references
-            referencesTree.values()
-          : referencesTree.valuesWithPrefix(idPath)
-
-      return _.uniqBy(Array.from(references).flat(), ref => ref.id.getFullName())
-    },
+    getElementReferencedFiles: async id => (
+      (await getLoadedNaclFilesSource()).getElementReferencedFiles(currentEnv(), id)
+    ),
+    getReferenceSourcesIndex: async (envName = currentEnv()) => (await getWorkspaceState())
+      .states[envName].referenceSources,
+    getElementOutgoingReferences,
     getElementIncomingReferences: async (id, envName = currentEnv()) => {
       if (!id.isBaseID()) {
         throw new Error(`getElementIncomingReferences only support base ids, received ${id.getFullName()}`)
@@ -1515,11 +1595,27 @@ export const loadWorkspace = async (
           missing: [...missing, ...innerRes.missing],
         }
       }
+      // const allSearchable = await ws.getSearchableNames()
+      const allDependecies = await getReferenceTargetDependecies({
+        ws,
+        elemIds: unresolvedElemIDs,
+        elementSourceToSkip: await ws.elements(false),
+        envName: completeFromEnv,
+      })
+      log.debug('Found unresolved', allDependecies.missing.length, 'unresolved references') // TODOS remove this log
+      const completedElemIds = _.uniq(Object.values(allDependecies.completed).flat().map(elemId => elemId.getFullName())
+        .concat(Object.keys(allDependecies.completed)))
+      const compactRes = compact(completedElemIds.sort().map(ElemID.fromFullName))
+      log.debug('Found', compactRes.length, 'resolved references') // TODOS remove this log
+
+
       const { completed, missing } = await addAndValidate(unresolvedElemIDs, new Set())
-      return {
-        found: compact(completed.sort().map(ElemID.fromFullName)),
-        missing: compact(missing.sort().map(ElemID.fromFullName)),
-      }
+      log.debug('Found', completed.length, 'resolved references', missing.length) // TODOS remove this log
+      // return {
+      //   found: compact(completed.sort().map(ElemID.fromFullName)),
+      //   missing: compact(missing.sort().map(ElemID.fromFullName)),
+      // }
+      return { found: compactRes, missing: allDependecies.missing }
     },
     getElementSourceOfPath: async (filePath, includeHidden = true) =>
       adaptersConfig.isConfigFile(filePath) ? adaptersConfig.getElements() : elementsImpl(includeHidden),
@@ -1532,6 +1628,7 @@ export const loadWorkspace = async (
     getAliases,
     isChangedAtIndexEmpty,
   }
+  return ws
 }
 
 export const initWorkspace = async (

@@ -636,7 +636,7 @@ export default class ZendeskAdapter implements AdapterOperations {
 
   private async isLocaleEnUs(): Promise<SaltoError | undefined> {
     try {
-      const res = (await this.client.getSinglePage({
+      const res = (await this.client.get({
         url: '/api/v2/users/me',
       })).data
       if (isCurrentUserResponse(res)) {
@@ -657,7 +657,7 @@ export default class ZendeskAdapter implements AdapterOperations {
 
   private async logSubscriptionData(): Promise<void> {
     try {
-      const { data } = await this.client.getSinglePage({ url: '/api/v2/account/subscription.json' })
+      const { data } = await this.client.get({ url: '/api/v2/account/subscription.json' })
       const subscriptionData = !_.isArray(data) ? data.subscription : undefined
       if (subscriptionData) {
         log.info(`Account subscription data: ${inspectValue(subscriptionData)}`)

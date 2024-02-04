@@ -64,7 +64,7 @@ const addQueueStarAndPriority = async (
   client: JiraClient,
 ): Promise<void> => {
   await awu(Object.entries(projectKeysToQueues)).forEach(async ([projectKey, queues]) => {
-    const response = await client.getSinglePage({
+    const response = await client.get({
       url: `/rest/servicedesk/1/servicedesk/${projectKey}/queues/categories`,
     })
     if (!isQueuesCatagoriesResponse(response.data)) {

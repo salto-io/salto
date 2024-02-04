@@ -28,7 +28,7 @@ describe('queueFetch filter', () => {
     type FilterType = filterUtils.FilterWith<'onFetch'>
     let filter: FilterType
     const client = new JiraClient({ credentials: { baseUrl: 'http://myjira.net', user: 'me', token: 'tok' }, isDataCenter: false })
-    const mockGet = jest.spyOn(client, 'getSinglePage')
+    const mockGet = jest.spyOn(client, 'get')
     let queueInstance: InstanceElement
     describe('on Fetch', () => {
       beforeEach(() => {

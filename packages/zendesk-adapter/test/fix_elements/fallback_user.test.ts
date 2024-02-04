@@ -221,7 +221,7 @@ describe('fallbackUsersHandler', () => {
     beforeEach(async () => {
       mockGetUsers.mockResolvedValue({ users: [], errors: [{ message: 'No users here!', severity: 'Warning' }] })
       const instances = [macroInstance, articleInstance].map(e => e.clone())
-      jest.spyOn(client, 'getSinglePage').mockImplementation(({ url }) => {
+      jest.spyOn(client, 'get').mockImplementation(({ url }) => {
         if (url === '/api/v2/users/me') {
           return Promise.resolve({ data: { user: { id: 1, name: 'name', locale: 'l', email: 'deployer@.com' } }, status: 202 })
         }

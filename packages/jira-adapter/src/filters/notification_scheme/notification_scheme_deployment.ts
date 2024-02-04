@@ -60,7 +60,7 @@ const toDeployableNotificationEvent = (eventEntries: NotificationEventValue): No
 
 const assignEventIds = async (change: Change<InstanceElement>, client: JiraClient): Promise<void> => {
   const notificationSchemeId = getChangeData(change).value.id
-  const { data } = await client.getSinglePage({
+  const { data } = await client.get({
     url: `/rest/api/3/notificationscheme/${notificationSchemeId}`,
     queryParams: { expand: 'all' },
   })

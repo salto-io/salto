@@ -54,7 +54,7 @@ const getExsitingAttributesNamesAndIds = async (
 ):Promise<string[][]> => {
   try {
     const objectType = changes[0].data.after.value.objectType?.value
-    const response = await client.getSinglePage({
+    const response = await client.get({
       url: `/gateway/api/jsm/assets/workspace/${workspaceId}/v1/objecttype/${objectType.value.id}/attributes`,
     })
     if (!isAttributeResponse(response.data)) {

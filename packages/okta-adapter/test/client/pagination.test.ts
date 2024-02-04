@@ -20,12 +20,12 @@ import { getWithCursorHeaderPagination } from '../../src/client/pagination'
 describe('okta pagination', () => {
   describe('getWithCursorHeaderPagination', () => {
     const client: MockInterface<clientUtils.HTTPReadClientInterface> = {
-      getSinglePage: mockFunction<clientUtils.HTTPReadClientInterface['getSinglePage']>(),
+      get: mockFunction<clientUtils.HTTPReadClientInterface['get']>(),
       getPageSize: mockFunction<clientUtils.HTTPReadClientInterface['getPageSize']>(),
     }
     const paginate = getWithCursorHeaderPagination()
     beforeEach(() => {
-      client.getSinglePage.mockReset()
+      client.get.mockReset()
       client.getPageSize.mockReset()
     })
 

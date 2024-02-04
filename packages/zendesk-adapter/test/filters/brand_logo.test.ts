@@ -139,7 +139,7 @@ describe('brand logo filter', () => {
         }
         throw new Error('Err')
       })
-      mockBrandGet = jest.spyOn(client, 'getSinglePage')
+      mockBrandGet = jest.spyOn(client, 'get')
       mockBrandGet.mockImplementation(params => {
         if (params.url === `/api/v2/brands/${brandId}`) {
           return {

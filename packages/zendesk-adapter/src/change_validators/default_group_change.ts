@@ -73,7 +73,7 @@ const fetchDefaultGroupMembershipRemovals = async (
   client: ZendeskClient, groups: InstanceElement[]
 ): Promise<ChangeError[]> => {
   const errorsWithUndefined = await Promise.all(groups.map(async group => {
-    const response = await client.getSinglePage({ url: `/api/v2/groups/${group.value.id}/memberships` })
+    const response = await client.get({ url: `/api/v2/groups/${group.value.id}/memberships` })
     if (!groupMembershipSchema(response.data)) {
       log.warn(`Got an invalid response for group membership for group ${group.value.id}, skipping this validation. Response: ${safeJsonStringify(response.data)}`)
       return undefined

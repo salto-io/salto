@@ -52,7 +52,7 @@ const deployJsmContextField = async (
 ): Promise<SaltoElementError[]> => {
   const instance = getChangeData(change)
   const errors: SaltoElementError[] = []
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url: `/rest/api/3/field/${parent.value.id}/context`,
   })
   if (!isContextFieldResponse(response.data)) {

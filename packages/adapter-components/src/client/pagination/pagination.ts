@@ -50,7 +50,7 @@ export const traverseRequests: (
     usedParams.add(serializedArgs)
     const params = { ...queryParams, ...additionalArgs }
     // eslint-disable-next-line no-await-in-loop
-    const response = await client.getSinglePage({
+    const response = await client.get({
       url,
       queryParams: Object.keys(params).length > 0 ? params : undefined,
       headers,

@@ -153,7 +153,7 @@ export const getAutomations = async (
   config: JiraConfig,
 ): Promise<Values[]> => (
   client.isDataCenter
-    ? (await client.getSinglePage({
+    ? (await client.get({
       url: '/rest/cb-automation/latest/project/GLOBAL/rule',
     })).data as Values[]
     : postPaginated(

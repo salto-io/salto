@@ -177,7 +177,7 @@ const isProjectDataResponse = createSchemeGuard<ProjectDataResponse>(PROJECT_DAT
 export const hasSoftwareProject = async (client: JiraClient):
 Promise<boolean> => {
   try {
-    const response = await client.getSinglePage({
+    const response = await client.get({
       url: '/rest/api/3/project/search',
     })
     if (!isProjectDataResponse(response.data)) {

@@ -80,11 +80,11 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
     return this.credentials.baseUrl
   }
 
-  public async getSinglePage(
+  public async get(
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
     try {
-      return await super.getSinglePage(args)
+      return await super.get(args)
     } catch (e) {
       // The http_client code catches the original error and transforms it such that it removes
       // the parsed information (like the status code), so we have to parse the string here in order
@@ -155,7 +155,7 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
   public async getPrivate(
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
-    return this.getSinglePage({
+    return this.get({
       ...args,
       headers: {
         ...PRIVATE_API_HEADERS,

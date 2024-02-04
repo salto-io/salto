@@ -228,7 +228,7 @@ describe('fieldContextDeployment', () => {
     beforeEach(() => {
       const { client: cli } = mockClient(false)
       client = cli
-      mockGet = jest.spyOn(client, 'getSinglePage')
+      mockGet = jest.spyOn(client, 'get')
       fieldInstcnae = new InstanceElement(
         'field',
         fieldType,

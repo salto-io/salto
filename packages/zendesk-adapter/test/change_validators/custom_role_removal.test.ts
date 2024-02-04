@@ -46,7 +46,7 @@ describe('customRoleRemovalValidator', () => {
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
-    mockGet = jest.spyOn(client, 'getSinglePage')
+    mockGet = jest.spyOn(client, 'get')
     mockGet.mockImplementation(() => (
       {
         status: 200,

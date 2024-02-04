@@ -25,7 +25,7 @@ const log = logger(module)
 const getProfileMapping = async (
   mappingId: string,
   client: OktaClient
-): Promise<Values> => (await client.getSinglePage({
+): Promise<Values> => (await client.get({
   url: `/api/v1/mappings/${mappingId}`,
 })).data as Values
 

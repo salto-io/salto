@@ -41,14 +41,14 @@ describe('client', () => {
       mockAxios.onGet().reply(400, { response: 'asd', errorMessages: ['error message'] })
     })
     it('should call send request decorator', async () => {
-      await expect(async () => client.getSinglePage({ url: '/myPath' })).rejects.toThrow(new Error('Failed to get /myPath with error: Error: Request failed with status code 400. error message'))
+      await expect(async () => client.get({ url: '/myPath' })).rejects.toThrow(new Error('Failed to get /myPath with error: Error: Request failed with status code 400. error message'))
     })
   })
 
-  describe('getSinglePage', () => {
+  describe('get', () => {
     beforeEach(async () => {
       mockAxios.onGet('/myPath').reply(200, { response: 'asd' })
-      result = await client.getSinglePage({ url: '/myPath' })
+      result = await client.get({ url: '/myPath' })
     })
     it('should request the correct path with auth headers', () => {
       const request = mockAxios.history.get.find(r => r.url === '/myPath')

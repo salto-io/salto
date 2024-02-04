@@ -49,6 +49,9 @@ export const customObjectFieldOptionType = new ObjectType({
     raw_name: { refType: BuiltinTypes.STRING },
     value: { refType: BuiltinTypes.STRING },
   },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
 })
 
 type CustomObjectFieldOption = {

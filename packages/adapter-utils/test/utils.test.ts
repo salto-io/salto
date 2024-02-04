@@ -65,6 +65,7 @@ describe('Test utils.ts', () => {
     },
     annotations: {
       testAnno: 'TEST ANNO',
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
     },
     fields: {
       ref: { refType: BuiltinTypes.STRING },
@@ -103,11 +104,20 @@ describe('Test utils.ts', () => {
                         deepNumber: { refType: BuiltinTypes.NUMBER },
                         deepName: { refType: BuiltinTypes.STRING },
                       },
+                      annotations: {
+                        [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+                      },
                     }),
                   },
                 },
+                annotations: {
+                  [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+                },
               }),
             },
+          },
+          annotations: {
+            [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
           },
         })),
       },
@@ -260,6 +270,9 @@ describe('Test utils.ts', () => {
         fields: {
           a: { refType: mockType.fields.obj.refType },
           b: { refType: mockType.fields.obj.refType },
+        },
+        annotations: {
+          [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
         },
       }))
     })

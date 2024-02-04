@@ -155,15 +155,20 @@ const createStatusMappingStructure = (statusMappings: StatusMapping): string =>
 
 const getProjectIssueTypes = async (
   projectRef: ReferenceExpression,
-  elementsSource:ReadOnlyElementsSource
+  elementsSource: ReadOnlyElementsSource
 ): Promise<ReferenceExpression[]> => {
-  const issueTypeSchemaRef = (await projectRef.getResolvedValue(elementsSource)).value?.issueTypeScheme
+  const issueTypeSchemaRef = projectRef.value.value.issueTypeScheme
   if (!isReferenceExpression(issueTypeSchemaRef)) {
     log.debug(`issueTypeScheme of the project ${projectRef.elemID.getFullName()} is not a reference expression`)
     return []
   }
-  const issueTypesRef = (await issueTypeSchemaRef.getResolvedValue(elementsSource)).value?.issueTypeIds
-  return makeArray(issueTypesRef).filter(isReferenceExpression)
+  const issueTypeScheme = await issueTypeSchemaRef.getResolvedValue(elementsSource)
+  if (!isInstanceElement(issueTypeScheme)) {
+    log.debug(`issueTypeScheme of the project ${projectRef.elemID.getFullName()} is not an instance element`)
+    return []
+  }
+  return makeArray(issueTypeScheme.value.issueTypeIds)
+    .filter(isReferenceExpression)
 }
 
 const getNewStatusMappings = async ({
@@ -240,8 +245,8 @@ export const workflowStatusMappingsValidator: ChangeValidator = async (changes, 
       return [{
         elemID: change.data.after.elemID,
         severity: 'Error' as SeverityLevel,
-        message: 'Workflow status mappings has invalid format',
-        detailedMessage: `The status mapping validation failed because of the following error: ${error?.message}. Learn more at https://help.salto.io/en/articles/8851200-migrating-issues-when-modifying-workflows.`,
+        message: 'Invalid workflow status mapping',
+        detailedMessage: `Error while validating the user-provided status mapping: ${error?.message}. Learn more at https://help.salto.io/en/articles/8851200-migrating-issues-when-modifying-workflows`,
       }]
     }
     const existingStatusMappings = workflowInstance.value.statusMappings ?? []

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { WALK_NEXT_STEP, WalkOnFunc, isResolvedReferenceExpression, resolveValues, walkOnElement } from '@salto-io/adapter-utils'
 import { elements as adapterElements, config as configUtils, client as clientUtils } from '@salto-io/adapter-components'
@@ -22,13 +22,14 @@ import { CORE_ANNOTATIONS, Element, InstanceElement, ObjectType, SaltoError, Add
 import { v4 as uuidv4 } from 'uuid'
 import { FilterCreator } from '../../filter'
 import { addAnnotationRecursively, convertPropertiesToList, convertPropertiesToMap, findObject, setTypeDeploymentAnnotations } from '../../utils'
-import { CHUNK_SIZE, isWorkflowIdsResponse, isWorkflowResponse, isTaskResponse, STATUS_CATEGORY_ID_TO_KEY, TASK_STATUS, WorkflowPayload, WorkflowVersion, CONDITION_LIST_FIELDS, VALIDATOR_LIST_FIELDS, ID_TO_UUID_PATH_NAME_TO_RECURSE, isAdditionOrModificationWorkflowChange, CONDITION_GROUPS_PATH_NAME_TO_RECURSE } from './types'
+import { CHUNK_SIZE, isWorkflowDataResponse, isWorkflowResponse, isTaskResponse, STATUS_CATEGORY_ID_TO_KEY, TASK_STATUS, WorkflowPayload, WorkflowVersion, CONDITION_LIST_FIELDS, VALIDATOR_LIST_FIELDS, ID_TO_UUID_PATH_NAME_TO_RECURSE, isAdditionOrModificationWorkflowChange, CONDITION_GROUPS_PATH_NAME_TO_RECURSE, Status } from './types'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
 import { JIRA_WORKFLOW_TYPE } from '../../constants'
 import JiraClient from '../../client/client'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { getLookUpName } from '../../reference_mapping'
 import { JiraConfig } from '../../config/config'
+import { transformTransitions } from '../workflow/transition_structure'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -43,8 +44,8 @@ const workflowFetchError = (errorMessage?: string): SaltoError => ({
   severity: 'Error',
 })
 
-type WorkflowIdsOrFilterResult = {
-  workflowIds?: string[]
+type WorkflowDataOrFilterResult = {
+  workflowIdToStatues: Record<string, Status[]>
   errors?: SaltoError[]
 }
 
@@ -53,21 +54,28 @@ type WorkflowInstancesOrFilterResult = {
   errors?: SaltoError[]
 }
 
-const fetchWorkflowIds = async (paginator: clientUtils.Paginator): Promise<WorkflowIdsOrFilterResult> => {
+const fetchWorkflowData = async (paginator: clientUtils.Paginator): Promise<WorkflowDataOrFilterResult> => {
   const paginationArgs = {
     url: '/rest/api/3/workflow/search',
     paginationField: 'startAt',
+    queryParams: {
+      expand: 'statuses',
+    },
   }
   const workflowValues = await awu(paginator(
     paginationArgs,
     page => makeArray(page.values) as clientUtils.ResponseValue[]
   )).flat().toArray()
-  if (!isWorkflowIdsResponse(workflowValues)) {
+  if (!isWorkflowDataResponse(workflowValues)) {
     return {
       errors: [workflowFetchError()],
+      workflowIdToStatues: {},
     }
   }
-  return { workflowIds: workflowValues.map(value => value.id.entityId) }
+  const workflowIdToStatues: Record<string, Status[]> = Object.fromEntries(
+    workflowValues.map(workflow => [workflow.id.entityId, workflow.statuses])
+  )
+  return { workflowIdToStatues }
 }
 
 const convertIdsStringToList = (ids: string): string[] => ids.split(',')
@@ -100,11 +108,17 @@ export const convertParametersFieldsToList = (
     })
 }
 
-const createWorkflowInstances = async (
-  client: JiraClient,
-  workflowIds: string[],
-  jiraWorkflowType: ObjectType,
-): Promise<WorkflowInstancesOrFilterResult> => {
+const createWorkflowInstances = async ({
+  client,
+  workflowIds,
+  jiraWorkflowType,
+  workflowIdToStatues: workflowIdToStatuses,
+}: {
+  client: JiraClient
+  workflowIds: string[]
+  jiraWorkflowType: ObjectType
+  workflowIdToStatues: Record<string, Status[]>
+}): Promise<WorkflowInstancesOrFilterResult> => {
   try {
     // The GET response content is limited, we are using a POST request to obtain the necessary additional information.
     const response = await client.post({
@@ -118,22 +132,28 @@ const createWorkflowInstances = async (
         errors: [workflowFetchError()],
       }
     }
-    const workflowInstances = await Promise.all(response.data.workflows.map(async workflow => {
-      const instance = await toBasicInstance({
+    const errors: SaltoError[] = []
+    const workflowInstances = (await Promise.all(response.data.workflows.map(async workflow => {
+      convertTransitionParametersFields(workflow.transitions, convertParametersFieldsToList)
+      convertPropertiesToList([
+        ...workflow.statuses ?? [],
+        ...workflow.transitions ?? [],
+      ])
+      // convert transition list to map
+      const [error] = transformTransitions(workflow, workflowIdToStatuses[workflow.id])
+      if (error) {
+        errors.push(error)
+        return undefined
+      }
+      return toBasicInstance({
         entry: workflow,
         type: jiraWorkflowType,
         transformationConfigByType: getTransformationConfigByType(DEFAULT_API_DEFINITIONS.types),
         transformationDefaultConfig: DEFAULT_API_DEFINITIONS.typeDefaults.transformation,
         defaultName: workflow.name,
       })
-      convertTransitionParametersFields(instance.value.transitions, convertParametersFieldsToList)
-      convertPropertiesToList([
-        ...instance.value.statuses ?? [],
-        ...instance.value.transitions ?? [],
-      ])
-      return instance
-    }))
-    return { workflowInstances }
+    }))).filter(values.isDefined)
+    return { workflowInstances, errors }
   } catch (error) {
     return {
       errors: [workflowFetchError(error.message)],
@@ -388,6 +408,22 @@ const replaceStatusIdWithUuid = (statusIdToUuid: Record<string, string>): WalkOn
   }
 )
 
+const getWorkflowForDeploy = async (
+  workflowInstance: InstanceElement,
+  statusIdToUuid: Record<string, string>
+): Promise<InstanceElement> => {
+  const resolvedInstance = await resolveValues(workflowInstance, getLookUpName)
+  resolvedInstance.value.transitions = Object.values(resolvedInstance.value.transitions ?? [])
+  convertTransitionParametersFields(resolvedInstance.value.transitions, convertParametersFieldsToString)
+  convertPropertiesToMap([
+    ...resolvedInstance.value.statuses ?? [],
+    ...resolvedInstance.value.transitions ?? [],
+  ])
+  walkOnElement({ element: resolvedInstance, func: replaceStatusIdWithUuid(statusIdToUuid) })
+  walkOnElement({ element: resolvedInstance, func: insertConditionGroups })
+  return resolvedInstance
+}
+
 /*
 * This filter uses the new workflow API to fetch and deploy workflows
 * deploy steps: the documentation is described in: https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-workflows/#api-rest-api-3-workflows-create-post
@@ -418,16 +454,19 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
       await addAnnotationRecursively(jiraWorkflow, CORE_ANNOTATIONS.CREATABLE)
       await addAnnotationRecursively(jiraWorkflow, CORE_ANNOTATIONS.UPDATABLE)
       await addAnnotationRecursively(jiraWorkflow, CORE_ANNOTATIONS.DELETABLE)
-      const { workflowIds, errors: fetchWorkflowIdsErrors } = await fetchWorkflowIds(paginator)
-      if (!_.isEmpty(fetchWorkflowIdsErrors)) {
-        return { errors: fetchWorkflowIdsErrors }
+      const { workflowIdToStatues, errors: fetchWorkflowDataErrors } = await fetchWorkflowData(paginator)
+      if (!_.isEmpty(fetchWorkflowDataErrors)) {
+        return { errors: fetchWorkflowDataErrors }
       }
-      const workflowChunks = _.chunk(workflowIds, CHUNK_SIZE)
+      const workflowChunks = _.chunk(Object.keys(workflowIdToStatues ?? []), CHUNK_SIZE)
       const errors: SaltoError[] = []
       await awu(workflowChunks).forEach(async chunk => {
-        const { workflowInstances, errors: createWorkflowInstancesErrors } = await createWorkflowInstances(
-          client, chunk, jiraWorkflow
-        )
+        const { workflowInstances, errors: createWorkflowInstancesErrors } = await createWorkflowInstances({
+          client,
+          workflowIds: chunk,
+          jiraWorkflowType: jiraWorkflow,
+          workflowIdToStatues,
+        })
         errors.push(...(createWorkflowInstancesErrors ?? []))
         elements.push(...(workflowInstances ?? []))
       })
@@ -441,18 +480,10 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
           originalInstances[workflowInstance.elemID.getFullName()] = workflowInstance.clone()
           const statusInstances = getStatusInstances(change)
           const statusIdToUuid = getUuidMap(statusInstances)
-          const resolvedWorkflowInstance = await resolveValues(workflowInstance, getLookUpName)
-          convertTransitionParametersFields(resolvedWorkflowInstance.value.transitions, convertParametersFieldsToString)
-          convertPropertiesToMap([
-            ...resolvedWorkflowInstance.value.statuses ?? [],
-            ...resolvedWorkflowInstance.value.transitions ?? [],
-          ])
-          walkOnElement({ element: resolvedWorkflowInstance, func: replaceStatusIdWithUuid(statusIdToUuid) })
-          walkOnElement({ element: resolvedWorkflowInstance, func: insertConditionGroups })
           const statusesPayload = getStatusesPayload(statusInstances, statusIdToUuid)
           workflowInstance.value = getWorkflowPayload(
             isAdditionChange(change),
-            resolvedWorkflowInstance,
+            await getWorkflowForDeploy(workflowInstance, statusIdToUuid),
             statusesPayload,
           )
         })

@@ -26,6 +26,7 @@ import {
   isReferenceExpression,
   TemplatePart,
   CORE_ANNOTATIONS,
+  isObjectType,
 } from '@salto-io/adapter-api'
 import { addReferencesToInstanceNames, referencedInstanceNamesFilterCreator,
   createReferenceIndex } from '../../src/filters/referenced_instance_names'
@@ -320,14 +321,14 @@ describe('referenced instances', () => {
           'myAdapter.book.instance.no_idFieldsParent',
           'myAdapter.email.instance.aaa_username_group1@um',
           'myAdapter.email.instance.aaa_username_group1_x_y@umvv',
-          'myAdapter.folder.instance.lastRecipe_456_123_ROOT__Desktop',
-          'myAdapter.folder.instance.lastRecipe_456_123_ROOT__Documents',
+          'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Desktop',
+          'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
           'myAdapter.group.instance.group1',
           'myAdapter.group.instance.group2',
           'myAdapter.group.instance.group3',
           'myAdapter.noIdFields.instance.no_idFieldsParent',
-          'myAdapter.recipe.instance.lastRecipe_456_123_ROOT',
           'myAdapter.recipe.instance.recipe123_123_ROOT',
+          'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
           'myAdapter.recipe.instance.recipe456_456_123_ROOT',
           'myAdapter.recipe.instance.sameRecipe',
           'myAdapter.recipe.instance.sameRecipe',
@@ -355,19 +356,19 @@ describe('referenced instances', () => {
       const sortedResult = result
         .filter(isInstanceElement)
         .map(i => i.elemID.getFullName()).sort()
-      expect(result.length).toEqual(15)
+      expect(result.length).toEqual(16)
       expect(sortedResult)
         .toEqual(['myAdapter.book.instance.123_ROOT',
           'myAdapter.book.instance.456_123_ROOT',
           'myAdapter.book.instance.no_idFieldsParent',
-          'myAdapter.folder.instance.lastRecipe_456_123_ROOT__Desktop',
-          'myAdapter.folder.instance.lastRecipe_456_123_ROOT__Documents',
+          'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Desktop',
+          'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
           'myAdapter.group.instance.group1',
           'myAdapter.group.instance.group2',
           'myAdapter.group.instance.group3',
           'myAdapter.noIdFields.instance.no_idFieldsWithParent',
-          'myAdapter.recipe.instance.lastRecipe_456_123_ROOT',
           'myAdapter.recipe.instance.recipe123_123_ROOT',
+          'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
           'myAdapter.recipe.instance.recipe456_456_123_ROOT',
         ])
     })
@@ -424,12 +425,12 @@ describe('referenced instances', () => {
           'myAdapter.book.instance.456_123_ROOT',
           'myAdapter.book.instance.no_idFieldsParent',
           'myAdapter.folder',
-          'myAdapter.folder.instance.lastRecipe_456_123_ROOT__Desktop',
-          'myAdapter.folder.instance.lastRecipe_456_123_ROOT__Documents',
+          'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Desktop',
+          'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
           'myAdapter.noIdFields.instance.no_idFieldsWithParent',
           'myAdapter.recipe',
-          'myAdapter.recipe.instance.lastRecipe_456_123_ROOT',
           'myAdapter.recipe.instance.recipe123_123_ROOT',
+          'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
           'myAdapter.recipe.instance.recipe456_456_123_ROOT',
           'myAdapter.recipe.instance.sameRecipe',
           'myAdapter.recipe.instance.sameRecipe',
@@ -448,7 +449,7 @@ describe('referenced instances', () => {
         'myAdapter.book.instance.no_idFieldsParent': 1,
         'myAdapter.recipe.instance.recipe123': 6,
         'myAdapter.recipe.instance.last': 2,
-        'myAdapter.recipe.instance.recipe456': 1,
+        'myAdapter.recipe.instance.recipe456': 2,
       })
     })
     it('should not have different results on the second fetch', async () => {
@@ -464,6 +465,30 @@ describe('referenced instances', () => {
         transformationDefaultConfig
       )
       expect(result).toEqual(result2)
+    })
+    it('should ignore null values on idFields', async () => {
+      elements = generateElements()
+      const parentRecipe = elements.filter(e => e.elemID.name === 'recipe123')
+      const recipeType = elements.find(e => isObjectType(e) && e.elemID.typeName === 'recipe')
+      const recipeWithNullBook = new InstanceElement(
+        'recipeWithNullBook',
+        recipeType as ObjectType,
+        {
+          name: 'recipeWithNullBook',
+          something: 'something',
+        },
+        undefined,
+        {
+          _parent: [new ReferenceExpression(parentRecipe[0].elemID, parentRecipe[0])],
+        }
+      )
+      const res = await addReferencesToInstanceNames(
+        elements.concat(recipeWithNullBook),
+        transformationConfigByType,
+        transformationDefaultConfig
+      )
+      const recipeWithNullBookRes = res.filter(isInstanceElement).find(e => e.value.name === 'recipeWithNullBook') as InstanceElement
+      expect(recipeWithNullBookRes.elemID.getFullName()).toEqual('myAdapter.recipe.instance.recipe123_123_ROOT__recipeWithNullBook')
     })
   })
 })

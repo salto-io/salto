@@ -53,7 +53,7 @@ const getFirstParentElemId = (instance: InstanceElement): ElemID | undefined => 
 const createInstanceReferencedNameParts = (
   instance: InstanceElement,
   idFields: string[],
-): string[] => idFields.map(
+): unknown[] => idFields.map(
   fieldName => {
     if (!isReferencedIdField(fieldName)) {
       return _.get(instance.value, fieldName)
@@ -71,8 +71,8 @@ const createInstanceReferencedNameParts = (
       return fieldValue.parts.map(part => (isReferenceExpression(part) ? dereferenceFieldValue(part) : _.toString(part))).join('')
     }
     if (fieldValue === undefined) {
-      log.warn(`In instance: ${instance.elemID.getFullName()}, could not find idField: ${fieldName}, returning ''`)
-      return _.toString(fieldValue)
+      log.debug(`In instance: ${instance.elemID.getFullName()}, could not find idField: ${fieldName}`)
+      return undefined
     }
     log.warn(`In instance: ${instance.elemID.getFullName()}, could not find reference for referenced idField: ${fieldName}, falling back to original value`)
     return _.toString(fieldValue)

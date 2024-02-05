@@ -147,5 +147,12 @@ describe('cpqReferencableFieldReferences', () => {
         [CUSTOM_OBJECT_ID_FIELD]: CUSTOM_OBJECT_ID,
       })
     })
+    it('should only handle applied changes', async () => {
+      const afterPreDeployChanges = [change]
+      await filter.preDeploy(afterPreDeployChanges)
+      const onDeployChanges: Change[] = []
+      await filter.onDeploy(onDeployChanges)
+      expect(onDeployChanges).toBeEmpty()
+    })
   })
 })

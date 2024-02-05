@@ -81,7 +81,8 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
     const [bundleInstances, nonBundleElements] = _.partition(elements, isBundleInstance)
     const [existingBundles, missingBundles] = _.partition(bundleInstances, bundle =>
       bundle.value.id in BUNDLE_ID_TO_COMPONENTS)
-    log.debug('The following bundle ids are missing in the bundle record: %o', missingBundles.map(bundle => bundle.value.id))
+    log.debug('The following bundle ids are missing in the bundle record: %o',
+      missingBundles.map(bundle => [bundle.value.id, bundle.value.installedFrom.toUpperCase(), bundle.value.publisher]))
     existingBundles.forEach(bundle => {
       bundle.value.isPrivate = Object.keys(BUNDLE_ID_TO_COMPONENTS[bundle.value.id]).length === 0
     })

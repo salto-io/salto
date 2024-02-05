@@ -64,7 +64,7 @@ describe('bundle_ids filter', () => {
     })
 
     it('should not add bundle field in case the bundle doesn\'t exist in the record', async () => {
-      const notInRecordBundle = new InstanceElement('0', bundleType().type, { id: '0' })
+      const notInRecordBundle = new InstanceElement('0', bundleType().type, { id: '0', installedFrom: 'Production' })
       await filterCreator(filterOpts).onFetch?.([recordInstance, notInRecordBundle])
       expect(fileCabinetInstance.value.bundle).toBeUndefined()
     })

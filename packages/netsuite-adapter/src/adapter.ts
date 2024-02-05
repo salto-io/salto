@@ -333,15 +333,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
         typeName: BUNDLE,
         values: { ...bundle, id: bundle.id.toString() },
       }))
-      // TODO: remove this log when SALTO-2602 is open for all customers
-      log.debug(
-        'The following bundle ids are missing in the bundle record: %o',
-        bundlesCustomInfo.map(bundle => [
-          bundle.values.id,
-          bundle.values.installedFrom?.toUpperCase(),
-          bundle.values.publisher,
-        ])
-      )
       const elementsToCreate = [
         ...customObjects,
         ...fileCabinetContent,

@@ -40,7 +40,7 @@ export const articleAttachmentSizeValidator: ChangeValidator = async changes => 
         return false
       }
       const contentValue = await attachmentInstance.value.content.getContent()
-      if (contentValue) {
+      if (contentValue === undefined) {
         log.error(`the attachment ${attachmentInstance.elemID.getFullName()}'s content does not exist`)
         return false
       }

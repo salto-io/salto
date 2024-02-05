@@ -395,11 +395,13 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
   {
     src: { field: 'macro_id' },
     serializationStrategy: 'id',
+    zendeskMissingRefStrategy: 'typeAndValue',
     target: { type: 'macro' },
   },
   {
     src: { field: 'macro_ids' },
     serializationStrategy: 'id',
+    zendeskMissingRefStrategy: 'typeAndValue',
     target: { type: 'macro' },
   },
   {
@@ -491,6 +493,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     src: { field: 'id', parentTypes: ['workspace__selected_macros'] },
     serializationStrategy: 'id',
     target: { type: 'macro' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: { field: 'role_restrictions' },
@@ -798,6 +801,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     src: { field: 'id', parentTypes: ['workspace__apps'] },
     serializationStrategy: 'id',
     target: { type: 'app_installation' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: { field: 'resource_id' },
@@ -886,6 +890,7 @@ const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
     },
     zendeskSerializationStrategy: 'idString',
     target: { typeContext: 'neighborField' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   // only one of these applies in a given instance
   {

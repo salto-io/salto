@@ -42,13 +42,14 @@ describe('group name filter', () => {
   })
 
   beforeEach(async () => {
+    jest.clearAllMocks()
     mockGetConfigWithDefault.mockReturnValue({ serviceIdField: 'groupId' })
     const elemIdGetter = mockFunction<ElemIdGetter>()
       .mockImplementation((adapterName, _serviceIds, name) => new ElemID(adapterName, name))
     filter = groupNameFilter({ ...getFilterParams(), getElemIdFunc: elemIdGetter }) as typeof filter
 
     withUUIDInstance = new InstanceElement(
-      'trusted_users_128baddc_c238_4857_b249_cfc84bd10c4b@b',
+      'trusted-users-128baddc-c238-4857-b249-cfc84bd10c4b@b',
       type,
       {
         name: 'trusted-users-128baddc-c238-4857-b249-cfc84bd10c4b',
@@ -63,11 +64,27 @@ describe('group name filter', () => {
     )
     withUUIDInstance.path = ['trusted_users_128baddc_c238_4857_b249_cfc84bd10c4b@b']
   })
+  it('should not change anything if there is more than one trusted users group', async () => {
+    const dup = new InstanceElement(
+      'trusted-users-123baddc-c123-1234-b249-cfc84bd10c4b@b',
+      type,
+      {
+        name: 'trusted-users-123baddc-c123-1234-b249-cfc84bd10c4b',
+      }
+    )
+    const elements = [withUUIDInstance, dup, withoutUUIDInstance]
+    await filter.onFetch(elements)
+    expect(elements.map(e => e.elemID.getFullName())).toEqual([
+      'jira.Group.instance.trusted-users-128baddc-c238-4857-b249-cfc84bd10c4b@b',
+      'jira.Group.instance.trusted-users-123baddc-c123-1234-b249-cfc84bd10c4b@b',
+      'jira.Group.instance.normal',
+    ])
+  })
   it('should remove uuid suffix from element name, file name and field into a new field', async () => {
     const elements = [withUUIDInstance]
     await filter.onFetch(elements)
     expect(elements[0].elemID.name).toEqual('trusted_users@b')
-    expect(elements[0].path).toEqual(['trusted_users'])
+    expect(elements[0].path).toEqual(['jira', 'Records', 'Group', 'trusted_users'])
     expect(elements[0].value.name).toEqual('trusted-users')
     expect(elements[0].value.originalName).toEqual('trusted-users-128baddc-c238-4857-b249-cfc84bd10c4b')
   })
@@ -76,22 +93,11 @@ describe('group name filter', () => {
     await filter.onFetch(elements)
     expect(elements[0].elemID.name).toEqual('normal')
   })
-  // it('should use empty list if no path is available', async () => {
-  //   const elements = [withoutUUIDInstance]
-  //   await filter.onFetch(elements)
-  //   expect(elements[0].elemID.name).toEqual('normal')
-  // })
-  it('should not change the name there is no service id in config', async () => {
-    mockGetConfigWithDefault.mockReturnValue({ serviceIdField: undefined })
-    const elements = [withUUIDInstance]
-    await filter.onFetch(elements)
-    expect(elements[0].elemID.name).toEqual('trusted_users_128baddc_c238_4857_b249_cfc84bd10c4b@b')
-  })
   it('change element file name to not have uuid', async () => {
     withUUIDInstance.path = undefined
     const elements = [withUUIDInstance]
     await filter.onFetch(elements)
-    expect(elements[0].path).toEqual(['trusted_users'])
+    expect(elements[0].path).toEqual(['jira', 'Records', 'Group', 'trusted_users'])
   })
 
   it('onDeploy should add originalName when addition', async () => {

@@ -2081,7 +2081,6 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         urlParamsToFields: {
           projectId: '_parent.0.id',
         },
-        omitRequestBody: true,
       },
     },
   },

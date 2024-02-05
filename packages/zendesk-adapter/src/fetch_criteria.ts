@@ -14,6 +14,23 @@
 * limitations under the License.
 */
 import { elements as elementUtils } from '@salto-io/adapter-components'
+import { InstanceElement, Value } from '@salto-io/adapter-api'
+import { TICKET_FORM_TYPE_NAME, WEBHOOK_TYPE_NAME } from './constants'
+
+const activeFieldCriteria = ({ instance, value }: {instance: InstanceElement; value: Value}): boolean => {
+  const { typeName } = instance.elemID
+  if (typeName === WEBHOOK_TYPE_NAME) {
+    if (value === true) {
+      return instance.value.status !== 'inactive'
+    }
+    return instance.value.status === 'inactive'
+  }
+  // We can't omit inactive ticket_form instances because we need all the instance in order to reorder them
+  if (typeName === TICKET_FORM_TYPE_NAME || instance.value.active === undefined) {
+    return true
+  }
+  return instance.value.active === value
+}
 
 export default {
   name: elementUtils.query.nameCriterion,
@@ -21,4 +38,5 @@ export default {
   raw_title: elementUtils.query.fieldCriterionCreator('raw_title'),
   title: elementUtils.query.fieldCriterionCreator('title'),
   type: elementUtils.query.fieldCriterionCreator('type'),
+  active: activeFieldCriteria,
 }

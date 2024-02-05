@@ -2801,6 +2801,9 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
   [FETCH_CONFIG]: {
     include: [{
       type: elements.query.ALL_TYPES,
+      criteria: {
+        active: true,
+      },
     }],
     exclude: [
       { type: 'organization' },

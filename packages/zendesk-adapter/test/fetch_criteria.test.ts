@@ -15,6 +15,7 @@
 */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import fetchCriteria from '../src/fetch_criteria'
+import { ZENDESK } from '../src/constants'
 
 describe('fetch_criteria', () => {
   describe('name', () => {
@@ -29,6 +30,38 @@ describe('fetch_criteria', () => {
 
       expect(fetchCriteria.name({ instance, value: '.ame' })).toBeTruthy()
       expect(fetchCriteria.name({ instance, value: 'ame' })).toBeFalsy()
+    })
+  })
+  describe('active', () => {
+    const macro = new ObjectType({ elemID: new ElemID(ZENDESK, 'macro') })
+    const webhookObjType = new ObjectType({ elemID: new ElemID(ZENDESK, 'webhook') })
+    const ticketForm = new ObjectType({ elemID: new ElemID(ZENDESK, 'ticket_form') })
+    const ticketForm1 = new InstanceElement('inst1', ticketForm, { name: 'test', active: false })
+    const macro1 = new InstanceElement('macro1', macro, { name: 'test', active: false })
+    const macro2 = new InstanceElement('macro2', macro, { name: 'test', active: true })
+    const webhook1 = new InstanceElement('webhook1', webhookObjType, { name: 'test', status: 'active' })
+    const webhook2 = new InstanceElement('webhook2', webhookObjType, { name: 'test', status: 'inactive' })
+    describe('webhook', () => {
+      it('should return true for active webhooks', () => {
+        expect(fetchCriteria.active({ instance: webhook1, value: true })).toBeTruthy()
+      })
+      it('should return false for inactive webhooks', () => {
+        expect(fetchCriteria.active({ instance: webhook2, value: true })).toBeFalsy()
+      })
+    })
+    describe('ticket_form', () => {
+      it('should always return true for ticket_form', () => {
+        expect(fetchCriteria.active({ instance: ticketForm1, value: true })).toBeTruthy()
+        expect(fetchCriteria.active({ instance: ticketForm1, value: false })).toBeTruthy()
+      })
+    })
+    describe('other', () => {
+      it('should return true for active instances', () => {
+        expect(fetchCriteria.active({ instance: macro2, value: true })).toBeTruthy()
+      })
+      it('should return false for inactive instances', () => {
+        expect(fetchCriteria.active({ instance: macro1, value: true })).toBeFalsy()
+      })
     })
   })
 })

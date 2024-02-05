@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { createMatchingObjectType } from '@salto-io/adapter-utils'
+import { createMatchingObjectType, ImportantValues } from '@salto-io/adapter-utils'
 import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
@@ -24,6 +24,7 @@ import {
   ListType,
   MapType,
   ObjectType,
+  importantValueType,
 } from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { types } from '@salto-io/lowerdash'
@@ -95,6 +96,7 @@ export type OptionalFeatures = {
   fixRetrieveFilePaths?: boolean
   organizationWideSharingDefaults?: boolean
   extendedCustomFieldInformation?: boolean
+  importantValues?: boolean
 }
 
 export type ChangeValidatorName = (
@@ -316,6 +318,7 @@ export type FetchParameters = {
   preferActiveFlowVersions?: boolean
   addNamespacePrefixToFullName?: boolean
   warningSettings?: WarningSettings
+  additionalImportantValues?: ImportantValues
 }
 
 export type DeprecatedMetadataParams = {
@@ -737,6 +740,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     fixRetrieveFilePaths: { refType: BuiltinTypes.BOOLEAN },
     organizationWideSharingDefaults: { refType: BuiltinTypes.BOOLEAN },
     extendedCustomFieldInformation: { refType: BuiltinTypes.BOOLEAN },
+    importantValues: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -800,6 +804,10 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
     preferActiveFlowVersions: { refType: BuiltinTypes.BOOLEAN },
     addNamespacePrefixToFullName: { refType: BuiltinTypes.BOOLEAN },
     warningSettings: { refType: warningSettingsType },
+    additionalImportantValues: {
+      // Exported type is downcasted to TypeElement
+      refType: new ListType(importantValueType),
+    },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -918,4 +926,5 @@ export type FetchProfile = {
   readonly addNamespacePrefixToFullName: boolean
   isWarningEnabled: (name: keyof WarningSettings) => boolean
   readonly maxItemsInRetrieveRequest: number
+  readonly importantValues: ImportantValues
 }

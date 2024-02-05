@@ -117,12 +117,22 @@ describe('client', () => {
         },
       },
     }
-    mockAxios.onPost().replyOnce(200, { data: { data: innerData } })
+    mockAxios.onPost().replyOnce(200, { data: innerData })
     result = await client.gqlPost({ url: 'www.test.com', query: 'query' })
-    expect(result).toEqual({ data: { data: innerData } })
+    expect(result).toEqual({ data: innerData })
   })
   it('check if gqlpost throws an error if the response is not as expected', async () => {
     mockAxios.onPost().replyOnce(200, { response: 'not as expected' })
+    await expect(client.gqlPost({ url: 'www.test.com', query: 'query' })).rejects.toThrow()
+  })
+  it('check if gqlpost throws an error if the response has an error', async () => {
+    const error = {
+      message: 'Requested issue layout configuration is not found',
+      locations: [{ line: 65, column: 3 }],
+      path: ['issueLayoutConfiguration'],
+      extensions: { statusCode: 404, errorType: 'DataFetchingException', classification: 'DataFetchingException' },
+    }
+    mockAxios.onPost().reply(200, { data: { layoutConfiguration: null }, errors: [error] })
     await expect(client.gqlPost({ url: 'www.test.com', query: 'query' })).rejects.toThrow()
   })
 })

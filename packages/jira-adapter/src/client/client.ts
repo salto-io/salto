@@ -16,7 +16,7 @@
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { createSchemeGuard, safeJsonStringify } from '@salto-io/adapter-utils'
 import { handleDeploymentErrors } from '../deployment/deployment_error_handling'
 import { createConnection } from './connection'
 import { JIRA } from '../constants'
@@ -42,7 +42,7 @@ const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
 
 export type graphQLResponseType = {
   data: unknown
-  errors?: unknown
+  errors?: unknown[]
 }
 
 const GRAPHQL_RESPONSE_SCHEME = Joi.object({
@@ -147,9 +147,13 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
       headers: PRIVATE_API_HEADERS,
     })
     if (isGraphQLResponse(response.data)) {
+      if (response.data.errors !== undefined && response.data.errors.length > 0) {
+        log.error('received the following errors for POST on %s with query: (%s). errors: %o', args.url, safeJsonStringify(args.query), response.data.errors)
+        throw new Error(`Received GQL error: ${safeJsonStringify(response.data.errors)}`)
+      }
       return response.data
     }
-    throw new Error('Failed to get issue layout response')
+    throw new Error('Failed to get GQL response')
   }
 
   public async getPrivate(

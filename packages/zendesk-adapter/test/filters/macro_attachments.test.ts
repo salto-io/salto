@@ -84,7 +84,7 @@ describe('macro attachment filter', () => {
       )
     })
     it('should create macro attachment instances', async () => {
-      mockGet = jest.spyOn(client, 'getSinglePage')
+      mockGet = jest.spyOn(client, 'get')
       mockGet.mockImplementation(params => {
         if (params.url === `/api/v2/macros/${macroInstance.value.id}/attachments`) {
           return {
@@ -133,7 +133,7 @@ describe('macro attachment filter', () => {
     })
     describe('invalid attachments response', () => {
       it('should return no attachments if response is an array', async () => {
-        mockGet = jest.spyOn(client, 'getSinglePage')
+        mockGet = jest.spyOn(client, 'get')
         mockGet.mockImplementation(params => {
           if (params.url === `/api/v2/macros/${macroInstance.value.id}/attachments`) {
             return {
@@ -168,7 +168,7 @@ describe('macro attachment filter', () => {
           ])
       })
       it('should return no attachments if attachment response is in invalid format', async () => {
-        mockGet = jest.spyOn(client, 'getSinglePage')
+        mockGet = jest.spyOn(client, 'get')
         mockGet.mockImplementation(params => {
           if (params.url === `/api/v2/macros/${macroInstance.value.id}/attachments`) {
             return {
@@ -202,7 +202,7 @@ describe('macro attachment filter', () => {
           ])
       })
       it('should not return attachment if its content is invalid', async () => {
-        mockGet = jest.spyOn(client, 'getSinglePage')
+        mockGet = jest.spyOn(client, 'get')
         mockGet.mockImplementation(params => {
           if (params.url === `/api/v2/macros/${macroInstance.value.id}/attachments`) {
             return {
@@ -241,7 +241,7 @@ describe('macro attachment filter', () => {
         expect(attachmentInst?.value.content).not.toBeDefined()
       })
       it('should return attachment without content if response with invalid status', async () => {
-        mockGet = jest.spyOn(client, 'getSinglePage')
+        mockGet = jest.spyOn(client, 'get')
         mockGet.mockImplementation(params => {
           if (params.url === `/api/v2/macros/${macroInstance.value.id}/attachments`) {
             return {

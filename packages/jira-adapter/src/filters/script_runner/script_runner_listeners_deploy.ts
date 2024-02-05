@@ -163,7 +163,7 @@ const filter: FilterCreator = ({ scriptRunnerClient, config }) => ({
     let valuesFromService: Value[]
     try {
       const response = await scriptRunnerClient
-        .getSinglePage({
+        .get({
           url: '/sr-dispatcher/jira/admin/token/scriptevents',
         })
       if (!isListenersResponse(response.data)) {

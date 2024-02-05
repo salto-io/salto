@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { InstanceElement, ObjectType, ElemID, DetailedChange, getChangeData } from '@salto-io/adapter-api'
+import { parser } from '@salto-io/parser'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
@@ -23,7 +24,6 @@ import { RemoteMap, RemoteMapCreator } from '../../src/workspace/remote_map'
 import { ValidationError } from '../../src/validator'
 import * as validator from '../../src/validator'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
-import { ParseError } from '../../src/parser'
 import { DuplicateAnnotationError } from '../../src/merger'
 import { Errors } from '../../src/errors'
 
@@ -192,7 +192,7 @@ describe('adapters config', () => {
     mockNaclFilesSource.getErrors.mockResolvedValue(new Errors({
       merge: [new DuplicateAnnotationError({ elemID: new ElemID('someID'), key: 'key', existingValue: 'val', newValue: 'val2' })],
       validation: [],
-      parse: [{} as ParseError],
+      parse: [{} as parser.ParseError],
     }))
     validationErrorsMap.values.mockReturnValue(awu([[new validator.InvalidValueValidationError({ elemID: new ElemID('someID'), value: 'val', fieldName: 'field', expectedValue: 'expVal' })]]))
 

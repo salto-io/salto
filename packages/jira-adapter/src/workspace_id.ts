@@ -40,7 +40,7 @@ export const getWorkspaceId = async (client: JiraClient, config: JiraConfig): Pr
     if (!config.fetch.enableJsmExperimental) {
       return undefined
     }
-    const response = await client.getSinglePage({
+    const response = await client.get({
       url: '/rest/servicedeskapi/assets/workspace',
     })
     if (!isWorkspaceResponse(response.data)) {

@@ -127,6 +127,19 @@ describe('jsmPathsFilter', () => {
         expect(requestTypeInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, REQUEST_TYPE_NAME, 'requestType1'])
         expect(calendarInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, CALENDAR_TYPE, 'calendar1'])
       })
+      it('should not change path to be subdirectory of parent if parent is not valid', async () => {
+        const queueWithInvalidParent = queueInstance.clone()
+        queueWithInvalidParent.annotations[CORE_ANNOTATIONS.PARENT] = ['invalidParent']
+        elements = [projectInstance, queueInstance, portalInstance, requestTypeInstance, calendarInstance]
+        const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+        config.fetch.enableJSM = false
+        filter = jsmArrangePathsFilter(getFilterParams({ config })) as typeof filter
+        await filter.onFetch(elements)
+        expect(queueInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, QUEUE_TYPE, 'queue1'])
+        expect(portalInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, PORTAL_GROUP_TYPE, 'portal1'])
+        expect(requestTypeInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, REQUEST_TYPE_NAME, 'requestType1'])
+        expect(calendarInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, CALENDAR_TYPE, 'calendar1'])
+      })
       it('should not change path to be subdirectory of parent if parent path is undefined', async () => {
         projectInstance.path = undefined
         await filter.onFetch(elements)

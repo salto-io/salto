@@ -42,7 +42,7 @@ const filter: FilterCreator = ({ client }) => ({
       return undefined
     }
     try {
-      const response = await client.getSinglePage({
+      const response = await client.get({
         url: '/rest/salto/1.0/plugininfo',
       })
       if (!isInfoResonse(response.data)) {

@@ -1,0 +1,10 @@
+/dist
+*.d.ts
+*.config.js
+coverage
+src/tools/
+/src/generated
+/package_native.js
+
+# Salesforce SFDX tests
+test/sfdx_parser/test_sfdx_project/

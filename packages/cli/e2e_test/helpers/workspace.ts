@@ -15,7 +15,8 @@
 */
 import glob from 'glob'
 import { Plan, telemetrySender, preview, loadLocalWorkspace, AppConfig } from '@salto-io/core'
-import { parser, Workspace, WorkspaceComponents } from '@salto-io/workspace'
+import { Workspace, WorkspaceComponents } from '@salto-io/workspace'
+import { parser } from '@salto-io/parser'
 import { readTextFile, writeFile } from '@salto-io/file'
 import {
   ActionName, Change, ElemID, getChangeData, InstanceElement, ObjectType, Values,

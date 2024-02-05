@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import { Element } from '@salto-io/adapter-api'
-import { SourceMap, ParseError } from '../../parser'
+import { parser } from '@salto-io/parser'
 
 export type ParsedNaclFileData = {
-  errors: () => Promise<ParseError[] | undefined>
+  errors: () => Promise<parser.ParseError[] | undefined>
   referenced: () => Promise<string[]>
   staticFiles: () => Promise<string[]>
 }
@@ -27,5 +27,5 @@ export type ParsedNaclFile = {
   elements: () => Promise<Element[] | undefined>
   data: ParsedNaclFileData
   buffer?: string
-  sourceMap?: () => Promise<SourceMap | undefined>
+  sourceMap?: () => Promise<parser.SourceMap | undefined>
 }

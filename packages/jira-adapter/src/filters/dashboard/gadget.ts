@@ -81,7 +81,7 @@ const getPropertiesKeys = async (
   const dashboardId = getParents(instance)[0].value.value.id
 
   try {
-    const response = await client.getSinglePage({
+    const response = await client.get({
       url: `/rest/api/3/dashboard/${dashboardId}/items/${instance.value.id}/properties`,
     })
     if (Array.isArray(response.data) || !Array.isArray(response.data.keys)) {
@@ -104,7 +104,7 @@ const getPropertyValue = async (
   const dashboardId = getParents(instance)[0].value.value.id
 
   try {
-    const response = await client.getSinglePage({
+    const response = await client.get({
       url: `/rest/api/3/dashboard/${dashboardId}/items/${instance.value.id}/properties/${key}`,
     })
 

@@ -28,7 +28,7 @@ import {
   InstanceElement,
   isAdditionOrModificationChange,
   isInstanceElement,
-  isObjectType, isReferenceExpression, isTemplateExpression,
+  isObjectType, isReferenceExpression, isStaticFile, isTemplateExpression,
   ListType,
   ObjectType, ProgressReporter,
   ReferenceExpression,
@@ -72,11 +72,11 @@ import {
   CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
   CUSTOM_OBJECT_FIELD_TYPE_NAME,
   CUSTOM_OBJECT_TYPE_NAME,
-  GUIDE,
+  GUIDE, GUIDE_THEME_TYPE_NAME,
   PERMISSION_GROUP_TYPE_NAME,
   SECTION_ORDER_TYPE_NAME,
   SECTION_TRANSLATION_TYPE_NAME,
-  SECTION_TYPE_NAME,
+  SECTION_TYPE_NAME, THEME_SETTINGS_TYPE_NAME,
   USER_SEGMENT_TYPE_NAME,
   ZENDESK,
 } from '../src/constants'
@@ -84,6 +84,7 @@ import { Credentials } from '../src/auth'
 import { getChangeGroupIds } from '../src/group_change'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
+import { ThemeDirectory, unzipFolderToElements } from '../src/filters/guide_theme'
 
 const { awu } = collections.asynciterable
 const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
@@ -199,6 +200,7 @@ const usedConfig = {
     exclude: [],
     guide: {
       brands: ['.*'],
+      themesForBrands: ['.*'],
     },
   },
   [API_DEFINITIONS_CONFIG]: {
@@ -217,6 +219,7 @@ describe('Zendesk adapter E2E', () => {
     let elements: Element[] = []
     let customObjectInstances: InstanceElement[]
     let guideInstances: InstanceElement[]
+    let guideThemeInstance: InstanceElement
     const createName = (type: string): string => `Test${type}${testSuffix}`
     const createSubdomainName = (): string => `test${testSuffix}`
 
@@ -301,6 +304,27 @@ describe('Zendesk adapter E2E', () => {
             expect(fetchInstanceValues[field]).toEqual(orgInstanceValues[field])
           }
         })
+    }
+
+    const createRootForTheme = async (buffer: Buffer, brandName: string, name: string)
+      : Promise<ThemeDirectory> => {
+      const root = await unzipFolderToElements(buffer, brandName, name)
+      const { content } = root.files['manifest_json@v']
+      expect(isStaticFile(content)).toBeTruthy()
+      if (!isStaticFile(content)) {
+        return root
+      }
+      const manifestBuffer = await content.getContent()
+      expect(manifestBuffer).toBeDefined()
+      if (manifestBuffer === undefined) {
+        return root
+      }
+      const stringManifest = manifestBuffer.toString()
+      root.files['manifest_json@v'].content = new StaticFile({
+        filepath: `${ZENDESK}/themes/brands/${brandName}/${name}/manifest.json`,
+        content: Buffer.from(stringManifest.replace('Copenhagen', name)),
+      })
+      return root
     }
 
     beforeAll(async () => {
@@ -974,6 +998,21 @@ describe('Zendesk adapter E2E', () => {
         name: `${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}`,
       })
 
+      const guideThemeName = createName('theme')
+      guideThemeInstance = createInstanceElement({
+        type: GUIDE_THEME_TYPE_NAME,
+        valuesOverride: {
+          name: guideThemeName,
+          root: await createRootForTheme(
+            fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/theme_zip/Copenhagen.zip`)),
+            HELP_CENTER_BRAND_NAME,
+            guideThemeName,
+          ),
+          brand_id: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+        },
+        name: `${HELP_CENTER_BRAND_NAME}_${guideThemeName}`,
+      })
+
       customObjectInstances = [
         customObjectInstance,
         customObjectFieldInstance1,
@@ -1060,6 +1099,7 @@ describe('Zendesk adapter E2E', () => {
         ...customObjectInstances,
         // guide elements
         ...guideInstances,
+        guideThemeInstance,
       ]
       await deployAndFetch(instancesToAdd, true)
     })
@@ -1128,6 +1168,8 @@ describe('Zendesk adapter E2E', () => {
         'user_field',
         'view',
         'workspace',
+        GUIDE_THEME_TYPE_NAME,
+        THEME_SETTINGS_TYPE_NAME,
       ]
       const typeNames = elements.filter(isObjectType).map(e => e.elemID.typeName)
       const instances = elements.filter(isInstanceElement)
@@ -1163,6 +1205,7 @@ describe('Zendesk adapter E2E', () => {
           'ticket_field',
           'user_field',
           ...GUIDE_TYPES_TO_HANDLE_BY_BRAND,
+          GUIDE_THEME_TYPE_NAME,
         ].includes(inst.elemID.typeName))
         .forEach(instanceToAdd => {
           const instance = elements.find(e => e.elemID.isEqual(instanceToAdd.elemID))
@@ -1251,12 +1294,20 @@ describe('Zendesk adapter E2E', () => {
         expect(instance).toBeDefined()
       })
     })
-    it('should handel guide elements correctly ', async () => {
+    it('should handle guide elements correctly ', async () => {
       const fetchedElements = getElementsAfterFetch(guideInstances)
       guideInstances
         .forEach(
           elem => verifyInstanceValues(fetchedElements[elem.elemID.getFullName()], elem, Object.keys(elem.value))
         )
+    })
+    it('should handle guide theme elements correctly ', async () => {
+      const fetchedElements = getElementsAfterFetch([guideThemeInstance])
+      verifyInstanceValues(
+        fetchedElements[guideThemeInstance.elemID.getFullName()],
+        guideThemeInstance,
+        Object.keys(guideThemeInstance.value,)
+      )
     })
   })
 })

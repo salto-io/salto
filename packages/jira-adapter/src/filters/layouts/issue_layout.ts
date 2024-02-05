@@ -72,7 +72,7 @@ const verifyProjectDeleted = async (
   client: JiraClient,
 ): Promise<boolean> => {
   try {
-    const res = await client.getSinglePage({ url: `/rest/api/3/project/${projectId}` })
+    const res = await client.get({ url: `/rest/api/3/project/${projectId}` })
     return res.status === 404
   } catch (error) {
     if (error instanceof clientUtils.HTTPError && error.response?.status === 404) {

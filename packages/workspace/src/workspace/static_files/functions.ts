@@ -15,18 +15,18 @@
 */
 import { StaticFile, Value, isStaticFile, DEFAULT_STATIC_FILE_ENCODING } from '@salto-io/adapter-api'
 
+import { parser } from '@salto-io/parser'
 import { StaticFilesSource, InvalidStaticFile, isInvalidStaticFile } from './common'
-import { Functions, FunctionExpression } from '../../parser/functions'
 
-export const getStaticFilesFunctions = (staticFilesSource: StaticFilesSource): Functions => ({
+export const getStaticFilesFunctions = (staticFilesSource: StaticFilesSource): parser.Functions => ({
   file: {
     parse: (parameters): Promise<StaticFile | InvalidStaticFile> => {
       const [filepath, encoding] = parameters
       return staticFilesSource.getStaticFile(filepath, encoding)
     },
-    dump: async (val: Value): Promise<FunctionExpression> => {
+    dump: async (val: Value): Promise<parser.FunctionExpression> => {
       if (isInvalidStaticFile(val)) {
-        return new FunctionExpression('file', [val.filepath])
+        return new parser.FunctionExpression('file', [val.filepath])
       }
 
       if (await val.getContent() !== undefined) {
@@ -34,7 +34,7 @@ export const getStaticFilesFunctions = (staticFilesSource: StaticFilesSource): F
       }
       const params = val.encoding === DEFAULT_STATIC_FILE_ENCODING
         ? [val.filepath] : [val.filepath, val.encoding]
-      return new FunctionExpression(
+      return new parser.FunctionExpression(
         'file',
         params,
       )

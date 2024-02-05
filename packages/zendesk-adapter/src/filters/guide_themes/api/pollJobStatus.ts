@@ -30,7 +30,7 @@ class JobError extends Error {
 const checkIfJobIsDone = async (
   client: ZendeskClient, jobId: string
 ): Promise<boolean> => {
-  const response = await client.getSinglePage({ url: `/api/v2/guide/theming/jobs/${jobId}` })
+  const response = await client.get({ url: `/api/v2/guide/theming/jobs/${jobId}` })
   if (!isJobResponse(response.data)) {
     throw new JobError(
       `Got an invalid response for Guide Theme job status. Job ID: ${jobId}`, jobId

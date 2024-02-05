@@ -29,7 +29,8 @@ import {
   Plan, PlanItem, EVENT_TYPES, DeployResult,
   telemetrySender, Telemetry, Tags, TelemetryEvent, CommandConfig, deploy as coreDeploy, ItemStatus,
 } from '@salto-io/core'
-import { Workspace, errors as wsErrors, state as wsState, parser, remoteMap, elementSource, pathIndex, staticFiles } from '@salto-io/workspace'
+import { Workspace, errors as wsErrors, state as wsState, remoteMap, elementSource, pathIndex, staticFiles } from '@salto-io/workspace'
+import { parser } from '@salto-io/parser'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'

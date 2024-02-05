@@ -56,11 +56,11 @@ export default class ZuoraClient extends clientUtils.AdapterHTTPClient<
     )
   }
 
-  public async getSinglePage(
+  public async get(
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
     try {
-      return await super.getSinglePage(args)
+      return await super.get(args)
     } catch (e) {
       const status = e.response?.status
       // Zuora sometimes returns 404 on speicic instances (e.g. workflow export)

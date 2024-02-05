@@ -92,14 +92,14 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
     const forms = (await Promise.all(jsmProjects
       .flatMap(async project => {
         const url = `/gateway/api/proforma/cloudid/${cloudId}/api/1/projects/${project.value.id}/forms`
-        const res = await client.getSinglePage({ url })
+        const res = await client.get({ url })
         if (!isFormsResponse(res)) {
           return undefined
         }
         return Promise.all(res.data
           .map(async formResponse => {
             const detailedUrl = `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms/${formResponse.id}`
-            const detailedRes = await client.getSinglePage({ url: detailedUrl })
+            const detailedRes = await client.get({ url: detailedUrl })
             if (!isDetailedFormsResponse(detailedRes.data)) {
               const error = {
                 message: `Unable to fetch form for project ${project.elemID.name} as it is missing a title.`,

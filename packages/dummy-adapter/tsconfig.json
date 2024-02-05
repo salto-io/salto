@@ -16,6 +16,7 @@
         { "path": "../lowerdash" },
         { "path": "../workspace" },
         { "path": "../adapter-components" },
-        { "path": "../logging" }
+        { "path": "../logging" },
+        { "path": "../parser" }
     ]
 }

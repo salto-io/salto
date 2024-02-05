@@ -16,9 +16,10 @@
 import * as path from 'path'
 import { readFileSync } from 'fs'
 import _ from 'lodash'
-import { Workspace, parser, errors as wsErrors, state, nacl, staticFiles, dirStore,
+import { Workspace, errors as wsErrors, state, nacl, staticFiles, dirStore,
   loadWorkspace, EnvironmentsSources, remoteMap, elementSource, pathIndex,
   adaptersConfigSource as acs } from '@salto-io/workspace'
+import { parser } from '@salto-io/parser'
 import { ElemID, SaltoError } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'

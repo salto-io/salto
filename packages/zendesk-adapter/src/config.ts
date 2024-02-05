@@ -1490,7 +1490,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       dataField: '.',
       standaloneFields: [{ fieldName: 'variants' }],
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToHide: FIELDS_TO_HIDE.concat([
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'outdated', fieldType: 'boolean' },
+      ]),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       serviceUrl: '/admin/workspaces/agent-workspace/dynamic_content',
     },
@@ -1521,7 +1524,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   dynamic_content_item__variants: {
     transformation: {
       idFields: ['&locale_id'],
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToHide: FIELDS_TO_HIDE.concat([
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'outdated', fieldType: 'boolean' },
+      ]),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       extendsParentId: true,
     },
@@ -2945,6 +2951,8 @@ export type ChangeValidatorName = (
   | 'notEnabledMissingReferences'
   | 'conditionalTicketFields'
   | 'dynamicContentDeletion'
+  | 'dynamicContentPlaceholderModification'
+  | 'inactiveTicketFormInView'
 )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -3019,6 +3027,8 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     notEnabledMissingReferences: { refType: BuiltinTypes.BOOLEAN },
     conditionalTicketFields: { refType: BuiltinTypes.BOOLEAN },
     dynamicContentDeletion: { refType: BuiltinTypes.BOOLEAN },
+    dynamicContentPlaceholderModification: { refType: BuiltinTypes.BOOLEAN },
+    inactiveTicketFormInView: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

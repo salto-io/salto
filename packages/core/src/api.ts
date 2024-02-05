@@ -782,6 +782,8 @@ const fixElementsContinuously = async (
 
   const fixedElements = getFixedElements(elements, fixes.fixedElements)
 
+  log.trace('FixElements returned the object %o', fixes)
+
   if (fixes.errors.length > 0 && runsLeft > 0) {
     const elementFixes = await fixElementsContinuously(workspace, fixedElements, adapters, runsLeft - 1)
 

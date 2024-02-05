@@ -13,10 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, TopLevelElement, createRefToElmWithValue } from '@salto-io/adapter-api'
 import NetsuiteClient from '../client/client'
-import { NETSUITE } from '../constants'
+import { ALLOCATION_TYPE, NETSUITE, PROJECT_EXPENSE_TYPE, TAX_SCHEDULE } from '../constants'
 import { getLastServerTime } from '../server_time'
 import { toSuiteQLWhereDateString } from '../changes_detector/date_formats'
 import { SuiteQLTableName } from './types'
@@ -29,10 +30,82 @@ export const INTERNAL_IDS_MAP = 'internalIdsMap'
 const VERSION_FIELD = 'version'
 const LATEST_VERSION = 1
 
+const ALLOCATION_TYPE_QUERY_LIMIT = 50
+
+type InternalIdsMap = Record<string, { name: string }>
+
 type QueryParams = {
-  internalIdField: 'id'
+  internalIdField: 'id' | 'key'
   nameField: string
   lastModifiedDateField?: 'lastmodifieddate'
+}
+
+type SavedSearchInternalIdsResult = {
+  internalid: [{
+    value: string
+  }]
+  name: string
+}
+
+type AllocationTypeSearchResult = {
+  [ALLOCATION_TYPE]: [{
+    value: string
+    text: string
+  }]
+}
+
+const SAVED_SEARCH_INTERNAL_IDS_RESULT_SCHEMA = {
+  type: 'array',
+  items: {
+    type: 'object',
+    required: ['name', 'internalid'],
+    properties: {
+      name: {
+        type: 'string',
+      },
+      internalid: {
+        type: 'array',
+        maxItems: 1,
+        minItems: 1,
+        items: {
+          type: 'object',
+          required: ['value'],
+          properties: {
+            value: {
+              type: 'string',
+            },
+          },
+        },
+      },
+    },
+  },
+}
+
+const ALLOCATION_TYPE_SEARCH_RESULT_SCHEMA = {
+  type: 'array',
+  items: {
+    type: 'object',
+    required: [ALLOCATION_TYPE],
+    properties: {
+      [ALLOCATION_TYPE]: {
+        type: 'array',
+        maxItems: 1,
+        minItems: 1,
+        items: {
+          type: 'object',
+          required: ['value', 'text'],
+          properties: {
+            value: {
+              type: 'string',
+            },
+            text: {
+              type: 'string',
+            },
+          },
+        },
+      },
+    },
+  },
 }
 
 export const QUERIES_BY_TABLE_NAME: Record<SuiteQLTableName, QueryParams | undefined> = {
@@ -51,6 +124,11 @@ export const QUERIES_BY_TABLE_NAME: Record<SuiteQLTableName, QueryParams | undef
     nameField: 'accountsearchdisplayname',
     lastModifiedDateField: 'lastmodifieddate',
   },
+  bom: {
+    internalIdField: 'id',
+    nameField: 'name',
+    lastModifiedDateField: 'lastmodifieddate',
+  },
   customer: {
     internalIdField: 'id',
     nameField: 'companyname',
@@ -64,6 +142,11 @@ export const QUERIES_BY_TABLE_NAME: Record<SuiteQLTableName, QueryParams | undef
   calendarEvent: {
     internalIdField: 'id',
     nameField: 'title',
+    lastModifiedDateField: 'lastmodifieddate',
+  },
+  charge: {
+    internalIdField: 'id',
+    nameField: 'description',
     lastModifiedDateField: 'lastmodifieddate',
   },
   classification: {
@@ -112,6 +195,11 @@ export const QUERIES_BY_TABLE_NAME: Record<SuiteQLTableName, QueryParams | undef
     lastModifiedDateField: 'lastmodifieddate',
   },
   location: {
+    internalIdField: 'id',
+    nameField: 'name',
+    lastModifiedDateField: 'lastmodifieddate',
+  },
+  manufacturingCostTemplate: {
     internalIdField: 'id',
     nameField: 'name',
     lastModifiedDateField: 'lastmodifieddate',
@@ -201,11 +289,47 @@ export const QUERIES_BY_TABLE_NAME: Record<SuiteQLTableName, QueryParams | undef
     internalIdField: 'id',
     nameField: 'name',
   },
+  campaignAudience: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  campaignCategory: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  campaignChannel: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  campaignFamily: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  campaignOffer: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  campaignSearchEngine: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  campaignSubscription: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  campaignVertical: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
   contactCategory: {
     internalIdField: 'id',
     nameField: 'name',
   },
   contactRole: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  costCategory: {
     internalIdField: 'id',
     nameField: 'name',
   },
@@ -225,6 +349,10 @@ export const QUERIES_BY_TABLE_NAME: Record<SuiteQLTableName, QueryParams | undef
     internalIdField: 'id',
     nameField: 'description',
   },
+  manufacturingRouting: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
   otherNameCategory: {
     internalIdField: 'id',
     nameField: 'name',
@@ -233,61 +361,78 @@ export const QUERIES_BY_TABLE_NAME: Record<SuiteQLTableName, QueryParams | undef
     internalIdField: 'id',
     nameField: 'name',
   },
+  promotionCode: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  salesRole: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  solution: {
+    internalIdField: 'id',
+    nameField: 'title',
+  },
+  supportCase: {
+    internalIdField: 'id',
+    nameField: 'title',
+  },
+  supportCasePriority: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  supportCaseStatus: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  entityStatus: {
+    internalIdField: 'key',
+    nameField: 'name',
+  },
+  campaignEvent: {
+    internalIdField: 'id',
+    nameField: 'description',
+  },
 
   // could not find table
   address: undefined,
   billingAccount: undefined,
-  bin: undefined,
-  bom: undefined,
-  bomRevision: undefined,
   campaign: undefined,
-  campaignAudience: undefined,
-  campaignCategory: undefined,
-  campaignChannel: undefined,
-  campaignFamily: undefined,
-  campaignOffer: undefined,
-  campaignResponse: undefined,
-  campaignSearchEngine: undefined,
-  campaignSubscription: undefined,
-  campaignVertical: undefined,
-  charge: undefined,
-  costCategory: undefined,
   customerStatus: undefined,
-  fairValuePrice: undefined,
   globalAccountMapping: undefined,
   hcmJob: undefined,
-  inboundShipment: undefined,
   inventoryDetail: undefined,
   issue: undefined,
   itemAccountMapping: undefined,
-  itemDemandPlan: undefined,
   itemRevision: undefined,
-  itemSupplyPlan: undefined,
-  manufacturingCostTemplate: undefined,
-  manufacturingOperationTask: undefined,
-  manufacturingRouting: undefined,
   noteType: undefined,
   opportunity: undefined,
   partnerCategory: undefined,
-  projectTask: undefined,
-  promotionCode: undefined,
-  resourceAllocation: undefined,
-  salesRole: undefined,
-  solution: undefined,
-  supportCase: undefined,
   supportCaseIssue: undefined,
   supportCaseOrigin: undefined,
-  supportCasePriority: undefined,
-  supportCaseStatus: undefined,
   supportCaseType: undefined,
   timeEntry: undefined,
   timeSheet: undefined,
   winLossReason: undefined,
 
   // has table, but no relevant info
+  bin: undefined,
   consolidatedExchangeRate: undefined,
+  inboundShipment: undefined,
   note: undefined,
   salesTaxItem: undefined,
+
+  // needs multiple fields for uniqueness
+  bomRevision: undefined,
+  manufacturingOperationTask: undefined,
+  projectTask: undefined,
+
+  // have fields that reference other tables
+  campaignResponse: undefined,
+  fairValuePrice: undefined,
+  itemDemandPlan: undefined,
+  itemSupplyPlan: undefined,
+  resourceAllocation: undefined,
 
   // referenced by scriptid
   customList: undefined,
@@ -299,12 +444,16 @@ export const QUERIES_BY_TABLE_NAME: Record<SuiteQLTableName, QueryParams | undef
   customrecordtype: undefined,
 }
 
+export const getSuiteQLTableInternalIdsMap = (instance: InstanceElement): InternalIdsMap =>
+  // value[INTERNAL_IDS_MAP] can be undefined because transformElement transform empty objects to undefined
+  instance.value[INTERNAL_IDS_MAP] ?? {}
+
 const getInternalIdsMap = async (
   client: NetsuiteClient,
   tableName: string,
   { internalIdField, nameField, lastModifiedDateField }: QueryParams,
   lastFetchTime: Date | undefined,
-): Promise<Record<string, { name: string }>> => {
+): Promise<InternalIdsMap> => {
   const whereLastModified = lastModifiedDateField !== undefined && lastFetchTime !== undefined
     ? `WHERE ${lastModifiedDateField} >= ${toSuiteQLWhereDateString(lastFetchTime)}` : ''
   const queryString = `SELECT ${internalIdField}, ${nameField} FROM ${tableName} ${whereLastModified} ORDER BY ${internalIdField} ASC`
@@ -360,10 +509,12 @@ const getSuiteQLTableInstance = async (
   suiteQLTableType: ObjectType,
   tableName: string,
   queryParams: QueryParams,
-  existingInstance: InstanceElement | undefined,
+  elementsSource: ReadOnlyElementsSource,
   lastFetchTime: Date | undefined,
   isPartial: boolean,
 ): Promise<InstanceElement | undefined> => {
+  const instanceElemId = suiteQLTableType.elemID.createNestedID('instance', tableName)
+  const existingInstance = await elementsSource.get(instanceElemId)
   fixExistingInstance(suiteQLTableType, existingInstance)
   if (isPartial) {
     return existingInstance
@@ -382,6 +533,97 @@ const getSuiteQLTableInstance = async (
   return instance
 }
 
+const getSavedSearchQueryInstance = async (
+  client: NetsuiteClient,
+  suiteQLTableType: ObjectType,
+  searchType: string,
+  elementsSource: ReadOnlyElementsSource,
+  isPartial: boolean,
+): Promise<InstanceElement | undefined> => {
+  const instanceElemId = suiteQLTableType.elemID.createNestedID('instance', searchType)
+  const existingInstance = await elementsSource.get(instanceElemId)
+  fixExistingInstance(suiteQLTableType, existingInstance)
+  if (isPartial) {
+    return existingInstance
+  }
+  const instance = createOrGetExistingInstance(suiteQLTableType, searchType, existingInstance)
+  const result = await client.runSavedSearchQuery({
+    type: searchType,
+    columns: ['internalid', 'name'],
+    filters: [],
+  })
+  const ajv = new Ajv({ allErrors: true, strict: false })
+  if (result === undefined) {
+    log.warn('failed to search %s using saved search query', searchType)
+  } else if (!ajv.validate<SavedSearchInternalIdsResult[]>(SAVED_SEARCH_INTERNAL_IDS_RESULT_SCHEMA, result)) {
+    log.error('Got invalid results from %s saved search query: %s', searchType, ajv.errorsText())
+  } else {
+    instance.value[INTERNAL_IDS_MAP] = Object.fromEntries(
+      result.map(res => [res.internalid[0].value, { name: res.name }])
+    )
+  }
+  instance.value[VERSION_FIELD] = LATEST_VERSION
+  return instance
+}
+
+const getAllocationTypeInstance = async (
+  client: NetsuiteClient,
+  suiteQLTableType: ObjectType,
+  elementsSource: ReadOnlyElementsSource,
+  isPartial: boolean,
+): Promise<InstanceElement | undefined> => {
+  const instanceElemId = suiteQLTableType.elemID.createNestedID('instance', ALLOCATION_TYPE)
+  const existingInstance = await elementsSource.get(instanceElemId)
+  fixExistingInstance(suiteQLTableType, existingInstance)
+  if (isPartial) {
+    return existingInstance
+  }
+  const instance = createOrGetExistingInstance(suiteQLTableType, ALLOCATION_TYPE, existingInstance)
+  const ajv = new Ajv({ allErrors: true, strict: false })
+  const getAllocationTypes = async (exclude: string[] = []): Promise<Record<string, { name: string }>> => {
+    const result = await client.runSavedSearchQuery(
+      {
+        type: 'resourceAllocation',
+        columns: [ALLOCATION_TYPE],
+        filters: exclude.length > 0 ? [[ALLOCATION_TYPE, 'noneof', ...exclude]] : [],
+      },
+      ALLOCATION_TYPE_QUERY_LIMIT
+    )
+    if (result === undefined) {
+      log.warn('failed to search %s using saved search query', ALLOCATION_TYPE)
+      return {}
+    }
+    if (!ajv.validate<AllocationTypeSearchResult[]>(ALLOCATION_TYPE_SEARCH_RESULT_SCHEMA, result)) {
+      log.error('Got invalid results from %s saved search query: %s', ALLOCATION_TYPE, ajv.errorsText())
+      return {}
+    }
+    const internalIdToName = Object.fromEntries(
+      result.map(row => [row[ALLOCATION_TYPE][0].value, { name: row[ALLOCATION_TYPE][0].text }])
+    )
+    if (result.length < ALLOCATION_TYPE_QUERY_LIMIT) {
+      return internalIdToName
+    }
+    return {
+      ...internalIdToName,
+      ...await getAllocationTypes(Object.keys(internalIdToName).concat(exclude)),
+    }
+  }
+  instance.value[INTERNAL_IDS_MAP] = await getAllocationTypes()
+  instance.value[VERSION_FIELD] = LATEST_VERSION
+  return instance
+}
+
+const getAdditionalInstances = (
+  client: NetsuiteClient,
+  suiteQLTableType: ObjectType,
+  elementsSource: ReadOnlyElementsSource,
+  isPartial: boolean
+): Promise<InstanceElement | undefined>[] => [
+  getSavedSearchQueryInstance(client, suiteQLTableType, TAX_SCHEDULE, elementsSource, isPartial),
+  getSavedSearchQueryInstance(client, suiteQLTableType, PROJECT_EXPENSE_TYPE, elementsSource, isPartial),
+  getAllocationTypeInstance(client, suiteQLTableType, elementsSource, isPartial),
+]
+
 export const getSuiteQLTableElements = async (
   client: NetsuiteClient,
   elementsSource: ReadOnlyElementsSource,
@@ -394,7 +636,7 @@ export const getSuiteQLTableElements = async (
 
   const lastFetchTime = await getLastServerTime(elementsSource)
   const instances = await Promise.all(
-    Object.entries(QUERIES_BY_TABLE_NAME).map(async ([tableName, queryParams]) => {
+    Object.entries(QUERIES_BY_TABLE_NAME).map(([tableName, queryParams]) => {
       if (queryParams === undefined) {
         return undefined
       }
@@ -403,11 +645,13 @@ export const getSuiteQLTableElements = async (
         suiteQLTableType,
         tableName,
         queryParams,
-        await elementsSource.get(suiteQLTableType.elemID.createNestedID('instance', tableName)),
+        elementsSource,
         lastFetchTime,
         isPartial
       )
-    })
+    }).concat(
+      getAdditionalInstances(client, suiteQLTableType, elementsSource, isPartial)
+    )
   ).then(res => res.flatMap(instance => instance ?? []))
 
   return [suiteQLTableType, ...instances]

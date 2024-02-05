@@ -33,7 +33,8 @@ import fs from 'fs'
 import path from 'path'
 import seedrandom from 'seedrandom'
 import readdirp from 'readdirp'
-import { parser, merger, expressions, elementSource } from '@salto-io/workspace'
+import { merger, expressions, elementSource } from '@salto-io/workspace'
+import { parser } from '@salto-io/parser'
 import { createMatchingObjectType, ImportantValues, inspectValue } from '@salto-io/adapter-utils'
 
 

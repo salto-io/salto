@@ -59,7 +59,7 @@ const noTranslationForDefaultLocale = (instance: InstanceElement): boolean => {
     .find(tran => {
       if (isResolvedReferenceExpression(tran.locale)) {
         if (!isInstanceElement(tran.locale.value)) {
-          log.warn(`${tran.locale.value} is not an instance element`)
+          log.warn('Translation locale is not an instance element')
           return false
         }
         return tran.locale.value.value.locale === sourceLocale

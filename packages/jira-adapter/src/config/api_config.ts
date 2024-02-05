@@ -1239,7 +1239,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       },
     },
   },
-  WorkflowRuleConfiguration: { // here
+  WorkflowRuleConfiguration: {
     transformation: {
       fieldsToOmit: [
         { fieldName: 'id' },

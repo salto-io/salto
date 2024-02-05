@@ -16,24 +16,20 @@
 import _ from 'lodash'
 import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 
-import { ChangeValidator, ReferenceExpression, Value, getChangeData,
+import { ChangeValidator, Value, getChangeData,
   isAdditionOrModificationChange,
   isInstanceChange,
   isReferenceExpression } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 
 import { VIEW_TYPE_NAME, TICKET_FORM_TYPE_NAME } from '../constants'
+import { ConditionWithReferenceValue } from './utils'
 
 const log = logger(module)
 
-type ConditionWithReferenceValue = {
-  field: string
-  value: ReferenceExpression
-}
-
-const isConditionWithReference = (instance: Value): instance is ConditionWithReferenceValue =>
-  _.isString(instance.field)
-  && isReferenceExpression(instance.value)
+const isConditionWithReference = (condition: Value): condition is ConditionWithReferenceValue =>
+  _.isString(condition.field)
+  && isReferenceExpression(condition.value)
 
 /*
  * This change validator checks that a user does not reference deactivated
@@ -45,14 +41,14 @@ export const inactiveTicketFormInViewValidator: ChangeValidator = async (changes
     return []
   }
 
-  const changedViews = changes
+  const changedViewsInstances = changes
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
     .filter(change => getChangeData(change).elemID.typeName === VIEW_TYPE_NAME)
     .filter(change => getChangeData(change).value?.conditions !== undefined)
     .map(getChangeData)
 
-  if (changedViews.length === 0) {
+  if (changedViewsInstances.length === 0) {
     return []
   }
 
@@ -61,7 +57,7 @@ export const inactiveTicketFormInViewValidator: ChangeValidator = async (changes
     .filter(ticketForm => ticketForm.value.active === false)
     .map(form => form.elemID.getFullName()))
 
-  return changedViews
+  return changedViewsInstances
     .flatMap(instance => {
       const conditions = (
         (instance.value.conditions.all ?? []).concat((instance.value.conditions.any ?? []))

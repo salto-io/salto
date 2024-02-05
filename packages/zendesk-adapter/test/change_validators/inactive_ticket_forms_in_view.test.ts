@@ -20,9 +20,8 @@ import {
   toChange, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-// eslint-disable-next-line no-restricted-imports
-import { Condition } from 'src/filters/utils'
-import { TICKET_FORM_TYPE_NAME, VIEW_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { ConditionWithReferenceValue } from '../../src/change_validators/utils'
+import { BRAND_TYPE_NAME, TICKET_FORM_TYPE_NAME, VIEW_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { inactiveTicketFormInViewValidator } from '../../src/change_validators'
 
 const createTicketForm = (name: string, active: boolean): InstanceElement => new InstanceElement(
@@ -31,15 +30,16 @@ const createTicketForm = (name: string, active: boolean): InstanceElement => new
   { active },
 )
 
-const createViewWithConditions = (name: string, conditions: Condition[]): InstanceElement => new InstanceElement(
-  name,
-  new ObjectType({ elemID: new ElemID(ZENDESK, VIEW_TYPE_NAME) }),
-  {
-    conditions: {
-      all: conditions,
-    },
-  }
-)
+const createViewWithConditions = (name: string, conditions: ConditionWithReferenceValue[]): InstanceElement =>
+  new InstanceElement(
+    name,
+    new ObjectType({ elemID: new ElemID(ZENDESK, VIEW_TYPE_NAME) }),
+    {
+      conditions: {
+        all: conditions,
+      },
+    }
+  )
 
 const createViewWithTicketFormCondition = (name: string, ticketForms: ElemID[]): InstanceElement => {
   const ticketConditions = ticketForms
@@ -90,18 +90,26 @@ describe('viewWithNoInactiveTicketsValidator', () => {
     expect(errors).toEqual([])
   })
   it('should have no errors when there are no ticket forms in the conditions field', async () => {
+    const brandType = new ObjectType({
+      elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME),
+    })
+    const brandInstance = new InstanceElement(
+      'testBrand',
+      brandType,
+      { name: 'test', subdomain: 'subdomain_test' },
+    )
+    const brandRef = new ReferenceExpression(brandInstance.elemID, brandInstance)
     const dummyConditions = [
       {
-        field: 'requester_id',
+        field: 'brand_id',
         operator: 'is',
-        value: 'current_user',
+        value: brandRef,
       },
       {
-        field: 'assignee_id',
+        field: 'brand_id',
         operator: 'is_not',
-        value: 'requester_id',
+        value: brandRef,
       },
-
     ]
     const viewWithNonTicketConditions = createViewWithConditions('viewWithNoTickets', dummyConditions)
 

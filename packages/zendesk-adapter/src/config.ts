@@ -2583,6 +2583,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       idFields: ['key'],
       extendsParentId: true,
+      standaloneFields: [{ fieldName: 'custom_field_options' }],
       sourceTypeName: 'custom_object__custom_object_fields',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldsToOmit: FIELDS_TO_OMIT.concat(
@@ -2790,8 +2791,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
         fieldsToOmit: FIELDS_TO_OMIT,
         fieldsToHide: FIELDS_TO_HIDE,
         serviceIdField: DEFAULT_SERVICE_ID_FIELD,
-        // TODO: change this to true for SALTO-3593.
-        nestStandaloneInstances: false,
+        nestStandaloneInstances: true,
       },
     },
     types: DEFAULT_TYPES,

@@ -91,14 +91,17 @@ const onFetch = async (elements: Element[]): Promise<void> => {
       )
       return
     }
+    const nestedPath = customObjectField.path
+      ? [...customObjectField.path.slice(0, customObjectField.path.length - 1), 'options']
+      : [ZENDESK, RECORDS_PATH, CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME]
     const optionInstances = options.map(option => {
       const instanceName = naclCase(`${customObjectField.elemID.name}__${option.value}`)
       return new InstanceElement(
         instanceName,
         customObjectFieldOptionType,
         option,
-        [ZENDESK, RECORDS_PATH, CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME, pathNaclCase(instanceName)],
-        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(customObjectField.elemID, customObjectField)] },
+        [...nestedPath, pathNaclCase(instanceName)],
+        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(customObjectField.elemID, customObjectField)] }
       )
     })
 

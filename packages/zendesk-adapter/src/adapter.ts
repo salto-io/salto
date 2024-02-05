@@ -151,6 +151,7 @@ import customRoleDeployFilter from './filters/custom_role_deploy'
 import routingAttributeValueDeployFilter from './filters/routing_attribute_value'
 import localeFilter from './filters/locale'
 import ticketStatusCustomStatusDeployFilter from './filters/ticket_status_custom_status'
+import { filterOutInactiveInstancesForType } from './inactive'
 import handleIdenticalAttachmentConflicts from './filters/handle_identical_attachment_conflicts'
 import addImportantValuesFilter from './filters/add_important_values'
 import customObjectFilter from './filters/custom_objects/custom_object'
@@ -570,6 +571,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       computeGetArgs,
       typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
       getElemIdFunc: this.getElemIdFunc,
+      customInstanceFilter: filterOutInactiveInstancesForType(this.userConfig),
     })
 
     if (!isGuideInFetch) {

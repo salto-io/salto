@@ -23,7 +23,7 @@ import NetsuiteClient from '../client/client'
 import { RemoteFilterCreator } from '../filter'
 import { ACCOUNT_SPECIFIC_VALUE, ALLOCATION_TYPE, EMPLOYEE, INIT_CONDITION, NAME_FIELD, PROJECT_EXPENSE_TYPE, SCRIPT_ID, SELECT_RECORD_TYPE, TAX_SCHEDULE, WORKFLOW } from '../constants'
 import { QUERY_RECORD_TYPES, QueryRecordType, QueryRecordResponse, QueryRecordSchema } from '../client/suiteapp_client/types'
-import { SUITEQL_TABLE, getSuiteQLTableInternalIdsMap } from '../data_elements/suiteql_table_elements'
+import { SUITEQL_TABLE, getSuiteQLNameToInternalIdsMap, getSuiteQLTableInternalIdsMap } from '../data_elements/suiteql_table_elements'
 import { INTERNAL_ID_TO_TYPES } from '../data_elements/types'
 import { captureServiceIdInfo } from '../service_id_info'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
@@ -32,7 +32,6 @@ import { assignToCustomFieldsSelectRecordTypeIndex } from '../elements_source_in
 const log = logger(module)
 const { isNumberStr, matchAll } = strings
 const { makeArray } = collections.array
-const { awu } = collections.asynciterable
 
 const RECORDS_PER_QUERY = 10
 
@@ -595,28 +594,6 @@ const setValuesInInstance = (
       setFieldValue(field, innerValue, internalId, suiteQLTablesMap)
     }
   })
-}
-
-const getSuiteQLNameToInternalIdsMap = async (
-  elementsSource: ReadOnlyElementsSource
-): Promise<Record<string, Record<string, string[]>>> => {
-  const suiteQLTableInstances = await awu(await elementsSource.list())
-    .filter(elemId => elemId.idType === 'instance' && elemId.typeName === SUITEQL_TABLE)
-    .map(elemId => elementsSource.get(elemId))
-    .filter(isInstanceElement)
-    .toArray()
-
-  return _(suiteQLTableInstances)
-    .keyBy(instance => instance.elemID.name)
-    .mapValues(getSuiteQLTableInternalIdsMap)
-    .mapValues(
-      internalIdsMap => _(internalIdsMap)
-        .entries()
-        .groupBy(([_key, value]) => value.name)
-        .mapValues(rows => rows.map(([key, _value]) => key))
-        .value()
-    )
-    .value()
 }
 
 const toMissingInternalIdWarning = (

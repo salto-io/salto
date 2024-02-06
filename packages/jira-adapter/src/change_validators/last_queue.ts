@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,14 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isInstanceChange, SeverityLevel, isRemovalChange, CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isInstanceChange, SeverityLevel, isRemovalChange, CORE_ANNOTATIONS, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { getParent } from '@salto-io/adapter-utils'
+import { getParent, hasValidParent } from '@salto-io/adapter-utils'
 import { PROJECT_TYPE, QUEUE_TYPE } from '../constants'
 import { JiraConfig } from '../config/config'
 
 const { awu } = collections.asynciterable
 
+/*
+* This validator prevents the deletion of the last queue of a project.
+*/
 export const deleteLastQueueValidator: (
     config: JiraConfig,
   ) => ChangeValidator = config => async (changes, elementsSource) => {
@@ -37,7 +40,7 @@ export const deleteLastQueueValidator: (
     const projectToQueues = await awu(await elementsSource.list())
       .filter(id => id.typeName === QUEUE_TYPE && id.idType === 'instance')
       .map(id => elementsSource.get(id))
-      .filter(queue => queue.annotations[CORE_ANNOTATIONS.PARENT]?.[0] !== undefined)
+      .filter(queue => isReferenceExpression(queue.annotations[CORE_ANNOTATIONS.PARENT]?.[0]))
       .groupBy(queue => queue.annotations[CORE_ANNOTATIONS.PARENT][0].elemID.getFullName())
 
     return awu(changes)
@@ -45,7 +48,7 @@ export const deleteLastQueueValidator: (
       .filter(isRemovalChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === QUEUE_TYPE)
-      .filter(queue => queue.annotations[CORE_ANNOTATIONS.PARENT]?.[0] !== undefined)
+      .filter(queue => hasValidParent(queue))
       .filter(async instance => {
         const relatedQueues = projectToQueues[getParent(instance).elemID.getFullName()]
         return relatedQueues === undefined && projects.includes(getParent(instance).elemID.getFullName())

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,7 +16,7 @@
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import NetsuiteClient from '../src/client/client'
-import { NetsuiteQuery } from '../src/query'
+import { NetsuiteQuery } from '../src/config/query'
 import { getDeletedElements } from '../src/deletion_calculator'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../src/constants'
 

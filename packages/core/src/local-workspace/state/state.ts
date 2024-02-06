@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -32,6 +32,7 @@ import semver from 'semver'
 
 import { ContentAndHash, createFileStateContentProvider, createS3StateContentProvider, getHashFromHashes, NamedStream, StateContentProvider } from './content_providers'
 import { version } from '../../generated/version.json'
+import { getLocalStoragePath } from '../../app_config'
 
 const { awu } = collections.asynciterable
 const { serializeStream, deserializeParsed } = serialization
@@ -98,14 +99,15 @@ export const getStateContentProvider = (
 ): StateContentProvider => {
   switch (stateConfig.provider) {
     case 'file': {
-      return createFileStateContentProvider()
+      const localStorageDir = stateConfig.options?.file?.localStorageDir ?? getLocalStoragePath(workspaceId)
+      return createFileStateContentProvider(localStorageDir)
     }
     case 's3': {
-      const bucketName = stateConfig.options?.s3?.bucket
-      if (bucketName === undefined) {
+      const options = stateConfig.options?.s3
+      if (options === undefined || options.bucket === undefined) {
         throw new Error('Missing key "options.s3.bucket" in workspace state configuration')
       }
-      return createS3StateContentProvider({ workspaceId, bucketName })
+      return createS3StateContentProvider({ workspaceId, options })
     }
     default:
       throw new Error(`Unsupported state provider ${stateConfig.provider}`)
@@ -116,8 +118,8 @@ export const localState = (
   filePrefix: string,
   envName: string,
   remoteMapCreator: remoteMap.RemoteMapCreator,
-  staticFilesSource: staticFiles.StateStaticFilesSource,
   contentProvider: StateContentProvider,
+  staticFilesSource?: staticFiles.StateStaticFilesSource,
   persistent = true
 ): state.State => {
   let dirty = false
@@ -125,6 +127,10 @@ export const localState = (
   let contentsAndHash: Promise<ContentAndHash[]> | undefined
   let currentFilePrefix = filePrefix
   let currentContentProvider = contentProvider
+
+  const currentStaticFilesSource = (): staticFiles.StateStaticFilesSource => (
+    staticFilesSource ?? currentContentProvider.staticFilesSource
+  )
 
   const setDirty = (): void => {
     dirty = true
@@ -168,7 +174,7 @@ export const localState = (
     const quickAccessStateData = await state.buildStateData(
       envName,
       remoteMapCreator,
-      staticFilesSource,
+      currentStaticFilesSource(),
       persistent,
     )
     const filePaths = await currentContentProvider.findStateFiles(currentFilePrefix)
@@ -268,7 +274,7 @@ export const localState = (
     },
     rename: async (newPrefix: string): Promise<void> => {
       await Promise.all([
-        staticFilesSource.rename(newPrefix),
+        currentStaticFilesSource().rename(newPrefix),
         currentContentProvider.rename(currentFilePrefix, newPrefix),
       ])
       currentFilePrefix = newPrefix
@@ -294,7 +300,6 @@ export const localState = (
       await inMemState.setVersion(version)
       await inMemState.setHash(updatedHash)
       await inMemState.flush()
-      await staticFilesSource.flush()
       dirty = false
       log.debug('finished flushing state')
     },
@@ -339,7 +344,7 @@ type LoadStateArgs = {
   baseDir: string
   envName: string
   remoteMapCreator: remoteMap.RemoteMapCreator
-  staticFilesSource: staticFiles.StateStaticFilesSource
+  staticFilesSource?: staticFiles.StateStaticFilesSource
   persistent: boolean
 }
 export const loadState = ({
@@ -355,8 +360,8 @@ export const loadState = ({
     baseDir,
     envName,
     remoteMapCreator,
-    staticFilesSource,
     getStateContentProvider(workspaceId, stateConfig),
+    staticFilesSource,
     persistent,
   )
 )

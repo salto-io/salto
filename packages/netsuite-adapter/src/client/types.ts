@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,7 +15,7 @@
 */
 import { Change, ChangeData, ElemID, getChangeData, InstanceElement, isInstanceChange, isObjectType, isObjectTypeChange, ObjectType, TopLevelElement, Values } from '@salto-io/adapter-api'
 import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type'
-import { NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, ObjectID } from '../query'
+import { NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, ObjectID } from '../config/types'
 
 export interface CustomizationInfo {
   typeName: string

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { parse, dumpElements } from '../parser'
+import { parser } from '@salto-io/parser'
 
 import { FILE_EXTENSION } from './nacl_files'
 import { DirectoryStore } from './dir_store'
@@ -51,7 +51,7 @@ export const configSource = (
         log.warn('Could not find file %s for configuration %s', filename(name), name)
         return defaultValue
       }
-      const parseResult = await parse(Buffer.from(naclFile.buffer), naclFile.filename)
+      const parseResult = await parser.parse(Buffer.from(naclFile.buffer), naclFile.filename)
       if (!_.isEmpty(parseResult.errors)) {
         log.error('failed to parse %s due to %o', name, parseResult.errors)
         throw new ConfigParseError(name)
@@ -73,7 +73,7 @@ export const configSource = (
       return configInstance
     },
     set: async (name: string, config: InstanceElement): Promise<void> => {
-      await dirStore.set({ filename: filename(name), buffer: await dumpElements([config]) })
+      await dirStore.set({ filename: filename(name), buffer: await parser.dumpElements([config]) })
       await dirStore.flush()
     },
 

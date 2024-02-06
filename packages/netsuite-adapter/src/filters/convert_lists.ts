@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -22,6 +22,7 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { LocalFilterCreator } from '../filter'
 import { datasetType } from '../autogen/types/standard_types/dataset'
+import { workbookType } from '../autogen/types/standard_types/workbook'
 import { isCustomRecordType, isFileCabinetInstance } from '../types'
 import { typeNameToParser } from '../change_validators/report_types_move_environment'
 
@@ -31,6 +32,7 @@ type FieldFullNameToOrderBy = Map<string, string | undefined>
 
 const unorderedListFields: FieldFullNameToOrderBy = new Map([
   [datasetType().innerTypes.dataset_dependencies.fields.dependency.elemID.getFullName(), undefined],
+  [workbookType().innerTypes.workbook_dependencies.fields.dependency.elemID.getFullName(), undefined],
 ])
 
 const castAndOrderLists: TransformFunc = async ({ value, field }) => {

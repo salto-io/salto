@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -22,10 +22,10 @@ import { Values } from '@salto-io/adapter-api'
 import { createConnection, createResourceConnection, instanceUrl } from './connection'
 import { ZENDESK } from '../constants'
 import { Credentials } from '../auth'
-import { PAGE_SIZE } from '../config'
+import { PAGE_SIZE, DEFAULT_TIMEOUT_OPTS } from '../config'
 
 const {
-  DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+  DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
   throttle, logDecorator, requiresLogin,
 } = clientUtils
 const log = logger(module)
@@ -95,11 +95,11 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
     return new URL(instanceUrl(this.credentials.subdomain, this.credentials.domain))
   }
 
-  public async getSinglePage(
+  public async get(
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
     try {
-      return await super.getSinglePage(args)
+      return await super.get(args)
     } catch (e) {
       const status = e.response?.status
       // Zendesk returns 404 when it doesn't have permissions for objects (not enabled features)

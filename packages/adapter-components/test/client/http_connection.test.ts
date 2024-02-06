@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -105,7 +105,7 @@ describe('client_http_connection', () => {
         additionalStatusCodesToRetry: [],
       },
       {
-        resetTimeoutBetweenAttempts: true,
+        retryOnTimeout: true,
         lastRetryNoTimeout: true,
       })
     })
@@ -115,6 +115,34 @@ describe('client_http_connection', () => {
           status: 429,
         },
       } as AxiosError)).toBeTruthy()
+    })
+
+    it('should retry on timeout if flag is true', () => {
+      expect(retryOptions.retryCondition?.({
+        response: {
+          status: 408,
+        },
+        code: 'ECONNABORTED',
+      } as AxiosError)).toBeTruthy()
+    })
+
+    it('should not retry on timeout if flag is false', () => {
+      retryOptions = createRetryOptions({
+        maxAttempts: 3,
+        retryDelay: 100,
+        additionalStatusCodesToRetry: [],
+      },
+      {
+        retryOnTimeout: false,
+        lastRetryNoTimeout: true,
+      })
+
+      expect(retryOptions.retryCondition?.({
+        response: {
+          status: 408,
+        },
+        code: 'ECONNABORTED',
+      } as AxiosError)).toBeFalsy()
     })
 
     it('should use the retry-after header when available', () => {
@@ -198,7 +226,7 @@ describe('client_http_connection', () => {
             additionalStatusCodesToRetry: [],
           },
           {
-            resetTimeoutBetweenAttempts: true,
+            retryOnTimeout: true,
             lastRetryNoTimeout: false,
           })
           const requestConfig = { timeout: 4 }

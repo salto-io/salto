@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,7 +15,11 @@
 */
 import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
-import { ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, createRestriction, DeployResult, getChangeData, Values, Change, toChange, ChangeGroup, isAdditionOrModificationChange, isServiceId, INSTANCE_ANNOTATIONS, ReferenceExpression, isInstanceElement, SeverityLevel, isSaltoElementError } from '@salto-io/adapter-api'
+import {
+  ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, createRestriction, DeployResult, getChangeData,
+  Values, Change, toChange, ChangeGroup, isAdditionOrModificationChange, isServiceId, INSTANCE_ANNOTATIONS,
+  ReferenceExpression, isInstanceElement, SeverityLevel, isSaltoElementError,
+} from '@salto-io/adapter-api'
 import { MockInterface, stepManager } from '@salto-io/test-utils'
 import { Package, DeployResultLocator, DeployResult as JSForceDeployResult } from '@salto-io/jsforce'
 import JSZip from 'jszip'
@@ -26,13 +30,14 @@ import { Types, createInstanceElement, apiName, metadataType, createMetadataObje
 import Connection from '../src/client/jsforce'
 import { CustomObject } from '../src/client/types'
 import mockAdapter from './adapter'
-import { createValueSetEntry, createCustomObjectType } from './utils'
+import { createValueSetEntry, createCustomObjectType, nullProgressReporter } from './utils'
 import { createElement, removeElement } from '../e2e_test/utils'
 import { mockTypes, mockDefaultValues } from './mock_elements'
-import { mockDeployResult, mockRunTestFailure, mockDeployResultComplete } from './connection'
+import { mockDeployResult, mockRunTestFailure, mockDeployResultComplete, mockRetrieveResult } from './connection'
 import { MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE, MappableSalesforceProblem } from '../src/client/user_facing_errors'
 import { GLOBAL_VALUE_SET } from '../src/filters/global_value_sets'
 import { apiNameSync, metadataTypeSync } from '../src/filters/utils'
+import { SalesforceArtifacts, INSTANCE_FULL_NAME_FIELD } from '../src/constants'
 
 const { makeArray } = collections.array
 
@@ -162,7 +167,13 @@ describe('SalesforceAdapter CRUD', () => {
             { [CORE_ANNOTATIONS.PARENT]:
               new ReferenceExpression(mockTypes.TestCustomObject__c.elemID, mockTypes.TestCustomObject__c) }
           )
-          workflowFieldUpdate = createInstanceElement(mockDefaultValues.WorkflowFieldUpdate, mockTypes.Workflow)
+          workflowFieldUpdate = createInstanceElement(
+            {
+              ...mockDefaultValues.WorkflowFieldUpdate,
+              [INSTANCE_FULL_NAME_FIELD]: 'TestCustomObject__c.TestWorkflowFieldUpdate',
+            },
+            mockTypes.WorkflowFieldUpdate
+          )
 
           connection.metadata.deploy.mockReturnValueOnce(mockDeployResult({
             success: false,
@@ -184,8 +195,8 @@ describe('SalesforceAdapter CRUD', () => {
               // WorkflowFieldUpdate failure
               {
                 componentType: 'WorkflowFieldUpdate',
-                fullName: 'ChangeRequest.Update_Status_to_Authorised',
-                problem: 'Some workflow task error',
+                fullName: 'TestCustomObject__c.TestWorkflowFieldUpdate',
+                problem: 'Some workflow field update error',
               },
             ],
           }))
@@ -197,6 +208,7 @@ describe('SalesforceAdapter CRUD', () => {
                 { action: 'add', data: { after: businessProcessInstance } },
                 { action: 'add', data: { after: workflowFieldUpdate } }],
             },
+            progressReporter: nullProgressReporter,
           })
         })
 
@@ -219,11 +231,11 @@ describe('SalesforceAdapter CRUD', () => {
 
           expect(result.errors[1].severity).toEqual('Error' as SeverityLevel)
 
-          // WorkflowTask will not have an ElemID because on failure
-          //  we only return the sub-instance and not the wrapped instance
-          expect(result.errors[2].message).toContain('Some workflow task error')
-          expect(isSaltoElementError(result.errors[2])).toBeFalse()
-          expect(result.errors[2].severity).toEqual('Error' as SeverityLevel)
+          expect(result.errors[2]).toEqual({
+            message: expect.stringContaining('Some workflow field update error'),
+            severity: 'Error',
+            elemID: workflowFieldUpdate.elemID,
+          })
         })
       })
 
@@ -247,6 +259,7 @@ describe('SalesforceAdapter CRUD', () => {
               groupID: newInst.elemID.getFullName(),
               changes: [{ action: 'add', data: { after: newInst } }],
             },
+            progressReporter: nullProgressReporter,
           })
         })
 
@@ -273,6 +286,7 @@ describe('SalesforceAdapter CRUD', () => {
                   groupID: instance.elemID.getFullName(),
                   changes: [{ action: 'add', data: { after: instance } }],
                 },
+                progressReporter: nullProgressReporter,
               })
             })
             it('should return applied changes', () => {
@@ -294,6 +308,7 @@ describe('SalesforceAdapter CRUD', () => {
                   groupID: instance.elemID.getFullName(),
                   changes: [{ action: 'add', data: { after: instance } }],
                 },
+                progressReporter: nullProgressReporter,
               })
             })
             it('should return applied changes', () => {
@@ -315,6 +330,7 @@ describe('SalesforceAdapter CRUD', () => {
                 groupID: instance.elemID.getFullName(),
                 changes: [{ action: 'add', data: { after: customObjectInstance } }],
               },
+              progressReporter: nullProgressReporter,
             })
           })
           it('should return error', () => {
@@ -360,6 +376,7 @@ describe('SalesforceAdapter CRUD', () => {
                 groupID: instance.elemID.getFullName(),
                 changes: [{ action: 'add', data: { after: instance } }],
               },
+              progressReporter: nullProgressReporter,
             })
           })
           it('should not return applied changes', () => {
@@ -377,6 +394,7 @@ describe('SalesforceAdapter CRUD', () => {
                 groupID: instance.elemID.getFullName(),
                 changes: [{ action: 'add', data: { after: customObjectInstance } }],
               },
+              progressReporter: nullProgressReporter,
             })
           })
           it('should return error', () => {
@@ -414,6 +432,7 @@ describe('SalesforceAdapter CRUD', () => {
                 groupID: instance.elemID.getFullName(),
                 changes: [{ action: 'add', data: { after: instance } }],
               },
+              progressReporter: nullProgressReporter,
             })
           })
           it('should deploy', () => {
@@ -444,6 +463,7 @@ describe('SalesforceAdapter CRUD', () => {
                 groupID: instance.elemID.getFullName(),
                 changes: [{ action: 'add', data: { after: instance } }],
               },
+              progressReporter: nullProgressReporter,
             })
           })
           it('should not deploy', () => {
@@ -472,6 +492,7 @@ describe('SalesforceAdapter CRUD', () => {
                 groupID: instance.elemID.getFullName(),
                 changes: [{ action: 'add', data: { after: instance } }],
               },
+              progressReporter: nullProgressReporter,
             })
             expect(errors).toBeEmpty()
           })
@@ -869,14 +890,22 @@ describe('SalesforceAdapter CRUD', () => {
             ...deployResultParams,
             rollbackOnError: true,
           }))
-          result = await adapter.deploy({ changeGroup: deployChangeGroup })
+          result = await adapter.deploy({ changeGroup: deployChangeGroup, progressReporter: nullProgressReporter })
         })
         it('should not apply the instance change', () => {
           expect(result.appliedChanges).toHaveLength(0)
         })
         it('should return the test errors', () => {
-          expect(result.errors).toHaveLength(1)
-          expect(result.errors[0].message).toMatch(/.*Test failed.*/)
+          expect(result.errors).toEqual([
+            expect.objectContaining({
+              message: expect.stringContaining('Test failed'),
+            }),
+            expect.objectContaining({
+              elemID: instance.elemID,
+              message: expect.stringContaining('rollbackOnError'),
+              severity: 'Warning',
+            }),
+          ])
         })
       })
       describe('without rollback on error', () => {
@@ -886,7 +915,7 @@ describe('SalesforceAdapter CRUD', () => {
             ...deployResultParams,
             rollbackOnError: false,
           }))
-          result = await adapter.deploy({ changeGroup: deployChangeGroup })
+          result = await adapter.deploy({ changeGroup: deployChangeGroup, progressReporter: nullProgressReporter })
         })
         it('should apply the component changes', () => {
           expect(result.appliedChanges).toHaveLength(1)
@@ -894,6 +923,65 @@ describe('SalesforceAdapter CRUD', () => {
         it('should return the test errors', () => {
           expect(result.errors).toHaveLength(1)
           expect(result.errors[0].message).toMatch(/.*Test failed.*/)
+        })
+      })
+    })
+
+    describe('when one component fails and others succeed', () => {
+      let deployResultParams: Parameters<typeof mockDeployResult>[0]
+      let successElement: InstanceElement
+      let failureElement: InstanceElement
+      let deployChangeGroup: ChangeGroup
+      beforeEach(() => {
+        successElement = createInstanceElement({
+          [INSTANCE_FULL_NAME_FIELD]: 'SuccessElement',
+        },
+        mockTypes.ApexClass)
+        failureElement = createInstanceElement({
+          [INSTANCE_FULL_NAME_FIELD]: 'FailureElement',
+        },
+        mockTypes.ApexClass)
+
+        deployResultParams = {
+          success: false,
+          componentSuccess: [
+            { fullName: apiNameSync(successElement), componentType: metadataTypeSync(successElement) },
+          ],
+          componentFailure: [
+            { fullName: apiNameSync(failureElement), componentType: metadataTypeSync(failureElement), problem: 'Failed to deploy' },
+          ],
+        }
+
+        deployChangeGroup = {
+          groupID: 'ChangeGroup',
+          changes: [toChange({ after: failureElement }), toChange({ after: successElement })],
+        }
+      })
+      describe('with rollback on error', () => {
+        let result: DeployResult
+        beforeEach(async () => {
+          connection.metadata.deploy.mockReturnValue(mockDeployResult({
+            ...deployResultParams,
+            rollbackOnError: true,
+          }))
+          result = await adapter.deploy({ changeGroup: deployChangeGroup, progressReporter: nullProgressReporter })
+        })
+        it('should return the test errors', () => {
+          expect(result.errors).toEqual([
+            expect.objectContaining({
+              elemID: failureElement.elemID,
+              message: expect.stringContaining('Failed to deploy'),
+              severity: 'Error',
+            }),
+            expect.objectContaining({
+              elemID: successElement.elemID,
+              message: expect.stringContaining('rollbackOnError'),
+              severity: 'Warning',
+            }),
+          ])
+        })
+        it('should have no applied changes', () => {
+          expect(result.appliedChanges).toBeEmpty()
         })
       })
     })
@@ -1067,12 +1155,14 @@ describe('SalesforceAdapter CRUD', () => {
               fullName: mockDefaultValues.Profile.fullName,
               componentType: constants.PROFILE_METADATA_TYPE,
             }],
+            retrieveResult: await mockRetrieveResult({}),
           }))
           result = await adapter.deploy({
             changeGroup: {
               groupID: afterInstance.elemID.getFullName(),
               changes: [{ action: 'modify', data: { before: beforeInstance, after: afterInstance } }],
             },
+            progressReporter: nullProgressReporter,
           })
         })
         it('should return an InstanceElement', () => {
@@ -1091,6 +1181,13 @@ describe('SalesforceAdapter CRUD', () => {
         it('should return deployment URL containing the deployment ID in the extra properties', async () => {
           const receivedUrl = (result.extraProperties?.groups ?? [])[0].url
           expect(receivedUrl).toContain(DEPLOYMENT_ID)
+        })
+        it('should return correct artifacts', () => {
+          const groups = result.extraProperties?.groups ?? []
+          expect(groups).toHaveLength(1)
+          const artifactNames = makeArray(groups[0].artifacts).map(artifact => artifact.name)
+          expect(artifactNames)
+            .toIncludeSameMembers([SalesforceArtifacts.DeployPackageXml, SalesforceArtifacts.PostDeployRetrieveZip])
         })
       })
 
@@ -1115,6 +1212,7 @@ describe('SalesforceAdapter CRUD', () => {
               groupID: afterInstance.elemID.getFullName(),
               changes: [{ action: 'modify', data: { before: beforeInstance, after: afterInstance } }],
             },
+            progressReporter: nullProgressReporter,
           })
         })
         it('should produce a deploy error', () => {
@@ -1138,10 +1236,19 @@ describe('SalesforceAdapter CRUD', () => {
               groupID: afterInstance.elemID.getFullName(),
               changes: [{ action: 'modify', data: { before: beforeInstance, after: afterInstance } }],
             },
+            progressReporter: nullProgressReporter,
           })
         })
         it('should produce a deploy error', () => {
-          expect(result.errors).toHaveLength(1)
+          expect(result.errors).toEqual([
+            expect.objectContaining({
+              message: expect.stringContaining('UNKNOWN_EXCEPTION'),
+            }),
+            expect.objectContaining({
+              elemID: afterInstance.elemID,
+              message: expect.stringContaining('rollbackOnError'),
+            }),
+          ])
         })
       })
 
@@ -1154,6 +1261,7 @@ describe('SalesforceAdapter CRUD', () => {
               groupID: afterInstance.elemID.getFullName(),
               changes: [{ action: 'modify', data: { before: beforeInstance, after: afterInstance } }],
             },
+            progressReporter: nullProgressReporter,
           })
         })
 
@@ -1196,6 +1304,7 @@ describe('SalesforceAdapter CRUD', () => {
                   data: { before: oldAssignmentRules, after: newAssignmentRules },
                 }],
               },
+              progressReporter: nullProgressReporter,
             })
           })
 
@@ -1265,6 +1374,7 @@ describe('SalesforceAdapter CRUD', () => {
                   data: { before: oldCustomLabels, after: newCustomLabels },
                 }],
               },
+              progressReporter: nullProgressReporter,
             })
           })
 
@@ -1297,6 +1407,7 @@ describe('SalesforceAdapter CRUD', () => {
               groupID: oldElement.elemID.getFullName(),
               changes: [{ action: 'modify', data: { before: oldElement, after: newElement } }],
             },
+            progressReporter: nullProgressReporter,
           })
         })
 
@@ -1371,6 +1482,7 @@ describe('SalesforceAdapter CRUD', () => {
               groupID: oldElement.elemID.getFullName(),
               changes,
             },
+            progressReporter: nullProgressReporter,
           })
         })
 
@@ -1486,6 +1598,7 @@ describe('SalesforceAdapter CRUD', () => {
               groupID: oldElement.elemID.getFullName(),
               changes,
             },
+            progressReporter: nullProgressReporter,
           })
         })
 
@@ -1594,6 +1707,7 @@ describe('SalesforceAdapter CRUD', () => {
                     after: newElement.fields.banana } },
               ],
             },
+            progressReporter: nullProgressReporter,
           })
         })
 
@@ -1637,6 +1751,7 @@ describe('SalesforceAdapter CRUD', () => {
                 { action: 'modify', data: { before, after } },
               ],
             },
+            progressReporter: nullProgressReporter,
           })
         })
         it('should fail because the type is not deployable', () => {
@@ -1694,6 +1809,7 @@ describe('SalesforceAdapter CRUD', () => {
               { action: 'remove', data: { before: before.fields.one } },
             ],
           },
+          progressReporter: nullProgressReporter,
         })
       })
 
@@ -1712,6 +1828,7 @@ describe('SalesforceAdapter CRUD', () => {
       let resultProfile: DeployResult
       beforeEach(async () => {
         const steps = stepManager(['firstDeploy', 'secondDeploy'])
+        const deployId = _.uniqueId()
 
         connection.metadata.deploy
           .mockReturnValueOnce({
@@ -1719,6 +1836,15 @@ describe('SalesforceAdapter CRUD', () => {
               steps.resolveStep('firstDeploy')
               await steps.waitStep('secondDeploy')
               return mockDeployResultComplete({
+                id: deployId,
+                componentSuccess: [{ fullName: 'Test__c.Valid', componentType: 'ValidationRule' }],
+              })
+            },
+            check: async () => {
+              steps.resolveStep('firstDeploy')
+              await steps.waitStep('secondDeploy')
+              return mockDeployResultComplete({
+                id: deployId,
                 componentSuccess: [{ fullName: 'Test__c.Valid', componentType: 'ValidationRule' }],
               })
             },
@@ -1727,6 +1853,14 @@ describe('SalesforceAdapter CRUD', () => {
             complete: async () => {
               steps.resolveStep('secondDeploy')
               return mockDeployResultComplete({
+                id: deployId,
+                componentSuccess: [{ fullName: 'TestAddProfileInstance__c', componentType: 'Profile' }],
+              })
+            },
+            check: async () => {
+              steps.resolveStep('secondDeploy')
+              return mockDeployResultComplete({
+                id: deployId,
                 componentSuccess: [{ fullName: 'TestAddProfileInstance__c', componentType: 'Profile' }],
               })
             },
@@ -1760,6 +1894,7 @@ describe('SalesforceAdapter CRUD', () => {
             groupID: testValidationRule.elemID.getFullName(),
             changes: [toChange({ after: testValidationRule })],
           },
+          progressReporter: nullProgressReporter,
         })
         await steps.waitStep('firstDeploy')
         const profilePromise = adapter.deploy({
@@ -1767,6 +1902,7 @@ describe('SalesforceAdapter CRUD', () => {
             groupID: testProfile.elemID.getFullName(),
             changes: [toChange({ after: testProfile })],
           },
+          progressReporter: nullProgressReporter,
         })
 
         resultValidationRule = await validationRulePromise
@@ -1797,7 +1933,7 @@ describe('SalesforceAdapter CRUD', () => {
           connection.metadata.deploy.mockReturnValue(mockDeployResult({
             componentSuccess: [{ fullName: 'MyValueSet__gvs', componentType: GLOBAL_VALUE_SET }],
           }))
-          result = await adapter.deploy({ changeGroup })
+          result = await adapter.deploy({ changeGroup, progressReporter: nullProgressReporter })
         })
         it('should apply the change', () => {
           expect(changesToFullNames(result.appliedChanges)).toEqual(
@@ -1815,7 +1951,7 @@ describe('SalesforceAdapter CRUD', () => {
             connection.metadata.deploy.mockReturnValue(mockDeployResult({
               componentSuccess: [{ fullName: 'MyValueSet', componentType: GLOBAL_VALUE_SET }],
             }))
-            result = await adapter.deploy({ changeGroup })
+            result = await adapter.deploy({ changeGroup, progressReporter: nullProgressReporter })
           })
           it('should apply the change', () => {
             expect(changesToFullNames(result.appliedChanges)).toEqual(
@@ -1828,7 +1964,7 @@ describe('SalesforceAdapter CRUD', () => {
             connection.metadata.deploy.mockReturnValue(mockDeployResult({
               componentSuccess: [{ fullName: 'MyValueSet__gvs', componentType: GLOBAL_VALUE_SET }],
             }))
-            result = await adapter.deploy({ changeGroup })
+            result = await adapter.deploy({ changeGroup, progressReporter: nullProgressReporter })
           })
           it('should apply the change', () => {
             expect(changesToFullNames(result.appliedChanges)).toEqual(

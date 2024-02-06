@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -52,7 +52,7 @@ export type ClientDataParams = ClientBaseParams & {
 export type ClientParams = ClientBaseParams | ClientDataParams
 
 export interface HTTPReadClientInterface {
-  getSinglePage(params: ClientBaseParams): Promise<Response<ResponseValue | ResponseValue[]>>
+  get(params: ClientBaseParams): Promise<Response<ResponseValue | ResponseValue[]>>
   getPageSize(): number
 }
 
@@ -168,7 +168,7 @@ export abstract class AdapterHTTPClient<
   @throttle<TRateLimitConfig>({ bucketName: 'get', keys: ['url', 'queryParams'] })
   @logDecorator(['url', 'queryParams'])
   @requiresLogin()
-  public async getSinglePage(params: ClientBaseParams):
+  public async get(params: ClientBaseParams):
     Promise<Response<ResponseValue | ResponseValue[]>> {
     return this.sendRequest('get', params)
   }

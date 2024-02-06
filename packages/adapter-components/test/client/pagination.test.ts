@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -29,20 +29,20 @@ describe('client_pagination', () => {
     [traverseAsync.traverseRequestsAsync, 'traverseRequestsAsync'],
   ])('traverseRequests with function %s', (traverseRequestsFunc, funcName) => {
     const client: MockInterface<HTTPReadClientInterface> = {
-      getSinglePage: mockFunction<HTTPReadClientInterface['getSinglePage']>(),
+      get: mockFunction<HTTPReadClientInterface['get']>(),
       getPageSize: mockFunction<HTTPReadClientInterface['getPageSize']>(),
     }
     const paginationFunc = mockFunction<PaginationFunc>()
     const customEntryExtractor = mockFunction<PageEntriesExtractor>()
     beforeEach(() => {
-      client.getSinglePage.mockReset()
+      client.get.mockReset()
       client.getPageSize.mockReset()
       paginationFunc.mockReset()
       customEntryExtractor.mockReset()
     })
 
     it(`${funcName} should query the pagination function even if paginationField is not specified`, async () => {
-      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
+      client.get.mockResolvedValueOnce(Promise.resolve({
         data: {
           a: 'a',
         },
@@ -62,12 +62,12 @@ describe('client_pagination', () => {
       }))).flat()
       expect(result).toEqual([{ a: 'a' }])
       expect(paginationFunc).toHaveBeenCalledTimes(1)
-      expect(client.getSinglePage).toHaveBeenCalledTimes(1)
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
+      expect(client.get).toHaveBeenCalledTimes(1)
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep' })
     })
 
     it(`${funcName}  should use query args`, async () => {
-      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
+      client.get.mockResolvedValueOnce(Promise.resolve({
         data: {
           a: 'a',
         },
@@ -90,15 +90,15 @@ describe('client_pagination', () => {
         },
       }))).flat()
       expect(result).toEqual([{ a: 'a' }])
-      expect(client.getSinglePage).toHaveBeenCalledTimes(1)
+      expect(client.get).toHaveBeenCalledTimes(1)
       const getParams = { url: '/ep', queryParams: { arg1: 'val1', arg2: 'val2' } }
-      expect(client.getSinglePage).toHaveBeenCalledWith(getParams)
+      expect(client.get).toHaveBeenCalledWith(getParams)
       expect(paginationFunc).toHaveBeenCalledTimes(1)
       expect(paginationFunc).toHaveBeenCalledWith({ currentParams: {}, getParams, page: [{ a: 'a' }], pageSize: 123, responseData: { a: 'a' } })
     })
 
     it(`${funcName}  should use recursive query args`, async () => {
-      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
+      client.get.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [
             { a: 'a1', id: 123 },
@@ -152,16 +152,16 @@ describe('client_pagination', () => {
         { a: 'a1', id: 789 },
         { a: 'a4', id: 789 },
       ])
-      expect(client.getSinglePage).toHaveBeenCalledTimes(4)
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { parentId: 123 } })
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { parentId: 456 } })
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { parentId: 789 } })
+      expect(client.get).toHaveBeenCalledTimes(4)
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep' })
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep', queryParams: { parentId: 123 } })
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep', queryParams: { parentId: 456 } })
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep', queryParams: { parentId: 789 } })
       expect(paginationFunc).toHaveBeenCalledTimes(3)
     })
 
     it(`${funcName}  should stop querying if pagination function returns empty`, async () => {
-      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
+      client.get.mockResolvedValueOnce(Promise.resolve({
         data: {
           a: 'a',
         },
@@ -181,8 +181,8 @@ describe('client_pagination', () => {
         },
       }))).flat()
       expect(result).toEqual([{ a: 'a' }])
-      expect(client.getSinglePage).toHaveBeenCalledTimes(1)
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
+      expect(client.get).toHaveBeenCalledTimes(1)
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep' })
       expect(paginationFunc).toHaveBeenCalledTimes(1)
       expect(paginationFunc).toHaveBeenCalledWith({
         pageSize: 123,
@@ -197,7 +197,7 @@ describe('client_pagination', () => {
     })
 
     it(`${funcName}  should query multiple pages if pagination function returns next pages`, async () => {
-      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
+      client.get.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [{ a: 'a1' }],
         },
@@ -240,11 +240,11 @@ describe('client_pagination', () => {
         ...params,
       }))).flat()
       expect(result).toEqual([{ a: 'a1' }, { a: 'a2', b: 'b2' }, { a: 'a3' }])
-      expect(client.getSinglePage).toHaveBeenCalledTimes(4)
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '2' } })
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '3' } })
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '4' } })
+      expect(client.get).toHaveBeenCalledTimes(4)
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep' })
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '2' } })
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '3' } })
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '4' } })
       expect(paginationFunc).toHaveBeenCalledTimes(3)
       expect(paginationFunc).toHaveBeenCalledWith({
         ...params,
@@ -267,7 +267,7 @@ describe('client_pagination', () => {
     })
 
     it(`${funcName}  should use page entries from paginator result if provided`, async () => {
-      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
+      client.get.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [{ a: 'a1' }],
         },
@@ -298,9 +298,9 @@ describe('client_pagination', () => {
         ...params,
       }))).flat()
       expect(result).toEqual([{ something: 'a' }])
-      expect(client.getSinglePage).toHaveBeenCalledTimes(2)
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '2' } })
+      expect(client.get).toHaveBeenCalledTimes(2)
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep' })
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '2' } })
       expect(paginationFunc).toHaveBeenCalledTimes(1)
       expect(paginationFunc).toHaveBeenCalledWith({
         ...params,
@@ -310,7 +310,7 @@ describe('client_pagination', () => {
       })
     })
     it(`${funcName}  should continue querying while there are results even if extractor returns empty`, async () => {
-      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
+      client.get.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [{ a: 'a1' }],
         },
@@ -341,9 +341,9 @@ describe('client_pagination', () => {
         ...params,
       }))).flat()
       expect(result).toEqual([])
-      expect(client.getSinglePage).toHaveBeenCalledTimes(2)
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '2' } })
+      expect(client.get).toHaveBeenCalledTimes(2)
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep' })
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '2' } })
       expect(paginationFunc).toHaveBeenCalledTimes(1)
       expect(paginationFunc).toHaveBeenCalledWith({
         ...params,
@@ -353,7 +353,7 @@ describe('client_pagination', () => {
       })
     })
     it(`${funcName}  should fail gracefully on HTTP errors`, async () => {
-      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
+      client.get.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [{
             a: 'a1',
@@ -383,14 +383,14 @@ describe('client_pagination', () => {
         getParams,
       }))).flat()
       expect(result).toEqual([{ a: 'a1' }])
-      expect(client.getSinglePage).toHaveBeenCalledTimes(2)
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { arg1: 'val1' } })
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '2', arg1: 'val1' } })
+      expect(client.get).toHaveBeenCalledTimes(2)
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep', queryParams: { arg1: 'val1' } })
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '2', arg1: 'val1' } })
       expect(paginationFunc).toHaveBeenCalledTimes(1)
       expect(paginationFunc).toHaveBeenCalledWith({ currentParams: {}, getParams, page: [{ a: 'a1' }], pageSize: 1, responseData: { items: [{ a: 'a1' }] } })
     })
     it(`${funcName}  should throw if encountered unknown HTTP exception errors`, async () => {
-      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
+      client.get.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [{
             a: 'a1',
@@ -857,11 +857,11 @@ describe('client_pagination', () => {
 
   describe('getWithCursorPagination', () => {
     const client: MockInterface<HTTPReadClientInterface> = {
-      getSinglePage: mockFunction<HTTPReadClientInterface['getSinglePage']>(),
+      get: mockFunction<HTTPReadClientInterface['get']>(),
       getPageSize: mockFunction<HTTPReadClientInterface['getPageSize']>(),
     }
     beforeEach(() => {
-      client.getSinglePage.mockReset()
+      client.get.mockReset()
       client.getPageSize.mockReset()
     })
 
@@ -1101,7 +1101,7 @@ describe('client_pagination', () => {
     let client: MockInterface<HTTPReadClientInterface>
     beforeEach(() => {
       client = {
-        getSinglePage: mockFunction<HTTPReadClientInterface['getSinglePage']>(),
+        get: mockFunction<HTTPReadClientInterface['get']>(),
         getPageSize: mockFunction<HTTPReadClientInterface['getPageSize']>().mockReturnValueOnce(3),
       }
     })

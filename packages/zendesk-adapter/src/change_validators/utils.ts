@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -36,6 +36,11 @@ const fieldToSchemeGuard: Record<string, (instance: InstanceElement) => boolean>
 export const validateOrderType = (orderInstance: InstanceElement, orderField: string): boolean => {
   const schemeGuard = fieldToSchemeGuard[orderField]
   return schemeGuard(orderInstance)
+}
+
+export type ConditionWithReferenceValue = {
+  field: string
+  value: ReferenceExpression
 }
 
 export type ActionsType = {

@@ -48,11 +48,21 @@ zendesk {
 
 ### Client configuration options
 
-| Name                                                          | Default when undefined   | Description
-|---------------------------------------------------------------|--------------------------|------------
-| [retry](#client-retry-configuration-options)                         | `{}` (no overrides)      | Configuration for retrying on errors
-| [rateLimit](#client-rate-limit-configuration-options)                | `{}` (no overrides)      | Limits on the number of concurrent requests of different types
-| [maxRequestsPerMinute]                                        | unlimited                | Limits on the number of requests per minute
+| Name                                                  | Default when undefined | Description
+|-------------------------------------------------------|------------------------|------------
+| [retry](#client-retry-configuration-options)          | `{}` (no overrides)    | Configuration for retrying on errors
+| [rateLimit](#client-rate-limit-configuration-options) | `{}` (no overrides)    | Limits on the number of concurrent requests of different types
+| [maxRequestsPerMinute]                                | unlimited              | Limits on the number of requests per minute
+| [timeout](#client-timeout-configuration-options)      | `{}` (no overrides)    | Configuration for setting request timeouts
+| unassociatedAttachmentChunkSize                       | `50`                   | chunk size for the creation of unassociated article attachments
+
+#### Client timeout configuration options
+
+| Name                  | Default when undefined | Description
+|-----------------------|------------------------|------------
+| [maxDuration]         | `5000` (5 seconds)     | Set a timeout (in milliseconds) on requests (setting `0` is unlimited)
+| [retryOnTimeout]      | true                   | Whether to retry requests that returned a timeout response
+| [lastRetryNoTimeout]  | true                   | Whether to disable the timeout duration on the last retry (if we assume the service will eventually return a response)
 
 #### Client retry configuration options
 
@@ -77,7 +87,7 @@ zendesk {
 | [guide]                            | undefined (Guide will be disabled)| Configuration for defining which brands will be included in Zendesk Guide fetch
 | [resolveOrganizationIDs]           | false                             | When enabled, organization IDs will be replaced with organization names
 | [resolveUserIDs]                   | true                              | When enabled, user IDs will be replaced with user emails
-| includeAuditDetails                | false                             | When enabled, changed_at and changed_by information will be added to instances
+| includeAuditDetails                | false                             | When enabled, changed_by information will be added to instances
 | handleIdenticalAttachmentConflicts | false                             | When enabled, one attachment will be kept from each set of identical attachments (having the same hash) associated with the same article
 | extractReferencesFromFreeText      | false                             | When enabled, convert ids in zendesk links in string values to salto references
 | convertJsonIdsToReferences         | false                             | When enabled, If a field is a json with an 'id' field, convert its value to a reference

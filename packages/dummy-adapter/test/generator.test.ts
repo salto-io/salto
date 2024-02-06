@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,11 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isObjectType, isInstanceElement, isPrimitiveType, isMapType, isListType, StaticFile } from '@salto-io/adapter-api'
+import {
+  isObjectType,
+  isInstanceElement,
+  isPrimitiveType,
+  isMapType,
+  isListType,
+  CORE_ANNOTATIONS,
+  StaticFile,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import path from 'path'
-import { generateElements } from '../src/generator'
+import { ImportantValue } from '@salto-io/adapter-utils'
+import { defaultParams, generateElements, GeneratorParams } from '../src/generator'
 import testParams from './test_params'
 
 const { awu } = collections.asynciterable
@@ -129,6 +138,73 @@ describe('elements generator', () => {
         const fragments = elements.filter(e => e.elemID.getFullName() === fixture.fullName)
         expect(fragments).toHaveLength(fixture.numOfFragments)
       })
+    })
+  })
+  describe('important values', () => {
+    const isValidImportantValue = (importantValue: ImportantValue): boolean => {
+      const { value, highlighted, indexed } = importantValue
+      return _.isString(value)
+        && _.isBoolean(highlighted)
+        && _.isBoolean(indexed)
+    }
+    it('should not create important values if importantValuesFreq is 0', async () => {
+      const importantValuesTestParams: GeneratorParams = {
+        ...defaultParams,
+        numOfObjs: 10,
+        numOfPrimitiveTypes: 0,
+        numOfProfiles: 0,
+        numOfRecords: 0,
+        numOfTypes: 10,
+        importantValuesFreq: 0,
+      }
+      const elements = await generateElements(importantValuesTestParams, mockProgressReporter)
+      const elementsWithImportantValues = elements
+        .filter(isObjectType)
+        .filter(obj =>
+          (obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] !== undefined
+          && obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES].every(isValidImportantValue))
+          || (obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] !== undefined
+        && obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES].every(isValidImportantValue)))
+      expect(_.isEmpty(elementsWithImportantValues)).toBeTruthy()
+    })
+    it('should create some important values if importantValuesFreq is 0.75', async () => {
+      const importantValuesTestParams: GeneratorParams = {
+        ...defaultParams,
+        numOfObjs: 10,
+        numOfPrimitiveTypes: 0,
+        numOfProfiles: 0,
+        numOfRecords: 0,
+        numOfTypes: 10,
+      }
+      const elements = await generateElements(importantValuesTestParams, mockProgressReporter)
+      const elementsWithImportantValues = elements
+        .filter(isObjectType)
+        .filter(obj =>
+          (obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] !== undefined
+            && obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES].every(isValidImportantValue))
+          || (obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] !== undefined
+            && obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES].every(isValidImportantValue)))
+      expect(_.isEmpty(elementsWithImportantValues)).toBeFalsy()
+    })
+    it('should create some important values if importantValuesFreq is undefined', async () => {
+      const importantValuesTestParams: GeneratorParams = {
+        ...defaultParams,
+        numOfObjs: 10,
+        numOfPrimitiveTypes: 0,
+        numOfProfiles: 0,
+        numOfRecords: 0,
+        numOfTypes: 10,
+        importantValuesFreq: undefined,
+      }
+      const elements = await generateElements(importantValuesTestParams, mockProgressReporter)
+      const elementsWithImportantValues = elements
+        .filter(isObjectType)
+        .filter(obj =>
+          (obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] !== undefined
+            && obj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES].every(isValidImportantValue))
+          || (obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] !== undefined
+            && obj.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES].every(isValidImportantValue)))
+      expect(_.isEmpty(elementsWithImportantValues)).toBeFalsy()
     })
   })
   describe('env data', () => {

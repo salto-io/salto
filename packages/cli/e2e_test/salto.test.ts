@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -22,7 +22,8 @@ import { SalesforceClient, UsernamePasswordCredentials } from '@salto-io/salesfo
 // eslint-disable-next-line no-restricted-imports
 import { testHelpers as salesforceTestHelpers } from '@salto-io/salesforce-adapter/dist/e2e_test/jest_environment'
 import { Plan, SALTO_HOME_VAR } from '@salto-io/core'
-import { Workspace, parser } from '@salto-io/workspace'
+import { Workspace } from '@salto-io/workspace'
+import { parser } from '@salto-io/parser'
 // eslint-disable-next-line no-restricted-imports
 import {
   API_NAME, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, SALESFORCE_CUSTOM_SUFFIX,

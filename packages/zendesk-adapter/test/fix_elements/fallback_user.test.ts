@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,7 +15,7 @@
 */
 import { ChangeError, ElemID, InstanceElement, ObjectType, Element } from '@salto-io/adapter-api'
 import ZendeskClient from '../../src/client/client'
-import { ARTICLE_TYPE_NAME, MACRO_TYPE_NAME, TRIGGER_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { ARTICLE_TYPE_NAME, MACRO_TYPE_NAME, TRIGGER_CATEGORY_TYPE_NAME, TRIGGER_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { fallbackUsersHandler } from '../../src/fix_elements/fallback_user'
 import * as userUtils from '../../src/user_utils'
 import { DEPLOY_CONFIG, FETCH_CONFIG } from '../../src/config'
@@ -71,10 +71,12 @@ describe('fallbackUsersHandler', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    mockGetUsers.mockResolvedValue({ users: [
-      { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
-      { id: 4, email: 'fallback@.com', role: 'agent', custom_role_id: 12, name: 'fallback', locale: 'en-US' },
-    ] })
+    mockGetUsers.mockResolvedValue({
+      users: [
+        { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c', locale: 'en-US' },
+        { id: 4, email: 'fallback@.com', role: 'agent', custom_role_id: 12, name: 'fallback', locale: 'en-US' },
+      ],
+    })
 
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
@@ -82,7 +84,7 @@ describe('fallbackUsersHandler', () => {
   })
 
   describe('valid fallback user provided', () => {
-    let fallbackResponse: {fixedElements: Element[]; errors: ChangeError[]}
+    let fallbackResponse: { fixedElements: Element[]; errors: ChangeError[] }
 
     beforeEach(async () => {
       const instances = [macroInstance, articleInstance, triggerInstance].map(e => e.clone())
@@ -116,33 +118,39 @@ describe('fallbackUsersHandler', () => {
           message: '2 usernames will be overridden to fallback@.com',
           severity: 'Warning',
           detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: a@a.com, 3.\n'
-          + "If you continue, they will be set to fallback@.com according to the environment's user fallback options.\n"
-          + 'Learn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
+            + "If you continue, they will be set to fallback@.com according to the environment's user fallback options.\n"
+            + 'Learn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
         },
         {
           elemID: articleInstance.elemID,
           message: '1 usernames will be overridden to fallback@.com',
           severity: 'Warning',
           detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: a@a.com.\n'
-          + "If you continue, they will be set to fallback@.com according to the environment's user fallback options.\n"
-          + 'Learn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
+            + "If you continue, they will be set to fallback@.com according to the environment's user fallback options.\n"
+            + 'Learn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
         },
         {
           elemID: triggerInstance.elemID,
           message: '1 usernames will be overridden to fallback@.com',
           severity: 'Warning',
           detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: non.\n'
-          + "If you continue, they will be set to fallback@.com according to the environment's user fallback options.\n"
-          + 'Learn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
+            + "If you continue, they will be set to fallback@.com according to the environment's user fallback options.\n"
+            + 'Learn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
         }])
     })
   })
 
   describe('fallback user does not appear in service users', () => {
-    let fallbackResponse: {fixedElements: Element[]; errors: ChangeError[]}
+    let fallbackResponse: { fixedElements: Element[]; errors: ChangeError[] }
 
     beforeEach(async () => {
-      const instances = [macroInstance, articleInstance].map(e => e.clone())
+      const triggerCategoryInstance = new InstanceElement(
+        // Test that we don't check in types that don't need replacement
+        'triggerCategory',
+        new ObjectType({ elemID: new ElemID(ZENDESK, TRIGGER_CATEGORY_TYPE_NAME) }),
+        {}
+      )
+      const instances = [macroInstance, articleInstance, triggerCategoryInstance].map(e => e.clone())
       fallbackResponse = await fallbackUsersHandler({
         client,
         config: {
@@ -187,7 +195,7 @@ describe('fallbackUsersHandler', () => {
   })
 
   describe('resolveUserIDs is false and fallback is not deployer', () => {
-    let fallbackResponse: {fixedElements: Element[]; errors: ChangeError[]}
+    let fallbackResponse: { fixedElements: Element[]; errors: ChangeError[] }
 
     beforeEach(async () => {
       mockGetUsers.mockResolvedValue({ users: [], errors: [{ message: 'No users here!', severity: 'Warning' }] })
@@ -208,12 +216,12 @@ describe('fallbackUsersHandler', () => {
   })
 
   describe('resolveUserIDs is false and fallback is deployer', () => {
-    let fallbackResponse: {fixedElements: Element[]; errors: ChangeError[]}
+    let fallbackResponse: { fixedElements: Element[]; errors: ChangeError[] }
 
     beforeEach(async () => {
       mockGetUsers.mockResolvedValue({ users: [], errors: [{ message: 'No users here!', severity: 'Warning' }] })
       const instances = [macroInstance, articleInstance].map(e => e.clone())
-      jest.spyOn(client, 'getSinglePage').mockImplementation(({ url }) => {
+      jest.spyOn(client, 'get').mockImplementation(({ url }) => {
         if (url === '/api/v2/users/me') {
           return Promise.resolve({ data: { user: { id: 1, name: 'name', locale: 'l', email: 'deployer@.com' } }, status: 202 })
         }
@@ -238,5 +246,22 @@ describe('fallbackUsersHandler', () => {
 
       expect(fallbackResponse.fixedElements).toEqual([fallbackMacro, fallbackArticle])
     })
+  })
+
+  it('does not replace types that do not need replacement', async () => {
+    const triggerCategoryInstance = new InstanceElement(
+      'triggerCategory',
+      new ObjectType({ elemID: new ElemID(ZENDESK, TRIGGER_CATEGORY_TYPE_NAME) }),
+      {}
+    )
+    const instances = [triggerCategoryInstance].map(e => e.clone())
+    const fallbackResponse = await fallbackUsersHandler({
+      client,
+      config: {
+        [DEPLOY_CONFIG]: { defaultMissingUserFallback: 'fallback@.com' },
+        [FETCH_CONFIG]: { resolveUserIDs: true },
+      },
+    } as FixElementsArgs)(instances)
+    expect(fallbackResponse.fixedElements).toEqual([])
   })
 })

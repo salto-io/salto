@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -25,11 +25,13 @@ import { projectDeletionValidator } from './project_deletion'
 import { statusValidator } from './status'
 import { privateApiValidator } from './private_api'
 import { readOnlyWorkflowValidator } from './workflows/read_only_workflow'
+import { workflowStatusMappingsValidator } from './workflowsV2/status_mappings'
 import { dashboardGadgetsValidator } from './dashboard_gadgets'
 import { dashboardLayoutValidator } from './dashboard_layout'
 import { permissionTypeValidator } from './permission_type'
+import { boardColumnConfigValidator } from './board_culomn_config'
 import { maskingValidator } from './masking'
-import { automationsValidator } from './automations'
+import { automationsValidator } from './automation/automations'
 import { lockedFieldsValidator } from './locked_fields'
 import { systemFieldsValidator } from './system_fields'
 import { workflowPropertiesValidator } from './workflows/workflow_properties'
@@ -53,12 +55,17 @@ import { sameIssueTypeNameChangeValidator } from './same_issue_type_name'
 import { issueTypeSchemeMigrationValidator } from './issue_type_scheme_migration'
 import { issueTypeDeletionValidator } from './issue_type_deletion'
 import { projectCategoryValidator } from './project_category'
-import { unresolvedFieldConfigurationItemsValidator } from './unresolved_field_configuration_items'
 import { fieldSecondGlobalContextValidator } from './field_contexts/second_global_context'
 import { customFieldsWith10KOptionValidator } from './field_contexts/custom_field_with_10K_options'
 import { issueTypeHierarchyValidator } from './issue_type_hierarchy'
-import { automationProjectsValidator } from './automation_projects'
+import { automationProjectsValidator } from './automation/automation_projects'
 import { deleteLastQueueValidator } from './last_queue'
+import { deleteLabelAtttributeValidator } from './assets/label_attribute_removal'
+import { defaultAdditionQueueValidator } from './default_addition_queue'
+import { defaultAttributeValidator } from './assets/default_attribute'
+import { automationToAssetsValidator } from './automation/automation_to_assets'
+import { addJsmProjectValidator } from './adding_jsm_project'
+import { jsmPermissionsValidator } from './jsm/jsm_permissions'
 
 const {
   deployTypesNotSupportedValidator,
@@ -93,6 +100,7 @@ export default (
     statusMigrationChange: statusMigrationChangeValidator,
     // Must run after statusMigrationChangeValidator
     workflowSchemeMigration: workflowSchemeMigrationValidator(client, config, paginator),
+    workflowStatusMappings: workflowStatusMappingsValidator,
     issueTypeSchemeMigration: issueTypeSchemeMigrationValidator(client),
     activeSchemeChange: activeSchemeChangeValidator(client),
     masking: maskingValidator(client),
@@ -110,11 +118,17 @@ export default (
     workflowTransitionDuplicateName: workflowTransitionDuplicateNameValidator,
     permissionSchemeDeployment: permissionSchemeDeploymentValidator(client),
     projectCategory: projectCategoryValidator(client),
-    unresolvedFieldConfigurationItems: unresolvedFieldConfigurationItemsValidator,
     customFieldsWith10KOptions: customFieldsWith10KOptionValidator,
     issueTypeHierarchy: issueTypeHierarchyValidator,
     automationProjects: automationProjectsValidator,
+    boardColumnConfig: boardColumnConfigValidator,
     deleteLastQueueValidator: deleteLastQueueValidator(config),
+    defaultAdditionQueueValidator: defaultAdditionQueueValidator(config),
+    automationToAssets: automationToAssetsValidator(config),
+    defaultAttributeValidator: defaultAttributeValidator(config, client),
+    addJsmProject: addJsmProjectValidator,
+    deleteLabelAtttribute: deleteLabelAtttributeValidator(config),
+    jsmPermissions: jsmPermissionsValidator(config, client),
   }
 
   return createChangeValidator({

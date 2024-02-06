@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -19,7 +19,7 @@ import {
   Element, isField, isType, isObjectType, ElemID, ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { resolvePath } from '@salto-io/adapter-utils'
-import { parser } from '@salto-io/workspace'
+import { parser } from '@salto-io/parser'
 
 type PositionContextType = 'global'|'instance'|'type'|'field'
 

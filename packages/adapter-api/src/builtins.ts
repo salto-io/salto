@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -103,7 +103,7 @@ const restrictionType = new ObjectType({
   },
 })
 
-const importantValueType = new ObjectType({
+export const importantValueType = new ObjectType({
   elemID: new ElemID(GLOBAL_ADAPTER, BUILTIN_TYPE_NAMES.IMPORTANT_VALUE),
   fields: {
     value: {

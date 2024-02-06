@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -19,5 +19,5 @@ export { createAdapterApiConfigType, getConfigWithDefault, AdapterApiConfig, Use
 export { mergeWithDefaultConfig } from './merge'
 export { createTypeNameOverrideConfigType, createSwaggerAdapterApiConfigType, AdapterSwaggerApiConfig, RequestableAdapterSwaggerApiConfig, TypeSwaggerConfig, RequestableTypeSwaggerConfig, TypeSwaggerDefaultConfig, TypeNameOverrideConfig, validateApiDefinitionConfig as validateSwaggerApiDefinitionConfig, validateFetchConfig as validateSwaggerFetchConfig } from './swagger'
 export { createTransformationConfigTypes, validateTransoformationConfig, TransformationDefaultConfig, TransformationConfig, StandaloneFieldConfigType, FieldToOmitType, FieldToHideType, getTransformationConfigByType, dereferenceFieldName, isReferencedIdField, NameMappingOptions, DATA_FIELD_ENTIRE_OBJECT, getTypeTransformationConfig, shouldNestFiles } from './transformation'
-export { getConfigWithExcludeFromConfigChanges, ConfigChangeSuggestion } from './config_change'
+export { getUpdatedCofigFromConfigChanges, ConfigChangeSuggestion } from './config_change'
 export * as configMigrations from './config_migrations'

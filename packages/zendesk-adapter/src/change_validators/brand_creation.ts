@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -42,7 +42,7 @@ const isSubdomainValid = async (brand: InstanceElement, client: ZendeskClient): 
   }
   let res
   try {
-    res = (await client.getSinglePage({
+    res = (await client.get({
       url: `/api/v2/accounts/available.json?subdomain=${brand.value.subdomain}`,
     })).data
   } catch (e) {

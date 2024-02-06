@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -25,6 +25,7 @@ import { FilterCreator } from '../filter'
 import { findObject, isAllFreeLicense, setFieldDeploymentAnnotations } from '../utils'
 import { PROJECT_CONTEXTS_FIELD } from './fields/contexts_projects_filter'
 import { JiraConfig } from '../config/config'
+import { PROJECT_TYPE_TYPE_NAME, SERVICE_DESK } from '../constants'
 
 const PROJECT_TYPE_NAME = 'Project'
 
@@ -39,6 +40,18 @@ const PROJECT_CATEGORY_FIELD = 'projectCategory'
 const CUSTOMER_PERMISSIONS = 'customerPermissions'
 
 const log = logger(module)
+
+const changeProjectPath = (
+  instance: InstanceElement,
+  projectTypesKeysToFormatedKeys: Record<string, string>
+): void => {
+  if (instance.path === undefined) {
+    log.error(`Cannot change instance's path, because instance ${instance.elemID.name} path is undefined`)
+    return
+  }
+  const subPath = projectTypesKeysToFormatedKeys[instance.value.projectTypeKey] ?? 'Other'
+  instance.path = [...instance.path.slice(0, -2), subPath, ...instance.path.slice(-2,)]
+}
 
 const deployScheme = async (
   instance: InstanceElement,
@@ -88,12 +101,13 @@ const deployCustomerPermissions = async (
   client: JiraClient,
   config: JiraConfig
 ): Promise<void> => {
-  if (!config.fetch.enableJSM) {
+  if (!config.fetch.enableJSM || instance.value.projectTypeKey !== SERVICE_DESK) {
     return
   }
-  if ((isAdditionChange(change))
+  if (((isAdditionChange(change))
   || (isModificationChange(change)
-  && !isEqualValues(change.data.before.value.customerPermissions, change.data.after.value.customerPermissions))) {
+    && !isEqualValues(change.data.before.value.customerPermissions, change.data.after.value.customerPermissions)))
+  && instance.value.customerPermissions !== undefined) {
     await client.post({
       url: `/rest/servicedesk/1/servicedesk/${instance.value.key}/settings/requestsecurity`,
       data: instance.value.customerPermissions,
@@ -120,7 +134,7 @@ const COMPONENTS_RESPONSE_SCHEME = Joi.object({
 const isComponentsResponse = createSchemeGuard<ComponentsResponse>(COMPONENTS_RESPONSE_SCHEME, 'Received an invalid project component response')
 
 const getProjectComponentIds = async (projectId: number, client: JiraClient): Promise<string[]> => {
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url: `/rest/api/3/project/${projectId}`,
   })
 
@@ -144,7 +158,7 @@ const isIdResponse = createSchemeGuard<{ id: string }>(Joi.object({
 }).unknown(true).required(), 'Received an invalid project id response')
 
 const getProjectId = async (projectKey: string, client: JiraClient): Promise<string> => {
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url: `/rest/api/3/project/${projectKey}`,
   })
 
@@ -174,7 +188,7 @@ const deleteFieldConfigurationScheme = async (
   client: JiraClient,
 ): Promise<void> => {
   const instance = await resolveValues(getChangeData(change), getLookUpName)
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url: `/rest/api/3/fieldconfigurationscheme/project?projectId=${instance.value.id}`,
   })
 
@@ -221,6 +235,11 @@ const filter: FilterCreator = ({ config, client, elementsSource }) => ({
       }
     }
 
+    const projectTypesKeysToFormattedKeys: Record<string, string> = Object.fromEntries(elements
+      .filter(isInstanceElement)
+      .filter(inst => inst.elemID.typeName === PROJECT_TYPE_TYPE_NAME)
+      .map(inst => [inst.value.key, inst.value.formattedKey]))
+
     elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === PROJECT_TYPE_NAME)
@@ -240,6 +259,7 @@ const filter: FilterCreator = ({ config, client, elementsSource }) => ({
         instance.value.notificationScheme = instance.value.notificationScheme?.id?.toString()
         instance.value.permissionScheme = instance.value.permissionScheme?.id?.toString()
         instance.value.issueSecurityScheme = instance.value.issueSecurityScheme?.id?.toString()
+        changeProjectPath(instance, projectTypesKeysToFormattedKeys)
       })
   },
 

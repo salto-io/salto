@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -289,11 +289,11 @@ describe('workspace command group', () => {
       it('should set the state config to have a s3 provider', async () => {
         const result = await setStateProviderAction({
           ...cliCommandArgs,
-          input: { provider: 's3', bucket: 'my-bucket' },
+          input: { provider: 's3', bucket: 'my-bucket', prefix: 'prefix' },
           workspace,
         })
         expect(result).toEqual(CliExitCode.Success)
-        expect(workspace.updateStateProvider).toHaveBeenCalledWith({ provider: 's3', options: { s3: { bucket: 'my-bucket' } } })
+        expect(workspace.updateStateProvider).toHaveBeenCalledWith({ provider: 's3', options: { s3: { bucket: 'my-bucket', prefix: 'prefix' } } })
       })
       it('should fail if the bucket argument is missing', async () => {
         const result = await setStateProviderAction({

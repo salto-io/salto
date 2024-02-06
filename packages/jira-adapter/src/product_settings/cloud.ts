@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -112,16 +112,6 @@ const CLOUD_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
             context: [{ name: 'projectId', fromField: 'id' }],
             isSingle: true,
           },
-          {
-            type: 'ServiceDeskId',
-            toField: 'serviceDeskId',
-            context: [{ name: 'projectId', fromField: 'id' }],
-            isSingle: true,
-            conditions: [{
-              fromField: 'projectTypeKey',
-              match: ['service_desk'],
-            }],
-          },
         ],
       },
     },
@@ -148,14 +138,6 @@ const CLOUD_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
         query: '/rest/api/3/notificationscheme/{id}?expand=all',
       },
     },
-    ServiceDeskId: {
-      request: {
-        url: '/rest/servicedeskapi/servicedesk/projectId:{projectId}',
-      },
-      transformation: {
-        dataField: '.',
-      },
-    },
   },
 
 }
@@ -179,5 +161,5 @@ export const CLOUD_SETTINGS: ProductSettings = {
   wrapConnection: _.identity,
   type: 'cloud',
   defaultScriptRunnerApiDefinitions: SCRIPT_RUNNER_DUCKTYPE_API_DEFINITIONS,
-  defualtDuckTypeApiDefinitions: JSM_DUCKTYPE_API_DEFINITIONS,
+  defaultDuckTypeApiDefinitions: JSM_DUCKTYPE_API_DEFINITIONS,
 }

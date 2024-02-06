@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -27,13 +27,13 @@ import { SuiteAppSoapCredentials, toUrlAccountId } from '../../credentials'
 import { CONSUMER_KEY, CONSUMER_SECRET, ECONN_ERROR, INSUFFICIENT_PERMISSION_ERROR, REQUEST_ABORTED_ERROR, UNEXPECTED_ERROR, VALIDATION_ERROR } from '../constants'
 import { ReadFileError } from '../errors'
 import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails, FileDetails, FolderDetails, HasElemIDFunc } from '../types'
-import { CustomRecordResponse, DeployListResults, GetAllResponse, GetResult, isDeployListSuccess, isGetSuccess, isSearchErrorResponse, isWriteResponseSuccess, RecordResponse, RecordValue, SearchErrorResponse, SearchPageResponse, SearchResponse, SoapSearchType, WriteResponse } from './types'
-import { DEPLOY_LIST_SCHEMA, GET_ALL_RESPONSE_SCHEMA, GET_RESULTS_SCHEMA, SEARCH_RESPONSE_SCHEMA } from './schemas'
+import { CustomRecordResponse, DeployListResults, GetAllResponse, GetResult, GetSelectValueResponse, isDeployListSuccess, isGetAllErrorResponse, isGetSelectValueSuccessResponse, isGetSuccess, isSearchErrorResponse, isWriteResponseSuccess, RecordResponse, RecordValue, SearchErrorResponse, SearchPageResponse, SearchResponse, SoapSearchType, WriteResponse } from './types'
+import { DEPLOY_LIST_SCHEMA, GET_ALL_RESPONSE_SCHEMA, GET_RESULTS_SCHEMA, GET_SELECT_VALUE_SCHEMA, SEARCH_RESPONSE_SCHEMA } from './schemas'
 import { InvalidSuiteAppCredentialsError } from '../../types'
 import { isCustomRecordType } from '../../../types'
-import { INTERNAL_ID_TO_TYPES, isItemType, ITEM_TYPE_ID, ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from '../../../data_elements/types'
+import { isItemType, ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from '../../../data_elements/types'
 import { XSI_TYPE } from '../../constants'
-import { InstanceLimiterFunc } from '../../../config'
+import { InstanceLimiterFunc } from '../../../config/types'
 import { toError } from '../../utils'
 import { removeUneditableLockedField } from './filter_uneditable_locked_field'
 
@@ -44,7 +44,6 @@ export const { createClientAsync } = elementUtils.soap
 
 const log = logger(module)
 
-export const ITEMS_TYPES = INTERNAL_ID_TO_TYPES[ITEM_TYPE_ID]
 export const WSDL_PATH = `${__dirname}/client/suiteapp_client/soap_client/wsdl/netsuite_1.wsdl`
 const REQUEST_MAX_RETRIES = 5
 const REQUEST_RETRY_DELAY = 5000
@@ -418,18 +417,25 @@ export default class SoapClient {
 
     const [itemTypes, otherTypes] = _.partition(types, isItemType)
 
-    const typesToSearch: SoapSearchType[] = otherTypes
-      .map(type => ({ type }))
+    const typesToSearch: SoapSearchType[] = otherTypes.map(type => ({ type }))
+
     if (itemTypes.length !== 0) {
-      typesToSearch.push({ type: 'Item', subtypes: _.uniq(itemTypes.map(type => ITEM_TYPE_TO_SEARCH_STRING[type])) })
+      typesToSearch.push({
+        type: 'Item',
+        originalTypes: itemTypes,
+        subtypes: _.uniq(itemTypes.map(type => ITEM_TYPE_TO_SEARCH_STRING[type])),
+      })
     }
 
-    const responses = await Promise.all(typesToSearch.map(async ({ type, subtypes }) => {
+    const responses = await Promise.all(typesToSearch.map(async params => {
+      const { type, subtypes, originalTypes } = params
       const namespace = await this.getTypeNamespace(SoapClient.getSearchType(type))
 
       if (namespace !== undefined) {
         const response = await this.search(type, namespace, subtypes)
-        return response.excludedFromSearch ? { largeTypesError: subtypes ?? [type] } : { records: response.records }
+        return response.excludedFromSearch
+          ? { largeTypesError: originalTypes ?? [type] }
+          : { records: response.records }
       }
       log.debug(`type ${type} does not support 'search' operation. Fallback to 'getAll' request`)
       // This type of query cannot be limited, so there are no cases of largeTypesError
@@ -751,6 +757,12 @@ export default class SoapClient {
       throw new Error(`VALIDATION_ERROR - Got invalid response from get all request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
     }
 
+    if (isGetAllErrorResponse(response)) {
+      const { code, message } = response.getAllResult.status.statusDetail[0]
+      log.error('Failed to run getAll request: %o', response)
+      throw new Error(`Failed to run getAll request: error code: ${code}, error message: ${message}`)
+    }
+
     return response.getAllResult.recordList.record
   }
 
@@ -834,6 +846,66 @@ export default class SoapClient {
     const response = await this.sendSoapRequest('search', body)
     this.assertSearchResponse(response)
     return SoapClient.toSearchResponse(response)
+  }
+
+  @retryOnBadResponse
+  private async sendGetSelectValueRequest(
+    type: string,
+    field: string,
+    filterBy: { field: string; internalId: string }[],
+    pageIndex: number
+  ): Promise<GetSelectValueResponse> {
+    // https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_N3504236.html#getSelectValue
+    const body = {
+      pageIndex,
+      fieldDescription: {
+        recordType: {
+          attributes: { xmlns: SOAP_CORE_URN },
+          $value: type,
+        },
+        field: {
+          attributes: { xmlns: SOAP_CORE_URN },
+          $value: field,
+        },
+        filterByValueList: filterBy.length > 0 ? {
+          attributes: { xmlns: SOAP_CORE_URN },
+          filterBy: filterBy.map(row => ({
+            field: row.field,
+            internalId: row.internalId,
+          })),
+        } : undefined,
+      },
+    }
+    const response = await this.sendSoapRequest('getSelectValue', body)
+    if (!this.ajv.validate<GetSelectValueResponse>(GET_SELECT_VALUE_SCHEMA, response)) {
+      log.error(`Got invalid response from getSelectValue request with SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`VALIDATION_ERROR - Got invalid response from getSelectValue request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+    }
+    return response
+  }
+
+  public async getSelectValue(
+    type: string,
+    field: string,
+    filterBy: { field: string; internalId: string }[],
+  ): Promise<Record<string, string[]>> {
+    const firstResponse = await this.sendGetSelectValueRequest(type, field, filterBy, 1)
+    if (!isGetSelectValueSuccessResponse(firstResponse)) {
+      return {}
+    }
+    const restOfResponses = await Promise.all(
+      _.range(2, firstResponse.getSelectValueResult.totalPages + 1, 1)
+        .map(pageIndex => this.sendGetSelectValueRequest(type, field, filterBy, pageIndex))
+    ).then(results => results.filter(isGetSelectValueSuccessResponse))
+    const responses = [firstResponse].concat(restOfResponses)
+
+    const result = _(responses)
+      .flatMap(res => res.getSelectValueResult.baseRefList?.baseRef ?? [])
+      .groupBy(row => row.name)
+      .mapValues(rows => rows.map(item => item.attributes.internalId))
+      .value()
+
+    return result
   }
 
   @retryOnBadResponse

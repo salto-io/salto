@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -53,7 +53,7 @@ const getDefaultPolicyRuleEntry = async (
   client: OktaClient,
 ): Promise<PolicyRule> => {
   const url = `/api/v1/policies/${policyId}/rules`
-  const ruleEntries = (await client.getSinglePage({ url })).data
+  const ruleEntries = (await client.get({ url })).data
   if (!isRulesResponse(ruleEntries)) {
     log.error(`Recieved invalid policy rule response from endpoint: ${url}`)
     throw new Error('Invalid policy rules response')

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -49,7 +49,7 @@ const client = new ZendeskClient({ credentials: { username: 'a', password: 'b', 
 client.put = jest.fn()
 client.post = jest.fn()
 client.delete = jest.fn()
-client.getSinglePage = jest.fn().mockResolvedValue({ data: 'def' })
+client.get = jest.fn().mockResolvedValue({ data: 'def' })
 
 describe('guideDefaultLanguage', () => {
   const config = { ...DEFAULT_CONFIG }

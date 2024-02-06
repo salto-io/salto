@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -17,6 +17,7 @@ import { logger } from '@salto-io/logging'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { hash } from '@salto-io/lowerdash'
 import { Readable } from 'stream'
+import { staticFiles } from '@salto-io/workspace'
 
 const { toMD5 } = hash
 const log = logger(module)
@@ -39,6 +40,7 @@ export type StateContentProvider = {
   getHash: (filePaths: string[]) => Promise<string>
   readContents: (filePaths: string[]) => AsyncIterable<NamedStream>
   writeContents: (prefix: string, contents: ContentAndHash[]) => Promise<void>
+  staticFilesSource: staticFiles.StateStaticFilesSource
 }
 
 

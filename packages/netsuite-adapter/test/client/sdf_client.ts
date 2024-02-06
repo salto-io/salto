@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,7 +15,7 @@
 */
 import Bottleneck from 'bottleneck'
 import SdfClient from '../../src/client/sdf_client'
-import { ClientConfig } from '../../src/config'
+import { ClientConfig } from '../../src/config/types'
 
 const DUMMY_ACCOUNT_ID = 'tstdrv123456-sb'
 const DUMMY_TOKEN_ID = 'dummyTokenId'

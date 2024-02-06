@@ -1,6 +1,6 @@
 
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -146,6 +146,13 @@ describe('cpqReferencableFieldReferences', () => {
         ...getChangeData(originalChange).value,
         [CUSTOM_OBJECT_ID_FIELD]: CUSTOM_OBJECT_ID,
       })
+    })
+    it('should only handle applied changes', async () => {
+      const afterPreDeployChanges = [change]
+      await filter.preDeploy(afterPreDeployChanges)
+      const onDeployChanges: Change[] = []
+      await filter.onDeploy(onDeployChanges)
+      expect(onDeployChanges).toBeEmpty()
     })
   })
 })

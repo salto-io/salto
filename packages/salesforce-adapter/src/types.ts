@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { createMatchingObjectType } from '@salto-io/adapter-utils'
+import { createMatchingObjectType, ImportantValues } from '@salto-io/adapter-utils'
 import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
@@ -24,6 +24,7 @@ import {
   ListType,
   MapType,
   ObjectType,
+  importantValueType,
 } from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { types } from '@salto-io/lowerdash'
@@ -51,6 +52,7 @@ export const CUSTOM_OBJECTS_DEPLOY_RETRY_OPTIONS = 'customObjectsDeployRetryOpti
 export const FETCH_CONFIG = 'fetch'
 export const DEPLOY_CONFIG = 'deploy'
 export const METADATA_CONFIG = 'metadata'
+export const CUSTOM_REFS_CONFIG = 'customReferences'
 export const METADATA_INCLUDE_LIST = 'include'
 export const METADATA_EXCLUDE_LIST = 'exclude'
 const METADATA_TYPE = 'metadataType'
@@ -103,6 +105,8 @@ export type OptionalFeatures = {
   useLabelAsAlias?: boolean
   fixRetrieveFilePaths?: boolean
   organizationWideSharingDefaults?: boolean
+  extendedCustomFieldInformation?: boolean
+  importantValues?: boolean
 }
 
 export type ChangeValidatorName = (
@@ -169,6 +173,11 @@ export type BrokenOutgoingReferencesSettings = {
   defaultBehavior: OutgoingReferenceBehavior
   perTargetTypeOverrides?: Record<string, OutgoingReferenceBehavior>
 }
+
+const customReferencesTypeNames = ['profiles'] as const
+type customReferencesTypes = typeof customReferencesTypeNames[number]
+
+export type CustomReferencesSettings = Partial<Record<customReferencesTypes, boolean>>
 
 const objectIdSettings = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'objectIdSettings'),
@@ -278,6 +287,11 @@ const brokenOutgoingReferencesSettingsType = new ObjectType({
   },
 })
 
+const customReferencesSettingsType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'saltoCustomReferencesSettings'),
+  fields: Object.fromEntries(customReferencesTypeNames.map(name => [name, { refType: BuiltinTypes.BOOLEAN }])),
+})
+
 const warningSettingsType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'saltoWarningSettings'),
   fields: {
@@ -301,6 +315,7 @@ export type DataManagementConfig = {
   saltoManagementFieldSettings?: SaltoManagementFieldSettings
   brokenOutgoingReferencesSettings?: BrokenOutgoingReferencesSettings
   omittedFields?: string[]
+  [CUSTOM_REFS_CONFIG]?: CustomReferencesSettings
 }
 
 export type FetchParameters = {
@@ -313,6 +328,7 @@ export type FetchParameters = {
   preferActiveFlowVersions?: boolean
   addNamespacePrefixToFullName?: boolean
   warningSettings?: WarningSettings
+  additionalImportantValues?: ImportantValues
 }
 
 export type DeprecatedMetadataParams = {
@@ -345,7 +361,7 @@ export type QuickDeployParams = {
   hash: string
 }
 
-type ClientDeployConfig = Partial<{
+export type ClientDeployConfig = Partial<{
   rollbackOnError: boolean
   ignoreWarnings: boolean
   purgeOnDelete: boolean
@@ -354,6 +370,7 @@ type ClientDeployConfig = Partial<{
   runTests: string[]
   deleteBeforeUpdate: boolean
   quickDeployParams: QuickDeployParams
+  performRetrieve: boolean
 }>
 
 export enum RetryStrategyName {
@@ -372,6 +389,7 @@ export type ClientRetryConfig = Partial<{
 export type CustomObjectsDeployRetryConfig = {
   maxAttempts: number
   retryDelay: number
+  retryDelayMultiplier: number
   retryableFailures: string[]
 }
 
@@ -558,6 +576,9 @@ const dataManagementType = new ObjectType({
     omittedFields: {
       refType: new ListType(BuiltinTypes.STRING),
     },
+    [CUSTOM_REFS_CONFIG]: {
+      refType: customReferencesSettingsType,
+    },
   } as Record<keyof DataManagementConfig, FieldDefinition>,
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -605,6 +626,7 @@ const clientDeployConfigType = new ObjectType({
     runTests: { refType: new ListType(BuiltinTypes.STRING) },
     deleteBeforeUpdate: { refType: BuiltinTypes.BOOLEAN },
     quickDeployParams: { refType: QuickDeployParamsType },
+    performRetrieve: { refType: BuiltinTypes.BOOLEAN },
   } as Record<keyof ClientDeployConfig, FieldDefinition>,
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -633,6 +655,7 @@ const clientRetryConfigType = new ObjectType({
   fields: {
     maxAttempts: { refType: BuiltinTypes.NUMBER },
     retryDelay: { refType: BuiltinTypes.NUMBER },
+    retryDelayMultiplier: { refType: BuiltinTypes.NUMBER },
     retryStrategy: {
       refType: BuiltinTypes.STRING,
       annotations: {
@@ -726,6 +749,8 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     useLabelAsAlias: { refType: BuiltinTypes.BOOLEAN },
     fixRetrieveFilePaths: { refType: BuiltinTypes.BOOLEAN },
     organizationWideSharingDefaults: { refType: BuiltinTypes.BOOLEAN },
+    extendedCustomFieldInformation: { refType: BuiltinTypes.BOOLEAN },
+    importantValues: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -789,6 +814,10 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
     preferActiveFlowVersions: { refType: BuiltinTypes.BOOLEAN },
     addNamespacePrefixToFullName: { refType: BuiltinTypes.BOOLEAN },
     warningSettings: { refType: warningSettingsType },
+    additionalImportantValues: {
+      // Exported type is downcasted to TypeElement
+      refType: new ListType(importantValueType),
+    },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -907,6 +936,7 @@ export type FetchProfile = {
   readonly addNamespacePrefixToFullName: boolean
   isWarningEnabled: (name: keyof WarningSettings) => boolean
   readonly maxItemsInRetrieveRequest: number
+  readonly importantValues: ImportantValues
 }
 
 

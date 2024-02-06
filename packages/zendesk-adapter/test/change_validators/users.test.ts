@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -91,7 +91,7 @@ describe('usersValidator', () => {
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
-    mockGet = jest.spyOn(client, 'getSinglePage')
+    mockGet = jest.spyOn(client, 'get')
     mockGet.mockImplementation(() => (
       {
         status: 200,

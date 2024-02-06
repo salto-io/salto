@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -131,7 +131,15 @@ export const folderType = (): ObjectType => new ObjectType({
   path: [constants.NETSUITE, constants.TYPES_PATH, folderElemID.name],
 })
 
-export const fileCabinetTypesNames: ReadonlySet<string> = new Set(['file', 'folder'])
+export const fileCabinetTypesNames = [
+  fileElemID.name,
+  folderElemID.name,
+] as const
+
+const fileCabinetTypesNamesSet: ReadonlySet<string> = new Set(fileCabinetTypesNames)
+export const isFileCabinetTypeName = (name: string): boolean =>
+  fileCabinetTypesNamesSet.has(name)
+
 export const getFileCabinetTypes = (): Readonly<Record<string, ObjectType>> => ({
   file: fileType(),
   folder: folderType(),

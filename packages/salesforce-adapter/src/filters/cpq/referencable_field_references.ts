@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -177,6 +177,7 @@ const filter: LocalFilterCreator = () => {
         changes.filter(isInstanceChange),
         change => getChangeData(change).elemID.getFullName(),
       )
+      const appliedChangesFullNames = new Set(Object.keys(appliedChangesByFullName))
       const relatedAppliedChanges = _.pick(appliedChangesByFullName, Object.keys(originalChangesByFullName))
       // Enrich the original changes with any extra data from the applied changes (e.g. Id, OwnerId etc...)
       Object.entries(originalChangesByFullName)
@@ -195,8 +196,11 @@ const filter: LocalFilterCreator = () => {
             ..._.pick(originalInstanceValue, _.flatten(Object.entries(REFERENCABLE_FIELD_NAME_TO_CONTROLLING_FIELD))),
           }
         })
+      // Revert the changes from preDeploy and use the original changes for the applied changes
       _.pullAll(changes, Object.values(relatedAppliedChanges))
-      Object.values(originalChangesByFullName).forEach(change => changes.push(change))
+      Object.entries(originalChangesByFullName)
+        .filter(([elemIdFullName, _originalChange]) => appliedChangesFullNames.has(elemIdFullName))
+        .forEach(([_elemIdFullName, originalChange]) => changes.push(originalChange))
     },
   }
 }

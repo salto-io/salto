@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -19,7 +19,7 @@ import { InstanceElement, ReferenceExpression, Element } from '@salto-io/adapter
 import { getDefaultConfig } from '../../../src/config/config'
 import assetsObjectTypePath from '../../../src/filters/assets/assets_object_type_path'
 import { createEmptyType, getFilterParams } from '../../utils'
-import { ASSESTS_SCHEMA_TYPE, ASSETS_OBJECT_TYPE, JIRA } from '../../../src/constants'
+import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_TYPE, JIRA } from '../../../src/constants'
 
 describe('assetsObjectTypePathsFilter', () => {
     type FilterType = filterUtils.FilterWith<'onFetch'>
@@ -32,12 +32,12 @@ describe('assetsObjectTypePathsFilter', () => {
     let grandsonTwoInstance: InstanceElement
     const assetSchemaInstance = new InstanceElement(
       'assetsSchema1',
-      createEmptyType(ASSESTS_SCHEMA_TYPE),
+      createEmptyType(OBJECT_SCHEMA_TYPE),
       {
         idAsInt: 5,
         name: 'assetsSchema',
       },
-      [JIRA, adapterElements.RECORDS_PATH, 'AssetsSchema', 'assetsSchema1', 'assetsSchema1'],
+      [JIRA, adapterElements.RECORDS_PATH, 'ObjectSchema', 'assetsSchema1', 'assetsSchema1'],
     )
     describe('on fetch', () => {
       beforeEach(async () => {
@@ -47,48 +47,48 @@ describe('assetsObjectTypePathsFilter', () => {
         filter = assetsObjectTypePath(getFilterParams({ config })) as typeof filter
         parentInstance = new InstanceElement(
           'parentInstance',
-          createEmptyType(ASSETS_OBJECT_TYPE),
+          createEmptyType(OBJECT_TYPE_TYPE),
           {
             name: 'parentInstance',
             parentObjectTypeId: new ReferenceExpression(assetSchemaInstance.elemID, assetSchemaInstance),
           },
-          [JIRA, adapterElements.RECORDS_PATH, 'AssetsSchema', 'assetsSchema1', 'assetsObjectTypes', 'parentInstance'],
+          [JIRA, adapterElements.RECORDS_PATH, 'ObjectSchema', 'assetsSchema1', 'objectTypes', 'parentInstance'],
         )
         sonOneInstance = new InstanceElement(
           'sonOneInstance',
-          createEmptyType(ASSETS_OBJECT_TYPE),
+          createEmptyType(OBJECT_TYPE_TYPE),
           {
             name: 'sonOneInstance',
             parentObjectTypeId: new ReferenceExpression(parentInstance.elemID, parentInstance),
           },
-          [JIRA, adapterElements.RECORDS_PATH, 'AssetsSchema', 'assetsSchema1', 'assetsObjectTypes', 'sonOneInstance'],
+          [JIRA, adapterElements.RECORDS_PATH, 'ObjectSchema', 'assetsSchema1', 'objectTypes', 'sonOneInstance'],
         )
         sonTwoInstance = new InstanceElement(
           'sonTwoInstance',
-          createEmptyType(ASSETS_OBJECT_TYPE),
+          createEmptyType(OBJECT_TYPE_TYPE),
           {
             name: 'sonTwoInstance',
             parentObjectTypeId: new ReferenceExpression(parentInstance.elemID, parentInstance),
           },
-          [JIRA, adapterElements.RECORDS_PATH, 'AssetsSchema', 'assetsSchema1', 'assetsObjectTypes', 'sonTwoInstance'],
+          [JIRA, adapterElements.RECORDS_PATH, 'ObjectSchema', 'assetsSchema1', 'objectTypes', 'sonTwoInstance'],
         )
         grandsonOneInstance = new InstanceElement(
           'grandsonOneInstance',
-          createEmptyType(ASSETS_OBJECT_TYPE),
+          createEmptyType(OBJECT_TYPE_TYPE),
           {
             name: 'grandsonOneInstance',
             parentObjectTypeId: new ReferenceExpression(sonOneInstance.elemID, sonOneInstance),
           },
-          [JIRA, adapterElements.RECORDS_PATH, 'AssetsSchema', 'assetsSchema1', 'assetsObjectTypes', 'grandsonOneInstance'],
+          [JIRA, adapterElements.RECORDS_PATH, 'ObjectSchema', 'assetsSchema1', 'objectTypes', 'grandsonOneInstance'],
         )
         grandsonTwoInstance = new InstanceElement(
           'grandsonTwoInstance',
-          createEmptyType(ASSETS_OBJECT_TYPE),
+          createEmptyType(OBJECT_TYPE_TYPE),
           {
             name: 'grandsonTwoInstance',
             parentObjectTypeId: new ReferenceExpression(sonOneInstance.elemID, sonOneInstance),
           },
-          [JIRA, adapterElements.RECORDS_PATH, 'AssetsSchema', 'assetsSchema1', 'assetsObjectTypes', 'grandsonTwoInstance'],
+          [JIRA, adapterElements.RECORDS_PATH, 'ObjectSchema', 'assetsSchema1', 'objectTypes', 'grandsonTwoInstance'],
         )
 
         elements = [
@@ -102,11 +102,11 @@ describe('assetsObjectTypePathsFilter', () => {
       })
       it('should change path to be subdirectory of parent', async () => {
         await filter.onFetch(elements)
-        expect(parentInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, 'AssetsSchema', 'assetsSchema1', 'assetsObjectTypes', 'parentInstance', 'parentInstance'])
-        expect(sonOneInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, 'AssetsSchema', 'assetsSchema1', 'assetsObjectTypes', 'parentInstance', 'sonOneInstance', 'sonOneInstance'])
-        expect(sonTwoInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, 'AssetsSchema', 'assetsSchema1', 'assetsObjectTypes', 'parentInstance', 'sonTwoInstance', 'sonTwoInstance'])
-        expect(grandsonOneInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, 'AssetsSchema', 'assetsSchema1', 'assetsObjectTypes', 'parentInstance', 'sonOneInstance', 'grandsonOneInstance', 'grandsonOneInstance'])
-        expect(grandsonTwoInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, 'AssetsSchema', 'assetsSchema1', 'assetsObjectTypes', 'parentInstance', 'sonOneInstance', 'grandsonTwoInstance', 'grandsonTwoInstance'])
+        expect(parentInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, 'ObjectSchema', 'assetsSchema1', 'objectTypes', 'parentInstance', 'parentInstance'])
+        expect(sonOneInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, 'ObjectSchema', 'assetsSchema1', 'objectTypes', 'parentInstance', 'sonOneInstance', 'sonOneInstance'])
+        expect(sonTwoInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, 'ObjectSchema', 'assetsSchema1', 'objectTypes', 'parentInstance', 'sonTwoInstance', 'sonTwoInstance'])
+        expect(grandsonOneInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, 'ObjectSchema', 'assetsSchema1', 'objectTypes', 'parentInstance', 'sonOneInstance', 'grandsonOneInstance', 'grandsonOneInstance'])
+        expect(grandsonTwoInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, 'ObjectSchema', 'assetsSchema1', 'objectTypes', 'parentInstance', 'sonOneInstance', 'grandsonTwoInstance', 'grandsonTwoInstance'])
       })
     })
 })

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -25,7 +25,7 @@ const { awu } = collections.asynciterable
 describe('createFileStateContentProvider', () => {
   let provider: StateContentProvider
   beforeEach(() => {
-    provider = createFileStateContentProvider()
+    provider = createFileStateContentProvider('localStorage')
   })
   const testDir = setupTmpDir()
   const accountNames = ['salesforce', 'netsuite', 'dummy']

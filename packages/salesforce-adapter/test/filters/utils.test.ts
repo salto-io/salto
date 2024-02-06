@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -45,7 +45,12 @@ import {
   getElementAuthorInformation,
   getNamespaceSync,
   referenceFieldTargetTypes,
+
   isStandardObjectSync,
+  isStandardField,
+  getFullName,
+  isInstanceOfCustomObjectSync,
+  isInstanceOfCustomObjectChangeSync, aliasOrElemID,
   getMostRecentFileProperties,
 } from '../../src/filters/utils'
 import {
@@ -687,6 +692,71 @@ describe('filter utils', () => {
         expect(referenceTargets).toBeArrayOfSize(1)
         expect(referenceTargets).toContainValue('SomeCustomObject')
       })
+    })
+  })
+  describe('isStandardField', () => {
+    it('should return true for Standard Field', () => {
+      expect(mockTypes.Account.fields.Name).toSatisfy(isStandardField)
+    })
+    it('should return false for Custom Field', () => {
+      const customField = new Field(
+        mockTypes.Account,
+        'CustomField__c',
+        Types.primitiveDataTypes.Text,
+        {
+          [API_NAME]: 'Account.CustomField__c',
+        },
+      )
+      expect(customField).not.toSatisfy(isStandardField)
+    })
+  })
+  describe('getFullName', () => {
+    it('should return correct fullNames', () => {
+      // instances with no parent
+      expect(getFullName(mockFileProperties({ fullName: 'Test', type: 'ApexClass' }))).toEqual('Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Test', namespacePrefix: 'test', type: 'ApexClass' }))).toEqual('test__Test')
+      expect(getFullName(mockFileProperties({ fullName: 'test__Test', namespacePrefix: 'test', type: 'ApexClass' }))).toEqual('test__Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Test', namespacePrefix: 'test', type: 'ApexClass' }), false)).toEqual('Test')
+      // layout instances
+      expect(getFullName(mockFileProperties({ fullName: 'Test-Test', type: 'Layout' }))).toEqual('Test-Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Test-Test', namespacePrefix: 'test', type: 'Layout' }))).toEqual('Test-test__Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Test-test__Test', namespacePrefix: 'test', type: 'Layout' }))).toEqual('Test-test__Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Test-Test', namespacePrefix: 'test', type: 'Layout' }), false)).toEqual('Test-test__Test')
+      // instances with parent
+      expect(getFullName(mockFileProperties({ fullName: 'Parent.Test', type: 'ValidationRule' }))).toEqual('Parent.Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Parent.Test', namespacePrefix: 'test', type: 'ValidationRule' }))).toEqual('Parent.test__Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Parent.test__Test', namespacePrefix: 'test', type: 'ValidationRule' }))).toEqual('Parent.test__Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Parent.Test', namespacePrefix: 'test', type: 'ValidationRule' }), false)).toEqual('Parent.Test')
+      expect(getFullName(mockFileProperties({ fullName: 'Parent.Test', namespacePrefix: 'test', type: 'ValidationRule' }), false)).toEqual('Parent.Test')
+    })
+  })
+  describe('isInstanceOfCustomObjectSync', () => {
+    it('should return true for CustomObject instance', () => {
+      const instance = new InstanceElement('TestInstance', mockTypes.Account, { Name: 'TestInstance' })
+      expect(instance).toSatisfy(isInstanceOfCustomObjectSync)
+    })
+    it('should return false for non CustomObject instance', () => {
+      expect(mockInstances().Profile).not.toSatisfy(isInstanceOfCustomObjectSync)
+    })
+  })
+  describe('isInstanceOfCustomObjectChangeSync', () => {
+    it('should return true for CustomObject instance', () => {
+      const instance = new InstanceElement('TestInstance', mockTypes.Account, { Name: 'TestInstance' })
+      expect(toChange({ after: instance })).toSatisfy(isInstanceOfCustomObjectChangeSync)
+    })
+    it('should return false for non CustomObject instance', () => {
+      expect(toChange({ after: mockInstances().Profile })).not.toSatisfy(isInstanceOfCustomObjectChangeSync)
+    })
+  })
+  describe('aliasOrElemID', () => {
+    it('should return the alias for Element with alias', () => {
+      const instanceWithAlias = mockInstances().Profile.clone()
+      instanceWithAlias.annotations[CORE_ANNOTATIONS.ALIAS] = 'Test Alias'
+      expect(aliasOrElemID(instanceWithAlias)).toEqual('Test Alias')
+    })
+    it('should return the fullElemID for Element without alias', () => {
+      const instanceWithoutAlias = mockInstances().Profile
+      expect(aliasOrElemID(instanceWithoutAlias)).toEqual(instanceWithoutAlias.elemID.getFullName())
     })
   })
   describe('getMostRecentFileProperties', () => {

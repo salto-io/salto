@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, Element, ElemID, SeverityLevel, isReferenceExpression, isTemplateExpression, isAdditionOrModificationChange, UnresolvedReference } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, Element, ElemID, SeverityLevel, isReferenceExpression, isTemplateExpression, isAdditionOrModificationChange, UnresolvedReference, UnresolvedReferenceError, SaltoErrorType } from '@salto-io/adapter-api'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { values, collections } from '@salto-io/lowerdash'
 
@@ -47,7 +47,7 @@ const getOutgoingUnresolvedReferences = (element: Element, shouldIgnore: ElemIDP
 
 
 export const createOutgoingUnresolvedReferencesValidator = (shouldIgnore: ElemIDPredicate = () => false)
-: ChangeValidator => async changes => (
+: ChangeValidator<UnresolvedReferenceError> => async changes => (
   awu(changes)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
@@ -61,7 +61,9 @@ export const createOutgoingUnresolvedReferencesValidator = (shouldIgnore: ElemID
         elemID: element.elemID,
         severity: 'Error' as SeverityLevel,
         message: 'Element has unresolved references',
-        detailedMessage: `Element ${element.elemID.getFullName()} contains unresolved references: ${unresolvedReferences.map(e => e.getFullName()).join(', ')}. Add the missing dependencies and try again.`,
+        detailedMessage: `Element ${element.elemID.getFullName()} contains unresolved references: ${unresolvedReferences.map(e => e.getFullName()).join(', ')}. Add the missing dependencies and try again. To learn more about fixing this error, go to https://help.salto.io/en/articles/6947056-element-contains-unresolved-references`,
+        unresolvedElemIds: unresolvedReferences,
+        type: 'unresolvedReferences' as SaltoErrorType,
       })
     })
     .filter(values.isDefined)

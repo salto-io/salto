@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -79,7 +79,7 @@ describe('groupPushFilter', () => {
       client = new OktaClient({
         credentials: { baseUrl: 'a.okta.com', token: 'b' },
       })
-      mockGet = jest.spyOn(client, 'getSinglePage')
+      mockGet = jest.spyOn(client, 'get')
     })
     it('should do nothing if usePrivateApi config flag is disabled', async () => {
       const elements: Element[] = [appType, appWithGroupPush, appWithNoGroupPush]
@@ -89,15 +89,11 @@ describe('groupPushFilter', () => {
       await filter.onFetch(elements)
       expect(elements).toHaveLength(3)
     })
-    it('should return fetch error when admin client is undefined', async () => {
+    it('should do nothing if admin client is', async () => {
+      const elements: Element[] = [appType, appWithGroupPush, appWithNoGroupPush]
       filter = groupPushFilter(getFilterParams({ adminClient: undefined })) as typeof filter
-      const res = await filter.onFetch([appType, appWithGroupPush, appWithNoGroupPush])
-      expect(res).toEqual({
-        errors: [{
-          message: 'Failed to fetch group push instances',
-          severity: 'Warning',
-        }],
-      })
+      await filter.onFetch(elements)
+      expect(elements).toHaveLength(3)
     })
     it('should create group push type and group push rule type', async () => {
       mockGet.mockImplementation(params => {

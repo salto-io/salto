@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -109,7 +109,7 @@ describe('role', () => {
         type: 'role',
         columns: ['internalid', 'permchangedate'],
         filters: [['permchangedate', 'within', '2021-01-11 6:55 pm', '2021-02-22 6:56 pm']],
-      })
+      }, undefined)
     })
   })
 

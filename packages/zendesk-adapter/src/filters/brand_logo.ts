@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -138,7 +138,7 @@ const fetchBrand = async (
   client: ZendeskClient,
   brandId: string,
 ): Promise<Brand | undefined> => {
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url: `/api/v2/brands/${brandId}`,
   })
   if (response === undefined) {

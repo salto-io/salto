@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -107,14 +107,14 @@ describe('screenFilter', () => {
     let fieldInstance2: InstanceElement
     let fieldReference: ReferenceExpression
     let fieldUnresolvedReference: UnresolvedReference
-    let screenWithFieldReferences: InstanceElement
+    let screenInstance: InstanceElement
     beforeEach(() => {
       fieldType = new ObjectType({ elemID: new ElemID(JIRA, 'field') })
       fieldInstance1 = new InstanceElement('instance', fieldType, { id: '1' })
       fieldInstance2 = new InstanceElement('instance', fieldType, { id: '2' })
       fieldReference = new ReferenceExpression(fieldInstance1.elemID)
       fieldUnresolvedReference = new UnresolvedReference(fieldInstance2.elemID)
-      screenWithFieldReferences = new InstanceElement(
+      screenInstance = new InstanceElement(
         'instance',
         screenType,
         {
@@ -125,23 +125,46 @@ describe('screenFilter', () => {
       )
     })
     it('should convert the field references to their original ids', async () => {
-      const afterInstance = screenWithFieldReferences.clone()
+      const afterInstance = screenInstance.clone()
       afterInstance.value.description = 'desc'
-      await filter.preDeploy?.([toChange({ before: screenWithFieldReferences, after: afterInstance })])
-      expect(screenWithFieldReferences.value).toEqual({
+      await filter.preDeploy?.([toChange({ before: screenInstance, after: afterInstance })])
+      expect(screenInstance.value).toEqual({
         tabs: {
           tab1: { name: 'tab1', position: 0, fields: ['1', '2'], originalFieldsIds: { ids: ['1', '2'] } },
         },
       })
     })
     it('should not convert the field references to their original ids when the ids are not exist ', async () => {
-      screenWithFieldReferences.value.tabs.tab1.originalFieldsIds = { ids: undefined }
-      const afterInstance = screenWithFieldReferences.clone()
+      screenInstance.value.tabs.tab1.originalFieldsIds = { ids: undefined }
+      const afterInstance = screenInstance.clone()
       afterInstance.value.description = 'desc'
-      await filter.preDeploy?.([toChange({ before: screenWithFieldReferences, after: afterInstance })])
-      expect(screenWithFieldReferences.value).toEqual({
+      await filter.preDeploy?.([toChange({ before: screenInstance, after: afterInstance })])
+      expect(screenInstance.value).toEqual({
         tabs: {
           tab1: { name: 'tab1', position: 0, fields: [fieldReference, fieldUnresolvedReference], originalFieldsIds: { ids: undefined } },
+        },
+      })
+    })
+    it('should do nothing if the screenTab has no fields', async () => {
+      screenInstance.value.tabs.tab1.fields = undefined
+      screenInstance.value.tabs.tab1.originalFieldsIds = undefined
+      const afterInstance = screenInstance.clone()
+      afterInstance.value.description = 'desc'
+      await filter.preDeploy?.([toChange({ before: screenInstance, after: afterInstance })])
+      expect(screenInstance.value).toEqual({
+        tabs: {
+          tab1: { name: 'tab1', position: 0 },
+        },
+      })
+    })
+    it('should do nothing if the screenTab has no originalFieldsIds', async () => {
+      screenInstance.value.tabs.tab1.originalFieldsIds = undefined
+      const afterInstance = screenInstance.clone()
+      afterInstance.value.description = 'desc'
+      await filter.preDeploy?.([toChange({ before: screenInstance, after: afterInstance })])
+      expect(screenInstance.value).toEqual({
+        tabs: {
+          tab1: { name: 'tab1', position: 0, fields: [fieldReference, fieldUnresolvedReference] },
         },
       })
     })

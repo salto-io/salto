@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -206,11 +206,11 @@ const replaceReferenceValues = async (
 const createElementsSourceServiceIdToElemID = async (
   elementsSourceIndex: LazyElementsSourceIndexes,
   isPartial: boolean,
-): Promise<ServiceIdRecords> => (
-  isPartial
+): Promise<ServiceIdRecords> => ({
+  ...isPartial
     ? (await elementsSourceIndex.getIndexes()).serviceIdRecordsIndex
-    : {}
-)
+    : {},
+})
 
 const applyValuesAndAnnotationsToElement = (element: Element, newElement: Element): void => {
   if (isInstanceElement(element) && isInstanceElement(newElement)) {
@@ -266,8 +266,8 @@ const filterCreator: LocalFilterCreator = ({
   name: 'replaceElementReferences',
   onFetch: async elements => {
     const serviceIdToElemID = Object.assign(
+      await createElementsSourceServiceIdToElemID(elementsSourceIndex, isPartial),
       await generateServiceIdToElemID(elements),
-      await createElementsSourceServiceIdToElemID(elementsSourceIndex, isPartial)
     )
     const customRecordFieldsToServiceIds = Object.assign(
       createCustomRecordFieldsToElemID(elements),

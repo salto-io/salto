@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,12 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { DeployResult, Element, getChangeData, InstanceElement, isAdditionChange, isInstanceElement, isObjectType,
-  ModificationChange,
-  ReadOnlyElementsSource, toChange } from '@salto-io/adapter-api'
+import {
+  DeployResult, Element, getChangeData, InstanceElement, isAdditionChange, isInstanceElement, isObjectType,
+  ModificationChange, ProgressReporter,
+  ReadOnlyElementsSource, toChange,
+} from '@salto-io/adapter-api'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
-import { buildElementsSourceFromElements, getParents, resolveValues } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, getParents, resolveValues, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import each from 'jest-each'
 import { Credentials } from '../src/auth'
@@ -29,15 +31,19 @@ import { createInstances, createModifyInstances } from './instances'
 import { findInstance } from './utils'
 import { getLookUpName } from '../src/reference_mapping'
 import { getDefaultConfig } from '../src/config/config'
-import { ASSESTS_SCHEMA_TYPE, ASSETS_ATTRIBUTE_TYPE, ASSETS_OBJECT_TYPE } from '../src/constants'
+import { BEHAVIOR_TYPE } from '../src/constants'
 
 const { awu } = collections.asynciterable
 const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
 
 jest.setTimeout(600 * 1000)
 
-const excludedTypes = ['Behavior', 'Behavior__config', ASSESTS_SCHEMA_TYPE, 'AssetsSchemas', 'AssetsStatuses', 'AssetsStatus', 'AssetsObjectTypes', ASSETS_OBJECT_TYPE, ASSETS_ATTRIBUTE_TYPE]
+const excludedTypes = [BEHAVIOR_TYPE, 'Behavior__config', 'ObjectTypes', 'ObjectSchemas', 'ObjectSchemaStatuses', 'ObjectSchemaReferenceTypes']
 
+const nullProgressReporter: ProgressReporter = {
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  reportProgress: () => {},
+}
 each([
   ['Cloud', false],
   ['Data Center', true],
@@ -135,6 +141,7 @@ each([
             groupID: group[0].elemID.getFullName(),
             changes: group.map(instance => toChange({ after: instance })),
           },
+          progressReporter: nullProgressReporter,
         })
 
         res.appliedChanges.forEach(appliedChange => {
@@ -158,6 +165,7 @@ each([
             groupID: group[0].data.after.elemID.getFullName(),
             changes: group,
           },
+          progressReporter: nullProgressReporter,
         })
 
         res.appliedChanges.forEach(appliedChange => {
@@ -230,7 +238,6 @@ each([
         .flatMap(res => res.appliedChanges)
         .filter(isAdditionChange)
         .map(change => toChange({ before: getChangeData(change) }))
-
       removalChanges.forEach(change => {
         const instance = getChangeData(change)
         removalChanges
@@ -248,11 +255,12 @@ each([
             groupID: getChangeData(change).elemID.getFullName(),
             changes: [change],
           },
+          progressReporter: nullProgressReporter,
         })))
 
       const errors = addDeployResults.flatMap(res => res.errors)
       if (errors.length) {
-        throw new Error(`Failed to clean e2e changes: ${errors.join(', ')}`)
+        throw new Error(`Failed to clean e2e changes: ${errors.map(e => safeJsonStringify(e)).join(', ')}`)
       }
     })
   })

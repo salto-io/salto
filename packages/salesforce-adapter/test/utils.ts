@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -24,7 +24,7 @@ import {
   MapType,
   ObjectType,
   PrimitiveType,
-  PrimitiveTypes,
+  PrimitiveTypes, ProgressReporter,
   TypeElement,
   Values,
 } from '@salto-io/adapter-api'
@@ -32,10 +32,9 @@ import { buildElementsSourceFromElements, findElements as findElementsByID } fro
 import JSZip from 'jszip'
 import { MockInterface } from '@salto-io/test-utils'
 import * as constants from '../src/constants'
-import { FIELD_ANNOTATIONS } from '../src/constants'
+import { FIELD_ANNOTATIONS, SYSTEM_FIELDS } from '../src/constants'
 import { annotationsFileName, customFieldsFileName, standardFieldsFileName } from '../src/filters/custom_type_split'
 import { FilterContext } from '../src/filter'
-import { SYSTEM_FIELDS } from '../src/adapter'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 import { LastChangeDateOfTypesWithNestedInstances } from '../src/types'
 
@@ -392,3 +391,8 @@ export const emptyLastChangeDateOfTypesWithNestedInstances = (): LastChangeDateO
   Workflow: {},
   CustomLabels: '2023-11-06T00:00:00.000Z',
 })
+
+export const nullProgressReporter: ProgressReporter = {
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  reportProgress: () => {},
+}

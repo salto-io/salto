@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -43,6 +43,14 @@ describe('lockedFieldsValidator', () => {
   })
 
   it('should not return an error if field is not locked', async () => {
+    expect(await lockedFieldsValidator([
+      toChange({
+        after: instance,
+      }),
+    ])).toEqual([])
+  })
+  it('should not return an error if field is locked but related to JSM project', async () => {
+    instance.value.name = 'service'
     expect(await lockedFieldsValidator([
       toChange({
         after: instance,

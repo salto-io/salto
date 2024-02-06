@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -24,8 +24,10 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { readTextFile, rm, rename, replaceContents } from '@salto-io/file'
 import { inspectValue, safeJsonStringify, createSchemeGuard } from '@salto-io/adapter-utils'
+import { state, ProviderOptionsS3 } from '@salto-io/workspace'
 
 import { StateContentProvider, getHashFromHashes } from './common'
+import { buildS3DirectoryStore } from '../../s3_dir_store'
 
 const { awu } = collections.asynciterable
 const glob = promisify(origGlob)
@@ -62,23 +64,26 @@ const findLocalStateFiles = (prefix: string): Promise<string[]> => (
 
 type CreateS3StateContentProviderArgs = {
   workspaceId: string
-  bucketName: string
+  options: ProviderOptionsS3
 }
 export const createS3StateContentProvider = (
-  { workspaceId, bucketName }: CreateS3StateContentProviderArgs
+  { workspaceId, options }: CreateS3StateContentProviderArgs
 ): StateContentProvider => {
+  const { bucket, prefix, uploadConcurrencyLimit } = options
+  const remoteBasePath = prefix === undefined ? `state/${workspaceId}` : `${prefix}/state/${workspaceId}`
+
   const buildRemoteStateFileName = ({ account, contentHash }: LocalStateFileContent): string => (
-    `${workspaceId}/${account}/${contentHash}`
+    `${remoteBasePath}/${account}/${contentHash}`
   )
 
   const s3 = createS3Client()
   return {
     findStateFiles: findLocalStateFiles,
-    clear: async prefix => {
+    clear: async localPrefix => {
       // We do not clear the current state file content from S3 on purpose as we expect that historic states
       // could be useful, and if not, that a lifecycle can be setup on S3 to remove them
       // This is to keep in line with the fact that we do not delete the previous state file on every writeContents
-      const localFiles = await findLocalStateFiles(prefix)
+      const localFiles = await findLocalStateFiles(localPrefix)
       await Promise.all(localFiles.map(filename => rm(filename)))
     },
     rename: async (oldPrefix, newPrefix) => {
@@ -98,8 +103,8 @@ export const createS3StateContentProvider = (
         .map(async filePath => {
           const parsedFile = await parseLocalStateFile(filePath)
           const remoteStatePath = buildRemoteStateFileName(parsedFile)
-          log.debug('Creating state content read stream from %s/%s', bucketName, remoteStatePath)
-          const readRes = await s3.getObject({ Bucket: bucketName, Key: remoteStatePath })
+          log.debug('Creating state content read stream from %s/%s', bucket, remoteStatePath)
+          const readRes = await s3.getObject({ Bucket: bucket, Key: remoteStatePath })
           const stream = readRes.Body
           if (!(stream instanceof Readable)) {
             // Should never happen
@@ -108,20 +113,28 @@ export const createS3StateContentProvider = (
           return { name: filePath, stream }
         })
     ),
-    writeContents: async (prefix, contents) => {
+    writeContents: async (localPrefix, contents) => {
       // Upload content to S3
       await Promise.all(contents.map(async ({ account, content, contentHash }) => {
         const remoteStatePath = buildRemoteStateFileName({ account, contentHash })
-        log.debug('Uploading state content to %s/%s', bucketName, remoteStatePath)
-        await s3.putObject({ Bucket: bucketName, Key: remoteStatePath, Body: content })
+        log.debug('Uploading state content to %s/%s', bucket, remoteStatePath)
+        await s3.putObject({ Bucket: bucket, Key: remoteStatePath, Body: content })
       }))
       // Update local files to point to new hash values
       await Promise.all(contents.map(async ({ account, contentHash }) => {
         await replaceContents(
-          buildLocalStateFileName(prefix, account),
+          buildLocalStateFileName(localPrefix, account),
           safeJsonStringify({ account, contentHash } as LocalStateFileContent)
         )
       }))
     },
+    staticFilesSource: state.buildHistoryStateStaticFilesSource(
+      buildS3DirectoryStore({
+        bucketName: bucket,
+        baseDir: `${prefix}/${workspaceId}`,
+        S3Client: s3,
+        concurrencyLimit: uploadConcurrencyLimit,
+      })
+    ),
   }
 }

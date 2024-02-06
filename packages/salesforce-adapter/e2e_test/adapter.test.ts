@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -56,7 +56,7 @@ import { mockTypes, lwcJsResourceContent, lwcHtmlResourceContent, mockDefaultVal
 import {
   objectExists, getMetadata, getMetadataFromElement, createInstance, removeElementAndVerify,
   removeElementIfAlreadyExists, createElementAndVerify, createElement, removeElement,
-  removeMetadataIfAlreadyExists,
+  removeMetadataIfAlreadyExists, nullProgressReporter,
 } from './utils'
 import {
   accountApiName, CUSTOM_FIELD_NAMES, customObjectAddFieldsName,
@@ -669,6 +669,7 @@ describe('Salesforce adapter E2E with real account', () => {
           groupID: oldElement.elemID.getFullName(),
           changes,
         },
+        progressReporter: nullProgressReporter,
       })
 
       expect(modificationResult.errors).toHaveLength(0)
@@ -758,6 +759,7 @@ describe('Salesforce adapter E2E with real account', () => {
           groupID: newInstance.elemID.getFullName(),
           changes: [{ action: 'modify', data: { before: oldInstance, after: newInstance } }],
         },
+        progressReporter: nullProgressReporter,
       })
 
       // Test
@@ -918,6 +920,7 @@ describe('Salesforce adapter E2E with real account', () => {
           groupID: newElement.elemID.getFullName(),
           changes,
         },
+        progressReporter: nullProgressReporter,
       })
       expect(modificationResult.errors).toHaveLength(0)
       expect(modificationResult.appliedChanges).toEqual(changes)
@@ -993,6 +996,7 @@ describe('Salesforce adapter E2E with real account', () => {
           groupID: newElement.elemID.getFullName(),
           changes,
         },
+        progressReporter: nullProgressReporter,
       })
       expect(modificationResult.errors).toHaveLength(0)
       expect(modificationResult.appliedChanges).toEqual(changes)
@@ -1780,6 +1784,7 @@ describe('Salesforce adapter E2E with real account', () => {
                   groupID: caseObj.elemID.getFullName(),
                   changes: [{ action: 'remove', data: { before: caseObj.fields[fieldName] } }],
                 },
+                progressReporter: nullProgressReporter,
               })
               return caseAfterFieldRemoval
             }
@@ -1821,6 +1826,7 @@ describe('Salesforce adapter E2E with real account', () => {
                     data: { after: caseAfterFieldAddition.fields[rollupSummaryFieldName] },
                   }],
                 },
+                progressReporter: nullProgressReporter,
               })
               return caseAfterFieldAddition
             }
@@ -2151,6 +2157,7 @@ describe('Salesforce adapter E2E with real account', () => {
                   data: { before: customFieldsObject.fields[f], after: newCustomObject.fields[f] },
                 })),
             },
+            progressReporter: nullProgressReporter,
           })
           objectInfo = await getMetadata(client, constants.CUSTOM_OBJECT,
             customObjectWithFieldsName) as CustomObject
@@ -2359,6 +2366,7 @@ describe('Salesforce adapter E2E with real account', () => {
                 groupID: account.elemID.getFullName(),
                 changes: [{ action: 'modify', data: { before: field, after: updatedField } }],
               },
+              progressReporter: nullProgressReporter,
             })
             const fieldInfo = await getMetadata(client, constants.CUSTOM_FIELD,
               fullName) as CustomField
@@ -2446,6 +2454,7 @@ describe('Salesforce adapter E2E with real account', () => {
           groupID: oldElement.elemID.getFullName(),
           changes,
         },
+        progressReporter: nullProgressReporter,
       })
       expect(modificationResult.errors).toHaveLength(0)
       expect(modificationResult.appliedChanges).toHaveLength(1)
@@ -2576,6 +2585,7 @@ describe('Salesforce adapter E2E with real account', () => {
           groupID: oldElement.elemID.getFullName(),
           changes: [{ action: 'modify', data: { before: oldElement, after: newElement } }],
         },
+        progressReporter: nullProgressReporter,
       })
 
       const updatedElement = getChangeData(modificationResult.appliedChanges[0])
@@ -2651,6 +2661,7 @@ describe('Salesforce adapter E2E with real account', () => {
             groupID: before.elemID.getFullName(),
             changes: [{ action: 'modify', data: { before, after } }],
           },
+          progressReporter: nullProgressReporter,
         })
 
         const updatedRules = await getRulesFromClient()
@@ -2663,6 +2674,7 @@ describe('Salesforce adapter E2E with real account', () => {
             groupID: before.elemID.getFullName(),
             changes: [{ action: 'modify', data: { before: after, after: before } }],
           },
+          progressReporter: nullProgressReporter,
         })
         const rules = await getRulesFromClient()
         expect(new Set(makeArray(rules.assignmentRule)))
@@ -2695,6 +2707,7 @@ describe('Salesforce adapter E2E with real account', () => {
             groupID: before.elemID.getFullName(),
             changes: [{ action: 'modify', data: { before, after } }],
           },
+          progressReporter: nullProgressReporter,
         })
 
         const updatedRules = await getRulesFromClient()
@@ -2704,6 +2717,7 @@ describe('Salesforce adapter E2E with real account', () => {
             groupID: before.elemID.getFullName(),
             changes: [{ action: 'modify', data: { before: after, after: before } }],
           },
+          progressReporter: nullProgressReporter,
         })
       })
     })
@@ -2778,6 +2792,7 @@ describe('Salesforce adapter E2E with real account', () => {
               groupID: instance.elemID.getFullName(),
               changes: [{ action: 'modify', data: { before: instance, after } }],
             },
+            progressReporter: nullProgressReporter,
           })
           const instanceInfo = await findInstance(instance)
           expect(instanceInfo).toBeDefined()
@@ -2943,6 +2958,7 @@ describe('Salesforce adapter E2E with real account', () => {
               groupID: instance.elemID.getFullName(),
               changes: [{ action: 'modify', data: { before: instance, after } }],
             },
+            progressReporter: nullProgressReporter,
           })
           if (deployResult.errors.length > 0) {
             if (deployResult.errors.length === 1) throw deployResult.errors[0]
@@ -3524,6 +3540,7 @@ describe('Salesforce adapter E2E with real account', () => {
             groupID: flow.elemID.getFullName(),
             changes: [{ action: 'modify', data: { before: flow, after: newFlow } }],
           },
+          progressReporter: nullProgressReporter,
         })
         flow = getChangeData(deployResult.appliedChanges[0]) as InstanceElement
 
@@ -3713,6 +3730,7 @@ describe('Salesforce adapter E2E with real account', () => {
             groupID: layout.elemID.getFullName(),
             changes: [{ action: 'modify', data: { before: layout, after: newLayout } }],
           },
+          progressReporter: nullProgressReporter,
         })
         layout = getChangeData(deployResult.appliedChanges[0]) as InstanceElement
 
@@ -3782,6 +3800,7 @@ describe('Salesforce adapter E2E with real account', () => {
             groupID: oldElement.elemID.getFullName(),
             changes,
           },
+          progressReporter: nullProgressReporter,
         })
 
         expect(modificationResult.errors).toHaveLength(0)
@@ -3804,6 +3823,7 @@ describe('Salesforce adapter E2E with real account', () => {
             groupID: quickAction.elemID.getFullName(),
             changes,
           },
+          progressReporter: nullProgressReporter,
         })
 
         expect(additionDeploy.errors).toHaveLength(0)

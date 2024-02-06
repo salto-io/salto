@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -51,7 +51,7 @@ const BOARD_CONFIG_RESPONSE_SCHEME = Joi.object({
 const isBoardConfigResponse = createSchemeGuard<BoardConfigResponse>(BOARD_CONFIG_RESPONSE_SCHEME, 'Received an invalid board config response')
 
 const getColumnsName = async (id: string, client: JiraClient): Promise<string[] | undefined> => {
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url: `/rest/agile/1.0/board/${id}/configuration`,
   })
 
@@ -192,6 +192,7 @@ const filter: FilterCreator = ({ config, client }) => ({
     }
 
     setFieldDeploymentAnnotations(boardType, COLUMNS_CONFIG_FIELD)
+    boardType.fields.columnConfig.annotations[CORE_ANNOTATIONS.REQUIRED] = true
     await addAnnotationRecursively(columnConfigType, CORE_ANNOTATIONS.CREATABLE)
     await addAnnotationRecursively(columnConfigType, CORE_ANNOTATIONS.UPDATABLE)
   },

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -27,16 +27,16 @@ const extractPageEntries: clientUtils.PageEntriesExtractor = page =>
 describe('client_pagination', () => {
   describe('getMinSinceIdPagination', () => {
     const client: MockInterface<clientUtils.HTTPReadClientInterface> = {
-      getSinglePage: mockFunction<clientUtils.HTTPReadClientInterface['getSinglePage']>(),
+      get: mockFunction<clientUtils.HTTPReadClientInterface['get']>(),
       getPageSize: mockFunction<clientUtils.HTTPReadClientInterface['getPageSize']>(),
     }
     beforeEach(() => {
-      client.getSinglePage.mockReset()
+      client.get.mockReset()
       client.getPageSize.mockReset()
     })
 
     it('should query a single page if paginationField is not specified', async () => {
-      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
+      client.get.mockResolvedValueOnce(Promise.resolve({
         data: {
           a: 'a',
         },
@@ -55,12 +55,12 @@ describe('client_pagination', () => {
         extractPageEntries,
       )(args))).flat()
       expect(result).toEqual([{ a: 'a' }])
-      expect(client.getSinglePage).toHaveBeenCalledTimes(1)
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
+      expect(client.get).toHaveBeenCalledTimes(1)
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep' })
     })
 
     it('should use query args', async () => {
-      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
+      client.get.mockResolvedValueOnce(Promise.resolve({
         data: {
           a: 'a',
         },
@@ -83,12 +83,12 @@ describe('client_pagination', () => {
         extractPageEntries,
       )(args))).flat()
       expect(result).toEqual([{ a: 'a' }])
-      expect(client.getSinglePage).toHaveBeenCalledTimes(1)
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { arg1: 'val1', arg2: 'val2' } })
+      expect(client.get).toHaveBeenCalledTimes(1)
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep', queryParams: { arg1: 'val1', arg2: 'val2' } })
     })
 
     it('should use recursive query args', async () => {
-      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
+      client.get.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [
             { a: 'a1', id: 123 },
@@ -142,15 +142,15 @@ describe('client_pagination', () => {
         { a: 'a1', id: 789 },
         { a: 'a4', id: 789 },
       ])
-      expect(client.getSinglePage).toHaveBeenCalledTimes(4)
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { parentId: 123 } })
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { parentId: 456 } })
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { parentId: 789 } })
+      expect(client.get).toHaveBeenCalledTimes(4)
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep' })
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep', queryParams: { parentId: 123 } })
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep', queryParams: { parentId: 456 } })
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep', queryParams: { parentId: 789 } })
     })
 
     it('should query a single page if data is empty', async () => {
-      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
+      client.get.mockResolvedValueOnce(Promise.resolve({
         data: [],
         status: 200,
         statusText: 'OK',
@@ -168,12 +168,12 @@ describe('client_pagination', () => {
         extractPageEntries,
       )(args))).flat()
       expect(result).toEqual([])
-      expect(client.getSinglePage).toHaveBeenCalledTimes(1)
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
+      expect(client.get).toHaveBeenCalledTimes(1)
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep' })
     })
 
     it('should query multiple pages if response has items', async () => {
-      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
+      client.get.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [{
             a: 'a1',
@@ -221,18 +221,18 @@ describe('client_pagination', () => {
         extractPageEntries,
       )(args))).flat()
       expect(result).toEqual([{ a: 'a1', id: 150 }, { a: 'a2', b: 'b2', id: 140 }, { a: 'a3', id: 130 }])
-      expect(client.getSinglePage).toHaveBeenCalledTimes(4)
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
+      expect(client.get).toHaveBeenCalledTimes(4)
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep' })
       // eslint-disable-next-line camelcase
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '150' } })
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '150' } })
       // eslint-disable-next-line camelcase
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '140' } })
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '140' } })
       // eslint-disable-next-line camelcase
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '130' } })
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '130' } })
     })
 
     it('should fail gracefully on HTTP errors', async () => {
-      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
+      client.get.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [{
             a: 'a1',
@@ -262,14 +262,14 @@ describe('client_pagination', () => {
         extractPageEntries,
       )(args))).flat()
       expect(result).toEqual([{ a: 'a1', id: 150 }])
-      expect(client.getSinglePage).toHaveBeenCalledTimes(2)
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { arg1: 'val1' } })
+      expect(client.get).toHaveBeenCalledTimes(2)
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep', queryParams: { arg1: 'val1' } })
       // eslint-disable-next-line camelcase
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '150', arg1: 'val1' } })
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '150', arg1: 'val1' } })
     })
 
     it('should stop pagination if min id does not decrease', async () => {
-      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
+      client.get.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [{
             a: 'a1',
@@ -317,15 +317,15 @@ describe('client_pagination', () => {
         extractPageEntries,
       )(args))).flat()
       expect(result).toEqual([{ a: 'a1', id: 150 }, { a: 'a2', b: 'b2', id: 140 }, { a: 'a3', id: 140 }])
-      expect(client.getSinglePage).toHaveBeenCalledTimes(3)
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
+      expect(client.get).toHaveBeenCalledTimes(3)
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep' })
       // eslint-disable-next-line camelcase
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '150' } })
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '150' } })
       // eslint-disable-next-line camelcase
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '140' } })
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '140' } })
     })
     it('should stop pagination if non-numerical id values are found', async () => {
-      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
+      client.get.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [{
             a: 'a1',
@@ -358,10 +358,10 @@ describe('client_pagination', () => {
         extractPageEntries,
       )(args))).flat()
       expect(result).toEqual([{ a: 'a1', id: 150 }, { a: 'a2', b: 'b2', id: '140' }])
-      expect(client.getSinglePage).toHaveBeenCalledTimes(2)
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
+      expect(client.get).toHaveBeenCalledTimes(2)
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep' })
       // eslint-disable-next-line camelcase
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '150' } })
+      expect(client.get).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '150' } })
     })
   })
 })

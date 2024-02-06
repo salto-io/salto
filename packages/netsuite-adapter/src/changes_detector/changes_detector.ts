@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,7 +15,7 @@
 */
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { NetsuiteQuery } from '../query'
+import { NetsuiteQuery } from '../config/query'
 import { getChangedFiles, getChangedFolders } from './changes_detectors/file_cabinet'
 import { customFieldDetector, customListDetector } from './changes_detectors/custom_type'
 import customRecordTypeDetector from './changes_detectors/custom_record_type'

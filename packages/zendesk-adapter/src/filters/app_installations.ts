@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -58,7 +58,7 @@ const isJobStatus = (value: unknown): value is JobStatus => {
 const checkIfJobIsDone = async (
   client: ZendeskClient, jobId: string, change: Change
 ): Promise<boolean> => {
-  const res = (await client.getSinglePage({ url: `/api/v2/apps/job_statuses/${jobId}` })).data
+  const res = (await client.get({ url: `/api/v2/apps/job_statuses/${jobId}` })).data
   if (!isJobStatus(res)) {
     throw createSaltoElementError({ // caught by deployChanges
       message: `Got an invalid response for job status. Job ID: ${jobId}`,

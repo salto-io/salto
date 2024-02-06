@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -27,7 +27,7 @@ import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
 import Connection from '../src/client/jsforce'
 import mockAdapter from './adapter'
-import { createCustomObjectType } from './utils'
+import { createCustomObjectType, nullProgressReporter } from './utils'
 import {
   ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP, CUSTOM_OBJECT_ID_FIELD,
   FIELD_ANNOTATIONS, OWNER_ID, SBAA_APPROVAL_CONDITION,
@@ -42,6 +42,7 @@ describe('Custom Object Instances CRUD', () => {
   const mockElemID = new ElemID(constants.SALESFORCE, 'Test')
   const instanceName = 'Instance'
   const anotherInstanceName = 'AnotherInstance'
+  const nameOfInstanceWithNonUpdateableField = 'NotUpdatable'
 
   const customObject = new ObjectType({
     elemID: mockElemID,
@@ -89,6 +90,15 @@ describe('Custom Object Instances CRUD', () => {
           [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
           [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
           [constants.API_NAME]: 'NotCreatable',
+        },
+      },
+      NotUpdateable: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+          [constants.FIELD_ANNOTATIONS.UPDATEABLE]: false,
+          [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
+          [constants.API_NAME]: 'NotUpdateable',
         },
       },
       AnotherField: {
@@ -186,6 +196,14 @@ describe('Custom Object Instances CRUD', () => {
     SaltoName: 'anotherExistingInstanceWithThing\'',
     NumField: null,
   }
+  const existingInstanceWithNonUpdateableField = new InstanceElement(
+    nameOfInstanceWithNonUpdateableField,
+    customObject,
+    {
+      SaltoName: 'existingInstanceWithNonUpdateableField',
+      NotUpdateable: 'DontSendMeOnUpdate',
+    }
+  )
   const newInstanceWithRefName = 'newInstanceWithRef'
   const newInstanceWithRef = new InstanceElement(
     newInstanceWithRefName,
@@ -207,6 +225,25 @@ describe('Custom Object Instances CRUD', () => {
         city: 'Ashkelon',
         country: 'Israel',
       },
+    }
+  )
+  const newInstanceWithNonCreatableFieldName = 'newInstanceWithNonCreatableField'
+  const newInstanceWithNonCreatableField = new InstanceElement(
+    newInstanceWithNonCreatableFieldName,
+    customObject,
+    {
+      SaltoName: 'newInstanceWithNonCreatableField',
+      NumField: 4,
+      NotCreatable: 'ShouldNotBeCreated',
+    }
+  )
+  const instanceWithMissingFields = new InstanceElement(
+    'instanceWithMissingFields',
+    customObject,
+    {
+      SaltoName: 'instanceWithMissingFields',
+      NumField: 4,
+      UnknownField: 'unknown',
     }
   )
 
@@ -288,6 +325,8 @@ describe('Custom Object Instances CRUD', () => {
           refType: idType,
           label: 'id',
           annotations: {
+            [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+            [constants.FIELD_ANNOTATIONS.UPDATEABLE]: false,
             [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
             [constants.LABEL]: 'Record ID',
@@ -302,6 +341,7 @@ describe('Custom Object Instances CRUD', () => {
             [constants.LABEL]: 'Name',
             [constants.API_NAME]: 'Name',
             [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+            [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
             [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
           },
         },
@@ -313,6 +353,7 @@ describe('Custom Object Instances CRUD', () => {
             [constants.LABEL]: 'TestField',
             [constants.API_NAME]: 'Type.TestField__c',
             [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+            [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
             [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
           },
           annotationRefsOrTypes: {
@@ -369,6 +410,7 @@ describe('Custom Object Instances CRUD', () => {
               { action: 'add', data: { after: nonExistingSettingInstance } },
             ],
           },
+          progressReporter: nullProgressReporter,
         })
       })
       it('Should query according to instance values', () => {
@@ -418,7 +460,7 @@ describe('Custom Object Instances CRUD', () => {
         expect(existingInstanceChangeData.value.Name).toBeDefined()
         expect(existingInstanceChangeData.value.Name).toBe('TestName1')
 
-        // newInstnace appliedChange
+        // newInstance appliedChange
         const newInstanceChangeData = result.appliedChanges
           .map(getChangeData)
           .find(element => element.elemID
@@ -448,14 +490,17 @@ describe('Custom Object Instances CRUD', () => {
                 changes: [
                   { action: 'add', data: { after: existingInstance } },
                   { action: 'add', data: { after: newInstanceWithRef } },
+                  { action: 'add', data: { after: newInstanceWithNonCreatableField } },
+                  { action: 'add', data: { after: instanceWithMissingFields } },
                 ],
               },
+              progressReporter: nullProgressReporter,
             })
           })
 
           it('Should query according to instance values', () => {
             expect(mockQuery.mock.calls).toHaveLength(1)
-            expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,OwnerId,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix FROM Type WHERE SaltoName IN (\'existingInstance\',\'newInstanceWithRef\') AND NumField IN (1,2) AND City IN (\'Tel-Aviv\',null) AND Country IN (\'Israel\',null) AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (\'first\',null) AND LastName IN (\'last\',null) AND Salutation IN (\'mrs.\',null) AND MiddleName IN (null) AND Suffix IN (null)')
+            expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,OwnerId,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix FROM Type WHERE SaltoName IN (\'existingInstance\',\'newInstanceWithRef\',\'newInstanceWithNonCreatableField\',\'instanceWithMissingFields\') AND NumField IN (1,2,4) AND City IN (\'Tel-Aviv\',null) AND Country IN (\'Israel\',null) AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (\'first\',null) AND LastName IN (\'last\',null) AND Salutation IN (\'mrs.\',null) AND MiddleName IN (null) AND Suffix IN (null)')
           })
 
           it('Should call load operation twice - once with insert once with update', () => {
@@ -482,24 +527,27 @@ describe('Custom Object Instances CRUD', () => {
             expect(updateCall[3][0].FieldWithNoValue).toBeNull()
           })
 
-          it('Should call load operation with insert for the "new" record', () => {
+          it('Should call load operation with insert for the "new" records', () => {
             const insertCall = mockBulkLoad.mock.calls.find(call => call[1] === 'insert')
             expect(insertCall.length).toBe(4)
             expect(insertCall[0]).toBe('Type')
-
             // Record
-            expect(insertCall[3]).toHaveLength(1)
-            expect(insertCall[3][0].SaltoName).toBeDefined()
-            expect(insertCall[3][0].SaltoName).toEqual('newInstanceWithRef')
-            expect(insertCall[3][0].NotCreatable).toBeUndefined()
-            expect(insertCall[3][0].AnotherField).toBeDefined()
-            expect(insertCall[3][0].AnotherField).toEqual('Type')
-            expect(insertCall[3][0].FieldWithNoValue).toBeUndefined()
+            expect(insertCall[3]).toHaveLength(3)
+
+            const newInstanceWithRefRecord = insertCall[3][0]
+            expect(newInstanceWithRefRecord).toHaveProperty('SaltoName', 'newInstanceWithRef')
+            expect(newInstanceWithRefRecord).toHaveProperty('AnotherField', 'Type')
+            expect(newInstanceWithRefRecord).not.toHaveProperty('NotCreatable')
+            expect(newInstanceWithRefRecord).not.toHaveProperty('FieldWithNoValue')
+
+            const newInstanceWithNonCreatableFieldRecord = insertCall[3][1]
+            expect(newInstanceWithNonCreatableFieldRecord).toHaveProperty('SaltoName', 'newInstanceWithNonCreatableField')
+            expect(newInstanceWithNonCreatableFieldRecord).toHaveProperty('NumField', 4)
+            expect(newInstanceWithNonCreatableFieldRecord).not.toHaveProperty('NotCreatable')
           })
 
-          it('Should have result with 2 applied changes, add 2 instances with new Id', async () => {
-            expect(result.errors).toHaveLength(0)
-            expect(result.appliedChanges).toHaveLength(2)
+          it('Should have result with correct applied changes and add Id to the inserted instances', async () => {
+            expect(result.appliedChanges).toHaveLength(4)
 
             // existingInstance appliedChange
             const existingInstanceChangeData = result.appliedChanges
@@ -512,7 +560,7 @@ describe('Custom Object Instances CRUD', () => {
             expect(existingInstanceChangeData.value.Id).toBeDefined()
             expect(existingInstanceChangeData.value.Id).toEqual('queryId')
 
-            // newInstnace appliedChange
+            // newInstance appliedChange
             const newInstanceChangeData = result.appliedChanges
               .map(getChangeData)
               .find(element => element.elemID.isEqual(newInstanceWithRef.elemID)) as InstanceElement
@@ -523,9 +571,31 @@ describe('Custom Object Instances CRUD', () => {
             expect(newInstanceChangeData.value.Id).toBeDefined()
             expect(newInstanceChangeData.value.Id).toEqual('newId0')
 
-            // Reference should stay a referece
+            // Reference should stay a reference
             expect(newInstanceChangeData.value.AnotherField)
               .toEqual(new ReferenceExpression(mockElemID, 'Type'))
+
+            // newInstanceWithNonCreatableFieldChangeData has its own test case
+          })
+
+          it('Should not insert non-creatable fields', () => {
+            expect(result.errors).toSatisfyAny(error =>
+              error.elemID.isEqual(newInstanceWithNonCreatableField.elemID)
+              && error.message.includes('createable')
+              && error.severity === 'Warning')
+            const newInstanceWithNonCreatableFieldChangeData = result.appliedChanges
+              .map(getChangeData)
+              .find(element => element.elemID.isEqual(newInstanceWithNonCreatableField.elemID)) as InstanceElement
+
+            expect(newInstanceWithNonCreatableFieldChangeData.value).not.toHaveProperty('NotCreatable')
+          })
+
+          it('Should create a warning for instance with missing fields', () => {
+            expect(result.errors).toSatisfyAny(
+              error => error.severity === 'Warning'
+                && error.elemID.isEqual(instanceWithMissingFields.elemID)
+                && error.message.includes('they are not defined in the type: [UnknownField]')
+            )
           })
         })
         describe('When called with only new instances', () => {
@@ -546,14 +616,16 @@ describe('Custom Object Instances CRUD', () => {
                   changes: [
                     { action: 'add', data: { after: newInstanceWithRef } },
                     { action: 'add', data: { after: anotherNewInstance } },
+                    { action: 'add', data: { after: newInstanceWithNonCreatableField } },
                   ],
                 },
+                progressReporter: nullProgressReporter,
               })
             })
 
             it('Should query according to instance values', () => {
               expect(mockQuery.mock.calls).toHaveLength(1)
-              expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,OwnerId,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix FROM Type WHERE SaltoName IN (\'newInstanceWithRef\',\'anotherNewInstance\') AND NumField IN (2,3) AND City IN (null,\'Ashkelon\') AND Country IN (null,\'Israel\') AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (null) AND LastName IN (null) AND Salutation IN (null) AND MiddleName IN (null) AND Suffix IN (null)')
+              expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,OwnerId,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix FROM Type WHERE SaltoName IN (\'newInstanceWithRef\',\'anotherNewInstance\',\'newInstanceWithNonCreatableField\') AND NumField IN (2,3,4) AND City IN (null,\'Ashkelon\') AND Country IN (null,\'Israel\') AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (null) AND LastName IN (null) AND Salutation IN (null) AND MiddleName IN (null) AND Suffix IN (null)')
             })
 
             it('Should call load operation once with insert', () => {
@@ -562,10 +634,9 @@ describe('Custom Object Instances CRUD', () => {
               expect(insertCall).toBeDefined()
             })
 
-            it('Should have result with 2 applied changes, add 2 instances with insert Id', async () => {
-              expect(result.errors).toHaveLength(0)
-              expect(result.appliedChanges).toHaveLength(2)
-              // newInstnace appliedChange
+            it('Should have result with 3 applied changes, add 3 instances with insert Id', async () => {
+              expect(result.appliedChanges).toHaveLength(3)
+              // newInstance appliedChange
               const newInstanceChangeData = result.appliedChanges
                 .map(getChangeData)
                 .find(element => element.elemID.isEqual(newInstanceWithRef.elemID)) as InstanceElement
@@ -590,6 +661,17 @@ describe('Custom Object Instances CRUD', () => {
               // Should add result Id
               expect(anotherNewInstanceChangeData.value.Id).toBeDefined()
               expect(anotherNewInstanceChangeData.value.Id).toEqual('newId1')
+            })
+            it('Should not insert non-creatable fields', () => {
+              expect(result.errors).toSatisfyAny(error =>
+                error.elemID.isEqual(newInstanceWithNonCreatableField.elemID)
+                && error.message.includes('createable')
+                && error.severity === 'Warning')
+              const newInstanceWithNonCreatableFieldChangeData = result.appliedChanges
+                .map(getChangeData)
+                .find(element => element.elemID.isEqual(newInstanceWithNonCreatableField.elemID)) as InstanceElement
+
+              expect(newInstanceWithNonCreatableFieldChangeData.value).not.toHaveProperty('NotCreatable')
             })
           })
           describe('when group has circular dependencies', () => {
@@ -661,6 +743,7 @@ describe('Custom Object Instances CRUD', () => {
                     { action: 'add', data: { after: instanceWithoutRef } },
                   ],
                 },
+                progressReporter: nullProgressReporter,
               })
             })
             it('should update the partially deployed instances after inserting them', () => {
@@ -699,6 +782,7 @@ describe('Custom Object Instances CRUD', () => {
                   { action: 'add', data: { after: anotherExistingInstance } },
                 ],
               },
+              progressReporter: nullProgressReporter,
             })
           })
 
@@ -768,6 +852,7 @@ describe('Custom Object Instances CRUD', () => {
                 groupID: 'add_Test_instances',
                 changes: _.times(100, createTestInstanceAddition),
               },
+              progressReporter: nullProgressReporter,
             })
           })
           it('should not not exceed max query size', () => {
@@ -815,6 +900,7 @@ describe('Custom Object Instances CRUD', () => {
                 { action: 'add', data: { after: anotherNewInstance } },
               ],
             },
+            progressReporter: nullProgressReporter,
           })
         })
         it('Should query according to instance values', () => {
@@ -893,21 +979,35 @@ describe('Custom Object Instances CRUD', () => {
       instanceToModify.value.Id = 'modifyId'
       const anotherInstanceToModify = anotherExistingInstance.clone()
       anotherInstanceToModify.value.Id = 'anotherModifyId'
+      const instanceWithNonUpdateableFieldBefore = existingInstanceWithNonUpdateableField.clone()
+      instanceWithNonUpdateableFieldBefore.value.Id = 'yetAnotherModifyId'
+      const instanceWithNonUpdateableFieldAfter = instanceWithNonUpdateableFieldBefore.clone()
+      instanceWithNonUpdateableFieldAfter.value.NotUpdateable = 'PleaseDontUpdate'
       const modifyDeployGroup = {
         groupID: 'modify__Test__c',
         changes: [
           { action: 'modify', data: { before: instanceToModify, after: instanceToModify } },
           { action: 'modify', data: { before: anotherInstanceToModify, after: anotherInstanceToModify } },
+          { action: 'modify', data: { before: instanceWithNonUpdateableFieldBefore, after: instanceWithNonUpdateableFieldAfter } },
         ],
       } as ChangeGroup
       describe('when loadBulk succeeds for all', () => {
         beforeEach(async () => {
-          result = await adapter.deploy({ changeGroup: modifyDeployGroup })
+          result = await adapter.deploy({ changeGroup: modifyDeployGroup, progressReporter: nullProgressReporter })
         })
 
-        it('should return no errors and 2 fitting applied changes', async () => {
-          expect(result.errors).toHaveLength(0)
-          expect(result.appliedChanges).toHaveLength(2)
+        it('should return one error and 3 fitting applied changes', async () => {
+          expect(result.errors).toEqual([
+            expect.objectContaining({
+              elemID: instanceWithNonUpdateableFieldAfter.elemID,
+              message: expect.stringContaining('updateable'),
+              severity: 'Warning',
+            }),
+          ])
+        })
+
+        it('should return correct applied changes', async () => {
+          expect(result.appliedChanges).toHaveLength(3)
           expect(isModificationChange(result.appliedChanges[0])).toBeTruthy()
           const changeData = getChangeData(result.appliedChanges[0])
           expect(changeData).toBeDefined()
@@ -916,16 +1016,20 @@ describe('Custom Object Instances CRUD', () => {
           const secondChangeData = getChangeData(result.appliedChanges[1])
           expect(secondChangeData).toBeDefined()
           expect(isInstanceElement(secondChangeData)).toBeTruthy()
+          const thirdChangeData = getChangeData(result.appliedChanges[2])
+          expect(thirdChangeData).toBeDefined()
+          expect(isInstanceElement(thirdChangeData)).toBeTruthy()
+          expect((thirdChangeData as InstanceElement).value).not.toHaveProperty('NotUpdateable')
         })
       })
 
       describe('when loadBulk partially succeeds', () => {
         beforeEach(async () => {
           connection.bulk.load = partialBulkLoad
-          result = await adapter.deploy({ changeGroup: modifyDeployGroup })
+          result = await adapter.deploy({ changeGroup: modifyDeployGroup, progressReporter: nullProgressReporter })
         })
 
-        it('should return one error and one applied change', async () => {
+        it('should return correct errors applied changes', async () => {
           expect(result.errors).toEqual([
             expect.objectContaining({
               elemID: existingInstance.elemID,
@@ -936,6 +1040,21 @@ describe('Custom Object Instances CRUD', () => {
               elemID: existingInstance.elemID,
               message: expect.stringContaining(errorMsgs[1]),
               severity: 'Error',
+            }),
+            expect.objectContaining({
+              elemID: existingInstanceWithNonUpdateableField.elemID,
+              message: expect.stringContaining(errorMsgs[0]),
+              severity: 'Error',
+            }),
+            expect.objectContaining({
+              elemID: existingInstanceWithNonUpdateableField.elemID,
+              message: expect.stringContaining(errorMsgs[1]),
+              severity: 'Error',
+            }),
+            expect.objectContaining({
+              elemID: existingInstanceWithNonUpdateableField.elemID,
+              message: expect.stringContaining('updateable'),
+              severity: 'Warning',
             }),
           ])
 
@@ -950,7 +1069,7 @@ describe('Custom Object Instances CRUD', () => {
       describe('when loadBulk fails for all', () => {
         beforeEach(async () => {
           connection.bulk.load = getBulkLoadMock('fail')
-          result = await adapter.deploy({ changeGroup: modifyDeployGroup })
+          result = await adapter.deploy({ changeGroup: modifyDeployGroup, progressReporter: nullProgressReporter })
         })
 
         it('should return only errors', async () => {
@@ -975,6 +1094,21 @@ describe('Custom Object Instances CRUD', () => {
               message: expect.stringContaining(errorMsgs[1]),
               severity: 'Error',
             }),
+            expect.objectContaining({
+              elemID: existingInstanceWithNonUpdateableField.elemID,
+              message: expect.stringContaining(errorMsgs[0]),
+              severity: 'Error',
+            }),
+            expect.objectContaining({
+              elemID: existingInstanceWithNonUpdateableField.elemID,
+              message: expect.stringContaining(errorMsgs[1]),
+              severity: 'Error',
+            }),
+            expect.objectContaining({
+              elemID: existingInstanceWithNonUpdateableField.elemID,
+              message: expect.stringContaining('updateable'),
+              severity: 'Warning',
+            }),
           ])
 
           expect(result.appliedChanges).toHaveLength(0)
@@ -996,7 +1130,7 @@ describe('Custom Object Instances CRUD', () => {
       } as ChangeGroup
       describe('when loadBulk succeeds for all', () => {
         beforeEach(async () => {
-          result = await adapter.deploy({ changeGroup: removeChangeGroup })
+          result = await adapter.deploy({ changeGroup: removeChangeGroup, progressReporter: nullProgressReporter })
         })
 
         it('should return no errors and 2 fitting applied changes', () => {
@@ -1017,7 +1151,7 @@ describe('Custom Object Instances CRUD', () => {
         describe('when loadBulk succeeds for all', () => {
           beforeEach(async () => {
             connection.bulk.load = partialBulkLoad
-            result = await adapter.deploy({ changeGroup: removeChangeGroup })
+            result = await adapter.deploy({ changeGroup: removeChangeGroup, progressReporter: nullProgressReporter })
           })
 
           it('should return two error', () => {
@@ -1047,7 +1181,7 @@ describe('Custom Object Instances CRUD', () => {
         describe('when loadBulk fails for all', () => {
           beforeEach(async () => {
             connection.bulk.load = getBulkLoadMock('fail')
-            result = await adapter.deploy({ changeGroup: removeChangeGroup })
+            result = await adapter.deploy({ changeGroup: removeChangeGroup, progressReporter: nullProgressReporter })
           })
 
           it('should return only errors', () => {
@@ -1099,6 +1233,7 @@ describe('Custom Object Instances CRUD', () => {
                   { action: 'add', data: { after: instanceOfAnotherType } },
                 ],
               },
+              progressReporter: nullProgressReporter,
             })
           })
         })
@@ -1112,6 +1247,7 @@ describe('Custom Object Instances CRUD', () => {
                   { action: 'modify', data: { before: instanceOfAnotherType, after: instanceOfAnotherType } },
                 ],
               },
+              progressReporter: nullProgressReporter,
             })
           })
         })
@@ -1125,16 +1261,15 @@ describe('Custom Object Instances CRUD', () => {
                   { action: 'remove', data: { before: instanceOfAnotherType } },
                 ],
               },
+              progressReporter: nullProgressReporter,
             })
           })
         })
         afterEach(() => {
-          expect(result.errors).toEqual([
-            expect.objectContaining({
-              message: expect.stringContaining('Custom Object Instances change group should have a single type but got: Type,anotherType'),
-              severity: 'Error',
-            }),
-          ])
+          expect(result.errors).toSatisfyAll(error =>
+            error.severity === 'Error'
+            && error.message.includes('Custom Object Instances change group should have a single type but got: Type,anotherType')
+            && error.elemID !== undefined)
         })
       })
 
@@ -1151,6 +1286,7 @@ describe('Custom Object Instances CRUD', () => {
                 { action: 'modify', data: { before: instanceToModify, after: anotherInstanceToModify } },
               ],
             },
+            progressReporter: nullProgressReporter,
           })
           expect(result.errors).toEqual([
             expect.objectContaining({
@@ -1172,13 +1308,12 @@ describe('Custom Object Instances CRUD', () => {
                 { action: 'remove', data: { before: newInstanceWithRef } },
               ],
             },
+            progressReporter: nullProgressReporter,
           })
-          expect(result.errors).toEqual(([
-            expect.objectContaining({
-              severity: 'Error',
-              message: expect.stringContaining('Custom Object Instances change group must have one action'),
-            }),
-          ]))
+          expect(result.errors).toSatisfyAll(error =>
+            error.severity === 'Error'
+            && error.message.includes('Custom Object Instances change group must have one action')
+            && error.elemID !== undefined)
         })
       })
     })
@@ -1206,6 +1341,7 @@ describe('Custom Object Instances CRUD', () => {
           }
           result = await adapter.deploy({
             changeGroup,
+            progressReporter: nullProgressReporter,
           })
         })
         it('should deploy successfully', () => {
@@ -1306,6 +1442,7 @@ describe('Custom Object Instances CRUD', () => {
 
           result = await adapter.deploy({
             changeGroup,
+            progressReporter: nullProgressReporter,
           })
         })
 
@@ -1345,7 +1482,7 @@ describe('Custom Object Instances CRUD', () => {
           }
         })
         it('should throw an error', async () => {
-          await expect(adapter.deploy({ changeGroup })).rejects.toThrow()
+          await expect(adapter.deploy({ changeGroup, progressReporter: nullProgressReporter })).rejects.toThrow()
         })
       })
     })
@@ -1378,6 +1515,7 @@ describe('Custom Object Instances CRUD', () => {
             { action: 'add', data: { after: existingInstance } },
           ],
         },
+        progressReporter: nullProgressReporter,
       })
       expect(result.errors).toEqual(([
         expect.objectContaining({
@@ -1407,6 +1545,7 @@ describe('Custom Object Instances CRUD', () => {
               { action: 'add', data: { after: existingInstance } },
             ],
           },
+          progressReporter: nullProgressReporter,
         })
       })
     })
@@ -1420,6 +1559,7 @@ describe('Custom Object Instances CRUD', () => {
               { action: 'modify', data: { before: existingInstance, after: existingInstance } },
             ],
           },
+          progressReporter: nullProgressReporter,
         })
       })
     })
@@ -1433,6 +1573,7 @@ describe('Custom Object Instances CRUD', () => {
               { action: 'remove', data: { before: existingInstance } },
             ],
           },
+          progressReporter: nullProgressReporter,
         })
       })
     })

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -71,7 +71,7 @@ describe('netsuite saved searches author information tests', () => {
       type: 'savedsearch',
       columns: ['modifiedby', 'id', 'datemodified'],
       filters: [],
-    })
+    }, undefined)
     expect(runSavedSearchQueryMock).toHaveBeenCalledTimes(1)
   })
 

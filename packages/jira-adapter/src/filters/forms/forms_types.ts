@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -40,7 +40,7 @@ type DetailedFormDataResponse = {
 
 type FormResponse = {
   id: number
-  name: string
+  name?: string
 }
 
 type FormsResponse = {
@@ -50,7 +50,7 @@ type FormsResponse = {
 export const FORMS_RESPONSE_SCHEME = Joi.object({
   data: Joi.array().items(Joi.object({
     id: Joi.number().required(),
-    name: Joi.string().required(),
+    name: Joi.string().allow(''),
   }).unknown(true).required()),
 }).unknown(true).required()
 

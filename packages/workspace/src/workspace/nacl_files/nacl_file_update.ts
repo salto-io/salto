@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -19,19 +19,14 @@ import { getChangeData, isElement, ObjectType, ElemID, Element, isType, isAdditi
 import { AdditionDiff, ActionName } from '@salto-io/dag'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { SourceRange, SourceMap } from '../../parser'
-
-import {
-  dumpAnnotationTypes, dumpElements, dumpSingleAnnotationType, dumpValues,
-} from '../../parser/dump'
-import { Functions } from '../../parser/functions'
+import { parser } from '@salto-io/parser'
 
 const { awu } = collections.asynciterable
 
 // Declared again to prevent cyclic dependency
 const FILE_EXTENSION = '.nacl'
 
-export type DetailedChangeWithSource = DetailedChange & { location: SourceRange }
+export type DetailedChangeWithSource = DetailedChange & { location: parser.SourceRange }
 
 const createFileNameFromPath = (pathParts?: ReadonlyArray<string>): string => (
   `${path.join(...(pathParts ?? ['unsorted']))}${FILE_EXTENSION}`
@@ -39,9 +34,9 @@ const createFileNameFromPath = (pathParts?: ReadonlyArray<string>): string => (
 
 export const getChangeLocations = (
   change: DetailedChange,
-  sourceMap: ReadonlyMap<string, SourceRange[]>,
+  sourceMap: ReadonlyMap<string, parser.SourceRange[]>,
 ): DetailedChangeWithSource[] => {
-  const lastNestedLocation = (parentScope: SourceRange): SourceRange => {
+  const lastNestedLocation = (parentScope: parser.SourceRange): parser.SourceRange => {
     // We want to insert just before the scope's closing bracket, so we place the change
     // one byte before the closing bracket.
     const nestedPosition = {
@@ -56,7 +51,7 @@ export const getChangeLocations = (
     }
   }
 
-  const findLocations = (): SourceRange[] => {
+  const findLocations = (): parser.SourceRange[] => {
     if (change.action !== 'add') {
       // We want to get the location of the existing element
       const possibleLocations = sourceMap.get(change.id.getFullName()) || []
@@ -134,7 +129,7 @@ type DetailedAddition = AdditionDiff<Element> & {
 }
 
 export const groupAnnotationTypeChanges = (fileChanges: DetailedChange[],
-  existingFileSourceMap?: SourceMap): DetailedChange[] => {
+  existingFileSourceMap?: parser.SourceMap): DetailedChange[] => {
   const isAnnotationTypeAddChange = (change: DetailedChange): boolean =>
     change.id.isAnnotationTypeID() && isAdditionChange(change)
 
@@ -182,7 +177,7 @@ const removeBracketLines = (dumpedObject: string): string => (
 export const updateNaclFileData = async (
   currentData: string,
   changes: DetailedChangeWithSource[],
-  functions: Functions,
+  functions: parser.Functions,
 ): Promise<string> => {
   type BufferChange = {
     newData: string
@@ -206,23 +201,23 @@ export const updateNaclFileData = async (
       const isListElement = changeKey.match(/^\d+$/) !== null
       if (change.id.isAnnotationTypeID()) {
         if (isType(elem) || isTypeReference(elem)) {
-          newData = dumpSingleAnnotationType(
+          newData = parser.dumpSingleAnnotationType(
             changeKey,
             new TypeReference(elem.elemID),
             indentationLevel
           )
         } else {
-          newData = dumpAnnotationTypes(elem, indentationLevel)
+          newData = parser.dumpAnnotationTypes(elem, indentationLevel)
         }
       } else if (isElement(elem)) {
-        newData = await dumpElements([elem], functions, indentationLevel)
+        newData = await parser.dumpElements([elem], functions, indentationLevel)
       } else if (isListElement) {
-        newData = await dumpValues(elem, functions, indentationLevel)
+        newData = await parser.dumpValues(elem, functions, indentationLevel)
       } else {
         // We create a "dummy object" as the scope in which we are going to write this value
         // We do this because we need to dump the key as well as the value and this is the easiest
         // way to ensure we remain consistent
-        const dumpedObj = await dumpValues({ [changeKey]: elem }, functions, indentationLevel - 1)
+        const dumpedObj = await parser.dumpValues({ [changeKey]: elem }, functions, indentationLevel - 1)
         // once we have the "new scope", we want to take just the serialized values because the
         // brackets already exist in the original scope.
         newData = removeBracketLines(dumpedObj)
@@ -312,7 +307,7 @@ const wrapAdditions = (nestedAdditions: DetailedAddition[]): DetailedAddition =>
 
 const parentElementExistsInPath = (
   dc: DetailedChange,
-  sourceMap: SourceMap
+  sourceMap: parser.SourceMap
 ): boolean => {
   const { parent } = dc.id.createTopLevelParentID()
   return _.some(sourceMap.get(parent.getFullName())?.map(
@@ -321,7 +316,7 @@ const parentElementExistsInPath = (
 }
 export const getChangesToUpdate = (
   changes: DetailedChange[],
-  sourceMap: SourceMap
+  sourceMap: parser.SourceMap
 ): DetailedChange[] => {
   const isNestedAddition = (dc: DetailedChange): boolean => (dc.path || false)
     && dc.action === 'add'

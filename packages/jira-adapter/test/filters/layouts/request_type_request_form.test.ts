@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -175,6 +175,23 @@ describe('requestTypeLayoutsFilter', () => {
       const issueLayoutInstance = instances.find(e => e.elemID.typeName === REQUEST_FORM_TYPE)
       expect(issueLayoutInstance).toBeDefined()
     })
+    it('should not add layout if requestType has no valid parent', async () => {
+      const requestTypeInstanceNoParent = requestTypeInstance.clone()
+      requestTypeInstanceNoParent.annotations[CORE_ANNOTATIONS.PARENT] = []
+      elements = [
+        projectType,
+        projectInstance,
+        requestTypeType,
+        requestTypeInstanceNoParent,
+        fieldType,
+        fieldInstance1,
+        fieldInstance2,
+      ]
+      await filter.onFetch(elements)
+      const instances = elements.filter(isInstanceElement)
+      const issueLayoutInstance = instances.find(e => e.elemID.typeName === REQUEST_FORM_TYPE)
+      expect(issueLayoutInstance).toBeUndefined()
+    })
     it('should not add layout if it is a bad response', async () => {
       mockGet.mockImplementation(() => ({
         status: 200,
@@ -292,6 +309,50 @@ describe('requestTypeLayoutsFilter', () => {
       const instances = elements.filter(isInstanceElement)
       const issueLayoutInstance = instances.find(e => e.elemID.typeName === REQUEST_FORM_TYPE)
       expect(issueLayoutInstance?.elemID.getFullName()).toEqual('jira.RequestForm.instance.someName')
+    })
+    it('should add request form when metadata is null', async () => {
+      mockGet.mockImplementation(params => {
+        if (params.url === '/rest/gira/1') {
+          return {
+            data: {
+              issueLayoutConfiguration: {
+                issueLayoutResult: {
+                  id: '2',
+                  name: 'Default Issue Layout',
+                  containers: [
+                    {
+                      containerType: 'PRIMARY',
+                      items: {
+                        nodes: [
+                          {
+                            fieldItemId: 'testField1',
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      containerType: 'SECONDARY',
+                      items: {
+                        nodes: [
+                          {
+                            fieldItemId: 'testField2',
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+                metadata: null,
+              },
+            },
+          }
+        }
+        throw new Error('Err')
+      })
+      await filter.onFetch(elements)
+      const instances = elements.filter(isInstanceElement)
+      const issueLayoutInstance = instances.find(e => e.elemID.typeName === REQUEST_FORM_TYPE)
+      expect(issueLayoutInstance).toBeDefined()
     })
   })
 })

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,14 +16,14 @@
 import wu from 'wu'
 import { types } from '@salto-io/lowerdash'
 import { SaltoError, SeverityLevel } from '@salto-io/adapter-api'
+import { parser } from '@salto-io/parser'
 import { MergeError } from '../merger'
 import { ValidationError } from '../validator'
-import { ParseError } from '../parser'
 
 export const MAX_ENV_NAME_LEN = 100
 
 export class Errors extends types.Bean<Readonly<{
-    parse: ReadonlyArray<ParseError>
+    parse: ReadonlyArray<parser.ParseError>
     merge: ReadonlyArray<MergeError>
     validation: ReadonlyArray<ValidationError>
   }>> {

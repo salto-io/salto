@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -48,7 +48,7 @@ const TOKEN_RESPONSE_SCHEME = Joi.object({
 const isTokenResponse = createSchemeGuard<TokenResponse>(TOKEN_RESPONSE_SCHEME, 'Failed to get script runner token from scriptRunner service')
 
 const getUrlFromService = async (jiraClient: JiraClient): Promise<string> => {
-  const jiraResponse = await jiraClient.getSinglePage({
+  const jiraResponse = await jiraClient.get({
     url: '/plugins/servlet/ac/com.onresolve.jira.groovy.groovyrunner/scriptrunner-home?classifier=json&s=com.onresolve.jira.groovy.groovyrunner__scriptrunner-home',
   })
   if (!isTokenAddressResponse(jiraResponse.data)) {

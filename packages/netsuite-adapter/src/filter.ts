@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -18,7 +18,7 @@ import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import NetsuiteClient from './client/client'
 import { LazyElementsSourceIndexes } from './elements_source_index/types'
 import { DeployResult } from './types'
-import { NetsuiteConfig } from './config'
+import { NetsuiteConfig } from './config/types'
 import { TimeZoneAndFormat } from './changes_detector/date_formats'
 
 

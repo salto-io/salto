@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,7 +15,7 @@
 */
 
 import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
-import { createAdapterApiConfigType, createTransformationConfigTypes, getConfigWithExcludeFromConfigChanges } from '../../src/config'
+import { createAdapterApiConfigType, createTransformationConfigTypes, getUpdatedCofigFromConfigChanges } from '../../src/config'
 
 describe('config_change', () => {
   let config: InstanceElement
@@ -33,23 +33,84 @@ describe('config_change', () => {
           exclude: [
             { type: 'Type1' },
           ],
+          fetchFlag1: false,
+          someFlag: false,
         },
       }
     )
   })
   it('should return undefined when no changes are suggested', () => {
-    expect(getConfigWithExcludeFromConfigChanges({ configChanges: [], currentConfig: config, configType, adapterName: 'Defualt' })).toBeUndefined()
+    expect(getUpdatedCofigFromConfigChanges({ configChanges: [], currentConfig: config, configType })).toBeUndefined()
   })
   it('should return new config when changes are suggested and a message', () => {
-    const configChange = getConfigWithExcludeFromConfigChanges({
-      configChanges: [{ typeToExclude: 'bType' }],
+    const configChange = getUpdatedCofigFromConfigChanges({
+      configChanges: [
+        { type: 'typeToExclude', value: 'bType', reason: 'r1' },
+        { type: 'typeToExclude', value: 'cType', reason: 'r2' },
+        { type: 'disablePrivateAPI', reason: 'can not fetch private api' },
+      ],
       currentConfig: config,
       configType,
-      adapterName: 'Defualt',
     })
     expect(configChange?.config).toHaveLength(1)
     expect(configChange?.config[0].value.fetch.include).toEqual([{ type: 'aType' }])
-    expect(configChange?.config[0].value.fetch.exclude).toEqual([{ type: 'Type1' }, { type: 'bType' }])
-    expect(configChange?.message).toEqual('    * Salto failed to fetch some items from Defualt. Failed items must be excluded from the fetch.')
+    expect(configChange?.config[0].value.fetch.exclude).toEqual([{ type: 'Type1' }, { type: 'bType' }, { type: 'cType' }])
+    expect(configChange?.config[0].value.client).toEqual({ usePrivateAPI: false })
+    expect(configChange?.message).toContain('r1')
+    expect(configChange?.message).toContain('r2')
+    expect(configChange?.message).toContain('can not fetch private api')
+  })
+  describe('enableFetchFlag config suggestions', () => {
+    it('should enable fetch flags when there are enableFetchFlag config suggestions', () => {
+      const updatedConfig = getUpdatedCofigFromConfigChanges({
+        configChanges: [
+          { type: 'enableFetchFlag', value: 'fetchFlag1', reason: 'r1' },
+          { type: 'enableFetchFlag', value: 'fetchFlag2', reason: 'r2' },
+        ],
+        currentConfig: config,
+        configType,
+      })
+      expect(updatedConfig?.config).toBeDefined()
+      expect(updatedConfig?.config[0].value).toEqual(
+        {
+          fetch: {
+            include: [
+              { type: 'aType' },
+            ],
+            exclude: [
+              { type: 'Type1' },
+            ],
+            fetchFlag1: true,
+            fetchFlag2: true,
+            someFlag: false,
+          },
+        }
+      )
+    })
+    it('should not change fetch flags when there are no enbaleFetchFlag config suggestions', () => {
+      const updatedConfig = getUpdatedCofigFromConfigChanges({
+        configChanges: [
+          { type: 'typeToExclude', value: 'bType', reason: 'r1' },
+        ],
+        currentConfig: config,
+        configType,
+      })
+      expect(updatedConfig?.config).toBeDefined()
+      expect(updatedConfig?.config[0].value).toEqual(
+        {
+          fetch: {
+            include: [
+              { type: 'aType' },
+            ],
+            exclude: [
+              { type: 'Type1' },
+              { type: 'bType' },
+            ],
+            fetchFlag1: false,
+            someFlag: false,
+          },
+        }
+      )
+    })
   })
 })

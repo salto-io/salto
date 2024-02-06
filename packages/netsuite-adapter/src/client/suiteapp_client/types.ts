@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,7 +15,7 @@
 */
 import { ElemID, Values } from '@salto-io/adapter-api'
 import Bottleneck from 'bottleneck'
-import { InstanceLimiterFunc, SuiteAppClientConfig } from '../../config'
+import { InstanceLimiterFunc, SuiteAppClientConfig } from '../../config/types'
 import { SuiteAppConfigRecordType, SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
 import { SuiteAppCredentials } from '../credentials'
 
@@ -209,7 +209,7 @@ type ReadFailure = {
 
 export type ReadResults = (ReadSuccess | ReadFailure)[]
 
-export type RestletOperation = 'search' | 'sysInfo' | 'readFile' | 'config' | 'listBundles' | 'listSuiteApps'
+export type RestletOperation = 'search' | 'sysInfo' | 'readFile' | 'config' | 'record' | 'listBundles' | 'listSuiteApps'
 
 export type CallsLimiter = <T>(fn: () => Promise<T>) => Promise<T>
 
@@ -377,6 +377,20 @@ export const SET_CONFIG_RESULT_SCHEMA = {
   },
 }
 
+export type SuiteAppType = {
+  appId: string
+  name: string
+  version: string
+  description: string
+  dateInstalled: Date
+  dateLastUpdated: Date
+  publisherId: string
+  installedBy: {
+    id: number
+    name: string
+  }
+}
+
 export const GET_BUNDLES_RESULT_SCHEMA = {
   type: 'array',
   items: {
@@ -425,3 +439,47 @@ export const GET_SUITEAPPS_RESULT_SCHEMA = {
 }
 
 export type SetConfigRecordsValuesResult = { errorMessage: string } | SetConfigResult
+
+export const QUERY_RECORD_TYPES = {
+  workflow: 'workflow',
+  workflowstate: 'workflowstate',
+  workflowtransition: 'workflowtransition',
+  actiontype: 'actiontype',
+  workflowstatecustomfield: 'workflowstatecustomfield',
+  workflowcustomfield: 'workflowcustomfield',
+} as const
+
+export type QueryRecordType = keyof typeof QUERY_RECORD_TYPES
+
+export type QueryRecordSchema = {
+  type: QueryRecordType
+  sublistId?: string
+  idAlias?: string
+  typeSuffix?: string
+  customTypes?: Record<string, string>
+  fields: string[]
+  filter: {
+    fieldId: string
+    in: string[]
+  }
+  sublists?: QueryRecordSchema[]
+}
+
+export type QueryRecordResponse = {
+  body: Record<string, unknown>
+  sublists: QueryRecordResponse[]
+  errors?: string[]
+}
+
+export const QUERY_RECORDS_RESPONSE_SCHEMA = {
+  type: 'array',
+  items: {
+    type: 'object',
+    required: ['body', 'sublists'],
+    properties: {
+      body: { type: 'object' },
+      sublists: { type: 'array' },
+      errors: { type: 'array', items: { type: 'string' } },
+    },
+  },
+}

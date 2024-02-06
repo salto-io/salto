@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -20,7 +20,7 @@ import _ from 'lodash'
 import { naclCase, pathNaclCase, transformValues } from '@salto-io/adapter-utils'
 import { collections, strings } from '@salto-io/lowerdash'
 import { NETSUITE, RECORDS_PATH, SOAP } from '../constants'
-import { NetsuiteQuery } from '../query'
+import { NetsuiteQuery } from '../config/query'
 import { getTypeIdentifier, SUPPORTED_TYPES } from './types'
 import NetsuiteClient from '../client/client'
 import { DataElementsResult } from '../client/types'

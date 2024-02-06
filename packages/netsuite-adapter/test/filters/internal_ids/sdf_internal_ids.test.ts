@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -192,7 +192,7 @@ describe('sdf internal ids tests', () => {
       expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, 'SELECT scriptid, internalid FROM customfield ORDER BY internalid ASC')
       expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, 'SELECT scriptid, internalid FROM customrecordtype ORDER BY internalid ASC')
       expect(runSuiteQLMock).toHaveBeenCalledTimes(3)
-      expect(runSavedSearchQueryMock).toHaveBeenCalledWith({ type: 'savedsearch', filters: [], columns: ['id', 'internalid'] })
+      expect(runSavedSearchQueryMock).toHaveBeenCalledWith({ type: 'savedsearch', filters: [], columns: ['id', 'internalid'] }, undefined)
       expect(runSavedSearchQueryMock).toHaveBeenCalledTimes(1)
     })
     it('should add internal ids to elements', () => {
@@ -252,7 +252,7 @@ describe('sdf internal ids tests', () => {
         expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, 'SELECT scriptid, id FROM clientscript ORDER BY id ASC')
         expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, 'SELECT scriptid, internalid FROM customrecordtype ORDER BY internalid ASC')
         expect(runSuiteQLMock).toHaveBeenCalledTimes(2)
-        expect(runSavedSearchQueryMock).toHaveBeenCalledWith({ type: 'savedsearch', filters: [], columns: ['id', 'internalid'] })
+        expect(runSavedSearchQueryMock).toHaveBeenCalledWith({ type: 'savedsearch', filters: [], columns: ['id', 'internalid'] }, undefined)
         expect(runSavedSearchQueryMock).toHaveBeenCalledTimes(1)
       })
       it('should add internal ids to new elements', () => {

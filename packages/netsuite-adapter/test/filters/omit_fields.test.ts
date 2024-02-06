@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -22,7 +22,7 @@ import filterCreator from '../../src/filters/omit_fields'
 import { LocalFilterOpts } from '../../src/filter'
 import { toAnnotationRefTypes } from '../../src/custom_records/custom_record_type'
 import { customrecordtypeType } from '../../src/autogen/types/standard_types/customrecordtype'
-import { emptyQueryParams, fullQueryParams, fullFetchConfig } from '../../src/query'
+import { emptyQueryParams, fullQueryParams, fullFetchConfig } from '../../src/config/config_creator'
 
 describe('omit fields filter', () => {
   let type: ObjectType

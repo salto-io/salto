@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,19 +15,17 @@
 */
 import { Element, Values, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { PROFILE_MAPPING_TYPE_NAME } from '../constants'
 import OktaClient from '../client/client'
 import { FETCH_CONFIG } from '../config'
 
-const { awu } = collections.asynciterable
 const log = logger(module)
 
 const getProfileMapping = async (
   mappingId: string,
   client: OktaClient
-): Promise<Values> => (await client.getSinglePage({
+): Promise<Values> => (await client.get({
   url: `/api/v1/mappings/${mappingId}`,
 })).data as Values
 
@@ -45,7 +43,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === PROFILE_MAPPING_TYPE_NAME)
 
-    await awu(instances).forEach(async instance => {
+    await Promise.all(instances.map(async instance => {
       const mappingId = instance.value.id
       const mappingProperties = (await getProfileMapping(mappingId, client))?.properties
       // not all mappings have properties
@@ -53,7 +51,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
         return
       }
       instance.value.properties = mappingProperties
-    })
+    }))
   },
 })
 

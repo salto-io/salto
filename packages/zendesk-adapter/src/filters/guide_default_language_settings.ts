@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -58,7 +58,7 @@ const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) 
     const brandsLanguageInfo = await awu(brands).map(async brand => {
       const brandId = brand.value.id
       try {
-        const res = await brandIdToClient[brandId].getSinglePage({ url: DEFAULT_LOCALE_API })
+        const res = await brandIdToClient[brandId].get({ url: DEFAULT_LOCALE_API })
         return {
           brandName: brand.elemID.name,
           defaultLocale: res.data.toString(),

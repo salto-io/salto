@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -19,7 +19,7 @@ import { InstanceElement, Adapter, Values } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import OktaClient from './client/client'
 import OktaAdapter from './adapter'
-import { Credentials, OAuthAccessTokenCredentials, accessTokenCredentialsType } from './auth'
+import { Credentials, accessTokenCredentialsType, OAuthAccessTokenCredentials, isOAuthAccessTokenCredentials } from './auth'
 import {
   configType,
   OktaConfig,
@@ -33,12 +33,11 @@ import {
   OktaDuckTypeApiConfig,
   validateOktaFetchConfig,
   DEPLOY_CONFIG,
+  OktaDeployConfig,
 } from './config'
 import { createConnection } from './client/connection'
 import { OKTA } from './constants'
 import { getAdminUrl } from './client/admin'
-
-type UserDeployConfig = configUtils.UserDeployConfig
 
 const log = logger(module)
 const { validateClientConfig, validateCredentials } = clientUtils
@@ -47,7 +46,7 @@ const {
   validateDuckTypeApiDefinitionConfig,
 } = configUtils
 
-const isOAuthAccessTokenCredentials = (configValue: Readonly<Values>): configValue is OAuthAccessTokenCredentials =>
+const isOAuthConfigCredentials = (configValue: Readonly<Values>): configValue is OAuthAccessTokenCredentials =>
   configValue.authType === 'oauth'
   && 'refreshToken' in configValue
   && 'clientId' in configValue
@@ -60,7 +59,7 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
   if (!hostName.includes(OKTA)) {
     throw new Error(`'${hostName}' is not a valid okta account url`)
   }
-  return isOAuthAccessTokenCredentials(value)
+  return isOAuthConfigCredentials(value)
     ? {
       baseUrl,
       clientId: value.clientId,
@@ -93,7 +92,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   const deploy = configUtils.mergeWithDefaultConfig(
     DEFAULT_CONFIG[DEPLOY_CONFIG] ?? {},
     config?.value?.deploy
-  ) as UserDeployConfig
+  ) as OktaDeployConfig
 
   validateClientConfig(CLIENT_CONFIG, client)
   validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
@@ -139,27 +138,25 @@ export const adapter: Adapter = {
       context.config,
     )
     const credentials = credentialsFromConfig(context.credentials)
+    const isOAuthLogin = isOAuthAccessTokenCredentials(credentials)
     const adapterOperations = new OktaAdapter({
       client: new OktaClient({
         credentials,
         config: config.client,
       }),
       config,
+      configInstance: context.config,
       getElemIdFunc: context.getElemIdFunc,
       elementsSource: context.elementsSource,
-      adminClient: createAdminClient(credentials, config),
+      isOAuthLogin,
+      adminClient: !isOAuthLogin ? createAdminClient(credentials, config) : undefined,
     })
 
     return {
       deploy: adapterOperations.deploy.bind(adapterOperations),
-      fetch: async args => {
-        const fetchRes = await adapterOperations.fetch(args)
-        return {
-          ...fetchRes,
-          updatedConfig: fetchRes.updatedConfig,
-        }
-      },
+      fetch: async args => adapterOperations.fetch(args),
       deployModifiers: adapterOperations.deployModifiers,
+      fixElements: adapterOperations.fixElements.bind(adapterOperations),
     }
   },
   validateCredentials: async config => validateCredentials(

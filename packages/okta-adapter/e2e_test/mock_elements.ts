@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -20,7 +20,6 @@ export const mockDefaultValues: Record<string, Values> = {
   [ACCESS_POLICY_TYPE_NAME]: {
     status: 'ACTIVE',
     name: 'authentication policy',
-    priority: 1,
     system: false,
     type: 'ACCESS_POLICY',
   },
@@ -134,7 +133,6 @@ export const mockDefaultValues: Record<string, Values> = {
   [PROFILE_ENROLLMENT_POLICY_TYPE_NAME]: {
     status: 'ACTIVE',
     name: 'profile',
-    priority: 1,
     system: false,
     type: 'PROFILE_ENROLLMENT',
   },

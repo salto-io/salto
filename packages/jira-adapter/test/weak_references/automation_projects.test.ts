@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -22,6 +22,11 @@ describe('automation_projects', () => {
   let projectInstance: InstanceElement
   let instance: InstanceElement
   let elementsSource: ReadOnlyElementsSource
+  const AdapterConfigType = new ObjectType({
+    elemID: new ElemID('adapter'),
+    isSettings: true,
+  })
+  const adapterConfig = new InstanceElement(ElemID.CONFIG_NAME, AdapterConfigType)
 
   beforeEach(() => {
     projectInstance = new InstanceElement(
@@ -46,7 +51,7 @@ describe('automation_projects', () => {
   })
   describe('findWeakReferences', () => {
     it('should return weak references projects', async () => {
-      const references = await automationProjectsHandler.findWeakReferences([instance])
+      const references = await automationProjectsHandler.findWeakReferences([instance], adapterConfig)
 
       expect(references).toEqual([
         { source: instance.elemID.createNestedID('1', 'projectId'), target: projectInstance.elemID, type: 'weak' },
@@ -56,14 +61,14 @@ describe('automation_projects', () => {
 
     it('should do nothing if received invalid automation', async () => {
       instance.value.projects = 'invalid'
-      const references = await automationProjectsHandler.findWeakReferences([instance])
+      const references = await automationProjectsHandler.findWeakReferences([instance], adapterConfig)
 
       expect(references).toEqual([])
     })
 
     it('should do nothing if there are no projects', async () => {
       delete instance.value.projects
-      const references = await automationProjectsHandler.findWeakReferences([instance])
+      const references = await automationProjectsHandler.findWeakReferences([instance], adapterConfig)
 
       expect(references).toEqual([])
     })

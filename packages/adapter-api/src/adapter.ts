@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -39,15 +39,20 @@ export interface FetchResult {
   partialFetchData?: PartialFetchData
 }
 
-export type Group = {
-  id?: string
+export type Artifact = {
+  name: string
+  content: Buffer
+}
+
+export type AdapterGroupProperties = {
+  url?: string
+  artifacts?: Artifact[]
   requestId?: string
   hash?: string
-  url?: string
 }
 
 export type DeployExtraProperties = {
-  groups?: Group[]
+  groups?: AdapterGroupProperties[]
 }
 
 type SaltoDeployErrors = {
@@ -75,6 +80,7 @@ export type FetchOptions = {
 }
 
 export type DeployOptions = {
+  progressReporter: ProgressReporter
   changeGroup: ChangeGroup
 }
 
@@ -110,11 +116,17 @@ export type DependencyError = ChangeError & {
   causeID: ElemID
 }
 
+export type UnresolvedReferenceError = ChangeError & {
+  unresolvedElemIds: ElemID[]
+}
+
 export const isDependencyError = (err: ChangeError): err is DependencyError => 'causeID' in err
 
-export type ChangeValidator = (
+export const isUnresolvedReferenceError = (err: ChangeError): err is UnresolvedReferenceError => err.type === 'unresolvedReferences' && 'unresolvedElemIds' in err
+
+export type ChangeValidator<T extends ChangeError = ChangeError> = (
   changes: ReadonlyArray<Change>, elementsSource?: ReadOnlyElementsSource
-) => Promise<ReadonlyArray<ChangeError>>
+) => Promise<ReadonlyArray<T>>
 
 export type DeployModifiers = {
   changeValidator?: ChangeValidator
@@ -197,7 +209,10 @@ export type ReferenceInfo = {
   type: ReferenceType
 }
 
-export type GetCustomReferencesFunc = (elements: Element[]) => Promise<ReferenceInfo[]>
+export type GetCustomReferencesFunc = (
+  elements: Element[],
+  adapterConfig: InstanceElement | undefined,
+) => Promise<ReferenceInfo[]>
 
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations

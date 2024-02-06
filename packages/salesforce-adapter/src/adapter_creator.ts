@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -37,6 +37,7 @@ import { ConfigChange } from './config_change'
 import { configCreator } from './config_creator'
 import { loadElementsFromFolder } from './sfdx_parser/sfdx_parser'
 import { getAdditionalReferences } from './additional_references'
+import { getCustomReferences } from './custom_references'
 
 type ValidatorsActivationConfig = deployment.changeValidators.ValidatorsActivationConfig
 
@@ -248,4 +249,5 @@ export const adapter: Adapter = {
   configCreator,
   loadElementsFromFolder,
   getAdditionalReferences,
+  getCustomReferences,
 }

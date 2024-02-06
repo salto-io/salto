@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -61,13 +61,13 @@ describe('createS3StateContentProvider', () => {
     const localContent: LocalStateFileContent = { account, contentHash }
     await writeFile(path.join(testDir.name(), `env.${account}.json`), safeJsonStringify(localContent))
     s3mock
-      .on(GetObjectCommand, { Bucket: bucketName, Key: `${workspaceId}/${account}/${remoteHash ?? contentHash}` })
+      .on(GetObjectCommand, { Bucket: bucketName, Key: `state/${workspaceId}/${account}/${remoteHash ?? contentHash}` })
       .resolves({ Body: sdkStreamMixin(Readable.from('stateData')) })
   }
 
   beforeEach(async () => {
     s3mock.reset()
-    provider = createS3StateContentProvider({ workspaceId, bucketName })
+    provider = createS3StateContentProvider({ workspaceId, options: { bucket: bucketName } })
     await Promise.all(
       accountNames.map(name => setupStateFile(name, 'hash'))
     )
@@ -168,7 +168,7 @@ describe('createS3StateContentProvider', () => {
     })
     it('should upload new data to S3', () => {
       expect(s3mock.calls().map(({ args }) => args[0].input)).toIncludeSameMembers(
-        accountNames.map(account => expect.objectContaining({ Bucket: bucketName, Key: `${workspaceId}/${account}/newHash` }))
+        accountNames.map(account => expect.objectContaining({ Bucket: bucketName, Key: `state/${workspaceId}/${account}/newHash` }))
       )
     })
     it('should return the new contents when reading', async () => {

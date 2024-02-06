@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -44,7 +44,7 @@ import { CustomField, FilterItem, CustomObject, CustomPicklistValue,
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
 import mockClient from '../client'
-import { createValueSetEntry } from '../utils'
+import { createValueSetEntry, defaultFilterContext } from '../utils'
 import { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import { mockValueTypeField, mockDescribeValueResult, mockFileProperties, mockSObjectField } from '../connection'
 import { allMissingSubTypes } from '../../src/transformers/salesforce_types'
@@ -173,21 +173,21 @@ describe('transformer', () => {
       it('should fetch lookup relationships with restricted deletion', async () => {
         _.set(salesforceReferenceField, 'restrictedDelete', true)
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField,
-          serviceIds)
+          serviceIds, {}, defaultFilterContext.fetchProfile)
         await assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.Lookup)
       })
 
       it('should fetch lookup relationships with allowed related record deletion when restrictedDelete set to false', async () => {
         _.set(salesforceReferenceField, 'restrictedDelete', false)
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField,
-          serviceIds)
+          serviceIds, {}, defaultFilterContext.fetchProfile)
         await assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.Lookup)
       })
 
       it('should fetch lookup relationships with allowed related record deletion when restrictedDelete is undefined', async () => {
         _.set(salesforceReferenceField, 'restrictedDelete', undefined)
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField,
-          serviceIds)
+          serviceIds, {}, defaultFilterContext.fetchProfile)
         await assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.Lookup)
       })
 
@@ -196,7 +196,7 @@ describe('transformer', () => {
         salesforceReferenceField.updateable = true
         salesforceReferenceField.writeRequiresMasterRead = true
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField,
-          serviceIds)
+          serviceIds, {}, defaultFilterContext.fetchProfile)
         await assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.MasterDetail)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(true)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(true)
@@ -206,7 +206,8 @@ describe('transformer', () => {
         salesforceReferenceField.cascadeDelete = true
         salesforceReferenceField.updateable = false
         delete salesforceReferenceField.writeRequiresMasterRead
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField, {})
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField,
+          {}, {}, defaultFilterContext.fetchProfile)
         await assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.MasterDetail)
         expect(fieldElement.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(false)
@@ -261,14 +262,14 @@ describe('transformer', () => {
 
       it('should fetch rollup summary field', async () => {
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceRollupSummaryField,
-          serviceIds)
+          serviceIds, {}, defaultFilterContext.fetchProfile)
         expect(await fieldElement.getType()).toEqual(Types.primitiveDataTypes.Summary)
       })
 
       it('should not fetch summary field if it is a calculated formula', async () => {
         salesforceRollupSummaryField.calculatedFormula = 'dummy formula'
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceRollupSummaryField,
-          serviceIds)
+          serviceIds, {}, defaultFilterContext.fetchProfile)
         expect(await fieldElement.getType()).not.toEqual(Types.primitiveDataTypes.Summary)
       })
     })
@@ -322,7 +323,8 @@ describe('transformer', () => {
         const scale = 6
         salesforceNumberField.precision = precision
         salesforceNumberField.scale = scale
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNumberField, serviceIds)
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNumberField, serviceIds,
+          {}, defaultFilterContext.fetchProfile)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.PRECISION]).toEqual(precision)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.SCALE]).toEqual(scale)
         expect(await fieldElement.getType()).toEqual(Types.primitiveDataTypes.Number)
@@ -332,7 +334,8 @@ describe('transformer', () => {
         const precision = 8
         salesforceNumberField.type = 'int'
         salesforceNumberField.digits = precision
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNumberField, serviceIds)
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNumberField, serviceIds,
+          {}, defaultFilterContext.fetchProfile)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.PRECISION]).toEqual(precision)
         expect(await fieldElement.getType()).toEqual(Types.primitiveDataTypes.Number)
       })
@@ -355,7 +358,7 @@ describe('transformer', () => {
           restrictedPicklist: true,
           precision: 3,
         })
-        field = getSObjectFieldElement(dummyElem, fieldDefinition, {})
+        field = getSObjectFieldElement(dummyElem, fieldDefinition, {}, {}, defaultFilterContext.fetchProfile)
       })
       it('should add value set annotation', () => {
         expect(field.annotations).toHaveProperty(FIELD_ANNOTATIONS.VALUE_SET, [
@@ -381,7 +384,7 @@ describe('transformer', () => {
           extraTypeInfo: 'plaintextarea',
           length: 5000,
         })
-        field = getSObjectFieldElement(dummyElem, fieldDefinition, {})
+        field = getSObjectFieldElement(dummyElem, fieldDefinition, {}, {}, defaultFilterContext.fetchProfile)
       })
       it('should get long text area field type', () => {
         expect(field.refType.type).toBe(Types.primitiveDataTypes.LongTextArea)
@@ -397,7 +400,7 @@ describe('transformer', () => {
           extraTypeInfo: 'richtextarea',
           length: 5000,
         })
-        field = getSObjectFieldElement(dummyElem, fieldDefinition, {})
+        field = getSObjectFieldElement(dummyElem, fieldDefinition, {}, {}, defaultFilterContext.fetchProfile)
       })
       it('should get html field type', () => {
         expect(field.refType.type).toBe(Types.primitiveDataTypes.Html)
@@ -411,7 +414,7 @@ describe('transformer', () => {
           soapType: 'xsd:string',
           type: 'encryptedstring',
         })
-        field = getSObjectFieldElement(dummyElem, fieldDefinition, {})
+        field = getSObjectFieldElement(dummyElem, fieldDefinition, {}, {}, defaultFilterContext.fetchProfile)
       })
       it('should get html field type', () => {
         expect(field.refType.type).toBe(Types.primitiveDataTypes.EncryptedText)
@@ -468,7 +471,8 @@ describe('transformer', () => {
           dummyElem,
           salesforceAddressField,
           serviceIds,
-          { OtherAddress: 'OtherAddress' }
+          { OtherAddress: 'OtherAddress' },
+          defaultFilterContext.fetchProfile,
         )
         expect(await fieldElement.getType()).toEqual(Types.compoundDataTypes.Address)
       })
@@ -517,7 +521,7 @@ describe('transformer', () => {
       it('should fetch idLookup & typed id fields as serviceId', async () => {
         salesforceIdField = _.cloneDeep(origSalesforceIdField)
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceIdField,
-          serviceIds, {})
+          serviceIds, {}, defaultFilterContext.fetchProfile)
         expect(isServiceId((await fieldElement.getType())))
           .toEqual(true)
       })
@@ -572,7 +576,8 @@ describe('transformer', () => {
             dummyElem,
             salesforceAutoNumberField,
             serviceIds,
-            {}
+            {},
+            defaultFilterContext.fetchProfile,
           )
           expect(await fieldElement.getType()).toEqual(Types.primitiveDataTypes.AutoNumber)
           expect(fieldElement.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]).toBeTruthy()
@@ -587,7 +592,8 @@ describe('transformer', () => {
             dummyElem,
             salesforceAutoNumberField,
             serviceIds,
-            {}
+            {},
+            defaultFilterContext.fetchProfile,
           )
           expect(await fieldElement.getType()).toEqual(Types.primitiveDataTypes.AutoNumber)
           expect(fieldElement.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]).toBeTruthy()
@@ -646,13 +652,15 @@ describe('transformer', () => {
           dummyElem,
           salesforceNameField,
           serviceIds,
-          { Name: 'Name' }
+          { Name: 'Name' },
+          defaultFilterContext.fetchProfile
         )
         expect(await fieldElement.getType()).toEqual(Types.compoundDataTypes.Name)
       })
 
       it('should fetch name field as text type when no name compound field in object', async () => {
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNameField, serviceIds, {})
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNameField, serviceIds,
+          {}, defaultFilterContext.fetchProfile)
         expect(await fieldElement.getType()).toEqual(Types.primitiveDataTypes.Text)
       })
     })
@@ -696,7 +704,7 @@ describe('transformer', () => {
           unique: false,
           updateable: true,
         }
-        field = getSObjectFieldElement(dummyElem, fieldDefinition, serviceIds)
+        field = getSObjectFieldElement(dummyElem, fieldDefinition, serviceIds, {}, defaultFilterContext.fetchProfile)
       })
       it('should create a field with a valid name', () => {
         expect(field.name).not.toInclude('%')
@@ -715,7 +723,7 @@ describe('transformer', () => {
           soapType: 'xsd:string',
           type: 'string',
         })
-        field = getSObjectFieldElement(dummyElem, fieldDefinition, serviceIds)
+        field = getSObjectFieldElement(dummyElem, fieldDefinition, serviceIds, {}, defaultFilterContext.fetchProfile)
       })
       it('should have a type of formula', () => {
         expect(field.refType.type?.elemID.name).toEqual('FormulaText')
@@ -742,7 +750,7 @@ describe('transformer', () => {
           soapType: 'xsd:boolean',
           type: 'boolean',
         })
-        field = getSObjectFieldElement(dummyElem, fieldDefinition, serviceIds)
+        field = getSObjectFieldElement(dummyElem, fieldDefinition, serviceIds, {}, defaultFilterContext.fetchProfile)
       })
       it('should set the _default annotation on the field', () => {
         expect(field.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE]).toEqual(true)
@@ -763,7 +771,7 @@ describe('transformer', () => {
           type: 'boolean',
           updateable: true,
         })
-        field = getSObjectFieldElement(dummyElem, fieldDefinition, serviceIds)
+        field = getSObjectFieldElement(dummyElem, fieldDefinition, serviceIds, {}, defaultFilterContext.fetchProfile)
       })
       it('should set the _default annotation on the field', () => {
         expect(field.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE]).toEqual(false)
@@ -777,13 +785,53 @@ describe('transformer', () => {
           name: 'LastModifiedDate',
           type: 'datetime',
         })
-        field = getSObjectFieldElement(dummyElem, fieldDefinition, serviceIds, {}, ['LastModifiedDate'])
+        field = getSObjectFieldElement(dummyElem, fieldDefinition, serviceIds, {}, defaultFilterContext.fetchProfile, ['LastModifiedDate'])
       })
       it('should create a field that is hidden and not required, creatable and updatable', () => {
         expect(field.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
         expect(field.annotations[FIELD_ANNOTATIONS.CREATABLE]).toBeFalsy()
         expect(field.annotations[FIELD_ANNOTATIONS.UPDATEABLE]).toBeFalsy()
         expect(field.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]).toBeTruthy()
+      })
+    })
+    describe('extendedCustomFieldInformation', () => {
+      let fieldDefinition: SalesforceField
+      beforeEach(() => {
+        fieldDefinition = mockSObjectField({
+          name: 'LastModifiedDate',
+          type: 'datetime',
+          [FIELD_ANNOTATIONS.DEFAULTED_ON_CREATE]: true,
+        })
+      })
+      describe('when feature is enabled', () => {
+        it('should return field with extended field information values', () => {
+          const field = getSObjectFieldElement(
+            dummyElem,
+            fieldDefinition,
+            serviceIds,
+            {},
+            {
+              ...defaultFilterContext.fetchProfile,
+              isFeatureEnabled: _feature => true,
+            }
+          )
+          expect(field.annotations[FIELD_ANNOTATIONS.DEFAULTED_ON_CREATE]).toEqual(true)
+        })
+      })
+      describe('when feature is disabled', () => {
+        it('should return field without extended field information values', () => {
+          const field = getSObjectFieldElement(
+            dummyElem,
+            fieldDefinition,
+            serviceIds,
+            {},
+            {
+              ...defaultFilterContext.fetchProfile,
+              isFeatureEnabled: _feature => false,
+            }
+          )
+          expect(field.annotations[FIELD_ANNOTATIONS.DEFAULTED_ON_CREATE]).toBeUndefined()
+        })
       })
     })
   })
@@ -815,6 +863,23 @@ describe('transformer', () => {
         const customField = await toCustomField(mockTypes.User.fields.Manager__c)
         expect(customField.relationshipName).toEqual('Manager')
         expect(customField.referenceTo).toBeUndefined()
+      })
+    })
+    describe('MetadataRelationship CustomField', () => {
+      const CONTROLLING_FIELD = 'TestControllingField__c'
+      it('should have controlling field value', async () => {
+        const metadataRelationshipField = new Field(
+          new ObjectType({ elemID }),
+          'RelationshipField',
+          Types.primitiveDataTypes.MetadataRelationship,
+          {
+            [LABEL]: 'Labelo',
+            [FIELD_ANNOTATIONS.METADATA_RELATIONSHIP_CONTROLLING_FIELD]: CONTROLLING_FIELD,
+          },
+        )
+        const customField = await toCustomField(metadataRelationshipField)
+        expect(customField[FIELD_ANNOTATIONS.METADATA_RELATIONSHIP_CONTROLLING_FIELD])
+          .toEqual(CONTROLLING_FIELD)
       })
     })
   })

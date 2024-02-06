@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -127,20 +127,6 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
           isRequired: true,
         },
       })
-    })
-
-    it('should not add a field to the list if not in element source', async () => {
-      const elementsSource = buildElementsSourceFromElements([])
-      filter = replaceFieldConfigurationReferencesFilter(getFilterParams({
-        config,
-        elementsSource,
-      })) as typeof filter
-      await filter.preDeploy?.([toChange({ after: instance })])
-
-      expect(instance.value.fields).toBeArrayOfSize(0)
-
-      await filter.onDeploy?.([toChange({ after: instance })])
-      expect(instance.value.fields).toEqual({})
     })
 
     it('should do nothing if splitFieldConfiguration is true', async () => {

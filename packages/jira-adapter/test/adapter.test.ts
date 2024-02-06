@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -22,7 +22,7 @@ import { mockFunction } from '@salto-io/test-utils'
 import JiraClient from '../src/client/client'
 import { adapter as adapterCreator } from '../src/adapter_creator'
 import { getDefaultConfig } from '../src/config/config'
-import { ASSETS_ATTRIBUTE_TYPE, ISSUE_TYPE_NAME, JIRA, PROJECT_TYPE, SERVICE_DESK } from '../src/constants'
+import { OBJECT_TYPE_ATTRIBUTE_TYPE, ISSUE_TYPE_NAME, JIRA, PROJECT_TYPE, SERVICE_DESK } from '../src/constants'
 import { createCredentialsInstance, createConfigInstance, mockClient, createEmptyType } from './utils'
 import { jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from '../src/jsm_utils'
 import { CLOUD_RESOURCE_FIELD } from '../src/filters/automation/cloud_id'
@@ -61,6 +61,11 @@ jest.mock('@salto-io/adapter-components', () => {
 describe('adapter', () => {
   let adapter: AdapterOperations
   let getElemIdFunc: ElemIdGetter
+
+  const nullProgressReporter: ProgressReporter = {
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    reportProgress: () => {},
+  }
 
   beforeEach(() => {
     const elementsSource = buildElementsSourceFromElements([])
@@ -103,6 +108,7 @@ describe('adapter', () => {
             toChange({ before: new InstanceElement('inst2', fieldConfigurationIssueTypeItemType) }),
           ],
         },
+        progressReporter: nullProgressReporter,
       })
 
       expect(deployRes.appliedChanges).toEqual([
@@ -129,6 +135,7 @@ describe('adapter', () => {
             }),
           ],
         },
+        progressReporter: nullProgressReporter,
       })
 
       expect(deployChangeMock).toHaveBeenCalledWith({
@@ -154,6 +161,7 @@ describe('adapter', () => {
             toChange({ before: new InstanceElement('inst2', fieldConfigurationIssueTypeItemType) }),
           ],
         },
+        progressReporter: nullProgressReporter,
       })
       expect(deployRes.errors).toEqual([
         {
@@ -178,6 +186,7 @@ describe('adapter', () => {
             toChange({ after: instance }),
           ],
         },
+        progressReporter: nullProgressReporter,
       })
 
       expect((getChangeData(appliedChanges[0]) as InstanceElement)?.value.id).toEqual(2)
@@ -192,6 +201,7 @@ describe('adapter', () => {
             toChange({ after: instance }),
           ],
         },
+        progressReporter: nullProgressReporter,
       })
 
       expect((getChangeData(appliedChanges[0]) as InstanceElement)?.value.id).toBeUndefined()
@@ -390,9 +400,6 @@ describe('adapter', () => {
           key: 'SD',
           name: 'Service Desk',
           projectTypeKey: SERVICE_DESK,
-          serviceDeskId: {
-            id: '1',
-          },
         },
       )
     })
@@ -434,8 +441,30 @@ describe('adapter', () => {
         (loadSwagger as jest.MockedFunction<typeof loadSwagger>)
           .mockResolvedValue({ document: {}, parser: {} } as elements.swagger.LoadedSwagger)
         mockAxiosAdapter = new MockAdapter(axios)
-        // mock as there are gets of license during fetch
-        mockAxiosAdapter.onGet().reply(200, { })
+        mockAxiosAdapter
+          // first three requests are for login assertion
+          .onGet('/rest/api/3/configuration').replyOnce(200)
+          .onGet('/rest/api/3/serverInfo').replyOnce(200, { baseUrl: 'a' })
+          .onGet('/rest/api/3/instance/license')
+          .replyOnce(200, { applications: [{ plan: 'FREE' }] })
+          .onGet('/rest/servicedeskapi/servicedesk')
+          .replyOnce(200,
+            {
+              size: 1,
+              start: 0,
+              limit: 50,
+              isLastPage: true,
+              _links: {
+              },
+              values: [
+                {
+                  id: '10',
+                  projectId: '10000',
+                  projectKey: 'SD',
+                  projectName: 'Service Desk',
+                },
+              ],
+            })
         // mock as we call getCloudId in the forms filter.
         mockAxiosAdapter.onPost().reply(200, {
           unparsedData: {
@@ -553,12 +582,32 @@ describe('adapter', () => {
       it('should change the objectType object struct to id', async () => {
         const result = await EntriesRequesterFunc({
           paginator,
-          args: { url: '/gateway/api/jsm/assets/workspace/defualtWorkSpaceId/v1/objectschema/2/attributes' },
-          typeName: ASSETS_ATTRIBUTE_TYPE,
-          typesConfig: { AssetsObjectTypeAttribute: { transformation: { dataField: '.' } } },
+          args: { url: '/gateway/api/jsm/assets/workspace/defaultWorkSpaceId/v1/objectschema/2/attributes' },
+          typeName: OBJECT_TYPE_ATTRIBUTE_TYPE,
+          typesConfig: { ObjectTypeAttribute: { transformation: { dataField: '.' } } },
         })
         expect(result[0]).toEqual({
           objectType: '1',
+        })
+      })
+      it('should not change the objectType object struct if no id was found', async () => {
+        responseValue = [{
+          objectType: {
+            id: undefined,
+          },
+        }];
+        (getEntriesResponseValues as jest.MockedFunction<typeof getEntriesResponseValues>)
+          .mockResolvedValue(responseValue)
+        const result = await EntriesRequesterFunc({
+          paginator,
+          args: { url: '/gateway/api/jsm/assets/workspace/defaultWorkSpaceId/v1/objectschema/2/attributes' },
+          typeName: OBJECT_TYPE_ATTRIBUTE_TYPE,
+          typesConfig: { ObjectTypeAttribute: { transformation: { dataField: '.' } } },
+        })
+        expect(result[0]).toEqual({
+          objectType: {
+            id: undefined,
+          },
         })
       })
     })

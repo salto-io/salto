@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -24,7 +24,7 @@ import {
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
-import { inspectValue } from '@salto-io/adapter-utils'
+import { inspectValue, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import {
   CUSTOM_FIELD_OPTIONS_FIELD_NAME,
   CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
@@ -82,12 +82,12 @@ const onFetch = async (elements: Element[]): Promise<void> => {
       return
     }
     const optionInstances = options.map(option => {
-      const instanceName = `${customObjectField.elemID.name}__${option.value}`
+      const instanceName = naclCase(`${customObjectField.elemID.name}__${option.value}`)
       return new InstanceElement(
         instanceName,
         customObjectFieldOptionType,
         option,
-        [ZENDESK, RECORDS_PATH, CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME, instanceName],
+        [ZENDESK, RECORDS_PATH, CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME, pathNaclCase(instanceName)],
         { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(customObjectField.elemID, customObjectField)] }
       )
     })

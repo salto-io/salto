@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -25,7 +25,7 @@ import {
   MapType,
   ObjectType,
   isObjectType,
-  CORE_ANNOTATIONS,
+  CORE_ANNOTATIONS, ProgressReporter,
 } from '@salto-io/adapter-api'
 import * as adapterComponents from '@salto-io/adapter-components'
 import { elements as elementUtils } from '@salto-io/adapter-components'
@@ -469,7 +469,14 @@ describe('adapter', () => {
         ),
         elementsSource: buildElementsSourceFromElements([]),
       })
-      await expect(operations.deploy({ changeGroup: { groupID: '', changes: [] } })).rejects.toThrow(new Error('Not implemented.'))
+      const nullProgressReporter: ProgressReporter = {
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        reportProgress: () => {},
+      }
+      await expect(operations.deploy({
+        changeGroup: { groupID: '', changes: [] },
+        progressReporter: nullProgressReporter,
+      })).rejects.toThrow(new Error('Not implemented.'))
     })
   })
 })

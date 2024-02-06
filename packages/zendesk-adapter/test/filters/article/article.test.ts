@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -298,7 +298,7 @@ describe('article filter', () => {
 
     beforeEach(() => {
       elements = generateElements()
-      mockGet = jest.spyOn(client, 'getSinglePage')
+      mockGet = jest.spyOn(client, 'get')
       mockGet.mockImplementation(params => {
         if ([
           '/api/v2/help_center/articles/333333/attachments',

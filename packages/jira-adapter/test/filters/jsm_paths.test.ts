@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -118,6 +118,19 @@ describe('jsmPathsFilter', () => {
         expect(calendarInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, PROJECT_TYPE, 'project1', 'calendars', 'calendar1'])
       })
       it('should not change path to be subdirectory of parent if enableJSM is false', async () => {
+        const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+        config.fetch.enableJSM = false
+        filter = jsmArrangePathsFilter(getFilterParams({ config })) as typeof filter
+        await filter.onFetch(elements)
+        expect(queueInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, QUEUE_TYPE, 'queue1'])
+        expect(portalInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, PORTAL_GROUP_TYPE, 'portal1'])
+        expect(requestTypeInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, REQUEST_TYPE_NAME, 'requestType1'])
+        expect(calendarInstance.path).toEqual([JIRA, adapterElements.RECORDS_PATH, CALENDAR_TYPE, 'calendar1'])
+      })
+      it('should not change path to be subdirectory of parent if parent is not valid', async () => {
+        const queueWithInvalidParent = queueInstance.clone()
+        queueWithInvalidParent.annotations[CORE_ANNOTATIONS.PARENT] = ['invalidParent']
+        elements = [projectInstance, queueInstance, portalInstance, requestTypeInstance, calendarInstance]
         const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
         config.fetch.enableJSM = false
         filter = jsmArrangePathsFilter(getFilterParams({ config })) as typeof filter

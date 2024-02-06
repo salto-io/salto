@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -96,7 +96,7 @@ describe('scripted_fragments_deploy', () => {
     filter = scriptedFragmentsDeploy(getFilterParams({ config, client, elementsSource })) as FilterType
     mockGetSinglePage = jest.fn()
     mockPut = jest.fn()
-    ScriptRunnerClient.prototype.getSinglePage = mockGetSinglePage
+    ScriptRunnerClient.prototype.get = mockGetSinglePage
     ScriptRunnerClient.prototype.put = mockPut
     mockGetSinglePage.mockResolvedValue({
       status: 200,

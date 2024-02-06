@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { parser } from '@salto-io/parser'
 import * as errors from './src/errors'
 import * as nacl from './src/workspace/nacl_files'
 import { Workspace, SourceLocation, StateRecency, loadWorkspace, isValidEnvName,
@@ -22,12 +23,11 @@ import * as hiddenValues from './src/workspace/hidden_values'
 import * as configSource from './src/workspace/config_source'
 import * as workspaceConfigSource from './src/workspace/workspace_config_source'
 import * as adaptersConfigSource from './src/workspace/adapters_config_source'
-import { WorkspaceConfig, EnvConfig, StateConfig } from './src/workspace/config/workspace_config_types'
+import { WorkspaceConfig, EnvConfig, StateConfig, ProviderOptionsS3, ProviderOptionsFile } from './src/workspace/config/workspace_config_types'
 import * as state from './src/workspace/state'
 import * as dirStore from './src/workspace/dir_store'
 import * as parseCache from './src/workspace/nacl_files/parsed_nacl_files_cache'
 import * as staticFiles from './src/workspace/static_files'
-import * as parser from './src/parser'
 import * as merger from './src/merger'
 import * as expressions from './src/expressions'
 import * as serialization from './src/serializer/elements'
@@ -51,7 +51,6 @@ export {
   errors,
   hiddenValues,
   serialization,
-  parser,
   merger,
   dirStore,
   parseCache,
@@ -63,6 +62,8 @@ export {
   elementSource,
   remoteMap,
   WorkspaceConfig,
+  ProviderOptionsS3,
+  ProviderOptionsFile,
   EnvConfig,
   StateConfig,
   // Workspace exports
@@ -106,4 +107,5 @@ export {
   Author,
   createPathIndexForElement,
   buildStaticFilesCache,
+  parser,
 }

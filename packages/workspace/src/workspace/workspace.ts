@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,9 +15,12 @@
 */
 import _ from 'lodash'
 import path from 'path'
-import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
-  Value, toChange, isRemovalChange, getChangeData,
-  ReadOnlyElementsSource, isAdditionOrModificationChange, StaticFile, isInstanceElement, AuthorInformation, ReferenceInfo, ReferenceType } from '@salto-io/adapter-api'
+import {
+  Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
+  Value, toChange, isRemovalChange, getChangeData, isField, AuthorInformation, ReferenceInfo, ReferenceType,
+  ReadOnlyElementsSource, isAdditionOrModificationChange, StaticFile, isInstanceElement, isObjectType,
+  isModificationChange, TypeReference,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
   applyDetailedChanges,
@@ -27,8 +30,8 @@ import {
   safeJsonStringify,
 } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
+import { parser } from '@salto-io/parser'
 import { ValidationError, validateElements, isUnresolvedRefError } from '../validator'
-import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
 import { State } from './state'
 import { multiEnvSource, getSourceNameForFilename, MultiEnvSource, EnvsChanges, FromSource } from './nacl_files/multi_env/multi_env_source'
@@ -76,8 +79,8 @@ export type DateRange = {
 }
 
 export type SourceLocation = {
-  sourceRange: SourceRange
-  subRange?: SourceRange
+  sourceRange: parser.SourceRange
+  subRange?: parser.SourceRange
 }
 
 export type WorkspaceError<T extends SaltoError> = Readonly<T & {
@@ -184,8 +187,8 @@ export type Workspace = {
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
   setNaclFiles: (naclFiles: NaclFile[], validate?: boolean) => Promise<EnvsChanges>
   removeNaclFiles: (names: string[], validate?: boolean) => Promise<EnvsChanges>
-  getSourceMap: (filename: string) => Promise<SourceMap>
-  getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
+  getSourceMap: (filename: string) => Promise<parser.SourceMap>
+  getSourceRanges: (elemID: ElemID) => Promise<parser.SourceRange[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   getReferenceSourcesIndex: (envName?: string) => Promise<ReadOnlyRemoteMap<ElemID[]>>
   getElementOutgoingReferences: (id: ElemID, envName?: string) => Promise<{ id: ElemID; type: ReferenceType }[]>
@@ -343,7 +346,8 @@ export const deserializeReferenceTree = async (data: string): Promise<ReferenceT
 
 type GetCustomReferencesFunc = (
   elements: Element[],
-  accountToServiceName: Record<string, string>
+  accountToServiceName: Record<string, string>,
+  adaptersConfig: AdaptersConfigSource,
 ) => Promise<ReferenceInfo[]>
 
 export const loadWorkspace = async (
@@ -760,7 +764,7 @@ export const loadWorkspace = async (
         stateToBuild.states[envName].mapVersions,
         stateToBuild.states[envName].merged,
         changeResult.cacheValid,
-        element => getCustomReferences(element, currentEnvConf().accountToServiceName ?? {}),
+        elements => getCustomReferences(elements, currentEnvConf().accountToServiceName ?? {}, adaptersConfig),
       )
 
       const changedElements = changes
@@ -848,6 +852,37 @@ export const loadWorkspace = async (
       return [toChange({ before, after })]
     }).toArray()
   }
+
+  const fixStateOnlyChangesFieldTypes = (
+    stateOnlyChanges: Change[],
+    changes: DetailedChange[],
+  ): void => {
+    // stateOnlyChanges should contain only the hidden parts from the state. for fields it is not
+    // possible to hide just the type of the field, so in theory the type of the field shouldn't
+    // be a part of the information (since the type is not hidden unless the whole field is hidden),
+    // but since we can't have a field without a type, we have to put something there. using the type
+    // from the original change to make sure there is no conflict is a way to "remove" the information.
+    const modifiedFieldsByParent = _.groupBy(
+      changes
+        .filter(isModificationChange)
+        .map(getChangeData)
+        .filter(isField),
+      field => field.parent.elemID.getFullName()
+    )
+    stateOnlyChanges
+      .filter(isModificationChange)
+      .map(getChangeData)
+      .filter(isObjectType)
+      .forEach(element => {
+        const modifiedFields = modifiedFieldsByParent[element.elemID.getFullName()] ?? []
+        modifiedFields
+          .filter(field => element.fields[field.name] !== undefined)
+          .forEach(field => {
+            element.fields[field.name].refType = new TypeReference(field.refType.elemID)
+          })
+      })
+  }
+
   const updateNaclFiles = async ({
     changes,
     mode,
@@ -876,6 +911,7 @@ export const loadWorkspace = async (
     await state(currentEnv()).calculateHash()
     const postChangeHash = await state(currentEnv()).getHash()
     const stateOnlyChanges = await getStateOnlyChanges(hiddenChanges)
+    fixStateOnlyChangesFieldTypes(stateOnlyChanges, changes)
     workspaceState = buildWorkspaceState({ workspaceChanges,
       stateOnlyChanges: { [currentEnv()]: {
         changes: stateOnlyChanges,
@@ -917,13 +953,13 @@ export const loadWorkspace = async (
   }
 
   const getErrorSourceRange = async <T extends SaltoElementError>(error: T):
-  Promise<SourceRange[]> => (
+  Promise<parser.SourceRange[]> => (
     error.type === 'config'
       ? adaptersConfig.getSourceRanges(error.elemID)
       : (await getLoadedNaclFilesSource()).getSourceRanges(currentEnv(), error.elemID)
   )
 
-  const transformParseError = (error: ParseError): WorkspaceError<SaltoError> => ({
+  const transformParseError = (error: parser.ParseError): WorkspaceError<SaltoError> => ({
     ...error,
     sourceLocations: [{ sourceRange: error.context, subRange: error.subject }],
   })
@@ -940,7 +976,7 @@ export const loadWorkspace = async (
     }
   }
   const transformError = async (error: SaltoError): Promise<WorkspaceError<SaltoError>> => {
-    const isParseError = (err: SaltoError): err is ParseError =>
+    const isParseError = (err: SaltoError): err is parser.ParseError =>
       _.has(err, 'subject')
     const isElementError = (err: SaltoError): err is SaltoElementError =>
       _.get(err, 'elemID') instanceof ElemID

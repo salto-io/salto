@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,7 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { extractIdFromUrl } from '../src/utils'
+import { MockInterface } from '@salto-io/test-utils'
+import { client as clientUtils } from '@salto-io/adapter-components'
+import { mockClient } from './utils'
+import OktaClient from '../src/client/client'
+import { extractIdFromUrl, isClassicEngineOrg } from '../src/utils'
 
 describe('okta utils', () => {
   describe('extractIdFromUrl', () => {
@@ -24,6 +28,33 @@ describe('okta utils', () => {
       expect(extractIdFromUrl(link)).toEqual('1234567')
       expect(extractIdFromUrl(link2)).toEqual('abc123')
       expect(extractIdFromUrl(invalidLink)).toBeUndefined()
+    })
+  })
+  describe('isClassicEngineOrg', () => {
+    let mockConnection: MockInterface<clientUtils.APIConnection>
+    let client: OktaClient
+
+    beforeEach(() => {
+      jest.clearAllMocks()
+      const { client: cli, connection } = mockClient()
+      mockConnection = connection
+      client = cli
+    })
+    it('should return true for classic engine org', async () => {
+      mockConnection.get.mockResolvedValue({ status: 200, data: { pipeline: 'v1' } })
+      expect(await isClassicEngineOrg(client)).toBeTruthy()
+    })
+    it('should return false for identity engine org', async () => {
+      mockConnection.get.mockResolvedValue({ status: 200, data: { pipeline: 'idx' } })
+      expect(await isClassicEngineOrg(client)).toBeFalsy()
+    })
+    it('should return false for invalid response', async () => {
+      mockConnection.get.mockResolvedValue({ status: 200, data: { org: 'org' } })
+      expect(await isClassicEngineOrg(client)).toBeFalsy()
+    })
+    it('should return false for error', async () => {
+      mockConnection.get.mockRejectedValue(new Error('error'))
+      expect(await isClassicEngineOrg(client)).toBeFalsy()
     })
   })
 })

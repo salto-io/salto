@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -58,7 +58,7 @@ const singlePagePagination = async (
   const { url, queryParams, headers } = getParams
   const params = { ...queryParams, ...additionalArgs }
 
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url,
     queryParams: Object.keys(params).length > 0 ? params : undefined,
     headers,

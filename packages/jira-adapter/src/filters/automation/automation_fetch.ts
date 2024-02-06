@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemIdGetter, InstanceElement, isInstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
+import { ElemIdGetter, InstanceElement, isInstanceElement, ObjectType, ReferenceExpression, Values } from '@salto-io/adapter-api'
 import { createSchemeGuard, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { elements as elementUtils, client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
@@ -28,6 +28,27 @@ import { JiraConfig } from '../../config/config'
 import { getCloudId } from './cloud_id'
 import { convertRuleScopeValueToProjects } from './automation_structure'
 
+export type Component = {
+  value: {
+      workspaceId?: string
+      schemaId: ReferenceExpression
+      objectTypeId?: ReferenceExpression
+      schemaLabel?: string
+      objectTypeLabel?: string
+  }
+}
+
+const ASSET_COMPONENT_SCHEME = Joi.object({
+  value: Joi.object({
+    objectTypeId: Joi.string(),
+    workspaceId: Joi.string(),
+    schemaId: Joi.string().required(),
+    schemaLabel: Joi.string(),
+    objectTypeLabel: Joi.string(),
+  }).unknown(true),
+}).unknown(true)
+
+export const isAssetComponent = createSchemeGuard<Component>(ASSET_COMPONENT_SCHEME)
 const DEFAULT_PAGE_SIZE = 1000
 const { getInstanceName } = elementUtils
 const log = logger(module)
@@ -114,13 +135,25 @@ const createInstance = (
     [JIRA, elementUtils.RECORDS_PATH, AUTOMATION_TYPE, pathNaclCase(instanceName)],
   )
 }
+const mofidyAssetsComponents = (instance: InstanceElement): void => {
+  if (!instance.value.components) {
+    return
+  }
+  const assetsComponents: Component[] = instance.value.components
+    .filter(isAssetComponent)
+  assetsComponents.forEach(component => {
+    delete component.value.schemaLabel
+    delete component.value.objectTypeLabel
+    delete component.value.workspaceId
+  })
+}
 
 export const getAutomations = async (
   client: JiraClient,
   config: JiraConfig,
 ): Promise<Values[]> => (
   client.isDataCenter
-    ? (await client.getSinglePage({
+    ? (await client.get({
       url: '/rest/cb-automation/latest/project/GLOBAL/rule',
     })).data as Values[]
     : postPaginated(
@@ -160,6 +193,12 @@ const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuery }) =>
       automations.forEach(automation => elements.push(
         createInstance(automation, automationType, idToProject, config, getElemIdFunc),
       ))
+      if (config.fetch.enableJSM && config.fetch.enableJsmExperimental) {
+        elements
+          .filter(isInstanceElement)
+          .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
+          .forEach(instance => mofidyAssetsComponents(instance))
+      }
       elements.push(automationType, ...subTypes)
       return undefined
     } catch (e) {

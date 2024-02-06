@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -62,7 +62,7 @@ import {
   CUSTOM_OBJECT,
   CUSTOM_OBJECT_ID_FIELD, DefaultSoqlQueryLimits,
   FIELD_ANNOTATIONS,
-  FLOW_METADATA_TYPE,
+  FLOW_METADATA_TYPE, INSTALLED_PACKAGE_METADATA,
   INSTANCE_FULL_NAME_FIELD,
   INTERNAL_ID_ANNOTATION,
   INTERNAL_ID_FIELD,
@@ -146,7 +146,6 @@ export const isCustomObjectSync = (element: Readonly<Element>): element is Objec
     && element.annotations[API_NAME] !== undefined
   return res
 }
-
 
 const fullApiNameSync = (elem: Readonly<Element>): string | undefined => {
   if (isInstanceElement(elem)) {
@@ -386,11 +385,46 @@ export const addElementParentReference = (instance: InstanceElement,
 export const fullApiName = (parent: string, child: string): string =>
   ([parent, child].join(API_NAME_SEPARATOR))
 
-export const getFullName = (obj: FileProperties): string => {
-  const namePrefix = obj.namespacePrefix
-    ? `${obj.namespacePrefix}${NAMESPACE_SEPARATOR}` : ''
-  return obj.fullName.startsWith(namePrefix) ? obj.fullName : `${namePrefix}${obj.fullName}`
+export const getFullName = (obj: FileProperties, addNamespacePrefixToFullName = true): string => {
+  if (!obj.namespacePrefix) {
+    return obj.fullName
+  }
+
+  const namePrefix = `${obj.namespacePrefix}${NAMESPACE_SEPARATOR}`
+
+  if (obj.type === LAYOUT_TYPE_ID_METADATA_TYPE) {
+    // Ensure layout name starts with the namespace prefix if there is one.
+    // needed due to a SF quirk where sometimes layout metadata instances fullNames return as
+    // <namespace>__<objectName>-<layoutName> where it should be
+    // <namespace>__<objectName>-<namespace>__<layoutName>
+    const [objectName, ...layoutName] = obj.fullName.split('-')
+    if (layoutName.length !== 0 && !layoutName[0].startsWith(namePrefix)) {
+      return `${objectName}-${namePrefix}${layoutName.join('-')}`
+    }
+    return obj.fullName
+  }
+
+  if (!addNamespacePrefixToFullName) {
+    return obj.fullName
+  }
+  // Instances of type InstalledPackage fullNames should never include the namespace prefix
+  if (obj.type === INSTALLED_PACKAGE_METADATA) {
+    return obj.fullName
+  }
+
+  const fullNameParts = obj.fullName.split(API_NAME_SEPARATOR)
+  const name = fullNameParts.slice(-1)[0]
+  const parentNames = fullNameParts.slice(0, -1)
+
+  if (name.startsWith(namePrefix)) {
+    return obj.fullName
+  }
+
+  // In some cases, obj.fullName does not contain the namespace prefix even though
+  // obj.namespacePrefix is defined. In these cases, we want to add the prefix manually
+  return [...parentNames, `${namePrefix}${name}`].join(API_NAME_SEPARATOR)
 }
+
 
 export const getInternalId = (elem: Element): string => (
   (isInstanceElement(elem))
@@ -614,6 +648,11 @@ export const isStandardObjectSync = (element: Element): element is ObjectType =>
   && !ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(apiNameSync(element) ?? '')
 )
 
+export const isStandardField = (field: Field): boolean => {
+  const fieldApiName = apiNameSync(field)
+  return fieldApiName !== undefined && !ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(fieldApiName)
+}
+
 export const getInstanceAlias = async (
   instance: MetadataInstanceElement,
   useLabelAsAlias: boolean
@@ -634,6 +673,7 @@ export const getChangedAtSingletonInstance = async (
   const element = await elementsSource.get(new ElemID(SALESFORCE, CHANGED_AT_SINGLETON, 'instance', ElemID.CONFIG_NAME))
   return isInstanceElement(element) ? element : undefined
 }
+
 
 export const isCustomType = (element: Element): element is ObjectType => (
   isObjectType(element) && ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(apiNameSync(element) ?? '')
@@ -761,6 +801,23 @@ export const isValueSetReference = (field: Field): boolean =>
 
 export const hasValueSetNameAnnotation = (field: Field): boolean =>
   !_.isUndefined(field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME])
+
+// This function checks whether an element is an instance of any custom object type.
+// Note that this does not apply to custom object definitions themselves, e.g, this will be true
+// for instances of Lead, but it will not be true for Lead itself when it is still an instance
+// (before the custom objects filter turns it into a type).
+// To filter for instances like the Lead definition, use isInstanceOfType(CUSTOM_OBJECT) instead
+export const isInstanceOfCustomObjectSync = (element: Element): element is InstanceElement => (
+  isInstanceElement(element) && isCustomObjectSync(element.getTypeSync())
+)
+
+export const isInstanceOfCustomObjectChangeSync = (change: Change): change is Change<InstanceElement> => (
+  isInstanceOfCustomObjectSync(getChangeData(change))
+)
+
+export const aliasOrElemID = (element: Element): string => (
+  element.annotations[CORE_ANNOTATIONS.ALIAS] ?? element.elemID.getFullName()
+)
 
 
 export const getMostRecentFileProperties = (fileProps: FileProperties[]): FileProperties | undefined => (

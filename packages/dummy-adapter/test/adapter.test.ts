@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -20,7 +20,7 @@ import {
   InstanceElement,
   getChangeData,
   isInstanceElement,
-  isObjectType, CORE_ANNOTATIONS,
+  isObjectType, CORE_ANNOTATIONS, ProgressReporter,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import DummyAdapter from '../src/adapter'
@@ -42,6 +42,10 @@ const objType = new ObjectType({
 const myInst1Change = toChange({ before: new InstanceElement('myIns1', objType) })
 const myInst2Change = toChange({ before: new InstanceElement('myIns2', objType) })
 
+const nullProgressReporter: ProgressReporter = {
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  reportProgress: () => {},
+}
 
 describe('dummy adapter', () => {
   const adapter = new DummyAdapter(testParams)
@@ -50,7 +54,7 @@ describe('dummy adapter', () => {
       expect(adapter.deploy).toBeDefined()
     })
     it('should do nothing', async () => {
-      expect(await adapter.deploy({ changeGroup: { changes: [], groupID: ':)' } })).toEqual({
+      expect(await adapter.deploy({ changeGroup: { changes: [], groupID: ':)' }, progressReporter: nullProgressReporter })).toEqual({
         appliedChanges: [],
         errors: [],
       })
@@ -66,7 +70,10 @@ describe('dummy adapter', () => {
         type,
         { fieldToOmit: 'val1', field2: 'val2' }
       )
-      const res = await adapter.deploy({ changeGroup: { changes: [toChange({ after: instance })], groupID: ':)' } })
+      const res = await adapter.deploy({
+        changeGroup: { changes: [toChange({ after: instance })], groupID: ':)' },
+        progressReporter: nullProgressReporter,
+      })
 
       const appliedInstance = getChangeData(res.appliedChanges[0]) as InstanceElement
 
@@ -78,7 +85,7 @@ describe('dummy adapter', () => {
       expect(adapter.validate).toBeDefined()
     })
     it('should do nothing', async () => {
-      expect(await adapter.validate({ changeGroup: { changes: [], groupID: ':)' } })).toEqual({
+      expect(await adapter.validate({ changeGroup: { changes: [], groupID: ':)' }, progressReporter: nullProgressReporter })).toEqual({
         appliedChanges: [],
         errors: [],
       })

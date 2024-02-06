@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -30,6 +30,12 @@ describe('pageByOffset', () => {
   beforeEach(() => {
     mockAxios = new MockAdapter(axios)
     client = new JiraClient({ credentials: { baseUrl: 'http://myjira.net', user: 'me', token: 'tok' }, isDataCenter: false })
+    mockAxios
+      // first three requests are for login assertion
+      .onGet('/rest/api/3/configuration').replyOnce(200)
+      .onGet('/rest/api/3/serverInfo').replyOnce(200, { baseUrl: 'a' })
+      .onGet('/rest/api/3/instance/license')
+      .replyOnce(200, { applications: [{ plan: 'FREE' }] })
   })
   afterEach(() => {
     mockAxios.restore()

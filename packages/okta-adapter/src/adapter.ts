@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,14 +14,14 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, getChangeData, ProgressReporter } from '@salto-io/adapter-api'
-import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, getChangeData, ProgressReporter, isInstanceElement, FixElementsFunc } from '@salto-io/adapter-api'
+import { config as configUtils, elements as elementUtils, client as clientUtils, combineElementFixers } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 import changeValidator from './change_validators'
-import { OktaConfig, API_DEFINITIONS_CONFIG, CLIENT_CONFIG } from './config'
+import { OktaConfig, API_DEFINITIONS_CONFIG, CLIENT_CONFIG, configType, FETCH_CONFIG, getSupportedTypes } from './config'
 import fetchCriteria from './fetch_criteria'
 import { paginate } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
@@ -37,7 +37,6 @@ import userTypeFilter from './filters/user_type'
 import userSchemaFilter from './filters/user_schema'
 import oktaExpressionLanguageFilter from './filters/expression_language'
 import defaultPolicyRuleDeployment from './filters/default_rule_deployment'
-import policyRuleRemoval from './filters/policy_rule_removal'
 import authorizationRuleFilter from './filters/authorization_server_rule'
 import privateApiDeployFilter from './filters/private_api_deploy'
 import profileEnrollmentAttributesFilter from './filters/profile_enrollment_attributes'
@@ -57,6 +56,9 @@ import groupPushFilter from './filters/group_push'
 import addImportantValues from './filters/add_important_values'
 import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
+import { User, getUsers, getUsersFromInstances } from './user_utils'
+import { isClassicEngineOrg } from './utils'
+import { createFixElementFunctions } from './fix_elements'
 
 const { awu } = collections.asynciterable
 
@@ -85,7 +87,6 @@ export const DEFAULT_FILTERS = [
   profileEnrollmentAttributesFilter,
   addImportantValues,
   defaultPolicyRuleDeployment,
-  policyRuleRemoval,
   schemaFieldsRemovalFilter,
   appLogoFilter,
   brandThemeFilesFilter,
@@ -115,32 +116,41 @@ export interface OktaAdapterParams {
   filterCreators?: FilterCreator[]
   client: OktaClient
   config: OktaConfig
+  configInstance?: InstanceElement
   getElemIdFunc?: ElemIdGetter
   elementsSource: ReadOnlyElementsSource
+  isOAuthLogin: boolean
   adminClient?: OktaClient
 }
 
 export default class OktaAdapter implements AdapterOperations {
-  private createFiltersRunner: () => Required<Filter>
+  private createFiltersRunner: (usersPromise?: Promise<User[]>) => Required<Filter>
   private client: OktaClient
   private userConfig: OktaConfig
+  private configInstance?: InstanceElement
   private paginator: clientUtils.Paginator
   private getElemIdFunc?: ElemIdGetter
   private fetchQuery: elementUtils.query.ElementQuery
+  private isOAuthLogin: boolean
   private adminClient?: OktaClient
+  private fixElementsFunc: FixElementsFunc
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
     client,
     getElemIdFunc,
     config,
+    configInstance,
     elementsSource,
+    isOAuthLogin,
     adminClient,
   }: OktaAdapterParams) {
     this.userConfig = config
+    this.configInstance = configInstance
     this.getElemIdFunc = getElemIdFunc
     this.client = client
     this.adminClient = adminClient
+    this.isOAuthLogin = isOAuthLogin
     const paginator = createPaginator({
       client: this.client,
       paginationFuncCreator: paginate,
@@ -154,22 +164,24 @@ export default class OktaAdapter implements AdapterOperations {
     this.paginator = paginator
 
     const filterContext = {}
-    this.createFiltersRunner = () => (
+    this.createFiltersRunner = usersPromise => (
       filtersRunner(
         {
           client,
           paginator,
-          config,
+          config: this.userConfig,
           getElemIdFunc,
           elementsSource,
           fetchQuery: this.fetchQuery,
           adapterContext: filterContext,
           adminClient,
+          usersPromise,
         },
         filterCreators,
         objects.concatObjects
       )
     )
+    this.fixElementsFunc = combineElementFixers(createFixElementFunctions({ client, config }))
   }
 
   @logDuration('generating types from swagger')
@@ -210,6 +222,14 @@ export default class OktaAdapter implements AdapterOperations {
 
   private async getPrivateApiElements(): Promise<elementUtils.FetchElements<Element[]>> {
     const { privateApiDefinitions } = this.userConfig
+    if (this.isOAuthLogin && this.userConfig[CLIENT_CONFIG]?.usePrivateAPI) {
+      log.warn('Fetching private APIs is not supported for OAuth login, creating config suggestion to exclude private APIs')
+      return {
+        elements: [],
+        errors: [{ message: 'Salto could not access private API when connecting with OAuth. Group Push and Settings types could not be fetched', severity: 'Warning' }],
+        configChanges: [{ type: 'disablePrivateAPI', reason: 'Private APIs can not be accessed when using OAuth login' }],
+      }
+    }
     if (this.adminClient === undefined || this.userConfig[CLIENT_CONFIG]?.usePrivateAPI !== true) {
       return { elements: [] }
     }
@@ -242,30 +262,70 @@ export default class OktaAdapter implements AdapterOperations {
     progressReporter.reportProgress({ message: 'Fetching instances' })
     const { errors, elements: instances } = await this.getSwaggerInstances(allTypes, parsedConfigs)
 
-    const privateApiElements = await this.getPrivateApiElements()
+    const privateApiResult = await this.getPrivateApiElements()
 
     const elements = [
       ...Object.values(allTypes),
       ...instances,
-      ...privateApiElements.elements,
+      ...privateApiResult.elements,
     ]
-    return { elements, errors: (errors ?? []).concat(privateApiElements.errors ?? []) }
+    return {
+      elements,
+      errors: (errors ?? []).concat(privateApiResult.errors ?? []),
+      configChanges: privateApiResult.configChanges,
+    }
+  }
+
+  private async handleClassicEngineOrg(): Promise<configUtils.ConfigChangeSuggestion | undefined> {
+    const { isClassicOrg: isClassicOrgByConfig } = this.userConfig[FETCH_CONFIG]
+    const isClassicOrg = isClassicOrgByConfig ?? await isClassicEngineOrg(this.client)
+    if (isClassicOrg) {
+      // update supported types to exclude types that are not supported in classic orgs
+      this.userConfig[API_DEFINITIONS_CONFIG].supportedTypes = getSupportedTypes({
+        isClassicOrg,
+        supportedTypes: this.userConfig[API_DEFINITIONS_CONFIG].supportedTypes,
+      })
+      return {
+        type: 'enableFetchFlag',
+        value: 'isClassicOrg',
+        reason: 'We detected that your Okta organization is using the Classic Engine, therefore, certain types of data that are only compatible with newer versions were not fetched.',
+      }
+    }
+    return undefined
   }
 
   @logDuration('fetching account configuration')
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch okta account configuration..')
-    const { elements, errors } = await this.getAllElements(progressReporter)
+    const { convertUsersIds, getUsersStrategy } = this.userConfig[FETCH_CONFIG]
+    const classicOrgConfigSuggestion = await this.handleClassicEngineOrg()
+    const { elements, errors, configChanges: getElementsConfigChanges } = await this.getAllElements(progressReporter)
+
+    const usersPromise = convertUsersIds
+      ? getUsers(
+        this.paginator,
+        getUsersStrategy === 'searchQuery'
+          ? { userIds: getUsersFromInstances(elements.filter(isInstanceElement)), property: 'id' }
+          : undefined
+      )
+      : undefined
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
-    const filterResult = await this.createFiltersRunner().onFetch(elements) || {}
+    const filterResult = await this.createFiltersRunner(usersPromise).onFetch(elements) || {}
 
-    // TODO SALTO-2690: addDeploymentAnnotations
-
+    const configChanges = (getElementsConfigChanges ?? []).concat(classicOrgConfigSuggestion ?? [])
+    const updatedConfig = !_.isEmpty(configChanges) && this.configInstance
+      ? configUtils.getUpdatedCofigFromConfigChanges({
+        configChanges,
+        currentConfig: this.configInstance,
+        configType,
+      })
+      : undefined
     return {
       elements,
       errors: (errors ?? []).concat(filterResult.errors ?? []),
+      updatedConfig,
     }
   }
 
@@ -322,4 +382,6 @@ export default class OktaAdapter implements AdapterOperations {
       dependencyChanger,
     }
   }
+
+  fixElements: FixElementsFunc = elements => this.fixElementsFunc(elements)
 }

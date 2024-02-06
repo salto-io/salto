@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -50,7 +50,7 @@ export const traverseRequests: (
     usedParams.add(serializedArgs)
     const params = { ...queryParams, ...additionalArgs }
     // eslint-disable-next-line no-await-in-loop
-    const response = await client.getSinglePage({
+    const response = await client.get({
       url,
       queryParams: Object.keys(params).length > 0 ? params : undefined,
       headers,

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -35,6 +35,7 @@ export const configType = new ObjectType({
     fieldsToOmitOnDeploy: { refType: new ListType(BuiltinTypes.STRING) },
     // Exclude elements from the fetch by their elemIDs
     elementsToExclude: { refType: new ListType(BuiltinTypes.STRING) },
+    importantValuesFreq: { refType: new ListType(BuiltinTypes.NUMBER) },
   },
 })
 

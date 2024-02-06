@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,7 +16,7 @@
 import { ElemID, ServiceIds } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import { ElementsSourceIndexes } from '../src/elements_source_index/types'
-import { configType, NetsuiteConfig } from '../src/config'
+import { configType, NetsuiteConfig } from '../src/config/types'
 import { NETSUITE } from '../src/constants'
 
 export const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
@@ -34,4 +34,5 @@ export const createEmptyElementsSourceIndexes = (): ElementsSourceIndexes => ({
   elemIdToChangeByIndex: {},
   elemIdToChangeAtIndex: {},
   customRecordFieldsServiceIdRecordsIndex: {},
+  customFieldsSelectRecordTypeIndex: {},
 })

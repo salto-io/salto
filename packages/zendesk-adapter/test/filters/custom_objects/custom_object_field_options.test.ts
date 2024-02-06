@@ -1,6 +1,6 @@
 
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -24,6 +24,7 @@ import {
   toChange,
   Value,
 } from '@salto-io/adapter-api'
+import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import filterCreator, {
   customObjectFieldOptionType,
 } from '../../../src/filters/custom_field_options/custom_object_field_options'
@@ -38,19 +39,22 @@ import {
 const { RECORDS_PATH } = elementsUtils
 type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'deploy' | 'onDeploy'>
 
-const createOptionsValue = (id: number): Value => ({
+const createOptionsValue = (id: number, value?: string): Value => ({
   id,
   name: id.toString(),
   raw_name: id.toString().repeat(2),
-  value: id.toString().repeat(3),
+  value: value ?? id.toString().repeat(3),
 })
 
-const createOptionInstance = ({ id, value }: {id: number; value: string}): InstanceElement => new InstanceElement(
-  `customObjectField__${value.toString()}`,
-  customObjectFieldOptionType,
-  createOptionsValue(id),
-  [ZENDESK, RECORDS_PATH, CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME, `customObjectField__${value.toString()}`],
-)
+const createOptionInstance = ({ id, value }: {id: number; value: string}): InstanceElement => {
+  const test = pathNaclCase(naclCase(`customObjectField__${value.toString()}`))
+  return new InstanceElement(
+    naclCase(`customObjectField__${value.toString()}`),
+    customObjectFieldOptionType,
+    createOptionsValue(id, value),
+    [ZENDESK, RECORDS_PATH, CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME, test],
+  )
+}
 
 describe('customObjectFieldOptionsFilter', () => {
   const customObjectFieldOptionsFilter = filterCreator(createFilterCreatorParams({})) as FilterType
@@ -60,7 +64,7 @@ describe('customObjectFieldOptionsFilter', () => {
       new ObjectType({ elemID: new ElemID(ZENDESK, CUSTOM_OBJECT_FIELD_TYPE_NAME) }),
       {
         [CUSTOM_FIELD_OPTIONS_FIELD_NAME]: [
-          createOptionsValue(1),
+          createOptionsValue(1, '!!'),
           createOptionsValue(2),
           createOptionsValue(3),
         ],
@@ -74,7 +78,7 @@ describe('customObjectFieldOptionsFilter', () => {
     expect(elements).toHaveLength(5)
     expect(elements[0]).toMatchObject(customObjectField)
     expect(elements[1]).toMatchObject(invalidCustomObjectField)
-    expect(elements[2]).toMatchObject(createOptionInstance(createOptionsValue(1)))
+    expect(elements[2]).toMatchObject(createOptionInstance(createOptionsValue(1, '!!')))
     expect(elements[3]).toMatchObject(createOptionInstance(createOptionsValue(2)))
     expect(elements[4]).toMatchObject(createOptionInstance(createOptionsValue(3)))
     expect(elements[2].annotations[CORE_ANNOTATIONS.PARENT][0]).toMatchObject(

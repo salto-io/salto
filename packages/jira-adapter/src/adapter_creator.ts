@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -25,7 +25,6 @@ import { Credentials, basicAuthCredentialsType } from './auth'
 import { configType, JiraConfig, getApiDefinitions, getDefaultConfig, validateJiraFetchConfig } from './config/config'
 import { createConnection, validateCredentials } from './client/connection'
 import { AUTOMATION_TYPE, SCRIPT_RUNNER_API_DEFINITIONS, WEBHOOK_TYPE } from './constants'
-import { getProductSettings } from './product_settings'
 import { configCreator } from './config_creator'
 import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
@@ -160,11 +159,10 @@ export const adapter: Adapter = {
   validateCredentials: async config => {
     const connection = createConnection(createRetryOptions(DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS))
     const creds = credentialsFromConfig(config)
-    const productSettings = getProductSettings({ isDataCenter: Boolean(creds.isDataCenter) })
 
     return validateCredentials({
-      connection: productSettings.wrapConnection(await connection.login(creds)),
-      isDataCenter: Boolean(creds.isDataCenter),
+      connection: await connection.login(creds),
+      credentials: creds,
     })
   },
   authenticationMethods: {
@@ -174,5 +172,7 @@ export const adapter: Adapter = {
   },
   configType,
   configCreator,
-  getCustomReferences: combineCustomReferenceGetters(weakReferenceHandlers.map(handler => handler.findWeakReferences)),
+  getCustomReferences: combineCustomReferenceGetters(
+    _.mapValues(weakReferenceHandlers, handler => handler.findWeakReferences),
+  ),
 }

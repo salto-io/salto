@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -17,10 +17,10 @@
 import { CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
 
 import { FilterCreator } from '../../filter'
-import { ASSETS_OBJECT_TYPE } from '../../constants'
+import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_TYPE } from '../../constants'
 
 
-/* This filter modifies the parentObjectTypeId of roots with AssetsObjectType to assetsSchema. */
+/* This filter modifies the parentObjectTypeId of roots with ObjectType to assetsSchema. */
 const filter: FilterCreator = ({ config }) => ({
   name: 'assetsObjectTypeChangeFields',
   onFetch: async elements => {
@@ -29,12 +29,20 @@ const filter: FilterCreator = ({ config }) => ({
     }
     elements
       .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === ASSETS_OBJECT_TYPE)
+      .filter(instance => instance.elemID.typeName === OBJECT_TYPE_TYPE)
       .forEach(instance => {
         if (instance.value.parentObjectTypeId === undefined) {
           // add reference to assetsSchema to the root, in order to be able to later update its elemID.
           [instance.value.parentObjectTypeId] = instance.annotations[CORE_ANNOTATIONS.PARENT]
         }
+      })
+    elements
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === OBJECT_SCHEMA_TYPE)
+      .forEach(instance => {
+        delete instance.value.objectTypes
+        delete instance.value.objectSchemaStatuses
+        delete instance.value.referenceTypes
       })
   },
 })

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -58,14 +58,14 @@ describe('client_http_client', () => {
           },
           timeout: {
             lastRetryNoTimeout: true,
-            resetTimeoutBetweenAttempts: true,
+            retryOnTimeout: true,
           },
         }
       )
     }
   }
 
-  describe('getSinglePage', () => {
+  describe('get', () => {
     it('should make the right request', async () => {
       expect(mockCreateConnection).not.toHaveBeenCalled()
       const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
@@ -81,8 +81,8 @@ describe('client_http_client', () => {
       mockAxiosAdapter.onGet('/ep').replyOnce(200, { a: 'b' }, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
       mockAxiosAdapter.onGet('/ep2', { a: 'AAA' }).replyOnce(200, { c: 'd' }, { hh: 'header' })
 
-      const getRes = await client.getSinglePage({ url: '/ep' })
-      const getRes2 = await client.getSinglePage({ url: '/ep2', queryParams: { a: 'AAA' } })
+      const getRes = await client.get({ url: '/ep' })
+      const getRes2 = await client.get({ url: '/ep2', queryParams: { a: 'AAA' } })
       expect(getRes).toEqual({ data: { a: 'b' }, status: 200, headers: { 'X-Rate-Limit': '456', 'Retry-After': '93' } })
       expect(getRes2).toEqual({ data: { c: 'd' }, status: 200, headers: {} })
       expect(clearValuesFromResponseDataFunc).toHaveBeenCalledTimes(2)
@@ -100,7 +100,7 @@ describe('client_http_client', () => {
       mockAxiosAdapter.onGet('/users/me').reply(401, {
         accountId: 'ACCOUNT_ID',
       })
-      await expect(client.getSinglePage({ url: '/ep' })).rejects.toThrow(UnauthorizedError)
+      await expect(client.get({ url: '/ep' })).rejects.toThrow(UnauthorizedError)
     })
 
     it('should throw HTTPError on other http errors', async () => {
@@ -109,7 +109,7 @@ describe('client_http_client', () => {
         accountId: 'ACCOUNT_ID',
       })
       mockAxiosAdapter.onGet('/ep').replyOnce(400, { a: 'b' })
-      await expect(client.getSinglePage({ url: '/ep' })).rejects.toThrow(HTTPError)
+      await expect(client.get({ url: '/ep' })).rejects.toThrow(HTTPError)
     })
 
     it('should throw TimeoutError if received ETIMEDOUT', async () => {
@@ -134,7 +134,7 @@ describe('client_http_client', () => {
         }),
       })
       const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
-      await expect(client.getSinglePage({ url: '/ep' })).rejects.toThrow(TimeoutError)
+      await expect(client.get({ url: '/ep' })).rejects.toThrow(TimeoutError)
     })
   })
 

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,11 +16,12 @@
 import _ from 'lodash'
 import path from 'path'
 import wu from 'wu'
-import { Workspace, nacl, errors, parser, validator, COMMON_ENV_PREFIX, elementSource } from '@salto-io/workspace'
+import { Workspace, nacl, errors, validator, COMMON_ENV_PREFIX, elementSource } from '@salto-io/workspace'
 import { Element, SaltoError, ElemID, Change, getChangeData,
   isRemovalChange, isReferenceExpression, isContainerType,
   Value, isModificationChange, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
+import { parser } from '@salto-io/parser'
 import { detailedCompare, walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 
 

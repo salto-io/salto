@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -24,7 +24,10 @@ import SalesforceAdapter from '../index'
 import realAdapter from './adapter'
 import SalesforceClient from '../src/client/client'
 import { UsernamePasswordCredentials } from '../src/types'
-import { runFiltersOnFetch, createElement, removeElementAndVerify, createInstance, getRecordOfInstance, fetchTypes, getMetadataInstance, removeElement, removeElementIfAlreadyExists } from './utils'
+import {
+  runFiltersOnFetch, createElement, removeElementAndVerify, createInstance, getRecordOfInstance, fetchTypes,
+  getMetadataInstance, removeElement, removeElementIfAlreadyExists, nullProgressReporter,
+} from './utils'
 import { apiName, isInstanceOfCustomObject } from '../src/transformers/transformer'
 import customObjectsFromDescribeFilter from '../src/filters/custom_objects_from_soap_describe'
 import customObjectsToObjectTypeFilter from '../src/filters/custom_objects_to_object_type'
@@ -191,6 +194,7 @@ describe('custom object instances e2e', () => {
             groupID: updatedInstance.elemID.getFullName(),
             changes: [{ action: 'modify', data: { before: createdInstance, after: updatedInstance } }],
           },
+          progressReporter: nullProgressReporter,
         })
         const fields = ['IsActive', 'ProductCode', 'IsArchived']
         const result = await getRecordOfInstance(client, createdInstance, fields)

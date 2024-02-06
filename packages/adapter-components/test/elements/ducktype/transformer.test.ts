@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -885,7 +885,11 @@ describe('ducktype_transformer', () => {
           error instanceof HTTPError && (error.response.status === 403),
       })
       const { configChanges } = res
-      expect(configChanges).toEqual([{ typeToExclude: 'folder' }])
+      expect(configChanges).toEqual([{
+        type: 'typeToExclude',
+        value: 'folder',
+        reason: 'Salto failed to fetch folder type',
+      }])
     })
     it('should return singleton type errors as fetch warnings', async () => {
       jest.spyOn(transformer, 'getTypeAndInstances').mockImplementation(() => {

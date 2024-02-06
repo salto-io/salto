@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -21,7 +21,7 @@ import { applyFunctionToChangeData, resolveValues, safeJsonStringify } from '@sa
 import _ from 'lodash'
 import { handleDeploymentError } from '../deployment/deployment_error_handling'
 import { getLookUpName } from '../reference_mapping'
-import { findObject } from '../utils'
+import { addAnnotationRecursively, findObject } from '../utils'
 import { FilterCreator } from '../filter'
 import { ISSUE_TYPE_NAME, JIRA, STATUS_TYPE_NAME } from '../constants'
 import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
@@ -91,7 +91,7 @@ const waitForWorkflowSchemePublish = async (
   })
 
   await waitForWorkflowSchemePublish(
-    await client.getSinglePage({ url: taskResponse.data.self }),
+    await client.get({ url: taskResponse.data.self }),
     client,
     retryDelay,
     checksLeft - 1,
@@ -123,7 +123,7 @@ export const updateSchemeId = async (
   config: JiraConfig,
 ): Promise<void> => {
   const instance = getChangeData(change)
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url: `/rest/api/3/workflowscheme/${instance.value.id}`,
   })
   if (response.status === 200
@@ -298,36 +298,15 @@ const filter: FilterCreator = ({ config, client, paginator, elementsSource }) =>
       if (workflowSchemeType.fields.issueTypeMappings !== undefined) {
         delete workflowSchemeType.fields.issueTypeMappings
       }
+      const statusMigrationsType = findObject(elements, 'StatusMapping')
+      if (statusMigrationsType !== undefined) {
+        await addAnnotationRecursively(statusMigrationsType, CORE_ANNOTATIONS.UPDATABLE)
+        workflowSchemeType.fields.statusMigrations.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
+      } else {
+        log.error('StatusMapping type was not found')
+      }
 
-      const statusMigrationType = new ObjectType({
-        elemID: new ElemID(JIRA, 'StatusMigration'),
-        fields: {
-          issueTypeId: {
-            refType: BuiltinTypes.STRING,
-            annotations: { [CORE_ANNOTATIONS.UPDATABLE]: true },
-          },
-          statusId: {
-            refType: BuiltinTypes.STRING,
-            annotations: { [CORE_ANNOTATIONS.UPDATABLE]: true },
-          },
-          newStatusId: {
-            refType: BuiltinTypes.STRING,
-            annotations: { [CORE_ANNOTATIONS.UPDATABLE]: true },
-          },
-        },
-        path: [JIRA, elementUtils.TYPES_PATH, 'StatusMigration'],
-      })
-
-      workflowSchemeType.fields.statusMigrations = new Field(
-        workflowSchemeType,
-        'statusMigrations',
-        new ListType(statusMigrationType),
-        {
-          [CORE_ANNOTATIONS.UPDATABLE]: true,
-        }
-      )
-
-      elements.push(workflowSchemeItemType, statusMigrationType)
+      elements.push(workflowSchemeItemType)
     }
 
     elements

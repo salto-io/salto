@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -1152,6 +1152,14 @@ export const getParent = (instance: Element): InstanceElement => {
   return parents[0].value
 }
 
+export const hasValidParent = (element: Element): boolean => {
+  try {
+    return getParent(element) !== undefined
+  } catch {
+    return false
+  }
+}
+
 // In the current use-cases for resolveTypeShallow it makes sense
 // to use the value on the ref over the elementsSource, unlike the
 // current Reference.getResolvedValue implementation
@@ -1266,6 +1274,7 @@ export const formatConfigSuggestionsReasons = (reasons: string[]): string => {
 /* Checks for references expression with undefined value or for unresolved references
 * during fetch and deploy. In fetch this can happen when the reference is set to be missing reference.
 * In deploy this can happen when the reference is assigned as unresolved reference.
+* If the element's source is the elementsSource then this function will return always false.
 */
 export const isResolvedReferenceExpression = (value: unknown): value is ReferenceExpression => (
   isReferenceExpression(value) && !(value.value instanceof UnresolvedReference) && value.value !== undefined
@@ -1277,3 +1286,12 @@ export const getInstancesFromElementSource = async (elementSource: ReadOnlyEleme
     .filter(isInstanceElement)
     .filter(instance => typeNames.includes(instance.elemID.typeName))
     .toArray()
+
+export const validateReferenceExpression = (fieldName: string): Joi.CustomValidator => (value, helpers) => {
+  if (!isReferenceExpression(value)) {
+    return helpers.message(
+      { custom: `Expected ${fieldName} to be ReferenceExpression` }
+    )
+  }
+  return true
+}

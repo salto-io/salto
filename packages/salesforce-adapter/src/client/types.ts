@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -165,6 +165,9 @@ export class CustomField implements MetadataInfo {
   securityClassification?: string
   complianceGroup?: string
 
+  // CustomMetadata types
+  metadataRelationshipControllingField?: string
+
   constructor(
     public fullName: string,
     type: string,
@@ -182,8 +185,12 @@ export class CustomField implements MetadataInfo {
     relatedTo?: string[],
     relationshipName?: string,
     length?: number,
+    metadataRelationshipControllingField?: string,
   ) {
     this.type = type
+    if (metadataRelationshipControllingField !== undefined) {
+      this.metadataRelationshipControllingField = metadataRelationshipControllingField
+    }
     if (formula) {
       this.formula = formula
     } else {

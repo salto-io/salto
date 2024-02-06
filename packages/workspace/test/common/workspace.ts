@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-import { Element } from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { Element, InstanceElement } from '@salto-io/adapter-api'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
 import { WorkspaceConfig } from '../../src/workspace/config/workspace_config_types'
 import { Errors } from '../../src/errors'
@@ -54,25 +54,42 @@ export const mockWorkspaceConfigSource = (conf?: Partial<WorkspaceConfig>,
   setWorkspaceConfig: jest.fn(),
 })
 
-export const mockAdaptersConfigSource = (): MockInterface<AdaptersConfigSource> => ({
-  getAdapter: mockFunction<AdaptersConfigSource['getAdapter']>(),
-  setAdapter: mockFunction<AdaptersConfigSource['setAdapter']>(),
-  getElementNaclFiles: mockFunction<AdaptersConfigSource['getElementNaclFiles']>(),
-  getErrors: mockFunction<AdaptersConfigSource['getErrors']>().mockResolvedValue(new Errors({
-    parse: [],
-    validation: [],
-    merge: [],
-  })),
-  getSourceRanges: mockFunction<AdaptersConfigSource['getSourceRanges']>().mockResolvedValue([]),
-  getNaclFile: mockFunction<AdaptersConfigSource['getNaclFile']>(),
-  setNaclFiles: mockFunction<AdaptersConfigSource['setNaclFiles']>(),
-  flush: mockFunction<AdaptersConfigSource['flush']>(),
-  getElements: mockFunction<AdaptersConfigSource['getElements']>(),
-  getParsedNaclFile: mockFunction<AdaptersConfigSource['getParsedNaclFile']>(),
-  getSourceMap: mockFunction<AdaptersConfigSource['getSourceMap']>(),
-  listNaclFiles: mockFunction<AdaptersConfigSource['listNaclFiles']>(),
-  isConfigFile: mockFunction<AdaptersConfigSource['isConfigFile']>(),
-})
+export const mockAdaptersConfigSource = (): MockInterface<AdaptersConfigSource> => {
+  const adapters: Record<string, InstanceElement> = {}
+
+  const getAdapter = async (adapterName: string): Promise<InstanceElement | undefined> => (
+    adapters[adapterName]
+  )
+  const setAdapter = async (
+    accountName: string,
+    _adapterName: string,
+    config: Readonly<InstanceElement> | Readonly<InstanceElement>[]
+  ): Promise<void> => {
+    if (!_.isArray(config)) {
+      adapters[accountName] = config as InstanceElement
+    }
+  }
+
+  return {
+    getAdapter: mockFunction<AdaptersConfigSource['getAdapter']>().mockImplementation(getAdapter),
+    setAdapter: mockFunction<AdaptersConfigSource['setAdapter']>().mockImplementation(setAdapter),
+    getElementNaclFiles: mockFunction<AdaptersConfigSource['getElementNaclFiles']>(),
+    getErrors: mockFunction<AdaptersConfigSource['getErrors']>().mockResolvedValue(new Errors({
+      parse: [],
+      validation: [],
+      merge: [],
+    })),
+    getSourceRanges: mockFunction<AdaptersConfigSource['getSourceRanges']>().mockResolvedValue([]),
+    getNaclFile: mockFunction<AdaptersConfigSource['getNaclFile']>(),
+    setNaclFiles: mockFunction<AdaptersConfigSource['setNaclFiles']>(),
+    flush: mockFunction<AdaptersConfigSource['flush']>(),
+    getElements: mockFunction<AdaptersConfigSource['getElements']>(),
+    getParsedNaclFile: mockFunction<AdaptersConfigSource['getParsedNaclFile']>(),
+    getSourceMap: mockFunction<AdaptersConfigSource['getSourceMap']>(),
+    listNaclFiles: mockFunction<AdaptersConfigSource['listNaclFiles']>(),
+    isConfigFile: mockFunction<AdaptersConfigSource['isConfigFile']>(),
+  }
+}
 
 export const mockCredentialsSource = (): ConfigSource => ({
   get: jest.fn(),

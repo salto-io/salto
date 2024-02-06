@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,13 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType, getDeepInnerType, InstanceElement, ReadOnlyElementsSource, isInstanceElement, Value } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType, getDeepInnerType, InstanceElement, ReadOnlyElementsSource, isInstanceElement, Value, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
-import { getParent } from '@salto-io/adapter-utils'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
+import Joi from 'joi'
 import { JiraConfig, JspUrls } from './config/config'
-import { ACCOUNT_INFO_ELEM_ID, JIRA_FREE_PLAN } from './constants'
+import { ACCOUNT_INFO_ELEM_ID, JIRA_FREE_PLAN, SOFTWARE_FIELD } from './constants'
+import JiraClient from './client/client'
 
 type appInfo = {
   id: string
@@ -125,6 +127,26 @@ export const isJiraSoftwareFreeLicense = async (
   return mainApplication.plan === JIRA_FREE_PLAN
 }
 
+/*
+* Checks if the Jira service has a service desk license. The default is to assume that it doesn't.
+*/
+export const hasJiraServiceDeskLicense = async (
+  elementsSource: ReadOnlyElementsSource
+): Promise<boolean> => {
+  const accountInfo = await elementsSource.get(ACCOUNT_INFO_ELEM_ID)
+  if (accountInfo === undefined || !isInstanceElement(accountInfo)
+  || accountInfo.value.license?.applications === undefined) {
+    log.error('account info instance or its license not found in elements source, treating the account as free one')
+    return false
+  }
+  const mainApplication = accountInfo.value.license.applications.find((app: Value) => app.id === 'jira-servicedesk')
+  if (mainApplication?.plan === undefined) {
+    log.warn('could not find license of jira-software, treating the account as free one')
+    return false
+  }
+  return true
+}
+
 export const renameKey = (object: Value, { from, to }: { from: string; to: string }): void => {
   if (object[from] !== undefined) {
     object[to] = object[from]
@@ -132,10 +154,56 @@ export const renameKey = (object: Value, { from, to }: { from: string; to: strin
   }
 }
 
-export const isThereValidParent = (element: Element): boolean => {
+type ProjectResponse = {
+  projectTypeKey: string
+}
+type ProjectDataResponse = {
+  values: ProjectResponse[]
+}
+
+const PROJECT_DATA_RESPONSE_SCHEMA = Joi.object({
+  values: Joi.array().items(Joi.object({
+    projectTypeKey: Joi.string().required(),
+  }).unknown(true).required()).required(),
+}).unknown(true).required()
+
+
+const isProjectDataResponse = createSchemeGuard<ProjectDataResponse>(PROJECT_DATA_RESPONSE_SCHEMA)
+
+/*
+* Checks if the Jira service has a software project. The default is to assume that it does.
+* We are going to exclude Borads if we sure that there is no software project.
+*/
+export const hasSoftwareProject = async (client: JiraClient):
+Promise<boolean> => {
   try {
-    return getParent(element) !== undefined
-  } catch {
-    return false
+    const response = await client.get({
+      url: '/rest/api/3/project/search',
+    })
+    if (!isProjectDataResponse(response.data)) {
+      return true
+    }
+    return response.data.values.some(project => project.projectTypeKey === SOFTWARE_FIELD)
+  } catch (e) {
+    log.error(`Failed to get server info: ${e}`)
   }
+  return true
+}
+
+export const convertPropertiesToList = (fields: Values[]): void => {
+  fields.forEach(field => {
+    if (field.properties != null) {
+      field.properties = Object.entries(field.properties)
+        .map(([key, value]) => ({ key, value }))
+    }
+  })
+}
+export const convertPropertiesToMap = (fields: Values[]): void => {
+  fields.forEach(field => {
+    if (field.properties != null) {
+      field.properties = Object.fromEntries(
+        field.properties.map(({ key, value }: Values) => [key, value])
+      )
+    }
+  })
 }

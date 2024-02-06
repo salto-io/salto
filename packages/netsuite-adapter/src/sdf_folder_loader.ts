@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -19,7 +19,7 @@ import { allFilters } from './adapter'
 import { createElementsSourceIndex } from './elements_source_index/elements_source_index'
 import { parseSdfProjectDir } from './client/sdf_parser'
 import { createElements } from './transformer'
-import { netsuiteConfigFromConfig } from './config'
+import { netsuiteConfigFromConfig } from './config/config_creator'
 import { TYPES_TO_SKIP } from './types'
 
 const localFilters = allFilters

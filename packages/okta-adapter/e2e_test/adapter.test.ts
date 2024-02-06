@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,9 +15,11 @@
 */
 import _ from 'lodash'
 import { v4 as uuidv4 } from 'uuid'
-import { Change, CORE_ANNOTATIONS, DeployResult, Element, getChangeData,
+import {
+  Change, CORE_ANNOTATIONS, DeployResult, Element, getChangeData,
   InstanceElement, isAdditionChange, isAdditionOrModificationChange, isEqualValues, isInstanceChange, isInstanceElement,
-  isObjectType, ObjectType, ReferenceExpression, TemplateExpression, toChange, Values } from '@salto-io/adapter-api'
+  isObjectType, ObjectType, ProgressReporter, ReferenceExpression, TemplateExpression, toChange, Values,
+} from '@salto-io/adapter-api'
 import { applyDetailedChanges, buildElementsSourceFromElements, detailedCompare, getParents, naclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { config as configUtils, elements as elementsUtils } from '@salto-io/adapter-components'
@@ -204,6 +206,11 @@ const createInstancesForDeploy = (types: ObjectType[], testSuffix: string): Inst
     accessPolicyRule, profileEnrollment, profileEnrollmentRule, app]
 }
 
+const nullProgressReporter: ProgressReporter = {
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  reportProgress: () => {},
+}
+
 const deployChanges = async (
   adapterAttr: Reals, instancesToAdd: InstanceElement[],
 ): Promise<DeployResult[]> => {
@@ -212,6 +219,7 @@ const deployChanges = async (
     .map(async instance => {
       const deployResult = await adapterAttr.adapter.deploy({
         changeGroup: { groupID: instance.elemID.getFullName(), changes: [toChange({ after: instance })] },
+        progressReporter: nullProgressReporter,
       })
       expect(deployResult.errors).toHaveLength(0)
       expect(deployResult.appliedChanges).not.toHaveLength(0)
@@ -241,10 +249,13 @@ const removeApp = async (adapterAttr: Reals, changes: Change<InstanceElement>[])
   inactiveApp.value.status = INACTIVE_STATUS
   // Application must be deactivated before removal
   const appDeactivationChange = toChange({ before: activeApp, after: inactiveApp })
-  const appDeployResult = await adapterAttr.adapter.deploy({ changeGroup: {
-    groupID: getChangeData(appDeactivationChange).elemID.getFullName(),
-    changes: [appDeactivationChange],
-  } })
+  const appDeployResult = await adapterAttr.adapter.deploy({
+    changeGroup: {
+      groupID: getChangeData(appDeactivationChange).elemID.getFullName(),
+      changes: [appDeactivationChange],
+    },
+    progressReporter: nullProgressReporter,
+  })
 
   const appRemovalChange = appDeployResult.appliedChanges
     .find(change => getChangeData(change).elemID.typeName === APPLICATION_TYPE_NAME)
@@ -256,6 +267,7 @@ const removeApp = async (adapterAttr: Reals, changes: Change<InstanceElement>[])
       groupID: getChangeData(appRemovalChange).elemID.getFullName(),
       changes: [toChange({ before: getChangeData(appRemovalChange) })],
     },
+    progressReporter: nullProgressReporter,
   })
 }
 
@@ -342,6 +354,7 @@ describe('Okta adapter E2E', () => {
             groupID: getChangeData(change).elemID.getFullName(),
             changes: [change],
           },
+          progressReporter: nullProgressReporter,
         })).toArray()
 
       const errors = deployResults.flatMap(res => res.errors)

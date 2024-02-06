@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -20,7 +20,7 @@ import { FilterCreator } from '../../../filter'
 import { isPrioritySchemeResponse } from './priority_scheme_deploy'
 
 const getProjectPriorityScheme = async (instance: InstanceElement, client: JiraClient): Promise<number | undefined> => {
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url: `/rest/api/2/project/${instance.value.id}/priorityscheme`,
   })
 

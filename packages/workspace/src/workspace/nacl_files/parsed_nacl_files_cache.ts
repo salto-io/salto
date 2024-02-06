@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { Element } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { hash, collections, values } from '@salto-io/lowerdash'
-import { SourceMap, ParseError } from '../../parser'
+import { parser } from '@salto-io/parser'
 import { ContentType } from '../dir_store'
 import { serialize, deserialize } from '../../serializer/elements'
 import { StaticFilesSource } from '../static_files'
@@ -38,9 +38,9 @@ type ParseResultKey = {
 
 type CacheSources = {
   elements: RemoteMap<Element[]>
-  sourceMap: RemoteMap<SourceMap>
+  sourceMap: RemoteMap<parser.SourceMap>
   metadata: RemoteMap<FileCacheMetadata>
-  errors: RemoteMap<ParseError[]>
+  errors: RemoteMap<parser.ParseError[]>
   referenced: RemoteMap<string[]>
   staticFiles: RemoteMap<string[]>
 }
@@ -58,7 +58,7 @@ export type ParsedNaclFileCache = {
   put(filename: string, value: ParsedNaclFile): Promise<void>
   putAll(files: Record<string, ParsedNaclFile>): Promise<void>
   hasValid(key: ParseResultKey): Promise<boolean>
-  getAllErrors(): Promise<ParseError[]> // TEMP
+  getAllErrors(): Promise<parser.ParseError[]> // TEMP
 }
 
 const isMD5Equal = (
@@ -106,10 +106,10 @@ const getErrors = async (
   cacheName: string,
   remoteMapCreator: RemoteMapCreator,
   persistent: boolean
-): Promise<RemoteMap<ParseError[]>> => (
+): Promise<RemoteMap<parser.ParseError[]>> => (
   remoteMapCreator({
     namespace: getRemoteMapCacheNamespace(cacheName, 'errors'),
-    serialize: async (errors: ParseError[]) => safeJsonStringify(errors ?? []),
+    serialize: async (errors: parser.ParseError[]) => safeJsonStringify(errors ?? []),
     deserialize: data => JSON.parse(data),
     persistent,
   })
@@ -133,8 +133,8 @@ const getCacheSources = async (
   }),
   sourceMap: (await remoteMapCreator({
     namespace: getRemoteMapCacheNamespace(cacheName, 'sourceMap'),
-    serialize: async (sourceMap: SourceMap) => safeJsonStringify(Array.from(sourceMap.entries())),
-    deserialize: async data => (new SourceMap(JSON.parse(data))),
+    serialize: async (sourceMap: parser.SourceMap) => safeJsonStringify(Array.from(sourceMap.entries())),
+    deserialize: async data => (new parser.SourceMap(JSON.parse(data))),
     persistent,
   })),
   errors: await getErrors(cacheName, remoteMapCreator, persistent),
@@ -254,7 +254,7 @@ export const createParseResultCache = (
       }
       return isMD5Equal(fileMetadata.hash, key.buffer)
     },
-    getAllErrors: async (): Promise<ParseError[]> =>
+    getAllErrors: async (): Promise<parser.ParseError[]> =>
       (await awu((await cacheSources).errors.values()).toArray()).flat(),
     get: async (filename: string): Promise<ParsedNaclFile> => {
       const sources = await cacheSources

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -128,13 +128,24 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
       log.debug('skipping topicsForObjectsFilter since the MetadataType TopicsForObjects is excluded')
       return
     }
-    const customObjectTypes = await awu(elements).filter(isCustomObject).toArray() as ObjectType[]
-    if (_.isEmpty(customObjectTypes)) {
-      return
-    }
-
     const topicsForObjectsInstances = await getInstancesOfMetadataType(elements,
       TOPICS_FOR_OBJECTS_METADATA_TYPE)
+    const topicsForObjectsType = elements
+      .filter(isMetadataObjectType)
+      .find(type => apiNameSync(type) === TOPICS_FOR_OBJECTS_METADATA_TYPE)
+    const removeTopicsForObjectInstancesAndHideTheirType = (): void => {
+      _.pullAll(elements, topicsForObjectsInstances)
+      if (topicsForObjectsType === undefined) {
+        log.warn('expected TopicsForObjects type to be defined')
+        return
+      }
+      topicsForObjectsType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
+    }
+    const customObjectTypes = await awu(elements).filter(isCustomObject).toArray() as ObjectType[]
+    if (_.isEmpty(customObjectTypes)) {
+      removeTopicsForObjectInstancesAndHideTheirType()
+      return
+    }
     const topicsPerObject = topicsForObjectsInstances.map(instance =>
       ({ [instance.value[ENTITY_API_NAME]]: boolValue(instance.value[ENABLE_TOPICS]) }))
     const topics: Record<string, boolean> = _.merge({}, ...topicsPerObject)
@@ -154,16 +165,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
         }
       })
     }
-    // Remove TopicsForObjects Instances & hide the TopicsForObjects metadata type
-    _.pullAll(elements, topicsForObjectsInstances)
-    const topicsForObjectsType = elements
-      .filter(isMetadataObjectType)
-      .find(type => apiNameSync(type) === TOPICS_FOR_OBJECTS_METADATA_TYPE)
-    if (topicsForObjectsType === undefined) {
-      log.warn('expected TopicsForObjects type to be defined')
-      return
-    }
-    topicsForObjectsType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
+    removeTopicsForObjectInstancesAndHideTheirType()
   },
 
   preDeploy: async changes => {

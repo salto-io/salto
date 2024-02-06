@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -39,7 +39,7 @@ import {
   AUTOMATION_ORDER_TYPE_NAME,
   SLA_POLICY_ORDER_TYPE_NAME,
   VIEW_ORDER_TYPE_NAME,
-  WORKSPACE_ORDER_TYPE_NAME,
+  WORKSPACE_ORDER_TYPE_NAME, THEME_SETTINGS_TYPE_NAME, GUIDE_THEME_TYPE_NAME,
 } from '../constants'
 import { FETCH_CONFIG, ZendeskConfig } from '../config'
 import { ZendeskMissingReferenceStrategyLookup, ZendeskMissingReferenceStrategyName } from './references/missing_references'
@@ -122,6 +122,7 @@ const TICKET_FIELD_OPTION_TYPE_NAME = 'ticket_field__custom_field_options'
 const ORG_FIELD_OPTION_TYPE_NAME = 'organization_field__custom_field_options'
 const USER_FIELD_OPTION_TYPE_NAME = 'user_field__custom_field_options'
 const CUSTOM_OBJECT_PREFIX = 'zen:custom_object:'
+const CUSTOM_STATUS_FIELD_PREFIX = 'custom_status_'
 
 const customFieldOptionSerialization: GetLookupNameFunc = ({ ref }) => {
   const fieldName = ref.elemID.typeName === TICKET_FIELD_OPTION_TYPE_NAME ? 'value' : 'id'
@@ -199,6 +200,7 @@ type ZendeskReferenceSerializationStrategyName = 'ticketField'
   | 'locale'
   | 'idString'
   | 'customObjectKey'
+  | 'customStatusField'
 const ZendeskReferenceSerializationStrategyLookup: Record<
   ZendeskReferenceSerializationStrategyName
   | referenceUtils.ReferenceSerializationStrategyName,
@@ -250,6 +252,13 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
     lookup: val =>
       ((_.isString(val) && val.startsWith(CUSTOM_OBJECT_PREFIX)) ? val.slice(CUSTOM_OBJECT_PREFIX.length) : val),
     lookupIndexName: 'key',
+  },
+  customStatusField: {
+    serialize: ({ ref }) => (isInstanceElement(ref.value) ? `${CUSTOM_STATUS_FIELD_PREFIX}${ref.value.value.id}` : ref.value),
+    lookup: val => ((_.isString(val) && val.match(`${CUSTOM_STATUS_FIELD_PREFIX}\\d+`) !== null)
+      ? val.slice(CUSTOM_STATUS_FIELD_PREFIX.length)
+      : val),
+    lookupIndexName: 'id',
   },
 }
 
@@ -386,12 +395,19 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
   {
     src: { field: 'macro_id' },
     serializationStrategy: 'id',
+    zendeskMissingRefStrategy: 'typeAndValue',
     target: { type: 'macro' },
   },
   {
     src: { field: 'macro_ids' },
     serializationStrategy: 'id',
+    zendeskMissingRefStrategy: 'typeAndValue',
     target: { type: 'macro' },
+  },
+  {
+    src: { field: 'liveTheme', parentTypes: [THEME_SETTINGS_TYPE_NAME] },
+    serializationStrategy: 'id',
+    target: { type: GUIDE_THEME_TYPE_NAME },
   },
   {
     src: { field: 'active', parentTypes: [TICKET_FORM_ORDER_TYPE_NAME] },
@@ -477,6 +493,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     src: { field: 'id', parentTypes: ['workspace__selected_macros'] },
     serializationStrategy: 'id',
     target: { type: 'macro' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: { field: 'role_restrictions' },
@@ -638,6 +655,14 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
   },
   {
     src: {
+      field: 'field',
+    },
+    zendeskSerializationStrategy: 'customStatusField',
+    zendeskMissingRefStrategy: 'prefixAndNumber',
+    target: { type: CUSTOM_STATUS_TYPE_NAME },
+  },
+  {
+    src: {
       field: 'subject',
       parentTypes: [
         'routing_attribute_value__conditions__all',
@@ -776,6 +801,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     src: { field: 'id', parentTypes: ['workspace__apps'] },
     serializationStrategy: 'id',
     target: { type: 'app_installation' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: { field: 'resource_id' },
@@ -864,6 +890,7 @@ const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
     },
     zendeskSerializationStrategy: 'idString',
     target: { typeContext: 'neighborField' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   // only one of these applies in a given instance
   {

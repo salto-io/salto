@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -17,6 +17,7 @@ import { Element, ElemID, ObjectType, DetailedChange, StaticFile, SaltoError, Va
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
+import { parser } from '@salto-io/parser'
 import { detailedCompare } from '@salto-io/adapter-utils'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
@@ -25,7 +26,6 @@ import { StaticFilesSource, MissingStaticFile } from '../../../src/workspace/sta
 import { ParsedNaclFileCache, createParseResultCache } from '../../../src/workspace/nacl_files/parsed_nacl_files_cache'
 
 import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../../utils'
-import * as parser from '../../../src/parser'
 import { InMemoryRemoteMap, RemoteMapCreator, RemoteMap, CreateRemoteMapParams } from '../../../src/workspace/remote_map'
 import { ParsedNaclFile } from '../../../src/workspace/nacl_files/parsed_nacl_file'
 import * as naclFileSourceModule from '../../../src/workspace/nacl_files/nacl_files_source'
@@ -60,11 +60,14 @@ jest.mock('../../../src/workspace/nacl_files/nacl_file_update', () => ({
   getChangeLocations: jest.fn(),
 }))
 
-jest.mock('../../../src/parser', () => {
-  const actual = jest.requireActual('../../../src/parser')
+jest.mock('@salto-io/parser', () => {
+  const actual = jest.requireActual('@salto-io/parser')
   return {
     ...actual,
-    parse: jest.fn().mockImplementation(actual.parse),
+    parser: {
+      ...actual.parser,
+      parse: jest.fn().mockImplementation(actual.parser.parse),
+    },
   }
 })
 
@@ -86,12 +89,13 @@ const validateParsedNaclFile = async (
   }
 }
 
+const mockParse = jest.mocked(parser).parse
+
 describe('Nacl Files Source', () => {
   let getChangeLocationsMock: jest.MockedFunction<typeof getChangeLocations>
   let mockDirStore: MockInterface<DirectoryStore<string>>
   let mockCache: ParsedNaclFileCache
   let mockedStaticFilesSource: StaticFilesSource
-  const mockParse = parser.parse as jest.Mock
 
   let createdMaps: Record<string, RemoteMap<Value>> = {}
   const mockRemoteMapCreator: RemoteMapCreator = async <T, K extends string = string>(
@@ -556,7 +560,7 @@ describe('Nacl Files Source', () => {
       const elem = new ObjectType({ elemID, path: ['test', 'new'] })
       const elements = [elem];
       (mockDirStore.get as jest.Mock).mockResolvedValue(mockFileData)
-      mockParse.mockResolvedValueOnce({ elements, errors: [], filename: mockFileData.filename })
+      mockParse.mockResolvedValueOnce({ elements, errors: [] })
       await validateParsedNaclFile(
         await naclSource.getParsedNaclFile(mockFileData.filename),
         mockFileData.filename,
@@ -572,7 +576,7 @@ describe('Nacl Files Source', () => {
     it('should cache referenced result on parsedNaclFile', async () => {
       (mockDirStore.get as jest.Mock).mockResolvedValue(mockFileData)
       const elements = [new ObjectType({ elemID: new ElemID('dummy', 'elem') })]
-      mockParse.mockResolvedValueOnce({ elements, errors: [], filename: mockFileData.filename })
+      mockParse.mockResolvedValueOnce({ elements, errors: [] })
       const mockGetElementReferenced = jest.spyOn(naclFileSourceModule, 'getElementReferenced')
       const parsed = await naclSource.getParsedNaclFile(mockFileData.filename)
       expect(parsed).toBeDefined()
@@ -595,7 +599,7 @@ describe('Nacl Files Source', () => {
           }
         ),
       ]
-      mockParse.mockResolvedValueOnce({ elements, errors: [], filename: mockFileData.filename })
+      mockParse.mockResolvedValueOnce({ elements, errors: [] })
       const parsed = await naclSource.getParsedNaclFile(mockFileData.filename)
       expect(parsed).toBeDefined()
       const staticFiles = await parsed?.data.staticFiles()

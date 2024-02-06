@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,7 +14,12 @@
 * limitations under the License.
 */
 import { automationProjectsHandler } from './automation_projects'
+import { WeakReferencesHandler } from './weak_references_handler'
+import { fieldConfigurationsHandler } from './field_configuration_items'
+import { queueFieldsHandler } from './queue_columns'
 
-export const weakReferenceHandlers = [
-  automationProjectsHandler,
-]
+export const weakReferenceHandlers: Record<string, WeakReferencesHandler> = {
+  automationProjects: automationProjectsHandler,
+  fieldConfigurationsHandler,
+  queueFieldsHandler,
+}

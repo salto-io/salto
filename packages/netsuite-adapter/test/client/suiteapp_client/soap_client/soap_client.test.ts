@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -18,7 +18,7 @@ import { ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression } fr
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { promises } from '@salto-io/lowerdash'
-import { DEFAULT_AXIOS_TIMEOUT_IN_MINUTES } from '../../../../src/config'
+import { DEFAULT_AXIOS_TIMEOUT_IN_MINUTES } from '../../../../src/config/constants'
 import { ExistingFileCabinetInstanceDetails } from '../../../../src/client/suiteapp_client/types'
 import { ReadFileError } from '../../../../src/client/suiteapp_client/errors'
 import SoapClient, * as soapClientUtils from '../../../../src/client/suiteapp_client/soap_client/soap_client'
@@ -42,6 +42,7 @@ describe('soap_client', () => {
   const searchMoreWithIdAsyncMock = jest.fn()
   const getAllAsyncMock = jest.fn()
   const getAsyncMock = jest.fn()
+  const getSelectValueAsyncMock = jest.fn()
   let wsdl: Record<string, unknown>
   const createClientAsyncMock = jest.spyOn(soapClientUtils, 'createClientAsync')
   const defaultSoapTimeOut = DEFAULT_AXIOS_TIMEOUT_IN_MINUTES * 60 * 1000
@@ -70,6 +71,7 @@ describe('soap_client', () => {
       searchAsync: searchAsyncMock,
       searchMoreWithIdAsync: searchMoreWithIdAsyncMock,
       getAllAsync: getAllAsyncMock,
+      getSelectValueAsync: getSelectValueAsyncMock,
       addSoapHeader: (fn: () => object) => fn(),
       wsdl,
     } as unknown as elementUtils.soap.Client)
@@ -635,9 +637,9 @@ describe('soap_client', () => {
         (_type: string, count: number) => count > 1,
         defaultSoapTimeOut
       )
-      await expect(client.getAllRecords(['subsidiary'])).resolves.toMatchObject({
+      await expect(client.getAllRecords(['subsidiary', 'assemblyItem', 'descriptionItem'])).resolves.toMatchObject({
         records: [],
-        largeTypesError: ['subsidiary'],
+        largeTypesError: ['subsidiary', 'assemblyItem', 'descriptionItem'],
       })
     })
 
@@ -895,6 +897,21 @@ describe('soap_client', () => {
 
       getAllAsyncMock.mockResolvedValue([{}])
       await expect(client.getAllRecords(['subsidiary'])).rejects.toThrow()
+    })
+
+    it('Should throw a better error if got error getAll results', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (wsdl as any).definitions.schemas.someNamespace.complexTypes.SubsidiarySearch
+
+      getAllAsyncMock.mockResolvedValue([{
+        getAllResult: {
+          status: {
+            attributes: { isSuccess: 'false' },
+            statusDetail: [{ code: 'SOME_ERROR', message: 'Some Error' }],
+          },
+        },
+      }])
+      await expect(client.getAllRecords(['subsidiary'])).rejects.toThrow('Failed to run getAll request: error code: SOME_ERROR, error message: Some Error')
     })
   })
 
@@ -1335,6 +1352,237 @@ describe('soap_client', () => {
           }
         ),
       ])).rejects.toThrow('Got invalid response from deleteList request. Errors:')
+    })
+  })
+
+  describe('getSelectValue', () => {
+    it('should make one request and return result', async () => {
+      getSelectValueAsyncMock.mockResolvedValue([{
+        getSelectValueResult: {
+          status: {
+            attributes: {
+              isSuccess: 'true',
+            },
+          },
+          totalRecords: 3,
+          totalPages: 1,
+          baseRefList: {
+            baseRef: [
+              {
+                attributes: {
+                  internalId: '1',
+                },
+                name: 'test1',
+              },
+              {
+                attributes: {
+                  internalId: '2',
+                },
+                name: 'test2',
+              },
+              {
+                attributes: {
+                  internalId: '3',
+                },
+                name: 'test2',
+              },
+            ],
+          },
+        },
+      }])
+      expect(await client.getSelectValue('account', 'unitstype', [])).toEqual({
+        test1: ['1'],
+        test2: ['2', '3'],
+      })
+      expect(getSelectValueAsyncMock).toHaveBeenCalledTimes(1)
+      expect(getSelectValueAsyncMock).toHaveBeenCalledWith({
+        pageIndex: 1,
+        fieldDescription: {
+          recordType: {
+            attributes: { xmlns: 'urn:core_2020_2.platform.webservices.netsuite.com' },
+            $value: 'account',
+          },
+          field: {
+            attributes: { xmlns: 'urn:core_2020_2.platform.webservices.netsuite.com' },
+            $value: 'unitstype',
+          },
+        },
+      })
+    })
+    it('should make several requests and return result', async () => {
+      getSelectValueAsyncMock.mockResolvedValueOnce([{
+        getSelectValueResult: {
+          status: {
+            attributes: {
+              isSuccess: 'true',
+            },
+          },
+          totalRecords: 3,
+          totalPages: 3,
+          baseRefList: {
+            baseRef: [
+              {
+                attributes: {
+                  internalId: '1',
+                },
+                name: 'test1',
+              },
+              {
+                attributes: {
+                  internalId: '2',
+                },
+                name: 'test2',
+              },
+              {
+                attributes: {
+                  internalId: '4',
+                },
+                name: 'test4',
+              },
+            ],
+          },
+        },
+      }])
+      getSelectValueAsyncMock.mockResolvedValueOnce([{
+        getSelectValueResult: {
+          status: {
+            attributes: {
+              isSuccess: 'true',
+            },
+          },
+          totalRecords: 3,
+          totalPages: 3,
+          baseRefList: {
+            baseRef: [
+              {
+                attributes: {
+                  internalId: '3',
+                },
+                name: 'test2',
+              },
+              {
+                attributes: {
+                  internalId: '5',
+                },
+                name: 'test5',
+              },
+              {
+                attributes: {
+                  internalId: '6',
+                },
+                name: 'test5',
+              },
+            ],
+          },
+        },
+      }])
+      getSelectValueAsyncMock.mockResolvedValueOnce([{
+        getSelectValueResult: {
+          status: {
+            attributes: {
+              isSuccess: 'true',
+            },
+          },
+          totalRecords: 0,
+          totalPages: 3,
+        },
+      }])
+      expect(await client.getSelectValue('account', 'unitstype', [])).toEqual({
+        test1: ['1'],
+        test2: ['2', '3'],
+        test4: ['4'],
+        test5: ['5', '6'],
+      })
+      expect(getSelectValueAsyncMock).toHaveBeenCalledTimes(3)
+      expect(getSelectValueAsyncMock).toHaveBeenCalledWith(expect.objectContaining({ pageIndex: 1 }))
+      expect(getSelectValueAsyncMock).toHaveBeenCalledWith(expect.objectContaining({ pageIndex: 2 }))
+      expect(getSelectValueAsyncMock).toHaveBeenCalledWith(expect.objectContaining({ pageIndex: 3 }))
+    })
+    it('should make a request with filterBy', async () => {
+      getSelectValueAsyncMock.mockResolvedValue([{
+        getSelectValueResult: {
+          status: {
+            attributes: {
+              isSuccess: 'true',
+            },
+          },
+          totalRecords: 3,
+          totalPages: 1,
+          baseRefList: {
+            baseRef: [
+              {
+                attributes: {
+                  internalId: '1',
+                },
+                name: 'test1',
+              },
+              {
+                attributes: {
+                  internalId: '2',
+                },
+                name: 'test2',
+              },
+              {
+                attributes: {
+                  internalId: '3',
+                },
+                name: 'test2',
+              },
+            ],
+          },
+        },
+      }])
+      expect(await client.getSelectValue('account', 'unit', [{ field: 'unitstype', internalId: '2' }])).toEqual({
+        test1: ['1'],
+        test2: ['2', '3'],
+      })
+      expect(getSelectValueAsyncMock).toHaveBeenCalledTimes(1)
+      expect(getSelectValueAsyncMock).toHaveBeenCalledWith({
+        pageIndex: 1,
+        fieldDescription: {
+          recordType: {
+            attributes: { xmlns: 'urn:core_2020_2.platform.webservices.netsuite.com' },
+            $value: 'account',
+          },
+          field: {
+            attributes: { xmlns: 'urn:core_2020_2.platform.webservices.netsuite.com' },
+            $value: 'unit',
+          },
+          filterByValueList: {
+            attributes: { xmlns: 'urn:core_2020_2.platform.webservices.netsuite.com' },
+            filterBy: [
+              {
+                field: 'unitstype',
+                internalId: '2',
+              },
+            ],
+          },
+        },
+      })
+    })
+    it('should return empty result when respose isSuccess=false', async () => {
+      getSelectValueAsyncMock.mockResolvedValue([{
+        getSelectValueResult: {
+          status: {
+            attributes: {
+              isSuccess: 'false',
+            },
+            statusDetail: [
+              {
+                code: 'ERROR',
+                message: 'Some error',
+              },
+            ],
+          },
+        },
+      }])
+      expect(await client.getSelectValue('account', 'unitstype', [])).toEqual({})
+    })
+    it('should throw error when result is invalid', async () => {
+      getSelectValueAsyncMock.mockResolvedValue([{
+        getSelectValueResult: {},
+      }])
+      await expect(client.getSelectValue('account', 'unitstype', [])).rejects.toThrow()
     })
   })
 

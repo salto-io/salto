@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -152,6 +152,22 @@ describe('deployment.ts', () => {
           [],
         )
         expect(result).toEqual({})
+        expect(mockConnection.delete).toHaveBeenCalledWith(
+          '/api/v1/groups/rules/1',
+          { data: undefined },
+        )
+      })
+      it('should mark removal as success if request returned with 404', async () => {
+        mockConnection.delete.mockRejectedValueOnce(new clientUtils.HTTPError('message', {
+          status: 404,
+          data: {},
+        }))
+        const result = await defaultDeployChange(
+          toChange({ before: instance }),
+          client,
+          DEFAULT_API_DEFINITIONS,
+        )
+        expect(result).toEqual(undefined)
         expect(mockConnection.delete).toHaveBeenCalledWith(
           '/api/v1/groups/rules/1',
           { data: undefined },

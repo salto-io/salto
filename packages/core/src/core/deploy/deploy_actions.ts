@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,18 +15,25 @@
 */
 import _ from 'lodash'
 import {
-  AdapterOperations, getChangeData, Change,
+  AdapterOperations,
+  Change,
+  DeployOptions,
+  DeployResult as AdapterDeployResult,
+  getChangeData,
   isAdditionOrModificationChange,
-  DeployExtraProperties, DeployOptions, Group,
-  SaltoElementError, SaltoError, SeverityLevel, DeployResult, ChangeDataType, SaltoErrorType,
+  SaltoElementError, SaltoError, SeverityLevel, ChangeDataType, SaltoErrorType, ProgressReporter,
+  Progress,
 } from '@salto-io/adapter-api'
-import { detailedCompare, applyDetailedChanges } from '@salto-io/adapter-utils'
-import { WalkError, NodeSkippedError } from '@salto-io/dag'
+import { applyDetailedChanges, detailedCompare } from '@salto-io/adapter-utils'
+import { NodeSkippedError, WalkError } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import wu from 'wu'
+import { collections } from '@salto-io/lowerdash'
 import { Plan, PlanItem, PlanItemId } from '../plan'
+import { DeployError, DeployResult, GroupProperties } from '../../types'
 
 const log = logger(module)
+const { makeArray } = collections.array
 
 type DeployOrValidateParams = {
   adapter: AdapterOperations
@@ -47,7 +54,7 @@ const addElemIDsToError = (
 
 const deployOrValidate = async (
   { adapter, adapterName, opts, checkOnly }: DeployOrValidateParams
-): Promise<DeployResult> => {
+): Promise<AdapterDeployResult> => {
   const deployOrValidateFn = checkOnly ? adapter.validate?.bind(adapter) : adapter.deploy.bind(adapter)
   if (deployOrValidateFn === undefined) {
     throw new Error(`${checkOnly ? 'Check-Only deployment' : 'Deployment'} is not supported in adapter ${adapterName}`)
@@ -65,21 +72,18 @@ const deployOrValidate = async (
 
 const deployAction = async (
   planItem: PlanItem,
-  adapters: Record<string, AdapterOperations>,
-  checkOnly: boolean
-): Promise<DeployResult> => {
+  adapterByAccountName: Record<string, AdapterOperations>,
+  checkOnly: boolean,
+  progressReporter: ProgressReporter,
+): Promise<AdapterDeployResult> => {
   const changes = [...planItem.changes()]
-  const adapterName = getChangeData(changes[0]).elemID.adapter
-  const adapter = adapters[adapterName]
+  const accountName = planItem.account
+  const adapter = adapterByAccountName[accountName]
   if (!adapter) {
-    throw new Error(`Missing adapter for ${adapterName}`)
+    throw new Error(`Missing adapter for ${accountName}`)
   }
-  const opts = { changeGroup: { groupID: planItem.groupKey, changes } }
-  return deployOrValidate({ adapter, adapterName, opts, checkOnly })
-}
-
-export type DeployError = (SaltoError | SaltoElementError) & {
-  groupId: string | string[]
+  const opts = { changeGroup: { groupID: planItem.groupKey, changes }, progressReporter }
+  return deployOrValidate({ adapter, adapterName: accountName, opts, checkOnly })
 }
 
 export type ItemStatus = 'started' | 'finished' | 'error' | 'cancelled'
@@ -92,7 +96,7 @@ export type StepEvents<T = void> = {
 type DeployActionResult = {
   errors: DeployError[]
   appliedChanges: Change[]
-  extraProperties: Required<DeployExtraProperties>
+  extraProperties: DeployResult['extraProperties']
 }
 
 const updatePlanElement = (item: PlanItem, appliedChanges: ReadonlyArray<Change>): void => {
@@ -125,7 +129,7 @@ export const deployActions = async (
   checkOnly: boolean
 ): Promise<DeployActionResult> => {
   const appliedChanges: Change[] = []
-  const groups: Group[] = []
+  const groups: GroupProperties[] = []
   try {
     await deployPlan.walkAsync(async (itemId: PlanItemId): Promise<void> => {
       const item = deployPlan.getItem(itemId) as PlanItem
@@ -135,11 +139,17 @@ export const deployActions = async (
       })
       reportProgress(item, 'started')
       try {
-        const result = await deployAction(item, adapters, checkOnly)
-        result.appliedChanges.forEach(appliedChange => appliedChanges.push(appliedChange))
-        if (result.extraProperties?.groups !== undefined) {
-          groups.push(...result.extraProperties.groups)
+        const progressReporter = {
+          reportProgress: (progress: Progress) => reportProgress(item, 'started', progress.message),
         }
+        const result = await deployAction(item, adapters, checkOnly, progressReporter)
+        result.appliedChanges.forEach(appliedChange => appliedChanges.push(appliedChange))
+        makeArray(result.extraProperties?.groups)
+          .forEach(group => groups.push({
+            ...group,
+            accountName: item.account,
+            id: item.groupKey,
+          }))
         // Update element with changes so references to it
         // will have an updated version throughout the deploy plan
         updatePlanElement(item, result.appliedChanges)

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { BuiltinTypes, ElemID, getChangeData, InstanceElement, isInstanceElement, ModificationChange, ObjectType, TopLevelElement } from '@salto-io/adapter-api'
 import { NETSUITE, SELECT_OPTION, SETTINGS_PATH, TYPES_PATH } from './constants'
 import { SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES, DeployResult } from './types'
-import { NetsuiteQuery } from './query'
+import { NetsuiteQuery } from './config/query'
 import { ConfigRecord, isSuccessSetConfig, SetConfigRecordsValuesResult, SetConfigType } from './client/suiteapp_client/types'
 
 export const getConfigTypes = (): ObjectType[] => ([new ObjectType({

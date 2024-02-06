@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,14 +14,14 @@
 * limitations under the License.
 */
 import { BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { filterUtils, client as clientUtils, deployment } from '@salto-io/adapter-components'
+import { filterUtils, client as clientUtils, deployment, elements as elementUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
 import { getDefaultConfig, JiraConfig } from '../../src/config/config'
 import JiraClient from '../../src/client/client'
-import { JIRA } from '../../src/constants'
+import { JIRA, PROJECT_TYPE_TYPE_NAME } from '../../src/constants'
 import projectFilter from '../../src/filters/project'
-import { getFilterParams, getLicenseElementSource, mockClient } from '../utils'
+import { createEmptyType, getFilterParams, getLicenseElementSource, mockClient } from '../utils'
 import { PROJECT_CONTEXTS_FIELD } from '../../src/filters/fields/contexts_projects_filter'
 
 jest.mock('@salto-io/adapter-components', () => {
@@ -45,6 +45,22 @@ describe('projectFilter', () => {
   const deployChangeMock = deployment.deployChange as jest.MockedFunction<
     typeof deployment.deployChange
   >
+  const SoftwareTypeInstance = new InstanceElement(
+    'softwareType',
+    createEmptyType(PROJECT_TYPE_TYPE_NAME),
+    {
+      key: 'software',
+      formattedKey: 'Software',
+    },
+  )
+  const JsmTypeInstance = new InstanceElement(
+    'jsmType',
+    createEmptyType(PROJECT_TYPE_TYPE_NAME),
+    {
+      key: 'service_desk',
+      formattedKey: 'Service Desk',
+    },
+  )
 
   beforeEach(async () => {
     const { client: cli, paginator, connection: conn } = mockClient()
@@ -74,12 +90,17 @@ describe('projectFilter', () => {
     instance = new InstanceElement(
       'instance',
       type,
+      {},
+      [JIRA, elementUtils.RECORDS_PATH, 'Project', 'instance', 'instance'],
     )
   })
 
   describe('onFetch', () => {
     beforeEach(async () => {
       instance.value = {
+        key: 'P1',
+        name: 'p1',
+        projectTypeKey: 'software',
         lead: {
           accountId: '1',
         },
@@ -212,6 +233,20 @@ describe('projectFilter', () => {
       await filter.onFetch([instance])
       expect(instance.value).toEqual({})
     })
+    it('should change the path for software project', async () => {
+      await filter.onFetch([type, instance, SoftwareTypeInstance, JsmTypeInstance])
+      expect(instance.path).toEqual([JIRA, elementUtils.RECORDS_PATH, 'Project', 'Software', 'instance', 'instance'])
+    })
+    it('should change the path for service desk project', async () => {
+      instance.value.projectTypeKey = 'service_desk'
+      await filter.onFetch([type, instance, SoftwareTypeInstance, JsmTypeInstance])
+      expect(instance.path).toEqual([JIRA, elementUtils.RECORDS_PATH, 'Project', 'Service Desk', 'instance', 'instance'])
+    })
+    it('should change for unexpected project type', async () => {
+      instance.value.projectTypeKey = 'unexpected'
+      await filter.onFetch([type, instance, SoftwareTypeInstance, JsmTypeInstance])
+      expect(instance.path).toEqual([JIRA, elementUtils.RECORDS_PATH, 'Project', 'Other', 'instance', 'instance'])
+    })
   })
 
   describe('When deploying a modification change', () => {
@@ -289,6 +324,7 @@ describe('projectFilter', () => {
       instance.value.customerPermissions = {
         serviceDeskOpenAccess: true,
       }
+      instance.value.projectTypeKey = 'service_desk'
       const afterInstance = instance.clone()
       afterInstance.value.customerPermissions = {
         serviceDeskOpenAccess: false,
@@ -314,10 +350,54 @@ describe('projectFilter', () => {
         undefined,
       )
     })
+    it('should not call to post customerPermissions when project is not jsm', async () => {
+      instance.value.customerPermissions = {
+        serviceDeskOpenAccess: true,
+      }
+      instance.value.projectTypeKey = 'software'
+      const afterInstance = instance.clone()
+      afterInstance.value.customerPermissions = {
+        serviceDeskOpenAccess: false,
+      }
+      change = toChange({ before: instance, after: afterInstance })
+      const { paginator } = mockClient()
+      const elementsSource = getLicenseElementSource(true)
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config.fetch.enableJSM = true
+      filter = projectFilter(getFilterParams({
+        client,
+        paginator,
+        elementsSource,
+        config,
+      })) as typeof filter
+      await filter.deploy([change])
+      expect(deployChangeMock).toHaveBeenCalledTimes(0)
+      expect(connection.post).toHaveBeenCalledTimes(0)
+    })
+    it('should not call to post customerPermissions when project is jsm but there is no customerPremissions', async () => {
+      instance.value.customerPermissions = undefined
+      instance.value.projectTypeKey = 'service_desk'
+      const afterInstance = instance.clone()
+      change = toChange({ before: instance, after: afterInstance })
+      const { paginator } = mockClient()
+      const elementsSource = getLicenseElementSource(true)
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config.fetch.enableJSM = true
+      filter = projectFilter(getFilterParams({
+        client,
+        paginator,
+        elementsSource,
+        config,
+      })) as typeof filter
+      await filter.deploy([change])
+      expect(deployChangeMock).toHaveBeenCalledTimes(0)
+      expect(connection.post).toHaveBeenCalledTimes(0)
+    })
     it('should not deploy customerPermissions modification when enableJSM is false', async () => {
       instance.value.customerPermissions = {
         serviceDeskOpenAccess: true,
       }
+      instance.value.projectTypeKey = 'service_desk'
       const afterInstance = instance.clone()
       afterInstance.value.customerPermissions = {
         serviceDeskOpenAccess: false,
@@ -341,7 +421,6 @@ describe('projectFilter', () => {
 
   describe('When deploying an addition change', () => {
     let change: Change
-
     beforeEach(async () => {
       instance.value.id = 3
       instance.value.priorityScheme = 11

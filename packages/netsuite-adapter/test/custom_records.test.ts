@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, ElemIdGetter, ObjectType } from '@salto-io/adapter-api'
-import { NetsuiteQuery, CustomRecordsQuery } from '../src/query'
+import { NetsuiteQuery, CustomRecordsQuery } from '../src/config/query'
 import NetsuiteClient from '../src/client/client'
 import { getCustomRecords } from '../src/custom_records/custom_records'
 import { NETSUITE } from '../src/constants'

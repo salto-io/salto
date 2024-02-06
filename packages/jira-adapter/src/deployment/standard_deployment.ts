@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -31,6 +31,11 @@ type DeployChangeParam = {
   fieldsToIgnore?: string[] | ((path: ElemID) => boolean)
   additionalUrlVars?: Record<string, string>
   elementsSource?: ReadOnlyElementsSource
+  serviceIdSetter?: (
+    instance: InstanceElement,
+    serviceIdField: string,
+    response: clientUtils.ResponseValue
+  ) => void
 }
 
 const invertKeysNames = (instance: Record<string, unknown>): void => {
@@ -40,6 +45,14 @@ const invertKeysNames = (instance: Record<string, unknown>): void => {
       instance[invertNaclCase(key)] = instance[key]
       delete instance[key]
     })
+}
+
+export const defaultServiceIdSetter = (
+  instance: InstanceElement,
+  serviceIdField: string,
+  response: clientUtils.ResponseValue
+): void => {
+  instance.value[serviceIdField] = response[serviceIdField]
 }
 
 /**
@@ -52,6 +65,7 @@ export const defaultDeployChange = async ({
   fieldsToIgnore = [],
   additionalUrlVars,
   elementsSource,
+  serviceIdSetter = defaultServiceIdSetter,
 }: DeployChangeParam): Promise<
   clientUtils.ResponseValue | clientUtils.ResponseValue[] | undefined
 > => {
@@ -94,7 +108,7 @@ export const defaultDeployChange = async ({
     if (!Array.isArray(response)) {
       const serviceIdField = apiDefinitions.types[getChangeData(change).elemID.typeName]?.transformation?.serviceIdField ?? 'id'
       if (response?.[serviceIdField] !== undefined) {
-        getChangeData(change).value[serviceIdField] = response[serviceIdField]
+        serviceIdSetter(change.data.after, serviceIdField, response)
       }
     } else {
       log.warn('Received unexpected response from deployChange: %o', response)
@@ -118,7 +132,11 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
         await deployChangeFunc(change)
         return change
       } catch (err) {
-        log.error(`Deployment of ${getChangeData(change).elemID.getFullName()} failed: ${err}`)
+        log.error(
+          'Deployment of %s failed: %o',
+          getChangeData(change).elemID.getFullName(),
+          err,
+        )
         errors.push({
           message: `${err}`,
           severity: 'Error',

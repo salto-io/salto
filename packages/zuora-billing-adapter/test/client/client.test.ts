@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -18,7 +18,7 @@ import MockAdapter from 'axios-mock-adapter'
 import ZuoraClient from '../../src/client/client'
 
 describe('client', () => {
-  describe('getSinglePage', () => {
+  describe('get', () => {
     let mockAxios: MockAdapter
     let client: ZuoraClient
     beforeEach(() => {
@@ -39,14 +39,14 @@ describe('client', () => {
 
     it('should return an empty result when there is a 404 response', async () => {
       mockAxios.onGet().replyOnce(404)
-      const res = await client.getSinglePage({ url: '/api/v1/workflows/111/export' })
+      const res = await client.get({ url: '/api/v1/workflows/111/export' })
       expect(res.data).toEqual([])
       expect(res.status).toEqual(404)
     })
     it('should throw if there is a different status', async () => {
       mockAxios.onGet().replyOnce(400)
       await expect(
-        client.getSinglePage({ url: '/api/v1/workflows/111/export' })
+        client.get({ url: '/api/v1/workflows/111/export' })
       ).rejects.toThrow()
     })
   })

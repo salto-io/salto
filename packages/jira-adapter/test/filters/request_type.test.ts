@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -77,7 +77,6 @@ describe('requestType filter', () => {
             name: 'project1',
             projectTypeKey: 'service_desk',
             key: 'project1Key',
-            serviceDeskId: 'serviceDeskId',
           },
         )
         workFlowStatusOne = {
@@ -187,7 +186,7 @@ describe('requestType filter', () => {
         // One call to deploy requestType and one to deployy workflow statuses.
         expect(connection.post).toHaveBeenCalledTimes(2)
         expect(connection.post).toHaveBeenCalledWith(
-          '/rest/servicedeskapi/servicedesk/serviceDeskId/requesttype',
+          '/rest/servicedeskapi/servicedesk/projectId:1/requesttype',
           {
             id: 10,
             name: 'requestType1',

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -41,7 +41,7 @@ import {
   CUSTOM_STATUS_TYPE_NAME,
   GROUP_TYPE_NAME,
   GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
-  GUIDE_SETTINGS_TYPE_NAME,
+  GUIDE_SETTINGS_TYPE_NAME, GUIDE_THEME_TYPE_NAME,
   MACRO_TYPE_NAME,
   ORG_FIELD_TYPE_NAME,
   PERMISSION_GROUP_TYPE_NAME,
@@ -50,7 +50,7 @@ import {
   SECTION_TRANSLATION_TYPE_NAME,
   SECTION_TYPE_NAME,
   SUPPORT_ADDRESS_TYPE_NAME,
-  TARGET_TYPE_NAME,
+  TARGET_TYPE_NAME, THEME_SETTINGS_TYPE_NAME,
   TICKET_FIELD_CUSTOM_FIELD_OPTION,
   TICKET_FIELD_TYPE_NAME,
   TICKET_FORM_TYPE_NAME,
@@ -67,6 +67,7 @@ const SECTION_ORDER = 'Section Order'
 const ARTICLE_ORDER = 'Article Order'
 const LANGUAGE_SETTINGS = 'language settings'
 const SETTINGS = 'Settings'
+const THEME_SETTINGS = 'Theme settings'
 
 
 const SECOND_ITERATION_TYPES = [
@@ -78,6 +79,7 @@ const SECOND_ITERATION_TYPES = [
   ARTICLE_TRANSLATION_TYPE_NAME,
   ARTICLE_ORDER_TYPE_NAME,
   ARTICLE_ATTACHMENT_TYPE_NAME,
+  THEME_SETTINGS_TYPE_NAME,
 ]
 
 const aliasMap: Record<string, AliasData> = {
@@ -385,6 +387,24 @@ const aliasMap: Record<string, AliasData> = {
       },
       {
         constant: SETTINGS,
+      },
+    ],
+  },
+  [THEME_SETTINGS_TYPE_NAME]: {
+    aliasComponents: [
+      {
+        fieldName: 'brand',
+        referenceFieldName: '_alias',
+      },
+      {
+        constant: THEME_SETTINGS,
+      },
+    ],
+  },
+  [GUIDE_THEME_TYPE_NAME]: {
+    aliasComponents: [
+      {
+        fieldName: 'name',
       },
     ],
   },

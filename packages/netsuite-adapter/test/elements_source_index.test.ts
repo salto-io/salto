@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { entitycustomfieldType } from '../src/autogen/types/standard_types/entitycustomfield'
 import { CUSTOM_RECORD_TYPE, INTERNAL_ID, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../src/constants'
@@ -251,6 +251,35 @@ describe('createElementsSourceIndex', () => {
     expect((await createElementsSourceIndex(elementsSource, true).getIndexes()).customRecordFieldsServiceIdRecordsIndex)
       .toEqual({
         custom_field: { elemID: custRecordField.elemID.createNestedID(SCRIPT_ID), serviceID: 'custom_field' },
+      })
+  })
+  it('should create the correct customFieldsSelectRecordType index', async () => {
+    const customFieldInstance = new InstanceElement(
+      'customentityfield123',
+      entitycustomfield,
+      {
+        selectrecordtype: '-4',
+      }
+    )
+    const custRecordType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'customrecord1'),
+      fields: {
+        custom_field: {
+          refType: BuiltinTypes.STRING,
+          annotations: {
+            selectrecordtype: new ReferenceExpression(customFieldInstance.elemID.createNestedID(SCRIPT_ID)),
+          },
+        },
+      },
+      annotations: {
+        [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+      },
+    })
+    getAllMock.mockImplementation(buildElementsSourceFromElements([custRecordType, customFieldInstance]).getAll)
+    expect((await createElementsSourceIndex(elementsSource, true).getIndexes()).customFieldsSelectRecordTypeIndex)
+      .toEqual({
+        [customFieldInstance.elemID.getFullName()]: '-4',
+        [custRecordType.elemID.createNestedID('field', 'custom_field').getFullName()]: new ReferenceExpression(customFieldInstance.elemID.createNestedID(SCRIPT_ID)),
       })
   })
 })

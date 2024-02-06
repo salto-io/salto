@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -231,7 +231,7 @@ export const getUserFallbackValue = async (
 ): Promise<string | undefined> => {
   if (defaultMissingUserFallback === configUtils.DEPLOYER_FALLBACK_VALUE) {
     try {
-      const response = (await client.getSinglePage({
+      const response = (await client.get({
         url: '/api/v2/users/me',
       })).data
       if (isCurrentUserResponse(response)) {

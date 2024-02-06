@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -20,12 +20,12 @@ import { decorators, collections, values } from '@salto-io/lowerdash'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { captureServiceIdInfo } from '../service_id_info'
-import { NetsuiteFetchQueries, NetsuiteQuery } from '../query'
+import { NetsuiteFetchQueries, NetsuiteQuery } from '../config/query'
 import { Credentials, isSuiteAppCredentials, toUrlAccountId } from './credentials'
 import SdfClient from './sdf_client'
-import SuiteAppClient, { SuiteAppType } from './suiteapp_client/suiteapp_client'
+import SuiteAppClient from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from './suiteapp_client/suiteapp_file_cabinet'
-import { ConfigRecord, EnvType, HasElemIDFunc, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
+import { ConfigRecord, EnvType, HasElemIDFunc, QueryRecordSchema, QueryRecordResponse, SavedSearchQuery, SystemInformation, SuiteAppType } from './suiteapp_client/types'
 import { CustomRecordResponse, RecordResponse } from './suiteapp_client/soap_client/types'
 import { DeployableChange, FeaturesMap, getChangeNodeId, GetCustomObjectsResult, getDeployableChanges, getNodeId, getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, InvalidSuiteAppCredentialsError, ManifestDependencies, SDFObjectNode } from './types'
 import { toCustomizationInfo } from '../transformer'
@@ -37,9 +37,9 @@ import { APPLICATION_ID, CONFIG_FEATURES } from '../constants'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
 import { FeaturesDeployError, MissingManifestFeaturesError, getChangesElemIdsToRemove, toFeaturesDeployPartialSuccessResult } from './errors'
 import { Graph, GraphNode } from './graph_utils'
-import { AdditionalDependencies, isRequiredFeature, removeRequiredFeatureSuffix } from '../config'
+import { AdditionalDependencies } from '../config/types'
 import { SuiteAppBundleType } from '../types/bundle_type'
-import { getChangeTypeAndAddedObjects, getDeployResultFromSuiteAppResult, toDependencyError, toElementError, toError } from './utils'
+import { getChangeTypeAndAddedObjects, getDeployResultFromSuiteAppResult, isRequiredFeature, removeRequiredFeatureSuffix, toDependencyError, toElementError, toError } from './utils'
 
 const { awu } = collections.asynciterable
 const { lookupValue } = values
@@ -531,9 +531,16 @@ export default class NetsuiteClient {
     return this.suiteAppClient?.runSuiteQL(query)
   }
 
-  public async runSavedSearchQuery(query: SavedSearchQuery):
+  public async runSavedSearchQuery(query: SavedSearchQuery, limit?: number):
     Promise<Record<string, unknown>[] | undefined> {
-    return this.suiteAppClient?.runSavedSearchQuery(query)
+    return this.suiteAppClient?.runSavedSearchQuery(query, limit)
+  }
+
+  public async runRecordsQuery(
+    ids: string[],
+    schema: QueryRecordSchema
+  ): Promise<QueryRecordResponse[] | undefined> {
+    return this.suiteAppClient?.runRecordsQuery(ids, schema)
   }
 
   public async getSystemInformation(): Promise<SystemInformation | undefined> {
@@ -585,5 +592,16 @@ export default class NetsuiteClient {
       throw new Error('Cannot call getCustomRecords when SuiteApp is not installed')
     }
     return this.suiteAppClient.getCustomRecords(customRecordTypes)
+  }
+
+  public async getSelectValue(
+    type: string,
+    field: string,
+    filterBy: { field: string; internalId: string }[] = [],
+  ): Promise<Record<string, string[]>> {
+    if (this.suiteAppClient === undefined) {
+      throw new Error('Cannot call getSelectValue when SuiteApp is not installed')
+    }
+    return this.suiteAppClient.getSelectValue(type, field, filterBy)
   }
 }

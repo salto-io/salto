@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -116,7 +116,7 @@ export const getOrganizationsByIds = async (
     _.chunk(organizationIds, 100) // The api limits to 100 ids in each request
       .map(async organizationChunk => {
         const url = `/api/v2/organizations/show_many?ids=${organizationChunk.join(',')}`
-        const result = await client.getSinglePage({ url })
+        const result = await client.get({ url })
         if (!isOrganizationsResponse(result.data)) {
           log.error('Invalid organizations response')
           return undefined

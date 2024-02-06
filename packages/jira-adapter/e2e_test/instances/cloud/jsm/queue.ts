@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -21,14 +21,6 @@ import { JIRA } from '../../../../src/constants'
 export const createQueueValues = (name: string, allElements: Element[]): Values => ({
   name,
   jql: new TemplateExpression({ parts: [
-    createReference(new ElemID(JIRA, 'Field', 'instance', 'Project__project'), allElements),
-    ' = ',
-    createReference(new ElemID(JIRA, 'Project', 'instance', 'Support'), allElements, ['key']),
-    ' AND ',
-    createReference(new ElemID(JIRA, 'Field', 'instance', 'Project__project'), allElements),
-    ' = ',
-    createReference(new ElemID(JIRA, 'Project', 'instance', 'Support'), allElements, ['key']),
-    ' AND ',
     createReference(new ElemID(JIRA, 'Field', 'instance', 'Resolution__resolution'), allElements),
     ' = UNRESOLVED',
   ] }),
@@ -40,4 +32,6 @@ export const createQueueValues = (name: string, allElements: Element[]): Values 
     createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee__user'), allElements),
     createReference(new ElemID(JIRA, 'Field', 'instance', 'Status__status'), allElements),
   ],
+  canBeHidden: false,
+  favourite: false,
 })

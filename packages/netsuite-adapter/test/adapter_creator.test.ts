@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -27,7 +27,7 @@ import { mockGetElemIdFunc } from './utils'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
 import { EnvType } from '../src/client/suiteapp_client/types'
 import { SdfCredentials } from '../src/client/credentials'
-import { emptyQueryParams, fullQueryParams, fullFetchConfig } from '../src/query'
+import { emptyQueryParams, fullQueryParams, fullFetchConfig } from '../src/config/config_creator'
 
 jest.mock('../src/client/sdf_client')
 jest.mock('../src/client/suiteapp_client/suiteapp_client')
@@ -73,7 +73,6 @@ describe('NetsuiteAdapter creator', () => {
       typesToSkip: ['test1'],
       filePathRegexSkipList: ['^/Templates.*'],
       client: clientConfig,
-      notExist: ['not exist'],
     }
   )
 

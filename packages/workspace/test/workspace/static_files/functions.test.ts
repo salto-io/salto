@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,14 +15,14 @@
 */
 import { StaticFile, Value } from '@salto-io/adapter-api'
 
-import { Functions } from '../../../src/parser/functions'
+import { parser } from '@salto-io/parser'
 import { getStaticFilesFunctions } from '../../../src/workspace/static_files/functions'
 import { StaticFilesSource } from '../../../src/workspace/static_files'
 import { mockStaticFilesSource } from '../../utils'
 import { MissingStaticFile } from '../../../src/workspace/static_files/common'
 
 describe('Functions', () => {
-  let functions: Functions
+  let functions: parser.Functions
   let mockedStaticFilesSource: StaticFilesSource
   beforeEach(() => {
     mockedStaticFilesSource = mockStaticFilesSource()

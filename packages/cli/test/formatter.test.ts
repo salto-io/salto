@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -18,10 +18,9 @@ import {
   PrimitiveTypes, BuiltinTypes, StaticFile, ListType,
 } from '@salto-io/adapter-api'
 import { EOL } from 'os'
-import { FetchChange } from '@salto-io/core'
+import { DeployError, FetchChange } from '@salto-io/core'
 import { errors as wsErrors } from '@salto-io/workspace'
 import chalk from 'chalk'
-import { DeployError } from '@salto-io/core/src/core/deploy'
 import { formatExecutionPlan, formatChange,
   formatFetchChangeForApproval, formatWorkspaceError,
   formatChangeErrors, formatConfigChangeNeeded, formatShouldChangeFetchModeToAlign, deployErrorsOutput } from '../src/formatter'

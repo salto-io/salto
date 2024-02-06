@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -21,7 +21,7 @@ import { groupSchemaModifyBaseValidator } from '../../src/change_validators/grou
 describe('groupSchemaModifyBaseValidator', () => {
   const groupSchemaType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_SCHEMA_TYPE_NAME) })
   const groupSchemaBeforeInstance = new InstanceElement(
-    'defualtGroupSchema',
+    'defaultGroupSchema',
     groupSchemaType,
     {
       definitions: {
@@ -35,7 +35,7 @@ describe('groupSchemaModifyBaseValidator', () => {
     },
   )
   const groupSchemaRemovedFieldInstance = new InstanceElement(
-    'defualtGroupSchema',
+    'defaultGroupSchema',
     groupSchemaType,
     {
       definitions: {
@@ -48,7 +48,7 @@ describe('groupSchemaModifyBaseValidator', () => {
     },
   )
   const groupSchemaModifiedFieldInstance = new InstanceElement(
-    'defualtGroupSchema',
+    'defaultGroupSchema',
     groupSchemaType,
     {
       definitions: {
@@ -81,7 +81,7 @@ describe('groupSchemaModifyBaseValidator', () => {
   })
   it('should not return errors for changing custom field', async () => {
     const groupSchemaWithCustomFields = new InstanceElement(
-      'defualtGroupSchema',
+      'defaultGroupSchema',
       groupSchemaType,
       {
         definitions: {

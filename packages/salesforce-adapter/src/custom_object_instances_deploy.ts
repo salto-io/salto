@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,18 +15,18 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections, hash, strings, promises, values } from '@salto-io/lowerdash'
+import { collections, hash, strings, promises, values, retry } from '@salto-io/lowerdash'
 import {
-  getChangeData, DeployResult, Change, isPrimitiveType, InstanceElement, Value, PrimitiveTypes,
+  AdditionChange, getChangeData, DeployResult, Change, isPrimitiveType, InstanceElement, Value, PrimitiveTypes,
   ModificationChange, Field, ObjectType, isObjectType, Values, isAdditionChange, isRemovalChange,
   isModificationChange,
   TypeElement,
   SaltoElementError,
   SaltoError,
   SeverityLevel,
-  isInstanceElement, isInstanceChange, toChange, isElement,
+  isInstanceElement, isInstanceChange, toChange, isElement, getAllChangeData, ElemID, isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
-import { inspectValue, safeJsonStringify } from '@salto-io/adapter-utils'
+import { inspectValue, safeJsonStringify, getValuesChanges, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { BatchResultInfo } from '@salto-io/jsforce-types'
 import { EOL } from 'os'
 import {
@@ -36,12 +36,15 @@ import {
 import SalesforceClient from './client/client'
 import {
   ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
-  CUSTOM_OBJECT_ID_FIELD, OWNER_ID, SBAA_APPROVAL_CONDITION,
+  CUSTOM_OBJECT_ID_FIELD, FIELD_ANNOTATIONS, DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY,
+  DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY_MULTIPLIER, OWNER_ID, SBAA_APPROVAL_CONDITION,
   SBAA_APPROVAL_RULE,
-  SBAA_CONDITIONS_MET,
+  SBAA_CONDITIONS_MET, SYSTEM_FIELDS,
 } from './constants'
 import { getIdFields, transformRecordToValues } from './filters/custom_objects_instances'
-import { apiNameSync, buildSelectQueries, getFieldNamesForQuery, isInstanceOfTypeChange } from './filters/utils'
+import {
+  apiNameSync, buildSelectQueries, getFieldNamesForQuery, isHiddenField, isInstanceOfTypeChange,
+} from './filters/utils'
 import { isListCustomSettingsObject } from './filters/custom_settings_filter'
 import { SalesforceRecord } from './client/types'
 import { buildDataManagement } from './fetch_profile/data_management'
@@ -52,6 +55,7 @@ const { partition } = promises.array
 const { sleep } = promises.timeout
 const { awu, keyByAsync } = collections.asynciterable
 const { toMD5 } = hash
+const { exponentialBackoff } = retry.retryStrategies
 const log = logger(module)
 
 type ActionResult = {
@@ -64,14 +68,16 @@ type InstanceAndResult = {
   result: BatchResultInfo
 }
 
-const logErroredInstances = (instancesAndResults: InstanceAndResult[]): void => (
+type ErrorType = 'recoverable' | 'fatal' | 'given-up-on-recoverable'
+
+const logErroredInstances = (instancesAndResults: InstanceAndResult[], errorType: ErrorType): void => (
   instancesAndResults.forEach(({ instance, result }) => {
     if (result.errors !== undefined) {
-      log.error(`Instance ${instance.elemID.getFullName()} had deploy errors - ${['', ...result.errors].join('\n\t')}
-
-and values -
-${inspectValue(instance.value)}
-`)
+      log.error('Instance %s had %s deploy errors - %s and values - %o',
+        instance.elemID.getFullName(),
+        errorType,
+        ['', ...result.errors].join('\n\t'),
+        inspectValue(instance.value))
     }
   })
 )
@@ -88,10 +94,10 @@ const getErrorInstancesFromInstAndResults = (instancesAndResults: InstanceAndRes
         } as SaltoElementError))
       : []))
 
-const getAndLogErrors = (instancesAndResults: InstanceAndResult[]): SaltoElementError[] => {
+const getAndLogErrors = (instancesAndResults: InstanceAndResult[], errorType: ErrorType): SaltoElementError[] => {
   const errored = instancesAndResults
     .filter(({ result }) => !result.success && result.errors !== undefined)
-  logErroredInstances(errored)
+  logErroredInstances(errored, errorType)
   return getErrorInstancesFromInstAndResults(errored)
 }
 
@@ -224,13 +230,21 @@ const isRetryableErr = (retryableFailures: string[]) =>
       _.some(retryableFailures, retryableFailure =>
         salesforceErr.includes(retryableFailure)))
 
+const retryDelayStrategyFromConfig = (client: SalesforceClient): retry.RetryStrategy => (
+  exponentialBackoff({
+    initial: client.dataRetry.retryDelay ?? DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY,
+    multiplier: client.dataRetry.retryDelayMultiplier ?? DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY_MULTIPLIER,
+  })()
+)
+
 export const retryFlow = async (
   crudFn: CrudFn,
   crudFnArgs: CrudFnArgs,
   retriesLeft: number,
+  retryDelayStrategy?: retry.RetryStrategy,
 ): Promise<ActionResult> => {
   const { client } = crudFnArgs
-  const { retryDelay, retryableFailures } = client.dataRetry
+  const { retryableFailures } = client.dataRetry
 
   let successes: InstanceElement[] = []
   let errors: (SaltoElementError | SaltoError)[] = []
@@ -242,7 +256,7 @@ export const retryFlow = async (
   const [recoverable, notRecoverable] = _.partition(failed, isRetryableErr(retryableFailures))
 
   successes = successes.concat(succeeded.map(instAndRes => instAndRes.instance))
-  errors = errors.concat(getAndLogErrors(notRecoverable))
+  errors = errors.concat(getAndLogErrors(notRecoverable, 'fatal'))
 
   if (_.isEmpty(recoverable)) {
     return { successInstances: successes, errorInstances: errors }
@@ -250,24 +264,99 @@ export const retryFlow = async (
   if (retriesLeft === 0) {
     return {
       successInstances: successes,
-      errorInstances: errors.concat(getAndLogErrors(recoverable)),
+      errorInstances: errors.concat(getAndLogErrors(recoverable, 'given-up-on-recoverable')),
     }
   }
 
-  await sleep(retryDelay)
+  const actualRetryDelayStrategy = retryDelayStrategy ?? retryDelayStrategyFromConfig(client)
+  const retryDelay = actualRetryDelayStrategy()
+  if (_.isNumber(retryDelay)) {
+    await sleep(retryDelay)
+  } else {
+    log.warn('Invalid delay %s', retryDelay)
+    await sleep(client.dataRetry.retryDelay)
+  }
 
-  log.debug(`in custom object deploy retry-flow. retries left: ${retriesLeft},
-                  remaining retryable failures are: ${recoverable}`)
+  log.debug('in custom object deploy retry-flow. retries left: %d', retriesLeft)
+  logErroredInstances(recoverable, 'recoverable')
 
   const { successInstances, errorInstances } = await retryFlow(
     crudFn,
     { ...crudFnArgs, instances: recoverable.map(instAndRes => instAndRes.instance) },
-    retriesLeft - 1
+    retriesLeft - 1,
+    actualRetryDelayStrategy,
   )
   return {
     successInstances: successes.concat(successInstances),
     errorInstances: errors.concat(errorInstances),
   }
+}
+
+const removeFieldsWithNoPermission = async (
+  instanceChange: Change<InstanceElement>,
+  permissionAnnotation: string
+): Promise<SaltoElementError[]> => {
+  const shouldRemoveField = (type: ObjectType, fieldName: string, fieldValue: Value): boolean => {
+    const fieldDef = type.fields[fieldName]
+    if (fieldDef === undefined) {
+      return false
+    }
+    if (isHiddenField(fieldDef) || SYSTEM_FIELDS.includes(fieldName)) {
+      return false
+    }
+    return (fieldValue === undefined
+      || !type.fields[fieldName].annotations[permissionAnnotation])
+  }
+  const createRemovedFieldWarning = (
+    type: ObjectType,
+    instanceId: ElemID,
+    fieldValue: Value,
+    fieldName: string
+  ): SaltoElementError => {
+    log.info('Removing field %s from %s: %s=%s, value=%s',
+      fieldName,
+      instanceId.getFullName(),
+      permissionAnnotation,
+      type.fields[fieldName]?.annotations[permissionAnnotation],
+      fieldValue)
+    return {
+      message: `The field ${fieldName} will not be deployed because it lacks the '${permissionAnnotation}' permission`,
+      severity: 'Warning',
+      elemID: instanceId,
+    }
+  }
+  let namesOfFieldsThatChanged = Object.keys(getChangeData(instanceChange).value)
+  if (isModificationChange(instanceChange)) {
+    const [instanceBefore, instanceAfter] = getAllChangeData(instanceChange)
+    const detailedChanges = getValuesChanges({
+      id: instanceBefore.elemID,
+      before: instanceBefore.value,
+      after: instanceAfter.value,
+      beforeId: instanceBefore.elemID,
+      afterId: instanceAfter.elemID,
+    })
+    namesOfFieldsThatChanged = detailedChanges
+      .filter(detailedChange => isAdditionOrModificationChange(detailedChange))
+      .map(detailedChange => detailedChange.id.name)
+  }
+  const instanceAfter = getChangeData(instanceChange)
+  const instanceType = instanceAfter.getTypeSync()
+  const fieldsToRemove = namesOfFieldsThatChanged
+    .filter(fieldName => shouldRemoveField(instanceType, fieldName, instanceAfter.value[fieldName]))
+
+  const warnings = fieldsToRemove
+    .map(fieldName => createRemovedFieldWarning(
+      instanceType,
+      instanceAfter.elemID,
+      instanceAfter.value[fieldName],
+      fieldName
+    ))
+
+  instanceAfter.value = _.omit(
+    instanceAfter.value,
+    fieldsToRemove,
+  )
+  return warnings
 }
 
 const insertInstances: CrudFn = async (
@@ -347,11 +436,12 @@ const cloneWithoutNulls = (val: Values): Values =>
   })))
 
 const deployAddInstances = async (
-  instances: InstanceElement[],
+  changes: ReadonlyArray<AdditionChange<InstanceElement>>,
   idFields: Field[],
   client: SalesforceClient,
   groupId: string
 ): Promise<DeployResult> => {
+  const instances = changes.map(getChangeData)
   // Instances with internalIds have been already deployed previously, unless they are in the current
   // deployed group of instances This is relevant to the ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP group for example.
   const instancesReferencingToBeDeployedInstances = instances
@@ -390,19 +480,27 @@ const deployAddInstances = async (
     computeRecordSaltoIdHash,
   )
   const [existingInstances, newInstances] = _.partition(
-    instances,
-    instance =>
-      existingRecordsLookup[computeSaltoIdHash(instance.value)] !== undefined
+    changes,
+    change =>
+      existingRecordsLookup[computeSaltoIdHash(getChangeData(change).value)] !== undefined
   )
+
+  const warningsForInvalidFieldsInAddedInstances = await awu(newInstances)
+    .flatMap(change => removeFieldsWithNoPermission(change, FIELD_ANNOTATIONS.CREATABLE))
+    .toArray()
+  const warningsForInvalidFieldsInModifiedInstances = await awu(existingInstances)
+    .flatMap(change => removeFieldsWithNoPermission(change, FIELD_ANNOTATIONS.UPDATEABLE))
+    .toArray()
   const {
     successInstances: successInsertInstances,
     errorInstances: insertErrorInstances,
   } = await retryFlow(
     insertInstances,
-    { typeName, instances: newInstances, client, groupId },
+    { typeName, instances: newInstances.map(getChangeData), client, groupId },
     client.dataRetry.maxAttempts
   )
-  existingInstances.forEach(instance => {
+  existingInstances.forEach(change => {
+    const instance = getChangeData(change)
     const existingRecordLookup = existingRecordsLookup[computeSaltoIdHash(instance.value)]
     MANDATORY_FIELDS_FOR_UPDATE.forEach(mandatoryField => {
       if (instance.value[mandatoryField] === undefined && existingRecordLookup[mandatoryField] !== undefined) {
@@ -417,7 +515,7 @@ const deployAddInstances = async (
     updateInstances,
     {
       typeName: await apiName(type),
-      instances: existingInstances.concat(instancesReferencingToBeDeployedInstances),
+      instances: existingInstances.map(getChangeData).concat(instancesReferencingToBeDeployedInstances),
       client,
       groupId,
     },
@@ -426,10 +524,12 @@ const deployAddInstances = async (
   const allSuccessInstances = [...successInsertInstances, ...successUpdateInstances]
   return {
     appliedChanges: allSuccessInstances.map(instance => ({ action: 'add', data: { after: instance } })),
-    errors: [...insertErrorInstances, ...errorUpdateInstances],
-    extraProperties: {
-      groups: [{ id: groupId }],
-    },
+    errors: [
+      ...insertErrorInstances,
+      ...errorUpdateInstances,
+      ...warningsForInvalidFieldsInAddedInstances,
+      ...warningsForInvalidFieldsInModifiedInstances,
+    ],
   }
 }
 
@@ -446,14 +546,11 @@ const deployRemoveInstances = async (
   return {
     appliedChanges: successInstances.map(instance => ({ action: 'remove', data: { before: instance } })),
     errors: errorInstances,
-    extraProperties: {
-      groups: [{ id: groupId }],
-    },
   }
 }
 
 const deployModifyChanges = async (
-  changes: Readonly<ModificationChange<InstanceElement>[]>,
+  changes: ReadonlyArray<ModificationChange<InstanceElement>>,
   client: SalesforceClient,
   groupId: string
 ): Promise<DeployResult> => {
@@ -465,6 +562,10 @@ const deployModifyChanges = async (
     async changeData => await apiName(changeData.before) === await apiName(changeData.after)
   )
   const afters = validData.map(data => data.after)
+
+  const invalidFieldsWarnings = await awu(changes)
+    .flatMap(change => removeFieldsWithNoPermission(change, FIELD_ANNOTATIONS.UPDATEABLE))
+    .toArray()
   const { successInstances, errorInstances } = await retryFlow(
     updateInstances,
     { typeName: instancesType, instances: afters, client, groupId },
@@ -478,16 +579,16 @@ const deployModifyChanges = async (
     message: `Failed to update as api name prev=${await apiName(data.before)} and new=${await apiName(data.after)} are different`,
     severity: 'Error' as SeverityLevel,
   })).toArray()
-  const errors: (SaltoElementError | SaltoError)[] = [...errorInstances, ...diffApiNameErrors]
+  const errors: (SaltoElementError | SaltoError)[] = [...errorInstances, ...diffApiNameErrors, ...invalidFieldsWarnings]
   return {
     appliedChanges: successData.map(data => ({ action: 'modify', data })),
     errors,
-    extraProperties: {
-      groups: [{ id: groupId }],
-    },
   }
 }
 
+/**
+ * @deprecated use {@link isInstanceOfCustomObjectChangeSync} instead.
+ */
 export const isInstanceOfCustomObjectChange = async (
   change: Change
 ): Promise<boolean> => (
@@ -505,11 +606,24 @@ const isModificationChangeList = <T>(
     changes.every(isModificationChange)
   )
 
+const getMissingFields = (change: Change<InstanceElement>): string[] => {
+  const typeFields = new Set(Object.keys(getChangeData(change).getTypeSync().fields))
+  return Object.keys(getChangeData(change).value).filter(instanceField => !typeFields.has(instanceField))
+}
 
-const customObjectInstancesDeployError = (message: string): DeployResult => ({
-  appliedChanges: [],
-  errors: [{ message, severity: 'Error' }],
-})
+const omitMissingFieldsValues = async (change: Change<InstanceElement>): Promise<Change<InstanceElement>> => (
+  applyFunctionToChangeData(change, instance => {
+    const instanceClone = instance.clone()
+    const typeFields = new Set(Object.keys(instanceClone.getTypeSync().fields))
+    Object.keys(instanceClone.value)
+      .forEach(instanceField => {
+        if (!typeFields.has(instanceField)) {
+          delete instanceClone.value[instanceField]
+        }
+      })
+    return instanceClone
+  })
+)
 
 const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
   changes: ReadonlyArray<Change<InstanceElement>>,
@@ -517,8 +631,39 @@ const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
   groupId: string,
   dataManagement?: DataManagement,
 ): Promise<DeployResult> => {
+  const customObjectInstancesDeployError = (message: string): DeployResult => ({
+    appliedChanges: [],
+    errors: changes.map(change => ({
+      message,
+      severity: 'Error',
+      elemID: getChangeData(change).elemID,
+    })),
+  })
+  const [changesWithMissingFields, validChanges] = _.partition(
+    changes,
+    change => getMissingFields(change).length > 0,
+  )
+  const missingFieldValuesWarnings: SaltoElementError[] = changesWithMissingFields
+    .map(change => ({ change, missingFields: getMissingFields(change) }))
+    .map(({ change, missingFields }) => ({
+      severity: 'Warning',
+      elemID: getChangeData(change).elemID,
+      message: `The values of the following fields were not deployed since they are not defined in the type: [${missingFields.join(', ')}]`,
+    }))
+  const withMissingFieldValuesErrors = (deployResult: DeployResult): DeployResult => {
+    const appliedChangesElemIds = new Set(deployResult.appliedChanges
+      .map(change => getChangeData(change).elemID.getFullName()))
+    return {
+      ...deployResult,
+      errors: deployResult.errors
+        // We should omit warnings on non applied changes
+        .concat(missingFieldValuesWarnings.filter(warning => appliedChangesElemIds.has(warning.elemID.getFullName()))),
+    }
+  }
+  const changesToDeploy = validChanges
+    .concat(await awu(changesWithMissingFields).map(omitMissingFieldsValues).toArray())
   try {
-    const instances = changes.map(change => getChangeData(change))
+    const instances = changesToDeploy.map(change => getChangeData(change))
     const instanceTypes = [...new Set(await awu(instances)
       .map(async inst => apiName(await inst.getType())).toArray())]
     if (instanceTypes.length > 1) {
@@ -536,18 +681,18 @@ const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
       if (invalidIdFields !== undefined && invalidIdFields.length > 0) {
         return customObjectInstancesDeployError(`Failed to add instances of type ${instanceTypes[0]} due to invalid SaltoIdFields - ${invalidIdFields}`)
       }
-      return await deployAddInstances(instances, idFields, client, groupId)
+      return withMissingFieldValuesErrors(await deployAddInstances(changes, idFields, client, groupId))
     }
     if (changes.every(isRemovalChange)) {
       return await deployRemoveInstances(instances, client, groupId)
     }
-    if (isModificationChangeList(changes)) {
-      return await deployModifyChanges(changes, client, groupId)
+    if (isModificationChangeList(changesToDeploy)) {
+      return withMissingFieldValuesErrors(await deployModifyChanges(changesToDeploy, client, groupId))
     }
     return customObjectInstancesDeployError('Custom Object Instances change group must have one action')
-  } catch (error: unknown) {
-    log.error('Unknown error occurred for Data Deploy group %s: %o', groupId, error)
-    return customObjectInstancesDeployError('Unknown error occurred')
+  } catch (error) {
+    log.error('Error occurred for Data Deploy group %s: %o', groupId, error)
+    return customObjectInstancesDeployError(error.message)
   }
 }
 

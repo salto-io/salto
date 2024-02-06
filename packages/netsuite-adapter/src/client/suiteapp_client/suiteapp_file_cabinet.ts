@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -38,8 +38,8 @@ import SuiteAppClient from './suiteapp_client'
 import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from './types'
 import { ImportFileCabinetResult } from '../types'
 import { FILE_CABINET_PATH_SEPARATOR, INTERNAL_ID, PARENT, PATH } from '../../constants'
-import { DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB } from '../../config'
-import { NetsuiteQuery } from '../../query'
+import { DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB } from '../../config/constants'
+import { NetsuiteQuery } from '../../config/query'
 import { isFileCabinetType, isFileInstance } from '../../types'
 import { filterFilePathsInFolders, filterFolderPathsInFolders, largeFoldersToExclude } from '../file_cabinet_utils'
 import { getDeployResultFromSuiteAppResult, toElementError, toError } from '../utils'

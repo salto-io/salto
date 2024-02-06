@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -79,7 +79,7 @@ const LICENSE_RESPONSE_SCHEME = Joi.object({
 const isLicenseResponse = createSchemeGuard<LicenseResponse>(LICENSE_RESPONSE_SCHEME, 'Received an invalid license response')
 
 const getCloudLicense = async (client: JiraClient): Promise<Value> => {
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url: '/rest/api/3/instance/license',
   })
   if (!isLicenseResponse(response.data)) {
@@ -89,7 +89,7 @@ const getCloudLicense = async (client: JiraClient): Promise<Value> => {
   return { applications: response.data.applications }
 }
 const getDCLicense = async (client: JiraClient): Promise<Value> => {
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url: '/rest/plugins/applications/1.0/installed/jira-software/license',
   })
   if (!Object.prototype.hasOwnProperty.call(response.data, 'licenseType') || Array.isArray(response.data)) {
@@ -145,9 +145,12 @@ const filter: FilterCreator = ({ client }) => ({
     const applicationRoles = elements
       .filter(element => element.elemID.typeName === 'ApplicationRole')
       .filter(isInstanceElement)
-    log.info('jira user count is: %s',
+    log.info('jira software user count is: %s',
       applicationRoles
         .find(role => role.value.key === 'jira-software')?.value.userCount ?? 'unknown')
+    log.info('jira JSM user count is: %s',
+        applicationRoles
+          .find(role => role.value.key === 'jira-servicedesk')?.value.userCount ?? 'unknown')
     applicationRoles
       .forEach(role => {
         delete role.value.userCount

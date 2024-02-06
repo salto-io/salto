@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -27,6 +27,7 @@ import {
 import { findElement, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
+import { parser } from '@salto-io/parser'
 import { InvalidValueValidationError, ValidationError } from '../../src/validator'
 import { WorkspaceConfigSource } from '../../src/workspace/workspace_config_source'
 import { ConfigSource } from '../../src/workspace/config_source'
@@ -48,7 +49,6 @@ import {
 import { DeleteCurrentEnvError, UnknownEnvError, EnvDuplicationError,
   AccountDuplicationError, InvalidEnvNameError, MAX_ENV_NAME_LEN, UnknownAccountError, InvalidAccountNameError } from '../../src/workspace/errors'
 import { MissingStaticFile } from '../../src/workspace/static_files'
-import * as dump from '../../src/parser/dump'
 import { mockDirStore } from '../common/nacl_file_store'
 import { EnvConfig, StateConfig } from '../../src/workspace/config/workspace_config_types'
 import { resolve } from '../../src/expressions'
@@ -247,7 +247,7 @@ describe('workspace', () => {
               naclFiles: await naclFilesSource(
                 'default',
                 mockDirStore([], false, {
-                  'prim.nacl': await dump.dumpElements([primaryEnvObj]),
+                  'prim.nacl': await parser.dumpElements([primaryEnvObj]),
                 }),
                 mockStaticFilesSource(),
                 persistentMockCreateRemoteMap(),
@@ -259,7 +259,7 @@ describe('workspace', () => {
               naclFiles: await naclFilesSource(
                 'inactive',
                 mockDirStore([], false, {
-                  'prim.nacl': await dump.dumpElements([secondaryEnvObj]),
+                  'prim.nacl': await parser.dumpElements([secondaryEnvObj]),
                 }),
                 mockStaticFilesSource(),
                 persistentMockCreateRemoteMap(),
@@ -1822,7 +1822,7 @@ describe('workspace', () => {
     })
 
     it('should not fail in case one of the changes fails', async () => {
-      jest.spyOn(dump, 'dumpValues').mockImplementationOnce(() => { throw new Error('failed') })
+      jest.spyOn(parser, 'dumpValues').mockImplementationOnce(() => { throw new Error('failed') })
       const change1: DetailedChange = {
         id: new ElemID('salesforce', 'lead', 'field', 'ext_field', CORE_ANNOTATIONS.DEFAULT),
         action: 'add',
@@ -1960,6 +1960,89 @@ describe('workspace', () => {
         expect(await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName))
           .list()).toArray())
           .toContainEqual(change.id)
+      })
+    })
+
+    describe('SALTO-5261 field type merge error', () => {
+      beforeEach(async () => {
+        const typeElemId = new ElemID('salesforce', 'type')
+
+        const stateType = new ObjectType({
+          elemID: typeElemId,
+          annotationRefsOrTypes: {
+            hiddenAnno: BuiltinTypes.HIDDEN_STRING,
+          },
+          fields: {
+            field: { refType: BuiltinTypes.NUMBER },
+          },
+          annotations: {
+            hiddenAnno: 'hidden',
+            anno: true,
+          },
+        })
+
+        const workspaceType = stateType.clone()
+        delete workspaceType.annotations.hiddenAnno
+
+        const workspaceChanges: DetailedChange[] = [
+          {
+            id: typeElemId.createNestedID('field', 'field'),
+            action: 'modify',
+            data: {
+              before: workspaceType.fields.field,
+              after: new Field(workspaceType, 'field', BuiltinTypes.STRING),
+            },
+          },
+          {
+            id: typeElemId.createNestedID('attr', 'anno'),
+            action: 'remove',
+            data: {
+              before: true,
+            },
+          },
+        ]
+
+        const modifiedWorkspaceType = workspaceType.clone()
+        applyDetailedChanges(modifiedWorkspaceType, workspaceChanges)
+
+        workspace = await createWorkspace(
+          undefined,
+          undefined,
+          mockWorkspaceConfigSource(),
+          undefined,
+          undefined,
+          undefined,
+          {
+            [COMMON_ENV_PREFIX]: {
+              naclFiles: createMockNaclFileSource([]),
+            },
+            default: {
+              naclFiles: createMockNaclFileSource(
+                [workspaceType],
+                undefined,
+                undefined,
+                undefined,
+                {
+                  changes: [
+                    {
+                      action: 'modify',
+                      data: {
+                        before: workspaceType,
+                        after: modifiedWorkspaceType,
+                      },
+                    },
+                  ],
+                  cacheValid: true,
+                },
+              ),
+              state: createState([stateType]),
+            },
+          },
+        )
+        await workspace.updateNaclFiles(workspaceChanges)
+      })
+      it('should not have merge errors', async () => {
+        expect((await workspace.errors()).merge).toHaveLength(0)
       })
     })
   })

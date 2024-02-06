@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -47,7 +47,6 @@ describe('portalSettings filter', () => {
             name: 'project1',
             projectTypeKey: 'service_desk',
             key: 'project1Key',
-            serviceDeskId: 'serviceDeskId',
           },
         )
         portalSettingInstance = new InstanceElement(
@@ -177,6 +176,32 @@ describe('portalSettings filter', () => {
         expect(res.deployResult.errors).toHaveLength(1)
         expect(res.deployResult.errors[0].message).toEqual('Error: Failed to put /rest/servicedesk/1/servicedesk-data/project1Key/name with error: Error: error')
         expect(res.deployResult.appliedChanges).toHaveLength(0)
+      })
+      it('should deploy removal of a portal settings', async () => {
+        const res = await filter.deploy([{ action: 'remove', data: { before: portalSettingInstance } }])
+        expect(res.leftoverChanges).toHaveLength(0)
+        expect(res.deployResult.errors).toHaveLength(0)
+        expect(res.deployResult.appliedChanges).toHaveLength(1)
+      })
+      it('should deploy only description if project setting has no canAgentsManagePortalAnnouncement', async () => {
+        portalSettingInstance.value.announcementSettings = undefined
+        const projectSettingsInstanceAfter = portalSettingInstance.clone()
+        projectSettingsInstanceAfter.value.description = 'newDescription'
+        const res = await filter.deploy([{ action: 'modify', data: { before: portalSettingInstance, after: projectSettingsInstanceAfter } }])
+        expect(res.leftoverChanges).toHaveLength(0)
+        expect(res.deployResult.errors).toHaveLength(0)
+        expect(res.deployResult.appliedChanges).toHaveLength(1)
+        // One call to deploy description.
+        expect(connection.put).toHaveBeenCalledTimes(1)
+      })
+      it('should call three endpoints if it is addition change and announcementSettings is undefined', async () => {
+        portalSettingInstance.value.announcementSettings = undefined
+        const res = await filter.deploy([{ action: 'add', data: { after: portalSettingInstance } }])
+        expect(res.leftoverChanges).toHaveLength(0)
+        expect(res.deployResult.errors).toHaveLength(0)
+        expect(res.deployResult.appliedChanges).toHaveLength(1)
+        // One call to deploy name and one call to deploy description.
+        expect(connection.put).toHaveBeenCalledTimes(3)
       })
     })
 })

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -198,6 +198,7 @@ describe('boardColumnsFilter', () => {
     it('should add deployment annotations', async () => {
       await filter.onFetch([type, columnConfigType])
       expect(type.fields[COLUMNS_CONFIG_FIELD].annotations).toEqual({
+        [CORE_ANNOTATIONS.REQUIRED]: true,
         [CORE_ANNOTATIONS.CREATABLE]: true,
         [CORE_ANNOTATIONS.UPDATABLE]: true,
       })

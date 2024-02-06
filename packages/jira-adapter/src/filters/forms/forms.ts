@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, Change, InstanceElement, ReferenceExpression, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Change, InstanceElement, ReferenceExpression, SaltoError, SeverityLevel, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { getParent, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { getParent, invertNaclCase, mapKeysRecursive, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { FORM_TYPE, JSM_DUCKTYPE_API_DEFINITIONS, PROJECT_TYPE, SERVICE_DESK } from '../../constants'
@@ -27,6 +27,7 @@ import JiraClient from '../../client/client'
 import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../../utils'
 
 const { isDefined } = lowerDashValues
+
 const deployForms = async (
   change: Change<InstanceElement>,
   client: JiraClient,
@@ -51,9 +52,10 @@ const deployForms = async (
       form.value.id = resp.data.id
       form.value.design.settings.templateId = resp.data.id
     }
+    const data = mapKeysRecursive(form.value, ({ key }) => invertNaclCase(key))
     await client.put({
       url: `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms/${form.value.id}`,
-      data: form.value,
+      data,
     })
   } else {
     await client.delete({
@@ -70,7 +72,7 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
   name: 'formsFilter',
   onFetch: async elements => {
     if (!config.fetch.enableJSM || client.isDataCenter || !fetchQuery.isTypeMatch(FORM_TYPE)) {
-      return
+      return { errors: [] }
     }
     const cloudId = await getCloudId(client)
     const { formType, subTypes } = createFormType()
@@ -86,18 +88,24 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       .filter(instance => instance.elemID.typeName === PROJECT_TYPE)
       .filter(project => project.value.projectTypeKey === SERVICE_DESK)
 
+    const errors: SaltoError[] = []
     const forms = (await Promise.all(jsmProjects
       .flatMap(async project => {
         const url = `/gateway/api/proforma/cloudid/${cloudId}/api/1/projects/${project.value.id}/forms`
-        const res = await client.getSinglePage({ url })
+        const res = await client.get({ url })
         if (!isFormsResponse(res)) {
           return undefined
         }
         return Promise.all(res.data
           .map(async formResponse => {
             const detailedUrl = `/gateway/api/proforma/cloudid/${cloudId}/api/2/projects/${project.value.id}/forms/${formResponse.id}`
-            const detailedRes = await client.getSinglePage({ url: detailedUrl })
+            const detailedRes = await client.get({ url: detailedUrl })
             if (!isDetailedFormsResponse(detailedRes.data)) {
+              const error = {
+                message: `Unable to fetch form for project ${project.elemID.name} as it is missing a title.`,
+                severity: 'Warning' as SeverityLevel,
+              }
+              errors.push(error)
               return undefined
             }
             const name = naclCase(`${project.value.key}_${formResponse.name}`)
@@ -120,7 +128,12 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       })))
       .flat()
       .filter(isDefined)
-    forms.forEach(form => elements.push(form))
+    forms.forEach(form => {
+      form.value = mapKeysRecursive(form.value, ({ key }) => naclCase(key))
+      elements.push(form)
+    })
+
+    return { errors }
   },
   preDeploy: async changes => {
     changes

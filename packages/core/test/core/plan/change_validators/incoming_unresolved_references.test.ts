@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -58,6 +58,7 @@ describe('incomingUnresolvedReferencesValidator', () => {
       expect(errors.length).toEqual(1)
       expect(errors[0].elemID).toEqual(firstInstance.elemID)
       expect(errors[0].severity).toEqual('Warning')
+      expect(errors[0].unresolvedElemIds).toEqual([firstInstance.elemID])
     })
 
     it('should return an error for modified elements', async () => {
@@ -69,6 +70,7 @@ describe('incomingUnresolvedReferencesValidator', () => {
       expect(errors.length).toEqual(1)
       expect(errors[0].elemID).toEqual(firstInstance.elemID)
       expect(errors[0].severity).toEqual('Warning')
+      expect(errors[0].unresolvedElemIds).toEqual([firstInstance.elemID])
     })
 
     it('should filter addition errors', async () => {
@@ -98,6 +100,7 @@ describe('incomingUnresolvedReferencesValidator', () => {
       expect(errors.length).toEqual(1)
       expect(errors[0].elemID).toEqual(firstInstance.elemID)
       expect(errors[0].severity).toEqual('Warning')
+      expect(errors[0].unresolvedElemIds).toEqual([firstInstance.elemID])
     })
   })
 })

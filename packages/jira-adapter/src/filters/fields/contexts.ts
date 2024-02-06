@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -85,7 +85,7 @@ export const getContexts = async (
   client: JiraClient,
 ): Promise<InstanceElement[]> => {
   const fieldInstance = getChangeData(fieldChange)
-  const resp = await client.getSinglePage({ url: `/rest/api/3/field/${fieldInstance.value.id}/context` })
+  const resp = await client.get({ url: `/rest/api/3/field/${fieldInstance.value.id}/context` })
   if (!Array.isArray(resp.data.values)) {
     log.warn(`Received unexpected response from Jira when querying contexts for instance ${getChangeData(fieldChange).elemID.getFullName()}: ${safeJsonStringify(resp.data.values)}`)
     throw new Error(`Received unexpected response from Jira when querying contexts for instance ${getChangeData(fieldChange).elemID.getFullName()}`)

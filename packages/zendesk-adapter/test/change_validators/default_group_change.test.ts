@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,6 +16,7 @@
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { GROUP_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { defaultGroupChangeValidator } from '../../src/change_validators'
+import ZendeskClient from '../../src/client/client'
 
 const createGroup = (elemName: string, isDefault: boolean): InstanceElement => new InstanceElement(
   elemName,
@@ -32,6 +33,22 @@ describe('defaultGroupDeletion', () => {
   const afterDefaultGroup = createGroup('afterDefaultGroup', true)
   const defaultGroup = createGroup('notChangingDefaultGroup', true)
   const notDefaultGroup = createGroup('notChangingNotDefaultGroup', false)
+
+  let client: ZendeskClient
+  let mockGet: jest.SpyInstance
+  beforeEach(() => {
+    jest.clearAllMocks()
+    client = new ZendeskClient({ credentials: { username: 'a', password: 'b', subdomain: 'ignore' } })
+    mockGet = jest.spyOn(client, 'get')
+    mockGet.mockImplementation(() => (
+      {
+        status: 200,
+        data: {
+        },
+      }
+    ))
+  })
+
   it('should not allow the user to make a change of the default group', async () => {
     const changes = [
       toChange({ after: newDefaultGroup }), // New group that is default
@@ -44,7 +61,7 @@ describe('defaultGroupDeletion', () => {
       toChange({ after: notDefaultGroup }), // Should do nothing because it is not a default group
     ]
 
-    const errors = await defaultGroupChangeValidator(changes)
+    const errors = await defaultGroupChangeValidator(client)(changes)
     expect(errors).toHaveLength(4)
     expect(errors).toEqual([
       {
@@ -58,7 +75,7 @@ describe('defaultGroupDeletion', () => {
         severity: 'Error',
         message: 'Cannot delete the default group',
         detailedMessage: `This group (${removedDefaultGroup.elemID.name}) is currently set as default in Zendesk and therefore cannot be deleted.\n`
-            + 'Changing the default group is not supported via the Zendesk API, therefore, you will need to configure a new default group directly via Zendesk and fetch.',
+          + 'Changing the default group is not supported via the Zendesk API, therefore, you will need to configure a new default group directly via Zendesk and fetch.',
       },
       {
         elemID: afterNotDefaultGroup.elemID,
@@ -71,6 +88,31 @@ describe('defaultGroupDeletion', () => {
         severity: 'Error',
         message: 'Cannot change the default group',
         detailedMessage: 'Changing the default group is not supported via the Zendesk API, therefore, you will need to do it directly via Zendesk and fetch.',
+      },
+    ])
+  })
+
+  it('does not allow deletion of groups that have members with default group', async () => {
+    const group = createGroup('nonDefaultWithDefaultUser', false)
+    const changes = [toChange({ before: group })]
+    mockGet.mockImplementation(() => (
+      {
+        status: 200,
+        data: {
+          group_memberships: [
+            { user_id: '1', default: true },
+          ],
+        },
+      }
+    ))
+    const errors = await defaultGroupChangeValidator(client)(changes)
+    expect(errors).toHaveLength(1)
+    expect(errors).toEqual([
+      {
+        elemID: group.elemID,
+        severity: 'Error',
+        message: 'Cannot remove the group, it is set as default for some users',
+        detailedMessage: 'This group (nonDefaultWithDefaultUser) is currently set as default for the following user ids: 1.',
       },
     ])
   })

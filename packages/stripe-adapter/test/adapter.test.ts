@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -23,7 +23,7 @@ import {
   InstanceElement,
   isInstanceElement,
   ListType,
-  ObjectType,
+  ObjectType, ProgressReporter,
   Values,
 } from '@salto-io/adapter-api'
 import * as adapterComponents from '@salto-io/adapter-components'
@@ -351,7 +351,14 @@ describe('stripe swagger adapter', () => {
         config: DEFAULT_CONFIG_INSTANCE,
         elementsSource: buildElementsSourceFromElements([]),
       })
-      const deployOptions = { changeGroup: { groupID: '', changes: [] } }
+      const nullProgressReporter: ProgressReporter = {
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        reportProgress: () => {},
+      }
+      const deployOptions = {
+        changeGroup: { groupID: '', changes: [] },
+        progressReporter: nullProgressReporter,
+      }
       await expect(adapterOperations.deploy(deployOptions)).rejects.toThrow(new Error('Not implemented.'))
     })
   })

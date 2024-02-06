@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -21,7 +21,7 @@ import { getElementValueOrAnnotations, isCustomRecordType } from '../types'
 import { ElementsSourceIndexes, LazyElementsSourceIndexes, ServiceIdRecords } from './types'
 import { getFieldInstanceTypes } from '../data_elements/custom_fields'
 import { extractCustomRecordFields, getElementServiceIdRecords } from '../filters/element_references'
-import { CUSTOM_LIST, CUSTOM_RECORD_TYPE, INTERNAL_ID, IS_SUB_INSTANCE } from '../constants'
+import { CUSTOM_LIST, CUSTOM_RECORD_TYPE, INTERNAL_ID, IS_SUB_INSTANCE, SELECT_RECORD_TYPE } from '../constants'
 import { TYPES_TO_INTERNAL_ID } from '../data_elements/types'
 
 const { awu } = collections.asynciterable
@@ -82,6 +82,21 @@ export const assignToInternalIdsIndex = async (
   }
 }
 
+export const assignToCustomFieldsSelectRecordTypeIndex = (
+  element: Element,
+  index: Record<string, unknown>
+): void => {
+  if (isInstanceElement(element) && element.value[SELECT_RECORD_TYPE] !== undefined) {
+    index[element.elemID.getFullName()] = element.value[SELECT_RECORD_TYPE]
+  } else if (isObjectType(element) && isCustomRecordType(element)) {
+    Object.values(element.fields).forEach(field => {
+      if (field.annotations[SELECT_RECORD_TYPE] !== undefined) {
+        index[field.elemID.getFullName()] = field.annotations[SELECT_RECORD_TYPE]
+      }
+    })
+  }
+}
+
 const createIndexes = async (elementsSource: ReadOnlyElementsSource, isPartial: boolean, deletedElements: ElemID[]):
   Promise<ElementsSourceIndexes> => {
   const serviceIdRecordsIndex: ServiceIdRecords = {}
@@ -90,6 +105,7 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource, isPartial: 
   const elemIdToChangeByIndex: Record<string, string> = {}
   const elemIdToChangeAtIndex: Record<string, string> = {}
   const customRecordFieldsServiceIdRecordsIndex: ServiceIdRecords = {}
+  const customFieldsSelectRecordTypeIndex: Record<string, unknown> = {}
 
   const updateInternalIdsIndex = async (element: Element): Promise<void> => {
     await assignToInternalIdsIndex(element, internalIdsIndex, elementsSource)
@@ -129,6 +145,10 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource, isPartial: 
     _.assign(customRecordFieldsServiceIdRecordsIndex, serviceIdRecords)
   }
 
+  const updateCustomFieldsSelectRecordTypeIndex = (element: Element): void => {
+    assignToCustomFieldsSelectRecordTypeIndex(element, customFieldsSelectRecordTypeIndex)
+  }
+
   const deletedElementSet = new Set(deletedElements.map(elemId => elemId.getFullName()))
   const elements = await elementsSource.getAll()
   await awu(elements)
@@ -141,6 +161,7 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource, isPartial: 
       if (isPartial) {
         await updateServiceIdRecordsIndex(element)
         await updateInternalIdsIndex(element)
+        updateCustomFieldsSelectRecordTypeIndex(element)
         if (isInstanceElement(element)) {
           updateCustomFieldsIndex(element)
         } else if (isObjectType(element) && isCustomRecordType(element)) {
@@ -156,6 +177,7 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource, isPartial: 
     elemIdToChangeByIndex,
     elemIdToChangeAtIndex,
     customRecordFieldsServiceIdRecordsIndex,
+    customFieldsSelectRecordTypeIndex,
   }
 }
 

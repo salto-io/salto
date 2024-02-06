@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -166,9 +166,13 @@ type GetDeployResultParams = {
   testCompleted?: number
   testErrors?: number
   errorMessage?: string
+  retrieveResult?: RetrieveResult
 }
+
+type MockDeployResultParams = GetDeployResultParams & Required<Pick<GetDeployResultParams, 'id'>>
+
 export const mockDeployResultComplete = ({
-  id = _.uniqueId(),
+  id,
   success = true,
   errorMessage,
   componentSuccess = [],
@@ -179,7 +183,8 @@ export const mockDeployResultComplete = ({
   checkOnly = false,
   testCompleted = 0,
   testErrors = 0,
-}: GetDeployResultParams): DeployResult => ({
+  retrieveResult,
+}: MockDeployResultParams): DeployResult => ({
   id,
   checkOnly,
   completedDate: '2020-05-01T14:31:36.000Z',
@@ -189,6 +194,7 @@ export const mockDeployResultComplete = ({
     componentFailures: componentFailure.map(mockDeployMessage),
     componentSuccesses: componentSuccess.map(mockDeployMessage),
     runTestResult: mockRunTestResult(runTestResult),
+    retrieveResult,
   }],
   ignoreWarnings,
   lastModifiedDate: '2020-05-01T14:31:36.000Z',
@@ -205,11 +211,52 @@ export const mockDeployResultComplete = ({
   errorMessage,
 })
 
+export const mockDeployResultInProgress = ({
+  id,
+  runTestResult = undefined,
+  ignoreWarnings = true,
+  rollbackOnError = true,
+  checkOnly = false,
+  testCompleted = 0,
+  testErrors = 0,
+}: MockDeployResultParams): DeployResult => ({
+  id,
+  checkOnly,
+  completedDate: '2020-05-01T14:31:36.000Z',
+  createdDate: '2020-05-01T14:21:36.000Z',
+  done: false,
+  details: [{
+    componentFailures: [],
+    componentSuccesses: [],
+    runTestResult: mockRunTestResult(runTestResult),
+  }],
+  ignoreWarnings,
+  lastModifiedDate: '2020-05-01T14:31:36.000Z',
+  numberComponentErrors: 0,
+  numberComponentsDeployed: 0,
+  numberComponentsTotal: 0,
+  numberTestErrors: testErrors,
+  numberTestsCompleted: testCompleted,
+  numberTestsTotal: testCompleted + testErrors,
+  rollbackOnError,
+  startDate: '2020-05-01T14:21:36.000Z',
+  status: 'Pending',
+  success: false,
+  errorMessage: undefined,
+})
+
 export const mockDeployResult = (
   params: GetDeployResultParams
-): DeployResultLocator<DeployResult> => ({
-  complete: jest.fn().mockResolvedValue(mockDeployResultComplete(params)),
-}) as unknown as DeployResultLocator<DeployResult>
+): DeployResultLocator<DeployResult> => {
+  const mockParams: MockDeployResultParams = _.defaults(params, { id: _.uniqueId() })
+  return {
+    complete: jest.fn()
+      .mockResolvedValue(mockDeployResultComplete(mockParams)),
+    check: jest.fn()
+      .mockResolvedValue(mockDeployResultComplete(mockParams))
+      .mockResolvedValueOnce(mockDeployResultInProgress(mockParams)),
+  } as unknown as DeployResultLocator<DeployResult>
+}
 
 export const mockQueryResult = (
   props: Partial<QueryResult<Value>>,
@@ -412,6 +459,7 @@ export const mockJsforce: () => MockInterface<Connection> = () => ({
   metadata: {
     pollInterval: 1000,
     pollTimeout: 10000,
+    checkDeployStatus: mockFunction<Metadata['checkDeployStatus']>().mockResolvedValue(mockDeployResultInProgress({ id: _.uniqueId() })),
     describe: mockFunction<Metadata['describe']>().mockResolvedValue({ metadataObjects: [], organizationNamespace: '' }),
     describeValueType: mockFunction<Metadata['describeValueType']>().mockResolvedValue(
       mockDescribeValueResult({ valueTypeFields: [] })

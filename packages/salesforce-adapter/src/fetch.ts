@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -28,15 +28,11 @@ import {
   MetadataQuery,
 } from './types'
 import {
-  API_NAME_SEPARATOR,
   CUSTOM_OBJECT,
   DEFAULT_NAMESPACE,
   FOLDER_CONTENT_TYPE,
-  INSTALLED_PACKAGE_METADATA,
   INTERNAL_ID_FIELD,
-  LAYOUT_TYPE_ID_METADATA_TYPE,
   METADATA_CONTENT_FIELD,
-  NAMESPACE_SEPARATOR,
   PROFILE_METADATA_TYPE,
   RETRIEVE_SIZE_LIMIT_ERROR,
   UNLIMITED_INSTANCES_VALUE,
@@ -56,7 +52,8 @@ import {
   MetadataObjectType,
 } from './transformers/transformer'
 import { fromRetrieveResult, getManifestTypeName, toRetrieveRequest } from './transformers/xml_transformer'
-import { listMetadataObjects } from './filters/utils'
+import { getFullName, isInstanceOfTypeSync, listMetadataObjects } from './filters/utils'
+import { buildFilePropsMetadataQuery } from './fetch_profile/metadata_query'
 
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
@@ -157,47 +154,6 @@ const listMetadataObjectsWithinFolders = async (
     .map(createListMetadataObjectsConfigChange)
     .concat(folders.configChanges)
   return { elements, configChanges }
-}
-
-const getFullName = (obj: FileProperties, addNamespacePrefixToFullName: boolean): string => {
-  if (!obj.namespacePrefix) {
-    return obj.fullName
-  }
-
-  const namePrefix = `${obj.namespacePrefix}${NAMESPACE_SEPARATOR}`
-
-  if (obj.type === LAYOUT_TYPE_ID_METADATA_TYPE) {
-  // Ensure layout name starts with the namespace prefix if there is one.
-  // needed due to a SF quirk where sometimes layout metadata instances fullNames return as
-  // <namespace>__<objectName>-<layoutName> where it should be
-  // <namespace>__<objectName>-<namespace>__<layoutName>
-    const [objectName, ...layoutName] = obj.fullName.split('-')
-    if (layoutName.length !== 0 && !layoutName[0].startsWith(namePrefix)) {
-      return `${objectName}-${namePrefix}${layoutName.join('-')}`
-    }
-    return obj.fullName
-  }
-
-  if (!addNamespacePrefixToFullName) {
-    log.debug('obj.fullName %s is missing namespace %s. Not adding because addNamespacePrefixToFullName is false. FileProps: %o', obj.fullName, obj.namespacePrefix, obj)
-    return obj.fullName
-  }
-  // Instances of type InstalledPackage fullNames should never include the namespace prefix
-  if (obj.type === INSTALLED_PACKAGE_METADATA) {
-    return obj.fullName
-  }
-
-  const fullNameParts = obj.fullName.split(API_NAME_SEPARATOR)
-  const name = fullNameParts.slice(-1)[0]
-  const parentNames = fullNameParts.slice(0, -1)
-
-  if (name.startsWith(namePrefix)) {
-    return obj.fullName
-  }
-
-  // In some cases, obj.fullName does not contain the namespace prefix even though
-  // obj.namespacePrefix is defined. In these cases, we want to add the prefix manually
-  return [...parentNames, `${namePrefix}${name}`].join(API_NAME_SEPARATOR)
 }
 
 const getPropsWithFullName = (
@@ -334,6 +290,8 @@ type RetrieveMetadataInstancesArgs = {
   // are included in the same retrieve request as the profile. Thus typesToSkip - a list of types that will be retrieved
   // along with the profiles, but discarded.
   typesToSkip?: ReadonlySet<string>
+  getFilesToRetrieveFunc?: (allProps: FileProperties[]) => FileProperties[]
+
 }
 
 export const retrieveMetadataInstances = async ({
@@ -341,12 +299,15 @@ export const retrieveMetadataInstances = async ({
   types,
   fetchProfile,
   typesToSkip = new Set(),
+  getFilesToRetrieveFunc,
 }: RetrieveMetadataInstancesArgs): Promise<FetchElements<InstanceElement[]>> => {
   const configChanges: ConfigChangeSuggestion[] = []
   const {
     metadataQuery,
     maxItemsInRetrieveRequest,
   } = fetchProfile
+  const getFilesToRetrieve = getFilesToRetrieveFunc
+    ?? (allProps => allProps.filter(props => notInSkipList(metadataQuery, props, false)))
 
   const listFilesOfType = async (type: MetadataObjectType): Promise<FileProperties[]> => {
     const typeName = await apiName(type)
@@ -464,28 +425,81 @@ export const retrieveMetadataInstances = async ({
     return contextInstances.concat(Object.values(profileInstances))
   }
 
-  const filesToRetrieve = _.flatten(await Promise.all(
+  const allProps = _.flatten(await Promise.all(
     types
       // We get folders as part of getting the records inside them
       .filter(type => type.annotations.folderContentType === undefined)
       .map(listFilesOfType)
-  )).filter(props => notInSkipList(metadataQuery, props, false))
+  ))
+  const filesToRetrieve = getFilesToRetrieve(allProps)
 
+  const [profileFiles, nonProfileFiles] = _.partition(filesToRetrieve, file => file.type === PROFILE_METADATA_TYPE)
   // Avoid sending empty requests for types that had no instances that were changed from the previous fetch
   // This is a common case for fetchWithChangesDetection mode for types that had no changes on their instances
-  if (filesToRetrieve.length === 0) {
+  if (nonProfileFiles.length === 0) {
     log.debug('No files to retrieve, skipping')
     return { elements: [], configChanges }
   }
 
   log.info('going to retrieve %d files', filesToRetrieve.length)
 
-  const [profileFiles, nonProfileFiles] = _.partition(filesToRetrieve, file => file.type === PROFILE_METADATA_TYPE)
 
   const instances = await retrieveProfilesWithContextTypes(profileFiles, nonProfileFiles)
 
   return {
     elements: instances.filter(instance => !typesToSkip.has(instance.elemID.typeName)),
     configChanges,
+  }
+}
+
+type Partitions = {
+  profileProps: FileProperties[]
+  nonProfileProps: FileProperties[]
+}
+
+export const retrieveMetadataInstanceForFetchWithChangesDetection: typeof retrieveMetadataInstances = async params => {
+  const metadataQuery = buildFilePropsMetadataQuery(params.fetchProfile.metadataQuery)
+  const getPartitions = (allProps: FileProperties[]): Partitions => {
+    const [profileProps, nonProfileProps] = _.partition(
+      allProps.filter(metadataQuery.isInstanceIncluded),
+      file => file.type === PROFILE_METADATA_TYPE
+    )
+    return { profileProps, nonProfileProps }
+  }
+
+  const retrievePartialProfileInstances = retrieveMetadataInstances({
+    ...params,
+    getFilesToRetrieveFunc: allProps => {
+      const { profileProps, nonProfileProps } = getPartitions(allProps)
+      const modifiedNonProfileProps = nonProfileProps.filter(props => metadataQuery.isInstanceMatch(props))
+      if (modifiedNonProfileProps.length === 0) {
+        log.debug('No profile related props were changed')
+        return []
+      }
+      const nonModifiedProfilesProps = profileProps.filter(props => !metadataQuery.isInstanceMatch(props))
+      return nonModifiedProfilesProps.concat(nonProfileProps)
+    },
+  })
+
+  const retrieveChangedProfileInstances = retrieveMetadataInstances({
+    ...params,
+    getFilesToRetrieveFunc: allProps => {
+      const { profileProps, nonProfileProps } = getPartitions(allProps)
+      const modifiedProfilesProps = profileProps.filter(props => metadataQuery.isInstanceMatch(props))
+      if (modifiedProfilesProps.length === 0) {
+        log.debug('No profiles were changed')
+        return []
+      }
+      return modifiedProfilesProps.concat(nonProfileProps)
+    },
+  }).then(result => ({
+    ...result,
+    // We only want to handle Profile instances
+    elements: result.elements.filter(isInstanceOfTypeSync(PROFILE_METADATA_TYPE)),
+  }))
+  const result = await Promise.all([retrievePartialProfileInstances, retrieveChangedProfileInstances])
+  return {
+    elements: result.flatMap(r => r.elements),
+    configChanges: result.flatMap(r => r.configChanges),
   }
 }

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -20,13 +20,17 @@ import { createHash } from 'crypto'
 import getStream from 'get-stream'
 
 import { collections } from '@salto-io/lowerdash'
+import { state } from '@salto-io/workspace'
 import { exists, rm, rename, replaceContents, createReadStream } from '@salto-io/file'
 import { StateContentProvider, getHashFromHashes } from './common'
+import { localDirectoryStore } from '../../dir_store'
 
 const { awu } = collections.asynciterable
 const glob = promisify(origGlob)
 
-export const createFileStateContentProvider = (): StateContentProvider => {
+export const STATE_STATIC_FILES_LOCAL_DIR = 'static-resources'
+
+export const createFileStateContentProvider = (localStorageDir: string): StateContentProvider => {
   const buildLocalStateFileName = (prefix: string, account: string): string => `${prefix}.${account}.jsonl.zip`
   const findStateFiles = (prefix: string): Promise<string[]> => glob(buildLocalStateFileName(prefix, '*([!.])'))
   return {
@@ -63,5 +67,8 @@ export const createFileStateContentProvider = (): StateContentProvider => {
         })
       )
     },
+    staticFilesSource: state.buildOverrideStateStaticFilesSource(
+      localDirectoryStore({ baseDir: path.resolve(localStorageDir, STATE_STATIC_FILES_LOCAL_DIR) })
+    ),
   }
 }

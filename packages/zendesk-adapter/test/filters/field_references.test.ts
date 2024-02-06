@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -18,7 +18,7 @@ import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element,
 import { filterUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../src/filters/field_references'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
-import { ROUTING_ATTRIBUTE_VALUE_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { CUSTOM_STATUS_TYPE_NAME, ROUTING_ATTRIBUTE_VALUE_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { createFilterCreatorParams } from '../utils'
 
 describe('References by id filter', () => {
@@ -225,6 +225,12 @@ describe('References by id filter', () => {
       },
     },
   })
+  const customStatusType = new ObjectType({
+    elemID: new ElemID(ZENDESK, CUSTOM_STATUS_TYPE_NAME),
+    fields: {
+      id: { refType: BuiltinTypes.NUMBER },
+    },
+  })
 
   const generateElements = (
   ): Element[] => ([
@@ -307,6 +313,7 @@ describe('References by id filter', () => {
       }
     ),
     new InstanceElement('customField2', ticketFieldType, { id: 6005, type: 'text' }),
+    new InstanceElement('customStatus', customStatusType, { id: 2001, type: 'text' }),
     new InstanceElement('userField1', userFieldType, { id: 6002, key: 'key_uf1', type: 'dropdown' }),
     new InstanceElement('orgField1', orgFieldType, { id: 6003, key: 'key_of1', type: 'dropdown' }),
     new InstanceElement('orgField2', orgFieldType, { id: 6003, key: 'key_of2', type: 'text' }),
@@ -368,6 +375,8 @@ describe('References by id filter', () => {
             { field: 'organization.custom_fields.key_of1', value: '9003' },
             { field: 'organization.custom_fields.key_of2', value: '9004' },
             { field: 'custom_fields_6005', operator: 'is', value: 'v11' },
+            { field: 'custom_status_2001', operator: 'is', value: '48' },
+            { field: 'custom_status_id', operator: 'is', value: 2001 },
           ],
         },
       },
@@ -385,6 +394,7 @@ describe('References by id filter', () => {
             { field: 'group_id', operator: 'is', value: 'a_thing' },
             { field: 'schedule_id', operator: 'is', value: 'someone_you_love' },
             { field: 'group_id', operator: 'is', value: 'current_groups' },
+            { field: 'custom_status_2002', operator: 'is', value: '48' },
           ],
         },
       },
@@ -501,6 +511,9 @@ describe('References by id filter', () => {
       expect(trigger.value.conditions.all[4].field.elemID.getFullName())
         .toEqual('zendesk.ticket_field.instance.customField2')
       expect(trigger.value.conditions.all[4].value).not.toBeInstanceOf(ReferenceExpression)
+      expect(trigger.value.conditions.all[5].field).toBeInstanceOf(ReferenceExpression)
+      expect(trigger.value.conditions.all[5].field.elemID.getFullName())
+        .toEqual('zendesk.custom_status.instance.customStatus')
 
       const userLookup = elements.filter(
         e => isInstanceElement(e) && e.elemID.name === 'userLookup1'
@@ -535,6 +548,9 @@ describe('References by id filter', () => {
           .toEqual('missing_someone_you_love')
         expect(brokenTrigger.value.conditions.all[5].value).not.toBeInstanceOf(ReferenceExpression)
         expect(brokenTrigger.value.conditions.all[5].value).toEqual('current_groups')
+        expect(brokenTrigger.value.conditions.all[6].field).toBeInstanceOf(ReferenceExpression)
+        expect(brokenTrigger.value.conditions.all[6].field.elemID.name)
+          .toEqual('missing_custom_status_2002')
       })
       it('should create valid missing reference for routing_attribute_value', async () => {
         const brokenAttribute = elements.filter(

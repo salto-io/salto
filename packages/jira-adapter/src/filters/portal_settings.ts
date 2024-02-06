@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { AdditionChange, Change, InstanceElement, ModificationChange, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
+import { AdditionChange, Change, InstanceElement, ModificationChange, getChangeData, isAdditionChange, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { deployChanges } from '../deployment/standard_deployment'
@@ -78,8 +78,13 @@ const filter: FilterCreator = ({ config, client }) => ({
       (change): change is Change<InstanceElement> => isInstanceChange(change)
       && getChangeData(change).elemID.typeName === PORTAL_SETTINGS_TYPE_NAME
     )
-    const deployResult = await deployChanges(portalChanges.filter(isAdditionOrModificationChange),
-      async change => deployPortalSettings(change, client))
+    const deployResult = await deployChanges(portalChanges,
+      async change => {
+        if (isRemovalChange(change)) {
+          return undefined
+        }
+        return deployPortalSettings(change, client)
+      })
 
     return {
       leftoverChanges,

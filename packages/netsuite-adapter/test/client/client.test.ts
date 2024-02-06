@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -23,7 +23,7 @@ import { SetConfigType } from '../../src/client/suiteapp_client/types'
 import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../src/types'
 import { featuresType } from '../../src/types/configuration_types'
 import { FeaturesDeployError, ManifestValidationError, MissingManifestFeaturesError, ObjectsDeployError, SettingsDeployError } from '../../src/client/errors'
-import { AdditionalDependencies } from '../../src/config'
+import { AdditionalDependencies } from '../../src/config/types'
 import { Graph, GraphNode } from '../../src/client/graph_utils'
 import { SDFObjectNode } from '../../src/client/types'
 

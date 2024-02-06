@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2024 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -27,7 +27,7 @@ jest.mock('@salto-io/logging', () => {
 })
 
 describe('client', () => {
-  describe('getSinglePage', () => {
+  describe('get', () => {
     let mockAxios: MockAdapter
     let client: ZendeskClient
     beforeEach(() => {
@@ -46,7 +46,7 @@ describe('client', () => {
     it('should return an empty result when there is a 404 response', async () => {
       // The first replyOnce with 200 is for the client authentication
       mockAxios.onGet().replyOnce(200).onGet().replyOnce(404)
-      const res = await client.getSinglePage({ url: '/api/v2/routing/attributes' })
+      const res = await client.get({ url: '/api/v2/routing/attributes' })
       expect(res.data).toEqual([])
       expect(res.status).toEqual(404)
     })
@@ -54,14 +54,14 @@ describe('client', () => {
       // The first replyOnce with 200 is for the client authentication
       mockAxios.onGet().replyOnce(200).onGet()
         .replyOnce(403)
-      await expect(client.getSinglePage({ url: '/api/v2/routing/attributes' })).rejects.toThrow()
+      await expect(client.get({ url: '/api/v2/routing/attributes' })).rejects.toThrow()
     })
     it('should throw if there is no status in the error', async () => {
       // The first replyOnce with 200 is for the client authentication
       mockAxios.onGet().replyOnce(200).onGet()
         .replyOnce(() => { throw new Error('Err') })
       await expect(
-        client.getSinglePage({ url: '/api/v2/routing/attributes' })
+        client.get({ url: '/api/v2/routing/attributes' })
       ).rejects.toThrow()
     })
     it('should retry on 409, 429 and 503', async () => {
@@ -86,11 +86,11 @@ describe('client', () => {
       const notFilteringClient = new ZendeskClient(
         { credentials: { username: 'a', password: 'b', subdomain: 'ignore' }, allowOrganizationNames: true }
       )
-      await notFilteringClient.getSinglePage({ url: 'organizations/show_many' })
-      await notFilteringClient.getSinglePage({ url: 'organizations/autocomplete' })
+      await notFilteringClient.get({ url: 'organizations/show_many' })
+      await notFilteringClient.get({ url: 'organizations/autocomplete' })
 
-      await client.getSinglePage({ url: 'organizations/show_many' })
-      await client.getSinglePage({ url: 'organizations/autocomplete' })
+      await client.get({ url: 'organizations/show_many' })
+      await client.get({ url: 'organizations/autocomplete' })
 
       expect(logTrace).toHaveBeenNthCalledWith(1, [
         'Full HTTP response for %s on %s: %s',

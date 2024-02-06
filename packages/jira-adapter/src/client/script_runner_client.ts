@@ -62,11 +62,11 @@ export default class ScriptRunnerClient extends clientUtils.AdapterHTTPClient<
   }
 
 
-  public async getSinglePage(
+  public async get(
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
     try {
-      return await super.getSinglePage({
+      return await super.get({
         ...args,
         headers: {
           ...(args.headers ?? {}),

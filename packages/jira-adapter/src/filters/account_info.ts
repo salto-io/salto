@@ -79,7 +79,7 @@ const LICENSE_RESPONSE_SCHEME = Joi.object({
 const isLicenseResponse = createSchemeGuard<LicenseResponse>(LICENSE_RESPONSE_SCHEME, 'Received an invalid license response')
 
 const getCloudLicense = async (client: JiraClient): Promise<Value> => {
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url: '/rest/api/3/instance/license',
   })
   if (!isLicenseResponse(response.data)) {
@@ -89,7 +89,7 @@ const getCloudLicense = async (client: JiraClient): Promise<Value> => {
   return { applications: response.data.applications }
 }
 const getDCLicense = async (client: JiraClient): Promise<Value> => {
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url: '/rest/plugins/applications/1.0/installed/jira-software/license',
   })
   if (!Object.prototype.hasOwnProperty.call(response.data, 'licenseType') || Array.isArray(response.data)) {

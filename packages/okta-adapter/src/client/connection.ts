@@ -15,6 +15,7 @@
 */
 import { AccountInfo } from '@salto-io/adapter-api'
 import { client as clientUtils, client, auth as authUtils } from '@salto-io/adapter-components'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Credentials, AccessTokenCredentials, isOAuthAccessTokenCredentials, OAuthAccessTokenCredentials } from '../auth'
 
@@ -52,11 +53,8 @@ export const validateCredentials = async (_creds: {
       isProduction: accountType === PRODUCTION_ACCOUNT_TYPE,
     }
   } catch (error) {
-    if (error.response?.status === 401) {
-      log.error('Failed to validate credentials: %s', error)
-      throw new client.UnauthorizedError('Invalid Credentials')
-    }
-    throw error
+    log.error('Failed to validate credentials, error: %s, stack: %s', safeJsonStringify({ data: error?.response?.data, status: error?.response?.status }), error.stack)
+    throw new client.UnauthorizedError('Invalid Credentials')
   }
 }
 

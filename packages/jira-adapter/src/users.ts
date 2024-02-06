@@ -155,7 +155,7 @@ export const getUsersMap = async (
 }
 
 export const getCurrentUserInfo = async (client: JiraClient): Promise<UserInfo | undefined> => {
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url: '/rest/api/3/myself',
   })
 

@@ -37,7 +37,7 @@ describe('brandCreationValidator', () => {
   })
 
   it('should return an error if a new brand is created', async () => {
-    mockGet = jest.spyOn(client, 'getSinglePage')
+    mockGet = jest.spyOn(client, 'get')
     mockGet.mockImplementation(params => {
       if (params.url === `/api/v2/accounts/available.json?subdomain=${brandInstance.value.subdomain}`) {
         return {
@@ -68,7 +68,7 @@ describe('brandCreationValidator', () => {
       { name: 'test' },
     )
 
-    mockGet = jest.spyOn(client, 'getSinglePage')
+    mockGet = jest.spyOn(client, 'get')
     mockGet.mockImplementation(params => {
       if (params.url === `/api/v2/accounts/available.json?subdomain=${brandInstance.value.subdomain}`) {
         return {
@@ -89,8 +89,8 @@ describe('brandCreationValidator', () => {
       detailedMessage: `Brand subdomains are globally unique, and the subdomain '${invalidBrandInstance.value.subdomain}' used for brand ${invalidBrandInstance.value.name} is not available. Please choose a different one.`,
     }])
   })
-  it('should return a warning if a new brand is created and getSinglePage fails', async () => {
-    mockGet = jest.spyOn(client, 'getSinglePage')
+  it('should return a warning if a new brand is created and get fails', async () => {
+    mockGet = jest.spyOn(client, 'get')
     mockGet.mockImplementation(params => {
       if (params.url === `/api/v2/accounts/available.json?subdomain=${brandInstance.value.subdomain}`) {
         return {
@@ -114,8 +114,8 @@ describe('brandCreationValidator', () => {
       detailedMessage: `Brand subdomains are globally unique, and we were unable to check the uniqueness of the subdomain '${brandInstance.value.subdomain}' used for brand ${brandInstance.value.name}. Please ensure its uniqueness before deploying`,
     }])
   })
-  it('should return a warning if a new brand is created and getSinglePage returns invalid answer', async () => {
-    mockGet = jest.spyOn(client, 'getSinglePage')
+  it('should return a warning if a new brand is created and get returns invalid answer', async () => {
+    mockGet = jest.spyOn(client, 'get')
     mockGet.mockImplementation(params => {
       if (params.url === `/api/v2/accounts/available.json?subdomain=${brandInstance.value.subdomain}`) {
         return {
@@ -143,7 +143,7 @@ describe('brandCreationValidator', () => {
     const clonedBeforeBrand = brandInstance.clone()
     const clonedAfterBrand = brandInstance.clone()
     clonedAfterBrand.value.subdomain = 'edited'
-    mockGet = jest.spyOn(client, 'getSinglePage')
+    mockGet = jest.spyOn(client, 'get')
     mockGet.mockImplementation(params => {
       if (params.url === `/api/v2/accounts/available.json?subdomain=${clonedAfterBrand.value.subdomain}`) {
         return {
@@ -165,7 +165,7 @@ describe('brandCreationValidator', () => {
   it('should not return an error if the subdomain was not modified', async () => {
     const clonedBeforeBrand = brandInstance.clone()
     const clonedAfterBrand = brandInstance.clone()
-    mockGet = jest.spyOn(client, 'getSinglePage')
+    mockGet = jest.spyOn(client, 'get')
     const errors = await changeValidator(
       [toChange({ before: clonedBeforeBrand, after: clonedAfterBrand })],
     )
@@ -173,7 +173,7 @@ describe('brandCreationValidator', () => {
     expect(errors).toHaveLength(0)
   })
   it('should not return an error if the brand was removed', async () => {
-    mockGet = jest.spyOn(client, 'getSinglePage')
+    mockGet = jest.spyOn(client, 'get')
     const errors = await changeValidator(
       [toChange({ before: brandInstance })],
     )
@@ -181,7 +181,7 @@ describe('brandCreationValidator', () => {
     expect(errors).toHaveLength(0)
   })
   it('should not return a warning if a new brand is created and subdomain is valid', async () => {
-    mockGet = jest.spyOn(client, 'getSinglePage')
+    mockGet = jest.spyOn(client, 'get')
     mockGet.mockImplementation(params => {
       if (params.url === `/api/v2/accounts/available.json?subdomain=${brandInstance.value.subdomain}`) {
         return {

@@ -58,7 +58,7 @@ const singlePagePagination = async (
   const { url, queryParams, headers } = getParams
   const params = { ...queryParams, ...additionalArgs }
 
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url,
     queryParams: Object.keys(params).length > 0 ? params : undefined,
     headers,

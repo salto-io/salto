@@ -116,7 +116,7 @@ const getAdapterOperations = (context: AdapterOperationsContext): AdapterOperati
       ?? Math.max(
         adapterConfig.client?.sdfConcurrencyLimit ?? DEFAULT_CONCURRENCY,
         adapterConfig.suiteAppClient?.suiteAppConcurrencyLimit ?? DEFAULT_CONCURRENCY
-      ),
+      ) + 1,
   })
 
   const instanceLimiter = instanceLimiterCreator(adapterConfig.client)

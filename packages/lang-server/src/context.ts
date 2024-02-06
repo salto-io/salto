@@ -19,7 +19,7 @@ import {
   Element, isField, isType, isObjectType, ElemID, ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { resolvePath } from '@salto-io/adapter-utils'
-import { parser } from '@salto-io/workspace'
+import { parser } from '@salto-io/parser'
 
 type PositionContextType = 'global'|'instance'|'type'|'field'
 

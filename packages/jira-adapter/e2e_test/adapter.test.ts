@@ -259,15 +259,7 @@ each([
         })))
 
       const errors = addDeployResults.flatMap(res => res.errors)
-      // TODO remove after SALTO-5205, IssueLayout cannot be deleted
-      if (!isDataCenter) {
-        expect(errors[0]).toEqual({
-          elemID: expect.anything(),
-          message: 'Error: Could not remove IssueLayout',
-          severity: 'Error',
-        })
-      }
-      if ((isDataCenter && errors.length) || errors.length > 1) {
+      if (errors.length) {
         throw new Error(`Failed to clean e2e changes: ${errors.map(e => safeJsonStringify(e)).join(', ')}`)
       }
     })

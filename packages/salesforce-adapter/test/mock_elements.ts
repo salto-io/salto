@@ -93,6 +93,10 @@ export const mockTypes = {
       dirName: 'triggers',
       suffix: 'trigger',
     },
+    fields: {
+      content: { refType: BuiltinTypes.STRING },
+      apiVersion: { refType: BuiltinTypes.NUMBER },
+    },
   }),
   ApexComponent: createMetadataObjectType({
     annotations: {

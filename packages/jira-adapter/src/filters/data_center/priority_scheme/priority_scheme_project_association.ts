@@ -20,7 +20,7 @@ import { FilterCreator } from '../../../filter'
 import { isPrioritySchemeResponse } from './priority_scheme_deploy'
 
 const getProjectPriorityScheme = async (instance: InstanceElement, client: JiraClient): Promise<number | undefined> => {
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url: `/rest/api/2/project/${instance.value.id}/priorityscheme`,
   })
 

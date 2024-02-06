@@ -400,9 +400,6 @@ describe('adapter', () => {
           key: 'SD',
           name: 'Service Desk',
           projectTypeKey: SERVICE_DESK,
-          serviceDeskId: {
-            id: '1',
-          },
         },
       )
     })
@@ -450,6 +447,24 @@ describe('adapter', () => {
           .onGet('/rest/api/3/serverInfo').replyOnce(200, { baseUrl: 'a' })
           .onGet('/rest/api/3/instance/license')
           .replyOnce(200, { applications: [{ plan: 'FREE' }] })
+          .onGet('/rest/servicedeskapi/servicedesk')
+          .replyOnce(200,
+            {
+              size: 1,
+              start: 0,
+              limit: 50,
+              isLastPage: true,
+              _links: {
+              },
+              values: [
+                {
+                  id: '10',
+                  projectId: '10000',
+                  projectKey: 'SD',
+                  projectName: 'Service Desk',
+                },
+              ],
+            })
         // mock as we call getCloudId in the forms filter.
         mockAxiosAdapter.onPost().reply(200, {
           unparsedData: {

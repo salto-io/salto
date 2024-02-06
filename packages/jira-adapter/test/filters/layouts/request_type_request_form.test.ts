@@ -175,6 +175,23 @@ describe('requestTypeLayoutsFilter', () => {
       const issueLayoutInstance = instances.find(e => e.elemID.typeName === REQUEST_FORM_TYPE)
       expect(issueLayoutInstance).toBeDefined()
     })
+    it('should not add layout if requestType has no valid parent', async () => {
+      const requestTypeInstanceNoParent = requestTypeInstance.clone()
+      requestTypeInstanceNoParent.annotations[CORE_ANNOTATIONS.PARENT] = []
+      elements = [
+        projectType,
+        projectInstance,
+        requestTypeType,
+        requestTypeInstanceNoParent,
+        fieldType,
+        fieldInstance1,
+        fieldInstance2,
+      ]
+      await filter.onFetch(elements)
+      const instances = elements.filter(isInstanceElement)
+      const issueLayoutInstance = instances.find(e => e.elemID.typeName === REQUEST_FORM_TYPE)
+      expect(issueLayoutInstance).toBeUndefined()
+    })
     it('should not add layout if it is a bad response', async () => {
       mockGet.mockImplementation(() => ({
         status: 200,

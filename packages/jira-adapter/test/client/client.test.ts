@@ -41,14 +41,14 @@ describe('client', () => {
       mockAxios.onGet().reply(400, { response: 'asd', errorMessages: ['error message'] })
     })
     it('should call send request decorator', async () => {
-      await expect(async () => client.getSinglePage({ url: '/myPath' })).rejects.toThrow(new Error('Failed to get /myPath with error: Error: Request failed with status code 400. error message'))
+      await expect(async () => client.get({ url: '/myPath' })).rejects.toThrow(new Error('Failed to get /myPath with error: Error: Request failed with status code 400. error message'))
     })
   })
 
-  describe('getSinglePage', () => {
+  describe('get', () => {
     beforeEach(async () => {
       mockAxios.onGet('/myPath').reply(200, { response: 'asd' })
-      result = await client.getSinglePage({ url: '/myPath' })
+      result = await client.get({ url: '/myPath' })
     })
     it('should request the correct path with auth headers', () => {
       const request = mockAxios.history.get.find(r => r.url === '/myPath')
@@ -117,12 +117,22 @@ describe('client', () => {
         },
       },
     }
-    mockAxios.onPost().replyOnce(200, { data: { data: innerData } })
+    mockAxios.onPost().replyOnce(200, { data: innerData })
     result = await client.gqlPost({ url: 'www.test.com', query: 'query' })
-    expect(result).toEqual({ data: { data: innerData } })
+    expect(result).toEqual({ data: innerData })
   })
   it('check if gqlpost throws an error if the response is not as expected', async () => {
     mockAxios.onPost().replyOnce(200, { response: 'not as expected' })
+    await expect(client.gqlPost({ url: 'www.test.com', query: 'query' })).rejects.toThrow()
+  })
+  it('check if gqlpost throws an error if the response has an error', async () => {
+    const error = {
+      message: 'Requested issue layout configuration is not found',
+      locations: [{ line: 65, column: 3 }],
+      path: ['issueLayoutConfiguration'],
+      extensions: { statusCode: 404, errorType: 'DataFetchingException', classification: 'DataFetchingException' },
+    }
+    mockAxios.onPost().reply(200, { data: { layoutConfiguration: null }, errors: [error] })
     await expect(client.gqlPost({ url: 'www.test.com', query: 'query' })).rejects.toThrow()
   })
 })

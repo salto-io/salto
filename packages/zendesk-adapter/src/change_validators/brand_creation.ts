@@ -42,7 +42,7 @@ const isSubdomainValid = async (brand: InstanceElement, client: ZendeskClient): 
   }
   let res
   try {
-    res = (await client.getSinglePage({
+    res = (await client.get({
       url: `/api/v2/accounts/available.json?subdomain=${brand.value.subdomain}`,
     })).data
   } catch (e) {

@@ -47,7 +47,7 @@ const getUserSchemaId = (instance: InstanceElement): string | undefined => {
 const getUserSchema = async (
   userSchemaId: string,
   client: OktaClient
-): Promise<Values> => (await client.getSinglePage({
+): Promise<Values> => (await client.get({
   url: `/api/v1/meta/schemas/user/${userSchemaId}`,
 })).data as Values[]
 

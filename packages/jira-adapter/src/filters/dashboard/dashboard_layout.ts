@@ -82,7 +82,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(instance => instance.elemID.typeName === DASHBOARD_TYPE)
       .map(async instance => {
         try {
-          const response = await client.getSinglePage({
+          const response = await client.get({
             url: `/rest/dashboards/1.0/${instance.value.id}`,
           })
 

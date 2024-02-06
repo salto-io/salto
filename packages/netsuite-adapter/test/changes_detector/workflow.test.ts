@@ -55,7 +55,7 @@ describe('workflow', () => {
             ['date', 'within', '2021-01-11 6:55 pm', '2021-02-22 6:56 am'],
           ],
           columns: ['recordid'],
-        })
+        }, undefined)
       })
     })
 

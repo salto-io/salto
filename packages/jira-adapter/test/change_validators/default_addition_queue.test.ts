@@ -62,7 +62,17 @@ describe('defaultAdditionQueueValidator', () => {
     )
     expect(changeErrors).toHaveLength(0)
   })
-
+  it('should not return error if queue has a unvalid parent', async () => {
+    queueInstance.annotations[CORE_ANNOTATIONS.PARENT] = [
+      'unvalidParent',
+    ]
+    const validator = defaultAdditionQueueValidator(config)
+    const changeErrors = await validator(
+      [toChange({ after: queueInstance })],
+      buildElementsSourceFromElements([projectInstance, queueInstance])
+    )
+    expect(changeErrors).toHaveLength(0)
+  })
   it('shuould return error if trying to add a queue with the same name as another queue in the project', async () => {
     const otherQueueInstance = new InstanceElement(
       'queue2',

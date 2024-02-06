@@ -775,7 +775,7 @@ describe('userUtils', () => {
       client = new ZendeskClient({
         credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
       })
-      mockGet = jest.spyOn(client, 'getSinglePage')
+      mockGet = jest.spyOn(client, 'get')
     })
 
     it('should return specific user value in case the user exists', async () => {

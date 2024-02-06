@@ -40,6 +40,7 @@ import {
   MetadataQueryParams,
 } from '../types'
 import { getChangedAtSingleton } from '../filters/utils'
+import { CUSTOM_OBJECT_FIELDS } from './metadata_types'
 
 const { isDefined } = values
 
@@ -74,6 +75,7 @@ const UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES = [
   // Since we don't retrieve the CustomMetadata types (CustomObjects), we shouldn't retrieve the Records
   CUSTOM_METADATA,
   CUSTOM_FIELD,
+  ...CUSTOM_OBJECT_FIELDS,
 ]
 
 const getDefaultNamespace = (metadataType: string): string =>

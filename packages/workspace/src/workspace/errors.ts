@@ -16,14 +16,14 @@
 import wu from 'wu'
 import { types } from '@salto-io/lowerdash'
 import { SaltoError, SeverityLevel } from '@salto-io/adapter-api'
+import { parser } from '@salto-io/parser'
 import { MergeError } from '../merger'
 import { ValidationError } from '../validator'
-import { ParseError } from '../parser'
 
 export const MAX_ENV_NAME_LEN = 100
 
 export class Errors extends types.Bean<Readonly<{
-    parse: ReadonlyArray<ParseError>
+    parse: ReadonlyArray<parser.ParseError>
     merge: ReadonlyArray<MergeError>
     validation: ReadonlyArray<ValidationError>
   }>> {

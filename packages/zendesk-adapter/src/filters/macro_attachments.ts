@@ -187,7 +187,7 @@ const getAttachmentContent = async ({
   attachmentType: ObjectType
 }): Promise<(InstanceElement | undefined | SaltoElementError)[]> => {
   try {
-    const res = await client.getSinglePage({
+    const res = await client.get({
       url: `/api/v2/macros/attachments/${attachment.id}/content`,
       responseType: 'arraybuffer',
     })
@@ -218,9 +218,9 @@ const getMacroAttachments = async ({
   macro: InstanceElement
   attachmentType: ObjectType
 }): Promise<(InstanceElement | SaltoElementError)[]> => {
-  // We are ok with calling getSinglePage here
+  // We are ok with calling get here
   //  because a macro can be associated with up to five attachments.
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url: `/api/v2/macros/${macro.value.id}/attachments`,
   })
   if (Array.isArray(response.data)) {

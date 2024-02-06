@@ -68,7 +68,7 @@ const getServiceIdFieldName = (type: ObjectType): string => {
   return isStandardType(type) ? SCRIPT_ID : PATH
 }
 
-const addBundlePrefix = (desiredName: string, type: ObjectType): string => (isBundleType(type) ? BUNDLE.concat(`_${desiredName}`) : desiredName)
+const addBundlePrefix = (desiredName: string, type: ObjectType): string => (isBundleType(type) ? `${BUNDLE}_${desiredName}` : desiredName)
 
 export const createInstanceElement = async (
   customizationInfo: CustomizationInfo,

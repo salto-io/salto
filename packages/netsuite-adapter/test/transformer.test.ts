@@ -23,9 +23,9 @@ import _ from 'lodash'
 import { createInstanceElement, getLookUpName, toCustomizationInfo } from '../src/transformer'
 import {
   ENTITY_CUSTOM_FIELD, SCRIPT_ID, CUSTOM_RECORD_TYPE, METADATA_TYPE,
-  EMAIL_TEMPLATE, NETSUITE, RECORDS_PATH, FILE, FILE_CABINET_PATH, FOLDER, PATH, CONFIG_FEATURES, WORKFLOW,
+  EMAIL_TEMPLATE, NETSUITE, RECORDS_PATH, FILE, FILE_CABINET_PATH, FOLDER, PATH, CONFIG_FEATURES, WORKFLOW, BUNDLE,
 } from '../src/constants'
-import { CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from '../src/client/types'
+import { CustomTypeInfo, CustomizationInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from '../src/client/types'
 import { isFileCustomizationInfo, isFolderCustomizationInfo } from '../src/client/utils'
 import { entitycustomfieldType } from '../src/autogen/types/standard_types/entitycustomfield'
 import { getFileCabinetTypes } from '../src/types/file_cabinet_types'
@@ -35,6 +35,7 @@ import { emailtemplateType } from '../src/autogen/types/standard_types/emailtemp
 import { addressFormType } from '../src/autogen/types/standard_types/addressForm'
 import { transactionFormType } from '../src/autogen/types/standard_types/transactionForm'
 import { workflowType } from '../src/autogen/types/standard_types/workflow'
+import { bundleType } from '../src/types/bundle_type'
 
 const NAME_FROM_GET_ELEM_ID = 'nameFromGetElemId'
 const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
@@ -207,6 +208,7 @@ describe('Transformer', () => {
   const workflow = workflowType().type
   const { file, folder } = getFileCabinetTypes()
   const companyFeatures = featuresType()
+  const bundle = bundleType().type
 
   describe('createInstanceElement', () => {
     const mockElementsSource = buildElementsSourceFromElements([])
@@ -387,6 +389,24 @@ describe('Transformer', () => {
         [SCRIPT_ID]: 'custemailtmpl_my_script_id',
       })
     })
+
+    it('should create bundle instance name correctly', async () => {
+      const bundleCustomizationInfo = {
+        typeName: 'bundle',
+        values: {
+          name: 'bundle name',
+          id: '4321',
+        },
+      } as CustomizationInfo
+      const result = await createInstanceElement(
+        bundleCustomizationInfo,
+        bundle,
+        mockElementsSource,
+        mockGetElemIdFunc
+      )
+      expect(result.elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${BUNDLE}_${bundleCustomizationInfo.values.id}`)
+    })
+
 
     describe('file cabinet types', () => {
       const fileCustomizationInfo: FileCustomizationInfo = {

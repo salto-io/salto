@@ -25,6 +25,7 @@ import {
   SaltoError,
   isInstanceElement,
   isPrimitiveType,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import {
@@ -634,6 +635,14 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     const customObjects = await awu(await elementsSource.getAll())
       .filter(isCustomObjectSync)
       .toArray()
+
+    // Resolve referenceTo fields from Elements Source for partial fetch
+    await awu(customObjects)
+      .flatMap(customObject => Object.values(customObject.fields))
+      .filter(isReferenceField)
+      .flatMap(field => makeArray(field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]))
+      .filter(isReferenceExpression)
+      .forEach(async reference => { reference.value = await reference.getResolvedValue(elementsSource) })
     const customObjectFetchSetting = await getCustomObjectsFetchSettings(
       customObjects,
       dataManagement,

@@ -64,6 +64,9 @@ export const REPORT_DEFINITION = 'reportdefinition'
 export const FINANCIAL_LAYOUT = 'financiallayout'
 export const BUNDLE = 'bundle'
 export const BIN = 'bin'
+export const TAX_SCHEDULE = 'taxSchedule'
+export const PROJECT_EXPENSE_TYPE = 'projectExpenseType'
+export const ALLOCATION_TYPE = 'allocationType'
 
 // Type Annotations
 export const SOURCE = 'source'
@@ -87,6 +90,8 @@ export const PERMISSIONS = 'permissions'
 export const CUSTOM_FIELD = 'customField'
 export const CUSTOM_FIELD_LIST = 'customFieldList'
 export const CONTENT = 'content'
+export const INIT_CONDITION = 'initcondition'
+export const SELECT_RECORD_TYPE = 'selectrecordtype'
 
 type InactiveFields = 'isinactive' | 'inactive' | 'isInactive'
 export const INACTIVE_FIELDS: { [K in InactiveFields]: K } = {

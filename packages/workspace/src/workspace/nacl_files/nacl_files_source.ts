@@ -48,6 +48,7 @@ import {
 } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
 import { AdditionDiff } from '@salto-io/dag'
+import { parser } from '@salto-io/parser'
 import osPath from 'path'
 import { mergeElements, MergeError } from '../../merger'
 import {
@@ -57,7 +58,6 @@ import {
   getNestedStaticFiles,
   updateNaclFileData,
 } from './nacl_file_update'
-import { parse, ParseResult, SourceMap, SourceRange } from '../../parser'
 import { ElementsSource, RemoteElementSource } from '../elements_source'
 import { DirectoryStore } from '../dir_store'
 import { Errors } from '../errors'
@@ -65,7 +65,6 @@ import { StaticFilesSource } from '../static_files'
 import { getStaticFilesFunctions } from '../static_files/functions'
 import { buildNewMergedElementsAndErrors, ChangeSet } from './elements_cache'
 import { deserializeMergeErrors, deserializeSingleElement, serialize } from '../../serializer/elements'
-import { Functions } from '../../parser/functions'
 import { RemoteMap, RemoteMapCreator } from '../remote_map'
 import { ParsedNaclFile } from './parsed_nacl_file'
 import { createParseResultCache, ParsedNaclFileCache } from './parsed_nacl_files_cache'
@@ -108,8 +107,8 @@ export type NaclFilesSource<Changes=ChangeSet<Change>> = Omit<ElementsSource, 'c
   // TODO: this should be for single?
   setNaclFiles: (naclFiles: NaclFile[]) => Promise<Changes>
   removeNaclFiles: (names: string[]) => Promise<Changes>
-  getSourceMap: (filename: string) => Promise<SourceMap>
-  getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
+  getSourceMap: (filename: string) => Promise<parser.SourceMap>
+  getSourceRanges: (elemID: ElemID) => Promise<parser.SourceRange[]>
   getErrors: () => Promise<Errors>
   getParsedNaclFile: (filename: string) => Promise<ParsedNaclFile | undefined>
   clone: () => NaclFilesSource<Changes>
@@ -215,7 +214,7 @@ const getElementsReferencedAndStaticFiles = (elements: ThenableIterable<Element>
 
 export const toParsedNaclFile = async (
   naclFile: NaclFile,
-  parseResult: ParseResult
+  parseResult: parser.ParseResult
 ): Promise<ParsedNaclFile> => {
   let referenced: string[]
   let staticFiles: string[]
@@ -248,20 +247,22 @@ export const toParsedNaclFile = async (
 }
 type ParseNaclFileArgs = {
   naclFile: NaclFile
-  functions: Functions
+  functions: parser.Functions
   createSourceMap?: boolean
 }
-async function parseNaclFile(args: ParseNaclFileArgs & { createSourceMap?: false }): Promise<ParseResult>
-async function parseNaclFile(args: ParseNaclFileArgs & { createSourceMap: boolean }): Promise<Required<ParseResult>>
+async function parseNaclFile(args: ParseNaclFileArgs & { createSourceMap?: false }): Promise<parser.ParseResult>
+async function parseNaclFile(
+  args: ParseNaclFileArgs & { createSourceMap: boolean }
+): Promise<Required<parser.ParseResult>>
 async function parseNaclFile(
   { naclFile, functions, createSourceMap = false }: ParseNaclFileArgs
-): Promise<ParseResult> {
-  return parse(Buffer.from(naclFile.buffer), naclFile.filename, functions, createSourceMap)
+): Promise<parser.ParseResult> {
+  return parser.parse(Buffer.from(naclFile.buffer), naclFile.filename, functions, createSourceMap)
 }
 
 type ParseNaclFilesArgs = {
   naclFiles: NaclFile[]
-  functions: Functions
+  functions: parser.Functions
   createSourceMap?: boolean
 }
 
@@ -280,7 +281,7 @@ const isEmptyNaclFile = async (naclFile: ParsedNaclFile): Promise<boolean> => (
   _.isEmpty(await naclFile.elements()) && _.isEmpty(await naclFile.data.errors())
 )
 
-export const getFunctions = (staticFilesSource: StaticFilesSource): Functions => ({
+export const getFunctions = (staticFilesSource: StaticFilesSource): parser.Functions => ({
   ...getStaticFilesFunctions(staticFilesSource), // add future functions here
 })
 
@@ -623,7 +624,7 @@ const buildNaclFilesSource = (
   persistent: boolean,
   initState?: Promise<NaclFilesState>,
 ): NaclFilesSource => {
-  const functions: Functions = getFunctions(staticFilesSource)
+  const functions: parser.Functions = getFunctions(staticFilesSource)
 
   let state = initState
   let initChanges: ChangeSet<Change> | undefined
@@ -763,7 +764,7 @@ const buildNaclFilesSource = (
     elemID: ElemID
   ): Promise<string[]> => await (await getState()).referencedIndex.get(elemID.getFullName()) ?? []
 
-  const getSourceMap = async (filename: string, useCache = true): Promise<SourceMap> => {
+  const getSourceMap = async (filename: string, useCache = true): Promise<parser.SourceMap> => {
     if (useCache) {
       const parsedNaclFile = await (await getState()).parsedNaclFiles.get(filename)
       const naclFileSourceMap = await parsedNaclFile.sourceMap?.()
@@ -774,7 +775,7 @@ const buildNaclFilesSource = (
     const naclFile = (await naclFilesStore.get(filename))
     if (_.isUndefined(naclFile)) {
       log.error('failed to find %s in NaCl file store', filename)
-      return new SourceMap()
+      return new parser.SourceMap()
     }
     const parsedResult = await parseNaclFile({ naclFile, functions, createSourceMap: true })
     if (useCache) {
@@ -856,7 +857,7 @@ const buildNaclFilesSource = (
         acc.merge(sourceMap)
         return acc
       },
-      new SourceMap(),
+      new parser.SourceMap(),
     )
     const changesWithLocation = getChangesToUpdate(changes, mergedSourceMap)
       .flatMap(change => getChangeLocations(change, mergedSourceMap))
@@ -914,7 +915,7 @@ const buildNaclFilesSource = (
                 buffer)
               : await toParsedNaclFile(
                 { filename, buffer },
-                await parse(Buffer.from(buffer), filename, functions, false),
+                await parser.parse(Buffer.from(buffer), filename, functions, false),
               )
             if (((await parsed.data.errors()) ?? []).length > 0) {
               logNaclFileUpdateErrorContext(filename, fileChanges, naclFileData, buffer)

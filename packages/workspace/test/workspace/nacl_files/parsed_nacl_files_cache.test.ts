@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, Value, SeverityLevel } from '@salto-io/adapter-api'
+import { parser } from '@salto-io/parser'
 import { ParsedNaclFile } from '../../../src/workspace/nacl_files'
 import { InMemoryRemoteMap, CreateRemoteMapParams, RemoteMap } from '../../../src/workspace/remote_map'
 import { createParseResultCache, ParsedNaclFileCache } from '../../../src/workspace/nacl_files/parsed_nacl_files_cache'
 import { StaticFilesSource } from '../../../src/workspace/static_files'
-import { SourceMap } from '../../../src/parser'
 import { toParsedNaclFile } from '../../../src/workspace/nacl_files/nacl_files_source'
 
 describe('ParsedNaclFileCache', () => {
@@ -30,7 +30,7 @@ describe('ParsedNaclFileCache', () => {
   ): Promise<RemoteMap<T, K>> =>
     (new InMemoryRemoteMap<T, K>())
   let cache: ParsedNaclFileCache
-  const sourceMap = new SourceMap()
+  const sourceMap = new parser.SourceMap()
 
   const someDateTimestamp = 553881433
   const afterTimestamp = someDateTimestamp + 10

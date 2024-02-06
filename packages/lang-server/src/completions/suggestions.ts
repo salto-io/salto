@@ -18,7 +18,7 @@ import { TypeElement, Field, isObjectType, isInstanceElement, isPrimitiveType,
   isField, PrimitiveTypes, BuiltinTypes, Value, getField,
   getFieldNames, getFieldType, ElemID,
   isListType, getRestriction, isMapType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { parser } from '@salto-io/workspace'
+import { parser } from '@salto-io/parser'
 import { resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { ContextReference } from '../context'

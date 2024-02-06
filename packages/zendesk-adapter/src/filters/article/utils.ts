@@ -133,7 +133,7 @@ const getAttachmentContent = async ({
   const client = brandIdToClient[attachment.value.brand]
   let res
   try {
-    res = await client.getSinglePage({
+    res = await client.get({
       url: `/hc/article_attachments/${attachment.value.id}/${attachment.value.file_name}`,
       responseType: 'arraybuffer',
     })

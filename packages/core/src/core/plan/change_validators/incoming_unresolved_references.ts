@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { ChangeValidator, ModificationChange, RemovalChange, SaltoError, getChangeData, isModificationChange, isRemovalOrModificationChange } from '@salto-io/adapter-api'
+import { ChangeValidator, ModificationChange, RemovalChange, SaltoError, SaltoErrorType, UnresolvedReferenceError, getChangeData, isModificationChange, isRemovalOrModificationChange } from '@salto-io/adapter-api'
 import { validator } from '@salto-io/workspace'
 
 const { isUnresolvedRefError } = validator
@@ -24,7 +24,7 @@ const getChangeType = <T>(change: ModificationChange<T> | RemovalChange<T>): str
 )
 
 export const incomingUnresolvedReferencesValidator = (validationErrors: ReadonlyArray<SaltoError>)
-  : ChangeValidator => async changes => {
+  : ChangeValidator<UnresolvedReferenceError> => async changes => {
   const unresolvedErrors = validationErrors.filter(isUnresolvedRefError)
   return changes
     .filter(isRemovalOrModificationChange)
@@ -42,6 +42,8 @@ export const incomingUnresolvedReferencesValidator = (validationErrors: Readonly
         message: `Some elements contain references to this ${changeType} element`,
         detailedMessage: `${group.length} other elements contain references to this ${changeType} element, which are no longer valid.`
             + ' You may continue with deploying this change, but the deployment might fail.',
+        unresolvedElemIds: [elemID],
+        type: 'unresolvedReferences' as SaltoErrorType,
       }
     })
 }

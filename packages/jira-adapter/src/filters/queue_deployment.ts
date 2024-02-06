@@ -65,13 +65,8 @@ const getExsitingQueuesNamesAndIds = async (
 ):Promise<string[][]> => {
   try {
     const parent = getParent(getChangeData(changes[0]))
-    const { serviceDeskId } = parent.value
-    if (serviceDeskId === undefined) {
-      log.error(`failed to deploy queue, because ${parent.value.name} does not have a service desk id`)
-      return []
-    }
-    const response = await client.getSinglePage({
-      url: `/rest/servicedeskapi/servicedesk/${serviceDeskId}/queue`,
+    const response = await client.get({
+      url: `/rest/servicedeskapi/servicedesk/projectId:${parent.value.id}/queue`,
     })
     if (!isQueueResponse(response.data)) {
       return []

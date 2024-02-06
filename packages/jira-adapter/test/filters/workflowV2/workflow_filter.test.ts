@@ -94,7 +94,23 @@ describe('jiraWorkflowFilter', () => {
               scope: {
                 type: 'global',
               },
-              transitions: [{ type: 'INITIAL' }],
+              transitions: [
+                {
+                  type: 'INITIAL',
+                  properties:
+                    {
+                      'jira.issue.editable': 'true',
+                    },
+                },
+              ],
+              statuses: [
+                {
+                  id: '1',
+                  properties: {
+                    'jira.issue.editable': 'true',
+                  },
+                },
+              ],
             },
             {
               id: '2',
@@ -128,7 +144,28 @@ describe('jiraWorkflowFilter', () => {
         scope: {
           type: 'global',
         },
-        transitions: [{ type: 'INITIAL' }],
+        transitions: [
+          {
+            type: 'INITIAL',
+            properties: [
+              {
+                key: 'jira.issue.editable',
+                value: 'true',
+              },
+            ],
+          },
+        ],
+        statuses: [
+          {
+            id: '1',
+            properties: [
+              {
+                key: 'jira.issue.editable',
+                value: 'true',
+              },
+            ],
+          },
+        ],
       })
       const secondWorkflow = elements[2] as unknown as InstanceElement
       expect(secondWorkflow.elemID.name).toEqual('secondWorkflow')
@@ -406,6 +443,9 @@ describe('jiraWorkflowFilter', () => {
                 y: 34,
               },
               statusReference: 'uuid1',
+              properties: {
+                'jira.issue.editable': 'true',
+              },
             },
             {
               layout: {
@@ -426,6 +466,9 @@ describe('jiraWorkflowFilter', () => {
               conditions: {
                 operation: 'ALL',
                 conditionGroups: [],
+              },
+              properties: {
+                'jira.issue.editable': 'true',
               },
             },
             {
@@ -621,6 +664,12 @@ describe('jiraWorkflowFilter', () => {
               x: 12,
               y: 34,
             },
+            properties: [
+              {
+                key: 'jira.issue.editable',
+                value: 'true',
+              },
+            ],
           },
           {
             statusReference: new ReferenceExpression(status2.elemID, status2),
@@ -641,6 +690,12 @@ describe('jiraWorkflowFilter', () => {
             conditions: {
               operation: 'ALL',
             },
+            properties: [
+              {
+                key: 'jira.issue.editable',
+                value: 'true',
+              },
+            ],
           },
           {
             id: '2',

@@ -23,9 +23,9 @@ import { captureServiceIdInfo } from '../service_id_info'
 import { NetsuiteFetchQueries, NetsuiteQuery } from '../config/query'
 import { Credentials, isSuiteAppCredentials, toUrlAccountId } from './credentials'
 import SdfClient from './sdf_client'
-import SuiteAppClient, { SuiteAppType } from './suiteapp_client/suiteapp_client'
+import SuiteAppClient from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from './suiteapp_client/suiteapp_file_cabinet'
-import { ConfigRecord, EnvType, HasElemIDFunc, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
+import { ConfigRecord, EnvType, HasElemIDFunc, QueryRecordSchema, QueryRecordResponse, SavedSearchQuery, SystemInformation, SuiteAppType } from './suiteapp_client/types'
 import { CustomRecordResponse, RecordResponse } from './suiteapp_client/soap_client/types'
 import { DeployableChange, FeaturesMap, getChangeNodeId, GetCustomObjectsResult, getDeployableChanges, getNodeId, getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, InvalidSuiteAppCredentialsError, ManifestDependencies, SDFObjectNode } from './types'
 import { toCustomizationInfo } from '../transformer'
@@ -531,9 +531,16 @@ export default class NetsuiteClient {
     return this.suiteAppClient?.runSuiteQL(query)
   }
 
-  public async runSavedSearchQuery(query: SavedSearchQuery):
+  public async runSavedSearchQuery(query: SavedSearchQuery, limit?: number):
     Promise<Record<string, unknown>[] | undefined> {
-    return this.suiteAppClient?.runSavedSearchQuery(query)
+    return this.suiteAppClient?.runSavedSearchQuery(query, limit)
+  }
+
+  public async runRecordsQuery(
+    ids: string[],
+    schema: QueryRecordSchema
+  ): Promise<QueryRecordResponse[] | undefined> {
+    return this.suiteAppClient?.runRecordsQuery(ids, schema)
   }
 
   public async getSystemInformation(): Promise<SystemInformation | undefined> {

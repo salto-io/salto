@@ -57,13 +57,14 @@ describe('automationsToAssetsValidator', () => {
         {
           elemID: automationInstance.elemID,
           severity: 'Warning',
-          message: 'Missing JSM Add-On for Automation Linked to Assets Elements.',
-          detailedMessage: 'The automation \'automation alias\', linked to the Assets object, requires the JSM Add-On in Salto. This automation currently uses internal IDs but does not have the JSM Add-On. If you have modified internal IDs, ensure they are accurate in the target environment. Incorrect IDs, without the JSM Add-On, could lead to deployment issues.',
+          message: 'Missing Assets support for Automation Linked to Assets Elements.',
+          detailedMessage: 'The automation \'automation alias\', linked to the Assets object, requires the Assets support in Salto. This automation currently uses internal IDs but does not have the Assets support. If you have modified internal IDs, ensure they are accurate in the target environment. Incorrect IDs, without the Assets support, could lead to deployment issues.',
         },
       ])
   })
   it('should not return a warning when its addition change and automation has workspaceId and enableJSM is true', async () => {
     config.fetch.enableJSM = true
+    config.fetch.enableJsmExperimental = true
     const validator = automationToAssetsValidator(config)
     expect(await validator([toChange({ after: automationInstance })]))
       .toEqual([])
@@ -84,8 +85,8 @@ describe('automationsToAssetsValidator', () => {
         {
           elemID: automationInstance.elemID,
           severity: 'Warning',
-          message: 'Missing JSM Add-On for Automation Linked to Assets Elements.',
-          detailedMessage: 'The automation \'automation alias\', linked to the Assets object, requires the JSM Add-On in Salto. This automation currently uses internal IDs but does not have the JSM Add-On. If you have modified internal IDs, ensure they are accurate in the target environment. Incorrect IDs, without the JSM Add-On, could lead to deployment issues.',
+          message: 'Missing Assets support for Automation Linked to Assets Elements.',
+          detailedMessage: 'The automation \'automation alias\', linked to the Assets object, requires the Assets support in Salto. This automation currently uses internal IDs but does not have the Assets support. If you have modified internal IDs, ensure they are accurate in the target environment. Incorrect IDs, without the Assets support, could lead to deployment issues.',
         },
       ])
   })

@@ -30,8 +30,8 @@ import {
   safeJsonStringify,
 } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
+import { parser } from '@salto-io/parser'
 import { ValidationError, validateElements, isUnresolvedRefError } from '../validator'
-import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
 import { State } from './state'
 import { multiEnvSource, getSourceNameForFilename, MultiEnvSource, EnvsChanges, FromSource } from './nacl_files/multi_env/multi_env_source'
@@ -79,8 +79,8 @@ export type DateRange = {
 }
 
 export type SourceLocation = {
-  sourceRange: SourceRange
-  subRange?: SourceRange
+  sourceRange: parser.SourceRange
+  subRange?: parser.SourceRange
 }
 
 export type WorkspaceError<T extends SaltoError> = Readonly<T & {
@@ -187,8 +187,8 @@ export type Workspace = {
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
   setNaclFiles: (naclFiles: NaclFile[], validate?: boolean) => Promise<EnvsChanges>
   removeNaclFiles: (names: string[], validate?: boolean) => Promise<EnvsChanges>
-  getSourceMap: (filename: string) => Promise<SourceMap>
-  getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
+  getSourceMap: (filename: string) => Promise<parser.SourceMap>
+  getSourceRanges: (elemID: ElemID) => Promise<parser.SourceRange[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   getReferenceSourcesIndex: (envName?: string) => Promise<ReadOnlyRemoteMap<ElemID[]>>
   getElementOutgoingReferences: (id: ElemID, envName?: string) => Promise<{ id: ElemID; type: ReferenceType }[]>
@@ -953,13 +953,13 @@ export const loadWorkspace = async (
   }
 
   const getErrorSourceRange = async <T extends SaltoElementError>(error: T):
-  Promise<SourceRange[]> => (
+  Promise<parser.SourceRange[]> => (
     error.type === 'config'
       ? adaptersConfig.getSourceRanges(error.elemID)
       : (await getLoadedNaclFilesSource()).getSourceRanges(currentEnv(), error.elemID)
   )
 
-  const transformParseError = (error: ParseError): WorkspaceError<SaltoError> => ({
+  const transformParseError = (error: parser.ParseError): WorkspaceError<SaltoError> => ({
     ...error,
     sourceLocations: [{ sourceRange: error.context, subRange: error.subject }],
   })
@@ -976,7 +976,7 @@ export const loadWorkspace = async (
     }
   }
   const transformError = async (error: SaltoError): Promise<WorkspaceError<SaltoError>> => {
-    const isParseError = (err: SaltoError): err is ParseError =>
+    const isParseError = (err: SaltoError): err is parser.ParseError =>
       _.has(err, 'subject')
     const isElementError = (err: SaltoError): err is SaltoElementError =>
       _.get(err, 'elemID') instanceof ElemID

@@ -22,10 +22,10 @@ import { Element, ElemID, getChangeData,
 import { logger } from '@salto-io/logging'
 import { promises, collections, values, objects } from '@salto-io/lowerdash'
 import { applyInstanceDefaults } from '@salto-io/adapter-utils'
+import { parser } from '@salto-io/parser'
 import { RemoteMap, RemoteMapCreator, mapRemoteMapResult } from '../../remote_map'
 import { ElementSelector, selectElementIdsByTraversal } from '../../element_selector'
 import { ValidationError } from '../../../validator'
-import { ParseError, SourceRange, SourceMap } from '../../../parser'
 import { mergeElements, MergeError } from '../../../merger'
 import { routeChanges, RoutedChanges, routePromote, routeDemote, routeCopyTo, routeRemoveFrom } from './routers'
 import { NaclFilesSource, NaclFile, RoutingMode, SourceLoadParams } from '../nacl_files_source'
@@ -101,8 +101,8 @@ export type MultiEnvSource = {
   getElementFileNames: (env: string) => Promise<Map<string, string[]>>
   setNaclFiles: (naclFiles: NaclFile[]) => Promise<EnvsChanges>
   removeNaclFiles: (names: string[]) => Promise<EnvsChanges>
-  getSourceMap: (filename: string) => Promise<SourceMap>
-  getSourceRanges: (env: string, elemID: ElemID) => Promise<SourceRange[]>
+  getSourceMap: (filename: string) => Promise<parser.SourceMap>
+  getSourceRanges: (env: string, elemID: ElemID) => Promise<parser.SourceRange[]>
   getErrors: (env: string) => Promise<Errors>
   getParsedNaclFile: (filename: string) => Promise<ParsedNaclFile | undefined>
   clone: () => MultiEnvSource
@@ -565,7 +565,7 @@ const buildMultiEnvSource = (
     }),
     {
       merge: mergeErrors,
-      parse: [] as ParseError[],
+      parse: [] as parser.ParseError[],
       validation: [] as ValidationError[],
     }))
   }
@@ -630,16 +630,16 @@ const buildMultiEnvSource = (
       state = buildRes.state
       return buildRes.changes
     },
-    getSourceMap: async (filename: string): Promise<SourceMap> => {
+    getSourceMap: async (filename: string): Promise<parser.SourceMap> => {
       const { source, relPath } = getSourceForNaclFile(filename)
       const sourceMap = await source.getSourceMap(relPath)
-      return new SourceMap(wu(sourceMap.entries())
+      return new parser.SourceMap(wu(sourceMap.entries())
         .map(([key, ranges]) => [
           key,
           ranges.map(r => ({ ...r, filename })),
-        ] as [string, SourceRange[]]))
+        ] as [string, parser.SourceRange[]]))
     },
-    getSourceRanges: async (env: string, elemID: ElemID): Promise<SourceRange[]> => (
+    getSourceRanges: async (env: string, elemID: ElemID): Promise<parser.SourceRange[]> => (
       awu(Object.entries(getActiveSources(env)))
         .flatMap(async ([prefix, source]) => (
           await source.getSourceRanges(elemID)).map(sourceRange => ({

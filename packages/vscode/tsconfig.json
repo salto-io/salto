@@ -30,5 +30,6 @@
       { "path": "../lowerdash" },
       { "path": "../file" },
       { "path": "../workspace" },
+      { "path": "../parser" }
     ]
 }

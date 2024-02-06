@@ -24,7 +24,7 @@ describe('usersValidator', () => {
   const client = new OktaClient({
     credentials: { baseUrl: 'a.okta.com', token: 'token' },
   })
-  const mockGet = jest.spyOn(client, 'getSinglePage')
+  const mockGet = jest.spyOn(client, 'get')
   const ruleType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_RULE_TYPE_NAME) })
   const accessRuleType = new ObjectType({ elemID: new ElemID(OKTA, ACCESS_POLICY_RULE_TYPE_NAME) })
   const policyInstance = new InstanceElement(

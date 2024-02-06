@@ -3032,10 +3032,10 @@
   resolved "https://registry.yarnpkg.com/@salto-io/jsforce-types/-/jsforce-types-0.1.0.tgz#e1a6b1c8c8060dabee2055c39f0b1dd9655489f2"
   integrity sha512-fKC9EdrVoT+5nwjgFi/ybHqT2gWYpCYGBpQ9zfdqc4Qc7rNbWlsr6c1WVrrBxSHNBaoiLpVlrssj166MdOPSAw==
 
-"@salto-io/jsforce@^1.9.3":
-  version "1.9.3"
-  resolved "https://registry.yarnpkg.com/@salto-io/jsforce/-/jsforce-1.9.3.tgz#6a7e2bd818432c40c2b5417e0c438ec16777617e"
-  integrity sha512-346nzB3qt9ljAYSKE8SXi4tyBVvx/m5M81yL1qDpeOjZi/FDoSoEpZII/4srMlKoZil9sUW2PKJ+eRlO9Hf9/w==
+"@salto-io/jsforce@^1.9.4":
+  version "1.9.4"
+  resolved "https://registry.yarnpkg.com/@salto-io/jsforce/-/jsforce-1.9.4.tgz#3919bced17a07e3b363a8780b857fe6c2cabada9"
+  integrity sha512-JiHWhkeGq5pH2CvOyfWsF/2Af1BrQ7dwzAFNYpj9bOwj3PAoKHNQmXThKU2RMX4mK4LOa+LvyY6WtpaIHF8qfg==
   dependencies:
     base64-url "^2.2.0"
     co-prompt "^1.0.0"

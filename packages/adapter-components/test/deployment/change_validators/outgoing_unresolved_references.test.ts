@@ -33,6 +33,7 @@ describe('unresolved_references', () => {
     expect(errors).toHaveLength(1)
     expect(errors[0].elemID).toEqual(instance.elemID)
     expect(errors[0].detailedMessage).toEqual(`Element ${instance.elemID.getFullName()} contains unresolved references: ${unresolvedElemId.getFullName()}. Add the missing dependencies and try again. To learn more about fixing this error, go to https://help.salto.io/en/articles/6947056-element-contains-unresolved-references`)
+    expect(errors[0].unresolvedElemIds).toEqual([unresolvedElemId])
   })
 
   it('should find unresolved references in instance annotation', async () => {
@@ -52,6 +53,8 @@ describe('unresolved_references', () => {
     expect(errors).toHaveLength(1)
     expect(errors[0].elemID).toEqual(instance.elemID)
     expect(errors[0].detailedMessage).toEqual(`Element ${instance.elemID.getFullName()} contains unresolved references: ${unresolvedElemId.getFullName()}. Add the missing dependencies and try again. To learn more about fixing this error, go to https://help.salto.io/en/articles/6947056-element-contains-unresolved-references`)
+    expect(errors[0].unresolvedElemIds).toEqual([unresolvedElemId])
+    expect(errors[0].type).toEqual('unresolvedReferences')
   })
 
   it('should find unresolved references in type annotation', async () => {
@@ -69,6 +72,8 @@ describe('unresolved_references', () => {
     expect(errors).toHaveLength(1)
     expect(errors[0].elemID).toEqual(type.elemID)
     expect(errors[0].detailedMessage).toEqual(`Element ${type.elemID.getFullName()} contains unresolved references: ${unresolvedElemId.getFullName()}. Add the missing dependencies and try again. To learn more about fixing this error, go to https://help.salto.io/en/articles/6947056-element-contains-unresolved-references`)
+    expect(errors[0].unresolvedElemIds).toEqual([unresolvedElemId])
+    expect(errors[0].type).toEqual('unresolvedReferences')
   })
 
   it('should find unresolved references in type field annotation', async () => {
@@ -91,6 +96,8 @@ describe('unresolved_references', () => {
     expect(errors).toHaveLength(1)
     expect(errors[0].elemID).toEqual(type.elemID)
     expect(errors[0].detailedMessage).toEqual(`Element ${type.elemID.getFullName()} contains unresolved references: ${unresolvedElemId.getFullName()}. Add the missing dependencies and try again. To learn more about fixing this error, go to https://help.salto.io/en/articles/6947056-element-contains-unresolved-references`)
+    expect(errors[0].unresolvedElemIds).toEqual([unresolvedElemId])
+    expect(errors[0].type).toEqual('unresolvedReferences')
   })
 
   it('should find unresolved references in templates', async () => {
@@ -108,6 +115,8 @@ describe('unresolved_references', () => {
     expect(errors).toHaveLength(1)
     expect(errors[0].elemID).toEqual(instance.elemID)
     expect(errors[0].detailedMessage).toEqual(`Element ${instance.elemID.getFullName()} contains unresolved references: ${unresolvedElemId.getFullName()}. Add the missing dependencies and try again. To learn more about fixing this error, go to https://help.salto.io/en/articles/6947056-element-contains-unresolved-references`)
+    expect(errors[0].unresolvedElemIds).toEqual([unresolvedElemId])
+    expect(errors[0].type).toEqual('unresolvedReferences')
   })
 
   it('should not return errors if does not have unresolved references', async () => {

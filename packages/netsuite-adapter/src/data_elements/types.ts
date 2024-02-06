@@ -179,7 +179,12 @@ const ALL_TABLE_TO_INTERNAL_ID = {
   ...MANUALLY_TABLE_TO_INTERNAL_ID,
 } as const
 
-export type SuiteQLTableName = keyof typeof ALL_TABLE_TO_INTERNAL_ID
+const ADDITIONAL_TABLES = [
+  'entityStatus',
+  'campaignEvent',
+] as const
+
+export type SuiteQLTableName = keyof typeof ALL_TABLE_TO_INTERNAL_ID | typeof ADDITIONAL_TABLES[number]
 
 const TRANSACTION_TYPES = [
   'advInterCompanyJournalEntry',

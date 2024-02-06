@@ -18,7 +18,7 @@ import { ElemID } from './element_id'
 
 export type SeverityLevel = 'Error' | 'Warning' | 'Info'
 
-export type SaltoErrorType = 'config' | 'dependency'
+export type SaltoErrorType = 'config' | 'dependency' | 'unresolvedReferences'
 
 export type SaltoError = {
     message: string

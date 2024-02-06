@@ -16,7 +16,7 @@
 
 import { CORE_ANNOTATIONS, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { getParent } from '@salto-io/adapter-utils'
+import { getParent, hasValidParent } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { OBJECT_TYPE_TYPE, OBJECT_SCHEMA_STATUS_TYPE, OBJECT_SCHEMA_TYPE, OBJECT_SCHMEA_REFERENCE_TYPE_TYPE } from '../../constants'
 
@@ -41,6 +41,7 @@ const filter: FilterCreator = ({ config }) => ({
       .filter(isAdditionChange)
       .map(getChangeData)
       .filter(instance => SUPPORTED_TYPES.includes(instance.elemID.typeName))
+      .filter(instance => hasValidParent(instance))
       .forEach(instance => {
         instance.value.objectSchemaId = getParent(instance).value.id
       })

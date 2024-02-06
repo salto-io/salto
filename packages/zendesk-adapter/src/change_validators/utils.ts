@@ -38,6 +38,11 @@ export const validateOrderType = (orderInstance: InstanceElement, orderField: st
   return schemeGuard(orderInstance)
 }
 
+export type ConditionWithReferenceValue = {
+  field: string
+  value: ReferenceExpression
+}
+
 export type ActionsType = {
   field: string | ReferenceExpression
   value: unknown

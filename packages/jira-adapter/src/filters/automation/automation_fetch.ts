@@ -31,8 +31,8 @@ import { convertRuleScopeValueToProjects } from './automation_structure'
 export type Component = {
   value: {
       workspaceId?: string
-      schemaId?: string
-      objectTypeId: ReferenceExpression
+      schemaId: ReferenceExpression
+      objectTypeId?: ReferenceExpression
       schemaLabel?: string
       objectTypeLabel?: string
   }
@@ -40,11 +40,11 @@ export type Component = {
 
 const ASSET_COMPONENT_SCHEME = Joi.object({
   value: Joi.object({
-    objectTypeId: Joi.required(),
-    workspaceId: Joi.string().required(),
+    objectTypeId: Joi.string(),
+    workspaceId: Joi.string(),
     schemaId: Joi.string().required(),
-    schemaLabel: Joi.string().required(),
-    objectTypeLabel: Joi.string().required(),
+    schemaLabel: Joi.string(),
+    objectTypeLabel: Joi.string(),
   }).unknown(true),
 }).unknown(true)
 
@@ -142,7 +142,6 @@ const mofidyAssetsComponents = (instance: InstanceElement): void => {
   const assetsComponents: Component[] = instance.value.components
     .filter(isAssetComponent)
   assetsComponents.forEach(component => {
-    delete component.value.schemaId
     delete component.value.schemaLabel
     delete component.value.objectTypeLabel
     delete component.value.workspaceId
@@ -154,7 +153,7 @@ export const getAutomations = async (
   config: JiraConfig,
 ): Promise<Values[]> => (
   client.isDataCenter
-    ? (await client.getSinglePage({
+    ? (await client.get({
       url: '/rest/cb-automation/latest/project/GLOBAL/rule',
     })).data as Values[]
     : postPaginated(

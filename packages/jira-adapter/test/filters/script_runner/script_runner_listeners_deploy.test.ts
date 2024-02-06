@@ -83,7 +83,7 @@ describe('script_runner_listeners_deploy', () => {
     filter = scriptRunnerListenersDeploy(getFilterParams({ config })) as FilterType
     mockGetSinglePage = jest.fn()
     mockPut = jest.fn()
-    ScriptRunnerClient.prototype.getSinglePage = mockGetSinglePage
+    ScriptRunnerClient.prototype.get = mockGetSinglePage
     ScriptRunnerClient.prototype.put = mockPut
     mockGetSinglePage.mockResolvedValue({
       status: 200,

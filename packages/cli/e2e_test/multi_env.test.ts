@@ -18,7 +18,7 @@ import { SalesforceClient, UsernamePasswordCredentials } from '@salto-io/salesfo
 import { testHelpers as salesforceTestHelpers } from '@salto-io/salesforce-adapter/dist/e2e_test/jest_environment'
 import path from 'path'
 import { Plan } from '@salto-io/core'
-import { parser } from '@salto-io/workspace'
+import { parser } from '@salto-io/parser'
 import { strings, collections } from '@salto-io/lowerdash'
 import tmp from 'tmp-promise'
 import { writeFile, rm } from '@salto-io/file'

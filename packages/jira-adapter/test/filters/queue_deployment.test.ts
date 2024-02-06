@@ -38,7 +38,6 @@ describe('queue deployment filter', () => {
         name: 'project1',
         projectTypeKey: 'service_desk',
         key: 'project1Key',
-        serviceDeskId: 3,
       },
     )
     const fieldType = createEmptyType(FIELD_TYPE_NAME)
@@ -112,7 +111,7 @@ describe('queue deployment filter', () => {
         const { client: cli, connection: conn } = mockClient(false)
         connection = conn
         client = cli
-        mockGet = jest.spyOn(client, 'getSinglePage')
+        mockGet = jest.spyOn(client, 'get')
         const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
         config.fetch.enableJSM = true
         queueInstance = new InstanceElement(
@@ -129,7 +128,7 @@ describe('queue deployment filter', () => {
           },
         )
         mockGet.mockImplementation(async params => {
-          if (params.url === '/rest/servicedeskapi/servicedesk/3/queue') {
+          if (params.url === '/rest/servicedeskapi/servicedesk/projectId:11111/queue') {
             return {
               status: 200,
               data: {
@@ -173,13 +172,6 @@ describe('queue deployment filter', () => {
         expect(res.deployResult.appliedChanges).toHaveLength(1)
         expect(connection.put).toHaveBeenCalledTimes(1)
         expect(connection.delete).toHaveBeenCalledTimes(1)
-      })
-      it('should deploy addition of a default queue, if parent does not have serviceDeskId as addition change', async () => {
-        queueInstance.annotations[CORE_ANNOTATIONS.PARENT][0].value.value.serviceDeskId = undefined
-        const res = await filter.deploy([{ action: 'add', data: { after: queueInstance } }])
-        expect(res.leftoverChanges).toHaveLength(0)
-        expect(res.deployResult.appliedChanges).toHaveLength(1)
-        expect(connection.post).toHaveBeenCalledTimes(2)
       })
       it('should deploy addition of a default queue as addition change, if failed to get default queues', async () => {
         mockGet.mockImplementation(async params => {

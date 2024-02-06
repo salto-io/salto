@@ -19,7 +19,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { CORE_ANNOTATIONS, BuiltinTypes, ObjectType, ElemID, InstanceElement, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { applyInstancesDefaults } from '@salto-io/adapter-utils'
 import { replaceContents, exists, mkdirp, readFile } from '@salto-io/file'
-import { parser } from '@salto-io/workspace'
+import { parser } from '@salto-io/parser'
 import { collections } from '@salto-io/lowerdash'
 import { TelemetryConfig } from './telemetry'
 

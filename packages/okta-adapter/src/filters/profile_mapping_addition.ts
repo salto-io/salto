@@ -30,7 +30,7 @@ const getMappingIdBySourceAndTarget = async (
   targetId: string,
   client: OktaClient,
 ): Promise<string> => {
-  const mappingEntries = (await client.getSinglePage({
+  const mappingEntries = (await client.get({
     url: '/api/v1/mappings',
     queryParams: { sourceId, targetId },
   })).data

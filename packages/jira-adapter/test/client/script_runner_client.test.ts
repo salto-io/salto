@@ -60,17 +60,17 @@ describe('scriptRunnerClient', () => {
     describe('get token address', () => {
       it('should throw correct error when cannot get JWT address', async () => {
         mockAxios.onGet(JWT_ACCESS_URL).reply(400, { response: 'asd', errorMessages: ['error message'] })
-        await expect(async () => scriptRunnerClient.getSinglePage({ url: '/myPath' })).rejects.toThrow(new Error(`Failed to get ${JWT_ACCESS_URL} with error: Error: Request failed with status code 400. error message`))
+        await expect(async () => scriptRunnerClient.get({ url: '/myPath' })).rejects.toThrow(new Error(`Failed to get ${JWT_ACCESS_URL} with error: Error: Request failed with status code 400. error message`))
       })
       it('should fail when JWT address object is not in the right format', async () => {
         mockAxios.onGet(JWT_ACCESS_URL).reply(200, { xurl: SCRIPT_RUNNER_VALID_URL })
-        const result = await scriptRunnerClient.getSinglePage({ url: '/myPath' })
+        const result = await scriptRunnerClient.get({ url: '/myPath' })
         expect(result).toEqual({ status: 401, data: [] })
         expect(logErrorSpy).toHaveBeenCalledWith('Failed to get script runner token, the response from the jira service was not as expected')
       })
       it('should fail when JWT address object is not a valid url', async () => {
         mockAxios.onGet(JWT_ACCESS_URL).reply(200, { url: 'http' })
-        const result = await scriptRunnerClient.getSinglePage({ url: '/myPath' })
+        const result = await scriptRunnerClient.get({ url: '/myPath' })
         expect(result).toEqual({ status: 401, data: [] })
         expect(logErrorSpy).toHaveBeenCalledWith('Failed to parse script runner token, the response from the jira service was not a valid url', 'http')
       })
@@ -78,8 +78,8 @@ describe('scriptRunnerClient', () => {
         mockAxios.onGet(JWT_ACCESS_URL).reply(200, { url: SCRIPT_RUNNER_VALID_URL })
         mockAxios.onGet(SCRIPT_RUNNER_VALID_URL).replyOnce(200, VALID_HTML)
         mockAxios.onGet('https://my.scriptrunner.net/myPath').reply(200, { response: 'asd' })
-        await scriptRunnerClient.getSinglePage({ url: '/myPath' })
-        await scriptRunnerClient.getSinglePage({ url: '/myPath' })
+        await scriptRunnerClient.get({ url: '/myPath' })
+        await scriptRunnerClient.get({ url: '/myPath' })
         expect(mockAxios.history.get.filter(history => history.url === JWT_ACCESS_URL)).toHaveLength(1)
         expect(mockAxios.history.get.filter(history => history.url === '/myUrlPath')).toHaveLength(1)
       })
@@ -90,37 +90,37 @@ describe('scriptRunnerClient', () => {
       })
       it('should fail when cannot access JWT address', async () => {
         mockAxios.onGet(SCRIPT_RUNNER_VALID_URL).reply(400, { response: 'asd', errorMessages: ['error message'] })
-        expect(await scriptRunnerClient.getSinglePage({ url: '/myPath' })).toEqual({ status: 401, data: [] })
+        expect(await scriptRunnerClient.get({ url: '/myPath' })).toEqual({ status: 401, data: [] })
         expect(logErrorSpy).toHaveBeenCalledWith('Failed to get script runner token from scriptRunner service', new Error('Request failed with status code 400'))
       })
       it('should fail when sr not in correct format', async () => {
         mockAxios.onGet(SCRIPT_RUNNER_VALID_URL).replyOnce(200, { response: 'asd' })
-        expect(await scriptRunnerClient.getSinglePage({ url: '/myPath' })).toEqual({ status: 401, data: [] })
+        expect(await scriptRunnerClient.get({ url: '/myPath' })).toEqual({ status: 401, data: [] })
       })
       it('should fail when not html response', async () => {
         mockAxios.onGet(SCRIPT_RUNNER_VALID_URL).replyOnce(200, 'not another html answer')
-        expect(await scriptRunnerClient.getSinglePage({ url: '/myPath' })).toEqual({ status: 401, data: [] })
+        expect(await scriptRunnerClient.get({ url: '/myPath' })).toEqual({ status: 401, data: [] })
         expect(logErrorSpy).toHaveBeenCalledWith('Failed to get script runner token from scriptRunner service, could not find meta tag with name="sr-token"', 'not another html answer')
       })
       it('should fail when not SR token', async () => {
         mockAxios.onGet(SCRIPT_RUNNER_VALID_URL).replyOnce(200, NO_SR_HTML)
-        expect(await scriptRunnerClient.getSinglePage({ url: '/myPath' })).toEqual({ status: 401, data: [] })
+        expect(await scriptRunnerClient.get({ url: '/myPath' })).toEqual({ status: 401, data: [] })
         expect(logErrorSpy).toHaveBeenCalledWith('Failed to get script runner token from scriptRunner service, could not find meta tag with name="sr-token"', '<!DOCTYPE html><html><head></head></html>')
       })
       it('should fail when sr element does not have context', async () => {
         mockAxios.onGet(SCRIPT_RUNNER_VALID_URL).replyOnce(200, NO_CONTENT_HTML)
-        expect(await scriptRunnerClient.getSinglePage({ url: '/myPath' })).toEqual({ status: 401, data: [] })
+        expect(await scriptRunnerClient.get({ url: '/myPath' })).toEqual({ status: 401, data: [] })
         expect(logErrorSpy).toHaveBeenCalledWith('Failed to get script runner token from scriptRunner service, could not find content attribute"', '<!DOCTYPE html><html><head><meta name="sr-token"></head></html>')
       })
       it('should call send request decorator for page', async () => {
         mockAxios.onGet(SCRIPT_RUNNER_VALID_URL).replyOnce(200, VALID_HTML)
         mockAxios.onGet('https://my.scriptrunner.net/myPath').replyOnce(400, { response: 'asd', errorMessages: ['error message'] })
-        await expect(async () => scriptRunnerClient.getSinglePage({ url: '/myPath' })).rejects.toThrow(new Error('Failed to get /myPath with error: Error: Request failed with status code 400. error message'))
+        await expect(async () => scriptRunnerClient.get({ url: '/myPath' })).rejects.toThrow(new Error('Failed to get /myPath with error: Error: Request failed with status code 400. error message'))
       })
       it('should fail without throwing when received page not found error', async () => {
         mockAxios.onGet(SCRIPT_RUNNER_VALID_URL).replyOnce(200, VALID_HTML)
         mockAxios.onGet('https://my.scriptrunner.net/myPath').reply(404, { response: 'asd', errorMessages: ['error message'] })
-        expect(await scriptRunnerClient.getSinglePage({ url: '/myPath' })).toEqual({ status: 404, data: [] })
+        expect(await scriptRunnerClient.get({ url: '/myPath' })).toEqual({ status: 404, data: [] })
       })
     })
     it('should not call endpoints for dc', async () => {
@@ -133,13 +133,13 @@ describe('scriptRunnerClient', () => {
     })
   })
 
-  describe('getSinglePage', () => {
+  describe('get', () => {
     let result: clientUtils.client.ResponseValue
     beforeEach(async () => {
       mockAxios.onGet(JWT_ACCESS_URL).reply(200, { url: SCRIPT_RUNNER_VALID_URL })
       mockAxios.onGet(SCRIPT_RUNNER_VALID_URL).replyOnce(200, VALID_HTML)
       mockAxios.onGet().reply(200, { response: 'asd' })
-      result = await scriptRunnerClient.getSinglePage({ url: '/myPath' })
+      result = await scriptRunnerClient.get({ url: '/myPath' })
     })
     it('should request the correct path with auth headers', () => {
       expect(mockAxios.history.get).toHaveLength(6)
@@ -160,11 +160,11 @@ describe('scriptRunnerClient', () => {
       expect(result).toEqual({ status: 200, data: { response: 'asd' } })
     })
     it('should not call the login endpoint again', async () => {
-      await scriptRunnerClient.getSinglePage({ url: '/myPath2' })
+      await scriptRunnerClient.get({ url: '/myPath2' })
       expect(mockAxios.history.get).toHaveLength(7)
     })
     it('should pass on headers', async () => {
-      await scriptRunnerClient.getSinglePage({ url: '/myPath2', headers: { 'X-Atlassian-Token': 'no-check' } })
+      await scriptRunnerClient.get({ url: '/myPath2', headers: { 'X-Atlassian-Token': 'no-check' } })
       expect(mockAxios.history.get).toHaveLength(7)
       const request = mockAxios.history.get.find(r => r.url === '/myPath2')
       expect(request?.headers?.['X-Atlassian-Token']).toEqual('no-check')
@@ -174,7 +174,7 @@ describe('scriptRunnerClient', () => {
     mockAxios.onGet(JWT_ACCESS_URL).reply(200, { url: SCRIPT_RUNNER_VALID_URL })
     mockAxios.onGet(SCRIPT_RUNNER_VALID_URL).replyOnce(200, VALID_HTML)
     mockAxios.onGet().reply(402, { response: 'asd' })
-    const result = await scriptRunnerClient.getSinglePage({ url: '/myPath' })
+    const result = await scriptRunnerClient.get({ url: '/myPath' })
     expect(result).toEqual({ status: 402, data: [] })
   })
 })

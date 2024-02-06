@@ -183,7 +183,7 @@ const getTabsFromService = async (
   const instance = getChangeData(change)
   // At this point because we call this right after the field is created,
   // there is only one tab so no need to paginate here
-  const resp = await client.getSinglePage({ url: `/rest/api/3/screens/${instance.value.id}/tabs` })
+  const resp = await client.get({ url: `/rest/api/3/screens/${instance.value.id}/tabs` })
   if (!Array.isArray(resp.data) || !resp.data.every(_.isPlainObject)) {
     log.warn(`Received unexpected response from Jira when querying tabs for instance ${instance.elemID.getFullName()}: ${safeJsonStringify(resp.data)}`)
     throw new Error(`Received unexpected response from Jira when querying tabs for instance ${instance.elemID.getFullName()}`)

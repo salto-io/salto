@@ -54,12 +54,12 @@ type ThemeFile = { filename: string; content: StaticFile }
 type DeployThemeFile = { filename: string; content: Buffer }
 
 
-type ThemeDirectory = {
+export type ThemeDirectory = {
   files: Record<string, ThemeFile | DeployThemeFile>
   folders: Record<string, ThemeDirectory>
 }
 
-const unzipFolderToElements = async (
+export const unzipFolderToElements = async (
   buffer: Buffer, brandName: string, name: string,
 ): Promise<ThemeDirectory> => {
   const zip = new JSZip()

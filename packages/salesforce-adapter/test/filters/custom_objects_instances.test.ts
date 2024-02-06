@@ -27,6 +27,7 @@ import {
   ObjectType,
   PrimitiveType,
   PrimitiveTypes, ReadOnlyElementsSource,
+  ReferenceExpression,
   SaltoError,
   ServiceIds,
 } from '@salto-io/adapter-api'
@@ -987,7 +988,9 @@ describe('Custom Object Instances filter', () => {
             annotations: {
               [LABEL]: 'parent field',
               [API_NAME]: 'Parent',
-              [FIELD_ANNOTATIONS.REFERENCE_TO]: [refToObjectName],
+              // ReferenceExpression is here on purpose to make sure
+              // we handle a use-case of unresolved reference to the type. (e.g. in Partial Fetch)
+              [FIELD_ANNOTATIONS.REFERENCE_TO]: [new ReferenceExpression(refToObject.elemID)],
               [FIELD_ANNOTATIONS.QUERYABLE]: true,
             },
           },

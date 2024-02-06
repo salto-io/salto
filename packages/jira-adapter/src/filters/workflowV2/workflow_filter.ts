@@ -21,7 +21,7 @@ import { elements as adapterElements, config as configUtils, client as clientUti
 import { CORE_ANNOTATIONS, Element, InstanceElement, ObjectType, SaltoError, AdditionChange, Change, ChangeDataType, getChangeData, isAdditionChange, isInstanceElement, isModificationChange, ModificationChange, ReadOnlyElementsSource, ReferenceExpression, Values, ElemID } from '@salto-io/adapter-api'
 import { v4 as uuidv4 } from 'uuid'
 import { FilterCreator } from '../../filter'
-import { addAnnotationRecursively, findObject, setTypeDeploymentAnnotations } from '../../utils'
+import { addAnnotationRecursively, convertPropertiesToList, convertPropertiesToMap, findObject, setTypeDeploymentAnnotations } from '../../utils'
 import { CHUNK_SIZE, isWorkflowIdsResponse, isWorkflowResponse, isTaskResponse, STATUS_CATEGORY_ID_TO_KEY, TASK_STATUS, WorkflowPayload, WorkflowVersion, CONDITION_LIST_FIELDS, VALIDATOR_LIST_FIELDS, ID_TO_UUID_PATH_NAME_TO_RECURSE, isAdditionOrModificationWorkflowChange, CONDITION_GROUPS_PATH_NAME_TO_RECURSE } from './types'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
 import { JIRA_WORKFLOW_TYPE } from '../../constants'
@@ -127,6 +127,10 @@ const createWorkflowInstances = async (
         defaultName: workflow.name,
       })
       convertTransitionParametersFields(instance.value.transitions, convertParametersFieldsToList)
+      convertPropertiesToList([
+        ...instance.value.statuses ?? [],
+        ...instance.value.transitions ?? [],
+      ])
       return instance
     }))
     return { workflowInstances }
@@ -439,6 +443,10 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
           const statusIdToUuid = getUuidMap(statusInstances)
           const resolvedWorkflowInstance = await resolveValues(workflowInstance, getLookUpName)
           convertTransitionParametersFields(resolvedWorkflowInstance.value.transitions, convertParametersFieldsToString)
+          convertPropertiesToMap([
+            ...resolvedWorkflowInstance.value.statuses ?? [],
+            ...resolvedWorkflowInstance.value.transitions ?? [],
+          ])
           walkOnElement({ element: resolvedWorkflowInstance, func: replaceStatusIdWithUuid(statusIdToUuid) })
           walkOnElement({ element: resolvedWorkflowInstance, func: insertConditionGroups })
           const statusesPayload = getStatusesPayload(statusInstances, statusIdToUuid)

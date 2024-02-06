@@ -231,7 +231,7 @@ export const getUserFallbackValue = async (
 ): Promise<string | undefined> => {
   if (defaultMissingUserFallback === configUtils.DEPLOYER_FALLBACK_VALUE) {
     try {
-      const response = (await client.getSinglePage({
+      const response = (await client.get({
         url: '/api/v2/users/me',
       })).data
       if (isCurrentUserResponse(response)) {

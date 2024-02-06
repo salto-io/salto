@@ -81,6 +81,8 @@ import {
   conditionalTicketFieldsValidator,
   dynamicContentDeletionValidator,
   guideThemeReadonlyValidator,
+  dynamicContentPlaceholderModificationValidator,
+  inactiveTicketFormInViewValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ChangeValidatorName, ZendeskDeployConfig, ZendeskFetchConfig, ZendeskConfig } from './config'
@@ -154,7 +156,7 @@ export default ({
     helpCenterActivation: helpCenterActivationValidator,
     helpCenterCreationOrRemoval: helpCenterCreationOrRemovalValidator(client, apiConfig),
     externalSourceWebhook: externalSourceWebhookValidator,
-    defaultGroupChange: defaultGroupChangeValidator,
+    defaultGroupChange: defaultGroupChangeValidator(client),
     organizationExistence: organizationExistenceValidator(client, fetchConfig, deployConfig),
     badFormatWebhookAction: badFormatWebhookActionValidator,
     guideDisabled: guideDisabledValidator(fetchConfig),
@@ -163,6 +165,7 @@ export default ({
     guideThemeUpdateMetadata: guideThemeUpdateMetadataValidator,
     additionOfTicketStatusForTicketForm: additionOfTicketStatusForTicketFormValidator,
     defaultDynamicContentItemVariant: defaultDynamicContentItemVariantValidator,
+    dynamicContentPlaceholderModification: dynamicContentPlaceholderModificationValidator,
     featureActivation: featureActivationValidator,
     deflectionAction: activeActionFeaturesValidator,
     standardFields: standardFieldsValidator,
@@ -175,6 +178,7 @@ export default ({
     notEnabledMissingReferences: notEnabledMissingReferencesValidator(config),
     conditionalTicketFields: conditionalTicketFieldsValidator,
     dynamicContentDeletion: dynamicContentDeletionValidator,
+    inactiveTicketFormInView: inactiveTicketFormInViewValidator,
     // *** Guide Order Validators ***
     childInOrder: childInOrderValidator,
     childrenReferences: childrenReferencesValidator,

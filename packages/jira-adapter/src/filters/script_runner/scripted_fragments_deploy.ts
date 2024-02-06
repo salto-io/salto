@@ -94,7 +94,7 @@ const filter: FilterCreator = ({ client, scriptRunnerClient, config, elementsSou
     let fragmentsFromService: Value[]
     try {
       const response = await scriptRunnerClient
-        .getSinglePage({
+        .get({
           url: '/sr-dispatcher/jira/token/script-fragments',
         })
       if (!isFragmentsResponse(response.data)) {

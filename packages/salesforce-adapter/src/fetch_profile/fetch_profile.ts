@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import {
   DATA_CONFIGURATION,
   FetchProfile,
@@ -24,6 +25,7 @@ import {
 import { buildDataManagement, validateDataManagementConfig } from './data_management'
 import { buildMetadataQuery, validateMetadataParams } from './metadata_query'
 import { DEFAULT_MAX_INSTANCES_PER_TYPE, DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../constants'
+import { mergeWithDefaultImportantValues } from './important_values'
 
 type OptionalFeaturesDefaultValues = {
   [FeatureName in keyof OptionalFeatures]?: boolean
@@ -37,6 +39,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   fixRetrieveFilePaths: true,
   extraDependenciesV2: true,
   extendedCustomFieldInformation: false,
+  importantValues: false,
 }
 
 type BuildFetchProfileParams = {
@@ -58,6 +61,7 @@ export const buildFetchProfile = ({
     preferActiveFlowVersions,
     addNamespacePrefixToFullName,
     warningSettings,
+    additionalImportantValues,
   } = fetchParams
   return {
     dataManagement: data && buildDataManagement(data),
@@ -71,6 +75,7 @@ export const buildFetchProfile = ({
     ),
     metadataQuery,
     maxItemsInRetrieveRequest,
+    importantValues: mergeWithDefaultImportantValues(additionalImportantValues),
   }
 }
 
@@ -82,5 +87,15 @@ export const validateFetchParameters = (
 
   if (params.data !== undefined) {
     validateDataManagementConfig(params.data, [...fieldPath, DATA_CONFIGURATION])
+  }
+  if (params.additionalImportantValues !== undefined) {
+    const duplicateDefs = _(params.additionalImportantValues)
+      .groupBy(def => def.value)
+      .filter((defs, _value) => defs.length > 1)
+      .keys()
+      .value()
+    if (duplicateDefs.length > 0) {
+      throw new Error(`Duplicate definitions for additionalImportantValues: [${duplicateDefs.join(', ')}]`)
+    }
   }
 }

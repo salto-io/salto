@@ -18,7 +18,7 @@ import { isInstanceElement } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
-import { OBJECT_TYPE_ATTRIBUTE_TYPE, OBJECT_TYPE_TYPE, PROJECT_TYPE, SERVICE_DESK } from '../constants'
+import { OBJECT_TYPE_ATTRIBUTE_TYPE, OBJECT_TYPE_TYPE } from '../constants'
 
 type ObjectWithId = {
   id: number
@@ -34,15 +34,6 @@ const filter: FilterCreator = () => ({
   name: 'changeJSMElementsFieldFilter',
   onFetch: async elements => {
     const instanceElements = elements.filter(isInstanceElement)
-
-    instanceElements
-      .filter(e => e.elemID.typeName === PROJECT_TYPE)
-      .filter(project => project.value.projectTypeKey === SERVICE_DESK)
-      .filter(project => project.value.serviceDeskId !== undefined)
-      .forEach(project => {
-        project.value.serviceDeskId = isObjectWithId(project.value.serviceDeskId)
-          ? project.value.serviceDeskId.id : project.value.serviceDeskId
-      })
 
     instanceElements
       .filter(e => e.elemID.typeName === OBJECT_TYPE_TYPE)

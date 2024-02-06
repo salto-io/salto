@@ -54,7 +54,7 @@ describe('SuiteAppClient', () => {
       mockAxiosAdapter.onPost().replyOnce(200, {
         status: 'success',
         results: {
-          appVersion: [0, 1, 9],
+          appVersion: [0, 2, 0],
           time: 1000,
           envType: EnvType.PRODUCTION,
         },
@@ -283,6 +283,146 @@ describe('SuiteAppClient', () => {
             limit: 1000,
           },
         })
+      })
+    })
+
+    describe('runRecordsQuery', () => {
+      it('successful query should return the results', async () => {
+        mockAxiosAdapter.onPost().reply(200, {
+          status: 'success',
+          results: [
+            {
+              body: {
+                scriptid: 'customworkflow123',
+              },
+              sublists: [],
+              errors: [
+                'some error',
+              ],
+            },
+            {
+              body: {
+                scriptid: 'customworkflow456',
+              },
+              sublists: [
+                {
+                  body: {
+                    scriptid: 'customworkflow789',
+                  },
+                  sublists: [],
+                },
+              ],
+              errors: [
+                'some error 2',
+              ],
+            },
+          ],
+        })
+        const results = await client.runRecordsQuery(
+          ['1', '2'],
+          {
+            type: 'workflow',
+            fields: ['scriptid'],
+            filter: {
+              fieldId: 'scriptid',
+              in: ['customworkflow'],
+            },
+          }
+        )
+        expect(results).toBeDefined()
+      })
+
+      describe('query failure', () => {
+        it('exception thrown', async () => {
+          mockAxiosAdapter.onPost().reply(() => [])
+          expect(await client.runRecordsQuery(
+            ['1', '2'],
+            {
+              type: 'workflow',
+              fields: ['scriptid'],
+              filter: {
+                fieldId: 'scriptid',
+                in: ['customworkflow'],
+              },
+            }
+          )).toBeUndefined()
+        })
+
+        it('invalid record query results', async () => {
+          mockAxiosAdapter.onPost().reply(200, { status: 'success', results: {} })
+          expect(await client.runRecordsQuery(
+            ['1', '2'],
+            {
+              type: 'workflow',
+              fields: ['scriptid'],
+              filter: {
+                fieldId: 'scriptid',
+                in: ['customworkflow'],
+              },
+            }
+          )).toBeUndefined()
+        })
+
+        it('invalid restlet results', async () => {
+          mockAxiosAdapter.onPost().reply(200, {})
+          expect(await client.runRecordsQuery(
+            ['1', '2'],
+            {
+              type: 'workflow',
+              fields: ['scriptid'],
+              filter: {
+                fieldId: 'scriptid',
+                in: ['customworkflow'],
+              },
+            }
+          )).toBeUndefined()
+        })
+
+        it('error status', async () => {
+          mockAxiosAdapter.onPost().reply(200, { status: 'error', message: '', error: new Error('error') })
+          expect(await client.runRecordsQuery(
+            ['1', '2'],
+            {
+              type: 'workflow',
+              fields: ['scriptid'],
+              filter: {
+                fieldId: 'scriptid',
+                in: ['customworkflow'],
+              },
+            }
+          )).toBeUndefined()
+        })
+      })
+
+      it('should return undefined when recordOperation feature is not supported', async () => {
+        const unsupportedClient = new SuiteAppClient({
+          credentials: {
+            accountId: 'ACCOUNT_ID',
+            suiteAppTokenId: 'tokenId',
+            suiteAppTokenSecret: 'tokenSecret',
+            suiteAppActivationKey: 'activationKey',
+          },
+          globalLimiter: new Bottleneck(),
+          instanceLimiter: (_t: string, _c: number) => false,
+        })
+        mockAxiosAdapter.onPost().replyOnce(200, {
+          status: 'success',
+          results: {
+            appVersion: [0, 1, 3],
+            time: 1000,
+          },
+        })
+        expect(await unsupportedClient.runRecordsQuery(
+          ['1', '2'],
+          {
+            type: 'workflow',
+            fields: ['scriptid'],
+            filter: {
+              fieldId: 'scriptid',
+              in: ['customworkflow'],
+            },
+          }
+        )).toBeUndefined()
       })
     })
 

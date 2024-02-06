@@ -16,7 +16,7 @@
 import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isRemovalOrModificationChange, ModificationChange, ReferenceExpression, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { createSchemeGuard, getParent, resolveValues } from '@salto-io/adapter-utils'
+import { createSchemeGuard, resolveValues } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { collections } from '@salto-io/lowerdash'
 import { getDiffIds } from '../../diff'
@@ -81,8 +81,8 @@ const isAutomationsResponse = createSchemeGuard<AutomationResponse[]>(AUTOMATION
 export type Component = {
   value: {
       workspaceId?: string
-      schemaId?: string
-      objectTypeId: ReferenceExpression
+      schemaId: ReferenceExpression
+      objectTypeId?: ReferenceExpression
       schemaLabel?: string
       objectTypeLabel?: string
   }
@@ -90,7 +90,7 @@ export type Component = {
 
 const ASSET_COMPONENT_SCHEME = Joi.object({
   value: Joi.object({
-    objectTypeId: Joi.required(),
+    schemaId: Joi.required(),
   }).unknown(true),
 }).unknown(true)
 
@@ -319,12 +319,13 @@ const addDetailedAssetsComponents = (instance: InstanceElement): void => {
     .filter(isAssetComponent)
   assetsComponents.forEach(component => {
     try {
-      const objectType = component.value.objectTypeId.value
-      const schema = getParent(objectType)
-      component.value.schemaId = schema.value.id
+      const schema = component.value.schemaId.value
       component.value.schemaLabel = schema.value.name
-      component.value.objectTypeLabel = objectType.value.name
       component.value.workspaceId = schema.value.workspaceId
+      if (component.value.objectTypeId !== undefined) {
+        const objectType = component.value.objectTypeId.value
+        component.value.objectTypeLabel = objectType.value.name
+      }
     } catch (e) {
       log.warn(`Failed to update detailed assets components for ${instance.elemID.getFullName()}`)
     }
@@ -338,7 +339,6 @@ const deleteDetailedAssetsComponents = (instance: InstanceElement): void => {
   const assetsComponents: Component[] = instance.value.components
     .filter(isAssetComponent)
   assetsComponents.forEach(component => {
-    delete component.value.schemaId
     delete component.value.schemaLabel
     delete component.value.objectTypeLabel
     delete component.value.workspaceId

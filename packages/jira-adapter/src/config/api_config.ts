@@ -847,11 +847,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'priorityScheme', fieldType: 'number' },
         { fieldName: 'issueTypeScheme', fieldType: ISSUE_TYPE_SCHEMA_NAME },
         { fieldName: 'fieldContexts', fieldType: `list<${FIELD_CONTEXT_TYPE_NAME}>` },
-        { fieldName: 'serviceDeskId', fieldType: 'list<unknown>' },
       ],
       fieldsToHide: [
         { fieldName: 'id' },
-        { fieldName: 'serviceDeskId' },
       ],
       fieldsToOmit: [
         { fieldName: 'style' },
@@ -1931,7 +1929,7 @@ const SCRIPT_RUNNER_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
 const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   RequestType: {
     request: {
-      url: '/rest/servicedeskapi/servicedesk/{serviceDeskId}/requesttype',
+      url: '/rest/servicedeskapi/servicedesk/projectId:{projectId}/requesttype',
       recurseInto: [
         {
           type: 'RequestType__workflowStatuses',
@@ -1946,9 +1944,9 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       dataField: 'values',
       fieldsToOmit: [
         { fieldName: '_expands' },
-        { fieldName: 'serviceDeskId' },
         { fieldName: 'portalId' },
         { fieldName: 'groupIds' },
+        { fieldName: 'serviceDeskId' },
       ],
       fieldsToHide: [
         { fieldName: 'id' },
@@ -1958,17 +1956,17 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/rest/servicedeskapi/servicedesk/{serviceDeskId}/requesttype',
+        url: '/rest/servicedeskapi/servicedesk/projectId:{projectId}/requesttype',
         method: 'post',
         urlParamsToFields: {
-          serviceDeskId: '_parent.0.serviceDeskId',
+          projectId: '_parent.0.id',
         },
       },
       remove: {
-        url: '/rest/servicedeskapi/servicedesk/{serviceDeskId}/requesttype/{id}',
+        url: '/rest/servicedeskapi/servicedesk/projectId:{projectId}/requesttype/{id}',
         method: 'delete',
         urlParamsToFields: {
-          serviceDeskId: '_parent.0.serviceDeskId',
+          projectId: '_parent.0.id',
         },
       },
     },
@@ -2002,7 +2000,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   },
   Queue: {
     request: {
-      url: '/rest/servicedeskapi/servicedesk/{serviceDeskId}/queue',
+      url: '/rest/servicedeskapi/servicedesk/projectId:{projectId}/queue',
     },
     transformation: {
       idFields: ['name', 'projectKey'],
@@ -2067,7 +2065,6 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         url: '/rest/servicedesk/1/servicedesk/{projectId}/portal-groups',
         method: 'post',
         urlParamsToFields: {
-          serviceDeskId: '_parent.0.serviceDeskId',
           projectId: '_parent.0.id',
         },
       },
@@ -2075,7 +2072,6 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         url: '/rest/servicedesk/1/servicedesk/{projectId}/portal-groups/{id}',
         method: 'put',
         urlParamsToFields: {
-          serviceDeskId: '_parent.0.serviceDeskId',
           projectId: '_parent.0.id',
         },
       },
@@ -2083,10 +2079,8 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
         url: '/rest/servicedesk/1/servicedesk/{projectId}/portal-groups/{id}',
         method: 'delete',
         urlParamsToFields: {
-          serviceDeskId: '_parent.0.serviceDeskId',
           projectId: '_parent.0.id',
         },
-        omitRequestBody: true,
       },
     },
   },
@@ -2128,7 +2122,6 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       remove: {
         url: '/rest/workinghours/1/api/calendar/{id}',
         method: 'delete',
-        omitRequestBody: true,
       },
     },
   },
@@ -2773,9 +2766,6 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
       // Needed to create a different transformation configuration for security scheme
       // that is fetched from the recurse into of a project and a normal security scheme
       { typeName: 'ProjectSecurityScheme', cloneFrom: 'SecurityScheme' },
-      // Nedded to create a supported type for serviceDeskId
-      // that are fetched from the recurse into of a project.
-      { typeName: 'ServiceDeskId', cloneFrom: 'SecurityScheme' },
     ],
   },
   jiraSwagger: {

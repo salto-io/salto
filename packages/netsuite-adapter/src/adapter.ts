@@ -67,6 +67,7 @@ import addImportantValuesFilter from './filters/add_important_values'
 import addBundleReferences from './filters/bundle_ids'
 import excludeCustomRecordTypes from './filters/exclude_by_criteria/exclude_custom_record_types'
 import excludeInstances from './filters/exclude_by_criteria/exclude_instances'
+import workflowAccountSpecificValues from './filters/workflow_account_specific_values'
 import { Filter, LocalFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreator, RemoteFilterCreatorDefinition, RemoteFilterOpts } from './filter'
 import { getLastServerTime, getOrCreateServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
@@ -137,6 +138,8 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   { creator: savedSearchesAuthorInformation, addsNewInformation: true },
   { creator: translationConverter },
   { creator: accountSpecificValues },
+  // the preDeploy of workflowAccountSpecificValues should run before accountSpecificValues
+  { creator: workflowAccountSpecificValues, addsNewInformation: true },
   { creator: suiteAppConfigElementsFilter },
   { creator: configFeaturesFilter },
   { creator: customRecordsFilter },

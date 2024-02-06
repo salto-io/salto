@@ -103,7 +103,7 @@ const restrictionType = new ObjectType({
   },
 })
 
-const importantValueType = new ObjectType({
+export const importantValueType = new ObjectType({
   elemID: new ElemID(GLOBAL_ADAPTER, BUILTIN_TYPE_NAMES.IMPORTANT_VALUE),
   fields: {
     value: {

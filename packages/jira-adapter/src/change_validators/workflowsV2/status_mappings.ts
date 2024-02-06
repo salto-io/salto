@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import Joi from 'joi'
+import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { Change, ChangeDataType, ChangeValidator, InstanceElement, ModificationChange, ReadOnlyElementsSource, ReferenceExpression, SeverityLevel, getChangeData, isInstanceChange, isInstanceElement, isModificationChange, isReferenceExpression } from '@salto-io/adapter-api'
 import { createSchemeGuard, getInstancesFromElementSource, validateReferenceExpression } from '@salto-io/adapter-utils'
@@ -23,6 +24,7 @@ import { ISSUE_TYPE_NAME, JIRA_WORKFLOW_TYPE, PROJECT_TYPE } from '../../constan
 
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
+const log = logger(module)
 
 type StatusMigration = {
   oldStatusReference: ReferenceExpression
@@ -151,6 +153,24 @@ const createStatusMappingStructure = (statusMappings: StatusMapping): string =>
       ]
     },`
 
+const getProjectIssueTypes = async (
+  projectRef: ReferenceExpression,
+  elementsSource: ReadOnlyElementsSource
+): Promise<ReferenceExpression[]> => {
+  const issueTypeSchemaRef = projectRef.value.value.issueTypeScheme
+  if (!isReferenceExpression(issueTypeSchemaRef)) {
+    log.debug(`issueTypeScheme of the project ${projectRef.elemID.getFullName()} is not a reference expression`)
+    return []
+  }
+  const issueTypeScheme = await issueTypeSchemaRef.getResolvedValue(elementsSource)
+  if (!isInstanceElement(issueTypeScheme)) {
+    log.debug(`issueTypeScheme of the project ${projectRef.elemID.getFullName()} is not an instance element`)
+    return []
+  }
+  return makeArray(issueTypeScheme.value.issueTypeIds)
+    .filter(isReferenceExpression)
+}
+
 const getNewStatusMappings = async ({
   workflowSchemeInstance,
   workflowName,
@@ -174,13 +194,20 @@ const getNewStatusMappings = async ({
   if (_.isEmpty(issueTypeReferences)) {
     return []
   }
-  const statusMappings = projectReferences.flatMap(project =>
-    issueTypeReferences.map(issueType =>
-      createStatusMapping({
-        project,
-        issueType,
-        statusesToMigrate: removedStatuses,
-      })))
+  const statusMappings = await awu(projectReferences).flatMap(async project => {
+    const projectIssueTypes = new Set(
+      (await getProjectIssueTypes(project, elementsSource))
+        .map(issueType => issueType.elemID.getFullName())
+    )
+    return issueTypeReferences
+      .filter(issueType => projectIssueTypes.has(issueType.elemID.getFullName()))
+      .map(issueType =>
+        createStatusMapping({
+          project,
+          issueType,
+          statusesToMigrate: removedStatuses,
+        }))
+  }).toArray()
   const missingStatusMappings = _.differenceWith(statusMappings, existingStatusMappings, isSameStatusMappings)
   if (_.isEmpty(missingStatusMappings)) {
     return []
@@ -218,8 +245,8 @@ export const workflowStatusMappingsValidator: ChangeValidator = async (changes, 
       return [{
         elemID: change.data.after.elemID,
         severity: 'Error' as SeverityLevel,
-        message: 'Workflow status mappings has invalid format',
-        detailedMessage: `The status mapping validation failed because of the following error: ${error?.message}. Learn more at https://help.salto.io/en/articles/8851200-migrating-issues-when-modifying-workflows.`,
+        message: 'Invalid workflow status mapping',
+        detailedMessage: `Error while validating the user-provided status mapping: ${error?.message}. Learn more at https://help.salto.io/en/articles/8851200-migrating-issues-when-modifying-workflows`,
       }]
     }
     const existingStatusMappings = workflowInstance.value.statusMappings ?? []

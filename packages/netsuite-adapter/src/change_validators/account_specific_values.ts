@@ -16,7 +16,7 @@
 import { values, collections } from '@salto-io/lowerdash'
 import { ChangeError, getChangeData, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { isStandardInstanceOrCustomRecordType } from '../types'
-import { ACCOUNT_SPECIFIC_VALUE } from '../constants'
+import { ACCOUNT_SPECIFIC_VALUE, WORKFLOW } from '../constants'
 import { isElementContainsStringValue } from './utils'
 import { NetsuiteChangeValidator } from './types'
 
@@ -30,6 +30,10 @@ const changeValidator: NetsuiteChangeValidator = async changes => (
     .map(async change => {
       const element = getChangeData(change)
       if (!isStandardInstanceOrCustomRecordType(element)) {
+        return undefined
+      }
+      // workflow account specific values are handled in another CV
+      if (element.elemID.typeName === WORKFLOW) {
         return undefined
       }
       if (!isElementContainsStringValue(element, ACCOUNT_SPECIFIC_VALUE)) {

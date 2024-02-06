@@ -30,9 +30,9 @@ import {
   UnresolvedReference,
 } from '@salto-io/adapter-api'
 import { safeJsonStringify, toObjectType } from '@salto-io/adapter-utils'
+import { parser } from '@salto-io/parser'
 import { InvalidStaticFile } from './workspace/static_files/common'
 import { CircularReference, resolve } from './expressions'
-import { IllegalReference } from './parser/parse'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -467,7 +467,7 @@ const createReferenceValidationErrors = (elemID: ElemID, value: Value): Validati
   if (value instanceof UnresolvedReference) {
     return [new UnresolvedReferenceValidationError({ elemID, target: value.target })]
   }
-  if (value instanceof IllegalReference) {
+  if (value instanceof parser.IllegalReference) {
     return [new IllegalReferenceValidationError({ elemID, reason: value.message })]
   }
   if (value instanceof CircularReference) {

@@ -64,7 +64,7 @@ const areIssueTypesUsed = async (
   const jql = `project in (${linkedProjectNames.join(',')}) AND issuetype = ${issueType}`
   let response: clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>
   try {
-    response = await client.getSinglePage({
+    response = await client.get({
       url: '/rest/api/3/search',
       queryParams: {
         jql,

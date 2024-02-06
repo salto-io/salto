@@ -26,6 +26,7 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import _ from 'lodash'
 import { apiName, MetadataTypeAnnotations } from '../../src/transformers/transformer'
 import * as constants from '../../src/constants'
 import filterCreator from '../../src/filters/topics_for_objects'
@@ -128,6 +129,19 @@ describe('Topics for objects filter', () => {
 
         // Check topic instances are deleted and the TopicsForObjects metadataType is hidden
         expect(elements).not.toSatisfy(isInstanceOfTypeSync(TOPICS_FOR_OBJECTS_METADATA_TYPE))
+        expect(topicsForObjectsMetadataType).toSatisfy(type => type.annotations[CORE_ANNOTATIONS.HIDDEN] === true)
+      })
+    })
+
+    describe('when fetched elements do not include any CustomObject', () => {
+      beforeEach(async () => {
+        filter = filterCreator({ config: defaultFilterContext }) as typeof filter
+        _.pullAll(elements, [topicsForObjectsType])
+      })
+      it('should remove the TopicsForObjects Instances', async () => {
+        await filter.onFetch(elements)
+        // Check topic instances are deleted and the TopicsForObjects metadataType is hidden
+        expect(elements).not.toSatisfyAny(isInstanceOfTypeSync(TOPICS_FOR_OBJECTS_METADATA_TYPE))
         expect(topicsForObjectsMetadataType).toSatisfy(type => type.annotations[CORE_ANNOTATIONS.HIDDEN] === true)
       })
     })

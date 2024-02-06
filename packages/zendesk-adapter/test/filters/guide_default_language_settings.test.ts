@@ -49,7 +49,7 @@ const client = new ZendeskClient({ credentials: { username: 'a', password: 'b', 
 client.put = jest.fn()
 client.post = jest.fn()
 client.delete = jest.fn()
-client.getSinglePage = jest.fn().mockResolvedValue({ data: 'def' })
+client.get = jest.fn().mockResolvedValue({ data: 'def' })
 
 describe('guideDefaultLanguage', () => {
   const config = { ...DEFAULT_CONFIG }

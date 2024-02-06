@@ -116,7 +116,7 @@ describe('audit_logs filter', () => {
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
     getIdByNameMock = getIdByName as jest.MockedFunction<typeof getIdByName>
-    mockGet = jest.spyOn(client, 'getSinglePage')
+    mockGet = jest.spyOn(client, 'get')
     filter = filterCreator(createFilterCreatorParams({
       client,
       config: {

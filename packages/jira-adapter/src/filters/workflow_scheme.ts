@@ -91,7 +91,7 @@ const waitForWorkflowSchemePublish = async (
   })
 
   await waitForWorkflowSchemePublish(
-    await client.getSinglePage({ url: taskResponse.data.self }),
+    await client.get({ url: taskResponse.data.self }),
     client,
     retryDelay,
     checksLeft - 1,
@@ -123,7 +123,7 @@ export const updateSchemeId = async (
   config: JiraConfig,
 ): Promise<void> => {
   const instance = getChangeData(change)
-  const response = await client.getSinglePage({
+  const response = await client.get({
     url: `/rest/api/3/workflowscheme/${instance.value.id}`,
   })
   if (response.status === 200

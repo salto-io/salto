@@ -13,11 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType, getDeepInnerType, InstanceElement, ReadOnlyElementsSource, isInstanceElement, Value } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType, getDeepInnerType, InstanceElement, ReadOnlyElementsSource, isInstanceElement, Value, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
-import { createSchemeGuard, getParent } from '@salto-io/adapter-utils'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { JiraConfig, JspUrls } from './config/config'
 import { ACCOUNT_INFO_ELEM_ID, JIRA_FREE_PLAN, SOFTWARE_FIELD } from './constants'
@@ -154,14 +154,6 @@ export const renameKey = (object: Value, { from, to }: { from: string; to: strin
   }
 }
 
-export const isThereValidParent = (element: Element): boolean => {
-  try {
-    return getParent(element) !== undefined
-  } catch {
-    return false
-  }
-}
-
 type ProjectResponse = {
   projectTypeKey: string
 }
@@ -185,7 +177,7 @@ const isProjectDataResponse = createSchemeGuard<ProjectDataResponse>(PROJECT_DAT
 export const hasSoftwareProject = async (client: JiraClient):
 Promise<boolean> => {
   try {
-    const response = await client.getSinglePage({
+    const response = await client.get({
       url: '/rest/api/3/project/search',
     })
     if (!isProjectDataResponse(response.data)) {
@@ -196,4 +188,22 @@ Promise<boolean> => {
     log.error(`Failed to get server info: ${e}`)
   }
   return true
+}
+
+export const convertPropertiesToList = (fields: Values[]): void => {
+  fields.forEach(field => {
+    if (field.properties != null) {
+      field.properties = Object.entries(field.properties)
+        .map(([key, value]) => ({ key, value }))
+    }
+  })
+}
+export const convertPropertiesToMap = (fields: Values[]): void => {
+  fields.forEach(field => {
+    if (field.properties != null) {
+      field.properties = Object.fromEntries(
+        field.properties.map(({ key, value }: Values) => [key, value])
+      )
+    }
+  })
 }

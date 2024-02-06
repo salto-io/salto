@@ -61,7 +61,7 @@ describe('profileMappingPropertiesFilter', () => {
     client = new OktaClient({
       credentials: { baseUrl: 'a.okta.com', token: 'b' },
     })
-    mockGet = jest.spyOn(client, 'getSinglePage')
+    mockGet = jest.spyOn(client, 'get')
   })
 
   it('should do nothing when includeProfileMappingProperties config flag is disabled', async () => {

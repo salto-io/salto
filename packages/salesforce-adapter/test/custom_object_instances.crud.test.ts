@@ -600,12 +600,22 @@ describe('Custom Object Instances CRUD', () => {
         })
         describe('When called with only new instances', () => {
           beforeEach(async () => {
-            mockQuery = jest.fn().mockImplementation(async () => (
-              {
-                totalSize: 0,
-                done: true,
-                records: [],
-              }))
+            mockQuery = jest.fn().mockImplementation(async query => (
+              // Second query should return the OwnerId to test flow of mandatory fields for update calls
+              query.includes("('firstInstance','secondInstance')")
+                ? {
+                  totalSize: 2,
+                  done: true,
+                  records: [
+                    { Id: 'newId0', Name: 'firstInstance', [OWNER_ID]: 'ownerId' },
+                    { Id: 'newId1', Name: 'secondInstance', [OWNER_ID]: 'ownerId' },
+                  ],
+                }
+                : {
+                  totalSize: 0,
+                  done: true,
+                  records: [],
+                }))
             connection.query = mockQuery
           })
           describe('when group has no circular dependencies', () => {
@@ -687,6 +697,7 @@ describe('Custom Object Instances CRUD', () => {
                       [FIELD_ANNOTATIONS.QUERYABLE]: true,
                       [FIELD_ANNOTATIONS.UPDATEABLE]: true,
                       [FIELD_ANNOTATIONS.CREATABLE]: true,
+                      apiName: 'Name',
                     },
                   },
                   Number__c: {
@@ -699,6 +710,14 @@ describe('Custom Object Instances CRUD', () => {
                   },
                   TestType__c: {
                     refType: Types.primitiveDataTypes.Lookup,
+                    annotations: {
+                      [FIELD_ANNOTATIONS.QUERYABLE]: true,
+                      [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+                      [FIELD_ANNOTATIONS.CREATABLE]: true,
+                    },
+                  },
+                  OwnerId: {
+                    refType: BuiltinTypes.STRING,
                     annotations: {
                       [FIELD_ANNOTATIONS.QUERYABLE]: true,
                       [FIELD_ANNOTATIONS.UPDATEABLE]: true,
@@ -746,22 +765,20 @@ describe('Custom Object Instances CRUD', () => {
                 progressReporter: nullProgressReporter,
               })
             })
-            it('should update the partially deployed instances after inserting them', () => {
+            it('should update the partially deployed instances after inserting them with mandatory field values', () => {
               expect(result.errors).toBeEmpty()
               expect(connection.bulk.load).toHaveBeenCalledTimes(2)
-              expect(connection.bulk.load).toHaveBeenCalledWith(
+              expect(connection.bulk.load).toHaveBeenNthCalledWith(1,
                 'TestType__c', 'insert', expect.anything(), [
                   { Id: undefined, Name: 'firstInstance', Number__c: 1, TestType__c: null },
                   { Id: undefined, Name: 'secondInstance', Number__c: 1, TestType__c: null },
                   { Id: undefined, Name: 'instanceWithoutRef', Number__c: 1 },
-                ]
-              )
-              expect(connection.bulk.load).toHaveBeenCalledWith(
+                ])
+              expect(connection.bulk.load).toHaveBeenNthCalledWith(2,
                 'TestType__c', 'update', expect.anything(), [
-                  { Id: 'newId0', Name: 'firstInstance', Number__c: 1, TestType__c: 'newId1' },
-                  { Id: 'newId1', Name: 'secondInstance', Number__c: 1, TestType__c: 'newId0' },
-                ]
-              )
+                  { Id: 'newId0', Name: 'firstInstance', Number__c: 1, TestType__c: 'newId1', [OWNER_ID]: 'ownerId' },
+                  { Id: 'newId1', Name: 'secondInstance', Number__c: 1, TestType__c: 'newId0', [OWNER_ID]: 'ownerId' },
+                ])
             })
           })
         })

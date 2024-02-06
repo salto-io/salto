@@ -25,7 +25,6 @@ import {
   FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
   MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD,
-  PROFILE_METADATA_TYPE,
   SETTINGS_METADATA_TYPE,
   TOPICS_FOR_OBJECTS_METADATA_TYPE,
 } from '../constants'
@@ -72,7 +71,6 @@ const DEFAULT_NAMESPACE_MATCH_ALL_TYPE_LIST = [
 
 // Instances of this type won't be fetched in fetchWithChangesDetection mode
 const UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES = [
-  PROFILE_METADATA_TYPE,
   CUSTOM_OBJECT,
   // Since we don't retrieve the CustomMetadata types (CustomObjects), we shouldn't retrieve the Records
   CUSTOM_METADATA,

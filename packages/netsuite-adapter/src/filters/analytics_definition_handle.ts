@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 
-import { BuiltinTypes, Change, createRefToElmWithValue, Element, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isListType, isObjectType, ObjectType, ReadOnlyElementsSource, Value, Values } from '@salto-io/adapter-api'
+import { BuiltinTypes, Change, createRefToElmWithValue, Element, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isListType, isObjectType, ObjectType, Value, Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { TransformFuncArgs, transformValues, WALK_NEXT_STEP, WalkOnFunc, walkOnValue } from '@salto-io/adapter-utils'
 import { parse, j2xParser } from 'fast-xml-parser'
 import { decode, encode } from 'he'
-import { collections, strings, values } from '@salto-io/lowerdash'
+import { collections, strings } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { APPLICATION_ID, DATASET, REAL_VALUE_KEY, SCRIPT_ID, SOAP_SCRIPT_ID, WORKBOOK } from '../constants'
 import { LocalFilterCreator } from '../filter'
@@ -27,7 +27,7 @@ import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from '../client/constants'
 import { parsedWorkbookType } from '../type_parsers/analytics_parsers/parsed_workbook'
 import { parsedDatasetType } from '../type_parsers/analytics_parsers/parsed_dataset'
 import { TypeAndInnerTypes } from '../types/object_types'
-import { AnalyticOriginalFields, CHART_IDS, CHARTS, DATA_VIEW_IDS, DATASET_LINKS, DATASETS, DEFAULT_VALUE, DEFAULT_XML_TYPE, DEFINITION, DEPENDENCIES, DO_NOT_ADD, EmptyObject, EXPRESSION_VALUE_VALUE_REGEX, FALSE, FIELD_DEFINITION, FIELD_TYPE, fieldsToOmitFromDefinition, fieldsToOmitFromOriginal, FieldWithType, INNER_ARRAY_NAMES, INNER_XML_TITLES, ITEM, NAME, originalFields, OriginalWorkbookArrays, PIVOT_IDS, PIVOTS, ROOT, StringToStringRecord, TRANSLATION_SCRIPT_ID, TRUE, TValuesToIgnore, TYPE, XML_TYPE, xmlType } from '../type_parsers/analytics_parsers/analytics_constants'
+import { AnalyticOriginalFields, CHART_IDS, DATA_VIEW_IDS, DEFAULT_VALUE, DEFAULT_XML_TYPE, DEFINITION, DEPENDENCIES, DO_NOT_ADD, EmptyObject, EXPRESSION_VALUE_VALUE_REGEX, FALSE, FIELD_DEFINITION, FIELD_TYPE, fieldsToOmitFromDefinition, fieldsToOmitFromOriginal, FieldWithType, ITEM, NAME, originalFields, OriginalWorkbookArrays, PIVOT_IDS, ROOT, StringToStringRecord, TRANSLATION_SCRIPT_ID, TRUE, TValuesToIgnore, TYPE, XML_TYPE, xmlType } from '../type_parsers/analytics_parsers/analytics_constants'
 import { captureServiceIdInfo } from '../service_id_info'
 import { workbookType } from '../autogen/types/standard_types/workbook'
 import { datasetType } from '../autogen/types/standard_types/dataset'
@@ -91,102 +91,9 @@ const fetchTransformFunc = async (
   return value
 }
 
-const addWorkbookToolsToRecord = (
-  instance: InstanceElement,
-  workbookToolsRecord: Record<string, Values>,
-  name: string
-): void => {
-  if (Array.isArray(instance.value[name])) {
-    instance.value[name].forEach((tool:unknown) => {
-      if (values.isPlainObject(tool)) {
-        Object.values(tool)
-          .filter(values.isPlainObject)
-          .forEach((obj: Values) => {
-            if (_.isString(obj[SOAP_SCRIPT_ID])) {
-              workbookToolsRecord[obj[SOAP_SCRIPT_ID]] = obj
-            }
-          })
-      }
-    })
-  }
-}
-
-const createRecordOfPivotsChartsAndDsLinks = async (
-  elementsSource: ReadOnlyElementsSource,
-  elemID: ElemID,
-): Promise<Record<string, Values>> => {
-  const oldWorkbookToolsRecord: Record<string, Values> = {}
-  const oldInstance = await elementsSource.get(elemID)
-  if (isInstanceElement(oldInstance)) {
-    addWorkbookToolsToRecord(oldInstance, oldWorkbookToolsRecord, PIVOTS)
-    addWorkbookToolsToRecord(oldInstance, oldWorkbookToolsRecord, CHARTS)
-    addWorkbookToolsToRecord(oldInstance, oldWorkbookToolsRecord, DATASET_LINKS)
-  }
-  return oldWorkbookToolsRecord
-}
-
-const isSameXmlValues = (xml1: string, xml2: string): boolean => {
-  const values1 = parse(xml1, {
-    attributeNamePrefix: ATTRIBUTE_PREFIX,
-    ignoreAttributes: false,
-    tagValueProcessor: val => decode(val),
-  })
-  const values2 = parse(xml2, {
-    attributeNamePrefix: ATTRIBUTE_PREFIX,
-    ignoreAttributes: false,
-    tagValueProcessor: val => decode(val),
-  })
-  return _.isEqual(values1, values2)
-}
-
-const getInnerXmlTitle = (workbookTool: Values): string | undefined =>
-  INNER_XML_TITLES.find(title => title in workbookTool)
-
-const compareAndAssignInnerXmls = (newTool: Values, oldTool: Values): void => {
-  const innerXmlTitle = getInnerXmlTitle(newTool)
-  if (innerXmlTitle === undefined) {
-    return
-  }
-  const innerXmlNew = newTool[innerXmlTitle]
-  const innerXmlOld = oldTool[innerXmlTitle]
-  if (innerXmlNew === undefined || innerXmlOld === undefined) {
-    return
-  }
-  if (isSameXmlValues(innerXmlNew, innerXmlOld)) {
-    newTool[innerXmlTitle] = oldTool[innerXmlTitle]
-  }
-}
-
-const adjustWorkbookToolsOrder = (workbookTools: Value[], oldWorkbookToolsRecord: Record<string, Values>): void => {
-  workbookTools
-    .filter(values.isPlainObject)
-    .flatMap(obj => Object.values(obj))
-    .forEach((workbookTool: Values) => {
-      if (_.isArray(workbookTool[DATASETS])) {
-        workbookTool[DATASETS].sort()
-      }
-      if (workbookTool[SOAP_SCRIPT_ID] in oldWorkbookToolsRecord) {
-        const oldWorkbookTool = oldWorkbookToolsRecord[workbookTool[SOAP_SCRIPT_ID]]
-        compareAndAssignInnerXmls(workbookTool, oldWorkbookTool)
-      }
-    })
-}
-
-const discardUnrelevantChanges = (
-  newInstanceValues: Values,
-  oldTools: Record<string, Values>,
-): void => {
-  INNER_ARRAY_NAMES.forEach((arrName: string) => {
-    if (Array.isArray(newInstanceValues[arrName])) {
-      adjustWorkbookToolsOrder(newInstanceValues[arrName], oldTools)
-    }
-  })
-}
-
 const createAnalyticsInstance = async (
   instance: InstanceElement,
   analyticsType: ObjectType,
-  elementsSource: ReadOnlyElementsSource,
 ): Promise<void> => {
   const definitionValues = _.omit(parse(instance.value[DEFINITION], {
     attributeNamePrefix: ATTRIBUTE_PREFIX,
@@ -203,8 +110,6 @@ const createAnalyticsInstance = async (
   })
 
   if (updatedValues !== undefined) {
-    const oldTools = await createRecordOfPivotsChartsAndDsLinks(elementsSource, instance.elemID)
-    discardUnrelevantChanges(updatedValues, oldTools)
     instance.value = {
       ..._.omit(instance.value, fieldsToOmitFromOriginal),
       ...updatedValues,
@@ -413,7 +318,6 @@ const returnToOriginalShape = async (
 const changeType = async (
   { type: analyticType, innerTypes }: TypeAndInnerTypes,
   elements: Element[],
-  elementsSource: ReadOnlyElementsSource,
 ): Promise<void> => {
   _.remove(elements, e => _.isEqual(e.path, analyticType.path))
   elements.push(analyticType)
@@ -425,15 +329,15 @@ const changeType = async (
   await awu(analyticInstances)
     .forEach(async instance => {
       instance.refType = createRefToElmWithValue(analyticType)
-      await createAnalyticsInstance(instance, analyticType, elementsSource)
+      await createAnalyticsInstance(instance, analyticType)
     })
 }
 
-const filterCreator: LocalFilterCreator = ({ elementsSource }) => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'parseAnalytics',
   onFetch: async elements => {
-    await changeType(parsedWorkbookType(), elements, elementsSource)
-    await changeType(parsedDatasetType(), elements, elementsSource)
+    await changeType(parsedWorkbookType(), elements)
+    await changeType(parsedDatasetType(), elements)
   },
 
   preDeploy: async (changes: Change[]) => {

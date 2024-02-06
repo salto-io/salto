@@ -18,37 +18,14 @@ import xmlParser from 'fast-xml-parser'
 import osPath from 'path'
 import { logger } from '@salto-io/logging'
 import { Graph } from './graph_utils'
-import { CustomizationInfo, SDFObjectNode } from './types'
+import { SDFObjectNode } from './types'
 import { isCustomTypeInfo } from './utils'
 import { OBJECTS_DIR, getCustomTypeInfoPath } from './sdf_parser'
-import { DATASET, TRANSLATION_COLLECTION, WORKBOOK } from '../constants'
 
 const log = logger(module)
 
 // The '/' prefix is needed to make osPath.resolve treat '~' as the root
 const PROJECT_ROOT_TILDE_PREFIX = `${osPath.sep}~`
-
-const sortingAnalytics = (a:CustomizationInfo, b:CustomizationInfo): number => {
-  const relevantTypes = [TRANSLATION_COLLECTION, DATASET, WORKBOOK]
-  if (a.typeName in relevantTypes && b.typeName in relevantTypes) {
-    if (a.typeName === TRANSLATION_COLLECTION && b.typeName !== TRANSLATION_COLLECTION) {
-      return -1
-    }
-    if (a.typeName !== TRANSLATION_COLLECTION && b.typeName === TRANSLATION_COLLECTION) {
-      return 1
-    }
-    if (a.typeName === DATASET && b.typeName === DATASET) {
-      return a.typeName.localeCompare(b.typeName)
-    }
-    if (a.typeName === DATASET && b.typeName === WORKBOOK) {
-      return -1
-    }
-    if (a.typeName === WORKBOOK && b.typeName === DATASET) {
-      return 1
-    }
-  }
-  return 0
-}
 
 export const reorderDeployXml = (
   deployContent: string,
@@ -59,7 +36,6 @@ export const reorderDeployXml = (
   const custInfosInTopologicalOrder = dependencyGraph.getTopologicalOrder()
     .filter(node => !nodesInCycle.has(node.id))
     .map(node => node.value.customizationInfo)
-    .sort(sortingAnalytics)
 
   const customTypeInfos = custInfosInTopologicalOrder.filter(isCustomTypeInfo)
   const deployXml = xmlParser.parse(deployContent, { ignoreAttributes: false })

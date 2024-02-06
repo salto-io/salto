@@ -22,7 +22,7 @@ import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../ut
 import { parsedDatasetType } from '../../src/type_parsers/analytics_parsers/parsed_dataset'
 import filterCreator from '../../src/filters/analytics_definition_handle'
 import * as constants from '../../src/constants'
-import { basicDataset, basicDatasetDefinition, basicWorkbookDefinition, defaultValuesDatasetDefinition, emptyDataset, emptyDatasetDefinition, emptyWorkbook, emptyWorkbookDefinition, parsedBasicDataset, parsedBasicDatasetValue, parsedBasicWorkbook, parsedDatasetWithDefaultCompletion, parsedTypesWorkbook, parsedUnknownDataset, typesWorkbook, unknownDataset, workbookDependencies, unknownDefinition, parsedWorkbookWithArrays, definitionWithArrays, tablesArray, pivotArray, basicWorkbook, parsedBasicWorkbookValue, parsedUnknownDatasetValueForFetch, newWorkbookWithArrays } from './analytics_tests_constants'
+import { basicDataset, basicDatasetDefinition, basicWorkbookDefinition, defaultValuesDatasetDefinition, emptyDataset, emptyDatasetDefinition, emptyWorkbook, emptyWorkbookDefinition, parsedBasicDataset, parsedBasicDatasetValue, parsedBasicWorkbook, parsedDatasetWithDefaultCompletion, parsedTypesWorkbook, parsedUnknownDataset, typesWorkbook, unknownDataset, workbookDependencies, unknownDefinition, parsedWorkbookWithArrays, definitionWithArrays, tablesArray, pivotArray, basicWorkbook, parsedBasicWorkbookValue, parsedUnknownDatasetValueForFetch } from './analytics_tests_constants'
 import { CHARTS, PIVOTS, TABLES } from '../../src/type_parsers/analytics_parsers/analytics_constants'
 
 
@@ -95,17 +95,6 @@ describe('analytics definition handle filter', () => {
         .not.toEqual(basicWorkbook)
       expect(newInstance)
         .toEqual(parsedBasicWorkbookValue)
-    })
-    it('should not change workbook with order different', async () => {
-      const elements = [newWorkbookWithArrays]
-      fetchOpts.elementsSource = buildElementsSourceFromElements([parsedWorkbookWithArrays])
-      await filterCreator(fetchOpts).onFetch?.(elements)
-      const newInstance = elements.filter(isInstanceElement)
-        .filter(e => e.elemID.typeName === constants.WORKBOOK)[0].value
-      expect(newInstance.pivots[0].pivot.datasets).toEqual(['a', 'b']) // sort arrays of datasets
-      const oldWorkbook = parsedWorkbookWithArrays
-      expect(newInstance.pivots[0].pivot.definition).toEqual(oldWorkbook.value.pivots[0].pivot.definition)
-      // don't change former definition if equal
     })
   })
   describe('preDeploy', () => {

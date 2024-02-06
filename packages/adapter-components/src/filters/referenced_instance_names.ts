@@ -50,10 +50,8 @@ const getFirstParentElemId = (instance: InstanceElement): ElemID | undefined => 
   return parentsElemIds.length > 0 ? parentsElemIds[0] : undefined
 }
 
-const createInstanceReferencedNameParts = (
-  instance: InstanceElement,
-  idFields: string[],
-): unknown[] => idFields.map(
+const createInstanceReferencedNameParts = (instance: InstanceElement, idFields: string[]):
+ (string | undefined)[] => idFields.map(
   fieldName => {
     if (!isReferencedIdField(fieldName)) {
       return _.get(instance.value, fieldName)

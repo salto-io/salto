@@ -49,7 +49,7 @@ export const joinInstanceNameParts = (
   // if nameParts is empty, we assume it is intentional
   (nameParts.length === 0 || nameParts.some(part => part !== undefined && part !== ''))
     ? nameParts
-      .filter(part => part !== undefined)
+      .filter(part => part !== undefined && part !== '')
       .map(String)
       .join('_')
     : undefined

@@ -27,7 +27,7 @@ import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { TRIGGER_CATEGORY_TYPE_NAME, TRIGGER_TYPE_NAME } from '../constants'
-import { ZendeskApiConfig } from '../config'
+import { ZendeskApiConfig, ZendeskFetchConfig } from '../config'
 
 const { isDefined } = lowerDashValues
 const log = logger(module)
@@ -37,8 +37,8 @@ const log = logger(module)
  * Warns about removal of a trigger category that is used by an inactive trigger
  * Warns about removal of a trigger category if omitInactive is true for triggers
  */
-export const triggerCategoryRemovalValidator: (apiConfig: ZendeskApiConfig)
-  => ChangeValidator = apiConfig => async (changes, elementSource) => {
+export const triggerCategoryRemovalValidator: (apiConfig: ZendeskApiConfig, fetchConfig: ZendeskFetchConfig)
+  => ChangeValidator = (apiConfig, fetchConfig) => async (changes, elementSource) => {
     if (elementSource === undefined) {
       log.error('Failed to run triggerCategoryRemovalValidator because element source is undefined')
       return []
@@ -84,11 +84,14 @@ export const triggerCategoryRemovalValidator: (apiConfig: ZendeskApiConfig)
         ,
       } : undefined
     })
-
-    const inactiveTriggersOmitted = configUtils.getConfigWithDefault(
-      apiConfig.types?.[TRIGGER_TYPE_NAME]?.transformation,
-      apiConfig.typeDefaults.transformation
-    ).omitInactive === true
+    const oldInactiveTriggersOmitted = _.get(configUtils.getConfigWithDefault(
+        apiConfig.types?.[TRIGGER_TYPE_NAME]?.transformation,
+        apiConfig.typeDefaults.transformation
+    ), 'omitInactive') === true
+    const inactiveTriggersOmitted = fetchConfig.include.filter(
+      include => (include.type.includes(TRIGGER_TYPE_NAME) || include.type === '.*')
+        && include.criteria?.active === true
+    ).length !== 0 || oldInactiveTriggersOmitted
     const removalWarnings = removedTriggerCategories.map((removedTriggerCategory): ChangeError | undefined => {
       // If we omitted inactive triggers, we can't warn about them specifically, so we return a general warning
       if (inactiveTriggersOmitted) {

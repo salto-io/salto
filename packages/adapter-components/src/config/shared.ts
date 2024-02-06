@@ -57,7 +57,6 @@ export type AdapterApiConfig<
 
 export type DefaultFetchCriteria = {
   name?: string
-  active?: boolean
 }
 
 type FetchEntry<T extends Record<string, unknown> | undefined> = {
@@ -162,12 +161,13 @@ export const createUserFetchConfigType = (
   adapter: string,
   additionalFields?: Record<string, FieldDefinition>,
   fetchCriteriaType?: ObjectType,
+  additionalCriteria?: Record<string, FieldDefinition>,
 ): ObjectType => {
   const defaultFetchCriteriaType = createMatchingObjectType<DefaultFetchCriteria>({
     elemID: new ElemID(adapter, 'FetchFilters'),
     fields: {
       name: { refType: BuiltinTypes.STRING },
-      active: { refType: BuiltinTypes.BOOLEAN },
+      ...additionalCriteria,
     },
     annotations: {
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

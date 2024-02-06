@@ -26,6 +26,7 @@ const activeFieldCriteria = ({ instance, value }: {instance: InstanceElement; va
     return instance.value.status === 'inactive'
   }
   // We can't omit inactive ticket_form instances because we need all the instance in order to reorder them
+  // If we decided to change that we need to add warning in the ticket_field_deactivation CV
   if (typeName === TICKET_FORM_TYPE_NAME || instance.value.active === undefined) {
     return true
   }

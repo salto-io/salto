@@ -172,7 +172,7 @@ export default ({
     defaultAutomationRemoval: defaultAutomationRemovalValidator,
     attachmentWithoutContent: attachmentWithoutContentValidator,
     duplicateRoutingAttributeValue: duplicateRoutingAttributeValueValidator,
-    triggerCategoryRemoval: triggerCategoryRemovalValidator(apiConfig),
+    triggerCategoryRemoval: triggerCategoryRemovalValidator(apiConfig, fetchConfig),
     duplicateIdFieldValues: duplicateIdFieldValuesValidator(apiConfig),
     notEnabledMissingReferences: notEnabledMissingReferencesValidator(config),
     conditionalTicketFields: conditionalTicketFieldsValidator,
@@ -182,7 +182,7 @@ export default ({
     childrenReferences: childrenReferencesValidator,
     orderChildrenParent: orderChildrenParentValidator,
     guideOrderDeletion: orderDeletionValidator,
-    ticketFieldDeactivation: ticketFieldDeactivationValidator(apiConfig),
+    ticketFieldDeactivation: ticketFieldDeactivationValidator,
     // ******************************
   }
 

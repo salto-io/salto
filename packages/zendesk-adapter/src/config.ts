@@ -83,7 +83,9 @@ export type Guide = {
 export type ZendeskClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
   & { unassociatedAttachmentChunkSize: number }
 
-export type ZendeskFetchConfig = configUtils.UserFetchConfig
+type ZendeskDefaultFetchCriteria = configUtils.DefaultFetchCriteria & { active?: boolean }
+
+export type ZendeskFetchConfig = configUtils.UserFetchConfig<ZendeskDefaultFetchCriteria>
   & {
     enableMissingReferences?: boolean
     includeAuditDetails?: boolean
@@ -101,8 +103,8 @@ export type ZendeskDeployConfig = configUtils.UserDeployConfig & configUtils.Def
   createMissingOrganizations?: boolean
 }
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
-  configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean },
-  configUtils.TransformationDefaultConfig & { omitInactive?: boolean }
+  configUtils.DuckTypeTransformationConfig,
+  configUtils.TransformationDefaultConfig
 >
 
 export type ZendeskConfig = {
@@ -2831,7 +2833,6 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
         fieldsToOmit: FIELDS_TO_OMIT,
         fieldsToHide: FIELDS_TO_HIDE,
         serviceIdField: DEFAULT_SERVICE_ID_FIELD,
-        omitInactive: true,
         // TODO: change this to true for SALTO-3593.
         nestStandaloneInstances: false,
       },
@@ -3058,6 +3059,10 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
           extractReferencesFromFreeText: { refType: BuiltinTypes.BOOLEAN },
           convertJsonIdsToReferences: { refType: BuiltinTypes.BOOLEAN },
         },
+        undefined,
+        {
+          active: { refType: BuiltinTypes.BOOLEAN },
+        },
       ),
     },
     [DEPLOY_CONFIG]: {
@@ -3073,7 +3078,6 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
     [API_DEFINITIONS_CONFIG]: {
       refType: createDucktypeAdapterApiConfigType({
         adapter: ZENDESK,
-        additionalTransformationFields: { omitInactive: { refType: BuiltinTypes.BOOLEAN } },
       }),
     },
   },

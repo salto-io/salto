@@ -23,7 +23,7 @@ const CLIENT_CONFIG = 'client'
 
 export const TYPE_TO_EXCLUDE = 'typeToExclude'
 export const DISABLE_PRIVATE_API = 'disablePrivateAPI'
-type ConfigSuggestionType = 'typeToExclude' | 'disablePrivateAPI' | 'enableFetchFlag'
+type ConfigSuggestionType = 'typeToExclude' | 'disablePrivateAPI' | 'enableFetchFlag' | 'addCriToInclude'
 
 export type ConfigChangeSuggestion = {
   type: ConfigSuggestionType

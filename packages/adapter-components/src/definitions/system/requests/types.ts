@@ -13,4 +13,42 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { Values } from '@salto-io/adapter-api'
+import { Response, ResponseValue } from '../../../client'
+import { ArgsWithCustomizer } from '../shared/types'
+
 export type HTTPMethod = 'get' | 'post' | 'put' | 'patch' | 'delete' | 'head' | 'options'
+
+export type HTTPEndpointIdentifier<ClientOptions extends string> = {
+  // specify the client to use to call the endpoint - defaults to the default client as specified in client.default
+  client?: ClientOptions
+  path: string
+  // when not specified, the method is assumed to be 'get'
+  method?: HTTPMethod
+}
+
+export type RequestArgs = {
+  headers?: Record<string, string>
+  queryArgs?: Record<string, string>
+  params?: Record<string, Values>
+  // TODO allow x-www-form-urlencoded + URLSearchParams, but not in a structured way yet?
+  body?: unknown
+}
+
+export type HTTPEndpointDetails<PaginationOptions extends string | 'none'> = RequestArgs & {
+  omitBody?: boolean
+
+  // override default expected HTTP codes
+  checkSuccess?: ArgsWithCustomizer< // TODON use
+    boolean,
+    // TODON decide on name
+    { httpSuccessCodes: number[] },
+    Response<ResponseValue | ResponseValue[]>
+  >
+
+  // the strategy to use to get all response pages
+  pagination?: PaginationOptions
+
+  // set this to mark as endpoint as safe for fetch. other endpoints can only be called during deploy.
+  readonly?: boolean // TDOON validate!
+}

@@ -121,7 +121,7 @@ export type ExtendedReferenceTargetDefinition<
   T extends string
 > = ReferenceTargetDefinition<T> & { lookup: LookupFunc }
 
-type SourceDef = {
+export type FieldReferenceSourceDefinition = {
   field: string
   parentTypes?: string[]
   // when available, only consider instances matching one or more of the specified types
@@ -143,7 +143,7 @@ type SourceDef = {
 export type FieldReferenceDefinition<
   T extends string | never
 > = {
-  src: SourceDef
+  src: FieldReferenceSourceDefinition
   serializationStrategy?: ReferenceSerializationStrategyName
   sourceTransformation?: ReferenceSourceTransformationName
   // If target is missing, the definition is used for resolving
@@ -177,7 +177,7 @@ type FieldReferenceResolverDetails<T extends string> = {
 }
 
 export class FieldReferenceResolver<T extends string> {
-  src: SourceDef
+  src: FieldReferenceSourceDefinition
   serializationStrategy: ReferenceSerializationStrategy
   sourceTransformation: ReferenceSourceTransformation
   target?: ExtendedReferenceTargetDefinition<T>

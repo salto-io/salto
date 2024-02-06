@@ -41,7 +41,7 @@ export const articleAttachmentSizeValidator: ChangeValidator = async changes => 
       }
       const contentValue = await attachmentInstance.value.content.getContent()
       if (contentValue === undefined) {
-        log.error(`the attachment ${attachmentInstance.elemID.getFullName()}'s content does not exist`)
+        log.warn(`the attachment ${attachmentInstance.elemID.getFullName()}'s content does not exist`)
         return false
       }
       const internalContentLength = Buffer.byteLength(contentValue)

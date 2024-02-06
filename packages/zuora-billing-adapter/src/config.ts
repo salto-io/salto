@@ -16,12 +16,11 @@
 import _ from 'lodash'
 import { ElemID, CORE_ANNOTATIONS, ListType } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, definitions, elements } from '@salto-io/adapter-components'
 import { ZUORA_BILLING, CUSTOM_OBJECT_DEFINITION_TYPE, LIST_ALL_SETTINGS_TYPE, SETTINGS_TYPE_PREFIX, TASK_TYPE, WORKFLOW_DETAILED_TYPE, WORKFLOW_EXPORT_TYPE, PRODUCT_RATE_PLAN_TYPE, ACCOUNTING_CODE_ITEM_TYPE } from './constants'
 
 const { createClientConfigType } = clientUtils
 const {
-  createUserFetchConfigType,
   createSwaggerAdapterApiConfigType,
   createTypeNameOverrideConfigType,
 } = configUtils
@@ -32,7 +31,7 @@ export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
 export type ZuoraClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
 
-export type ZuoraFetchConfig = configUtils.UserFetchConfig
+export type ZuoraFetchConfig = definitions.UserFetchConfig
 
 type ZuoraSettingsSwaggerConfig = {
   typeNameOverrides?: configUtils.TypeNameOverrideConfig[]
@@ -811,7 +810,7 @@ export const configType = createMatchingObjectType<Partial<ZuoraConfig>>({
       refType: createClientConfigType(ZUORA_BILLING),
     },
     [FETCH_CONFIG]: {
-      refType: createUserFetchConfigType(
+      refType: definitions.createUserFetchConfigType(
         ZUORA_BILLING,
       ),
     },

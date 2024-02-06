@@ -111,7 +111,7 @@ const createInstance = (
   config: JiraConfig,
   getElemIdFunc?: ElemIdGetter,
 ): InstanceElement => {
-  const serviceIds = elementUtils.createServiceIds(values, 'id', type.elemID)
+  const serviceIds = elementUtils.createServiceIds({ entry: values, serviceIdFields: ['id'], typeID: type.elemID })
   const idFields = configUtils.getTypeTransformationConfig(
     AUTOMATION_TYPE, config.apiDefinitions.types, config.apiDefinitions.typeDefaults
   ).idFields ?? ['name']

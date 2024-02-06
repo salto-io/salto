@@ -47,6 +47,8 @@ export type APIConnection<T = any, S = any> = {
   delete: (url: string, config?: AxiosRequestConfig) => Promise<Response<T>>
   patch: (url: string, data: S, config?: AxiosRequestConfig)
     => Promise<Response<T>>
+  head: (url: string, config?: AxiosRequestConfig) => Promise<Response<T>>
+  options: (url: string, config?: AxiosRequestConfig) => Promise<Response<T>>
 }
 
 export type AuthenticatedAPIConnection = APIConnection & {

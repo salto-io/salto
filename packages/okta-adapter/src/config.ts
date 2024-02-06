@@ -16,17 +16,15 @@
 import _ from 'lodash'
 import { ElemID, CORE_ANNOTATIONS, ActionName, ObjectType, Field, createRestriction, BuiltinTypes } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, definitions, elements } from '@salto-io/adapter-components'
 import { ACCESS_POLICY_TYPE_NAME, CUSTOM_NAME_FIELD, IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, OKTA, PASSWORD_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, SIGN_ON_POLICY_TYPE_NAME, AUTOMATION_TYPE_NAME, AUTHENTICATOR_TYPE_NAME, DEVICE_ASSURANCE } from './constants'
 import { DEFAULT_CONVERT_USERS_IDS_VALUE, DEFAULT_GET_USERS_STRATEGY } from './user_utils'
 import { DEFAULT_APP_URLS_VALIDATOR_VALUE } from './change_validators/app_urls'
 
-type UserDeployConfig = configUtils.UserDeployConfig
+type UserDeployConfig = definitions.UserDeployConfig
 const {
-  createUserFetchConfigType,
   createSwaggerAdapterApiConfigType,
   createDucktypeAdapterApiConfigType,
-  createUserDeployConfigType,
 } = configUtils
 
 export const CLIENT_CONFIG = 'client'
@@ -43,7 +41,7 @@ export type OktaClientConfig = clientUtils.ClientBaseConfig<OktaClientRateLimitC
 export type OktaStatusActionName = 'activate' | 'deactivate'
 export type OktaActionName = ActionName | OktaStatusActionName
 type GetUsersStrategy = 'searchQuery' | 'allUsers'
-export type OktaFetchConfig = configUtils.UserFetchConfig & {
+export type OktaFetchConfig = definitions.UserFetchConfig & {
   isClassicOrg?: boolean
   convertUsersIds?: boolean
   enableMissingReferences?: boolean
@@ -1881,7 +1879,7 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
       refType: createClientConfigType(),
     },
     [FETCH_CONFIG]: {
-      refType: createUserFetchConfigType(
+      refType: definitions.createUserFetchConfigType(
         OKTA,
         {
           convertUsersIds: { refType: BuiltinTypes.BOOLEAN },
@@ -1899,7 +1897,7 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
       ),
     },
     [DEPLOY_CONFIG]: {
-      refType: createUserDeployConfigType(
+      refType: definitions.createUserDeployConfigType(
         OKTA,
         changeValidatorConfigType,
         { omitMissingUsers: { refType: BuiltinTypes.BOOLEAN } }

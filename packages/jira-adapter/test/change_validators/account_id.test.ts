@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { toChange, InstanceElement, ElemID, ChangeError, ObjectType } from '@salto-io/adapter-api'
-import { config as configUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
+import { toChange, InstanceElement, ElemID, ChangeError, ObjectType } from '@salto-io/adapter-api'
+import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockClient } from '../utils'
 import { accountIdValidator } from '../../src/change_validators/account_id'
@@ -262,7 +262,7 @@ Go to ${url} to see valid users and account IDs.`,
   })
 
   it('should return a warning when the account id is wrong but the default user is the current deployer', async () => {
-    config.deploy.defaultMissingUserFallback = configUtils.DEPLOYER_FALLBACK_VALUE
+    config.deploy.defaultMissingUserFallback = definitions.DEPLOYER_FALLBACK_VALUE
     instances[0].value.leadAccountId.id = '403'
     expect(await validator([
       toChange({
@@ -507,7 +507,7 @@ Go to ${url} to see valid users and account IDs.`,
     })
 
     it('should return a warning when the account id is wrong but the default user is the current deployer', async () => {
-      configDC.deploy.defaultMissingUserFallback = configUtils.DEPLOYER_FALLBACK_VALUE
+      configDC.deploy.defaultMissingUserFallback = definitions.DEPLOYER_FALLBACK_VALUE
       expect(await validatorDC([
         toChange({
           after: invalidUserInstance,

@@ -13,11 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement,
   isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
-import { config as configUtils } from '@salto-io/adapter-components'
+import { definitions } from '@salto-io/adapter-components'
 import { walkOnElement } from '@salto-io/adapter-utils'
-import _ from 'lodash'
 import { isDeployableAccountIdType, walkOnUsers, WalkOnUsersCallback } from '../filters/account_id/account_id_filter'
 import { getUserIdFromEmail, getUsersMap, getUsersMapByVisibleId, UserMap } from '../users'
 import { JiraConfig } from '../config/config'
@@ -73,7 +73,7 @@ const replacingAccountIdChangeError = ({
   missingUsers: missingUsersDetails[]
   defaultUser: string
 }): ChangeError => {
-  const user = defaultUser === configUtils.DEPLOYER_FALLBACK_VALUE ? 'the deployer\'s user' : defaultUser
+  const user = defaultUser === definitions.DEPLOYER_FALLBACK_VALUE ? 'the deployer\'s user' : defaultUser
   return {
     elemID: elemId,
     severity: 'Warning',
@@ -131,7 +131,7 @@ const doesDefaultUserExist = (
     return false
   }
 
-  if (defaultUser === configUtils.DEPLOYER_FALLBACK_VALUE) {
+  if (defaultUser === definitions.DEPLOYER_FALLBACK_VALUE) {
     return true
   }
 

@@ -15,7 +15,7 @@
 */
 import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType, getDeepInnerType, InstanceElement, ReadOnlyElementsSource, isInstanceElement, Value, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import { fetch as fetchUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import Joi from 'joi'
@@ -83,7 +83,7 @@ export const getFilledJspUrls = (
 
   return {
     ...jspRequests,
-    query: jspRequests.query && elementUtils.createUrl({
+    query: jspRequests.query && fetchUtils.resource.createUrl({
       instance,
       baseUrl: jspRequests.query,
     }),

@@ -126,6 +126,8 @@ describe('client_http_client', () => {
           put: mockFunction<APIConnection['put']>(),
           patch: mockFunction<APIConnection['patch']>(),
           delete: mockFunction<APIConnection['delete']>(),
+          head: mockFunction<APIConnection['delete']>(),
+          options: mockFunction<APIConnection['delete']>(),
           accountInfo: {
             accountId: 'ACCOUNT_ID',
             accountType: 'Sandbox',
@@ -135,6 +137,88 @@ describe('client_http_client', () => {
       })
       const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
       await expect(client.get({ url: '/ep' })).rejects.toThrow(TimeoutError)
+    })
+  })
+
+  describe('head', () => {
+    it('should make the right request', async () => {
+      expect(mockCreateConnection).not.toHaveBeenCalled()
+      const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const clearValuesFromResponseDataFunc = jest.spyOn(MyCustomClient.prototype as any, 'clearValuesFromResponseData')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const extractHeadersFunc = jest.spyOn(MyCustomClient.prototype as any, 'extractHeaders')
+      expect(mockCreateConnection).toHaveBeenCalledTimes(1)
+
+      mockAxiosAdapter.onGet('/users/me').reply(200, {
+        accountId: 'ACCOUNT_ID',
+      })
+      mockAxiosAdapter.onHead('/ep').replyOnce(200, { a: 'b' }, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
+      mockAxiosAdapter.onHead('/ep2', { a: 'AAA' }).replyOnce(200, { c: 'd' }, { hh: 'header' })
+
+      const res = await client.head({ url: '/ep' })
+      const res2 = await client.head({ url: '/ep2', queryParams: { a: 'AAA' } })
+      expect(res).toEqual({ data: { a: 'b' }, status: 200, headers: { 'X-Rate-Limit': '456', 'Retry-After': '93' } })
+      expect(res2).toEqual({ data: { c: 'd' }, status: 200, headers: {} })
+      expect(clearValuesFromResponseDataFunc).toHaveBeenCalledTimes(2)
+      expect(clearValuesFromResponseDataFunc).toHaveBeenNthCalledWith(1, { a: 'b' }, '/ep')
+      expect(clearValuesFromResponseDataFunc).toHaveBeenNthCalledWith(2, { c: 'd' }, '/ep2')
+      expect(extractHeadersFunc).toHaveBeenCalledTimes(4)
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(1, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(2, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(3, { hh: 'header' })
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(4, { hh: 'header' })
+    })
+
+
+    it('should throw HTTPError on http errors', async () => {
+      const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
+      mockAxiosAdapter.onGet('/users/me').reply(200, {
+        accountId: 'ACCOUNT_ID',
+      })
+      mockAxiosAdapter.onHead('/ep').replyOnce(400, { a: 'b' })
+      await expect(client.head({ url: '/ep' })).rejects.toThrow(HTTPError)
+    })
+  })
+
+  describe('options', () => {
+    it('should make the right request', async () => {
+      expect(mockCreateConnection).not.toHaveBeenCalled()
+      const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const clearValuesFromResponseDataFunc = jest.spyOn(MyCustomClient.prototype as any, 'clearValuesFromResponseData')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const extractHeadersFunc = jest.spyOn(MyCustomClient.prototype as any, 'extractHeaders')
+      expect(mockCreateConnection).toHaveBeenCalledTimes(1)
+
+      mockAxiosAdapter.onGet('/users/me').reply(200, {
+        accountId: 'ACCOUNT_ID',
+      })
+      mockAxiosAdapter.onOptions('/ep').replyOnce(200, { a: 'b' }, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
+      mockAxiosAdapter.onOptions('/ep2', { a: 'AAA' }).replyOnce(200, { c: 'd' }, { hh: 'header' })
+
+      const res = await client.options({ url: '/ep' })
+      const res2 = await client.options({ url: '/ep2', queryParams: { a: 'AAA' } })
+      expect(res).toEqual({ data: { a: 'b' }, status: 200, headers: { 'X-Rate-Limit': '456', 'Retry-After': '93' } })
+      expect(res2).toEqual({ data: { c: 'd' }, status: 200, headers: {} })
+      expect(clearValuesFromResponseDataFunc).toHaveBeenCalledTimes(2)
+      expect(clearValuesFromResponseDataFunc).toHaveBeenNthCalledWith(1, { a: 'b' }, '/ep')
+      expect(clearValuesFromResponseDataFunc).toHaveBeenNthCalledWith(2, { c: 'd' }, '/ep2')
+      expect(extractHeadersFunc).toHaveBeenCalledTimes(4)
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(1, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(2, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(3, { hh: 'header' })
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(4, { hh: 'header' })
+    })
+
+
+    it('should throw HTTPError on http errors', async () => {
+      const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
+      mockAxiosAdapter.onGet('/users/me').reply(200, {
+        accountId: 'ACCOUNT_ID',
+      })
+      mockAxiosAdapter.onOptions('/ep').replyOnce(400, { a: 'b' })
+      await expect(client.options({ url: '/ep' })).rejects.toThrow(HTTPError)
     })
   })
 

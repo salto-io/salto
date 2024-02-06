@@ -16,7 +16,7 @@
 import { types as lowerdashTypes } from '@salto-io/lowerdash'
 import { ElemID, ListType, BuiltinTypes, CORE_ANNOTATIONS, createRestriction, MapType, Values } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { config as configUtils } from '@salto-io/adapter-components'
+import { definitions } from '@salto-io/adapter-components'
 import { BIN, CURRENCY, CUSTOM_RECORD_TYPE, DATASET, EXCHANGE_RATE, INACTIVE_FIELDS, NETSUITE, PERMISSIONS, SAVED_SEARCH, WORKBOOK } from '../constants'
 import { netsuiteSupportedTypes } from '../types'
 import { ITEM_TYPE_TO_SEARCH_STRING } from '../data_elements/types'
@@ -111,7 +111,7 @@ export type AdditionalDependencies = {
   exclude: AdditionalSdfDeployDependencies
 }
 
-type UserDeployConfig = configUtils.UserDeployConfig
+type UserDeployConfig = definitions.UserDeployConfig
 
 export type DeployParams = UserDeployConfig & {
   warnOnStaleWorkspaceData?: boolean
@@ -634,7 +634,7 @@ const baseDeployConfigType = createMatchingObjectType<Omit<DeployParams, keyof U
   },
 })
 
-const deployConfigType = configUtils.createUserDeployConfigType(
+const deployConfigType = definitions.createUserDeployConfigType(
   NETSUITE,
   changeValidatorConfigType,
   baseDeployConfigType.fields,

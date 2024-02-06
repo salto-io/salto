@@ -13,16 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { config as configUtils } from '@salto-io/adapter-components'
+import { config as configUtils, definitions } from '@salto-io/adapter-components'
 import { DEFAULT_API_DEFINITIONS, JiraApiConfig } from '../../config/api_config'
 import { DC_ADDITIONAL_TYPE_NAME_OVERRIDES, DC_DEFAULT_API_DEFINITIONS } from './api_config'
 import { ProductSettings } from '../product_settings'
 import { addTypeNameOverrides } from '../utils'
 
-type HttpMethod = 'get' | 'post' | 'put' | 'delete' | 'patch'
-
 type UrlPattern = {
-  httpMethods: HttpMethod[]
+  httpMethods: definitions.HTTPMethod[]
   url: string
 }
 
@@ -355,18 +353,20 @@ const replaceRestVersion = (url: string): string => url.replace(
 
 const createRegex = (patternUrl: string): RegExp => new RegExp(`^${patternUrl}/?$`)
 
-const replaceToPluginUrl = (url: string, httpMethod: HttpMethod): string | undefined => (
+const replaceToPluginUrl = (url: string, httpMethod: definitions.HTTPMethod): string | undefined => (
   PLUGIN_URL_PATTERNS.some(({ httpMethods, url: patternUrl }) =>
     httpMethods.includes(httpMethod) && createRegex(patternUrl).test(url))
     ? url.replace(CLOUD_REST_PREFIX, PLUGIN_REST_PREFIX)
     : undefined
 )
 
-const replaceUrl = (url: string, httpMethods: HttpMethod): string =>
+const replaceUrl = (url: string, httpMethods: definitions.HTTPMethod): string =>
   replaceToPluginUrl(url, httpMethods) ?? replaceRestVersion(url)
 
 const wrapConnection: ProductSettings['wrapConnection'] = connection => ({
   get: (url, config) => connection.get(replaceUrl(url, 'get'), config),
+  head: (url, config) => connection.head(replaceUrl(url, 'head'), config),
+  options: (url, config) => connection.options(replaceUrl(url, 'options'), config),
   post: (url, data, config) => connection.post(replaceUrl(url, 'post'), data, config),
   put: (url, data, config) => connection.put(replaceUrl(url, 'put'), data, config),
   delete: (url, config) => connection.delete(replaceUrl(url, 'delete'), config),

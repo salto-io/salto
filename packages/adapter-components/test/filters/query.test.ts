@@ -18,7 +18,7 @@ import { MockInterface } from '@salto-io/test-utils'
 import { FilterWith } from '../../src/filter_utils'
 import { Paginator } from '../../src/client'
 import { queryFilterCreator } from '../../src/filters/query'
-import { createMockQuery, ElementQuery } from '../../src/elements/query'
+import { createMockQuery, ElementQuery } from '../../src/fetch/query'
 
 describe('query filter', () => {
   let fetchQuery: MockInterface<ElementQuery>

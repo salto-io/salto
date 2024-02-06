@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { ElemID, CORE_ANNOTATIONS, BuiltinTypes, ListType } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, definitions, elements } from '@salto-io/adapter-components'
 import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
   ARTICLE_ORDER_TYPE_NAME,
@@ -29,8 +29,6 @@ import {
 const { defaultMissingUserFallbackField } = configUtils
 const { createClientConfigType } = clientUtils
 const {
-  createUserFetchConfigType,
-  createUserDeployConfigType,
   createDucktypeAdapterApiConfigType,
   validateDuckTypeFetchConfig,
 } = configUtils
@@ -83,7 +81,7 @@ export type Guide = {
 export type ZendeskClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
   & { unassociatedAttachmentChunkSize: number }
 
-export type ZendeskFetchConfig = configUtils.UserFetchConfig
+export type ZendeskFetchConfig = definitions.UserFetchConfig
   & {
     enableMissingReferences?: boolean
     includeAuditDetails?: boolean
@@ -97,7 +95,7 @@ export type ZendeskFetchConfig = configUtils.UserFetchConfig
     extractReferencesFromFreeText?: boolean
     convertJsonIdsToReferences?: boolean
   }
-export type ZendeskDeployConfig = configUtils.UserDeployConfig & configUtils.DefaultMissingUserFallbackConfig & {
+export type ZendeskDeployConfig = definitions.UserDeployConfig & definitions.DefaultMissingUserFallbackConfig & {
   createMissingOrganizations?: boolean
 }
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
@@ -3046,7 +3044,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       refType: createClientConfigType(ZENDESK),
     },
     [FETCH_CONFIG]: {
-      refType: createUserFetchConfigType(
+      refType: definitions.createUserFetchConfigType(
         ZENDESK,
         {
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
@@ -3064,7 +3062,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       ),
     },
     [DEPLOY_CONFIG]: {
-      refType: createUserDeployConfigType(
+      refType: definitions.createUserDeployConfigType(
         ZENDESK,
         changeValidatorConfigType,
         {
@@ -3108,7 +3106,7 @@ export type FilterContext = {
 
 export const validateFetchConfig = (
   fetchConfigPath: string,
-  userFetchConfig: configUtils.UserFetchConfig,
+  userFetchConfig: definitions.UserFetchConfig,
   adapterApiConfig: configUtils.AdapterApiConfig,
 ): void => validateDuckTypeFetchConfig(
   fetchConfigPath,

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, Adapter, Values, OAuthRequestParameters, OauthAccessTokenResponse, ElemID } from '@salto-io/adapter-api'
-import { client as clientUtils, combineCustomReferenceGetters, config as configUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, combineCustomReferenceGetters, config as configUtils, definitions } from '@salto-io/adapter-components'
 import ZendeskAdapter from './adapter'
 import { Credentials, oauthAccessTokenCredentialsType, oauthRequestParametersType, usernamePasswordCredentialsType } from './auth'
 import {
@@ -39,7 +39,8 @@ import { customReferenceHandlers } from './custom_references'
 
 const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
-const { validateDuckTypeApiDefinitionConfig, validateDefaultMissingUserFallbackConfig } = configUtils
+const { validateDuckTypeApiDefinitionConfig } = configUtils
+const { validateDefaultMissingUserFallbackConfig } = definitions
 
 /*
 

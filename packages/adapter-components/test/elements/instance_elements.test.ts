@@ -16,7 +16,7 @@
 
 import { ElemID } from '@salto-io/adapter-api'
 import { generateInstanceNameFromConfig, getInstanceNaclName } from '../../src/elements/instance_elements'
-import { NameMappingOptions } from '../../src/config'
+import { NameMappingOptions } from '../../src/definitions'
 
 describe('generateInstanceNameFromConfig', () => {
   it('should return the name of the instance based on the type config', () => {

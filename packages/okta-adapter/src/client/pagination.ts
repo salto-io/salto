@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import * as parse from 'parse-link-header'
 import { logger } from '@salto-io/logging'
@@ -43,7 +43,7 @@ export const getWithCursorHeaderPagination = (): clientUtils.PaginationFunc => {
       if (_.isString(linkHeader)) {
         const nextPage = getNextPage(linkHeader)
         if (nextPage !== undefined) {
-          if (!clientUtils.defaultPathChecker(url, nextPage.pathname)) {
+          if (!fetchUtils.request.pagination.defaultPathChecker(url, nextPage.pathname)) {
             log.error('unexpected next page received for endpoint %s params %o: %s', url, currentParams, nextPage.pathname)
             throw new Error(`unexpected next page received for endpoint ${url}: ${nextPage.pathname}`)
           }

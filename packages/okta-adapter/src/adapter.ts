@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, getChangeData, ProgressReporter, isInstanceElement, FixElementsFunc } from '@salto-io/adapter-api'
-import { config as configUtils, elements as elementUtils, client as clientUtils, combineElementFixers } from '@salto-io/adapter-components'
+import { config as configUtils, elements as elementUtils, client as clientUtils, combineElementFixers, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, objects } from '@salto-io/lowerdash'
@@ -64,11 +64,12 @@ const { awu } = collections.asynciterable
 
 const { generateTypes, getAllInstances } = elementUtils.swagger
 const { getAllElements } = elementUtils.ducktype
-const { findDataField, computeGetArgs } = elementUtils
+const { computeGetArgs } = fetchUtils.resource
+const { findDataField } = elementUtils
 const { createPaginator } = clientUtils
 const log = logger(module)
 
-export const DEFAULT_FILTERS = [
+const DEFAULT_FILTERS = [
   standardRolesFilter,
   deleteFieldsFilter,
   userTypeFilter,

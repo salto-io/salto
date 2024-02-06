@@ -16,9 +16,10 @@
 import _ from 'lodash'
 import { ObjectType, BuiltinTypes, FieldDefinition } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { AdapterApiConfig, createAdapterApiConfigType, UserFetchConfig, TypeConfig, TypeDefaultsConfig, validateSupportedTypes } from './shared'
+import { AdapterApiConfig, createAdapterApiConfigType, TypeConfig, TypeDefaultsConfig, validateSupportedTypes } from './shared'
 import { TransformationConfig, TransformationDefaultConfig, createTransformationConfigTypes, validateTransoformationConfig, getTransformationConfigByType } from './transformation'
 import { validateRequestConfig } from './request'
+import { UserFetchConfig } from '../definitions/user'
 
 const { isDefined } = lowerDashValues
 

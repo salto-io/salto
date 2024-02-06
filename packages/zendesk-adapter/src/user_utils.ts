@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'
-import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, definitions } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { SaltoError, Values } from '@salto-io/adapter-api'
@@ -229,7 +229,7 @@ export const getUserFallbackValue = async (
   existingUsers: Set<string>,
   client: ZendeskClient
 ): Promise<string | undefined> => {
-  if (defaultMissingUserFallback === configUtils.DEPLOYER_FALLBACK_VALUE) {
+  if (defaultMissingUserFallback === definitions.DEPLOYER_FALLBACK_VALUE) {
     try {
       const response = (await client.get({
         url: '/api/v2/users/me',

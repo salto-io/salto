@@ -16,12 +16,11 @@
 import _ from 'lodash'
 import { ElemID, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, definitions, elements } from '@salto-io/adapter-components'
 import { SAP } from './constants'
 
 const { createClientConfigType } = clientUtils
 const {
-  createUserFetchConfigType,
   createSwaggerAdapterApiConfigType,
 } = configUtils
 
@@ -31,7 +30,7 @@ export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
 export type SAPClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
 
-export type SAPFetchConfig = configUtils.UserFetchConfig
+export type SAPFetchConfig = definitions.UserFetchConfig
 
 export type SAPApiConfig = configUtils.AdapterSwaggerApiConfig
 
@@ -138,7 +137,7 @@ export const configType = createMatchingObjectType<Partial<SAPConfig>>({
       refType: createClientConfigType(SAP),
     },
     [FETCH_CONFIG]: {
-      refType: createUserFetchConfigType(
+      refType: definitions.createUserFetchConfigType(
         SAP,
       ),
     },

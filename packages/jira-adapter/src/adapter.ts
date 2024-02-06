@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, ProgressReporter, FixElementsFunc, isInstanceElement } from '@salto-io/adapter-api'
-import { config as configUtils, elements as elementUtils, client as clientUtils, combineElementFixers } from '@salto-io/adapter-components'
+import { config as configUtils, elements as elementUtils, client as clientUtils, combineElementFixers, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, getElemIdFuncWrapper, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { objects, collections } from '@salto-io/lowerdash'
@@ -174,7 +174,8 @@ import { getWorkspaceId } from './workspace_id'
 import { JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES } from './config/api_config'
 
 const { getAllElements } = elementUtils.ducktype
-const { findDataField, computeGetArgs } = elementUtils
+const { findDataField } = elementUtils
+const { computeGetArgs } = fetchUtils.resource
 const {
   generateTypes,
   getAllInstances,

@@ -14,10 +14,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { ElemID, getChangeData, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { setPath, walkOnElement } from '@salto-io/adapter-utils'
-import { config as configUtils } from '@salto-io/adapter-components'
-import _ from 'lodash'
+import { definitions } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../filter'
 import { walkOnUsers } from './account_id_filter'
 import { getCurrentUserInfo, getUserIdFromEmail, getUsersMap, getUsersMapByVisibleId, UserMap } from '../../users'
@@ -28,7 +28,7 @@ const getFallbackUser = async (
   defaultUser: string,
   userMap: UserMap
 ): Promise<string | undefined> => {
-  if (defaultUser !== configUtils.DEPLOYER_FALLBACK_VALUE) {
+  if (defaultUser !== definitions.DEPLOYER_FALLBACK_VALUE) {
     if (!client.isDataCenter && defaultUser !== undefined) {
       return getUserIdFromEmail(defaultUser, userMap)
     }

@@ -24,14 +24,14 @@ import { toInstance } from './instance_elements'
 import { TypeConfig, getConfigWithDefault, getTransformationConfigByType } from '../../config'
 import { FindNestedFieldFunc } from '../field_finder'
 import { TypeDuckTypeDefaultsConfig, TypeDuckTypeConfig, DuckTypeTransformationConfig, DuckTypeTransformationDefaultConfig } from '../../config/ducktype'
-import { ComputeGetArgsFunc } from '../request_parameters'
 import { FetchElements, getElementsWithContext } from '../element_getter'
 import { extractStandaloneFields } from './standalone_field_extractor'
 import { shouldRecurseIntoEntry } from '../instance_elements'
 import { addRemainingTypes } from './add_remaining_types'
-import { ElementQuery } from '../query'
 import { AdapterFetchError, InvalidSingletonType } from '../../config/shared'
 import { ConfigChangeSuggestion, TYPE_TO_EXCLUDE } from '../../config/config_change'
+import { ComputeGetArgsFunc } from '../../fetch/resource/request_parameters'
+import { ElementQuery } from '../../fetch/query'
 
 const { makeArray } = collections.array
 const { toArrayAsync, awu } = collections.asynciterable

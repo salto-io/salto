@@ -68,7 +68,7 @@ const getServiceIdFieldName = (type: ObjectType): string => {
   return isStandardType(type) ? SCRIPT_ID : PATH
 }
 
-const addBundlePrefix = (desiredName: string, type: ObjectType): string => (isBundleType(type) ? `${BUNDLE}_${desiredName}` : desiredName)
+const addBundlePrefix = (desiredName: string, type: ObjectType): string => (isBundleType(type) ? (`${BUNDLE}_${desiredName}`) : desiredName)
 
 export const createInstanceElement = async (
   customizationInfo: CustomizationInfo,
@@ -92,7 +92,7 @@ export const createInstanceElement = async (
     }
     const desiredName = naclCase(addBundlePrefix(transformedValues[serviceIdFieldName], type)
       .replace(new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}`), ''))
-    return getElemIdFunc ? getElemIdFunc(NETSUITE, serviceIds, desiredName).name : desiredName
+    return getElemIdFunc && !isBundleType(type) ? getElemIdFunc(NETSUITE, serviceIds, desiredName).name : desiredName
   }
 
   const getInstancePath = (instanceName: string): string[] => {

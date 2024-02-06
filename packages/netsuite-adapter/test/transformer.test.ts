@@ -404,7 +404,7 @@ describe('Transformer', () => {
         mockElementsSource,
         mockGetElemIdFunc
       )
-      expect(result.elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${BUNDLE}_${bundleCustomizationInfo.values.id}`)
+      expect(result.elemID.name).toEqual(`${BUNDLE}_${bundleCustomizationInfo.values.id}`)
     })
 
 

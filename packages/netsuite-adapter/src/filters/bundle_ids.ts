@@ -83,7 +83,12 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
       bundle.value.id in BUNDLE_ID_TO_COMPONENTS)
     if (missingBundles) {
       log.debug('The following bundle ids are missing in the bundle record: %o',
-        missingBundles.map(bundle => ({ bundleId: bundle.value.id, installedFrom: bundle.value.installedFrom.toUpperCase(), publisher: bundle.value.publisher })))
+        missingBundles.map(bundle => (
+          {
+            bundleId: bundle.value.id,
+            installedFrom: bundle.value.installedFrom.toUpperCase(),
+            publisher: bundle.value.publisher,
+          })))
     }
     existingBundles.forEach(bundle => {
       bundle.value.isPrivate = Object.keys(BUNDLE_ID_TO_COMPONENTS[bundle.value.id]).length === 0

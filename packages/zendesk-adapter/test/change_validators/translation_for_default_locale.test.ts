@@ -82,6 +82,15 @@ describe('translationForDefaultLocaleValidator',
         body: 'description',
       }
     )
+    const enArticleTranslationInstanceUnresolvedReferenceLocale = new InstanceElement(
+      'instance',
+      articleTranslationType,
+      {
+        locale: new ReferenceExpression(guideLanguageSettingsInstance.elemID.createNestedID('instance', 'Test1')),
+        title: 'name',
+        body: 'description',
+      }
+    )
     const enArticleTranslationInstanceReferenceLocale = new InstanceElement(
       'instance',
       articleTranslationType,
@@ -196,6 +205,37 @@ describe('translationForDefaultLocaleValidator',
         )
         expect(errors).toHaveLength(0)
       })
+    it('should return an error when a locale reference is unresolved',
+      async () => {
+        const validArticleInstance = replaceInstanceTypeForDeploy({
+          instance: new InstanceElement(
+            'instance',
+            articleType,
+            {
+              id: 1,
+              name: 'name',
+              description: 'description',
+              source_locale: new ReferenceExpression(
+                guideLanguageSettingsInstance.elemID.createNestedID('instance', 'Test1'),
+                guideLanguageSettingsInstance
+              ),
+              translations:
+          [
+            new ReferenceExpression(
+              enArticleTranslationInstanceUnresolvedReferenceLocale.elemID.createNestedID('instance', 'Test2'),
+              enArticleTranslationInstanceUnresolvedReferenceLocale
+            ),
+          ],
+            }
+          ),
+          config: DEFAULT_CONFIG.apiDefinitions,
+        })
+        const errors = await translationForDefaultLocaleValidator(
+          [toChange({ after: validArticleInstance })]
+        )
+        expect(errors).toHaveLength(1)
+      })
+
     it('should not return an error when article has translation for source_locale, locale is a reference expression',
       async () => {
         const validArticleInstance = replaceInstanceTypeForDeploy({

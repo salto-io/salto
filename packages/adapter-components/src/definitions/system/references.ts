@@ -13,7 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { ApiClientDefinition, RESTApiClientDefinition } from './client'
-export { EndpointDefinition, EndpointByPathAndMethod } from './endpoint'
-export { PaginationDefinitions } from './pagination'
-export { HTTPEndpointIdentifier, RequestArgs, HTTPMethod } from './types'
+import { FieldReferenceDefinition } from '../../references'
+
+export type ReferenceDefinitions = {
+  // TODO use in filter
+  rules: FieldReferenceDefinition<never>[]
+}

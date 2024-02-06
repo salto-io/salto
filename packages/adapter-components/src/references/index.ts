@@ -26,6 +26,7 @@ export {
   MissingReferenceStrategy,
   MissingReferenceStrategyName,
   FieldReferenceDefinition,
+  FieldReferenceSourceDefinition,
   FieldReferenceResolver,
   ReferenceResolverFinder,
   ReferenceTargetDefinition,

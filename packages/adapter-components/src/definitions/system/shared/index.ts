@@ -14,5 +14,5 @@
 * limitations under the License.
 */
 
-export * from './types'
 export * from './transformation'
+export * from './types'

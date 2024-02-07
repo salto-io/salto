@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceElement } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceElement, isStaticFile } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { ARTICLE_ATTACHMENT_TYPE_NAME } from '../constants'
@@ -30,11 +30,21 @@ export const articleAttachmentSizeValidator: ChangeValidator = async changes => 
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME)
     .filter(async attachmentInstance => {
-      if (attachmentInstance.value.content === undefined) {
-        log.error(`the attachment ${attachmentInstance.elemID.getFullName()} does not have a content field`)
+      const { content } = attachmentInstance.value
+      if (content === undefined) {
+        log.warn(`the attachment ${attachmentInstance.elemID.getFullName()} does not have a content field`)
         return false
       }
-      const internalContentLength = Buffer.byteLength(await attachmentInstance.value.content.getContent())
+      if (isStaticFile(content) === false) {
+        log.warn(`the attachment ${attachmentInstance.elemID.getFullName()} is not a static file`)
+        return false
+      }
+      const contentValue = await attachmentInstance.value.content.getContent()
+      if (contentValue === undefined) {
+        log.warn(`the attachment ${attachmentInstance.elemID.getFullName()}'s content does not exist`)
+        return false
+      }
+      const internalContentLength = Buffer.byteLength(contentValue)
       return internalContentLength >= SIZE_20_MB
     })
     .toArray()

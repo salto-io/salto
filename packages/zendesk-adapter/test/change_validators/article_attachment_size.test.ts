@@ -132,4 +132,22 @@ describe('articleAttachmentSizeValidator', () => {
     )
     expect(errors).toHaveLength(0)
   })
+  it('should not return an error when the content inside the attachment is not a static file', async () => {
+    const articleAttachmentLazyInstance = new InstanceElement(
+      'testArticle',
+      new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_ATTACHMENT_TYPE_NAME) }),
+      {
+        id: 20222022,
+        filename: 'filename.png',
+        contentType: 'image/png',
+        content: 'Hello',
+        inline: true,
+        brand: '1',
+      }
+    )
+    const errors = await articleAttachmentSizeValidator(
+      [toChange({ after: articleAttachmentLazyInstance })],
+    )
+    expect(errors).toHaveLength(0)
+  })
 })

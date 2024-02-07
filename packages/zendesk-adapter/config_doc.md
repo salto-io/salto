@@ -33,6 +33,12 @@ zendesk {
     }
     includeAuditDetails = true
     handleIdenticalAttachmentConflicts = true
+    omitInactive = {
+      default = true
+      customizations = {
+        group = false
+      }
+    }
   }
   deploy = {
     defaultMissingUserFallback = "##DEPLOYER##"
@@ -93,6 +99,8 @@ zendesk {
 | handleIdenticalAttachmentConflicts | false                              | When enabled, one attachment will be kept from each set of identical attachments (having the same hash) associated with the same article |
 | extractReferencesFromFreeText      | false                              | When enabled, convert ids in zendesk links in string values to salto references                                                          |
 | convertJsonIdsToReferences         | false                              | When enabled, If a field is a json with an 'id' field, convert its value to a reference                                                  |
+| omitInactive                       | true                               | When enabled, Inactive instances will be omitted from the fetch. This option support default value and specific types can be overridden using the customizations field |
+
 
 ## Fetch entry options
 

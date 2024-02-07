@@ -142,13 +142,9 @@ describe('adapter', () => {
                 guide: {
                   brands: ['.*'],
                 },
-              },
-              [API_DEFINITIONS_CONFIG]: {
-                ...DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
-                typeDefaults: {
-                  transformation: {
-                    omitInactive: false,
-                  },
+                omitInactive: {
+                  default: false,
+                  customizations: {},
                 },
               },
             }),
@@ -701,13 +697,9 @@ describe('adapter', () => {
                 guide: {
                   brands: ['.*'],
                 },
-              },
-              [API_DEFINITIONS_CONFIG]: {
-                ...DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
-                typeDefaults: {
-                  transformation: {
-                    omitInactive: false,
-                  },
+                omitInactive: {
+                  default: false,
+                  customizations: {},
                 },
               },
             }),
@@ -1254,12 +1246,9 @@ describe('adapter', () => {
                 guide: {
                   brands: ['.*'],
                 },
-              },
-              [API_DEFINITIONS_CONFIG]: {
-                typeDefaults: {
-                  transformation: {
-                    omitInactive: true,
-                  },
+                omitInactive: {
+                  default: true,
+                  customizations: {},
                 },
               },
             }),
@@ -1804,13 +1793,9 @@ describe('adapter', () => {
                 guide: {
                   brands: ['.*'],
                 },
-              },
-              [API_DEFINITIONS_CONFIG]: {
-                ...DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
-                typeDefaults: {
-                  transformation: {
-                    omitInactive: false,
-                  },
+                omitInactive: {
+                  default: false,
+                  customizations: {},
                 },
               },
             }),
@@ -1862,13 +1847,9 @@ describe('adapter', () => {
                 guide: {
                   brands: ['.*'],
                 },
-              },
-              [API_DEFINITIONS_CONFIG]: {
-                ...DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
-                typeDefaults: {
-                  transformation: {
-                    omitInactive: false,
-                  },
+                omitInactive: {
+                  default: false,
+                  customizations: {},
                 },
               },
             }),
@@ -1990,13 +1971,9 @@ describe('adapter', () => {
             guide: {
               brands: ['BestBrand'],
             },
-          },
-          [API_DEFINITIONS_CONFIG]: {
-            ...DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
-            typeDefaults: {
-              transformation: {
-                omitInactive: false,
-              },
+            omitInactive: {
+              default: false,
+              customizations: {},
             },
           },
         })

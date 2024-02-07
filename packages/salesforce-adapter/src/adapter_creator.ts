@@ -38,6 +38,7 @@ import { configCreator } from './config_creator'
 import { loadElementsFromFolder } from './sfdx_parser/sfdx_parser'
 import { getAdditionalReferences } from './additional_references'
 import { getCustomReferences } from './custom_references'
+import { dependencyChanger } from './dependency_changer'
 
 type ValidatorsActivationConfig = deployment.changeValidators.ValidatorsActivationConfig
 
@@ -217,6 +218,7 @@ export const adapter: Adapter = {
         changeValidator: createChangeValidator(
           { config, isSandbox: credentials.isSandbox, checkOnly: false, client }
         ),
+        dependencyChanger,
         getChangeGroupIds,
       },
       validationModifiers: {

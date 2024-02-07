@@ -1213,6 +1213,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         // this line creates the type despite that
         { fieldName: 'tempWorkflowType', fieldType: 'JiraWorkflow' },
         { fieldName: 'statusMappings', fieldType: 'List<StatusMappingDTO>' },
+        { fieldName: 'transitions', fieldType: 'Map<WorkflowTransitions>' },
       ],
       fieldsToHide: [
         { fieldName: 'id' },

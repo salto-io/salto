@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import { CORE_ANNOTATIONS, InstanceElement, ObjectType, BuiltinTypes, ElemID, ListType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
+import { naclCase } from '@salto-io/adapter-utils'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
 import { logger } from '@salto-io/logging'
 import { FilterResult } from '../../../src/filter'
@@ -55,6 +56,10 @@ describe('jiraWorkflowFilter', () => {
   let config: JiraConfig
   let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
+  const TRANSITION_NAME_TO_KEY:Record<string, string> = {
+    Create: naclCase('Create::From: none::Initial'),
+    Done: naclCase('Done::From: any status::Global'),
+  }
 
   beforeEach(async () => {
     jest.clearAllMocks()
@@ -66,8 +71,8 @@ describe('jiraWorkflowFilter', () => {
     beforeEach(() => {
       mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function *get() {
         yield [
-          { id: { entityId: '1' } },
-          { id: { entityId: '2' } },
+          { id: { entityId: '1' }, statuses: [{ id: '11', name: 'Quack' }] },
+          { id: { entityId: '2' }, statuses: [{ id: '22', name: 'Quack Quack' }] },
         ]
       })
       const { client: cli, connection: conn } = mockClient()
@@ -97,15 +102,19 @@ describe('jiraWorkflowFilter', () => {
               transitions: [
                 {
                   type: 'INITIAL',
+                  name: 'Create',
                   properties:
                     {
                       'jira.issue.editable': 'true',
                     },
+                  to: {
+                    statusReference: '11',
+                  },
                 },
               ],
               statuses: [
                 {
-                  id: '1',
+                  id: '11',
                   properties: {
                     'jira.issue.editable': 'true',
                   },
@@ -122,7 +131,23 @@ describe('jiraWorkflowFilter', () => {
               scope: {
                 type: 'global',
               },
-              transitions: [{ type: 'INITIAL' }],
+              statuses: [
+                {
+                  id: '22',
+                  properties: {
+                    'jira.issue.editable': 'true',
+                  },
+                },
+              ],
+              transitions: [
+                {
+                  type: 'GLOBAL',
+                  name: 'Done',
+                  to: {
+                    statusReference: '22',
+                  },
+                },
+              ],
             },
           ],
         },
@@ -144,20 +169,24 @@ describe('jiraWorkflowFilter', () => {
         scope: {
           type: 'global',
         },
-        transitions: [
-          {
+        transitions: {
+          [TRANSITION_NAME_TO_KEY.Create]: {
             type: 'INITIAL',
+            name: 'Create',
             properties: [
               {
                 key: 'jira.issue.editable',
                 value: 'true',
               },
             ],
+            to: {
+              statusReference: '11',
+            },
           },
-        ],
+        },
         statuses: [
           {
-            id: '1',
+            id: '11',
             properties: [
               {
                 key: 'jira.issue.editable',
@@ -179,7 +208,26 @@ describe('jiraWorkflowFilter', () => {
         scope: {
           type: 'global',
         },
-        transitions: [{ type: 'INITIAL' }],
+        transitions: {
+          [TRANSITION_NAME_TO_KEY.Done]: {
+            type: 'GLOBAL',
+            name: 'Done',
+            to: {
+              statusReference: '22',
+            },
+          },
+        },
+        statuses: [
+          {
+            id: '22',
+            properties: [
+              {
+                key: 'jira.issue.editable',
+                value: 'true',
+              },
+            ],
+          },
+        ],
       })
     })
     it('should add workflows deployment annotations to JiraWorkflow type', async () => {
@@ -199,6 +247,9 @@ describe('jiraWorkflowFilter', () => {
         {
           url: '/rest/api/3/workflow/search',
           paginationField: 'startAt',
+          queryParams: {
+            expand: 'statuses',
+          },
         },
         expect.anything(),
       )
@@ -357,6 +408,7 @@ describe('jiraWorkflowFilter', () => {
                     ],
                   },
                 ],
+                statuses: [],
               },
             ],
           },
@@ -367,9 +419,9 @@ describe('jiraWorkflowFilter', () => {
         await filter.onFetch(elements)
         expect(elements).toHaveLength(2)
         const workflow = elements[1] as unknown as InstanceElement
-        expect(workflow.value.transitions[0].conditions.conditions[0].parameters)
+        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].conditions.conditions[0].parameters)
           .toEqual({ groupIds: ['1', '2'] })
-        expect(workflow.value.transitions[0].validators[0].parameters)
+        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].validators[0].parameters)
           .toEqual({ statusIds: ['1', '2'] })
       })
       it('should do nothing if parameters field not in the relevant list', async () => {
@@ -377,9 +429,9 @@ describe('jiraWorkflowFilter', () => {
         await filter.onFetch(elements)
         expect(elements).toHaveLength(2)
         const workflow = elements[1] as unknown as InstanceElement
-        expect(workflow.value.transitions[0].conditions.conditions[1].parameters)
+        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].conditions.conditions[1].parameters)
           .toEqual({ fromStatusId: '1' })
-        expect(workflow.value.transitions[0].validators[1].parameters)
+        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].validators[1].parameters)
           .toEqual({ fieldKey: 'fieldKey' })
       })
       it('should do nothing if parameters is undefined', async () => {
@@ -387,9 +439,9 @@ describe('jiraWorkflowFilter', () => {
         await filter.onFetch(elements)
         expect(elements).toHaveLength(2)
         const workflow = elements[1] as unknown as InstanceElement
-        expect(workflow.value.transitions[0].conditions.conditions[2].parameters)
+        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].conditions.conditions[2].parameters)
           .toBeUndefined()
-        expect(workflow.value.transitions[0].validators[2].parameters)
+        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].validators[2].parameters)
           .toBeUndefined()
       })
       it('should not convert parameters if it is an empty string', async () => {
@@ -397,9 +449,9 @@ describe('jiraWorkflowFilter', () => {
         await filter.onFetch(elements)
         expect(elements).toHaveLength(2)
         const workflow = elements[1] as unknown as InstanceElement
-        expect(workflow.value.transitions[0].conditions.conditions[3].parameters)
+        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].conditions.conditions[3].parameters)
           .toEqual({ groupIds: '' })
-        expect(workflow.value.transitions[0].validators[3].parameters)
+        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].validators[3].parameters)
           .toEqual({ fieldsRequired: '' })
       })
     })
@@ -774,7 +826,7 @@ describe('jiraWorkflowFilter', () => {
             ...WORKFLOW_PAYLOAD,
             workflows: [{
               ...WORKFLOW_PAYLOAD.workflows[0],
-              transitions: undefined,
+              transitions: [],
               statuses: undefined,
             }],
             statuses: [],
@@ -883,6 +935,8 @@ describe('jiraWorkflowFilter', () => {
                   scope: {
                     type: 'global',
                   },
+                  statuses: [],
+                  transitions: [],
                 },
               ],
               taskId: '1',
@@ -1025,6 +1079,8 @@ describe('jiraWorkflowFilter', () => {
                   scope: {
                     type: 'global',
                   },
+                  statuses: [],
+                  transitions: [],
                 },
               ],
             },

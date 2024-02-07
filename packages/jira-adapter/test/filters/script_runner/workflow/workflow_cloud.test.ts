@@ -120,8 +120,8 @@ describe('ScriptRunner cloud Workflow', () => {
         'instance',
         workflowV2Type,
         {
-          transitions: [
-            {
+          transitions: {
+            tran1: {
               actions: [{
                 parameters:
                   {
@@ -130,7 +130,7 @@ describe('ScriptRunner cloud Workflow', () => {
                   },
               }],
             },
-          ],
+          },
         }
       )
     })
@@ -138,14 +138,14 @@ describe('ScriptRunner cloud Workflow', () => {
       describe('workflowV2', () => {
         it('should change field name to scriptRunner', async () => {
           await filterWithNewWorkflowAPI.onFetch([workflowV2Instance])
-          expect(workflowV2Instance.value.transitions[0].actions[0].parameters.scriptRunner).toBeDefined()
-          expect(workflowV2Instance.value.transitions[0].actions[0].parameters.config).toBeUndefined()
+          expect(workflowV2Instance.value.transitions.tran1.actions[0].parameters.scriptRunner).toBeDefined()
+          expect(workflowV2Instance.value.transitions.tran1.actions[0].parameters.config).toBeUndefined()
         })
         it('should make array of accountIds and groups', async () => {
-          workflowV2Instance.value.transitions[0].actions[0].parameters.config = accountAndGroupB64
+          workflowV2Instance.value.transitions.tran1.actions[0].parameters.config = accountAndGroupB64
           await filterWithNewWorkflowAPI.onFetch([workflowV2Instance])
-          expect(workflowV2Instance.value.transitions[0].actions[0].parameters.scriptRunner.accountIds).toEqual(['1', '2', '3'])
-          expect(workflowV2Instance.value.transitions[0].actions[0].parameters.scriptRunner.groupName).toEqual(['4', '5', '6'])
+          expect(workflowV2Instance.value.transitions.tran1.actions[0].parameters.scriptRunner.accountIds).toEqual(['1', '2', '3'])
+          expect(workflowV2Instance.value.transitions.tran1.actions[0].parameters.scriptRunner.groupName).toEqual(['4', '5', '6'])
         })
         it('should not make an array of groups if wrong class', async () => {
           const noGroup = {
@@ -153,35 +153,35 @@ describe('ScriptRunner cloud Workflow', () => {
             groupName: '4,5,6',
           }
           const base64OfNoGroup = encode(noGroup)
-          workflowV2Instance.value.transitions[0].actions[0].parameters.config = base64OfNoGroup
+          workflowV2Instance.value.transitions.tran1.actions[0].parameters.config = base64OfNoGroup
           await filterWithNewWorkflowAPI.onFetch([workflowV2Instance])
-          expect(workflowV2Instance.value.transitions[0].actions[0].parameters.scriptRunner.groupName).toEqual('4,5,6')
+          expect(workflowV2Instance.value.transitions.tran1.actions[0].parameters.scriptRunner.groupName).toEqual('4,5,6')
         })
         it('should decode properly', async () => {
           await filterWithNewWorkflowAPI.onFetch([workflowV2Instance])
-          expect(workflowV2Instance.value.transitions[0].actions[0].parameters.scriptRunner).toEqual({ a: 1 })
+          expect(workflowV2Instance.value.transitions.tran1.actions[0].parameters.scriptRunner).toEqual({ a: 1 })
         })
         it('should not decode if not compressed', async () => {
-          workflowV2Instance.value.transitions[0].actions[0].parameters.config = notZippedBuffer
+          workflowV2Instance.value.transitions.tran1.actions[0].parameters.config = notZippedBuffer
           await filterWithNewWorkflowAPI.onFetch([workflowV2Instance])
-          expect(workflowV2Instance.value.transitions[0].actions[0].parameters.scriptRunner)
+          expect(workflowV2Instance.value.transitions.tran1.actions[0].parameters.scriptRunner)
             .toEqual(notZippedBuffer)
         })
         it('should not decode if not base64', async () => {
-          workflowV2Instance.value.transitions[0].actions[0].parameters.config = 'not base64'
+          workflowV2Instance.value.transitions.tran1.actions[0].parameters.config = 'not base64'
           await filterWithNewWorkflowAPI.onFetch([workflowV2Instance])
-          expect(workflowV2Instance.value.transitions[0].actions[0].parameters.scriptRunner).toEqual('not base64')
+          expect(workflowV2Instance.value.transitions.tran1.actions[0].parameters.scriptRunner).toEqual('not base64')
         })
         it('should not decode if not valid json', async () => {
-          workflowV2Instance.value.transitions[0].actions[0].parameters.config = wrongInnerStructure
+          workflowV2Instance.value.transitions.tran1.actions[0].parameters.config = wrongInnerStructure
           await filterWithNewWorkflowAPI.onFetch([workflowV2Instance])
-          expect(workflowV2Instance.value.transitions[0].actions[0].parameters.scriptRunner)
+          expect(workflowV2Instance.value.transitions.tran1.actions[0].parameters.scriptRunner)
             .toEqual(wrongInnerStructure)
         })
         it('should not fail if no value', async () => {
-          workflowV2Instance.value.transitions[0].actions[0].parameters.config = undefined
+          workflowV2Instance.value.transitions.tran1.actions[0].parameters.config = undefined
           await filterWithNewWorkflowAPI.onFetch([workflowV2Instance])
-          expect(workflowV2Instance.value.transitions[0].actions[0].parameters.scriptRunner).toBeUndefined()
+          expect(workflowV2Instance.value.transitions.tran1.actions[0].parameters.scriptRunner).toBeUndefined()
         })
       })
       describe('workflowV1', () => {
@@ -247,29 +247,29 @@ describe('ScriptRunner cloud Workflow', () => {
     describe('pre deploy', () => {
       describe('workflowV2', () => {
         beforeEach(() => {
-          renameKey(workflowV2Instance.value.transitions[0].actions[0].parameters, { from: 'config', to: 'scriptRunner' })
+          renameKey(workflowV2Instance.value.transitions.tran1.actions[0].parameters, { from: 'config', to: 'scriptRunner' })
         })
         it('should change field name to value', async () => {
           await filterWithNewWorkflowAPI.preDeploy([toChange({ after: workflowV2Instance })])
-          expect(workflowV2Instance.value.transitions[0].actions[0].parameters.scriptRunner)
+          expect(workflowV2Instance.value.transitions.tran1.actions[0].parameters.scriptRunner)
             .toBeUndefined()
-          expect(workflowV2Instance.value.transitions[0].actions[0].parameters.config).toBeDefined()
+          expect(workflowV2Instance.value.transitions.tran1.actions[0].parameters.config).toBeDefined()
         })
         it('should return an array of accountIds and groups to strings', async () => {
-          workflowV2Instance.value.transitions[0].actions[0].parameters.scriptRunner = accountAndGroupArrayed
+          workflowV2Instance.value.transitions.tran1.actions[0].parameters.scriptRunner = accountAndGroupArrayed
           await filterWithNewWorkflowAPI.preDeploy([toChange({ after: workflowV2Instance })])
-          expect(workflowV2Instance.value.transitions[0].actions[0].parameters.config)
+          expect(workflowV2Instance.value.transitions.tran1.actions[0].parameters.config)
             .toEqual(accountAndGroupB64)
         })
         it('should encode properly', async () => {
-          workflowV2Instance.value.transitions[0].actions[0].parameters.scriptRunner = { a: 1 }
+          workflowV2Instance.value.transitions.tran1.actions[0].parameters.scriptRunner = { a: 1 }
           await filterWithNewWorkflowAPI.preDeploy([toChange({ after: workflowV2Instance })])
-          compareScripts(workflowV2Instance.value.transitions[0].actions[0].parameters.config, goodBase64)
+          compareScripts(workflowV2Instance.value.transitions.tran1.actions[0].parameters.config, goodBase64)
         })
         it('should not decode if undefined', async () => {
-          workflowV2Instance.value.transitions[0].actions[0].parameters.scriptRunner = undefined
+          workflowV2Instance.value.transitions.tran1.actions[0].parameters.scriptRunner = undefined
           await filterWithNewWorkflowAPI.preDeploy([toChange({ after: workflowV2Instance })])
-          expect(workflowV2Instance.value.transitions[0].actions[0].parameters.config).toBeUndefined()
+          expect(workflowV2Instance.value.transitions.tran1.actions[0].parameters.config).toBeUndefined()
         })
       })
       describe('workflowV1', () => {
@@ -314,18 +314,18 @@ describe('ScriptRunner cloud Workflow', () => {
       describe('workflowV2', () => {
         it('should change field name to scriptRunner', async () => {
           await filterWithNewWorkflowAPI.onDeploy([toChange({ after: workflowV2Instance })])
-          expect(workflowV2Instance.value.transitions[0].actions[0].parameters.scriptRunner).toBeDefined()
-          expect(workflowV2Instance.value.transitions[0].actions[0].parameters.config).toBeUndefined()
+          expect(workflowV2Instance.value.transitions.tran1.actions[0].parameters.scriptRunner).toBeDefined()
+          expect(workflowV2Instance.value.transitions.tran1.actions[0].parameters.config).toBeUndefined()
         })
         it('should make array of accountIds and groups', async () => {
-          workflowV2Instance.value.transitions[0].actions[0].parameters.config = accountAndGroup
+          workflowV2Instance.value.transitions.tran1.actions[0].parameters.config = accountAndGroup
           await filterWithNewWorkflowAPI.onDeploy([toChange({ after: workflowV2Instance })])
-          expect(workflowV2Instance.value.transitions[0].actions[0].parameters.scriptRunner.accountIds).toEqual(['1', '2', '3'])
-          expect(workflowV2Instance.value.transitions[0].actions[0].parameters.scriptRunner.groupName).toEqual(['4', '5', '6'])
+          expect(workflowV2Instance.value.transitions.tran1.actions[0].parameters.scriptRunner.accountIds).toEqual(['1', '2', '3'])
+          expect(workflowV2Instance.value.transitions.tran1.actions[0].parameters.scriptRunner.groupName).toEqual(['4', '5', '6'])
         })
         it('should decode properly', async () => {
           await filterWithNewWorkflowAPI.onDeploy([toChange({ after: workflowV2Instance })])
-          expect(workflowV2Instance.value.transitions[0].actions[0].parameters.scriptRunner).toEqual({ a: 1 })
+          expect(workflowV2Instance.value.transitions.tran1.actions[0].parameters.scriptRunner).toEqual({ a: 1 })
         })
       })
       describe('workflowV1', () => {
@@ -385,8 +385,8 @@ describe('ScriptRunner cloud Workflow', () => {
         'instance',
         workflowV2Type,
         {
-          transitions: [
-            {
+          transitions: {
+            tran1: {
               validators: [{
                 parameters:
                   {
@@ -395,7 +395,7 @@ describe('ScriptRunner cloud Workflow', () => {
                   },
               }],
             },
-          ],
+          },
         }
       )
     })
@@ -403,22 +403,23 @@ describe('ScriptRunner cloud Workflow', () => {
       describe('workflowV2', () => {
         it('should rename field name to scriptRunner', async () => {
           await filterWithNewWorkflowAPI.onFetch([workflowV2Instance])
-          expect(workflowV2Instance.value.transitions[0].validators[0].parameters.scriptRunner).toBeDefined()
-          expect(workflowV2Instance.value.transitions[0].validators[0].parameters.config).toBeUndefined()
+          expect(workflowV2Instance.value.transitions.tran1.validators[0].parameters.scriptRunner).toBeDefined()
+          expect(workflowV2Instance.value.transitions.tran1.validators[0].parameters.config).toBeUndefined()
         })
         it('should objectify properly', async () => {
           await filterWithNewWorkflowAPI.onFetch([workflowV2Instance])
-          expect(workflowV2Instance.value.transitions[0].validators[0].parameters.scriptRunner).toEqual({ a: 1 })
+          expect(workflowV2Instance.value.transitions.tran1.validators[0].parameters.scriptRunner).toEqual({ a: 1 })
         })
         it('should not objectify if not json object', async () => {
-          workflowV2Instance.value.transitions[0].validators[0].parameters.config = wrongJsonObject
+          workflowV2Instance.value.transitions.tran1.validators[0].parameters.config = wrongJsonObject
           await filterWithNewWorkflowAPI.onFetch([workflowV2Instance])
-          expect(workflowV2Instance.value.transitions[0].validators[0].parameters.scriptRunner).toEqual(wrongJsonObject)
+          expect(workflowV2Instance.value.transitions.tran1.validators[0].parameters.scriptRunner)
+            .toEqual(wrongJsonObject)
         })
         it('should not fail if no value', async () => {
-          workflowV2Instance.value.transitions[0].validators[0].parameters.config = undefined
+          workflowV2Instance.value.transitions.tran1.validators[0].parameters.config = undefined
           await filterWithNewWorkflowAPI.onFetch([workflowV2Instance])
-          expect(workflowV2Instance.value.transitions[0].validators[0].parameters.scriptRunner).toBeUndefined()
+          expect(workflowV2Instance.value.transitions.tran1.validators[0].parameters.scriptRunner).toBeUndefined()
         })
       })
       describe('workflowV1', () => {
@@ -449,22 +450,22 @@ describe('ScriptRunner cloud Workflow', () => {
     describe('pre deploy', () => {
       describe('workflowV2', () => {
         beforeEach(() => {
-          renameKey(workflowV2Instance.value.transitions[0].validators[0].parameters, { from: 'config', to: 'scriptRunner' })
+          renameKey(workflowV2Instance.value.transitions.tran1.validators[0].parameters, { from: 'config', to: 'scriptRunner' })
         })
         it('should rename field name to value', async () => {
           await filterWithNewWorkflowAPI.preDeploy([toChange({ after: workflowV2Instance })])
-          expect(workflowV2Instance.value.transitions[0].validators[0].parameters.config).toBeDefined()
-          expect(workflowV2Instance.value.transitions[0].validators[0].parameters.scriptRunner).toBeUndefined()
+          expect(workflowV2Instance.value.transitions.tran1.validators[0].parameters.config).toBeDefined()
+          expect(workflowV2Instance.value.transitions.tran1.validators[0].parameters.scriptRunner).toBeUndefined()
         })
         it('should stringify properly', async () => {
-          workflowV2Instance.value.transitions[0].validators[0].parameters.scriptRunner = { a: 1 }
+          workflowV2Instance.value.transitions.tran1.validators[0].parameters.scriptRunner = { a: 1 }
           await filterWithNewWorkflowAPI.preDeploy([toChange({ after: workflowV2Instance })])
-          expect(workflowV2Instance.value.transitions[0].validators[0].parameters.config).toEqual(goodJsonObject)
+          expect(workflowV2Instance.value.transitions.tran1.validators[0].parameters.config).toEqual(goodJsonObject)
         })
         it('should not fail if undefined', async () => {
-          workflowV2Instance.value.transitions[0].validators[0].parameters.scriptRunner = undefined
+          workflowV2Instance.value.transitions.tran1.validators[0].parameters.scriptRunner = undefined
           await filterWithNewWorkflowAPI.preDeploy([toChange({ after: workflowV2Instance })])
-          expect(workflowV2Instance.value.transitions[0].validators[0].parameters.config).toBeUndefined()
+          expect(workflowV2Instance.value.transitions.tran1.validators[0].parameters.config).toBeUndefined()
         })
       })
       describe('workflowV1', () => {
@@ -494,12 +495,12 @@ describe('ScriptRunner cloud Workflow', () => {
       describe('workflowV2', () => {
         it('should rename field name to scriptRunner', async () => {
           await filterWithNewWorkflowAPI.onDeploy([toChange({ after: workflowV2Instance })])
-          expect(workflowV2Instance.value.transitions[0].validators[0].parameters.scriptRunner).toBeDefined()
-          expect(workflowV2Instance.value.transitions[0].validators[0].parameters.config).toBeUndefined()
+          expect(workflowV2Instance.value.transitions.tran1.validators[0].parameters.scriptRunner).toBeDefined()
+          expect(workflowV2Instance.value.transitions.tran1.validators[0].parameters.config).toBeUndefined()
         })
         it('should objectify properly', async () => {
           await filterWithNewWorkflowAPI.onDeploy([toChange({ after: workflowV2Instance })])
-          expect(workflowV2Instance.value.transitions[0].validators[0].parameters.scriptRunner).toEqual({ a: 1 })
+          expect(workflowV2Instance.value.transitions.tran1.validators[0].parameters.scriptRunner).toEqual({ a: 1 })
         })
       })
       describe('workflowV1', () => {
@@ -545,8 +546,8 @@ describe('ScriptRunner cloud Workflow', () => {
         'instance',
         workflowV2Type,
         {
-          transitions: [
-            {
+          transitions: {
+            tran1: {
               conditions: [{
                 parameters:
                   {
@@ -555,7 +556,7 @@ describe('ScriptRunner cloud Workflow', () => {
                   },
               }],
             },
-          ],
+          },
         }
       )
     })
@@ -563,22 +564,23 @@ describe('ScriptRunner cloud Workflow', () => {
       describe('workflowV2', () => {
         it('should rename field name to scriptRunner', async () => {
           await filterWithNewWorkflowAPI.onFetch([workflowV2Instance])
-          expect(workflowV2Instance.value.transitions[0].conditions[0].parameters.scriptRunner).toBeDefined()
-          expect(workflowV2Instance.value.transitions[0].conditions[0].parameters.config).toBeUndefined()
+          expect(workflowV2Instance.value.transitions.tran1.conditions[0].parameters.scriptRunner).toBeDefined()
+          expect(workflowV2Instance.value.transitions.tran1.conditions[0].parameters.config).toBeUndefined()
         })
         it('should objectify properly', async () => {
           await filterWithNewWorkflowAPI.onFetch([workflowV2Instance])
-          expect(workflowV2Instance.value.transitions[0].conditions[0].parameters.scriptRunner).toEqual({ b: 1 })
+          expect(workflowV2Instance.value.transitions.tran1.conditions[0].parameters.scriptRunner).toEqual({ b: 1 })
         })
         it('should not objectify if not json object', async () => {
-          workflowV2Instance.value.transitions[0].conditions[0].parameters.config = wrongJsonObject
+          workflowV2Instance.value.transitions.tran1.conditions[0].parameters.config = wrongJsonObject
           await filterWithNewWorkflowAPI.onFetch([workflowV2Instance])
-          expect(workflowV2Instance.value.transitions[0].conditions[0].parameters.scriptRunner).toEqual(wrongJsonObject)
+          expect(workflowV2Instance.value.transitions.tran1.conditions[0].parameters.scriptRunner)
+            .toEqual(wrongJsonObject)
         })
         it('should not fail if no value', async () => {
-          workflowV2Instance.value.transitions[0].conditions[0].parameters.config = undefined
+          workflowV2Instance.value.transitions.tran1.conditions[0].parameters.config = undefined
           await filterWithNewWorkflowAPI.onFetch([workflowV2Instance])
-          expect(workflowV2Instance.value.transitions[0].conditions[0].parameters.scriptRunner).toBeUndefined()
+          expect(workflowV2Instance.value.transitions.tran1.conditions[0].parameters.scriptRunner).toBeUndefined()
         })
       })
       describe('workflowV1', () => {
@@ -609,22 +611,22 @@ describe('ScriptRunner cloud Workflow', () => {
     describe('pre deploy', () => {
       describe('workflowV2', () => {
         beforeEach(() => {
-          renameKey(workflowV2Instance.value.transitions[0].conditions[0].parameters, { from: 'config', to: 'scriptRunner' })
+          renameKey(workflowV2Instance.value.transitions.tran1.conditions[0].parameters, { from: 'config', to: 'scriptRunner' })
         })
         it('should rename field name to value', async () => {
           await filterWithNewWorkflowAPI.preDeploy([toChange({ after: workflowV2Instance })])
-          expect(workflowV2Instance.value.transitions[0].conditions[0].parameters.config).toBeDefined()
-          expect(workflowV2Instance.value.transitions[0].conditions[0].parameters.scriptRunner).toBeUndefined()
+          expect(workflowV2Instance.value.transitions.tran1.conditions[0].parameters.config).toBeDefined()
+          expect(workflowV2Instance.value.transitions.tran1.conditions[0].parameters.scriptRunner).toBeUndefined()
         })
         it('should stringify properly', async () => {
-          workflowV2Instance.value.transitions[0].conditions[0].parameters.scriptRunner = { b: 1 }
+          workflowV2Instance.value.transitions.tran1.conditions[0].parameters.scriptRunner = { b: 1 }
           await filterWithNewWorkflowAPI.preDeploy([toChange({ after: workflowV2Instance })])
-          expect(workflowV2Instance.value.transitions[0].conditions[0].parameters.config).toEqual(goodJsonObject)
+          expect(workflowV2Instance.value.transitions.tran1.conditions[0].parameters.config).toEqual(goodJsonObject)
         })
         it('should not fail if undefined', async () => {
-          workflowV2Instance.value.transitions[0].conditions[0].parameters.scriptRunner = undefined
+          workflowV2Instance.value.transitions.tran1.conditions[0].parameters.scriptRunner = undefined
           await filterWithNewWorkflowAPI.preDeploy([toChange({ after: workflowV2Instance })])
-          expect(workflowV2Instance.value.transitions[0].conditions[0].parameters.config).toBeUndefined()
+          expect(workflowV2Instance.value.transitions.tran1.conditions[0].parameters.config).toBeUndefined()
         })
       })
       describe('workflowV1', () => {
@@ -649,12 +651,12 @@ describe('ScriptRunner cloud Workflow', () => {
       describe('workflowV2', () => {
         it('should rename field name to scriptRunner', async () => {
           await filterWithNewWorkflowAPI.onDeploy([toChange({ after: workflowV2Instance })])
-          expect(workflowV2Instance.value.transitions[0].conditions[0].parameters.scriptRunner).toBeDefined()
-          expect(workflowV2Instance.value.transitions[0].conditions[0].parameters.config).toBeUndefined()
+          expect(workflowV2Instance.value.transitions.tran1.conditions[0].parameters.scriptRunner).toBeDefined()
+          expect(workflowV2Instance.value.transitions.tran1.conditions[0].parameters.config).toBeUndefined()
         })
         it('should objectify properly', async () => {
           await filterWithNewWorkflowAPI.onDeploy([toChange({ after: workflowV2Instance })])
-          expect(workflowV2Instance.value.transitions[0].conditions[0].parameters.scriptRunner).toEqual({ b: 1 })
+          expect(workflowV2Instance.value.transitions.tran1.conditions[0].parameters.scriptRunner).toEqual({ b: 1 })
         })
       })
       describe('workflowV1', () => {

@@ -36,7 +36,7 @@ const getTransitionTypeFromKey = (key: string): string => {
 }
 
 const getTransitionType = (transition: Transition): TransitionType => {
-  if (transition.type === 'initial') {
+  if (transition.type?.toLowerCase() === 'initial') {
     return 'Initial'
   }
   if (transition.from !== undefined
@@ -88,8 +88,11 @@ export const getTransitionKey = (transition: Transition, statusesMap: Map<string
   return naclCase([transition.name, `From: ${fromSorted}`, type].join(TRANSITION_PARTS_SEPARATOR))
 }
 
-export const transformTransitions = (value: Value): SaltoError[] => {
-  const statusesMap = createStatusMap(value.statuses ?? [])
+export const transformTransitions = (
+  value: Value,
+  statuses?: Pick<Status, 'id' | 'name'>[]
+): SaltoError[] => {
+  const statusesMap = createStatusMap(statuses ?? value.statuses ?? [])
   const maxCounts = _(value.transitions).map(transition => getTransitionKey(transition, statusesMap)).countBy().value()
 
   const counts: Record<string, number> = {}

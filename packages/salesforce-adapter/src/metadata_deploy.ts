@@ -36,15 +36,18 @@ import {
   Value,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-
-
 import { DeployResult as SFDeployResult, DeployMessage } from '@salto-io/jsforce'
-
 import SalesforceClient from './client/client'
 import { createDeployPackage, DeployPackage } from './transformers/xml_transformer'
-import { isMetadataInstanceElement, apiName, metadataType, isMetadataObjectType, MetadataInstanceElement, assertMetadataObjectType } from './transformers/transformer'
+import {
+  isMetadataInstanceElement, apiName, metadataType, isMetadataObjectType, MetadataInstanceElement,
+  assertMetadataObjectType, Types,
+} from './transformers/transformer'
 import { apiNameSync, fullApiName } from './filters/utils'
-import { API_NAME_SEPARATOR, GLOBAL_VALUE_SET_SUFFIX, INSTANCE_FULL_NAME_FIELD, SalesforceArtifacts } from './constants'
+import {
+  API_NAME_SEPARATOR, CUSTOM_FIELD, CUSTOM_OBJECT, GLOBAL_VALUE_SET_SUFFIX, INSTANCE_FULL_NAME_FIELD,
+  SalesforceArtifacts,
+} from './constants'
 import { RunTestsResult } from './client/jsforce'
 import { getUserFriendlyDeployMessage } from './client/user_facing_errors'
 import { QuickDeployParams } from './types'
@@ -220,6 +223,25 @@ const processDeployResponse = (
   isCheckOnly: boolean,
 ): { successfulFullNames: ReadonlyArray<MetadataId>
   errors: ReadonlyArray<SaltoError | SaltoElementError> } => {
+  const getElemIdForDeployError = ({ componentType, fullName }: DeployMessage): ElemID | undefined => {
+    const rawElemId = typeAndNameToElemId[componentType]?.[fullName]
+    if (rawElemId === undefined) {
+      return undefined
+    }
+    if (rawElemId.typeName === CUSTOM_OBJECT) {
+      // When there's a deploy error for a custom object, we receive componentType = 'CustomObject',
+      // fullName = (e.g.) 'Account'. By this point in the flow, custom objects are converted back into instances of
+      // 'CustomObject', so we end up mapping the deploy errors to (e.g.) salesforce.CustomObject.instance.Account
+      // instead of salesforce.Account.
+      return Types.getElemId(rawElemId.name, true)
+    }
+    if (rawElemId.typeName === CUSTOM_FIELD) {
+      const [typeName, fieldName] = fullName.split(API_NAME_SEPARATOR)
+      return Types.getElemId(typeName, true).createNestedID('field', fieldName)
+    }
+    return rawElemId
+  }
+
   const allFailureMessages = makeArray(result.details)
     .flatMap(detail => makeArray(detail.componentFailures))
 
@@ -227,7 +249,7 @@ const processDeployResponse = (
     .filter(failure => !isUnFoundDelete(failure, deletionsPackageName))
     .map(getUserFriendlyDeployMessage)
     .map(failure => ({
-      elemID: typeAndNameToElemId[failure.componentType]?.[failure.fullName],
+      elemID: getElemIdForDeployError(failure),
       message: failure.problem,
       severity: 'Error' as SeverityLevel,
     }))

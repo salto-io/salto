@@ -1879,9 +1879,9 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
       refType: createClientConfigType(),
     },
     [FETCH_CONFIG]: {
-      refType: definitions.createUserFetchConfigType(
-        OKTA,
-        {
+      refType: definitions.createUserFetchConfigType({
+        adapterName: OKTA,
+        additionalFields: {
           convertUsersIds: { refType: BuiltinTypes.BOOLEAN },
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
           includeGroupMemberships: { refType: BuiltinTypes.BOOLEAN },
@@ -1893,8 +1893,9 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
             },
           },
           isClassicOrg: { refType: BuiltinTypes.BOOLEAN },
-        }
-      ),
+        },
+        omitElemID: true,
+      }),
     },
     [DEPLOY_CONFIG]: {
       refType: definitions.createUserDeployConfigType(

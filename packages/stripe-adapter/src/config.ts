@@ -144,7 +144,7 @@ export const configType = createMatchingObjectType<Partial<StripeConfig>>({
       refType: createClientConfigType(STRIPE),
     },
     [FETCH_CONFIG]: {
-      refType: definitions.createUserFetchConfigType(STRIPE),
+      refType: definitions.createUserFetchConfigType({ adapterName: STRIPE, omitElemID: true }),
     },
     [API_DEFINITIONS_CONFIG]: {
       refType: createSwaggerAdapterApiConfigType({

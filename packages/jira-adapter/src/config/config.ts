@@ -328,9 +328,9 @@ const fetchFiltersType = createMatchingObjectType<JiraFetchFilters>({
   },
 })
 
-const fetchConfigType = definitions.createUserFetchConfigType(
-  JIRA,
-  {
+const fetchConfigType = definitions.createUserFetchConfigType({
+  adapterName: JIRA,
+  additionalFields: {
     fallbackToInternalId: { refType: BuiltinTypes.BOOLEAN },
     addTypeToFieldName: { refType: BuiltinTypes.BOOLEAN },
     showUserDisplayNames: { refType: BuiltinTypes.BOOLEAN },
@@ -346,8 +346,9 @@ const fetchConfigType = definitions.createUserFetchConfigType(
     enableIssueLayouts: { refType: BuiltinTypes.BOOLEAN },
     enableNewWorkflowAPI: { refType: BuiltinTypes.BOOLEAN },
   },
-  fetchFiltersType,
-)
+  fetchCriteriaType: fetchFiltersType,
+  omitElemID: true,
+})
 
 const maskingConfigType = createMatchingObjectType<Partial<MaskingConfig>>({
   elemID: new ElemID(JIRA, 'MaskingConfig'),

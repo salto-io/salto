@@ -33,6 +33,7 @@ export type ConfigTypeCreator = (args: {
   additionalDeployFields?: Record<string, FieldDefinition>
   additionalClientFields?: Record<string, FieldDefinition>
   changeValidatorNames?: string[]
+  omitElemID?: boolean
 }) => ObjectType
 
 export const createUserConfigType: ConfigTypeCreator = ({
@@ -43,6 +44,7 @@ export const createUserConfigType: ConfigTypeCreator = ({
   additionalFetchFields,
   additionalDeployFields,
   additionalClientFields,
+  omitElemID,
 }) => createMatchingObjectType<Partial<UserConfig>>({
   elemID: new ElemID(adapterName),
   fields: {
@@ -50,10 +52,11 @@ export const createUserConfigType: ConfigTypeCreator = ({
       refType: createClientConfigType(adapterName, undefined, additionalClientFields),
     },
     fetch: {
-      refType: createUserFetchConfigType(
+      refType: createUserFetchConfigType({
         adapterName,
-        additionalFetchFields,
-      ),
+        additionalFields: additionalFetchFields,
+        omitElemID,
+      }),
     },
     deploy: {
       refType: createUserDeployConfigType(

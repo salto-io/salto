@@ -250,14 +250,15 @@ export const configType = new ObjectType({
       refType: createClientConfigType(WORKATO),
     },
     [FETCH_CONFIG]: {
-      refType: definitions.createUserFetchConfigType(
-        WORKATO,
-        {
+      refType: definitions.createUserFetchConfigType({
+        adapterName: WORKATO,
+        additionalFields: {
           serviceConnectionNames: {
             refType: new MapType(new ListType(BuiltinTypes.STRING)),
           },
         },
-      ),
+        omitElemID: true,
+      }),
     },
     [API_DEFINITIONS_CONFIG]: {
       refType: createDucktypeAdapterApiConfigType({ adapter: WORKATO }),

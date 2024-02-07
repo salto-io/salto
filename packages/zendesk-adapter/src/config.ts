@@ -3044,9 +3044,9 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       refType: createClientConfigType(ZENDESK),
     },
     [FETCH_CONFIG]: {
-      refType: definitions.createUserFetchConfigType(
-        ZENDESK,
-        {
+      refType: definitions.createUserFetchConfigType({
+        adapterName: ZENDESK,
+        additionalFields: {
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
           resolveUserIDs: { refType: BuiltinTypes.BOOLEAN },
           includeAuditDetails: { refType: BuiltinTypes.BOOLEAN },
@@ -3059,7 +3059,8 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
           extractReferencesFromFreeText: { refType: BuiltinTypes.BOOLEAN },
           convertJsonIdsToReferences: { refType: BuiltinTypes.BOOLEAN },
         },
-      ),
+        omitElemID: true,
+      }),
     },
     [DEPLOY_CONFIG]: {
       refType: definitions.createUserDeployConfigType(

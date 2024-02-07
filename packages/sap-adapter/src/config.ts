@@ -137,9 +137,10 @@ export const configType = createMatchingObjectType<Partial<SAPConfig>>({
       refType: createClientConfigType(SAP),
     },
     [FETCH_CONFIG]: {
-      refType: definitions.createUserFetchConfigType(
-        SAP,
-      ),
+      refType: definitions.createUserFetchConfigType({
+        adapterName: SAP,
+        omitElemID: true,
+      }),
     },
     [API_DEFINITIONS_CONFIG]: {
       refType: createSwaggerAdapterApiConfigType({ adapter: SAP }),

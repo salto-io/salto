@@ -245,6 +245,7 @@ export const DEFAULT_FILTERS = [
   workflowDeployFilter,
   workflowModificationFilter,
   emptyValidatorWorkflowFilter,
+  // must run before fieldReferencesFilter
   groupNameFilter,
   workflowGroupsFilter,
   workflowSchemeFilter,

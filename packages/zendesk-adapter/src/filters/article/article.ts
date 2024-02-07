@@ -14,8 +14,6 @@
 * limitations under the License.
 */
 
-/* eslint-disable no-console */
-
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections, strings, promises } from '@salto-io/lowerdash'
@@ -107,16 +105,13 @@ const setupArticleUserSegmentId = (
   elements: Element[],
   articleInstances: InstanceElement[],
 ): void => {
-  console.log('h1i')
   const everyoneUserSegmentInstance = elements
     .filter(instance => instance.elemID.typeName === USER_SEGMENT_TYPE_NAME)
     .find(instance => instance.elemID.name === EVERYONE_USER_TYPE)
-  console.log('hi2', everyoneUserSegmentInstance)
   if (everyoneUserSegmentInstance === undefined) {
     log.info("Couldn't find Everyone user_segment instance.")
     return
   }
-  console.log('hi3')
   articleInstances
     .filter(article => article.value[USER_SEGMENT_ID_FIELD] === undefined)
     .forEach(article => {
@@ -129,21 +124,14 @@ const setupArticleUserSegmentId = (
 
 // The default user_segment we added will be resolved to undefined
 // So in order to create a new article we need to add a null value user_segment_id
-const setUserSegmentIdForAdditionChanges = (
+// Similarly, when modifying the user segment to "Everyone", manually add the value
+const setUserSegmentIdForAdditionOrModificationChanges = (
   changes: Change<InstanceElement>[]
 ): void => {
   changes
     .map(getChangeData)
-    .forEach(articleInstance => {
-      console.log(articleInstance)
-    })
-
-  changes
-    .filter(isAdditionChange)
-    .map(getChangeData)
     .filter(articleInstance => articleInstance.value[USER_SEGMENT_ID_FIELD] === undefined)
     .forEach(articleInstance => {
-      console.log(articleInstance)
       articleInstance.value[USER_SEGMENT_ID_FIELD] = null
     })
 }
@@ -400,7 +388,6 @@ const calculateAndRemoveDeletedAttachments = ({
  */
 const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdToClient = {} }) => {
   const articleNameToAttachments: Record<string, number[]> = {}
-  console.log('hello?')
   return {
     name: 'articleFilter',
     onFetch: async (elements: Element[]) => {
@@ -479,11 +466,6 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
       await handleArticleAttachmentsPreDeploy(
         { changes, client, elementsSource, articleNameToAttachments, config }
       )
-      changes
-        .map(getChangeData)
-        .forEach(articleInstance => {
-          console.log(articleInstance)
-        })
       await awu(changes)
         .filter(isAdditionChange)
         .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
@@ -504,7 +486,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
       const articleRemovalChanges = otherChanges
         .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
       addRemovalChangesId(articleRemovalChanges)
-      setUserSegmentIdForAdditionChanges(articleAdditionAndModificationChanges)
+      setUserSegmentIdForAdditionOrModificationChanges(articleAdditionAndModificationChanges)
       const articleDeployResult = await deployChanges(
         articleAdditionAndModificationChanges,
         async change => {

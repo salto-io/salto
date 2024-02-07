@@ -20,6 +20,16 @@ import { DefaultWithCustomizations } from './shared/types'
 
 const log = logger(module)
 
+/**
+ * merge a single custom definition with a default, assuming they came from a DefaultWithCustomizations definition.
+ * the merge is done as follows:
+ * - customization takes precedence over default
+ * - if the customization is an array, the default is expected to be a single item with the same structure,
+ *   and the default is applied to each item in the customization array
+ * - special case (TODO generalize): if the definition specifies ignoreDefaultFieldCustomizations=true, then
+ *   the corresponding fieldCustomizations field, if exists, will not be merged with the default.
+ *   the ignoreDefaultFieldCustomizations value itself is omitted from the returned result.
+ */
 export const mergeSingleDefWithDefault = <T, K extends string>(
   defaultDef: DefaultWithCustomizations<T, K>['default'] | undefined,
   def: T | undefined,
@@ -28,9 +38,6 @@ export const mergeSingleDefWithDefault = <T, K extends string>(
     return def
   }
   if (Array.isArray(def)) {
-    if (defaultDef === undefined) {
-      return def
-    }
     if (Array.isArray(defaultDef)) {
       // shouldn't happen
       log.warn('found array in custom and default definitions, ignoring default')

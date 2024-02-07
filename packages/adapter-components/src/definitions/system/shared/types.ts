@@ -29,8 +29,8 @@ export type DefaultWithCustomizations<T, K extends string = string> = {
   customizations: string extends K ? Record<K, T> : Partial<Record<K, T>>
 }
 
-export type ArgsWithCustomizer<ResponseType, Args, Input = unknown, AdditionalArgs = {}> = Args & {
-  custom?: ((args: Partial<Args> & AdditionalArgs) => (input: Input) => ResponseType)
+export type ArgsWithCustomizer<ResultType, Args, Input = unknown, AdditionalArgs = {}> = Args & {
+  custom?: ((args: Partial<Args> & AdditionalArgs) => (input: Input) => ResultType)
 }
 
 export type OptionsWithDefault<T, K extends string> = {

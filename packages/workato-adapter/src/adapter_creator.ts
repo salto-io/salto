@@ -15,7 +15,7 @@
 */
 import { logger } from '@salto-io/logging'
 import { InstanceElement, Adapter, ElemID } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, definitions } from '@salto-io/adapter-components'
 import WorkatoAdapter from './adapter'
 import { Credentials, usernameTokenCredentialsType } from './auth'
 import {
@@ -26,7 +26,8 @@ import WorkatoClient from './client/client'
 import { createConnection } from './client/connection'
 
 const log = logger(module)
-const { validateCredentials, validateClientConfig } = clientUtils
+const { validateCredentials } = clientUtils
+const { validateClientConfig } = definitions
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => ({
   username: config.value.username,

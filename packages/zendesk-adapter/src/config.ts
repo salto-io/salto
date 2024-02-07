@@ -27,7 +27,7 @@ import {
 } from './constants'
 
 const { defaultMissingUserFallbackField } = configUtils
-const { createClientConfigType } = clientUtils
+const { createClientConfigType } = definitions
 const {
   createDucktypeAdapterApiConfigType,
   validateDuckTypeFetchConfig,
@@ -78,7 +78,7 @@ export type Guide = {
   themesForBrands?: string[]
 }
 
-export type ZendeskClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
+export type ZendeskClientConfig = definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>
   & { unassociatedAttachmentChunkSize: number }
 
 export type ZendeskFetchConfig = definitions.UserFetchConfig

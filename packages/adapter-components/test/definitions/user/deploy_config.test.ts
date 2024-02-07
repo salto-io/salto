@@ -14,19 +14,9 @@
 * limitations under the License.
 */
 import { ElemID, ObjectType } from '@salto-io/adapter-api'
-import { createUserFetchConfigType, createUserDeployConfigType, validateDefaultMissingUserFallbackConfig } from '../../../src/definitions/user/user_config'
+import { createUserDeployConfigType, validateDefaultMissingUserFallbackConfig } from '../../../src/definitions/user'
 
 describe('config_shared', () => {
-  describe('createUserFetchConfigType', () => {
-    it('should return default type when no custom fields were added', () => {
-      const type = createUserFetchConfigType('myAdapter')
-      expect(Object.keys(type.fields)).toHaveLength(4)
-      expect(type.fields.include).toBeDefined()
-      expect(type.fields.exclude).toBeDefined()
-      expect(type.fields.hideTypes).toBeDefined()
-      expect(type.fields.asyncPagination).toBeDefined()
-    })
-  })
   describe('createUserDeployConfigType', () => {
     it('should return default type when no custom fields were added', () => {
       const type = createUserDeployConfigType('myAdapter', new ObjectType({ elemID: new ElemID('test') }))

@@ -368,7 +368,7 @@ const getGuideElements = async ({
   apiDefinitions: configUtils.AdapterDuckTypeApiConfig
   fetchQuery: elementUtils.query.ElementQuery
   getElemIdFunc?: ElemIdGetter
-}): Promise<elementUtils.FetchElements<Element[]>> => {
+}): Promise<fetchUtils.FetchElements<Element[]>> => {
   const transformationDefaultConfig = apiDefinitions.typeDefaults.transformation
   const transformationConfigByType = configUtils.getTransformationConfigByType(apiDefinitions.types)
 

@@ -16,7 +16,7 @@
 import {
   InstanceElement, Adapter,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, definitions, config as configUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import SapClient from './client/client'
 import SapAdapter from './adapter'
@@ -27,7 +27,8 @@ import {
 } from './config'
 import { createConnection } from './client/connection'
 
-const { validateCredentials, validateClientConfig } = clientUtils
+const { validateCredentials } = clientUtils
+const { validateClientConfig } = definitions
 const { validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } = configUtils
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {

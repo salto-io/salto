@@ -21,7 +21,7 @@ import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { Connection, ConnectionCreator, createRetryOptions, createClientConnection, ResponseValue, Response } from './http_connection'
 import { AdapterClientBase } from './base'
-import { ClientRetryConfig, ClientRateLimitConfig, ClientPageSizeConfig, ClientBaseConfig, ClientTimeoutConfig } from './config'
+import { ClientRetryConfig, ClientRateLimitConfig, ClientPageSizeConfig, ClientBaseConfig, ClientTimeoutConfig } from '../definitions/user/client_config'
 import { requiresLogin, logDecorator } from './decorators'
 import { throttle } from './rate_limit'
 

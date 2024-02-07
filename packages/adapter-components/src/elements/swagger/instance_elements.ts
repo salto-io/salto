@@ -31,9 +31,10 @@ import {
 import { InvalidSingletonType } from '../../config/shared'
 import { findDataField, FindNestedFieldFunc } from '../field_finder'
 import { computeGetArgs as defaultComputeGetArgs, ComputeGetArgsFunc } from '../../fetch/resource/request_parameters'
-import { FetchElements, getElementsWithContext } from '../element_getter'
+import { getElementsWithContext } from '../element_getter'
 import { TimeoutError } from '../../client/http_client'
 import { ElementQuery } from '../../fetch/query'
+import { FetchElements } from '../../fetch'
 
 const { makeArray } = collections.array
 const { toArrayAsync, awu } = collections.asynciterable

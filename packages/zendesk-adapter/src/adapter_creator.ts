@@ -38,7 +38,8 @@ import { configCreator } from './config_creator'
 import { customReferenceHandlers } from './custom_references'
 
 const log = logger(module)
-const { validateCredentials, validateClientConfig } = clientUtils
+const { validateCredentials } = clientUtils
+const { validateClientConfig } = definitions
 const { validateDuckTypeApiDefinitionConfig } = configUtils
 const { validateDefaultMissingUserFallbackConfig } = definitions
 

@@ -38,7 +38,7 @@ export const toPrimitiveType = (val: string): PrimitiveType => _.get(
 /**
  * Helper function for creating the right type element from the type name specified in the config.
  * This can be called recursively to generate the right type from existing types, potentially
- * wrapped in containers - such as List<Map<List<someTypeName>>>
+ * wrapped in containers - such as list<map<list<someTypeName>>>
  */
 export const getContainerForType = (typeName: string): {
   container: 'list' | 'map'

@@ -15,11 +15,11 @@
 */
 import { ElemID, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { client as clientUtils, config as configUtils, definitions, elements } from '@salto-io/adapter-components'
+import { config as configUtils, definitions, elements } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { STRIPE } from './constants'
 
-const { createClientConfigType } = clientUtils
+const { createClientConfigType } = definitions
 const { createSwaggerAdapterApiConfigType } = configUtils
 
 const DEFAULT_ID_FIELDS = ['id']
@@ -34,7 +34,7 @@ export const FETCH_CONFIG = 'fetch'
 
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
-export type StripeClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
+export type StripeClientConfig = definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>
 
 export type StripeFetchConfig = definitions.UserFetchConfig
 export type StripeApiConfig = configUtils.AdapterSwaggerApiConfig

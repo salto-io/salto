@@ -16,7 +16,7 @@
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { mockFunction } from '@salto-io/test-utils'
-import { ClientRateLimitConfig } from '../../src/client/config'
+import { ClientRateLimitConfig } from '../../src/definitions/user/client_config'
 import { AdapterHTTPClient, APIConnection, ClientOpts, ConnectionCreator, HTTPError, UnauthorizedError } from '../../src/client'
 import { createConnection, Credentials } from './common'
 import { TimeoutError } from '../../src/client/http_client'

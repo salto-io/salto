@@ -15,13 +15,13 @@
 */
 import _ from 'lodash'
 import { ElemID, ObjectType, CORE_ANNOTATIONS, BuiltinTypes, ListType, MapType } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils, definitions, elements } from '@salto-io/adapter-components'
+import { config as configUtils, definitions, elements } from '@salto-io/adapter-components'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { WORKATO, PROPERTY_TYPE, ROLE_TYPE, API_COLLECTION_TYPE, FOLDER_TYPE, RECIPE_TYPE, CONNECTION_TYPE, API_ENDPOINT_TYPE, API_CLIENT_TYPE, API_ACCESS_PROFILE_TYPE, RECIPE_CODE_TYPE } from './constants'
 
 type UserDeployConfig = definitions.UserDeployConfig
 
-const { createClientConfigType } = clientUtils
+const { createClientConfigType } = definitions
 const {
   createDucktypeAdapterApiConfigType,
   validateDuckTypeFetchConfig,
@@ -42,7 +42,7 @@ export const FETCH_CONFIG = 'fetch'
 export const DEPLOY_CONFIG = 'deploy'
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
-export type WorkatoClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
+export type WorkatoClientConfig = definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>
 
 export type WorkatoFetchConfig = definitions.UserFetchConfig & {
   serviceConnectionNames?: Record<string, string[]>

@@ -15,7 +15,10 @@
 */
 import _ from 'lodash'
 import { ElemID, OBJECT_NAME, OBJECT_SERVICE_ID, ServiceIds, Values, toServiceIdsString } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { NameMappingOptions } from '../../definitions'
+
+const log = logger(module)
 
 export const getNameMapping = (
   name: string,
@@ -32,9 +35,16 @@ export const createServiceIDs = ({ entry, serviceIdFields, typeID }: {
   entry: Values
   serviceIdFields: string[]
   typeID: ElemID
-}): ServiceIds => ({
-  ..._.pick(entry, serviceIdFields),
-  [OBJECT_SERVICE_ID]: toServiceIdsString({
-    [OBJECT_NAME]: typeID.getFullName(),
-  }),
-})
+}): ServiceIds => {
+  const missingFields = serviceIdFields.filter(f => entry[f] === undefined)
+  if (missingFields.length > 0) {
+    log.debug('some service id fields could not be found: type %s fields %s, available fields %s ',
+      typeID.getFullName(), missingFields, Object.keys(entry))
+  }
+  return {
+    ..._.pick(entry, serviceIdFields),
+    [OBJECT_SERVICE_ID]: toServiceIdsString({
+      [OBJECT_NAME]: typeID.getFullName(),
+    }),
+  }
+}

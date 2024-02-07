@@ -17,7 +17,7 @@ import { logger } from '@salto-io/logging'
 import {
   InstanceElement, Adapter, ElemID,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, definitions } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import ZuoraClient from './client/client'
 import ZuoraAdapter from './adapter'
@@ -30,7 +30,8 @@ import { createConnection } from './client/connection'
 import { SETTINGS_TYPE_PREFIX } from './constants'
 
 const log = logger(module)
-const { validateCredentials, validateClientConfig } = clientUtils
+const { validateCredentials } = clientUtils
+const { validateClientConfig } = definitions
 const { validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } = configUtils
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {

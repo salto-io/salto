@@ -21,7 +21,6 @@ import { RECORDS_PATH, TYPES_PATH, SUBTYPES_PATH, SETTINGS_NESTED_PATH } from '.
 import { findDataField, returnFullEntry, FindNestedFieldFunc } from './field_finder'
 import { filterTypes } from './type_elements'
 import { getInstanceName, generateInstanceNameFromConfig, removeNullValues, removeNullValuesTransformFunc, toBasicInstance } from './instance_elements'
-import { FetchElements } from './element_getter'
 import { createServiceIDs as createServiceIds } from '../fetch/element/id_utils'
 
 export {
@@ -37,6 +36,5 @@ export {
   removeNullValues,
   removeNullValuesTransformFunc,
   query,
-  FetchElements,
   toBasicInstance,
 }

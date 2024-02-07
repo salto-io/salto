@@ -482,7 +482,7 @@ export default class JiraAdapter implements AdapterOperations {
     allTypes: TypeMap,
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>,
     supportedTypes: Record<string, string[]>
-  ): Promise<elementUtils.FetchElements<InstanceElement[]>> {
+  ): Promise<fetchUtils.FetchElements<InstanceElement[]>> {
     const updatedApiDefinitionsConfig = {
       ...this.userConfig.apiDefinitions,
       types: {
@@ -504,7 +504,7 @@ export default class JiraAdapter implements AdapterOperations {
   }
 
   @logDuration('generating scriptRunner instances and types from service')
-  private async getScriptRunnerElements(): Promise<elementUtils.FetchElements<Element[]>> {
+  private async getScriptRunnerElements(): Promise<fetchUtils.FetchElements<Element[]>> {
     const { scriptRunnerApiDefinitions } = this.userConfig
     // scriptRunnerApiDefinitions is currently undefined for DC
     if (this.scriptRunnerClient === undefined
@@ -534,7 +534,7 @@ export default class JiraAdapter implements AdapterOperations {
 
   @logDuration('generating JSM assets instances and types from service')
   private async getJSMAssetsElements():
-  Promise<elementUtils.FetchElements<Element[]>> {
+  Promise<fetchUtils.FetchElements<Element[]>> {
     const { jsmApiDefinitions } = this.userConfig
     // jsmApiDefinitions is currently undefined for DC
     if (this.client === undefined
@@ -567,7 +567,7 @@ export default class JiraAdapter implements AdapterOperations {
 
   @logDuration('generating JSM instances and types from service')
   private async getJSMElements(swaggerResponseElements: InstanceElement[]):
-  Promise<elementUtils.FetchElements<Element[]>> {
+  Promise<fetchUtils.FetchElements<Element[]>> {
     const { jsmApiDefinitions } = this.userConfig
     // jsmApiDefinitions is currently undefined for DC
     if (this.client === undefined
@@ -654,7 +654,7 @@ export default class JiraAdapter implements AdapterOperations {
   private async getAllJiraElements(
     progressReporter: ProgressReporter,
     swaggers: AdapterSwaggers
-  ): Promise<elementUtils.FetchElements<Element[]>> {
+  ): Promise<fetchUtils.FetchElements<Element[]>> {
     log.debug('going to fetch jira account configuration..')
     progressReporter.reportProgress({ message: 'Fetching types' })
     const { allTypes: swaggerTypes, parsedConfigs } = await this.getAllTypes(swaggers)

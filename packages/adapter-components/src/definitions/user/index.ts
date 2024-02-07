@@ -14,4 +14,9 @@
 * limitations under the License.
 */
 
-export { UserFetchConfig, UserDeployConfig, createUserFetchConfigType, createUserDeployConfigType, DefaultFetchCriteria, DEPLOYER_FALLBACK_VALUE, DefaultMissingUserFallbackConfig, validateDefaultMissingUserFallbackConfig } from './user_config'
+// eslint-disable-next-line import/no-cycle
+export { UserConfig, createUserConfigType, ConfigTypeCreator } from './user_config'
+// eslint-disable-next-line import/no-cycle
+export { UserFetchConfig, createUserFetchConfigType, ElemIDCustomization, DefaultFetchCriteria } from './fetch_config'
+export { UserDeployConfig, createUserDeployConfigType, validateDefaultMissingUserFallbackConfig, DefaultMissingUserFallbackConfig, DEPLOYER_FALLBACK_VALUE } from './deploy_config'
+export { ClientBaseConfig, ClientRateLimitConfig, ClientRetryConfig, ClientPageSizeConfig, ClientTimeoutConfig, createClientConfigType, validateClientConfig } from './client_config'

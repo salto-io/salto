@@ -14,20 +14,13 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, SaltoError } from '@salto-io/adapter-api'
+import { Element } from '@salto-io/adapter-api'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
-import { TypeConfig, ConfigChangeSuggestion } from '../config'
+import { TypeConfig } from '../config'
 import { ElementQuery } from '../fetch/query'
-
+import { FetchElements } from '../fetch'
 
 const { isDefined } = lowerdashValues
-
-export type FetchElements<T> = {
-  elements: T
-  errors?: SaltoError[]
-  configChanges?: ConfigChangeSuggestion[]
-}
-
 
 /**
  * Get all dependencies types (by the usage of "dependsOn")

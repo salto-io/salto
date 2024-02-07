@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils, definitions, elements } from '@salto-io/adapter-components'
+import { config as configUtils, definitions, elements } from '@salto-io/adapter-components'
 import { JIRA, SCRIPT_RUNNER_API_DEFINITIONS, JSM_DUCKTYPE_API_DEFINITIONS, FETCH_CONFIG } from '../constants'
 import { getProductSettings } from '../product_settings'
 import { JiraDuckTypeConfig } from './api_config'
@@ -27,7 +27,7 @@ const {
   defaultMissingUserFallbackField,
 } = configUtils
 
-type JiraClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
+type JiraClientConfig = definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>
   & {
     fieldConfigurationItemsDeploymentLimit: number
     usePrivateAPI: boolean
@@ -181,7 +181,7 @@ export const getDefaultConfig = ({ isDataCenter }: { isDataCenter: boolean }): J
 })
 
 const createClientConfigType = (): ObjectType => {
-  const configType = clientUtils.createClientConfigType(JIRA)
+  const configType = definitions.createClientConfigType(JIRA)
   configType.fields.FieldConfigurationItemsDeploymentLimit = new Field(
     configType, 'FieldConfigurationItemsDeploymentLimit', BuiltinTypes.NUMBER
   )

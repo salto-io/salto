@@ -1,4 +1,3 @@
-
 /*
 *                      Copyright 2024 Salto Labs Ltd.
 *
@@ -14,18 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ClientRetryConfig, ClientTimeoutConfig } from '../definitions/user/client_config'
+import { Element, SaltoError } from '@salto-io/adapter-api'
+import { ConfigChangeSuggestion } from '../config'
 
-export const DEFAULT_RETRY_OPTS: Required<ClientRetryConfig> = {
-  maxAttempts: 5, // try 5 times
-  retryDelay: 5000, // wait for 5s before trying again
-  additionalStatusCodesToRetry: [],
+export type FetchElements<T = Element[]> = {
+  elements: T
+  errors?: SaltoError[]
+  configChanges?: ConfigChangeSuggestion[]
 }
-
-export const DEFAULT_TIMEOUT_OPTS: Required<ClientTimeoutConfig> = {
-  maxDuration: 0,
-  retryOnTimeout: true,
-  lastRetryNoTimeout: true,
-}
-
-export const RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS = -1

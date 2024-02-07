@@ -18,7 +18,7 @@ import axios, { AxiosError, AxiosBasicCredentials, AxiosRequestConfig, AxiosRequ
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { AccountInfo, CredentialError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { ClientRetryConfig, ClientTimeoutConfig } from './config'
+import { ClientRetryConfig, ClientTimeoutConfig } from '../definitions/user/client_config'
 import { DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS } from './constants'
 
 const log = logger(module)

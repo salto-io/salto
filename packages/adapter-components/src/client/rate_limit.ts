@@ -17,7 +17,7 @@ import _ from 'lodash'
 import Bottleneck from 'bottleneck'
 import { logger } from '@salto-io/logging'
 import { decorators } from '@salto-io/lowerdash'
-import { ClientRateLimitConfig } from './config'
+import { ClientRateLimitConfig } from '../definitions/user/client_config'
 import { logOperationDecorator } from './decorators'
 
 const log = logger(module)

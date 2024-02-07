@@ -40,7 +40,7 @@ export const STATUS_CATEGORY_ID_TO_KEY: Record<number, string> = {
   3: 'DONE',
 }
 
-export type Status = {
+export type WorkflowStatus = {
   id: string
   name: string
 }
@@ -49,7 +49,7 @@ type WorkflowDataResponse = {
   id: {
     entityId: string
   }
-  statuses: Status[]
+  statuses: WorkflowStatus[]
 }
 
 export type WorkflowVersion = {

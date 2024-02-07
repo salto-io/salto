@@ -413,7 +413,8 @@ describe('ScriptRunner cloud Workflow', () => {
         it('should not objectify if not json object', async () => {
           workflowV2Instance.value.transitions.tran1.validators[0].parameters.config = wrongJsonObject
           await filterWithNewWorkflowAPI.onFetch([workflowV2Instance])
-          expect(workflowV2Instance.value.transitions.tran1.validators[0].parameters.scriptRunner).toEqual(wrongJsonObject)
+          expect(workflowV2Instance.value.transitions.tran1.validators[0].parameters.scriptRunner)
+            .toEqual(wrongJsonObject)
         })
         it('should not fail if no value', async () => {
           workflowV2Instance.value.transitions.tran1.validators[0].parameters.config = undefined
@@ -573,7 +574,8 @@ describe('ScriptRunner cloud Workflow', () => {
         it('should not objectify if not json object', async () => {
           workflowV2Instance.value.transitions.tran1.conditions[0].parameters.config = wrongJsonObject
           await filterWithNewWorkflowAPI.onFetch([workflowV2Instance])
-          expect(workflowV2Instance.value.transitions.tran1.conditions[0].parameters.scriptRunner).toEqual(wrongJsonObject)
+          expect(workflowV2Instance.value.transitions.tran1.conditions[0].parameters.scriptRunner)
+            .toEqual(wrongJsonObject)
         })
         it('should not fail if no value', async () => {
           workflowV2Instance.value.transitions.tran1.conditions[0].parameters.config = undefined

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { DefaultWithCustomizations, mergeSingleDefWithDefault, queryWithDefault, mergeWithDefault, mergeNestedWithDefault, DefQuery } from '../../../src/definitions/system'
+import { DefaultWithCustomizations, mergeSingleDefWithDefault, queryWithDefault, mergeWithDefault, getNestedWithDefault, DefQuery } from '../../../src/definitions/system'
 
 describe('system definitions utils', () => {
   let defs: DefaultWithCustomizations<unknown>
@@ -151,24 +151,33 @@ describe('system definitions utils', () => {
     })
   })
 
-  describe('mergeNestedWithDefault', () => {
-    it('should return the merged value in nested paths', () => {
+  describe('getNestedWithDefault', () => {
+    it('should return the nested paths in both default and customization', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect(mergeNestedWithDefault<any, any, string>(defs, 'a')).toEqual({
-        k1: 'override',
-        k2: 'a',
+      expect(getNestedWithDefault<any, any, string>(defs, 'a')).toEqual({
+        default: 'a',
+        customizations: {
+          k1: 'override',
+          k2: undefined,
+        },
       })
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect(mergeNestedWithDefault<any, any, string>(defs, 'b.c')).toEqual({
-        k1: 'd',
-        k2: 'd',
+      expect(getNestedWithDefault<any, any, string>(defs, 'b.c')).toEqual({
+        default: 'd',
+        customizations: {
+          k1: undefined,
+          k2: undefined,
+        },
       })
     })
     it('should return undefined when path is missing', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect(mergeNestedWithDefault<any, any, string>(defs, 'nonexistent')).toEqual({
-        k1: undefined,
-        k2: undefined,
+      expect(getNestedWithDefault<any, any, string>(defs, 'nonexistent')).toEqual({
+        default: undefined,
+        customizations: {
+          k1: undefined,
+          k2: undefined,
+        },
       })
     })
   })

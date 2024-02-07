@@ -24,6 +24,7 @@ import { adapter as jiraAdapter } from '@salto-io/jira-adapter'
 import { adapter as stripeAdapter } from '@salto-io/stripe-adapter'
 import { adapter as oktaAdapter } from '@salto-io/okta-adapter'
 import { adapter as sapAdapter } from '@salto-io/sap-adapter'
+import { adapter as PLACEHOLDERAdapter } from '@salto-io/PLACEHOLDER-adapter'
 
 const adapterCreators: Record<string, Adapter> = {
   salesforce: salesforceAdapter,
@@ -38,6 +39,7 @@ const adapterCreators: Record<string, Adapter> = {
   jira: jiraAdapter,
   okta: oktaAdapter,
   dummy: dummyAdapter,
+  PLACEHOLDER: PLACEHOLDERAdapter,
 }
 
 export default adapterCreators

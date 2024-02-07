@@ -113,6 +113,10 @@
 			"path": "packages/stripe-adapter"
 		},
 		{
+			"name": "PLACEHOLDER-adapter",
+			"path": "packages/PLACEHOLDER-adapter"
+		},
+		{
 			"name": "aws-utils",
 			"path": "packages/aws-utils"
 		}

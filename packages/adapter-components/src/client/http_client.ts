@@ -98,6 +98,14 @@ export class HTTPError extends Error {
 
 export class TimeoutError extends Error {}
 
+export type ClientDefaults<TRateLimitConfig extends ClientRateLimitConfig> = {
+  retry: Required<ClientRetryConfig>
+  rateLimit: Required<TRateLimitConfig>
+  maxRequestsPerMinute: number
+  pageSize: Required<ClientPageSizeConfig>
+  timeout?: ClientTimeoutConfig
+}
+
 const isMethodWithData = (params: ClientParams): params is ClientDataParams => 'data' in params
 
 // Determines if the given HTTP method uses 'data' as the second parameter, based on APIConnection
@@ -116,13 +124,7 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
     clientName: string,
     { credentials, connection, config }: ClientOpts<TCredentials, TRateLimitConfig>,
     createConnection: ConnectionCreator<TCredentials>,
-    defaults: {
-      retry: Required<ClientRetryConfig>
-      rateLimit: Required<TRateLimitConfig>
-      maxRequestsPerMinute: number
-      pageSize: Required<ClientPageSizeConfig>
-      timeout?: ClientTimeoutConfig
-    },
+    defaults: ClientDefaults<TRateLimitConfig>,
   ) {
     super(clientName, config, defaults)
     this.conn = createClientConnection({

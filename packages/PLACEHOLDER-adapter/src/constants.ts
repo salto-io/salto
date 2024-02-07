@@ -13,6 +13,4 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export { combineDependencyChangers } from './dependency_changer'
-export { removeStandaloneFieldDependency } from './remove_standalone_field_dependency'
-export { ChangeWithKey } from './types'
+export const ADAPTER_NAME = 'PLACEHOLDER' // TODO adjust

@@ -17,10 +17,8 @@ import _ from 'lodash'
 import { ElemIdGetter, ObjectType, isObjectType } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { types } from '@salto-io/lowerdash'
 import { ElementQuery } from './query'
 import {
-  ApiDefinitions,
   APIDefinitionsOptions,
   getNestedWithDefault,
   mergeWithDefault,
@@ -31,6 +29,7 @@ import { getRequester } from './request/requester'
 import { createResourceManager } from './resource/resource_manager'
 import { getElementGenerator } from './element/element'
 import { FetchElements } from './types'
+import { RequiredDefinitions } from '../definitions/system/types'
 
 const log = logger(module)
 
@@ -54,7 +53,7 @@ export const getElements = async <Options extends APIDefinitionsOptions>({
 }: {
   adapterName: string
   fetchQuery: ElementQuery
-  definitions: types.PickyRequired<ApiDefinitions<Options>, 'clients' | 'pagination' | 'fetch'>
+  definitions: RequiredDefinitions<Options>
   predefinedTypes?: Record<string, ObjectType>
   getElemIdFunc?: ElemIdGetter
   additionalRequestContext?: Record<string, unknown>

@@ -60,3 +60,4 @@ export {
 } from './pagination/common'
 export { getAllPagesWithOffsetAndTotal } from './pagination/pagination_async'
 export { createRateLimitersFromConfig, throttle, BottleneckBuckets } from './rate_limit'
+export { createClient } from './client_creator'

@@ -59,15 +59,19 @@ type ItemExtractor = (
 ) => unknown
 
 const createExtractor = (transformationDef?: TransformDefinition<ChangeAndContext>): ItemExtractor => {
-  const transform = createValueTransformer(transformationDef)
-  return ({ value, ...args }) =>
-    collections.array.makeArray(
-      transform({
-        value,
-        typeName: getChangeData(args.change).elemID.typeName,
-        context: { ...args },
-      }),
-    )[0]?.value
+  // default single to true for deploy if not explicitly specified
+  const transform = createValueTransformer(_.defaults({}, transformationDef, { single: true }))
+  return ({ value, ...args }) => {
+    const res = transform({
+      value,
+      typeName: getChangeData(args.change).elemID.typeName,
+      context: { ...args },
+    })
+    if (Array.isArray(res)) {
+      return res.map(item => item.value)
+    }
+    return res?.value
+  }
 }
 
 const createCheck = (conditionDef?: DeployRequestCondition): ((args: ChangeAndContext) => boolean) => {
@@ -78,6 +82,8 @@ const createCheck = (conditionDef?: DeployRequestCondition): ((args: ChangeAndCo
   if (skipIfIdentical === false) {
     return () => true
   }
+  // note: no need to add a default for the value of single,
+  // since the comparison will return the same value when working with two arrays vs two individual items
   const transform = createValueTransformer(transformForCheck)
   return args => {
     const { change } = args
@@ -196,11 +202,11 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
 
     const resolvedChange = await changeResolver(change)
     const additionalContext = replaceAllArgs({
-      context: value,
-      value: _.omit(mergedRequestDef.context, ['change', 'changeGroup', 'elementSource']),
+      context: _.merge({}, getChangeData(resolvedChange).value, getChangeData(resolvedChange).annotations),
+      value: _.merge(_.omit(mergedRequestDef.context, ['change', 'changeGroup', 'elementSource'])),
     })
 
-    const extractedBody = mergedEndpointDef.omitBody
+    const data = mergedEndpointDef.omitBody
       ? undefined
       : extractor({
           change,
@@ -209,7 +215,6 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
           additionalContext,
           value: getChangeData(resolvedChange).value,
         })
-    const data = Array.isArray(extractedBody) ? extractedBody[0] : extractedBody
 
     throwOnUnresolvedRefeferences(data)
 
@@ -261,6 +266,10 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
 
     await awu(collections.array.makeArray(requests)).some(async def => {
       const { request, condition } = def
+      if (request.earlySuccess === undefined && request.endpoint === undefined) {
+        // should not happen
+        throw new Error(`Invalid request for change ${elemID.getFullName()} action ${action}`)
+      }
       const checkFunc = createCheck(condition)
       if (!checkFunc(args)) {
         if (!request.earlySuccess) {

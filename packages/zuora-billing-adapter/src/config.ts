@@ -810,9 +810,7 @@ export const configType = createMatchingObjectType<Partial<ZuoraConfig>>({
       refType: createClientConfigType(ZUORA_BILLING),
     },
     [FETCH_CONFIG]: {
-      refType: definitions.createUserFetchConfigType(
-        ZUORA_BILLING,
-      ),
+      refType: definitions.createUserFetchConfigType({ adapterName: ZUORA_BILLING, omitElemID: true }),
     },
     [API_DEFINITIONS_CONFIG]: {
       refType: createSwaggerAdapterApiConfigType({

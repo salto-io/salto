@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { FieldDefinition, ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, Field, ListType, MapType } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { ElemIDDefinition, FieldIDPart } from '../system/fetch/element'
@@ -42,13 +43,14 @@ export type UserFetchConfig<T extends Record<string, unknown> | undefined = Defa
   elemID?: Record<string, ElemIDCustomization>
 }
 
-export const createUserFetchConfigType = (
-  adapter: string,
-  additionalFields?: Record<string, FieldDefinition>,
-  fetchCriteriaType?: ObjectType,
-): ObjectType => {
+export const createUserFetchConfigType = ({ adapterName, additionalFields, fetchCriteriaType, omitElemID }: {
+  adapterName: string
+  additionalFields?: Record<string, FieldDefinition>
+  fetchCriteriaType?: ObjectType
+  omitElemID?: boolean
+}): ObjectType => {
   const defaultFetchCriteriaType = createMatchingObjectType<DefaultFetchCriteria>({
-    elemID: new ElemID(adapter, 'FetchFilters'),
+    elemID: new ElemID(adapterName, 'FetchFilters'),
     fields: {
       name: { refType: BuiltinTypes.STRING },
     },
@@ -57,7 +59,7 @@ export const createUserFetchConfigType = (
     },
   })
   const fetchEntryType = createMatchingObjectType<FetchEntry<DefaultFetchCriteria>>({
-    elemID: new ElemID(adapter, 'FetchEntry'),
+    elemID: new ElemID(adapterName, 'FetchEntry'),
     fields: {
       type: {
         refType: BuiltinTypes.STRING,
@@ -77,7 +79,7 @@ export const createUserFetchConfigType = (
   }
 
   const elemIDPartType = createMatchingObjectType<Omit<FieldIDPart, 'condition' | 'custom'>>({
-    elemID: new ElemID(adapter, 'ElemIDPart'),
+    elemID: new ElemID(adapterName, 'ElemIDPart'),
     fields: {
       fieldName: {
         refType: BuiltinTypes.STRING,
@@ -95,7 +97,7 @@ export const createUserFetchConfigType = (
   })
 
   const elemIDCustomizationType = createMatchingObjectType<ElemIDCustomization>({
-    elemID: new ElemID(adapter, 'ElemIDCustomization'),
+    elemID: new ElemID(adapterName, 'ElemIDCustomization'),
     fields: {
       extendsParent: {
         refType: BuiltinTypes.BOOLEAN,
@@ -115,8 +117,8 @@ export const createUserFetchConfigType = (
     },
   })
 
-  return createMatchingObjectType<UserFetchConfig>({
-    elemID: new ElemID(adapter, 'userFetchConfig'),
+  const type = createMatchingObjectType<UserFetchConfig>({
+    elemID: new ElemID(adapterName, 'userFetchConfig'),
     fields: {
       include: {
         refType: new ListType(fetchEntryType),
@@ -135,4 +137,8 @@ export const createUserFetchConfigType = (
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
     },
   })
+  if (omitElemID) {
+    type.fields = _.omit(type.fields, 'elemID')
+  }
+  return type
 }

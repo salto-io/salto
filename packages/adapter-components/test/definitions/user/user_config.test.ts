@@ -17,7 +17,7 @@ import { BuiltinTypes } from '@salto-io/adapter-api'
 import { createUserConfigType } from '../../../src/definitions/user'
 
 describe('config_shared', () => {
-  describe('createUserFetchConfigType', () => {
+  describe('createUserConfigType', () => {
     it('should return default type when no custom fields were added', () => {
       const type = createUserConfigType({ adapterName: 'myAdapter' })
       expect(Object.keys(type.fields)).toHaveLength(3)

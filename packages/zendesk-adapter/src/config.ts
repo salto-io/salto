@@ -216,8 +216,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   view: {
     transformation: {
       sourceTypeName: 'views__views',
-      idFields: ['&title'],
-      fileNameFields: ['&title'],
+      idFields: ['title'],
+      fileNameFields: ['title'],
       fieldsToHide: FIELDS_TO_HIDE.concat([
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'title', fieldType: 'string' },

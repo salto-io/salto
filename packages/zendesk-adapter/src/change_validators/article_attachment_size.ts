@@ -32,11 +32,11 @@ export const articleAttachmentSizeValidator: ChangeValidator = async changes => 
     .filter(async attachmentInstance => {
       const { content } = attachmentInstance.value
       if (content === undefined) {
-        log.error(`the attachment ${attachmentInstance.elemID.getFullName()} does not have a content field`)
+        log.warn(`the attachment ${attachmentInstance.elemID.getFullName()} does not have a content field`)
         return false
       }
       if (isStaticFile(content) === false) {
-        log.error(`the attachment ${attachmentInstance.elemID.getFullName()} is not a static file`)
+        log.warn(`the attachment ${attachmentInstance.elemID.getFullName()} is not a static file`)
         return false
       }
       const contentValue = await attachmentInstance.value.content.getContent()

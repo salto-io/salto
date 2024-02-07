@@ -2955,6 +2955,7 @@ export type ChangeValidatorName = (
   | 'dynamicContentDeletion'
   | 'dynamicContentPlaceholderModification'
   | 'inactiveTicketFormInView'
+  | 'immutableTypeAndKeyForUserFields'
 )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -3031,6 +3032,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     dynamicContentDeletion: { refType: BuiltinTypes.BOOLEAN },
     dynamicContentPlaceholderModification: { refType: BuiltinTypes.BOOLEAN },
     inactiveTicketFormInView: { refType: BuiltinTypes.BOOLEAN },
+    immutableTypeAndKeyForUserFields: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

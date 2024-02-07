@@ -40,10 +40,16 @@ export const STATUS_CATEGORY_ID_TO_KEY: Record<number, string> = {
   3: 'DONE',
 }
 
-type WorkflowIdResponse = {
+export type WorkflowStatus = {
+  id: string
+  name: string
+}
+
+type WorkflowDataResponse = {
   id: {
     entityId: string
   }
+  statuses: WorkflowStatus[]
 }
 
 export type WorkflowVersion = {
@@ -61,6 +67,8 @@ export type Workflow = {
   version: WorkflowVersion
   scope: WorkflowScope
   id: string
+  transitions: Values[]
+  statuses: Values[]
 }
 
 export type WorkflowPayload = {
@@ -91,10 +99,14 @@ const TASK_RESPONSE_SCHEMA = Joi.object({
   progress: Joi.number().required(),
 }).unknown(true).required()
 
-const WORKFLOW_IDS_RESPONSE_SCHEMA = Joi.array().items(Joi.object({
+const WORKFLOW_DATA_RESPONSE_SCHEMA = Joi.array().items(Joi.object({
   id: Joi.object({
     entityId: Joi.string().required(),
   }).unknown(true).required(),
+  statuses: Joi.array().items(Joi.object({
+    id: Joi.string().required(),
+    name: Joi.string().required(),
+  }).unknown(true).required()).required(),
 }).unknown(true).required()).required()
 
 
@@ -110,11 +122,15 @@ const WORKFLOW_RESPONSE_SCHEME = Joi.object({
       project: Joi.string(),
       type: Joi.string().required(),
     }).unknown(true).required(),
+    statuses: Joi.array().items(Joi.object()
+      .unknown(true)).required(),
+    transitions: Joi.array().items(Joi.object()
+      .unknown(true)).required(),
   }).unknown(true)).required(),
   taskId: Joi.string(),
 }).unknown(true).required()
 
-export const isWorkflowIdsResponse = createSchemeGuard<WorkflowIdResponse[]>(WORKFLOW_IDS_RESPONSE_SCHEMA, 'Received an invalid workflow ids response')
+export const isWorkflowDataResponse = createSchemeGuard<WorkflowDataResponse[]>(WORKFLOW_DATA_RESPONSE_SCHEMA, 'Received an invalid workflow ids response')
 
 export const isWorkflowResponse = createSchemeGuard<WorkflowResponse>(WORKFLOW_RESPONSE_SCHEME, 'Received an invalid workflow response')
 

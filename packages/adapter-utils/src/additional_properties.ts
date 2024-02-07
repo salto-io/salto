@@ -15,6 +15,7 @@
 */
 
 import { BuiltinTypes, CORE_ANNOTATIONS, Field, isType, Element, ObjectType, TypeElement, Value } from '@salto-io/adapter-api'
+import _ from 'lodash'
 
 type AdditionalPropertiesAnnotation = {
   refType: TypeElement
@@ -25,12 +26,12 @@ export const setAdditionalPropertiesAnnotation = <T extends Element>(
   type: T,
   value?: false | AdditionalPropertiesAnnotation
 ): T => {
-  type.annotations = { ...type.annotations, [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: value }
+  type.annotate({ [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: value })
   return type
 }
 
 const isAdditionalPropertiesAnnotation = (value: Value): value is AdditionalPropertiesAnnotation =>
-  ((value?.annotations === undefined || typeof value?.annotations === 'object') && isType(value?.refType))
+  ((value?.annotations === undefined || _.isPlainObject(value?.annotations)) && isType(value?.refType))
 
 
 export const extractAdditionalPropertiesField = (objType: ObjectType, name: string): Field | undefined => {

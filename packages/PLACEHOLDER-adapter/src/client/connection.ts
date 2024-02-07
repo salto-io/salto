@@ -13,6 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+// TODO remove unneeded imports
+// import axios from 'axios'
+// import FormData from 'form-data'
+// import { CookieJar } from 'tough-cookie'
+// import { wrapper } from 'axios-cookiejar-support'
+// import HTMLParser from 'node-html-parser'
 import { AccountInfo } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
@@ -48,5 +54,24 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = retr
         'x-custom-header': `${token}`,
       },
     }),
+    // TODO adjust / remove - more complex example for private APIs requiring cookies
+    // authParamsFunc: async ({ token, username, password }: Credentials) => {
+    //   const jar = new CookieJar()
+    //   const client = wrapper(axios.create({ jar }))
+    //   const { data } = await client.get('https://localhost:80/sign_in')
+    //   const root = HTMLParser.parse(data)
+    //   const token = root.querySelector('TODO')?.attrs.value
+    //   const form = new FormData()
+    //   form.append('admin[email]', username)
+    //   form.append('admin[password]', password)
+    //   form.append('authenticity_token', token)
+    //   await client.post('https://localhost:80/authenticate', form, { headers: form.getHeaders() })
+
+    //   // return arguments that should be used by all client calls
+    //   return {
+    //     headers: { Authorization: `Bearer ${token}` },
+    //     jar,
+    //   }
+    // },
     credValidateFunc: validateCredentials,
   })

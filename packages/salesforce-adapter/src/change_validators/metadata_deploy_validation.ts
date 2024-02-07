@@ -17,15 +17,18 @@ import { values, collections } from '@salto-io/lowerdash'
 import {
   Change, ChangeError, ChangeValidator, getChangeData, isInstanceChange, isModificationChange,
 } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { isMetadataInstanceElement } from '../transformers/transformer'
 import { apiNameSync } from '../filters/utils'
 
 const { isDefined } = values
 const { awu } = collections.asynciterable
+const log = logger(module)
 
 const getChangeError = async (change: Change): Promise<ChangeError | undefined> => {
   const changeElem = getChangeData(change)
   if (apiNameSync(changeElem) === undefined) {
+    log.info('API name is undefined for %s', changeElem.elemID.getFullName())
     return {
       elemID: changeElem.elemID,
       message: `Cannot ${change.action} element because it has no api name`,
@@ -37,6 +40,7 @@ const getChangeError = async (change: Change): Promise<ChangeError | undefined> 
     const beforeName = apiNameSync(change.data.before)
     const afterName = apiNameSync(change.data.after)
     if (beforeName !== afterName) {
+      log.info('API name changed for %s', changeElem.elemID.getFullName())
       return {
         elemID: changeElem.elemID,
         message: 'Failed to update element because the API name before the change is different from the API name after it',
@@ -46,6 +50,7 @@ const getChangeError = async (change: Change): Promise<ChangeError | undefined> 
     }
   }
   if (!isInstanceChange(change) || !await isMetadataInstanceElement(changeElem)) {
+    log.info('%s is not an instance', changeElem.elemID.getFullName())
     return {
       elemID: changeElem.elemID,
       message: 'Cannot deploy because it is not a metadata instance',

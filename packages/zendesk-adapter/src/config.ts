@@ -697,6 +697,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
           restrictions: { enforce_value: true, values: ['unknown', 'verified', 'failed'] },
         },
         {
+          fieldName: 'username',
+          fieldType: 'string',
+        },
+        {
           fieldName: 'dns_results',
           fieldType: 'string',
           restrictions: { enforce_value: true, values: ['verified', 'failed'] },

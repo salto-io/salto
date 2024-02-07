@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 import { getDefaultAdapterConfig } from '../utils'
@@ -31,6 +31,9 @@ describe('omit sdf untyped values filter', () => {
       new ObjectType({
         elemID: new ElemID(NETSUITE, WORKFLOW),
         fields: { someField: { refType: BuiltinTypes.BOOLEAN } },
+        annotations: {
+          [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+        },
       }),
       {
         someField: true,

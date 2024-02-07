@@ -430,49 +430,54 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
   return {
     add: async (instance, withManifest = true) => {
       const instanceName = await apiName(instance)
-      if (withManifest) {
-        addToManifest(assertMetadataObjectType(await instance.getType()), instanceName)
-      }
-      // Add instance file(s) to zip
-      const typeName = await metadataType(instance)
-      const values = await getValuesToDeploy(await toDeployableInstance(instance))
-      if (isComplexType(typeName)) {
-        const complexType = complexTypesMap[typeName]
-        const fieldToFileToContent = complexType.mapContentFields(instanceName, values)
-
-        // Add instance metadata
-        const metadataValues = _.omit(values, ...Object.keys(fieldToFileToContent))
-        zip.file(
-          complexType.getMetadataFilePath(instanceName, values),
-          toMetadataXml(
-            typeName,
-            complexType.sortMetadataValues?.(metadataValues) ?? metadataValues
-          )
-        )
-
-        // Add instance content fields
-        const fileNameToContentMaps = Object.values(fieldToFileToContent)
-        fileNameToContentMaps.forEach(fileNameToContentMap =>
-          Object.entries(fileNameToContentMap)
-            .forEach(([fileName, content]) => zip.file(fileName, content)))
-      } else {
-        const { dirName, suffix, hasMetaFile } = (await instance.getType()).annotations
-        const instanceContentPath = [
-          PACKAGE,
-          dirName,
-          ...instance.annotations[CONTENT_FILENAME_OVERRIDE] ?? [`${instanceName}${suffix === undefined ? '' : `.${suffix}`}`],
-        ].join('/')
-        if (hasMetaFile) {
-          zip.file(
-            `${instanceContentPath}${METADATA_XML_SUFFIX}`,
-            toMetadataXml(typeName, _.omit(values, METADATA_CONTENT_FIELD))
-          )
-          if (values[METADATA_CONTENT_FIELD] !== undefined) {
-            zip.file(instanceContentPath, values[METADATA_CONTENT_FIELD])
-          }
-        } else {
-          zip.file(instanceContentPath, toMetadataXml(typeName, values))
+      try {
+        if (withManifest) {
+          addToManifest(assertMetadataObjectType(await instance.getType()), instanceName)
         }
+        // Add instance file(s) to zip
+        const typeName = await metadataType(instance)
+        const values = await getValuesToDeploy(await toDeployableInstance(instance))
+        if (isComplexType(typeName)) {
+          const complexType = complexTypesMap[typeName]
+          const fieldToFileToContent = complexType.mapContentFields(instanceName, values)
+
+          // Add instance metadata
+          const metadataValues = _.omit(values, ...Object.keys(fieldToFileToContent))
+          zip.file(
+            complexType.getMetadataFilePath(instanceName, values),
+            toMetadataXml(
+              typeName,
+              complexType.sortMetadataValues?.(metadataValues) ?? metadataValues
+            )
+          )
+
+          // Add instance content fields
+          const fileNameToContentMaps = Object.values(fieldToFileToContent)
+          fileNameToContentMaps.forEach(fileNameToContentMap =>
+            Object.entries(fileNameToContentMap)
+              .forEach(([fileName, content]) => zip.file(fileName, content)))
+        } else {
+          const { dirName, suffix, hasMetaFile } = (await instance.getType()).annotations
+          const instanceContentPath = [
+            PACKAGE,
+            dirName,
+            ...instance.annotations[CONTENT_FILENAME_OVERRIDE] ?? [`${instanceName}${suffix === undefined ? '' : `.${suffix}`}`],
+          ].join('/')
+          if (hasMetaFile) {
+            zip.file(
+              `${instanceContentPath}${METADATA_XML_SUFFIX}`,
+              toMetadataXml(typeName, _.omit(values, METADATA_CONTENT_FIELD))
+            )
+            if (values[METADATA_CONTENT_FIELD] !== undefined) {
+              zip.file(instanceContentPath, values[METADATA_CONTENT_FIELD])
+            }
+          } else {
+            zip.file(instanceContentPath, toMetadataXml(typeName, values))
+          }
+        }
+      } catch (e) {
+        log.error('Error occurred when attempting to add the instance %s to the deploy package. Error: %o', instanceName, e)
+        throw e
       }
     },
     addToManifest,

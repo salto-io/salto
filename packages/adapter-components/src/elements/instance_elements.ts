@@ -44,8 +44,16 @@ export type InstanceCreationParams = {
 }
 
 export const joinInstanceNameParts = (
-  nameParts: string[],
-): string | undefined => (nameParts.every(part => part !== undefined && part !== '') ? nameParts.map(String).join('_') : undefined)
+  nameParts: unknown[],
+): string | undefined => (
+  // if nameParts is empty, we assume it is intentional
+  (nameParts.length === 0 || nameParts.some(part => part !== undefined && part !== ''))
+    ? nameParts
+      .filter(part => part !== undefined && part !== '')
+      .map(String)
+      .join('_')
+    : undefined
+)
 
 export const getInstanceName = (
   instanceValues: Values,
@@ -53,11 +61,12 @@ export const getInstanceName = (
   typeName: string,
 ): string | undefined => {
   const nameParts = idFields
-    .map(fieldName => _.get(instanceValues, dereferenceFieldName(fieldName)))
-  if (nameParts.includes(undefined)) {
-    log.warn(`could not find id for entry in type ${typeName} - expected id fields ${idFields}, available fields ${Object.keys(instanceValues)}`)
+    .map(fieldName => ({ fieldName, value: _.get(instanceValues, dereferenceFieldName(fieldName)) }))
+  const missingFieldNames = nameParts.filter(part => part.value === undefined).map(part => part.fieldName)
+  if (missingFieldNames.length > 0) {
+    log.debug(`Some instances of type ${typeName} did not contain the following id fields: ${missingFieldNames}`)
   }
-  return joinInstanceNameParts(nameParts)
+  return joinInstanceNameParts(nameParts.map(part => part.value))
 }
 
 export const getInstanceFilePath = ({
@@ -151,8 +160,8 @@ export const getInstanceNaclName = ({
   nameMapping?: NameMappingOptions
 }): string => {
   // If the name is empty, there is no reason to add the ID_SEPARATOR
-  const parentNameSuffix = !isEmpty(name) ? `${ID_SEPARATOR}${name}` : ''
-  const newName = parentName ? `${parentName}${parentNameSuffix}` : String(name)
+  const nameWithSeparator = !isEmpty(name) ? `${ID_SEPARATOR}${name}` : ''
+  const newName = parentName ? `${parentName}${nameWithSeparator}` : String(name)
   const naclName = naclCase(newName)
 
   const desiredName = nameMapping

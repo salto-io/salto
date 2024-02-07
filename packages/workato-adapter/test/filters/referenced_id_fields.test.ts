@@ -200,9 +200,9 @@ describe('referenced id fields filter', () => {
     const instances = elements.filter(isInstanceElement)
     expect(instances.map(e => e.elemID.getFullName()).sort()).toEqual([
       'workato.folder.instance.Root',
-      'workato.folder.instance.folder11_55',
-      'workato.folder.instance.folder22_11',
-      'workato.folder.instance.folder33_55',
+      'workato.folder.instance.folder11',
+      'workato.folder.instance.folder22',
+      'workato.folder.instance.folder33',
       'workato.recipe.instance.recipe123',
       'workato.recipe__code.instance.recipe123_',
     ])

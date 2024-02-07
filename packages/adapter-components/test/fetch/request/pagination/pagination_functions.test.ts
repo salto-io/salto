@@ -18,11 +18,11 @@ import { defaultPathChecker } from '../../../../src/fetch/request/pagination/pag
 describe('pagination functions', () => {
   describe('defaultPathChecker', () => {
     it('should return true for identical paths', () => {
-      expect(defaultPathChecker('/a/b/c', '/a/b/c')).toBeTruthy()
+      expect(defaultPathChecker('/a/b/c', '/a/b/c')).toEqual(true)
     })
 
     it('should return false for different paths', () => {
-      expect(defaultPathChecker('/a/b/c', '/a/b/c/d')).toBeTruthy()
+      expect(defaultPathChecker('/a/b/c', '/a/b/c/d')).toEqual(false)
     })
   })
 })

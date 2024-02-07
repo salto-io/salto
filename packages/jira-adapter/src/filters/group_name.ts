@@ -58,13 +58,17 @@ const createRenamedTrustedGroupInstance = async (
 }
 
 /**
- * Remove uuid suffix from group names.
+ * Remove uuid suffix from the trusted-users group name
+ * The filter also update original name field for all instances because references are curretnly based on this field
  */
 const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
   name: 'groupNameFilter',
   onFetch: async (elements: Element[]) => {
-    const trustedUsersGroup = elements
-      .filter(isInstanceElement).filter(instance => isGroupElement(instance) && isTrustedGroupInstance(instance))
+    const groupInstances = elements.filter(isInstanceElement).filter(isGroupElement)
+    // this is needed inorder for groupStrategyByOriginalName serialization strategy will work
+    groupInstances.forEach(instance => { instance.value.originalName = instance.value.name })
+
+    const trustedUsersGroup = groupInstances.filter(isTrustedGroupInstance)
     if (trustedUsersGroup.length > 1) {
       log.error('Found more than one trusted users group instances %s. Skipping renaming groups', trustedUsersGroup.map(e => e.elemID.getFullName()).join(', '))
       return

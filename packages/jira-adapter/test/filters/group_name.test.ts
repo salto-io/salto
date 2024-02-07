@@ -99,6 +99,12 @@ describe('group name filter', () => {
     await filter.onFetch(elements)
     expect(elements[0].path).toEqual(['jira', 'Records', 'Group', 'trusted_users'])
   })
+  it('should update original name field for all group instances', async () => {
+    const elements = [withUUIDInstance, withoutUUIDInstance]
+    await filter.onFetch(elements)
+    expect(elements[0].value.originalName).toEqual('normal')
+    expect(elements[1].value.originalName).toEqual('trusted-users-128baddc-c238-4857-b249-cfc84bd10c4b')
+  })
 
   it('onDeploy should add originalName when addition', async () => {
     await filter.onDeploy([toChange({ after: withUUIDInstance })])

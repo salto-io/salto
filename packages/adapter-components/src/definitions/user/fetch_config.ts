@@ -39,9 +39,6 @@ export type UserFetchConfig<T extends Record<string, unknown> | undefined = Defa
   // TODO deprecate and remove once the migration is complete and everything is async
   asyncPagination?: boolean
   // customize how to generate elem ids
-  // TODO validate that the types are valid and top-level
-  // TODO (informative, remove after discussions) - not using default+customizations to avoid questions about
-  //   priorities between user default and system custom
   elemID?: Record<string, ElemIDCustomization>
 }
 

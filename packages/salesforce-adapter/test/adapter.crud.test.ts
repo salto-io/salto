@@ -1038,8 +1038,8 @@ describe('SalesforceAdapter CRUD', () => {
           delete element.value.fullName
           result = await removeElement(adapter, element, false)
         })
-        it('should return an error', () => {
-          expect(result.errors).toHaveLength(1)
+        it('should not return an error', () => {
+          expect(result.errors).toBeEmpty()
         })
         it('should not apply the change', () => {
           expect(result.appliedChanges).toHaveLength(0)
@@ -1265,8 +1265,8 @@ describe('SalesforceAdapter CRUD', () => {
           })
         })
 
-        it('should return an error', () => {
-          expect(result.errors).toHaveLength(1)
+        it('should not return an error', () => {
+          expect(result.errors).toBeEmpty()
         })
 
         it('should return empty applied changes', () => {
@@ -1411,8 +1411,8 @@ describe('SalesforceAdapter CRUD', () => {
           })
         })
 
-        it('should return an error', () => {
-          expect(result.errors).toHaveLength(1)
+        it('should not return an error', () => {
+          expect(result.errors).toBeEmpty()
         })
 
         it('should return empty applied changes', () => {
@@ -1754,8 +1754,8 @@ describe('SalesforceAdapter CRUD', () => {
             progressReporter: nullProgressReporter,
           })
         })
-        it('should fail because the type is not deployable', () => {
-          expect(result.errors).toHaveLength(1)
+        it('should not return errors', () => {
+          expect(result.errors).toBeEmpty()
         })
         it('should not apply the change', () => {
           expect(result.appliedChanges).toHaveLength(0)

@@ -23,8 +23,6 @@ import {
   Change,
   getChangeData,
   isRemovalChange,
-  isModificationChange,
-  isInstanceChange,
   isContainerType,
   isAdditionChange,
   SaltoElementError,
@@ -34,16 +32,17 @@ import {
   ElemID,
   TypeElement,
   Value,
+  isInstanceElement, isModificationChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { DeployResult as SFDeployResult, DeployMessage } from '@salto-io/jsforce'
 import SalesforceClient from './client/client'
 import { createDeployPackage, DeployPackage } from './transformers/xml_transformer'
 import {
-  isMetadataInstanceElement, apiName, metadataType, isMetadataObjectType, MetadataInstanceElement,
+  apiName, metadataType, isMetadataObjectType, MetadataInstanceElement,
   assertMetadataObjectType, Types,
 } from './transformers/transformer'
-import { apiNameSync, fullApiName } from './filters/utils'
+import { apiNameSync, fullApiName, isMetadataInstanceElementSync } from './filters/utils'
 import {
   API_NAME_SEPARATOR, CUSTOM_FIELD, CUSTOM_OBJECT, GLOBAL_VALUE_SET_SUFFIX, INSTANCE_FULL_NAME_FIELD,
   SalesforceArtifacts,
@@ -323,51 +322,6 @@ const processDeployResponse = (
   return { successfulFullNames, errors }
 }
 
-const getChangeError = async (change: Change): Promise<SaltoElementError | undefined> => {
-  const changeElem = getChangeData(change)
-  if (await apiName(changeElem) === undefined) {
-    return { elemID: changeElem.elemID, message: `Cannot ${change.action} element because it has no api name`, severity: 'Error' }
-  }
-  if (isModificationChange(change)) {
-    const beforeName = await apiName(change.data.before)
-    const afterName = await apiName(change.data.after)
-    if (beforeName !== afterName) {
-      return { elemID: changeElem.elemID, message: `Failed to update element because api names prev=${beforeName} and new=${afterName} are different`, severity: 'Error' }
-    }
-  }
-  if (!isInstanceChange(change) || !await isMetadataInstanceElement(changeElem)) {
-    return { elemID: changeElem.elemID, message: 'Cannot deploy because it is not a metadata instance', severity: 'Error' }
-  }
-  return undefined
-}
-
-const validateChanges = async (
-  changes: ReadonlyArray<Change>
-): Promise<{
-    validChanges: ReadonlyArray<Change<MetadataInstanceElement>>
-    errors: (SaltoError | SaltoElementError)[]
-  }> => {
-  const changesAndValidation = await awu(changes)
-    .map(async change => ({ change, error: await getChangeError(change) }))
-    .toArray()
-
-  const [invalidChanges, validChanges] = _.partition(
-    changesAndValidation,
-    ({ error }) => isDefined(error)
-  )
-
-  const errors = invalidChanges
-    .filter(change => isDefined(change.error))
-    .map(({ error }) => error) as SaltoElementError[]
-
-  return {
-    // We can cast to MetadataInstanceElement here because we will have an error for changes that
-    // are not metadata instance changes
-    validChanges: validChanges.map(({ change }) => change as Change<MetadataInstanceElement>),
-    errors,
-  }
-}
-
 const getDeployStatusUrl = async (
   { id }: SFDeployResult,
   client: SalesforceClient
@@ -502,10 +456,19 @@ export const deployMetadata = async (
 
   const pkg = createDeployPackage(deleteBeforeUpdate)
 
-  const { validChanges, errors: validationErrors } = await validateChanges(changes)
+  // Any change that gets discarded here will be flagged by the metadata_deploy_validation CV
+  const validChanges = changes
+    .filter(change => apiNameSync(getChangeData(change)) !== undefined)
+    .filter(change => (
+      !isModificationChange(change) || apiNameSync(change.data.before) === apiNameSync(change.data.after)
+    ))
+    .filter(change => (
+      isMetadataInstanceElementSync(getChangeData(change)) || isInstanceElement(getChangeData(change))
+    )) as Change<MetadataInstanceElement>[]
+
   if (validChanges.length === 0) {
     // Skip deploy if there are no valid changes
-    return { appliedChanges: [], errors: validationErrors }
+    return { appliedChanges: [], errors: [] }
   }
   const changeToDeployedIds: Record<string, MetadataIdsMap> = {}
   const deployedComponentsElemIdsByType: Record<string, NameToElemIDMap> = {}
@@ -567,7 +530,7 @@ export const deployMetadata = async (
   ].filter(isDefined)
   return {
     appliedChanges: validChanges.filter(isSuccessfulChange),
-    errors: [...validationErrors, ...errors],
+    errors,
     extraProperties: {
       groups: isQuickDeployable(sfDeployRes)
         ? [{ requestId: sfDeployRes.id, hash: planHash, url: deploymentUrl, artifacts }]

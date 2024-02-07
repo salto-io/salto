@@ -15,12 +15,12 @@
 */
 import { ElemID, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
+import { config as configUtils, definitions, elements } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { STRIPE } from './constants'
 
-const { createClientConfigType } = clientUtils
-const { createUserFetchConfigType, createSwaggerAdapterApiConfigType } = configUtils
+const { createClientConfigType } = definitions
+const { createSwaggerAdapterApiConfigType } = configUtils
 
 const DEFAULT_ID_FIELDS = ['id']
 export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
@@ -34,9 +34,9 @@ export const FETCH_CONFIG = 'fetch'
 
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
-export type StripeClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
+export type StripeClientConfig = definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>
 
-export type StripeFetchConfig = configUtils.UserFetchConfig
+export type StripeFetchConfig = definitions.UserFetchConfig
 export type StripeApiConfig = configUtils.AdapterSwaggerApiConfig
 
 export type StripeConfig = {
@@ -144,7 +144,7 @@ export const configType = createMatchingObjectType<Partial<StripeConfig>>({
       refType: createClientConfigType(STRIPE),
     },
     [FETCH_CONFIG]: {
-      refType: createUserFetchConfigType(STRIPE),
+      refType: definitions.createUserFetchConfigType(STRIPE),
     },
     [API_DEFINITIONS_CONFIG]: {
       refType: createSwaggerAdapterApiConfigType({

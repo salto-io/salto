@@ -14,12 +14,13 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, Values, isInstanceElement, isPrimitiveValue, InstanceElement } from '@salto-io/adapter-api'
+import { Element, Values, isInstanceElement, InstanceElement } from '@salto-io/adapter-api'
 import { resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
-import { ClientGetWithPaginationParams } from '../client'
-import { FetchRequestConfig, ARG_PLACEHOLDER_MATCHER, UrlParams, DependsOnConfig } from '../config/request'
+import { ClientGetWithPaginationParams } from '../../client'
+import { FetchRequestConfig, UrlParams, DependsOnConfig } from '../../config/request' // TODO move and change format
+import { replaceArgs, ARG_PLACEHOLDER_MATCHER } from '../request'
 
 const { isDefined } = lowerdashValues
 const log = logger(module)
@@ -41,6 +42,7 @@ export const simpleGetArgs: ComputeGetArgsFunc = (
   {
     url,
     queryParams,
+    // TODO deprecate once old config is gone, and replace with recurseInto
     recursiveQueryByResponseField,
     paginationField,
   },
@@ -54,19 +56,6 @@ export const simpleGetArgs: ComputeGetArgsFunc = (
   return [{ url, queryParams, recursiveQueryParams, paginationField }]
 }
 
-export const replaceUrlParams = (url: string, paramValues: Record<string, unknown>): string => (
-  url.replace(
-    ARG_PLACEHOLDER_MATCHER,
-    val => {
-      const replacement = paramValues[val.slice(1, -1)] ?? val
-      if (!isPrimitiveValue(replacement)) {
-        throw new Error(`Cannot replace param ${val} in ${url} with non-primitive value ${replacement}`)
-      }
-      return replacement.toString()
-    }
-  )
-)
-
 const getContextInstances = (
   referenceDetails: DependsOnConfig,
   contextElements: Record<string, Element[]>,
@@ -79,6 +68,32 @@ const getContextInstances = (
     // The relevant context instances are of the types correspond to the page type in SupportedTypes,
     // fallback to all instances if the mapping is missing from SupportedTypess
     .filter(instance => (itemTypes !== undefined ? itemTypes.includes(instance.elemID.typeName) : true))
+}
+
+export class MissingContextError extends Error {}
+
+/**
+ * Compute the cartesian product of all the potential arg values that are relevant for the output args.
+ * Assumes possibleArgs are unique.
+ *
+ * @param possibleArgs A mapping from each arg to its possible choices
+ * @param outputArgs The args in play
+ */
+export const computeArgCombinations = (
+  possibleArgs: Record<string, unknown[]>, // assuming possibleArgs are unique
+  outputArgs?: string[],
+): Record<string, unknown>[] => {
+  // since we are creating a cartesian product, we should focus on the required args
+  // in order to avoid getting unnecessarily-large combination sets
+  const potentialArgsByName = Object.entries(outputArgs !== undefined ? _.pick(possibleArgs, outputArgs) : possibleArgs)
+    .map(([argName, argValues]) => argValues.map(val => ({ [argName]: val })))
+
+  if (potentialArgsByName.length === 0) {
+    return [{}]
+  }
+  return potentialArgsByName.reduce((acc, argChoices) => acc.flatMap(
+    combo => argChoices.map(arg => ({ ...combo, ...arg }))
+  ))
 }
 
 const computeDependsOnURLs = (
@@ -98,7 +113,7 @@ const computeDependsOnURLs = (
   }
 
   if (contextElements === undefined || dependsOn === undefined || _.isEmpty(dependsOn)) {
-    throw new Error(`cannot resolve endpoint ${url} - missing context`)
+    throw new MissingContextError(`cannot resolve endpoint ${url} - missing context`)
   }
 
   const potentialParamsByArg = urlParams.map(urlParam => {
@@ -123,7 +138,7 @@ const computeDependsOnURLs = (
     combo => potentialParams.map(param => ({ ...combo, ...param }))
   ))
 
-  return allArgCombinations.map(p => replaceUrlParams(url, p))
+  return allArgCombinations.map(p => replaceArgs(url, p))
 }
 
 export const createUrl = ({
@@ -133,7 +148,7 @@ export const createUrl = ({
   baseUrl: string
   urlParamsToFields?: UrlParams
   additionalUrlVars?: Record<string, string>
-}): string => replaceUrlParams(
+}): string => replaceArgs(
   baseUrl,
   {
     ...instance.value,
@@ -156,7 +171,7 @@ export const computeGetArgs: ComputeGetArgsFunc = (
 ) => {
   // Replace known url params
   const baseUrl = requestContext !== undefined
-    ? replaceUrlParams(args.url, requestContext)
+    ? replaceArgs(args.url, requestContext)
     : args.url
 
   const urls = computeDependsOnURLs(

@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, definitions } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import { Values } from '@salto-io/adapter-api'
@@ -38,14 +38,14 @@ type LogsFilterConfig = {
 }
 
 
-const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
+const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<definitions.ClientRateLimitConfig> = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
   // this is arbitrary, could not find official limits
   get: 100,
   deploy: 100,
 }
 
-const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
+const DEFAULT_PAGE_SIZE: Required<definitions.ClientPageSizeConfig> = {
   get: PAGE_SIZE,
 }
 
@@ -56,7 +56,7 @@ const DEFAULT_FILTER_LOGS_CONFIG: LogsFilterConfig = {
 
 
 export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
-  Credentials, clientUtils.ClientRateLimitConfig
+  Credentials, definitions.ClientRateLimitConfig
   > {
   // These properties create another connection and client for Zendesk resources API
   protected readonly resourceConn: clientUtils.Connection<Credentials>
@@ -66,7 +66,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
   private logsFilterConfig: LogsFilterConfig
 
   constructor(
-    clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig> & LogsFilterConfig,
+    clientOpts: clientUtils.ClientOpts<Credentials, definitions.ClientRateLimitConfig> & LogsFilterConfig,
   ) {
     super(
       ZENDESK,
@@ -126,7 +126,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
     }
   }
 
-  @throttle<clientUtils.ClientRateLimitConfig>({ bucketName: 'get', keys: ['url'] })
+  @throttle<definitions.ClientRateLimitConfig>({ bucketName: 'get', keys: ['url'] })
   @logDecorator(['url'])
   @requiresLogin()
   public async getResource(

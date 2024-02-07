@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { createElementQuery, ElementQuery } from '../../../src/elements/query'
+import { createElementQuery, ElementQuery } from '../../../src/fetch/query'
 
 describe('query', () => {
   describe('createElementQuery', () => {

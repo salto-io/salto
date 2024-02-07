@@ -38,7 +38,7 @@ import {
   resolveChangeElement, safeJsonStringify, pathNaclCase, references, inspectValue,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { elements as elementsUtils } from '@salto-io/adapter-components'
+import { elements as elementsUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { ZENDESK, MACRO_TYPE_NAME } from '../constants'
@@ -135,7 +135,7 @@ const createAttachmentInstance = ({
   content?: Buffer
   macro: InstanceElement
 }): InstanceElement => {
-  const name = elementsUtils.ducktype.toNestedTypeName(
+  const name = fetchUtils.element.toNestedTypeName(
     macro.value.title, attachment.filename
   )
   const naclName = naclCase(name)

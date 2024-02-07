@@ -15,7 +15,7 @@
 */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { InstanceElement, ObjectType, ElemID } from '@salto-io/adapter-api'
-import { simpleGetArgs, computeGetArgs } from '../../src/elements/request_parameters'
+import { simpleGetArgs, computeGetArgs } from '../../../src/fetch/resource/request_parameters'
 
 const logWarn = jest.fn()
 jest.mock('@salto-io/logging', () => {

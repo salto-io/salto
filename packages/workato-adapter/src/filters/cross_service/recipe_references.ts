@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   Element, isInstanceElement, InstanceElement, ElemID, isReferenceExpression, PostFetchOptions,
 } from '@salto-io/adapter-api'
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import { fetch as fetchUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
@@ -37,7 +37,7 @@ import { addZendeskRecipeReferences } from './zendesk/reference_finder'
 const log = logger(module)
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
-const { toNestedTypeName } = elementUtils.ducktype
+const { toNestedTypeName } = fetchUtils.element
 
 type ConnectionDetails = {
   id: ElemID

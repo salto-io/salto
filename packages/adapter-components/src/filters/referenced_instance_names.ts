@@ -25,8 +25,9 @@ import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter_utils'
 import { AdapterApiConfig, getTransformationConfigByType,
   TransformationConfig, TransformationDefaultConfig, getConfigWithDefault,
-  dereferenceFieldName, isReferencedIdField, NameMappingOptions } from '../config'
+  dereferenceFieldName, isReferencedIdField } from '../config'
 import { joinInstanceNameParts, getInstanceFilePath, getInstanceNaclName } from '../elements/instance_elements'
+import { NameMappingOptions } from '../definitions'
 
 const { findDuplicates } = collections.array
 const { awu } = collections.asynciterable

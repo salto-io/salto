@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { FieldDefinition, BuiltinTypes, ObjectType, ElemID, createRefToElmWithValue, Value, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { BuiltinTypes, ObjectType, ElemID, Value, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { SUBTYPES_PATH, TYPES_PATH } from '../../src/elements/constants'
-import { filterTypes, getContainerForType, hideFields, markServiceIdField } from '../../src/elements/type_elements'
+import { filterTypes, hideFields } from '../../src/elements/type_elements'
 
 describe('type_elements', () => {
   describe('hideFields', () => {
@@ -144,70 +144,6 @@ describe('type_elements', () => {
       expect(filteredTypes[1].path).toEqual(['adapterName', TYPES_PATH, SUBTYPES_PATH, 'A'])
       expect(filteredTypes[2].elemID.getFullNameParts()).toEqual(['adapterName', 'B'])
       expect(filteredTypes[2].path).toEqual(['adapter', 'somePath'])
-    })
-  })
-
-  describe('markServiceIdField', () => {
-    describe('mark service id correctly', () => {
-      it('should mark string', () => {
-        const typeFields = {
-          id: { refType: BuiltinTypes.STRING },
-          anotherField: { refType: BuiltinTypes.STRING },
-        }
-        markServiceIdField('id', typeFields, 'test')
-        expect(typeFields.id.refType).toEqual(
-          createRefToElmWithValue(BuiltinTypes.SERVICE_ID)
-        )
-      })
-      it('should mark number', () => {
-        const typeFields = {
-          id: { refType: BuiltinTypes.NUMBER },
-          anotherField: { refType: BuiltinTypes.STRING },
-        }
-        markServiceIdField('id', typeFields, 'test')
-        expect(typeFields.id.refType).toEqual(
-          createRefToElmWithValue(BuiltinTypes.SERVICE_ID_NUMBER)
-        )
-      })
-      it('should not mark boolean', () => {
-        const typeFields = {
-          id: { refType: BuiltinTypes.BOOLEAN },
-          anotherField: { refType: BuiltinTypes.STRING },
-        }
-        markServiceIdField('id', typeFields, 'test')
-        expect(typeFields.id.refType).toEqual(BuiltinTypes.BOOLEAN)
-      })
-      it('should not mark non primitive types', () => {
-        const type = new ObjectType({ elemID: new ElemID('adapter', 'test') })
-        const typeFields = {
-          id: { refType: type },
-          anotherField: { refType: BuiltinTypes.STRING },
-        }
-        markServiceIdField('id', typeFields, 'test')
-        expect(typeFields.id.refType).toEqual(type)
-      })
-      it('should not mark non existent field', () => {
-        const typeFields: Record<string, FieldDefinition> = {
-          anotherField: { refType: BuiltinTypes.STRING },
-        }
-        markServiceIdField('id', typeFields, 'test')
-        expect(typeFields.id).not.toBeDefined()
-      })
-    })
-  })
-
-  describe('getContainerForType', () => {
-    it('should return the correct container and type name substring', () => {
-      const listType = getContainerForType('list<SomeType>')
-      expect(listType?.container).toEqual('list')
-      expect(listType?.typeNameSubstring).toEqual('SomeType')
-      const mapType = getContainerForType('map<list<AnotherType>>')
-      expect(mapType?.container).toEqual('map')
-      expect(mapType?.typeNameSubstring).toEqual('list<AnotherType>')
-    })
-    it('should return undefined if there is no container', () => {
-      const result = getContainerForType('SomeType')
-      expect(result).toBeUndefined()
     })
   })
 })

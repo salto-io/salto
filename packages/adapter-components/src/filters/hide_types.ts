@@ -15,7 +15,7 @@
 */
 import { Element, isObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { filter } from '@salto-io/adapter-utils'
-import { UserFetchConfig } from '../config'
+import { UserFetchConfig } from '../definitions/user'
 import { FilterCreator } from '../filter_utils'
 
 

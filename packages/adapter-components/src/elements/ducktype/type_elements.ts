@@ -21,13 +21,10 @@ import {
 import { pathNaclCase, naclCase } from '@salto-io/adapter-utils'
 import { DuckTypeTransformationConfig, DuckTypeTransformationDefaultConfig, getConfigWithDefault } from '../../config'
 import { TYPES_PATH, SUBTYPES_PATH } from '../constants'
-import { fixFieldTypes, hideFields, markServiceIdField } from '../type_elements'
+import { fixFieldTypes, hideFields } from '../type_elements'
+import { markServiceIdField, toNestedTypeName, toPrimitiveType } from '../../fetch/element'
 
 const ID_SEPARATOR = '__'
-
-export const toNestedTypeName = (parentName: string, nestedTypeName: string): string => (
-  `${parentName}${ID_SEPARATOR}${nestedTypeName}`
-)
 
 type ObjectTypeWithNestedTypes = {
   type: ObjectType
@@ -38,15 +35,6 @@ type NestedTypeWithNestedTypes = {
   type: ObjectType | ListType | PrimitiveType
   nestedTypes: ObjectType[]
 }
-
-const duckTypeTypeMap: Record<string, PrimitiveType> = {
-  string: BuiltinTypes.STRING,
-  boolean: BuiltinTypes.BOOLEAN,
-  number: BuiltinTypes.NUMBER,
-}
-
-export const toPrimitiveType = (val: string): PrimitiveType =>
-  _.get(duckTypeTypeMap, val, BuiltinTypes.UNKNOWN)
 
 const generateNestedType = ({
   adapterName,

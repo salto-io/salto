@@ -53,6 +53,8 @@ jest.mock('@salto-io/adapter-components', () => {
 describe('jiraWorkflowFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'deploy' | 'onDeploy', FilterResult>
   let workflowType: ObjectType
+  let workflowRuleConfigurationParametersType: ObjectType
+  let elements: ObjectType[]
   let config: JiraConfig
   let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
@@ -64,6 +66,8 @@ describe('jiraWorkflowFilter', () => {
   beforeEach(async () => {
     jest.clearAllMocks()
     workflowType = createEmptyType(JIRA_WORKFLOW_TYPE)
+    workflowRuleConfigurationParametersType = createEmptyType('WorkflowRuleConfiguration_parameters')
+    elements = [workflowType, workflowRuleConfigurationParametersType]
   })
 
   describe('onFetch', () => {
@@ -154,11 +158,10 @@ describe('jiraWorkflowFilter', () => {
       })
     })
     it('should add workflow instances', async () => {
-      const elements = [workflowType]
       await filter.onFetch(elements)
-      expect(elements).toHaveLength(3)
-      const firstWorkflow = elements[1] as unknown as InstanceElement
-      expect(elements[1].elemID.name).toEqual('firstWorkflow')
+      expect(elements).toHaveLength(4)
+      const firstWorkflow = elements[2] as unknown as InstanceElement
+      expect(firstWorkflow.elemID.name).toEqual('firstWorkflow')
       expect(firstWorkflow.value).toEqual({
         id: '1',
         name: 'firstWorkflow',
@@ -196,7 +199,7 @@ describe('jiraWorkflowFilter', () => {
           },
         ],
       })
-      const secondWorkflow = elements[2] as unknown as InstanceElement
+      const secondWorkflow = elements[3] as unknown as InstanceElement
       expect(secondWorkflow.elemID.name).toEqual('secondWorkflow')
       expect(secondWorkflow.value).toEqual({
         id: '2',
@@ -231,17 +234,23 @@ describe('jiraWorkflowFilter', () => {
       })
     })
     it('should add workflows deployment annotations to JiraWorkflow type', async () => {
-      const elements = [workflowType]
       await filter.onFetch(elements)
-      expect(elements).toHaveLength(3)
+      expect(elements).toHaveLength(4)
       expect(elements[0].annotations).toEqual({
         [CORE_ANNOTATIONS.CREATABLE]: true,
         [CORE_ANNOTATIONS.UPDATABLE]: true,
         [CORE_ANNOTATIONS.DELETABLE]: true,
       })
     })
+    it('should add deployment annotations to scriptRunner type', async () => {
+      await filter.onFetch(elements)
+      expect(elements).toHaveLength(4)
+      expect(elements[1].fields.scriptRunner.annotations).toEqual({
+        [CORE_ANNOTATIONS.CREATABLE]: true,
+        [CORE_ANNOTATIONS.UPDATABLE]: true,
+      })
+    })
     it('should call paginator with the correct parameters', async () => {
-      const elements = [workflowType]
       await filter.onFetch(elements)
       expect(mockPaginator).toHaveBeenCalledWith(
         {
@@ -255,7 +264,6 @@ describe('jiraWorkflowFilter', () => {
       )
     })
     it('should call the client with the correct parameters', async () => {
-      const elements = [workflowType]
       await filter.onFetch(elements)
       expect(connection.post).toHaveBeenCalledWith(
         '/rest/api/3/workflows',
@@ -277,9 +285,8 @@ describe('jiraWorkflowFilter', () => {
         }),
         config,
       })) as typeof filter
-      const elements = [workflowType]
       await filter.onFetch(elements)
-      expect(elements).toHaveLength(1)
+      expect(elements).toHaveLength(2)
     })
     it('should fail when JiraWorkflow type is not found', async () => {
       const filterResult = await filter.onFetch([]) as FilterResult
@@ -301,7 +308,6 @@ describe('jiraWorkflowFilter', () => {
         config,
       })) as typeof filter
 
-      const elements = [workflowType]
       const filterResult = await filter.onFetch(elements) as FilterResult
 
       const errors = filterResult?.errors ?? []
@@ -312,7 +318,6 @@ describe('jiraWorkflowFilter', () => {
     })
     it('should fail when bulk get post request is rejected', async () => {
       connection.post.mockRejectedValue(new Error('code 400'))
-      const elements = [workflowType]
       const filterResult = await filter.onFetch(elements) as FilterResult
       const errors = filterResult?.errors ?? []
       expect(errors).toBeDefined()
@@ -329,7 +334,6 @@ describe('jiraWorkflowFilter', () => {
           },
         }] },
       })
-      const elements = [workflowType]
       const filterResult = await filter.onFetch(elements) as FilterResult
       const errors = filterResult?.errors ?? []
       expect(errors).toBeDefined()
@@ -415,40 +419,36 @@ describe('jiraWorkflowFilter', () => {
         })
       })
       it('should convert transition parameters to list', async () => {
-        const elements = [workflowType]
         await filter.onFetch(elements)
-        expect(elements).toHaveLength(2)
-        const workflow = elements[1] as unknown as InstanceElement
+        expect(elements).toHaveLength(3)
+        const workflow = elements[2] as unknown as InstanceElement
         expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].conditions.conditions[0].parameters)
           .toEqual({ groupIds: ['1', '2'] })
         expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].validators[0].parameters)
           .toEqual({ statusIds: ['1', '2'] })
       })
       it('should do nothing if parameters field not in the relevant list', async () => {
-        const elements = [workflowType]
         await filter.onFetch(elements)
-        expect(elements).toHaveLength(2)
-        const workflow = elements[1] as unknown as InstanceElement
+        expect(elements).toHaveLength(3)
+        const workflow = elements[2] as unknown as InstanceElement
         expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].conditions.conditions[1].parameters)
           .toEqual({ fromStatusId: '1' })
         expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].validators[1].parameters)
           .toEqual({ fieldKey: 'fieldKey' })
       })
       it('should do nothing if parameters is undefined', async () => {
-        const elements = [workflowType]
         await filter.onFetch(elements)
-        expect(elements).toHaveLength(2)
-        const workflow = elements[1] as unknown as InstanceElement
+        expect(elements).toHaveLength(3)
+        const workflow = elements[2] as unknown as InstanceElement
         expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].conditions.conditions[2].parameters)
           .toBeUndefined()
         expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].validators[2].parameters)
           .toBeUndefined()
       })
       it('should not convert parameters if it is an empty string', async () => {
-        const elements = [workflowType]
         await filter.onFetch(elements)
-        expect(elements).toHaveLength(2)
-        const workflow = elements[1] as unknown as InstanceElement
+        expect(elements).toHaveLength(3)
+        const workflow = elements[2] as unknown as InstanceElement
         expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].conditions.conditions[3].parameters)
           .toEqual({ groupIds: '' })
         expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].validators[3].parameters)

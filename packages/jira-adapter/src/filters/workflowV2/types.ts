@@ -45,6 +45,13 @@ export type WorkflowStatus = {
   name: string
 }
 
+export type WorkflowTransition = {
+  id: string
+  actions?: Values[]
+  conditions?: Values
+  validators?: Values[]
+}
+
 type WorkflowDataResponse = {
   id: {
     entityId: string
@@ -70,6 +77,34 @@ export type Workflow = {
   transitions: Values[]
   statuses: Values[]
 }
+
+export type WorkflowV2Instance = InstanceElement & { value: InstanceElement['value'] & Workflow & { transitions: Record<string, WorkflowTransition> } }
+
+const WORKFLOW_SCHEMA = Joi.object({
+  name: Joi.string().required(),
+  version: Joi.object({
+    versionNumber: Joi.number().required(),
+    id: Joi.string().required(),
+  }).unknown(true).required(),
+  scope: Joi.object({
+    project: Joi.string(),
+    type: Joi.string().required(),
+  }).unknown(true).required(),
+  id: Joi.string().required(),
+  transitions: Joi.object().pattern(Joi.string(), Joi.object({
+    id: Joi.string().required(),
+    actions: Joi.array().items(Joi.object()),
+    conditions: Joi.object(),
+    validators: Joi.array().items(Joi.object()),
+  }).unknown(true).required()).required(),
+  statuses: Joi.array().items(Joi.object()).required(),
+}).unknown(true).required()
+
+const isWorkflowValues = createSchemeGuard<Workflow & { transitions: Record<string, Values> }>(WORKFLOW_SCHEMA, 'Received an invalid workflow values')
+
+export const isWorkflowV2Instance = (instance: InstanceElement)
+: instance is WorkflowV2Instance =>
+  instance.elemID.typeName === JIRA_WORKFLOW_TYPE && isWorkflowValues(instance.value)
 
 export type WorkflowPayload = {
   statuses: Values[]

@@ -51,7 +51,7 @@ const webhookConfigType = new ObjectType({
   path: [JIRA, elements.TYPES_PATH, 'WebhookConfig'],
 })
 
-const scriptRunnerObjectType = new ObjectType({
+export const scriptRunnerObjectType = new ObjectType({
   elemID: new ElemID(JIRA, SCRIPT_RUNNER_TYPE),
   fields: {
     issueTypeId: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },

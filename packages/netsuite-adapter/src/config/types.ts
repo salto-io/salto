@@ -85,6 +85,7 @@ export type FetchParams = {
   addBundles?: boolean
   addImportantValues?: boolean
   resolveAccountSpecificValues?: boolean
+  skipResolvingAccountSpecificValuesToTypes?: string[]
 } & LockedElementsConfig['fetch']
 
 export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
@@ -98,6 +99,7 @@ export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
   addBundles: 'addBundles',
   addImportantValues: 'addImportantValues',
   resolveAccountSpecificValues: 'resolveAccountSpecificValues',
+  skipResolvingAccountSpecificValuesToTypes: 'skipResolvingAccountSpecificValuesToTypes',
 }
 
 export type AdditionalSdfDeployDependencies = {
@@ -551,6 +553,7 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
     addBundles: { refType: BuiltinTypes.BOOLEAN },
     addImportantValues: { refType: BuiltinTypes.BOOLEAN },
     resolveAccountSpecificValues: { refType: BuiltinTypes.BOOLEAN },
+    skipResolvingAccountSpecificValuesToTypes: { refType: new ListType(BuiltinTypes.STRING) },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

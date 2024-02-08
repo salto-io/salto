@@ -71,6 +71,14 @@ function validateNumber(
   }
 }
 
+const validateRegularExpressions = (regexes: string[], configPath: string | string[]): void => {
+  const invalidRegexes = regexes.filter(strRegex => !regex.isValidRegex(strRegex))
+  if (!_.isEmpty(invalidRegexes)) {
+    const errMessage = `received an invalid ${makeArray(configPath).join('.')} value. The following regular expressions are invalid: ${invalidRegexes}`
+    throw new Error(errMessage)
+  }
+}
+
 const noSupportedTypeMatch = (name: string): boolean =>
   !netsuiteSupportedTypes
     .some(existTypeName => regex.isFullRegexMatch(existTypeName, name)
@@ -303,7 +311,7 @@ const validateAdditionalDependencies = (
 }
 
 const validateFetchConfig = ({
-  include, exclude, fieldsToOmit,
+  include, exclude, fieldsToOmit, skipResolvingAccountSpecificValuesToTypes,
 }: Record<keyof FetchParams, unknown>): void => {
   validateDefined(include, [CONFIG.fetch, FETCH_PARAMS.include])
   validatePlainObject(include, [CONFIG.fetch, FETCH_PARAMS.include])
@@ -318,6 +326,17 @@ const validateFetchConfig = ({
 
   if (fieldsToOmit !== undefined) {
     validateFieldsToOmitConfig(fieldsToOmit)
+  }
+
+  if (skipResolvingAccountSpecificValuesToTypes !== undefined) {
+    validateArrayOfStrings(
+      skipResolvingAccountSpecificValuesToTypes,
+      [CONFIG.fetch, FETCH_PARAMS.skipResolvingAccountSpecificValuesToTypes],
+    )
+    validateRegularExpressions(
+      skipResolvingAccountSpecificValuesToTypes,
+      [CONFIG.fetch, FETCH_PARAMS.skipResolvingAccountSpecificValuesToTypes],
+    )
   }
 }
 
@@ -377,15 +396,6 @@ const validateSuiteAppClientParams = (
   }
 }
 
-const validateRegularExpressions = (regularExpressions: string[]): void => {
-  const invalidRegularExpressions = regularExpressions
-    .filter(strRegex => !regex.isValidRegex(strRegex))
-  if (!_.isEmpty(invalidRegularExpressions)) {
-    const errMessage = `received an invalid ${CONFIG.filePathRegexSkipList} value. The following regular expressions are invalid: ${invalidRegularExpressions}`
-    throw new Error(errMessage)
-  }
-}
-
 export function validateConfig(input: Record<string, unknown>): asserts input is NetsuiteConfig {
   try {
     const config = _.pick(input, Object.values(CONFIG))
@@ -409,7 +419,7 @@ export function validateConfig(input: Record<string, unknown>): asserts input is
     }
     if (config.filePathRegexSkipList !== undefined) {
       validateArrayOfStrings(config.filePathRegexSkipList, CONFIG.filePathRegexSkipList)
-      validateRegularExpressions(config.filePathRegexSkipList)
+      validateRegularExpressions(config.filePathRegexSkipList, CONFIG.filePathRegexSkipList)
     }
     if (config.typesToSkip !== undefined) {
       validateArrayOfStrings(config.typesToSkip, CONFIG.typesToSkip)

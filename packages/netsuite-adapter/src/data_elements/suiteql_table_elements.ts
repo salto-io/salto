@@ -15,8 +15,10 @@
 */
 import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
+import { regex } from '@salto-io/lowerdash'
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, TopLevelElement, createRefToElmWithValue } from '@salto-io/adapter-api'
 import NetsuiteClient from '../client/client'
+import { NetsuiteConfig } from '../config/types'
 import { ALLOCATION_TYPE, EMPLOYEE, NETSUITE, PROJECT_EXPENSE_TYPE, TAX_SCHEDULE } from '../constants'
 import { getLastServerTime } from '../server_time'
 import { toSuiteQLWhereDateString } from '../changes_detector/date_formats'
@@ -618,27 +620,47 @@ const getAdditionalInstances = (
   client: NetsuiteClient,
   suiteQLTableType: ObjectType,
   elementsSource: ReadOnlyElementsSource,
-  isPartial: boolean
+  isPartial: boolean,
+  shouldSkipSuiteQLTable: (tableName: string) => boolean
 ): Promise<InstanceElement | undefined>[] => [
-  getSavedSearchQueryInstance(client, suiteQLTableType, TAX_SCHEDULE, elementsSource, isPartial),
-  getSavedSearchQueryInstance(client, suiteQLTableType, PROJECT_EXPENSE_TYPE, elementsSource, isPartial),
-  getAllocationTypeInstance(client, suiteQLTableType, elementsSource, isPartial),
+  shouldSkipSuiteQLTable(TAX_SCHEDULE)
+    ? Promise.resolve(undefined)
+    : getSavedSearchQueryInstance(client, suiteQLTableType, TAX_SCHEDULE, elementsSource, isPartial),
+  shouldSkipSuiteQLTable(PROJECT_EXPENSE_TYPE)
+    ? Promise.resolve(undefined)
+    : getSavedSearchQueryInstance(client, suiteQLTableType, PROJECT_EXPENSE_TYPE, elementsSource, isPartial),
+  shouldSkipSuiteQLTable(ALLOCATION_TYPE)
+    ? Promise.resolve(undefined)
+    : getAllocationTypeInstance(client, suiteQLTableType, elementsSource, isPartial),
 ]
 
 export const getSuiteQLTableElements = async (
+  config: NetsuiteConfig,
   client: NetsuiteClient,
   elementsSource: ReadOnlyElementsSource,
   isPartial: boolean
 ): Promise<TopLevelElement[]> => {
+  if (!config.fetch.resolveAccountSpecificValues) {
+    return []
+  }
   const suiteQLTableType = new ObjectType({
     elemID: new ElemID(NETSUITE, SUITEQL_TABLE),
     annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
   })
 
+  const shouldSkipSuiteQLTable = (tableName: string): boolean => {
+    const shouldSkip = (config.fetch.skipResolvingAccountSpecificValuesToTypes ?? [])
+      .some(name => regex.isFullRegexMatch(tableName, name))
+    if (shouldSkip) {
+      log.debug('skipping query of SuiteQL table %s', tableName)
+    }
+    return shouldSkip
+  }
+
   const lastFetchTime = await getLastServerTime(elementsSource)
   const instances = await Promise.all(
     Object.entries(QUERIES_BY_TABLE_NAME).map(([tableName, queryParams]) => {
-      if (queryParams === undefined) {
+      if (queryParams === undefined || shouldSkipSuiteQLTable(tableName)) {
         return undefined
       }
       return getSuiteQLTableInstance(
@@ -651,7 +673,7 @@ export const getSuiteQLTableElements = async (
         isPartial
       )
     }).concat(
-      getAdditionalInstances(client, suiteQLTableType, elementsSource, isPartial)
+      getAdditionalInstances(client, suiteQLTableType, elementsSource, isPartial, shouldSkipSuiteQLTable)
     )
   ).then(res => res.flatMap(instance => instance ?? []))
 

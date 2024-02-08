@@ -476,6 +476,7 @@ export const CPQ_HIDDEN_SOURCE_OBJECT = 'SBQQ__HiddenSourceObject__c'
 export const CPQ_TARGET_FIELD = 'SBQQ__TargetField__c'
 export const CPQ_TARGET_OBJECT = 'SBQQ__TargetObject__c'
 export const CPQ_CONDITIONS_MET = 'SBQQ__ConditionsMet__c'
+export const CPQ_PRICE_CONDITION_RULE_FIELD = 'SBQQ__Rule__c'
 
 export const CPQ_QUOTE_NO_PRE = 'Quote__c'
 export const CPQ_QUOTE_LINE_GROUP_NO_PRE = 'QuoteLineGroup__c'

@@ -35,7 +35,7 @@ import {
   SBAA_CONDITIONS_MET,
   METADATA_CHANGE_GROUP,
   groupIdForInstanceChangeGroup, CPQ_PRICE_RULE, CPQ_CONDITIONS_MET, CPQ_PRICE_CONDITION,
-  ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP,
+  ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP, CPQ_PRICE_CONDITION_RULE_FIELD,
 } from './constants'
 
 const getGroupId = (change: Change): string => {
@@ -58,6 +58,7 @@ const getAddCustomRuleAndConditionGroupChangeIds = (
   ruleTypeName: string,
   ruleConditionFieldName: string,
   conditionTypeName: string,
+  conditionRuleFieldName: string,
 ): Set<ChangeId> => {
   const addedInstancesChanges = wu(changes.entries())
     .filter(([_changeId, change]) => isAdditionChange(change))
@@ -71,7 +72,7 @@ const getAddCustomRuleAndConditionGroupChangeIds = (
   const customConditionAdditions = addedInstancesChanges
     .filter(([_changeId, change]) => isInstanceOfTypeChangeSync(conditionTypeName)(change))
     .filter(([_changeId, change]) => {
-      const rule = getChangeData(change).value[ruleTypeName]
+      const rule = getChangeData(change).value[conditionRuleFieldName]
       return isReferenceExpression(rule) && customRuleElemIds.has(rule.elemID.getFullName())
     })
   return new Set(customRuleAdditions
@@ -91,6 +92,7 @@ const getAddSbaaCustomApprovalRuleAndConditionGroupChangeIds = (
     SBAA_APPROVAL_RULE,
     SBAA_CONDITIONS_MET,
     SBAA_APPROVAL_CONDITION,
+    SBAA_APPROVAL_RULE,
   )
 )
 
@@ -106,6 +108,7 @@ const getAddCpqCustomPriceRuleAndConditionGroupChangeIds = (
     CPQ_PRICE_RULE,
     CPQ_CONDITIONS_MET,
     CPQ_PRICE_CONDITION,
+    CPQ_PRICE_CONDITION_RULE_FIELD,
   )
 )
 

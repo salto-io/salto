@@ -40,7 +40,7 @@ import {
   DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY_MULTIPLIER, OWNER_ID, SBAA_APPROVAL_CONDITION,
   SBAA_APPROVAL_RULE,
   SBAA_CONDITIONS_MET, SYSTEM_FIELDS, ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP, CPQ_PRICE_RULE,
-  CPQ_PRICE_CONDITION, CPQ_CONDITIONS_MET,
+  CPQ_PRICE_CONDITION, CPQ_CONDITIONS_MET, CPQ_PRICE_CONDITION_RULE_FIELD,
 } from './constants'
 import { getIdFields, transformRecordToValues } from './filters/custom_objects_instances'
 import {
@@ -740,6 +740,7 @@ const deployRulesAndConditionsGroup = async (
   ruleTypeName: string,
   ruleConditionFieldName: string,
   conditionTypeName: string,
+  conditionRuleFieldName: string,
   changes: ReadonlyArray<Change<InstanceElement>>,
   changeGroupId: string,
   client: SalesforceClient,
@@ -791,9 +792,9 @@ const deployRulesAndConditionsGroup = async (
     conditionChanges,
     change => {
       const conditionInstance = getChangeData(change)
-      const ruleInstance = conditionInstance.value[ruleTypeName]
+      const ruleInstance = conditionInstance.value[conditionRuleFieldName]
       if (!isInstanceElement(ruleInstance)) {
-        log.error(`Expected ${conditionTypeName} with name %s to contain InstanceElement for the ${ruleTypeName} field`, conditionInstance.elemID.getFullName())
+        log.error(`Expected ${conditionTypeName} with name %s to contain InstanceElement for the ${conditionRuleFieldName} field`, conditionInstance.elemID.getFullName())
         return false
       }
       // Only successfully deployed Instances have Id
@@ -847,6 +848,7 @@ const deployAddCustomApprovalRulesAndConditions = async (
   SBAA_APPROVAL_RULE,
   SBAA_CONDITIONS_MET,
   SBAA_APPROVAL_CONDITION,
+  SBAA_APPROVAL_RULE,
   changes,
   ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
   client,
@@ -861,6 +863,7 @@ const deployAddCustomPriceRulesAndConditions = async (
   CPQ_PRICE_RULE,
   CPQ_CONDITIONS_MET,
   CPQ_PRICE_CONDITION,
+  CPQ_PRICE_CONDITION_RULE_FIELD,
   changes,
   ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP,
   client,

@@ -28,7 +28,7 @@ import {
   API_NAME,
   ArtificialTypes,
   ASSIGNMENT_RULES_METADATA_TYPE,
-  CHANGED_AT_SINGLETON,
+  CHANGED_AT_SINGLETON, CPQ_CONDITIONS_MET, CPQ_PRICE_CONDITION, CPQ_PRICE_CONDITION_RULE_FIELD, CPQ_PRICE_RULE,
   CPQ_QUOTE,
   CUSTOM_METADATA,
   CUSTOM_OBJECT,
@@ -59,6 +59,19 @@ import { SORT_ORDER } from '../src/change_validators/duplicate_rules_sort_order'
 const SBAA_APPROVAL_RULE_TYPE = createCustomObjectType(SBAA_APPROVAL_RULE, {
   fields: {
     [SBAA_CONDITIONS_MET]: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [FIELD_ANNOTATIONS.QUERYABLE]: true,
+        [FIELD_ANNOTATIONS.CREATABLE]: true,
+        [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+      },
+    },
+  },
+})
+
+const CPQ_PRICE_RULE_TYPE = createCustomObjectType(CPQ_PRICE_RULE, {
+  fields: {
+    [CPQ_CONDITIONS_MET]: {
       refType: BuiltinTypes.STRING,
       annotations: {
         [FIELD_ANNOTATIONS.QUERYABLE]: true,
@@ -562,6 +575,22 @@ export const mockTypes = {
       metadataType: 'BusinessProcess',
     },
   }),
+  [CPQ_PRICE_RULE]: CPQ_PRICE_RULE_TYPE,
+  [CPQ_PRICE_CONDITION]: createCustomObjectType(
+    CPQ_PRICE_CONDITION,
+    {
+      fields: {
+        [CPQ_PRICE_CONDITION_RULE_FIELD]: {
+          refType: Types.primitiveDataTypes.Lookup,
+          annotations: {
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
+            [FIELD_ANNOTATIONS.CREATABLE]: true,
+            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          },
+        },
+      },
+    },
+  ),
 }
 
 export const lwcJsResourceContent = "import { LightningElement } from 'lwc';\nexport default class BikeCard extends LightningElement {\n   name = 'Electra X4';\n   description = 'A sweet bike built for comfort.';\n   category = 'Mountain';\n   material = 'Steel';\n   price = '$2,700';\n   pictureUrl = 'https://s3-us-west-1.amazonaws.com/sfdc-demo/ebikes/electrax4.jpg';\n }"

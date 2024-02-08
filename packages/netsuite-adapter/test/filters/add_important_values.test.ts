@@ -15,6 +15,7 @@
 */
 import { CORE_ANNOTATIONS, ElemID, ObjectType, BuiltinTypes } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { addBundleFieldToType } from '../../src/transformer'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 import { getDefaultAdapterConfig } from '../utils'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE } from '../../src/constants'
@@ -59,7 +60,10 @@ describe('add important values filter', () => {
       standardCustomRecordType,
       userCustomRecordType,
       innerType,
-    ]
+    ].map(type => {
+      addBundleFieldToType(type)
+      return type
+    })
 
     defaultOpts = {
       elementsSourceIndex: {} as LazyElementsSourceIndexes,
@@ -122,6 +126,11 @@ describe('add important values filter', () => {
           highlighted: true,
           indexed: true,
         },
+        {
+          value: 'bundle',
+          highlighted: true,
+          indexed: true,
+        },
       ],
     })
     expect(formType.annotations).toEqual({
@@ -138,6 +147,11 @@ describe('add important values filter', () => {
         },
         {
           value: 'inactive',
+          highlighted: true,
+          indexed: true,
+        },
+        {
+          value: 'bundle',
           highlighted: true,
           indexed: true,
         },
@@ -160,6 +174,11 @@ describe('add important values filter', () => {
           highlighted: true,
           indexed: true,
         },
+        {
+          value: 'bundle',
+          highlighted: true,
+          indexed: true,
+        },
       ],
     })
     expect(userCustomRecordType.annotations).toEqual({
@@ -179,6 +198,11 @@ describe('add important values filter', () => {
           highlighted: true,
           indexed: true,
         },
+        {
+          value: 'bundle',
+          highlighted: true,
+          indexed: true,
+        },
       ],
       _self_important_values: [
         {
@@ -193,6 +217,11 @@ describe('add important values filter', () => {
         },
         {
           value: 'isinactive',
+          highlighted: true,
+          indexed: true,
+        },
+        {
+          value: 'bundle',
           highlighted: true,
           indexed: true,
         },

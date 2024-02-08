@@ -40,6 +40,8 @@ import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomi
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from './client/constants'
 import { isStandardTypeName } from './autogen/types'
 import { createCustomRecordTypes } from './custom_records/custom_record_type'
+import { bundleType } from './types/bundle_type'
+import { getFileCabinetTypes } from './types/file_cabinet_types'
 
 const { awu } = collections.asynciterable
 
@@ -53,6 +55,10 @@ const removeDotPrefix = (name: string): string => name.replace(/^\.+/, '_')
 
 export const addApplicationIdToType = (type: ObjectType): void => {
   type.fields[APPLICATION_ID] = new Field(type, APPLICATION_ID, BuiltinTypes.STRING)
+}
+
+export const addBundleFieldToType = (type: ObjectType): void => {
+  type.fields[BUNDLE] = new Field(type, BUNDLE, bundleType().type)
 }
 
 const getFileContentField = (type: ObjectType): Promise<Field | undefined> =>
@@ -204,8 +210,13 @@ export const createElements = async (
 ): Promise<Array<TopLevelElement>> => {
   const { standardTypes, additionalTypes, innerAdditionalTypes } = getMetadataTypes()
 
-  getTopLevelStandardTypes(standardTypes).concat(Object.values(additionalTypes))
+  const topLevelStandardTypes = getTopLevelStandardTypes(standardTypes)
+
+  topLevelStandardTypes.concat(Object.values(additionalTypes))
     .forEach(addApplicationIdToType)
+
+  topLevelStandardTypes.concat(Object.values(getFileCabinetTypes()))
+    .forEach(addBundleFieldToType)
 
   const customizationInfosWithTypes = customizationInfos
     .map(customizationInfo => ({

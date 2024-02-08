@@ -22,7 +22,7 @@ import loadElementsFromFolder from '../src/sdf_folder_loader'
 import { getMetadataTypes, isCustomRecordType, metadataTypesToList } from '../src/types'
 import { createCustomRecordTypes } from '../src/custom_records/custom_record_type'
 import { LocalFilterCreator } from '../src/filter'
-import { addApplicationIdToType } from '../src/transformer'
+import { addApplicationIdToType, addBundleFieldToType } from '../src/transformer'
 import { createEmptyElementsSourceIndexes } from './utils'
 import { fullFetchConfig } from '../src/config/config_creator'
 
@@ -132,6 +132,7 @@ describe('sdf folder loader', () => {
 
     const instance = elements.find(elem => isInstanceElement(elem) && elem.elemID.typeName === ENTITY_CUSTOM_FIELD)
     addApplicationIdToType(standardTypes[ENTITY_CUSTOM_FIELD].type)
+    addBundleFieldToType(standardTypes[ENTITY_CUSTOM_FIELD].type)
     expect(instance).toEqual(new InstanceElement(
       'custentity_my_script_id',
       standardTypes[ENTITY_CUSTOM_FIELD].type,
@@ -183,6 +184,7 @@ describe('sdf folder loader', () => {
 
     const customRecordType = elements.find(elem => isObjectType(elem) && isCustomRecordType(elem))
     addApplicationIdToType(standardTypes[CUSTOM_RECORD_TYPE].type)
+    addBundleFieldToType(standardTypes[CUSTOM_RECORD_TYPE].type)
     expect(customRecordType).toEqual(createCustomRecordTypes(
       [new InstanceElement(
         'customrecord1',

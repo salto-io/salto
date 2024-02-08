@@ -225,7 +225,7 @@ describe('data account specific values filter', () => {
         .find(type => type.annotations.originalType !== undefined)
       expect(referenceType).toBeDefined()
       expect(isReferenceExpression(referenceType?.annotations.originalType)
-        && referenceType.annotations.originalType.elemID).toEqual(fileType.elemID)
+        && referenceType?.annotations.originalType.elemID).toEqual(fileType.elemID)
       expect(dataType.fields.fileField.refType.elemID).toEqual(referenceType?.elemID)
     })
 

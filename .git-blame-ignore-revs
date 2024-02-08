@@ -1,0 +1,6 @@
+# This file contains a list of commit hashes that will be ignored by git blame.
+#
+# For more details see:
+# - https://docs.github.com/en/repositories/working-with-files/using-files/viewing-a-file#ignore-commits-in-the-blame-view
+# - https://git-scm.com/docs/git-blame#Documentation/git-blame.txt---ignore-revs-fileltfilegt
+#

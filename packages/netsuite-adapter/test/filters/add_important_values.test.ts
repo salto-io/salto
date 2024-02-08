@@ -60,10 +60,9 @@ describe('add important values filter', () => {
       standardCustomRecordType,
       userCustomRecordType,
       innerType,
-    ].map(type => {
-      addBundleFieldToType(type)
-      return type
-    })
+    ]
+
+    types.forEach(addBundleFieldToType)
 
     defaultOpts = {
       elementsSourceIndex: {} as LazyElementsSourceIndexes,

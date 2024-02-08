@@ -145,6 +145,7 @@ describe('sdf folder loader', () => {
 
     const fileInstance = elements.find(elem => isInstanceElement(elem) && elem.elemID.typeName === FILE)
     addApplicationIdToType(additionalTypes[FILE])
+    addBundleFieldToType(additionalTypes[FILE])
     expect(fileInstance).toEqual(new InstanceElement(
       naclCase('a/b/c'),
       additionalTypes[FILE],
@@ -160,6 +161,7 @@ describe('sdf folder loader', () => {
 
     const folderInstance = elements.find(elem => isInstanceElement(elem) && elem.elemID.typeName === FOLDER)
     addApplicationIdToType(additionalTypes[FOLDER])
+    addBundleFieldToType(additionalTypes[FOLDER])
     expect(folderInstance).toEqual(new InstanceElement(
       naclCase('a/b'),
       additionalTypes[FOLDER],

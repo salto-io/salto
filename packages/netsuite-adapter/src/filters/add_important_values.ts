@@ -26,6 +26,7 @@ const log = logger(module)
 const { IMPORTANT_VALUES, SELF_IMPORTANT_VALUES } = CORE_ANNOTATIONS
 
 const HIGHLIGHTED_FIELD_NAMES = [NAME_FIELD, 'label', 'description', SCRIPT_ID]
+const HIGHLIGHTED_AND_INDEXED_FIELD_NAMES = [...Object.values(INACTIVE_FIELDS), BUNDLE]
 
 const customRecordInstancesImportantValues = (): ImportantValues => [
   {
@@ -50,11 +51,9 @@ const customRecordInstancesImportantValues = (): ImportantValues => [
   },
 ]
 
-const highlightedAndIndexedFieldNames = [...Object.values(INACTIVE_FIELDS), BUNDLE]
-
 const getImportantValues = (type: ObjectType): ImportantValues => [
   ...toImportantValues(type, HIGHLIGHTED_FIELD_NAMES, { highlighted: true }),
-  ...toImportantValues(type, highlightedAndIndexedFieldNames, { indexed: true, highlighted: true }),
+  ...toImportantValues(type, HIGHLIGHTED_AND_INDEXED_FIELD_NAMES, { indexed: true, highlighted: true }),
 ]
 
 const filterCreator: LocalFilterCreator = ({ config }) => ({

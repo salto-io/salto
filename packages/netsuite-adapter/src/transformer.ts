@@ -41,7 +41,6 @@ import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from './client/constants'
 import { isStandardTypeName } from './autogen/types'
 import { createCustomRecordTypes } from './custom_records/custom_record_type'
 import { bundleType } from './types/bundle_type'
-import { getFileCabinetTypes } from './types/file_cabinet_types'
 
 const { awu } = collections.asynciterable
 
@@ -215,7 +214,7 @@ export const createElements = async (
   topLevelStandardTypes.concat(Object.values(additionalTypes))
     .forEach(addApplicationIdToType)
 
-  topLevelStandardTypes.concat(Object.values(getFileCabinetTypes()))
+  topLevelStandardTypes.concat(Object.values(additionalTypes).filter(isFileCabinetType))
     .forEach(addBundleFieldToType)
 
   const customizationInfosWithTypes = customizationInfos

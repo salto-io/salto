@@ -14,13 +14,12 @@
 * limitations under the License.
 */
 import {
-  isObjectType, Element, isInstanceElement, CORE_ANNOTATIONS,
+  isObjectType, Element, isInstanceElement,
 } from '@salto-io/adapter-api'
 import { transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
 import { metadataType } from '../transformers/transformer'
-import { metadataTypeSync } from './utils'
 
 const { awu } = collections.asynciterable
 
@@ -28,20 +27,15 @@ const TYPE_NAME_TO_FIELD_REMOVALS: Map<string, string[]> = new Map([
   ['Profile', ['tabVisibilities']],
 ])
 
-const hideFieldsFromTypes = (
+const removeFieldsFromTypes = async (
   elements: Element[],
   typeNameToFieldRemovals: Map<string, string[]>
-): void => {
-  elements
+): Promise<void> => {
+  await awu(elements)
     .filter(isObjectType)
-    .forEach(type => {
-      const fieldsToHide = typeNameToFieldRemovals.get(metadataTypeSync(type)) ?? []
-      fieldsToHide.forEach(fieldName => {
-        const field = type.fields[fieldName]
-        if (field !== undefined) {
-          field.annotations[CORE_ANNOTATIONS.HIDDEN] = true
-        }
-      })
+    .forEach(async type => {
+      const fieldsToRemove = typeNameToFieldRemovals.get(await metadataType(type)) ?? []
+      fieldsToRemove.forEach(fieldName => { delete type.fields[fieldName] })
     })
 }
 
@@ -87,7 +81,7 @@ export const makeFilter = (
   name: 'removeFieldsAndValuesFilter',
   onFetch: async (elements: Element[]) => {
     await removeValuesFromInstances(elements, typeNameToFieldRemovals)
-    hideFieldsFromTypes(elements, typeNameToFieldRemovals)
+    await removeFieldsFromTypes(elements, typeNameToFieldRemovals)
   },
 })
 

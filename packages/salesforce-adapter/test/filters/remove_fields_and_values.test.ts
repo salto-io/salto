@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, BuiltinTypes, Element, InstanceElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, Element, InstanceElement } from '@salto-io/adapter-api'
 import { makeFilter } from '../../src/filters/remove_fields_and_values'
 import * as constants from '../../src/constants'
 import { defaultFilterContext } from '../utils'
@@ -90,14 +90,13 @@ describe('remove fields filter', () => {
   })
 
   describe('on fetch', () => {
-    const toBeHidden = (element: Element): boolean => element.annotations[CORE_ANNOTATIONS.HIDDEN] === true
     beforeEach(() => filter.onFetch(testElements))
 
-    it('should hide field', () => {
+    it('should remove field', () => {
       const testType = testElements[0] as ObjectType
       expect(testType.fields.existing).toBeDefined()
       expect(testType.fields.existing.isEqual(mockType.fields.existing)).toBe(true)
-      expect(testType.fields.remove).toSatisfy(toBeHidden)
+      expect(testType.fields.remove).toBeUndefined()
     })
 
     it('should not remove field when the ID is not of the right object', () => {
@@ -108,8 +107,8 @@ describe('remove fields filter', () => {
 
     it('should remove multiple fields from type and corresponding instance', () => {
       const testType = testElements[1] as ObjectType
-      expect(testType.fields.removeAlsoFromInstance).toSatisfy(toBeHidden)
-      expect(testType.fields.removeAlsoFromInstance2).toSatisfy(toBeHidden)
+      expect(testType.fields.removeAlsoFromInstance).toBeUndefined()
+      expect(testType.fields.removeAlsoFromInstance2).toBeUndefined()
 
       const testInstance = testElements[3] as InstanceElement
       expect(testInstance.value.existing).toEqual(mockInstance.value.existing)
@@ -124,7 +123,7 @@ describe('remove fields filter', () => {
       const testNestedType = testElements[2] as ObjectType
       expect(testNestedType.fields.existing).toBeDefined()
       expect(testNestedType.fields.existing.isEqual(mockNestedType.fields.existing)).toBe(true)
-      expect(testNestedType.fields.remove).toSatisfy(toBeHidden)
+      expect(testNestedType.fields.remove).toBeUndefined()
 
       const testInstance = testElements[3] as InstanceElement
       expect(testInstance.value.withNested).toBeDefined()

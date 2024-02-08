@@ -30,12 +30,16 @@ describe('client_pagination', () => {
   ])('traverseRequests with function %s', (traverseRequestsFunc, funcName) => {
     const client: MockInterface<HTTPReadClientInterface> = {
       get: mockFunction<HTTPReadClientInterface['get']>(),
+      head: mockFunction<HTTPReadClientInterface['head']>(),
+      options: mockFunction<HTTPReadClientInterface['options']>(),
       getPageSize: mockFunction<HTTPReadClientInterface['getPageSize']>(),
     }
     const paginationFunc = mockFunction<PaginationFunc>()
     const customEntryExtractor = mockFunction<PageEntriesExtractor>()
     beforeEach(() => {
       client.get.mockReset()
+      client.head.mockReset()
+      client.options.mockReset()
       client.getPageSize.mockReset()
       paginationFunc.mockReset()
       customEntryExtractor.mockReset()
@@ -858,10 +862,14 @@ describe('client_pagination', () => {
   describe('getWithCursorPagination', () => {
     const client: MockInterface<HTTPReadClientInterface> = {
       get: mockFunction<HTTPReadClientInterface['get']>(),
+      head: mockFunction<HTTPReadClientInterface['head']>(),
+      options: mockFunction<HTTPReadClientInterface['options']>(),
       getPageSize: mockFunction<HTTPReadClientInterface['getPageSize']>(),
     }
     beforeEach(() => {
       client.get.mockReset()
+      client.head.mockReset()
+      client.options.mockReset()
       client.getPageSize.mockReset()
     })
 
@@ -1102,6 +1110,8 @@ describe('client_pagination', () => {
     beforeEach(() => {
       client = {
         get: mockFunction<HTTPReadClientInterface['get']>(),
+        head: mockFunction<HTTPReadClientInterface['head']>(),
+        options: mockFunction<HTTPReadClientInterface['options']>(),
         getPageSize: mockFunction<HTTPReadClientInterface['getPageSize']>().mockReturnValueOnce(3),
       }
     })

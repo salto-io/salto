@@ -20,6 +20,7 @@ import { logger } from '@salto-io/logging'
 import { HTTPReadClientInterface } from '../http_client'
 import { traverseRequestsAsync } from './pagination_async'
 import { GetAllItemsFunc, PageEntriesExtractor, PaginationFunc, PaginationFuncCreator, Paginator, computeRecursiveArgs } from './common'
+import { defaultPathChecker } from '../../fetch/request/pagination'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -102,9 +103,8 @@ export const traverseRequests: (
  */
 export const getWithItemOffsetPagination = ({
   firstIndex,
-  pageSizeArgName
-  ,
-} : {
+  pageSizeArgName,
+}: {
   firstIndex: number
   pageSizeArgName: string | undefined
 }): PaginationFunc => {
@@ -206,18 +206,6 @@ export const getWithOffsetAndLimit = (): PaginationFunc => {
 
   return getNextPage
 }
-
-/**
- * Path checker for ensuring the next url's path is under the same endpoint as the one configured.
- * Can be customized when the next url returned has different formatting, e.g. has a longer prefix
- * (such as /api/v1/product vs /product).
- * @return true if the configured endpoint can be used to get the next path, false otherwise.
- */
-export type PathCheckerFunc = (endpointPath: string, nextPath: string) => boolean
-export const defaultPathChecker: PathCheckerFunc = (
-  endpointPath,
-  nextPath
-) => (endpointPath === nextPath)
 
 /**
  * Make paginated requests using the specified paginationField, assuming the next page is specified

@@ -20,8 +20,8 @@ import { mockFunction } from '@salto-io/test-utils'
 import { getAllInstances } from '../../../src/elements/swagger'
 import { returnFullEntry } from '../../../src/elements/field_finder'
 import { HTTPError, Paginator } from '../../../src/client'
-import { simpleGetArgs } from '../../../src/elements/request_parameters'
-import { createElementQuery } from '../../../src/elements/query'
+import { simpleGetArgs } from '../../../src/fetch/resource/request_parameters'
+import { createElementQuery } from '../../../src/fetch/query/query'
 
 const { toAsyncIterable } = collections.asynciterable
 

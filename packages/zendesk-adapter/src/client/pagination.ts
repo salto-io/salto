@@ -13,11 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
 
 const { getWithCursorPagination } = clientUtils
 
-const pathChecker: clientUtils.PathCheckerFunc = (current, next) => (
+const pathChecker: fetchUtils.request.pagination.PathCheckerFunc = (current, next) => (
   next === `${current}.json` || next === `${current}`
 )
 export const paginate: clientUtils.PaginationFuncCreator = () => (

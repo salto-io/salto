@@ -30,7 +30,7 @@ import {
 } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { elements as elementsUtils } from '@salto-io/adapter-components'
+import { elements as elementsUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
 import ZendeskClient from '../../client/client'
 import { API_DEFINITIONS_CONFIG, FilterContext } from '../../config'
 import { BRAND_TYPE_NAME, CATEGORY_ORDER_TYPE_NAME, SECTION_ORDER_TYPE_NAME, ARTICLE_ORDER_TYPE_NAME, CATEGORY_TYPE_NAME, ZENDESK, CATEGORIES_FIELD, SECTION_TYPE_NAME, SECTIONS_FIELD, ARTICLE_TYPE_NAME, ARTICLES_FIELD } from '../../constants'
@@ -38,7 +38,7 @@ import { getZendeskError } from '../../errors'
 
 
 const { isDefined } = lowerDashValues
-const { createUrl } = elementsUtils
+const { createUrl } = fetchUtils.resource
 const { awu } = collections.asynciterable
 
 export const GUIDE_ORDER_TYPES = [

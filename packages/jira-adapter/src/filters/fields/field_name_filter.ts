@@ -67,11 +67,11 @@ const getInstanceName = (
     return defaultName
   }
 
-  const serviceIds = elementUtils.createServiceIds(
-    instance.value,
-    serviceIdField,
-    instance.refType.elemID
-  )
+  const serviceIds = elementUtils.createServiceIds({
+    entry: instance.value,
+    serviceIdFields: [serviceIdField],
+    typeID: instance.refType.elemID,
+  })
 
   return getElemIdFunc(JIRA, serviceIds, defaultName).name
 }

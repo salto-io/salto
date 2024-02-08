@@ -46,7 +46,7 @@ import {
   TypeMap,
   Value,
 } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements, createSchemeGuard, detailedCompare, getParents } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, createSchemeGuard, detailedCompare, getParents, setAdditionalPropertiesAnnotation } from '@salto-io/adapter-utils'
 import { FileProperties } from '@salto-io/jsforce-types'
 import { chunks, collections, types, values } from '@salto-io/lowerdash'
 import Joi from 'joi'
@@ -355,10 +355,11 @@ export const extractFullNamesFromValueList = (instanceValues: { [INSTANCE_FULL_N
 
 export const buildAnnotationsObjectType = (annotationTypes: TypeMap): ObjectType => {
   const annotationTypesElemID = new ElemID(SALESFORCE, 'AnnotationType')
-  return new ObjectType({ elemID: annotationTypesElemID,
+  const annotationObjType = new ObjectType({ elemID: annotationTypesElemID,
     fields: Object.assign({}, ...Object.entries(annotationTypes)
       .concat(Object.entries(CoreAnnotationTypes))
       .map(([name, type]) => ({ [name]: { refType: createRefToElmWithValue(type) } }))) })
+  return setAdditionalPropertiesAnnotation(annotationObjType, false)
 }
 
 export const namePartsFromApiName = (elementApiName: string): string[] => (

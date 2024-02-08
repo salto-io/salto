@@ -18,8 +18,9 @@ import { InstanceElement, isObjectType, isInstanceElement, ReferenceExpression, 
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { StandaloneFieldConfigType, TransformationConfig, TransformationDefaultConfig } from '../../config'
-import { generateType, toNestedTypeName } from './type_elements'
+import { generateType } from './type_elements'
 import { toInstance } from './instance_elements'
+import { toNestedTypeName } from '../../fetch/element'
 
 const log = logger(module)
 const { awu } = collections.asynciterable

@@ -16,8 +16,8 @@
 import { Change, CORE_ANNOTATIONS, Element, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { filter } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter_utils'
-import { createUrl } from '../elements'
 import { AdapterApiConfig } from '../config'
+import { createUrl } from '../fetch/resource'
 
 
 export const addUrlToInstance = <TContext extends { apiDefinitions: AdapterApiConfig }>(

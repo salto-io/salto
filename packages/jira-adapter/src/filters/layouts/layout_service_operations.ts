@@ -154,7 +154,7 @@ export const getLayout = async ({
       issueLayoutConfig: fromLayoutConfigRespToLayoutConfig(response.data.issueLayoutConfiguration),
     }
     const name = `${instance.value.name}_${issueLayoutResult.name}`
-    const serviceIds = adapterElements.createServiceIds(value, 'id', layoutType.elemID)
+    const serviceIds = adapterElements.createServiceIds({ entry: value, serviceIdFields: ['id'], typeID: layoutType.elemID })
     const instanceName = getElemIdFunc ? getElemIdFunc(JIRA, serviceIds, naclCase(name)).name
       : naclCase(name)
     return toBasicInstance({

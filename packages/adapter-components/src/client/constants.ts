@@ -14,7 +14,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ClientRetryConfig, ClientTimeoutConfig } from './config'
+import { ClientRetryConfig, ClientTimeoutConfig } from '../definitions/user/client_config'
 
 export const DEFAULT_RETRY_OPTS: Required<ClientRetryConfig> = {
   maxAttempts: 5, // try 5 times

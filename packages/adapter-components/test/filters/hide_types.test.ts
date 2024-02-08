@@ -17,7 +17,7 @@ import { ObjectType, ElemID, isObjectType, CORE_ANNOTATIONS } from '@salto-io/ad
 import { FilterWith } from '../../src/filter_utils'
 import { Paginator } from '../../src/client'
 import { hideTypesFilterCreator } from '../../src/filters/hide_types'
-import { createMockQuery } from '../../src/elements/query'
+import { createMockQuery } from '../../src/fetch/query'
 
 describe('hide types filter', () => {
   type FilterType = FilterWith<'onFetch'>

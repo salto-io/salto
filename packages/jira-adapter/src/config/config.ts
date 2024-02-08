@@ -16,17 +16,18 @@
 import _ from 'lodash'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
+import { config as configUtils, definitions, elements } from '@salto-io/adapter-components'
 import { JIRA, SCRIPT_RUNNER_API_DEFINITIONS, JSM_DUCKTYPE_API_DEFINITIONS, FETCH_CONFIG } from '../constants'
 import { getProductSettings } from '../product_settings'
 import { JiraDuckTypeConfig } from './api_config'
 
-const { createUserFetchConfigType,
+const {
   createSwaggerAdapterApiConfigType,
   createDucktypeAdapterApiConfigType,
-  defaultMissingUserFallbackField } = configUtils
+  defaultMissingUserFallbackField,
+} = configUtils
 
-type JiraClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
+type JiraClientConfig = definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>
   & {
     fieldConfigurationItemsDeploymentLimit: number
     usePrivateAPI: boolean
@@ -50,17 +51,17 @@ type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
   typesToFallbackToInternalId: string[]
 }
 
-type JiraDeployConfig = configUtils.UserDeployConfig & configUtils.DefaultMissingUserFallbackConfig & {
+type JiraDeployConfig = definitions.UserDeployConfig & definitions.DefaultMissingUserFallbackConfig & {
   forceDelete: boolean
   taskMaxRetries: number
   taskRetryDelay: number
 }
 
-type JiraFetchFilters = configUtils.DefaultFetchCriteria & {
+type JiraFetchFilters = definitions.DefaultFetchCriteria & {
   type?: string
 }
 
-type JiraFetchConfig = configUtils.UserFetchConfig<JiraFetchFilters> & {
+type JiraFetchConfig = definitions.UserFetchConfig<JiraFetchFilters> & {
   fallbackToInternalId?: boolean
   addTypeToFieldName?: boolean
   convertUsersIds?: boolean
@@ -180,7 +181,7 @@ export const getDefaultConfig = ({ isDataCenter }: { isDataCenter: boolean }): J
 })
 
 const createClientConfigType = (): ObjectType => {
-  const configType = clientUtils.createClientConfigType(JIRA)
+  const configType = definitions.createClientConfigType(JIRA)
   configType.fields.FieldConfigurationItemsDeploymentLimit = new Field(
     configType, 'FieldConfigurationItemsDeploymentLimit', BuiltinTypes.NUMBER
   )
@@ -307,7 +308,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
-const jiraDeployConfigType = configUtils.createUserDeployConfigType(
+const jiraDeployConfigType = definitions.createUserDeployConfigType(
   JIRA,
   changeValidatorConfigType,
   {
@@ -327,9 +328,9 @@ const fetchFiltersType = createMatchingObjectType<JiraFetchFilters>({
   },
 })
 
-const fetchConfigType = createUserFetchConfigType(
-  JIRA,
-  {
+const fetchConfigType = definitions.createUserFetchConfigType({
+  adapterName: JIRA,
+  additionalFields: {
     fallbackToInternalId: { refType: BuiltinTypes.BOOLEAN },
     addTypeToFieldName: { refType: BuiltinTypes.BOOLEAN },
     showUserDisplayNames: { refType: BuiltinTypes.BOOLEAN },
@@ -345,8 +346,9 @@ const fetchConfigType = createUserFetchConfigType(
     enableIssueLayouts: { refType: BuiltinTypes.BOOLEAN },
     enableNewWorkflowAPI: { refType: BuiltinTypes.BOOLEAN },
   },
-  fetchFiltersType,
-)
+  fetchCriteriaType: fetchFiltersType,
+  omitElemID: true,
+})
 
 const maskingConfigType = createMatchingObjectType<Partial<MaskingConfig>>({
   elemID: new ElemID(JIRA, 'MaskingConfig'),

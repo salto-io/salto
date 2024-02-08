@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, definitions } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { handleDeploymentErrors } from '../deployment/deployment_error_handling'
 import { JIRA } from '../constants'
@@ -30,21 +30,21 @@ const {
 } = clientUtils
 
 // The below default values are taken from Jira and were not verified for ScriptRunner
-const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
+const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<definitions.ClientRateLimitConfig> = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
   get: 60,
   deploy: 2,
 }
 
-const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
+const DEFAULT_PAGE_SIZE: Required<definitions.ClientPageSizeConfig> = {
   get: 1000,
 }
 
 export default class ScriptRunnerClient extends clientUtils.AdapterHTTPClient<
-  ScriptRunnerCredentials, clientUtils.ClientRateLimitConfig
+  ScriptRunnerCredentials, definitions.ClientRateLimitConfig
 > {
   constructor(
-    clientOpts: clientUtils.ClientOpts<ScriptRunnerCredentials, clientUtils.ClientRateLimitConfig>
+    clientOpts: clientUtils.ClientOpts<ScriptRunnerCredentials, definitions.ClientRateLimitConfig>
       & { isDataCenter: boolean; jiraClient: JiraClient},
   ) {
     super(

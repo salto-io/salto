@@ -18,7 +18,7 @@ import {
   FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType,
   DeployModifiers, FetchOptions,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, elements as elementUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import SAPClient from './client/client'
@@ -100,7 +100,7 @@ export default class SAPAdapter implements AdapterOperations {
   private async getInstances(
     allTypes: TypeMap,
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>,
-  ): Promise<elementUtils.FetchElements<InstanceElement[]>> {
+  ): Promise<fetchUtils.FetchElements<InstanceElement[]>> {
     return getAllInstances({
       paginator: this.paginator,
       objectTypes: _.pickBy(allTypes, isObjectType),

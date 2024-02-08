@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { elements } from '@salto-io/adapter-components'
+import { fetch as fetchUtils } from '@salto-io/adapter-components'
 import { AdditionChange, InstanceElement, isAdditionChange, isReferenceExpression, ModificationChange, ElemID } from '@salto-io/adapter-api'
 import { ZendeskApiConfig } from '../../config'
 
@@ -40,7 +40,7 @@ export const getChildAndParentTypeNames = (config: ZendeskApiConfig): ChildParen
   return parentTypes.flatMap(parentType => {
     const fields = config.types[parentType].transformation?.standaloneFields ?? []
     return fields.map(field => {
-      const fullChildTypeName = elements.ducktype.toNestedTypeName(parentType, field.fieldName)
+      const fullChildTypeName = fetchUtils.element.toNestedTypeName(parentType, field.fieldName)
       const childTypeName = Object.entries(config.types).find(([_typeName, typeConfig]) =>
         typeConfig.transformation?.sourceTypeName === fullChildTypeName)?.[0] ?? fullChildTypeName
       return { parent: parentType, child: childTypeName, fieldName: field.fieldName }

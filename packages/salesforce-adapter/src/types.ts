@@ -26,7 +26,7 @@ import {
   ObjectType,
   importantValueType,
 } from '@salto-io/adapter-api'
-import { config as configUtils } from '@salto-io/adapter-components'
+import { definitions } from '@salto-io/adapter-components'
 import { types } from '@salto-io/lowerdash'
 import { SUPPORTED_METADATA_TYPES } from './fetch_profile/metadata_types'
 import * as constants from './constants'
@@ -42,8 +42,7 @@ import {
   WORKFLOW_METADATA_TYPE,
 } from './constants'
 
-type UserDeployConfig = configUtils.UserDeployConfig
-const { createUserDeployConfigType } = configUtils
+type UserDeployConfig = definitions.UserDeployConfig
 
 export const CLIENT_CONFIG = 'client'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
@@ -896,7 +895,7 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
       refType: clientConfigType,
     },
     [DEPLOY_CONFIG]: {
-      refType: createUserDeployConfigType(SALESFORCE, changeValidatorConfigType),
+      refType: definitions.createUserDeployConfigType(SALESFORCE, changeValidatorConfigType),
     },
   },
   annotations: {

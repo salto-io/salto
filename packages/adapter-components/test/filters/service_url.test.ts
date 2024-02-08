@@ -17,7 +17,7 @@ import { ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, toChange, getCha
 import { FilterWith } from '../../src/filter_utils'
 import { Paginator } from '../../src/client'
 import { serviceUrlFilterCreator } from '../../src/filters/service_url'
-import { createMockQuery } from '../../src/elements/query'
+import { createMockQuery } from '../../src/fetch/query'
 
 describe('service url filter', () => {
   type FilterType = FilterWith<'onFetch' | 'onDeploy'>

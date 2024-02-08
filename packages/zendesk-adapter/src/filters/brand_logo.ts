@@ -20,7 +20,7 @@ import {
   isAdditionOrModificationChange, isSaltoError, isInstanceElement, isStaticFile, ObjectType,
   ReferenceExpression, SaltoElementError, SaltoError, StaticFile,
 } from '@salto-io/adapter-api'
-import { elements as elementsUtils } from '@salto-io/adapter-components'
+import { elements as elementsUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { naclCase, safeJsonStringify, getParent, normalizeFilePathPart, pathNaclCase, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import FormData from 'form-data'
@@ -102,7 +102,7 @@ const getBrandLogo = async ({ client, brand }: {
   if (logoValues === undefined) {
     return undefined
   }
-  const name = elementsUtils.ducktype.toNestedTypeName(
+  const name = fetchUtils.element.toNestedTypeName(
     brand.value.name, logoValues.file_name
   )
   const pathName = pathNaclCase(naclCase(name))

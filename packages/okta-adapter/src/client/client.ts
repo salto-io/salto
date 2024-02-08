@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, definitions } from '@salto-io/adapter-components'
 import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import axios from 'axios'
@@ -33,7 +33,7 @@ const {
 } = clientUtils
 const log = logger(module)
 
-const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
+const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<definitions.ClientRateLimitConfig> = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
   // the smallest concurrent rate limit is 15 (by plan)
   get: 15,
@@ -47,7 +47,7 @@ export const DEFAULT_RATE_LIMIT_BUFFER = 6
 const DEFAULT_MAX_REQUESTS_PER_MINUTE = 600
 export const UNLIMITED_MAX_REQUESTS_PER_MINUTE = -1
 
-const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
+const DEFAULT_PAGE_SIZE: Required<definitions.ClientPageSizeConfig> = {
   get: 50,
 }
 
@@ -143,7 +143,7 @@ export const updateRateLimits = (
 }
 
 export default class OktaClient extends clientUtils.AdapterHTTPClient<
-  Credentials, clientUtils.ClientRateLimitConfig
+  Credentials, definitions.ClientRateLimitConfig
 > {
   private readonly rateLimitBuffer: number
 
@@ -262,7 +262,7 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
       : undefined
   }
 
-  @throttle<clientUtils.ClientRateLimitConfig>({ bucketName: 'get', keys: ['url'] })
+  @throttle<definitions.ClientRateLimitConfig>({ bucketName: 'get', keys: ['url'] })
   @logDecorator(['url'])
   // We use this function without client instance because we don't need it
   // but we want to take advantage of the client's capabilities.

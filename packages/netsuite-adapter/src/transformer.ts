@@ -118,7 +118,7 @@ export const createInstanceElement = async (
       // We sometimes get empty strings that we want to filter out
       return undefined
     }
-    if (!isPrimitiveType(fieldType) || !isPrimitiveValue(value)) {
+    if (!isPrimitiveType(fieldType) || !isPrimitiveValue(value) || fieldType.primitive === PrimitiveTypes.UNKNOWN) {
       if (value === XML_TRUE_VALUE) return true
       if (value === XML_FALSE_VALUE) return false
       return value
@@ -129,8 +129,6 @@ export const createInstanceElement = async (
         return Number(value)
       case PrimitiveTypes.BOOLEAN:
         return value === XML_TRUE_VALUE
-      case PrimitiveTypes.UNKNOWN:
-        return value
       default:
         return String(value)
     }

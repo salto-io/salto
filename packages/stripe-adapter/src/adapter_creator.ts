@@ -17,7 +17,7 @@ import { logger } from '@salto-io/logging'
 import {
   InstanceElement, Adapter, ElemID,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, definitions } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import StripeClient from './client/client'
 import StripeAdapter from './adapter'
@@ -29,7 +29,8 @@ import { configType, StripeConfig, CLIENT_CONFIG, API_DEFINITIONS_CONFIG,
 import { createConnection } from './client/connection'
 
 const log = logger(module)
-const { validateCredentials, validateClientConfig } = clientUtils
+const { validateCredentials } = clientUtils
+const { validateClientConfig } = definitions
 const { validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } = configUtils
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => ({

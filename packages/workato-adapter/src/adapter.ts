@@ -17,7 +17,7 @@ import {
   FetchResult, AdapterOperations, DeployResult, PostFetchOptions, DeployModifiers,
   FetchOptions, ElemIdGetter,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, elements as elementUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import WorkatoClient from './client/client'
@@ -36,8 +36,9 @@ import { paginate } from './client/pagination'
 
 const log = logger(module)
 const { createPaginator } = clientUtils
-const { returnFullEntry, simpleGetArgs } = elementUtils
+const { returnFullEntry } = elementUtils
 const { getAllElements } = elementUtils.ducktype
+const { simpleGetArgs } = fetchUtils.resource
 
 export const DEFAULT_FILTERS = [
   addRootFolderFilter,

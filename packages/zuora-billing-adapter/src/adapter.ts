@@ -18,7 +18,7 @@ import {
   FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType,
   DeployModifiers, Element, FetchOptions,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, elements as elementUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import ZuoraClient from './client/client'
@@ -174,7 +174,7 @@ export default class ZuoraAdapter implements AdapterOperations {
   private async getInstances(
     allTypes: TypeMap,
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>,
-  ): Promise<elementUtils.FetchElements<InstanceElement[]>> {
+  ): Promise<fetchUtils.FetchElements<InstanceElement[]>> {
     // standard objects are not included in the swagger and need special handling - done in a filter
     const standardObjectTypeName = getStandardObjectTypeName(this.apiDefinitions(parsedConfigs))
 

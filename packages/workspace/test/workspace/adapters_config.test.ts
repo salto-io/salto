@@ -38,35 +38,37 @@ describe('adapters config', () => {
 
   const configType = new ObjectType({ elemID: new ElemID(SALESFORCE, ElemID.CONFIG_NAME) })
 
+  const mockNaclFilesSourceGetResult = new InstanceElement(
+    ElemID.CONFIG_NAME,
+    new ObjectType({ elemID: new ElemID(SALESFORCE, ElemID.CONFIG_NAME) }),
+    {
+      metadataTypesSkippedList: [
+        'Report',
+        'ReportType',
+        'ReportFolder',
+        'Dashboard',
+        'DashboardFolder',
+        'EmailTemplate',
+      ],
+      instancesRegexSkippedList: [
+        '^ConnectedApp.CPQIntegrationUserApp$',
+      ],
+      maxItemsInRetrieveRequest: 2500,
+      client: {
+        maxConcurrentApiRequests: {
+          retrieve: 3,
+        },
+      },
+    }
+  )
+
   beforeEach(async () => {
     jest.resetAllMocks()
     mockNaclFilesSource = createMockNaclFileSource([])
 
     mockNaclFilesSource.has.mockResolvedValue(true)
 
-    mockNaclFilesSource.get.mockResolvedValue(new InstanceElement(
-      ElemID.CONFIG_NAME,
-      new ObjectType({ elemID: new ElemID(SALESFORCE, ElemID.CONFIG_NAME) }),
-      {
-        metadataTypesSkippedList: [
-          'Report',
-          'ReportType',
-          'ReportFolder',
-          'Dashboard',
-          'DashboardFolder',
-          'EmailTemplate',
-        ],
-        instancesRegexSkippedList: [
-          '^ConnectedApp.CPQIntegrationUserApp$',
-        ],
-        maxItemsInRetrieveRequest: 2500,
-        client: {
-          maxConcurrentApiRequests: {
-            retrieve: 3,
-          },
-        },
-      }
-    ))
+    mockNaclFilesSource.get.mockResolvedValue(mockNaclFilesSourceGetResult)
     mockNaclFilesSource.getElementNaclFiles.mockResolvedValue([])
     mockNaclFilesSource.getErrors.mockResolvedValue({
       hasErrors: () => false,
@@ -201,6 +203,7 @@ describe('adapters config', () => {
   })
 
   it('should remove undefined values when setting the configuration', async () => {
+    mockNaclFilesSource.get.mockResolvedValueOnce(mockNaclFilesSourceGetResult).mockResolvedValue(undefined)
     await configSource.setAdapter('salesforce', 'salesforce', new InstanceElement(
       ElemID.CONFIG_NAME,
       new ObjectType({
@@ -231,6 +234,7 @@ describe('adapters config', () => {
     })
 
     it('update a none overridden field should not throw an exception', async () => {
+      mockNaclFilesSource.get.mockResolvedValueOnce(mockNaclFilesSourceGetResult).mockResolvedValue(undefined)
       const conf = await configSource.getAdapter(SALESFORCE) as InstanceElement
       conf.value.other = 3
       await configSource.setAdapter(SALESFORCE, SALESFORCE, conf)

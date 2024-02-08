@@ -26,10 +26,11 @@ import {
   SchemaOrReference, SWAGGER_ARRAY, SWAGGER_OBJECT, isArraySchemaObject, SchemasAndRefs,
 } from './swagger_parser'
 import { fixTypes, defineAdditionalTypes, getFieldTypeOverridesTypes } from './type_config_override'
-import { filterTypes, markServiceIdField } from '../../type_elements'
+import { filterTypes } from '../../type_elements'
 import { LoadedSwagger } from '../swagger'
 import { getConfigWithDefault } from '../../../config/shared'
 import { getDependencies } from '../../element_getter'
+import { markServiceIdField } from '../../../fetch/element/type_utils'
 
 const { isDefined } = lowerdashValues
 const { isArrayOfType } = lowerdashTypes

@@ -24,6 +24,8 @@ describe('dataCenter settings', () => {
     beforeEach(() => {
       apiConnection = {
         get: mockFunction<client.APIConnection['get']>(),
+        head: mockFunction<client.APIConnection['head']>(),
+        options: mockFunction<client.APIConnection['options']>(),
         post: mockFunction<client.APIConnection['post']>(),
         put: mockFunction<client.APIConnection['put']>(),
         delete: mockFunction<client.APIConnection['delete']>(),

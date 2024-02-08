@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ClientBaseConfig, ClientRateLimitConfig, ClientRetryConfig, ClientPageSizeConfig } from './config'
+import { ClientBaseConfig, ClientRateLimitConfig, ClientRetryConfig, ClientPageSizeConfig } from '../definitions/user/client_config'
 import { APIConnection } from './http_connection'
 import { BottleneckBuckets, createRateLimitersFromConfig } from './rate_limit'
 

@@ -20,7 +20,7 @@ import {
   InstanceElement,
   isInstanceElement,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, definitions } from '@salto-io/adapter-components'
 import { resolvePath, setPath } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
@@ -111,7 +111,7 @@ const noRelevantUsers = (
     // If the user does not want to resolve user IDs (fetch all users),
     // we will replace them to the deployer's ID if requested.
     const doNotResolveIdsAndDeployerFallback = resolveUserIDs === false
-      && defaultMissingUserFallback === configUtils.DEPLOYER_FALLBACK_VALUE
+      && defaultMissingUserFallback === definitions.DEPLOYER_FALLBACK_VALUE
     return !doNotResolveIdsAndDeployerFallback
   }
   return false

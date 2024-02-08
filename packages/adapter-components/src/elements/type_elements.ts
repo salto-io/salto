@@ -15,14 +15,15 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { FieldDefinition, Field, CORE_ANNOTATIONS, TypeElement, isObjectType, isContainerType,
-  getDeepInnerType, ObjectType, BuiltinTypes, createRestriction, createRefToElmWithValue, PrimitiveType, LIST_ID_PREFIX, GENERIC_ID_PREFIX, GENERIC_ID_SUFFIX, MAP_ID_PREFIX, ListType, MapType, isEqualElements, isPrimitiveType, PrimitiveTypes, isTypeReference } from '@salto-io/adapter-api'
+import { Field, CORE_ANNOTATIONS, TypeElement, isObjectType, isContainerType,
+  getDeepInnerType, ObjectType, BuiltinTypes, createRestriction, createRefToElmWithValue, PrimitiveType, ListType, MapType, isEqualElements } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values, collections } from '@salto-io/lowerdash'
 import { getSubtypes } from '@salto-io/adapter-utils'
 import { FieldToHideType, FieldTypeOverrideType, getTypeTransformationConfig } from '../config/transformation'
 import { SUBTYPES_PATH, TYPES_PATH } from './constants'
 import { TypeConfig, TypeDefaultsConfig } from '../config/shared'
+import { getContainerForType } from '../fetch/element/type_utils'
 
 const { awu } = collections.asynciterable
 
@@ -66,44 +67,6 @@ export const hideFields = (
   })
 }
 
-/**
- * Change field type to be service_id if it match the specified configuration.
- */
-export const markServiceIdField = (
-  fieldName: string,
-  typeFields: Record<string, FieldDefinition | Field>,
-  typeName: string,
-): void => {
-  const field = Object.prototype.hasOwnProperty.call(typeFields, fieldName)
-    ? typeFields[fieldName]
-    : undefined
-  if (field === undefined) {
-    return
-  }
-  log.debug('Mark field %s.%s as service_id', typeName, fieldName)
-  const fieldType = isTypeReference(field.refType)
-    ? field.refType.type
-    : field.refType
-
-  if (!isPrimitiveType(fieldType)) {
-    log.warn('field %s.%s type is not primitive, cannot mark it as service_id', typeName, fieldName)
-    return
-  }
-  switch (fieldType.primitive) {
-    case (PrimitiveTypes.NUMBER):
-      field.refType = createRefToElmWithValue(BuiltinTypes.SERVICE_ID_NUMBER)
-      return
-    case (PrimitiveTypes.STRING):
-      field.refType = createRefToElmWithValue(BuiltinTypes.SERVICE_ID)
-      return
-    default:
-      log.warn(
-        'Failed to mark field %s.%s as service id, since its primitive type id (%d) is not supported',
-        typeName, fieldName, fieldType.primitive
-      )
-  }
-}
-
 export const filterTypes = async (
   adapterName: string,
   allTypes: TypeElement[],
@@ -135,42 +98,6 @@ export const filterTypes = async (
     .forEach(t => { t.path = [adapterName, TYPES_PATH, SUBTYPES_PATH, t.elemID.name] })
 
   return [...relevantTypes, ...subtypes]
-}
-
-/**
- * Helper function for creating the right type element from the type name specified in the config.
- * This can be called recursively to generate the right type from existing types, potentially
- * wrapped in containers - such as List<Map<List<someTypeName>>>
- */
-export const getContainerForType = (typeName: string): {
-  container: 'list' | 'map'
-  typeNameSubstring: string
-} | undefined => {
-  if (
-    typeName.toLowerCase().startsWith(`${LIST_ID_PREFIX.toLowerCase()}${GENERIC_ID_PREFIX}`)
-    && typeName.endsWith(GENERIC_ID_SUFFIX)
-  ) {
-    return {
-      container: 'list',
-      typeNameSubstring: typeName.substring(
-        LIST_ID_PREFIX.length + GENERIC_ID_PREFIX.length,
-        typeName.length - GENERIC_ID_SUFFIX.length,
-      ),
-    }
-  }
-  if (
-    typeName.toLowerCase().startsWith(MAP_ID_PREFIX.toLowerCase())
-    && typeName.endsWith(GENERIC_ID_SUFFIX)
-  ) {
-    return {
-      container: 'map',
-      typeNameSubstring: typeName.substring(
-        MAP_ID_PREFIX.length + GENERIC_ID_PREFIX.length,
-        typeName.length - GENERIC_ID_SUFFIX.length,
-      ),
-    }
-  }
-  return undefined
 }
 
 export const fixFieldTypes = (

@@ -15,4 +15,5 @@
 */
 
 export * from './utils'
-export { DefaultWithCustomizations, ArgsWithCustomizer, OptionsWithDefault } from './shared'
+export { DefaultWithCustomizations, ArgsWithCustomizer, OptionsWithDefault, DATA_FIELD_ENTIRE_OBJECT, NameMappingOptions, ContextParams } from './shared'
+export * from './requests'

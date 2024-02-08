@@ -85,7 +85,7 @@ export const queryWithDefault = <T>(
   )
   return {
     query,
-    allKeys: () => Object.keys(defsWithDefault.customizations),
+    allKeys: () => Object.keys(defsWithDefault.customizations ?? {}),
     getAll: () => _.pickBy(
       _.mapValues(defsWithDefault.customizations, (_def, k) => query(k)),
       lowerdashValues.isDefined,
@@ -109,10 +109,10 @@ export function mergeWithDefault<T>(
   )
 }
 
-export const mergeNestedWithDefault = <T, TNested, K extends string>(
+export const getNestedWithDefault = <T, TNested, K extends string>(
   defsWithDefault: DefaultWithCustomizations<T, K>,
   path: string
-): DefaultWithCustomizations<TNested, K> => mergeWithDefault({
+): DefaultWithCustomizations<TNested, K> => ({
   default: _.get(defsWithDefault.default, path),
   customizations: _.mapValues(
     defsWithDefault.customizations,

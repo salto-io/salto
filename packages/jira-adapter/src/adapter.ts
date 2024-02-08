@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, ProgressReporter, FixElementsFunc, isInstanceElement } from '@salto-io/adapter-api'
-import { config as configUtils, elements as elementUtils, client as clientUtils, combineElementFixers } from '@salto-io/adapter-components'
+import { config as configUtils, elements as elementUtils, client as clientUtils, combineElementFixers, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, getElemIdFuncWrapper, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { objects, collections } from '@salto-io/lowerdash'
@@ -174,7 +174,8 @@ import { getWorkspaceId } from './workspace_id'
 import { JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES } from './config/api_config'
 
 const { getAllElements } = elementUtils.ducktype
-const { findDataField, computeGetArgs } = elementUtils
+const { findDataField } = elementUtils
+const { computeGetArgs } = fetchUtils.resource
 const {
   generateTypes,
   getAllInstances,
@@ -244,6 +245,7 @@ export const DEFAULT_FILTERS = [
   workflowDeployFilter,
   workflowModificationFilter,
   emptyValidatorWorkflowFilter,
+  // must run before fieldReferencesFilter
   groupNameFilter,
   workflowGroupsFilter,
   workflowSchemeFilter,
@@ -481,7 +483,7 @@ export default class JiraAdapter implements AdapterOperations {
     allTypes: TypeMap,
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>,
     supportedTypes: Record<string, string[]>
-  ): Promise<elementUtils.FetchElements<InstanceElement[]>> {
+  ): Promise<fetchUtils.FetchElements<InstanceElement[]>> {
     const updatedApiDefinitionsConfig = {
       ...this.userConfig.apiDefinitions,
       types: {
@@ -503,7 +505,7 @@ export default class JiraAdapter implements AdapterOperations {
   }
 
   @logDuration('generating scriptRunner instances and types from service')
-  private async getScriptRunnerElements(): Promise<elementUtils.FetchElements<Element[]>> {
+  private async getScriptRunnerElements(): Promise<fetchUtils.FetchElements<Element[]>> {
     const { scriptRunnerApiDefinitions } = this.userConfig
     // scriptRunnerApiDefinitions is currently undefined for DC
     if (this.scriptRunnerClient === undefined
@@ -533,7 +535,7 @@ export default class JiraAdapter implements AdapterOperations {
 
   @logDuration('generating JSM assets instances and types from service')
   private async getJSMAssetsElements():
-  Promise<elementUtils.FetchElements<Element[]>> {
+  Promise<fetchUtils.FetchElements<Element[]>> {
     const { jsmApiDefinitions } = this.userConfig
     // jsmApiDefinitions is currently undefined for DC
     if (this.client === undefined
@@ -566,7 +568,7 @@ export default class JiraAdapter implements AdapterOperations {
 
   @logDuration('generating JSM instances and types from service')
   private async getJSMElements(swaggerResponseElements: InstanceElement[]):
-  Promise<elementUtils.FetchElements<Element[]>> {
+  Promise<fetchUtils.FetchElements<Element[]>> {
     const { jsmApiDefinitions } = this.userConfig
     // jsmApiDefinitions is currently undefined for DC
     if (this.client === undefined
@@ -653,7 +655,7 @@ export default class JiraAdapter implements AdapterOperations {
   private async getAllJiraElements(
     progressReporter: ProgressReporter,
     swaggers: AdapterSwaggers
-  ): Promise<elementUtils.FetchElements<Element[]>> {
+  ): Promise<fetchUtils.FetchElements<Element[]>> {
     log.debug('going to fetch jira account configuration..')
     progressReporter.reportProgress({ message: 'Fetching types' })
     const { allTypes: swaggerTypes, parsedConfigs } = await this.getAllTypes(swaggers)

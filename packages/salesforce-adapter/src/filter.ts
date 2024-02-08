@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ReadOnlyElementsSource, SaltoError } from '@salto-io/adapter-api'
+import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { filterUtils } from '@salto-io/adapter-components'
 import { filter } from '@salto-io/adapter-utils'
 import SalesforceClient from './client/client'
 import { ConfigChangeSuggestion, FetchProfile } from './types'
@@ -39,9 +40,8 @@ export type FilterOpts = {
   files: FilterFilesContext
 }
 
-export type FilterResult = {
+export type FilterResult = filterUtils.FilterResult & {
   configSuggestions?: ConfigChangeSuggestion[]
-  errors?: SaltoError[]
 }
 
 export type Filter = filter.Filter<FilterResult>

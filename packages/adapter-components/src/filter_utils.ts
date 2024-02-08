@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemIdGetter } from '@salto-io/adapter-api'
+import { ElemIdGetter, SaltoError } from '@salto-io/adapter-api'
 import { filter } from '@salto-io/adapter-utils'
 import { Paginator } from './client'
-import { ElementQuery } from './elements/query'
+import { ElementQuery } from './fetch/query'
 
 export type Filter<TResult extends void | filter.FilterResult = void> = filter.Filter<TResult>
 
@@ -38,6 +38,10 @@ export type FilterCreator<
   TResult,
   FilterOpts<TClient, TContext, TAdditional>
 >
+
+export type FilterResult = {
+  errors?: SaltoError[]
+}
 
 export const filtersRunner = <
   TClient, TContext, TResult extends void | filter.FilterResult = void, TAdditional={}

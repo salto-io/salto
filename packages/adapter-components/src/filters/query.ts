@@ -20,7 +20,7 @@ import { collections } from '@salto-io/lowerdash'
 import { AbstractNodeMap } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter_utils'
-import { ElementQuery } from '../elements/query'
+import { ElementQuery } from '../fetch/query'
 
 const log = logger(module)
 

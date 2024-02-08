@@ -15,7 +15,7 @@
 */
 
 import { InstanceElement } from '@salto-io/adapter-api'
-import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { config as configUtils, definitions, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -66,13 +66,13 @@ const processEntries = async ({
       return makeArray(response)
     }
     const responseEntries = makeArray(
-      (responseEntryName !== configUtils.DATA_FIELD_ENTIRE_OBJECT)
+      (responseEntryName !== definitions.DATA_FIELD_ENTIRE_OBJECT)
         ? response[responseEntryName]
         : response
     ) as clientUtils.ResponseValue[]
 
     responseEntries.forEach(entry => additionalProcessing(entry))
-    if (responseEntryName === configUtils.DATA_FIELD_ENTIRE_OBJECT) {
+    if (responseEntryName === definitions.DATA_FIELD_ENTIRE_OBJECT) {
       return responseEntries
     }
     return {

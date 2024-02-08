@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { BuiltinTypes, Change, ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
-import { elements as elementsUtils, filterUtils, config as configUtils } from '@salto-io/adapter-components'
+import { fetch as fetchUtils, filterUtils, config as configUtils } from '@salto-io/adapter-components'
 import { ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ZENDESK, ARTICLES_FIELD, CATEGORIES_FIELD, SECTIONS_FIELD } from '../../src/constants'
 import categoryOrderFilter from '../../src/filters/guide_order/category_order'
 import sectionOrderFilter from '../../src/filters/guide_order/section_order'
@@ -24,7 +24,7 @@ import { createOrderType } from '../../src/filters/guide_order/guide_order_utils
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 
-const { createUrl } = elementsUtils
+const { createUrl } = fetchUtils.resource
 
 const client = new ZendeskClient({
   credentials: { username: 'a', password: 'b', subdomain: 'ignore' },

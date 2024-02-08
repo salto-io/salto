@@ -18,7 +18,7 @@ import axios, { AxiosError, AxiosBasicCredentials, AxiosRequestConfig, AxiosRequ
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { AccountInfo, CredentialError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { ClientRetryConfig, ClientTimeoutConfig } from './config'
+import { ClientRetryConfig, ClientTimeoutConfig } from '../definitions/user/client_config'
 import { DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS } from './constants'
 
 const log = logger(module)
@@ -47,6 +47,8 @@ export type APIConnection<T = any, S = any> = {
   delete: (url: string, config?: AxiosRequestConfig) => Promise<Response<T>>
   patch: (url: string, data: S, config?: AxiosRequestConfig)
     => Promise<Response<T>>
+  head: (url: string, config?: AxiosRequestConfig) => Promise<Response<T>>
+  options: (url: string, config?: AxiosRequestConfig) => Promise<Response<T>>
 }
 
 export type AuthenticatedAPIConnection = APIConnection & {

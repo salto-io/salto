@@ -13,11 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, toChange } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
-import { client as clientUtils, filterUtils, config as configUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, filterUtils, definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import _ from 'lodash'
 import { getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import userFallbackFilter from '../../../src/filters/account_id/user_fallback_filter'
@@ -122,7 +122,7 @@ describe('user_fallback_filter', () => {
     })
 
     it('should replace the account id with the current deployer if requested', async () => {
-      config.deploy.defaultMissingUserFallback = configUtils.DEPLOYER_FALLBACK_VALUE
+      config.deploy.defaultMissingUserFallback = definitions.DEPLOYER_FALLBACK_VALUE
       const change = toChange({ after: instance })
       await filter.preDeploy([change])
       expect(instance.value.leadAccountId.id).toEqual('3')
@@ -197,7 +197,7 @@ describe('user_fallback_filter', () => {
     })
 
     it('should replace the account id with the current deployer if requested', async () => {
-      config.deploy.defaultMissingUserFallback = configUtils.DEPLOYER_FALLBACK_VALUE
+      config.deploy.defaultMissingUserFallback = definitions.DEPLOYER_FALLBACK_VALUE
       const change = toChange({ after: instance })
       await filter.preDeploy([change])
       expect(instance.value.leadAccountId.id).toEqual('name3')

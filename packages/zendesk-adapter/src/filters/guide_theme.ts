@@ -30,7 +30,7 @@ import {
   isObjectType, Field, MapType, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { values, values as lowerdashValues } from '@salto-io/lowerdash'
+import { values, values as lowerdashValues, collections } from '@salto-io/lowerdash'
 import JSZip from 'jszip'
 import _, { remove } from 'lodash'
 import { getInstancesFromElementSource, naclCase, inspectValue } from '@salto-io/adapter-utils'
@@ -45,10 +45,12 @@ import { deleteTheme } from './guide_themes/delete'
 import { download } from './guide_themes/download'
 import { publish } from './guide_themes/publish'
 import { getBrandsForGuideThemes } from './utils'
+import { parseHandlebarReferences } from './template_engines/handlebar_parser'
 
 
 const log = logger(module)
 const { isPlainRecord } = lowerdashValues
+const { awu } = collections.asynciterable
 
 type ThemeFile = { filename: string; content: StaticFile }
 type DeployThemeFile = { filename: string; content: Buffer }
@@ -59,8 +61,26 @@ export type ThemeDirectory = {
   folders: Record<string, ThemeDirectory>
 }
 
-export const unzipFolderToElements = async (
-  buffer: Buffer, brandName: string, name: string,
+const createTemplateParts = (filePath: string, content: string, idsToElements: Record<string, Element>): void => {
+  if (filePath.endsWith('.hbs')) {
+    try {
+      const potentialReferences = parseHandlebarReferences(content)
+      const templateParts = potentialReferences.map(ref => (idsToElements[ref.value] !== undefined
+        ? { value: idsToElements[ref.value], loc: ref.loc }
+        : ref))
+      if (templateParts.length > 0) {
+        log.info('Found the following references in the theme: %o', templateParts)
+      }
+    } catch (e) {
+      log.warn('Error parsing references in file %s, %o', filePath, e)
+    }
+  }
+}
+
+export const unzipFolderToElements = async ({
+  buffer, brandName, name, idsToElements,
+}:
+  { buffer: Buffer; brandName: string; name: string; idsToElements: Record<string, Element> }
 ): Promise<ThemeDirectory> => {
   const zip = new JSZip()
   const unzippedContents = await zip.loadAsync(buffer)
@@ -83,6 +103,7 @@ export const unzipFolderToElements = async (
       // It's a file
       const filepath = `${ZENDESK}/themes/brands/${brandName}/${name}/${fullPath}`
       const content = await file.async('nodebuffer')
+      createTemplateParts(fullPath, content.toString(), idsToElements) // Only logging for now
       currentDir.files[naclCase(firstPart)] = {
         filename: fullPath,
         content: new StaticFile({ filepath, content }),
@@ -246,6 +267,12 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
       }
       return brandName
     }
+    const idsToElements = await awu(await elementsSource.getAll())
+      .filter(isInstanceElement)
+      .reduce<Record<string, Element>>((acc, elem) => {
+        acc[elem.value.id] = elem
+        return acc
+      }, {})
 
     const processedThemes = await Promise.all(guideThemes
       .map(async (theme): Promise<{ successfulTheme?: InstanceElement; errors: SaltoError[] }> => {
@@ -262,7 +289,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
         }
         try {
           const themeElements = await unzipFolderToElements(
-            themeZip, brandName, theme.value.name
+            { buffer: themeZip, brandName, name: theme.value.name, idsToElements }
           )
           theme.value.root = themeElements
         } catch (e) {

@@ -308,7 +308,7 @@ describe('Zendesk adapter E2E', () => {
 
     const createRootForTheme = async (buffer: Buffer, brandName: string, name: string)
       : Promise<ThemeDirectory> => {
-      const root = await unzipFolderToElements(buffer, brandName, name)
+      const root = await unzipFolderToElements({ buffer, brandName, name, idsToElements: {} })
       const { content } = root.files['manifest_json@v']
       expect(isStaticFile(content)).toBeTruthy()
       if (!isStaticFile(content)) {

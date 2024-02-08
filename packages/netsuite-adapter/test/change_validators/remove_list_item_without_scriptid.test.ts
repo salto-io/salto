@@ -73,15 +73,51 @@ describe('remove item without scriptis from inner list change validator', () => 
     }
   )
 
+  const originRoleWithArrayPermissions = new InstanceElement(
+    'role_with_array_permission_test',
+    roleType().type,
+    {
+      [SCRIPT_ID]: 'role_with_array_permission_test',
+      permissions: {
+        permission: [
+          {
+            permkey: 'TRAN_PAYMENTAUDIT',
+            permlevel: 'EDIT',
+          },
+        ],
+      },
+    }
+  )
+
+  const originRoleWithOddPermission = new InstanceElement(
+    'role_with_odd_permission_test',
+    roleType().type,
+    {
+      [SCRIPT_ID]: 'role_with_odd_permission_test',
+      permissions: {
+        permission: {
+          TRAN_PAYMENTAUDIT: {
+            strangeKey: 'TRAN_PAYMENTAUDIT',
+            permlevel: 'EDIT',
+          },
+        },
+      },
+    }
+  )
+
 
   let roleInstance: InstanceElement
   let roleWithoutPermissionsInstance: InstanceElement
   let nonRelevantInstance: InstanceElement
+  let roleWithArrayPermissionsInstance: InstanceElement
+  let roleWithOddPermissionsInstance: InstanceElement
 
   beforeEach(() => {
     roleInstance = originRoleInstance.clone()
     roleWithoutPermissionsInstance = originRoleWithoutPermissions.clone()
     nonRelevantInstance = originNonRelevantInstance.clone()
+    roleWithArrayPermissionsInstance = originRoleWithArrayPermissions.clone()
+    roleWithOddPermissionsInstance = originRoleWithOddPermission.clone()
   })
 
   describe('When adding new instance with inner list', () => {
@@ -161,6 +197,30 @@ describe('remove item without scriptis from inner list change validator', () => 
       const changeErrors = await removeListItemValidator(
         [toChange({ before: roleInstance, after })]
       )
+      expect(changeErrors).toHaveLength(0)
+    })
+    it('should have change errors when deleting the whole permissions field from the role', async () => {
+      const after = roleInstance.clone()
+      delete after.value.permissions.permission
+      const changeErrors = await removeListItemValidator(
+        [toChange({ before: roleInstance, after })]
+      )
+      expect(changeErrors).toHaveLength(1)
+      expect(changeErrors[0].severity).toEqual('Warning')
+      expect(changeErrors[0].elemID).toEqual(roleInstance.elemID)
+      expect(changeErrors[0].detailedMessage).toEqual("Can't remove the list permissions.permission.")
+    })
+    it('should have no change errors when dealing with odd permission in role', async () => {
+      const afterWithArray = roleWithArrayPermissionsInstance.clone()
+      delete afterWithArray.value.permissions.permission[0]
+
+      const afterWithOddPermission = roleWithOddPermissionsInstance.clone()
+      delete afterWithOddPermission.value.permissions.permission.TRAN_PAYMENTAUDIT
+
+      const changeErrors = await removeListItemValidator([
+        toChange({ before: roleWithArrayPermissionsInstance, after: afterWithArray }),
+        toChange({ before: roleWithOddPermissionsInstance, after: afterWithOddPermission }),
+      ])
       expect(changeErrors).toHaveLength(0)
     })
   })

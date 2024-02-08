@@ -132,6 +132,14 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition)[] = [
+  // excludeCustomRecordTypes should run before customRecordTypesType,
+  // because otherwise there will be broken references to excluded types.
+  { creator: excludeCustomRecordTypes },
+  { creator: restoreDeletedListItems },
+  { creator: restoreDeletedListItemsWithScriptId },
+  // excludeCustomRecordTypes should run before customRecordTypesType,
+  // because otherwise there will be broken references to excluded types.
+  { creator: excludeCustomRecordTypes },
   { creator: customRecordTypesType },
   { creator: omitSdfUntypedValues },
   { creator: dataInstancesIdentifiers },
@@ -185,6 +193,8 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   { creator: addAliasFilter },
   { creator: addImportantValuesFilter },
   { creator: fixOrderProblemsInWorkbooks },
+  { creator: restoreDeletedListItems }, // does it matter where it is?
+  { creator: restoreDeletedListItemsWithScriptId }, // does it matter where it is?
   { creator: restoreDeletedListItems }, // does it matter where it is?
   { creator: restoreDeletedListItemsWithScriptId }, // does it matter where it is?
   // serviceUrls must run after suiteAppInternalIds and SDFInternalIds filter

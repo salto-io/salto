@@ -14,46 +14,51 @@
 * limitations under the License.
 */
 import { InstanceElement, ModificationChange, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import _ from 'lodash'
+import { setPath } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
-import { ItemInList, ItemListGetters, getGettersByType, getRemovedListItemDetails } from '../change_validators/remove_list_item_without_scriptid'
-
-const log = logger(module)
+import { ItemInList, ItemListGetters, getGettersByType, getRemovedListItemIds } from '../change_validators/remove_list_item_without_scriptid'
 
 const getRemovedListItems = (
   instanceChange: ModificationChange<InstanceElement>,
   getters: ItemListGetters,
-): { [id: string]: ItemInList }[] => {
-  const idsList = getRemovedListItemDetails(instanceChange)
-  return idsList.removedListItems
-    .map(id => {
-      const item = getters.getItemByID(instanceChange.data.before, id)
-      if (item === undefined) {
-        return undefined
-      }
-      return { [id]: item }
-    })
-    .filter((val: { [id: string]: ItemInList } | undefined): val is { [id: string]: ItemInList } => val !== undefined)
+): Record<string, ItemInList> => {
+  const idsList = getRemovedListItemIds(instanceChange, getters)
+  const itemsRecord: Record<string, ItemInList> = {}
+  idsList.forEach(id => {
+    const item = getters.getItemByID(instanceChange.data.before, id)
+    if (item !== undefined) {
+      itemsRecord[id] = item
+    }
+  })
+  return itemsRecord
 }
 
 const filterCreator: LocalFilterCreator = () => ({
   name: 'restorDeletedListItems',
   onDeploy: async changes => {
-    log.debug('')
     changes
       .filter(isModificationChange)
       .filter(isInstanceChange)
       .forEach(instanceChange => {
         const getters = getGettersByType(instanceChange.data.before.elemID.typeName)
-        if (getters === undefined) {
+        const { before, after } = instanceChange.data
+        if (getters === undefined || _.isUndefined(_.get(before.value, getters.getListPath()))) {
           return
         }
-        const removedItems = getRemovedListItems(instanceChange, getters)
-        Object.assign(
-          _.get(instanceChange.data.after.value, getters.getListPath()),
-          ...removedItems
-        )
+        if (_.isUndefined(_.get(after.value, getters.getListPath()))) {
+          setPath(
+            after,
+            after.elemID.createNestedID(...getters.getListPath()),
+            _.get(before.value, getters.getListPath())
+          )
+        } else {
+          const removedItems = getRemovedListItems(instanceChange, getters)
+          Object.assign(
+            _.get(after.value, getters.getListPath()),
+            removedItems
+          )
+        }
       })
   },
 })

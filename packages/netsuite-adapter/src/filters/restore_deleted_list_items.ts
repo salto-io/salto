@@ -14,32 +14,18 @@
 * limitations under the License.
 */
 import { collections } from '@salto-io/lowerdash'
-import { InstanceElement, Value, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
-import { WALK_NEXT_STEP, walkOnElement } from '@salto-io/adapter-utils'
+import { ElemID, InstanceElement, Value, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
+import { WALK_NEXT_STEP, setPath, walkOnElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { LocalFilterCreator } from '../filter'
 import { SCRIPT_ID } from '../constants'
 
 const { awu } = collections.asynciterable
 
-const log = logger(module)
-
-const getRelativePathAndScriptId = (path: string): {
-  relativePath: string
-  scriptId: string
-} | undefined => {
-  const fullNameRegex = /\.instance\.(?<instance_name>\w+)\.(?<relative_path>[\w.]+(?=\.\w+$))\.(?<scriptid>\w+)$/
-  const match = path.match(fullNameRegex)
-  if (match && match.groups) {
-    return { relativePath: match.groups.relative_path, scriptId: match.groups.scriptid }
-  }
-  return undefined
-}
-
-const getScriptIdsUnderLists = async (instance: InstanceElement):
-  Promise<Map<string, { relativePath: string; id:string; val: Value}>> => {
-  const pathToScriptIds = new Map<string, { relativePath: string; id:string; val: Value}>()
+const getScriptIdsUnderLists = async (
+  instance: InstanceElement
+): Promise<Map<string, { elemID: ElemID; val: Value}>> => {
+  const pathToScriptIds = new Map<string, { elemID: ElemID; val: Value}>()
   walkOnElement({
     element: instance,
     func: ({ value, path }) => {
@@ -47,11 +33,7 @@ const getScriptIdsUnderLists = async (instance: InstanceElement):
         return WALK_NEXT_STEP.SKIP
       }
       if (_.isPlainObject(value) && SCRIPT_ID in value) {
-        const fullNameSplit = getRelativePathAndScriptId(path.getFullName())
-        if (fullNameSplit !== undefined) {
-          const { relativePath, scriptId } = fullNameSplit
-          pathToScriptIds.set(path.getFullName(), { relativePath, id: scriptId, val: value })
-        }
+        pathToScriptIds.set(path.getFullName(), { elemID: path, val: value })
       }
       return WALK_NEXT_STEP.RECURSE
     },
@@ -62,7 +44,6 @@ const getScriptIdsUnderLists = async (instance: InstanceElement):
 const filterCreator: LocalFilterCreator = () => ({
   name: 'restorDeletedListItems',
   onDeploy: async changes => {
-    log.debug('')
     await awu(changes)
       .filter(isModificationChange)
       .filter(isInstanceChange)
@@ -71,8 +52,7 @@ const filterCreator: LocalFilterCreator = () => ({
         const after = await getScriptIdsUnderLists(instanceChange.data.after)
         before.forEach((value, key) => {
           if (!after.has(key)) {
-            _.get(instanceChange.data.after.value, value.relativePath)[value.id] = value.val
-            log.debug('')
+            setPath(instanceChange.data.after, value.elemID, value.val)
           }
         })
       })

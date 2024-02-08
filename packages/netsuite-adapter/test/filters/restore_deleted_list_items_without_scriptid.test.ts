@@ -136,5 +136,29 @@ describe('restore deleted list items with scriptid filter', () => {
       expect(change.data.after.value.permissions.permission.customrecord1)
         .toEqual(change.data.before.value.permissions.permission.customrecord1)
     })
+    it('should add the whole permissions field deleted from the role', async () => {
+      const after = roleInstance.clone()
+      delete after.value.permissions
+      const change = toChange({ before: roleInstance, after }) as ModificationChange<InstanceElement>
+      await filterCreator(fetchOpts).onDeploy?.([change], {
+        appliedChanges: [],
+        errors: [],
+      })
+      expect(change.data.after.value.permissions.permission).toBeDefined()
+      expect(change.data.after.value.permissions.permission.customrecord1)
+        .toEqual(change.data.before.value.permissions.permission.customrecord1)
+    })
+    it('should add the whole permission list deleted from the role', async () => {
+      const after = roleInstance.clone()
+      delete after.value.permissions.permission
+      const change = toChange({ before: roleInstance, after }) as ModificationChange<InstanceElement>
+      await filterCreator(fetchOpts).onDeploy?.([change], {
+        appliedChanges: [],
+        errors: [],
+      })
+      expect(change.data.after.value.permissions.permission).toBeDefined()
+      expect(change.data.after.value.permissions.permission.customrecord1)
+        .toEqual(change.data.before.value.permissions.permission.customrecord1)
+    })
   })
 })

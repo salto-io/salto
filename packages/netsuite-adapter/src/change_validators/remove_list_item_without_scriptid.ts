@@ -23,23 +23,19 @@ import {
   ChangeError,
   isReferenceExpression,
 } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
+import { values } from '@salto-io/lowerdash'
 import { NetsuiteChangeValidator } from './types'
-import { ROLE } from '../constants'
+import { PERMISSIONS, ROLE } from '../constants'
 
+const log = logger(module)
 
-const { awu } = collections.asynciterable
-
-const PERMISSIONS = 'permissions'
 const PERMISSION = 'permission'
-const PERMKEY = 'permkey'
-const PERMLEVEL = 'permlevel'
-const RESTRICTION = 'restriction'
 
 type RolePermissionObject = {
-  [PERMKEY]: string | ReferenceExpression
-  [PERMLEVEL]: string
-  [RESTRICTION]?: string
+  permkey: string | ReferenceExpression
+  permlevel: string
+  restriction?: string
 }
 
 export type ItemInList = RolePermissionObject
@@ -61,31 +57,40 @@ export type ItemListGetters = {
   getDetailedMessage: GetMessage
 }
 
-const isRolePermissionObject = (obj: Value): obj is RolePermissionObject =>
-  (typeof obj[PERMKEY] === 'string' || isReferenceExpression(obj[PERMKEY]))
-  && typeof obj[PERMLEVEL] === 'string'
-  && ((typeof obj[RESTRICTION] === 'string') || !(RESTRICTION in obj))
+const isRolePermissionObject = (obj: Value): obj is RolePermissionObject => {
+  const returnVal = (
+    _.isPlainObject(obj)
+    && (typeof obj.permkey === 'string' || isReferenceExpression(obj.permkey))
+    && typeof obj.permlevel === 'string'
+    && (typeof obj.restriction === 'string' || obj.restriction === undefined)
+  )
+  if (!returnVal) {
+    log.debug('There is a role permission with a different shape', obj)
+  }
+  return returnVal
+}
 
 const getRoleListPath: GetListPath = () => [
   PERMISSIONS,
   PERMISSION,
 ]
 
-const getRolePermissionList:GetItemList = (
-  instance: InstanceElement,
-): RolePermissionObject[] => {
+const getRolePermissionList:GetItemList = instance => {
   const listPathValue = _.get(instance.value, getRoleListPath())
   if (_.isPlainObject(listPathValue)) {
     return Object.values(listPathValue)
       .filter(isRolePermissionObject)
   }
-  return [] as RolePermissionObject[]
+  if (listPathValue !== undefined) {
+    log.debug("Role permissions wasn't a plain object under permissions.permission", instance)
+  }
+  return []
 }
 
 const getRolePermkey: GetItemString = (
   permission: RolePermissionObject
 ): string => {
-  const permkey = permission[PERMKEY]
+  const { permkey } = permission
   if (_.isString(permkey)) {
     return permkey
   }
@@ -96,17 +101,14 @@ const getRolePermissionByName = (
   role: InstanceElement,
   id: string,
 ): RolePermissionObject | undefined => (
-  _.isPlainObject(role.value[PERMISSIONS]?.[PERMISSION])
-    ? Object.values(role.value[PERMISSIONS]?.[PERMISSION])
-      .filter(isRolePermissionObject)
-      .find(permObj => getRolePermkey(permObj) === id)
-    : undefined
+  getRolePermissionList(role)
+    .find(permObj => getRolePermkey(permObj) === id)
 )
 
 const getRoleMessage = (removedListItems: string[]): string =>
   getMessageByElementNameAndListItems(PERMISSION, removedListItems)
 
-export const roleGetters: ItemListGetters = {
+const roleGetters: ItemListGetters = {
   getItemList: getRolePermissionList,
   getItemString: getRolePermkey,
   getItemByID: getRolePermissionByName,
@@ -115,9 +117,9 @@ export const roleGetters: ItemListGetters = {
 }
 
 export const getGettersByType = (
-  typename: string,
+  typeName: string,
 ): ItemListGetters | undefined => {
-  if (typename === ROLE) {
+  if (typeName === ROLE) {
     return roleGetters
   }
   return undefined
@@ -128,43 +130,58 @@ const getIdentifierList = (
 ): string[] =>
   getters.getItemList(instance).map(getters.getItemString)
 
-export const getRemovedListItemDetails = (
+export const getRemovedListItemIds = (
   instanceChange: ModificationChange<InstanceElement>,
-): {
-  removedListItems: string[]
-  elemID: ElemID
-  detailedMessage: string
-} => {
-  const getters = getGettersByType(instanceChange.data.before.elemID.typeName)
-  if (getters === undefined) {
-    return { removedListItems: [], elemID: instanceChange.data.before.elemID, detailedMessage: '' }
-  }
+  getters: ItemListGetters,
+): string[] => {
   const { before, after } = instanceChange.data
   const beforeItemList = getIdentifierList(before, getters)
-  const afterItemSet = new Set<string>(getIdentifierList(after, getters))
-  const removedListItems = beforeItemList.filter(id => !afterItemSet.has(id))
-  return {
-    removedListItems,
-    elemID: before.elemID,
-    detailedMessage: getters.getDetailedMessage(removedListItems),
-  }
+  const afterItemSet = new Set(getIdentifierList(after, getters))
+  return beforeItemList.filter(id => !afterItemSet.has(id))
 }
 
+const getDetailedMessage = (
+  instanceChange: ModificationChange<InstanceElement>,
+): {
+  elemID: ElemID
+  detailedMessage: string
+} | undefined => {
+  const { before, after } = instanceChange.data
+  const { elemID } = before
+  const getters = getGettersByType(elemID.typeName)
+  if (getters === undefined || _.isUndefined(_.get(before.value, getters.getListPath()))) {
+    return undefined
+  }
+
+  if (_.isUndefined(_.get(after.value, getters.getListPath()))) {
+    return {
+      elemID,
+      detailedMessage: `Can't remove the list ${getters.getListPath().join('.')}.`,
+    }
+  }
+
+  const removedListItems = getRemovedListItemIds(instanceChange, getters)
+  return (removedListItems.length > 0) ? {
+    elemID,
+    detailedMessage: getters.getDetailedMessage(removedListItems),
+  } : undefined
+}
+
+
 const changeValidator: NetsuiteChangeValidator = async changes => {
-  const instanceChanges = await awu(changes)
+  const instanceChanges = changes
     .filter(isModificationChange)
     .filter(isInstanceChange)
-    .toArray() as ModificationChange<InstanceElement>[]
 
   return instanceChanges
-    .map(getRemovedListItemDetails)
-    .filter(({ removedListItems }) => !_.isEmpty(removedListItems))
-    .map(({ detailedMessage, elemID }) => ({
+    .map(getDetailedMessage)
+    .filter(values.isDefined)
+    .map(({ detailedMessage, elemID }): ChangeError => ({
       elemID,
       severity: 'Warning',
       message: 'Can\'t remove inner elements',
       detailedMessage,
-    })) as ChangeError[]
+    }))
 }
 
 export default changeValidator

@@ -25,16 +25,11 @@ import {
 } from '@salto-io/adapter-api'
 import { pathNaclCase, naclCase, TransformFunc, TransformFuncSync, transformValuesSync } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { values as lDValues } from '@salto-io/lowerdash'
 import { RECORDS_PATH, SETTINGS_NESTED_PATH } from './constants'
 import {
-  TransformationConfig,
-  TransformationDefaultConfig,
-  getConfigWithDefault,
-  shouldNestFiles,
-  RecurseIntoCondition,
-  isRecurseIntoConditionByField,
-  AdapterApiConfig,
-  dereferenceFieldName,
+  TransformationConfig, TransformationDefaultConfig, getConfigWithDefault, shouldNestFiles,
+  RecurseIntoCondition, isRecurseIntoConditionByField, AdapterApiConfig, dereferenceFieldName,
 } from '../config'
 import { NameMappingOptions } from '../definitions'
 import { createServiceIDs, getNameMapping } from '../fetch/element/id_utils'
@@ -60,9 +55,9 @@ export const joinInstanceNameParts = (nameParts: unknown[]): string | undefined 
   // if nameParts is empty, we assume it is intentional
   nameParts.length === 0 || nameParts.some(part => part !== undefined && part !== '')
     ? nameParts
-        .filter(part => part !== undefined && part !== '')
-        .map(String)
-        .join('_')
+      .filter(part => part !== undefined && part !== '')
+      .map(String)
+      .join('_')
     : undefined
 
 export const getInstanceName = (instanceValues: Values, idFields: string[], typeName: string): string | undefined => {
@@ -86,6 +81,7 @@ export const getInstanceFilePath = ({
   nameMapping,
   adapterName,
   nestedPaths,
+  hasNestStandAloneFields,
 }: {
   fileNameFields: string[] | undefined
   entry: Values
@@ -95,18 +91,27 @@ export const getInstanceFilePath = ({
   nameMapping?: NameMappingOptions
   adapterName: string
   nestedPaths?: string[]
+  hasNestStandAloneFields?: boolean
 }): string[] => {
   const fileNameParts = fileNameFields !== undefined ? fileNameFields.map(field => _.get(entry, field)) : undefined
   const fileName = fileNameParts?.every(p => _.isString(p) || _.isNumber(p)) ? fileNameParts.join('_') : undefined
   const naclCaseFileName = fileName ? pathNaclCase(naclCase(fileName)) : pathNaclCase(naclName)
-  return isSettingType
-    ? [adapterName, RECORDS_PATH, SETTINGS_NESTED_PATH, pathNaclCase(typeName)]
+  const mappedNaclCaseFileName = nameMapping ? getNameMapping(naclCaseFileName, nameMapping) : naclCaseFileName
+  return (isSettingType
+    ? [
+      adapterName,
+      RECORDS_PATH,
+      SETTINGS_NESTED_PATH,
+      pathNaclCase(typeName),
+    ]
     : [
-        adapterName,
-        RECORDS_PATH,
-        ...(nestedPaths ? nestedPaths.map(pathNaclCase) : [pathNaclCase(typeName)]),
-        nameMapping ? getNameMapping(naclCaseFileName, nameMapping) : naclCaseFileName,
-      ]
+      adapterName,
+      RECORDS_PATH,
+      ...(nestedPaths ? nestedPaths.map(pathNaclCase) : [pathNaclCase(typeName)]),
+      mappedNaclCaseFileName,
+      // if there are nested standalone fields, we nest the instance in its own folder.
+      hasNestStandAloneFields ? mappedNaclCaseFileName : undefined,
+    ].filter(lDValues.isDefined))
 }
 
 export const generateInstanceNameFromConfig = (
@@ -160,10 +165,10 @@ export const getInstanceNaclName = ({
   const desiredName = nameMapping ? getNameMapping(naclName, nameMapping) : naclName
   return getElemIdFunc && serviceIdField
     ? getElemIdFunc(
-        adapterName,
-        createServiceIDs({ entry, serviceIDFields: [serviceIdField], typeID: typeElemId }),
-        desiredName,
-      ).name
+      adapterName,
+      createServiceIDs({ entry, serviceIDFields: [serviceIdField], typeID: typeElemId }),
+      desiredName,
+    ).name
     : desiredName
 }
 
@@ -232,18 +237,13 @@ export const toBasicInstance = async ({
     isSettingType: type.isSettings,
     nameMapping,
     adapterName,
-    nestedPaths:
-      parent && shouldNestFiles(transformationDefaultConfig, transformationConfigByType[parent.elemID.typeName])
-        ? nestedPath
-        : undefined,
+    nestedPaths: parent && shouldNestFiles(
+      transformationDefaultConfig,
+      transformationConfigByType[parent.elemID.typeName]
+    ) ? nestedPath : undefined,
+    hasNestStandAloneFields: transformationConfigByType[type.elemID.name]?.standaloneFields !== undefined
+      && shouldNestFiles(transformationDefaultConfig, transformationConfigByType[type.elemID.name]),
   })
-  if (
-    transformationConfigByType[type.elemID.name]?.standaloneFields !== undefined &&
-    shouldNestFiles(transformationDefaultConfig, transformationConfigByType[type.elemID.name])
-  ) {
-    // if there are standalone fields and they should be nested, we nest the instance in its own folder.
-    filePath.push(filePath[filePath.length - 1])
-  }
 
   return new InstanceElement(
     type.isSettings ? ElemID.CONFIG_NAME : naclName,

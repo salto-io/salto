@@ -131,8 +131,9 @@ const isStandalone = (instance: InstanceElement, configByType: Record<string, Tr
   if (parentElemID === undefined) {
     return false
   }
-  return configByType[parentElemID.typeName]?.standaloneFields?.map(field => field.fieldName)
-    .includes(instance.elemID.name) ?? false
+  const { standaloneFields, nestStandaloneInstances } = configByType[parentElemID.typeName]
+  return (nestStandaloneInstances && standaloneFields?.map(field => field.fieldName)
+    .includes(instance.elemID.name)) ?? false
 }
 
 /* Calculates the new instance name and file path */
@@ -147,7 +148,7 @@ const createInstanceNameAndFilePath = (
   const newName = joinInstanceNameParts(newNameParts) ?? instance.elemID.name
   const parentName = idConfig.extendsParentId ? getFirstParentElemId(instance)?.name : undefined
   const { typeName, adapter } = instance.elemID
-  const { fileNameFields, serviceIdField, nestStandaloneInstances } = configByType[typeName]
+  const { fileNameFields, serviceIdField, nestStandaloneInstances, standaloneFields } = configByType[typeName]
 
   const newNaclName = getInstanceNaclName({
     entry: instance.value,
@@ -167,8 +168,9 @@ const createInstanceNameAndFilePath = (
     isSettingType: configByType[typeName].isSingleton ?? false,
     nameMapping: configByType[typeName].nameMapping,
     adapterName: adapter,
-    nestedPaths: nestStandaloneInstances && isStandalone(instance, configByType)
+    nestedPaths: isStandalone(instance, configByType)
       ? [...instance.path?.slice(2, instance.path?.length - 1) ?? []] : undefined,
+    hasNestStandAloneFields: nestStandaloneInstances && standaloneFields !== undefined,
   })
   return { newNaclName, filePath }
 }

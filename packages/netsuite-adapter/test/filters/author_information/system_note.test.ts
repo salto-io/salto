@@ -16,7 +16,7 @@
 import { CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator, { FILE_FIELD_IDENTIFIER, FOLDER_FIELD_IDENTIFIER } from '../../../src/filters/author_information/system_note'
-import { CUSTOM_RECORD_TYPE, FILE, FOLDER, METADATA_TYPE, NETSUITE } from '../../../src/constants'
+import { CUSTOM_RECORD_TYPE, EMPLOYEE, FILE, FOLDER, METADATA_TYPE, NETSUITE } from '../../../src/constants'
 import { createServerTimeElements } from '../../../src/server_time'
 import NetsuiteClient from '../../../src/client/client'
 import { RemoteFilterOpts } from '../../../src/filter'
@@ -25,6 +25,7 @@ import mockSdfClient from '../../client/sdf_client'
 import { EMPLOYEE_NAME_QUERY } from '../../../src/filters/author_information/constants'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../../utils'
 import { toSuiteQLSelectDateString, toSuiteQLWhereDateString } from '../../../src/changes_detector/date_formats'
+import { INTERNAL_IDS_MAP, SUITEQL_TABLE } from '../../../src/data_elements/suiteql_table_elements'
 
 describe('netsuite system note author information', () => {
   let filterOpts: RemoteFilterOpts
@@ -139,6 +140,34 @@ describe('netsuite system note author information', () => {
     expect(missingInstance.annotations).toEqual({})
     expect(fileInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 3 name').toBeTruthy()
     expect(folderInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 3 name').toBeTruthy()
+  })
+
+  it('should use employee SuiteQLTable instance to get employee names', async () => {
+    runSuiteQLMock.mockReset()
+    runSuiteQLMock.mockResolvedValue([
+      { recordid: '1', recordtypeid: '-112', field: '', name: '1', date: '2022-01-01 00:00:00' },
+      { recordid: '1', recordtypeid: '-123', field: '', name: '2', date: '2022-01-01 00:00:00' },
+      { recordid: '123', recordtypeid: '1', field: '', name: '3', date: '2022-01-01 00:00:00' },
+    ])
+    const suiteQLTableType = new ObjectType({ elemID: new ElemID(NETSUITE, SUITEQL_TABLE) })
+    const employeeSuiteQLTableInstance = new InstanceElement(
+      EMPLOYEE,
+      suiteQLTableType,
+      {
+        [INTERNAL_IDS_MAP]: {
+          1: { name: 'user 1 name' },
+          2: { name: 'user 2 name' },
+          3: { name: 'user 3 name' },
+        },
+      }
+    )
+    await filterCreator(filterOpts).onFetch?.(
+      elements.concat(suiteQLTableType, employeeSuiteQLTableInstance)
+    )
+    expect(runSuiteQLMock).not.toHaveBeenCalledWith(EMPLOYEE_NAME_QUERY)
+    expect(accountInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 1 name').toBeTruthy()
+    expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 2 name').toBeTruthy()
+    expect(customRecord.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 3 name').toBeTruthy()
   })
 
   it('should add dates to elements', async () => {

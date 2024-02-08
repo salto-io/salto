@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { strings } from '@salto-io/lowerdash'
 import { Element, CORE_ANNOTATIONS, createRefToElmWithValue, ElemID, InstanceElement, isInstanceElement, isObjectType, ObjectType, ReadOnlyElementsSource, ReferenceExpression, Value, Field, isReferenceExpression, isAdditionOrModificationChange, ChangeError } from '@salto-io/adapter-api'
-import { TransformFunc, transformValuesSync } from '@salto-io/adapter-utils'
+import { TransformFunc, naclCase, transformValuesSync } from '@salto-io/adapter-utils'
 import { isDataObjectType, isFileCabinetType, isStandardType } from '../types'
 import { ACCOUNT_SPECIFIC_VALUE, ID_FIELD, INTERNAL_ID, NAME_FIELD, NETSUITE, SUBTYPES_PATH, TYPES_PATH } from '../constants'
 import { TYPE_ID } from '../client/suiteapp_client/constants'
@@ -27,9 +27,10 @@ import { SUITEQL_TABLE, getSuiteQLTableInternalIdsMap, getSuiteQLNameToInternalI
 
 const log = logger(module)
 
+export const UNKNOWN_TYPE_REFERENCES_TYPE_NAME = 'unknownTypeReferences'
+export const UNKNOWN_TYPE_REFERENCES_ELEM_ID = new ElemID(NETSUITE, UNKNOWN_TYPE_REFERENCES_TYPE_NAME)
+
 const UNKNOWN_TYPE = 'object'
-const UNKNOWN_TYPE_REFERENCES_TYPE_NAME = 'unknownTypeReferences'
-const UNKNOWN_TYPE_REFERENCES_ELEM_ID = new ElemID(NETSUITE, UNKNOWN_TYPE_REFERENCES_TYPE_NAME)
 
 const REGEX_TYPE = 'type'
 const REGEX_NAME = 'name'
@@ -45,14 +46,16 @@ type ResolvedAccountSpecificValue = {
 const isNestedObject = (path: ElemID | undefined, value: Value): path is ElemID =>
   path !== undefined && !path.isTopLevel() && _.isPlainObject(value)
 
-const isSOAPReferenceObject = (value: Value): boolean =>
+const isSoapReferenceObject = (value: Value): boolean =>
   Object.keys(value).every(key => SOAP_REFERENCE_FIELDS.has(key))
 
 const getUnknownTypeReferencesPath = (elemId: ElemID): string => {
   const { parent, path } = elemId.createTopLevelParentID()
-  return [parent.typeName, ...path]
-    .map(part => (strings.isNumberStr(part) ? '*' : part))
-    .join('_')
+  return naclCase(
+    [parent.typeName, ...path]
+      .map(part => (strings.isNumberStr(part) ? '*' : part))
+      .join(ElemID.NAMESPACE_SEPARATOR)
+  )
 }
 
 const resolvedAccountSpecificValueRegex = new RegExp(`^${_.escapeRegExp(ACCOUNT_SPECIFIC_VALUE)} \\((?<${REGEX_TYPE}>\\w+)\\) \\((?<${REGEX_NAME}>.*)\\)$`)
@@ -73,6 +76,11 @@ const getNameFromUnknownTypeReference = (
   internalId: string,
   fallbackName: string | undefined
 ): string | undefined => {
+  // unknownTypeReferencesInstance holds internal ids of references that we don't know their type.
+  // in this case, we save an internalId-to-name mapping under the path of the reference, so we'll know
+  // to look there when we want to resolve the name back to internal id. for example:
+  // if in nexus.state field the reference value was { internalId: "1", name: "California" }
+  // then the value we'll store will be { nexus_state: { "1": "California" } }
   const path = getUnknownTypeReferencesPath(elemId)
   if (unknownTypeReferencesInstance.value[path] === undefined) {
     unknownTypeReferencesInstance.value[path] = {}
@@ -210,7 +218,7 @@ const setAccountSpecificValues = (
       return value
     }
 
-    if (!isSOAPReferenceObject(value)) {
+    if (!isSoapReferenceObject(value)) {
       // some inner objects that are not references also have internalId (e.g mainAddress),
       // but it's not required for addition/modification of the instance/field, so we can just omit it.
       return _.omit(value, INTERNAL_ID)
@@ -285,24 +293,24 @@ export const getResolvedAccountSpecificValue = (
 
   const regexRes = value[ID_FIELD].match(resolvedAccountSpecificValueRegex)
   if (regexRes?.groups === undefined) {
+    // In case that the user sets the "id" value manually
     log.debug('replacing field id with internalId in path %s', path.getFullName())
     return { value: { [INTERNAL_ID]: value[ID_FIELD] } }
   }
 
   const { [REGEX_TYPE]: type, [REGEX_NAME]: name } = regexRes.groups
-  const referencePath = getUnknownTypeReferencesPath(path)
   const nameToInternalIds = type === UNKNOWN_TYPE
-    ? unknownTypeReferencesMap[referencePath]
+    ? unknownTypeReferencesMap[getUnknownTypeReferencesPath(path)]
     : suiteQLTablesMap[type]
 
   if (nameToInternalIds === undefined) {
-    log.warn('did not find internal ids map of %s for path %s', type, referencePath)
+    log.warn('did not find internal ids map of %s for path %s', type, path.getFullName())
     return { value: undefined, error: toMissingInternalIdError(path, name) }
   }
 
   const internalIds = nameToInternalIds[name] ?? []
   if (internalIds.length === 0) {
-    log.warn('did not find name %s in internal ids map of %s for path %s', name, type, referencePath)
+    log.warn('did not find name %s in internal ids map of %s for path %s', name, type, path.getFullName())
     return { value: undefined, error: toMissingInternalIdError(path, name) }
   }
 
@@ -310,7 +318,7 @@ export const getResolvedAccountSpecificValue = (
   if (internalIds.length > 1) {
     log.warn(
       'there are several internal ids for name %s in internal ids map of %s for path %s - using the first: %s',
-      name, type, referencePath, resolvedValue[INTERNAL_ID],
+      name, type, path.getFullName(), resolvedValue[INTERNAL_ID],
     )
     return { value: resolvedValue, error: toMultipleInternalIdsWarning(path, name, resolvedValue[INTERNAL_ID]) }
   }

@@ -16,17 +16,16 @@
 import { Element, isObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { filter } from '@salto-io/adapter-utils'
 import { UserFetchConfig } from '../definitions/user'
-import { FilterCreator } from '../filter_utils'
+import { UserConfigAdapterFilterCreator } from '../filter_utils'
 
 /**
  * Hide types if needed according to configuration.
  * Note: This should apply only to hard-coded types - it is the adapter's responsibility to ensure this.
  */
 export const hideTypesFilterCreator: <
-  TClient,
   TContext extends { fetch: Pick<UserFetchConfig, 'hideTypes'> },
   TResult extends void | filter.FilterResult = void,
->() => FilterCreator<TClient, TContext, TResult> =
+>() => UserConfigAdapterFilterCreator<TContext, TResult> =
   () =>
   ({ config }) => ({
     name: 'hideTypes',

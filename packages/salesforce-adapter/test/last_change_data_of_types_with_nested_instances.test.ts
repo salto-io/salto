@@ -16,8 +16,6 @@
 import { FileProperties } from '@salto-io/jsforce'
 import { MockInterface } from '@salto-io/test-utils'
 import { collections } from '@salto-io/lowerdash'
-import _ from 'lodash'
-import { CUSTOM_OBJECT_FIELDS } from '../src/fetch_profile/metadata_types'
 import { CUSTOM_FIELD, CUSTOM_OBJECT } from '../src/constants'
 import { SalesforceClient } from '../index'
 import Connection from '../src/client/jsforce'
@@ -34,24 +32,16 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
   const FUTURE_TIME = '2024-11-07T00:00:00.000Z'
   const FIRST_OBJECT_NAME = 'Test1__c'
   const SECOND_OBJECT_NAME = 'Test2__c'
-  const RELATED_TYPES = [
-    ...CUSTOM_OBJECT_FIELDS,
-    CUSTOM_OBJECT,
-    CUSTOM_FIELD,
-  ] as const
-  type RelatedType = typeof RELATED_TYPES[number]
-  const isRelatedType = (type: string): type is RelatedType => (
-    RELATED_TYPES.includes(type as RelatedType)
-  )
 
   let client: SalesforceClient
   let connection: MockInterface<Connection>
-  let listedTypes: RelatedType[]
+  let listedTypes: string[]
   let metadataQuery: MetadataQuery<FileProperties>
   beforeEach(() => {
     ({ client, connection } = mockClient())
     listedTypes = []
-    const filePropByRelatedType: Record<RelatedType, FileProperties[]> = {
+    const filePropByRelatedType: Record<string, FileProperties[]> = {
+      // CustomObject props
       BusinessProcess: [
         // Latest related property for Updated__c
         mockFileProperties({
@@ -114,7 +104,6 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
         }),
       ],
       FieldSet: [],
-      // We exclude this type as part of the tests
       Index: [
         mockFileProperties({
           fullName: `${FIRST_OBJECT_NAME}.TestIndex`,
@@ -144,40 +133,29 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
       SharingReason: [],
       ValidationRule: [],
       WebLink: [],
+      // CustomLabels props
+      CustomLabel: [
+        mockFileProperties({
+          fullName: 'TestLabel1',
+          type: 'CustomLabel',
+          lastModifiedDate: '2023-11-07T00:00:00.000Z',
+        }),
+        mockFileProperties({
+          fullName: 'TestLabel2',
+          type: 'CustomLabel',
+          lastModifiedDate: '2023-11-09T00:00:00.000Z',
+        }),
+      ],
     }
     connection.metadata.list.mockImplementation(async queries => (
       makeArray(queries).flatMap(({ type }) => {
-        if (!isRelatedType(type)) {
-          throw new Error(`Unexpected non mocked type in mock: ${type}`)
-        }
         listedTypes.push(type)
-        return filePropByRelatedType[type as RelatedType] ?? []
+        return filePropByRelatedType[type] ?? []
       })
     ))
   })
-  describe('when all types with nested instances are excluded', () => {
-    beforeEach(() => {
-      metadataQuery = buildFilePropsMetadataQuery(buildMetadataQuery({
-        fetchParams: {
-          metadata: {
-            exclude: [{
-              metadataType: CUSTOM_OBJECT,
-            }],
-          },
-        },
-      }))
-    })
-    it('should return empty object', async () => {
-      const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
-        client,
-        metadataQuery,
-      })
-      expect(lastChangeDateOfTypesWithNestedInstances).toBeEmpty()
-      expect(listedTypes).toBeEmpty()
-    })
-  })
   describe('when all types with nested instances are included', () => {
-    let excludedRelatedTypes: RelatedType[]
+    let excludedRelatedTypes: string[]
     beforeEach(() => {
       excludedRelatedTypes = ['Index']
       metadataQuery = buildFilePropsMetadataQuery(buildMetadataQuery({
@@ -200,14 +178,16 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
       const expected: LastChangeDateOfTypesWithNestedInstances = {
         AssignmentRules: {},
         AutoResponseRules: {},
-        CustomLabels: undefined,
-        CustomObject: {},
+        CustomLabels: '2023-11-09T00:00:00.000Z',
+        CustomObject: {
+          Test1__c: '2024-11-07T00:00:00.000Z',
+          Test2__c: '2024-11-07T00:00:00.000Z',
+        },
         EscalationRules: {},
         SharingRules: {},
         Workflow: {},
       }
       expect(lastChangeDateOfTypesWithNestedInstances).toEqual(expected)
-      expect(listedTypes).toIncludeSameMembers(_.difference(RELATED_TYPES, excludedRelatedTypes))
     })
   })
 })

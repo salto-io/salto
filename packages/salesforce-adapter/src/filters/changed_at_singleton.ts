@@ -36,7 +36,7 @@ import { MetadataInstanceElement } from '../transformers/transformer'
 import { ChangedAtSingletonValue, LastChangeDateOfTypesWithNestedInstances } from '../types'
 
 const createCurrentChangedAtSingletonValues = (
-  lastChangeDateOfTypesWithNestedInstances: LastChangeDateOfTypesWithNestedInstances,
+  lastChangeDateOfTypesWithNestedInstances: LastChangeDateOfTypesWithNestedInstances | {},
   metadataInstancesByType: Record<string, MetadataInstanceElement[]>
 ): ChangedAtSingletonValue => {
   const instanceValues: Values = {}
@@ -66,10 +66,7 @@ const dateStringOfMostRecentlyChangedInstance = (instances: InstanceElement[]): 
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'changedAtSingletonFilter',
   onFetch: async (elements: Element[]) => {
-    const { lastChangeDateOfTypesWithNestedInstances } = config
-    if (lastChangeDateOfTypesWithNestedInstances === undefined) {
-      throw new Error('Unknown error occurred upon fetch')
-    }
+    const { lastChangeDateOfTypesWithNestedInstances = {} } = config
     const instancesByType = _.groupBy(
       elements
         .filter(isMetadataInstanceElementSync)

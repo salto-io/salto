@@ -60,7 +60,7 @@ describe('Salesforce Fetch With Changes Detection', () => {
       },
     }))
   })
-  describe('fetch with changes detection for CustomObjects', () => {
+  describe('fetch with changes detection for types with nested instances', () => {
     const RELATED_TYPES = [...CUSTOM_OBJECT_FIELDS, CUSTOM_FIELD, CUSTOM_OBJECT] as const
     type RelatedType = typeof RELATED_TYPES[number]
 

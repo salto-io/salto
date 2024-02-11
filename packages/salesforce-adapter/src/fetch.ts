@@ -432,7 +432,6 @@ export const retrieveMetadataInstances = async ({
       .map(listFilesOfType)
   ))
   const filesToRetrieve = getFilesToRetrieve(allProps)
-
   const [profileFiles, nonProfileFiles] = _.partition(filesToRetrieve, file => file.type === PROFILE_METADATA_TYPE)
   // Avoid sending empty requests for types that had no instances that were changed from the previous fetch
   // This is a common case for fetchWithChangesDetection mode for types that had no changes on their instances
@@ -477,7 +476,7 @@ export const retrieveMetadataInstanceForFetchWithChangesDetection: typeof retrie
         return []
       }
       const nonModifiedProfilesProps = profileProps.filter(props => !metadataQuery.isInstanceMatch(props))
-      return nonModifiedProfilesProps.concat(nonProfileProps)
+      return nonModifiedProfilesProps.concat(modifiedNonProfileProps)
     },
   })
 

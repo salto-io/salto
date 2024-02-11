@@ -59,7 +59,7 @@ export const isTypeWithNestedInstancesPerParent = (typeName: string): typeName i
   (TYPES_WITH_NESTED_INSTANCES_PER_PARENT as ReadonlyArray<string>).includes(typeName)
 )
 
-const TYPE_TO_NESTED_TYPES: TypeToNestedTypes = {
+export const TYPE_TO_NESTED_TYPES: TypeToNestedTypes = {
   AssignmentRules: [ASSIGNMENT_RULE_METADATA_TYPE],
   AutoResponseRules: [AUTO_RESPONSE_RULE_METADATA_TYPE],
   CustomLabels: [CUSTOM_LABEL_METADATA_TYPE],

@@ -37,6 +37,7 @@ import hiddenFields from './filters/hidden_fields'
 import replaceRecordRef from './filters/replace_record_ref'
 import removeUnsupportedTypes from './filters/remove_unsupported_types'
 import dataInstancesInternalId from './filters/data_instances_internal_id'
+import dataAccountSpecificValues from './filters/data_account_specific_values'
 import dataInstancesReferences from './filters/data_instances_references'
 import dataTypesCustomFields from './filters/data_types_custom_fields'
 import dataInstancesCustomFields from './filters/data_instances_custom_fields'
@@ -130,6 +131,7 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   { creator: removeUnsupportedTypes },
   { creator: dataInstancesReferences },
   { creator: dataInstancesInternalId },
+  { creator: dataAccountSpecificValues },
   { creator: suiteAppInternalIds },
   { creator: currencyExchangeRate },
   // AuthorInformation filters must run after SDFInternalIds filter

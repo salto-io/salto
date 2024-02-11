@@ -48,9 +48,12 @@ const isNestedPath = (path: ElemID | undefined): path is ElemID =>
  * (since the internal id is hidden, and we don't support hidden values in lists,
  * the objects in the list need to be extracted to new instances).
  */
-const filterCreator: LocalFilterCreator = () => ({
+const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'dataInstancesInternalId',
   onFetch: async elements => {
+    if (config.fetch.resolveAccountSpecificValues) {
+      return
+    }
     const newInstancesMap: Record<string, InstanceElement> = {}
     const recordRefType = elements.filter(isObjectType).find(e => e.elemID.name === RECORD_REF)
 
@@ -110,6 +113,9 @@ const filterCreator: LocalFilterCreator = () => ({
   },
 
   preDeploy: async changes => {
+    if (config.fetch.resolveAccountSpecificValues) {
+      return
+    }
     await awu(changes).forEach(async change => {
       await awu(Object.values(change.data))
         .filter(isInstanceElement)

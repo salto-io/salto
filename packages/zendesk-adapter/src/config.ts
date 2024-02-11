@@ -1958,6 +1958,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'content_url', fieldType: 'string' },
         { fieldName: 'size', fieldType: 'number' },
         { fieldName: 'hash', fieldType: 'string' },
+        { fieldName: 'relative_path', fieldType: 'string' },
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
@@ -1968,7 +1969,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'article_id', fieldType: 'number' },
         { fieldName: 'display_file_name', fieldType: 'string' },
-        { fieldName: 'relative_path', fieldType: 'string' },
       ),
       extendsParentId: true,
       dataField: 'article_attachments',

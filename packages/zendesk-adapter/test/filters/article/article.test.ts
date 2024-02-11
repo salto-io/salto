@@ -138,6 +138,7 @@ describe('article filter', () => {
       inline: false,
       brand: brandInstance.value.id,
       content_url: 'https://someURL.com',
+      relative_path: '/hc/article_attachments/20222022/attachmentFileName.png',
     },
     undefined,
     { [CORE_ANNOTATIONS.PARENT]: [

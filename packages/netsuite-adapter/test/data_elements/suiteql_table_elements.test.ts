@@ -276,9 +276,9 @@ describe('SuiteQL table elements', () => {
   describe('when isPartial=true', () => {
     beforeEach(async () => {
       runSuiteQLMock.mockResolvedValue([
-        { id: '1', name: 'Some name' },
-        { id: '2', name: 'Some name 2' },
-        { id: '3', name: 'Some name 3' },
+        { id: '1', entityid: 'Some name' },
+        { id: '2', entityid: 'Some name 2' },
+        { id: '3', entityid: 'Some name 3' },
       ])
       const elementsSource = buildElementsSourceFromElements([
         suiteQLTableType,
@@ -289,8 +289,8 @@ describe('SuiteQL table elements', () => {
       elements = await getSuiteQLTableElements(client, elementsSource, true)
     })
 
-    it('should return only existing instances', () => {
-      expect(elements).toHaveLength(4)
+    it('should return only existing instances and employee instance', () => {
+      expect(elements).toHaveLength(5)
       const existingInstance = elements.filter(isInstanceElement)
         .find(element => element.elemID.name === 'currency')
       expect(existingInstance?.value).toEqual({
@@ -317,10 +317,21 @@ describe('SuiteQL table elements', () => {
         [INTERNAL_IDS_MAP]: {},
         version: 1,
       })
+      const employeeInstance = elements.filter(isInstanceElement)
+        .find(element => element.elemID.name === 'employee')
+      expect(employeeInstance?.value).toEqual({
+        [INTERNAL_IDS_MAP]: {
+          1: { name: 'Some name' },
+          2: { name: 'Some name 2' },
+          3: { name: 'Some name 3' },
+        },
+        version: 1,
+      })
     })
 
     it('should not call runSuiteQL', () => {
-      expect(runSuiteQLMock).not.toHaveBeenCalled()
+      expect(runSuiteQLMock).toHaveBeenCalledTimes(1)
+      expect(runSuiteQLMock).toHaveBeenCalledWith(expect.stringContaining('FROM employee'))
     })
   })
 })

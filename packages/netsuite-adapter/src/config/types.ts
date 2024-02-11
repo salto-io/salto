@@ -17,7 +17,7 @@ import { types as lowerdashTypes } from '@salto-io/lowerdash'
 import { ElemID, ListType, BuiltinTypes, CORE_ANNOTATIONS, createRestriction, MapType, Values } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { definitions } from '@salto-io/adapter-components'
-import { BIN, CURRENCY, CUSTOM_RECORD_TYPE, DATASET, EXCHANGE_RATE, INACTIVE_FIELDS, NETSUITE, PERMISSIONS, SAVED_SEARCH, WORKBOOK } from '../constants'
+import { BIN, CURRENCY, CUSTOM_RECORD_TYPE, DATASET, EMPLOYEE, EXCHANGE_RATE, INACTIVE_FIELDS, NETSUITE, PERMISSIONS, SAVED_SEARCH, WORKBOOK } from '../constants'
 import { netsuiteSupportedTypes } from '../types'
 import { ITEM_TYPE_TO_SEARCH_STRING } from '../data_elements/types'
 import { ALL_TYPES_REGEX, GROUPS_TO_DATA_FILE_TYPES, DEFAULT_AXIOS_TIMEOUT_IN_MINUTES, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES, DEFAULT_CONCURRENCY, DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB, DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FILE_CABINET, FILE_TYPES_TO_EXCLUDE_REGEX, INCLUDE_ALL } from './constants'
@@ -460,7 +460,7 @@ export const fetchDefault: FetchParams = {
       { name: DATASET },
       { name: 'customer' },
       { name: 'accountingPeriod' },
-      { name: 'employee' },
+      { name: EMPLOYEE },
       { name: 'job' },
       { name: 'manufacturingCostTemplate' },
       { name: 'partner' },

@@ -13,9 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
-import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, TopLevelElement, createRefToElmWithValue } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
+import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, TopLevelElement, createRefToElmWithValue, isInstanceElement } from '@salto-io/adapter-api'
 import NetsuiteClient from '../client/client'
 import { ALLOCATION_TYPE, EMPLOYEE, NETSUITE, PROJECT_EXPENSE_TYPE, TAX_SCHEDULE } from '../constants'
 import { getLastServerTime } from '../server_time'
@@ -23,6 +25,7 @@ import { toSuiteQLWhereDateString } from '../changes_detector/date_formats'
 import { SuiteQLTableName } from './types'
 
 const log = logger(module)
+const { awu } = collections.asynciterable
 
 export const SUITEQL_TABLE = 'suiteql_table'
 export const INTERNAL_IDS_MAP = 'internalIdsMap'
@@ -444,9 +447,35 @@ export const QUERIES_BY_TABLE_NAME: Record<SuiteQLTableName, QueryParams | undef
   customrecordtype: undefined,
 }
 
-export const getSuiteQLTableInternalIdsMap = (instance: InstanceElement): InternalIdsMap =>
+export const getSuiteQLTableInternalIdsMap = (instance: InstanceElement): InternalIdsMap => {
   // value[INTERNAL_IDS_MAP] can be undefined because transformElement transform empty objects to undefined
-  instance.value[INTERNAL_IDS_MAP] ?? {}
+  if (instance.value[INTERNAL_IDS_MAP] === undefined) {
+    instance.value[INTERNAL_IDS_MAP] = {}
+  }
+  return instance.value[INTERNAL_IDS_MAP]
+}
+
+export const getSuiteQLNameToInternalIdsMap = async (
+  elementsSource: ReadOnlyElementsSource
+): Promise<Record<string, Record<string, string[]>>> => {
+  const suiteQLTableInstances = await awu(await elementsSource.list())
+    .filter(elemId => elemId.idType === 'instance' && elemId.typeName === SUITEQL_TABLE)
+    .map(elemId => elementsSource.get(elemId))
+    .filter(isInstanceElement)
+    .toArray()
+
+  return _(suiteQLTableInstances)
+    .keyBy(instance => instance.elemID.name)
+    .mapValues(getSuiteQLTableInternalIdsMap)
+    .mapValues(
+      internalIdsMap => _(internalIdsMap)
+        .entries()
+        .groupBy(([_key, value]) => value.name)
+        .mapValues(rows => rows.map(([key, _value]) => key))
+        .value()
+    )
+    .value()
+}
 
 const getInternalIdsMap = async (
   client: NetsuiteClient,

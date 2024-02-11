@@ -476,9 +476,6 @@ describe('Scriptrunner references', () => {
         expect(getNestedField({ workflowVersion, transitionKey: 'tran1', postFunctionIndex: 0, fieldName: SCRIPT_RUNNER }).transitionId)
           .toEqual('21')
       })
-      // it('should create reference although enableMissingReferences is undefined', async () => {
-      //   config.fetch.enableMissingReferences = undefined
-      // })
     })
     describe('pre deploy', () => {
       it('should store reference and replace correctly', async () => {

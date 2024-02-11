@@ -340,6 +340,24 @@ describe('netsuite config validations', () => {
         expect(() => validateConfig(config)).toThrow('The following regular expressions are invalid')
       })
     })
+
+    describe('skip resolving account specific values to types', () => {
+      it('should not throw', () => {
+        config.fetch.skipResolvingAccountSpecificValuesToTypes = []
+        expect(() => validateConfig(config)).not.toThrow()
+
+        config.fetch.skipResolvingAccountSpecificValuesToTypes = ['.*']
+        expect(() => validateConfig(config)).not.toThrow()
+      })
+      it('should throw if value is not a list of strings', () => {
+        config.fetch.skipResolvingAccountSpecificValuesToTypes = '.*'
+        expect(() => validateConfig(config)).toThrow('fetch.skipResolvingAccountSpecificValuesToTypes should be a list of strings')
+      })
+      it('should throw if value contain invalid regex', () => {
+        config.fetch.skipResolvingAccountSpecificValuesToTypes = ['.*', '(']
+        expect(() => validateConfig(config)).toThrow('The following regular expressions are invalid: (')
+      })
+    })
   })
 
   describe('client config', () => {

@@ -115,4 +115,12 @@ describe('jsmPermissionsValidator', () => {
     )
     expect(changeErrors).toHaveLength(0)
   })
+  it('should not return error if trying to deploy Jsm type with its associated project', async () => {
+    const validator = jsmPermissionsValidator(config, client)
+    projectInstance.value.id = '44'
+    const changeErrors = await validator(
+      [toChange({ after: queueInstance }), toChange({ after: projectInstance })],
+    )
+    expect(changeErrors).toHaveLength(0)
+  })
 })

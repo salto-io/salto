@@ -17,7 +17,7 @@ import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, TopLevelElement, createRefToElmWithValue } from '@salto-io/adapter-api'
 import NetsuiteClient from '../client/client'
-import { ALLOCATION_TYPE, NETSUITE, PROJECT_EXPENSE_TYPE, TAX_SCHEDULE } from '../constants'
+import { ALLOCATION_TYPE, EMPLOYEE, NETSUITE, PROJECT_EXPENSE_TYPE, TAX_SCHEDULE } from '../constants'
 import { getLastServerTime } from '../server_time'
 import { toSuiteQLWhereDateString } from '../changes_detector/date_formats'
 import { SuiteQLTableName } from './types'
@@ -516,7 +516,8 @@ const getSuiteQLTableInstance = async (
   const instanceElemId = suiteQLTableType.elemID.createNestedID('instance', tableName)
   const existingInstance = await elementsSource.get(instanceElemId)
   fixExistingInstance(suiteQLTableType, existingInstance)
-  if (isPartial) {
+  // we want to query employees in partial fetch too, for _changed_by
+  if (isPartial && tableName !== EMPLOYEE) {
     return existingInstance
   }
   const instance = createOrGetExistingInstance(suiteQLTableType, tableName, existingInstance)

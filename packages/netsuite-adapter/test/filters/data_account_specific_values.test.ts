@@ -214,8 +214,8 @@ describe('data account specific values filter', () => {
       delete dataInstance.value.customField.name
       delete dataInstance.value.someField.inner.name
       await filterCreator(filterOpts).onFetch?.(elements)
-      expect(dataInstance.value.customField.id).toEqual('[ACCOUNT_SPECIFIC_VALUE] (account) (unknown 2)')
-      expect(dataInstance.value.someField.inner.id).toEqual('[ACCOUNT_SPECIFIC_VALUE] (object) (unknown 123)')
+      expect(dataInstance.value.customField.id).toEqual('[ACCOUNT_SPECIFIC_VALUE] (account) (unknown object)')
+      expect(dataInstance.value.someField.inner.id).toEqual('[ACCOUNT_SPECIFIC_VALUE] (object) (unknown object)')
     })
 
     it('should add reference types and replace field types', async () => {

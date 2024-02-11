@@ -61,13 +61,12 @@ const getUnknownTypeReferencesPath = (elemId: ElemID): string => {
 const resolvedAccountSpecificValueRegex = new RegExp(`^${_.escapeRegExp(ACCOUNT_SPECIFIC_VALUE)} \\((?<${REGEX_TYPE}>\\w+)\\) \\((?<${REGEX_NAME}>.*)\\)$`)
 
 const toResolvedAccountSpecificValue = (
-  { type, name, internalId }: {
+  { type, name }: {
     type: string
     name: string | undefined
-    internalId: string
   }
 ): ResolvedAccountSpecificValue => ({
-  id: `${ACCOUNT_SPECIFIC_VALUE} (${type}) (${name ?? `unknown ${internalId}`})`,
+  id: `${ACCOUNT_SPECIFIC_VALUE} (${type}) (${name ?? 'unknown object'})`,
 })
 
 const getNameFromUnknownTypeReference = (
@@ -239,10 +238,10 @@ const setAccountSpecificValues = (
       const name = getNameFromUnknownTypeReference(
         path, unknownTypeReferencesInstance, internalId, fallbackName
       )
-      return toResolvedAccountSpecificValue({ type: UNKNOWN_TYPE, name, internalId })
+      return toResolvedAccountSpecificValue({ type: UNKNOWN_TYPE, name })
     }
     const name = getNameFromSuiteQLTableInstance(suiteQLTableInstance, internalId, fallbackName)
-    return toResolvedAccountSpecificValue({ type: suiteQLTableInstance.elemID.name, name, internalId })
+    return toResolvedAccountSpecificValue({ type: suiteQLTableInstance.elemID.name, name })
   }
 
   dataInstance.value = transformValuesSync({

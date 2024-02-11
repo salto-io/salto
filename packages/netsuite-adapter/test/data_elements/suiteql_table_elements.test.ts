@@ -47,7 +47,7 @@ describe('SuiteQL table elements', () => {
       fetch: {
         ...fullFetchConfig(),
         resolveAccountSpecificValues: true,
-        skipResolvingAccountSpecificValuesToTypes: ['employee'],
+        skipResolvingAccountSpecificValuesToTypes: ['vendor'],
       },
     }
     serverTimeType = new ObjectType({ elemID: new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME) })
@@ -128,7 +128,7 @@ describe('SuiteQL table elements', () => {
 
     it('should return all elements', () => {
       // additional elements are the type, and instances from getAdditionalInstances
-      // minus 1 for the skipped employee table
+      // minus 1 for the skipped vendor table
       expect(elements).toHaveLength(numOfInstances + 4 - 1)
       expect(elements.every(element => element.annotations[CORE_ANNOTATIONS.HIDDEN] === true)).toBeTruthy()
     })
@@ -215,8 +215,8 @@ describe('SuiteQL table elements', () => {
     })
 
     it('should skip tables from skipResolvingAccountSpecificValuesToTypes', () => {
-      expect(elements.find(elem => elem.elemID.name === 'employee')).toBeUndefined()
-      expect(runSuiteQLMock).not.toHaveBeenCalledWith(expect.stringContaining('FROM employee'))
+      expect(elements.find(elem => elem.elemID.name === 'vendor')).toBeUndefined()
+      expect(runSuiteQLMock).not.toHaveBeenCalledWith(expect.stringContaining('FROM vendor '))
     })
   })
 

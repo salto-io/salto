@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeValidator, getChangeData, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
+import { Change, ChangeValidator, getChangeData, isAdditionChange, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { getParent, hasValidParent } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
@@ -30,8 +30,9 @@ const SUPPORTED_TYPES = new Set(
   [REQUEST_TYPE_NAME, QUEUE_TYPE, PORTAL_GROUP_TYPE, CALENDAR_TYPE, PORTAL_SETTINGS_TYPE_NAME, SLA_TYPE_NAME, FORM_TYPE]
 )
 
-const getProjectChangesNames = (changes: ReadonlyArray<Change>): string[] => changes
+const getAdditionChangedProjectsNames = (changes: ReadonlyArray<Change>): string[] => changes
   .filter(isInstanceChange)
+  .filter(isAdditionChange)
   .map(getChangeData)
   .filter(instance => instance.elemID.typeName === PROJECT_TYPE)
   .map(instance => instance.elemID.getFullName())
@@ -66,7 +67,7 @@ export const jsmPermissionsValidator: (
       .filter(instance => SUPPORTED_TYPES.has(instance.elemID.typeName))
       .filter(instance => hasValidParent(instance))
       // We don't need to check for permissions if we are also deploying the project itself
-      .filter(instance => !getProjectChangesNames(changes).includes(getParent(instance).elemID.getFullName()))
+      .filter(instance => !getAdditionChangedProjectsNames(changes).includes(getParent(instance).elemID.getFullName()))
       .filter(instance => !serviceDeskProjectIds.includes(getParent(instance).value.id))
       .map(instance => ({
         elemID: instance.elemID,

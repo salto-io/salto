@@ -611,3 +611,9 @@ export const SalesforceArtifacts = {
   DeployPackageXml: 'package.xml',
   PostDeployRetrieveZip: 'post-deploy-retrieve.zip',
 } as const
+
+
+// The following Elements are not returned from `listMetadataObjects` but do return as instances
+export const NON_LISTED_ELEMENT_IDS = [
+  'salesforce.RecordType.instance.Idea_InternalIdeasIdeaRecordType',
+]

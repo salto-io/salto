@@ -756,6 +756,7 @@ export default class SalesforceAdapter implements AdapterOperations {
 
   private async getElemIdsByTypeFromSource(): Promise<Record<string, ElemID[]>> {
     const metadataElements = (await awu(await this.elementsSource.getAll()).toArray())
+      .filter(element => !constants.NON_LISTED_ELEMENT_IDS.includes(element.elemID.getFullName()))
       .filter(element => isMetadataInstanceElementSync(element) || isCustomObjectSync(element))
     return _(metadataElements)
       .groupBy(metadataTypeSync)

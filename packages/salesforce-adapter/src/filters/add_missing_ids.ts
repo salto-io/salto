@@ -30,16 +30,10 @@ import {
   isStandardField,
   isInstanceOfTypeSync, getFullName,
 } from './utils'
-import { GLOBAL_VALUE_SET_TRANSLATION_METADATA_TYPE, TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../constants'
+import { GLOBAL_VALUE_SET_TRANSLATION_METADATA_TYPE, NON_LISTED_ELEMENT_IDS, TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../constants'
 
 const log = logger(module)
 const { awu, groupByAsync } = collections.asynciterable
-
-
-const ELEMENTS_WITH_NO_INTERNAL_IDS = new Set([
-  'salesforce.RecordType.instance.Idea_InternalIdeasIdeaRecordType',
-])
-
 const TYPES_WITH_NO_INTERNAL_IDS = [
   TOPICS_FOR_OBJECTS_METADATA_TYPE,
   GLOBAL_VALUE_SET_TRANSLATION_METADATA_TYPE,
@@ -47,7 +41,7 @@ const TYPES_WITH_NO_INTERNAL_IDS = [
 
 // Used for logging
 const shouldHaveInternalId = (element: Element): boolean => {
-  if (ELEMENTS_WITH_NO_INTERNAL_IDS.has(element.elemID.getFullName())) {
+  if (NON_LISTED_ELEMENT_IDS.includes(element.elemID.getFullName())) {
     return false
   }
   if (isInstanceElement(element)) {

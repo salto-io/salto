@@ -16,10 +16,10 @@
 import _ from 'lodash'
 import { regex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { isInstanceElement, isObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, createRefToElmWithValue, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import { isCriteriaQuery } from '../../config/query'
 import { LocalFilterCreator } from '../../filter'
-import { isCustomRecordType } from '../../types'
+import { isCustomFieldName, isCustomRecordType } from '../../types'
 import { CUSTOM_RECORD_TYPE } from '../../constants'
 import { shouldExcludeElement } from './exclude_instances'
 
@@ -45,6 +45,16 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
       removedCustomRecordInstances.length,
       removedCustomRecordTypes.map(elem => elem.elemID.getFullName())
     )
+
+    elements
+      .filter(isObjectType)
+      .filter(isCustomRecordType)
+      .flatMap(type => Object.values(type.fields))
+      .filter(field => isCustomFieldName(field.name))
+      .filter(field => removedCustomRecordTypeNames.has(field.refType.elemID.name))
+      .forEach(field => {
+        field.refType = createRefToElmWithValue(BuiltinTypes.UNKNOWN)
+      })
   },
 })
 

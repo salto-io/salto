@@ -1,21 +1,18 @@
 /*
-*                      Copyright 2024 Salto Labs Ltd.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-
-/* eslint-disable no-console */
-
+ *                      Copyright 2024 Salto Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import {
   Change,
   Element,
@@ -50,18 +47,15 @@ const transformDynamicContentDependencies = async (
 ): Promise<void> => {
   const partToTemplate = (part: string): TemplatePart[] => {
     const placeholder = part.match(INNER_PLACEHOLDER_REGEX)
-    console.log('hi', part)
     if (!placeholder) {
       return [part]
     }
     const itemInstance = placeholderToItem[placeholder[0]]
-    console.log('hi1', itemInstance)
     if (!itemInstance) {
       if (!enableMissingReference) {
         return [part]
       }
       const matches = placeholder[0].match(/dc\.([a-zA-Z0-9_-]+)\}\}/)
-      console.log('hi2', matches)
       // matches can return null
       if (!matches || matches.length < 2) {
         return [part]
@@ -72,25 +66,24 @@ const transformDynamicContentDependencies = async (
         // matches[1] is the value after the ".", it is caught by the capture group in the regex
         matches[1],
       )
-      console.log('hi3', missingInstance)
       missingInstance.value.placeholder = `${placeholder[0]}`
       return [OPEN_BRACKETS, new ReferenceExpression(missingInstance.elemID, missingInstance), CLOSE_BRACKETS]
     }
     return [OPEN_BRACKETS, new ReferenceExpression(itemInstance.elemID, itemInstance), CLOSE_BRACKETS]
   }
-  instance.value = await transformValues({
-    values: instance.value,
-    type: await instance.getType(),
-    pathID: instance.elemID,
-    transformFunc: ({ value, path }) => {
-      if (path && path.name.startsWith('raw_') && _.isString(value)) {
-        return extractTemplate(value, [PLACEHOLDER_REGEX], partToTemplate)
-      }
-      return value
-    },
-    allowEmpty: true,
-  }) ?? instance.value
-  // console.log('hi4', instance.value)
+  instance.value =
+    (await transformValues({
+      values: instance.value,
+      type: await instance.getType(),
+      pathID: instance.elemID,
+      transformFunc: ({ value, path }) => {
+        if (path && path.name.startsWith('raw_') && _.isString(value)) {
+          return extractTemplate(value, [PLACEHOLDER_REGEX], partToTemplate)
+        }
+        return value
+      },
+      allowEmpty: true,
+    })) ?? instance.value
 }
 
 const templatePartToApiValue = (allParts: TemplatePart[]): string =>
@@ -138,7 +131,6 @@ export const DynamicContentReferencesOnFetch = async (elements: Element[], confi
     .filter(instance => instance.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME)
     .keyBy(instance => instance.value.placeholder)
     .value()
-  console.log('poop2', placeholderToItem)
 
   await Promise.all(
     instances.map(instance =>

@@ -767,6 +767,13 @@ export default class SalesforceAdapter implements AdapterOperations {
     fetchElements: ReadonlyArray<Element>
     fetchProfile: FetchProfile
   }): Promise<Required<PartialFetchData>['deletedElements']> {
+    const createElemId = (type: ObjectType, fullName: string): ElemID => {
+      const typeName = apiNameSync(type)
+      return typeName === CUSTOM_OBJECT
+        // CustomObjects are converted to types and do not remain instances
+        ? new ElemID(constants.SALESFORCE, fullName)
+        : createInstanceElement({ fullName }, type).elemID
+    }
     const metadataTypesByName = _.keyBy(
       fetchElements.filter(isMetadataObjectType),
       type => apiNameSync(type) ?? 'unknown'
@@ -784,7 +791,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         }
         const listedElemIdsFullNames = new Set(Array.from(this.listedInstancesByType.getOrUndefined(typeName) ?? [])
           // We invoke createInstanceElement to have the correct elemID that we calculate in fetch
-          .map(fullName => createInstanceElement({ fullName }, metadataType).elemID.getFullName()))
+          .map(fullName => createElemId(metadataType, fullName).getFullName()))
 
         elemIdsFromSource.forEach(sourceElemId => {
           if (!listedElemIdsFullNames.has(sourceElemId.getFullName())) {

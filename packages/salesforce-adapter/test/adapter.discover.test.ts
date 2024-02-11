@@ -42,7 +42,7 @@ import {
   MetadataObjectType,
   Types,
 } from '../src/transformers/transformer'
-import { findElements, mockFetchOpts, ZipFile } from './utils'
+import { createCustomObjectType, findElements, mockFetchOpts, ZipFile } from './utils'
 import mockAdapter from './adapter'
 import * as constants from '../src/constants'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
@@ -403,12 +403,15 @@ describe('SalesforceAdapter fetch', () => {
           mockInstances().ChangedAtSingleton,
           mockTypes.Layout,
           mockTypes.ApexClass,
+          mockTypes.CustomObject,
           createInstanceElement({ fullName: 'Layout1' }, mockTypes.Layout),
           createInstanceElement({ fullName: 'Layout2' }, mockTypes.Layout),
           createInstanceElement({ fullName: 'DeletedLayout' }, mockTypes.Layout),
           createInstanceElement({ fullName: 'Apex1' }, mockTypes.ApexClass),
           createInstanceElement({ fullName: 'Apex2' }, mockTypes.ApexClass),
           createInstanceElement({ fullName: 'DeletedApex' }, mockTypes.ApexClass),
+          createCustomObjectType('Account', {}),
+          createCustomObjectType('Deleted__c', {}),
         ]
         const elementsSource = buildElementsSourceFromElements(existingElements);
         ({ connection: testConnection, adapter: testAdapter } = mockAdapter({
@@ -445,6 +448,11 @@ describe('SalesforceAdapter fetch', () => {
               mockFileProperties({ type: 'ApexClass', fullName: 'Apex2' }),
             ]
           }
+          if (query.type === 'CustomObject') {
+            return [
+              mockFileProperties({ type: 'CustomObject', fullName: 'Account' }),
+            ]
+          }
           return []
         }))
       })
@@ -456,6 +464,7 @@ describe('SalesforceAdapter fetch', () => {
         expect(makeArray(fetchResult.partialFetchData?.deletedElements).map(id => id.getFullName())).toEqual([
           'salesforce.Layout.instance.DeletedLayout',
           'salesforce.ApexClass.instance.DeletedApex',
+          'salesforce.Deleted__c',
         ])
       })
     })

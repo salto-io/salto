@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, definitions } from '@salto-io/adapter-components'
 import { createConnection } from './connection'
 import { STRIPE } from '../constants'
 import { Credentials } from '../auth'
@@ -23,22 +23,22 @@ const {
 } = clientUtils
 
 
-const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
+const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<definitions.ClientRateLimitConfig> = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
   get: 25,
   deploy: 25,
 }
 
 // Stripe uses cursor pagination so this parameter is not in use
-const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
+const DEFAULT_PAGE_SIZE: Required<definitions.ClientPageSizeConfig> = {
   get: 100,
 }
 
 export default class StripeClient extends clientUtils.AdapterHTTPClient<
-  Credentials, clientUtils.ClientRateLimitConfig
+  Credentials, definitions.ClientRateLimitConfig
 > {
   constructor(
-    clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig>,
+    clientOpts: clientUtils.ClientOpts<Credentials, definitions.ClientRateLimitConfig>,
   ) {
     super(
       STRIPE,

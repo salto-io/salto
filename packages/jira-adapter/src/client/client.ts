@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, definitions } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
 import { createSchemeGuard, safeJsonStringify } from '@salto-io/adapter-utils'
@@ -30,13 +30,13 @@ const {
   DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
 } = clientUtils
 
-const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
+const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<definitions.ClientRateLimitConfig> = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
   get: 60,
   deploy: 2,
 }
 
-const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
+const DEFAULT_PAGE_SIZE: Required<definitions.ClientPageSizeConfig> = {
   get: 1000,
 }
 
@@ -53,12 +53,12 @@ const GRAPHQL_RESPONSE_SCHEME = Joi.object({
 const isGraphQLResponse = createSchemeGuard<graphQLResponseType>(GRAPHQL_RESPONSE_SCHEME, 'Failed to get graphql response')
 
 export default class JiraClient extends clientUtils.AdapterHTTPClient<
-  Credentials, clientUtils.ClientRateLimitConfig
+  Credentials, definitions.ClientRateLimitConfig
 > {
   readonly isDataCenter: boolean
 
   constructor(
-    clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig>
+    clientOpts: clientUtils.ClientOpts<Credentials, definitions.ClientRateLimitConfig>
       & { isDataCenter: boolean },
   ) {
     super(
@@ -132,7 +132,7 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
   }
 
   // Sends a post request to Jira with GQL body
-  @clientUtils.throttle<clientUtils.ClientRateLimitConfig>({ bucketName: 'get', keys: ['url', 'queryParams'] })
+  @clientUtils.throttle<definitions.ClientRateLimitConfig>({ bucketName: 'get', keys: ['url', 'queryParams'] })
   @clientUtils.logDecorator(['url', 'queryParams'])
   @clientUtils.requiresLogin()
   public async gqlPost(

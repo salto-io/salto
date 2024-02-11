@@ -27,10 +27,12 @@ import {
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
   ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType, isTypeReference,
   ReadOnlyElementsSource, ReferenceMap, TypeReference, createRefToElmWithValue, isElement,
-  compareSpecialValues, getChangeData, isTemplateExpression, PlaceholderObjectType, UnresolvedReference, FieldMap,
+  compareSpecialValues, getChangeData, isTemplateExpression, PlaceholderObjectType,
+  UnresolvedReference, FieldMap,
 } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from './walk_element'
+import { extractAdditionalPropertiesField } from './additional_properties'
 
 const { mapValuesAsync } = promises.object
 const { awu, mapAsync, toArrayAsync } = collections.asynciterable
@@ -113,7 +115,7 @@ const fieldMapperGenerator = (
 ): FieldMapperFunc => {
   if (isObjectType(type) || isMapType(type) || isListType(type)) {
     const objType = toObjectType(type, value)
-    return name => objType.fields[name]
+    return name => objType.fields[name] ?? extractAdditionalPropertiesField(objType, name)
   }
   const objType = new ObjectType({ elemID: new ElemID('') })
   return name => (

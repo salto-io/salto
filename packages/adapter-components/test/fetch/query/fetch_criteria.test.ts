@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { fieldCriterionCreator, nameCriterion } from '../../../src/elements/query'
+import { fieldCriterionCreator, nameCriterion } from '../../../src/fetch/query'
 
 describe('fetch_criteria', () => {
   describe('fieldCriterionCreator', () => {

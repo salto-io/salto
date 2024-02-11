@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, getChangeData, ProgressReporter, isInstanceElement, FixElementsFunc } from '@salto-io/adapter-api'
-import { config as configUtils, elements as elementUtils, client as clientUtils, combineElementFixers } from '@salto-io/adapter-components'
+import { config as configUtils, elements as elementUtils, client as clientUtils, combineElementFixers, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, objects } from '@salto-io/lowerdash'
@@ -64,11 +64,12 @@ const { awu } = collections.asynciterable
 
 const { generateTypes, getAllInstances } = elementUtils.swagger
 const { getAllElements } = elementUtils.ducktype
-const { findDataField, computeGetArgs } = elementUtils
+const { computeGetArgs } = fetchUtils.resource
+const { findDataField } = elementUtils
 const { createPaginator } = clientUtils
 const log = logger(module)
 
-export const DEFAULT_FILTERS = [
+const DEFAULT_FILTERS = [
   standardRolesFilter,
   deleteFieldsFilter,
   userTypeFilter,
@@ -199,7 +200,7 @@ export default class OktaAdapter implements AdapterOperations {
   private async getSwaggerInstances(
     allTypes: TypeMap,
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
-  ): Promise<elementUtils.FetchElements<InstanceElement[]>> {
+  ): Promise<fetchUtils.FetchElements<InstanceElement[]>> {
     const updatedApiDefinitionsConfig = {
       ...this.userConfig.apiDefinitions,
       types: {
@@ -220,7 +221,7 @@ export default class OktaAdapter implements AdapterOperations {
     })
   }
 
-  private async getPrivateApiElements(): Promise<elementUtils.FetchElements<Element[]>> {
+  private async getPrivateApiElements(): Promise<fetchUtils.FetchElements<Element[]>> {
     const { privateApiDefinitions } = this.userConfig
     if (this.isOAuthLogin && this.userConfig[CLIENT_CONFIG]?.usePrivateAPI) {
       log.warn('Fetching private APIs is not supported for OAuth login, creating config suggestion to exclude private APIs')
@@ -256,7 +257,7 @@ export default class OktaAdapter implements AdapterOperations {
   @logDuration('generating instances from service')
   private async getAllElements(
     progressReporter: ProgressReporter
-  ): Promise<elementUtils.FetchElements<Element[]>> {
+  ): Promise<fetchUtils.FetchElements<Element[]>> {
     progressReporter.reportProgress({ message: 'Fetching types' })
     const { allTypes, parsedConfigs } = await this.getSwaggerTypes()
     progressReporter.reportProgress({ message: 'Fetching instances' })

@@ -25,7 +25,8 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { FieldToOmitType, DATA_FIELD_ENTIRE_OBJECT } from '../config/transformation'
+import { FieldToOmitType } from '../config/transformation'
+import { DATA_FIELD_ENTIRE_OBJECT } from '../definitions/system'
 
 const { awu } = collections.asynciterable
 const log = logger(module)

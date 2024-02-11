@@ -31,10 +31,11 @@ import * as instanceElements from '../../../src/elements/ducktype/instance_eleme
 import * as transformer from '../../../src/elements/ducktype/transformer'
 import { HTTPError, Paginator } from '../../../src/client'
 import { TypeDuckTypeConfig, TypeDuckTypeDefaultsConfig } from '../../../src/config'
-import { simpleGetArgs, returnFullEntry, computeGetArgs } from '../../../src/elements'
+import { returnFullEntry } from '../../../src/elements'
 import { findDataField } from '../../../src/elements/field_finder'
-import { createElementQuery } from '../../../src/elements/query'
+import { createElementQuery } from '../../../src/fetch/query'
 import { AdapterFetchError, InvalidSingletonType } from '../../../src/config/shared'
+import { computeGetArgs, simpleGetArgs } from '../../../src/fetch/resource'
 
 describe('ducktype_transformer', () => {
   describe('getTypeAndInstances', () => {

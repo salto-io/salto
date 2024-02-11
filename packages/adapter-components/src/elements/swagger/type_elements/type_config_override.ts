@@ -19,8 +19,9 @@ import { values } from '@salto-io/lowerdash'
 import { TypeSwaggerConfig, AdditionalTypeConfig, TypeSwaggerDefaultConfig } from '../../../config/swagger'
 import { FieldToHideType, getTypeTransformationConfig } from '../../../config/transformation'
 import { toPrimitiveType } from './swagger_parser'
-import { hideFields, fixFieldTypes, getContainerForType } from '../../type_elements'
+import { hideFields, fixFieldTypes } from '../../type_elements'
 import { getConfigWithDefault } from '../../../config/shared'
+import { getContainerForType } from '../../../fetch/element'
 
 const log = logger(module)
 const { isDefined } = values

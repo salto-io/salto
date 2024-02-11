@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, Adapter, Values } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, definitions } from '@salto-io/adapter-components'
 import OktaClient from './client/client'
 import OktaAdapter from './adapter'
 import { Credentials, accessTokenCredentialsType, OAuthAccessTokenCredentials, isOAuthAccessTokenCredentials } from './auth'
@@ -40,7 +40,8 @@ import { OKTA } from './constants'
 import { getAdminUrl } from './client/admin'
 
 const log = logger(module)
-const { validateClientConfig, validateCredentials } = clientUtils
+const { validateCredentials } = clientUtils
+const { validateClientConfig } = definitions
 const {
   validateSwaggerApiDefinitionConfig,
   validateDuckTypeApiDefinitionConfig,

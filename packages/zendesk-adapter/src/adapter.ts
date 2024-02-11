@@ -33,7 +33,7 @@ import {
   ReadOnlyElementsSource,
   SaltoError,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, combineElementFixers, config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, combineElementFixers, config as configUtils, definitions, elements as elementUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
 import {
   getElemIdFuncWrapper,
   inspectValue,
@@ -164,7 +164,8 @@ import guideThemeSettingFilter from './filters/guide_theme_settings'
 const { makeArray } = collections.array
 const log = logger(module)
 const { createPaginator } = clientUtils
-const { findDataField, computeGetArgs } = elementUtils
+const { findDataField } = elementUtils
+const { computeGetArgs } = fetchUtils.resource
 const {
   getAllElements,
   replaceInstanceTypeForDeploy,
@@ -313,7 +314,7 @@ const zendeskGuideEntriesFunc = (
         return makeArray(response)
       }
       const responseEntries = makeArray(
-        (responseEntryName !== configUtils.DATA_FIELD_ENTIRE_OBJECT)
+        (responseEntryName !== definitions.DATA_FIELD_ENTIRE_OBJECT)
           ? response[responseEntryName]
           : response
       ) as clientUtils.ResponseValue[]
@@ -328,7 +329,7 @@ const zendeskGuideEntriesFunc = (
           addParentFields(entry)
         })
       }
-      if (responseEntryName === configUtils.DATA_FIELD_ENTIRE_OBJECT) {
+      if (responseEntryName === definitions.DATA_FIELD_ENTIRE_OBJECT) {
         return responseEntries
       }
       return {
@@ -367,7 +368,7 @@ const getGuideElements = async ({
   apiDefinitions: configUtils.AdapterDuckTypeApiConfig
   fetchQuery: elementUtils.query.ElementQuery
   getElemIdFunc?: ElemIdGetter
-}): Promise<elementUtils.FetchElements<Element[]>> => {
+}): Promise<fetchUtils.FetchElements<Element[]>> => {
   const transformationDefaultConfig = apiDefinitions.typeDefaults.transformation
   const transformationConfigByType = configUtils.getTransformationConfigByType(apiDefinitions.types)
 

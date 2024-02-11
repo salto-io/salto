@@ -16,7 +16,7 @@
 import { BuiltinTypes, ElemID, Field, isContainerType, isObjectType, isPrimitiveType, ListType, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { NETSUITE, PARENT, RECORD_REF } from '../constants'
+import { EMPLOYEE, NETSUITE, PARENT, RECORD_REF } from '../constants'
 import { LocalFilterCreator } from '../filter'
 
 const { awu } = collections.asynciterable
@@ -141,7 +141,7 @@ const fieldNameToTypeName: Record<string, string | undefined> = {
   owner: undefined,
   attendee: undefined,
   resource: undefined,
-  employee: 'employee',
+  employee: EMPLOYEE,
   customer: 'customer',
   payrollItem: 'payrollItem',
   temporaryLocalJurisdiction: undefined,
@@ -221,7 +221,7 @@ const fieldNameToTypeName: Record<string, string | undefined> = {
   voidJournal: undefined,
   payeeAddressList: undefined,
   contactSource: undefined,
-  supervisor: 'employee',
+  supervisor: EMPLOYEE,
   assistant: undefined,
   role: 'role',
   entityStatus: undefined,

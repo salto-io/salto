@@ -97,6 +97,7 @@ import centralizeTrackingInfoFilter from './filters/centralize_tracking_info'
 import changedAtSingletonFilter from './filters/changed_at_singleton'
 import importantValuesFilter from './filters/important_values_filter'
 import { FetchElements, FetchProfile, MetadataQuery, SalesforceConfig } from './types'
+import mergeProfilesWithSourceValuesFilter from './filters/merge_profiles_with_source_values'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
 import {
@@ -107,7 +108,12 @@ import {
   listMetadataObjects,
   metadataTypeSync,
 } from './filters/utils'
-import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances } from './fetch'
+import {
+  retrieveMetadataInstances,
+  fetchMetadataType,
+  fetchMetadataInstances,
+  retrieveMetadataInstanceForFetchWithChangesDetection,
+} from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 import { getLookUpName, getLookupNameForDataInstances } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
@@ -122,7 +128,10 @@ import {
   OWNER_ID,
   PROFILE_METADATA_TYPE,
 } from './constants'
-import { buildMetadataQuery, buildMetadataQueryForFetchWithChangesDetection } from './fetch_profile/metadata_query'
+import {
+  buildMetadataQuery,
+  buildMetadataQueryForFetchWithChangesDetection,
+} from './fetch_profile/metadata_query'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -203,6 +212,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: extraDependenciesFilter, addsNewInformation: true },
   { creator: installedPackageGeneratedDependencies },
   { creator: customTypeSplit },
+  { creator: mergeProfilesWithSourceValuesFilter },
+  // profileInstanceSplitFilter should run after mergeProfilesWithSourceValuesFilter
   { creator: profileInstanceSplitFilter },
   // Any filter that relies on _created_at or _changed_at should run after removeUnixTimeZero
   { creator: removeUnixTimeZeroFilter },
@@ -645,7 +656,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private async fetchMetadataInstances(
     typeInfoPromise: Promise<MetadataObject[]>,
     types: Promise<TypeElement[]>,
-    fetchProfile: FetchProfile
+    fetchProfile: FetchProfile,
   ): Promise<FetchElements<InstanceElement[]>> {
     const readInstances = async (metadataTypes: ObjectType[]):
       Promise<FetchElements<InstanceElement[]>> => {
@@ -677,8 +688,12 @@ export default class SalesforceAdapter implements AdapterOperations {
       async t => this.metadataToRetrieve.includes(await apiName(t)),
     )
 
+    const retrieveMetadataInstancesFunc = fetchProfile.metadataQuery.isFetchWithChangesDetection()
+      ? retrieveMetadataInstanceForFetchWithChangesDetection
+      : retrieveMetadataInstances
+
     const allInstances = await Promise.all([
-      retrieveMetadataInstances({
+      retrieveMetadataInstancesFunc({
         client: this.client,
         types: metadataTypesToRetrieve,
         fetchProfile,
@@ -692,10 +707,6 @@ export default class SalesforceAdapter implements AdapterOperations {
     }
   }
 
-  /**
-   * Create all the instances of specific metadataType
-   * @param type the metadata type
-   */
   private async createMetadataInstances(type: ObjectType, fetchProfile: FetchProfile):
   Promise<FetchElements<InstanceElement[]>> {
     const typeName = await apiName(type)

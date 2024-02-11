@@ -15,8 +15,8 @@
 */
 
 import { ElemID } from '@salto-io/adapter-api'
-import { generateInstanceNameFromConfig, getInstanceNaclName } from '../../src/elements/instance_elements'
-import { NameMappingOptions } from '../../src/config'
+import { generateInstanceNameFromConfig, getInstanceNaclName, getInstanceName } from '../../src/elements/instance_elements'
+import { NameMappingOptions } from '../../src/definitions'
 
 describe('generateInstanceNameFromConfig', () => {
   it('should return the name of the instance based on the type config', () => {
@@ -135,5 +135,49 @@ describe('getInstanceNaclName', () => {
     })
     expect(naclNameEmptyName).toBe('parent')
     expect(naclNameRegular).toBe('parent__name')
+  })
+})
+
+describe('getInstanceName', () => {
+  it('should return the correct name based on the idFields', () => {
+    expect(getInstanceName(
+      { name: 'name', type: 'A' },
+      ['name'],
+      'test'
+    )).toBe('name')
+    expect(getInstanceName(
+      { name: 'name', type: 'A' },
+      ['name', 'type'],
+      'test'
+    )).toBe('name_A')
+    expect(getInstanceName(
+      { name: 'name', type: 'A' },
+      [],
+      'test'
+    )).toBe('')
+  })
+  it('should return undefined if all idFields doesnt exist in entry', () => {
+    expect(getInstanceName(
+      { name: 'name', type: 'A' },
+      ['foo', 'bar'],
+      'test'
+    )).toBe(undefined)
+  })
+  it('should ignore undefined fields when there is at least one defined field', () => {
+    expect(getInstanceName(
+      { name: 'name', type: 'A' },
+      ['name', 'foo', 'type'],
+      'test'
+    )).toBe('name_A')
+    expect(getInstanceName(
+      { name: 'name', type: 'A' },
+      ['foo', 'name', 'type'],
+      'test'
+    )).toBe('name_A')
+    expect(getInstanceName(
+      { name: 'name', type: 'A' },
+      ['name', 'foo'],
+      'test'
+    )).toBe('name')
   })
 })

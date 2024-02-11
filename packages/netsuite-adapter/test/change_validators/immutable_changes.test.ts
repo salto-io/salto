@@ -260,7 +260,7 @@ describe('customization type change validator', () => {
 
       new Array<ChangeDataType>(entityCustomFieldInstance, type, field).forEach(async element => {
         const change = await immutableChangesValidator([toChange({ after: element })])
-        expect(change).toBeFalsy()
+        expect(change).toEqual([])
       })
     })
   })

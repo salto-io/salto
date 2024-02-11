@@ -30,6 +30,8 @@ describe('client connection', () => {
       put: mockFunction<clientUtils.APIConnection['put']>(),
       delete: mockFunction<clientUtils.APIConnection['delete']>(),
       patch: mockFunction<clientUtils.APIConnection['patch']>(),
+      head: mockFunction<clientUtils.APIConnection['head']>(),
+      options: mockFunction<clientUtils.APIConnection['options']>(),
     }
     it('should always extract empty account id', async () => {
       mockGet.mockImplementationOnce(url => Promise.resolve(

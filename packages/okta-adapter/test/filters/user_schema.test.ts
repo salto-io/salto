@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { ObjectType, ElemID, isInstanceElement, InstanceElement, CORE_ANNOTATIONS, toChange, getChangeData } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, isInstanceElement, InstanceElement, CORE_ANNOTATIONS, toChange, getChangeData, BuiltinTypes } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { getParent } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
@@ -27,7 +27,10 @@ describe('userSchemaFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let client: OktaClient
   let mockConnection: MockInterface<clientUtils.APIConnection>
-  const userSchemaType = new ObjectType({ elemID: new ElemID(OKTA, USER_SCHEMA_TYPE_NAME) })
+  const userSchemaType = new ObjectType({
+    elemID: new ElemID(OKTA, USER_SCHEMA_TYPE_NAME),
+    fields: { description: { refType: BuiltinTypes.STRING } },
+  })
   const userTypeType = new ObjectType({ elemID: new ElemID(OKTA, USERTYPE_TYPE_NAME) })
   const userTypeInstanceA = new InstanceElement(
     'test1',
@@ -129,9 +132,9 @@ describe('userSchemaFilter', () => {
         'okta.UserSchema.instance.userSchema345',
       ])
       expect(createdInstance.map(i => i.value)).toEqual([
-        { id: 'A123', name: 'userSchema123', description: 'user schema' },
-        { id: 'B123', name: 'userSchema234', description: 'user schema' },
-        { id: 'C123', name: 'userSchema345', description: 'user schema' },
+        { id: 'A123', name: 'userSchema123' },
+        { id: 'B123', name: 'userSchema234' },
+        { id: 'C123', name: 'userSchema345' },
       ])
       expect(createdInstance.map(i => getParent(i).elemID.getFullName())).toEqual([
         'okta.UserType.instance.test1',

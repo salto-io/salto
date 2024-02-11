@@ -31,7 +31,7 @@ import _ from 'lodash'
 import {
   ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM, IS_ATTRIBUTE, NETSUITE, RECORDS_PATH,
   SCRIPT_ID, ADDITIONAL_FILE_SUFFIX, FILE_CABINET_PATH, PATH, FILE_CABINET_PATH_SEPARATOR,
-  APPLICATION_ID, SETTINGS_PATH, CUSTOM_RECORD_TYPE, CONTENT, ID_FIELD,
+  APPLICATION_ID, SETTINGS_PATH, CUSTOM_RECORD_TYPE, CONTENT, ID_FIELD, BUNDLE,
 } from './constants'
 import { fieldTypes } from './types/field_types'
 import { isSDFConfigType, isStandardType, isFileCabinetType, isCustomRecordType, getTopLevelStandardTypes, metadataTypesToList, getMetadataTypes, isFileInstance, isBundleType } from './types'
@@ -68,6 +68,8 @@ const getServiceIdFieldName = (type: ObjectType): string => {
   return isStandardType(type) ? SCRIPT_ID : PATH
 }
 
+const addBundlePrefix = (desiredName: string, type: ObjectType): string => (isBundleType(type) ? (`${BUNDLE}_${desiredName}`) : desiredName)
+
 export const createInstanceElement = async (
   customizationInfo: CustomizationInfo,
   type: ObjectType,
@@ -88,9 +90,9 @@ export const createInstanceElement = async (
         [OBJECT_NAME]: type.elemID.getFullName(),
       }),
     }
-    const desiredName = naclCase(transformedValues[serviceIdFieldName]
+    const desiredName = naclCase(addBundlePrefix(transformedValues[serviceIdFieldName], type)
       .replace(new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}`), ''))
-    return getElemIdFunc ? getElemIdFunc(NETSUITE, serviceIds, desiredName).name : desiredName
+    return getElemIdFunc && !isBundleType(type) ? getElemIdFunc(NETSUITE, serviceIds, desiredName).name : desiredName
   }
 
   const getInstancePath = (instanceName: string): string[] => {
@@ -116,7 +118,7 @@ export const createInstanceElement = async (
       // We sometimes get empty strings that we want to filter out
       return undefined
     }
-    if (!isPrimitiveType(fieldType) || !isPrimitiveValue(value)) {
+    if (!isPrimitiveType(fieldType) || !isPrimitiveValue(value) || fieldType.primitive === PrimitiveTypes.UNKNOWN) {
       if (value === XML_TRUE_VALUE) return true
       if (value === XML_FALSE_VALUE) return false
       return value
@@ -127,8 +129,6 @@ export const createInstanceElement = async (
         return Number(value)
       case PrimitiveTypes.BOOLEAN:
         return value === XML_TRUE_VALUE
-      case PrimitiveTypes.UNKNOWN:
-        return value
       default:
         return String(value)
     }

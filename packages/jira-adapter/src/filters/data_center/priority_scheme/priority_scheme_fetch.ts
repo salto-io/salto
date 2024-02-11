@@ -39,7 +39,7 @@ const fetchSchemeValues = async (paginator: clientUtils.Paginator): Promise<Valu
 }
 
 const createInstance = (values: Values, type: ObjectType, getElemIdFunc: ElemIdGetter | undefined): InstanceElement => {
-  const serviceIds = elementUtils.createServiceIds(values, 'id', type.elemID)
+  const serviceIds = elementUtils.createServiceIds({ entry: values, serviceIdFields: ['id'], typeID: type.elemID })
 
   const defaultName = naclCase(values.name)
 

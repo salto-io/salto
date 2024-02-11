@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import { Element } from '@salto-io/adapter-api'
-import { elements as elementUtils, references as referenceUtils } from '@salto-io/adapter-components'
+import { fetch as fetchUtils, references as referenceUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 
-const { toNestedTypeName } = elementUtils.ducktype
+const { toNestedTypeName } = fetchUtils.element
 
 const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition<never>[] = [
   {

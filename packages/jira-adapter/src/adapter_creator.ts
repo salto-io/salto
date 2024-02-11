@@ -18,7 +18,7 @@ import { logger } from '@salto-io/logging'
 import {
   InstanceElement, Adapter, Values, ElemID,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, combineCustomReferenceGetters, config as configUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, combineCustomReferenceGetters, config as configUtils, definitions } from '@salto-io/adapter-components'
 import JiraClient from './client/client'
 import JiraAdapter from './adapter'
 import { Credentials, basicAuthCredentialsType } from './auth'
@@ -30,7 +30,8 @@ import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
 
 const log = logger(module)
-const { validateClientConfig, createRetryOptions, DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS } = clientUtils
+const { createRetryOptions, DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS } = clientUtils
+const { validateClientConfig } = definitions
 const { validateSwaggerApiDefinitionConfig,
   validateDuckTypeApiDefinitionConfig } = configUtils
 

@@ -15,8 +15,8 @@
 */
 import _ from 'lodash'
 import Joi from 'joi'
-import { Change, ChangeDataType, DeployResult, getChangeData, InstanceElement, isAdditionChange, isModificationChange, isEqualValues, ModificationChange, AdditionChange, ElemID, createSaltoElementError, isSaltoError, SaltoError } from '@salto-io/adapter-api'
-import { config as configUtils, deployment, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { Change, ChangeDataType, DeployResult, getChangeData, InstanceElement, isAdditionChange, isModificationChange, ModificationChange, isEqualValues, AdditionChange, ElemID, createSaltoElementError, isSaltoError, SaltoError } from '@salto-io/adapter-api'
+import { config as configUtils, deployment, elements as elementUtils, client as clientUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values, collections } from '@salto-io/lowerdash'
@@ -26,7 +26,7 @@ import { OktaStatusActionName, OktaSwaggerApiConfig } from './config'
 
 const log = logger(module)
 
-const { createUrl } = elementUtils
+const { createUrl } = fetchUtils.resource
 const { awu } = collections.asynciterable
 const { isDefined } = values
 
@@ -273,7 +273,7 @@ export const deployEdges = async (
     deployRequest: configUtils.DeployRequestConfig,
     fieldName: string,
   ): Promise<deployment.ResponseResult> => {
-    const url = elementUtils.replaceUrlParams(deployRequest.url, paramValues)
+    const url = fetchUtils.request.replaceArgs(deployRequest.url, paramValues)
     try {
       const response = await client[deployRequest.method]({ url, data: {} })
       return response.data

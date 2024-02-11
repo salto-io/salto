@@ -49,7 +49,7 @@ class InvalidResponseError extends PublishDraftError {
 
 class TooManyRetriesError extends PublishDraftError {
   constructor() {
-    super('Failed to publish workflow scheme draft after too many retries')
+    super('Could not verify successful deployment of workflow scheme. Check your Jira instance to see whether it was deployed')
   }
 }
 

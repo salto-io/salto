@@ -15,7 +15,7 @@
 */
 
 import { invertNaclCase, naclCase } from '@salto-io/adapter-utils'
-import { SaltoError, Value, Values } from '@salto-io/adapter-api'
+import { SaltoError, Value } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { Status, Transition, WorkflowV1Instance } from './types'
 import { SCRIPT_RUNNER_POST_FUNCTION_TYPE } from '../script_runner/workflow/workflow_cloud'
@@ -134,13 +134,10 @@ export const walkOverTransitionIds = (transition: Transition, func: (value: Valu
 
 export const walkOverTransitionIdsV2 = (transition: WorkflowTransition, func: (value: Value) => void): void => {
   transition.actions
-    ?.filter((action: Values) =>
-      action.parameters !== undefined
-      && action.parameters.appKey === SCRIPT_RUNNER_POST_FUNCTION_TYPE)
-    .forEach((action: Values) => {
-      if (action.parameters.scriptRunner?.transitionId === undefined) {
-        return
-      }
+    ?.filter(action =>
+      action.parameters?.appKey === SCRIPT_RUNNER_POST_FUNCTION_TYPE
+      && action.parameters.scriptRunner?.transitionId !== undefined)
+    .forEach(action => {
       func(action.parameters.scriptRunner)
     })
 }

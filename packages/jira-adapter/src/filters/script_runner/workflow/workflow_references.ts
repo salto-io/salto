@@ -16,14 +16,14 @@
 
 import { isResolvedReferenceExpression, resolveValues, restoreValues } from '@salto-io/adapter-utils'
 import { isAdditionOrModificationChange, getChangeData, InstanceElement, isInstanceElement, ReferenceExpression, Value, isReferenceExpression } from '@salto-io/adapter-api'
-import { collections, values } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../../filter'
 import { JIRA_WORKFLOW_TYPE, WORKFLOW_TYPE_NAME } from '../../../constants'
 import { getLookUpName } from '../../../reference_mapping'
 import { WorkflowV1Instance, isWorkflowV1Instance } from '../../workflow/types'
 import { transitionKeysToExpectedIds, walkOverTransitionIds, walkOverTransitionIdsV2 } from '../../workflow/transition_structure'
-import { WorkflowV2Instance, isWorkflowV2Instance } from '../../workflowV2/types'
+import { WorkflowV2Instance, isWorkflowInstance, isWorkflowV2Instance } from '../../workflowV2/types'
 
 
 const { awu } = collections.asynciterable
@@ -75,10 +75,8 @@ const filter: FilterCreator = ({ config, client }) => {
 
       elements
         .filter(isInstanceElement)
+        .filter(isWorkflowInstance)
         .forEach(instance => {
-          if (!isWorkflowV1Instance(instance) && !isWorkflowV2Instance(instance)) {
-            return
-          }
           addTransitionReferences(
             instance,
             config.fetch.enableMissingReferences ?? true
@@ -93,27 +91,29 @@ const filter: FilterCreator = ({ config, client }) => {
         .filter(isAdditionOrModificationChange)
         .map(getChangeData)
         .filter(isInstanceElement)
-        .map(instance => {
-          if (!isWorkflowV1Instance(instance) && !isWorkflowV2Instance(instance)) {
-            return undefined
-          }
-          return instance
-        })
-        .filter(values.isDefined)
+        .filter(isWorkflowInstance)
 
       workflows
+        .filter(isWorkflowV1Instance)
         .forEach(workflow => {
-          const expectedIdsMap = isWorkflowV1Instance(workflow) ? transitionKeysToExpectedIds(workflow) : undefined
+          const expectedIdsMap = transitionKeysToExpectedIds(workflow)
           Object.values(workflow.value.transitions).forEach(transition => {
-            WALK_OVER_TRANSITION_IDS_FUNCS[workflow.elemID.typeName](transition, scriptRunner => {
-              if (isWorkflowV2Instance(workflow) && isResolvedReferenceExpression(scriptRunner.transitionId)) {
-                scriptRunner.transitionId = scriptRunner.transitionId.value.id
-              } else {
-                scriptRunner.transitionId = isReferenceExpression(scriptRunner.transitionId)
-                  ? (expectedIdsMap && expectedIdsMap.get(scriptRunner.transitionId.elemID.name))
+            walkOverTransitionIds(transition, scriptRunner => {
+              scriptRunner.transitionId = isReferenceExpression(scriptRunner.transitionId)
+                ? expectedIdsMap.get(scriptRunner.transitionId.elemID.name)
                     ?? scriptRunner.transitionId
-                  : scriptRunner.transitionId
-              }
+                : scriptRunner.transitionId
+            })
+          })
+        })
+      workflows
+        .filter(isWorkflowV2Instance)
+        .forEach(workflow => {
+          Object.values(workflow.value.transitions).forEach(transition => {
+            walkOverTransitionIdsV2(transition, scriptRunner => {
+              scriptRunner.transitionId = isResolvedReferenceExpression(scriptRunner.transitionId)
+                ? scriptRunner.transitionId.value.id
+                : scriptRunner.transitionId
             })
           })
         })
@@ -134,17 +134,14 @@ const filter: FilterCreator = ({ config, client }) => {
         .filter(isAdditionOrModificationChange)
         .map(getChangeData)
         .filter(isInstanceElement)
-        .map(instance => {
-          if (!isWorkflowV1Instance(instance) && !isWorkflowV2Instance(instance)) {
-            return undefined
-          }
-          addTransitionReferences(
-            instance,
-            config.fetch.enableMissingReferences ?? true
-          )
-          return instance
-        })
-        .filter(values.isDefined)
+        .filter(isWorkflowInstance)
+
+      workflows.forEach(workflow => {
+        addTransitionReferences(
+          workflow,
+          config.fetch.enableMissingReferences ?? true
+        )
+      })
 
       await awu(workflows)
         .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME

@@ -17,6 +17,7 @@ import Joi from 'joi'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { AdditionChange, Change, InstanceElement, ModificationChange, Values, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import { JIRA_WORKFLOW_TYPE } from '../../constants'
+import { WorkflowV1Instance, isWorkflowV1Instance } from '../workflow/types'
 
 export const CHUNK_SIZE = 25
 export const VALIDATOR_LIST_FIELDS = new Set(['statusIds', 'groupsExemptFromValidation', 'fieldsRequired'])
@@ -78,7 +79,7 @@ export type Workflow = {
   statuses: Values[]
 }
 
-export type WorkflowV2Instance = InstanceElement & { value: InstanceElement['value'] & Workflow & { transitions: Record<string, WorkflowTransition> } }
+export type WorkflowV2Instance = InstanceElement & { value: InstanceElement['value'] & Omit<Workflow, 'transitions'> & { transitions: Record<string, WorkflowTransition> } }
 
 const WORKFLOW_SCHEMA = Joi.object({
   name: Joi.string().required(),
@@ -100,11 +101,15 @@ const WORKFLOW_SCHEMA = Joi.object({
   statuses: Joi.array().items(Joi.object()).required(),
 }).unknown(true).required()
 
-const isWorkflowValues = createSchemeGuard<Workflow & { transitions: Record<string, Values> }>(WORKFLOW_SCHEMA, 'Received an invalid workflow values')
+const isWorkflowValues = createSchemeGuard<Workflow & { transitions: Record<string, WorkflowTransition> }>(WORKFLOW_SCHEMA, 'Received an invalid workflow values')
 
 export const isWorkflowV2Instance = (instance: InstanceElement)
 : instance is WorkflowV2Instance =>
   instance.elemID.typeName === JIRA_WORKFLOW_TYPE && isWorkflowValues(instance.value)
+
+export const isWorkflowInstance = (instance: InstanceElement): instance is WorkflowV1Instance | WorkflowV2Instance => (
+  isWorkflowV1Instance(instance) || isWorkflowV2Instance(instance)
+)
 
 export type WorkflowPayload = {
   statuses: Values[]

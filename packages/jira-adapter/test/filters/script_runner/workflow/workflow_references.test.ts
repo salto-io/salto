@@ -160,12 +160,12 @@ describe('Scriptrunner references', () => {
     throw new Error('Unknown workflow version')
   }
 
-  const getElements = (workflowVersion: string): InstanceElement[] => {
+  const getElement = (workflowVersion: string): InstanceElement => {
     if (workflowVersion === WORKFLOW_V1) {
-      return [instance]
+      return instance
     }
     if (workflowVersion === WORKFLOW_V2) {
-      return [workflowV2Instance]
+      return workflowV2Instance
     }
     throw new Error('Unknown workflow version')
   }
@@ -328,7 +328,7 @@ describe('Scriptrunner references', () => {
         }
       })
       it('should create references to transitions', async () => {
-        await filterCloud.onFetch(getElements(workflowVersion))
+        await filterCloud.onFetch([getElement(workflowVersion)])
         expect(getNestedField({ workflowVersion, transitionKey: 'tran1', postFunctionIndex: 0, fieldName: SCRIPT_RUNNER }).transitionId)
           .toBeInstanceOf(ReferenceExpression)
         expect(getNestedField({ workflowVersion, transitionKey: 'tran1', postFunctionIndex: 0, fieldName: SCRIPT_RUNNER }).transitionId
@@ -423,7 +423,7 @@ describe('Scriptrunner references', () => {
             },
           },
         }
-        await expect(filterCloud.onFetch(getElements(workflowVersion))).resolves.not.toThrow()
+        await expect(filterCloud.onFetch([getElement(workflowVersion)])).resolves.not.toThrow()
       })
       it('should convert to missing reference if transition id does not exist', async () => {
         instance.value.transitions = {
@@ -461,21 +461,24 @@ describe('Scriptrunner references', () => {
             ],
           },
         }
-        await filterCloud.onFetch(getElements(workflowVersion))
+        await filterCloud.onFetch([getElement(workflowVersion)])
         const { transitionId } = getNestedField({ workflowVersion, transitionKey: 'tran1', postFunctionIndex: 0, fieldName: SCRIPT_RUNNER })
         expect(transitionId).toBeInstanceOf(ReferenceExpression)
         expect(transitionId.elemID.getFullName()).toEndWith('.transitions.missing_21')
       })
       it('should not change anything if script runner is not enabled', async () => {
-        await filterOff.onFetch(getElements(workflowVersion))
+        await filterOff.onFetch([getElement(workflowVersion)])
         expect(getNestedField({ workflowVersion, transitionKey: 'tran1', postFunctionIndex: 0, fieldName: SCRIPT_RUNNER }).transitionId)
           .toEqual('21')
       })
       it('should not change anything if dc', async () => {
-        await filter.onFetch(getElements(workflowVersion))
+        await filter.onFetch([getElement(workflowVersion)])
         expect(getNestedField({ workflowVersion, transitionKey: 'tran1', postFunctionIndex: 0, fieldName: SCRIPT_RUNNER }).transitionId)
           .toEqual('21')
       })
+      // it('should create reference although enableMissingReferences is undefined', async () => {
+      //   config.fetch.enableMissingReferences = undefined
+      // })
     })
     describe('pre deploy', () => {
       it('should store reference and replace correctly', async () => {

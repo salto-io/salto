@@ -16,7 +16,7 @@
 
 import { InstanceElement } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
-import { Transition, TransitionFrom, WorkflowInstance } from '../../../src/filters/workflow/types'
+import { Transition, TransitionFrom, WorkflowV1Instance } from '../../../src/filters/workflow/types'
 import { createEmptyType } from '../../utils'
 import { getTransitionKey, transitionKeysToExpectedIds } from '../../../src/filters/workflow/transition_structure'
 
@@ -30,7 +30,7 @@ const keys = {
 
 describe('transitionKeysToExpectedIds', () => {
   it('should return a map with expected transition IDs for each transition key', () => {
-    const workflowInstance: WorkflowInstance = new InstanceElement(
+    const workflowInstance: WorkflowV1Instance = new InstanceElement(
       'instance',
       createEmptyType('Workflow'),
       {
@@ -42,7 +42,7 @@ describe('transitionKeysToExpectedIds', () => {
           [keys.t5]: { name: 'transition5' },
         },
       }
-    ) as WorkflowInstance
+    ) as WorkflowV1Instance
     const result = transitionKeysToExpectedIds(workflowInstance)
     expect(result.get(keys.t1)).toEqual('31')
     expect(result.get(keys.t2)).toEqual('1')
@@ -52,21 +52,21 @@ describe('transitionKeysToExpectedIds', () => {
   })
 
   it('should handle empty transition groups', () => {
-    const workflowInstance: WorkflowInstance = new InstanceElement(
+    const workflowInstance: WorkflowV1Instance = new InstanceElement(
       'instance',
       createEmptyType('Workflow'),
       {
         transitions: {
         },
       }
-    ) as WorkflowInstance
+    ) as WorkflowV1Instance
 
     const result = transitionKeysToExpectedIds(workflowInstance)
 
     expect(result).toEqual(new Map())
   })
   it('should handle wrong transition keys', () => {
-    const workflowInstance: WorkflowInstance = new InstanceElement(
+    const workflowInstance: WorkflowV1Instance = new InstanceElement(
       'instance',
       createEmptyType('Workflow'),
       {
@@ -74,7 +74,7 @@ describe('transitionKeysToExpectedIds', () => {
           '': { name: 'transition1' },
         },
       }
-    ) as WorkflowInstance
+    ) as WorkflowV1Instance
 
     const result = transitionKeysToExpectedIds(workflowInstance)
 

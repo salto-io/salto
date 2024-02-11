@@ -17,7 +17,7 @@ import { Element, InstanceElement, isInstanceElement, ReferenceExpression } from
 import _ from 'lodash'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
-import { isWorkflowInstance, WorkflowInstance } from './types'
+import { isWorkflowV1Instance, WorkflowV1Instance } from './types'
 import { GROUP_TYPE_NAME } from '../../constants'
 
 const ANY_GROUP_CONDITION = 'UserInAnyGroupCondition'
@@ -25,7 +25,7 @@ const SINGLE_GROUP_CONDITION = 'UserInGroupCondition'
 
 
 export const fixGroupNames = (
-  instance: WorkflowInstance,
+  instance: WorkflowV1Instance,
   groups: Record<string, InstanceElement> = {}
 ): void => {
   walkOnElement({
@@ -82,7 +82,7 @@ const filter: FilterCreator = () => ({
       .value()
 
     instances
-      .filter(isWorkflowInstance)
+      .filter(isWorkflowV1Instance)
       .forEach(instance => {
         fixGroupNames(instance, groups)
       })

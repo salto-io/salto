@@ -21,14 +21,14 @@ import { references as referenceUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../../filter'
 import { JIRA_WORKFLOW_TYPE, WORKFLOW_TYPE_NAME } from '../../../constants'
 import { getLookUpName } from '../../../reference_mapping'
-import { WorkflowInstance, isWorkflowInstance } from '../../workflow/types'
+import { WorkflowV1Instance, isWorkflowV1Instance } from '../../workflow/types'
 import { transitionKeysToExpectedIds, walkOverTransitionIds, walkOverTransitionIdsV2 } from '../../workflow/transition_structure'
 import { WorkflowV2Instance, isWorkflowV2Instance } from '../../workflowV2/types'
 
 
 const { awu } = collections.asynciterable
 
-const getTransitionIdToKeyMap = (workflowInstance: WorkflowInstance | WorkflowV2Instance): Map<string, string> =>
+const getTransitionIdToKeyMap = (workflowInstance: WorkflowV1Instance | WorkflowV2Instance): Map<string, string> =>
   new Map(Object.entries(workflowInstance.value.transitions)
     .map(([key, transition]) => [transition.id, key])
     .filter((entry): entry is [string, string] => entry[0] !== undefined))
@@ -41,7 +41,7 @@ const WALK_OVER_TRANSITION_IDS_FUNCS:
   }
 
 const addTransitionReferences = (
-  workflowInstance: WorkflowInstance | WorkflowV2Instance,
+  workflowInstance: WorkflowV1Instance | WorkflowV2Instance,
   enableMissingReferences: boolean
 ): void => {
   const transitionIdToKey = getTransitionIdToKeyMap(workflowInstance)
@@ -76,7 +76,7 @@ const filter: FilterCreator = ({ config, client }) => {
       elements
         .filter(isInstanceElement)
         .forEach(instance => {
-          if (!isWorkflowInstance(instance) && !isWorkflowV2Instance(instance)) {
+          if (!isWorkflowV1Instance(instance) && !isWorkflowV2Instance(instance)) {
             return
           }
           addTransitionReferences(
@@ -94,7 +94,7 @@ const filter: FilterCreator = ({ config, client }) => {
         .map(getChangeData)
         .filter(isInstanceElement)
         .map(instance => {
-          if (!isWorkflowInstance(instance) && !isWorkflowV2Instance(instance)) {
+          if (!isWorkflowV1Instance(instance) && !isWorkflowV2Instance(instance)) {
             return undefined
           }
           return instance
@@ -103,7 +103,7 @@ const filter: FilterCreator = ({ config, client }) => {
 
       workflows
         .forEach(workflow => {
-          const expectedIdsMap = isWorkflowInstance(workflow) ? transitionKeysToExpectedIds(workflow) : undefined
+          const expectedIdsMap = isWorkflowV1Instance(workflow) ? transitionKeysToExpectedIds(workflow) : undefined
           Object.values(workflow.value.transitions).forEach(transition => {
             WALK_OVER_TRANSITION_IDS_FUNCS[workflow.elemID.typeName](transition, scriptRunner => {
               if (isWorkflowV2Instance(workflow) && isResolvedReferenceExpression(scriptRunner.transitionId)) {
@@ -135,7 +135,7 @@ const filter: FilterCreator = ({ config, client }) => {
         .map(getChangeData)
         .filter(isInstanceElement)
         .map(instance => {
-          if (!isWorkflowInstance(instance) && !isWorkflowV2Instance(instance)) {
+          if (!isWorkflowV1Instance(instance) && !isWorkflowV2Instance(instance)) {
             return undefined
           }
           addTransitionReferences(

@@ -16,7 +16,7 @@
 import { getChangeData, isAdditionOrModificationChange, Value } from '@salto-io/adapter-api'
 import { CONFIGURATION_VALIDATOR_TYPE } from '../../change_validators/workflows/empty_validator_workflow'
 import { FilterCreator } from '../../filter'
-import { getWorkflowChanges, WorkflowInstance } from './types'
+import { getWorkflowChanges, WorkflowV1Instance } from './types'
 
 type TransitionValidator = {
     type: string
@@ -25,7 +25,7 @@ type TransitionValidator = {
     }
 }
 
-const removeValidatorsWithoutConfiguration = (instance: WorkflowInstance): void => {
+const removeValidatorsWithoutConfiguration = (instance: WorkflowV1Instance): void => {
   Object.values(instance.value.transitions)
     .filter((transition: Value) => transition.rules?.validators !== undefined)
     .forEach((transition: Value) => {

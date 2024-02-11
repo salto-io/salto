@@ -18,7 +18,7 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import JiraClient from '../../client/client'
-import { WorkflowInstance } from './types'
+import { WorkflowV1Instance } from './types'
 
 
 const { awu } = collections.asynciterable
@@ -26,7 +26,7 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 export const deployTriggers = async (
-  change: AdditionChange<WorkflowInstance>,
+  change: AdditionChange<WorkflowV1Instance>,
   client: JiraClient,
 ): Promise<void> => {
   const instance = getChangeData(change)

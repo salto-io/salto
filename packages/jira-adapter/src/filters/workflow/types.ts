@@ -205,7 +205,7 @@ export const workflowSchema = WORKFLOW_RESPONSE_SCHEMA.keys({
   transitions: Joi.object().pattern(Joi.string(), transitionsSchema).required(),
 })
 
-export type WorkflowInstance = InstanceElement & { value: InstanceElement['value'] & Workflow }
+export type WorkflowV1Instance = InstanceElement & { value: InstanceElement['value'] & Workflow }
 export type WorkflowResponseInstance = InstanceElement & { value: InstanceElement['value'] & WorkflowResponse }
 
 const isWorkflowResponseValues = createSchemeGuard<WorkflowResponse>(WORKFLOW_RESPONSE_SCHEMA, 'Received unexpected workflow response from service')
@@ -219,8 +219,8 @@ export const isWorkflowValues = (values: unknown): values is Workflow => {
   return true
 }
 
-export const isWorkflowInstance = (instance: InstanceElement)
-: instance is WorkflowInstance =>
+export const isWorkflowV1Instance = (instance: InstanceElement)
+: instance is WorkflowV1Instance =>
   instance.elemID.typeName === WORKFLOW_TYPE_NAME && isWorkflowValues(instance.value)
 
 export const isWorkflowResponseInstance = (instance: InstanceElement)
@@ -231,7 +231,7 @@ export type PostFetchWorkflow = Workflow & {
   name: string
 }
 
-export type PostFetchWorkflowInstance = WorkflowInstance & { value: WorkflowInstance['value'] & PostFetchWorkflow }
+export type PostFetchWorkflowInstance = WorkflowV1Instance & { value: WorkflowV1Instance['value'] & PostFetchWorkflow }
 
 export const isPostFetchWorkflowInstance = (instance: InstanceElement)
 : instance is PostFetchWorkflowInstance => isWorkflowValues(instance.value)
@@ -240,6 +240,6 @@ export const isPostFetchWorkflowInstance = (instance: InstanceElement)
 export const isPostFetchWorkflowChange = (change: Change<Element>): change is Change<PostFetchWorkflowInstance> =>
   isInstanceChange(change) && isPostFetchWorkflowInstance(getChangeData(change))
 
-export const getWorkflowChanges = (changes: Change<Element>[]): Change<WorkflowInstance>[] => changes
+export const getWorkflowChanges = (changes: Change<Element>[]): Change<WorkflowV1Instance>[] => changes
   .filter(isInstanceChange)
-  .filter((change): change is Change<WorkflowInstance> => isWorkflowInstance(getChangeData(change)))
+  .filter((change): change is Change<WorkflowV1Instance> => isWorkflowV1Instance(getChangeData(change)))

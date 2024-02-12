@@ -13,9 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-/* eslint-disable no-console */
-
 import _ from 'lodash'
 import {
   ActionName,
@@ -195,7 +192,6 @@ export const deployChange = async ({
       data: endpoint.omitRequestBody ? undefined : data,
       queryParams,
     })
-    console.log('inner response', response)
     return response.data
   } catch (error) {
     if (

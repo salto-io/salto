@@ -13,9 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-/* eslint-disable no-console */
-
 import { Element, Change, PostFetchOptions, DeployResult, SaltoElementError, SaltoError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { types, promises, values, collections, objects } from '@salto-io/lowerdash'
@@ -128,7 +125,6 @@ export const filtersRunner = <R extends FilterResult | void, T, DeployInfo = voi
       awu(filtersWith('deploy')).reduce(
         async (total, current) => {
           const { deployResult, leftoverChanges } = await log.time(() => current.deploy(total.leftoverChanges), `(${current.name}):deploy`)
-          console.log(deployResult)
           return {
             deployResult: concatObjects([total.deployResult, deployResult]),
             leftoverChanges,

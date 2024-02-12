@@ -13,9 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-/* eslint-disable no-console */
-
 import _ from 'lodash'
 import {
   Change,
@@ -157,11 +154,8 @@ export const deployChange = async (
       response,
       dataField: deployRequests?.add?.deployAsField,
     })
-    console.log('1', response)
     return response
   } catch (err) {
-    console.log('2', err)
-
     throw getZendeskError(getChangeData(change).elemID, err)
   }
 }

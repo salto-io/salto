@@ -13,9 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-/* eslint-disable no-console */
-
 import _, { isString } from 'lodash'
 import {
   AdapterOperations,
@@ -849,7 +846,6 @@ export default class ZendeskAdapter implements AdapterOperations {
       }
     }
     const { deployResult } = await runner.deploy(supportResolvedChanges)
-    console.log('asdasdas: ', deployResult)
     const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
     try {
       await runner.onDeploy(appliedChangesBeforeRestore)

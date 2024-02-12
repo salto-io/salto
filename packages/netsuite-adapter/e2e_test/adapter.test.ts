@@ -50,6 +50,9 @@ import { SERVER_TIME_TYPE_NAME } from '../src/server_time'
 import { ProjectInfo, createAdditionalFiles, createSdfExecutor } from './sdf_executor'
 import { parsedDatasetType } from '../src/type_parsers/analytics_parsers/parsed_dataset'
 import { parsedWorkbookType } from '../src/type_parsers/analytics_parsers/parsed_workbook'
+import { UNKNOWN_TYPE_REFERENCES_ELEM_ID } from '../src/filters/data_account_specific_values'
+import { SUITEQL_TABLE } from '../src/data_elements/suiteql_table_elements'
+import { NUM_OF_SUITEQL_ELEMENTS } from '../test/data_elements/suiteql_table_elements.test'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -671,8 +674,9 @@ describe('Netsuite adapter E2E with real account', () => {
           .filter(element => getElementValueOrAnnotations(element)[IS_SUB_INSTANCE] !== true)
 
         if (withSuiteApp) {
-          expect(elementsWithoutAlias).toHaveLength(1)
-          expect(elementsWithoutAlias[0].elemID.typeName).toEqual(SERVER_TIME_TYPE_NAME)
+          expect(elementsWithoutAlias).toHaveLength(1 + NUM_OF_SUITEQL_ELEMENTS)
+          expect(elementsWithoutAlias.every(e =>
+            [SERVER_TIME_TYPE_NAME, SUITEQL_TABLE].includes(e.elemID.typeName))).toBeTruthy()
         } else {
           expect(elementsWithoutAlias).toHaveLength(0)
         }
@@ -996,6 +1000,8 @@ describe('Netsuite adapter E2E with real account', () => {
           .concat(filesToImport)
           .concat(existingFileCabinetInstances)
           .concat(newFileCabinetInstancesElemIds)
+          .concat({ elemID: UNKNOWN_TYPE_REFERENCES_ELEM_ID })
+          .concat({ elemID: UNKNOWN_TYPE_REFERENCES_ELEM_ID.createNestedID('instance', ElemID.CONFIG_NAME) })
 
         const expectedElements = _.uniq(
           allTypes

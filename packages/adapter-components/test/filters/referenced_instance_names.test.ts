@@ -96,6 +96,12 @@ describe('referenced instances', () => {
         name: { refType: BuiltinTypes.STRING },
       },
     })
+    const standaloneDoubleNestedFieldType = new ObjectType({
+      elemID: new ElemID(ADAPTER_NAME, 'standaloneDoubleNestedField'),
+      fields: {
+        name: { refType: BuiltinTypes.STRING },
+      },
+    })
     const notStandaloneNestedFieldType = new ObjectType({
       elemID: new ElemID(ADAPTER_NAME, 'notStandaloneNestedField'),
       fields: {
@@ -263,13 +269,25 @@ describe('referenced instances', () => {
       [],
       { [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(noIdFieldsParent.elemID, noIdFieldsParent) }
     )
-    const nestingParent = new InstanceElement('nestingParent', nestingParentType)
+    const nestingParent = new InstanceElement(
+      'nestingParent',
+      nestingParentType,
+      {},
+      ['adapterName', 'Records', 'existing', 'path', 'to', 'nestingParent', 'nestingParent']
+    )
     const standaloneNestedField = new InstanceElement(
       'standaloneNestedField',
       standaloneNestedFieldType,
       { name: 'upstandingName' },
-      ['adapterName', 'Records', 'existing', 'path', 'to', 'standaloneNestedField'],
+      ['will', 'change', 'to', 'hierarchy', 'nestingParent', 'standaloneNestedField'],
       { [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(nestingParent.elemID, nestingParent) }
+    )
+    const nestedNestedStandaloneField = new InstanceElement(
+      'nestedNestedStandaloneField',
+      standaloneDoubleNestedFieldType,
+      { name: 'nestedNestedName' },
+      ['will', 'change', 'to', 'hierarchy', 'nestingParent', 'standaloneNestedField', 'nestedNestedStandaloneField'],
+      { [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(standaloneNestedField.elemID, standaloneNestedField) }
     )
     const notNestingParent = new InstanceElement('notNestingParent', notNestingParentType)
     const notStandaloneNestedField = new InstanceElement(
@@ -284,7 +302,7 @@ describe('referenced instances', () => {
       sameRecipeOne, sameRecipeTwo, lastRecipe, groupType, ...groups,
       folderType, folderOne, folderTwo, statusType, status, ...emailsWithTemplates,
       noIdFieldsParent, noIdFieldsWithParent,
-      nestingParent, notNestingParent, standaloneNestedField, notStandaloneNestedField]
+      nestingParent, notNestingParent, standaloneNestedField, notStandaloneNestedField, nestedNestedStandaloneField]
   }
   const lowercaseName: NameMappingOptions = 'lowercase'
   const config = {
@@ -348,6 +366,16 @@ describe('referenced instances', () => {
         standaloneNestedField: {
           transformation: {
             extendsParentId: true,
+            nestStandaloneInstances: true,
+            standaloneFields: [
+              { fieldName: 'standaloneDoubleNestedField' },
+            ],
+          },
+        },
+        standaloneDoubleNestedField: {
+          transformation: {
+            extendsParentId: true,
+            nestStandaloneInstances: true,
           },
         },
         notStandaloneNestedField: {
@@ -404,6 +432,7 @@ describe('referenced instances', () => {
           'myAdapter.recipe.instance.recipe456_456_123_ROOT',
           'myAdapter.recipe.instance.sameRecipe',
           'myAdapter.recipe.instance.sameRecipe',
+          'myAdapter.standaloneDoubleNestedField.instance.nestingParent__standaloneNestedField__nestedNestedStandaloneField',
           'myAdapter.standaloneNestedField.instance.nestingParent__standaloneNestedField',
           'myAdapter.status.instance.status_recipe123_123_root_name@uuuv',
         ])
@@ -420,6 +449,7 @@ describe('referenced instances', () => {
       nestingParent: config.apiDefinitions.types.nestingParent.transformation,
       notNestingParent: config.apiDefinitions.types.notNestingParent.transformation,
       standaloneNestedField: config.apiDefinitions.types.standaloneNestedField.transformation,
+      standaloneDoubleNestedField: config.apiDefinitions.types.standaloneDoubleNestedField.transformation,
       notStandaloneNestedField: config.apiDefinitions.types.notStandaloneNestedField.transformation,
     }
 
@@ -433,7 +463,7 @@ describe('referenced instances', () => {
       const sortedResult = result
         .filter(isInstanceElement)
         .map(i => i.elemID.getFullName()).sort()
-      expect(result.length).toEqual(20)
+      expect(result.length).toEqual(21)
       expect(sortedResult)
         .toEqual(['myAdapter.book.instance.123_ROOT',
           'myAdapter.book.instance.456_123_ROOT',
@@ -450,6 +480,7 @@ describe('referenced instances', () => {
           'myAdapter.recipe.instance.recipe123_123_ROOT',
           'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
           'myAdapter.recipe.instance.recipe456_456_123_ROOT',
+          'myAdapter.standaloneDoubleNestedField.instance.nestingParent__standaloneNestedField__nestedNestedStandaloneField',
           'myAdapter.standaloneNestedField.instance.nestingParent__standaloneNestedField',
         ])
     })
@@ -498,7 +529,7 @@ describe('referenced instances', () => {
         transformationConfigByType,
         transformationDefaultConfig
       )
-      expect(result.length).toEqual(18)
+      expect(result.length).toEqual(19)
       expect(result
         .map(e => e.elemID.getFullName()).sort())
         .toEqual(['myAdapter.book',
@@ -518,6 +549,7 @@ describe('referenced instances', () => {
           'myAdapter.recipe.instance.recipe456_456_123_ROOT',
           'myAdapter.recipe.instance.sameRecipe',
           'myAdapter.recipe.instance.sameRecipe',
+          'myAdapter.standaloneDoubleNestedField.instance.nestingParent__standaloneNestedField__nestedNestedStandaloneField',
           'myAdapter.standaloneNestedField.instance.nestingParent__standaloneNestedField',
         ])
     })
@@ -529,11 +561,26 @@ describe('referenced instances', () => {
         transformationDefaultConfig
       )
       const updatedStandaloneNestedField = result.filter(isInstanceElement).find(inst => inst.elemID.typeName === 'standaloneNestedField')
+      // The double last couple is because the type has it's own standalone field
       expect(updatedStandaloneNestedField?.path)
-        .toEqual(['myAdapter', 'Records', 'existing', 'path', 'to', 'nestingParent__standaloneNestedField'])
+        .toEqual(['myAdapter', 'Records', 'existing', 'path', 'to', 'nestingParent', 'standaloneNestedField',
+          'nestingParent__standaloneNestedField', 'nestingParent__standaloneNestedField'])
       const updatedNotStandaloneNestedField = result.filter(isInstanceElement).find(inst => inst.elemID.typeName === 'notStandaloneNestedField')
       expect(updatedNotStandaloneNestedField?.path)
         .toEqual(['myAdapter', 'Records', 'notStandaloneNestedField', 'notNestingParent__notStandaloneNestedField'])
+    })
+    it('should update the path of a double nested instance', async () => {
+      elements = generateElements()
+      const result = await addReferencesToInstanceNames(
+        elements,
+        transformationConfigByType,
+        transformationDefaultConfig
+      )
+      const updatedNestedNestedStandaloneField = result.filter(isInstanceElement).find(inst => inst.elemID.typeName === 'standaloneDoubleNestedField')
+        ?.path
+      expect(updatedNestedNestedStandaloneField)
+        .toEqual(['myAdapter', 'Records', 'existing', 'path', 'to', 'nestingParent', 'standaloneNestedField',
+          'nestingParent__standaloneNestedField', 'standaloneDoubleNestedField', 'nestingParent__standaloneNestedField__nestedNestedStandaloneField'])
     })
     it('should create the correct reference map', () => {
       elements = generateElements()

@@ -16,26 +16,12 @@
 import _ from 'lodash'
 import wu from 'wu'
 import {
-  Element,
-  isInstanceElement,
-  isReferenceExpression,
-  InstanceElement,
-  ElemID,
-  ElemIdGetter,
-  ReferenceExpression,
-  isTemplateExpression,
+  Element, isInstanceElement, isReferenceExpression, InstanceElement, ElemID,
+  ElemIdGetter, ReferenceExpression, isTemplateExpression
 } from '@salto-io/adapter-api'
 import {
-  filter,
-  references,
-  getParents,
-  transformElement,
-  setPath,
-  walkOnElement,
-  WalkOnFunc,
-  WALK_NEXT_STEP,
-  resolvePath,
-  createTemplateExpression,
+  filter, references, getParents, transformElement, setPath,
+  walkOnElement, WalkOnFunc, WALK_NEXT_STEP, resolvePath, createTemplateExpression, getParent
 } from '@salto-io/adapter-utils'
 import { DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
@@ -133,7 +119,18 @@ const isStandalone = (instance: InstanceElement, configByType: Record<string, Tr
   }
   const { standaloneFields, nestStandaloneInstances } = configByType[parentElemID.typeName]
   return (nestStandaloneInstances && standaloneFields?.map(field => field.fieldName)
-    .includes(instance.elemID.name)) ?? false
+    .includes(instance.elemID.typeName)) ?? false
+}
+
+const nestedPath = (
+  instance: InstanceElement, configByType: Record<string, TransformationConfig>
+): string[] | undefined => {
+  if (!isStandalone(instance, configByType)) {
+    return undefined
+  }
+  const parent = getParent(instance)
+  // Remove adapter, Records and the parent instance type name
+  return [...parent.path?.slice(2, parent.path.length - 1) ?? [], instance.elemID.typeName]
 }
 
 /* Calculates the new instance name and file path */
@@ -168,8 +165,7 @@ const createInstanceNameAndFilePath = (
     isSettingType: configByType[typeName].isSingleton ?? false,
     nameMapping: configByType[typeName].nameMapping,
     adapterName: adapter,
-    nestedPaths: isStandalone(instance, configByType)
-      ? [...instance.path?.slice(2, instance.path?.length - 1) ?? []] : undefined,
+    nestedPaths: nestedPath(instance, configByType),
     hasNestStandAloneFields: nestStandaloneInstances && standaloneFields !== undefined,
   })
   return { newNaclName, filePath }

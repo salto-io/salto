@@ -21,7 +21,7 @@ import {
   toChange, FetchResult, InstanceElement, ReferenceExpression, isReferenceExpression,
   Element, DeployResult, Values, isStaticFile, StaticFile, FetchOptions, Change,
   ChangeId, ChangeGroupId, ElemID, ChangeError, getChangeData, ObjectType, BuiltinTypes,
-  isInstanceElement, CORE_ANNOTATIONS, Field, isObjectType, ProgressReporter,
+  isInstanceElement, CORE_ANNOTATIONS, Field, isObjectType, ProgressReporter, createRefToElmWithValue,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements, findElement, naclCase } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
@@ -93,6 +93,25 @@ describe('Netsuite adapter E2E with real account', () => {
       undefined,
       annotations
     )
+  }
+
+  const alignInactiveFields = (instance: InstanceElement): InstanceElement => {
+    const cloned = instance.clone()
+    const type = cloned.getTypeSync().clone()
+    type.fields.isInactive = new Field(
+      type,
+      'isInactive',
+      BuiltinTypes.BOOLEAN,
+      { originalName: 'isinactive' }
+    )
+    delete type.fields.isinactive
+    delete type.fields.inactive
+    cloned.refType = createRefToElmWithValue(type)
+
+    cloned.value.isInactive = cloned.value.isInactive ?? cloned.value.isinactive ?? cloned.value.inactive
+    delete cloned.value.isinactive
+    delete cloned.value.inactive
+    return cloned
   }
 
   beforeAll(async () => {
@@ -1123,8 +1142,8 @@ describe('Netsuite adapter E2E with real account', () => {
       })
 
       it('should load existing folders correctly', async () => {
-        expect(findElement(loadedElements, topLevelFolder.elemID)).toEqual(topLevelFolder)
-        expect(findElement(loadedElements, innerFolder.elemID)).toEqual(innerFolder)
+        expect(findElement(loadedElements, topLevelFolder.elemID)).toEqual(alignInactiveFields(topLevelFolder))
+        expect(findElement(loadedElements, innerFolder.elemID)).toEqual(alignInactiveFields(innerFolder))
       })
 
       it('should load existing file with new content', async () => {
@@ -1132,7 +1151,7 @@ describe('Netsuite adapter E2E with real account', () => {
         const loadedContent = loadedExistingFile.value.content
         delete loadedExistingFile.value.content
         delete existingFileInstance.value.content
-        expect(loadedExistingFile).toEqual(existingFileInstance)
+        expect(loadedExistingFile).toEqual(alignInactiveFields(existingFileInstance))
         expect(loadedContent).toEqual(new StaticFile({
           filepath: 'netsuite/FileCabinet/SuiteScripts/b/existing.js',
           content: Buffer.from('console.log("Hello Back!")'),
@@ -1140,45 +1159,49 @@ describe('Netsuite adapter E2E with real account', () => {
       })
 
       it('should load new folder with default values', async () => {
-        expect(findElement(loadedElements, newFolderElemId)).toEqual(new InstanceElement(
-          newFolderElemId.name,
-          additionalTypes[FOLDER],
-          {
-            bundleable: false,
-            isinactive: false,
-            isprivate: false,
-            path: '/SuiteScripts/b/c',
-          },
-          ['netsuite', 'FileCabinet', 'SuiteScripts', 'b', 'c', 'c'],
-          {
-            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(innerFolder.elemID)],
-            [CORE_ANNOTATIONS.ALIAS]: 'c',
-          }
-        ))
+        expect(findElement(loadedElements, newFolderElemId)).toEqual(
+          alignInactiveFields(new InstanceElement(
+            newFolderElemId.name,
+            additionalTypes[FOLDER],
+            {
+              bundleable: false,
+              isinactive: false,
+              isprivate: false,
+              path: '/SuiteScripts/b/c',
+            },
+            ['netsuite', 'FileCabinet', 'SuiteScripts', 'b', 'c', 'c'],
+            {
+              [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(innerFolder.elemID)],
+              [CORE_ANNOTATIONS.ALIAS]: 'c',
+            }
+          ))
+        )
       })
 
       it('should load new file with default values', async () => {
-        expect(findElement(loadedElements, newFileElemId)).toEqual(new InstanceElement(
-          newFileElemId.name,
-          additionalTypes[FILE],
-          {
-            availablewithoutlogin: false,
-            bundleable: false,
-            generateurltimestamp: false,
-            hideinbundle: false,
-            isinactive: false,
-            path: '/SuiteScripts/b/c/new.js',
-            content: new StaticFile({
-              filepath: 'netsuite/FileCabinet/SuiteScripts/b/c/new.js',
-              content: Buffer.from('console.log("Hello World!")'),
-            }),
-          },
-          ['netsuite', 'FileCabinet', 'SuiteScripts', 'b', 'c', 'new.js'],
-          {
-            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(newFolderElemId)],
-            [CORE_ANNOTATIONS.ALIAS]: 'new.js',
-          }
-        ))
+        expect(findElement(loadedElements, newFileElemId)).toEqual(
+          alignInactiveFields(new InstanceElement(
+            newFileElemId.name,
+            additionalTypes[FILE],
+            {
+              availablewithoutlogin: false,
+              bundleable: false,
+              generateurltimestamp: false,
+              hideinbundle: false,
+              isinactive: false,
+              path: '/SuiteScripts/b/c/new.js',
+              content: new StaticFile({
+                filepath: 'netsuite/FileCabinet/SuiteScripts/b/c/new.js',
+                content: Buffer.from('console.log("Hello World!")'),
+              }),
+            },
+            ['netsuite', 'FileCabinet', 'SuiteScripts', 'b', 'c', 'new.js'],
+            {
+              [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(newFolderElemId)],
+              [CORE_ANNOTATIONS.ALIAS]: 'new.js',
+            }
+          ))
+        )
       })
     })
 

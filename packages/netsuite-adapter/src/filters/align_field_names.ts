@@ -122,10 +122,14 @@ const restoreFieldNamesInValue = (type: ObjectType, value: Values): void => {
 
 const alignFieldNamesInCustomRecordType = (type: ObjectType): void => {
   CUSTOM_RECORD_TYPE_ANNOTATIONS_TO_ALIGN.forEach(anno => {
-    type.annotationRefTypes[anno.to] = type.annotationRefTypes[anno.from]
-    delete type.annotationRefTypes[anno.from]
-    type.annotations[anno.to] = type.annotations[anno.from]
-    delete type.annotations[anno.from]
+    if (type.annotationRefTypes[anno.from] !== undefined) {
+      type.annotationRefTypes[anno.to] = type.annotationRefTypes[anno.from]
+      delete type.annotationRefTypes[anno.from]
+    }
+    if (type.annotations[anno.from] !== undefined) {
+      type.annotations[anno.to] = type.annotations[anno.from]
+      delete type.annotations[anno.from]
+    }
   })
   runFuncOnCustomRecordTypeNestedAnnotations(type, alignFieldNamesInValue)
 }
@@ -135,10 +139,14 @@ const alignFieldNamesInInstance = (instance: InstanceElement): void =>
 
 const restoreFieldNamesInCustomRecordType = (type: ObjectType): void => {
   CUSTOM_RECORD_TYPE_ANNOTATIONS_TO_ALIGN.forEach(anno => {
-    type.annotationRefTypes[anno.from] = type.annotationRefTypes[anno.to]
-    delete type.annotationRefTypes[anno.to]
-    type.annotations[anno.from] = type.annotations[anno.to]
-    delete type.annotations[anno.to]
+    if (type.annotationRefTypes[anno.to] !== undefined) {
+      type.annotationRefTypes[anno.from] = type.annotationRefTypes[anno.to]
+      delete type.annotationRefTypes[anno.to]
+    }
+    if (type.annotations[anno.to] !== undefined) {
+      type.annotations[anno.from] = type.annotations[anno.to]
+      delete type.annotations[anno.to]
+    }
   })
   runFuncOnCustomRecordTypeNestedAnnotations(type, restoreFieldNamesInValue)
 }

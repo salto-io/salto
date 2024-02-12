@@ -33,6 +33,7 @@ const runSavedSearchQueryMock = jest.fn()
 const client = {
   runSuiteQL: runSuiteQLMock,
   runSavedSearchQuery: runSavedSearchQueryMock,
+  isSuiteAppConfigured: () => true,
 } as unknown as NetsuiteClient
 
 describe('SuiteQL table elements', () => {

@@ -50,7 +50,6 @@ import { getDataElements } from '../src/data_elements/data_elements'
 import * as elementsSourceIndexModule from '../src/elements_source_index/elements_source_index'
 import { fullQueryParams, fullFetchConfig } from '../src/config/config_creator'
 import { FetchByQueryFunc } from '../src/config/query'
-import { NUM_OF_SUITEQL_ELEMENTS } from './data_elements/suiteql_table_elements.test'
 
 const DEFAULT_SDF_DEPLOY_PARAMS = {
   manifestDependencies: {
@@ -233,7 +232,7 @@ describe('Adapter', () => {
       expect(fileCabinetQuery.isFileMatch('Some/anotherFile/Regex')).toBeTruthy()
 
       // metadataTypes + folderInstance + fileInstance + featuresInstance + customTypeInstance
-      expect(elements).toHaveLength(metadataTypes.length + NUM_OF_SUITEQL_ELEMENTS + 4)
+      expect(elements).toHaveLength(metadataTypes.length + 4)
 
       const customFieldType = elements.find(element =>
         element.elemID.isEqual(new ElemID(NETSUITE, ENTITY_CUSTOM_FIELD)))
@@ -497,7 +496,7 @@ describe('Adapter', () => {
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         })
       const { elements } = await netsuiteAdapter.fetch(mockFetchOpts)
-      expect(elements).toHaveLength(metadataTypes.length + NUM_OF_SUITEQL_ELEMENTS)
+      expect(elements).toHaveLength(metadataTypes.length)
     })
 
     it('should call filters by their order', async () => {

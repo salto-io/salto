@@ -720,4 +720,17 @@ describe('article filter', () => {
       expect(getChangeData(TranslationAddition)).toBe(clonedTranslation)
     })
   })
+  it('should have an empty user segment id when changing to Everyone', async () => {
+    const clonedArticle = anotherArticleInstance.clone()
+    // Changing user segment to "Everyone" completely removes the
+    // field from the article instance
+    delete clonedArticle.value.user_segment_id
+    const articleModification = toChange({ before: anotherArticleInstance, after: clonedArticle })
+
+    await filter.deploy([
+      articleModification,
+    ])
+    const filteredArticle = getChangeData(articleModification)
+    expect(filteredArticle.value.user_segment_id).toBeNull()
+  })
 })

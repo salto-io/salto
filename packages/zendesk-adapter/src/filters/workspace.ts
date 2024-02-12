@@ -18,7 +18,6 @@ import {
   Change, createSaltoElementError, getChangeData, InstanceElement, isRemovalChange, Values,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
-import { ResponseValue } from '@salto-io/adapter-components/src/client'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import { applyforInstanceChangesOfType } from './utils'
@@ -62,16 +61,15 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         const response = await deployChange(
           change, client, config.apiDefinitions, ['selected_macros'],
         )
-        if (response !== undefined) {
-          let errors
-          if (Array.isArray(response) && response.length > 0) {
-            errors = response[0]?.errors
-          } else {
-            errors = (response as ResponseValue)?.errors
-          }
-          if (Array.isArray(errors) && errors.length > 0) {
+        // It's possible for the deployment to return with status 200 and still have errors.
+        if (response !== undefined
+          && !_.isArray(response)
+          && response.errors !== undefined
+          && Array.isArray(response.errors)
+          && response.errors.length > 0) {
+          if (response.errors !== undefined) {
             throw createSaltoElementError({ // caught by deployChanges
-              message: errors[0],
+              message: response.errors[0],
               severity: 'Error',
               elemID: getChangeData(change).elemID,
             })

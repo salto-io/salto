@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { config as configUtils } from '@salto-io/adapter-components'
+import { config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { AdditionChange, Change, DeployResult, InstanceElement, ReadOnlyElementsSource, createSaltoElementError, getChangeData, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isReferenceExpression, isRemovalChange, toChange } from '@salto-io/adapter-api'
@@ -29,6 +29,7 @@ import JiraClient from '../../client/client'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
+const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
 
 type AttributeParams = {
   id: string
@@ -205,9 +206,19 @@ const filter: FilterCreator = ({ config, client, elementsSource }) => ({
               workspaceId,
             )]))
     )
+    const typeFixedChanges = attributesChanges
+      .map(change => ({
+        action: change.action,
+        data: _.mapValues(change.data, (instance: InstanceElement) =>
+          replaceInstanceTypeForDeploy({
+            instance,
+            config: jsmApiDefinitions,
+          })),
+      })) as Change<InstanceElement>[]
+
     const deployResult = await deployAttributeChanges({
       jsmApiDefinitions,
-      changes: attributesChanges,
+      changes: typeFixedChanges,
       client,
       workspaceId,
       objectTypeToEditableExistiningAttributes,

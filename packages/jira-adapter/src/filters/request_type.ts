@@ -20,6 +20,7 @@ import _ from 'lodash'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { createSchemeGuard, getParent, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 import { ISSUE_VIEW_TYPE, REQUEST_FORM_TYPE, REQUEST_TYPE_NAME } from '../constants'
 import { deployChanges, defaultDeployChange } from '../deployment/standard_deployment'
@@ -29,6 +30,7 @@ import { LayoutTypeName, getLayoutResponse, isIssueLayoutResponse, LAYOUT_TYPE_N
 
 const { isDefined } = lowerDashValues
 const log = logger(module)
+const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
 
 type statusType = {
   id: ReferenceExpression
@@ -178,9 +180,18 @@ const filter: FilterCreator = ({ config, client }) => ({
         getChangeData(change).elemID.typeName === REQUEST_TYPE_NAME
         && isInstanceChange(change)
     )
+    const typeFixedChanges = relevantChanges
+      .map(change => ({
+        action: change.action,
+        data: _.mapValues(change.data, (instance: InstanceElement) =>
+          replaceInstanceTypeForDeploy({
+            instance,
+            config: jsmApiDefinitions,
+          })),
+      })) as Change<InstanceElement>[]
 
     const deployResult = await deployChanges(
-      relevantChanges,
+      typeFixedChanges,
       async change => {
         if (isAdditionOrModificationChange(change)) {
           if (isAdditionChange(change)) {

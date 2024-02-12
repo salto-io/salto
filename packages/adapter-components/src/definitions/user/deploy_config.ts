@@ -26,7 +26,6 @@ export const createChangeValidatorConfigType = <ChangeValidatorName extends stri
 }: {
   adapterName: string
   changeValidatorNames: ChangeValidatorName[]
-  // TODON see if can create a real matching object type
 }): ObjectType => createMatchingObjectType<Partial<Record<string, boolean>>>({
   elemID: new ElemID(adapterName, 'changeValidatorConfig'),
   fields: Object.fromEntries((changeValidatorNames).map(validatorName => (

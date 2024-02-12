@@ -36,8 +36,12 @@ export const findAllUnresolvedArgs = (value: unknown, definedParams: Set<string>
   return _.uniq(allParams)
 }
 
-export const replaceArgs = (valueToReplace: string, args: Record<string, unknown>): string => (
-  valueToReplace.replace(
+export const replaceArgs = (
+  valueToReplace: string,
+  args: Record<string, unknown>,
+  throwOnUnresolvedArgs?: boolean,
+): string => {
+  const res = valueToReplace.replace(
     ARG_PLACEHOLDER_MATCHER,
     val => {
       const replacement = args[val.slice(1, -1)] ?? val
@@ -47,13 +51,21 @@ export const replaceArgs = (valueToReplace: string, args: Record<string, unknown
       return replacement.toString()
     }
   )
-)
+  if (throwOnUnresolvedArgs) {
+    const unresolved = findUnresolvedArgs(res)
+    if (unresolved.length > 0) {
+      throw new Error(`value ${res} still contains unresolved args: ${unresolved}`)
+    }
+  }
+  return res
+}
 
 // replace all placeholder args recursively
-export const replaceAllArgs = <T extends Values = Values>({ context, value }: {
+export const replaceAllArgs = <T extends Values = Values>({ context, value, throwOnUnresolvedArgs }: {
   context: ContextParams
   value: T
+  throwOnUnresolvedArgs?: boolean
 }): T => (_.cloneDeepWith(
     value,
-    val => (_.isString(val) ? replaceArgs(val, context) : undefined),
+    val => (_.isString(val) ? replaceArgs(val, context, throwOnUnresolvedArgs) : undefined),
   ))

@@ -133,8 +133,8 @@ export const createAdapterApiConfigType = ({
 export const defaultMissingUserFallbackField = { defaultMissingUserFallback: { refType: BuiltinTypes.STRING } }
 
 export const getConfigWithDefault = <
-  T extends TransformationConfig | FetchRequestConfig | undefined,
-  S extends TransformationDefaultConfig | FetchRequestDefaultConfig
+  T extends TransformationConfig | FetchRequestConfig | TypeConfig | undefined,
+  S extends TransformationDefaultConfig | FetchRequestDefaultConfig | TypeDefaultsConfig
 >(
     typeSpecificConfig: T,
     defaultConfig: S,

@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import stableStringify from 'json-stable-stringify'
 import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
@@ -77,3 +78,14 @@ export const createValueTransformer = <TContext extends Record<string, unknown>,
     return res[0]
   }
 }
+
+export const serviceIdCreator = (
+  serviceIdFields: string[], typeName: string,
+): (
+  (entry: Values) => string
+) => entry => (
+  stableStringify({
+    typeName,
+    ids: _.pick(entry, serviceIdFields),
+  })
+)

@@ -26,11 +26,8 @@ export type OpenAPIDefinition<
   ClientOptions extends string,
 > = {
   url: string
-  // avoid importing parts of the swagger (in order to avoid conflicts)
-  // filter?: RegExp
 
   // rename or clone types from the OpenAPI spec
-  // TODO replaces the old typeNameOverrides + additionalTypes
   typeAdjustments?: Record<string, SourceTypeDefinition>
 
   // prefix for all types and subtypes

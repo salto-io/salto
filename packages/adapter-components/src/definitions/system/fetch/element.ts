@@ -16,7 +16,7 @@
 import { types } from '@salto-io/lowerdash'
 import { ElemID, ElemIdGetter, InstanceElement, ObjectType, RestrictionAnnotationType, SaltoError, Values } from '@salto-io/adapter-api'
 import { NameMappingOptions } from '../shared'
-import { ConfigChangeSuggestion } from '../../../config' // TODON move
+import { ConfigChangeSuggestion } from '../../../config' // TODO move
 import { ArgsWithCustomizer } from '../shared/types'
 // eslint-disable-next-line import/no-cycle
 import { GenerateTypeArgs } from './types'
@@ -29,14 +29,13 @@ export type FieldIDPart = ArgsWithCustomizer<
     mapping?: NameMappingOptions
     // when true, the elem ids are re-calculated after all references have been generated
     // TODO see if can change the default to always re-generate all elem ids at the end of the fetch, except
-    // where explicitly specified otherwise
+    // where explicitly specified otherwise (in SALTO-5421)
     isReference?: boolean
   },
   Values
 >
 
 export type IDPartsDefinition = {
-  // extendsDefault?: boolean, // when true, also include the "default" id fields? doesn't seem needed
   parts?: FieldIDPart[]
   // the delimiter to use between parts - default is '_'
   delimiter?: string
@@ -44,7 +43,7 @@ export type IDPartsDefinition = {
 
 export type ElemIDDefinition = IDPartsDefinition & {
   // default - true when parent annotation exists?
-  // TODO check if still needed
+  // TODO check if still needed when implementing SALTO-5421
   extendsParent?: boolean
 }
 
@@ -62,13 +61,14 @@ type StandaloneFieldDefinition = {
   referenceFromParent?: boolean
   // when true, standalone fields' path is <account>/Records/<parent path>/<standalone field name>/<child path>
   // when false, the path is <account>/Records/<child type name>/<child path>
+  // default false
   nestPathUnderParent?: boolean
 }
 
-// TODO add safeties (e.g. standalone.referencFromParent means omit)
+// TODO add safeties (e.g. standalone.referencFromParent=false means omit)
 export type ElementFieldCustomization = types.XOR<
   {
-    fieldType?: string // TODON also convert to service id? so should do before the service id marker
+    fieldType?: string
     hide?: boolean
     standalone?: StandaloneFieldDefinition
     restrictions?: RestrictionAnnotationType
@@ -110,8 +110,9 @@ type FetchTopLevelElementDefinition<TVal extends Values = Values> = {
       (input: GenerateTypeArgs) => ElementsAndErrors)
 
   // the type should have exactly one instance, and it will use the settings instance name.
-  // note: when set, the elemID is ignored.
+  // note: when set, the elemID definition is ignored
   singleton?: boolean
+
   elemID?: ArgsWithCustomizer<
     string,
     ElemIDDefinition,
@@ -122,6 +123,7 @@ type FetchTopLevelElementDefinition<TVal extends Values = Values> = {
     },
     ElemIDCreatorArgs
   >
+
   path?: PathDefinition
 
   // customize the service-url annotation used to define go-to-service

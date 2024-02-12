@@ -14,4 +14,6 @@
 * limitations under the License.
 */
 export { getNameMapping, createServiceIDs } from './id_utils'
-export { getContainerForType, markServiceIdField, toNestedTypeName, toPrimitiveType } from './type_utils'
+export { getContainerForType, markServiceIdField, toNestedTypeName, toPrimitiveType, adjustFieldTypes } from './type_utils'
+export { generateInstancesForType } from './instance_element'
+export { generateType } from './type_element'

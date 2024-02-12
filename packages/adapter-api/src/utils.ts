@@ -33,6 +33,15 @@ export const getDeepInnerType = async (
   return getDeepInnerType(await type.getInnerType(elementsSource), elementsSource)
 }
 
+export const getDeepInnerTypeSync = (
+  type: TypeElement,
+): ObjectType | PrimitiveType => {
+  if (!isContainerType(type)) {
+    return type
+  }
+  return getDeepInnerTypeSync(type.getInnerTypeSync())
+}
+
 const getSubElement = async (
   baseType: TypeElement,
   pathParts: ReadonlyArray<string>,

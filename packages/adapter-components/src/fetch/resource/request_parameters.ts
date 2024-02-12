@@ -20,7 +20,8 @@ import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { ClientGetWithPaginationParams } from '../../client'
 import { FetchRequestConfig, UrlParams, DependsOnConfig } from '../../config/request' // TODO move and change format
-import { replaceArgs, ARG_PLACEHOLDER_MATCHER } from '../request'
+import { replaceArgs } from '../request'
+import { findUnresolvedArgs } from '../request/utils'
 
 const { isDefined } = lowerdashValues
 const log = logger(module)
@@ -107,17 +108,13 @@ const computeDependsOnURLs = (
   if (!url.includes('{')) {
     return [url]
   }
-  const urlParams = url.match(ARG_PLACEHOLDER_MATCHER)
-  if (urlParams === null) {
-    throw new Error(`invalid endpoint definition ${url}`)
-  }
+  const urlParams = findUnresolvedArgs(url)
 
   if (contextElements === undefined || dependsOn === undefined || _.isEmpty(dependsOn)) {
     throw new MissingContextError(`cannot resolve endpoint ${url} - missing context`)
   }
 
-  const potentialParamsByArg = urlParams.map(urlParam => {
-    const argName = urlParam.slice(1, -1)
+  const potentialParamsByArg = urlParams.map(argName => {
     const referenceDetails = dependsOn.find(({ pathParam }) => pathParam === argName)
     if (referenceDetails === undefined) {
       log.error('could not resolve path param %s in url %s with dependsOn config %s', argName, url, safeJsonStringify(dependsOn))
@@ -136,7 +133,7 @@ const computeDependsOnURLs = (
 
   const allArgCombinations = potentialParamsByArg.reduce((acc, potentialParams) => acc.flatMap(
     combo => potentialParams.map(param => ({ ...combo, ...param }))
-  ))
+  ), [{}])
 
   return allArgCombinations.map(p => replaceArgs(url, p))
 }

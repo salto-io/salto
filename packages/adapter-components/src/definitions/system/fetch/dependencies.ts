@@ -13,16 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Values } from '@salto-io/adapter-api'
 import { TransformDefinition } from '../shared'
 
 export type DependsOnDefinition = {
   parentTypeName: string
   transformation: TransformDefinition<{}, unknown>
-}
-
-type FixedValueContextDefinition = {
-  value: string | number | boolean | Values
 }
 
 type ConditionBase = { match: string[] }
@@ -42,7 +37,7 @@ export const isConditionByField = (
 )
 
 type RecurseIntoContextParamDefinition = {
-  fromField: string
+  fromField: string // TODO replace with transformation config to align
 }
 type RecurseIntoContext = {
   args: Record<string, RecurseIntoContextParamDefinition>
@@ -50,16 +45,13 @@ type RecurseIntoContext = {
 
 export type RecurseIntoDefinition = {
   typeName: string
-  single?: boolean // TODON implement (maybe move to field customization?)
+  single?: boolean
   context: RecurseIntoContext
   conditions?: Condition[]
   skipOnError?: boolean
 }
 
 export type ContextCombinationDefinition = {
-  // TODON see if can move to requests instead - if so, can make the entire context dependsOnContext
-  hardcoded?: Record<string, FixedValueContextDefinition>
-
   // each dependsOn combination provides a cartesian product of its possible arguments
   dependsOn?: Record<string, DependsOnDefinition>
   conditions?: Condition[]

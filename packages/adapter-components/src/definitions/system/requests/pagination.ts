@@ -19,7 +19,7 @@ import { HTTPEndpointIdentifier, RequestArgs } from './types'
 
 export type ClientRequestArgsNoPath = Omit<ClientBaseParams, 'url'>
 
-export type PaginationFunc = <ClientOptions extends string>({
+export type PaginationFunction = <ClientOptions extends string>({
   responseData,
   currentParams,
   responseHeaders,
@@ -29,13 +29,13 @@ export type PaginationFunc = <ClientOptions extends string>({
   currentParams: ClientRequestArgsNoPath
   responseHeaders?: Record<string, unknown>
   endpointIdentifier: HTTPEndpointIdentifier<ClientOptions>
-}) => ClientRequestArgsNoPath[] // TODON change response value?
+}) => ClientRequestArgsNoPath[]
 
 export type PaginationFuncCreator<ClientOptions extends string> = (args: {
   client: HTTPReadClientInterface & HTTPWriteClientInterface
   endpointIdentifier: HTTPEndpointIdentifier<ClientOptions>
   params: ContextParams
-}) => PaginationFunc
+}) => PaginationFunction
 
 export type PaginationDefinitions<ClientOptions extends string> = {
   funcCreator: PaginationFuncCreator<ClientOptions>

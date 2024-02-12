@@ -22,7 +22,6 @@ export type RESTApiClientDefinition<
   httpClient: HTTPReadClientInterface & HTTPWriteClientInterface
 
   // when specified, the additional args will be expected to appear in the context
-  // TODON if exposing here, should use to validate as though these are additional args passed to the endpoint
   clientArgs?: Record<string, string>
 
   // the endpoints the client supports

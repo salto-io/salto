@@ -18,6 +18,7 @@ import { ApiClientDefinition, PaginationDefinitions } from './requests'
 import { OptionsWithDefault } from './shared'
 import { OpenAPIDefinition } from './sources'
 import { FetchApiDefinitions } from './fetch'
+// import { DeployApiDefinitions } from './deploy'
 import { ReferenceDefinitions } from './references'
 
 export type ApiDefinitions<
@@ -46,4 +47,6 @@ export type ApiDefinitions<
   references?: ReferenceDefinitions
 
   fetch?: FetchApiDefinitions<ClientOptions>
+  // TODO add deploy
+  // deploy?: DeployApiDefinitions<Action, ClientOptions>
 }

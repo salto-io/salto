@@ -124,6 +124,13 @@ export const getNestedWithDefault = <T, TNested, K extends string>(
 // TODO see if can avoid the cast
 }) as unknown as DefaultWithCustomizations<TNested, K>
 
+/**
+ * elem ids for instances can be defined in two places:
+ * - the "system" definitions
+ * - user-specified overrides that are added under fetch.elemID
+ * this function combines these two, by treating the user-provided overrides as customizations
+ * and giving them precedence when merging with the system definitions
+ */
 export const mergeWithUserElemIDDefinitions = <
   ClientOptions extends string,
   PaginationOptions extends string | 'none' = 'none',

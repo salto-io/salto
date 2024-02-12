@@ -14,8 +14,6 @@
 * limitations under the License.
 */
 import { Values } from '@salto-io/adapter-api'
-import { Response, ResponseValue } from '../../../client'
-import { ArgsWithCustomizer } from '../shared/types'
 
 export type HTTPMethod = 'get' | 'post' | 'put' | 'patch' | 'delete' | 'head' | 'options'
 
@@ -31,24 +29,18 @@ export type RequestArgs = {
   headers?: Record<string, string>
   queryArgs?: Record<string, string>
   params?: Record<string, Values>
-  // TODO allow x-www-form-urlencoded + URLSearchParams, but not in a structured way yet?
+  // TODO support x-www-form-urlencoded + URLSearchParams
   body?: unknown
 }
 
 export type HTTPEndpointDetails<PaginationOptions extends string | 'none'> = RequestArgs & {
   omitBody?: boolean
 
-  // override default expected HTTP codes
-  checkSuccess?: ArgsWithCustomizer< // TODON use
-    boolean,
-    // TODON decide on name
-    { httpSuccessCodes: number[] },
-    Response<ResponseValue | ResponseValue[]>
-  >
+  // TODO add option to override default expected HTTP codes (SALTO-5415)
 
   // the strategy to use to get all response pages
   pagination?: PaginationOptions
 
   // set this to mark as endpoint as safe for fetch. other endpoints can only be called during deploy.
-  readonly?: boolean // TDOON validate!
+  readonly?: boolean
 }

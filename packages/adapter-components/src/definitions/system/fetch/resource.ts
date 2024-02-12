@@ -20,11 +20,9 @@ export type ResourceTransformFunc = AdjustFunction<{ fragments: GeneratedItem[] 
 
 export type FetchResourceDefinition = {
   // set to true if the resource should be fetched on its own. set to false for types only fetched via recurseInto
-  directFetch: boolean // TODON after refactor might not be needed?
+  directFetch: boolean
 
-  // TODON make sure to also mark the fields correctly (after they've been set as number/string)
-  // TODON check if need to use the context to identify a resource - if so the instance one should be separate
-  // (hopefully won't need)
+  // fields used to uniquely identify this entity in the service. usually the (internal) id can be used
   serviceIDFields?: string[]
 
   // context arg name to type info

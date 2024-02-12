@@ -26,7 +26,7 @@ export type ContextParams = Record<string, unknown>
 export type GeneratedItem<TContext = ContextParams, TVal = unknown> = {
   typeName: string
   value: TVal
-  // TODO also support binary values?
+  // TODO also support binary values (for SALTO-5400)
   readonly context: ContextParams & TContext
 }
 
@@ -73,10 +73,4 @@ export type ExtractionParams<TContext = ContextParams> = {
 
 export type EndpointExtractionParams<TContext, ClientOptions extends string> = ExtractionParams<TContext> & {
   endpoint: HTTPEndpointIdentifier<ClientOptions> & RequestArgs
-}
-
-export type EndpointCallResult = { // TDOON check if needed
-  success: boolean
-  errors?: Error[] // TODON
-  resources: GeneratedItem[]
 }

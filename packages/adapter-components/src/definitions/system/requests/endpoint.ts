@@ -13,16 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { EndpointCallResult, ArgsWithCustomizer, DefaultWithCustomizations } from '../shared'
+import { DefaultWithCustomizations } from '../shared'
 import { HTTPEndpointDetails, HTTPMethod } from './types'
 
-export type EndpointDefinition<PaginationOptions extends string> = ArgsWithCustomizer<
-  EndpointCallResult,
-  HTTPEndpointDetails<PaginationOptions>
->
-
 export type ClientEndpoints<PaginationOptions extends string> = Partial<
-  Record<HTTPMethod, EndpointDefinition<PaginationOptions>>>
+  Record<HTTPMethod, HTTPEndpointDetails<PaginationOptions>>>
 
 export type EndpointByPathAndMethod<PaginationOptions extends string> = DefaultWithCustomizations<
   ClientEndpoints<PaginationOptions>

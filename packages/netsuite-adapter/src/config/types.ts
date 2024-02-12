@@ -474,13 +474,12 @@ export const fetchDefault: FetchParams = {
           .filter(itemTypeName => !['giftCertificateItem', 'downloadItem'].includes(itemTypeName))
           .join('|'),
       }, // may be a lot of data that takes a lot of time to fetch
-      ...Object.values(INACTIVE_FIELDS)
-        .map((fieldName): CriteriaQuery => ({
-          name: ALL_TYPES_REGEX,
-          criteria: {
-            [fieldName]: true,
-          },
-        })),
+      {
+        name: ALL_TYPES_REGEX,
+        criteria: {
+          [INACTIVE_FIELDS.isInactive]: true,
+        },
+      },
       {
         name: SAVED_SEARCH,
         criteria: {

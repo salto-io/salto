@@ -18,6 +18,7 @@ import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { FailedFiles } from '../client/types'
+import { INACTIVE_FIELDS } from '../constants'
 import { FetchTypeQueryParams, LockedElementsConfig, NetsuiteConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, QueryParams, configType } from './types'
 import { FetchByQueryFailures, convertToQueryParams, isCriteriaQuery } from './query'
 import { emptyQueryParams, fullFetchConfig } from './config_creator'
@@ -30,6 +31,8 @@ export const toLargeFoldersExcludedMessage = (updatedLargeFolders: NetsuiteFileP
 
 export const toLargeTypesExcludedMessage = (updatedLargeTypes: string[]): string => `The following types were excluded from the fetch as the elements of that type were too numerous: ${updatedLargeTypes.join(', ')}.`
  + ' To include them, increase the types elements\' size limitations and remove their exclusion rules.'
+
+export const ALIGNED_INACTIVE_CRITERIAS = 'The exclusion criteria of inactive elements was modified.'
 
 const createFolderExclude = (folderPaths: NetsuiteFilePathsQueryParams): string[] =>
   folderPaths.map(folder => `^${_.escapeRegExp(folder)}.*`)
@@ -198,6 +201,22 @@ const updateConfigFromLargeTypes = (
   return []
 }
 
+// TODO: remove at May 24.
+const alignInactiveExclusionCriterias = (config: NetsuiteConfig): boolean => {
+  let isUpdated = false
+  config.fetch.exclude.types.filter(isCriteriaQuery).forEach(item => {
+    Object.values(INACTIVE_FIELDS).forEach(fieldName => {
+      if (item.criteria[fieldName] !== undefined && fieldName !== INACTIVE_FIELDS.isInactive) {
+        item.criteria[INACTIVE_FIELDS.isInactive] = item.criteria[fieldName]
+        delete item.criteria[fieldName]
+        isUpdated = true
+      }
+    })
+  })
+  config.fetch.exclude.types = _.uniqWith(config.fetch.exclude.types, _.isEqual)
+  return isUpdated
+}
+
 const toConfigInstance = (config: NetsuiteConfig): InstanceElement =>
   new InstanceElement(ElemID.CONFIG_NAME, configType, _.pickBy(config, values.isDefined))
 
@@ -234,6 +253,7 @@ export const getConfigFromConfigChanges = (
   const didUpdateFromFailures = updateConfigFromFailedFetch(config, failures)
   const updatedLargeFolders = updateConfigFromLargeFolders(config, failures.failedFilePaths)
   const updatedLargeTypes = updateConfigFromLargeTypes(config, failures)
+  const alignedInactiveCriterias = alignInactiveExclusionCriterias(config)
 
   const messages = [
     didUpdateFromFailures
@@ -244,6 +264,9 @@ export const getConfigFromConfigChanges = (
       : undefined,
     updatedLargeTypes.length > 0
       ? toLargeTypesExcludedMessage(updatedLargeTypes)
+      : undefined,
+    alignedInactiveCriterias
+      ? ALIGNED_INACTIVE_CRITERIAS
       : undefined,
   ].filter(values.isDefined)
 

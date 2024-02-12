@@ -1508,6 +1508,36 @@ describe('Custom Object Instances CRUD', () => {
     })
 
     describe('when group is ADD_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP', () => {
+      let mockQuery: jest.Mock
+      beforeEach(() => {
+        mockQuery = jest.fn()
+          .mockImplementationOnce(() => ({
+            // first insert of PriceRule with ConditionsMet='All'
+            totalSize: 0,
+            done: true,
+            records: [
+            ],
+          }))
+          .mockImplementationOnce(() => ({
+            // insert of PriceCondition
+            totalSize: 0,
+            done: true,
+            records: [
+            ],
+          }))
+          .mockImplementationOnce(() => ({
+            // second insert of PriceRule with ConditionsMet='Custom'
+            totalSize: 1,
+            done: true,
+            records: [
+              {
+                Id: 'newId0',
+                OwnerId: 'SomeOwnerId',
+              },
+            ],
+          }))
+        connection.query = mockQuery
+      })
       describe('when no Errors occur during the deploy', () => {
         beforeEach(async () => {
           const priceRule = new InstanceElement(
@@ -1542,6 +1572,7 @@ describe('Custom Object Instances CRUD', () => {
           expect(appliedPriceRule.value).toEqual({
             [CUSTOM_OBJECT_ID_FIELD]: 'newId0',
             [CPQ_CONDITIONS_MET]: 'Custom',
+            [OWNER_ID]: 'SomeOwnerId',
           })
           expect(appliedPriceCondition.value).toEqual({
             [CUSTOM_OBJECT_ID_FIELD]: 'newId0',
@@ -1561,7 +1592,7 @@ describe('Custom Object Instances CRUD', () => {
           )
           expect(connection.bulk.load).toHaveBeenCalledWith(
             CPQ_PRICE_RULE, 'update', expect.anything(), [
-              { Id: 'newId0', [CPQ_CONDITIONS_MET]: 'Custom', Name: null },
+              { Id: 'newId0', [OWNER_ID]: 'SomeOwnerId', [CPQ_CONDITIONS_MET]: 'Custom', Name: null },
             ]
           )
         })

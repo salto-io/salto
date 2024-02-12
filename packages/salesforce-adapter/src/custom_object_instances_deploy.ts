@@ -44,7 +44,7 @@ import {
 } from './constants'
 import { getIdFields, transformRecordToValues } from './filters/custom_objects_instances'
 import {
-  apiNameSync, buildSelectQueries, getFieldNamesForQuery, isHiddenField, isInstanceOfTypeChangeSync,
+  apiNameSync, buildSelectQueries, getFieldNamesForQuery, isHiddenField, isInstanceOfTypeChangeSync, SoqlQuery,
 } from './filters/utils'
 import { isListCustomSettingsObject } from './filters/custom_settings_filter'
 import { SalesforceRecord } from './client/types'
@@ -148,6 +148,29 @@ const isCompoundFieldType = (type: TypeElement): type is ObjectType => (
 
 const MANDATORY_FIELDS_FOR_UPDATE = [CUSTOM_OBJECT_ID_FIELD, OWNER_ID]
 
+const mandatoryFieldsForType = (type: ObjectType): string[] => (
+  // Should always query these fields along the SaltoIdFields as they're mandatory for update operation
+  MANDATORY_FIELDS_FOR_UPDATE
+    // Some mandatory fields might not be in the type (e.g. for custom settings or the detail side of
+    // master-detail relationship for CustomObjects)
+    .filter(mandatoryField => Object.keys(type.fields).includes(mandatoryField))
+)
+
+const queryInstancesWithFields = async (
+  client: SalesforceClient,
+  typeName: string,
+  fieldsToQuery: string[],
+  instanceIdValues: ReadonlyArray<ReadonlyArray<SoqlQuery>>,
+): Promise<SalesforceRecord[]> => {
+  const queries = buildSelectQueries(
+    typeName,
+    fieldsToQuery,
+    instanceIdValues,
+  )
+  const recordsIterable = awu(queries).flatMap(query => client.queryAll(query))
+  return (await toArrayAsync(recordsIterable)).flat()
+}
+
 const getRecordsBySaltoIds = async (
   type: ObjectType,
   instances: InstanceElement[],
@@ -173,6 +196,11 @@ const getRecordsBySaltoIds = async (
     ]
   }
 
+  if (apiNameSync(type) === undefined) {
+    log.debug('Type %s has no API name. Existing records will not be fetched.', type.elemID.getFullName())
+    return []
+  }
+
   const instanceIdValues = await Promise.all(instances.map(async inst => {
     const idFieldsNameToValue = (await Promise.all(
       saltoIdFields.map(field => getFieldNamesToValues(inst, field))
@@ -182,30 +210,12 @@ const getRecordsBySaltoIds = async (
   }))
 
   const fieldsToQuery = _.uniq(
-    // Should always query these fields along the SaltoIdFields as they're mandatory for update operation
-    MANDATORY_FIELDS_FOR_UPDATE
-      // Some mandatory fields might not be in the type (e.g. for custom settings or the detail side of
-      // master-detail relationship for CustomObjects)
-      .filter(mandatoryField => Object.keys(type.fields).includes(mandatoryField))
+    mandatoryFieldsForType(type)
       .concat(
         (await awu(saltoIdFields).flatMap(getFieldNamesForQuery).toArray())
       )
   )
-  const queries = buildSelectQueries(
-    await apiName(type),
-    fieldsToQuery,
-    instanceIdValues,
-  )
-  const recordsIterable = awu(queries).flatMap(query => client.queryAll(query))
-  // Possible REBASE issue
-  // const selectStr = await buildSelectStr(saltoIdFieldsWithIdField)
-  // const fieldsWheres = await awu(saltoIdFields)
-  //   .flatMap(async e => makeArray(await computeWhereConditions(e)))
-  //   .toArray()
-  // const whereStr = fieldsWheres.join(' AND ')
-  // const query = `SELECT ${selectStr} FROM ${await apiName(type)} WHERE ${whereStr}`
-  // const recordsIterable = await client.queryAll(query)
-  return (await toArrayAsync(recordsIterable)).flat()
+  return queryInstancesWithFields(client, apiNameSync(type) as string, fieldsToQuery, instanceIdValues)
 }
 
 const getDataManagementFromCustomSettings = async (instances: InstanceElement[]):
@@ -731,6 +741,7 @@ const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
  * @param ruleTypeName
  * @param ruleConditionFieldName
  * @param conditionTypeName
+ * @param conditionRuleFieldName
  * @param changes
  * @param changeGroupId
  * @param client
@@ -812,6 +823,26 @@ const deployRulesAndConditionsGroup = async (
     dataManagement,
   )
 
+  const ruleType = getChangeData(ruleChanges[0]).getTypeSync()
+  const mandatoryFieldsForUpdate = mandatoryFieldsForType(ruleType)
+  const instanceIdToMandatoryFields: Record<string, SalesforceRecord> = {}
+  if (mandatoryFieldsForUpdate.length > 0) {
+    const fieldsQuery = rulesWithAllConditionsMetDeployResult.appliedChanges
+      .map(change => getChangeData(change) as InstanceElement)
+      .map(instance => instance.value[CUSTOM_OBJECT_ID_FIELD])
+      .map(internalId => [{ fieldName: CUSTOM_OBJECT_ID_FIELD, operator: 'IN' as const, value: `'${internalId}'` }])
+    const recordsWithMandatoryFields = await queryInstancesWithFields(
+      client,
+      ruleTypeName,
+      mandatoryFieldsForUpdate,
+      fieldsQuery,
+    )
+    recordsWithMandatoryFields
+      .forEach(record => {
+        instanceIdToMandatoryFields[record[CUSTOM_OBJECT_ID_FIELD]] = record
+      })
+  }
+
   log.debug(`Updating the ${ruleTypeName} instances with Custom ${ruleConditionFieldName}`)
   const firstDeployAppliedChanges = rulesWithAllConditionsMetDeployResult.appliedChanges
     .filter(isInstanceChange)
@@ -819,6 +850,12 @@ const deployRulesAndConditionsGroup = async (
     .map(getChangeData)
     .forEach(instance => {
       instance.value[ruleConditionFieldName] = 'Custom'
+      const instanceId = instance.value[CUSTOM_OBJECT_ID_FIELD]
+      _(mandatoryFieldsForUpdate)
+        .without(CUSTOM_OBJECT_ID_FIELD)
+        .forEach(fieldName => {
+          instance.value[fieldName] = instanceIdToMandatoryFields[instanceId]?.[fieldName]
+        })
     })
   const rulesWithCustomDeployResult = await deploySingleTypeAndActionCustomObjectInstancesGroup(
     // Transforming to modification changes to trigger "update" instead of "insert"

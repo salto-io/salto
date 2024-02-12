@@ -668,7 +668,7 @@ export const getSuiteQLTableElements = async (
   elementsSource: ReadOnlyElementsSource,
   isPartial: boolean
 ): Promise<TopLevelElement[]> => {
-  if (!config.fetch.resolveAccountSpecificValues) {
+  if (config.fetch.resolveAccountSpecificValues === false) {
     return []
   }
   const suiteQLTableType = new ObjectType({

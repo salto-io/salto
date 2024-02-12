@@ -338,7 +338,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       const elementsToCreate = [
         ...customObjects,
         ...fileCabinetContent,
-        ...(this.userConfig.fetch.addBundles ? bundlesCustomInfo : []),
+        ...(this.userConfig.fetch.addBundles !== false ? bundlesCustomInfo : []),
       ]
       const elements = await createElements(elementsToCreate, this.elementsSource, this.getElemIdFunc)
       const [standardInstances, types] = _.partition(elements, isInstanceElement)

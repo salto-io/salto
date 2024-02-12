@@ -191,7 +191,7 @@ export const deployActions = async (
         throw error
       }
     })
-    return { errors: [], appliedChanges, extraProperties: { groups } }
+    return { errors: accumulatedNonFatalErrors, appliedChanges, extraProperties: { groups } }
   } catch (error) {
     const deployErrors: DeployError[] = []
     if (error instanceof WalkError) {

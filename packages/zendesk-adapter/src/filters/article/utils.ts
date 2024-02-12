@@ -132,7 +132,7 @@ const getAttachmentContent = async ({
   }
   if (attachment.value.relative_path === undefined) {
     const error = `could not add attachment ${attachment.elemID.getFullName()}, as the relative_path is undefined`
-    log.error(error)
+    log.warn(error)
     return contentWarning(error)
   }
   const client = brandIdToClient[attachment.value.brand]

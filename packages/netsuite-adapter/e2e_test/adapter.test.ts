@@ -95,6 +95,9 @@ describe('Netsuite adapter E2E with real account', () => {
     )
   }
 
+  // the hardcoded types have "isinactive"/"inactive" fields and there's a filter
+  // that replace them with "isInactive", so we should do that too here in order
+  // to compare a fetched instance and a hardcoded instance
   const alignInactiveFields = (instance: InstanceElement): InstanceElement => {
     const cloned = instance.clone()
     const type = cloned.getTypeSync().clone()

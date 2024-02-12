@@ -26,6 +26,7 @@ import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 import { entryFormType } from '../../src/autogen/types/standard_types/entryForm'
 import { customlistType } from '../../src/autogen/types/standard_types/customlist'
 import { emptyQueryParams, fullQueryParams } from '../../src/config/config_creator'
+import { bundleType } from '../../src/types/bundle_type'
 
 describe('add important values filter', () => {
   let workflow: ObjectType
@@ -62,7 +63,7 @@ describe('add important values filter', () => {
       innerType,
     ]
 
-    types.forEach(addBundleFieldToType)
+    types.forEach(type => addBundleFieldToType(type, bundleType().type))
 
     defaultOpts = {
       elementsSourceIndex: {} as LazyElementsSourceIndexes,

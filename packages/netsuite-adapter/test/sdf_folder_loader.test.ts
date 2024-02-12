@@ -127,12 +127,12 @@ describe('sdf folder loader', () => {
     const metadataTypes = metadataTypesToList({ standardTypes, additionalTypes, innerAdditionalTypes })
       .concat(createCustomRecordTypes([], standardTypes.customrecordtype.type))
 
+    addApplicationIdToType(additionalTypes.bundle)
     // metadataTypes + folderInstance + fileInstance + featuresInstance + customTypeInstance + customRecordType
     expect(elements).toHaveLength(metadataTypes.length + 5)
-
     const instance = elements.find(elem => isInstanceElement(elem) && elem.elemID.typeName === ENTITY_CUSTOM_FIELD)
     addApplicationIdToType(standardTypes[ENTITY_CUSTOM_FIELD].type)
-    addBundleFieldToType(standardTypes[ENTITY_CUSTOM_FIELD].type)
+    addBundleFieldToType(standardTypes[ENTITY_CUSTOM_FIELD].type, additionalTypes.bundle)
     expect(instance).toEqual(new InstanceElement(
       'custentity_my_script_id',
       standardTypes[ENTITY_CUSTOM_FIELD].type,
@@ -145,7 +145,7 @@ describe('sdf folder loader', () => {
 
     const fileInstance = elements.find(elem => isInstanceElement(elem) && elem.elemID.typeName === FILE)
     addApplicationIdToType(additionalTypes[FILE])
-    addBundleFieldToType(additionalTypes[FILE])
+    addBundleFieldToType(additionalTypes[FILE], additionalTypes.bundle)
     expect(fileInstance).toEqual(new InstanceElement(
       naclCase('a/b/c'),
       additionalTypes[FILE],
@@ -161,7 +161,7 @@ describe('sdf folder loader', () => {
 
     const folderInstance = elements.find(elem => isInstanceElement(elem) && elem.elemID.typeName === FOLDER)
     addApplicationIdToType(additionalTypes[FOLDER])
-    addBundleFieldToType(additionalTypes[FOLDER])
+    addBundleFieldToType(additionalTypes[FOLDER], additionalTypes.bundle)
     expect(folderInstance).toEqual(new InstanceElement(
       naclCase('a/b'),
       additionalTypes[FOLDER],
@@ -186,7 +186,7 @@ describe('sdf folder loader', () => {
 
     const customRecordType = elements.find(elem => isObjectType(elem) && isCustomRecordType(elem))
     addApplicationIdToType(standardTypes[CUSTOM_RECORD_TYPE].type)
-    addBundleFieldToType(standardTypes[CUSTOM_RECORD_TYPE].type)
+    addBundleFieldToType(standardTypes[CUSTOM_RECORD_TYPE].type, additionalTypes.bundle)
     expect(customRecordType).toEqual(createCustomRecordTypes(
       [new InstanceElement(
         'customrecord1',

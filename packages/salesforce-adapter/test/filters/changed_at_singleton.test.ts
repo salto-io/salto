@@ -39,6 +39,8 @@ describe('createChangedAtSingletonInstanceFilter', () => {
   beforeEach(() => {
     lastChangeDateOfTypesWithNestedInstances = {
       ...emptyLastChangeDateOfTypesWithNestedInstances(),
+      // Make sure we filter out CustomLabels when none exist in the workspace
+      CustomLabels: undefined,
       [CUSTOM_OBJECT]: {
         SBQQ__Template__c: '2023-03-01T00:00:00.000Z',
       },
@@ -131,7 +133,7 @@ describe('createChangedAtSingletonInstanceFilter', () => {
           .find(e => e.elemID.typeName === CHANGED_AT_SINGLETON)
         expect(changedAtSingleton).toBeDefined()
         expect(changedAtSingleton?.value).toEqual({
-          ...lastChangeDateOfTypesWithNestedInstances,
+          ..._.omit(lastChangeDateOfTypesWithNestedInstances, 'CustomLabels'),
           [updatedInstanceTypeName]: {
             [updatedInstanceName]: CHANGED_AT,
           },

@@ -33,12 +33,12 @@ import {
   metadataTypeSync,
 } from './utils'
 import { MetadataInstanceElement } from '../transformers/transformer'
-import { ChangedAtSingletonValue, LastChangeDateOfTypesWithNestedInstances } from '../types'
+import { LastChangeDateOfTypesWithNestedInstances } from '../types'
 
 const createCurrentChangedAtSingletonValues = (
   lastChangeDateOfTypesWithNestedInstances: LastChangeDateOfTypesWithNestedInstances | {},
   metadataInstancesByType: Record<string, MetadataInstanceElement[]>
-): ChangedAtSingletonValue => {
+): Values => {
   const instanceValues: Values = {}
   Object.entries(metadataInstancesByType).forEach(([metadataType, elements]) => {
     instanceValues[metadataType] = {}
@@ -80,9 +80,11 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
     if (Object.values(instancesByType).flat().length === 0) {
       return
     }
-    changedAtInstance.value = _.defaultsDeep(
-      createCurrentChangedAtSingletonValues(lastChangeDateOfTypesWithNestedInstances, instancesByType),
-      changedAtInstance.value,
+    changedAtInstance.value = Object.fromEntries(
+      Object.entries(_.defaultsDeep(
+        createCurrentChangedAtSingletonValues(lastChangeDateOfTypesWithNestedInstances, instancesByType),
+        changedAtInstance.value,
+      )).filter(([, value]) => value !== undefined)
     )
 
     const instanceLastChangedByCustomObjectType = _(elements)

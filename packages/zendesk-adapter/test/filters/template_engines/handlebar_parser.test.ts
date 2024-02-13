@@ -13,26 +13,26 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { parseHandlebarReferences } from '../../../src/filters/template_engines/handlebar_parser'
+import { parseHandlebarPotentialReferences } from '../../../src/filters/template_engines/handlebar_parser'
 
 describe('parse', () => {
   it('should parse a template with a relevant helper function', () => {
     const template = 'Hello {{#is id 12345}}good name{{else}}bad name{{/is}}'
-    const parsed = parseHandlebarReferences(template)
+    const parsed = parseHandlebarPotentialReferences(template)
     expect(parsed).toHaveLength(1)
     expect(parsed[0].value).toEqual(12345)
   })
 
   it('should parse a template with a relevant helper function and a sub expression', () => {
     const template = 'Hello {{#is (lookup id) 12345}}good name{{else}}bad name{{/is}}'
-    const parsed = parseHandlebarReferences(template)
+    const parsed = parseHandlebarPotentialReferences(template)
     expect(parsed).toHaveLength(1)
     expect(parsed[0].value).toEqual(12345)
   })
 
   it('should not parse a template with an irrelevant helper function', () => {
     const template = 'Hello {{#if id 123456}}good name{{else}}bad name{{/if}}{{notBlock 1231}}'
-    const parsed = parseHandlebarReferences(template)
+    const parsed = parseHandlebarPotentialReferences(template)
     expect(parsed).toHaveLength(0)
   })
 })

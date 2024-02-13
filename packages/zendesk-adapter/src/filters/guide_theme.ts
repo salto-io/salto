@@ -45,7 +45,7 @@ import { deleteTheme } from './guide_themes/delete'
 import { download } from './guide_themes/download'
 import { publish } from './guide_themes/publish'
 import { getBrandsForGuideThemes } from './utils'
-import { parseHandlebarReferences } from './template_engines/handlebar_parser'
+import { parseHandlebarPotentialReferences } from './template_engines/handlebar_parser'
 
 
 const log = logger(module)
@@ -64,7 +64,7 @@ export type ThemeDirectory = {
 const createTemplateParts = (filePath: string, content: string, idsToElements: Record<string, Element>): void => {
   if (filePath.endsWith('.hbs')) {
     try {
-      const potentialReferences = parseHandlebarReferences(content)
+      const potentialReferences = parseHandlebarPotentialReferences(content)
       const templateParts = potentialReferences.map(ref => (idsToElements[ref.value] !== undefined
         ? { value: idsToElements[ref.value], loc: ref.loc }
         : ref))
@@ -269,6 +269,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
     }
     const idsToElements = await awu(await elementsSource.getAll())
       .filter(isInstanceElement)
+      .filter(element => element.value.id !== undefined)
       .reduce<Record<string, Element>>((acc, elem) => {
         acc[elem.value.id] = elem
         return acc

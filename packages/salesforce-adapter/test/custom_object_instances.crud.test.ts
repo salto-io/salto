@@ -29,9 +29,10 @@ import Connection from '../src/client/jsforce'
 import mockAdapter from './adapter'
 import { createCustomObjectType, nullProgressReporter } from './utils'
 import {
-  ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP, CUSTOM_OBJECT_ID_FIELD,
+  ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP, CUSTOM_OBJECT_ID_FIELD,
   FIELD_ANNOTATIONS, OWNER_ID, SBAA_APPROVAL_CONDITION,
-  SBAA_APPROVAL_RULE, SBAA_CONDITIONS_MET, DefaultSoqlQueryLimits,
+  SBAA_APPROVAL_RULE, SBAA_CONDITIONS_MET, DefaultSoqlQueryLimits, CPQ_PRICE_RULE, CPQ_CONDITIONS_MET,
+  CPQ_PRICE_CONDITION, CPQ_PRICE_CONDITION_RULE_FIELD, ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP,
 } from '../src/constants'
 import { mockTypes } from './mock_elements'
 
@@ -295,6 +296,8 @@ describe('Custom Object Instances CRUD', () => {
                     { objectsRegex: 'TestType__c', idFields: ['Name'] },
                     { objectsRegex: 'sbaa__ApprovalRule__c', idFields: ['Id'] },
                     { objectsRegex: 'sbaa__ApprovalCondition__c', idFields: ['sbaa__ApprovalRule__c'] },
+                    { objectsRegex: CPQ_PRICE_RULE, idFields: ['Id'] },
+                    { objectsRegex: CPQ_PRICE_CONDITION, idFields: [CPQ_PRICE_CONDITION_RULE_FIELD] },
                   ],
                 },
               },
@@ -1353,7 +1356,7 @@ describe('Custom Object Instances CRUD', () => {
             }
           )
           const changeGroup = {
-            groupID: ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+            groupID: ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
             changes: [approvalRule, approvalCondition].map(instance => toChange({ after: instance })),
           }
           result = await adapter.deploy({
@@ -1428,7 +1431,7 @@ describe('Custom Object Instances CRUD', () => {
             }
           )
           const changeGroup = {
-            groupID: ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+            groupID: ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
             changes: [
               approvalRule,
               failApprovalRule,
@@ -1494,8 +1497,210 @@ describe('Custom Object Instances CRUD', () => {
             }
           )
           changeGroup = {
-            groupID: ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+            groupID: ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
             changes: [approvalRule, approvalCondition].map(instance => toChange({ after: instance })),
+          }
+        })
+        it('should throw an error', async () => {
+          await expect(adapter.deploy({ changeGroup, progressReporter: nullProgressReporter })).rejects.toThrow()
+        })
+      })
+    })
+
+    describe('when group is ADD_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP', () => {
+      let mockQuery: jest.Mock
+      beforeEach(() => {
+        mockQuery = jest.fn()
+          .mockImplementationOnce(() => ({
+            // first insert of PriceRule with ConditionsMet='All'
+            totalSize: 0,
+            done: true,
+            records: [
+            ],
+          }))
+          .mockImplementationOnce(() => ({
+            // insert of PriceCondition
+            totalSize: 0,
+            done: true,
+            records: [
+            ],
+          }))
+          .mockImplementationOnce(() => ({
+            // second insert of PriceRule with ConditionsMet='Custom'
+            totalSize: 1,
+            done: true,
+            records: [
+              {
+                Id: 'newId0',
+                OwnerId: 'SomeOwnerId',
+              },
+            ],
+          }))
+        connection.query = mockQuery
+      })
+      describe('when no Errors occur during the deploy', () => {
+        beforeEach(async () => {
+          const priceRule = new InstanceElement(
+            'somePriceRule',
+            mockTypes[CPQ_PRICE_RULE],
+            {
+              [CPQ_CONDITIONS_MET]: 'Custom',
+            },
+          )
+          const priceCondition = new InstanceElement(
+            'somePriceCondition',
+            mockTypes[CPQ_PRICE_CONDITION],
+            {
+              [CPQ_PRICE_CONDITION_RULE_FIELD]: new ReferenceExpression(priceRule.elemID, priceRule),
+            }
+          )
+          const changeGroup = {
+            groupID: ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP,
+            changes: [priceRule, priceCondition].map(instance => toChange({ after: instance })),
+          }
+          result = await adapter.deploy({
+            changeGroup,
+            progressReporter: nullProgressReporter,
+          })
+        })
+        it('should deploy successfully', () => {
+          expect(result.errors).toBeEmpty()
+          expect(result.appliedChanges).toHaveLength(2)
+          const [appliedPriceRule, appliedPriceCondition] = result.appliedChanges
+            .map(getChangeData)
+            .filter(isInstanceElement)
+          expect(appliedPriceRule.value).toEqual({
+            [CUSTOM_OBJECT_ID_FIELD]: 'newId0',
+            [CPQ_CONDITIONS_MET]: 'Custom',
+            [OWNER_ID]: 'SomeOwnerId',
+          })
+          expect(appliedPriceCondition.value).toEqual({
+            [CUSTOM_OBJECT_ID_FIELD]: 'newId0',
+            [CPQ_PRICE_CONDITION_RULE_FIELD]: expect.objectContaining({ elemID: appliedPriceRule.elemID }),
+          })
+
+          expect(connection.bulk.load).toHaveBeenCalledTimes(3)
+          expect(connection.bulk.load).toHaveBeenCalledWith(
+            CPQ_PRICE_RULE, 'insert', expect.anything(), [
+              { Id: undefined, [CPQ_CONDITIONS_MET]: 'All' },
+            ]
+          )
+          expect(connection.bulk.load).toHaveBeenCalledWith(
+            CPQ_PRICE_CONDITION, 'insert', expect.anything(), [
+              { Id: undefined, [CPQ_PRICE_CONDITION_RULE_FIELD]: appliedPriceRule.value[CUSTOM_OBJECT_ID_FIELD] },
+            ]
+          )
+          expect(connection.bulk.load).toHaveBeenCalledWith(
+            CPQ_PRICE_RULE, 'update', expect.anything(), [
+              { Id: 'newId0', [OWNER_ID]: 'SomeOwnerId', [CPQ_CONDITIONS_MET]: 'Custom', Name: null },
+            ]
+          )
+        })
+      })
+      describe('when some PriceRule instances fail to deploy', () => {
+        let priceRule: InstanceElement
+        let priceCondition: InstanceElement
+        let failPriceRule: InstanceElement
+        let failPriceCondition: InstanceElement
+        beforeEach(async () => {
+          priceRule = new InstanceElement(
+            '1',
+            mockTypes[CPQ_PRICE_RULE],
+            {
+              [CPQ_CONDITIONS_MET]: 'Custom',
+            },
+          )
+          priceCondition = new InstanceElement(
+            '1',
+            mockTypes[CPQ_PRICE_CONDITION],
+            {
+              [CPQ_PRICE_CONDITION_RULE_FIELD]: new ReferenceExpression(priceRule.elemID, priceRule),
+            }
+          )
+          failPriceRule = new InstanceElement(
+            '2',
+            mockTypes[CPQ_PRICE_RULE],
+            {
+              [CPQ_CONDITIONS_MET]: 'Custom',
+              Name: 'Fail', // Used to indicate which Record should fail in SF
+            },
+          )
+          failPriceCondition = new InstanceElement(
+            '2',
+            mockTypes[CPQ_PRICE_CONDITION],
+            {
+              [CPQ_PRICE_CONDITION_RULE_FIELD]: new ReferenceExpression(failPriceRule.elemID, failPriceRule),
+            }
+          )
+          const changeGroup = {
+            groupID: ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP,
+            changes: [
+              priceRule,
+              failPriceRule,
+              priceCondition,
+              failPriceCondition,
+            ].map(instance => toChange({ after: instance })),
+          }
+
+          connection.bulk.load = jest.fn().mockImplementation(
+            (_type: string, _operation: BulkLoadOperation, _opt?: BulkOptions, input?: SfRecord[]) => {
+              const loadEmitter = new EventEmitter()
+              loadEmitter.on('newListener', (_event, _listener) => {
+                // This is a workaround to call emit('close')
+                // that is really called as a side effect to load() inside
+                // jsforce *after* our code listens on.('close')
+                setTimeout(() => loadEmitter.emit('close'), 0)
+              })
+              return {
+                then: () => (Promise.resolve(input?.map((res, index) => ({
+                  id: res.Id || `newId${index}`,
+                  success: res.Name !== 'Fail',
+                  errors: res.Name === 'Fail' ? ['Failed to deploy ApprovalRule with Name Fail'] : [],
+                })))),
+                job: loadEmitter,
+              }
+            }
+          )
+
+          result = await adapter.deploy({
+            changeGroup,
+            progressReporter: nullProgressReporter,
+          })
+        })
+
+        it('should deploy partially', () => {
+          expect(result.errors).toEqual([
+            expect.objectContaining({ elemID: failPriceRule.elemID }),
+            expect.objectContaining({ elemID: failPriceCondition.elemID }),
+          ])
+          expect(result.appliedChanges).toHaveLength(2)
+          const [appliedPriceRule, appliedPriceCondition] = result.appliedChanges
+            .map(getChangeData)
+            .filter(isInstanceElement)
+          expect(appliedPriceRule.elemID).toEqual(priceRule.elemID)
+          expect(appliedPriceCondition.elemID).toEqual(priceCondition.elemID)
+        })
+      })
+      describe('when a PriceRule instance does not have SBQQ__ConditionsMet__c = Custom', () => {
+        let changeGroup: ChangeGroup
+        beforeEach(() => {
+          const priceRule = new InstanceElement(
+            '1',
+            mockTypes[CPQ_PRICE_RULE],
+            {
+              [CPQ_CONDITIONS_MET]: 'All',
+            },
+          )
+          const priceCondition = new InstanceElement(
+            '1',
+            mockTypes[CPQ_PRICE_CONDITION],
+            {
+              [CPQ_PRICE_CONDITION_RULE_FIELD]: new ReferenceExpression(priceRule.elemID, priceRule),
+            }
+          )
+          changeGroup = {
+            groupID: ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP,
+            changes: [priceRule, priceCondition].map(instance => toChange({ after: instance })),
           }
         })
         it('should throw an error', async () => {

@@ -72,5 +72,14 @@ describe('addJsmTypesAsFieldsFilter', () => {
         await filter.onFetch([projectInstance, customerPermissionsInstance])
         expect(projectInstance.value.customerPermissions).toBeUndefined()
       })
+      it('should not add customerPermissions field to project instance if project instance is undefined', async () => {
+        const elements = [projectInstance, customerPermissionsInstance]
+        const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+        config.fetch.enableJSM = true
+        customerPermissionsInstance.value.projectKey.value = undefined
+        filter = addJsmTypesAsFieldsFilter(getFilterParams({ config })) as typeof filter
+        await filter.onFetch(elements)
+        expect(elements.find(e => e.elemID.typeName === CUSTOMER_PERMISSIONS_TYPE)).toBeUndefined()
+      })
     })
 })

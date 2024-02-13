@@ -100,8 +100,8 @@ const filter: FilterCreator = ({ config, client }) => {
           Object.values(workflow.value.transitions).forEach(transition => {
             walkOverTransitionIds(transition, scriptRunner => {
               scriptRunner.transitionId = isReferenceExpression(scriptRunner.transitionId)
+              && expectedIdsMap.get(scriptRunner.transitionId.elemID.name) !== undefined
                 ? expectedIdsMap.get(scriptRunner.transitionId.elemID.name)
-                    ?? scriptRunner.transitionId
                 : scriptRunner.transitionId
             })
           })

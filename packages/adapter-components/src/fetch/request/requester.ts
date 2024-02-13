@@ -24,9 +24,9 @@ import { findAllUnresolvedArgs } from './utils'
 import { createValueTransformer } from '../utils'
 import { traversePages } from './pagination/pagination'
 import { noPagination } from './pagination'
-import { FetchRequestDefinition } from '../../definitions/system/fetch/fetch'
 import { computeArgCombinations } from '../resource/request_parameters'
-import { HTTPEndpointDetails } from '../../definitions/system/requests/types'
+import { HTTPEndpointDetails } from '../../definitions/system'
+import { FetchRequestDefinition } from '../../definitions/system/fetch'
 
 const log = logger(module)
 
@@ -65,6 +65,7 @@ export const getRequester = <
   ClientOptions extends string,
   PaginationOptions extends string | 'none',
 >({
+    adapterName,
     clients,
     pagination,
     requestDefQuery,
@@ -127,6 +128,7 @@ export const getRequester = <
       : _.pick(mergedEndpointDef, ['queryArgs', 'headers', 'body']))
 
 
+    log.trace('traversing pages for adapter %s client %s endpoint %s.%s', adapterName, clientName, mergedRequestDef.endpoint.path, mergedRequestDef.endpoint.method)
     const pagesWithContext = await traversePages({
       client: clientDefs[clientName].httpClient,
       paginationDef,

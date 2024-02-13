@@ -31,6 +31,7 @@ export type PaginationFunction = <ClientOptions extends string>({
   endpointIdentifier: HTTPEndpointIdentifier<ClientOptions>
 }) => ClientRequestArgsNoPath[]
 
+// creates a pagination function that receives a single-page response and returns the next page requests
 export type PaginationFuncCreator<ClientOptions extends string> = (args: {
   client: HTTPReadClientInterface & HTTPWriteClientInterface
   endpointIdentifier: HTTPEndpointIdentifier<ClientOptions>

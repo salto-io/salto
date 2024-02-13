@@ -58,13 +58,21 @@ const computElemIDPartsFunc = (elemIDDef: ElemIDDefinition): PartsCreator => ({ 
       }
       return getNameMapping(String(_.get(entry, part.fieldName) ?? ''), part.mapping)
     })
+  const nonEmptyParts = parts
     .filter(lowerdashValues.isDefined)
     .filter(part => part.length > 0)
 
-  return elemIDDef.extendsParent && parent !== undefined
+
+  const res = elemIDDef.extendsParent && parent !== undefined
     // the delimiter between parent and child will be doubled
-    ? [invertNaclCase(parent.elemID.name), '', ...parts]
-    : parts
+    ? [invertNaclCase(parent.elemID.name), '', ...nonEmptyParts]
+    : nonEmptyParts
+
+  if (nonEmptyParts.length < parts.length) {
+    log.trace('omitted %d/%d empty elem id parts, remaining parts are %s', parts.length - nonEmptyParts.length, parts.length, res)
+  }
+
+  return res
 }
 
 export const createServiceIDs = ({ entry, serviceIdFields, typeID }: {

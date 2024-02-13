@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemIdGetter, Element, ObjectType, SeverityLevel, Values } from '@salto-io/adapter-api'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { ElementQuery } from '../query'
@@ -56,7 +57,7 @@ export const getElementGenerator = ({
     const { element: elementDef } = defQuery.query(typeName) ?? {}
     const valueGuard = elementDef?.topLevel?.valueGuard ?? lowerdashValues.isPlainObject
     const [validEntries, invalidEntries] = _.partition(entries, valueGuard)
-    log.warn('[%s] omitted %d entries of type %s that did not match the value guard', adapterName, invalidEntries.length, typeName)
+    log.warn('[%s] omitted %d entries of type %s that did not match the value guard, first item:', adapterName, invalidEntries.length, typeName, safeJsonStringify(invalidEntries[0]))
 
     // TODO make sure type + service ids are unique
     if (valuesByType[typeName] === undefined) {
@@ -64,6 +65,7 @@ export const getElementGenerator = ({
     }
     valuesByType[typeName].push(...validEntries)
   }
+
   const generate: ElementGenerator['generate'] = () => {
     const allResults = Object.entries(valuesByType).flatMap(([typeName, values]) => {
       try {

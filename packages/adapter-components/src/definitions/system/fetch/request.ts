@@ -13,10 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-/* eslint-disable import/no-cycle */
+import { ContextParams, EndpointExtractionParams } from '../shared/transformation'
 
-export { ContextCombinationDefinition } from './dependencies'
-export { FetchApiDefinitions, InstanceFetchApiDefinitions } from './fetch'
-export { FetchRequestDefinition } from './request'
-export { ResourceTransformFunc } from './resource'
-export { ElementFieldCustomization, FieldIDPart, ElementFetchDefinition } from './element'
+export type FetchRequestDefinition<ClientOptions extends string> = EndpointExtractionParams<
+  ContextParams, ClientOptions
+>

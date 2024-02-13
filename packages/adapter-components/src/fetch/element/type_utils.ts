@@ -28,6 +28,12 @@ export const toNestedTypeName = (parentName: string, nestedTypeName: string): st
   `${parentName}${NESTING_SEPARATOR}${nestedTypeName}`
 )
 
+/**
+ * calculate mapping from original type name to new type name. there are two ways to rename a type:
+ * - using sourceTypeName on the new type name, saying which original type name it should be renamed from
+ * - when extracting a standalone field, the provided typename will be used as the extracted instances' type
+ *   (and the referring field's type as well)
+ */
 export const computeTypesToRename = ({ defQuery, typeNameOverrides }: {
   defQuery: ElementAndResourceDefFinder
   typeNameOverrides?: Record<string, string>
@@ -190,6 +196,7 @@ export const adjustFieldTypes = ({ definedTypes, defQuery, finalTypeNames }: {
   Object.entries(definedTypes).forEach(([typeName, type]) => {
     if (finalTypeNames.has(typeName)) {
       log.trace('type %s is marked as final, not adjusting', type.elemID.getFullName())
+      return
     }
 
     const { element: elementDef, resource: resourceDef } = defQuery.query(typeName) ?? {}

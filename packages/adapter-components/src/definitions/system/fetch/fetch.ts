@@ -17,11 +17,7 @@ import { FetchResourceDefinition } from './resource'
 // eslint-disable-next-line import/no-cycle
 import { ElementFetchDefinition } from './element'
 import { DefaultWithCustomizations } from '../shared/types'
-import { ContextParams, EndpointExtractionParams } from '../shared/transformation'
-
-export type FetchRequestDefinition<ClientOptions extends string> = EndpointExtractionParams<
-  ContextParams, ClientOptions
->
+import { FetchRequestDefinition } from './request'
 
 /**
  * Fetch flow:
@@ -36,15 +32,17 @@ export type FetchRequestDefinition<ClientOptions extends string> = EndpointExtra
  * - Once all resources have been generated, elements are produced
  */
 export type InstanceFetchApiDefinitions<ClientOptions extends string = 'main'> = {
-  // a resource aggregates fragments associated with the same logical entity from various requests by a service id,
-  // and transforms the value that will become the instance(s). it is mainly used for orchestrating the structure and
-  // requests for complex types
-  resource?: FetchResourceDefinition
   // "edges" specifying how to generate resources from endpoint calls.
   // these are used in two places during fetch:
   // 1. to decide which endpoints to call given a fetch query (all endpoints that produce resources of relevant types)
   // 2. to generate resources from endpoint responses
   requests?: FetchRequestDefinition<ClientOptions>[]
+
+  // a resource aggregates fragments associated with the same logical entity from various requests by a service id,
+  // and transforms the value that will become the instance(s). it is mainly used for orchestrating the structure and
+  // requests for complex types
+  resource?: FetchResourceDefinition
+
   element?: ElementFetchDefinition
 }
 

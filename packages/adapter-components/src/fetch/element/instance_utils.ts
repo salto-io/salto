@@ -89,7 +89,7 @@ export type InstanceCreationParams = {
 
 /**
  * Generate an instance for a single entry returned for a given type, and set its elem id and path.
- * Assuming the entry is already in its final structure (after running to InstanceValue).
+ * Assuming the entry is already in its final structure (after running toInstanceValue).
  */
 export const getInstanceCreationFunctions = ({
   defQuery,

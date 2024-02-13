@@ -14,21 +14,18 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ActionName } from '@salto-io/adapter-api'
 import { types, values as lowerdashValues } from '@salto-io/lowerdash'
-import { logger } from '@salto-io/logging'
 import { DefaultWithCustomizations } from './shared/types'
 import { UserFetchConfig } from '../user'
-import { ApiDefinitions } from './api'
-
-const log = logger(module)
+import { FetchApiDefinitions } from './fetch'
 
 /**
  * merge a single custom definition with a default, assuming they came from a DefaultWithCustomizations definition.
  * the merge is done as follows:
  * - customization takes precedence over default
- * - if the customization is an array, the default is expected to be a single item with the same structure,
- *   and the default is applied to each item in the customization array
+ * - if the customization is an array -
+ *   - if the default is a single item, then the default is applied to each item in the customization array
+ *   - if the default is also an array, then the customization is used instead of the default
  * - special case (TODO generalize): if the definition specifies ignoreDefaultFieldCustomizations=true, then
  *   the corresponding fieldCustomizations field, if exists, will not be merged with the default.
  *   the ignoreDefaultFieldCustomizations value itself is omitted from the returned result.
@@ -42,8 +39,6 @@ export const mergeSingleDefWithDefault = <T, K extends string>(
   }
   if (Array.isArray(def)) {
     if (Array.isArray(defaultDef)) {
-      // shouldn't happen
-      log.warn('found array in custom and default definitions, ignoring default')
       return def
     }
     // TODO improve casting
@@ -133,42 +128,38 @@ export const getNestedWithDefault = <T, TNested, K extends string>(
  */
 export const mergeWithUserElemIDDefinitions = <
   ClientOptions extends string,
-  PaginationOptions extends string | 'none' = 'none',
-  Action extends string = ActionName
 >({ userElemID, fetchConfig }: {
   userElemID: UserFetchConfig['elemID']
-  fetchConfig: ApiDefinitions<ClientOptions, PaginationOptions, Action>
-}): ApiDefinitions<ClientOptions, PaginationOptions, Action> => {
+  fetchConfig?: FetchApiDefinitions<ClientOptions>
+}): FetchApiDefinitions<ClientOptions> => {
   if (userElemID === undefined) {
-    return fetchConfig
+    return fetchConfig ?? { instances: { customizations: {} } }
   }
   return _.merge(
     {},
     fetchConfig,
     {
-      fetch: {
-        instances: {
-          customizations: _.mapValues(
-            userElemID,
-            ({ extendSystemPartsDefinition, ...userDef }, type) => {
-              const { elemID: systemDef } = fetchConfig.fetch?.instances.customizations[type].element?.topLevel ?? {}
-              const elemIDDef = {
-                ..._.defaults({}, userDef, systemDef),
-                parts: extendSystemPartsDefinition
-                  ? (systemDef?.parts ?? []).concat(userDef.parts ?? [])
-                  : userDef.parts,
-              }
-              return {
-                element: {
-                  topLevel: {
-                    elemID: elemIDDef,
-                  },
-                },
-              }
+      instances: {
+        customizations: _.mapValues(
+          userElemID,
+          ({ extendSystemPartsDefinition, ...userDef }, type) => {
+            const { elemID: systemDef } = fetchConfig?.instances.customizations[type]?.element?.topLevel ?? {}
+            const elemIDDef = {
+              ..._.defaults({}, userDef, systemDef),
+              parts: extendSystemPartsDefinition
+                ? (systemDef?.parts ?? []).concat(userDef.parts ?? [])
+                : userDef.parts,
             }
-          ),
-        },
+            return {
+              element: {
+                topLevel: {
+                  elemID: elemIDDef,
+                },
+              },
+            }
+          }
+        ),
       },
-    }
+    },
   )
 }

@@ -58,8 +58,14 @@ export const getElements = async <
 }): Promise<FetchElements> => {
   const { clients, fetch, pagination } = definitions
 
-  log.debug('original defs: %s', safeJsonStringify(definitions))
-  log.debug('merged defs: %s', safeJsonStringify(_.mapValues(definitions, mergeWithDefault)))
+  log.trace('original defs: %s', safeJsonStringify({
+    fetch: definitions.fetch,
+    clients: {
+      default: definitions.clients.default,
+      options: _.mapValues(definitions.clients.options, val => _.omit(val, 'httpClient')),
+    },
+  }))
+  log.trace('merged fetch defs: %s', safeJsonStringify(mergeWithDefault(definitions.fetch.instances)))
 
   // the requester is responsible for making all "direct" client requests for a given resource including pagination,
   // i.e., the requests listed under the `requests` definition,

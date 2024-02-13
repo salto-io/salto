@@ -53,6 +53,9 @@ export type AdjustFunction<TContext = ContextParams, TSourceVal = unknown, TTarg
  * - if omit is specified, omit the specified paths
  * - if nestUnderField is specified, nest the entire object under the specified path
  * - if adjust is specified, run the function on the current transformation result and return the final value
+ * - the transformation described above runs after converting the original value to an array (if it wasn't already).
+ *   if single is true, the first result of the transformation will be returned from the resulting array
+ *   (and undefined will be returned if the array is empty). if single is false, the result will be returned as-is.
  */
 export type TransformDefinition<TContext = ContextParams, TTargetVal = Values> = {
   // return field name (can customize e.g. to "type => types")

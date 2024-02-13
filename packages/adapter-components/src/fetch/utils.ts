@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import stableStringify from 'json-stable-stringify'
 import { Values } from '@salto-io/adapter-api'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { TransformDefinition, TransformFunction, SingleValueTransformationFunction } from '../definitions/system/shared'
@@ -84,8 +84,8 @@ export const serviceIdCreator = (
 ): (
   (entry: Values) => string
 ) => entry => (
-  stableStringify({
+  safeJsonStringify({
     typeName,
-    ids: _.pick(entry, serviceIdFields),
+    ids: _.pick(entry, serviceIdFields.sort()),
   })
 )

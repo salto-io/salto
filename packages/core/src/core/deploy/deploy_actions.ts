@@ -177,10 +177,9 @@ export const deployActions = async (
         }
         if (fatalErrors.length > 0) {
           log.warn(
-            'Failed to deploy %s, fatal errors: %s, non-fatal errors: %s',
+            'Failed to deploy %s, errors: %s',
             item.groupKey,
             fatalErrors.map(err => err.message).join('\n\n'),
-            nonFatalErrors.map(err => err.message).join('\n\n'),
           )
           throw new WalkDeployError(fatalErrors)
         }

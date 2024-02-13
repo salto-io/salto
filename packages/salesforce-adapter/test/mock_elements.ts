@@ -28,7 +28,7 @@ import {
   API_NAME,
   ArtificialTypes,
   ASSIGNMENT_RULES_METADATA_TYPE,
-  CHANGED_AT_SINGLETON,
+  CHANGED_AT_SINGLETON, CPQ_CONDITIONS_MET, CPQ_PRICE_CONDITION, CPQ_PRICE_CONDITION_RULE_FIELD, CPQ_PRICE_RULE,
   CPQ_QUOTE,
   CUSTOM_METADATA,
   CUSTOM_OBJECT,
@@ -37,7 +37,7 @@ import {
   INSTALLED_PACKAGE_METADATA,
   INSTANCE_FULL_NAME_FIELD, LABEL,
   LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
-  METADATA_TYPE,
+  METADATA_TYPE, OWNER_ID,
   PATH_ASSISTANT_METADATA_TYPE,
   SALESFORCE,
   SBAA_APPROVAL_CONDITION,
@@ -54,6 +54,7 @@ import { API_VERSION } from '../src/client/client'
 import { WORKFLOW_FIELD_TO_TYPE } from '../src/filters/workflow'
 import { createCustomObjectType } from './utils'
 import { SORT_ORDER } from '../src/change_validators/duplicate_rules_sort_order'
+import * as constants from '../src/constants'
 
 
 const SBAA_APPROVAL_RULE_TYPE = createCustomObjectType(SBAA_APPROVAL_RULE, {
@@ -64,6 +65,28 @@ const SBAA_APPROVAL_RULE_TYPE = createCustomObjectType(SBAA_APPROVAL_RULE, {
         [FIELD_ANNOTATIONS.QUERYABLE]: true,
         [FIELD_ANNOTATIONS.CREATABLE]: true,
         [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+      },
+    },
+  },
+})
+
+const CPQ_PRICE_RULE_TYPE = createCustomObjectType(CPQ_PRICE_RULE, {
+  fields: {
+    [CPQ_CONDITIONS_MET]: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [FIELD_ANNOTATIONS.QUERYABLE]: true,
+        [FIELD_ANNOTATIONS.CREATABLE]: true,
+        [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+      },
+    },
+    [OWNER_ID]: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+        [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
+        [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
+        [constants.API_NAME]: OWNER_ID,
       },
     },
   },
@@ -593,6 +616,22 @@ export const mockTypes = {
       metadataType: 'BusinessProcess',
     },
   }),
+  [CPQ_PRICE_RULE]: CPQ_PRICE_RULE_TYPE,
+  [CPQ_PRICE_CONDITION]: createCustomObjectType(
+    CPQ_PRICE_CONDITION,
+    {
+      fields: {
+        [CPQ_PRICE_CONDITION_RULE_FIELD]: {
+          refType: Types.primitiveDataTypes.Lookup,
+          annotations: {
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
+            [FIELD_ANNOTATIONS.CREATABLE]: true,
+            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          },
+        },
+      },
+    },
+  ),
 }
 
 export const lwcJsResourceContent = "import { LightningElement } from 'lwc';\nexport default class BikeCard extends LightningElement {\n   name = 'Electra X4';\n   description = 'A sweet bike built for comfort.';\n   category = 'Mountain';\n   material = 'Steel';\n   price = '$2,700';\n   pictureUrl = 'https://s3-us-west-1.amazonaws.com/sfdc-demo/ebikes/electrax4.jpg';\n }"

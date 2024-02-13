@@ -443,6 +443,7 @@ export const DATA_INSTANCES_CHANGED_AT_MAGIC = '__DataInstances__'
 export const CPQ_NAMESPACE = 'SBQQ'
 export const CPQ_PRODUCT_RULE = 'SBQQ__ProductRule__c'
 export const CPQ_PRICE_RULE = 'SBQQ__PriceRule__c'
+export const CPQ_PRICE_CONDITION = 'SBQQ__PriceCondition__c'
 export const CPQ_LOOKUP_QUERY = 'SBQQ__LookupQuery__c'
 export const CPQ_PRICE_ACTION = 'SBQQ__PriceAction__c'
 export const CPQ_FIELD_METADATA = 'SBQQ__FieldMetadata__c'
@@ -482,6 +483,8 @@ export const CPQ_HIDDEN_SOURCE_FIELD = 'SBQQ__HiddenSourceField__c'
 export const CPQ_HIDDEN_SOURCE_OBJECT = 'SBQQ__HiddenSourceObject__c'
 export const CPQ_TARGET_FIELD = 'SBQQ__TargetField__c'
 export const CPQ_TARGET_OBJECT = 'SBQQ__TargetObject__c'
+export const CPQ_CONDITIONS_MET = 'SBQQ__ConditionsMet__c'
+export const CPQ_PRICE_CONDITION_RULE_FIELD = 'SBQQ__Rule__c'
 
 export const CPQ_QUOTE_NO_PRE = 'Quote__c'
 export const CPQ_QUOTE_LINE_GROUP_NO_PRE = 'QuoteLineGroup__c'
@@ -532,7 +535,8 @@ export const groupIdForInstanceChangeGroup = (action: ActionName, typeName: stri
   }
   return `${_.capitalize(toVerbalNoun(action))} of data instances of type '${typeName}'`
 }
-export const ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup('add', 'Custom ApprovalRule and ApprovalCondition')
+export const ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup('add', 'Custom ApprovalRule and ApprovalCondition')
+export const ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup('add', 'Custom PriceRule and PriceCondition')
 export const METADATA_CHANGE_GROUP = 'Salesforce Metadata'
 
 

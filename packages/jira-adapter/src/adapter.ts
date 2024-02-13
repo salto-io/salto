@@ -166,6 +166,7 @@ import assetsObjectTypeChangeFields from './filters/assets/assets_object_type_ch
 import assetsObjectTypeOrderFilter from './filters/assets/assets_object_type_order'
 import defaultAttributesFilter from './filters/assets/label_object_type_attribute'
 import changeAttributesPathFilter from './filters/assets/change_attributes_path'
+import asyncApiCallsFilter from './filters/async_api_calls'
 import ScriptRunnerClient from './client/script_runner_client'
 import { weakReferenceHandlers } from './weak_references'
 import { jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from './jsm_utils'
@@ -190,6 +191,7 @@ const { toArrayAsync } = collections.asynciterable
 const { makeArray } = collections.array
 
 export const DEFAULT_FILTERS = [
+  asyncApiCallsFilter,
   accountInfoFilter,
   storeUsersFilter,
   changeJSMElementsFieldFilter,

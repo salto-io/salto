@@ -21,6 +21,7 @@ import { getElementValueOrAnnotations, isDataObjectType } from '../types'
 import { LocalFilterCreator } from '../filter'
 import { assignToInternalIdsIndex, getDataInstanceId } from '../elements_source_index/elements_source_index'
 import { PARENT } from '../constants'
+import { TYPE_ID } from '../client/suiteapp_client/constants'
 
 const { awu } = collections.asynciterable
 
@@ -37,9 +38,9 @@ const generateReference = (
       elementsMap[getDataInstanceId(value.internalId, type.elemID.name)]
     )
   }
-  if (elementsMap[getDataInstanceId(value.internalId, value.typeId)]) {
+  if (elementsMap[getDataInstanceId(value.internalId, value[TYPE_ID])]) {
     return new ReferenceExpression(
-      elementsMap[getDataInstanceId(value.internalId, value.typeId)]
+      elementsMap[getDataInstanceId(value.internalId, value[TYPE_ID])]
     )
   }
   return undefined

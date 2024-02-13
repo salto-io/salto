@@ -130,11 +130,16 @@ const getAttachmentContent = async ({
     log.error(error)
     return contentWarning(error)
   }
+  if (attachment.value.relative_path === undefined) {
+    const error = `could not add attachment ${attachment.elemID.getFullName()}, as the relative_path is undefined`
+    log.warn(error)
+    return contentWarning(error)
+  }
   const client = brandIdToClient[attachment.value.brand]
   let res
   try {
     res = await client.get({
-      url: `/hc/article_attachments/${attachment.value.id}/${attachment.value.file_name}`,
+      url: `${attachment.value.relative_path}`,
       responseType: 'arraybuffer',
     })
   } catch (e) {

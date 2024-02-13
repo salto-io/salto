@@ -138,10 +138,9 @@ export const getOrCreateOrganizationsByNames = async ({
   paginator: clientUtils.Paginator
   createMissingOrganizations?: boolean
   client?: ZendeskClient
- }
-): Promise<Organization[]> => {
+ }): Promise<Organization[]> => {
   const paginationArgs = {
-    url: '/api/v2/organizations/autocomplete',
+    url: '/api/v2/organizations/search',
     paginationField: 'next_page',
   }
   const organizations = (await Promise.all(

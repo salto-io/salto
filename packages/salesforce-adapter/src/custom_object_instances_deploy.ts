@@ -35,15 +35,16 @@ import {
 } from './transformers/transformer'
 import SalesforceClient from './client/client'
 import {
-  ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+  ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
   CUSTOM_OBJECT_ID_FIELD, FIELD_ANNOTATIONS, DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY,
   DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY_MULTIPLIER, OWNER_ID, SBAA_APPROVAL_CONDITION,
   SBAA_APPROVAL_RULE,
-  SBAA_CONDITIONS_MET, SYSTEM_FIELDS,
+  SBAA_CONDITIONS_MET, SYSTEM_FIELDS, ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP, CPQ_PRICE_RULE,
+  CPQ_PRICE_CONDITION, CPQ_CONDITIONS_MET, CPQ_PRICE_CONDITION_RULE_FIELD,
 } from './constants'
 import { getIdFields, transformRecordToValues } from './filters/custom_objects_instances'
 import {
-  apiNameSync, buildSelectQueries, getFieldNamesForQuery, isHiddenField, isInstanceOfTypeChange,
+  apiNameSync, buildSelectQueries, getFieldNamesForQuery, isHiddenField, isInstanceOfTypeChangeSync, SoqlQuery,
 } from './filters/utils'
 import { isListCustomSettingsObject } from './filters/custom_settings_filter'
 import { SalesforceRecord } from './client/types'
@@ -147,6 +148,29 @@ const isCompoundFieldType = (type: TypeElement): type is ObjectType => (
 
 const MANDATORY_FIELDS_FOR_UPDATE = [CUSTOM_OBJECT_ID_FIELD, OWNER_ID]
 
+const mandatoryFieldsForType = (type: ObjectType): string[] => (
+  // Should always query these fields along the SaltoIdFields as they're mandatory for update operation
+  MANDATORY_FIELDS_FOR_UPDATE
+    // Some mandatory fields might not be in the type (e.g. for custom settings or the detail side of
+    // master-detail relationship for CustomObjects)
+    .filter(mandatoryField => Object.keys(type.fields).includes(mandatoryField))
+)
+
+const queryInstancesWithFields = async (
+  client: SalesforceClient,
+  typeName: string,
+  fieldsToQuery: string[],
+  instanceIdValues: ReadonlyArray<ReadonlyArray<SoqlQuery>>,
+): Promise<SalesforceRecord[]> => {
+  const queries = buildSelectQueries(
+    typeName,
+    fieldsToQuery,
+    instanceIdValues,
+  )
+  const recordsIterable = awu(queries).flatMap(query => client.queryAll(query))
+  return (await toArrayAsync(recordsIterable)).flat()
+}
+
 const getRecordsBySaltoIds = async (
   type: ObjectType,
   instances: InstanceElement[],
@@ -172,6 +196,11 @@ const getRecordsBySaltoIds = async (
     ]
   }
 
+  if (apiNameSync(type) === undefined) {
+    log.debug('Type %s has no API name. Existing records will not be fetched.', type.elemID.getFullName())
+    return []
+  }
+
   const instanceIdValues = await Promise.all(instances.map(async inst => {
     const idFieldsNameToValue = (await Promise.all(
       saltoIdFields.map(field => getFieldNamesToValues(inst, field))
@@ -181,30 +210,12 @@ const getRecordsBySaltoIds = async (
   }))
 
   const fieldsToQuery = _.uniq(
-    // Should always query these fields along the SaltoIdFields as they're mandatory for update operation
-    MANDATORY_FIELDS_FOR_UPDATE
-      // Some mandatory fields might not be in the type (e.g. for custom settings or the detail side of
-      // master-detail relationship for CustomObjects)
-      .filter(mandatoryField => Object.keys(type.fields).includes(mandatoryField))
+    mandatoryFieldsForType(type)
       .concat(
         (await awu(saltoIdFields).flatMap(getFieldNamesForQuery).toArray())
       )
   )
-  const queries = buildSelectQueries(
-    await apiName(type),
-    fieldsToQuery,
-    instanceIdValues,
-  )
-  const recordsIterable = awu(queries).flatMap(query => client.queryAll(query))
-  // Possible REBASE issue
-  // const selectStr = await buildSelectStr(saltoIdFieldsWithIdField)
-  // const fieldsWheres = await awu(saltoIdFields)
-  //   .flatMap(async e => makeArray(await computeWhereConditions(e)))
-  //   .toArray()
-  // const whereStr = fieldsWheres.join(' AND ')
-  // const query = `SELECT ${selectStr} FROM ${await apiName(type)} WHERE ${whereStr}`
-  // const recordsIterable = await client.queryAll(query)
-  return (await toArrayAsync(recordsIterable)).flat()
+  return queryInstancesWithFields(client, apiNameSync(type) as string, fieldsToQuery, instanceIdValues)
 }
 
 const getDataManagementFromCustomSettings = async (instances: InstanceElement[]):
@@ -396,7 +407,7 @@ const updateInstances: CrudFn = async (
     'update',
     // For this special group, we know it's safe to update without adding nulls, since the Record
     // was previously added by us, and no Data could be deleted by the user during this process.
-    await instancesToUpdateRecords(instances, groupId !== ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP)
+    await instancesToUpdateRecords(instances, groupId !== ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP)
   )
   return groupInstancesAndResultsByIndex(results, instances)
 }
@@ -708,61 +719,98 @@ const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
   }
 }
 
-const createNonDeployableConditionChangeError = (change: Change): SaltoElementError => ({
-  message: `Cannot deploy ApprovalCondition instance ${getChangeData(change).elemID.getFullName()} since it depends on an ApprovalRule instance that was not deployed successfully`,
-  severity: 'Error',
-  elemID: getChangeData(change).elemID,
-})
-
-const deployAddCustomApprovalRulesAndConditions = async (
+/** Deploy a group with a circular dependency between the elements.
+ *
+ * CPQ and Advanced Approvals packages contain a pattern that results in a circular dependency between instances:
+ *  - There is a "Rule" type (sbaa__ApprovalRule__c or SBQQ__PriceRule__c) and a "Condition" type
+ *    (sbaa__ApprovalCondition__c or SBQQ__PriceCondition__c).
+ *  - The "Condition" type contains a MasterDetail field that references the "Rule" type
+ *  - The "Rule" type contains a "ConditionsMet" field (sbaa_ConditionsMet__c or SBQQ__ConditionsMet__c). If this field
+ *    is set to "Custom" then the "AdvancedCondition" field (sbaa_AdvancedCondition__c or SBQQ_AdvancedCondition__c) has
+ *    an indirect reference to some "Condition" instances. This reference is indirect because the "AdvancedCondition"
+ *    field is a text field that contains indexes of "Condition" instances.
+ *  - Thus if the "ConditionsMet" field is set to "Custom", then the "Rule" instance references specific "Condition"
+ *    instances (via the "AdvancedCondition" field) while the "Condition" instances, in turn, reference the same "Rule"
+ *    instance, leading to a circular dependency.
+ *
+ *  What we do in this case is we first set the "ConditionsMet" field of all the "Rule" instances to "All" (to break the
+ *  circular dependency), then deploy them. This ensures any references from the (still undeployed) "Condition"
+ *  instances is valid. We then deploy the "Condition" instances. Finally, we set the "ConditionsMet" field back to
+ *  "Custom", and deploy the "Rule" instances again.
+ *
+ * @param ruleTypeName
+ * @param ruleConditionFieldName
+ * @param conditionTypeName
+ * @param conditionRuleFieldName
+ * @param changes
+ * @param changeGroupId
+ * @param client
+ * @param dataManagement
+ */
+const deployRulesAndConditionsGroup = async (
+  ruleTypeName: string,
+  ruleConditionFieldName: string,
+  conditionTypeName: string,
+  conditionRuleFieldName: string,
   changes: ReadonlyArray<Change<InstanceElement>>,
+  changeGroupId: string,
   client: SalesforceClient,
   dataManagement: DataManagement | undefined
 ): Promise<DeployResult> => {
-  const approvalRuleChanges = await awu(changes)
-    .filter(isInstanceOfTypeChange(SBAA_APPROVAL_RULE))
-    .toArray()
-  const approvalConditionChanges = await awu(changes)
-    .filter(isInstanceOfTypeChange(SBAA_APPROVAL_CONDITION))
-    .toArray()
-  if (approvalRuleChanges.map(getChangeData).some(instance => instance.value[SBAA_CONDITIONS_MET] !== 'Custom')) {
-    throw new Error('Received ApprovalRule instance without Custom ConditionsMet')
+  const createNonDeployableConditionChangeError = (change: Change): SaltoElementError => ({
+    message: `Cannot deploy ${conditionTypeName} instance ${getChangeData(change).elemID.getFullName()} since it depends on an ${ruleTypeName} instance that was not deployed successfully`,
+    severity: 'Error',
+    elemID: getChangeData(change).elemID,
+  })
+
+  const ruleChanges = changes
+    .filter(isInstanceOfTypeChangeSync(ruleTypeName))
+
+  const conditionChanges = changes
+    .filter(isInstanceOfTypeChangeSync(conditionTypeName))
+
+  const anyInvalidRuleInstances = ruleChanges
+    .map(getChangeData)
+    .some(instance => instance.value[ruleConditionFieldName] !== 'Custom')
+
+  if (anyInvalidRuleInstances) {
+    throw new Error(`Received ${ruleTypeName} instance without Custom ConditionsMet`)
   }
-  // On each ApprovalCondition instance, Replacing sbaa__ApprovalRule__c to point to the resolved instance
-  const approvalRuleByElemID = _.keyBy(
-    approvalRuleChanges.map(getChangeData),
+  // On each condition instance, Replacing field referencing the rule to point to the resolved instance
+  const ruleInstanceByElemID = _.keyBy(
+    ruleChanges.map(getChangeData),
     instance => instance.elemID.getFullName()
   )
-  await awu(approvalConditionChanges.map(getChangeData)).forEach(instance => {
+  await awu(conditionChanges.map(getChangeData)).forEach(instance => {
     instance.value = _.mapValues(instance.value, val => (isInstanceElement(val)
-      ? approvalRuleByElemID[val.elemID.getFullName()] ?? val
+      ? ruleInstanceByElemID[val.elemID.getFullName()] ?? val
       : val))
   })
-  log.debug('Deploying ApprovalRule instances with "All" ConditionsMet instead of "Custom"')
-  approvalRuleChanges
+  log.debug(`Deploying ${ruleTypeName} instances with "All" ConditionsMet instead of "Custom"`)
+  ruleChanges
     .map(getChangeData)
     .forEach(instance => {
-      instance.value[SBAA_CONDITIONS_MET] = 'All'
+      instance.value[ruleConditionFieldName] = 'All'
     })
-  const approvalRulesWithAllConditionsMetDeployResult = await deploySingleTypeAndActionCustomObjectInstancesGroup(
-    approvalRuleChanges,
+  const rulesWithAllConditionsMetDeployResult = await deploySingleTypeAndActionCustomObjectInstancesGroup(
+    ruleChanges,
     client,
-    ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+    changeGroupId,
     dataManagement,
   )
-  log.debug('Deploying ApprovalCondition instances')
+  log.debug(`Deploying ${conditionTypeName} instances`)
   const [deployableConditionChanges, nonDeployableConditionChanges] = _.partition(
-    approvalConditionChanges,
+    conditionChanges,
     change => {
-      const instance = getChangeData(change)
-      const approvalRule = instance.value[SBAA_APPROVAL_RULE]
-      if (!isInstanceElement(approvalRule)) {
-        log.error('Expected ApprovalCondition with name %s to contain InstanceElement for the sbaa__ApprovalRule__c field', instance.elemID.getFullName())
+      const conditionInstance = getChangeData(change)
+      const ruleInstance = conditionInstance.value[conditionRuleFieldName]
+      if (!isInstanceElement(ruleInstance)) {
+        log.error(`Expected ${conditionTypeName} with name %s to contain InstanceElement for the ${conditionRuleFieldName} field`, conditionInstance.elemID.getFullName())
         return false
       }
       // Only successfully deployed Instances have Id
-      if (approvalRule.value[CUSTOM_OBJECT_ID_FIELD] === undefined) {
-        log.error('The ApprovalCondition with name %s is not referencing a successfully deployed ApprovalRule instance with name %s', instance.elemID.getFullName(), approvalRule.elemID.getFullName())
+      if (ruleInstance.value[CUSTOM_OBJECT_ID_FIELD] === undefined) {
+        log.error(`The ${conditionTypeName} with name %s is not referencing a successfully deployed ${ruleTypeName} instance with name %s`, conditionInstance.elemID.getFullName(), ruleInstance.elemID.getFullName())
         return false
       }
       return true
@@ -771,46 +819,109 @@ const deployAddCustomApprovalRulesAndConditions = async (
   const conditionsDeployResult = await deploySingleTypeAndActionCustomObjectInstancesGroup(
     deployableConditionChanges,
     client,
-    ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+    changeGroupId,
     dataManagement,
   )
 
-  log.debug('Updating the ApprovalRule instances with Custom ConditionsMet')
-  const firstDeployAppliedChanges = approvalRulesWithAllConditionsMetDeployResult.appliedChanges
+  const ruleType = getChangeData(ruleChanges[0]).getTypeSync()
+  const mandatoryFieldsForUpdate = mandatoryFieldsForType(ruleType)
+  const instanceIdToMandatoryFields: Record<string, SalesforceRecord> = {}
+  if (mandatoryFieldsForUpdate.length > 0) {
+    const fieldsQuery = rulesWithAllConditionsMetDeployResult.appliedChanges
+      .map(change => getChangeData(change) as InstanceElement)
+      .map(instance => instance.value[CUSTOM_OBJECT_ID_FIELD])
+      .map(internalId => [{ fieldName: CUSTOM_OBJECT_ID_FIELD, operator: 'IN' as const, value: `'${internalId}'` }])
+    const recordsWithMandatoryFields = await queryInstancesWithFields(
+      client,
+      ruleTypeName,
+      mandatoryFieldsForUpdate,
+      fieldsQuery,
+    )
+    recordsWithMandatoryFields
+      .forEach(record => {
+        instanceIdToMandatoryFields[record[CUSTOM_OBJECT_ID_FIELD]] = record
+      })
+  }
+
+  log.debug(`Updating the ${ruleTypeName} instances with Custom ${ruleConditionFieldName}`)
+  const firstDeployAppliedChanges = rulesWithAllConditionsMetDeployResult.appliedChanges
     .filter(isInstanceChange)
   firstDeployAppliedChanges
     .map(getChangeData)
     .forEach(instance => {
-      instance.value[SBAA_CONDITIONS_MET] = 'Custom'
+      instance.value[ruleConditionFieldName] = 'Custom'
+      const instanceId = instance.value[CUSTOM_OBJECT_ID_FIELD]
+      _(mandatoryFieldsForUpdate)
+        .without(CUSTOM_OBJECT_ID_FIELD)
+        .forEach(fieldName => {
+          instance.value[fieldName] = instanceIdToMandatoryFields[instanceId]?.[fieldName]
+        })
     })
-  const approvalRulesWithCustomDeployResult = await deploySingleTypeAndActionCustomObjectInstancesGroup(
+  const rulesWithCustomDeployResult = await deploySingleTypeAndActionCustomObjectInstancesGroup(
     // Transforming to modification changes to trigger "update" instead of "insert"
     firstDeployAppliedChanges.map(change => toChange({ before: getChangeData(change), after: getChangeData(change) })),
     client,
-    ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+    changeGroupId,
     dataManagement,
   )
   return {
-    appliedChanges: approvalRulesWithCustomDeployResult.appliedChanges
+    appliedChanges: rulesWithCustomDeployResult.appliedChanges
       // Transforming back to addition changes
       .map(change => toChange({ after: getChangeData(change) }))
       .concat(conditionsDeployResult.appliedChanges),
-    errors: approvalRulesWithAllConditionsMetDeployResult.errors.concat(
+    errors: rulesWithAllConditionsMetDeployResult.errors.concat(
       conditionsDeployResult.errors,
-      approvalRulesWithCustomDeployResult.errors,
+      rulesWithCustomDeployResult.errors,
       nonDeployableConditionChanges.map(createNonDeployableConditionChangeError)
     ),
   }
 }
 
+const deployAddCustomApprovalRulesAndConditions = async (
+  changes: ReadonlyArray<Change<InstanceElement>>,
+  client: SalesforceClient,
+  dataManagement: DataManagement | undefined
+): Promise<DeployResult> => deployRulesAndConditionsGroup(
+  SBAA_APPROVAL_RULE,
+  SBAA_CONDITIONS_MET,
+  SBAA_APPROVAL_CONDITION,
+  SBAA_APPROVAL_RULE,
+  changes,
+  ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+  client,
+  dataManagement
+)
+
+const deployAddCustomPriceRulesAndConditions = async (
+  changes: ReadonlyArray<Change<InstanceElement>>,
+  client: SalesforceClient,
+  dataManagement: DataManagement | undefined
+): Promise<DeployResult> => deployRulesAndConditionsGroup(
+  CPQ_PRICE_RULE,
+  CPQ_CONDITIONS_MET,
+  CPQ_PRICE_CONDITION,
+  CPQ_PRICE_CONDITION_RULE_FIELD,
+  changes,
+  ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP,
+  client,
+  dataManagement
+)
 
 export const deployCustomObjectInstancesGroup = async (
   changes: ReadonlyArray<Change<InstanceElement>>,
   client: SalesforceClient,
   groupId: string,
   dataManagement?: DataManagement,
-): Promise<DeployResult> => (
-  groupId === ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP
-    ? deployAddCustomApprovalRulesAndConditions(changes, client, dataManagement)
-    : deploySingleTypeAndActionCustomObjectInstancesGroup(changes, client, groupId, dataManagement)
-)
+): Promise<DeployResult> => {
+  switch (groupId) {
+    case ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP: {
+      return deployAddCustomApprovalRulesAndConditions(changes, client, dataManagement)
+    }
+    case ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP: {
+      return deployAddCustomPriceRulesAndConditions(changes, client, dataManagement)
+    }
+    default: {
+      return deploySingleTypeAndActionCustomObjectInstancesGroup(changes, client, groupId, dataManagement)
+    }
+  }
+}

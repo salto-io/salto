@@ -164,7 +164,7 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
   },
   deploy: {
     forceDelete: false,
-    taskMaxRetries: 120,
+    taskMaxRetries: 180,
     taskRetryDelay: 1000,
   },
   masking: {

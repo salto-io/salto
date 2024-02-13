@@ -13,16 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
-import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, TopLevelElement, createRefToElmWithValue } from '@salto-io/adapter-api'
+import { collections, regex } from '@salto-io/lowerdash'
+import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, TopLevelElement, createRefToElmWithValue, isInstanceElement } from '@salto-io/adapter-api'
 import NetsuiteClient from '../client/client'
+import { NetsuiteConfig } from '../config/types'
 import { ALLOCATION_TYPE, EMPLOYEE, NETSUITE, PROJECT_EXPENSE_TYPE, TAX_SCHEDULE } from '../constants'
 import { getLastServerTime } from '../server_time'
 import { toSuiteQLWhereDateString } from '../changes_detector/date_formats'
 import { SuiteQLTableName } from './types'
 
 const log = logger(module)
+const { awu } = collections.asynciterable
 
 export const SUITEQL_TABLE = 'suiteql_table'
 export const INTERNAL_IDS_MAP = 'internalIdsMap'
@@ -444,9 +448,35 @@ export const QUERIES_BY_TABLE_NAME: Record<SuiteQLTableName, QueryParams | undef
   customrecordtype: undefined,
 }
 
-export const getSuiteQLTableInternalIdsMap = (instance: InstanceElement): InternalIdsMap =>
+export const getSuiteQLTableInternalIdsMap = (instance: InstanceElement): InternalIdsMap => {
   // value[INTERNAL_IDS_MAP] can be undefined because transformElement transform empty objects to undefined
-  instance.value[INTERNAL_IDS_MAP] ?? {}
+  if (instance.value[INTERNAL_IDS_MAP] === undefined) {
+    instance.value[INTERNAL_IDS_MAP] = {}
+  }
+  return instance.value[INTERNAL_IDS_MAP]
+}
+
+export const getSuiteQLNameToInternalIdsMap = async (
+  elementsSource: ReadOnlyElementsSource
+): Promise<Record<string, Record<string, string[]>>> => {
+  const suiteQLTableInstances = await awu(await elementsSource.list())
+    .filter(elemId => elemId.idType === 'instance' && elemId.typeName === SUITEQL_TABLE)
+    .map(elemId => elementsSource.get(elemId))
+    .filter(isInstanceElement)
+    .toArray()
+
+  return _(suiteQLTableInstances)
+    .keyBy(instance => instance.elemID.name)
+    .mapValues(getSuiteQLTableInternalIdsMap)
+    .mapValues(
+      internalIdsMap => _(internalIdsMap)
+        .entries()
+        .groupBy(([_key, value]) => value.name)
+        .mapValues(rows => rows.map(([key, _value]) => key))
+        .value()
+    )
+    .value()
+}
 
 const getInternalIdsMap = async (
   client: NetsuiteClient,
@@ -618,27 +648,47 @@ const getAdditionalInstances = (
   client: NetsuiteClient,
   suiteQLTableType: ObjectType,
   elementsSource: ReadOnlyElementsSource,
-  isPartial: boolean
+  isPartial: boolean,
+  shouldSkipSuiteQLTable: (tableName: string) => boolean
 ): Promise<InstanceElement | undefined>[] => [
-  getSavedSearchQueryInstance(client, suiteQLTableType, TAX_SCHEDULE, elementsSource, isPartial),
-  getSavedSearchQueryInstance(client, suiteQLTableType, PROJECT_EXPENSE_TYPE, elementsSource, isPartial),
-  getAllocationTypeInstance(client, suiteQLTableType, elementsSource, isPartial),
+  shouldSkipSuiteQLTable(TAX_SCHEDULE)
+    ? Promise.resolve(undefined)
+    : getSavedSearchQueryInstance(client, suiteQLTableType, TAX_SCHEDULE, elementsSource, isPartial),
+  shouldSkipSuiteQLTable(PROJECT_EXPENSE_TYPE)
+    ? Promise.resolve(undefined)
+    : getSavedSearchQueryInstance(client, suiteQLTableType, PROJECT_EXPENSE_TYPE, elementsSource, isPartial),
+  shouldSkipSuiteQLTable(ALLOCATION_TYPE)
+    ? Promise.resolve(undefined)
+    : getAllocationTypeInstance(client, suiteQLTableType, elementsSource, isPartial),
 ]
 
 export const getSuiteQLTableElements = async (
+  config: NetsuiteConfig,
   client: NetsuiteClient,
   elementsSource: ReadOnlyElementsSource,
   isPartial: boolean
 ): Promise<TopLevelElement[]> => {
+  if (!config.fetch.resolveAccountSpecificValues) {
+    return []
+  }
   const suiteQLTableType = new ObjectType({
     elemID: new ElemID(NETSUITE, SUITEQL_TABLE),
     annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
   })
 
+  const shouldSkipSuiteQLTable = (tableName: string): boolean => {
+    const shouldSkip = (config.fetch.skipResolvingAccountSpecificValuesToTypes ?? [])
+      .some(name => regex.isFullRegexMatch(tableName, name))
+    if (shouldSkip) {
+      log.debug('skipping query of SuiteQL table %s', tableName)
+    }
+    return shouldSkip
+  }
+
   const lastFetchTime = await getLastServerTime(elementsSource)
   const instances = await Promise.all(
     Object.entries(QUERIES_BY_TABLE_NAME).map(([tableName, queryParams]) => {
-      if (queryParams === undefined) {
+      if (queryParams === undefined || shouldSkipSuiteQLTable(tableName)) {
         return undefined
       }
       return getSuiteQLTableInstance(
@@ -651,7 +701,7 @@ export const getSuiteQLTableElements = async (
         isPartial
       )
     }).concat(
-      getAdditionalInstances(client, suiteQLTableType, elementsSource, isPartial)
+      getAdditionalInstances(client, suiteQLTableType, elementsSource, isPartial, shouldSkipSuiteQLTable)
     )
   ).then(res => res.flatMap(instance => instance ?? []))
 

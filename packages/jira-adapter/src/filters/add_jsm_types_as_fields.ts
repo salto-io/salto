@@ -15,6 +15,7 @@
 */
 
 import { isInstanceElement } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { CUSTOMER_PERMISSIONS_TYPE, PROJECT_TYPE } from '../constants'
 
@@ -24,16 +25,17 @@ const filter: FilterCreator = ({ config }) => ({
     if (!config.fetch.enableJSM) {
       return
     }
-    elements
+    const customerPermissionInstances = _.remove(
+      elements, e => e.elemID.typeName === CUSTOMER_PERMISSIONS_TYPE && isInstanceElement(e)
+    )
+    customerPermissionInstances
       .filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === CUSTOMER_PERMISSIONS_TYPE)
       .forEach(customerPermission => {
-        const project = customerPermission.value.projectKey.value
+        const project = customerPermission.value.projectKey?.value
         delete customerPermission.value.projectKey
-        if (project.elemID.typeName === PROJECT_TYPE) {
+        if (project?.elemID.typeName === PROJECT_TYPE) {
           project.value.customerPermissions = customerPermission.value
         }
-        elements.splice(elements.indexOf(customerPermission), 1)
       })
   },
 })

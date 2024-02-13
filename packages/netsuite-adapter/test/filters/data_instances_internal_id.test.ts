@@ -14,12 +14,16 @@
 * limitations under the License.
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/data_instances_internal_id'
 import { ACCOUNT_SPECIFIC_VALUE, NETSUITE } from '../../src/constants'
 import { roleType } from '../../src/autogen/types/standard_types/role'
 import { LocalFilterOpts } from '../../src/filter'
+import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
+import { getDefaultAdapterConfig } from '../utils'
 
 describe('data_instances_internal_id', () => {
+  let defaultOpts: LocalFilterOpts
   const recordRefType = new ObjectType({
     elemID: new ElemID(NETSUITE, 'recordRef'),
     fields: {
@@ -38,6 +42,14 @@ describe('data_instances_internal_id', () => {
       },
     },
   })
+  beforeEach(async () => {
+    defaultOpts = {
+      elementsSourceIndex: {} as LazyElementsSourceIndexes,
+      elementsSource: buildElementsSourceFromElements([]),
+      isPartial: false,
+      config: await getDefaultAdapterConfig(),
+    }
+  })
   describe('onFetch', () => {
     it('should add account specific value to record refs', async () => {
       const instance = new InstanceElement(
@@ -48,10 +60,25 @@ describe('data_instances_internal_id', () => {
         }
       )
 
-      await filterCreator({} as LocalFilterOpts).onFetch?.([instance])
+      await filterCreator(defaultOpts).onFetch?.([instance])
       expect(instance.value.recordRef).toEqual({
         internalId: '1',
         id: ACCOUNT_SPECIFIC_VALUE,
+      })
+    })
+
+    it('should not run filter when fetch.resolveAccountSpecificValue is true', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        new ObjectType({ elemID: new ElemID(NETSUITE, 'type'), fields: { recordRef: { refType: recordRefType } }, annotations: { source: 'soap' } }),
+        {
+          recordRef: { internalId: '1' },
+        }
+      )
+      defaultOpts.config.fetch.resolveAccountSpecificValues = true
+      await filterCreator(defaultOpts).onFetch?.([instance])
+      expect(instance.value.recordRef).toEqual({
+        internalId: '1',
       })
     })
 
@@ -62,7 +89,7 @@ describe('data_instances_internal_id', () => {
         { recordRef: { internalId: '1' } }
       )
 
-      await filterCreator({} as LocalFilterOpts).onFetch?.([instance])
+      await filterCreator(defaultOpts).onFetch?.([instance])
       expect(instance.value.recordRef.internalId).toEqual(ACCOUNT_SPECIFIC_VALUE)
     })
 
@@ -84,7 +111,7 @@ describe('data_instances_internal_id', () => {
 
       const elements = [instance]
 
-      await filterCreator({} as LocalFilterOpts).onFetch?.(elements)
+      await filterCreator(defaultOpts).onFetch?.(elements)
       expect(elements[1].elemID.name).toBe('type_someList_1')
       expect(elements[1].elemID.typeName).toBe('subsidiary')
       expect(elements[1].value.isSubInstance).toBeTruthy()
@@ -102,7 +129,7 @@ describe('data_instances_internal_id', () => {
 
       const elements = [instance, recordRefType]
 
-      await filterCreator({} as LocalFilterOpts).onFetch?.(elements)
+      await filterCreator(defaultOpts).onFetch?.(elements)
       expect(elements.length).toBe(3)
       expect(elements[2].elemID.name).toBe('type_someValue_1')
       expect(elements[2].elemID.typeName).toBe('recordRef')
@@ -117,7 +144,7 @@ describe('data_instances_internal_id', () => {
         new ObjectType({ elemID: new ElemID(NETSUITE, 'account'), fields: { someValue: { refType: unitsType } }, annotations: { source: 'soap' } }),
         { someValue: { internalId: '1' } }
       )
-      await filterCreator({} as LocalFilterOpts).onFetch?.([instance])
+      await filterCreator(defaultOpts).onFetch?.([instance])
       expect(instance.value.someValue.id).toEqual(ACCOUNT_SPECIFIC_VALUE)
     })
   })
@@ -132,7 +159,7 @@ describe('data_instances_internal_id', () => {
         { recordRef: { internalId: '1', id: '2', name: 'Some Name' } }
       )
 
-      await filterCreator({} as LocalFilterOpts).preDeploy?.([
+      await filterCreator(defaultOpts).preDeploy?.([
         toChange({ before: instance.clone(), after: instance }),
         toChange({ before: type, after: type }),
       ])
@@ -146,7 +173,7 @@ describe('data_instances_internal_id', () => {
         { recordRef: { internalId: '1', id: ACCOUNT_SPECIFIC_VALUE, name: 'Some Name' } }
       )
 
-      await filterCreator({} as LocalFilterOpts).preDeploy?.([
+      await filterCreator(defaultOpts).preDeploy?.([
         toChange({ before: instance.clone(), after: instance }),
       ])
       expect(instance.value).toEqual({ recordRef: { internalId: '1' } })
@@ -159,7 +186,7 @@ describe('data_instances_internal_id', () => {
         { recordRef: { internalId: '1', name: 'Some Name', anotherField: 'value' } }
       )
 
-      await filterCreator({} as LocalFilterOpts).preDeploy?.([
+      await filterCreator(defaultOpts).preDeploy?.([
         toChange({ before: instance.clone(), after: instance }),
       ])
       expect(instance.value).toEqual({ recordRef: { internalId: '1', name: 'Some Name', anotherField: 'value' } })

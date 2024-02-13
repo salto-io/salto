@@ -83,6 +83,7 @@ import {
   guideThemeReadonlyValidator,
   dynamicContentPlaceholderModificationValidator,
   inactiveTicketFormInViewValidator,
+  immutableTypeAndKeyForUserFieldsValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ChangeValidatorName, ZendeskDeployConfig, ZendeskFetchConfig, ZendeskConfig } from './config'
@@ -179,6 +180,7 @@ export default ({
     conditionalTicketFields: conditionalTicketFieldsValidator,
     dynamicContentDeletion: dynamicContentDeletionValidator,
     inactiveTicketFormInView: inactiveTicketFormInViewValidator,
+    immutableTypeAndKeyForUserFields: immutableTypeAndKeyForUserFieldsValidator,
     // *** Guide Order Validators ***
     childInOrder: childInOrderValidator,
     childrenReferences: childrenReferencesValidator,

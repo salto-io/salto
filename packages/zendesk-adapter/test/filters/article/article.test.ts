@@ -138,6 +138,7 @@ describe('article filter', () => {
       inline: false,
       brand: brandInstance.value.id,
       content_url: 'https://someURL.com',
+      relative_path: '/hc/article_attachments/20222022/attachmentFileName.png',
     },
     undefined,
     { [CORE_ANNOTATIONS.PARENT]: [
@@ -719,5 +720,18 @@ describe('article filter', () => {
       expect(filteredArticle.value.body).toBeUndefined()
       expect(getChangeData(TranslationAddition)).toBe(clonedTranslation)
     })
+  })
+  it('should have an empty user segment id when changing to Everyone', async () => {
+    const clonedArticle = anotherArticleInstance.clone()
+    // Changing user segment to "Everyone" completely removes the
+    // field from the article instance
+    delete clonedArticle.value.user_segment_id
+    const articleModification = toChange({ before: anotherArticleInstance, after: clonedArticle })
+
+    await filter.deploy([
+      articleModification,
+    ])
+    const filteredArticle = getChangeData(articleModification)
+    expect(filteredArticle.value.user_segment_id).toBeNull()
   })
 })

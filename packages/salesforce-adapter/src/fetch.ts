@@ -486,7 +486,7 @@ export const retrieveMetadataInstanceForFetchWithChangesDetection: typeof retrie
         return []
       }
       const nonModifiedProfilesProps = profileProps.filter(props => !metadataQuery.isInstanceMatch(props))
-      return nonModifiedProfilesProps.concat(nonProfileProps)
+      return nonModifiedProfilesProps.concat(modifiedNonProfileProps)
     },
   })
 

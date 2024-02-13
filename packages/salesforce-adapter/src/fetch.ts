@@ -118,13 +118,22 @@ const getNamespace = (obj: FileProperties): string => (
   obj.namespacePrefix === undefined || obj.namespacePrefix === '' ? DEFAULT_NAMESPACE : obj.namespacePrefix
 )
 export const notInSkipList = (metadataQuery: MetadataQuery, file: FileProperties, isFolderType: boolean): boolean => (
-  metadataQuery.isInstanceMatch({
-    namespace: getNamespace(file),
-    metadataType: file.type,
-    name: file.fullName,
-    isFolderType,
-    changedAt: file.lastModifiedDate,
-  })
+  isFolderType
+    // We should always list folders, even if they were not modified.
+    ? metadataQuery.isInstanceIncluded({
+      namespace: getNamespace(file),
+      metadataType: file.type,
+      name: file.fullName,
+      isFolderType,
+      changedAt: file.lastModifiedDate,
+    })
+    : metadataQuery.isInstanceMatch({
+      namespace: getNamespace(file),
+      metadataType: file.type,
+      name: file.fullName,
+      isFolderType,
+      changedAt: file.lastModifiedDate,
+    })
 )
 
 const listMetadataObjectsWithinFolders = async (

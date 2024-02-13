@@ -103,6 +103,7 @@ import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFil
 import {
   addDefaults,
   apiNameSync,
+  getFullName,
   isCustomObjectSync,
   isCustomType, isMetadataInstanceElementSync,
   listMetadataObjects,
@@ -431,7 +432,7 @@ export default class SalesforceAdapter implements AdapterOperations {
                 .groupBy(({ type }) => type)
                 .forEach((props, typeName) => {
                   const listedInstances = this.listedInstancesByType.get(typeName)
-                  props.forEach(({ fullName }) => listedInstances.add(fullName))
+                  props.forEach(prop => listedInstances.add(getFullName(prop)))
                 })
               return listMetadataObjectsResult
             })

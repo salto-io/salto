@@ -26,17 +26,20 @@ import {
   isInstanceElement,
   isRemovalChange,
   isAdditionChange,
+  Value,
 } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { getParent, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { ISSUE_LAYOUT_TYPE, PROJECT_TYPE } from '../../constants'
+import { ElementQuery } from '@salto-io/adapter-components/src/elements/query'
+import { ISSUE_LAYOUT_TYPE, ISSUE_TYPE_SCREEN_SCHEME_TYPE, PROJECT_TYPE, SCREEN_SCHEME_TYPE } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { createLayoutType, LayoutConfigItem } from './layout_types'
 import { addAnnotationRecursively, setTypeDeploymentAnnotations } from '../../utils'
 import { generateLayoutId, getLayout, getLayoutResponse, isIssueLayoutResponse } from './layout_service_operations'
 import { deployChanges } from '../../deployment/standard_deployment'
-import JiraClient from '../../client/client'
+import JiraClient, { graphQLResponseType } from '../../client/client'
+import { JiraConfig } from '../../config/config'
 
 const log = logger(module)
 const { isDefined } = lowerDashValues
@@ -45,6 +48,32 @@ type issueTypeMappingStruct = {
     issueTypeId: string
     screenSchemeId: ReferenceExpression
 }
+
+type ResponsesRecord = Record<string, Record<string, Promise<graphQLResponseType>>>
+
+const getProjectToScreenMappingUnresolved = (elements: Element[]): Record<string, number[]> => {
+  const screensSchemesToDefaultScreens = Object.fromEntries(elements
+    .filter(isInstanceElement)
+    .filter(e => e.elemID.typeName === SCREEN_SCHEME_TYPE)
+    .filter(screenScheme => screenScheme.value.screens?.default !== undefined)
+    .map(screenScheme => [screenScheme.value.id, screenScheme.value.screens.default]))
+
+  const issueTypeScreenSchemesToScreens = Object.fromEntries(elements
+    .filter(isInstanceElement)
+    .filter(e => e.elemID.typeName === ISSUE_TYPE_SCREEN_SCHEME_TYPE)
+    .map(issueTypeScreenScheme => [issueTypeScreenScheme.value.id,
+      issueTypeScreenScheme.value.issueTypeMappings
+        ?.map((struct: issueTypeMappingStruct) => struct.screenSchemeId)
+        ?.map((screenSchemeId: number) => screensSchemesToDefaultScreens[screenSchemeId])]))
+
+  return Object.fromEntries(elements
+    .filter(isInstanceElement)
+    .filter(e => e.elemID.typeName === PROJECT_TYPE)
+    .filter(project => project.value.issueTypeScreenScheme?.issueTypeScreenScheme?.id !== undefined)
+    .map(project => [project.value.id,
+      issueTypeScreenSchemesToScreens[project.value.issueTypeScreenScheme.issueTypeScreenScheme.id]]))
+}
+
 
 const getProjectToScreenMapping = async (elements: Element[]): Promise<Record<string, number[]>> => {
   const projectToScreenId: Record<string, number[]> = Object.fromEntries(
@@ -150,7 +179,50 @@ const deployLayoutChange = async (
   throw Error('Failed to deploy issue layout changes due to missing references')
 }
 
-const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) => ({
+const getProjectIdToProjectDict = async (elements: Element[]): Promise<Value> =>
+  Object.fromEntries(
+    (await Promise.all(elements.filter(e => e.elemID.typeName === PROJECT_TYPE)
+      .filter(isInstanceElement)
+      .filter(project => !project.value.simplified && project.value.projectTypeKey === 'software')
+      .map(async project => [project.value.id, project])))
+      .filter(isDefined)
+  )
+
+export const getLayoutRequestsAsync = async (
+  client: JiraClient,
+  config: JiraConfig,
+  fetchQuery: ElementQuery,
+  elements: Element[]
+): Promise<ResponsesRecord> => {
+  if (client.isDataCenter
+  || !fetchQuery.isTypeMatch(ISSUE_LAYOUT_TYPE)
+    || !config.fetch.enableIssueLayouts) {
+    return {}
+  }
+
+  const projectIdToProject = await getProjectIdToProjectDict(elements)
+
+  const projectToScreenId = Object.fromEntries(Object.entries(getProjectToScreenMappingUnresolved(elements))
+    .filter(([key]) => Object.keys(projectIdToProject).includes(key)))
+
+  const requests: ResponsesRecord = Object.fromEntries(Object.entries(projectToScreenId)
+    .map(([projectId, screenIds]) => ([
+      projectId, Object.fromEntries(screenIds.map(screenId => ([
+        screenId,
+        getLayoutResponse({
+          variables: {
+            projectId,
+            extraDefinerId: screenId,
+          },
+          client,
+          typeName: ISSUE_LAYOUT_TYPE,
+        }),
+      ]))),
+    ])))
+  return requests
+}
+
+const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc, adapterContext }) => ({
   name: 'issueLayoutFilter',
   onFetch: async elements => {
     if (client.isDataCenter
@@ -158,32 +230,19 @@ const filter: FilterCreator = ({ client, config, fetchQuery, getElemIdFunc }) =>
       || !config.fetch.enableIssueLayouts) {
       return
     }
-    const projectIdToProject = Object.fromEntries(
-      (await Promise.all(elements.filter(e => e.elemID.typeName === PROJECT_TYPE)
-        .filter(isInstanceElement)
-        .filter(project => !project.value.simplified && project.value.projectTypeKey === 'software')
-        .map(async project => [project.value.id, project])))
-        .filter(isDefined)
-    )
+    const projectIdToProject = await getProjectIdToProjectDict(elements)
     const projectToScreenId = Object.fromEntries(Object.entries(await getProjectToScreenMapping(elements))
       .filter(([key]) => Object.keys(projectIdToProject).includes(key)))
     const { subTypes, layoutType: issueLayoutType } = createLayoutType(ISSUE_LAYOUT_TYPE)
     elements.push(issueLayoutType)
     subTypes.forEach(type => elements.push(type))
+    const responses = await adapterContext.layoutsPromise as ResponsesRecord
 
     const issueLayouts = (await Promise.all(Object.entries(projectToScreenId)
       .flatMap(([projectId, screenIds]) => screenIds.map(async screenId => {
-        const variables = {
-          projectId,
-          extraDefinerId: screenId,
-        }
-        const response = await getLayoutResponse({
-          variables,
-          client,
-          typeName: ISSUE_LAYOUT_TYPE,
-        })
+        const response = await responses[projectId][screenId]
         const layoutInstance = await getLayout({
-          extraDefinerId: variables.extraDefinerId,
+          extraDefinerId: screenId,
           response,
           instance: projectIdToProject[projectId],
           layoutType: issueLayoutType,

@@ -30,8 +30,7 @@ import {
 } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { getParent, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
-import { client as clientUtils } from '@salto-io/adapter-components'
-import { ElementQuery } from '@salto-io/adapter-components/src/elements/query'
+import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { ISSUE_LAYOUT_TYPE, ISSUE_TYPE_SCREEN_SCHEME_TYPE, PROJECT_TYPE, SCREEN_SCHEME_TYPE } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { createLayoutType, LayoutConfigItem } from './layout_types'
@@ -191,7 +190,7 @@ const getProjectIdToProjectDict = async (elements: Element[]): Promise<Value> =>
 export const getLayoutRequestsAsync = async (
   client: JiraClient,
   config: JiraConfig,
-  fetchQuery: ElementQuery,
+  fetchQuery: elementUtils.query.ElementQuery,
   elements: Element[]
 ): Promise<ResponsesRecord> => {
   if (client.isDataCenter

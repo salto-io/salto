@@ -429,48 +429,46 @@ const isAdapterOperationsWithPostFetch = (
   v.postFetch !== undefined
 )
 
+type AccountInput = {
+  fetchedElements: Element[] | undefined
+  stateElements: ReadonlyArray<Element>
+  partiallyFetchedAccountData: PartiallyFetchedAccountData | undefined
+}
+
 const runPostFetch = async ({
   adapters,
-  accountElements,
-  stateElementsByAccount,
-  partiallyFetchedAccountData,
+  accountInputs,
   accountToServiceNameMap,
   progressReporters,
 }: {
   adapters: Record<string, AdapterOperationsWithPostFetch>
-  accountElements: Element[]
-  stateElementsByAccount: Record<string, ReadonlyArray<Element>>
-  partiallyFetchedAccountData: Map<string, PartiallyFetchedAccountData>
+  accountInputs: Record<string, AccountInput>
   accountToServiceNameMap: Record<string, string>
   progressReporters: Record<string, ProgressReporter>
 }): Promise<void> => {
-  const serviceElementsByAccount = _.groupBy(accountElements, e => e.elemID.adapter)
   const getAdapterElements = (accountName: string): ReadonlyArray<Element> => {
-    if (!partiallyFetchedAccountData.has(accountName)) {
-      return serviceElementsByAccount[accountName] ?? stateElementsByAccount[accountName]
+    const { partiallyFetchedAccountData, fetchedElements, stateElements } = accountInputs[accountName]
+    if (partiallyFetchedAccountData === undefined) {
+      return fetchedElements ?? stateElements
     }
     const fetchedIDs = new Set(
-      serviceElementsByAccount[accountName].map(e => e.elemID.getFullName())
+      fetchedElements?.map(e => e.elemID.getFullName())
     )
-    const missingElements = stateElementsByAccount[accountName]
+    const missingElements = stateElements
       .filter(e => !fetchedIDs.has(e.elemID.getFullName()))
-      .filter(e => !partiallyFetchedAccountData.get(accountName)?.deletedElements?.has(e.elemID.getFullName()))
+      .filter(e => !partiallyFetchedAccountData.deletedElements?.has(e.elemID.getFullName()))
     return [
-      ...serviceElementsByAccount[accountName],
+      ...fetchedElements ?? [],
       ...missingElements,
     ]
   }
-  const elementsByAccount = Object.fromEntries(
-    [...new Set([
-      ...Object.keys(stateElementsByAccount),
-      ...Object.keys(serviceElementsByAccount),
-    ])].map(accountName => [accountName, getAdapterElements(accountName)])
-  )
+  const elementsByAccount = Object.fromEntries(Object.keys(accountInputs)
+    .map(accountName => [accountName, getAdapterElements(accountName)]))
   // only modifies elements in-place, done sequentially to avoid race conditions
   await promises.array.series(
     Object.entries(adapters).map(([adapterName, adapter]) => async () => (
       adapter.postFetch({
-        currentAdapterElements: serviceElementsByAccount[adapterName],
+        currentAdapterElements: accountInputs[adapterName].fetchedElements ?? [],
         elementsByAccount,
         accountToServiceNameMap,
         progressReporter: progressReporters[adapterName],
@@ -603,19 +601,26 @@ const fetchAndProcessMergeErrors = async (
         { deletedElements: new Set(result.partialFetchData?.deletedElements?.map(elem => elem.getFullName())) },
       ]))
     log.debug(`fetched ${accountElements.length} elements from adapters`)
-    const stateElementsByAccount = await groupByAsync(
-      await stateElements.getAll(),
-      elem => elem.elemID.adapter
-    )
+
     const adaptersWithPostFetch = _.pickBy(accountsToAdapters, isAdapterOperationsWithPostFetch)
     if (!_.isEmpty(adaptersWithPostFetch)) {
       try {
+        const stateElementsByAccount = await groupByAsync(
+          await stateElements.getAll(),
+          elem => elem.elemID.adapter
+        )
+        const serviceElementsByAccount = _.groupBy(accountElements, e => e.elemID.adapter)
+        const accountInputs = Object.fromEntries(Object.keys(accountToServiceNameMap)
+          .map(key => [
+            key,
+            { fetchedElements: serviceElementsByAccount[key],
+              stateElements: stateElementsByAccount[key],
+              partiallyFetchedAccountData: partiallyFetchedAccountData.get(key) },
+          ]))
         // update elements based on fetch results from other services
         await runPostFetch({
           adapters: adaptersWithPostFetch,
-          accountElements,
-          stateElementsByAccount,
-          partiallyFetchedAccountData,
+          accountInputs,
           accountToServiceNameMap,
           progressReporters,
         })
@@ -844,8 +849,7 @@ const createFetchChanges = async ({
   }
   const isFirstFetch = await awu(await workspaceElements.list())
     .concat(await stateElements.list())
-    .filter(e => !e.isConfigType())
-    .isEmpty()
+    .some(e => !e.isConfigType())
 
   const { changes, serviceToStateChanges } = isFirstFetch
     ? await createFirstFetchChanges(unmergedElements, processErrorsResult.keptElements)
@@ -905,6 +909,7 @@ const createFetchChanges = async ({
     partiallyFetchedAccounts: new Set(partiallyFetchedAccountData.keys()),
   }
 }
+
 export const fetchChanges = async (
   accountsToAdapters: Record<string, AdapterOperations>,
   workspaceElements: elementSource.ElementsSource,

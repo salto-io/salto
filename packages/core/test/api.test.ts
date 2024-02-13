@@ -1162,6 +1162,75 @@ describe('api.ts', () => {
         expect(res.fetchErrors).toHaveLength(0)
         expect(res.mergeErrors).toHaveLength(0)
         expect(res.changes).toHaveLength(2)
+        expect(res.serviceChanges).toHaveLength(2)
+        const modifyChange = res.serviceChanges?.find(isModificationChange)
+        expect(modifyChange).toEqual({
+          action: 'modify',
+          data: {
+            before: instance,
+            after: afterModifyInstance,
+          },
+          detailedChanges: expect.any(Function),
+        })
+        expect(modifyChange?.detailedChanges()).toEqual([{
+          id: instance.elemID.createNestedID('f'),
+          action: 'modify',
+          elemIDs: {
+            before: instance.elemID.createNestedID('f'),
+            after: instance.elemID.createNestedID('f'),
+          },
+          data: {
+            before: 'v',
+            after: 'v3',
+          },
+        }])
+        const additionChange = res.serviceChanges?.find(isAdditionChange)
+        expect(additionChange).toEqual({
+          action: 'add',
+          data: {
+            after: afterNewInstance,
+          },
+          detailedChanges: expect.any(Function),
+        })
+        expect(additionChange?.detailedChanges()).toEqual([{
+          id: afterNewInstance.elemID,
+          action: 'add',
+          data: {
+            after: afterNewInstance,
+          },
+        }])
+      })
+    })
+
+    describe('when it is a field change', () => {
+      it('should return field service change', async () => {
+        const typeWithNewField = type.clone()
+        typeWithNewField.fields.new_field = new Field(typeWithNewField, 'new_field', BuiltinTypes.STRING)
+        const beforeElements = [type]
+        const afterElements = [typeWithNewField]
+        mockLoadElementsFromFolder
+          .mockResolvedValueOnce({ elements: beforeElements })
+          .mockResolvedValueOnce({ elements: afterElements })
+        const res = await api.calculatePatch({ workspace: ws, fromDir: 'before', toDir: 'after', accountName: 'salesforce' })
+        expect(res.success).toBeTruthy()
+        expect(res.fetchErrors).toHaveLength(0)
+        expect(res.mergeErrors).toHaveLength(0)
+        expect(res.changes).toHaveLength(1)
+        expect(res.serviceChanges).toHaveLength(1)
+        expect(res.serviceChanges?.[0]).toEqual({
+          action: 'add',
+          data: {
+            after: typeWithNewField.fields.new_field,
+          },
+          detailedChanges: expect.any(Function),
+        })
+        expect(res.serviceChanges?.[0]?.detailedChanges()).toEqual([{
+          id: typeWithNewField.fields.new_field.elemID,
+          action: 'add',
+          data: {
+            after: typeWithNewField.fields.new_field,
+          },
+        }])
       })
     })
 
@@ -1180,6 +1249,21 @@ describe('api.ts', () => {
         expect(res.mergeErrors).toHaveLength(0)
         expect(res.changes).toHaveLength(1)
         expect(res.changes[0].change.id.name).toEqual('f')
+        expect(res.serviceChanges).toHaveLength(1)
+        expect(res.serviceChanges?.[0]).toEqual({
+          action: 'add',
+          data: {
+            after: afterModifyInstance,
+          },
+          detailedChanges: expect.any(Function),
+        })
+        expect(res.serviceChanges?.[0]?.detailedChanges()).toEqual([{
+          id: afterModifyInstance.elemID,
+          action: 'add',
+          data: {
+            after: afterModifyInstance,
+          },
+        }])
       })
     })
 
@@ -1195,6 +1279,7 @@ describe('api.ts', () => {
         expect(res.fetchErrors).toHaveLength(0)
         expect(res.mergeErrors).toHaveLength(0)
         expect(res.changes).toHaveLength(0)
+        expect(res.serviceChanges).toHaveLength(0)
       })
     })
 
@@ -1207,6 +1292,7 @@ describe('api.ts', () => {
         expect(res.success).toBeFalsy()
         expect(res.fetchErrors).toHaveLength(0)
         expect(res.changes).toHaveLength(0)
+        expect(res.serviceChanges).toBeUndefined()
         expect(res.mergeErrors).toHaveLength(1)
       })
     })
@@ -1223,6 +1309,27 @@ describe('api.ts', () => {
         const res = await api.calculatePatch({ workspace: ws, fromDir: 'before', toDir: 'after', accountName: 'salesforce' })
         expect(res.success).toBeTruthy()
         expect(res.changes).toHaveLength(1)
+        expect(res.serviceChanges).toHaveLength(1)
+        expect(res.serviceChanges?.[0]).toEqual({
+          action: 'modify',
+          data: {
+            before: instance,
+            after: afterModifyInstance,
+          },
+          detailedChanges: expect.any(Function),
+        })
+        expect(res.serviceChanges?.[0].detailedChanges()).toEqual([{
+          id: instance.elemID.createNestedID('f'),
+          action: 'modify',
+          elemIDs: {
+            before: instance.elemID.createNestedID('f'),
+            after: instance.elemID.createNestedID('f'),
+          },
+          data: {
+            before: 'v',
+            after: 'v3',
+          },
+        }])
         expect(res.mergeErrors).toHaveLength(0)
         expect(res.fetchErrors).toHaveLength(1)
       })

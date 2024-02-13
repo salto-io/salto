@@ -23,6 +23,7 @@ import {
   Change,
   ChangeDataType,
   ChangeError,
+  ChangeParams,
   DetailedChange,
   Element,
   ElemID,
@@ -33,10 +34,14 @@ import {
   isAdditionOrModificationChange,
   isField,
   isFieldChange,
+  isInstanceElement,
+  isObjectType,
   isRemovalChange,
+  isType,
   ObjectType,
   ReferenceMapping,
   SaltoError,
+  toChange,
   TopLevelElement,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
@@ -236,6 +241,7 @@ export type FillConfigFunc = (configType: ObjectType) => Promise<InstanceElement
 
 export type FetchResult = {
   changes: FetchChange[]
+  serviceChanges?: ChangeWithDetails[]
   mergeErrors: MergeErrorWithElements[]
   fetchErrors: SaltoError[]
   success: boolean
@@ -412,6 +418,59 @@ type CalculatePatchArgs = {
   ignoreStateElemIdMapping?: boolean
 }
 
+const isChangeDataTypeOrUndefined = (element: Element | undefined): element is ChangeDataType | undefined =>
+  element === undefined || isType(element) || isInstanceElement(element) || isField(element)
+
+const createServiceChanges = (
+  beforeElements: Element[],
+  afterElements: Element[],
+  changes: FetchChange[]
+): ChangeWithDetails[] => {
+  const beforeElementsById = new Map(beforeElements.map(elem => [elem.elemID.getFullName(), elem]))
+  const afterElementsById = new Map(afterElements.map(elem => [elem.elemID.getFullName(), elem]))
+  const serviceDetailedChangesBaseIds = _.uniqBy(
+    changes
+      .flatMap(change => change.serviceChanges)
+      .map(change => change.id.createBaseID().parent),
+    elemId => elemId.getFullName()
+  )
+  return serviceDetailedChangesBaseIds.map(baseId => {
+    const topLevelId = baseId.createTopLevelParentID().parent
+    const beforeElement = beforeElementsById.get(baseId.getFullName())
+      ?? beforeElementsById.get(topLevelId.getFullName())
+    const afterElement = afterElementsById.get(baseId.getFullName())
+      ?? afterElementsById.get(topLevelId.getFullName())
+    if (beforeElement !== undefined && afterElement !== undefined
+      && !beforeElement.elemID.isEqual(afterElement.elemID)) {
+      log.warn('dropping change with mismatching elem ids: %o', {
+        before: beforeElement.elemID.getFullName(),
+        after: afterElement.elemID.getFullName(),
+      })
+      return undefined
+    }
+    if (isObjectType(beforeElement) && isObjectType(afterElement) && baseId.idType === 'field') {
+      const beforeField = beforeElement.fields[baseId.name]
+      const afterField = afterElement.fields[baseId.name]
+      return toChange({ before: beforeField, after: afterField })
+    }
+    if (!isChangeDataTypeOrUndefined(beforeElement) || !isChangeDataTypeOrUndefined(afterElement)) {
+      log.warn(
+        'dropping change for non change data type: %s',
+        afterElement?.elemID.getFullName() ?? beforeElement?.elemID.getFullName()
+      )
+      return undefined
+    }
+    return toChange<ChangeParams<ChangeDataType>>({
+      before: beforeElement,
+      after: afterElement,
+    })
+  }).filter(values.isDefined)
+    .map(change => ({
+      ...change,
+      detailedChanges: () => getDetailedChangesFromChange(change),
+    }))
+}
+
 export const calculatePatch = async (
   {
     workspace,
@@ -500,6 +559,7 @@ export const calculatePatch = async (
   )
   return {
     changes,
+    serviceChanges: createServiceChanges(mergedBeforeElements, mergedAfterElements, changes),
     mergeErrors: [],
     fetchErrors: [
       ...(beforeLoadErrors ?? []),

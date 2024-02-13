@@ -23,13 +23,13 @@ import {
   CUSTOM_LABEL_METADATA_TYPE,
   CUSTOM_OBJECT,
   ESCALATION_RULE_TYPE,
+  TYPES_WITH_NESTED_INSTANCES,
+  TYPES_WITH_NESTED_INSTANCES_PER_PARENT,
 } from './constants'
 import SalesforceClient from './client/client'
 import {
   LastChangeDateOfTypesWithNestedInstances,
   MetadataQuery,
-  TYPES_WITH_NESTED_INSTANCES,
-  TYPES_WITH_NESTED_INSTANCES_PER_PARENT,
   TypeWithNestedInstances,
   TypeWithNestedInstancesPerParent,
 } from './types'

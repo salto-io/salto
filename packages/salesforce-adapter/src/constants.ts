@@ -621,3 +621,17 @@ export const SalesforceArtifacts = {
 export const NON_LISTED_ELEMENT_IDS = [
   'salesforce.RecordType.instance.Idea_InternalIdeasIdeaRecordType',
 ]
+
+
+export const TYPES_WITH_NESTED_INSTANCES = [
+  CUSTOM_LABELS_METADATA_TYPE,
+] as const
+
+export const TYPES_WITH_NESTED_INSTANCES_PER_PARENT = [
+  CUSTOM_OBJECT,
+  ASSIGNMENT_RULES_METADATA_TYPE,
+  AUTO_RESPONSE_RULES_METADATA_TYPE,
+  SHARING_RULES_TYPE,
+  ESCALATION_RULES_TYPE,
+  WORKFLOW_METADATA_TYPE,
+] as const

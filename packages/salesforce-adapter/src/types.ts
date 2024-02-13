@@ -30,17 +30,6 @@ import { definitions } from '@salto-io/adapter-components'
 import { types } from '@salto-io/lowerdash'
 import { SUPPORTED_METADATA_TYPES } from './fetch_profile/metadata_types'
 import * as constants from './constants'
-import {
-  ASSIGNMENT_RULES_METADATA_TYPE,
-  AUTO_RESPONSE_RULES_METADATA_TYPE,
-  CUSTOM_LABELS_METADATA_TYPE,
-  CUSTOM_OBJECT,
-  DEFAULT_MAX_INSTANCES_PER_TYPE,
-  ESCALATION_RULES_TYPE,
-  SALESFORCE,
-  SHARING_RULES_TYPE,
-  WORKFLOW_METADATA_TYPE,
-} from './constants'
 
 type UserDeployConfig = definitions.UserDeployConfig
 
@@ -874,7 +863,7 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
             ],
           },
           [SHOULD_FETCH_ALL_CUSTOM_SETTINGS]: false,
-          [MAX_INSTANCES_PER_TYPE]: DEFAULT_MAX_INSTANCES_PER_TYPE,
+          [MAX_INSTANCES_PER_TYPE]: constants.DEFAULT_MAX_INSTANCES_PER_TYPE,
         },
       },
     },
@@ -895,7 +884,7 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
       refType: clientConfigType,
     },
     [DEPLOY_CONFIG]: {
-      refType: definitions.createUserDeployConfigType(SALESFORCE, changeValidatorConfigType),
+      refType: definitions.createUserDeployConfigType(constants.SALESFORCE, changeValidatorConfigType),
     },
   },
   annotations: {
@@ -938,22 +927,8 @@ export type FetchProfile = {
   readonly importantValues: ImportantValues
 }
 
-
-export const TYPES_WITH_NESTED_INSTANCES = [
-  CUSTOM_LABELS_METADATA_TYPE,
-] as const
-
-export const TYPES_WITH_NESTED_INSTANCES_PER_PARENT = [
-  CUSTOM_OBJECT,
-  ASSIGNMENT_RULES_METADATA_TYPE,
-  AUTO_RESPONSE_RULES_METADATA_TYPE,
-  SHARING_RULES_TYPE,
-  ESCALATION_RULES_TYPE,
-  WORKFLOW_METADATA_TYPE,
-] as const
-
-export type TypeWithNestedInstances = typeof TYPES_WITH_NESTED_INSTANCES[number]
-export type TypeWithNestedInstancesPerParent = typeof TYPES_WITH_NESTED_INSTANCES_PER_PARENT[number]
+export type TypeWithNestedInstances = typeof constants.TYPES_WITH_NESTED_INSTANCES[number]
+export type TypeWithNestedInstancesPerParent = typeof constants.TYPES_WITH_NESTED_INSTANCES_PER_PARENT[number]
 export type LastChangeDateOfTypesWithNestedInstances = {
   [key in TypeWithNestedInstancesPerParent]: Record<string, string>
 } & {

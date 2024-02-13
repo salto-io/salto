@@ -76,7 +76,7 @@ const DEFAULT_NAMESPACE_MATCH_ALL_TYPE_LIST = [
 
 // Instances of this type won't be fetched in fetchWithChangesDetection mode
 const UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES = [
-  // Since we don't retrieve the CustomMetadata types (CustomObjects), we shouldn't retrieve the Records
+  // CustomMetadata Records do not contain lastModifiedDate
   CUSTOM_METADATA,
 
 ]

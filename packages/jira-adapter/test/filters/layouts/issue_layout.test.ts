@@ -298,6 +298,14 @@ describe('issue layout filter', () => {
       await getLayoutRequestsAsync(mockClient(true).client, configWithDataCenterTrue, fetchQuery, elements)
       expect(connection.post).not.toHaveBeenCalled()
     })
+    it('should return empty list if screen scheme does not have screens', async () => {
+      delete screenSchemeInstance.value.screens
+      const res = await getLayoutRequestsAsync(client, config, fetchQuery, elements)
+      expect(Object.entries(res)).toHaveLength(1)
+      expect(res[11111]).toEqual({
+        undefined: Promise.resolve({ data: {} }),
+      })
+    })
   })
   describe('on fetch', () => {
     beforeEach(async () => {

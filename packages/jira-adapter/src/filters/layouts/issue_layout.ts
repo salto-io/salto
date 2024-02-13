@@ -55,6 +55,7 @@ const getProjectToScreenMappingUnresolved = (elements: Element[]): Record<string
   const screensSchemesToDefaultScreens = Object.fromEntries(elements
     .filter(isInstanceElement)
     .filter(e => e.elemID.typeName === SCREEN_SCHEME_TYPE)
+    .filter(screenScheme => screenScheme.value.screens?.default !== undefined)
     .map(screenScheme => [screenScheme.value.id, screenScheme.value.screens.default]))
 
   const issueTypeScreenSchemesToScreens = Object.fromEntries(elements
@@ -62,8 +63,8 @@ const getProjectToScreenMappingUnresolved = (elements: Element[]): Record<string
     .filter(e => e.elemID.typeName === ISSUE_TYPE_SCREEN_SCHEME_TYPE)
     .map(issueTypeScreenScheme => [issueTypeScreenScheme.value.id,
       issueTypeScreenScheme.value.issueTypeMappings
-        .map((struct: issueTypeMappingStruct) => struct.screenSchemeId)
-        .map((screenSchemeId: number) => screensSchemesToDefaultScreens[screenSchemeId])]))
+        ?.map((struct: issueTypeMappingStruct) => struct.screenSchemeId)
+        ?.map((screenSchemeId: number) => screensSchemesToDefaultScreens[screenSchemeId])]))
 
   return Object.fromEntries(elements
     .filter(isInstanceElement)

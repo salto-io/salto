@@ -454,5 +454,25 @@ describe('dependency changers', () => {
         expect(dependencyChanges).toHaveLength(0)
       })
     })
+    describe('when reference changed and old referenced element removed', () => {
+      beforeEach(async () => {
+        const testInstanceAfter = testInstance.clone()
+        const firstTestReferenceInstance = new InstanceElement('first_ref', testType)
+        const secondTestReferenceInstance = new InstanceElement('second_ref', testType)
+        testInstance.value.ref = new ReferenceExpression(firstTestReferenceInstance.elemID)
+        testInstanceAfter.value.ref = new ReferenceExpression(secondTestReferenceInstance.elemID)
+        const inputChanges = new Map<number, Change>([
+          [0, toChange({ before: firstTestReferenceInstance })],
+          [1, toChange({ before: testInstance, after: testInstanceAfter })],
+        ])
+        dependencyChanges = [...await addReferencesDependency(inputChanges, new Map())]
+      })
+
+      it('should add dependency to the removed referenced element', () => {
+        expect(dependencyChanges).toEqual([
+          { action: 'add', dependency: { source: 0, target: 1 } },
+        ])
+      })
+    })
   })
 })

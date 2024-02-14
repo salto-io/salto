@@ -34,7 +34,8 @@ import {
   OBJECTS_PATH,
   SBAA_APPROVAL_RULE,
   SBAA_CONDITIONS_MET,
-  ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+  ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP, CPQ_PRICE_RULE, CPQ_CONDITIONS_MET, CPQ_PRICE_CONDITION,
+  CPQ_PRICE_CONDITION_RULE_FIELD, ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP,
 } from '../src/constants'
 import { getChangeGroupIds } from '../src/group_changes'
 import { createInstanceElement } from '../src/transformers/transformer'
@@ -232,10 +233,60 @@ describe('Group changes function', () => {
       result = await getChangeGroupIds(changeMap)
     })
     it('should create correct groups', () => {
-      expect(result.changeGroupIdMap.get('CustomApprovalRule')).toEqual(ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP)
-      expect(result.changeGroupIdMap.get('CustomApprovalCondition')).toEqual(ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP)
+      expect(result.changeGroupIdMap.get('CustomApprovalRule')).toEqual(ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP)
+      expect(result.changeGroupIdMap.get('CustomApprovalCondition')).toEqual(ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP)
       expect(result.changeGroupIdMap.get('ApprovalRule')).toEqual('Addition of data instances of type \'sbaa__ApprovalRule__c\'')
       expect(result.changeGroupIdMap.get('ApprovalCondition')).toEqual('Addition of data instances of type \'sbaa__ApprovalCondition__c\'')
+    })
+  })
+  describe('when changes are additions of SBQQ__PriceRule__c and SBQQ__PriceCondition__c', () => {
+    let result: ChangeGroupIdFunctionReturn
+    beforeEach(async () => {
+      const customPriceRule = new InstanceElement(
+        'CustomPriceRule',
+        mockTypes[CPQ_PRICE_RULE],
+        {
+          [CPQ_CONDITIONS_MET]: 'Custom',
+        }
+      )
+      const priceRule = new InstanceElement(
+        'PriceRule',
+        mockTypes[CPQ_PRICE_RULE],
+        {
+          [CPQ_CONDITIONS_MET]: 'All',
+        }
+      )
+      const customPriceCondition = new InstanceElement(
+        'CustomPriceCondition',
+        mockTypes[CPQ_PRICE_CONDITION],
+        {
+          [CPQ_PRICE_CONDITION_RULE_FIELD]: new ReferenceExpression(customPriceRule.elemID, customPriceRule),
+        }
+      )
+      const priceCondition = new InstanceElement(
+        'PriceCondition',
+        mockTypes[CPQ_PRICE_CONDITION],
+        {
+          [CPQ_PRICE_CONDITION_RULE_FIELD]: new ReferenceExpression(priceRule.elemID, priceRule),
+        }
+      )
+      const addedInstances = [
+        customPriceRule,
+        priceRule,
+        customPriceCondition,
+        priceCondition,
+      ]
+      const changeMap = new Map<string, Change>()
+      addedInstances.forEach(instance => {
+        changeMap.set(instance.elemID.name, toChange({ after: instance }))
+      })
+      result = await getChangeGroupIds(changeMap)
+    })
+    it('should create correct groups', () => {
+      expect(result.changeGroupIdMap.get('CustomPriceRule')).toEqual(ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP)
+      expect(result.changeGroupIdMap.get('CustomPriceCondition')).toEqual(ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP)
+      expect(result.changeGroupIdMap.get('PriceRule')).toEqual('Addition of data instances of type \'SBQQ__PriceRule__c\'')
+      expect(result.changeGroupIdMap.get('PriceCondition')).toEqual('Addition of data instances of type \'SBQQ__PriceCondition__c\'')
     })
   })
 })

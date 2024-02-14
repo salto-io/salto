@@ -774,7 +774,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       const typeName = apiNameSync(type)
       return typeName === CUSTOM_OBJECT
         // CustomObjects are converted to types and do not remain instances
-        ? new ElemID(constants.SALESFORCE, fullName)
+        ? Types.getElemId(fullName, true)
         : createInstanceElement({ fullName }, type).elemID
     }
     const metadataTypesByName = _.keyBy(

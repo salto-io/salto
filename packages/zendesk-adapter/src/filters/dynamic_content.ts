@@ -76,6 +76,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       relevantChanges,
       change => getChangeData(change).elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME,
     )
+    relevantChanges.map(change => console.log(change.data))
     if (itemChanges.length === 0 || itemChanges.every(isModificationChange)) {
       // The service does not allow us to have an item with no variant - therefore, we need to do
       //  the removal changes last

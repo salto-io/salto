@@ -13,4 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { HTTPMethod } from './types'
+export { ApiClientDefinition, RESTApiClientDefinition } from './client'
+export { EndpointByPathAndMethod } from './endpoint'
+export { PaginationDefinitions, PaginationFunction, ClientRequestArgsNoPath } from './pagination'
+export { HTTPEndpointIdentifier, RequestArgs, HTTPMethod, HTTPEndpointDetails } from './types'

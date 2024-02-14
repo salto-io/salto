@@ -78,6 +78,8 @@ export const createElementQuery = <T extends Record<string, unknown>>(
 
       return isIncluded && !isExcluded
     },
+
+    // TODO add request-time optimizations where relevant (SALTO-5425)
   })
 
 export const createMockQuery = (): MockInterface<ElementQuery> => ({

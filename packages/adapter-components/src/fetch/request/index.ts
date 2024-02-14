@@ -13,5 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { replaceAllArgs, replaceArgs, ARG_PLACEHOLDER_MATCHER } from './utils'
 export * as pagination from './pagination'
+// eslint-disable-next-line import/no-cycle
+export { getRequester } from './requester'
+export { replaceAllArgs, replaceArgs, ARG_PLACEHOLDER_MATCHER } from './utils'

@@ -13,4 +13,5 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { defaultPathChecker, PathCheckerFunc } from './pagination_functions'
+export { cursorPagination, itemOffsetPagination, offsetAndLimitPagination, pageOffsetAndLastPagination, pageOffsetPagination, noPagination, defaultPathChecker, PathCheckerFunc } from './pagination_functions'
+export { traversePages } from './pagination'

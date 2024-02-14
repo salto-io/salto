@@ -69,7 +69,7 @@ const getInstanceName = (
 
   const serviceIds = elementUtils.createServiceIds({
     entry: instance.value,
-    serviceIdFields: [serviceIdField],
+    serviceIDFields: [serviceIdField],
     typeID: instance.refType.elemID,
   })
 

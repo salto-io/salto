@@ -164,7 +164,7 @@ const getServiceIds = (
   )
 
   return serviceIdField !== undefined
-    ? elementUtils.createServiceIds({ entry: instanceValues, serviceIdFields: [serviceIdField], typeID: type.elemID })
+    ? elementUtils.createServiceIds({ entry: instanceValues, serviceIDFields: [serviceIdField], typeID: type.elemID })
     : undefined
 }
 

@@ -15,17 +15,17 @@
 */
 import _ from 'lodash'
 import { types, values as lowerdashValues } from '@salto-io/lowerdash'
-import { logger } from '@salto-io/logging'
 import { DefaultWithCustomizations } from './shared/types'
-
-const log = logger(module)
+import { UserFetchConfig } from '../user'
+import { FetchApiDefinitions } from './fetch'
 
 /**
  * merge a single custom definition with a default, assuming they came from a DefaultWithCustomizations definition.
  * the merge is done as follows:
  * - customization takes precedence over default
- * - if the customization is an array, the default is expected to be a single item with the same structure,
- *   and the default is applied to each item in the customization array
+ * - if the customization is an array -
+ *   - if the default is a single item, then the default is applied to each item in the customization array
+ *   - if the default is also an array, then the customization is used instead of the default
  * - special case (TODO generalize): if the definition specifies ignoreDefaultFieldCustomizations=true, then
  *   the corresponding fieldCustomizations field, if exists, will not be merged with the default.
  *   the ignoreDefaultFieldCustomizations value itself is omitted from the returned result.
@@ -39,8 +39,6 @@ export const mergeSingleDefWithDefault = <T, K extends string>(
   }
   if (Array.isArray(def)) {
     if (Array.isArray(defaultDef)) {
-      // shouldn't happen
-      log.warn('found array in custom and default definitions, ignoring default')
       return def
     }
     // TODO improve casting
@@ -120,3 +118,48 @@ export const getNestedWithDefault = <T, TNested, K extends string>(
   ),
 // TODO see if can avoid the cast
 }) as unknown as DefaultWithCustomizations<TNested, K>
+
+/**
+ * elem ids for instances can be defined in two places:
+ * - the "system" definitions
+ * - user-specified overrides that are added under fetch.elemID
+ * this function combines these two, by treating the user-provided overrides as customizations
+ * and giving them precedence when merging with the system definitions
+ */
+export const mergeWithUserElemIDDefinitions = <
+  ClientOptions extends string,
+>({ userElemID, fetchConfig }: {
+  userElemID: UserFetchConfig['elemID']
+  fetchConfig?: FetchApiDefinitions<ClientOptions>
+}): FetchApiDefinitions<ClientOptions> => {
+  if (userElemID === undefined) {
+    return fetchConfig ?? { instances: { customizations: {} } }
+  }
+  return _.merge(
+    {},
+    fetchConfig,
+    {
+      instances: {
+        customizations: _.mapValues(
+          userElemID,
+          ({ extendSystemPartsDefinition, ...userDef }, type) => {
+            const { elemID: systemDef } = fetchConfig?.instances.customizations[type]?.element?.topLevel ?? {}
+            const elemIDDef = {
+              ..._.defaults({}, userDef, systemDef),
+              parts: extendSystemPartsDefinition
+                ? (systemDef?.parts ?? []).concat(userDef.parts ?? [])
+                : userDef.parts,
+            }
+            return {
+              element: {
+                topLevel: {
+                  elemID: elemIDDef,
+                },
+              },
+            }
+          }
+        ),
+      },
+    },
+  )
+}

@@ -14,6 +14,8 @@
 * limitations under the License.
 */
 
-export * from './utils'
-export { DefaultWithCustomizations, ArgsWithCustomizer, OptionsWithDefault, DATA_FIELD_ENTIRE_OBJECT, NameMappingOptions, ContextParams } from './shared'
+export { ApiDefinitions } from './api'
+export * as fetch from './fetch'
 export * from './requests'
+export { DATA_FIELD_ENTIRE_OBJECT, NameMappingOptions, DefaultWithCustomizations, ArgsWithCustomizer, OptionsWithDefault, TransformFunction, AdjustFunction, ContextParams } from './shared'
+export * from './utils'

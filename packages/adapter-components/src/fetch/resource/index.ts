@@ -14,3 +14,4 @@
 * limitations under the License.
 */
 export * from './request_parameters'
+export { createResourceManager } from './resource_manager'

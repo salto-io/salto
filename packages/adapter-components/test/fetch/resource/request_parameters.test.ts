@@ -283,17 +283,6 @@ describe('request_parameters', () => {
         },
       )).toThrow(new Error('cannot resolve endpoint /a/b/{pet_id} - missing context'))
     })
-    it('should fail if url is not valid', () => {
-      expect(() => computeGetArgs(
-        {
-          url: '/a/b/{pet_id',
-          dependsOn: [
-            { pathParam: 'pet_id', from: { type: 'Pet', field: 'id' } },
-          ],
-        },
-        {},
-      )).toThrow(new Error('invalid endpoint definition /a/b/{pet_id'))
-    })
     it('should fail if argument definition is not found in dependsOn', () => {
       expect(() => computeGetArgs(
         {

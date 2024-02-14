@@ -112,7 +112,9 @@ export type NonPromise<T> = T extends Promise<unknown> ? never : T
 
 export type RecursivePartial<T> = {
   [P in keyof T]?:
-    T[P] extends (infer U)[] ? RecursivePartial<U>[] :
-    T[P] extends object | undefined ? RecursivePartial<T[P]> :
-    T[P];
-};
+    T[P] extends (infer U)[]
+      ? (RecursivePartial<U>[] | RecursivePartial<U>)
+      : T[P] extends object | undefined
+        ? RecursivePartial<T[P]>
+        : T[P]
+}

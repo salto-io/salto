@@ -617,8 +617,11 @@ export const SalesforceArtifacts = {
 } as const
 
 
-// The following Elements are not returned from `listMetadataObjects` but do return as instances
+// Since the adapter relies on lists in some scenarios (e.g. deletions in partial fetch)
+// Elements that are not listed should be ignored from such flows.
 export const NON_LISTED_ELEMENT_IDS = [
+  // This RecordType is not presented when listing RecordTypes,
+  // but returns as sub-instance of the CustomObject Idea.
   'salesforce.RecordType.instance.Idea_InternalIdeasIdeaRecordType',
 ]
 

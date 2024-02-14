@@ -99,13 +99,12 @@ import importantValuesFilter from './filters/important_values_filter'
 import {
   FetchElements,
   FetchProfile,
-  LastChangeDateOfTypesWithNestedInstances,
   MetadataQuery,
   SalesforceConfig,
 } from './types'
 import mergeProfilesWithSourceValuesFilter from './filters/merge_profiles_with_source_values'
 import { getConfigFromConfigChanges } from './config_change'
-import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
+import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition, FilterContext } from './filter'
 import {
   addDefaults,
   apiNameSync,
@@ -361,7 +360,7 @@ const getMetadataTypesFromElementsSource = async (
 
 type CreateFiltersRunnerParams = {
   fetchProfile: FetchProfile
-  lastChangeDateOfTypesWithNestedInstances?: LastChangeDateOfTypesWithNestedInstances
+  contextOverrides?: Partial<FilterContext>
 }
 
 export default class SalesforceAdapter implements AdapterOperations {
@@ -457,7 +456,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.elementsSource = elementsSource
     this.createFiltersRunner = ({
       fetchProfile,
-      lastChangeDateOfTypesWithNestedInstances,
+      contextOverrides = {},
     }: CreateFiltersRunnerParams) => filter.filtersRunner(
       {
         client: this.client,
@@ -469,7 +468,7 @@ export default class SalesforceAdapter implements AdapterOperations {
           fetchProfile,
           elementsSource,
           separateFieldToFiles: config.fetch?.metadata?.objectsToSeperateFieldsToFiles,
-          lastChangeDateOfTypesWithNestedInstances,
+          ...contextOverrides,
         },
       },
       filterCreators,
@@ -542,7 +541,10 @@ export default class SalesforceAdapter implements AdapterOperations {
       ...fieldTypes, ...hardCodedTypes, ...metadataTypes, ...metadataInstancesElements,
     ]
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
-    const fetchFiltersRunner = this.createFiltersRunner({ fetchProfile, lastChangeDateOfTypesWithNestedInstances })
+    const fetchFiltersRunner = this.createFiltersRunner({
+      fetchProfile,
+      contextOverrides: { lastChangeDateOfTypesWithNestedInstances },
+    })
     const onFetchFilterResult = await fetchFiltersRunner.onFetch(elements) as FilterResult
     const configChangeSuggestions = [
       ...metadataInstancesConfigInstances, ...(onFetchFilterResult.configSuggestions ?? []),

@@ -391,7 +391,7 @@ describe('Zendesk adapter E2E', () => {
       })
       const viewInstance = createInstanceElement({
         type: 'view',
-        valuesOverride: { title: createName('view') },
+        valuesOverride: { title: createName('view'), raw_title: createName('view') },
       })
       const ticketFieldInstance = createInstanceElement({
         type: 'ticket_field',

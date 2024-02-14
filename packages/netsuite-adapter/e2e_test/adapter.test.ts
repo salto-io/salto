@@ -21,7 +21,7 @@ import {
   toChange, FetchResult, InstanceElement, ReferenceExpression, isReferenceExpression,
   Element, DeployResult, Values, isStaticFile, StaticFile, FetchOptions, Change,
   ChangeId, ChangeGroupId, ElemID, ChangeError, getChangeData, ObjectType, BuiltinTypes,
-  isInstanceElement, CORE_ANNOTATIONS, Field, isObjectType, ProgressReporter,
+  isInstanceElement, CORE_ANNOTATIONS, Field, isObjectType, ProgressReporter, createRefToElmWithValue,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements, findElement, naclCase } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
@@ -46,12 +46,13 @@ import { createCustomRecordTypes } from '../src/custom_records/custom_record_typ
 import { savedsearchType } from '../src/type_parsers/saved_search_parsing/parsed_saved_search'
 import { reportdefinitionType } from '../src/type_parsers/report_definition_parsing/parsed_report_definition'
 import { financiallayoutType } from '../src/type_parsers/financial_layout_parsing/parsed_financial_layout'
-import { SERVER_TIME_TYPE_NAME } from '../src/server_time'
 import { ProjectInfo, createAdditionalFiles, createSdfExecutor } from './sdf_executor'
 import { parsedDatasetType } from '../src/type_parsers/analytics_parsers/parsed_dataset'
 import { parsedWorkbookType } from '../src/type_parsers/analytics_parsers/parsed_workbook'
 import { bundleType as bundle } from '../src/types/bundle_type'
 import { addApplicationIdToType } from '../src/transformer'
+import { UNKNOWN_TYPE_REFERENCES_ELEM_ID } from '../src/filters/data_account_specific_values'
+
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -98,6 +99,28 @@ describe('Netsuite adapter E2E with real account', () => {
       undefined,
       annotations
     )
+  }
+
+  // the hardcoded types have "isinactive"/"inactive" fields and there's a filter
+  // that replace them with "isInactive", so we should do that too here in order
+  // to compare a fetched instance and a hardcoded instance
+  const alignInactiveFields = (instance: InstanceElement): InstanceElement => {
+    const cloned = instance.clone()
+    const type = cloned.getTypeSync().clone()
+    type.fields.isInactive = new Field(
+      type,
+      'isInactive',
+      BuiltinTypes.BOOLEAN,
+      { originalName: 'isinactive' }
+    )
+    delete type.fields.isinactive
+    delete type.fields.inactive
+    cloned.refType = createRefToElmWithValue(type)
+
+    cloned.value.isInactive = cloned.value.isInactive ?? cloned.value.isinactive ?? cloned.value.inactive
+    delete cloned.value.isinactive
+    delete cloned.value.inactive
+    return cloned
   }
 
   beforeAll(async () => {
@@ -675,12 +698,7 @@ describe('Netsuite adapter E2E with real account', () => {
           // some sub-instances don't have alias
           .filter(element => getElementValueOrAnnotations(element)[IS_SUB_INSTANCE] !== true)
 
-        if (withSuiteApp) {
-          expect(elementsWithoutAlias).toHaveLength(1)
-          expect(elementsWithoutAlias[0].elemID.typeName).toEqual(SERVER_TIME_TYPE_NAME)
-        } else {
-          expect(elementsWithoutAlias).toHaveLength(0)
-        }
+        expect(elementsWithoutAlias.every(elem => elem.annotations[CORE_ANNOTATIONS.HIDDEN])).toBeTruthy()
       })
 
       it('should fetch the created entityCustomField and its special chars', async () => {
@@ -1002,6 +1020,8 @@ describe('Netsuite adapter E2E with real account', () => {
           .concat(filesToImport)
           .concat(existingFileCabinetInstances)
           .concat(newFileCabinetInstancesElemIds)
+          .concat({ elemID: UNKNOWN_TYPE_REFERENCES_ELEM_ID })
+          .concat({ elemID: UNKNOWN_TYPE_REFERENCES_ELEM_ID.createNestedID('instance', ElemID.CONFIG_NAME) })
 
         const expectedElements = _.uniq(
           allTypes
@@ -1129,8 +1149,8 @@ describe('Netsuite adapter E2E with real account', () => {
       })
 
       it('should load existing folders correctly', async () => {
-        expect(findElement(loadedElements, topLevelFolder.elemID)).toEqual(topLevelFolder)
-        expect(findElement(loadedElements, innerFolder.elemID)).toEqual(innerFolder)
+        expect(findElement(loadedElements, topLevelFolder.elemID)).toEqual(alignInactiveFields(topLevelFolder))
+        expect(findElement(loadedElements, innerFolder.elemID)).toEqual(alignInactiveFields(innerFolder))
       })
 
       it('should load existing file with new content', async () => {
@@ -1138,7 +1158,7 @@ describe('Netsuite adapter E2E with real account', () => {
         const loadedContent = loadedExistingFile.value.content
         delete loadedExistingFile.value.content
         delete existingFileInstance.value.content
-        expect(loadedExistingFile).toEqual(existingFileInstance)
+        expect(loadedExistingFile).toEqual(alignInactiveFields(existingFileInstance))
         expect(loadedContent).toEqual(new StaticFile({
           filepath: 'netsuite/FileCabinet/SuiteScripts/b/existing.js',
           content: Buffer.from('console.log("Hello Back!")'),
@@ -1146,45 +1166,49 @@ describe('Netsuite adapter E2E with real account', () => {
       })
 
       it('should load new folder with default values', async () => {
-        expect(findElement(loadedElements, newFolderElemId)).toEqual(new InstanceElement(
-          newFolderElemId.name,
-          additionalTypes[FOLDER],
-          {
-            bundleable: false,
-            isinactive: false,
-            isprivate: false,
-            path: '/SuiteScripts/b/c',
-          },
-          ['netsuite', 'FileCabinet', 'SuiteScripts', 'b', 'c', 'c'],
-          {
-            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(innerFolder.elemID)],
-            [CORE_ANNOTATIONS.ALIAS]: 'c',
-          }
-        ))
+        expect(findElement(loadedElements, newFolderElemId)).toEqual(
+          alignInactiveFields(new InstanceElement(
+            newFolderElemId.name,
+            additionalTypes[FOLDER],
+            {
+              bundleable: false,
+              isinactive: false,
+              isprivate: false,
+              path: '/SuiteScripts/b/c',
+            },
+            ['netsuite', 'FileCabinet', 'SuiteScripts', 'b', 'c', 'c'],
+            {
+              [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(innerFolder.elemID)],
+              [CORE_ANNOTATIONS.ALIAS]: 'c',
+            }
+          ))
+        )
       })
 
       it('should load new file with default values', async () => {
-        expect(findElement(loadedElements, newFileElemId)).toEqual(new InstanceElement(
-          newFileElemId.name,
-          additionalTypes[FILE],
-          {
-            availablewithoutlogin: false,
-            bundleable: false,
-            generateurltimestamp: false,
-            hideinbundle: false,
-            isinactive: false,
-            path: '/SuiteScripts/b/c/new.js',
-            content: new StaticFile({
-              filepath: 'netsuite/FileCabinet/SuiteScripts/b/c/new.js',
-              content: Buffer.from('console.log("Hello World!")'),
-            }),
-          },
-          ['netsuite', 'FileCabinet', 'SuiteScripts', 'b', 'c', 'new.js'],
-          {
-            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(newFolderElemId)],
-            [CORE_ANNOTATIONS.ALIAS]: 'new.js',
-          }
-        ))
+        expect(findElement(loadedElements, newFileElemId)).toEqual(
+          alignInactiveFields(new InstanceElement(
+            newFileElemId.name,
+            additionalTypes[FILE],
+            {
+              availablewithoutlogin: false,
+              bundleable: false,
+              generateurltimestamp: false,
+              hideinbundle: false,
+              isinactive: false,
+              path: '/SuiteScripts/b/c/new.js',
+              content: new StaticFile({
+                filepath: 'netsuite/FileCabinet/SuiteScripts/b/c/new.js',
+                content: Buffer.from('console.log("Hello World!")'),
+              }),
+            },
+            ['netsuite', 'FileCabinet', 'SuiteScripts', 'b', 'c', 'new.js'],
+            {
+              [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(newFolderElemId)],
+              [CORE_ANNOTATIONS.ALIAS]: 'new.js',
+            }
+          ))
+        )
       })
     })
 

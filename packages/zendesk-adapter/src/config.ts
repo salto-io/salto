@@ -218,7 +218,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       sourceTypeName: 'views__views',
       idFields: ['title'],
       fileNameFields: ['title'],
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToHide: FIELDS_TO_HIDE.concat([
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'title', fieldType: 'string' },
+      ]),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       serviceUrl: '/admin/workspaces/agent-workspace/views/{id}',
     },
@@ -1958,6 +1961,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'content_url', fieldType: 'string' },
         { fieldName: 'size', fieldType: 'number' },
         { fieldName: 'hash', fieldType: 'string' },
+        { fieldName: 'relative_path', fieldType: 'string' },
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
@@ -1968,7 +1972,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'article_id', fieldType: 'number' },
         { fieldName: 'display_file_name', fieldType: 'string' },
-        { fieldName: 'relative_path', fieldType: 'string' },
       ),
       extendsParentId: true,
       dataField: 'article_attachments',
@@ -2955,6 +2958,7 @@ export type ChangeValidatorName = (
   | 'dynamicContentDeletion'
   | 'dynamicContentPlaceholderModification'
   | 'inactiveTicketFormInView'
+  | 'immutableTypeAndKeyForUserFields'
 )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -3031,6 +3035,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     dynamicContentDeletion: { refType: BuiltinTypes.BOOLEAN },
     dynamicContentPlaceholderModification: { refType: BuiltinTypes.BOOLEAN },
     inactiveTicketFormInView: { refType: BuiltinTypes.BOOLEAN },
+    immutableTypeAndKeyForUserFields: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

@@ -46,6 +46,9 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
             columns: instance.value.execution.columns?.filter(_.isPlainObject)
               .map((c: Values) => c.id).filter(values.isDefined) ?? [],
           },
+          // copying raw_title to title means that title might now be a dynamic content token
+          // and not a raw string. Since the title field is hidden, this should be safe
+          title: instance.value.raw_title,
         }
         return instance
       }

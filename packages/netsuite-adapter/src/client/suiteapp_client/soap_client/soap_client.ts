@@ -24,7 +24,7 @@ import { collections, decorators, promises, strings } from '@salto-io/lowerdash'
 import { v4 as uuidv4 } from 'uuid'
 import { RECORD_REF } from '../../../constants'
 import { SuiteAppSoapCredentials, toUrlAccountId } from '../../credentials'
-import { CONSUMER_KEY, CONSUMER_SECRET, ECONN_ERROR, INSUFFICIENT_PERMISSION_ERROR, REQUEST_ABORTED_ERROR, UNEXPECTED_ERROR, VALIDATION_ERROR } from '../constants'
+import { CONSUMER_KEY, CONSUMER_SECRET, ECONN_ERROR, INSUFFICIENT_PERMISSION_ERROR, REQUEST_ABORTED_ERROR, TYPE_ID, UNEXPECTED_ERROR, VALIDATION_ERROR } from '../constants'
 import { ReadFileError } from '../errors'
 import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails, FileDetails, FolderDetails, HasElemIDFunc } from '../types'
 import { CustomRecordResponse, DeployListResults, GetAllResponse, GetResult, GetSelectValueResponse, isDeployListSuccess, isGetAllErrorResponse, isGetSelectValueSuccessResponse, isGetSuccess, isSearchErrorResponse, isWriteResponseSuccess, RecordResponse, RecordValue, SearchErrorResponse, SearchPageResponse, SearchResponse, SoapSearchType, WriteResponse } from './types'
@@ -257,7 +257,7 @@ export default class SoapClient {
   }: { id: number; type: string; isCustomRecord?: boolean }): object {
     return {
       attributes: isCustomRecord ? {
-        typeId: type,
+        [TYPE_ID]: type,
         internalId: id,
         [XSI_TYPE]: 'q1:CustomRecordRef',
         'xmlns:q1': SOAP_CORE_URN,

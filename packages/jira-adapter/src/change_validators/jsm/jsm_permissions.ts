@@ -13,20 +13,30 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
+import { Change, ChangeValidator, getChangeData, isAdditionChange, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { getParent, hasValidParent } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config/config'
-import { JSM_DUCKTYPE_SUPPORTED_TYPES } from '../../config/api_config'
+import { REQUEST_TYPE_NAME, QUEUE_TYPE, PORTAL_GROUP_TYPE, CALENDAR_TYPE, PORTAL_SETTINGS_TYPE_NAME, SLA_TYPE_NAME, FORM_TYPE, PROJECT_TYPE } from '../../constants'
 
 const { awu } = collections.asynciterable
 const { createPaginator, getWithCursorPagination } = clientUtils
 const { toArrayAsync } = collections.asynciterable
 const { makeArray } = collections.array
 
-const SUPPORTED_TYPES = new Set(Object.keys(JSM_DUCKTYPE_SUPPORTED_TYPES))
+const SUPPORTED_TYPES = new Set(
+  [REQUEST_TYPE_NAME, QUEUE_TYPE, PORTAL_GROUP_TYPE, CALENDAR_TYPE, PORTAL_SETTINGS_TYPE_NAME, SLA_TYPE_NAME, FORM_TYPE]
+)
+
+const getAdditionChangedProjectsNames = (changes: ReadonlyArray<Change>): string[] => changes
+  .filter(isInstanceChange)
+  .filter(isAdditionChange)
+  .map(getChangeData)
+  .filter(instance => instance.elemID.typeName === PROJECT_TYPE)
+  .map(instance => instance.elemID.getFullName())
+
 /*
 * This validator prevents deployment of jsm types when user has no jsm permissions.
 */
@@ -56,6 +66,8 @@ export const jsmPermissionsValidator: (
       .map(getChangeData)
       .filter(instance => SUPPORTED_TYPES.has(instance.elemID.typeName))
       .filter(instance => hasValidParent(instance))
+      // We don't need to check for permissions if we are also deploying the project itself
+      .filter(instance => !getAdditionChangedProjectsNames(changes).includes(getParent(instance).elemID.getFullName()))
       .filter(instance => !serviceDeskProjectIds.includes(getParent(instance).value.id))
       .map(instance => ({
         elemID: instance.elemID,

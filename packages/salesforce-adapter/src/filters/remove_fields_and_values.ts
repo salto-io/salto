@@ -64,7 +64,7 @@ const removeValuesFromInstances = async (
         values: inst.value,
         type: await inst.getType(),
         transformFunc: removeValuesFunc,
-        strict: false,
+        strict: true,
         allowEmpty: true,
         pathID: inst.elemID,
       }) || inst.value

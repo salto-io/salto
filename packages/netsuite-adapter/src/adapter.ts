@@ -37,6 +37,7 @@ import hiddenFields from './filters/hidden_fields'
 import replaceRecordRef from './filters/replace_record_ref'
 import removeUnsupportedTypes from './filters/remove_unsupported_types'
 import dataInstancesInternalId from './filters/data_instances_internal_id'
+import dataAccountSpecificValues from './filters/data_account_specific_values'
 import dataInstancesReferences from './filters/data_instances_references'
 import dataTypesCustomFields from './filters/data_types_custom_fields'
 import dataInstancesCustomFields from './filters/data_instances_custom_fields'
@@ -68,6 +69,7 @@ import addBundleReferences from './filters/bundle_ids'
 import excludeCustomRecordTypes from './filters/exclude_by_criteria/exclude_custom_record_types'
 import excludeInstances from './filters/exclude_by_criteria/exclude_instances'
 import workflowAccountSpecificValues from './filters/workflow_account_specific_values'
+import alignFieldNamesFilter from './filters/align_field_names'
 import { Filter, LocalFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreator, RemoteFilterCreatorDefinition, RemoteFilterOpts } from './filter'
 import { getLastServerTime, getOrCreateServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
@@ -96,14 +98,11 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition)[] = [
-  // excludeCustomRecordTypes should run before customRecordTypesType,
-  // because otherwise there will be broken references to excluded types.
-  { creator: excludeCustomRecordTypes },
   { creator: customRecordTypesType },
   { creator: omitSdfUntypedValues },
   { creator: dataInstancesIdentifiers },
   { creator: dataInstancesDiff },
-  // addParentFolder must run before replaceInstanceReferencesFilter
+  // addParentFolder must run before replaceElementReferences
   { creator: addParentFolder },
   { creator: convertLists },
   { creator: parseReportTypes },
@@ -111,12 +110,16 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   // and before translationConverter and replaceElementReferences
   { creator: analyticsDefinitionHandle },
   { creator: consistentValues },
-  // excludeInstances should run after parseReportTypes, analyticsDefinitionHandle & consistentValues,
-  // so users will be able to exclude elements based on parsed values.
-  { creator: excludeInstances },
   // convertListsToMaps must run after convertLists and consistentValues
-  // and must run before replaceInstanceReferencesFilter
+  // and must run before replaceElementReferences
   { creator: convertListsToMaps },
+  // alignFieldNamesFilter should run before excludeInstances on fetch and before
+  // convertListsToMaps on deploy, because convertListsToMaps replace the type of the change
+  { creator: alignFieldNamesFilter },
+  // excludeCustomRecordTypes & excludeInstances should run after parsing & transforming filters,
+  // so users will be able to exclude elements based on parsed/transformed values.
+  { creator: excludeCustomRecordTypes },
+  { creator: excludeInstances },
   { creator: replaceElementReferences },
   { creator: currencyUndeployableFieldsFilter },
   { creator: SDFInternalIds, addsNewInformation: true },
@@ -130,6 +133,7 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   { creator: removeUnsupportedTypes },
   { creator: dataInstancesReferences },
   { creator: dataInstancesInternalId },
+  { creator: dataAccountSpecificValues },
   { creator: suiteAppInternalIds },
   { creator: currencyExchangeRate },
   // AuthorInformation filters must run after SDFInternalIds filter
@@ -336,7 +340,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       const elementsToCreate = [
         ...customObjects,
         ...fileCabinetContent,
-        ...(this.userConfig.fetch.addBundles ? bundlesCustomInfo : []),
+        ...(this.userConfig.fetch.addBundles !== false ? bundlesCustomInfo : []),
       ]
       const elements = await createElements(elementsToCreate, this.elementsSource, this.getElemIdFunc)
       const [standardInstances, types] = _.partition(elements, isInstanceElement)
@@ -372,8 +376,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     ] = await Promise.all([
       getStandardAndCustomElements(),
       getDataElements(this.client, fetchQuery, this.getElemIdFunc),
-      this.userConfig.fetch.resolveAccountSpecificValues
-        ? getSuiteQLTableElements(this.client, this.elementsSource, isPartial) : [],
+      getSuiteQLTableElements(this.userConfig, this.client, this.elementsSource, isPartial),
     ])
 
     progressReporter.reportProgress({ message: 'Running filters for additional information' })

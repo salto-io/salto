@@ -21,12 +21,13 @@ import { collections } from '@salto-io/lowerdash'
 import Ajv from 'ajv'
 import moment from 'moment-timezone'
 import { TYPES_TO_INTERNAL_ID as ORIGINAL_TYPES_TO_INTERNAL_ID } from '../../data_elements/types'
+import { SUITEQL_TABLE, getSuiteQLTableInternalIdsMap } from '../../data_elements/suiteql_table_elements'
 import NetsuiteClient from '../../client/client'
 import { RemoteFilterCreator } from '../../filter'
 import { getLastServerTime } from '../../server_time'
 import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, SystemNoteResult, SYSTEM_NOTE_SCHEMA, ModificationInformation } from './constants'
 import { getInternalId, hasInternalId, isCustomRecordType } from '../../types'
-import { CUSTOM_RECORD_TYPE } from '../../constants'
+import { CUSTOM_RECORD_TYPE, EMPLOYEE } from '../../constants'
 import { toMomentDate } from './saved_searches'
 import { toSuiteQLSelectDateString, toSuiteQLWhereDateString } from '../../changes_detector/date_formats'
 
@@ -150,6 +151,13 @@ const fetchEmployeeNames = async (client: NetsuiteClient): Promise<Record<string
     return Object.fromEntries(employees.map(entry => [entry.id, entry.entityid]))
   }
   return {}
+}
+
+const getEmployeeNamesFromEmployeeSuiteQLTableInstance = (
+  instance: InstanceElement,
+): Record<string, string> => {
+  const internalIdsMap = getSuiteQLTableInternalIdsMap(instance)
+  return _.mapValues(internalIdsMap, row => row.name)
 }
 
 const getKeyForNote = (systemNote: SystemNoteResult): string => {
@@ -288,7 +296,14 @@ const filterCreator: RemoteFilterCreator = (
     if (_.isEmpty(queryIds)) {
       return
     }
-    const employeeNames = await fetchEmployeeNames(client)
+
+    const employeeSuiteQLTableInstance = elements
+      .filter(isInstanceElement)
+      .find(instance => instance.elemID.typeName === SUITEQL_TABLE && instance.elemID.name === EMPLOYEE)
+    const employeeNames = employeeSuiteQLTableInstance !== undefined
+      ? getEmployeeNamesFromEmployeeSuiteQLTableInstance(employeeSuiteQLTableInstance)
+      : await fetchEmployeeNames(client)
+
     const timeZone = timeZoneAndFormat?.timeZone
     const systemNotes = !_.isEmpty(employeeNames)
       ? await fetchSystemNotes(client, queryIds, lastFetchTime, employeeNames, timeZone)

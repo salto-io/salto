@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections, strings, promises } from '@salto-io/lowerdash'
@@ -123,11 +124,11 @@ const setupArticleUserSegmentId = (
 
 // The default user_segment we added will be resolved to undefined
 // So in order to create a new article we need to add a null value user_segment_id
-const setUserSegmentIdForAdditionChanges = (
+// Similarly, when modifying the user segment to "Everyone", manually add the value
+const setUserSegmentIdForAdditionOrModificationChanges = (
   changes: Change<InstanceElement>[]
 ): void => {
   changes
-    .filter(isAdditionChange)
     .map(getChangeData)
     .filter(articleInstance => articleInstance.value[USER_SEGMENT_ID_FIELD] === undefined)
     .forEach(articleInstance => {
@@ -485,7 +486,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
       const articleRemovalChanges = otherChanges
         .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
       addRemovalChangesId(articleRemovalChanges)
-      setUserSegmentIdForAdditionChanges(articleAdditionAndModificationChanges)
+      setUserSegmentIdForAdditionOrModificationChanges(articleAdditionAndModificationChanges)
       const articleDeployResult = await deployChanges(
         articleAdditionAndModificationChanges,
         async change => {

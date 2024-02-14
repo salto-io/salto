@@ -21,15 +21,23 @@ import { INTERNAL_IDS_MAP, QUERIES_BY_TABLE_NAME, SUITEQL_TABLE, getSuiteQLTable
 import { SuiteQLTableName } from '../../src/data_elements/types'
 import { ALLOCATION_TYPE, NETSUITE, PROJECT_EXPENSE_TYPE, TAX_SCHEDULE } from '../../src/constants'
 import { SERVER_TIME_TYPE_NAME } from '../../src/server_time'
+import { NetsuiteConfig } from '../../src/config/types'
+import { fullFetchConfig } from '../../src/config/config_creator'
+
+export const NUM_OF_SUITEQL_ELEMENTS = Object.values(QUERIES_BY_TABLE_NAME).filter(query => query !== undefined).length
+  // additional elements are the type, and instances from getAdditionalInstances
+  + 4
 
 const runSuiteQLMock = jest.fn()
 const runSavedSearchQueryMock = jest.fn()
 const client = {
   runSuiteQL: runSuiteQLMock,
   runSavedSearchQuery: runSavedSearchQueryMock,
+  isSuiteAppConfigured: () => true,
 } as unknown as NetsuiteClient
 
 describe('SuiteQL table elements', () => {
+  let config: NetsuiteConfig
   let serverTimeType: ObjectType
   let serverTimeInstance: InstanceElement
   let suiteQLTableType: ObjectType
@@ -40,6 +48,13 @@ describe('SuiteQL table elements', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    config = {
+      fetch: {
+        ...fullFetchConfig(),
+        resolveAccountSpecificValues: true,
+        skipResolvingAccountSpecificValuesToTypes: ['vendor'],
+      },
+    }
     serverTimeType = new ObjectType({ elemID: new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME) })
     serverTimeInstance = new InstanceElement(
       ElemID.CONFIG_NAME,
@@ -81,8 +96,6 @@ describe('SuiteQL table elements', () => {
   })
 
   describe('when there are no existing instances', () => {
-    const numOfInstances = Object.values(QUERIES_BY_TABLE_NAME).filter(query => query !== undefined).length
-
     beforeEach(async () => {
       runSuiteQLMock.mockResolvedValue([
         { id: '1', name: 'Some name' },
@@ -113,12 +126,12 @@ describe('SuiteQL table elements', () => {
         }]
       })
       const elementsSource = buildElementsSourceFromElements([])
-      elements = await getSuiteQLTableElements(client, elementsSource, false)
+      elements = await getSuiteQLTableElements(config, client, elementsSource, false)
     })
 
     it('should return all elements', () => {
-      // additional elements are the type, and instances from getAdditionalInstances
-      expect(elements).toHaveLength(numOfInstances + 4)
+      // minus 1 for the skipped vendor table
+      expect(elements).toHaveLength(NUM_OF_SUITEQL_ELEMENTS - 1)
       expect(elements.every(element => element.annotations[CORE_ANNOTATIONS.HIDDEN] === true)).toBeTruthy()
     })
 
@@ -202,6 +215,11 @@ describe('SuiteQL table elements', () => {
         version: 1,
       })
     })
+
+    it('should skip tables from skipResolvingAccountSpecificValuesToTypes', () => {
+      expect(elements.find(elem => elem.elemID.name === 'vendor')).toBeUndefined()
+      expect(runSuiteQLMock).not.toHaveBeenCalledWith(expect.stringContaining('FROM vendor '))
+    })
   })
 
   describe('when there are existing instances', () => {
@@ -219,7 +237,7 @@ describe('SuiteQL table elements', () => {
         oldSuiteQLTableInstance,
         emptySuiteQLTableInstance,
       ])
-      elements = await getSuiteQLTableElements(client, elementsSource, false)
+      elements = await getSuiteQLTableElements(config, client, elementsSource, false)
     })
 
     it('should update existing instance values', () => {
@@ -276,9 +294,9 @@ describe('SuiteQL table elements', () => {
   describe('when isPartial=true', () => {
     beforeEach(async () => {
       runSuiteQLMock.mockResolvedValue([
-        { id: '1', name: 'Some name' },
-        { id: '2', name: 'Some name 2' },
-        { id: '3', name: 'Some name 3' },
+        { id: '1', entityid: 'Some name' },
+        { id: '2', entityid: 'Some name 2' },
+        { id: '3', entityid: 'Some name 3' },
       ])
       const elementsSource = buildElementsSourceFromElements([
         suiteQLTableType,
@@ -286,11 +304,11 @@ describe('SuiteQL table elements', () => {
         oldSuiteQLTableInstance,
         emptySuiteQLTableInstance,
       ])
-      elements = await getSuiteQLTableElements(client, elementsSource, true)
+      elements = await getSuiteQLTableElements(config, client, elementsSource, true)
     })
 
-    it('should return only existing instances', () => {
-      expect(elements).toHaveLength(4)
+    it('should return only existing instances and employee instance', () => {
+      expect(elements).toHaveLength(5)
       const existingInstance = elements.filter(isInstanceElement)
         .find(element => element.elemID.name === 'currency')
       expect(existingInstance?.value).toEqual({
@@ -317,10 +335,52 @@ describe('SuiteQL table elements', () => {
         [INTERNAL_IDS_MAP]: {},
         version: 1,
       })
+      const employeeInstance = elements.filter(isInstanceElement)
+        .find(element => element.elemID.name === 'employee')
+      expect(employeeInstance?.value).toEqual({
+        [INTERNAL_IDS_MAP]: {
+          1: { name: 'Some name' },
+          2: { name: 'Some name 2' },
+          3: { name: 'Some name 3' },
+        },
+        version: 1,
+      })
     })
 
     it('should not call runSuiteQL', () => {
+      expect(runSuiteQLMock).toHaveBeenCalledTimes(1)
+      expect(runSuiteQLMock).toHaveBeenCalledWith(expect.stringContaining('FROM employee'))
+    })
+  })
+
+  describe('when fetch.resolveAccountSpecificValues=false', () => {
+    beforeEach(async () => {
+      config.fetch.resolveAccountSpecificValues = false
+      const elementsSource = buildElementsSourceFromElements([])
+      elements = await getSuiteQLTableElements(config, client, elementsSource, false)
+    })
+    it('should not return elements', () => {
+      expect(elements).toHaveLength(0)
+    })
+    it('should not run queries', () => {
       expect(runSuiteQLMock).not.toHaveBeenCalled()
+      expect(runSavedSearchQueryMock).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('when fetch.skipResolvingAccountSpecificValuesToTypes=[".*"]', () => {
+    beforeEach(async () => {
+      config.fetch.skipResolvingAccountSpecificValuesToTypes = ['.*']
+      const elementsSource = buildElementsSourceFromElements([])
+      elements = await getSuiteQLTableElements(config, client, elementsSource, false)
+    })
+    it('should not return elements', () => {
+      expect(elements).toHaveLength(1)
+      expect(elements[0].elemID).toEqual(suiteQLTableType.elemID)
+    })
+    it('should not run queries', () => {
+      expect(runSuiteQLMock).not.toHaveBeenCalled()
+      expect(runSavedSearchQueryMock).not.toHaveBeenCalled()
     })
   })
 })

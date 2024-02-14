@@ -184,6 +184,9 @@ describe('views filter', () => {
       expect(anotherClonedView.value.any).toBeDefined()
       expect(anotherClonedView.value.any).toHaveLength(0)
     })
+    it('should copy raw_title to title', async () => {
+      expect(clonedView.value.raw_title).toEqual(clonedView.value.title)
+    })
   })
 
   describe('onDeploy', () => {

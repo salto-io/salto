@@ -143,7 +143,10 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
         serviceIDFields: def.serviceIDFields ?? [],
         typeID: new ElemID(adapterName, typeName),
       })
-      const groupedFragments = _.groupBy(allFragments, ({ value }) => toServiceID(value))
+      const groupedFragments = (_.isEmpty(def.serviceIDFields)
+        // fake grouping to avoid merging
+        ? Object.fromEntries(allFragments.map((fragment, idx) => [idx, [fragment]]))
+        : _.groupBy(allFragments, ({ value }) => toServiceID(value)))
       const mergedFragments = _(groupedFragments)
         .mapValues(fragments => ({
           typeName,

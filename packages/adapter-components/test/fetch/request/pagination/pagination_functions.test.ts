@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { defaultPathChecker, noPagination, itemOffsetPagination } from '../../../../src/fetch/request/pagination/pagination_functions'
+import { defaultPathChecker, noPagination, itemOffsetPagination, cursorPagination, offsetAndLimitPagination } from '../../../../src/fetch/request/pagination/pagination_functions'
 
 describe('pagination functions', () => {
   describe('defaultPathChecker', () => {
@@ -44,6 +44,33 @@ describe('pagination functions', () => {
         currentParams: { queryParams: { next: '20' } },
         responseData: { maxResults: 30 },
       })).toEqual([{ queryParams: { next: '21' } }])
+    })
+  })
+
+  describe('cursorPagination', () => {
+    it('should calculate next pages', async () => {
+      const paginate = cursorPagination({ paginationField: 'next', pathChecker: defaultPathChecker })
+      expect(paginate({
+        endpointIdentifier: { path: '/ep' },
+        currentParams: {},
+        responseData: { a: [{ x: 'y' }], next: 'https://127.0.0.1/ep?arg=val' },
+      })).toEqual([{ queryParams: { arg: 'val' } }])
+    })
+  })
+
+  describe('offsetAndLimitPagination', () => {
+    it('should calculate next pages', async () => {
+      const paginate = offsetAndLimitPagination({ paginationField: 'startAt' })
+      expect(paginate({
+        endpointIdentifier: { path: '/ep' },
+        currentParams: {},
+        responseData: { isLast: false, startAt: 0, values: [1, 2] },
+      })).toEqual([{ queryParams: { startAt: '2' } }])
+      expect(paginate({
+        endpointIdentifier: { path: '/ep' },
+        currentParams: {},
+        responseData: { isLast: false, startAt: 2, values: [3] },
+      })).toEqual([{ queryParams: { startAt: '3' } }])
     })
   })
 

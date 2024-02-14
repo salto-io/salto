@@ -36,7 +36,7 @@ import { adapter as adapterCreator } from '../src/adapter_creator'
 import {
   CUSTOM_RECORD_TYPE, EMAIL_TEMPLATE, ENTITY_CUSTOM_FIELD,
   FILE, FILE_CABINET_PATH_SEPARATOR, FOLDER, PATH, ROLE, SCRIPT_ID,
-  CONFIG_FEATURES, TRANSACTION_COLUMN_CUSTOM_FIELD, WORKFLOW, NETSUITE, APPLICATION_ID, IS_SUB_INSTANCE,
+  CONFIG_FEATURES, TRANSACTION_COLUMN_CUSTOM_FIELD, WORKFLOW, NETSUITE, APPLICATION_ID, IS_SUB_INSTANCE, BUNDLE,
 } from '../src/constants'
 import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../src/group_changes'
 import { mockDefaultValues } from './mock_elements'
@@ -49,7 +49,10 @@ import { financiallayoutType } from '../src/type_parsers/financial_layout_parsin
 import { ProjectInfo, createAdditionalFiles, createSdfExecutor } from './sdf_executor'
 import { parsedDatasetType } from '../src/type_parsers/analytics_parsers/parsed_dataset'
 import { parsedWorkbookType } from '../src/type_parsers/analytics_parsers/parsed_workbook'
+import { bundleType as bundle } from '../src/types/bundle_type'
+import { addApplicationIdToType } from '../src/transformer'
 import { UNKNOWN_TYPE_REFERENCES_ELEM_ID } from '../src/filters/data_account_specific_values'
+
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -85,7 +88,10 @@ describe('Netsuite adapter E2E with real account', () => {
         .replace(new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}`), ''))
 
     const type = isStandardTypeName(typeName) ? standardTypes[typeName].type : additionalTypes[typeName]
+    const bundleType = bundle().type
+    addApplicationIdToType(bundleType)
     type.fields[APPLICATION_ID] = new Field(type, APPLICATION_ID, BuiltinTypes.STRING)
+    type.fields[BUNDLE] = new Field(type, BUNDLE, bundleType)
     return new InstanceElement(
       instanceName,
       type,
@@ -918,6 +924,7 @@ describe('Netsuite adapter E2E with real account', () => {
         { elemID: newFolderElemId },
         { elemID: newFileElemId },
       ]
+
 
       const topLevelFolder = createInstanceElement(
         FOLDER,

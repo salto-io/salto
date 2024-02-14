@@ -55,6 +55,10 @@ export const addApplicationIdToType = (type: ObjectType): void => {
   type.fields[APPLICATION_ID] = new Field(type, APPLICATION_ID, BuiltinTypes.STRING)
 }
 
+export const addBundleFieldToType = (type: ObjectType, bundleType: ObjectType): void => {
+  type.fields[BUNDLE] = new Field(type, BUNDLE, bundleType)
+}
+
 const getFileContentField = (type: ObjectType): Promise<Field | undefined> =>
   awu(Object.values(type.fields))
     .find(async f => {
@@ -204,8 +208,13 @@ export const createElements = async (
 ): Promise<Array<TopLevelElement>> => {
   const { standardTypes, additionalTypes, innerAdditionalTypes } = getMetadataTypes()
 
-  getTopLevelStandardTypes(standardTypes).concat(Object.values(additionalTypes))
+  const topLevelStandardTypes = getTopLevelStandardTypes(standardTypes)
+
+  topLevelStandardTypes.concat(Object.values(additionalTypes))
     .forEach(addApplicationIdToType)
+
+  topLevelStandardTypes.concat(Object.values(additionalTypes).filter(isFileCabinetType))
+    .forEach(type => addBundleFieldToType(type, additionalTypes.bundle))
 
   const customizationInfosWithTypes = customizationInfos
     .map(customizationInfo => ({

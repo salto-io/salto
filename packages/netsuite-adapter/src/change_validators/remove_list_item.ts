@@ -41,7 +41,7 @@ const getScriptIdsUnderLists = async (
       if (path.isAttrID()) {
         return WALK_NEXT_STEP.SKIP
       }
-      if (_.isPlainObject(value) && SCRIPT_ID in value) {
+      if (_.isPlainObject(value) && SCRIPT_ID in value && !path.isTopLevel()) {
         pathToScriptIds.get(path.getFullName()).add(value.scriptid)
       }
       return WALK_NEXT_STEP.RECURSE
@@ -78,7 +78,11 @@ const changeValidator: NetsuiteChangeValidator = async changes => {
       elemID,
       severity: 'Warning',
       message: 'Can\'t remove inner elements',
-      detailedMessage: `Can't remove the inner element${removedListItems.length > 1 ? 's' : ''} ${removedListItems.join(', ')}. NetSuite supports the removal of inner elements only from its UI.`,
+      detailedMessage: ((removedListItems.length > 1)
+        ? (`Can't remove the inner elements ${removedListItems.join(', ')}. NetSuite supports the removal of inner elements only from its UI.`
+          + ' Salto is going to ignore these removals.')
+        : (`Can't remove the inner element ${removedListItems.join(', ')}. NetSuite supports the removal of inner elements only from its UI.`
+          + ' Salto is going to ignore this removal.')),
     }))
     .toArray() as Promise<ChangeError[]>
 }

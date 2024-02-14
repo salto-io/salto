@@ -168,7 +168,7 @@ describe('remove item without scriptis from inner list change validator', () => 
       expect(firstChangeErrors).toHaveLength(1)
       expect(firstChangeErrors[0].severity).toEqual('Warning')
       expect(firstChangeErrors[0].elemID).toEqual(roleInstance.elemID)
-      expect(firstChangeErrors[0].detailedMessage).toEqual('Can\'t remove the inner permission TRAN_PAYMENTAUDIT. NetSuite supports the removal of inner elements only from its UI.')
+      expect(firstChangeErrors[0].detailedMessage).toEqual('Can\'t remove the inner permission TRAN_PAYMENTAUDIT. NetSuite supports the removal of inner elements only from its UI. Salto is going to ignore this removal.')
 
       delete after.value.permissions.permission.customrecord1
       const secondChangeErrors = await removeListItemValidator(
@@ -177,10 +177,10 @@ describe('remove item without scriptis from inner list change validator', () => 
       expect(secondChangeErrors).toHaveLength(1)
       expect(secondChangeErrors[0].severity).toEqual('Warning')
       expect(secondChangeErrors[0].elemID).toEqual(roleInstance.elemID)
-      expect(secondChangeErrors[0].detailedMessage).toEqual('Can\'t remove the inner permissions TRAN_PAYMENTAUDIT, customrecord1. NetSuite supports the removal of inner elements only from its UI.')
+      expect(secondChangeErrors[0].detailedMessage).toEqual('Can\'t remove the inner permissions TRAN_PAYMENTAUDIT, customrecord1. NetSuite supports the removal of inner elements only from its UI. Salto is going to ignore these removals.')
     })
 
-    it('should not have change errors when modifiying a permission from the role', async () => {
+    it('should not have a change error when modifiying a permission from the role', async () => {
       const after = roleInstance.clone()
       after.value.permissions.permission.TRAN_PAYMENTAUDIT = {
         permkey: 'TRAN_PAYMENTAUDIT',
@@ -199,7 +199,7 @@ describe('remove item without scriptis from inner list change validator', () => 
       )
       expect(changeErrors).toHaveLength(0)
     })
-    it('should have change errors when deleting the whole permissions field from the role', async () => {
+    it('should have a change error when deleting the whole permissions field from the role', async () => {
       const after = roleInstance.clone()
       delete after.value.permissions.permission
       const changeErrors = await removeListItemValidator(
@@ -208,7 +208,7 @@ describe('remove item without scriptis from inner list change validator', () => 
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
       expect(changeErrors[0].elemID).toEqual(roleInstance.elemID)
-      expect(changeErrors[0].detailedMessage).toEqual("Can't remove the list permissions.permission.")
+      expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner permissions TRAN_PAYMENTAUDIT, customrecord1. NetSuite supports the removal of inner elements only from its UI. Salto is going to ignore these removals.')
     })
     it('should have no change errors when dealing with odd permission in role', async () => {
       const afterWithArray = roleWithArrayPermissionsInstance.clone()

@@ -22,9 +22,9 @@ import { SCRIPT_ID } from '../constants'
 
 const { awu } = collections.asynciterable
 
-const getScriptIdsUnderLists = async (
+const getScriptIdsUnderLists = (
   instance: InstanceElement
-): Promise<Map<string, { elemID: ElemID; val: Value}>> => {
+): Map<string, { elemID: ElemID; val: Value}> => {
   const pathToScriptIds = new Map<string, { elemID: ElemID; val: Value}>()
   walkOnElement({
     element: instance,
@@ -32,7 +32,7 @@ const getScriptIdsUnderLists = async (
       if (path.isAttrID()) {
         return WALK_NEXT_STEP.SKIP
       }
-      if (_.isPlainObject(value) && SCRIPT_ID in value) {
+      if (_.isPlainObject(value) && SCRIPT_ID in value && !path.isTopLevel()) {
         pathToScriptIds.set(path.getFullName(), { elemID: path, val: value })
       }
       return WALK_NEXT_STEP.RECURSE
@@ -42,14 +42,14 @@ const getScriptIdsUnderLists = async (
 }
 
 const filterCreator: LocalFilterCreator = () => ({
-  name: 'restorDeletedListItems',
+  name: 'restoreDeletedListItems',
   onDeploy: async changes => {
     await awu(changes)
       .filter(isModificationChange)
       .filter(isInstanceChange)
       .forEach(async instanceChange => {
-        const before = await getScriptIdsUnderLists(instanceChange.data.before)
-        const after = await getScriptIdsUnderLists(instanceChange.data.after)
+        const before = getScriptIdsUnderLists(instanceChange.data.before)
+        const after = getScriptIdsUnderLists(instanceChange.data.after)
         before.forEach((value, key) => {
           if (!after.has(key)) {
             setPath(instanceChange.data.after, value.elemID, value.val)

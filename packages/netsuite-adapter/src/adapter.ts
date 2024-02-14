@@ -135,8 +135,8 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   // excludeCustomRecordTypes should run before customRecordTypesType,
   // because otherwise there will be broken references to excluded types.
   { creator: excludeCustomRecordTypes },
-  { creator: restoreDeletedListItems },
   { creator: restoreDeletedListItemsWithScriptId },
+  { creator: restoreDeletedListItems },
   // excludeCustomRecordTypes should run before customRecordTypesType,
   // because otherwise there will be broken references to excluded types.
   { creator: excludeCustomRecordTypes },

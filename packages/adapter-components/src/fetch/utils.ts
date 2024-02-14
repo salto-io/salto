@@ -15,7 +15,6 @@
 */
 import _ from 'lodash'
 import { Values } from '@salto-io/adapter-api'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { TransformDefinition, TransformFunction, SingleValueTransformationFunction } from '../definitions/system/shared'
@@ -78,14 +77,3 @@ export const createValueTransformer = <TContext extends Record<string, unknown>,
     return res[0]
   }
 }
-
-export const serviceIdCreator = (
-  serviceIdFields: string[], typeName: string,
-): (
-  (entry: Values) => string
-) => entry => (
-  safeJsonStringify({
-    typeName,
-    ids: _.pick(entry, serviceIdFields.sort()),
-  })
-)

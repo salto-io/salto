@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemID, InstanceElement, OBJECT_NAME, OBJECT_SERVICE_ID, ServiceIds, Values, toServiceIdsString } from '@salto-io/adapter-api'
-import { invertNaclCase, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { invertNaclCase, naclCase, pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { NameMappingOptions } from '../../definitions'
@@ -37,6 +37,29 @@ export type PartsCreator = (args: {
 const ID_SEPARATOR = '_'
 
 const log = logger(module)
+
+export const createServiceIDs = ({ entry, serviceIDFields, typeID }: {
+  entry: Values
+  serviceIDFields: string[]
+  typeID: ElemID
+}): ServiceIds => {
+  const missingFields = serviceIDFields.filter(f => entry[f] === undefined)
+  if (missingFields.length > 0) {
+    log.trace('some service id fields could not be found: type %s fields %s, available fields %s ',
+      typeID.getFullName(), missingFields, Object.keys(entry))
+  }
+  return {
+    ..._.pick(entry, serviceIDFields.sort()),
+    [OBJECT_SERVICE_ID]: toServiceIdsString({
+      [OBJECT_NAME]: typeID.getFullName(),
+    }),
+  }
+}
+
+export const serviceIDKeyCreator = ({ serviceIDFields, typeID }: {
+  serviceIDFields: string[]
+  typeID: ElemID
+}): (entry: Values) => string => entry => safeJsonStringify(createServiceIDs({ entry, serviceIDFields, typeID }))
 
 export const getNameMapping = (
   name: string,
@@ -75,24 +98,6 @@ const computElemIDPartsFunc = (elemIDDef: ElemIDDefinition): PartsCreator => ({ 
   return res
 }
 
-export const createServiceIDs = ({ entry, serviceIdFields, typeID }: {
-  entry: Values
-  serviceIdFields: string[]
-  typeID: ElemID
-}): ServiceIds => {
-  const missingFields = serviceIdFields.filter(f => entry[f] === undefined)
-  if (missingFields.length > 0) {
-    log.debug('some service id fields could not be found: type %s fields %s, available fields %s ',
-      typeID.getFullName(), missingFields, Object.keys(entry))
-  }
-  return {
-    ..._.pick(entry, serviceIdFields),
-    [OBJECT_SERVICE_ID]: toServiceIdsString({
-      [OBJECT_NAME]: typeID.getFullName(),
-    }),
-  }
-}
-
 export const createElemIDFunc = ({
   elemIDDef, getElemIdFunc, serviceIDDef, typeID, singleton,
 }: ElemIDCreatorArgs): ElemIDCreator => args => {
@@ -110,7 +115,7 @@ export const createElemIDFunc = ({
     const { adapter: adapterName } = typeID
     return getElemIdFunc(
       adapterName,
-      createServiceIDs({ entry, serviceIdFields: serviceIDDef, typeID }),
+      createServiceIDs({ entry, serviceIDFields: serviceIDDef, typeID }),
       computedName,
     ).name
   }

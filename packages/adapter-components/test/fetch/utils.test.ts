@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { Values } from '@salto-io/adapter-api'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { ContextParams, GeneratedItem } from '../../src/definitions/system/shared'
-import { createValueTransformer, serviceIdCreator } from '../../src/fetch/utils'
+import { createValueTransformer } from '../../src/fetch/utils'
 
 describe('fetch utils', () => {
   describe('createValueTransformer', () => {
@@ -114,21 +114,6 @@ describe('fetch utils', () => {
           value: 1,
         })
       })
-    })
-  })
-
-  describe('serviceIdCreator', () => {
-    it('should calculate the service id for a given object and defintion', () => {
-      expect(serviceIdCreator(['a', 'b'], 't')({ a: 'A', b: 'B', c: 'C' })).toEqual('{"typeName":"t","ids":{"a":"A","b":"B"}}')
-    })
-    it('should create a stable serialization', () => {
-      expect(serviceIdCreator(['a', 'b'], 't')({ b: 'B', a: 'A', c: 'C' })).toEqual('{"typeName":"t","ids":{"a":"A","b":"B"}}')
-    })
-    it('should not crash on non-primitive service id values', () => {
-      expect(serviceIdCreator(['a', 'b'], 't')({ a: [{ x: 'X' }], b: 'B', c: 'C' })).toEqual('{"typeName":"t","ids":{"a":[{"x":"X"}],"b":"B"}}')
-    })
-    it('should not crash on missing fields', () => {
-      expect(serviceIdCreator(['a', 'b'], 't')({ a: 'A', c: 'C' })).toEqual('{"typeName":"t","ids":{"a":"A"}}')
     })
   })
 })

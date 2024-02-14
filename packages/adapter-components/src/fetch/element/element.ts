@@ -20,7 +20,7 @@ import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { ElementQuery } from '../query'
 import { FetchElements } from '../types'
-import { generateInstancesForType } from './instance_element'
+import { generateInstancesWithInitialTypes } from './instance_element'
 import { adjustFieldTypes } from './type_utils'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
 import { InvalidSingletonType } from '../../config/shared' // TODO move
@@ -69,7 +69,7 @@ export const getElementGenerator = ({
   const generate: ElementGenerator['generate'] = () => {
     const allResults = Object.entries(valuesByType).flatMap(([typeName, values]) => {
       try {
-        return generateInstancesForType({
+        return generateInstancesWithInitialTypes({
           adapterName,
           defQuery,
           entries: values,

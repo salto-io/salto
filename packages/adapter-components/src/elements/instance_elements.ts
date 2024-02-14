@@ -170,7 +170,7 @@ export const getInstanceNaclName = ({
   return getElemIdFunc && serviceIdField
     ? getElemIdFunc(
       adapterName,
-      createServiceIDs({ entry, serviceIdFields: [serviceIdField], typeID: typeElemId }),
+      createServiceIDs({ entry, serviceIDFields: [serviceIdField], typeID: typeElemId }),
       desiredName
     ).name
     : desiredName

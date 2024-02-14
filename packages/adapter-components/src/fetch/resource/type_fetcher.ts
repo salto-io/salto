@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import objectHash from 'object-hash'
-import { Values, isPrimitiveValue } from '@salto-io/adapter-api'
+import { ElemID, Values, isPrimitiveValue } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { ElementQuery } from '../query'
@@ -25,9 +25,10 @@ import { DefQuery } from '../../definitions/system'
 import { GeneratedItem } from '../../definitions/system/shared'
 import { FetchResourceDefinition } from '../../definitions/system/fetch/resource'
 import { recurseIntoSubresources } from './subresources'
-import { createValueTransformer, serviceIdCreator } from '../utils'
+import { createValueTransformer } from '../utils'
 import { ARG_PLACEHOLDER_MATCHER } from '../request'
 import { DependsOnDefinition } from '../../definitions/system/fetch/dependencies'
+import { serviceIDKeyCreator } from '../element/id_utils'
 
 const log = logger(module)
 
@@ -138,7 +139,10 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
           context: item.context,
         }
       }))
-      const toServiceID = serviceIdCreator(def.serviceIDFields ?? [], typeName)
+      const toServiceID = serviceIDKeyCreator({
+        serviceIDFields: def.serviceIDFields ?? [],
+        typeID: new ElemID(adapterName, typeName),
+      })
       const groupedFragments = _.groupBy(allFragments, ({ value }) => toServiceID(value))
       const mergedFragments = _(groupedFragments)
         .mapValues(fragments => ({

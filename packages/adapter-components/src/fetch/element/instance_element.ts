@@ -28,7 +28,7 @@ const log = logger(module)
  * Note: it is recommended to re-generate types after all instances of all types have been created,
  * since there might be some overlaps between subtypes.
  */
-export const generateInstancesForType = (
+export const generateInstancesWithInitialTypes = (
   args: Omit<GenerateTypeArgs, 'parentName' | 'isMapWithDynamicType' | 'typeNameOverrides'>
 ): ElementsAndErrors => {
   const { defQuery, entries, adapterName, typeName, getElemIdFunc } = args

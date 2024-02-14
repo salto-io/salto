@@ -198,19 +198,22 @@ export const generateType = (
 
   const fields: Record<string, FieldDefinition> = Object.fromEntries(
     _.uniq(entries.flatMap(e => Object.keys(e)))
-      .map(fieldName => [
-        fieldName,
-        {
-          refType: addNestedType(generateNestedType({
-            ...args,
-            typeName: fieldName,
-            parentName: typeName,
-            entries: entries.map(entry => entry[fieldName]).filter(entry => entry !== undefined),
-            typeNameOverrides: typesToRename,
-            isMapWithDynamicType: elementDef?.fieldCustomizations?.[fieldName]?.isMapWithDynamicType,
-          })),
-        },
-      ])
+      .map(key => {
+        const fieldName = naclCase(key)
+        return [
+          fieldName,
+          {
+            refType: addNestedType(generateNestedType({
+              ...args,
+              typeName: fieldName,
+              parentName: typeName,
+              entries: entries.map(entry => entry[fieldName]).filter(entry => entry !== undefined),
+              typeNameOverrides: typesToRename,
+              isMapWithDynamicType: elementDef?.fieldCustomizations?.[fieldName]?.isMapWithDynamicType,
+            })),
+          },
+        ]
+      })
   )
 
   const { topLevel } = elementDef ?? {}

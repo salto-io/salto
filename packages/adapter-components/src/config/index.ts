@@ -15,7 +15,7 @@
 */
 export { createDucktypeAdapterApiConfigType, AdapterDuckTypeApiConfig, DuckTypeTransformationConfig, DuckTypeTransformationDefaultConfig, TypeDuckTypeConfig, TypeDuckTypeDefaultsConfig, validateApiDefinitionConfig as validateDuckTypeApiDefinitionConfig, validateFetchConfig as validateDuckTypeFetchConfig } from './ducktype'
 export { createRequestConfigs, validateRequestConfig, FetchRequestConfig, DeployRequestConfig, UrlParams, DeploymentRequestsByAction, RecurseIntoCondition, RecurseIntoConfig, isRecurseIntoConditionByField } from './request'
-export { createAdapterApiConfigType, getConfigWithDefault, AdapterApiConfig, TypeConfig, TypeDefaultsConfig, validateSupportedTypes, defaultMissingUserFallbackField, AdapterFetchError as FetchError } from './shared'
+export { createAdapterApiConfigType, getConfigWithDefault, AdapterApiConfig, TypeConfig, TypeDefaultsConfig, validateSupportedTypes, defaultMissingUserFallbackField, AdapterFetchError } from './shared'
 export { mergeWithDefaultConfig } from './merge'
 export { createTypeNameOverrideConfigType, createSwaggerAdapterApiConfigType, AdapterSwaggerApiConfig, RequestableAdapterSwaggerApiConfig, SwaggerDefinitionBaseConfig, TypeSwaggerConfig, RequestableTypeSwaggerConfig, TypeSwaggerDefaultConfig, TypeNameOverrideConfig, validateApiDefinitionConfig as validateSwaggerApiDefinitionConfig, validateFetchConfig as validateSwaggerFetchConfig } from './swagger'
 export { createTransformationConfigTypes, validateTransoformationConfig, TransformationDefaultConfig, TransformationConfig, StandaloneFieldConfigType, FieldToOmitType, FieldToHideType, getTransformationConfigByType, dereferenceFieldName, isReferencedIdField, getTypeTransformationConfig, shouldNestFiles } from './transformation'

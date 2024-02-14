@@ -17,7 +17,7 @@ import { client as clientUtils, definitions } from '@salto-io/adapter-components
 import { logger } from '@salto-io/logging'
 import { handleDeploymentErrors } from '../deployment/deployment_error_handling'
 import { JIRA } from '../constants'
-import { ScriptRunnerLoginError, createScriptRunnerConnection } from './script_runner_connection'
+import { createScriptRunnerConnection } from './script_runner_connection'
 import JiraClient from './client'
 import { ScriptRunnerCredentials } from '../auth'
 
@@ -73,13 +73,6 @@ export default class ScriptRunnerClient extends clientUtils.AdapterHTTPClient<
         },
       })
     } catch (e) {
-      if (e instanceof ScriptRunnerLoginError) {
-        log.error('Suppressing script runner login error %o', e)
-        return {
-          data: [],
-          status: 401,
-        }
-      }
       // The http_client code catches the original error and transforms it such that it removes
       // the parsed information (like the status code), so we have to parse the string here in order
       // to realize what type of error was thrown

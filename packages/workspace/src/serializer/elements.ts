@@ -1,18 +1,18 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+*                      Copyright 2024 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import _ from 'lodash'
 import { collections, types, serialize as lowerdashSerialize } from '@salto-io/lowerdash'
 import {
@@ -177,8 +177,7 @@ export const serializeStream = async <T = Element>(
   const saltoClassReplacer = <T extends Serializable>(e: T): T & SerializedClass => {
     // Add property SALTO_CLASS_FIELD
     const o = _.clone(e as T & SerializedClass)
-    o[SALTO_CLASS_FIELD] =
-      ctorNameToSerializedName[e.constructor.name] || nameToTypeEntries.find(([_name, type]) => e instanceof type)?.[0]
+    o[SALTO_CLASS_FIELD] = ctorNameToSerializedName[e.constructor.name] || nameToTypeEntries.find(([_name, type]) => e instanceof type)?.[0]
     return o
   }
   const staticFileReplacer = (
@@ -187,7 +186,7 @@ export const serializeStream = async <T = Element>(
     if (storeStaticFile !== undefined) {
       promises.push(storeStaticFile(e))
     }
-    return _.pick(saltoClassReplacer(e), SALTO_CLASS_FIELD, 'filepath', 'hash', 'encoding')
+    return _.pick(saltoClassReplacer(e), SALTO_CLASS_FIELD, 'filepath', 'hash', 'encoding', 'isTemplate')
   }
 
   const elemIdReplacer = (
@@ -213,9 +212,9 @@ export const serializeStream = async <T = Element>(
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const resolveCircles = (v: any): any =>
-    isPrimitiveType(v)
+    (isPrimitiveType(v)
       ? new PrimitiveType({ elemID: v.elemID, primitive: v.primitive })
-      : new ObjectType({ elemID: v.elemID })
+      : new ObjectType({ elemID: v.elemID }))
   const referenceTypeReplacer = (e: TypeReference): TypeReference & SerializedClass => {
     if (referenceSerializerMode === 'keepRef') {
       if (isType(e.type) && !isContainerType(e.type)) {
@@ -311,15 +310,15 @@ const generalDeserializeParsed = async <T>(parsed: unknown, staticFileReviver?: 
     }
 
     const reviveFieldDefinitions = (v: Value): Record<string, FieldDefinition> =>
-      _.isPlainObject(v)
+      (_.isPlainObject(v)
         ? _.mapValues(
-            _.pickBy(v, val => isSerializedClass(val) && val[SALTO_CLASS_FIELD] === 'Field'),
-            val => ({
-              refType: reviveRefTypeOfElement(val),
-              annotations: restoreClasses(val.annotations),
-            }),
-          )
-        : {}
+          _.pickBy(v, val => isSerializedClass(val) && val[SALTO_CLASS_FIELD] === 'Field'),
+          val => ({
+            refType: reviveRefTypeOfElement(val),
+            annotations: restoreClasses(val.annotations),
+          }),
+        )
+        : {})
 
     const revivers: ReviverMap = {
       InstanceElement: v =>
@@ -365,9 +364,17 @@ const generalDeserializeParsed = async <T>(parsed: unknown, staticFileReviver?: 
       },
       TemplateExpression: v => new TemplateExpression({ parts: restoreClasses(v.parts) }),
       ReferenceExpression: reviveReferenceExpression,
-      TypeReference: v => new TypeReference(reviveElemID(v.elemID)),
-      VariableExpression: v => new VariableExpression(reviveElemID(v.elemID ?? v.elemId)),
-      StaticFile: v => new StaticFile({ filepath: v.filepath, hash: v.hash, encoding: v.encoding }),
+      TypeReference: v => (
+        new TypeReference(reviveElemID(v.elemID))
+      ),
+      VariableExpression: v => (
+        new VariableExpression(reviveElemID(v.elemID ?? v.elemId))
+      ),
+      StaticFile: v => (
+        new StaticFile(
+          { filepath: v.filepath, hash: v.hash, encoding: v.encoding, isTemplate: v.isTemplate }
+        )
+      ),
       MissingStaticFile: v => new MissingStaticFile(v.filepath),
       AccessDeniedStaticFile: v => new AccessDeniedStaticFile(v.filepath),
       DuplicateAnnotationError: v =>

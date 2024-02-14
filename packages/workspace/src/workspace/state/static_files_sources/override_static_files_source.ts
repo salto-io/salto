@@ -68,6 +68,7 @@ export const buildOverrideStateStaticFilesSource = (dirStore: DirectoryStore<Buf
         return content !== undefined && lowerdashHash.toMD5(content) === fileHash ? content : undefined
       },
       fileEncoding,
+      args.isTemplate
     )
   },
 

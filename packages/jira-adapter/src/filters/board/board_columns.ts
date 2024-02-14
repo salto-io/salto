@@ -26,7 +26,9 @@ import {
   Values,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { createSchemeGuard, resolveChangeElement } from '@salto-io/adapter-utils'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { resolveChangeElement } from '@salto-io/adapter-components'
+
 import _ from 'lodash'
 import Joi from 'joi'
 import { collections } from '@salto-io/lowerdash'

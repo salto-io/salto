@@ -1,18 +1,18 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+*                      Copyright 2024 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import _, { isString } from 'lodash'
 import {
   AdapterOperations,
@@ -38,16 +38,17 @@ import {
   client as clientUtils,
   combineElementFixers,
   config as configUtils,
-  definitions,
   elements as elementUtils,
+  resolveChangeElement,
+  resolveValues,
+  definitions,
   fetch as fetchUtils,
 } from '@salto-io/adapter-components'
 import {
   getElemIdFuncWrapper,
   inspectValue,
   logDuration,
-  resolveChangeElement,
-  resolveValues,
+
   restoreChangeElement,
 } from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
@@ -379,8 +380,7 @@ const getGuideElements = async ({
 
   // Omit standaloneFields from config to avoid creating types from references
   const typesConfigWithNoStandaloneFields = _.mapValues(apiDefinitions.types, config =>
-    _.omit(config, ['transformation.standaloneFields']),
-  )
+    _.omit(config, ['transformation.standaloneFields']),)
   const fetchResultWithDuplicateTypes = await Promise.all(
     brandsList.map(async brandInstance => {
       const brandsPaginator = brandToPaginator[brandInstance.elemID.name]
@@ -713,14 +713,13 @@ export default class ZendeskAdapter implements AdapterOperations {
     )
     // This exposes different subdomain clients for Guide related types filters
     const result = (await (await this.createFiltersRunner({ brandIdToClient })).onFetch(elements)) as FilterResult
-    const updatedConfig =
-      this.configInstance && configChanges
-        ? configUtils.getUpdatedCofigFromConfigChanges({
-            configChanges,
-            currentConfig: this.configInstance,
-            configType,
-          })
-        : undefined
+    const updatedConfig = this.configInstance && configChanges
+      ? configUtils.getUpdatedCofigFromConfigChanges({
+        configChanges,
+        currentConfig: this.configInstance,
+        configType,
+      })
+      : undefined
 
     // TODO SALTO-5420 remove the omitInactive migration
     const configWithOmitInactive = this.configInstance
@@ -817,23 +816,19 @@ export default class ZendeskAdapter implements AdapterOperations {
         replaceInstanceTypeForDeploy({
           instance,
           config: this.userConfig[API_DEFINITIONS_CONFIG],
-        }),
-      ),
+        }),),
     })) as Change<InstanceElement>[]
     const sourceChanges = _.keyBy(changesToDeploy, change => getChangeData(change).elemID.getFullName())
     const runner = await this.createFiltersRunner({})
     const resolvedChanges = await awu(changesToDeploy)
       .map(async change =>
-        SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
+        (SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
           ? change
           : resolveChangeElement(change, lookupFunc, async (element, getLookUpName, elementsSource) =>
-              resolveValues(element, getLookUpName, elementsSource, true),
-            ),
-      )
+            resolveValues(element, getLookUpName, elementsSource, true),)),)
       .toArray()
     const [guideResolvedChanges, supportResolvedChanges] = _.partition(resolvedChanges, change =>
-      GUIDE_TYPES_TO_HANDLE_BY_BRAND.includes(getChangeData(change).elemID.typeName),
-    )
+      GUIDE_TYPES_TO_HANDLE_BY_BRAND.includes(getChangeData(change).elemID.typeName),)
     const saltoErrors: SaltoError[] = []
     try {
       await runner.preDeploy(supportResolvedChanges)

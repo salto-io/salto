@@ -31,13 +31,12 @@ import {
   applyFunctionToChangeData,
   createSchemeGuard,
   getParents,
-  resolveChangeElement,
   references,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import wu from 'wu'
-import { references as referencesUtils } from '@salto-io/adapter-components'
+import { references as referencesUtils, resolveChangeElement } from '@salto-io/adapter-components'
 import { lookupFunc } from './field_references'
 import { ZendeskFetchConfig } from '../config'
 import {

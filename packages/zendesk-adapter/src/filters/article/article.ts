@@ -36,7 +36,9 @@ import {
   ReadOnlyElementsSource,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { createSchemeGuard, getParents, resolveChangeElement } from '@salto-io/adapter-utils'
+import { createSchemeGuard, getParents } from '@salto-io/adapter-utils'
+import { resolveChangeElement } from '@salto-io/adapter-components'
+
 import Joi from 'joi'
 import { FilterCreator } from '../../filter'
 import { deployChange, deployChanges } from '../../deployment'

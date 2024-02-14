@@ -27,7 +27,7 @@ export type StaticFilesSource = {
   // Load is optional for backwards compatibility
   load?(): Promise<string[]>
   getStaticFile: (
-    args: string | { filepath: string; encoding: BufferEncoding; hash?: string },
+    args: string | { filepath: string; encoding: BufferEncoding; hash?: string, isTemplate?: boolean },
     encoding?: BufferEncoding,
     hash?: string,
   ) => Promise<StaticFile | InvalidStaticFile>

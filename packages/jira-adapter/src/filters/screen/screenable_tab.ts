@@ -31,7 +31,9 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { naclCase, resolveChangeElement, safeJsonStringify } from '@salto-io/adapter-utils'
+import { naclCase, safeJsonStringify } from '@salto-io/adapter-utils'
+import { resolveChangeElement } from '@salto-io/adapter-components'
+
 import { logger } from '@salto-io/logging'
 import { defaultDeployChange } from '../../deployment/standard_deployment'
 import JiraClient from '../../client/client'

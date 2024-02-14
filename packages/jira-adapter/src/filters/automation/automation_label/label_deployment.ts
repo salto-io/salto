@@ -23,7 +23,9 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { createSchemeGuard, resolveValues } from '@salto-io/adapter-utils'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { resolveValues } from '@salto-io/adapter-components'
+
 import Joi from 'joi'
 import { addAnnotationRecursively, findObject } from '../../../utils'
 import { AUTOMATION_LABEL_TYPE } from '../../../constants'

@@ -110,8 +110,7 @@ export const mockWorkspace = ({
     elements: jest
       .fn()
       .mockImplementation(async (includeHidden = true) =>
-        elementSource.createInMemoryElementSource(includeHidden ? elements : elementsWithoutHidden),
-      ),
+        elementSource.createInMemoryElementSource(includeHidden ? elements : elementsWithoutHidden),),
     name,
     envs: () => ['default'],
     currentEnv: () => 'default',
@@ -144,7 +143,7 @@ export const mockWorkspace = ({
     getParsedNaclFile: async (filename: string) => ({
       elements: async () => parsedNaclFiles[filename],
     }),
-    getStaticFile: ({ filepath, encoding }: { filepath: string; encoding: BufferEncoding }) =>
-      staticFilesSource ? staticFilesSource.getStaticFile({ filepath, encoding }) : undefined,
+    getStaticFile: ({ filepath, encoding }: { filepath: string; encoding: BufferEncoding; isTemplate?: boolean }) =>
+      staticFilesSource ? staticFilesSource.getStaticFile({ filepath, encoding, isTemplate }) : undefined,
   } as unknown as workspace.Workspace
 }

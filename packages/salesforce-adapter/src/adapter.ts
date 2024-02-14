@@ -35,10 +35,10 @@ import {
 import {
   filter,
   logDuration,
-  resolveChangeElement,
   restoreChangeElement,
   safeJsonStringify,
 } from '@salto-io/adapter-utils'
+import { resolveChangeElement } from '@salto-io/adapter-components'
 import { MetadataObject } from '@salto-io/jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'

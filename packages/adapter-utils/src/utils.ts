@@ -21,51 +21,14 @@ import safeStringify from 'fast-safe-stringify'
 import { logger } from '@salto-io/logging'
 import { types as lowerDashTypes, collections, values as lowerDashValues, promises } from '@salto-io/lowerdash'
 import {
-  ObjectType,
-  isStaticFile,
-  StaticFile,
-  ElemID,
-  PrimitiveType,
-  Values,
-  Value,
-  isReferenceExpression,
-  Element,
-  isInstanceElement,
-  InstanceElement,
-  isPrimitiveType,
-  TypeMap,
-  isField,
-  ChangeDataType,
-  ReferenceExpression,
-  Field,
-  InstanceAnnotationTypes,
-  isType,
-  isObjectType,
-  isAdditionChange,
-  CORE_ANNOTATIONS,
-  TypeElement,
-  Change,
-  isRemovalChange,
-  isModificationChange,
-  isListType,
-  ChangeData,
-  ListType,
-  CoreAnnotationTypes,
-  isMapType,
-  MapType,
-  isContainerType,
-  isTypeReference,
-  ReadOnlyElementsSource,
-  ReferenceMap,
-  TypeReference,
-  createRefToElmWithValue,
-  isElement,
-  compareSpecialValues,
-  getChangeData,
-  isTemplateExpression,
-  PlaceholderObjectType,
-  UnresolvedReference,
-  FieldMap,
+  ObjectType, isStaticFile, StaticFile, ElemID, PrimitiveType, Values, Value, isReferenceExpression,
+  Element, isInstanceElement, InstanceElement, isPrimitiveType, TypeMap, isField,
+  ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isAdditionChange,
+  CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
+  ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType, isTypeReference,
+  ReadOnlyElementsSource, ReferenceMap, TypeReference, createRefToElmWithValue, isElement,
+  compareSpecialValues, getChangeData, isTemplateExpression, PlaceholderObjectType,
+  UnresolvedReference, FieldMap,
 } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from './walk_element'
@@ -541,36 +504,6 @@ export type ResolveValuesFunc = <T extends Element>(
   allowEmpty?: boolean,
 ) => Promise<T>
 
-export const resolveValues: ResolveValuesFunc = async (element, getLookUpName, elementsSource, allowEmpty = true) => {
-  const valuesReplacer: TransformFunc = async ({ value, field, path }) => {
-    if (isReferenceExpression(value)) {
-      return getLookUpName({
-        // Make sure the reference here is always resolved
-        ref:
-          value.value === undefined && elementsSource !== undefined
-            ? new ReferenceExpression(value.elemID, await value.getResolvedValue(elementsSource), value.topLevelParent)
-            : value,
-        field,
-        path,
-        element,
-      })
-    }
-    if (isStaticFile(value)) {
-      const content = await value.getContent()
-      return value.encoding === 'binary' ? content : content?.toString(value.encoding)
-    }
-    return value
-  }
-
-  return transformElement({
-    element,
-    transformFunc: valuesReplacer,
-    strict: false,
-    elementsSource,
-    allowEmpty,
-  })
-}
-
 export type RestoreValuesFunc = <T extends Element>(
   source: T,
   targetElement: T,
@@ -686,15 +619,7 @@ export const restoreChangeElement = async (
   return change
 }
 
-export const resolveChangeElement = <T extends Change<ChangeDataType> = Change<ChangeDataType>>(
-  change: T,
-  getLookUpName: GetLookupNameFunc,
-  resolveValuesFunc = resolveValues,
-  elementsSource?: ReadOnlyElementsSource,
-): Promise<T> =>
-  applyFunctionToChangeData(change, changeData => resolveValuesFunc(changeData, getLookUpName, elementsSource))
-
-export const findElements = (elements: Iterable<Element>, id: ElemID): Iterable<Element> =>
+export const findElements = (elements: Iterable<Element>, id: ElemID): Iterable<Element> => (
   wu(elements).filter(e => e.elemID.isEqual(id))
 
 export const findElement = (elements: Iterable<Element>, id: ElemID): Element | undefined =>

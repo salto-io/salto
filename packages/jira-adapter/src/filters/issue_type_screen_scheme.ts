@@ -1,29 +1,20 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-import {
-  CORE_ANNOTATIONS,
-  getChangeData,
-  InstanceElement,
-  isInstanceChange,
-  isModificationChange,
-  isObjectType,
-  ModificationChange,
-  Values,
-} from '@salto-io/adapter-api'
-import { resolveChangeElement } from '@salto-io/adapter-utils'
+*                      Copyright 2024 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+import { CORE_ANNOTATIONS, getChangeData, InstanceElement, isInstanceChange, isModificationChange, isObjectType, ModificationChange, Values } from '@salto-io/adapter-api'
+import { resolveChangeElement } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { getLookUpName } from '../reference_mapping'
@@ -55,14 +46,14 @@ const deployIssueTypeMappings = async (
 
   const itemsToAdd = (change.data.after.value.issueTypeMappings ?? []).filter(
     (mapping: Values) =>
-      mapping.issueTypeId !== DEFAULT_ISSUE_TYPE &&
-      (beforeItemsMap[mapping.issueTypeId] === undefined || !_.isEqual(beforeItemsMap[mapping.issueTypeId], mapping)),
+      mapping.issueTypeId !== DEFAULT_ISSUE_TYPE
+      && (beforeItemsMap[mapping.issueTypeId] === undefined || !_.isEqual(beforeItemsMap[mapping.issueTypeId], mapping)),
   )
 
   const itemsToRemove = (change.data.before.value.issueTypeMappings ?? []).filter(
     (mapping: Values) =>
-      mapping.issueTypeId !== DEFAULT_ISSUE_TYPE &&
-      (afterItemsMap[mapping.issueTypeId] === undefined || !_.isEqual(afterItemsMap[mapping.issueTypeId], mapping)),
+      mapping.issueTypeId !== DEFAULT_ISSUE_TYPE
+      && (afterItemsMap[mapping.issueTypeId] === undefined || !_.isEqual(afterItemsMap[mapping.issueTypeId], mapping)),
   )
 
   const instance = getChangeData(change)
@@ -152,9 +143,9 @@ const filter: FilterCreator = ({ config, client }) => ({
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change =>
-        isInstanceChange(change) &&
-        isModificationChange(change) &&
-        getChangeData(change).elemID.typeName === ISSUE_TYPE_SCREEN_SCHEME_NAME,
+        isInstanceChange(change)
+        && isModificationChange(change)
+        && getChangeData(change).elemID.typeName === ISSUE_TYPE_SCREEN_SCHEME_NAME,
     )
 
     const deployResult = await deployChanges(

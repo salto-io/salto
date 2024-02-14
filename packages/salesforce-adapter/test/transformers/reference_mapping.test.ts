@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 import { InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
-import { GetLookupNameFunc, resolveValues } from '@salto-io/adapter-utils'
+import { GetLookupNameFunc } from '@salto-io/adapter-utils'
+import { resolveValues } from '@salto-io/adapter-components'
+
 import { mockTypes } from '../mock_elements'
 import {
   getLookUpName,

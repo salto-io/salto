@@ -1,18 +1,18 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+*                      Copyright 2024 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import _ from 'lodash'
 import {
   ChangeValidator,
@@ -25,11 +25,9 @@ import {
   isAdditionOrModificationChange,
   isInstanceChange,
 } from '@salto-io/adapter-api'
-import {
-  TransformFunc,
-  transformValues,
-  resolveValues,
-} from '@salto-io/adapter-utils'
+import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import { resolveValues } from '@salto-io/adapter-components'
+
 import { collections } from '@salto-io/lowerdash'
 import {
   defaultMapper,
@@ -64,8 +62,8 @@ const getMapKeyErrors = async (
   await awu(Object.entries(after.value))
     .filter(
       async ([fieldName]) =>
-        isMapType(await type.fields[fieldName]?.getType()) &&
-        mapper[fieldName] !== undefined,
+        isMapType(await type.fields[fieldName]?.getType())
+        && mapper[fieldName] !== undefined,
     )
     .forEach(async ([fieldName, fieldValues]) => {
       const fieldType = (await type.fields[fieldName].getType()) as MapType
@@ -96,7 +94,7 @@ const getMapKeyErrors = async (
           )
           const pathParts = path
             .getFullNameParts()
-            .filter((part) => !isNum(part))
+            .filter(part => !isNum(part))
           const actualPath = pathParts.slice(-expectedPath.length)
           const previewPrefix = actualPath.slice(
             0,
@@ -127,16 +125,15 @@ const getMapKeyErrors = async (
   return errors
 }
 
-const changeValidator: ChangeValidator = async (changes) =>
+const changeValidator: ChangeValidator = async changes =>
   awu(changes)
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .filter(isInstanceOfTypeChange(...metadataTypesToValidate))
-    .flatMap(async (change) =>
+    .flatMap(async change =>
       getMapKeyErrors(
         await resolveValues(getChangeData(change), getLookUpName),
-      ),
-    )
+      ),)
     .toArray()
 
 export default changeValidator

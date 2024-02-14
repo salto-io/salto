@@ -13,19 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import { isResolvedReferenceExpression, resolvePath, resolveValues, restoreValues } from '@salto-io/adapter-utils'
-import {
-  isAdditionOrModificationChange,
-  getChangeData,
-  InstanceElement,
-  isInstanceElement,
-  ReferenceExpression,
-  Value,
-  isReferenceExpression,
-} from '@salto-io/adapter-api'
+import { restoreValues, isResolvedReferenceExpression, resolvePath } from '@salto-io/adapter-utils'
+import { isAdditionOrModificationChange, getChangeData, InstanceElement, isInstanceElement, ReferenceExpression, Value, isReferenceExpression } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { references as referenceUtils } from '@salto-io/adapter-components'
+import { references as referenceUtils, resolveValues } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../../filter'
 import { WORKFLOW_CONFIGURATION_TYPE, WORKFLOW_TYPE_NAME } from '../../../constants'
 import { getLookUpName } from '../../../reference_mapping'
@@ -62,17 +53,16 @@ const addTransitionReferences = (
       const transitionKey = transitionIdToKey.get(scriptRunner.transitionId)
       const missingValue = enableMissingReferences
         ? referenceUtils.createMissingValueReference(
-            workflowInstance.elemID.createNestedID('transitions'),
-            scriptRunner.transitionId,
-          )
+          workflowInstance.elemID.createNestedID('transitions'),
+          scriptRunner.transitionId,
+        )
         : scriptRunner.transitionId
-      scriptRunner.transitionId =
-        transitionKey === undefined
-          ? missingValue
-          : new ReferenceExpression(
-              workflowInstance.elemID.createNestedID('transitions', transitionKey),
-              workflowInstance.value.transitions[transitionKey],
-            )
+      scriptRunner.transitionId = transitionKey === undefined
+        ? missingValue
+        : new ReferenceExpression(
+          workflowInstance.elemID.createNestedID('transitions', transitionKey),
+          workflowInstance.value.transitions[transitionKey],
+        )
     })
   })
 }
@@ -109,11 +99,10 @@ const filter: FilterCreator = ({ config, client }) => {
         const expectedIdsMap = transitionKeysToExpectedIds(workflow)
         Object.values(workflow.value.transitions).forEach(transition => {
           walkOverTransitionIds(transition, scriptRunner => {
-            scriptRunner.transitionId =
-              isReferenceExpression(scriptRunner.transitionId) &&
-              expectedIdsMap.get(scriptRunner.transitionId.elemID.name) !== undefined
-                ? expectedIdsMap.get(scriptRunner.transitionId.elemID.name)
-                : scriptRunner.transitionId
+            scriptRunner.transitionId = isReferenceExpression(scriptRunner.transitionId)
+              && expectedIdsMap.get(scriptRunner.transitionId.elemID.name) !== undefined
+              ? expectedIdsMap.get(scriptRunner.transitionId.elemID.name)
+              : scriptRunner.transitionId
           })
         })
       })

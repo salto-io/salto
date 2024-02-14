@@ -13,4 +13,4 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { templateExpressionToStaticFile } from './template_static_file'
+export { templateExpressionToStaticFile, staticFileToTemplateExpression } from './template_static_file'

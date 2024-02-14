@@ -1,47 +1,27 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+*                      Copyright 2024 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import _ from 'lodash'
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'
-import {
-  InstanceElement,
-  isInstanceElement,
-  Values,
-  getChangeData,
-  Change,
-  isInstanceChange,
-} from '@salto-io/adapter-api'
-import {
-  transformElement,
-  applyFunctionToChangeData,
-  resolveValues,
-  restoreChangeElement,
-  safeJsonStringify,
-  restoreValues,
-  createSchemeGuard,
-  TransformFuncSync,
-} from '@salto-io/adapter-utils'
+import { InstanceElement, isInstanceElement, Values, getChangeData,
+  Change, isInstanceChange } from '@salto-io/adapter-api'
+import { transformElement, applyFunctionToChangeData, restoreChangeElement, safeJsonStringify, restoreValues, createSchemeGuard, TransformFuncSync } from '@salto-io/adapter-utils'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
-import { elements as elementUtils } from '@salto-io/adapter-components'
-import {
-  AUTOMATION_TYPE,
-  AUTOMATION_COMPONENT_TYPE,
-  AUTOMATION_COMPONENT_VALUE_TYPE,
-  AUTOMATION_OPERATION,
-} from '../../constants'
+import { elements as elementUtils, resolveValues } from '@salto-io/adapter-components'
+import { AUTOMATION_TYPE, AUTOMATION_COMPONENT_TYPE, AUTOMATION_COMPONENT_VALUE_TYPE, AUTOMATION_OPERATION } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { getLookUpName } from '../../reference_mapping'
 
@@ -147,24 +127,24 @@ const findKeyInRecordObject = (obj: Record<string, string>, value: string): stri
   Object.entries(obj).find(([_key, val]) => val === value)?.[0]
 
 const removeRedundantKeys: TransformFuncSync = ({ value, path }) =>
-  KEYS_TO_REMOVE.includes(path !== undefined ? path.name : '') ? undefined : value
+  (KEYS_TO_REMOVE.includes(path !== undefined ? path.name : '') ? undefined : value)
 
 const removeInnerIds: TransformFuncSync = ({ value, path }) =>
   // We want to remove all the ids besides the id in the of the automation itself
   // and ids inside component values
-  path !== undefined &&
-  path.name === 'id' &&
-  !path.getFullNameParts().includes('value') &&
-  !path.createParentID().isTopLevel()
+  (path !== undefined
+  && path.name === 'id'
+  && !path.getFullNameParts().includes('value')
+  && !path.createParentID().isTopLevel()
     ? undefined
-    : value
+    : value)
 
 const replaceStringValuesFieldName: TransformFuncSync = ({ value, field }) => {
   const typeName = field?.getTypeSync()?.elemID.typeName
   if (
-    _.isPlainObject(value) &&
-    (typeName === AUTOMATION_COMPONENT_TYPE || typeName === AUTOMATION_OPERATION) &&
-    _.isString(value.value)
+    _.isPlainObject(value)
+    && (typeName === AUTOMATION_COMPONENT_TYPE || typeName === AUTOMATION_OPERATION)
+    && _.isString(value.value)
   ) {
     value.rawValue = value.value
     delete value.value
@@ -188,9 +168,9 @@ const separateLinkTypeField: TransformFuncSync = ({ value, path }) => {
 
 const convertToCompareFieldValue: TransformFuncSync = ({ value, path, field }) => {
   if (
-    path?.name === 'value' &&
-    field?.getTypeSync()?.elemID.typeName === AUTOMATION_COMPONENT_VALUE_TYPE &&
-    _.isPlainObject(value?.compareValue)
+    path?.name === 'value'
+    && field?.getTypeSync()?.elemID.typeName === AUTOMATION_COMPONENT_VALUE_TYPE
+    && _.isPlainObject(value?.compareValue)
   ) {
     // compareValue can be either an object or a primitive type
     // we change the field name to compareFieldValue to distinguish between the cases
@@ -232,13 +212,12 @@ const changeRawValueFieldsToValue: TransformFuncSync = ({ value, field }) => {
 // For components with type = "jira.issue.hasAttachments"
 // Value is a boolean, but component.value is an object in the objectType
 // So we transform the value to hasAttachmentsValue and vice versa
-const createTransformHasAttachmentValueFunc =
-  (reverse?: boolean): TransformFuncSync =>
+const createTransformHasAttachmentValueFunc = (reverse?: boolean): TransformFuncSync =>
   ({ value }) => {
     if (
-      value?.type === 'jira.issue.hasAttachments' &&
-      value?.component &&
-      _.isBoolean(reverse ? value.hasAttachmentsValue : value.value)
+      value?.type === 'jira.issue.hasAttachments'
+      && value?.component
+      && _.isBoolean(reverse ? value.hasAttachmentsValue : value.value)
     ) {
       if (reverse) {
         value.value = value.hasAttachmentsValue
@@ -323,8 +302,7 @@ const removeProjectsForGlobalDCAutomation = (instance: InstanceElement): void =>
 // When component type is "jira.issue.delete.link"
 // linkTypes field is returned from the service as a list of objects,
 // Since linkTypes is a string array in component objectType, we change the field name to deleteLinkTypes
-const createTransformDeleteLinkTypesFunc =
-  (reverse?: boolean): TransformFuncSync =>
+const createTransformDeleteLinkTypesFunc = (reverse?: boolean): TransformFuncSync =>
   ({ value }) => {
     if (value?.type === 'jira.issue.delete.link' && value?.component) {
       if (reverse) {
@@ -338,8 +316,7 @@ const createTransformDeleteLinkTypesFunc =
     return value
   }
 
-const createAutomationTransformFunc =
-  (transformFuncs: TransformFuncSync[]): TransformFuncSync =>
+const createAutomationTransformFunc = (transformFuncs: TransformFuncSync[]): TransformFuncSync =>
   ({ value, ...args }) => {
     const newValue = transformFuncs.reduce((currentVal, func) => {
       const updatedValue = func({ value: currentVal, ...args })
@@ -382,8 +359,7 @@ const filter: FilterCreator = ({ client }) => {
           ).value
 
           instance.value.projects = instance.value.projects?.map(({ projectId, projectTypeKey }: Values) =>
-            projectId !== undefined ? { projectId } : { projectTypeKey },
-          )
+            (projectId !== undefined ? { projectId } : { projectTypeKey }),)
         }),
 
     preDeploy: async changes => {
@@ -416,8 +392,7 @@ const filter: FilterCreator = ({ client }) => {
               })
             ).value
             return instance
-          }),
-        )
+          }),)
     },
 
     onDeploy: async changes => {
@@ -456,8 +431,7 @@ const filter: FilterCreator = ({ client }) => {
             originalAutomationChanges,
             getLookUpName,
             (source, targetElement, lookUpNameFunc) => restoreValues(source, targetElement, lookUpNameFunc),
-          ),
-        )
+          ),)
         .toArray()
       _.pullAll(changes, automationChanges)
       changes.push(...automationChangesToReturn)

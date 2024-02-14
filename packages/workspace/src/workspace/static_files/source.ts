@@ -62,8 +62,9 @@ export class LazyStaticFile extends AbsoluteStaticFile {
     absoluteFilePath: string,
     private getContentFunc: () => Promise<Buffer | undefined>,
     encoding?: BufferEncoding,
+    isTemplate?: boolean
   ) {
-    super({ filepath, hash, encoding, absoluteFilePath })
+    super({ filepath, hash, encoding, absoluteFilePath, isTemplate })
   }
 
   async getContent(): Promise<Buffer | undefined> {
@@ -148,6 +149,7 @@ export const buildStaticFilesSource = (
       args: string | { filepath: string; encoding: BufferEncoding; hash?: string },
       encoding?: BufferEncoding,
       hash?: string,
+      isTemplate?: boolean,
     ): Promise<StaticFile | InvalidStaticFile> => {
       let filePath: string
       let fileEncoding: BufferEncoding
@@ -174,7 +176,7 @@ export const buildStaticFilesSource = (
           // written, and a file that existed but was modified since the cache was written,
           // as the latter should not be represented in the element that is returned from
           // the cache as MissingStaticFile
-          return new StaticFile({ filepath: filePath, encoding: fileEncoding, hash: fileHash })
+          return new StaticFile({ filepath: filePath, encoding: fileEncoding, hash: fileHash, isTemplate })
         }
 
         if (staticFileData.buffer !== undefined) {
@@ -183,6 +185,7 @@ export const buildStaticFilesSource = (
             content: staticFileData.buffer,
             encoding: fileEncoding,
             absoluteFilePath: staticFilesDirStore.getFullPath(filePath),
+            isTemplate,
           })
           return staticFileWithHashAndContent
         }
@@ -194,6 +197,7 @@ export const buildStaticFilesSource = (
           // was deleted, we will still lbe able to access the content
           async () => (await staticFilesDirStore.get(filePath, { ignoreDeletionsCache: true }))?.buffer,
           fileEncoding,
+            isTemplate
         )
       } catch (e) {
         if (fileHash !== undefined) {
@@ -202,7 +206,7 @@ export const buildStaticFilesSource = (
           // written, and a file that existed but was removed since the cache was written,
           // as the latter should not be represented in the element that is returned from
           // the cache as MissingStaticFile
-          return new StaticFile({ filepath: filePath, encoding: fileEncoding, hash: fileHash })
+          return new StaticFile({ filepath: filePath, encoding: fileEncoding, hash: fileHash, isTemplate })
         }
 
         if (e instanceof MissingStaticFileError) {

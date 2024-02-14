@@ -1,35 +1,22 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-import {
-  BuiltinTypes,
-  Change,
-  CORE_ANNOTATIONS,
-  Element,
-  ElemID,
-  Field,
-  getChangeData,
-  InstanceElement,
-  isInstanceElement,
-  ListType,
-  ObjectType,
-  Values,
-} from '@salto-io/adapter-api'
-import { applyFunctionToChangeData, resolveValues, restoreChangeElement } from '@salto-io/adapter-utils'
+*                      Copyright 2024 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+import { BuiltinTypes, Change, CORE_ANNOTATIONS, Element, ElemID, Field, getChangeData, InstanceElement, isInstanceElement, ListType, ObjectType, Values } from '@salto-io/adapter-api'
+import { applyFunctionToChangeData, restoreChangeElement } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import { elements as elementUtils, resolveValues } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
@@ -42,7 +29,7 @@ const PROPERTY_TYPE_NAME = 'WorkflowProperty'
 const { awu } = collections.asynciterable
 
 const convertPropertiesToList = (instance: WorkflowV1Instance): void => {
-  ;[...(instance.value.statuses ?? []), ...(Object.values(instance.value.transitions) ?? [])].forEach(item => {
+  [...(instance.value.statuses ?? []), ...(Object.values(instance.value.transitions) ?? [])].forEach(item => {
     if (item.properties !== undefined) {
       item.properties = Object.entries(item.properties).map(([key, value]) => ({ key, value }))
     }
@@ -50,7 +37,7 @@ const convertPropertiesToList = (instance: WorkflowV1Instance): void => {
 }
 
 const convertPropertiesToMap = (instance: WorkflowV1Instance): void => {
-  ;[...(instance.value.statuses ?? []), ...(Object.values(instance.value.transitions) ?? [])].forEach(item => {
+  [...(instance.value.statuses ?? []), ...(Object.values(instance.value.transitions) ?? [])].forEach(item => {
     if (item.properties !== undefined) {
       item.properties = Object.fromEntries(item.properties.map(({ key, value }: Values) => [key, value]))
     }

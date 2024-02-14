@@ -13,19 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  Element,
-  isInstanceElement,
-  ElemID,
-  ReferenceExpression,
-  CORE_ANNOTATIONS,
-  ReadOnlyElementsSource,
-  isObjectType,
-  getChangeData,
-  InstanceElement,
-  ObjectType,
-} from '@salto-io/adapter-api'
-import { extendGeneratedDependencies, resolveValues, transformElement, TransformFunc } from '@salto-io/adapter-utils'
+import { Element, isInstanceElement, ElemID, ReferenceExpression, CORE_ANNOTATIONS, ReadOnlyElementsSource, isObjectType, getChangeData, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { extendGeneratedDependencies, transformElement, TransformFunc } from '@salto-io/adapter-utils'
+import { resolveValues } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import osPath from 'path'

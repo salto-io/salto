@@ -40,7 +40,12 @@ import {
   TypeReference,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { applyDetailedChanges, inspectValue, naclCase, resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
+import {
+  applyDetailedChanges,
+  inspectValue,
+  naclCase,
+  safeJsonStringify,
+} from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
 import { parser } from '@salto-io/parser'
 import { ValidationError, validateElements, isUnresolvedRefError } from '../validator'
@@ -367,80 +372,51 @@ export const deserializeReferenceTree = async (data: string): Promise<ReferenceT
 }
 
 /*
-* Get reference dependecies for a given list of elemIds within a workspace
-* filters out weak references and any elemIds in elemIdsToSkip
+* Get reference dependecies for a given list of elemIDs within a workspace
+* filters out weak references and any elemIDs from elemIDsToSkip
 */
-export const getReferenceTargetDependecies = async ({
+export const getReferenceTargetDependencies = async ({
   ws,
-  elemIds,
-  elementSourceToSkip,
+  elemIDs,
+  elemIDsToSkip = [],
   envName,
 }:{
   ws: Workspace
-  elemIds: ElemID[]
-  elementSourceToSkip?: ReadOnlyElementsSource
+  elemIDs: ElemID[]
+  elemIDsToSkip?: ElemID[]
   envName?: string
 }): Promise<{ completed: Record<string, ElemID[]>; missing: ElemID[] }> => {
-  const isElemIdExist = async (elemId: ElemID, elementSource?: ReadOnlyElementsSource): Promise<boolean> => {
-    if (elementSource === undefined) {
-      return false
-    }
-    const { parent } = elemId.createBaseID()
-    // TODOS only get element when baseID is differenct from elemId
-    const rootElem = await elementSource.get(parent)
-    if (rootElem === undefined) {
-      return false
-    }
-    const resolvedPath = resolvePath(rootElem, elemId)
-    // TODOS - should probably verify we got value / instance / type
-    return resolvedPath !== undefined
-  }
+  const wsSearchableNames = new Set(await ws.getSearchableNamesOfEnv(envName))
+  const elemIdsToSkipSet = new Set(elemIDsToSkip.map(id => id.getFullName()))
+  const baseLevelIds = elemIDs.map(id => id.createBaseID().parent)
+  const [resolvedIds, missingIds] = _.partition(baseLevelIds, elemID => wsSearchableNames.has(elemID.getFullName()))
 
-  const wsElementSource = await ws.elements(false, envName)
-  // const wsElementList = await awu(await (wsElementSource).list()).toArray()
-  // const wsElemIds = new Set(wsElementList.map(elemId => elemId.getFullName()))
-
-  const [resolvedIds, missingIds] = await awu(elemIds)
-    .partition(async ref => isElemIdExist(ref, wsElementSource))
-
-  // DFS setup
   const result: Record<string, ElemID[]> = {}
   const stack = [...resolvedIds]
   const visited: Set<string> = new Set()
-  // iterative DFS
   while (stack.length > 0) {
     const currentId = stack.pop() as ElemID
     if (!visited.has(currentId.getFullName())) {
       visited.add(currentId.getFullName())
       // eslint-disable-next-line no-await-in-loop
       const references = await ws.getElementOutgoingReferences(currentId, envName ?? ws.currentEnv())
-      // eslint-disable-next-line no-await-in-loop
-      const relevantElemIds = await awu(references)
+      const relevantElemIds = references
         .filter(ref => ref.type !== 'weak')
-        .map(ref => ref.id)
-        .filter(async elemId => {
-          // filters out elemIds that included in elementSourceToSkip
-          if (await isElemIdExist(elemId, elementSourceToSkip)) {
-            return false
-          }
-          return true
-        })
-        .toArray()
+        .map(ref => ref.id.createBaseID().parent)
+        .filter(elemId => !elemIdsToSkipSet.has(elemId.getFullName()))
 
-      // eslint-disable-next-line no-await-in-loop
-      const [resolvedRelevantIds, missingElemIds] = await awu(relevantElemIds)
-        .partition(async ref => isElemIdExist(ref, wsElementSource))
+      const [resolvedRelevantIds, missingElemIds] = _.partition(
+        relevantElemIds,
+        elemID => wsSearchableNames.has(elemID.getFullName())
+      )
       missingElemIds.forEach(id => missingIds.push(id))
       result[currentId.getFullName()] = resolvedRelevantIds
       stack.push(...resolvedRelevantIds)
     }
   }
 
-  return { completed: result, missing: missingIds }
+  return { completed: result, missing: _.uniqBy(missingIds, id => id.getFullName()) }
 }
-
-// ws.getElementOutgoingReferences().bind(ws)
-// const bla = (getRefs: Workspace['getElementOutgoingReferences'])
 
 type GetCustomReferencesFunc = (
   elements: Element[],
@@ -1549,8 +1525,6 @@ export const loadWorkspace = async (
         const workspaceErrors = validationErrors.filter(isUnresolvedRefError).map(e => e.target.createBaseID().parent)
         return _.uniqBy(workspaceErrors, elemID => elemID.getFullName())
       }
-      const getUnresolvedElemIDs = async (elementsArray: Element[]): Promise<ElemID[]> =>
-        getUnresolvedElemIDsFromErrors(await validateElements(elementsArray, await elements()))
       const unresolvedElemIDs = getUnresolvedElemIDsFromErrors((await errors()).validation)
       if (completeFromEnv === undefined) {
         return {
@@ -1558,64 +1532,19 @@ export const loadWorkspace = async (
           missing: compact(_.sortBy(unresolvedElemIDs, id => id.getFullName())),
         }
       }
-      const addAndValidate = async (
-        ids: ElemID[],
-        visitedIds: Set<string>,
-        elementsArray: Element[] = [],
-      ): Promise<{ completed: string[]; missing: string[] }> => {
-        const newIds = ids.filter(id => !visitedIds.has(id.getFullName()))
 
-        if (newIds.length === 0) {
-          return { completed: [], missing: [] }
-        }
-
-        newIds.map(id => id.getFullName()).forEach(id => visitedIds.add(id))
-
-        const getCompletionElem = async (id: ElemID): Promise<Element | undefined> => {
-          const rootElem = await (await elementsImpl(true, completeFromEnv)).get(id.createTopLevelParentID().parent)
-          if (!rootElem) {
-            return undefined
-          }
-          // Using the createBaseID method in getUnresolvedElemIDsFromErrors function let us know
-          // the returned unresolved element is in fact a type, an instance or a field,
-          // so it's unnecessary to verify is the resolved path is an element
-          return resolvePath(rootElem, id)
-        }
-        const completionRes = Object.fromEntries(
-          await awu(newIds)
-            .map(async id => [id.getFullName(), await getCompletionElem(id)])
-            .toArray(),
-        ) as Record<string, Element | undefined>
-        const [completed, missing] = _.partition(Object.keys(completionRes), id => values.isDefined(completionRes[id]))
-        const resolvedElements = Object.values(completionRes).filter(values.isDefined)
-        const unresolvedIDs = await getUnresolvedElemIDs(resolvedElements)
-        const innerRes = await addAndValidate(unresolvedIDs, visitedIds, [...elementsArray, ...resolvedElements])
-        return {
-          completed: [...completed, ...innerRes.completed],
-          missing: [...missing, ...innerRes.missing],
-        }
-      }
-      // const allSearchable = await ws.getSearchableNames()
-      const allDependecies = await getReferenceTargetDependecies({
+      const { completed, missing } = await getReferenceTargetDependencies({
         ws,
-        elemIds: unresolvedElemIDs,
-        elementSourceToSkip: await ws.elements(false),
+        elemIDs: unresolvedElemIDs,
+        elemIDsToSkip: (await ws.getSearchableNames()).map(ElemID.fromFullName),
         envName: completeFromEnv,
       })
-      log.debug('Found unresolved', allDependecies.missing.length, 'unresolved references') // TODOS remove this log
-      const completedElemIds = _.uniq(Object.values(allDependecies.completed).flat().map(elemId => elemId.getFullName())
-        .concat(Object.keys(allDependecies.completed)))
-      const compactRes = compact(completedElemIds.sort().map(ElemID.fromFullName))
-      log.debug('Found', compactRes.length, 'resolved references') // TODOS remove this log
-
-
-      const { completed, missing } = await addAndValidate(unresolvedElemIDs, new Set())
-      log.debug('Found', completed.length, 'resolved references', missing.length) // TODOS remove this log
-      // return {
-      //   found: compact(completed.sort().map(ElemID.fromFullName)),
-      //   missing: compact(missing.sort().map(ElemID.fromFullName)),
-      // }
-      return { found: compactRes, missing: allDependecies.missing }
+      const completedElemIds = _.uniq(Object.values(completed).flat().map(elemId => elemId.getFullName())
+        .concat(Object.keys(completed)))
+      return {
+        found: compact(completedElemIds.sort().map(ElemID.fromFullName)),
+        missing: compact(_.sortBy(missing, id => id.getFullName())),
+      }
     },
     getElementSourceOfPath: async (filePath, includeHidden = true) =>
       adaptersConfig.isConfigFile(filePath) ? adaptersConfig.getElements() : elementsImpl(includeHidden),

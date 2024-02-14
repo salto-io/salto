@@ -66,6 +66,7 @@ import {
   isValidEnvName,
   serializeReferenceTree,
   deserializeReferenceTree,
+  getReferenceTargetDependencies,
 } from '../../src/workspace/workspace'
 import {
   DeleteCurrentEnvError,
@@ -4895,10 +4896,8 @@ describe('nacl sources reuse', () => {
   let elementSources: Record<string, EnvironmentSource>
   let ws: Workspace
 
-  beforeAll(() => {
-    mockMuiltiEnv = jest.spyOn(multiEnvSrcLib, 'multiEnvSource')
-  })
   beforeEach(async () => {
+    mockMuiltiEnv = jest.spyOn(multiEnvSrcLib, 'multiEnvSource')
     mockMuiltiEnv.mockClear()
     elementSources = {
       '': {
@@ -4923,9 +4922,6 @@ describe('nacl sources reuse', () => {
       elementSources,
     )
   })
-  afterAll(() => {
-    mockMuiltiEnv.mockReset()
-  })
 
   it('should create only one copy the multi env source', async () => {
     await ws.flush()
@@ -4935,5 +4931,153 @@ describe('nacl sources reuse', () => {
   it('should not create a new copy of a secondary env when invoking a command directly on the secondary env', async () => {
     await ws.elements(true, 'inactive')
     expect(mockMuiltiEnv).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('getReferenceTargetDependencies', () => {
+  let workspace: Workspace
+  const type1 = new ObjectType({
+    elemID: new ElemID('salesforce', 'someType'),
+    fields: {
+      a: { refType: BuiltinTypes.NUMBER },
+      b: { refType: BuiltinTypes.NUMBER },
+      c: { refType: BuiltinTypes.NUMBER },
+    },
+  })
+  const type2 = new ObjectType({
+    elemID: new ElemID('salesforce', 'anotherType'),
+    annotations: { _parent: new TypeReference(type1.elemID) },
+    fields: {
+      a: { refType: type1 },
+      b: { refType: BuiltinTypes.NUMBER },
+    },
+  })
+  const instWithRef = new InstanceElement(
+    'inst1',
+    new TypeReference(type1.elemID),
+    {
+      a: 'aaa',
+      b: new ReferenceExpression(type1.elemID.createNestedID('field', 'c')),
+      c: 'ccc',
+    },
+  )
+  const instNoRefs = new InstanceElement(
+    'inst11',
+    new TypeReference(type1.elemID),
+    {
+      a: 'aaa',
+      b: 'bbb',
+      c: 'ccc',
+    },
+  )
+  const instWithNestedPathRef = new InstanceElement(
+    'inst2',
+    new TypeReference(type2.elemID),
+    {
+      a: {
+        a: 'aaa',
+        b: 'bbb',
+        c: new ReferenceExpression(instWithRef.elemID.createNestedID('a')),
+      },
+      b: new ReferenceExpression(instNoRefs.elemID),
+    },
+  )
+  instWithRef.value.a = new ReferenceExpression(instWithNestedPathRef.elemID) // create circular reference
+  const instWithMissingRef = new InstanceElement(
+    'inst3',
+    new TypeReference(type2.elemID),
+    {
+      a: 'aaa',
+      b: new ReferenceExpression(new ElemID('salesforce', 'someType', 'instance', 'nissingInst')),
+    },
+  )
+  const initialInst = new InstanceElement(
+    'start',
+    new TypeReference(type1.elemID),
+    {
+      a: new ReferenceExpression(instWithNestedPathRef.elemID),
+      b: 'bbb',
+      c: 'ccc',
+    }
+  )
+
+  beforeEach(async () => {
+    jest.clearAllMocks()
+    const elements = [type1, type2, instWithRef, instNoRefs, instWithNestedPathRef, instWithMissingRef, initialInst]
+    workspace = await createWorkspace(
+      undefined, undefined, undefined, undefined, undefined, undefined,
+      {
+        '': {
+          naclFiles: await naclFilesSource(
+            COMMON_ENV_PREFIX,
+            mockDirStore(),
+            mockStaticFilesSource(),
+            persistentMockCreateRemoteMap(),
+            true,
+          ),
+        },
+        default: {
+          naclFiles: createMockNaclFileSource(elements),
+          state: createState(elements),
+        },
+      }
+    )
+  })
+
+  it('should return the correct dependencies', async () => {
+    const res = await getReferenceTargetDependencies({
+      ws: workspace,
+      elemIDs: [initialInst.elemID],
+      elemIDsToSkip: [instNoRefs.elemID],
+      envName: 'default',
+    })
+
+    expect(res.completed).toEqual({
+      [initialInst.elemID.getFullName()]: [instWithNestedPathRef.elemID],
+      [instWithNestedPathRef.elemID.getFullName()]: [instWithRef.elemID],
+      [instWithRef.elemID.getFullName()]: [instWithNestedPathRef.elemID, type1.elemID.createNestedID('field', 'c')],
+      [type1.elemID.createNestedID('field', 'c').getFullName()]: [],
+    })
+    expect(res.missing).toEqual([])
+  })
+  it('should not include elemIDs from the list of elemIDs to ignore', async () => {
+    const res = await getReferenceTargetDependencies({
+      ws: workspace,
+      elemIDs: [initialInst.elemID],
+      elemIDsToSkip: [instNoRefs.elemID, instWithRef.elemID],
+      envName: 'default',
+    })
+    expect(res.completed).toEqual({
+      [initialInst.elemID.getFullName()]: [instWithNestedPathRef.elemID],
+      [instWithNestedPathRef.elemID.getFullName()]: [],
+    })
+  })
+  it('should treat references to relative path as references to the baseID', async () => {
+    const res = await getReferenceTargetDependencies({
+      ws: workspace,
+      elemIDs: [instWithNestedPathRef.elemID.createNestedID('a', 'a')],
+      envName: 'default',
+    })
+    expect(res.completed).toEqual({
+      [instWithNestedPathRef.elemID.getFullName()]: [instWithRef.elemID, instNoRefs.elemID],
+      [instWithRef.elemID.getFullName()]: [instWithNestedPathRef.elemID, type1.elemID.createNestedID('field', 'c')],
+      [instNoRefs.elemID.getFullName()]: [],
+      [type1.elemID.createNestedID('field', 'c').getFullName()]: [],
+    })
+  })
+  it('should stop iterating when encoutinering a missing referenc and return missing elemdIDs recursively', async () => {
+    const topLevelMissing = new ElemID('salesforce', 'someType', 'instance', 'missing')
+    const nestedMissingElemId = new ElemID('salesforce', 'missingType', 'instance', 'misisng2')
+    instWithNestedPathRef.value.a.a = new ReferenceExpression(nestedMissingElemId)
+    const res = await getReferenceTargetDependencies({
+      ws: workspace,
+      elemIDs: [initialInst.elemID, topLevelMissing],
+      elemIDsToSkip: [instWithRef.elemID, instNoRefs.elemID],
+      envName: 'default',
+    })
+    expect(res.missing).toEqual([
+      topLevelMissing,
+      nestedMissingElemId,
+    ])
   })
 })

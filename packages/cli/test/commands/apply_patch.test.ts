@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { DetailedChange, Element, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { Element, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { detailedCompare } from '@salto-io/adapter-utils'
 import { calculatePatch } from '@salto-io/core'
 import { merger, updateElementsWithAlternativeAccount } from '@salto-io/workspace'
@@ -65,10 +65,12 @@ describe('apply-patch command', () => {
         originalInstance,
         updatedInstance,
       )
+      const baseChange = toChange({ after: newInstance })
       const additionChange = {
-        ...toChange({ after: newInstance }),
+        ...baseChange,
         id: newInstance.elemID,
-      } as DetailedChange
+        baseChange,
+      }
       mockCalculatePatch.mockResolvedValue({
         changes: [
           ...modifyInstanceChanges.map(c => ({ change: c, serviceChanges: [c] })),

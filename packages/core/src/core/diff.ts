@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { DetailedChange, ElemID, isRemovalChange } from '@salto-io/adapter-api'
+import { DetailedChange, DetailedChangeWithBaseChange, ElemID, isRemovalChange } from '@salto-io/adapter-api'
 import { ElementSelector, selectElementIdsByTraversal, elementSource, Workspace, remoteMap } from '@salto-io/workspace'
 import wu from 'wu'
 import { collections, values } from '@salto-io/lowerdash'
@@ -132,7 +132,7 @@ export function createDiffChanges(
   elementSelectors?: ElementSelector[],
   topLevelFilters?: IDFilter[],
   resultType?: 'detailedChanges'
-): Promise<DetailedChange[]>
+): Promise<DetailedChangeWithBaseChange[]>
 export async function createDiffChanges(
   toElementsSrc: elementSource.ElementsSource,
   fromElementsSrc: elementSource.ElementsSource,
@@ -140,7 +140,7 @@ export async function createDiffChanges(
   elementSelectors: ElementSelector[] = [],
   topLevelFilters: IDFilter[] = [],
   resultType: 'changes' | 'detailedChanges' = 'detailedChanges'
-): Promise<DetailedChange[] | ChangeWithDetails[]> {
+): Promise<DetailedChangeWithBaseChange[] | ChangeWithDetails[]> {
   if (elementSelectors.length > 0) {
     const matchers = await createMatchers(
       toElementsSrc,

@@ -20,8 +20,10 @@ import {
   AdapterOperations,
   AdapterOperationsContext,
   AdditionChange,
+  Change,
   CORE_ANNOTATIONS,
   DetailedChange,
+  DetailedChangeWithBaseChange,
   Element,
   ElemID,
   ElemIdGetter,
@@ -111,10 +113,14 @@ const getFetchChangeMetadata = (changedElement: Element | undefined): FetchChang
   getAuthorInformation(changedElement)
 
 export const toAddFetchChange = (elem: Element): FetchChange => {
-  const change: DetailedChange = {
-    id: elem.elemID,
+  const baseChange: Change<Element> = {
     action: 'add',
     data: { after: elem },
+  }
+  const change: DetailedChangeWithBaseChange = {
+    ...baseChange,
+    id: elem.elemID,
+    baseChange,
   }
   return { change, serviceChanges: [change], metadata: getFetchChangeMetadata(elem) }
 }
@@ -143,7 +149,7 @@ export const getDetailedChanges = async (
   before: ReadOnlyElementsSource,
   after: ReadOnlyElementsSource,
   topLevelFilters: IDFilter[]
-): Promise<Iterable<DetailedChange>> =>
+): Promise<Iterable<DetailedChangeWithBaseChange>> =>
   wu((await getPlan({
     before,
     after,
@@ -155,7 +161,7 @@ export const getDetailedChanges = async (
 
 type WorkspaceDetailedChangeOrigin = 'service' | 'workspace'
 type WorkspaceDetailedChange = {
-  change: DetailedChange
+  change: DetailedChangeWithBaseChange
   origin: WorkspaceDetailedChangeOrigin
 }
 
@@ -339,7 +345,7 @@ const toFetchChanges = (
         )
       }
 
-      const createFetchChange = (change: DetailedChange): FetchChange => {
+      const createFetchChange = (change: DetailedChangeWithBaseChange): FetchChange => {
         if (!change.id.isEqual(elemId) && isAdditionChange(change)) {
           // We have a workspace change that is nested inside a conflict between
           // the workspace and the service. it seems like this can only happen if both sides

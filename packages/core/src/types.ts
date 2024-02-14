@@ -17,7 +17,7 @@ import {
   AdapterGroupProperties,
   AuthorInformation,
   Change,
-  DetailedChange,
+  DetailedChangeWithBaseChange,
   SaltoElementError,
   SaltoError,
 } from '@salto-io/adapter-api'
@@ -25,11 +25,11 @@ import {
 export type FetchChangeMetadata = AuthorInformation
 export type FetchChange = {
   // The actual change to apply to the workspace
-  change: DetailedChange
+  change: DetailedChangeWithBaseChange
   // The change that happened in the service
-  serviceChanges: DetailedChange[]
+  serviceChanges: DetailedChangeWithBaseChange[]
   // The change between the working copy and the state
-  pendingChanges?: DetailedChange[]
+  pendingChanges?: DetailedChangeWithBaseChange[]
   // Metadata information about the change.
   metadata?: FetchChangeMetadata
 }

@@ -49,7 +49,7 @@ const createInstance = (
   type: ObjectType,
   getElemIdFunc?: ElemIdGetter,
 ): InstanceElement => {
-  const serviceIds = elementUtils.createServiceIds({ entry: values, serviceIdFields: ['id'], typeID: type.elemID })
+  const serviceIds = elementUtils.createServiceIds({ entry: values, serviceIDFields: ['id'], typeID: type.elemID })
 
   const defaultName = naclCase(values.name)
 

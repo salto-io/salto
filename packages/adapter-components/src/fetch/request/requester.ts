@@ -94,8 +94,8 @@ export const getRequester = <
     const clientDef = clientDefs[clientName]
     const endpointDef = clientDef.endpoints.query(requestEndpoint.path)?.[requestEndpoint.method ?? 'get']
     if (!endpointDef?.readonly) {
-      log.error(`Endpoint ${clientName}.${requestEndpoint.path}:${requestEndpoint.method} is not marked as readonly, cannot use in fetch`)
-      throw new Error(`Endpoint ${clientName}.${requestEndpoint.path}:${requestEndpoint.method} is not marked as readonly, cannot use in fetch`)
+      log.error(`Endpoint [${clientName}]${requestEndpoint.path}:${requestEndpoint.method} is not marked as readonly, cannot use in fetch`)
+      throw new Error(`Endpoint [${clientName}]${requestEndpoint.path}:${requestEndpoint.method} is not marked as readonly, cannot use in fetch`)
     }
     return {
       merged: {

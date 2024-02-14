@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { defaultPathChecker } from '../../../../src/fetch/request/pagination/pagination_functions'
+import { defaultPathChecker, noPagination, itemOffsetPagination } from '../../../../src/fetch/request/pagination/pagination_functions'
 
 describe('pagination functions', () => {
   describe('defaultPathChecker', () => {
@@ -25,4 +25,27 @@ describe('pagination functions', () => {
       expect(defaultPathChecker('/a/b/c', '/a/b/c/d')).toEqual(false)
     })
   })
+  describe('noPagination', () => {
+    it('should return no next page', () => {
+      expect(noPagination()({ endpointIdentifier: { path: '/ep' }, responseData: {}, currentParams: {} })).toEqual([])
+    })
+  })
+
+  describe('itemOffsetPagination', () => {
+    it('should calculate next pages', async () => {
+      const paginate = itemOffsetPagination({ firstIndex: 0, dataField: 'a', pageSize: 1, paginationField: 'next', pageSizeArgName: 'maxResults' })
+      expect(paginate({
+        endpointIdentifier: { path: '/ep' },
+        currentParams: {},
+        responseData: { a: [{ x: 'y' }], maxResults: 30 },
+      })).toEqual([{ queryParams: { next: '1' } }])
+      expect(paginate({
+        endpointIdentifier: { path: '/ep' },
+        currentParams: { queryParams: { next: '20' } },
+        responseData: { maxResults: 30 },
+      })).toEqual([{ queryParams: { next: '21' } }])
+    })
+  })
+
+  // TODO extend tests for all pagination functions (can rely on previous tests)
 })

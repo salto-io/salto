@@ -59,7 +59,7 @@ export const traversePages = async <ClientOptions extends string>({
         url: finalEndpointIdentifier.path,
         ...args,
       })
-      pages.push(...collections.array.makeArray(page.data))
+      pages.push(...collections.array.makeArray(page.data).filter(item => !_.isEmpty(item)))
       return page
     }
 

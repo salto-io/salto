@@ -24,7 +24,6 @@ import {
   validateMetadataParams,
 } from '../../src/fetch_profile/metadata_query'
 import {
-  CUSTOM_METADATA,
   CUSTOM_OBJECT,
   TOPICS_FOR_OBJECTS_METADATA_TYPE,
 } from '../../src/constants'
@@ -551,9 +550,6 @@ describe('buildMetadataQuery', () => {
       })
       it('should return false for excluded type', () => {
         expect(metadataQuery.isTypeMatch(EXCLUDED_TYPE)).toBeFalse()
-      })
-      it('should return false for unsupported fetch with changes detection type', () => {
-        expect(metadataQuery.isTypeMatch(CUSTOM_METADATA)).toBeFalse()
       })
     })
     describe('isInstanceIncluded & isInstanceMatch', () => {

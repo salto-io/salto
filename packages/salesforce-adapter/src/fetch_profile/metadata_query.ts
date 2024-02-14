@@ -18,7 +18,6 @@ import _ from 'lodash'
 import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { FileProperties } from '@salto-io/jsforce'
 import {
-  CUSTOM_METADATA,
   CUSTOM_OBJECT,
   DEFAULT_NAMESPACE,
   FLOW_DEFINITION_METADATA_TYPE,
@@ -71,14 +70,6 @@ const PERMANENT_SKIP_LIST: MetadataQueryParams[] = [
 // and not just standard if '' (aka default) is provided in the namespace filter
 const DEFAULT_NAMESPACE_MATCH_ALL_TYPE_LIST = [
   'InstalledPackage',
-]
-
-
-// Instances of this type won't be fetched in fetchWithChangesDetection mode
-const UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES = [
-  // CustomMetadata Records do not contain lastModifiedDate
-  CUSTOM_METADATA,
-
 ]
 
 const getDefaultNamespace = (metadataType: string): string =>
@@ -241,10 +232,6 @@ export const buildMetadataQueryForFetchWithChangesDetection = async (
   }
   return {
     ...metadataQuery,
-    isTypeMatch: (type: string) => (
-      metadataQuery.isTypeMatch(type)
-      && !UNSUPPORTED_FETCH_WITH_CHANGES_DETECTION_TYPES.includes(type)
-    ),
     isPartialFetch: () => true,
     isFetchWithChangesDetection: () => true,
     isInstanceMatch: instance => {

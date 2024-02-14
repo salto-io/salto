@@ -22,6 +22,8 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { mockTypes, mockInstances } from '../mock_elements'
 import { defaultFilterContext } from '../utils'
 import makeFilter, { ServiceMDTRecordValue } from '../../src/filters/custom_metadata'
@@ -126,6 +128,55 @@ describe('CustomMetadata filter', () => {
         })
         const elements = [mockTypes.CustomMetadata, singleValueInstance,
           nullValueInstance, customMetadataRecordType]
+        await filter.onFetch(elements)
+        singleValueInstance = await getInstanceByApiName(elements, SINGLE_VALUE_INSTANCE_NAME)
+        nullValueInstance = await getInstanceByApiName(elements, NULL_VALUE_INSTANCE_NAME)
+      })
+      it('should create fields from "values"', () => {
+        expect(singleValueInstance.value.values).toBeUndefined()
+        expect(singleValueInstance.value.text__c).toEqual('value')
+      })
+      it('should not convert null values to fields', async () => {
+        expect(nullValueInstance.value.values).toBeUndefined()
+        expect(nullValueInstance.value.text__c).toEqual('value')
+        expect(nullValueInstance.value.number__c).toBeUndefined()
+      })
+      it('should remove XML namespace attributes', () => {
+        expect(nullValueInstance.value).not.toContainKey(
+          expect.stringMatching(new RegExp(`^${XML_ATTRIBUTE_PREFIX}.*`))
+        )
+      })
+      it('should convert to the correct type', async () => {
+        const instanceType = await singleValueInstance.getType()
+        expect(instanceType).toEqual(customMetadataRecordType)
+      })
+    })
+    describe('when CustomMetadataRecordType was not retrieved in partial fetch', () => {
+      const SINGLE_VALUE_INSTANCE_NAME = 'MDType.InstWithSingleValue'
+      const NULL_VALUE_INSTANCE_NAME = 'MDType.InstWithNullValue'
+
+      let singleValueInstance: MetadataInstanceElement
+      let nullValueInstance: MetadataInstanceElement
+
+      beforeEach(async () => {
+        singleValueInstance = createCustomMetadataInstanceFromService({
+          [INSTANCE_FULL_NAME_FIELD]: SINGLE_VALUE_INSTANCE_NAME,
+          values: { field: 'text__c', value: { 'attr_xsi:type': 'xsd:string', '#text': 'value' } },
+        })
+        nullValueInstance = createCustomMetadataInstanceFromService({
+          [INSTANCE_FULL_NAME_FIELD]: NULL_VALUE_INSTANCE_NAME,
+          values: [
+            { field: 'text__c', value: { 'attr_xsi:type': 'xsd:string', '#text': 'value' } },
+            { field: 'number__c', value: { 'attr_xsi:nil': 'true' } },
+          ],
+        })
+        const elements = [mockTypes.CustomMetadata, singleValueInstance,
+          nullValueInstance]
+        filter = makeFilter({ config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({ fetchParams: { target: [CUSTOM_METADATA] } }),
+          elementsSource: buildElementsSourceFromElements([customMetadataRecordType]),
+        } }) as FilterType
         await filter.onFetch(elements)
         singleValueInstance = await getInstanceByApiName(elements, SINGLE_VALUE_INSTANCE_NAME)
         nullValueInstance = await getInstanceByApiName(elements, NULL_VALUE_INSTANCE_NAME)

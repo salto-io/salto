@@ -30,7 +30,7 @@ import {
 } from '@salto-io/adapter-api'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
-import { isCustomMetadataRecordInstance, isCustomMetadataRecordType, isInstanceOfType, isMetadataValues } from './utils'
+import { buildElementsSourceForFetch, isCustomMetadataRecordInstance, isCustomMetadataRecordType, isInstanceOfType, isMetadataValues } from './utils'
 import {
   CUSTOM_METADATA, CUSTOM_METADATA_SUFFIX,
   FIELD_TYPE_NAMES,
@@ -241,12 +241,13 @@ const toDeployableChange = async (
     : toChange({ after: deployableAfter })
 }
 
-const filterCreator: LocalFilterCreator = () => {
+const filterCreator: LocalFilterCreator = ({ config }) => {
   let originalChangesByApiName: Record<string, Change>
   return {
     name: 'customMetadataRecordsFilter',
     onFetch: async elements => {
-      const customMetadataRecordTypes = await awu(elements)
+      const elementsSource = buildElementsSourceForFetch(elements, config)
+      const customMetadataRecordTypes = await awu(await elementsSource.getAll())
         .filter(isObjectType)
         .filter(isCustomMetadataRecordType)
         .toArray()

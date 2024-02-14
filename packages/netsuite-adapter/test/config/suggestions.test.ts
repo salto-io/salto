@@ -17,8 +17,9 @@ import _ from 'lodash'
 import { InstanceElement, ElemID } from '@salto-io/adapter-api'
 import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import { fullFetchConfig, fullQueryParams } from '../../src/config/config_creator'
-import { toLargeFoldersExcludedMessage, toLargeTypesExcludedMessage, STOP_MANAGING_ITEMS_MSG, getConfigFromConfigChanges } from '../../src/config/suggestions'
-import { NetsuiteQueryParameters, fetchDefault, configType } from '../../src/config/types'
+import { toLargeFoldersExcludedMessage, toLargeTypesExcludedMessage, STOP_MANAGING_ITEMS_MSG, getConfigFromConfigChanges, ALIGNED_INACTIVE_CRITERIAS } from '../../src/config/suggestions'
+import { NetsuiteQueryParameters, fetchDefault, configType, NetsuiteConfig } from '../../src/config/types'
+import { INACTIVE_FIELDS } from '../../src/constants'
 
 describe('netsuite config suggestions', () => {
   const skipList: NetsuiteQueryParameters = {
@@ -44,7 +45,7 @@ describe('netsuite config suggestions', () => {
         types: [
           { name: 'testAll', ids: ['.*'] },
           { name: 'testExistingPartial', ids: ['scriptid1', 'scriptid2'] },
-          { name: '.*', criteria: { isinactive: true } },
+          { name: '.*', criteria: { isInactive: true } },
         ],
         fileCabinet: ['SomeRegex'],
       },
@@ -125,7 +126,7 @@ describe('netsuite config suggestions', () => {
       types: [
         { name: 'testAll', ids: ['.*'] },
         { name: 'testExistingPartial', ids: ['scriptid1', 'scriptid2', 'scriptid3', 'scriptid4'] },
-        { name: '.*', criteria: { isinactive: true } },
+        { name: '.*', criteria: { isInactive: true } },
         { name: 'testNew', ids: ['scriptid5', 'scriptid6'] },
         { name: 'excludedTypeTest' },
       ],
@@ -193,5 +194,44 @@ describe('netsuite config suggestions', () => {
     expect(configChange?.message).toBe(
       formatConfigSuggestionsReasons([STOP_MANAGING_ITEMS_MSG, toLargeFoldersExcludedMessage([newLargeFolderPath])])
     )
+  })
+
+  it('should align inactive fields', () => {
+    const config: NetsuiteConfig = {
+      fetch: fullFetchConfig(),
+    }
+    config.fetch.exclude.types = Object.values(INACTIVE_FIELDS)
+      .map(fieldName => ({
+        name: '.*',
+        criteria: {
+          [fieldName]: true,
+        },
+      }))
+    const configChange = getConfigFromConfigChanges(
+      {
+        failedToFetchAllAtOnce: false,
+        failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+        failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+        failedCustomRecords: [],
+      },
+      config,
+    )
+    expect(configChange?.config[0].value).toEqual({
+      fetch: {
+        include: fullQueryParams(),
+        exclude: {
+          types: [
+            {
+              name: '.*',
+              criteria: {
+                isInactive: true,
+              },
+            },
+          ],
+          fileCabinet: [],
+        },
+      },
+    })
+    expect(configChange?.message).toMatch(ALIGNED_INACTIVE_CRITERIAS)
   })
 })

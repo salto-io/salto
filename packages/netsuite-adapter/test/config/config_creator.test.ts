@@ -149,8 +149,6 @@ describe('netsuite config creator', () => {
       config.value.includeInactiveRecords = []
       expect(netsuiteConfigFromConfig(config).fetch.exclude.types).toEqual([
         ...config.value.fetch.exclude.types,
-        { name: '.*', criteria: { isinactive: true } },
-        { name: '.*', criteria: { inactive: true } },
         { name: '.*', criteria: { isInactive: true } },
       ])
     })
@@ -159,8 +157,6 @@ describe('netsuite config creator', () => {
       const allExceptRegex = '(?!(workflow|file|folder)$).*'
       expect(netsuiteConfigFromConfig(config).fetch.exclude.types).toEqual([
         ...config.value.fetch.exclude.types,
-        { name: allExceptRegex, criteria: { isinactive: true } },
-        { name: allExceptRegex, criteria: { inactive: true } },
         { name: allExceptRegex, criteria: { isInactive: true } },
       ])
       expect(regex.isFullRegexMatch('workflow', allExceptRegex)).toBeFalsy()

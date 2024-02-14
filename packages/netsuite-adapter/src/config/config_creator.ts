@@ -94,9 +94,9 @@ const includeCustomRecords = (config: NetsuiteConfig): FetchTypeQueryParams[] =>
   return [{ name: config.includeCustomRecords.join('|') }]
 }
 
-const excludeInactiveRecords = (config: NetsuiteConfig): CriteriaQuery[] => {
+const excludeInactiveRecords = (config: NetsuiteConfig): CriteriaQuery | undefined => {
   if (config.includeInactiveRecords === undefined || config.includeInactiveRecords.includes(INCLUDE_ALL)) {
-    return []
+    return undefined
   }
 
   const typesToInclude = config.includeInactiveRecords
@@ -107,12 +107,12 @@ const excludeInactiveRecords = (config: NetsuiteConfig): CriteriaQuery[] => {
     // match all except for the exact strings in typesToInclude
     : `(?!(${typesToInclude.join('|')})$).*`
 
-  return Object.values(INACTIVE_FIELDS).map(fieldName => ({
+  return {
     name: inactiveRecordsToExcludeRegex,
     criteria: {
-      [fieldName]: true,
+      [INACTIVE_FIELDS.isInactive]: true,
     },
-  }))
+  }
 }
 
 const excludeDataFileTypes = (config: NetsuiteConfig): string[] => {
@@ -142,7 +142,7 @@ const updatedFetchInclude = (config: NetsuiteConfig): QueryParams => ({
 
 const updatedFetchExclude = (config: NetsuiteConfig): QueryParams => ({
   ...config.fetch.exclude,
-  types: config.fetch.exclude.types.concat(excludeInactiveRecords(config)),
+  types: config.fetch.exclude.types.concat(excludeInactiveRecords(config) ?? []),
   fileCabinet: config.fetch.exclude.fileCabinet.concat(excludeDataFileTypes(config)),
 })
 

@@ -49,6 +49,7 @@ describe('data_instances_internal_id', () => {
       isPartial: false,
       config: await getDefaultAdapterConfig(),
     }
+    defaultOpts.config.fetch.resolveAccountSpecificValues = false
   })
   describe('onFetch', () => {
     it('should add account specific value to record refs', async () => {

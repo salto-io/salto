@@ -1212,6 +1212,8 @@ describe('Adapter', () => {
         getSystemInformation: getSystemInformationMock,
         getNetsuiteWsdl: () => undefined,
         getConfigRecords: () => [],
+        runSavedSearchQuery: () => [],
+        runSuiteQL: () => [],
         getInstalledBundles: () => [],
         getCustomRecords: getCustomRecordsMock,
       } as unknown as SuiteAppClient
@@ -1276,6 +1278,7 @@ describe('Adapter', () => {
           ),
           getInstalledBundles: () => [],
           getCustomRecords: getCustomRecordsMock,
+          runSuiteQL: () => [],
         } as unknown as SuiteAppClient
 
         adapter = new NetsuiteAdapter({

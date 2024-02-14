@@ -46,10 +46,10 @@ import { createCustomRecordTypes } from '../src/custom_records/custom_record_typ
 import { savedsearchType } from '../src/type_parsers/saved_search_parsing/parsed_saved_search'
 import { reportdefinitionType } from '../src/type_parsers/report_definition_parsing/parsed_report_definition'
 import { financiallayoutType } from '../src/type_parsers/financial_layout_parsing/parsed_financial_layout'
-import { SERVER_TIME_TYPE_NAME } from '../src/server_time'
 import { ProjectInfo, createAdditionalFiles, createSdfExecutor } from './sdf_executor'
 import { parsedDatasetType } from '../src/type_parsers/analytics_parsers/parsed_dataset'
 import { parsedWorkbookType } from '../src/type_parsers/analytics_parsers/parsed_workbook'
+import { UNKNOWN_TYPE_REFERENCES_ELEM_ID } from '../src/filters/data_account_specific_values'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -692,12 +692,7 @@ describe('Netsuite adapter E2E with real account', () => {
           // some sub-instances don't have alias
           .filter(element => getElementValueOrAnnotations(element)[IS_SUB_INSTANCE] !== true)
 
-        if (withSuiteApp) {
-          expect(elementsWithoutAlias).toHaveLength(1)
-          expect(elementsWithoutAlias[0].elemID.typeName).toEqual(SERVER_TIME_TYPE_NAME)
-        } else {
-          expect(elementsWithoutAlias).toHaveLength(0)
-        }
+        expect(elementsWithoutAlias.every(elem => elem.annotations[CORE_ANNOTATIONS.HIDDEN])).toBeTruthy()
       })
 
       it('should fetch the created entityCustomField and its special chars', async () => {
@@ -1018,6 +1013,8 @@ describe('Netsuite adapter E2E with real account', () => {
           .concat(filesToImport)
           .concat(existingFileCabinetInstances)
           .concat(newFileCabinetInstancesElemIds)
+          .concat({ elemID: UNKNOWN_TYPE_REFERENCES_ELEM_ID })
+          .concat({ elemID: UNKNOWN_TYPE_REFERENCES_ELEM_ID.createNestedID('instance', ElemID.CONFIG_NAME) })
 
         const expectedElements = _.uniq(
           allTypes

@@ -24,11 +24,16 @@ import { SERVER_TIME_TYPE_NAME } from '../../src/server_time'
 import { NetsuiteConfig } from '../../src/config/types'
 import { fullFetchConfig } from '../../src/config/config_creator'
 
+export const NUM_OF_SUITEQL_ELEMENTS = Object.values(QUERIES_BY_TABLE_NAME).filter(query => query !== undefined).length
+  // additional elements are the type, and instances from getAdditionalInstances
+  + 4
+
 const runSuiteQLMock = jest.fn()
 const runSavedSearchQueryMock = jest.fn()
 const client = {
   runSuiteQL: runSuiteQLMock,
   runSavedSearchQuery: runSavedSearchQueryMock,
+  isSuiteAppConfigured: () => true,
 } as unknown as NetsuiteClient
 
 describe('SuiteQL table elements', () => {
@@ -91,8 +96,6 @@ describe('SuiteQL table elements', () => {
   })
 
   describe('when there are no existing instances', () => {
-    const numOfInstances = Object.values(QUERIES_BY_TABLE_NAME).filter(query => query !== undefined).length
-
     beforeEach(async () => {
       runSuiteQLMock.mockResolvedValue([
         { id: '1', name: 'Some name' },
@@ -127,9 +130,8 @@ describe('SuiteQL table elements', () => {
     })
 
     it('should return all elements', () => {
-      // additional elements are the type, and instances from getAdditionalInstances
       // minus 1 for the skipped vendor table
-      expect(elements).toHaveLength(numOfInstances + 4 - 1)
+      expect(elements).toHaveLength(NUM_OF_SUITEQL_ELEMENTS - 1)
       expect(elements.every(element => element.annotations[CORE_ANNOTATIONS.HIDDEN] === true)).toBeTruthy()
     })
 

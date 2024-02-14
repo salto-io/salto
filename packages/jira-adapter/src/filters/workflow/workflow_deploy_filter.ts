@@ -19,7 +19,7 @@ import Joi from 'joi'
 import { resolveChangeElement, walkOnValue, WALK_NEXT_STEP, inspectValue, createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
-import { isPostFetchWorkflowChange, PostFetchWorkflowInstance, Transition, WORKFLOW_RESPONSE_SCHEMA, WorkflowInstance, WorkflowResponse } from './types'
+import { isPostFetchWorkflowChange, PostFetchWorkflowInstance, Transition, WORKFLOW_RESPONSE_SCHEMA, WorkflowV1Instance, WorkflowResponse } from './types'
 import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config/config'
 import { getLookUpName } from '../../reference_mapping'
@@ -94,7 +94,7 @@ const sameTransitionIds = (
  * Currently the API does not allow us to remove it but we can at least make sure to
  * not create an additional one if one validator like that already appears in the nacl.
  */
-const removeCreateIssuePermissionValidator = (instance: WorkflowInstance): void => {
+const removeCreateIssuePermissionValidator = (instance: WorkflowV1Instance): void => {
   Object.values(instance.value.transitions)
     .filter(transition => transition.type === 'initial')
     .forEach(transition => {
@@ -133,7 +133,7 @@ const workflowTransitionsToList = (workflowInstance: InstanceElement): void => {
 }
 
 const addTransitionIdsToInstance = (
-  workflowInstance: WorkflowInstance,
+  workflowInstance: WorkflowV1Instance,
   transitions: Transition[],
   statusesMap: Map<string, string>
 ): void => {
@@ -365,7 +365,7 @@ export const deployWorkflow = async (
       // No need to run in DC since the main deployment requests already supports deploying steps
       if (!client.isDataCenter) {
         // as is done since it was already verified on the resolved change
-        await deploySteps(getChangeData(change) as WorkflowInstance, client)
+        await deploySteps(getChangeData(change) as WorkflowV1Instance, client)
       }
     }
   }

@@ -22,7 +22,7 @@ import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { addAnnotationRecursively, findObject, setFieldDeploymentAnnotations } from '../../utils'
 import { JIRA, WORKFLOW_STATUS_TYPE_NAME, WORKFLOW_TRANSITION_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
 import { FilterCreator } from '../../filter'
-import { isWorkflowInstance, StatusLocation, TransitionFrom, WorkflowInstance } from './types'
+import { isWorkflowV1Instance, StatusLocation, TransitionFrom, WorkflowV1Instance } from './types'
 import JiraClient from '../../client/client'
 
 const log = logger(module)
@@ -156,7 +156,7 @@ const getTransitionFrom = (transitionName: string, statusIdToStepId: Record<stri
 }
 
 
-export const removeWorkflowDiagramFields = (element: WorkflowInstance): void => {
+export const removeWorkflowDiagramFields = (element: WorkflowV1Instance): void => {
   element.value.statuses
     ?.filter(status => status.location !== undefined)
     .forEach(status => {
@@ -178,7 +178,7 @@ export const removeWorkflowDiagramFields = (element: WorkflowInstance): void => 
   delete element.value.diagramGlobalLoopedTransition
 }
 
-const buildStatusDiagramFields = (workflow: WorkflowInstance, statusIdToStepId: Record<string, string>)
+const buildStatusDiagramFields = (workflow: WorkflowV1Instance, statusIdToStepId: Record<string, string>)
   :StatusDiagramDeploy[] | undefined => {
   const statuses = workflow.value.statuses
     ?.map(status => {
@@ -199,7 +199,7 @@ const buildStatusDiagramFields = (workflow: WorkflowInstance, statusIdToStepId: 
   return statuses
 }
 
-const buildTransitionsDiagramFields = (workflow: WorkflowInstance, statusIdToStepId: Record<string, string>,
+const buildTransitionsDiagramFields = (workflow: WorkflowV1Instance, statusIdToStepId: Record<string, string>,
   actionKeyToTransition: Record<string, TransitionDiagramFields>)
   : (TransitionDiagramDeploy | undefined)[] | undefined =>
   Object.values(workflow.value.transitions)
@@ -229,7 +229,7 @@ const buildTransitionsDiagramFields = (workflow: WorkflowInstance, statusIdToSte
         })
     }).filter(val => val !== undefined)
 
-export const hasDiagramFields = (instance: WorkflowInstance): boolean => {
+export const hasDiagramFields = (instance: WorkflowV1Instance): boolean => {
   const statusesLocations = instance.value.statuses
     ?.map(status => status.location)
     .filter(location => location !== undefined)
@@ -245,7 +245,7 @@ export const hasDiagramFields = (instance: WorkflowInstance): boolean => {
 const buildDiagramMaps = async ({ client, workflow }:
   {
     client: JiraClient
-    workflow: WorkflowInstance
+    workflow: WorkflowV1Instance
   }):Promise<WorkflowDiagramMaps> => {
   const { name } = workflow.value
   const statusIdToStatus: Record<string, StatusDiagramFields> = {}
@@ -287,7 +287,7 @@ const buildDiagramMaps = async ({ client, workflow }:
   return { statusIdToStatus, statusIdToStepId, actionKeyToTransition, loopedTransitionContainer }
 }
 
-const insertWorkflowDiagramFields = (workflow: WorkflowInstance,
+const insertWorkflowDiagramFields = (workflow: WorkflowV1Instance,
   { statusIdToStatus, statusIdToStepId, actionKeyToTransition, loopedTransitionContainer }: WorkflowDiagramMaps)
   : void => {
   workflow.value.statuses?.forEach(status => {
@@ -324,7 +324,7 @@ export const deployWorkflowDiagram = async (
     client,
   }
   : {
-    instance: WorkflowInstance
+    instance: WorkflowV1Instance
     client: JiraClient
   }): Promise<void> => {
   const workflowDiagramMaps = await buildDiagramMaps({ client, workflow: instance })
@@ -375,7 +375,7 @@ const filter: FilterCreator = ({ client }) => ({
 
     await Promise.all(elements
       .filter(isInstanceElement)
-      .filter(isWorkflowInstance)
+      .filter(isWorkflowV1Instance)
       .map(async workflow => {
         try {
           const workflowDiagramMaps = await buildDiagramMaps(

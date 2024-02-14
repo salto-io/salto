@@ -16,7 +16,7 @@
 import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
 import { invertNaclCase } from '@salto-io/adapter-utils'
 import { TRANSITION_PARTS_SEPARATOR } from '../../filters/workflow/transition_structure'
-import { isWorkflowInstance } from '../../filters/workflow/types'
+import { isWorkflowV1Instance } from '../../filters/workflow/types'
 
 const isDuplicateTransitionKey = (transitionKey: string): boolean =>
   !Number.isNaN(Number(invertNaclCase(transitionKey).split(TRANSITION_PARTS_SEPARATOR).pop()))
@@ -26,7 +26,7 @@ export const workflowTransitionDuplicateNameValidator: ChangeValidator = async c
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
-    .filter(isWorkflowInstance)
+    .filter(isWorkflowV1Instance)
     .filter(workflow => workflow.value.transitions !== undefined
       && Object.keys(workflow.value.transitions).some(isDuplicateTransitionKey))
     .map(instance => {

@@ -15,7 +15,7 @@
 */
 import { Element, getChangeData, isAdditionOrModificationChange, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
-import { isWorkflowInstance } from './types'
+import { isWorkflowV1Instance } from './types'
 
 /**
  * A filter that deletes the transition ids from all the workflows.
@@ -27,7 +27,7 @@ const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)
-      .filter(isWorkflowInstance)
+      .filter(isWorkflowV1Instance)
       .forEach(instance => {
         Object.values(instance.value.transitions).forEach(transition => {
           // We don't need to id after this filter since
@@ -41,7 +41,7 @@ const filter: FilterCreator = () => ({
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
       .filter(isInstanceElement)
-      .filter(isWorkflowInstance)
+      .filter(isWorkflowV1Instance)
       .forEach(instance => {
         Object.values(instance.value.transitions).forEach(transition => {
           // We don't need to id after this filter since

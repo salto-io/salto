@@ -18,7 +18,7 @@ import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { WALK_NEXT_STEP, WalkOnFunc, isResolvedReferenceExpression, resolveValues, walkOnElement } from '@salto-io/adapter-utils'
 import { elements as adapterElements, config as configUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { CORE_ANNOTATIONS, Element, InstanceElement, ObjectType, SaltoError, AdditionChange, Change, ChangeDataType, getChangeData, isAdditionChange, isInstanceElement, isModificationChange, ModificationChange, ReadOnlyElementsSource, ReferenceExpression, Values, ElemID } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Element, InstanceElement, ObjectType, SaltoError, AdditionChange, Change, ChangeDataType, getChangeData, isAdditionChange, isInstanceElement, isModificationChange, ModificationChange, ReadOnlyElementsSource, ReferenceExpression, Values, ElemID, Field } from '@salto-io/adapter-api'
 import { v4 as uuidv4 } from 'uuid'
 import { FilterCreator } from '../../filter'
 import { addAnnotationRecursively, convertPropertiesToList, convertPropertiesToMap, findObject, setTypeDeploymentAnnotations } from '../../utils'
@@ -30,6 +30,7 @@ import { defaultDeployChange, deployChanges } from '../../deployment/standard_de
 import { getLookUpName } from '../../reference_mapping'
 import { JiraConfig } from '../../config/config'
 import { transformTransitions } from '../workflow/transition_structure'
+import { scriptRunnerObjectType } from '../workflow/post_functions_types'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -454,6 +455,16 @@ const filter: FilterCreator = ({ config, client, paginator, fetchQuery, elements
       await addAnnotationRecursively(jiraWorkflow, CORE_ANNOTATIONS.CREATABLE)
       await addAnnotationRecursively(jiraWorkflow, CORE_ANNOTATIONS.UPDATABLE)
       await addAnnotationRecursively(jiraWorkflow, CORE_ANNOTATIONS.DELETABLE)
+
+      const workflowRuleConfigurationParameters = findObject(elements, 'WorkflowRuleConfiguration_parameters')
+      if (workflowRuleConfigurationParameters !== undefined) {
+        workflowRuleConfigurationParameters.fields.scriptRunner = new Field(
+          workflowRuleConfigurationParameters,
+          'scriptRunner',
+          scriptRunnerObjectType,
+          { [CORE_ANNOTATIONS.CREATABLE]: true, [CORE_ANNOTATIONS.UPDATABLE]: true }
+        )
+      }
       const { workflowIdToStatuses, errors: fetchWorkflowDataErrors } = await fetchWorkflowData(paginator)
       if (!_.isEmpty(fetchWorkflowDataErrors)) {
         return { errors: fetchWorkflowDataErrors }

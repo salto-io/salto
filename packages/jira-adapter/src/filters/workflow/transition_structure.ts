@@ -17,8 +17,9 @@
 import { invertNaclCase, naclCase } from '@salto-io/adapter-utils'
 import { SaltoError, Value } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { Status, Transition, WorkflowInstance } from './types'
+import { Status, Transition, WorkflowV1Instance } from './types'
 import { SCRIPT_RUNNER_POST_FUNCTION_TYPE } from '../script_runner/workflow/workflow_cloud'
+import { WorkflowTransition } from '../workflowV2/types'
 
 export const TRANSITION_PARTS_SEPARATOR = '::'
 
@@ -50,7 +51,7 @@ const getTransitionType = (transition: Transition): TransitionType => {
 }
 
 // returns a map of with the expected transition IDs after deployment for each transition key
-export const transitionKeysToExpectedIds = (workflowInstance: WorkflowInstance): Map<string, string> => {
+export const transitionKeysToExpectedIds = (workflowInstance: WorkflowV1Instance): Map<string, string> => {
   const groupedKeys = _.groupBy(Object.keys(workflowInstance.value.transitions), getTransitionTypeFromKey)
 
   const map = new Map<string, string>()
@@ -128,6 +129,16 @@ export const walkOverTransitionIds = (transition: Transition, func: (value: Valu
         return
       }
       func(postFunction.configuration.scriptRunner)
+    })
+}
+
+export const walkOverTransitionIdsV2 = (transition: WorkflowTransition, func: (value: Value) => void): void => {
+  transition.actions
+    ?.filter(action =>
+      action.parameters?.appKey === SCRIPT_RUNNER_POST_FUNCTION_TYPE
+      && action.parameters.scriptRunner?.transitionId !== undefined)
+    .forEach(action => {
+      func(action.parameters.scriptRunner)
     })
 }
 

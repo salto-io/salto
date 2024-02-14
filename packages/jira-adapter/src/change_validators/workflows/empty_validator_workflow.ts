@@ -15,7 +15,7 @@
 */
 import { ChangeError, ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
-import { isWorkflowInstance, WorkflowInstance } from '../../filters/workflow/types'
+import { isWorkflowV1Instance, WorkflowV1Instance } from '../../filters/workflow/types'
 
 const { isDefined } = values
 export const CONFIGURATION_VALIDATOR_TYPE = new Set([
@@ -30,7 +30,7 @@ export const CONFIGURATION_VALIDATOR_TYPE = new Set([
   'WindowsDateValidator',
 ])
 
-const workflowHasEmptyValidator = (instance: WorkflowInstance): Set<string> => {
+const workflowHasEmptyValidator = (instance: WorkflowV1Instance): Set<string> => {
   const invalidValidators = new Set<string>()
   Object.values(instance.value.transitions).forEach(transition => {
     transition.rules?.validators?.forEach(validator => {
@@ -43,7 +43,7 @@ const workflowHasEmptyValidator = (instance: WorkflowInstance): Set<string> => {
 }
 
 const createEmptyValidatorWorkflowError = (
-  instance: WorkflowInstance,
+  instance: WorkflowV1Instance,
   validatorType: Set<string>,
 ): ChangeError | undefined => (validatorType.size > 0 ? {
   elemID: instance.elemID,
@@ -57,7 +57,7 @@ export const emptyValidatorWorkflowChangeValidator: ChangeValidator = async chan
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
-    .filter(isWorkflowInstance)
+    .filter(isWorkflowV1Instance)
     .map(instance => ({ instance, validatorTypes: workflowHasEmptyValidator(instance) }))
     .map(({ instance, validatorTypes }) => createEmptyValidatorWorkflowError(instance, validatorTypes))
     .filter(isDefined)

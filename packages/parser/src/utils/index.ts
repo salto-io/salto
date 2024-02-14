@@ -13,11 +13,4 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { StaticFile, TemplateExpression } from '@salto-io/adapter-api'
-import { parser } from '@salto-io/parser'
-
-
-export const templateExpressionToStaticFile = (expression: TemplateExpression, filepath: string): StaticFile => {
-  const string = parser.dumpValue(expression).toString()
-  return new StaticFile({ filepath, content: Buffer.from(string) }) // need to add the template encoding
-}
+export { templateExpressionToStaticFile } from './template_static_file'

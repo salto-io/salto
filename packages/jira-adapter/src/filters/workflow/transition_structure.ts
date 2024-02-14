@@ -19,7 +19,7 @@ import { SaltoError, Value } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { Status, Transition, WorkflowV1Instance } from './types'
 import { SCRIPT_RUNNER_POST_FUNCTION_TYPE } from '../script_runner/workflow/workflow_cloud'
-import { WorkflowTransition } from '../workflowV2/types'
+import { TransitionV2 } from '../workflowV2/types'
 
 export const TRANSITION_PARTS_SEPARATOR = '::'
 
@@ -132,7 +132,7 @@ export const walkOverTransitionIds = (transition: Transition, func: (value: Valu
     })
 }
 
-export const walkOverTransitionIdsV2 = (transition: WorkflowTransition, func: (value: Value) => void): void => {
+export const walkOverTransitionIdsV2 = (transition: TransitionV2, func: (value: Value) => void): void => {
   transition.actions
     ?.filter(action =>
       action.parameters?.appKey === SCRIPT_RUNNER_POST_FUNCTION_TYPE

@@ -20,7 +20,6 @@ import {
   AdapterOperations,
   AdapterOperationsContext,
   AdditionChange,
-  Change,
   CORE_ANNOTATIONS,
   DetailedChange,
   DetailedChangeWithBaseChange,
@@ -64,6 +63,7 @@ import {
   resolvePath,
   safeJsonStringify,
   setPath,
+  toDetailedChangeWithBaseChange,
   WALK_NEXT_STEP,
   walkOnElement,
   WalkOnFunc,
@@ -113,15 +113,7 @@ const getFetchChangeMetadata = (changedElement: Element | undefined): FetchChang
   getAuthorInformation(changedElement)
 
 export const toAddFetchChange = (elem: Element): FetchChange => {
-  const baseChange: Change<Element> = {
-    action: 'add',
-    data: { after: elem },
-  }
-  const change: DetailedChangeWithBaseChange = {
-    ...baseChange,
-    id: elem.elemID,
-    baseChange,
-  }
+  const change = toDetailedChangeWithBaseChange(toChange({ after: elem }))
   return { change, serviceChanges: [change], metadata: getFetchChangeMetadata(elem) }
 }
 

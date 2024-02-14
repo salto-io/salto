@@ -225,6 +225,16 @@ const getAnnotationTypeChanges = ({
   return []
 }
 
+export const toDetailedChangeWithBaseChange = (
+  baseChange: Change<Element>,
+  elemIDs?: DetailedChangeWithBaseChange['elemIDs']
+): DetailedChangeWithBaseChange => ({
+  ...baseChange,
+  id: getChangeData(baseChange).elemID,
+  elemIDs,
+  baseChange,
+})
+
 export const detailedCompare = (
   // This function supports all types of Elements, but doesn't necessarily support Variable (SALTO-4363)
   before: Element,
@@ -270,12 +280,12 @@ export const detailedCompare = (
 
   // A special case to handle type changes in fields, we have to modify the whole field
   if (isField(before) && isField(after) && !before.refType.elemID.isEqual(after.refType.elemID)) {
-    return [{
-      ...baseChange,
-      id: after.elemID,
-      elemIDs: { before: before.elemID, after: after.elemID },
-      baseChange,
-    }]
+    return [
+      toDetailedChangeWithBaseChange(
+        baseChange,
+        { before: before.elemID, after: after.elemID }
+      ),
+    ]
   }
 
   const valueChanges = isInstanceElement(before) && isInstanceElement(after)
@@ -321,9 +331,8 @@ export const detailedCompare = (
 }
 
 export const getDetailedChanges = (change: Change, compareOptions?: CompareOptions): DetailedChangeWithBaseChange[] => {
-  const elem = getChangeData(change)
   if (change.action !== 'modify') {
-    return [{ ...change, id: elem.elemID, baseChange: change }]
+    return [toDetailedChangeWithBaseChange(change)]
   }
   return detailedCompare(
     change.data.before,

@@ -94,12 +94,10 @@ export type DetailedChange<T = ChangeDataType | Values | Value> =
       after?: ElemID
     }
     path?: ReadonlyArray<string>
+    baseChange?: Change<Element>
   }
 
-export type DetailedChangeWithBaseChange<T = ChangeDataType | Values | Value> =
-  DetailedChange<T> & {
-    baseChange: Change<Element>
-  }
+export type DetailedChangeWithBaseChange = DetailedChange & Required<Pick<DetailedChange, 'baseChange'>>
 
 export type ChangeParams<T> = { before?: T; after?: T }
 

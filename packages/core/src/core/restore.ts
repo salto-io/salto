@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, isRemovalChange, toChange, getChangeData, Element, DetailedChangeWithBaseChange } from '@salto-io/adapter-api'
-import { filterByID, applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { ElemID, isRemovalChange, toChange, Element, DetailedChangeWithBaseChange } from '@salto-io/adapter-api'
+import { filterByID, applyFunctionToChangeData, toDetailedChangeWithBaseChange } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { pathIndex, filterByPathHint, ElementSelector, elementSource, remoteMap } from '@salto-io/workspace'
 import { createDiffChanges } from './diff'
@@ -116,23 +116,15 @@ export const createRestorePathChanges = async (
 ): Promise<DetailedChangeWithBaseChange[]> => {
   const relevantElements = elements
     .filter(element => accounts === undefined || accounts.includes(element.elemID.adapter))
-  const removalChanges = relevantElements.map(element => {
-    const baseChange = toChange({ before: element })
-    return {
-      ...baseChange,
-      id: element.elemID,
-      baseChange,
-    }
-  })
+
+  const removalChanges = relevantElements
+    .map(element => toChange({ before: element }))
+    .map(change => toDetailedChangeWithBaseChange(change))
 
   const additionChanges = await awu(relevantElements)
     .map(element => toChange({ after: element }))
-    .flatMap(baseChange => splitDetailedChangeByPath(
-      {
-        ...baseChange,
-        id: getChangeData(baseChange).elemID,
-        baseChange,
-      },
+    .flatMap(change => splitDetailedChangeByPath(
+      toDetailedChangeWithBaseChange(change),
       index
     ))
     .toArray()

@@ -39,7 +39,7 @@ describe('deleteFieldsFilter', () => {
       })
       const applicationInstance = new InstanceElement('application', applicationType, {
         label: 'app',
-        appUserSchema: { id: '123' },
+        AppUserSchema: { id: '123' },
       })
       const accessPolicy = new InstanceElement('access', accessType, {
         id: 'BBB',
@@ -48,7 +48,7 @@ describe('deleteFieldsFilter', () => {
       await filter.onFetch?.([groupType, groupInstance, applicationInstance, accessPolicy, accessType])
       expect(groupInstance.value.roles).toEqual(undefined)
       expect(groupInstance.value).toEqual({ id: 'AAA', profile: { name: 'everyone' } })
-      expect(applicationInstance.value.appUserSchema).toEqual(undefined)
+      expect(applicationInstance.value.AppUserSchema).toEqual(undefined)
       expect(applicationInstance.value).toEqual({ label: 'app' })
       expect(accessPolicy.value).toEqual({ id: 'BBB' })
     })

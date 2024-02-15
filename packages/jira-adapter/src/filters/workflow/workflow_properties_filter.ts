@@ -20,7 +20,7 @@ import { elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
-import { getWorkflowChanges, isWorkflowInstance, WorkflowInstance } from './types'
+import { getWorkflowChanges, isWorkflowV1Instance, WorkflowV1Instance } from './types'
 import { JIRA, WORKFLOW_STATUS_TYPE_NAME, WORKFLOW_TRANSITION_TYPE_NAME } from '../../constants'
 import { getLookUpName } from '../../reference_mapping'
 
@@ -28,7 +28,7 @@ const PROPERTY_TYPE_NAME = 'WorkflowProperty'
 
 const { awu } = collections.asynciterable
 
-const convertPropertiesToList = (instance: WorkflowInstance): void => {
+const convertPropertiesToList = (instance: WorkflowV1Instance): void => {
   [
     ...(instance.value.statuses ?? []),
     ...(Object.values(instance.value.transitions) ?? []),
@@ -40,7 +40,7 @@ const convertPropertiesToList = (instance: WorkflowInstance): void => {
   })
 }
 
-const convertPropertiesToMap = (instance: WorkflowInstance): void => {
+const convertPropertiesToMap = (instance: WorkflowV1Instance): void => {
   [
     ...(instance.value.statuses ?? []),
     ...(Object.values(instance.value.transitions) ?? []),
@@ -88,7 +88,7 @@ const filter: FilterCreator = () => {
 
       elements
         .filter(isInstanceElement)
-        .filter(isWorkflowInstance)
+        .filter(isWorkflowV1Instance)
         .forEach(convertPropertiesToList)
     },
 
@@ -98,7 +98,7 @@ const filter: FilterCreator = () => {
       const changesToReturn = await awu(relevantChanges)
         .map(async change => {
           originalChanges[getChangeData(change).elemID.getFullName()] = change
-          return applyFunctionToChangeData<Change<WorkflowInstance>>(
+          return applyFunctionToChangeData<Change<WorkflowV1Instance>>(
             change,
             async instance => {
               // I have to call resolveValues here because after I change the status
@@ -121,7 +121,7 @@ const filter: FilterCreator = () => {
 
       const changesToReturn = await awu(relevantChanges)
         .map(async change => {
-          await applyFunctionToChangeData<Change<WorkflowInstance>>(
+          await applyFunctionToChangeData<Change<WorkflowV1Instance>>(
             change,
             instance => {
               convertPropertiesToList(instance)

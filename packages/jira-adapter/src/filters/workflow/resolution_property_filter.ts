@@ -19,14 +19,14 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
-import { isWorkflowInstance, WorkflowInstance } from './types'
+import { isWorkflowV1Instance, WorkflowV1Instance } from './types'
 import { RESOLUTION_KEY_PATTERN } from '../../references/workflow_properties'
 
 const { awu } = collections.asynciterable
 
 const log = logger(module)
 
-const splitResolutionProperties = (instance: WorkflowInstance): void => {
+const splitResolutionProperties = (instance: WorkflowV1Instance): void => {
   Object.values(instance.value.transitions)
     .filter(transition => transition.properties !== undefined)
     ?.forEach(transition => {
@@ -50,16 +50,16 @@ const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)
-      .filter(isWorkflowInstance)
+      .filter(isWorkflowV1Instance)
       .forEach(splitResolutionProperties)
   },
 
   preDeploy: async changes => {
     await awu(changes)
       .filter(isInstanceChange)
-      .filter((change): change is Change<WorkflowInstance> => isWorkflowInstance(getChangeData(change)))
+      .filter((change): change is Change<WorkflowV1Instance> => isWorkflowV1Instance(getChangeData(change)))
       .forEach(async change => {
-        await applyFunctionToChangeData<Change<WorkflowInstance>>(
+        await applyFunctionToChangeData<Change<WorkflowV1Instance>>(
           change,
           async instance => {
             Object.values(instance.value.transitions)
@@ -88,9 +88,9 @@ const filter: FilterCreator = () => ({
   onDeploy: async changes => {
     await awu(changes)
       .filter(isInstanceChange)
-      .filter((change): change is Change<WorkflowInstance> => isWorkflowInstance(getChangeData(change)))
+      .filter((change): change is Change<WorkflowV1Instance> => isWorkflowV1Instance(getChangeData(change)))
       .forEach(async change => {
-        await applyFunctionToChangeData<Change<WorkflowInstance>>(
+        await applyFunctionToChangeData<Change<WorkflowV1Instance>>(
           change,
           instance => {
             splitResolutionProperties(instance)

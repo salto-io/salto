@@ -18,7 +18,7 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import JiraClient from '../../client/client'
-import { WorkflowInstance } from './types'
+import { WorkflowV1Instance } from './types'
 
 const { awu } = collections.asynciterable
 
@@ -73,7 +73,7 @@ const getStatusIdToStepId = async (
 }
 
 export const deploySteps = async (
-  instance: WorkflowInstance,
+  instance: WorkflowV1Instance,
   client: JiraClient
 ): Promise<void> => {
   const statuses = instance.value.statuses ?? []

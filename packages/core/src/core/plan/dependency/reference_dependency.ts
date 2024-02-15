@@ -52,7 +52,7 @@ export const addReferencesDependency: DependencyChanger = async changes => {
     ([_id, change]) => getChangeElemId(change),
   )
 
-  const getTarget = (targetRefId: ElemID, changeElemIdName: string) : undefined | [collections.set.SetId, Change] => {
+  const getTarget = (targetRefId: ElemID, changeElemIdName: string) : undefined | ChangeEntry => {
     const targetElemIdName = targetRefId.createBaseID().parent.getFullName()
     // Ignore self references
     if (targetElemIdName === changeElemIdName) {

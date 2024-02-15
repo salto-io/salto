@@ -21,7 +21,7 @@ import Joi from 'joi'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { WORKFLOW_RULES_TYPE_NAME } from '../../constants'
-import { isWorkflowInstance, triggerSchema } from './types'
+import { isWorkflowV1Instance, triggerSchema } from './types'
 import { triggerType } from './triggers_types'
 
 const log = logger(module)
@@ -60,7 +60,7 @@ const filter: FilterCreator = ({ client, config }) => ({
     const failedWorkflowsIds = new Set<string>()
     await Promise.all(elements
       .filter(isInstanceElement)
-      .filter(isWorkflowInstance)
+      .filter(isWorkflowV1Instance)
       .filter(workflow => workflow.value.name !== undefined)
       .map(async instance => {
         try {

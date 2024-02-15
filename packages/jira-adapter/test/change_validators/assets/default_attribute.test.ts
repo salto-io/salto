@@ -69,7 +69,7 @@ describe('attributeValidator', () => {
     config.fetch.enableJSM = true
     config.fetch.enableJsmExperimental = true
   })
-  it('should return error if trying to add non editable defult attribute', async () => {
+  it('should not return error if trying to add non editable defult attribute', async () => {
     attributeInstance = new InstanceElement(
       'attribute1',
       createEmptyType(OBJECT_TYPE_ATTRIBUTE_TYPE),
@@ -82,12 +82,12 @@ describe('attributeValidator', () => {
     )
     const validator = defaultAttributeValidator(config, client)
     const changeErrors = await validator(
-      [toChange({ before: attributeInstance })],
+      [toChange({ after: attributeInstance })],
       elementsSource
     )
-    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors).toHaveLength(0)
   })
-  it('should return error if trying to modify non editable defult attribute', async () => {
+  it('should not return error if trying to modify non editable defult attribute', async () => {
     attributeInstance = new InstanceElement(
       'attribute1',
       createEmptyType(OBJECT_TYPE_ATTRIBUTE_TYPE),
@@ -103,7 +103,7 @@ describe('attributeValidator', () => {
       [toChange({ before: attributeInstance, after: attributeInstance })],
       elementsSource
     )
-    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors).toHaveLength(0)
   })
   it('should return error if trying to remove non editable defult attribute', async () => {
     attributeInstance = new InstanceElement(

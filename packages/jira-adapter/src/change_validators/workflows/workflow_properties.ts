@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ChangeValidator, getChangeData, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { Values } from '@salto-io/adapter-api/src/values'
-import { isWorkflowInstance, Status, Transition } from '../../filters/workflow/types'
+import { isWorkflowV1Instance, Status, Transition } from '../../filters/workflow/types'
 
 
 const { awu } = collections.asynciterable
@@ -31,7 +31,7 @@ export const workflowPropertiesValidator: ChangeValidator = async changes =>
   awu(changes)
     .filter(isInstanceChange)
     .map(getChangeData)
-    .filter(isWorkflowInstance)
+    .filter(isWorkflowV1Instance)
     .filter(instance => {
       const items = [...(instance.value.statuses ?? []), ...(Object.values(instance.value.transitions) ?? [])]
       const countItemsKeys = getPropertiesKeyGroups(items).map(keyGroup => _.countBy(keyGroup))

@@ -43,6 +43,7 @@ export const defaultAttributeValidator: (
 
   return awu(changes)
     .filter(isInstanceChange)
+    .filter(isRemovalChange)
     .filter(change => getChangeData(change).elemID.typeName === OBJECT_TYPE_ATTRIBUTE_TYPE)
     .filter(async change => {
       const instance = getChangeData(change)
@@ -61,8 +62,8 @@ export const defaultAttributeValidator: (
     .map(async change => ({
       elemID: getChangeData(change).elemID,
       severity: 'Error' as SeverityLevel,
-      message: 'Cannot deploy a system non editable attribute.',
-      detailedMessage: `Cannot deploy this attribute ${getChangeData(change).elemID.name}, as it is a system non deployable attribute.`,
+      message: 'Cannot remove a system non removable attribute.',
+      detailedMessage: `Cannot deploy this attribute ${getChangeData(change).elemID.name}, as it is a system non removable attribute.`,
     }))
     .toArray()
 }

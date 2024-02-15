@@ -17,12 +17,12 @@
 import { isInstanceElement, Element, isAdditionOrModificationChange, getChangeData, isInstanceChange, Value } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../../filter'
-import { WorkflowInstance, isWorkflowInstance } from '../../workflow/types'
+import { WorkflowV1Instance, isWorkflowV1Instance } from '../../workflow/types'
 import { SCRIPT_RUNNER_POST_FUNCTION_TYPE, SCRIPT_RUNNER_SEND_NOTIFICATIONS } from './workflow_cloud'
 
 const { makeArray } = collections.array
 
-const changeAccountIds = (workflowInstance: WorkflowInstance, func: (scriptRunner: Value) => Value): void => {
+const changeAccountIds = (workflowInstance: WorkflowV1Instance, func: (scriptRunner: Value) => Value): void => {
   Object.values(workflowInstance.value.transitions).forEach(transition => {
     makeArray(transition.rules?.postFunctions).forEach(postFunction => {
       if (postFunction.type === SCRIPT_RUNNER_POST_FUNCTION_TYPE
@@ -60,7 +60,7 @@ const filter: FilterCreator = ({ client, config }) => ({
 
     elements
       .filter(isInstanceElement)
-      .filter(isWorkflowInstance)
+      .filter(isWorkflowV1Instance)
       .forEach(workflowInstance => changeAccountIds(workflowInstance, deleteEmptyAccountsId))
   },
   preDeploy: async changes => {
@@ -72,7 +72,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(isAdditionOrModificationChange)
       .filter(isInstanceChange)
       .map(getChangeData)
-      .filter(isWorkflowInstance)
+      .filter(isWorkflowV1Instance)
       .forEach(workflowInstance => changeAccountIds(workflowInstance, addEmptyAccountsId))
   },
   onDeploy: async changes => {
@@ -84,7 +84,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(isAdditionOrModificationChange)
       .filter(isInstanceChange)
       .map(getChangeData)
-      .filter(isWorkflowInstance)
+      .filter(isWorkflowV1Instance)
       .forEach(workflowInstance => changeAccountIds(workflowInstance, deleteEmptyAccountsId))
   },
 })

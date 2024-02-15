@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, DetailedChange, isRemovalChange, toChange, getChangeData, Element } from '@salto-io/adapter-api'
-import { filterByID, applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { ElemID, isRemovalChange, toChange, Element, DetailedChangeWithBaseChange } from '@salto-io/adapter-api'
+import { filterByID, applyFunctionToChangeData, toDetailedChangeFromBaseChange } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { pathIndex, filterByPathHint, ElementSelector, elementSource, remoteMap } from '@salto-io/workspace'
 import { createDiffChanges } from './diff'
@@ -24,9 +24,9 @@ import { ChangeWithDetails } from './plan/plan_item'
 const { awu } = collections.asynciterable
 
 const splitDetailedChangeByPath = async (
-  change: DetailedChange,
+  change: DetailedChangeWithBaseChange,
   index: pathIndex.PathIndex
-): Promise<DetailedChange[]> => {
+): Promise<DetailedChangeWithBaseChange[]> => {
   const changeHints = await pathIndex.getFromPathIndex(change.id, index)
   if (_.isEmpty(changeHints) || isRemovalChange(change)) {
     return [change]
@@ -66,7 +66,7 @@ export function createRestoreChanges(
   elementSelectors?: ElementSelector[],
   accounts?: readonly string[],
   resultType?: 'detailedChanges'
-): Promise<DetailedChange[]>
+): Promise<DetailedChangeWithBaseChange[]>
 export async function createRestoreChanges(
   workspaceElements: elementSource.ElementsSource,
   state: elementSource.ElementsSource,
@@ -75,7 +75,7 @@ export async function createRestoreChanges(
   elementSelectors: ElementSelector[] = [],
   accounts?: readonly string[],
   resultType: 'changes' | 'detailedChanges' = 'detailedChanges'
-): Promise<DetailedChange[] | ChangeWithDetails[]> {
+): Promise<DetailedChangeWithBaseChange[] | ChangeWithDetails[]> {
   if (resultType === 'changes') {
     const changes = await createDiffChanges(
       workspaceElements,
@@ -113,21 +113,18 @@ export const createRestorePathChanges = async (
   elements: Element[],
   index: remoteMap.RemoteMap<pathIndex.Path[]>,
   accounts?: string[],
-): Promise<DetailedChange[]> => {
+): Promise<DetailedChangeWithBaseChange[]> => {
   const relevantElements = elements
     .filter(element => accounts === undefined || accounts.includes(element.elemID.adapter))
-  const removalChanges = relevantElements.map(element => ({
-    ...toChange({ before: element }),
-    id: element.elemID,
-  }))
+
+  const removalChanges = relevantElements
+    .map(element => toChange({ before: element }))
+    .map(change => toDetailedChangeFromBaseChange(change))
 
   const additionChanges = await awu(relevantElements)
     .map(element => toChange({ after: element }))
     .flatMap(change => splitDetailedChangeByPath(
-      {
-        ...change,
-        id: getChangeData(change).elemID,
-      },
+      toDetailedChangeFromBaseChange(change),
       index
     ))
     .toArray()

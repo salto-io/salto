@@ -18,7 +18,7 @@ import {
 } from '@salto-io/dag'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import {
-  ObjectType, InstanceElement, Field, isInstanceElement, isObjectType, isField, TopLevelElement,
+  ObjectType, InstanceElement, Field, isInstanceElement, isObjectType, isField, TopLevelElement, Element,
 } from './elements'
 import { ElemID } from './element_id'
 import { Values, Value } from './values'
@@ -94,7 +94,10 @@ export type DetailedChange<T = ChangeDataType | Values | Value> =
       after?: ElemID
     }
     path?: ReadonlyArray<string>
+    baseChange?: Change<Element>
   }
+
+export type DetailedChangeWithBaseChange = DetailedChange & Required<Pick<DetailedChange, 'baseChange'>>
 
 export type ChangeParams<T> = { before?: T; after?: T }
 

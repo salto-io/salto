@@ -16,18 +16,18 @@
 import wu from 'wu'
 
 import { NodeId, Group, ActionName } from '@salto-io/dag'
-import { Change, getChangeData, DetailedChange, CompareOptions } from '@salto-io/adapter-api'
+import { Change, getChangeData, CompareOptions, DetailedChangeWithBaseChange } from '@salto-io/adapter-api'
 import { getDetailedChanges } from '@salto-io/adapter-utils'
 
 export type PlanItemId = NodeId
 export type ChangeWithDetails = Change & {
-  detailedChanges: () => DetailedChange[]
+  detailedChanges: () => DetailedChangeWithBaseChange[]
 }
 export type PlanItem = Group<Change> & {
   action: ActionName
   account: string
   changes: () => Iterable<ChangeWithDetails>
-  detailedChanges: () => Iterable<DetailedChange>
+  detailedChanges: () => Iterable<DetailedChangeWithBaseChange>
 }
 
 const getGroupAction = (group: Group<Change>): ActionName => {

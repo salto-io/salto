@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { detailedCompare } from '@salto-io/adapter-utils'
-import { ElemID, Field, BuiltinTypes, ObjectType, ListType, InstanceElement, DetailedChange, PrimitiveType, PrimitiveTypes, isField, getChangeData, Change, ReferenceExpression, INSTANCE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ElemID, Field, BuiltinTypes, ObjectType, ListType, InstanceElement, DetailedChange, PrimitiveType, PrimitiveTypes, isField, getChangeData, Change, ReferenceExpression, INSTANCE_ANNOTATIONS, toChange } from '@salto-io/adapter-api'
 import { ModificationDiff, RemovalDiff, AdditionDiff } from '@salto-io/dag'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
 import { routeChanges, routePromote, routeDemote, routeCopyTo, getMergeableParentID, routeRemoveFrom } from '../../../src/workspace/nacl_files/multi_env/routers'
@@ -872,6 +872,10 @@ describe('isolated routing', () => {
       .toMatchObject(change)
   })
   it('should route a common modification diff to common and revert the change in secondary envs', async () => {
+    const primarySrcObj = envObj.clone()
+    primarySrcObj.annotate({ boolean: true })
+    const secSrcObj = envObj.clone()
+    secSrcObj.annotate({ boolean: false })
     const specificChange: DetailedChange = {
       action: 'modify',
       data: { before: false, after: true },
@@ -896,6 +900,7 @@ describe('isolated routing', () => {
       },
       id: specificChange.id,
       path: ['test', 'path'],
+      baseChange: toChange({ before: envObj, after: primarySrcObj }),
     })
     expect(routedChanges.commonSource?.[0]).toEqual({
       action: 'remove',
@@ -912,6 +917,7 @@ describe('isolated routing', () => {
         after: specificChange.id,
       },
       path: ['test', 'path'],
+      baseChange: toChange({ before: envObj, after: secSrcObj }),
     })
   })
   it('should route a common removal diff to common and revert the change in secondary envs', async () => {

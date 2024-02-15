@@ -14,9 +14,8 @@
 * limitations under the License.
 */
 import { EventEmitter } from 'pietile-eventemitter'
-import { InstanceElement, DetailedChange } from '@salto-io/adapter-api'
-import { fetch, fetchFromWorkspace, FetchChange, FetchProgressEvents, StepEmitter, FetchFunc,
-  loadLocalWorkspace } from '@salto-io/core'
+import { InstanceElement } from '@salto-io/adapter-api'
+import { fetch, fetchFromWorkspace, FetchProgressEvents, StepEmitter, FetchFunc, loadLocalWorkspace } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { mockFunction } from '@salto-io/test-utils'
 import { CliExitCode, CliTelemetry, CliError } from '../../src/types'
@@ -273,7 +272,7 @@ describe('fetch command', () => {
       })
       describe('with upstream changes', () => {
         const changes = mocks.dummyChanges.map(
-          (change: DetailedChange): FetchChange => ({ change, serviceChanges: [change] })
+          change => ({ change, serviceChanges: [change] })
         )
         const mockFetchWithChanges = jest.fn().mockResolvedValue(
           {

@@ -15,7 +15,7 @@
 */
 import { restore, restorePaths } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
-import { DetailedChange, ElemID, ModificationChange, StaticFile, Values } from '@salto-io/adapter-api'
+import { DetailedChangeWithBaseChange, ElemID, ModificationChange, StaticFile, Values } from '@salto-io/adapter-api'
 import { getUserBooleanInput } from '../../src/callbacks'
 import { CliExitCode } from '../../src/types'
 import { action } from '../../src/commands/restore'
@@ -439,7 +439,7 @@ describe('restore command', () => {
 
     it('should warn of inner unrestoring modified static files without content', async () => {
       const workspace = mocks.mockWorkspace({})
-      const change: ModificationChange<Values> & DetailedChange = {
+      const change: ModificationChange<Values> & DetailedChangeWithBaseChange = {
         data: {
           before: {
             file: new StaticFile({
@@ -456,6 +456,7 @@ describe('restore command', () => {
         },
         action: 'modify',
         id: new ElemID('adapter', 'type', 'instance', 'inst', 'value'),
+        baseChange: mocks.baseChange('modify'),
       }
       mockRestore.mockResolvedValueOnce([
         {

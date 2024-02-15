@@ -19,6 +19,7 @@ import {
   ChangeDataType,
   CompareOptions,
   DetailedChange,
+  DetailedChangeWithBaseChange,
   Element,
   ElemID,
   getChangeData,
@@ -34,6 +35,7 @@ import {
   isType,
   ObjectType,
   PrimitiveType,
+  toChange,
   Value,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
@@ -223,12 +225,23 @@ const getAnnotationTypeChanges = ({
   return []
 }
 
+export const toDetailedChangeFromBaseChange = (
+  baseChange: Change<Element>,
+  elemIDs?: DetailedChangeWithBaseChange['elemIDs']
+): DetailedChangeWithBaseChange => ({
+  ...baseChange,
+  id: getChangeData(baseChange).elemID,
+  elemIDs,
+  baseChange,
+})
+
 export const detailedCompare = (
   // This function supports all types of Elements, but doesn't necessarily support Variable (SALTO-4363)
   before: Element,
   after: Element,
   compareOptions?: DetailedCompareOptions
-): DetailedChange[] => {
+): DetailedChangeWithBaseChange[] => {
+  const baseChange = toChange({ before, after })
   const createFieldChanges = compareOptions?.createFieldChanges ?? false
 
   const getFieldsChanges = (beforeObj: ObjectType, afterObj: ObjectType): DetailedChange[] => {
@@ -267,12 +280,12 @@ export const detailedCompare = (
 
   // A special case to handle type changes in fields, we have to modify the whole field
   if (isField(before) && isField(after) && !before.refType.elemID.isEqual(after.refType.elemID)) {
-    return [{
-      action: 'modify',
-      id: after.elemID,
-      data: { before, after },
-      elemIDs: { before: before.elemID, after: after.elemID },
-    }]
+    return [
+      toDetailedChangeFromBaseChange(
+        baseChange,
+        { before: before.elemID, after: after.elemID }
+      ),
+    ]
   }
 
   const valueChanges = isInstanceElement(before) && isInstanceElement(after)
@@ -309,13 +322,17 @@ export const detailedCompare = (
   const fieldChanges = createFieldChanges && isObjectType(before) && isObjectType(after)
     ? getFieldsChanges(before, after)
     : []
-  return [...annotationTypeChanges, ...annotationChanges, ...fieldChanges, ...valueChanges]
+
+  return annotationTypeChanges
+    .concat(annotationChanges)
+    .concat(fieldChanges)
+    .concat(valueChanges)
+    .map(detailedChange => ({ ...detailedChange, baseChange }))
 }
 
-export const getDetailedChanges = (change: Change, compareOptions?: CompareOptions): DetailedChange[] => {
-  const elem = getChangeData(change)
+export const getDetailedChanges = (change: Change, compareOptions?: CompareOptions): DetailedChangeWithBaseChange[] => {
   if (change.action !== 'modify') {
-    return [{ ...change, id: elem.elemID }]
+    return [toDetailedChangeFromBaseChange(change)]
   }
   return detailedCompare(
     change.data.before,

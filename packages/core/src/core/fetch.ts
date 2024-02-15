@@ -22,6 +22,7 @@ import {
   AdditionChange,
   CORE_ANNOTATIONS,
   DetailedChange,
+  DetailedChangeWithBaseChange,
   Element,
   ElemID,
   ElemIdGetter,
@@ -62,6 +63,7 @@ import {
   resolvePath,
   safeJsonStringify,
   setPath,
+  toDetailedChangeFromBaseChange,
   WALK_NEXT_STEP,
   walkOnElement,
   WalkOnFunc,
@@ -111,11 +113,7 @@ const getFetchChangeMetadata = (changedElement: Element | undefined): FetchChang
   getAuthorInformation(changedElement)
 
 export const toAddFetchChange = (elem: Element): FetchChange => {
-  const change: DetailedChange = {
-    id: elem.elemID,
-    action: 'add',
-    data: { after: elem },
-  }
+  const change = toDetailedChangeFromBaseChange(toChange({ after: elem }))
   return { change, serviceChanges: [change], metadata: getFetchChangeMetadata(elem) }
 }
 
@@ -143,7 +141,7 @@ export const getDetailedChanges = async (
   before: ReadOnlyElementsSource,
   after: ReadOnlyElementsSource,
   topLevelFilters: IDFilter[]
-): Promise<Iterable<DetailedChange>> =>
+): Promise<Iterable<DetailedChangeWithBaseChange>> =>
   wu((await getPlan({
     before,
     after,
@@ -155,7 +153,7 @@ export const getDetailedChanges = async (
 
 type WorkspaceDetailedChangeOrigin = 'service' | 'workspace'
 type WorkspaceDetailedChange = {
-  change: DetailedChange
+  change: DetailedChangeWithBaseChange
   origin: WorkspaceDetailedChangeOrigin
 }
 
@@ -339,7 +337,7 @@ const toFetchChanges = (
         )
       }
 
-      const createFetchChange = (change: DetailedChange): FetchChange => {
+      const createFetchChange = (change: DetailedChangeWithBaseChange): FetchChange => {
         if (!change.id.isEqual(elemId) && isAdditionChange(change)) {
           // We have a workspace change that is nested inside a conflict between
           // the workspace and the service. it seems like this can only happen if both sides

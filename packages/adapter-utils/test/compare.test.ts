@@ -28,6 +28,7 @@ import {
   ReferenceExpression,
   isAdditionChange,
   toChange,
+  Change,
 } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges, getRelevantNamesFromChange } from '../src/compare'
 
@@ -98,11 +99,13 @@ describe('detailedCompare', () => {
       let beforeInst: InstanceElement
       let afterInst: InstanceElement
       let listID: ElemID
+      let baseChange: Change<InstanceElement>
 
       beforeEach(() => {
         beforeInst = new InstanceElement('inst', instType, { list: [] })
         afterInst = new InstanceElement('inst', instType, { list: [] })
         listID = beforeInst.elemID.createNestedID('list')
+        baseChange = toChange({ before: beforeInst, after: afterInst })
       })
 
       it('should detect removals', () => {
@@ -117,6 +120,7 @@ describe('detailedCompare', () => {
             elemIDs: {
               before: listID.createNestedID('1'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('2'),
@@ -126,6 +130,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('2'),
               after: listID.createNestedID('1'),
             },
+            baseChange,
           },
         ])
       })
@@ -142,6 +147,7 @@ describe('detailedCompare', () => {
             elemIDs: {
               after: listID.createNestedID('1'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('2'),
@@ -151,6 +157,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('1'),
               after: listID.createNestedID('2'),
             },
+            baseChange,
           },
         ])
       })
@@ -167,6 +174,7 @@ describe('detailedCompare', () => {
             elemIDs: {
               after: listID.createNestedID('0'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('1'),
@@ -175,6 +183,7 @@ describe('detailedCompare', () => {
             elemIDs: {
               before: listID.createNestedID('1'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('2'),
@@ -184,6 +193,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('0'),
               after: listID.createNestedID('1'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('3'),
@@ -193,6 +203,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('2'),
               after: listID.createNestedID('2'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('4'),
@@ -201,6 +212,7 @@ describe('detailedCompare', () => {
             elemIDs: {
               after: listID.createNestedID('3'),
             },
+            baseChange,
           },
         ])
       })
@@ -217,6 +229,7 @@ describe('detailedCompare', () => {
             elemIDs: {
               after: listID.createNestedID('0'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('1'),
@@ -226,6 +239,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('0'),
               after: listID.createNestedID('1'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('2'),
@@ -235,6 +249,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('1'),
               after: listID.createNestedID('2'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('3'),
@@ -244,6 +259,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('2'),
               after: listID.createNestedID('3'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('4'),
@@ -253,6 +269,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('3'),
               after: listID.createNestedID('4'),
             },
+            baseChange,
           },
         ])
       })
@@ -269,6 +286,7 @@ describe('detailedCompare', () => {
             elemIDs: {
               before: listID.createNestedID('0'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('1'),
@@ -278,6 +296,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('1'),
               after: listID.createNestedID('0'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('2'),
@@ -286,6 +305,7 @@ describe('detailedCompare', () => {
             elemIDs: {
               after: listID.createNestedID('1'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('3'),
@@ -294,6 +314,7 @@ describe('detailedCompare', () => {
             elemIDs: {
               before: listID.createNestedID('3'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('4'),
@@ -303,6 +324,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('2'),
               after: listID.createNestedID('2'),
             },
+            baseChange,
           },
         ])
       })
@@ -339,6 +361,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('1', 'value2', '0'),
               after: listID.createNestedID('0', 'value2', '0'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('0'),
@@ -351,6 +374,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('1'),
               after: listID.createNestedID('0'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('1'),
@@ -363,6 +387,7 @@ describe('detailedCompare', () => {
               before: listID.createNestedID('0'),
               after: listID.createNestedID('1'),
             },
+            baseChange,
           },
         ])
       })
@@ -390,6 +415,7 @@ describe('detailedCompare', () => {
             elemIDs: {
               before: listID.createNestedID('1'),
             },
+            baseChange,
           },
           {
             id: listID.createNestedID('2'),
@@ -398,6 +424,7 @@ describe('detailedCompare', () => {
             elemIDs: {
               before: listID.createNestedID('2'),
             },
+            baseChange,
           },
         ])
       })
@@ -432,6 +459,10 @@ describe('detailedCompare', () => {
     })
 
     const changes = detailedCompare(before, after)
+    it('should add the right baseChange', () => {
+      const baseChange = toChange({ before, after })
+      changes.forEach(change => expect(change.baseChange).toEqual(baseChange))
+    })
     it('should create add changes for values that were only present in the after type', () => {
       expect(hasChange(
         changes,
@@ -528,6 +559,10 @@ describe('detailedCompare', () => {
 
     describe('without field changes', () => {
       const changes = detailedCompare(before, after)
+      it('should add the right baseChange', () => {
+        const baseChange = toChange({ before, after })
+        changes.forEach(change => expect(change.baseChange).toEqual(baseChange))
+      })
       it('should create add changes for values that were only present in the after object', () => {
         expect(hasChange(
           changes,
@@ -567,6 +602,10 @@ describe('detailedCompare', () => {
     })
     describe('with field changes', () => {
       const changes = detailedCompare(before, after, { createFieldChanges: true })
+      it('should add the right baseChange', () => {
+        const baseChange = toChange({ before, after })
+        changes.forEach(change => expect(change.baseChange).toEqual(baseChange))
+      })
       it('should identify field changes, and create changes with the field id', () => {
         expect(hasChange(
           changes,
@@ -598,6 +637,10 @@ describe('detailedCompare', () => {
       modify: 'After',
     })
     const changes = detailedCompare(before, after)
+    it('should add the right baseChange', () => {
+      const baseChange = toChange({ before, after })
+      changes.forEach(change => expect(change.baseChange).toEqual(baseChange))
+    })
     it('should create add changes for values that were only present in the after field', () => {
       expect(hasChange(
         changes,

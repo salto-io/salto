@@ -24,6 +24,7 @@ import {
   StaticFile,
   ChangeError,
   ChangeDataType,
+  DetailedChangeWithBaseChange,
 } from '@salto-io/adapter-api'
 import {
   Plan, PlanItem, EVENT_TYPES, DeployResult,
@@ -468,22 +469,34 @@ export const mockConfigType = (adapterName: string): ObjectType => {
 export const mockAdapterAuthentication = (credentialsType: ObjectType): AdapterAuthentication =>
   ({ basic: { credentialsType } })
 
+export const baseChange = (action: 'add' | 'modify' | 'remove'): Change<Element> => {
+  const before = new ObjectType({ elemID: new ElemID('salesforce') })
+  const after = new ObjectType({ elemID: new ElemID('salesforce'), annotations: { anno: 'test' } })
+  if (action === 'add') {
+    return { action, data: { after } }
+  }
+  if (action === 'remove') {
+    return { action, data: { before } }
+  }
+  return { action, data: { before, after } }
+}
+
 export const detailedChange = (
   action: 'add' | 'modify' | 'remove', path: ReadonlyArray<string> | ElemID,
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   before: any, after: any,
-): DetailedChange => {
+): DetailedChangeWithBaseChange => {
   const id = path instanceof ElemID ? path : new ElemID('salesforce', ...path)
   if (action === 'add') {
-    return { action, id, data: { after } }
+    return { action, id, data: { after }, baseChange: baseChange(action) }
   }
   if (action === 'remove') {
-    return { action, id, data: { before } }
+    return { action, id, data: { before }, baseChange: baseChange(action) }
   }
-  return { action, id, data: { before, after } }
+  return { action, id, data: { before, after }, baseChange: baseChange(action) }
 }
 
-export const dummyChanges: DetailedChange[] = [
+export const dummyChanges: DetailedChangeWithBaseChange[] = [
   detailedChange('add', ['adapter', 'dummy'], undefined, 'after-add-dummy1'),
   detailedChange('remove', ['adapter', 'dummy2'], 'before-remove-dummy2', undefined),
 ]
@@ -504,10 +517,11 @@ const toPlanItem = (
     const detailedChangesByChange = _.groupBy(detailed, change => change.id.createBaseID().parent.getFullName())
     return changes.map(change => ({
       ...change,
-      detailedChanges: () => detailedChangesByChange[getChangeData(change).elemID.getFullName()],
+      detailedChanges: () => detailedChangesByChange[getChangeData(change).elemID.getFullName()]
+        .map(dc => ({ ...dc, baseChange: change })),
     }))
   },
-  detailedChanges: () => detailed,
+  detailedChanges: () => detailed.map(dc => ({ ...dc, baseChange: parent })),
 })
 
 const createChange = (action: 'add' | 'modify' | 'remove', ...path: string[]): Change => {
@@ -786,7 +800,7 @@ export const deploy: typeof coreDeploy = async (
   }
 }
 
-export const staticFileChange = (action: 'add' | 'modify' | 'remove', withContent = false): DetailedChange => {
+export const staticFileChange = (action: 'add' | 'modify' | 'remove', withContent = false): DetailedChangeWithBaseChange => {
   const id = new ElemID('salesforce')
   const path = ['salesforce', 'Records', 'advancedpdftemplate', 'custtmpl_103_t2257860_156']
   const beforeFile = new StaticFile({
@@ -804,12 +818,12 @@ export const staticFileChange = (action: 'add' | 'modify' | 'remove', withConten
 
   if (action === 'add') {
     const data = { after: afterFile }
-    return { id, action, data, path }
+    return { id, action, data, path, baseChange: baseChange(action) }
   }
   if (action === 'modify') {
     const data = { before: beforeFile, after: afterFile }
-    return { id, action, data, path }
+    return { id, action, data, path, baseChange: baseChange(action) }
   }
   const data = { before: beforeFile }
-  return { id, action, data, path }
+  return { id, action, data, path, baseChange: baseChange(action) }
 }

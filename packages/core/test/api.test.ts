@@ -1424,7 +1424,10 @@ describe('api.ts', () => {
       const res = await api.fixElements(ws, [
         workspace.createElementSelector(type.elemID.getFullName()),
       ])
-
+      const typeBefore = type.clone()
+      const typeAfter = type.clone()
+      typeAfter.annotate({ a: 1, b: 2 })
+      const baseChange = toChange({ before: typeBefore, after: typeAfter })
       expect(res).toEqual({
         changes: [
           {
@@ -1437,6 +1440,7 @@ describe('api.ts', () => {
               before: new ElemID('test1', 'test', 'attr', 'a'),
               after: new ElemID('test1', 'test', 'attr', 'a'),
             },
+            baseChange,
           },
           {
             action: 'add',
@@ -1448,6 +1452,7 @@ describe('api.ts', () => {
               before: new ElemID('test1', 'test', 'attr', 'b'),
               after: new ElemID('test1', 'test', 'attr', 'b'),
             },
+            baseChange,
           },
         ],
         errors: [

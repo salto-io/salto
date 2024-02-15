@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemID, isRemovalChange, toChange, Element, DetailedChangeWithBaseChange } from '@salto-io/adapter-api'
-import { filterByID, applyFunctionToChangeData, toDetailedChangeWithBaseChange } from '@salto-io/adapter-utils'
+import { filterByID, applyFunctionToChangeData, toDetailedChangeFromBaseChange } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { pathIndex, filterByPathHint, ElementSelector, elementSource, remoteMap } from '@salto-io/workspace'
 import { createDiffChanges } from './diff'
@@ -119,12 +119,12 @@ export const createRestorePathChanges = async (
 
   const removalChanges = relevantElements
     .map(element => toChange({ before: element }))
-    .map(change => toDetailedChangeWithBaseChange(change))
+    .map(change => toDetailedChangeFromBaseChange(change))
 
   const additionChanges = await awu(relevantElements)
     .map(element => toChange({ after: element }))
     .flatMap(change => splitDetailedChangeByPath(
-      toDetailedChangeWithBaseChange(change),
+      toDetailedChangeFromBaseChange(change),
       index
     ))
     .toArray()

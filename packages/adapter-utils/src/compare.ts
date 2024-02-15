@@ -225,7 +225,7 @@ const getAnnotationTypeChanges = ({
   return []
 }
 
-export const toDetailedChangeWithBaseChange = (
+export const toDetailedChangeFromBaseChange = (
   baseChange: Change<Element>,
   elemIDs?: DetailedChangeWithBaseChange['elemIDs']
 ): DetailedChangeWithBaseChange => ({
@@ -281,7 +281,7 @@ export const detailedCompare = (
   // A special case to handle type changes in fields, we have to modify the whole field
   if (isField(before) && isField(after) && !before.refType.elemID.isEqual(after.refType.elemID)) {
     return [
-      toDetailedChangeWithBaseChange(
+      toDetailedChangeFromBaseChange(
         baseChange,
         { before: before.elemID, after: after.elemID }
       ),
@@ -332,7 +332,7 @@ export const detailedCompare = (
 
 export const getDetailedChanges = (change: Change, compareOptions?: CompareOptions): DetailedChangeWithBaseChange[] => {
   if (change.action !== 'modify') {
-    return [toDetailedChangeWithBaseChange(change)]
+    return [toDetailedChangeFromBaseChange(change)]
   }
   return detailedCompare(
     change.data.before,

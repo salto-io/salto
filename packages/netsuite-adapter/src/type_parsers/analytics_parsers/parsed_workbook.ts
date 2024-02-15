@@ -16,6 +16,7 @@
 
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ListType, ObjectType, createRefToElmWithValue, createRestriction } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
+import { types } from '@salto-io/lowerdash'
 import { TypeAndInnerTypes } from '../../types/object_types'
 import * as constants from '../../constants'
 import { fieldTypes } from '../../types/field_types'
@@ -166,6 +167,14 @@ type WorkbookDefinitionType = {
   dataViews?: visualizationType[]
   pivots?: visualizationType[]
   Workbook?: InnerWorkbook
+}
+
+export const workbookDefinitionFields: types.TypeKeysEnum<WorkbookDefinitionType> = {
+  charts: 'charts',
+  datasetLinks: 'datasetLinks',
+  dataViews: 'dataViews',
+  pivots: 'pivots',
+  Workbook: 'Workbook',
 }
 
 export type Workbook = AnalyticOriginalFields & WorkbookDefinitionType

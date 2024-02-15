@@ -14,20 +14,20 @@
 * limitations under the License.
 */
 
-import { BuiltinTypes, Change, createRefToElmWithValue, Element, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isListType, isObjectType, ObjectType, Value, Values } from '@salto-io/adapter-api'
+import { BuiltinTypes, Change, cloneDeepWithoutRefs, createRefToElmWithValue, Element, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isListType, isObjectType, ObjectType, Value, Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { TransformFuncArgs, transformValues, WALK_NEXT_STEP, WalkOnFunc, walkOnValue } from '@salto-io/adapter-utils'
 import { parse, j2xParser } from 'fast-xml-parser'
 import { decode, encode } from 'he'
 import { collections, strings } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { APPLICATION_ID, DATASET, REAL_VALUE_KEY, SCRIPT_ID, SOAP_SCRIPT_ID, WORKBOOK } from '../constants'
+import { DATASET, REAL_VALUE_KEY, SCRIPT_ID, SOAP_SCRIPT_ID, WORKBOOK } from '../constants'
 import { LocalFilterCreator } from '../filter'
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from '../client/constants'
-import { parsedWorkbookType } from '../type_parsers/analytics_parsers/parsed_workbook'
-import { parsedDatasetType } from '../type_parsers/analytics_parsers/parsed_dataset'
+import { parsedWorkbookType, workbookDefinitionFields } from '../type_parsers/analytics_parsers/parsed_workbook'
+import { datasetDefinitionFields, parsedDatasetType } from '../type_parsers/analytics_parsers/parsed_dataset'
 import { TypeAndInnerTypes } from '../types/object_types'
-import { AnalyticOriginalFields, CHART_IDS, DATA_VIEW_IDS, DEFAULT_VALUE, DEFAULT_XML_TYPE, DEFINITION, DEPENDENCIES, DO_NOT_ADD, EmptyObject, EXPRESSION_VALUE_VALUE_REGEX, FALSE, FIELD_DEFINITION, FIELD_TYPE, fieldsToOmitFromDefinition, fieldsToOmitFromOriginal, FieldWithType, ITEM, NAME, originalFields, OriginalWorkbookArrays, PIVOT_IDS, ROOT, StringToStringRecord, TRANSLATION_SCRIPT_ID, TRUE, TValuesToIgnore, TYPE, XML_TYPE, xmlType } from '../type_parsers/analytics_parsers/analytics_constants'
+import { CHART_IDS, DATA_VIEW_IDS, DEFAULT_VALUE, DEFAULT_XML_TYPE, DEFINITION, DO_NOT_ADD, EmptyObject, EXPRESSION_VALUE_VALUE_REGEX, FALSE, FIELD_DEFINITION, FIELD_TYPE, fieldsToOmitFromDefinition, fieldsToOmitFromOriginal, FieldWithType, ITEM, NAME, OriginalWorkbookArrays, PIVOT_IDS, ROOT, StringToStringRecord, TRANSLATION_SCRIPT_ID, TRUE, TValuesToIgnore, TYPE, XML_TYPE, xmlType } from '../type_parsers/analytics_parsers/analytics_constants'
 import { captureServiceIdInfo } from '../service_id_info'
 import { workbookType } from '../autogen/types/standard_types/workbook'
 import { datasetType } from '../autogen/types/standard_types/dataset'
@@ -72,7 +72,7 @@ const fetchTransformFunc = async (
       return String(value[REAL_VALUE_KEY])
     }
     if (FIELD_DEFINITION in value) {
-      if (!isObjectType(fieldType) || !(XML_TYPE in fieldType.annotations)) {
+      if (!isObjectType(fieldType) || !(fieldType.annotations[XML_TYPE])) {
         log.debug('unexpected _T_ field in analytic instance. Path: %s', path?.getFullName())
         return {
           [FIELD_TYPE]: value[FIELD_DEFINITION],
@@ -225,7 +225,7 @@ const addMissingFields = async (
   ): Promise<Value> => {
     const fieldType = path?.isTopLevel() ? analyticsType : await field?.getType()
     if (isObjectType(fieldType) && _.isPlainObject(value) && !(TYPE in value)) {
-      if (XML_TYPE in fieldType.annotations
+      if (fieldType.annotations[XML_TYPE]
         && Object.keys(value).length === 1
         && fieldType.annotations[DEFAULT_XML_TYPE] === undefined) {
         const [key] = Object.keys(value)
@@ -283,18 +283,22 @@ const createDefinitionName = (instance: InstanceElement, definitionValues: Value
 
 const returnToOriginalShape = async (
   instance: InstanceElement,
-): Promise<AnalyticOriginalFields> => {
+): Promise<Values> => {
   const analyticsType = await instance.getType()
 
   const arrays = (analyticsType.elemID.typeName === WORKBOOK) ? createOriginalArrays(instance.value) : []
 
-  const definitionValues: Values = _.omit(instance.value, Object.values(originalFields))
+  const definitionValues = (analyticsType.elemID.typeName === WORKBOOK)
+    ? _.pick(instance.value, Object.values(workbookDefinitionFields))
+    : _.pick(instance.value, Object.values(datasetDefinitionFields))
 
-  await addMissingFields(instance, definitionValues, analyticsType)
+  const updatedDefinitionValues = cloneDeepWithoutRefs(definitionValues)
 
-  matchToXmlObjectForm(instance, definitionValues)
+  await addMissingFields(instance, updatedDefinitionValues, analyticsType)
 
-  createDefinitionName(instance, definitionValues)
+  matchToXmlObjectForm(instance, updatedDefinitionValues)
+
+  createDefinitionName(instance, updatedDefinitionValues)
 
   // eslint-disable-next-line new-cap
   const xmlString = new j2xParser({
@@ -303,13 +307,10 @@ const returnToOriginalShape = async (
     ignoreAttributes: false,
     cdataTagName: CDATA_TAG_NAME,
     tagValueProcessor: val => encode(val.toString()),
-  }).parse({ [ROOT]: definitionValues })
+  }).parse({ [ROOT]: updatedDefinitionValues })
 
   return {
-    [NAME]: instance.value[NAME],
-    [SCRIPT_ID]: instance.value[SCRIPT_ID],
-    [DEPENDENCIES]: instance.value[DEPENDENCIES],
-    [APPLICATION_ID]: instance.value[APPLICATION_ID],
+    ..._.omit(instance.value, Object.keys(definitionValues)),
     [DEFINITION]: xmlString,
     ...arrays,
   }

@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 
-import { types } from '@salto-io/lowerdash'
 import { APPLICATION_ID, REAL_VALUE_KEY, SCRIPT_ID } from '../../constants'
 
 // annotations
@@ -32,19 +31,24 @@ export const FIELD_TYPE = 'fieldType'
 // const strings
 export const ROOT = 'root'
 export const DEFINITION = 'definition'
+export const MAPPING = 'mapping'
 export const ITEM = '_ITEM_'
 export const TRUE = 'true'
 export const FALSE = 'false'
 export const DEPENDENCIES = 'dependencies'
+export const DEPENDENCY = 'dependency'
 export const NAME = 'name'
 export const TRANSLATION_SCRIPT_ID = 'translationScriptId'
 export const CHARTS = 'charts'
 export const PIVOTS = 'pivots'
 export const TABLES = 'tables'
+export const DATASET_LINKS = 'datasetLinks'
+export const DATASET_LINK = 'dsLink'
 export const DATA_VIEWS = 'dataViews'
 export const CHART_IDS = 'chartIDs'
 export const PIVOT_IDS = 'pivotIDs'
 export const DATA_VIEW_IDS = 'dataViewIDs'
+export const DATASETS = 'datasets'
 export const EXPRESSION_VALUE_VALUE_REGEX = /expressions\.\d+\.value\.value$/
 
 // types
@@ -205,10 +209,7 @@ export const fieldsToOmitFromOriginal = [
   CHARTS,
   PIVOTS,
 ]
-export const originalFields: types.TypeKeysEnum<AnalyticOriginalFields> = {
-  [SCRIPT_ID]: SCRIPT_ID,
-  [NAME]: NAME,
-  [DEPENDENCIES]: DEPENDENCIES,
-  [DEFINITION]: DEFINITION,
-  [APPLICATION_ID]: APPLICATION_ID,
-}
+
+export const INNER_ARRAY_NAMES = [PIVOTS, CHARTS, DATASET_LINKS]
+
+export const INNER_XML_TITLES = [DEFINITION, MAPPING]

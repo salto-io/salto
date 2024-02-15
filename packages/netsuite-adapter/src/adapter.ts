@@ -66,6 +66,7 @@ import addInstancesFetchTime from './filters/add_instances_fetch_time'
 import addAliasFilter from './filters/add_alias'
 import addImportantValuesFilter from './filters/add_important_values'
 import addBundleReferences from './filters/bundle_ids'
+import fixOrderProblemsInWorkbooks from './filters/fix_order_problems_in_workbooks'
 import excludeCustomRecordTypes from './filters/exclude_by_criteria/exclude_custom_record_types'
 import excludeInstances from './filters/exclude_by_criteria/exclude_instances'
 import workflowAccountSpecificValues from './filters/workflow_account_specific_values'
@@ -150,6 +151,7 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   { creator: addInstancesFetchTime },
   { creator: addAliasFilter },
   { creator: addImportantValuesFilter },
+  { creator: fixOrderProblemsInWorkbooks },
   // serviceUrls must run after suiteAppInternalIds and SDFInternalIds filter
   { creator: serviceUrls, addsNewInformation: true },
   { creator: addBundleReferences },

@@ -33,7 +33,7 @@ import { isSdfCreateOrUpdateGroupId, isSdfDeleteGroupId, isSuiteAppCreateRecords
   isSuiteAppUpdateRecordsGroupId, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID,
   SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../group_changes'
 import { DeployResult, getElementValueOrAnnotations, getServiceId } from '../types'
-import { APPLICATION_ID, CONFIG_FEATURES } from '../constants'
+import { ADDITIONAL_DEPENDENCIES, APPLICATION_ID, CONFIG_FEATURES } from '../constants'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
 import { FeaturesDeployError, MissingManifestFeaturesError, getChangesElemIdsToRemove, toFeaturesDeployPartialSuccessResult } from './errors'
 import { Graph, GraphNode } from './graph_utils'
@@ -220,6 +220,7 @@ export default class NetsuiteClient {
           }
         })
       })
+      delete node.value.customizationInfo.values[ADDITIONAL_DEPENDENCIES]
     })
     return { dependencyMap, dependencyGraph }
   }

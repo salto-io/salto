@@ -44,6 +44,8 @@ import {
 } from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import { DefaultFetchCriteria } from '@salto-io/adapter-components/src/definitions'
+import { FetchEntry } from '@salto-io/adapter-components/src/definitions/user/fetch_config'
 import ZendeskClient from './client/client'
 import { BrandIdToClient, Filter, FilterCreator, FilterResult, filtersRunner } from './filter'
 import {
@@ -61,12 +63,16 @@ import {
 } from './config'
 import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
+  ARTICLE_TYPE_NAME,
   BRAND_LOGO_TYPE_NAME,
   BRAND_TYPE_NAME,
+  CATEGORY_TYPE_NAME,
   CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
   CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME,
   DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
   GUIDE_THEME_TYPE_NAME,
+  SECTION_TYPE_NAME,
+  SECTIONS_TYPE_NAME,
   THEME_SETTINGS_TYPE_NAME,
   ZENDESK,
 } from './constants'
@@ -175,7 +181,6 @@ const {
 } = elementUtils.ducktype
 const { awu } = collections.asynciterable
 const { concatObjects } = objects
-const SECTIONS_TYPE_NAME = 'sections'
 
 export const DEFAULT_FILTERS = [
   ticketStatusCustomStatusDeployFilter,
@@ -280,6 +285,35 @@ const SKIP_RESOLVE_TYPE_NAMES = [
   'brand_logo',
   ...GUIDE_ORDER_TYPES,
 ]
+
+// Source is dependent on target, when target is excluded source should be also excluded
+type ExcludeDependency = {
+  source: string
+  target: string
+}
+
+const GUIDE_EXCLUDE_DEPENDENCIES: ExcludeDependency[] = [
+  {
+    source: SECTION_TYPE_NAME,
+    target: CATEGORY_TYPE_NAME,
+  },
+  {
+    source: ARTICLE_TYPE_NAME,
+    target: SECTION_TYPE_NAME,
+  },
+]
+
+
+const excludeGuideDependentTypes = (excludeElements: FetchEntry<DefaultFetchCriteria>[]):
+  FetchEntry<DefaultFetchCriteria>[] => (
+  GUIDE_EXCLUDE_DEPENDENCIES
+    .reduce(
+      (acc, dep) => (
+        acc.map(e => e.type).includes(dep.target)
+        && !acc.map(e => e.type).includes(dep.source)
+          ? [...acc, { type: dep.source }] : acc),
+      excludeElements
+    ))
 
 /**
  * Fetch Guide (help_center) elements of brand.
@@ -556,6 +590,7 @@ export default class ZendeskAdapter implements AdapterOperations {
 
   @logDuration('generating instances and types from service')
   private async getElements(): Promise<ReturnType<typeof getAllElements>> {
+    this.userConfig[FETCH_CONFIG].exclude = excludeGuideDependentTypes(this.userConfig[FETCH_CONFIG].exclude)
     const isGuideEnabledInConfig = isGuideEnabled(this.userConfig[FETCH_CONFIG])
     const isGuideInFetch = isGuideEnabledInConfig && !_.isEmpty(this.userConfig[FETCH_CONFIG].guide?.brands)
     const supportedTypes = this.filterSupportedTypes()

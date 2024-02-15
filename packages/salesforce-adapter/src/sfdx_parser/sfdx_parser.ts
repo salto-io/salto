@@ -151,6 +151,7 @@ const getElementsFromDXFolder = async (
           fetchParams: { target: ['hack to make filters think this is partial fetch'] },
         }),
         elementsSource: workspaceElements,
+        flsProfiles: [],
       },
       files: {
         baseDirName: packageDir,

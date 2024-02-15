@@ -17,6 +17,7 @@ salesforce {
       testLevel = "NoTestRun"
       runTests = ["Test name", "Other test"]
       deleteBeforeUpdate = false
+      flsProfiles = ["System Administrator", "Cloud Profile"]
     }
     retry = {
       maxAttempts = 5
@@ -277,6 +278,7 @@ salesforce {
 | testLevel          | `NoTestRun` (development) `RunLocalTests` (production) | Specifies which tests are run as part of a deployment. possible values are: `NoTestRun`, `RunSpecifiedTests`, `RunLocalTests` and `RunAllTestsInOrg`                                                                     |
 | runTests           | `[]` (no tests)                                        | A list of Apex tests to run during deployment, must configure `RunSpecifiedTests` in `testLevel` for this option to work                                                                                                 |
 | deleteBeforeUpdate | `false`                                                | If `true`, deploy will make deletions before any other deployed change                                                                                                                                                   |
+| flsProfiles        | `["System Administraor"]`                              | When deploying new CustomFields and CustomObjects, Salto will make them visible to the specified Profiles Profiles                                                                                                       |
 
 For more details see the DeployOptions section in the [salesforce documentation of the deploy API](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_deploy.htm)
 

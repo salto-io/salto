@@ -374,6 +374,7 @@ export const defaultFilterContext: FilterContext = {
   fetchProfile: buildFetchProfile({ fetchParams: {} }),
   elementsSource: buildElementsSourceFromElements([]),
   enumFieldPermissions: false,
+  flsProfiles: [constants.ADMIN_PROFILE],
 }
 
 export const nullProgressReporter: ProgressReporter = {

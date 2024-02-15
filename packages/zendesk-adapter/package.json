@@ -26,10 +26,10 @@
     "watch-test": "yarn tsc-watch --onSuccess 'yarn clean-ts-test'",
     "build-ts": "tsc -b && yarn clean-ts",
     "watch-ts": "tsc -b -w",
-    "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
+    "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./ --ignore-path ../../.eslintignore",
     "lint-fix": "yarn lint --fix",
-    "format": "prettier --write .",
-    "check-format": "prettier --check ."
+    "format": "prettier --write . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore",
+    "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
     "@handlebars/parser": "^2.1.0",
@@ -62,7 +62,7 @@
     "axios": "^0.26.1",
     "axios-mock-adapter": "^1.19.0",
     "axios-retry": "^4.0.0",
-    "eslint": "^6.2.2",
+    "eslint": "^7.3.2",
     "eslint-config-airbnb": "18.0.1",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-header": "^3.0.0",

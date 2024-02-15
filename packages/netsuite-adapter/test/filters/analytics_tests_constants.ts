@@ -250,10 +250,6 @@ export const unknownDefinition = `<root>
     <isPublic type="boolean">true</isPublic>
     <AudienceItems type="array"></AudienceItems>
   </audience>
-  <strangeAttribute>
-    <num type="string">0.5</num>
-    <_T_>type</_T_>
-  </strangeAttribute>
   <_T_>dataSet</_T_>
   <scriptid type="null"></scriptid>
   <name>seggev test unknown</name>
@@ -320,12 +316,10 @@ export const emptyWorkbook = new InstanceElement(
 export const emptyDatasetDefinition = '<root>\n  <_T_>dataSet</_T_>\n  <scriptid type="null"></scriptid>\n  <applicationId type="null"></applicationId>\n  <audience type="null"></audience>\n  <baseRecord type="null"></baseRecord>\n  <columns type="array"></columns>\n  <criteria type="null"></criteria>\n  <description type="null"></description>\n  <formulas type="array"></formulas>\n  <id type="null"></id>\n  <ownerId type="null"></ownerId>\n  <version type="null"></version>\n</root>\n'
 
 export const basicDatasetDefinition = `<root>
-  <version type="string">0.1</version>
   <audience>
     <isPublic type="boolean">false</isPublic>
     <AudienceItems type="array"></AudienceItems>
   </audience>
-  <ownerId>5</ownerId>
   <baseRecord>
     <id>account</id>
     <label>Account</label>
@@ -381,6 +375,8 @@ export const basicDatasetDefinition = `<root>
     <field type="null"></field>
     <fieldStateName type="null"></fieldStateName>
   </criteria>
+  <ownerId>5</ownerId>
+  <version type="string">0.1</version>
   <_T_>dataSet</_T_>
   <scriptid type="null"></scriptid>
   <name>seggev test basic</name>
@@ -437,14 +433,6 @@ export const parsedBasicWorkbookValue = {
     '#text': '[scriptid=name]',
   },
   dependencies: workbookDependencies,
-  tables: {
-    table: {
-      custview72_16951029801843995215: {
-        scriptid: 'custview72_16951029801843995215',
-        index: 0,
-      },
-    },
-  },
   Workbook: {
     version: '1.1.1',
     name: {
@@ -494,35 +482,6 @@ export const parsedBasicWorkbook = new InstanceElement(
 )
 
 export const basicWorkbookDefinition = `<root>
-  <tables>
-    <table>
-      <custview72_16951029801843995215>
-        <scriptid>custview72_16951029801843995215</scriptid>
-        <index>0</index>
-      </custview72_16951029801843995215>
-    </table>
-  </tables>
-  <Workbook>
-    <version>1.1.1</version>
-    <name>
-      <translationScriptId>seggev basic workbook name</translationScriptId>
-    </name>
-    <audience>
-      <isPublic type="boolean">false</isPublic>
-      <AudienceItems type="array"></AudienceItems>
-    </audience>
-    <ownerId>5</ownerId>
-    <dataViewIDs type="array">
-      <_ITEM_>custview72_16951029801843995215</_ITEM_>
-    </dataViewIDs>
-    <_T_>workbook</_T_>
-    <id type="null"></id>
-    <scriptId type="null"></scriptId>
-    <applicationId type="null"></applicationId>
-    <description type="null"></description>
-    <pivotIDs type="array"></pivotIDs>
-    <chartIDs type="array"></chartIDs>
-  </Workbook>
   <dataViews type="array">
     <_ITEM_>
       <_T_>dataView</_T_>
@@ -555,6 +514,27 @@ export const basicWorkbookDefinition = `<root>
       <applicationId type="null"></applicationId>
     </_ITEM_>
   </dataViews>
+  <Workbook>
+    <version>1.1.1</version>
+    <name>
+      <translationScriptId>seggev basic workbook name</translationScriptId>
+    </name>
+    <audience>
+      <isPublic type="boolean">false</isPublic>
+      <AudienceItems type="array"></AudienceItems>
+    </audience>
+    <ownerId>5</ownerId>
+    <dataViewIDs type="array">
+      <_ITEM_>custview72_16951029801843995215</_ITEM_>
+    </dataViewIDs>
+    <_T_>workbook</_T_>
+    <id type="null"></id>
+    <scriptId type="null"></scriptId>
+    <applicationId type="null"></applicationId>
+    <description type="null"></description>
+    <pivotIDs type="array"></pivotIDs>
+    <chartIDs type="array"></chartIDs>
+  </Workbook>
   <scriptid type="null"></scriptid>
   <name>
     <translationScriptId>name</translationScriptId>
@@ -571,6 +551,14 @@ const basicWorkbookValue = {
   },
   dependencies: workbookDependencies,
   definition: basicWorkbookDefinition,
+  tables: {
+    table: {
+      custview72_16951029801843995215: {
+        scriptid: 'custview72_16951029801843995215',
+        index: 0,
+      },
+    },
+  },
 }
 
 export const basicWorkbook = new InstanceElement(

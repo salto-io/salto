@@ -15,7 +15,7 @@
 */
 
 /* eslint-disable camelcase */
-import { InstanceElement, isInstanceElement, isReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { InstanceElement, isInstanceElement, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { LocalFilterOpts } from '../../src/filter'
@@ -92,8 +92,8 @@ describe('analytics definition handle filter', () => {
         {
           dsLink: {
             [DATASETS]: [
-              'custdataset_2',
               'custdataset_1',
+              'custdataset_2',
             ],
           },
         },
@@ -109,9 +109,9 @@ describe('analytics definition handle filter', () => {
         {
           dsLink: {
             [DATASETS]: [
+              'custdataset_1',
               'custdataset_2',
               'custdataset_3',
-              'custdataset_1',
             ],
           },
         },
@@ -274,9 +274,9 @@ describe('analytics definition handle filter', () => {
       ]
       await filterCreator(fetchOpts).preDeploy?.(changes)
       expect(_.isEmpty(deployDataset1.value[DEPENDENCIES][DEPENDENCY])).toBeTruthy()
-      expect(_.isEmpty(deployDataset2.value[DEPENDENCIES][DEPENDENCY])).toBeFalsy()
-      const dependency = deployDataset2.value[DEPENDENCIES][DEPENDENCY][0]
-      expect(isReferenceExpression(dependency) && dependency.value === 'custdataset_1').toBeTruthy()
+      expect(_.isEmpty(deployDataset2.value[constants.ADDITIONAL_DEPENDENCIES])).toBeFalsy()
+      const additionalDependency = deployDataset2.value[constants.ADDITIONAL_DEPENDENCIES][0]
+      expect(additionalDependency === `[${constants.SCRIPT_ID}=${deployDataset1.value[constants.SCRIPT_ID]}]`).toBeTruthy()
     })
     it('should add dependency to related datasets with 3 datasets', async () => {
       const changes = [
@@ -287,12 +287,12 @@ describe('analytics definition handle filter', () => {
       ]
       await filterCreator(fetchOpts).preDeploy?.(changes)
       expect(_.isEmpty(deployDataset1.value[DEPENDENCIES][DEPENDENCY])).toBeTruthy()
-      expect(_.isEmpty(deployDataset2.value[DEPENDENCIES][DEPENDENCY])).toBeFalsy()
-      expect(_.isEmpty(deployDataset3.value[DEPENDENCIES][DEPENDENCY])).toBeFalsy()
-      const dependencyOf2 = deployDataset2.value[DEPENDENCIES][DEPENDENCY][0]
-      const dependencyOf3 = deployDataset3.value[DEPENDENCIES][DEPENDENCY][0]
-      expect(isReferenceExpression(dependencyOf2) && dependencyOf2.value === 'custdataset_1').toBeTruthy()
-      expect(isReferenceExpression(dependencyOf3) && dependencyOf3.value === 'custdataset_2').toBeTruthy()
+      expect(_.isEmpty(deployDataset2.value[constants.ADDITIONAL_DEPENDENCIES])).toBeFalsy()
+      expect(_.isEmpty(deployDataset3.value[constants.ADDITIONAL_DEPENDENCIES])).toBeFalsy()
+      const additionalDependencyOf2 = deployDataset2.value[constants.ADDITIONAL_DEPENDENCIES][0]
+      const additionalDependencyOf3 = deployDataset3.value[constants.ADDITIONAL_DEPENDENCIES][0]
+      expect(additionalDependencyOf2 === `[${constants.SCRIPT_ID}=${deployDataset1.value[constants.SCRIPT_ID]}]`).toBeTruthy()
+      expect(additionalDependencyOf3 === `[${constants.SCRIPT_ID}=${deployDataset2.value[constants.SCRIPT_ID]}]`).toBeTruthy()
     })
   })
 })

@@ -17,8 +17,8 @@ import _ from 'lodash'
 import { strings, values } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { Change, ElemID, SaltoElementError, getChangeData, isAdditionChange } from '@salto-io/adapter-api'
-import { FILE, FOLDER } from '../constants'
+import { Change, ElemID, InstanceElement, SaltoElementError, getChangeData, isAdditionChange } from '@salto-io/adapter-api'
+import { ADDITIONAL_DEPENDENCIES, FILE, FOLDER, SCRIPT_ID } from '../constants'
 import { CustomizationInfo, CustomTypeInfo, DeployableChange, FileCustomizationInfo, FolderCustomizationInfo, SDFObjectChangeType, TemplateCustomTypeInfo } from './types'
 import { NetsuiteTypesQueryParams } from '../config/types'
 import { REQUIRED_FEATURE_SUFFIX } from '../config/constants'
@@ -175,4 +175,11 @@ export const getChangeTypeAndAddedObjects = (
     addedInnerObjects
   )
   return { changeType: 'modification', addedObjects: new Set(addedInnerObjects) }
+}
+
+export const addAdditionalDependency = (instance: InstanceElement, scriptId: string): void => {
+  if (instance.value[ADDITIONAL_DEPENDENCIES] === undefined) {
+    instance.value[ADDITIONAL_DEPENDENCIES] = []
+  }
+  instance.value[ADDITIONAL_DEPENDENCIES].push(`[${SCRIPT_ID}=${scriptId}]`)
 }

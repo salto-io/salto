@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 
-import { types } from '@salto-io/lowerdash'
 import { APPLICATION_ID, REAL_VALUE_KEY, SCRIPT_ID } from '../../constants'
 
 // annotations
@@ -210,13 +209,6 @@ export const fieldsToOmitFromOriginal = [
   CHARTS,
   PIVOTS,
 ]
-export const originalFields: types.TypeKeysEnum<AnalyticOriginalFields> = {
-  [SCRIPT_ID]: SCRIPT_ID,
-  [NAME]: NAME,
-  [DEPENDENCIES]: DEPENDENCIES,
-  [DEFINITION]: DEFINITION,
-  [APPLICATION_ID]: APPLICATION_ID,
-}
 
 export const INNER_ARRAY_NAMES = [PIVOTS, CHARTS, DATASET_LINKS]
 

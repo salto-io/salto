@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { Change, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceElement, ReadOnlyElementsSource, ReferenceExpression, Value, Values } from '@salto-io/adapter-api'
+import { Change, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceElement, ReadOnlyElementsSource, Value, Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { parse } from 'fast-xml-parser'
 import { decode } from 'he'
@@ -23,7 +23,8 @@ import { collections, values } from '@salto-io/lowerdash'
 import { DATASET, SCRIPT_ID, SOAP_SCRIPT_ID, WORKBOOK } from '../constants'
 import { LocalFilterCreator } from '../filter'
 import { ATTRIBUTE_PREFIX } from '../client/constants'
-import { CHARTS, DATASET_LINK, DATASET_LINKS, DATASETS, DEPENDENCIES, DEPENDENCY, INNER_ARRAY_NAMES, INNER_XML_TITLES, PIVOTS } from '../type_parsers/analytics_parsers/analytics_constants'
+import { DATASET_LINK, DATASET_LINKS, DATASETS, INNER_ARRAY_NAMES, INNER_XML_TITLES } from '../type_parsers/analytics_parsers/analytics_constants'
+import { addAdditionalDependency } from '../client/utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -34,7 +35,7 @@ const addWorkbookToolsToRecord = (
   name: string
 ): void => {
   if (Array.isArray(instance.value[name])) {
-    instance.value[name].forEach((tool:unknown) => {
+    instance.value[name].forEach((tool: unknown) => {
       if (values.isPlainObject(tool)) {
         Object.values(tool)
           .filter(values.isPlainObject)
@@ -55,9 +56,9 @@ const createRecordOfPivotsChartsAndDsLinks = async (
   const oldWorkbookToolsRecord: Record<string, Values> = {}
   const oldInstance = await elementsSource.get(elemID)
   if (isInstanceElement(oldInstance)) {
-    addWorkbookToolsToRecord(oldInstance, oldWorkbookToolsRecord, PIVOTS)
-    addWorkbookToolsToRecord(oldInstance, oldWorkbookToolsRecord, CHARTS)
-    addWorkbookToolsToRecord(oldInstance, oldWorkbookToolsRecord, DATASET_LINKS)
+    INNER_ARRAY_NAMES.forEach(arrayName => {
+      addWorkbookToolsToRecord(oldInstance, oldWorkbookToolsRecord, arrayName)
+    })
   }
   return oldWorkbookToolsRecord
 }
@@ -98,11 +99,12 @@ const adjustWorkbookToolsOrder = (workbookTools: Value[], oldWorkbookToolsRecord
   workbookTools
     .filter(values.isPlainObject)
     .flatMap(obj => Object.values(obj))
+    .filter(values.isPlainRecord)
     .forEach((workbookTool: Values) => {
       if (_.isArray(workbookTool[DATASETS])) {
         workbookTool[DATASETS].sort()
       }
-      if (workbookTool[SOAP_SCRIPT_ID] in oldWorkbookToolsRecord) {
+      if (_.isString(workbookTool[SOAP_SCRIPT_ID]) && workbookTool[SOAP_SCRIPT_ID] in oldWorkbookToolsRecord) {
         const oldWorkbookTool = oldWorkbookToolsRecord[workbookTool[SOAP_SCRIPT_ID]]
         compareAndAssignInnerXmls(workbookTool, oldWorkbookTool)
       }
@@ -113,40 +115,39 @@ const discardUnrelevantChanges = (
   newInstanceValues: Values,
   oldTools: Record<string, Values>,
 ): void => {
-  INNER_ARRAY_NAMES.forEach((arrName: string) => {
+  INNER_ARRAY_NAMES.forEach(arrName => {
     if (Array.isArray(newInstanceValues[arrName])) {
       adjustWorkbookToolsOrder(newInstanceValues[arrName], oldTools)
     }
   })
 }
 
-const addPermissionToDataset = (
-  dataset1Name: string,
-  dataset2Name: string,
+// The deployment order of datasets affected the list order and resulted in changes to the fetch operations.
+// We created dependencies between the datasets to ensure the correct order.
+const addDependencyToDataset = (
+  datasetFirstName: string,
+  datasetSecondName: string,
   datasetMap: Map<string, InstanceElement>,
 ): void => {
-  const firstDataset = datasetMap.get(dataset1Name)
-  const secondDataset = datasetMap.get(dataset2Name)
-  if (
-    isInstanceElement(firstDataset)
-    && isInstanceElement(secondDataset)
-    && Array.isArray(secondDataset.value[DEPENDENCIES]?.[DEPENDENCY])
-  ) {
-    secondDataset.value[DEPENDENCIES]?.[DEPENDENCY]
-      ?.push(new ReferenceExpression(firstDataset.elemID, firstDataset.value[SCRIPT_ID], firstDataset))
+  const firstDataset = datasetMap.get(datasetFirstName)
+  const secondDataset = datasetMap.get(datasetSecondName)
+  if (isInstanceElement(firstDataset) && isInstanceElement(secondDataset)) {
+    addAdditionalDependency(secondDataset, firstDataset.value[SCRIPT_ID])
   }
 }
 
 const getDatasetLinkList = (workbook: InstanceElement): Values[] =>
   (Array.isArray(workbook.value[DATASET_LINKS])
     ? workbook.value[DATASET_LINKS]
-      .filter(values.isPlainObject)
-      .map((obj:Values) => obj[DATASET_LINK])
+      .filter(values.isPlainRecord)
+      .map((obj: Values) => obj[DATASET_LINK])
       .filter(values.isPlainObject)
     : [])
 
+const isStringArray = (val: unknown): val is string[] => Array.isArray(val) && _.every(val, _.isString)
+
 const filterCreator: LocalFilterCreator = ({ elementsSource }) => ({
-  name: 'parseAnalytics',
+  name: 'fixOrderProblemsInWorkbooks',
   onFetch: async elements => {
     const workbooks = elements
       .filter(elem => elem.elemID.typeName === WORKBOOK)
@@ -165,12 +166,9 @@ const filterCreator: LocalFilterCreator = ({ elementsSource }) => ({
       .map(getChangeData)
       .filter(isInstanceElement)
 
-    const datasetMap = new Map<string, InstanceElement>()
-    changedDatasets.forEach(dataset =>
-      datasetMap.set(
-        dataset.value[SCRIPT_ID],
-        dataset
-      ))
+    const datasetMap = new Map<string, InstanceElement>(
+      changedDatasets.map(dataset => [dataset.value[SCRIPT_ID], dataset])
+    )
 
     const workbooks = changes
       .filter(isAdditionOrModificationChange)
@@ -180,16 +178,16 @@ const filterCreator: LocalFilterCreator = ({ elementsSource }) => ({
 
     workbooks.forEach(workbook => {
       getDatasetLinkList(workbook)
-        .forEach((dslink: Values) => {
-          if (Array.isArray(dslink[DATASETS])) {
-            const sortedDatasetArr = [...dslink[DATASETS]].sort()
-            if (dslink[DATASETS].length > 2) {
-              log.debug('There is a datasetLink with more than 2 datasets')
-              for (let i = 0; i < dslink[DATASETS].length - 1; i += 1) {
-                addPermissionToDataset(sortedDatasetArr[i], sortedDatasetArr[i + 1], datasetMap)
-              }
+        .forEach(dslink => {
+          const datasetNamesArray = dslink[DATASETS]
+          if (isStringArray(datasetNamesArray)) {
+            if (datasetNamesArray.length !== 2) {
+              log.debug('There is a datasetLink with different number of datasets than 2: %o', dslink)
             }
-            addPermissionToDataset(sortedDatasetArr[0], sortedDatasetArr[1], datasetMap)
+            datasetNamesArray.reduce((prev, current) => {
+              addDependencyToDataset(prev, current, datasetMap)
+              return current
+            })
           }
         })
     })

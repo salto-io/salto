@@ -101,7 +101,7 @@ describe('analytics definition handle filter', () => {
     it('should add the right fields to an empty dataset', async () => {
       const datasetChange = toChange({ after: emptyDataset }) as AdditionChange<InstanceElement>
       await filterCreator(fetchOpts).preDeploy?.([datasetChange])
-      expect(Object.keys(datasetChange.data.after.value)).toHaveLength(5)
+      expect(Object.keys(datasetChange.data.after.value)).toHaveLength(2)
       expect(datasetChange.data.after.value.definition).toEqual(emptyDatasetDefinition)
       expect(datasetChange.data.after.value.name).toEqual(emptyDataset.value.name)
       expect(datasetChange.data.after.value.scriptid).toEqual(emptyDataset.value.scriptid)
@@ -110,7 +110,7 @@ describe('analytics definition handle filter', () => {
     it('should add the right fields to an empty workbook', async () => {
       const analyticChange = toChange({ after: emptyWorkbook }) as AdditionChange<InstanceElement>
       await filterCreator(fetchOpts).preDeploy?.([analyticChange])
-      expect(Object.keys(analyticChange.data.after.value)).toHaveLength(8)
+      expect(Object.keys(analyticChange.data.after.value)).toHaveLength(5)
       expect(analyticChange.data.after.value.definition).toEqual(emptyWorkbookDefinition)
       expect(analyticChange.data.after.value.name).toEqual(emptyWorkbook.value.name)
       expect(analyticChange.data.after.value.scriptid).toEqual(emptyWorkbook.value.scriptid)
@@ -119,7 +119,7 @@ describe('analytics definition handle filter', () => {
     it('should create a deployable element from basic dataset', async () => {
       const analyticChange = toChange({ after: parsedBasicDataset }) as AdditionChange<InstanceElement>
       await filterCreator(fetchOpts).preDeploy?.([analyticChange])
-      expect(Object.keys(analyticChange.data.after.value)).toHaveLength(5)
+      expect(Object.keys(analyticChange.data.after.value)).toHaveLength(3)
       expect(analyticChange.data.after.value.definition).toEqual(basicDatasetDefinition)
       expect(analyticChange.data.after.value.name).toEqual(parsedBasicDataset.value.name)
       expect(analyticChange.data.after.value.scriptid).toEqual(parsedBasicDataset.value.scriptid)
@@ -128,7 +128,7 @@ describe('analytics definition handle filter', () => {
     it('should create a deployable element from basic workbook', async () => {
       const analyticChange = toChange({ after: parsedBasicWorkbook }) as AdditionChange<InstanceElement>
       await filterCreator(fetchOpts).preDeploy?.([analyticChange])
-      expect(Object.keys(analyticChange.data.after.value)).toHaveLength(8)
+      expect(Object.keys(analyticChange.data.after.value)).toHaveLength(7)
       expect(analyticChange.data.after.value.definition).toEqual(basicWorkbookDefinition)
       expect(analyticChange.data.after.value.name).toEqual(parsedBasicWorkbook.value.name)
       expect(analyticChange.data.after.value.scriptid).toEqual(parsedBasicWorkbook.value.scriptid)
@@ -138,7 +138,7 @@ describe('analytics definition handle filter', () => {
     it('should add default values to missing fields with that annotation', async () => {
       const analyticChange = toChange({ after: parsedDatasetWithDefaultCompletion }) as AdditionChange<InstanceElement>
       await filterCreator(fetchOpts).preDeploy?.([analyticChange])
-      expect(Object.keys(analyticChange.data.after.value)).toHaveLength(5)
+      expect(Object.keys(analyticChange.data.after.value)).toHaveLength(3)
       expect(analyticChange.data.after.value.definition).toEqual(defaultValuesDatasetDefinition)
       expect(analyticChange.data.after.value.name).toEqual(parsedDatasetWithDefaultCompletion.value.name)
       expect(analyticChange.data.after.value.scriptid).toEqual(parsedDatasetWithDefaultCompletion.value.scriptid)
@@ -147,7 +147,7 @@ describe('analytics definition handle filter', () => {
     it('should handle unknown values in the create of the definition value', async () => {
       const analyticChange = toChange({ after: parsedUnknownDataset }) as AdditionChange<InstanceElement>
       await filterCreator(fetchOpts).preDeploy?.([analyticChange])
-      expect(Object.keys(analyticChange.data.after.value)).toHaveLength(5)
+      expect(Object.keys(analyticChange.data.after.value)).toHaveLength(4)
       expect(analyticChange.data.after.value.definition).toEqual(unknownDefinition)
       expect(analyticChange.data.after.value.name).toEqual(parsedUnknownDataset.value.name)
       expect(analyticChange.data.after.value.scriptid).toEqual(parsedUnknownDataset.value.scriptid)
@@ -156,7 +156,7 @@ describe('analytics definition handle filter', () => {
     it('should create arrays of pivots/tables/charts/dataLinks as the original', async () => {
       const analyticChange = toChange({ after: parsedWorkbookWithArrays }) as AdditionChange<InstanceElement>
       await filterCreator(fetchOpts).preDeploy?.([analyticChange])
-      expect(Object.keys(analyticChange.data.after.value)).toHaveLength(8)
+      expect(Object.keys(analyticChange.data.after.value)).toHaveLength(6)
       expect(analyticChange.data.after.value.definition).toEqual(definitionWithArrays)
       expect(analyticChange.data.after.value.name).toEqual(parsedWorkbookWithArrays.value.name)
       expect(analyticChange.data.after.value.scriptid).toEqual(parsedWorkbookWithArrays.value.scriptid)

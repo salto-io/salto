@@ -15,6 +15,7 @@
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
+import { types } from '@salto-io/lowerdash'
 import { TypeAndInnerTypes } from '../../types/object_types'
 import * as constants from '../../constants'
 import { fieldTypes } from '../../types/field_types'
@@ -38,6 +39,19 @@ type DatasetDefinitionType = {
   id?: DefinitionId
   ownerId?: number
   version?: string
+}
+
+export const datasetDefinitionFields: types.TypeKeysEnum<DatasetDefinitionType> = {
+  applicationId: 'applicationId',
+  audience: 'audience',
+  baseRecord: 'baseRecord',
+  columns: 'columns',
+  criteria: 'criteria',
+  description: 'description',
+  formulas: 'formulas',
+  id: 'id',
+  ownerId: 'ownerId',
+  version: 'version',
 }
 
 export type Dataset = AnalyticOriginalFields & DatasetDefinitionType

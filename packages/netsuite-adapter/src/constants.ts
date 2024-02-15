@@ -92,6 +92,7 @@ export const CUSTOM_FIELD_LIST = 'customFieldList'
 export const CONTENT = 'content'
 export const INIT_CONDITION = 'initcondition'
 export const SELECT_RECORD_TYPE = 'selectrecordtype'
+export const ADDITIONAL_DEPENDENCIES = 'additionalDependencies'
 
 type InactiveFields = 'isinactive' | 'inactive' | 'isInactive'
 export const INACTIVE_FIELDS: { [K in InactiveFields]: K } = {

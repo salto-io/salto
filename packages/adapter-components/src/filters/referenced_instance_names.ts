@@ -38,6 +38,7 @@ import {
 } from '../config'
 import { joinInstanceNameParts, getInstanceFilePath, getInstanceNaclName } from '../elements/instance_elements'
 import { NameMappingOptions } from '../definitions'
+import { toNestedTypeName } from '../fetch/element'
 
 const { findDuplicates } = collections.array
 const { awu } = collections.asynciterable
@@ -118,8 +119,10 @@ const isStandalone = (instance: InstanceElement, configByType: Record<string, Tr
     return false
   }
   const { standaloneFields, nestStandaloneInstances } = configByType[parentElemID.typeName]
-  return (nestStandaloneInstances && standaloneFields?.map(field => field.fieldName)
-    .includes(instance.elemID.typeName)) ?? false
+  return (nestStandaloneInstances
+    && standaloneFields?.some(field =>
+      toNestedTypeName(parentElemID.name, field.fieldName) === instance.elemID.typeName
+      || field.fieldName === instance.elemID.typeName)) ?? false
 }
 
 const nestedPath = (
@@ -129,8 +132,9 @@ const nestedPath = (
     return undefined
   }
   const parent = getParent(instance)
+  const fieldName = instance.elemID.typeName.split('__').pop() ?? instance.elemID.typeName
   // Remove adapter, Records and the parent instance type name
-  return [...parent.path?.slice(2, parent.path.length - 1) ?? [], instance.elemID.typeName]
+  return [...parent.path?.slice(2, parent.path.length - 1) ?? [], fieldName]
 }
 
 /* Calculates the new instance name and file path */

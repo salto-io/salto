@@ -97,7 +97,7 @@ describe('referenced instances', () => {
       },
     })
     const standaloneDoubleNestedFieldType = new ObjectType({
-      elemID: new ElemID(ADAPTER_NAME, 'standaloneDoubleNestedField'),
+      elemID: new ElemID(ADAPTER_NAME, 'nestingParent__standaloneNestedField__standaloneDoubleNestedField'),
       fields: {
         name: { refType: BuiltinTypes.STRING },
       },
@@ -372,7 +372,7 @@ describe('referenced instances', () => {
             ],
           },
         },
-        standaloneDoubleNestedField: {
+        nestingParent__standaloneNestedField__standaloneDoubleNestedField: {
           transformation: {
             extendsParentId: true,
             nestStandaloneInstances: true,
@@ -424,6 +424,7 @@ describe('referenced instances', () => {
           'myAdapter.group.instance.group2',
           'myAdapter.group.instance.group3',
           'myAdapter.nestingParent.instance.nestingParent',
+          'myAdapter.nestingParent__standaloneNestedField__standaloneDoubleNestedField.instance.nestingParent__standaloneNestedField__nestedNestedStandaloneField',
           'myAdapter.noIdFields.instance.no_idFieldsParent',
           'myAdapter.notNestingParent.instance.notNestingParent',
           'myAdapter.notStandaloneNestedField.instance.notNestingParent__notStandaloneNestedField',
@@ -432,7 +433,6 @@ describe('referenced instances', () => {
           'myAdapter.recipe.instance.recipe456_456_123_ROOT',
           'myAdapter.recipe.instance.sameRecipe',
           'myAdapter.recipe.instance.sameRecipe',
-          'myAdapter.standaloneDoubleNestedField.instance.nestingParent__standaloneNestedField__nestedNestedStandaloneField',
           'myAdapter.standaloneNestedField.instance.nestingParent__standaloneNestedField',
           'myAdapter.status.instance.status_recipe123_123_root_name@uuuv',
         ])
@@ -449,7 +449,8 @@ describe('referenced instances', () => {
       nestingParent: config.apiDefinitions.types.nestingParent.transformation,
       notNestingParent: config.apiDefinitions.types.notNestingParent.transformation,
       standaloneNestedField: config.apiDefinitions.types.standaloneNestedField.transformation,
-      standaloneDoubleNestedField: config.apiDefinitions.types.standaloneDoubleNestedField.transformation,
+      nestingParent__standaloneNestedField__standaloneDoubleNestedField:
+        config.apiDefinitions.types.nestingParent__standaloneNestedField__standaloneDoubleNestedField.transformation,
       notStandaloneNestedField: config.apiDefinitions.types.notStandaloneNestedField.transformation,
     }
 
@@ -474,13 +475,13 @@ describe('referenced instances', () => {
           'myAdapter.group.instance.group2',
           'myAdapter.group.instance.group3',
           'myAdapter.nestingParent.instance.nestingParent',
+          'myAdapter.nestingParent__standaloneNestedField__standaloneDoubleNestedField.instance.nestingParent__standaloneNestedField__nestedNestedStandaloneField',
           'myAdapter.noIdFields.instance.no_idFieldsWithParent',
           'myAdapter.notNestingParent.instance.notNestingParent',
           'myAdapter.notStandaloneNestedField.instance.notNestingParent__notStandaloneNestedField',
           'myAdapter.recipe.instance.recipe123_123_ROOT',
           'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
           'myAdapter.recipe.instance.recipe456_456_123_ROOT',
-          'myAdapter.standaloneDoubleNestedField.instance.nestingParent__standaloneNestedField__nestedNestedStandaloneField',
           'myAdapter.standaloneNestedField.instance.nestingParent__standaloneNestedField',
         ])
     })
@@ -540,6 +541,7 @@ describe('referenced instances', () => {
           'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Desktop',
           'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
           'myAdapter.nestingParent.instance.nestingParent',
+          'myAdapter.nestingParent__standaloneNestedField__standaloneDoubleNestedField.instance.nestingParent__standaloneNestedField__nestedNestedStandaloneField',
           'myAdapter.noIdFields.instance.no_idFieldsWithParent',
           'myAdapter.notNestingParent.instance.notNestingParent',
           'myAdapter.notStandaloneNestedField.instance.notNestingParent__notStandaloneNestedField',
@@ -549,7 +551,6 @@ describe('referenced instances', () => {
           'myAdapter.recipe.instance.recipe456_456_123_ROOT',
           'myAdapter.recipe.instance.sameRecipe',
           'myAdapter.recipe.instance.sameRecipe',
-          'myAdapter.standaloneDoubleNestedField.instance.nestingParent__standaloneNestedField__nestedNestedStandaloneField',
           'myAdapter.standaloneNestedField.instance.nestingParent__standaloneNestedField',
         ])
     })
@@ -576,7 +577,8 @@ describe('referenced instances', () => {
         transformationConfigByType,
         transformationDefaultConfig
       )
-      const updatedNestedNestedStandaloneField = result.filter(isInstanceElement).find(inst => inst.elemID.typeName === 'standaloneDoubleNestedField')
+      const updatedNestedNestedStandaloneField = result.filter(isInstanceElement)
+        .find(inst => inst.elemID.typeName === 'nestingParent__standaloneNestedField__standaloneDoubleNestedField')
         ?.path
       expect(updatedNestedNestedStandaloneField)
         .toEqual(['myAdapter', 'Records', 'existing', 'path', 'to', 'nestingParent', 'standaloneNestedField',

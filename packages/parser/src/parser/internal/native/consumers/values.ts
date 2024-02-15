@@ -134,7 +134,7 @@ const consumeStringData = (
   // We start by collecting all of the tokens until the line ends
   // (its a single line string!) or the " char is met
   while (
-        context.lexer.peek(false)?.type !== TOKEN_TYPES.DOUBLE_QUOTES
+    context.lexer.peek(false)?.type !== TOKEN_TYPES.DOUBLE_QUOTES
         && context.lexer.peek(false)?.type !== TOKEN_TYPES.NEWLINE
   ) {
     tokens.push(context.lexer.next(false))

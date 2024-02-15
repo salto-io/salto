@@ -22,7 +22,7 @@ const log = logger(module)
 const { awu } = collections.asynciterable
 export const isRelatedToSpecifiedTerms = (instance: InstanceElement, terms: string[]): boolean => {
   const includesTerm = (term: string): boolean =>
-  instance.value.name?.includes(term) || instance.value.description?.includes(term)
+    instance.value.name?.includes(term) || instance.value.description?.includes(term)
 
   if (terms.some(includesTerm)) {
     log.debug(`Found a field related to specified term in ${instance.elemID.getFullName()}. Planning to deploy it.`)

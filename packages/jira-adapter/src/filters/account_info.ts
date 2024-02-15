@@ -149,8 +149,8 @@ const filter: FilterCreator = ({ client }) => ({
       applicationRoles
         .find(role => role.value.key === 'jira-software')?.value.userCount ?? 'unknown')
     log.info('jira JSM user count is: %s',
-        applicationRoles
-          .find(role => role.value.key === 'jira-servicedesk')?.value.userCount ?? 'unknown')
+      applicationRoles
+        .find(role => role.value.key === 'jira-servicedesk')?.value.userCount ?? 'unknown')
     applicationRoles
       .forEach(role => {
         delete role.value.userCount

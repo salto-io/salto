@@ -231,8 +231,7 @@ export const deployWithJspEndpoints = async ({
   serviceValuesTransformer?: ServiceValuesTransformer
   fieldsToIgnore?: string[]
   getNameFunction?: (values: Values) => string
-}
-): Promise<DeployResult> => {
+}): Promise<DeployResult> => {
   const deployResult = await deployChanges(
     changes,
     change => deployChange(

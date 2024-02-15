@@ -835,8 +835,7 @@ const createFetchChanges = async ({
   adapterNames, workspaceElements, stateElements, unmergedElements,
   processErrorsResult, currentConfigs, getChangesEmitter, partiallyFetchedAccountData,
   updatedConfigs = [], errors = [], progressEmitter,
-}: CreateFetchChangesParams
-): Promise<FetchChangesResult> => {
+}: CreateFetchChangesParams): Promise<FetchChangesResult> => {
   const calculateDiffEmitter = new StepEmitter()
   if (progressEmitter) {
     getChangesEmitter.emit('completed')

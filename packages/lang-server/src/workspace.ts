@@ -303,7 +303,7 @@ export class EditorWorkspace {
   async getElements(filename: string): Promise<AsyncIterable<Element>> {
     const elements = await (
       await this.workspace.getParsedNaclFile(this.workspaceFilename(filename))
-      )?.elements() ?? []
+    )?.elements() ?? []
     return awu(elements)
   }
 

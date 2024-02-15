@@ -49,7 +49,8 @@ type SetAuthorInformationForTypeParams = {
 const setAuthorInformationForInstancesOfType = async (
   {
     client, typeName, instances,
-  }: SetAuthorInformationForTypeParams): Promise<void> => {
+  }: SetAuthorInformationForTypeParams
+): Promise<void> => {
   const { result: filesProps } = await client.listMetadataObjects([{ type: typeName }])
   const filePropsByFullName = _.keyBy(filesProps, props => props.fullName)
   const instancesWithMissingFileProps: MetadataInstanceElement[] = []

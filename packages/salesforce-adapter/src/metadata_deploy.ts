@@ -345,7 +345,8 @@ const validateChanges = async (
   changes: ReadonlyArray<Change>
 ): Promise<{
     validChanges: ReadonlyArray<Change<MetadataInstanceElement>>
-    errors: (SaltoError | SaltoElementError)[]
+    errors: (SaltoError | SaltoElementError
+)[]
   }> => {
   const changesAndValidation = await awu(changes)
     .map(async change => ({ change, error: await getChangeError(change) }))

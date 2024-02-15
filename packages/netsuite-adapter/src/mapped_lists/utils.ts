@@ -296,8 +296,7 @@ const transformMapsToLists = (element: ChangeDataType): Promise<ChangeDataType> 
   })
 
 export const createConvertStandardElementMapsToLists = async (): Promise<(
-  element: ChangeDataType
-) => Promise<ChangeDataType>> => {
+  element: ChangeDataType) => Promise<ChangeDataType>> => {
   // Using hardcoded types so the transformed elements will have fields with List<> ref types.
   const standardTypes = getStandardTypes()
   const customRecordTypeAnnotationRefTypes = toAnnotationRefTypes(standardTypes.customrecordtype.type)

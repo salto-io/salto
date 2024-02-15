@@ -581,7 +581,8 @@ SuiteAppFileCabinetOperations => {
   const deployInstances = async (
     instances: FileCabinetInstanceDetails[],
     type: DeployType,
-  ): Promise<(number | Error)[]> => {
+  ): Promise<(number | Error
+)[]> => {
     if (type === 'add') {
       return suiteAppClient.addFileCabinetInstances(instances)
     }

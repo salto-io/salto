@@ -77,10 +77,11 @@ const createTemplateParts = (filePath: string, content: string, idsToElements: R
   }
 }
 
-export const unzipFolderToElements = async ({
-  buffer, brandName, name, idsToElements,
-}:
-  { buffer: Buffer; brandName: string; name: string; idsToElements: Record<string, Element> }
+export const unzipFolderToElements = async (
+  {
+    buffer, brandName, name, idsToElements,
+  }:
+    { buffer: Buffer; brandName: string; name: string; idsToElements: Record<string, Element> }
 ): Promise<ThemeDirectory> => {
   const zip = new JSZip()
   const unzippedContents = await zip.loadAsync(buffer)

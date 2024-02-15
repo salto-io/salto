@@ -389,7 +389,8 @@ const getEntriesForType = async (
 
   const getExtraFieldValues = async (
     entry: Values
-  ): Promise<([string, Values | Values[]])[]> => (await Promise.all(
+  ): Promise<([string, Values | Values[]]
+)[]> => (await Promise.all(
     recurseInto
       .filter(({ conditions }) => shouldRecurseIntoEntry(entry, requestContext, conditions))
       .map(async nested => {
